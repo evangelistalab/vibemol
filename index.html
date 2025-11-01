@@ -136,6 +136,17 @@
       color: var(--text);
       font-size: 13px;
     }
+    #viewControls {
+      padding: 10px 12px;
+      border-bottom: 1px solid #223;
+      color: var(--text);
+      background: #0f151f;
+    }
+    #viewControls h4 { margin: 0 0 8px 0; font-weight: 600; color: var(--muted); }
+    #viewControls .row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; align-items: center; }
+    #viewControls label { color: var(--muted); font-size: 12px; }
+    #viewControls input[type="number"] { width: 100%; padding: 3px 6px; background: #1a2230; color: var(--text); border: 1px solid #223; border-radius: 4px; }
+    #viewControls input[type="checkbox"] { vertical-align: middle; }
 
     #coordsContent table {
       width: 100%;
@@ -201,6 +212,7 @@
     <div class="spacer"></div>
     <button id="saveBtn">Save PNG</button>
     <button id="batchBtn" class="secondary">Batch export</button>
+    <button id="viewBtn" class="secondary" title="View controls">View</button>
     <button id="coordsBtn" class="secondary" title="Show atom coordinates">Coords</button>
   </div>
 
@@ -219,9 +231,45 @@
         <button id="sideClose" title="Close">✕</button>
       </div>
     </div>
-    <div id="coordsContent">
-      <!-- Filled dynamically -->
-    </div>
+      <div id="viewControls">
+        <h4>View</h4>
+        <div class="row">
+          <label>Shift X</label><input type="number" id="shiftX" step="0.1" />
+          <label>Shift Y</label><input type="number" id="shiftY" step="0.1" />
+        </div>
+        <div class="row">
+          <label>Shift Z</label><input type="number" id="shiftZ" step="0.1" />
+          <span></span><span></span>
+        </div>
+        <div class="row">
+          <label>Cam X</label><input type="number" id="camX" step="0.1" />
+          <label>Cam Y</label><input type="number" id="camY" step="0.1" />
+        </div>
+        <div class="row">
+          <label>Cam Z</label><input type="number" id="camZ" step="0.1" />
+          <span></span><span></span>
+        </div>
+        <div class="row">
+          <label>Target X</label><input type="number" id="tgtX" step="0.1" />
+          <label>Target Y</label><input type="number" id="tgtY" step="0.1" />
+        </div>
+        <div class="row">
+          <label>Target Z</label><input type="number" id="tgtZ" step="0.1" />
+          <span></span><span></span>
+        </div>
+        <div class="row">
+          <label><input type="checkbox" id="autoRot"/> Auto-rotate</label>
+          <label>Rot speed</label><input type="number" id="rotSpeed" step="0.01" />
+          <label>Damping</label><input type="number" id="damp" step="0.01" />
+        </div>
+        <div class="row">
+          <label>AutoRot speed</label><input type="number" id="autoRotSpeed" step="0.1" />
+          <span></span><span></span>
+        </div>
+      </div>
+      <div id="coordsContent">
+        <!-- Filled dynamically -->
+      </div>
   </div>
 
   <!-- three.js core and controls (local copies) -->
@@ -381,13 +429,16 @@
       let meshes = []; // active meshes (pos/neg)
       let atomGroup = new THREE.Group();
       let boxHelper = null;
-      scene.add(atomGroup);
+      // Content group to allow whole-scene shifting
+      const contentGroup = new THREE.Group();
+      scene.add(contentGroup);
+      contentGroup.add(atomGroup);
 
       function clearSceneMeshes() {
-        for (const m of meshes) scene.remove(m), m.geometry.dispose(), m.material.dispose();
+        for (const m of meshes) contentGroup.remove(m), m.geometry.dispose(), m.material.dispose();
         meshes = [];
         atomGroup.clear();
-        if (boxHelper) { scene.remove(boxHelper); boxHelper.geometry.dispose(); boxHelper.material.dispose(); boxHelper = null; }
+        if (boxHelper) { contentGroup.remove(boxHelper); boxHelper.geometry.dispose(); boxHelper.material.dispose(); boxHelper = null; }
       }
 
       function buildAtoms(vol) {
@@ -512,17 +563,79 @@
       const saveBtn = document.getElementById('saveBtn');
       const batchBtn = document.getElementById('batchBtn');
       // Side panel controls
+      const viewBtn = document.getElementById('viewBtn');
       const coordsBtn = document.getElementById('coordsBtn');
       const sidePanel = document.getElementById('sidePanel');
       const sideClose = document.getElementById('sideClose');
       const coordsContent = document.getElementById('coordsContent');
       const copyXYZBtn = document.getElementById('copyXYZ');
       const downloadXYZBtn = document.getElementById('downloadXYZ');
+      // View controls
+      const shiftX = document.getElementById('shiftX');
+      const shiftY = document.getElementById('shiftY');
+      const shiftZ = document.getElementById('shiftZ');
+      const camX = document.getElementById('camX');
+      const camY = document.getElementById('camY');
+      const camZ = document.getElementById('camZ');
+      const tgtX = document.getElementById('tgtX');
+      const tgtY = document.getElementById('tgtY');
+      const tgtZ = document.getElementById('tgtZ');
+      const autoRot = document.getElementById('autoRot');
+      const rotSpeed = document.getElementById('rotSpeed');
+      const damp = document.getElementById('damp');
+      const autoRotSpeed = document.getElementById('autoRotSpeed');
 
       openBtn.onclick = () => fileInput.click();
       const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); };
+      const openSide = () => { if (!sidePanel.classList.contains('open')) { sidePanel.classList.add('open'); sidePanel.setAttribute('aria-hidden','false'); } };
       coordsBtn.onclick = toggleSide;
+      viewBtn.onclick = () => { openSide(); try { document.getElementById('viewControls').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(_) {} try { shiftX && shiftX.focus(); } catch(_) {} };
       sideClose.onclick = toggleSide;
+
+      function refreshViewUI() {
+        const notEditing = (el) => document.activeElement !== el;
+        if (notEditing(shiftX)) shiftX.value = contentGroup.position.x.toFixed(3);
+        if (notEditing(shiftY)) shiftY.value = contentGroup.position.y.toFixed(3);
+        if (notEditing(shiftZ)) shiftZ.value = contentGroup.position.z.toFixed(3);
+        if (notEditing(camX)) camX.value = camera.position.x.toFixed(3);
+        if (notEditing(camY)) camY.value = camera.position.y.toFixed(3);
+        if (notEditing(camZ)) camZ.value = camera.position.z.toFixed(3);
+        if (notEditing(tgtX)) tgtX.value = controls.target.x.toFixed(3);
+        if (notEditing(tgtY)) tgtY.value = controls.target.y.toFixed(3);
+        if (notEditing(tgtZ)) tgtZ.value = controls.target.z.toFixed(3);
+        autoRot.checked = controls.autoRotate === true;
+        if (notEditing(rotSpeed)) rotSpeed.value = (controls.rotateSpeed ?? 1.0).toFixed(2);
+        if (notEditing(damp)) damp.value = (controls.dampingFactor ?? 0.05).toFixed(2);
+        if (notEditing(autoRotSpeed)) autoRotSpeed.value = (controls.autoRotateSpeed ?? 2.0).toFixed(2);
+      }
+
+      // Initialize view UI
+      refreshViewUI();
+      controls.addEventListener('change', refreshViewUI);
+
+      // Apply handlers
+      const toNum = (v, def=0) => { const n = parseFloat(v); return Number.isFinite(n) ? n : def; };
+      for (const el of [shiftX, shiftY, shiftZ]) {
+        el.oninput = () => {
+          contentGroup.position.set(toNum(shiftX.value, 0), toNum(shiftY.value, 0), toNum(shiftZ.value, 0));
+        };
+      }
+      for (const el of [camX, camY, camZ]) {
+        el.oninput = () => {
+          camera.position.set(toNum(camX.value, camera.position.x), toNum(camY.value, camera.position.y), toNum(camZ.value, camera.position.z));
+          controls.update();
+        };
+      }
+      for (const el of [tgtX, tgtY, tgtZ]) {
+        el.oninput = () => {
+          controls.target.set(toNum(tgtX.value, controls.target.x), toNum(tgtY.value, controls.target.y), toNum(tgtZ.value, controls.target.z));
+          controls.update();
+        };
+      }
+      autoRot.onchange = () => { controls.autoRotate = !!autoRot.checked; };
+      rotSpeed.oninput = () => { const v = toNum(rotSpeed.value, 1.0); if (Number.isFinite(v)) controls.rotateSpeed = v; };
+      damp.oninput = () => { const v = toNum(damp.value, 0.05); if (Number.isFinite(v)) controls.dampingFactor = v; };
+      autoRotSpeed.oninput = () => { const v = toNum(autoRotSpeed.value, 2.0); if (Number.isFinite(v)) controls.autoRotateSpeed = v; };
 
       function updateSidePanel() {
         if (currentIndex < 0 || !volumes[currentIndex]) { coordsContent.innerHTML = '<em>No file loaded</em>'; return; }
@@ -722,7 +835,7 @@
           const geomP = makeIsosurface(vol, iso);
           const meshP = new THREE.Mesh(geomP, posMat);
           meshP.userData.sign = 'pos';
-          scene.add(meshP); meshes.push(meshP);
+          contentGroup.add(meshP); meshes.push(meshP);
           // Debug: triangle count
           if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count / 3) | 0);
         }
@@ -731,20 +844,20 @@
           const geomN = makeIsosurface(vol, -iso);
           const meshN = new THREE.Mesh(geomN, negMat);
           meshN.userData.sign = 'neg';
-          scene.add(meshN); meshes.push(meshN);
+          contentGroup.add(meshN); meshes.push(meshN);
           if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
         }
 
         // Atoms
         if (toggleAtoms.checked) {
           atomGroup = buildAtoms(volumes[currentIndex].vol);
-          scene.add(atomGroup);
+          contentGroup.add(atomGroup);
         }
 
         // Box
         if (toggleBox.checked) {
           boxHelper = buildBox(vol);
-          scene.add(boxHelper);
+          contentGroup.add(boxHelper);
           console.log('[CUBE] Box helper added');
         }
 
