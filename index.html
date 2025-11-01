@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CUBE Isosurface Viewer (Zero-install)</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121822;
+      --text: #e8eef6;
+      --muted: #9ab;
+      --accent: #4aa3ff;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.3 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    #toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--panel);
+      border-bottom: 1px solid #223;
+      padding: 8px 10px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      z-index: 10;
+      flex-wrap: wrap;
+    }
+
+    #toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+    }
+
+    #toolbar input[type="number"] {
+      width: 6.5em;
+    }
+
+    #toolbar input[type="range"] {
+      width: 140px;
+    }
+
+    #toolbar input[type="color"] {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+    }
+
+    #toolbar button {
+      background: var(--accent);
+      color: #003;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #toolbar button.secondary {
+      background: #2a3344;
+      color: #dfe7f3;
+    }
+
+    #toolbar .spacer {
+      flex: 1;
+    }
+
+    #drop {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    #hint {
+      position: fixed;
+      left: 12px;
+      bottom: 10px;
+      color: #9ab;
+      background: #0f141d90;
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="toolbar">
+    <label><strong>CUBE files</strong>
+      <input type="file" id="fileInput" accept=".cube,.cub" multiple />
+      <button id="openBtn" class="secondary">Open…</button>
+    </label>
+    <label>Active file
+      <select id="fileSelect"></select>
+    </label>
+    <label>Iso
+      <input type="number" id="iso" value="0.02" step="0.005" />
+    </label>
+    <label>Opacity
+      <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.6" />
+    </label>
+    <label>+ color <input type="color" id="posColor" value="#1f77b4" /></label>
+    <label>− color <input type="color" id="negColor" value="#d62728" /></label>
+    <label>BG <input type="color" id="bgColor" value="#ffffff" /></label>
+    <label><input type="checkbox" id="showAtoms" checked /> atoms</label>
+    <label><input type="checkbox" id="showBox" /> box</label>
+    <div class="spacer"></div>
+    <button id="saveBtn">Save PNG</button>
+    <button id="batchBtn" class="secondary">Batch export</button>
+  </div>
+
+  <div id="drop">
+    <canvas id="canvas"></canvas>
+  </div>
+  <div id="hint">Drag & drop .cube files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
+
+  <!-- three.js core and controls (local copies) -->
+  <script src="./three.min.js"></script>
+  <script src="./OrbitControls.global.js"></script>
+  <!-- isosurface (global) -->
+  <script src="isosurface.bundle.js"></script>
+  <!-- atomic data (global) -->
+  <script src="atomicData.js"></script>
+
+  <script>
+    (function () {
+      // --- Constants & helpers ---
+      const BOHR_TO_ANG = 0.529177210903;
+
+      function arrayMinMax(a) {
+        let min = Infinity, max = -Infinity;
+        for (let i = 0; i < a.length; i++) {
+          const v = a[i];
+          if (v < min) min = v;
+          if (v > max) max = v;
+        }
+        return { min, max };
+      }
+
+      function parseCube(text) {
+        const lines = text.replace(/\r/g, '').split('\n').filter(l => l.length > 0);
+        if (lines.length < 6) throw new Error("Not enough lines for a CUBE file.");
+
+        const title = lines[0];
+        const comment = lines[1];
+
+        // Generic "(x,y)" capture anywhere on the 2nd line (your regex)
+        let isoHint = null;
+        {
+          const m = comment.match(/\(([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\)/);
+          if (m) isoHint = parseFloat(m[1]); // take the first number as suggested level
+        }
+
+        // origin / natoms line
+        const L3 = lines[2].trim().split(/\s+/);
+        const natoms = parseInt(L3[0], 10);
+        const origin = [parseFloat(L3[1]), parseFloat(L3[2]), parseFloat(L3[3])];
+
+        // grid counts + per-voxel step vectors (Bohr)
+        const sx = lines[3].trim().split(/\s+/).map(Number); // [numx, ax, ay, az]
+        const sy = lines[4].trim().split(/\s+/).map(Number); // [numy, bx, by, bz]
+        const sz = lines[5].trim().split(/\s+/).map(Number); // [numz, cx, cy, cz]
+        const numx = Math.abs(sx[0]) | 0, numy = Math.abs(sy[0]) | 0, numz = Math.abs(sz[0]) | 0;
+        const ax = sx.slice(1, 4); // per-voxel step along i
+        const ay = sy.slice(1, 4); // per-voxel step along j
+        const az = sz.slice(1, 4); // per-voxel step along k
+
+        // atoms: Z, q, x, y, z  (positions in Bohr)
+        const atoms = [];
+        for (let i = 0; i < Math.abs(natoms); i++) {
+          const p = lines[6 + i].trim().split(/\s+/).map(Number);
+          atoms.push({ Z: p[0], q: p[1], x: p[2], y: p[3], z: p[4] });
+        }
+
+        // volumetric data (z fastest, then y, then x) — reshape (numx,numy,numz)
+        const flat = lines.slice(6 + Math.abs(natoms)).join(' ').trim().split(/\s+/);
+        const total = numx * numy * numz;
+        if (flat.length < total) throw new Error(`Data size mismatch. Expected ${total}, got ${flat.length}`);
+        const data = new Float32Array(total);
+        for (let i = 0; i < total; i++) data[i] = parseFloat(flat[i]);
+
+        // index helper matching your reshape: data[i,j,k]
+        const idx = (i, j, k) => (i * numy + j) * numz + k;
+
+        return {
+          title, comment,
+          natoms: Math.abs(natoms),
+          origin,                        // Bohr
+          nxyz: [numx, numy, numz],
+          axes: [ax, ay, az],            // per-voxel step vectors in Bohr
+          atoms, data, idx,
+          isoHint                        // may be null if not present
+        };
+      }
+
+      // (subsample removed)
+
+      // Map a point in voxel grid coords (x,y,z in [0..nx-1], etc.) to world (Å)
+      function voxelToWorld(vol, p) {
+        const a = vol.axes[0].map(v => v * BOHR_TO_ANG);
+        const b = vol.axes[1].map(v => v * BOHR_TO_ANG);
+        const c = vol.axes[2].map(v => v * BOHR_TO_ANG);
+        const o = vol.origin ? vol.origin.map(v => v * BOHR_TO_ANG) : [0, 0, 0];
+        return [
+          o[0] + p[0] * a[0] + p[1] * b[0] + p[2] * c[0],
+          o[1] + p[0] * a[1] + p[1] * b[1] + p[2] * c[1],
+          o[2] + p[0] * a[2] + p[1] * b[2] + p[2] * c[2],
+        ];
+      }
+
+      function makeIsosurface(vol, level) {
+        const [nx, ny, nz] = vol.nxyz;
+        // MarchingCubes extracts the 0-level set of the potential.
+        // To get an iso-surface at `level`, return field(x)-level.
+        const sampler = (x, y, z) => {
+          const i = Math.max(0, Math.min(nx - 1, Math.floor(x)));
+          const j = Math.max(0, Math.min(ny - 1, Math.floor(y)));
+          const k = Math.max(0, Math.min(nz - 1, Math.floor(z)));
+          return vol.data[vol.idx(i, j, k)];
+        };
+        // Marching cubes → triangles (no explicit bounds => defaults to [[0,0,0],[nx,ny,nz]])
+        const result = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => sampler(x, y, z) - level);
+        const geom = new THREE.BufferGeometry();
+        const positions = new Float32Array(result.positions.length * 3);
+        for (let i = 0; i < result.positions.length; i++) {
+          const p = voxelToWorld(vol, result.positions[i]); // positions in voxel coords
+          positions[3 * i + 0] = p[0];
+          positions[3 * i + 1] = p[1];
+          positions[3 * i + 2] = p[2];
+        }
+        const indices = new Uint32Array(result.cells.flat()); // triangles
+        geom.setIndex(new THREE.BufferAttribute(indices, 1));
+        geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geom.computeVertexNormals();
+        return geom;
+      }
+
+      // --- Three.js scene setup ---
+      const canvas = document.getElementById('canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+      const scene = new THREE.Scene();
+      // Default to white background
+      scene.background = new THREE.Color(0xffffff);
+      const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 1e6);
+      camera.position.set(60, 50, 60);
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+
+      // Lights
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x081018, 0.7);
+      const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+      dir.position.set(1, 1, 1);
+      scene.add(hemi, dir);
+
+      // Resizer
+      function resize() {
+        const panelH = 56; // toolbar height
+        const w = window.innerWidth;
+        const h = window.innerHeight - panelH;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      // State
+      let volumes = []; // {name, vol}
+      let currentIndex = -1;
+      let meshes = []; // active meshes (pos/neg)
+      let atomGroup = new THREE.Group();
+      let boxHelper = null;
+      scene.add(atomGroup);
+
+      function clearSceneMeshes() {
+        for (const m of meshes) scene.remove(m), m.geometry.dispose(), m.material.dispose();
+        meshes = [];
+        atomGroup.clear();
+        if (boxHelper) { scene.remove(boxHelper); boxHelper.geometry.dispose(); boxHelper.material.dispose(); boxHelper = null; }
+      }
+
+      function buildAtoms(vol) {
+        const group = new THREE.Group();
+        // Atoms (spheres)
+        const sphere = new THREE.SphereGeometry(0.5, 20, 12);
+        // Covalent radii from atomic data (Å)
+        const covR = (z) => (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
+        const atomPositions = [];
+        for (const a of vol.atoms) {
+          const r = covR(a.Z | 0);
+          const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.0 });
+          const mesh = new THREE.Mesh(sphere, mat);
+          const pos = new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
+          mesh.position.copy(pos);
+          mesh.scale.setScalar(r * 2);
+          group.add(mesh);
+          atomPositions.push({ pos, Z: a.Z | 0 });
+        }
+
+        // Bonds (cylinders) based on distance vs. covalent radii
+        const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.5, metalness: 0.1 });
+        const up = new THREE.Vector3(0, 1, 0);
+        const N = atomPositions.length;
+        const bondRadius = 0.08; // Å
+        for (let i = 0; i < N; i++) {
+          for (let j = i + 1; j < N; j++) {
+            const a = atomPositions[i];
+            const b = atomPositions[j];
+            const ri = covR(a.Z);
+            const rj = covR(b.Z);
+            const cutoff = 1.15 * (ri + rj); // heuristic
+            const dir = new THREE.Vector3().subVectors(b.pos, a.pos);
+            const len = dir.length();
+            if (len < 0.4 || len > cutoff) continue;
+            const mid = new THREE.Vector3().addVectors(a.pos, b.pos).multiplyScalar(0.5);
+            const geom = new THREE.CylinderGeometry(bondRadius, bondRadius, len, 12, 1, false);
+            const cyl = new THREE.Mesh(geom, bondMat);
+            cyl.position.copy(mid);
+            const q = new THREE.Quaternion().setFromUnitVectors(up, dir.normalize());
+            cyl.setRotationFromQuaternion(q);
+            group.add(cyl);
+          }
+        }
+
+        return group;
+      }
+
+      function buildBox(vol) {
+        const [nx, ny, nz] = vol.nxyz;
+        // Use cell-corner indexing: far corner at (nx,ny,nz) works visually, but try (nx-1,...) to stay within data
+        const nx1 = Math.max(0, nx - 1), ny1 = Math.max(0, ny - 1), nz1 = Math.max(0, nz - 1);
+        const corners = [
+          [0, 0, 0], [nx1, 0, 0], [0, ny1, 0], [0, 0, nz1],
+          [nx1, ny1, 0], [nx1, 0, nz1], [0, ny1, nz1], [nx1, ny1, nz1]
+        ].map(p => new THREE.Vector3(...voxelToWorld(vol, p)));
+        const geom = new THREE.BufferGeometry();
+        const verts = new Float32Array(24 * 3);
+        const edges = [
+          [0, 1], [0, 2], [0, 3], [7, 6], [7, 5], [7, 4], [1, 4], [1, 5], [2, 4], [2, 6], [3, 5], [3, 6]
+        ];
+        edges.forEach((e, i) => {
+          verts[6 * i + 0] = corners[e[0]].x; verts[6 * i + 1] = corners[e[0]].y; verts[6 * i + 2] = corners[e[0]].z;
+          verts[6 * i + 3] = corners[e[1]].x; verts[6 * i + 4] = corners[e[1]].y; verts[6 * i + 5] = corners[e[1]].z;
+        });
+        geom.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+        const mat = new THREE.LineBasicMaterial({ color: 0xd3d3d3, linewidth: 1, depthTest: false, transparent: true, opacity: 0.9 });
+        return new THREE.LineSegments(geom, mat);
+      }
+
+      function fitCameraToScene() {
+        const box = new THREE.Box3();
+        let hasSomething = false;
+        for (const m of meshes) { box.expandByObject(m); hasSomething = true; }
+        if (atomGroup.children.length) { box.expandByObject(atomGroup); hasSomething = true; }
+        if (boxHelper) { box.expandByObject(boxHelper); hasSomething = true; }
+        if (!hasSomething || box.isEmpty()) return;
+
+        const size = new THREE.Vector3(), center = new THREE.Vector3();
+        box.getSize(size); box.getCenter(center);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const dist = maxDim * 1.6 / Math.tan((camera.fov * Math.PI / 180) / 2);
+        const dir = new THREE.Vector3(1, 1, 1).normalize();
+        camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
+        camera.near = Math.max(0.01, dist / 100);
+        camera.far = dist * 10 + maxDim;
+        camera.updateProjectionMatrix();
+        controls.target.copy(center);
+        controls.update();
+      }
+
+      function render() {
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(render);
+      }
+      requestAnimationFrame(render);
+
+      // --- UI wiring ---
+      const fileInput = document.getElementById('fileInput');
+      const openBtn = document.getElementById('openBtn');
+      const fileSelect = document.getElementById('fileSelect');
+      const isoInput = document.getElementById('iso');
+      const opInput = document.getElementById('opacity');
+      const posColor = document.getElementById('posColor');
+      const negColor = document.getElementById('negColor');
+      const bgColor = document.getElementById('bgColor');
+      const toggleAtoms = document.getElementById('showAtoms');
+      const toggleBox = document.getElementById('showBox');
+      const saveBtn = document.getElementById('saveBtn');
+      const batchBtn = document.getElementById('batchBtn');
+
+      openBtn.onclick = () => fileInput.click();
+
+      async function handleFiles(fileList) {
+        const arr = Array.from(fileList);
+        // If demo is present and this is the first real load, clear it
+        if (volumes.length === 1 && volumes[0].name === 'Demo Water') {
+          console.log('[CUBE] Replacing demo with loaded file(s).');
+          volumes = [];
+          currentIndex = -1;
+          clearSceneMeshes();
+        }
+        const startIndex = volumes.length; // index of first newly added
+        for (const f of arr) {
+          const text = await f.text();
+          const vol = parseCube(text);
+          volumes.push({ name: f.name, vol });
+          // adopt hinted iso if the user hasn’t interacted yet
+          if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
+            isoInput.value = String(vol.isoHint);
+          }
+          // Debug: print parsed volume info
+          try {
+            const stats = arrayMinMax(vol.data);
+            console.log('[CUBE] Loaded', f.name, {
+              title: vol.title,
+              nxyz: vol.nxyz,
+              origin: vol.origin,
+              axes: vol.axes,
+              natoms: vol.natoms,
+              isoHint: vol.isoHint,
+              min: stats.min,
+              max: stats.max
+            });
+          } catch (e) {
+            console.warn('[CUBE] Stats failed for', f.name, e);
+          }
+        }
+        refreshFileSelect();
+        if (volumes.length > 0) {
+          // Select the first of the newly added files
+          currentIndex = startIndex;
+          if (fileSelect && fileSelect.options.length > currentIndex) {
+            fileSelect.value = String(currentIndex);
+          }
+          rebuildScene();
+        }
+      }
+
+      fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+      const drop = document.getElementById('drop');
+      drop.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+      drop.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+
+      function refreshFileSelect() {
+        fileSelect.innerHTML = "";
+        volumes.forEach((v, i) => {
+          const opt = document.createElement('option');
+          opt.value = i; opt.textContent = v.name;
+          fileSelect.appendChild(opt);
+        });
+        if (currentIndex >= 0) fileSelect.value = currentIndex;
+      }
+
+      fileSelect.onchange = () => {
+        currentIndex = parseInt(fileSelect.value, 10);
+        rebuildScene();
+      };
+
+      // (subsample controls removed)
+
+      isoInput.onchange = () => rebuildScene({ preserveView: true });
+      opInput.oninput = updateOpacityAndColors;
+      posColor.oninput = updateOpacityAndColors;
+      negColor.oninput = updateOpacityAndColors;
+      bgColor.oninput = () => {
+        // Update scene background to selected color
+        try { scene.background = new THREE.Color(bgColor.value); } catch {}
+      };
+      toggleAtoms.onchange = () => rebuildScene({ preserveView: true });
+      toggleBox.onchange = () => rebuildScene({ preserveView: true });
+
+      function rebuildScene(options = {}) {
+        const preserveView = !!options.preserveView;
+        // Save current camera + controls target if preserving view
+        const savedCam = preserveView ? camera.clone() : null;
+        const savedTarget = preserveView ? controls.target.clone() : null;
+        if (currentIndex < 0) return;
+        clearSceneMeshes();
+        const vol = volumes[currentIndex].vol;
+
+        // Compute robust min/max
+        const { min, max } = arrayMinMax(vol.data);
+
+        // Auto-iso fallback: if requested iso shows nothing, lower it to ~95th percentile of |field|
+        let iso = parseFloat(isoInput.value || "0.02");
+        if (!(max >= iso || min <= -iso)) {
+          // compute ~95th percentile on a sampled subset for speed
+          const sampleStep = Math.max(1, Math.floor(vol.data.length / 50000));
+          const absVals = [];
+          for (let i = 0; i < vol.data.length; i += sampleStep) absVals.push(Math.abs(vol.data[i]));
+          absVals.sort((a, b) => a - b);
+          const p95 = absVals[Math.floor(0.95 * (absVals.length - 1))] || 0.0;
+          iso = p95 || Math.max(Math.abs(min), Math.abs(max)) * 0.5;
+          console.warn('[CUBE] Requested iso produced no surface. Falling back to', iso.toFixed(6));
+        }
+
+        const opacity = parseFloat(opInput.value || "0.6");
+        const posMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(posColor.value), roughness: 0.65, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
+        const negMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(negColor.value), roughness: 0.65, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
+
+        // Positive iso (+iso value, + color)
+        if (max >= iso) {
+          const geomP = makeIsosurface(vol, iso);
+          const meshP = new THREE.Mesh(geomP, posMat);
+          meshP.userData.sign = 'pos';
+          scene.add(meshP); meshes.push(meshP);
+          // Debug: triangle count
+          if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count/3)|0);
+        }
+        // Negative iso (−iso value, − color)
+        if (min <= -iso) {
+          const geomN = makeIsosurface(vol, -iso);
+          const meshN = new THREE.Mesh(geomN, negMat);
+          meshN.userData.sign = 'neg';
+          scene.add(meshN); meshes.push(meshN);
+          if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count/3)|0);
+        }
+
+        // Atoms
+        if (toggleAtoms.checked) {
+          atomGroup = buildAtoms(volumes[currentIndex].vol);
+          scene.add(atomGroup);
+        }
+
+        // Box
+        if (toggleBox.checked) {
+          boxHelper = buildBox(vol);
+          scene.add(boxHelper);
+          console.log('[CUBE] Box helper added');
+        }
+
+        if (preserveView && savedCam && savedTarget) {
+          camera.copy(savedCam);
+          controls.target.copy(savedTarget);
+          controls.update();
+        } else {
+          fitCameraToScene();
+        }
+        console.log('[CUBE] Rebuilt scene. iso=', iso, 'opacity=', opacity, 'min/max=', min, max);
+      }
+
+      function updateOpacityAndColors() {
+        const op = parseFloat(opInput.value || "0.6");
+        for (const m of meshes) {
+          if (!m || !m.material) continue;
+          m.material.opacity = op;
+          const sign = m.userData && m.userData.sign;
+          const col = sign === 'neg' ? negColor.value : posColor.value;
+          m.material.color = new THREE.Color(col);
+          m.material.needsUpdate = true;
+        }
+      }
+
+      saveBtn.onclick = () => {
+        const link = document.createElement('a');
+        const name = currentIndex >= 0 ? volumes[currentIndex].name.replace(/\.[^/.]+$/, '') : 'render';
+        link.download = `${name}_iso${parseFloat(isoInput.value || "0.02").toFixed(4)}.png`;
+        link.href = renderer.domElement.toDataURL('image/png');
+        link.click();
+      };
+
+      batchBtn.onclick = async () => {
+        if (volumes.length === 0) return;
+        const keepCamera = camera.clone(); const keepTarget = controls.target.clone();
+
+        for (let i = 0; i < volumes.length; i++) {
+          currentIndex = i;
+          fileSelect.value = i;
+          rebuildScene();
+          await new Promise(r => requestAnimationFrame(() => r()));
+          const link = document.createElement('a');
+          const name = volumes[i].name.replace(/\.[^/.]+$/, '');
+          link.download = `${name}_iso${parseFloat(isoInput.value || "0.02").toFixed(4)}.png`;
+          link.href = renderer.domElement.toDataURL('image/png');
+          link.click();
+          await new Promise(r => setTimeout(r, 120));
+        }
+        camera.copy(keepCamera); controls.target.copy(keepTarget); controls.update();
+      };
+
+      // Try to load a local sample CUBE at startup; fall back to demo if unavailable
+      (async function initLoad() {
+        if (volumes.length > 0) return;
+        try {
+          const resp = await fetch('./sample.cube', { cache: 'no-store' });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const text = await resp.text();
+          const vol = parseCube(text);
+          volumes = [];
+          currentIndex = -1;
+          clearSceneMeshes();
+          volumes.push({ name: 'sample.cube', vol });
+          if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
+            isoInput.value = String(vol.isoHint);
+          }
+          try {
+            const stats = arrayMinMax(vol.data);
+            console.log('[CUBE] Loaded sample.cube', {
+              title: vol.title,
+              nxyz: vol.nxyz,
+              origin: vol.origin,
+              axes: vol.axes,
+              natoms: vol.natoms,
+              isoHint: vol.isoHint,
+              min: stats.min,
+              max: stats.max
+            });
+          } catch (e) {
+            console.warn('[CUBE] Stats failed for sample.cube', e);
+          }
+          currentIndex = 0;
+          refreshFileSelect();
+          rebuildScene();
+          const hint = document.getElementById('hint');
+          if (hint) hint.textContent = 'Loaded sample.cube • Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
+          return;
+        } catch (err) {
+          console.warn('[CUBE] Could not auto-load sample.cube, using demo instead:', err);
+        }
+
+        // Demo seed so something shows on first load
+        const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
+        // Simple water molecule geometry (Å)
+        const r = 0.9572; // O–H bond length
+        const theta = 104.5 * Math.PI / 180; // H–O–H angle
+        const hx = r * Math.sin(theta / 2);
+        const hz = r * Math.cos(theta / 2);
+        const atoms = [
+          { Z: (ATOM_SYMBOL_TO_Z.O || 8), q: 0, x: 0, y: 0, z: 0 },                // O
+          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x:  hx * ANG_TO_BOHR, y: 0, z:  hz * ANG_TO_BOHR }, // H1 (Bohr)
+          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: -hx * ANG_TO_BOHR, y: 0, z:  hz * ANG_TO_BOHR }, // H2 (Bohr)
+        ];
+        // Tiny empty volume just for a bounding box frame of reference
+        const nx = 20, ny = 20, nz = 20;
+        const step = 0.6; // Bohr per voxel along each axis
+        const axes = [[step, 0, 0], [0, step, 0], [0, 0, step]];
+        const origin = [-(nx * step) / 2, -(ny * step) / 2, -(nz * step) / 2]; // Bohr
+        const data = new Float32Array(nx * ny * nz); // all zeros => no iso by default
+        const idx = (i, j, k) => (i * ny + j) * nz + k;
+        const vol = { title: 'Demo Water', comment: '', natoms: 3, origin, nxyz: [nx, ny, nz], axes, atoms, data, idx, isoHint: null };
+        volumes.push({ name: 'Demo Water', vol });
+        currentIndex = 0;
+        refreshFileSelect();
+        rebuildScene();
+      })();
+
+      // Keyboard shortcuts
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 's') saveBtn.click();
+        if (e.key === 'b') batchBtn.click();
+      });
+
+    })();
+  </script>
+</body>
+
+</html>
