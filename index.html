@@ -87,6 +87,74 @@
       bottom: 0;
     }
 
+    /* Side panel for dynamic info */
+    #sidePanel {
+      position: fixed;
+      top: 56px;
+      right: 0;
+      bottom: 0;
+      width: 320px;
+      background: var(--panel);
+      border-left: 1px solid #223;
+      box-shadow: -6px 0 16px #0006;
+      transform: translateX(100%);
+      transition: transform 160ms ease-in-out;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidePanel.open {
+      transform: translateX(0);
+    }
+
+    #sideHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid #223;
+      color: var(--text);
+    }
+
+    #sideHeader .title {
+      font-weight: 600;
+    }
+
+    #sideClose {
+      background: #2a3344;
+      color: #dfe7f3;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #coordsContent {
+      padding: 10px 12px;
+      overflow: auto;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    #coordsContent table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #coordsContent th,
+    #coordsContent td {
+      text-align: right;
+      padding: 4px 6px;
+      border-bottom: 1px solid #223;
+    }
+
+    #coordsContent th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
     #canvas {
       width: 100%;
       height: 100%;
@@ -122,22 +190,39 @@
       <input type="number" id="iso" value="0.02" step="0.005" />
     </label>
     <label>Opacity
-      <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.6" />
+      <input type="range" id="opacity" min="0.05" max="1" step="0.01" value="0.93" />
     </label>
-    <label>+ color <input type="color" id="posColor" value="#1f77b4" /></label>
-    <label>− color <input type="color" id="negColor" value="#d62728" /></label>
+    <label>+ color <input type="color" id="posColor" value="#f2a900" /></label>
+    <label>− color <input type="color" id="negColor" value="#0033a0" /></label>
     <label>BG <input type="color" id="bgColor" value="#ffffff" /></label>
     <label><input type="checkbox" id="showAtoms" checked /> atoms</label>
+    <label><input type="checkbox" id="elementColors" checked /> elem colors</label>
     <label><input type="checkbox" id="showBox" /> box</label>
     <div class="spacer"></div>
     <button id="saveBtn">Save PNG</button>
     <button id="batchBtn" class="secondary">Batch export</button>
+    <button id="coordsBtn" class="secondary" title="Show atom coordinates">Coords</button>
   </div>
 
   <div id="drop">
     <canvas id="canvas"></canvas>
   </div>
   <div id="hint">Drag & drop .cube files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
+
+  <!-- Right side panel (toggle) -->
+  <div id="sidePanel" aria-hidden="true">
+    <div id="sideHeader">
+      <div class="title">Coordinates (Å)</div>
+      <div>
+        <button id="copyXYZ" class="secondary" title="Copy XYZ">Copy</button>
+        <button id="downloadXYZ" class="secondary" title="Download XYZ">Download</button>
+        <button id="sideClose" title="Close">✕</button>
+      </div>
+    </div>
+    <div id="coordsContent">
+      <!-- Filled dynamically -->
+    </div>
+  </div>
 
   <!-- three.js core and controls (local copies) -->
   <script src="./three.min.js"></script>
@@ -275,7 +360,8 @@
       const hemi = new THREE.HemisphereLight(0xffffff, 0x081018, 0.7);
       const dir = new THREE.DirectionalLight(0xffffff, 0.8);
       dir.position.set(1, 1, 1);
-      scene.add(hemi, dir);
+      const amb = new THREE.AmbientLight(0x999999, 0.45);
+      scene.add(hemi, dir, amb);
 
       // Resizer
       function resize() {
@@ -313,20 +399,29 @@
         const atomPositions = [];
         for (const a of vol.atoms) {
           const r = covR(a.Z | 0);
-          const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.0 });
+          // Element-based color if enabled
+          let atomColor = new THREE.Color(0xffffff);
+          if (typeof elementColors !== 'undefined' && elementColors && elementColors.checked && ATOM_Z_TO_DATA) {
+            const info = ATOM_Z_TO_DATA[a.Z | 0];
+            if (info && Array.isArray(info.color)) {
+              const [cr, cg, cb] = info.color;
+              atomColor = new THREE.Color(cr / 255, cg / 255, cb / 255);
+            }
+          }
+          const mat = new THREE.MeshStandardMaterial({ color: atomColor, roughness: 0.25, metalness: 0.1 });
           const mesh = new THREE.Mesh(sphere, mat);
           const pos = new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
           mesh.position.copy(pos);
-          mesh.scale.setScalar(r * 2);
+          mesh.scale.setScalar(r * 1.2);
           group.add(mesh);
           atomPositions.push({ pos, Z: a.Z | 0 });
         }
 
         // Bonds (cylinders) based on distance vs. covalent radii
-        const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.5, metalness: 0.1 });
+        const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.35, metalness: 0.05 });
         const up = new THREE.Vector3(0, 1, 0);
         const N = atomPositions.length;
-        const bondRadius = 0.08; // Å
+        const bondRadius = 0.12; // Å
         for (let i = 0; i < N; i++) {
           for (let j = i + 1; j < N; j++) {
             const a = atomPositions[i];
@@ -410,11 +505,86 @@
       const negColor = document.getElementById('negColor');
       const bgColor = document.getElementById('bgColor');
       const toggleAtoms = document.getElementById('showAtoms');
+      const elementColors = document.getElementById('elementColors');
       const toggleBox = document.getElementById('showBox');
       const saveBtn = document.getElementById('saveBtn');
       const batchBtn = document.getElementById('batchBtn');
+      // Side panel controls
+      const coordsBtn = document.getElementById('coordsBtn');
+      const sidePanel = document.getElementById('sidePanel');
+      const sideClose = document.getElementById('sideClose');
+      const coordsContent = document.getElementById('coordsContent');
+      const copyXYZBtn = document.getElementById('copyXYZ');
+      const downloadXYZBtn = document.getElementById('downloadXYZ');
 
       openBtn.onclick = () => fileInput.click();
+      const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); };
+      coordsBtn.onclick = toggleSide;
+      sideClose.onclick = toggleSide;
+
+      function updateSidePanel() {
+        if (currentIndex < 0 || !volumes[currentIndex]) { coordsContent.innerHTML = '<em>No file loaded</em>'; return; }
+        const v = volumes[currentIndex].vol;
+        if (!v || !Array.isArray(v.atoms) || v.atoms.length === 0) { coordsContent.innerHTML = '<em>No atoms</em>'; return; }
+        const rows = v.atoms.map((a, i) => {
+          const z = a.Z | 0;
+          const sym = (window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z] && window.ATOM_Z_TO_DATA[z].symbol) || String(z);
+          const x = a.x * BOHR_TO_ANG, y = a.y * BOHR_TO_ANG, zA = a.z * BOHR_TO_ANG;
+          return `<tr><td>${i + 1}</td><td>${sym}</td><td>${(a.Z | 0)}</td><td>${x.toFixed(3)}</td><td>${y.toFixed(3)}</td><td>${zA.toFixed(3)}</td></tr>`;
+        }).join('');
+        coordsContent.innerHTML = `
+          <div style="margin-bottom:8px;color:var(--muted)">Active: ${volumes[currentIndex].name}</div>
+          <table>
+            <thead><tr><th>#</th><th>Sym</th><th>Z</th><th>x</th><th>y</th><th>z</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+
+      function toXYZString() {
+        if (currentIndex < 0 || !volumes[currentIndex]) return '';
+        const v = volumes[currentIndex].vol;
+        if (!v || !Array.isArray(v.atoms)) return '';
+        const atoms = v.atoms;
+        const lines = [];
+        lines.push(String(atoms.length));
+        const comment = (v.title || volumes[currentIndex].name || '').toString();
+        lines.push(comment);
+        for (const a of atoms) {
+          const z = a.Z | 0;
+          const sym = (window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z] && window.ATOM_Z_TO_DATA[z].symbol) || String(z);
+          const x = a.x * BOHR_TO_ANG, y = a.y * BOHR_TO_ANG, zA = a.z * BOHR_TO_ANG;
+          lines.push(`${sym} ${x.toFixed(6)} ${y.toFixed(6)} ${zA.toFixed(6)}`);
+        }
+        return lines.join('\n');
+      }
+
+      copyXYZBtn.onclick = async () => {
+        const txt = toXYZString();
+        if (!txt) return;
+        try {
+          await navigator.clipboard.writeText(txt);
+        } catch (e) {
+          const ta = document.createElement('textarea');
+          ta.value = txt; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); } catch { }
+          document.body.removeChild(ta);
+        }
+      };
+
+      downloadXYZBtn.onclick = () => {
+        const txt = toXYZString();
+        if (!txt) return;
+        const blob = new Blob([txt], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const base = volumes[currentIndex] ? volumes[currentIndex].name.replace(/\.[^/.]+$/, '') : 'coords';
+        a.download = `${base}.xyz`;
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      };
 
       async function handleFiles(fileList) {
         const arr = Array.from(fileList);
@@ -459,6 +629,7 @@
             fileSelect.value = String(currentIndex);
           }
           rebuildScene();
+          updateSidePanel();
         }
       }
 
@@ -480,6 +651,7 @@
       fileSelect.onchange = () => {
         currentIndex = parseInt(fileSelect.value, 10);
         rebuildScene();
+        updateSidePanel();
       };
 
       // (subsample controls removed)
@@ -493,6 +665,7 @@
         try { scene.background = new THREE.Color(bgColor.value); } catch { }
       };
       toggleAtoms.onchange = () => rebuildScene({ preserveView: true });
+      elementColors.onchange = () => rebuildScene({ preserveView: true });
       toggleBox.onchange = () => rebuildScene({ preserveView: true });
 
       function rebuildScene(options = {}) {
@@ -520,9 +693,27 @@
           console.warn('[CUBE] Requested iso produced no surface. Falling back to', iso.toFixed(6));
         }
 
-        const opacity = parseFloat(opInput.value || "0.6");
-        const posMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(posColor.value), roughness: 0.65, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
-        const negMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(negColor.value), roughness: 0.65, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
+        const opacity = parseFloat(opInput.value || "0.93");
+        const posMat = new THREE.MeshPhongMaterial({
+          color: new THREE.Color(posColor.value),
+          specular: new THREE.Color(0x222222),
+          shininess: 75,
+          emissive: new THREE.Color(posColor.value),
+          emissiveIntensity: 0.18,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity
+        });
+        const negMat = new THREE.MeshPhongMaterial({
+          color: new THREE.Color(negColor.value),
+          specular: new THREE.Color(0x222222),
+          shininess: 75,
+          emissive: new THREE.Color(negColor.value),
+          emissiveIntensity: 0.18,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity
+        });
 
         // Positive iso (+iso value, + color)
         if (max >= iso) {
@@ -563,16 +754,21 @@
           fitCameraToScene();
         }
         console.log('[CUBE] Rebuilt scene. iso=', iso, 'opacity=', opacity, 'min/max=', min, max);
+        updateSidePanel();
       }
 
       function updateOpacityAndColors() {
-        const op = parseFloat(opInput.value || "0.6");
+        const op = parseFloat(opInput.value || "0.93");
         for (const m of meshes) {
           if (!m || !m.material) continue;
           m.material.opacity = op;
           const sign = m.userData && m.userData.sign;
           const col = sign === 'neg' ? negColor.value : posColor.value;
           m.material.color = new THREE.Color(col);
+          if (m.material.emissive) {
+            m.material.emissive.set(col);
+            m.material.emissiveIntensity = 0.18;
+          }
           m.material.needsUpdate = true;
         }
       }
@@ -637,6 +833,7 @@
           currentIndex = 0;
           refreshFileSelect();
           rebuildScene();
+          updateSidePanel();
           const hint = document.getElementById('hint');
           if (hint) hint.textContent = 'Loaded sample.cube • Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
           return;
@@ -668,6 +865,7 @@
         currentIndex = 0;
         refreshFileSelect();
         rebuildScene();
+        updateSidePanel();
       })();
 
       // Keyboard shortcuts
