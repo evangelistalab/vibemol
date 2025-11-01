@@ -252,6 +252,7 @@
     <label><input type="checkbox" id="showBonds" checked /> bonds</label>
     <label><input type="checkbox" id="elementColors" checked /> elem colors</label>
     <label><input type="checkbox" id="showBox" /> box</label>
+    <label><input type="checkbox" id="showAxes" checked /> axes</label>
     <div class="spacer"></div>
     <button id="saveBtn">Save PNG</button>
     <button id="batchBtn" class="secondary">Batch export</button>
@@ -312,9 +313,12 @@
   </div>
 
   <!-- Help / Shortcuts modal -->
-  <div id="helpOverlay" aria-hidden="true" style="display:none; position:fixed; inset:0; background:#0008; z-index:50; align-items:center; justify-content:center;">
-    <div id="helpModal" role="dialog" aria-modal="true" style="background:var(--panel); color:var(--text); width:min(680px,92vw); max-height:80vh; overflow:auto; border:1px solid #223; border-radius:10px; box-shadow:0 10px 30px #000a;">
-      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #223;">
+  <div id="helpOverlay" aria-hidden="true"
+    style="display:none; position:fixed; inset:0; background:#0008; z-index:50; align-items:center; justify-content:center;">
+    <div id="helpModal" role="dialog" aria-modal="true"
+      style="background:var(--panel); color:var(--text); width:min(680px,92vw); max-height:80vh; overflow:auto; border:1px solid #223; border-radius:10px; box-shadow:0 10px 30px #000a;">
+      <div
+        style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #223;">
         <div style="font-weight:700;">Help & Shortcuts</div>
         <button id="helpClose" class="secondary" title="Close">✕</button>
       </div>
@@ -324,12 +328,14 @@
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
           <li>Atoms and Bonds can be toggled independently; bonds are color‑graded between atoms.</li>
+          <li>The Cartesian coordinates are displayed as red (X), green (Y), and blue (Z) arrows.</li>
         </ul>
         <p>Shortcuts</p>
         <ul>
           <li><strong>S</strong> — Save PNG</li>
           <li><strong>B</strong> — Batch export all files</li>
           <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
+          <li><strong>X</strong> — Toggle axis gizmo on/off</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
           <li><strong>Esc</strong> — Close open menus/dialogs</li>
         </ul>
@@ -700,19 +706,22 @@
         renderer.setScissorTest(false);
         renderer.render(scene, camera);
 
-        // Overlay axes (bottom-left). Copy view rotation only by rotating the gizmo opposite the camera
-        // so it reflects world-axis orientation in the current view.
-        axisGizmo.quaternion.copy(camera.quaternion).invert();
-        const size = new THREE.Vector2();
-        renderer.getSize(size);
-        const px = Math.max(64, Math.min(128, Math.floor(Math.min(size.x, size.y) / 5)));
-        const margin = 10;
-        renderer.clearDepth();
-        renderer.setScissorTest(true);
-        renderer.setScissor(margin, margin, px, px);
-        renderer.setViewport(margin, margin, px, px);
-        // Orthographic camera has fixed framing; no aspect update needed
-        renderer.render(axisScene, axisCamera);
+        // Overlay axes (bottom-left) — only if enabled
+        if (window.__showAxes__) {
+          // Copy view rotation only by rotating the gizmo opposite the camera
+          // so it reflects world-axis orientation in the current view.
+          axisGizmo.quaternion.copy(camera.quaternion).invert();
+          const size = new THREE.Vector2();
+          renderer.getSize(size);
+          const px = Math.max(64, Math.min(128, Math.floor(Math.min(size.x, size.y) / 5)));
+          const margin = 10;
+          renderer.clearDepth();
+          renderer.setScissorTest(true);
+          renderer.setScissor(margin, margin, px, px);
+          renderer.setViewport(margin, margin, px, px);
+          // Orthographic camera has fixed framing; no aspect update needed
+          renderer.render(axisScene, axisCamera);
+        }
 
         requestAnimationFrame(render);
       }
@@ -731,6 +740,7 @@
       const toggleBonds = document.getElementById('showBonds');
       const elementColors = document.getElementById('elementColors');
       const toggleBox = document.getElementById('showBox');
+      const toggleAxes = document.getElementById('showAxes');
       const saveBtn = document.getElementById('saveBtn');
       const batchBtn = document.getElementById('batchBtn');
       const surfBtn = document.getElementById('surfBtn');
@@ -770,8 +780,8 @@
       panelBtn.onclick = toggleSide;
       sideClose.onclick = toggleSide;
       // Help modal logic
-      function openHelp() { helpOverlay.style.display = 'flex'; helpOverlay.setAttribute('aria-hidden','false'); }
-      function closeHelp() { helpOverlay.style.display = 'none'; helpOverlay.setAttribute('aria-hidden','true'); }
+      function openHelp() { helpOverlay.style.display = 'flex'; helpOverlay.setAttribute('aria-hidden', 'false'); }
+      function closeHelp() { helpOverlay.style.display = 'none'; helpOverlay.setAttribute('aria-hidden', 'true'); }
       if (helpBtn) helpBtn.onclick = openHelp;
       if (helpClose) helpClose.onclick = closeHelp;
       if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
@@ -796,6 +806,10 @@
       // Initialize view UI
       refreshViewUI();
       controls.addEventListener('change', refreshViewUI);
+
+      // Axes gizmo state
+      window.__showAxes__ = true;
+      if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
 
       // Apply handlers
       const toNum = (v, def = 0) => { const n = parseFloat(v); return Number.isFinite(n) ? n : def; };
@@ -999,6 +1013,7 @@
       toggleBonds.onchange = () => rebuildScene({ preserveView: true });
       elementColors.onchange = () => rebuildScene({ preserveView: true });
       toggleBox.onchange = () => rebuildScene({ preserveView: true });
+      if (toggleAxes) toggleAxes.onchange = () => { window.__showAxes__ = !!toggleAxes.checked; };
 
       function rebuildScene(options = {}) {
         const preserveView = !!options.preserveView;
@@ -1212,6 +1227,10 @@
         if (e.key === 's' && !editing) saveBtn.click();
         if (e.key === 'b' && !editing) batchBtn.click();
         if ((e.key === 'i' || e.key === 'I') && !editing) { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); }
+        if ((e.key === 'x' || e.key === 'X') && !editing) {
+          window.__showAxes__ = !window.__showAxes__;
+          if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
+        }
         if (!editing && (e.key === 'h' || e.key === 'H' || e.key === '?')) { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); }
         if (e.key === 'Escape') { closeSide(); if (helpOverlay) closeHelp(); }
 
