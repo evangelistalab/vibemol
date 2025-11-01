@@ -255,6 +255,7 @@
     <div class="spacer"></div>
     <button id="saveBtn">Save PNG</button>
     <button id="batchBtn" class="secondary">Batch export</button>
+    <button id="surfBtn" class="secondary" title="Toggle iso-surface rendering">Hide Surfaces</button>
     <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear</button>
     <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
   </div>
@@ -501,6 +502,7 @@
       let atomGroup = new THREE.Group();
       let bondGroup = new THREE.Group();
       let boxHelper = null;
+      let showSurfaces = true; // toggle iso-surface visibility
       // Content group to allow whole-scene shifting
       const contentGroup = new THREE.Group();
       scene.add(contentGroup);
@@ -647,6 +649,7 @@
       const toggleBox = document.getElementById('showBox');
       const saveBtn = document.getElementById('saveBtn');
       const batchBtn = document.getElementById('batchBtn');
+      const surfBtn = document.getElementById('surfBtn');
       const clearBtn = document.getElementById('clearBtn');
       // Side panel controls
       const panelBtn = document.getElementById('panelBtn');
@@ -671,6 +674,10 @@
       const autoRotSpeed = document.getElementById('autoRotSpeed');
 
       openBtn.onclick = () => fileInput.click();
+      // Toggle surface rendering button
+      const updateSurfBtn = () => { surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces'; };
+      updateSurfBtn();
+      surfBtn.onclick = () => { showSurfaces = !showSurfaces; updateSurfBtn(); rebuildScene({ preserveView: true }); };
       const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); };
       const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); } };
       panelBtn.onclick = toggleSide;
@@ -947,22 +954,24 @@
           opacity
         });
 
-        // Positive iso (+iso value, + color)
-        if (max >= iso) {
-          const geomP = makeIsosurface(vol, iso);
-          const meshP = new THREE.Mesh(geomP, posMat);
-          meshP.userData.sign = 'pos';
-          contentGroup.add(meshP); meshes.push(meshP);
-          // Debug: triangle count
-          if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count / 3) | 0);
-        }
-        // Negative iso (−iso value, − color)
-        if (min <= -iso) {
-          const geomN = makeIsosurface(vol, -iso);
-          const meshN = new THREE.Mesh(geomN, negMat);
-          meshN.userData.sign = 'neg';
-          contentGroup.add(meshN); meshes.push(meshN);
-          if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
+        if (showSurfaces) {
+          // Positive iso (+iso value, + color)
+          if (max >= iso) {
+            const geomP = makeIsosurface(vol, iso);
+            const meshP = new THREE.Mesh(geomP, posMat);
+            meshP.userData.sign = 'pos';
+            contentGroup.add(meshP); meshes.push(meshP);
+            // Debug: triangle count
+            if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count / 3) | 0);
+          }
+          // Negative iso (−iso value, − color)
+          if (min <= -iso) {
+            const geomN = makeIsosurface(vol, -iso);
+            const meshN = new THREE.Mesh(geomN, negMat);
+            meshN.userData.sign = 'neg';
+            contentGroup.add(meshN); meshes.push(meshN);
+            if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
+          }
         }
 
         // Atoms
@@ -1104,8 +1113,25 @@
 
       // Keyboard shortcuts
       window.addEventListener('keydown', (e) => {
-        if (e.key === 's') saveBtn.click();
-        if (e.key === 'b') batchBtn.click();
+        // Ignore shortcuts while typing in inputs
+        const tag = (document.activeElement && document.activeElement.tagName) || '';
+        const editing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+        if (e.key === 's' && !editing) saveBtn.click();
+        if (e.key === 'b' && !editing) batchBtn.click();
+        if ((e.key === 'i' || e.key === 'I') && !editing) { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); }
+
+        // Arrow keys: switch files (preserve camera)
+        if (!editing && volumes.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
+          let delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
+          const n = volumes.length;
+          if (n > 0) {
+            currentIndex = ((currentIndex + delta) % n + n) % n; // wrap safely
+            if (fileSelect) fileSelect.value = String(currentIndex);
+            rebuildScene({ preserveView: true });
+            updateSidePanel();
+            e.preventDefault();
+          }
+        }
       });
 
     })();
