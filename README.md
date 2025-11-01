@@ -20,3 +20,11 @@ Notes
 - Repository name: VibeMol
 - Entry point: `index.html`
 - Local libs: `three.min.js`, `OrbitControls.global.js`, `isosurface.bundle.js`
+
+GitHub Pages
+- URL (after enabling Pages): https://evangelistalab.github.io/vibemol/
+- Enable in GitHub → Settings → Pages:
+  - Source: Deploy from a branch
+  - Branch: `main` — folder `/ (root)`
+  - Save
+- This repo includes `.nojekyll` to ensure static assets are served as-is.
