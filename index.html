@@ -493,6 +493,7 @@
       // --- Three.js scene setup ---
       const canvas = document.getElementById('canvas');
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+      renderer.autoClear = false; // allow overlay rendering in same canvas
       const scene = new THREE.Scene();
       // Default to white background
       scene.background = new THREE.Color(0xffffff);
@@ -521,6 +522,42 @@
       }
       window.addEventListener('resize', resize);
       resize();
+
+      // --- Corner axes (overlay) ---
+      const axisScene = new THREE.Scene();
+      // Use an orthographic camera so the gizmo stays centered without perspective shift
+      const axisCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+      axisCamera.position.set(0, 0, 2);
+      axisCamera.lookAt(0, 0, 0);
+      const axisGizmo = new THREE.Group();
+      // Simple lights so the gizmo shows shaded heads/shafts
+      {
+        const aHemi = new THREE.HemisphereLight(0xffffff, 0x223344, 0.9);
+        const aDir = new THREE.DirectionalLight(0xffffff, 1.2); aDir.position.set(1, 1, 1);
+        axisScene.add(aHemi, aDir);
+      }
+      function addShadedArrow(dir, color) {
+        const g = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.15 });
+        // Shaft along +Y
+        const shaftLen = 0.75, shaftRad = 0.05;
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(shaftRad, shaftRad, shaftLen, 16, 1), mat);
+        shaft.position.y = shaftLen / 2;
+        g.add(shaft);
+        // Head (cone) along +Y
+        const headLen = 0.30, headRad = 0.12;
+        const head = new THREE.Mesh(new THREE.ConeGeometry(headRad, headLen, 20, 1), mat);
+        head.position.y = shaftLen + headLen / 2;
+        g.add(head);
+        // Rotate to desired direction
+        const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+        g.setRotationFromQuaternion(q);
+        axisGizmo.add(g);
+      }
+      addShadedArrow(new THREE.Vector3(1, 0, 0), 0xff4136); // X - red
+      addShadedArrow(new THREE.Vector3(0, 1, 0), 0x2ecc40); // Y - green
+      addShadedArrow(new THREE.Vector3(0, 0, 1), 0x0074d9); // Z - blue
+      axisScene.add(axisGizmo);
 
       // State
       let volumes = []; // {name, vol}
@@ -656,7 +693,27 @@
 
       function render() {
         controls.update();
+
+        // Main scene
+        renderer.clear();
+        renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
+        renderer.setScissorTest(false);
         renderer.render(scene, camera);
+
+        // Overlay axes (bottom-left). Copy view rotation only by rotating the gizmo opposite the camera
+        // so it reflects world-axis orientation in the current view.
+        axisGizmo.quaternion.copy(camera.quaternion).invert();
+        const size = new THREE.Vector2();
+        renderer.getSize(size);
+        const px = Math.max(64, Math.min(128, Math.floor(Math.min(size.x, size.y) / 5)));
+        const margin = 10;
+        renderer.clearDepth();
+        renderer.setScissorTest(true);
+        renderer.setScissor(margin, margin, px, px);
+        renderer.setViewport(margin, margin, px, px);
+        // Orthographic camera has fixed framing; no aspect update needed
+        renderer.render(axisScene, axisCamera);
+
         requestAnimationFrame(render);
       }
       requestAnimationFrame(render);
