@@ -190,7 +190,7 @@
       <input type="number" id="iso" value="0.02" step="0.005" />
     </label>
     <label>Opacity
-      <input type="range" id="opacity" min="0.05" max="1" step="0.01" value="0.93" />
+      <input type="range" id="opacity" min="0.05" max="1" step="0.01" value="1.00" />
     </label>
     <label>+ color <input type="color" id="posColor" value="#f2a900" /></label>
     <label>− color <input type="color" id="negColor" value="#0033a0" /></label>
@@ -408,7 +408,7 @@
               atomColor = new THREE.Color(cr / 255, cg / 255, cb / 255);
             }
           }
-          const mat = new THREE.MeshStandardMaterial({ color: atomColor, roughness: 0.25, metalness: 0.1 });
+          const mat = new THREE.MeshStandardMaterial({ color: atomColor, roughness: 0.25, metalness: 0.25 });
           const mesh = new THREE.Mesh(sphere, mat);
           const pos = new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
           mesh.position.copy(pos);
@@ -421,7 +421,7 @@
         const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.35, metalness: 0.05 });
         const up = new THREE.Vector3(0, 1, 0);
         const N = atomPositions.length;
-        const bondRadius = 0.12; // Å
+        const bondRadius = 0.1; // Å
         for (let i = 0; i < N; i++) {
           for (let j = i + 1; j < N; j++) {
             const a = atomPositions[i];
@@ -478,7 +478,9 @@
         const size = new THREE.Vector3(), center = new THREE.Vector3();
         box.getSize(size); box.getCenter(center);
         const maxDim = Math.max(size.x, size.y, size.z);
-        const dist = maxDim * 1.6 / Math.tan((camera.fov * Math.PI / 180) / 2);
+        // Tighten fit so the model appears ~1.75x larger
+        const FIT_TIGHTNESS = 1.6 / 1.75;
+        const dist = maxDim * FIT_TIGHTNESS / Math.tan((camera.fov * Math.PI / 180) / 2);
         const dir = new THREE.Vector3(1, 1, 1).normalize();
         camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
         camera.near = Math.max(0.01, dist / 100);
@@ -693,13 +695,13 @@
           console.warn('[CUBE] Requested iso produced no surface. Falling back to', iso.toFixed(6));
         }
 
-        const opacity = parseFloat(opInput.value || "0.93");
+        const opacity = parseFloat(opInput.value || "1.00");
         const posMat = new THREE.MeshPhongMaterial({
           color: new THREE.Color(posColor.value),
           specular: new THREE.Color(0x222222),
           shininess: 75,
           emissive: new THREE.Color(posColor.value),
-          emissiveIntensity: 0.18,
+          emissiveIntensity: 0.30,
           side: THREE.DoubleSide,
           transparent: true,
           opacity
@@ -709,7 +711,7 @@
           specular: new THREE.Color(0x222222),
           shininess: 75,
           emissive: new THREE.Color(negColor.value),
-          emissiveIntensity: 0.18,
+          emissiveIntensity: 0.30,
           side: THREE.DoubleSide,
           transparent: true,
           opacity
@@ -758,7 +760,7 @@
       }
 
       function updateOpacityAndColors() {
-        const op = parseFloat(opInput.value || "0.93");
+        const op = parseFloat(opInput.value || "1.00");
         for (const m of meshes) {
           if (!m || !m.material) continue;
           m.material.opacity = op;

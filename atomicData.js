@@ -107,7 +107,7 @@
   // Atomic data table
   const ATOM_DATA = [
     { symbol: 'X',  name: 'Dummy',       mass: 0,        radius_covalent: 0.18, radius_VDW: 0.69, color: [17, 127, 178] },
-    { symbol: 'H',  name: 'Hydrogen',    mass: 1.00784,  radius_covalent: 0.32, radius_VDW: 1.2,  color: [240, 240, 240] },
+    { symbol: 'H',  name: 'Hydrogen',    mass: 1.00784,  radius_covalent: 0.32, radius_VDW: 1.2,  color: [255, 255, 255] },
     { symbol: 'He', name: 'Helium',      mass: 4.0026,   radius_covalent: 0.46, radius_VDW: 1.43, color: [217, 255, 255] },
     { symbol: 'Li', name: 'Lithium',     mass: 6.938,    radius_covalent: 1.33, radius_VDW: 2.12, color: [204, 128, 255] },
     { symbol: 'Be', name: 'Beryllium',   mass: 9.01218,  radius_covalent: 1.02, radius_VDW: 1.98, color: [194, 255, 0] },
