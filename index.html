@@ -157,6 +157,13 @@
       margin-bottom: 8px;
       align-items: center;
     }
+    #viewControls .row-vec {
+      display: grid;
+      grid-template-columns: 60px 10px 1fr 10px 1fr 10px 1fr;
+      gap: 4px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
 
     #viewControls label {
       color: var(--muted);
@@ -175,6 +182,7 @@
     #viewControls input[type="checkbox"] {
       vertical-align: middle;
     }
+    #viewControls .axis { color: var(--muted); font-size: 12px; text-align: center; }
 
     #coordsContent table {
       width: 100%;
@@ -253,30 +261,24 @@
   <div id="sidePanel" aria-hidden="true">
     <div id="viewControls">
       <h4>View</h4>
-      <div class="row">
-        <label>Shift X</label><input type="number" id="shiftX" step="0.1" />
-        <label>Shift Y</label><input type="number" id="shiftY" step="0.1" />
-      </div>
-      <div class="row">
-        <label>Shift Z</label><input type="number" id="shiftZ" step="0.1" />
-        <span></span><span></span>
-      </div>
-      <div class="row">
-        <label>Cam X</label><input type="number" id="camX" step="0.1" />
-        <label>Cam Y</label><input type="number" id="camY" step="0.1" />
-      </div>
-      <div class="row">
-        <label>Cam Z</label><input type="number" id="camZ" step="0.1" />
-        <span></span><span></span>
-      </div>
-      <div class="row">
-        <label>Target X</label><input type="number" id="tgtX" step="0.1" />
-        <label>Target Y</label><input type="number" id="tgtY" step="0.1" />
-      </div>
-      <div class="row">
-        <label>Target Z</label><input type="number" id="tgtZ" step="0.1" />
-        <span></span><span></span>
-      </div>
+        <div class="row-vec">
+          <label>Shift</label>
+          <span class="axis">X</span><input type="number" id="shiftX" step="0.1" />
+          <span class="axis">Y</span><input type="number" id="shiftY" step="0.1" />
+          <span class="axis">Z</span><input type="number" id="shiftZ" step="0.1" />
+        </div>
+        <div class="row-vec">
+          <label>Cam</label>
+          <span class="axis">X</span><input type="number" id="camX" step="0.1" />
+          <span class="axis">Y</span><input type="number" id="camY" step="0.1" />
+          <span class="axis">Z</span><input type="number" id="camZ" step="0.1" />
+        </div>
+        <div class="row-vec">
+          <label>Target</label>
+          <span class="axis">X</span><input type="number" id="tgtX" step="0.1" />
+          <span class="axis">Y</span><input type="number" id="tgtY" step="0.1" />
+          <span class="axis">Z</span><input type="number" id="tgtZ" step="0.1" />
+        </div>
       <div class="row">
         <label><input type="checkbox" id="autoRot" /> Auto-rotate</label>
         <label>Rot speed</label><input type="number" id="rotSpeed" step="0.01" />
