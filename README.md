@@ -1,6 +1,8 @@
 VibeMol
 =======
 
+A vibe-coded cube file visualization tool
+
 A lightweight, zero-install molecular isosurface viewer for Gaussian CUBE files.
 
 - View positive/negative orbital isosurfaces (Emory color scheme by default)
