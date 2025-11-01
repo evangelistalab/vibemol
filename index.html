@@ -406,15 +406,45 @@
         };
         // Marching cubes → triangles (no explicit bounds => defaults to [[0,0,0],[nx,ny,nz]])
         const result = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => sampler(x, y, z) - level);
-        const geom = new THREE.BufferGeometry();
-        const positions = new Float32Array(result.positions.length * 3);
-        for (let i = 0; i < result.positions.length; i++) {
-          const p = voxelToWorld(vol, result.positions[i]); // positions in voxel coords
+
+        // Weld vertices across cube boundaries by deduplicating identical voxel-space positions.
+        // Quantize voxel coords to a small grid to ensure stable keys.
+        const voxPos = result.positions; // array of [x,y,z] in voxel units
+        const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
+        const map = new Map();
+        const unique = [];
+        const oldToNew = new Uint32Array(voxPos.length);
+        for (let i = 0; i < voxPos.length; i++) {
+          const k = key(voxPos[i]);
+          let idx = map.get(k);
+          if (idx === undefined) {
+            idx = unique.length;
+            map.set(k, idx);
+            unique.push(voxPos[i]);
+          }
+          oldToNew[i] = idx;
+        }
+
+        // Remap triangle indices through the welding map
+        const cells = result.cells; // array of [a,b,c]
+        const indices = new Uint32Array(cells.length * 3);
+        for (let t = 0; t < cells.length; t++) {
+          const c = cells[t];
+          indices[3 * t + 0] = oldToNew[c[0]];
+          indices[3 * t + 1] = oldToNew[c[1]];
+          indices[3 * t + 2] = oldToNew[c[2]];
+        }
+
+        // Build world-space positions for the unique vertices
+        const positions = new Float32Array(unique.length * 3);
+        for (let i = 0; i < unique.length; i++) {
+          const p = voxelToWorld(vol, unique[i]); // map voxel coords to Å
           positions[3 * i + 0] = p[0];
           positions[3 * i + 1] = p[1];
           positions[3 * i + 2] = p[2];
         }
-        const indices = new Uint32Array(result.cells.flat()); // triangles
+
+        const geom = new THREE.BufferGeometry();
         geom.setIndex(new THREE.BufferAttribute(indices, 1));
         geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geom.computeVertexNormals();
