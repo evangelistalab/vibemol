@@ -1,0 +1,20 @@
+VibeMol
+=======
+
+A lightweight, zero-install molecular isosurface viewer for Gaussian CUBE files.
+
+- View positive/negative orbital isosurfaces (Emory color scheme by default)
+- Atom spheres + bond cylinders with element covalent radii
+- Interactive camera and view controls (shift, camera, target, rotation)
+- Background color, opacity, and color controls
+- Drag-and-drop or auto-load `sample.cube`
+
+Quick start
+- Serve the folder (recommended for local fetch of `sample.cube`):
+  - `python3 -m http.server` then open http://localhost:8000/
+- Or open `index.html` directly (auto-load may be blocked by browser file:// policies)
+
+Notes
+- Repository name: VibeMol
+- Entry point: `index.html`
+- Local libs: `three.min.js`, `OrbitControls.global.js`, `isosurface.bundle.js`
