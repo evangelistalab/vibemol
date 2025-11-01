@@ -655,6 +655,7 @@
 
       openBtn.onclick = () => fileInput.click();
       const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); };
+      const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden','true'); } };
       panelBtn.onclick = toggleSide;
       sideClose.onclick = toggleSide;
 
@@ -825,6 +826,20 @@
       const drop = document.getElementById('drop');
       drop.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
       drop.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+      // Close side panel when clicking on the scene (not during drags)
+      let downPos = null;
+      drop.addEventListener('pointerdown', (e) => {
+        if (e.button === 0) downPos = { x: e.clientX, y: e.clientY };
+        else downPos = null;
+      });
+      drop.addEventListener('pointerup', (e) => {
+        if (!sidePanel.classList.contains('open')) { downPos = null; return; }
+        if (!downPos) return;
+        const dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
+        const moved = Math.hypot(dx, dy) > 4; // threshold to distinguish drag
+        downPos = null;
+        if (!moved) closeSide();
+      });
 
       // Clear cubes and show sample again
       clearBtn.onclick = async () => {
