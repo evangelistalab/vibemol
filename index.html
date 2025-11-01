@@ -240,6 +240,7 @@
     <div class="spacer"></div>
     <button id="saveBtn">Save PNG</button>
     <button id="batchBtn" class="secondary">Batch export</button>
+    <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear</button>
     <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
   </div>
 
@@ -619,6 +620,7 @@
       const toggleBox = document.getElementById('showBox');
       const saveBtn = document.getElementById('saveBtn');
       const batchBtn = document.getElementById('batchBtn');
+      const clearBtn = document.getElementById('clearBtn');
       // Side panel controls
       const panelBtn = document.getElementById('panelBtn');
       const sidePanel = document.getElementById('sidePanel');
@@ -764,6 +766,13 @@
           currentIndex = -1;
           clearSceneMeshes();
         }
+        // Remove sample cube if present
+        if (volumes.some(v => v.isSample)) {
+          console.log('[CUBE] Removing sample.cube from list before adding user files.');
+          volumes = volumes.filter(v => !v.isSample);
+          currentIndex = -1;
+          clearSceneMeshes();
+        }
         const startIndex = volumes.length; // index of first newly added
         for (const f of arr) {
           const text = await f.text();
@@ -806,6 +815,16 @@
       const drop = document.getElementById('drop');
       drop.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
       drop.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+      
+      // Clear cubes and show sample again
+      clearBtn.onclick = async () => {
+        volumes = [];
+        currentIndex = -1;
+        refreshFileSelect();
+        clearSceneMeshes();
+        const ok = await loadSampleCube();
+        if (!ok) loadDemo();
+      };
 
       function refreshFileSelect() {
         fileSelect.innerHTML = "";
@@ -969,9 +988,8 @@
         camera.copy(keepCamera); controls.target.copy(keepTarget); controls.update();
       };
 
-      // Try to load a local sample CUBE at startup; fall back to demo if unavailable
-      (async function initLoad() {
-        if (volumes.length > 0) return;
+      // Helpers to load the sample cube or demo
+      async function loadSampleCube() {
         try {
           const resp = await fetch('./sample.cube', { cache: 'no-store' });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -980,22 +998,13 @@
           volumes = [];
           currentIndex = -1;
           clearSceneMeshes();
-          volumes.push({ name: 'sample.cube', vol });
+          volumes.push({ name: 'sample.cube', vol, isSample: true });
           if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
             isoInput.value = String(vol.isoHint);
           }
           try {
             const stats = arrayMinMax(vol.data);
-            console.log('[CUBE] Loaded sample.cube', {
-              title: vol.title,
-              nxyz: vol.nxyz,
-              origin: vol.origin,
-              axes: vol.axes,
-              natoms: vol.natoms,
-              isoHint: vol.isoHint,
-              min: stats.min,
-              max: stats.max
-            });
+            console.log('[CUBE] Loaded sample.cube', { title: vol.title, nxyz: vol.nxyz, origin: vol.origin, axes: vol.axes, natoms: vol.natoms, isoHint: vol.isoHint, min: stats.min, max: stats.max });
           } catch (e) {
             console.warn('[CUBE] Stats failed for sample.cube', e);
           }
@@ -1005,29 +1014,29 @@
           updateSidePanel();
           const hint = document.getElementById('hint');
           if (hint) hint.textContent = 'Loaded sample.cube • Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
-          return;
+          return true;
         } catch (err) {
-          console.warn('[CUBE] Could not auto-load sample.cube, using demo instead:', err);
+          console.warn('[CUBE] Could not auto-load sample.cube:', err);
+          return false;
         }
+      }
 
-        // Demo seed so something shows on first load
+      function loadDemo() {
         const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
-        // Simple water molecule geometry (Å)
         const r = 0.9572; // O–H bond length
         const theta = 104.5 * Math.PI / 180; // H–O–H angle
         const hx = r * Math.sin(theta / 2);
         const hz = r * Math.cos(theta / 2);
         const atoms = [
-          { Z: (ATOM_SYMBOL_TO_Z.O || 8), q: 0, x: 0, y: 0, z: 0 },                // O
-          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR }, // H1 (Bohr)
-          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: -hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR }, // H2 (Bohr)
+          { Z: (ATOM_SYMBOL_TO_Z.O || 8), q: 0, x: 0, y: 0, z: 0 },
+          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR },
+          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: -hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR },
         ];
-        // Tiny empty volume just for a bounding box frame of reference
         const nx = 20, ny = 20, nz = 20;
         const step = 0.6; // Bohr per voxel along each axis
         const axes = [[step, 0, 0], [0, step, 0], [0, 0, step]];
         const origin = [-(nx * step) / 2, -(ny * step) / 2, -(nz * step) / 2]; // Bohr
-        const data = new Float32Array(nx * ny * nz); // all zeros => no iso by default
+        const data = new Float32Array(nx * ny * nz);
         const idx = (i, j, k) => (i * ny + j) * nz + k;
         const vol = { title: 'Demo Water', comment: '', natoms: 3, origin, nxyz: [nx, ny, nz], axes, atoms, data, idx, isoHint: null };
         volumes.push({ name: 'Demo Water', vol });
@@ -1035,6 +1044,13 @@
         refreshFileSelect();
         rebuildScene();
         updateSidePanel();
+      }
+
+      // Startup: show sample cube, fallback to demo
+      (async function initLoad() {
+        if (volumes.length > 0) return;
+        const ok = await loadSampleCube();
+        if (!ok) loadDemo();
       })();
 
       // Keyboard shortcuts
