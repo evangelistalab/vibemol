@@ -490,7 +490,7 @@
       negColor.oninput = updateOpacityAndColors;
       bgColor.oninput = () => {
         // Update scene background to selected color
-        try { scene.background = new THREE.Color(bgColor.value); } catch {}
+        try { scene.background = new THREE.Color(bgColor.value); } catch { }
       };
       toggleAtoms.onchange = () => rebuildScene({ preserveView: true });
       toggleBox.onchange = () => rebuildScene({ preserveView: true });
@@ -531,7 +531,7 @@
           meshP.userData.sign = 'pos';
           scene.add(meshP); meshes.push(meshP);
           // Debug: triangle count
-          if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count/3)|0);
+          if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count / 3) | 0);
         }
         // Negative iso (−iso value, − color)
         if (min <= -iso) {
@@ -539,7 +539,7 @@
           const meshN = new THREE.Mesh(geomN, negMat);
           meshN.userData.sign = 'neg';
           scene.add(meshN); meshes.push(meshN);
-          if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count/3)|0);
+          if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
         }
 
         // Atoms
@@ -653,8 +653,8 @@
         const hz = r * Math.cos(theta / 2);
         const atoms = [
           { Z: (ATOM_SYMBOL_TO_Z.O || 8), q: 0, x: 0, y: 0, z: 0 },                // O
-          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x:  hx * ANG_TO_BOHR, y: 0, z:  hz * ANG_TO_BOHR }, // H1 (Bohr)
-          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: -hx * ANG_TO_BOHR, y: 0, z:  hz * ANG_TO_BOHR }, // H2 (Bohr)
+          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR }, // H1 (Bohr)
+          { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: -hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR }, // H2 (Bohr)
         ];
         // Tiny empty volume just for a bounding box frame of reference
         const nx = 20, ny = 20, nz = 20;
