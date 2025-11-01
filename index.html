@@ -333,7 +333,9 @@
       }
 
       function parseCube(text) {
-        const lines = text.replace(/\r/g, '').split('\n').filter(l => l.length > 0);
+        // Split lines, handle CRLF
+        const lines = text.replace(/\r/g, '').split('\n');
+
         if (lines.length < 6) throw new Error("Not enough lines for a CUBE file.");
 
         const title = lines[0];
@@ -346,7 +348,7 @@
           if (m) isoHint = parseFloat(m[1]); // take the first number as suggested level
         }
 
-        // origin / natoms line
+        // natoms / origin line
         const L3 = lines[2].trim().split(/\s+/);
         const natoms = parseInt(L3[0], 10);
         const origin = [parseFloat(L3[1]), parseFloat(L3[2]), parseFloat(L3[3])];
@@ -670,7 +672,7 @@
 
       openBtn.onclick = () => fileInput.click();
       const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); };
-      const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden','true'); } };
+      const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); } };
       panelBtn.onclick = toggleSide;
       sideClose.onclick = toggleSide;
 
