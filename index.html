@@ -249,6 +249,7 @@
     <label>− color <input type="color" id="negColor" value="#0033a0" /></label>
     <label>BG <input type="color" id="bgColor" value="#ffffff" /></label>
     <label><input type="checkbox" id="showAtoms" checked /> atoms</label>
+    <label><input type="checkbox" id="showBonds" checked /> bonds</label>
     <label><input type="checkbox" id="elementColors" checked /> elem colors</label>
     <label><input type="checkbox" id="showBox" /> box</label>
     <div class="spacer"></div>
@@ -496,16 +497,20 @@
       let currentIndex = -1;
       let meshes = []; // active meshes (pos/neg)
       let atomGroup = new THREE.Group();
+      let bondGroup = new THREE.Group();
       let boxHelper = null;
       // Content group to allow whole-scene shifting
       const contentGroup = new THREE.Group();
       scene.add(contentGroup);
       contentGroup.add(atomGroup);
+      contentGroup.add(bondGroup);
 
       function clearSceneMeshes() {
         for (const m of meshes) contentGroup.remove(m), m.geometry.dispose(), m.material.dispose();
         meshes = [];
-        atomGroup.clear();
+        // Reset atom and bond groups
+        contentGroup.remove(atomGroup); atomGroup.clear(); atomGroup = new THREE.Group();
+        contentGroup.remove(bondGroup); bondGroup.clear(); bondGroup = new THREE.Group();
         if (boxHelper) { contentGroup.remove(boxHelper); boxHelper.geometry.dispose(); boxHelper.material.dispose(); boxHelper = null; }
       }
 
@@ -535,12 +540,21 @@
           group.add(mesh);
           atomPositions.push({ pos, Z: a.Z | 0 });
         }
+        return group;
+      }
 
-        // Bonds (cylinders) based on distance vs. covalent radii
+      function buildBonds(vol) {
+        const group = new THREE.Group();
+        const covR = (z) => (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
+        const atomPositions = [];
+        for (const a of vol.atoms) {
+          const pos = new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
+          atomPositions.push({ pos, Z: a.Z | 0 });
+        }
         const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.35, metalness: 0.05 });
         const up = new THREE.Vector3(0, 1, 0);
         const N = atomPositions.length;
-        const bondRadius = 0.1; // Å
+        const bondRadius = 0.12; // Å
         for (let i = 0; i < N; i++) {
           for (let j = i + 1; j < N; j++) {
             const a = atomPositions[i];
@@ -560,7 +574,6 @@
             group.add(cyl);
           }
         }
-
         return group;
       }
 
@@ -591,6 +604,7 @@
         let hasSomething = false;
         for (const m of meshes) { box.expandByObject(m); hasSomething = true; }
         if (atomGroup.children.length) { box.expandByObject(atomGroup); hasSomething = true; }
+        if (bondGroup.children.length) { box.expandByObject(bondGroup); hasSomething = true; }
         if (boxHelper) { box.expandByObject(boxHelper); hasSomething = true; }
         if (!hasSomething || box.isEmpty()) return;
 
@@ -626,6 +640,7 @@
       const negColor = document.getElementById('negColor');
       const bgColor = document.getElementById('bgColor');
       const toggleAtoms = document.getElementById('showAtoms');
+      const toggleBonds = document.getElementById('showBonds');
       const elementColors = document.getElementById('elementColors');
       const toggleBox = document.getElementById('showBox');
       const saveBtn = document.getElementById('saveBtn');
@@ -863,7 +878,8 @@
 
       fileSelect.onchange = () => {
         currentIndex = parseInt(fileSelect.value, 10);
-        rebuildScene();
+        // Preserve camera view (position, orientation, zoom) when switching files
+        rebuildScene({ preserveView: true });
         updateSidePanel();
       };
 
@@ -878,6 +894,7 @@
         try { scene.background = new THREE.Color(bgColor.value); } catch { }
       };
       toggleAtoms.onchange = () => rebuildScene({ preserveView: true });
+      toggleBonds.onchange = () => rebuildScene({ preserveView: true });
       elementColors.onchange = () => rebuildScene({ preserveView: true });
       toggleBox.onchange = () => rebuildScene({ preserveView: true });
 
@@ -950,6 +967,11 @@
         if (toggleAtoms.checked) {
           atomGroup = buildAtoms(volumes[currentIndex].vol);
           contentGroup.add(atomGroup);
+        }
+        // Bonds
+        if (toggleBonds.checked) {
+          bondGroup = buildBonds(volumes[currentIndex].vol);
+          contentGroup.add(bondGroup);
         }
 
         // Box
