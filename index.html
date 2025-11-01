@@ -136,17 +136,45 @@
       color: var(--text);
       font-size: 13px;
     }
+
     #viewControls {
       padding: 10px 12px;
       border-bottom: 1px solid #223;
       color: var(--text);
       background: #0f151f;
     }
-    #viewControls h4 { margin: 0 0 8px 0; font-weight: 600; color: var(--muted); }
-    #viewControls .row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; align-items: center; }
-    #viewControls label { color: var(--muted); font-size: 12px; }
-    #viewControls input[type="number"] { width: 100%; padding: 3px 6px; background: #1a2230; color: var(--text); border: 1px solid #223; border-radius: 4px; }
-    #viewControls input[type="checkbox"] { vertical-align: middle; }
+
+    #viewControls h4 {
+      margin: 0 0 8px 0;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    #viewControls .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    #viewControls label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    #viewControls input[type="number"] {
+      width: 100%;
+      padding: 3px 6px;
+      background: #1a2230;
+      color: var(--text);
+      border: 1px solid #223;
+      border-radius: 4px;
+    }
+
+    #viewControls input[type="checkbox"] {
+      vertical-align: middle;
+    }
 
     #coordsContent table {
       width: 100%;
@@ -231,45 +259,45 @@
         <button id="sideClose" title="Close">✕</button>
       </div>
     </div>
-      <div id="viewControls">
-        <h4>View</h4>
-        <div class="row">
-          <label>Shift X</label><input type="number" id="shiftX" step="0.1" />
-          <label>Shift Y</label><input type="number" id="shiftY" step="0.1" />
-        </div>
-        <div class="row">
-          <label>Shift Z</label><input type="number" id="shiftZ" step="0.1" />
-          <span></span><span></span>
-        </div>
-        <div class="row">
-          <label>Cam X</label><input type="number" id="camX" step="0.1" />
-          <label>Cam Y</label><input type="number" id="camY" step="0.1" />
-        </div>
-        <div class="row">
-          <label>Cam Z</label><input type="number" id="camZ" step="0.1" />
-          <span></span><span></span>
-        </div>
-        <div class="row">
-          <label>Target X</label><input type="number" id="tgtX" step="0.1" />
-          <label>Target Y</label><input type="number" id="tgtY" step="0.1" />
-        </div>
-        <div class="row">
-          <label>Target Z</label><input type="number" id="tgtZ" step="0.1" />
-          <span></span><span></span>
-        </div>
-        <div class="row">
-          <label><input type="checkbox" id="autoRot"/> Auto-rotate</label>
-          <label>Rot speed</label><input type="number" id="rotSpeed" step="0.01" />
-          <label>Damping</label><input type="number" id="damp" step="0.01" />
-        </div>
-        <div class="row">
-          <label>AutoRot speed</label><input type="number" id="autoRotSpeed" step="0.1" />
-          <span></span><span></span>
-        </div>
+    <div id="viewControls">
+      <h4>View</h4>
+      <div class="row">
+        <label>Shift X</label><input type="number" id="shiftX" step="0.1" />
+        <label>Shift Y</label><input type="number" id="shiftY" step="0.1" />
       </div>
-      <div id="coordsContent">
-        <!-- Filled dynamically -->
+      <div class="row">
+        <label>Shift Z</label><input type="number" id="shiftZ" step="0.1" />
+        <span></span><span></span>
       </div>
+      <div class="row">
+        <label>Cam X</label><input type="number" id="camX" step="0.1" />
+        <label>Cam Y</label><input type="number" id="camY" step="0.1" />
+      </div>
+      <div class="row">
+        <label>Cam Z</label><input type="number" id="camZ" step="0.1" />
+        <span></span><span></span>
+      </div>
+      <div class="row">
+        <label>Target X</label><input type="number" id="tgtX" step="0.1" />
+        <label>Target Y</label><input type="number" id="tgtY" step="0.1" />
+      </div>
+      <div class="row">
+        <label>Target Z</label><input type="number" id="tgtZ" step="0.1" />
+        <span></span><span></span>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="autoRot" /> Auto-rotate</label>
+        <label>Rot speed</label><input type="number" id="rotSpeed" step="0.01" />
+        <label>Damping</label><input type="number" id="damp" step="0.01" />
+      </div>
+      <div class="row">
+        <label>AutoRot speed</label><input type="number" id="autoRotSpeed" step="0.1" />
+        <span></span><span></span>
+      </div>
+    </div>
+    <div id="coordsContent">
+      <!-- Filled dynamically -->
+    </div>
   </div>
 
   <!-- three.js core and controls (local copies) -->
@@ -408,7 +436,7 @@
       const hemi = new THREE.HemisphereLight(0xffffff, 0x081018, 0.7);
       const dir = new THREE.DirectionalLight(0xffffff, 0.8);
       dir.position.set(1, 1, 1);
-      const amb = new THREE.AmbientLight(0x999999, 0.45);
+      const amb = new THREE.AmbientLight(0x999999, 0.5);
       scene.add(hemi, dir, amb);
 
       // Resizer
@@ -587,9 +615,9 @@
 
       openBtn.onclick = () => fileInput.click();
       const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); };
-      const openSide = () => { if (!sidePanel.classList.contains('open')) { sidePanel.classList.add('open'); sidePanel.setAttribute('aria-hidden','false'); } };
+      const openSide = () => { if (!sidePanel.classList.contains('open')) { sidePanel.classList.add('open'); sidePanel.setAttribute('aria-hidden', 'false'); } };
       coordsBtn.onclick = toggleSide;
-      viewBtn.onclick = () => { openSide(); try { document.getElementById('viewControls').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(_) {} try { shiftX && shiftX.focus(); } catch(_) {} };
+      viewBtn.onclick = () => { openSide(); try { document.getElementById('viewControls').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) { } try { shiftX && shiftX.focus(); } catch (_) { } };
       sideClose.onclick = toggleSide;
 
       function refreshViewUI() {
@@ -614,7 +642,7 @@
       controls.addEventListener('change', refreshViewUI);
 
       // Apply handlers
-      const toNum = (v, def=0) => { const n = parseFloat(v); return Number.isFinite(n) ? n : def; };
+      const toNum = (v, def = 0) => { const n = parseFloat(v); return Number.isFinite(n) ? n : def; };
       for (const el of [shiftX, shiftY, shiftZ]) {
         el.oninput = () => {
           contentGroup.position.set(toNum(shiftX.value, 0), toNum(shiftY.value, 0), toNum(shiftZ.value, 0));
@@ -809,22 +837,22 @@
         }
 
         const opacity = parseFloat(opInput.value || "1.00");
-        const posMat = new THREE.MeshPhongMaterial({
+        const posMat = new THREE.MeshStandardMaterial({
           color: new THREE.Color(posColor.value),
-          specular: new THREE.Color(0x222222),
-          shininess: 75,
+          roughness: 0.1,
+          metalness: 0.0,
           emissive: new THREE.Color(posColor.value),
-          emissiveIntensity: 0.30,
+          emissiveIntensity: 0.50,
           side: THREE.DoubleSide,
           transparent: true,
           opacity
         });
-        const negMat = new THREE.MeshPhongMaterial({
+        const negMat = new THREE.MeshStandardMaterial({
           color: new THREE.Color(negColor.value),
-          specular: new THREE.Color(0x222222),
-          shininess: 75,
+          roughness: 0.1,
+          metalness: 0.0,
           emissive: new THREE.Color(negColor.value),
-          emissiveIntensity: 0.30,
+          emissiveIntensity: 0.50,
           side: THREE.DoubleSide,
           transparent: true,
           opacity
