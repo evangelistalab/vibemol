@@ -258,6 +258,7 @@
     <button id="surfBtn" class="secondary" title="Toggle iso-surface rendering">Hide Surfaces</button>
     <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear</button>
     <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
+    <button id="helpBtn" class="secondary" title="Help and shortcuts">Help</button>
   </div>
 
   <div id="drop">
@@ -307,6 +308,32 @@
     </div>
     <div id="coordsContent">
       <!-- Filled dynamically -->
+    </div>
+  </div>
+
+  <!-- Help / Shortcuts modal -->
+  <div id="helpOverlay" aria-hidden="true" style="display:none; position:fixed; inset:0; background:#0008; z-index:50; align-items:center; justify-content:center;">
+    <div id="helpModal" role="dialog" aria-modal="true" style="background:var(--panel); color:var(--text); width:min(680px,92vw); max-height:80vh; overflow:auto; border:1px solid #223; border-radius:10px; box-shadow:0 10px 30px #000a;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #223;">
+        <div style="font-weight:700;">Help & Shortcuts</div>
+        <button id="helpClose" class="secondary" title="Close">✕</button>
+      </div>
+      <div style="padding:12px 14px; font-size:13px; line-height:1.45;">
+        <p>Tips</p>
+        <ul>
+          <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
+          <li>Use View/Coords to adjust camera, target, and scene shift.</li>
+          <li>Atoms and Bonds can be toggled independently; bonds are color‑graded between atoms.</li>
+        </ul>
+        <p>Shortcuts</p>
+        <ul>
+          <li><strong>S</strong> — Save PNG</li>
+          <li><strong>B</strong> — Batch export all files</li>
+          <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
+          <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
+          <li><strong>Esc</strong> — Close open menus/dialogs</li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -651,10 +678,13 @@
       const batchBtn = document.getElementById('batchBtn');
       const surfBtn = document.getElementById('surfBtn');
       const clearBtn = document.getElementById('clearBtn');
+      const helpBtn = document.getElementById('helpBtn');
       // Side panel controls
       const panelBtn = document.getElementById('panelBtn');
       const sidePanel = document.getElementById('sidePanel');
       const sideClose = document.getElementById('sideClose');
+      const helpOverlay = document.getElementById('helpOverlay');
+      const helpClose = document.getElementById('helpClose');
       const coordsContent = document.getElementById('coordsContent');
       const copyXYZBtn = document.getElementById('copyXYZ');
       const downloadXYZBtn = document.getElementById('downloadXYZ');
@@ -682,6 +712,12 @@
       const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); } };
       panelBtn.onclick = toggleSide;
       sideClose.onclick = toggleSide;
+      // Help modal logic
+      function openHelp() { helpOverlay.style.display = 'flex'; helpOverlay.setAttribute('aria-hidden','false'); }
+      function closeHelp() { helpOverlay.style.display = 'none'; helpOverlay.setAttribute('aria-hidden','true'); }
+      if (helpBtn) helpBtn.onclick = openHelp;
+      if (helpClose) helpClose.onclick = closeHelp;
+      if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
 
       function refreshViewUI() {
         const notEditing = (el) => document.activeElement !== el;
@@ -1119,6 +1155,8 @@
         if (e.key === 's' && !editing) saveBtn.click();
         if (e.key === 'b' && !editing) batchBtn.click();
         if ((e.key === 'i' || e.key === 'I') && !editing) { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); }
+        if (!editing && (e.key === 'h' || e.key === 'H' || e.key === '?')) { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); }
+        if (e.key === 'Escape') { closeSide(); if (helpOverlay) closeHelp(); }
 
         // Arrow keys: switch files (preserve camera)
         if (!editing && volumes.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
