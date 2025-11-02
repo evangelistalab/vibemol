@@ -308,6 +308,18 @@
         <span></span><span></span>
       </div>
       <div class="row">
+        <label>Color scheme</label>
+        <select id="schemeSelect" title="Choose default +/- surface colors">
+          <option value="emory" selected>Emory (gold/blue)</option>
+          <option value="national">National (red/blue)</option>
+          <option value="bright">Bright (yellow/cyan)</option>
+          <option value="electron">Electron (magenta/green)</option>
+          <option value="classic">Classic (blue/red)</option>
+          <option value="custom">Custom (via color pickers)</option>
+        </select>
+        <span></span><span></span>
+      </div>
+      <div class="row">
         <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
           title="Speed at which the view rotates" />
         <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
@@ -710,7 +722,7 @@
             clearcoatRoughness: 0.025,
             reflectivity: 0.1,
             ior: 1.2,
-            thickness: 0.0,
+            thickness: 1.0,
             side: THREE.DoubleSide,
           });
         }
@@ -718,8 +730,9 @@
           return new THREE.MeshPhysicalMaterial({
             color: col,
             clearcoat: 1.0,
+            clearcoatRoughness: 0.1,
             emissive: col.clone(),
-            emissiveIntensity: 1.0,
+            emissiveIntensity: 0.8,
             side: THREE.DoubleSide,
             transparent: true,
             opacity
@@ -827,6 +840,7 @@
       const autoRotSpeed = document.getElementById('autoRotSpeed');
       const viewReset = document.getElementById('viewReset');
       const styleSelect = document.getElementById('styleSelect');
+      const schemeSelect = document.getElementById('schemeSelect');
 
       openBtn.onclick = () => fileInput.click();
       // Toggle surface rendering button
@@ -883,6 +897,26 @@
       if (styleSelect) {
         styleSelect.value = surfaceStyle;
         styleSelect.onchange = () => { surfaceStyle = styleSelect.value; rebuildScene({ preserveView: true }); };
+      }
+
+      // Default color schemes for +/- surfaces
+      if (schemeSelect) {
+        const schemes = {
+          emory: { pos: '#f2a900', neg: '#0033a0' },
+          national: { pos: '#e60000', neg: '#0033a0' },
+          bright: { pos: '#ffcc00', neg: '#00bfff' },
+          electron: { pos: '#ff00bf', neg: '#2eb82e' },
+          classic: { pos: '#1f77b4', neg: '#d62728' },
+        };
+        schemeSelect.onchange = () => {
+          const v = schemeSelect.value;
+          const s = schemes[v];
+          if (s) {
+            posColor.value = s.pos;
+            negColor.value = s.neg;
+            updateOpacityAndColors();
+          }
+        };
       }
 
       // Axes gizmo state
@@ -1081,8 +1115,8 @@
 
       isoInput.onchange = () => rebuildScene({ preserveView: true });
       opInput.oninput = updateOpacityAndColors;
-      posColor.oninput = updateOpacityAndColors;
-      negColor.oninput = updateOpacityAndColors;
+      posColor.oninput = () => { if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom'; updateOpacityAndColors(); };
+      negColor.oninput = () => { if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom'; updateOpacityAndColors(); };
       bgColor.oninput = () => {
         // Update scene background to selected color
         try { scene.background = new THREE.Color(bgColor.value); } catch { }
@@ -1182,19 +1216,29 @@
         const op = parseFloat(opInput.value || "1.00");
         for (const m of meshes) {
           if (!m || !m.material) continue;
+          const sign = m.userData && m.userData.sign;
+          const colStr = sign === 'neg' ? negColor.value : posColor.value;
+          const col = new THREE.Color(colStr);
           const mat = m.material;
           // Adapt behavior to glossy physical materials
           if (mat.isMeshPhysicalMaterial) {
             if (surfaceStyle === 'glass' && 'transmission' in mat) {
               // For glass: drive transmission with slider, keep alpha at 1
+              col.multiplyScalar(2);
               mat.transmission = Math.max(0, Math.min(1, op));
+              mat.color.copy(col);
             } else {
               // Emissive physical (default): use opacity, keep emissiveIntensity intact
               mat.opacity = op;
+              mat.transparent = true;
+              mat.color.copy(col);
+              if (mat.emissive) mat.emissive.copy(col);
             }
           } else {
             // Fallback materials (standard/toon)
             mat.opacity = op;
+            mat.transparent = true;
+            mat.color.copy(col);
           }
           mat.needsUpdate = true;
         }
