@@ -300,6 +300,14 @@
           title="Target position in the Z-direction" />
       </div>
       <div class="row">
+        <label>Surface style</label>
+        <select id="styleSelect" title="Choose iso-surface material style">
+          <option value="emissive" selected>Emissive (physical)</option>
+          <option value="glass">Glass (physical)</option>
+        </select>
+        <span></span><span></span>
+      </div>
+      <div class="row">
         <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
           title="Speed at which the view rotates" />
         <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
@@ -586,6 +594,8 @@
       let showSurfaces = true; // toggle iso-surface visibility
       // Default view reference (captured on first non-preserved fit)
       let defaultView = null;
+      // Current iso-surface material style
+      let surfaceStyle = 'emissive';
       // Content group to allow whole-scene shifting
       const contentGroup = new THREE.Group();
       scene.add(contentGroup);
@@ -686,6 +696,39 @@
         return new THREE.LineSegments(geom, mat);
       }
 
+      // --- Surface material helpers ---
+      function createIsoMaterial(sign, opacity) {
+        const col = new THREE.Color(sign === 'neg' ? negColor.value : posColor.value);
+        if (surfaceStyle === 'glass') {
+          col.multiplyScalar(2);
+          return new THREE.MeshPhysicalMaterial({
+            color: col,
+            transmission: 1.0,
+            roughness: 0.1,
+            metalness: 0.0,
+            clearcoat: 0.8,
+            clearcoatRoughness: 0.025,
+            reflectivity: 0.1,
+            ior: 1.2,
+            thickness: 0.0,
+            side: THREE.DoubleSide,
+          });
+        }
+        if (surfaceStyle === 'emissive') {
+          return new THREE.MeshPhysicalMaterial({
+            color: col,
+            clearcoat: 1.0,
+            emissive: col.clone(),
+            emissiveIntensity: 1.0,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity
+          });
+        }
+        // Fallback standard
+        return new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
+      }
+
       function fitCameraToScene() {
         const box = new THREE.Box3();
         let hasSomething = false;
@@ -783,6 +826,7 @@
       const damp = document.getElementById('damp');
       const autoRotSpeed = document.getElementById('autoRotSpeed');
       const viewReset = document.getElementById('viewReset');
+      const styleSelect = document.getElementById('styleSelect');
 
       openBtn.onclick = () => fileInput.click();
       // Toggle surface rendering button
@@ -834,6 +878,12 @@
           refreshViewUI();
         }
       };
+
+      // Surface style selector
+      if (styleSelect) {
+        styleSelect.value = surfaceStyle;
+        styleSelect.onchange = () => { surfaceStyle = styleSelect.value; rebuildScene({ preserveView: true }); };
+      }
 
       // Axes gizmo state
       window.__showAxes__ = true;
@@ -1069,26 +1119,8 @@
         }
 
         const opacity = parseFloat(opInput.value || "1.00");
-        const posMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(posColor.value),
-          roughness: 0.1,
-          metalness: 0.1,
-          emissive: new THREE.Color(posColor.value),
-          emissiveIntensity: 0.50,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity
-        });
-        const negMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(negColor.value),
-          roughness: 0.1,
-          metalness: 0.1,
-          emissive: new THREE.Color(negColor.value),
-          emissiveIntensity: 0.50,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity
-        });
+        const posMat = createIsoMaterial('pos', opacity);
+        const negMat = createIsoMaterial('neg', opacity);
 
         if (showSurfaces) {
           // Positive iso (+iso value, + color)
@@ -1150,15 +1182,21 @@
         const op = parseFloat(opInput.value || "1.00");
         for (const m of meshes) {
           if (!m || !m.material) continue;
-          m.material.opacity = op;
-          const sign = m.userData && m.userData.sign;
-          const col = sign === 'neg' ? negColor.value : posColor.value;
-          m.material.color = new THREE.Color(col);
-          // Keep existing emissiveIntensity; only update emissive color
-          if (m.material.emissive) {
-            m.material.emissive.set(col);
+          const mat = m.material;
+          // Adapt behavior to glossy physical materials
+          if (mat.isMeshPhysicalMaterial) {
+            if (surfaceStyle === 'glass' && 'transmission' in mat) {
+              // For glass: drive transmission with slider, keep alpha at 1
+              mat.transmission = Math.max(0, Math.min(1, op));
+            } else {
+              // Emissive physical (default): use opacity, keep emissiveIntensity intact
+              mat.opacity = op;
+            }
+          } else {
+            // Fallback materials (standard/toon)
+            mat.opacity = op;
           }
-          m.material.needsUpdate = true;
+          mat.needsUpdate = true;
         }
       }
 
