@@ -522,8 +522,8 @@
       controls.rotateSpeed = 1.5;
 
       // Lights
-      const hemi = new THREE.HemisphereLight(0xffffff, 0x081018, 0.7);
-      const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+      const hemi = new THREE.HemisphereLight(0xffffff, 0x081018, 2.0);
+      const dir = new THREE.DirectionalLight(0xffffff, 1.0);
       dir.position.set(1, 1, 1);
       const amb = new THREE.AmbientLight(0x999999, 0.65);
       scene.add(hemi, dir, amb);
@@ -638,7 +638,7 @@
           const pos = new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
           atomPositions.push({ pos, Z: a.Z | 0 });
         }
-        const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.35, metalness: 0.05 });
+        const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.1, metalness: 0.1 });
         const up = new THREE.Vector3(0, 1, 0);
         const N = atomPositions.length;
         const bondRadius = 0.12; // Å
@@ -1072,7 +1072,7 @@
         const posMat = new THREE.MeshStandardMaterial({
           color: new THREE.Color(posColor.value),
           roughness: 0.1,
-          metalness: 0.0,
+          metalness: 0.1,
           emissive: new THREE.Color(posColor.value),
           emissiveIntensity: 0.50,
           side: THREE.DoubleSide,
@@ -1082,7 +1082,7 @@
         const negMat = new THREE.MeshStandardMaterial({
           color: new THREE.Color(negColor.value),
           roughness: 0.1,
-          metalness: 0.0,
+          metalness: 0.1,
           emissive: new THREE.Color(negColor.value),
           emissiveIntensity: 0.50,
           side: THREE.DoubleSide,
