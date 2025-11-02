@@ -296,7 +296,7 @@
       <div class="row">
         <label><input type="checkbox" id="autoRot" /> Auto-rotate</label>
         <label>Auto-rotate speed</label><input type="number" id="autoRotSpeed" step="0.1" />
-        <span></span>
+        <button id="viewReset" class="secondary" style="grid-column:1 / -1;">Reset View</button>
       </div>
     </div>
     <div id="sideHeader">
@@ -573,6 +573,8 @@
       let bondGroup = new THREE.Group();
       let boxHelper = null;
       let showSurfaces = true; // toggle iso-surface visibility
+      // Default view reference (captured on first non-preserved fit)
+      let defaultView = null;
       // Content group to allow whole-scene shifting
       const contentGroup = new THREE.Group();
       scene.add(contentGroup);
@@ -769,6 +771,7 @@
       const rotSpeed = document.getElementById('rotSpeed');
       const damp = document.getElementById('damp');
       const autoRotSpeed = document.getElementById('autoRotSpeed');
+      const viewReset = document.getElementById('viewReset');
 
       openBtn.onclick = () => fileInput.click();
       // Toggle surface rendering button
@@ -806,6 +809,20 @@
       // Initialize view UI
       refreshViewUI();
       controls.addEventListener('change', refreshViewUI);
+
+      // Reset view to the initial camera/target/shift
+      viewReset.onclick = () => {
+        if (defaultView) {
+          contentGroup.position.copy(defaultView.contentPos);
+          camera.copy(defaultView.cam);
+          controls.target.copy(defaultView.target);
+          controls.update();
+          refreshViewUI();
+        } else {
+          fitCameraToScene();
+          refreshViewUI();
+        }
+      };
 
       // Axes gizmo state
       window.__showAxes__ = true;
