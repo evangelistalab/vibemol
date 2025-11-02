@@ -325,14 +325,6 @@
       </div>
       <div class="row">
         <label>Stride</label><input type="number" id="cloudStride" min="1" max="8" step="1" value="2" title="Sample every N voxels per axis" />
-        <label>Thresh</label><input type="number" id="cloudTlow" step="1e-6" value="0.000001" title="Ignore |rho| below this" />
-      </div>
-      <div class="row">
-        <label>Hi bound</label>
-        <select id="cloudHi" title="Upper bound for transfer mapping">
-          <option value="p99" selected>p99</option>
-          <option value="max">max</option>
-        </select>
         <label>Alpha max</label><input type="number" id="cloudAlpha" min="0.05" max="1" step="0.05" value="0.6" />
       </div>
       <div class="row">
@@ -810,8 +802,12 @@
         const g = new THREE.Group();
         const [nx, ny, nz] = vol.nxyz;
         const stride = Math.max(1, opts.stride|0);
-        const cell = estimateCellSize(vol);
-        const baseScale = cell * 0.85;
+        // Compute voxel edge lengths in Å and scale so adjacent samples touch.
+        const ax = vol.axes[0].map(v => v * BOHR_TO_ANG);
+        const ay = vol.axes[1].map(v => v * BOHR_TO_ANG);
+        const az = vol.axes[2].map(v => v * BOHR_TO_ANG);
+        const len = v => Math.hypot(v[0], v[1], v[2]);
+        const scaleVec = new THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
         // Determine high bound
         const hi = opts.hiMode === 'max' ? Math.max(...vol.data.map(v => Math.abs(v))) : absPercentile(vol, 0.99, Math.max(1, stride));
         const tLow = opts.tLow;
@@ -830,7 +826,7 @@
         }
         const makeInst = (count, color) => {
           const geom = new THREE.BoxGeometry(1, 1, 1);
-          const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), transparent: true, opacity: opts.alphaMax, depthWrite: false });
+          const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), transparent: true, opacity: Math.min(1, opts.alphaMax * stride), depthWrite: false });
           return new THREE.InstancedMesh(geom, mat, Math.max(1, count));
         };
         const instPos = makeInst(nPos, posColor.value);
@@ -845,10 +841,9 @@
               const v = vol.data[vol.idx(i, j, k)];
               const av = Math.abs(v);
               if (av < tLow) continue;
-              const t = clamp01(av / (hi || (tLow*2)));
-              const scale = baseScale * (0.3 + 0.7 * Math.pow(t, 0.6));
               const pos = voxelCenterToWorld(vol, i, j, k);
-              m4.compose(new THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.set(scale, scale, scale));
+              // Use a constant scale so neighboring cubes (at given stride) touch each other
+              m4.compose(new THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec));
               if (v >= 0) { instPos.setMatrixAt(ip++, m4); }
               else { instNeg.setMatrixAt(ineg++, m4); }
             }
@@ -865,26 +860,72 @@
         const [nx, ny, nz] = vol.nxyz;
         const stride = Math.max(1, opts.stride|0);
         const tLow = opts.tLow;
-        const positionsPos = [];
-        const positionsNeg = [];
+        // Determine hi bound for strength mapping
+        const hi = absPercentile(vol, 0.99, Math.max(1, stride));
+        const clamp01 = x => Math.max(0, Math.min(1, x));
+        // Collect positions and strength per sign
+        const posPos = [], posNeg = [], strPos = [], strNeg = [];
         for (let i = 0; i < nx; i += stride) {
           for (let j = 0; j < ny; j += stride) {
             for (let k = 0; k < nz; k += stride) {
               const v = vol.data[vol.idx(i, j, k)];
-              if (Math.abs(v) < tLow) continue;
+              const av = Math.abs(v);
+              if (av < tLow) continue;
+              const s = clamp01((av - tLow) / Math.max(1e-12, (hi - tLow)));
               const p = voxelCenterToWorld(vol, i, j, k);
-              (v >= 0 ? positionsPos : positionsNeg).push(p[0], p[1], p[2]);
+              if (v >= 0) { posPos.push(p[0], p[1], p[2]); strPos.push(s); }
+              else { posNeg.push(p[0], p[1], p[2]); strNeg.push(s); }
             }
           }
         }
-        const makePoints = (arr, color) => {
+        // Shader material for round, shaded sprites
+        const baseSize = estimateCellSize(vol) * 3.0; // uniform size, independent of stride/strength
+        const makeSpriteMat = (colorHex) => new THREE.ShaderMaterial({
+          uniforms: {
+            uColor: { value: new THREE.Color(colorHex) },
+            uAlpha: { value: Math.min(1.0, opts.alphaMax * stride) },
+            uSize:  { value: baseSize },
+          },
+          vertexShader: `
+            uniform float uSize;
+            attribute float aStrength;
+            varying float vStrength;
+            void main() {
+              vStrength = aStrength;
+              vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+              // approximate size attenuation (constant base size)
+              float dist = -mvPosition.z;
+              gl_PointSize = uSize * (300.0 / max(1.0, dist));
+              gl_Position = projectionMatrix * mvPosition;
+            }
+          `,
+          fragmentShader: `
+            uniform vec3 uColor;
+            uniform float uAlpha;
+            varying float vStrength;
+            void main() {
+              vec2 uv = gl_PointCoord - vec2(0.5);
+              float d = length(uv);
+              if (d > 0.5) discard; // round sprite
+              float fall = smoothstep(0.5, 0.0, d);
+              float a = uAlpha * vStrength * fall;
+              gl_FragColor = vec4(uColor, a);
+            }
+          `,
+          transparent: true,
+          depthWrite: false,
+          depthTest: false,
+          blending: THREE.NormalBlending,
+        });
+        const makePoints = (posArr, strArr, color) => {
           const geo = new THREE.BufferGeometry();
-          geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(arr), 3));
-          const mat = new THREE.PointsMaterial({ color: new THREE.Color(color), sizeAttenuation: true, size: estimateCellSize(vol) * 1.2, transparent: true, opacity: opts.alphaMax, depthWrite: false, blending: THREE.AdditiveBlending });
+          geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(posArr), 3));
+          geo.setAttribute('aStrength', new THREE.BufferAttribute(new Float32Array(strArr), 1));
+          const mat = makeSpriteMat(color);
           return new THREE.Points(geo, mat);
         };
-        if (positionsPos.length) g.add(makePoints(positionsPos, posColor.value));
-        if (positionsNeg.length) g.add(makePoints(positionsNeg, negColor.value));
+        if (posPos.length) g.add(makePoints(posPos, strPos, posColor.value));
+        if (posNeg.length) g.add(makePoints(posNeg, strNeg, negColor.value));
         return g;
       }
 
@@ -990,8 +1031,6 @@
       const renderModeSel = document.getElementById('renderMode');
       const cloudTypeSel = document.getElementById('cloudType');
       const cloudStrideEl = document.getElementById('cloudStride');
-      const cloudTlowEl = document.getElementById('cloudTlow');
-      const cloudHiSel = document.getElementById('cloudHi');
       const cloudAlphaEl = document.getElementById('cloudAlpha');
 
       openBtn.onclick = () => fileInput.click();
@@ -1075,19 +1114,17 @@
       let renderMode = (renderModeSel && renderModeSel.value) || 'surface';
       let cloudType = (cloudTypeSel && cloudTypeSel.value) || 'cubes';
       function readCloudOpts() {
+        const iso = Math.abs(parseFloat((isoInput && isoInput.value) || '0')) || 0;
         return {
           type: cloudType,
           stride: Math.max(1, parseInt((cloudStrideEl && cloudStrideEl.value) || '2', 10)),
-          tLow: parseFloat((cloudTlowEl && cloudTlowEl.value) || '0.000001') || 1e-6,
-          hiMode: (cloudHiSel && cloudHiSel.value) || 'p99',
+          tLow: iso > 0 ? iso : 1e-6, // threshold tied to iso value
           alphaMax: Math.min(1, Math.max(0.05, parseFloat((cloudAlphaEl && cloudAlphaEl.value) || '0.6'))),
         };
       }
       if (renderModeSel) renderModeSel.onchange = () => { renderMode = renderModeSel.value; rebuildScene({ preserveView: true }); };
       if (cloudTypeSel) cloudTypeSel.onchange = () => { cloudType = cloudTypeSel.value; rebuildScene({ preserveView: true }); };
       if (cloudStrideEl) cloudStrideEl.onchange = () => rebuildScene({ preserveView: true });
-      if (cloudTlowEl) cloudTlowEl.onchange = () => rebuildScene({ preserveView: true });
-      if (cloudHiSel) cloudHiSel.onchange = () => rebuildScene({ preserveView: true });
       if (cloudAlphaEl) cloudAlphaEl.onchange = () => rebuildScene({ preserveView: true });
 
       // Axes gizmo state
