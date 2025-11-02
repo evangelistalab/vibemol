@@ -310,36 +310,7 @@
         <label>Speed</label><input type="number" id="autoRotSpeed" step="1" title="Speed of auto-rotation" />
       </div>
       <div class="row">
-        <label>Render mode</label>
-        <select id="renderMode" title="Choose visualization mode">
-          <option value="surface" selected>Surfaces</option>
-          <option value="cloud">Cloud</option>
-        </select>
-        <span></span><span></span>
-      </div>
-      <div class="row" id="rowStyle">
-        <label>Surface style</label>
-        <select id="styleSelect" title="Choose iso-surface material style">
-          <option value="emissive" selected>Emissive (physical)</option>
-          <option value="glass">Glass (physical)</option>
-        </select>
-        <span></span><span></span>
-      </div>
-      <div class="row" id="rowCloudType">
-        <label>Cloud type</label>
-        <select id="cloudType" title="Cloud renderer">
-          <option value="cubes" selected>Cubes</option>
-          <option value="points">Points</option>
-        </select>
-        <span></span><span></span>
-      </div>
-      <div class="row" id="rowCloudParams">
-        <label>Stride</label><input type="number" id="cloudStride" min="1" max="8" step="1" value="1"
-          title="Sample every N voxels per axis" />
-        <label>Alpha max</label><input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1" />
-      </div>
-      <div class="row">
-        <label>Color scheme</label>
+        <label style="width: 80px;">Color scheme</label>
         <select id="schemeSelect" title="Choose default +/- surface colors">
           <option value="emory" selected>Emory (gold/blue)</option>
           <option value="national">National (red/blue)</option>
@@ -349,6 +320,35 @@
           <option value="custom">Custom (via color pickers)</option>
         </select>
         <span></span><span></span>
+      </div>
+      <div class="row">
+        <label style="width: 80px;">Render mode</label>
+        <select id="renderMode" title="Choose visualization mode">
+          <option value="surface" selected>Surfaces</option>
+          <option value="cloud">Cloud</option>
+        </select>
+        <span></span><span></span>
+      </div>
+      <div class="row" id="rowStyle">
+        <label style="width: 80px;">Surface style</label>
+        <select id="styleSelect" title="Choose iso-surface material style">
+          <option value="emissive" selected>Emissive (physical)</option>
+          <option value="glass">Glass (physical)</option>
+        </select>
+        <span></span><span></span>
+      </div>
+      <div class="row" id="rowCloudType">
+        <label style="width: 80px;">Cloud type</label>
+        <select id="cloudType" title="Cloud renderer">
+          <option value="cubes" selected>Cubes</option>
+          <option value="points">Points</option>
+        </select>
+        <span></span><span></span>
+      </div>
+      <div class="row" id="rowCloudParams">
+        <label style="width: 80px;">Stride</label><input type="number" id="cloudStride" min="1" max="8" step="1"
+          value="1" title="Sample every N voxels per axis" />
+        <label>Alpha max</label><input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1" />
       </div>
     </div>
     <div id="sideHeader">
