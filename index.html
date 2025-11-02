@@ -144,12 +144,6 @@
       background: #0f151f;
     }
 
-    #viewControls h4 {
-      margin: 0 0 8px 0;
-      font-weight: 600;
-      color: var(--muted);
-    }
-
     #viewControls .row {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -254,8 +248,8 @@
     <label><input type="checkbox" id="showBox" /> box</label>
     <label><input type="checkbox" id="showAxes" checked /> axes</label>
     <div class="spacer"></div>
-    <button id="saveBtn">Save PNG</button>
-    <button id="batchBtn" class="secondary">Batch export</button>
+    <button id="saveBtn" title="Save the current view as a PNG image">Save PNG</button>
+    <button id="batchBtn" class="secondary" title="Export all views as PNG images">Batch export</button>
     <button id="surfBtn" class="secondary" title="Toggle iso-surface rendering">Hide Surfaces</button>
     <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear</button>
     <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
@@ -269,34 +263,52 @@
 
   <!-- Right side panel (toggle) -->
   <div id="sidePanel" aria-hidden="true">
+    <div id="sideHeader">
+      <div class="title">View</div>
+      <div>
+        <button id="viewReset" class="secondary" title="Reset the view to the initial state">Reset View</button>
+        <button id="sideClose" title="Close">✕</button>
+      </div>
+    </div>
+
     <div id="viewControls">
-      <h4>View</h4>
       <div class="row-vec">
         <label>Shift</label>
-        <span class="axis">X</span><input type="number" id="shiftX" step="0.1" />
-        <span class="axis">Y</span><input type="number" id="shiftY" step="0.1" />
-        <span class="axis">Z</span><input type="number" id="shiftZ" step="0.1" />
+        <span class="axis">X</span><input type="number" id="shiftX" step="0.1"
+          title="Shift the molecule in the X-direction" />
+        <span class="axis">Y</span><input type="number" id="shiftY" step="0.1"
+          title="Shift the molecule in the Y-direction" />
+        <span class="axis">Z</span><input type="number" id="shiftZ" step="0.1"
+          title="Shift the molecule in the Z-direction" />
       </div>
       <div class="row-vec">
         <label>Cam</label>
-        <span class="axis">X</span><input type="number" id="camX" step="0.1" />
-        <span class="axis">Y</span><input type="number" id="camY" step="0.1" />
-        <span class="axis">Z</span><input type="number" id="camZ" step="0.1" />
+        <span class="axis">X</span><input type="number" id="camX" step="0.1"
+          title="Camera position in the X-direction" />
+        <span class="axis">Y</span><input type="number" id="camY" step="0.1"
+          title="Camera position in the Y-direction" />
+        <span class="axis">Z</span><input type="number" id="camZ" step="0.1"
+          title="Camera position in the Z-direction" />
       </div>
       <div class="row-vec">
         <label>Target</label>
-        <span class="axis">X</span><input type="number" id="tgtX" step="0.1" />
-        <span class="axis">Y</span><input type="number" id="tgtY" step="0.1" />
-        <span class="axis">Z</span><input type="number" id="tgtZ" step="0.1" />
+        <span class="axis">X</span><input type="number" id="tgtX" step="0.1"
+          title="Target position in the X-direction" />
+        <span class="axis">Y</span><input type="number" id="tgtY" step="0.1"
+          title="Target position in the Y-direction" />
+        <span class="axis">Z</span><input type="number" id="tgtZ" step="0.1"
+          title="Target position in the Z-direction" />
       </div>
       <div class="row">
-        <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01" />
-        <label>Damping</label><input type="number" id="damp" step="0.01" />
+        <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
+          title="Speed at which the view rotates" />
+        <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
       </div>
       <div class="row">
-        <label><input type="checkbox" id="autoRot" /> Auto-rotate</label>
-        <label>Auto-rotate speed</label><input type="number" id="autoRotSpeed" step="0.1" />
-        <button id="viewReset" class="secondary" style="grid-column:1 / -1;">Reset View</button>
+        <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
+          Auto-rotate</label>
+        <label style="width:80px">Auto-rotate speed</label><input type="number" id="autoRotSpeed" step="0.1"
+          title="Speed of auto-rotation" />
       </div>
     </div>
     <div id="sideHeader">
@@ -304,7 +316,6 @@
       <div>
         <button id="copyXYZ" class="secondary" title="Copy XYZ">Copy</button>
         <button id="downloadXYZ" class="secondary" title="Download XYZ">Download</button>
-        <button id="sideClose" title="Close">✕</button>
       </div>
     </div>
     <div id="coordsContent">
@@ -1123,6 +1134,13 @@
           controls.update();
         } else {
           fitCameraToScene();
+          if (!defaultView) {
+            defaultView = {
+              cam: camera.clone(),
+              target: controls.target.clone(),
+              contentPos: contentGroup.position.clone(),
+            };
+          }
         }
         console.log('[CUBE] Rebuilt scene. iso=', iso, 'opacity=', opacity, 'min/max=', min, max);
         updateSidePanel();
@@ -1136,9 +1154,9 @@
           const sign = m.userData && m.userData.sign;
           const col = sign === 'neg' ? negColor.value : posColor.value;
           m.material.color = new THREE.Color(col);
+          // Keep existing emissiveIntensity; only update emissive color
           if (m.material.emissive) {
             m.material.emissive.set(col);
-            m.material.emissiveIntensity = 0.18;
           }
           m.material.needsUpdate = true;
         }
