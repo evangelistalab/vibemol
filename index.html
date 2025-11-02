@@ -826,7 +826,18 @@
         }
         const makeInst = (count, color) => {
           const geom = new THREE.BoxGeometry(1, 1, 1);
-          const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color), transparent: true, opacity: Math.min(1, opts.alphaMax * stride), depthWrite: false });
+          const alpha = Math.min(1, opts.alphaMax * stride);
+          const mat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(color),
+            transparent: alpha < 1.0,
+            opacity: alpha,
+            depthWrite: alpha >= 1.0,
+            depthTest: true,
+            dithering: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -0.5,
+            polygonOffsetUnits: -1.0,
+          });
           return new THREE.InstancedMesh(geom, mat, Math.max(1, count));
         };
         const instPos = makeInst(nPos, posColor.value);
@@ -842,8 +853,8 @@
               const av = Math.abs(v);
               if (av < tLow) continue;
               const pos = voxelCenterToWorld(vol, i, j, k);
-              // Use a constant scale so neighboring cubes (at given stride) touch each other
-              m4.compose(new THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec));
+              // Slightly shrink to mitigate coplanar z-fighting while still appearing contiguous
+              m4.compose(new THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(0.99));
               if (v >= 0) { instPos.setMatrixAt(ip++, m4); }
               else { instNeg.setMatrixAt(ineg++, m4); }
             }
@@ -1382,7 +1393,7 @@
             contentGroup.add(meshN); meshes.push(meshN);
             if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
           }
-        } else if (renderMode === 'cloud') {
+        } else if (renderMode === 'cloud' && showSurfaces) {
           const opts = readCloudOpts();
           cloudGroup = (opts.type === 'points') ? buildCloudPoints(vol, opts) : buildCloudCubes(vol, opts);
           contentGroup.add(cloudGroup);
