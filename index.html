@@ -300,6 +300,16 @@
           title="Target position in the Z-direction" />
       </div>
       <div class="row">
+        <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
+          title="Speed at which the view rotates" />
+        <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
+      </div>
+      <div class="row">
+        <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
+          Auto-rotate</label>
+        <label>Speed</label><input type="number" id="autoRotSpeed" step="1" title="Speed of auto-rotation" />
+      </div>
+      <div class="row">
         <label>Render mode</label>
         <select id="renderMode" title="Choose visualization mode">
           <option value="surface" selected>Surfaces</option>
@@ -339,17 +349,6 @@
           <option value="custom">Custom (via color pickers)</option>
         </select>
         <span></span><span></span>
-      </div>
-      <div class="row">
-        <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
-          title="Speed at which the view rotates" />
-        <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
-      </div>
-      <div class="row">
-        <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
-          Auto-rotate</label>
-        <label style="width:80px">Auto-rotate speed</label><input type="number" id="autoRotSpeed" step="0.1"
-          title="Speed of auto-rotation" />
       </div>
     </div>
     <div id="sideHeader">
