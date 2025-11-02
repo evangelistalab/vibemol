@@ -300,29 +300,6 @@
           title="Target position in the Z-direction" />
       </div>
       <div class="row">
-        <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
-          title="Speed at which the view rotates" />
-        <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
-      </div>
-      <div class="row">
-        <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
-          Auto-rotate</label>
-        <label style="width:80px">Auto-rotate speed</label><input type="number" id="autoRotSpeed" step="0.1"
-          title="Speed of auto-rotation" />
-      </div>
-      <div class="row">
-        <label>Color scheme</label>
-        <select id="schemeSelect" title="Choose default +/- surface colors">
-          <option value="emory" selected>Emory (gold/blue)</option>
-          <option value="national">National (red/blue)</option>
-          <option value="bright">Bright (yellow/cyan)</option>
-          <option value="electron">Electron (magenta/green)</option>
-          <option value="classic">Classic (blue/red)</option>
-          <option value="custom">Custom (via color pickers)</option>
-        </select>
-        <span></span><span></span>
-      </div>
-      <div class="row">
         <label>Render mode</label>
         <select id="renderMode" title="Choose visualization mode">
           <option value="surface" selected>Surfaces</option>
@@ -338,10 +315,6 @@
         </select>
         <span></span><span></span>
       </div>
-      <div class="row" id="rowNormals">
-        <label><input type="checkbox" id="enableNormals" /> Normal map</label>
-        <span></span><span></span>
-      </div>
       <div class="row" id="rowCloudType">
         <label>Cloud type</label>
         <select id="cloudType" title="Cloud renderer">
@@ -355,7 +328,29 @@
           title="Sample every N voxels per axis" />
         <label>Alpha max</label><input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1" />
       </div>
-
+      <div class="row">
+        <label>Color scheme</label>
+        <select id="schemeSelect" title="Choose default +/- surface colors">
+          <option value="emory" selected>Emory (gold/blue)</option>
+          <option value="national">National (red/blue)</option>
+          <option value="bright">Bright (yellow/cyan)</option>
+          <option value="electron">Electron (magenta/green)</option>
+          <option value="classic">Classic (blue/red)</option>
+          <option value="custom">Custom (via color pickers)</option>
+        </select>
+        <span></span><span></span>
+      </div>
+      <div class="row">
+        <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
+          title="Speed at which the view rotates" />
+        <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
+      </div>
+      <div class="row">
+        <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
+          Auto-rotate</label>
+        <label style="width:80px">Auto-rotate speed</label><input type="number" id="autoRotSpeed" step="0.1"
+          title="Speed of auto-rotation" />
+      </div>
     </div>
     <div id="sideHeader">
       <div class="title">Coordinates (Å)</div>
@@ -546,20 +541,9 @@
           positions[3 * i + 2] = p[2];
         }
 
-        // Simple UVs from world position for normal mapping (planar projection)
-        const uvs = new Float32Array(unique.length * 2);
-        const cell = estimateCellSize(vol);
-        const texScale = 1.0 / Math.max(1e-6, cell * 4.0);
-        for (let i = 0; i < unique.length; i++) {
-          const x = positions[3 * i + 0], z = positions[3 * i + 2];
-          uvs[2 * i + 0] = x * texScale;
-          uvs[2 * i + 1] = z * texScale;
-        }
-
         const geom = new THREE.BufferGeometry();
         geom.setIndex(new THREE.BufferAttribute(indices, 1));
         geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
         geom.computeVertexNormals();
         return geom;
       }
@@ -642,13 +626,10 @@
       let cloudGroup = new THREE.Group();
       let boxHelper = null;
       let showSurfaces = true; // toggle iso-surface visibility
-      let enableNormals = false; // surface normal map toggle
-      let normalTex = null; // generated normal map texture
       // Default view reference (captured on first non-preserved fit)
       let defaultView = null;
       // Current iso-surface material style
       let surfaceStyle = 'emissive';
-      let negSurfaceScale = 1.0;
       // Content group to allow whole-scene shifting
       const contentGroup = new THREE.Group();
       scene.add(contentGroup);
@@ -752,43 +733,11 @@
       }
 
       // --- Surface material helpers ---
-      function ensureNormalTexture() {
-        if (normalTex) return normalTex;
-        const size = 128, tiles = 6;
-        const data = new Uint8Array(size * size * 3);
-        for (let y = 0; y < size; y++) {
-          for (let x = 0; x < size; x++) {
-            const u = (x + 0.5) / size * tiles * Math.PI * 2.0;
-            const v = (y + 0.5) / size * tiles * Math.PI * 2.0;
-            const h = Math.sin(u) * Math.sin(v); // height field
-            // central differences in texture space
-            const hx = Math.cos(u) * Math.sin(v);
-            const hy = Math.sin(u) * Math.cos(v);
-            // tangent-space normal (approx): (-dh/du, -dh/dv, 1)
-            let nx = -hx, ny = -hy, nz = 1.0;
-            const inv = 1.0 / Math.hypot(nx, ny, nz);
-            nx *= inv; ny *= inv; nz *= inv;
-            const idx = 3 * (y * size + x);
-            data[idx + 0] = Math.round(127.5 * (nx + 1.0));
-            data[idx + 1] = Math.round(127.5 * (ny + 1.0));
-            data[idx + 2] = Math.round(127.5 * (nz + 1.0));
-          }
-        }
-        const tex = new THREE.DataTexture(data, size, size, THREE.RGBFormat);
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        tex.minFilter = THREE.LinearMipMapLinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.generateMipmaps = true;
-        tex.needsUpdate = true;
-        normalTex = tex;
-        return tex;
-      }
-
       function createIsoMaterial(sign, opacity) {
         const col = new THREE.Color(sign === 'neg' ? negColor.value : posColor.value);
         if (surfaceStyle === 'glass') {
           col.multiplyScalar(2);
-          const mat = new THREE.MeshPhysicalMaterial({
+          return new THREE.MeshPhysicalMaterial({
             color: col,
             transmission: 1.0,
             roughness: 0.1,
@@ -800,16 +749,9 @@
             thickness: 1.0,
             side: THREE.DoubleSide,
           });
-          if (enableNormals) {
-            const tex = ensureNormalTexture();
-            mat.normalMap = tex;
-            mat.clearcoatNormalMap = tex;
-            mat.normalScale = new THREE.Vector2(0.35, 0.35);
-          }
-          return mat;
         }
         if (surfaceStyle === 'emissive') {
-          const mat = new THREE.MeshPhysicalMaterial({
+          return new THREE.MeshPhysicalMaterial({
             color: col,
             clearcoat: 1.0,
             clearcoatRoughness: 0.1,
@@ -819,22 +761,9 @@
             transparent: true,
             opacity
           });
-          if (enableNormals) {
-            const tex = ensureNormalTexture();
-            mat.normalMap = tex;
-            mat.clearcoatNormalMap = tex;
-            mat.normalScale = new THREE.Vector2(0.25, 0.25);
-          }
-          return mat;
         }
         // Fallback standard
-        const matStd = new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
-        if (enableNormals) {
-          const tex = ensureNormalTexture();
-          matStd.normalMap = tex;
-          matStd.normalScale = new THREE.Vector2(0.35, 0.35);
-        }
-        return matStd;
+        return new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
       }
 
       // --- Cloud builders ---
@@ -1173,11 +1102,6 @@
       if (styleSelect) {
         styleSelect.value = surfaceStyle;
         styleSelect.onchange = () => { surfaceStyle = styleSelect.value; rebuildScene({ preserveView: true }); };
-      }
-      const enableNormalsEl = document.getElementById('enableNormals');
-      if (enableNormalsEl) {
-        enableNormals = !!enableNormalsEl.checked;
-        enableNormalsEl.onchange = () => { enableNormals = !!enableNormalsEl.checked; if (renderMode === 'surface') rebuildScene({ preserveView: true }); };
       }
 
       // Default color schemes for +/- surfaces
