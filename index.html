@@ -260,6 +260,8 @@
     <canvas id="canvas"></canvas>
   </div>
   <div id="hint">Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
+  <div id="shortcutRibbon" aria-hidden="true"
+    style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid #223; pointer-events:none; z-index:30;"></div>
 
   <!-- Right side panel (toggle) -->
   <div id="sidePanel" aria-hidden="true">
@@ -1108,19 +1110,51 @@
       const cloudTypeSel = document.getElementById('cloudType');
       const cloudStrideEl = document.getElementById('cloudStride');
       const cloudAlphaEl = document.getElementById('cloudAlpha');
+      const shortcutRibbon = document.getElementById('shortcutRibbon');
 
       openBtn.onclick = () => fileInput.click();
       // Toggle surface rendering button
       const updateSurfBtn = () => { surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces'; };
       updateSurfBtn();
+
+      // Keyboard shortcuts registry and ribbon
+      const SHORTCUTS = {
+        default: [
+          { k: 'S', d: 'Save PNG' },
+          { k: 'B', d: 'Batch export' },
+          { k: 'I', d: 'Toggle surfaces' },
+          { k: 'X', d: 'Toggle axes' },
+          { k: '←/→', d: 'Prev/Next file' },
+          { k: '?', d: 'Help' },
+        ],
+        panel: [
+          { k: 'Esc', d: 'Close View/Coords' },
+          { k: 'S', d: 'Save PNG' },
+          { k: 'I', d: 'Toggle surfaces' },
+        ],
+        help: [
+          { k: 'Esc', d: 'Close Help' },
+          { k: '←/→', d: 'Prev/Next file' },
+        ],
+      };
+      let currentShortcutContext = 'default';
+      function renderRibbon(ctx = currentShortcutContext) {
+        currentShortcutContext = ctx;
+        const list = SHORTCUTS[ctx] || SHORTCUTS.default;
+        if (!shortcutRibbon) return;
+        const parts = list.map(s => `<span style="opacity:.85"><span style=\"background:#1a2230; color:#e9f1ff; padding:1px 6px; border:1px solid #2a3546; border-radius:4px;\">${s.k}</span> ${s.d}</span>`);
+        shortcutRibbon.innerHTML = parts.join('<span style="opacity:.35"> • </span>');
+        shortcutRibbon.setAttribute('aria-hidden', 'false');
+      }
+      renderRibbon('default');
       surfBtn.onclick = () => { showSurfaces = !showSurfaces; updateSurfBtn(); rebuildScene({ preserveView: true }); };
-      const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); };
-      const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); } };
+      const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); renderRibbon(sidePanel.classList.contains('open') ? 'panel' : 'default'); };
+      const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); renderRibbon('default'); } };
       panelBtn.onclick = toggleSide;
       sideClose.onclick = toggleSide;
       // Help modal logic
-      function openHelp() { helpOverlay.style.display = 'flex'; helpOverlay.setAttribute('aria-hidden', 'false'); }
-      function closeHelp() { helpOverlay.style.display = 'none'; helpOverlay.setAttribute('aria-hidden', 'true'); }
+      function openHelp() { helpOverlay.style.display = 'flex'; helpOverlay.setAttribute('aria-hidden', 'false'); renderRibbon('help'); }
+      function closeHelp() { helpOverlay.style.display = 'none'; helpOverlay.setAttribute('aria-hidden', 'true'); renderRibbon('default'); }
       if (helpBtn) helpBtn.onclick = openHelp;
       if (helpClose) helpClose.onclick = closeHelp;
       if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
