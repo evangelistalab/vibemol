@@ -832,6 +832,73 @@
         }
       }
 
+      // Shared bond material (reuse for dynamically added cylinders)
+      let __sharedBondMat = null;
+      function getSharedBondMaterial() {
+        if (__sharedBondMat) return __sharedBondMat;
+        if (bondGroup && bondGroup.children) {
+          const m = bondGroup.children.find(o => o.isMesh)?.material;
+          if (m) { __sharedBondMat = m; return __sharedBondMat; }
+        }
+        __sharedBondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.1, metalness: 0.1 });
+        return __sharedBondMat;
+      }
+
+      // Add/remove bonds that involve a moved atom (idx) based on covalent cutoff
+      function adjustBondsConnectivityForAtom(idx) {
+        if (currentIndex < 0 || !volumes[currentIndex]) return;
+        const vol = volumes[currentIndex].vol; if (!vol || !vol.atoms || !bondGroup) return;
+        const atoms = vol.atoms;
+        const toAng = (vol.units === 'angstrom');
+        const toV3 = (a) => new THREE.Vector3(toAng ? a.x : a.x * BOHR_TO_ANG, toAng ? a.y : a.y * BOHR_TO_ANG, toAng ? a.z : a.z * BOHR_TO_ANG);
+        const pI = toV3(atoms[idx]); const zI = (atoms[idx].Z | 0);
+        const bondRadius = 0.12; const up = new THREE.Vector3(0,1,0);
+        const cutoff = (z1, z2) => 1.15 * ((covalentRadius(z1) || 0.7) + (covalentRadius(z2) || 0.7));
+        const want = new Set();
+        for (let j = 0; j < atoms.length; j++) {
+          if (j === idx) continue;
+          const pJ = toV3(atoms[j]);
+          const len = pI.distanceTo(pJ);
+          const cof = cutoff(zI, atoms[j].Z | 0);
+          if (len >= 0.4 && len <= cof) {
+            const i0 = Math.min(idx, j), j0 = Math.max(idx, j);
+            want.add(`${i0}_${j0}`);
+          }
+        }
+        // Existing children map
+        const existing = new Map();
+        for (const obj of bondGroup.children) {
+          if (!obj.isMesh || !obj.userData) continue;
+          const i = obj.userData.i, j = obj.userData.j;
+          if (i == null || j == null) continue;
+          existing.set(`${Math.min(i,j)}_${Math.max(i,j)}`, obj);
+        }
+        // Remove broken (involving idx) not in want
+        const toRemove = [];
+        for (const [k, obj] of existing) {
+          const i = obj.userData.i, j = obj.userData.j;
+          if (i !== idx && j !== idx) continue;
+          if (!want.has(k)) toRemove.push(obj);
+        }
+        for (const obj of toRemove) { bondGroup.remove(obj); obj.geometry?.dispose?.(); existing.delete(`${Math.min(obj.userData.i, obj.userData.j)}_${Math.max(obj.userData.i, obj.userData.j)}`); }
+        // Add missing wanted bonds
+        for (const k of want) {
+          if (existing.has(k)) continue;
+          const [i0s, j0s] = k.split('_'); const i0 = parseInt(i0s,10), j0 = parseInt(j0s,10);
+          const aPos = toV3(atoms[i0]); const bPos = toV3(atoms[j0]);
+          const len = aPos.distanceTo(bPos);
+          const mid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
+          const dir = new THREE.Vector3().subVectors(bPos, aPos);
+          const geom = new THREE.CylinderGeometry(bondRadius, bondRadius, len, 12, 1, false);
+          const cyl = new THREE.Mesh(geom, getSharedBondMaterial());
+          cyl.position.copy(mid);
+          cyl.quaternion.setFromUnitVectors(up, dir.clone().normalize());
+          cyl.userData = { i: i0, j: j0, baseLen: len };
+          bondGroup.add(cyl);
+          existing.set(k, cyl);
+        }
+      }
+
       function buildBox(vol) {
         const [nx, ny, nz] = vol.nxyz;
         // Use cell-corner indexing: far corner at (nx,ny,nz) works visually, but try (nx-1,...) to stay within data
@@ -1354,9 +1421,9 @@
                 const a = vol.atoms[dragAtomIndex];
                 a.x = arr[0]; a.y = arr[1]; a.z = arr[2];
               }
-              // Update bonds in-place at ~30 FPS to minimize flicker
+              // Update bonds/connectivity in-place at ~30 FPS to minimize flicker
               const now = performance.now();
-              if (now - __lastBondUpdate > 33) { updateBondsInPlace(); __lastBondUpdate = now; }
+              if (now - __lastBondUpdate > 33) { adjustBondsConnectivityForAtom(dragAtomIndex); updateBondsInPlace(); __lastBondUpdate = now; }
             }
           }
           return;
