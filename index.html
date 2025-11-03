@@ -946,6 +946,16 @@
         return out;
       }
 
+      function chooseHybridization(heavyCount, val) {
+        if (heavyCount >= 4) return 'sp3';
+        if (heavyCount === 3) return 'sp2';
+        if (heavyCount === 2) return 'sp';
+        if (val >= 4) return 'sp3';
+        if (val === 3) return 'sp2';
+        if (val === 2) return 'sp';
+        return 'sp3';
+      }
+
       function placeHydrogensGeometry(vol, idx, count) {
         if (count <= 0) return true;
         ensureBonds(vol);
@@ -964,11 +974,11 @@
         }
         const val = defaultValence((atoms[idx].Z | 0));
         let base;
-        if (val >= 4) base = sp3Slots();
-        else if (val === 3) base = sp2Slots();
-        else if (val === 2) base = spSlots();
-        else if (val === 1) base = [ new THREE.Vector3(1,0,0) ];
-        else base = null;
+        switch (chooseHybridization(neighbors.length, val)) {
+          case 'sp': base = spSlots(); break;
+          case 'sp2': base = sp2Slots(); break;
+          case 'sp3': default: base = sp3Slots(); break;
+        }
         if (!base) return false;
         // Align to neighbors and mark occupied slots
         const aligned = alignSlotsToNeighbors(base, neighbors);
@@ -1083,10 +1093,11 @@
         // Compute target slots
         const val = defaultValence(ZX);
         let base;
-        if (val >= 4) base = sp3Slots();
-        else if (val === 3) base = sp2Slots();
-        else if (val === 2) base = spSlots();
-        else base = sp3Slots(); // fallback
+        switch (chooseHybridization(heavyDirs.length, val)) {
+          case 'sp': base = spSlots(); break;
+          case 'sp2': base = sp2Slots(); break;
+          case 'sp3': default: base = sp3Slots(); break;
+        }
         const aligned = alignSlotsToNeighbors(base, heavyDirs);
         // Mark slots occupied by heavy neighbors
         const used = new Array(aligned.length).fill(false);
