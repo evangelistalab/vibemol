@@ -226,8 +226,8 @@
 
 <body>
   <div id="toolbar">
-    <label><strong>CUBE files</strong>
-      <input type="file" id="fileInput" accept=".cube,.cub" multiple />
+    <label><strong>CUBE/XYZ files</strong>
+      <input type="file" id="fileInput" accept=".cube,.cub,.xyz" multiple />
       <button id="openBtn" class="secondary">Open…</button>
     </label>
     <label>Active file
@@ -259,7 +259,7 @@
   <div id="drop">
     <canvas id="canvas"></canvas>
   </div>
-  <div id="hint">Drag & drop .cube files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
+  <div id="hint">Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
 
   <!-- Right side panel (toggle) -->
   <div id="sidePanel" aria-hidden="true">
@@ -471,8 +471,40 @@
           nxyz: [numx, numy, numz],
           axes: [ax, ay, az],            // per-voxel step vectors in Bohr
           atoms, data, idx,
+          units: 'bohr',                 // positions stored in Bohr
           isoHint                        // may be null if not present
         };
+      }
+
+      function parseXYZ(text) {
+        const lines = text.replace(/\r/g, '').split('\n');
+        let i = 0;
+        // Optional first line atom count
+        let natoms = 0;
+        if (lines.length > 0) {
+          const maybeN = parseInt((lines[0] || '').trim(), 10);
+          if (!Number.isNaN(maybeN) && maybeN >= 0) {
+            natoms = maybeN | 0; i = 2; // skip count + optional comment
+          }
+        }
+        const atoms = [];
+        for (; i < lines.length; i++) {
+          const l = lines[i].trim();
+          if (!l) continue;
+          const parts = l.split(/\s+/);
+          if (parts.length < 4) continue;
+          const sym = parts[0];
+          const Z = (window.ATOM_SYMBOL_TO_Z && window.ATOM_SYMBOL_TO_Z[sym.toUpperCase()]) || 0;
+          const x = parseFloat(parts[1]);
+          const y = parseFloat(parts[2]);
+          const z = parseFloat(parts[3]);
+          if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+            atoms.push({ Z, q: 0, x, y, z }); // XYZ is in Å already
+          }
+        }
+        if (natoms === 0) natoms = atoms.length;
+        const idx = (i, j, k) => 0;
+        return { title: 'XYZ', comment: '', natoms, origin:[0,0,0], nxyz:[0,0,0], axes:[[1,0,0],[0,1,0],[0,0,1]], atoms, data:new Float32Array(0), idx, units: 'angstrom', kind: 'xyz' };
       }
 
       // (subsample removed)
@@ -653,6 +685,7 @@
         // Covalent radii from atomic data (Å)
         const covR = (z) => (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
         const atomPositions = [];
+        const toAng = (vol.units === 'angstrom');
         for (const a of vol.atoms) {
           const r = covR(a.Z | 0);
           // Element-based color if enabled
@@ -666,7 +699,10 @@
           }
           const mat = new THREE.MeshStandardMaterial({ color: atomColor, roughness: 0.25, metalness: 0.25 });
           const mesh = new THREE.Mesh(sphere, mat);
-          const pos = new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
+          const px = toAng ? a.x : a.x * BOHR_TO_ANG;
+          const py = toAng ? a.y : a.y * BOHR_TO_ANG;
+          const pz = toAng ? a.z : a.z * BOHR_TO_ANG;
+          const pos = new THREE.Vector3(px, py, pz);
           mesh.position.copy(pos);
           mesh.scale.setScalar(r * 1.2);
           group.add(mesh);
@@ -679,8 +715,12 @@
         const group = new THREE.Group();
         const covR = (z) => (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
         const atomPositions = [];
+        const toAng = (vol.units === 'angstrom');
         for (const a of vol.atoms) {
-          const pos = new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
+          const px = toAng ? a.x : a.x * BOHR_TO_ANG;
+          const py = toAng ? a.y : a.y * BOHR_TO_ANG;
+          const pz = toAng ? a.z : a.z * BOHR_TO_ANG;
+          const pos = new THREE.Vector3(px, py, pz);
           atomPositions.push({ pos, Z: a.Z | 0 });
         }
         const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.1, metalness: 0.1 });
@@ -1186,7 +1226,10 @@
         const rows = v.atoms.map((a, i) => {
           const z = a.Z | 0;
           const sym = (window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z] && window.ATOM_Z_TO_DATA[z].symbol) || String(z);
-          const x = a.x * BOHR_TO_ANG, y = a.y * BOHR_TO_ANG, zA = a.z * BOHR_TO_ANG;
+          const toAng = (v.units === 'angstrom');
+          const x = toAng ? a.x : a.x * BOHR_TO_ANG;
+          const y = toAng ? a.y : a.y * BOHR_TO_ANG;
+          const zA = toAng ? a.z : a.z * BOHR_TO_ANG;
           return `<tr><td>${i + 1}</td><td>${sym}</td><td>${(a.Z | 0)}</td><td>${x.toFixed(3)}</td><td>${y.toFixed(3)}</td><td>${zA.toFixed(3)}</td></tr>`;
         }).join('');
         coordsContent.innerHTML = `
@@ -1209,7 +1252,10 @@
         for (const a of atoms) {
           const z = a.Z | 0;
           const sym = (window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z] && window.ATOM_Z_TO_DATA[z].symbol) || String(z);
-          const x = a.x * BOHR_TO_ANG, y = a.y * BOHR_TO_ANG, zA = a.z * BOHR_TO_ANG;
+          const toAng = (v.units === 'angstrom');
+          const x = toAng ? a.x : a.x * BOHR_TO_ANG;
+          const y = toAng ? a.y : a.y * BOHR_TO_ANG;
+          const zA = toAng ? a.z : a.z * BOHR_TO_ANG;
           lines.push(`${sym} ${x.toFixed(6)} ${y.toFixed(6)} ${zA.toFixed(6)}`);
         }
         return lines.join('\n');
@@ -1262,27 +1308,23 @@
         const startIndex = volumes.length; // index of first newly added
         for (const f of arr) {
           const text = await f.text();
-          const vol = parseCube(text);
+          const lower = f.name.toLowerCase();
+          const vol = (lower.endsWith('.xyz')) ? parseXYZ(text) : parseCube(text);
           volumes.push({ name: f.name, vol });
           // adopt hinted iso if the user hasn’t interacted yet
           if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
             isoInput.value = String(vol.isoHint);
           }
           // Debug: print parsed volume info
-          try {
-            const stats = arrayMinMax(vol.data);
-            console.log('[CUBE] Loaded', f.name, {
-              title: vol.title,
-              nxyz: vol.nxyz,
-              origin: vol.origin,
-              axes: vol.axes,
-              natoms: vol.natoms,
-              isoHint: vol.isoHint,
-              min: stats.min,
-              max: stats.max
-            });
-          } catch (e) {
-            console.warn('[CUBE] Stats failed for', f.name, e);
+          if (vol.data && vol.data.length) {
+            try {
+              const stats = arrayMinMax(vol.data);
+              console.log('[CUBE] Loaded', f.name, { title: vol.title, nxyz: vol.nxyz, origin: vol.origin, axes: vol.axes, natoms: vol.natoms, isoHint: vol.isoHint, min: stats.min, max: stats.max });
+            } catch (e) {
+              console.warn('[CUBE] Stats failed for', f.name, e);
+            }
+          } else {
+            console.log('[XYZ] Loaded', f.name, { natoms: vol.natoms });
           }
         }
         refreshFileSelect();
@@ -1369,7 +1411,7 @@
         const vol = volumes[currentIndex].vol;
 
         // Compute robust min/max
-        const { min, max } = arrayMinMax(vol.data);
+        const { min, max } = arrayMinMax(vol.data || []);
 
         // Auto-iso fallback: if requested iso shows nothing, lower it to ~95th percentile of |field|
         let iso = parseFloat(isoInput.value || "0.02");
@@ -1388,7 +1430,8 @@
         const posMat = createIsoMaterial('pos', opacity);
         const negMat = createIsoMaterial('neg', opacity);
 
-        if (renderMode === 'surface' && showSurfaces) {
+        const hasGrid = Array.isArray(vol.nxyz) && (vol.nxyz[0] > 0 && vol.nxyz[1] > 0 && vol.nxyz[2] > 0);
+        if (renderMode === 'surface' && showSurfaces && hasGrid) {
           // Positive iso (+iso value, + color)
           if (max >= iso) {
             const geomP = makeIsosurface(vol, iso);
@@ -1406,7 +1449,7 @@
             contentGroup.add(meshN); meshes.push(meshN);
             if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
           }
-        } else if (renderMode === 'cloud' && showSurfaces) {
+        } else if (renderMode === 'cloud' && showSurfaces && hasGrid) {
           const opts = readCloudOpts();
           cloudGroup = (opts.type === 'points') ? buildCloudPoints(vol, opts) : buildCloudCubes(vol, opts);
           contentGroup.add(cloudGroup);
@@ -1424,7 +1467,7 @@
         }
 
         // Box
-        if (toggleBox.checked) {
+        if (toggleBox.checked && hasGrid) {
           boxHelper = buildBox(vol);
           contentGroup.add(boxHelper);
           console.log('[CUBE] Box helper added');
