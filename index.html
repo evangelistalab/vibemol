@@ -957,7 +957,7 @@
         const neighbors = [];
         for (const b of vol.bonds) {
           const other = (b.i === idx) ? b.j : (b.j === idx ? b.i : -1);
-          if (other >= 0) {
+          if (other >= 0 && ((atoms[other].Z | 0) !== 1)) { // only heavy neighbors for alignment
             const v = atomUnitsToAng(vol, atoms[other]).sub(center).normalize();
             neighbors.push(v);
           }
@@ -1061,6 +1061,88 @@
         }
       }
 
+      function repositionHydrogens(vol, idx) {
+        ensureBonds(vol);
+        const atoms = vol.atoms || [];
+        if (!atoms[idx]) return;
+        const center = atomUnitsToAng(vol, atoms[idx]);
+        const ZX = atoms[idx].Z | 0;
+        if (ZX === 1) return; // not for hydrogen itself
+        // Collect neighbors
+        const hIdx = [];
+        const heavyDirs = [];
+        for (const b of vol.bonds) {
+          if (!(b.i === idx || b.j === idx)) continue;
+          const other = (b.i === idx) ? b.j : b.i;
+          const Z = (atoms[other].Z | 0);
+          const p = atomUnitsToAng(vol, atoms[other]);
+          const d = p.clone().sub(center).normalize();
+          if (Z === 1) hIdx.push(other); else heavyDirs.push(d);
+        }
+        if (hIdx.length === 0) return;
+        // Compute target slots
+        const val = defaultValence(ZX);
+        let base;
+        if (val >= 4) base = sp3Slots();
+        else if (val === 3) base = sp2Slots();
+        else if (val === 2) base = spSlots();
+        else base = sp3Slots(); // fallback
+        const aligned = alignSlotsToNeighbors(base, heavyDirs);
+        // Mark slots occupied by heavy neighbors
+        const used = new Array(aligned.length).fill(false);
+        for (const n of heavyDirs) {
+          let bi = -1, best = -Infinity;
+          for (let i = 0; i < aligned.length; i++) {
+            const d = aligned[i].dot(n);
+            if (d > best) { best = d; bi = i; }
+          }
+          if (bi >= 0) used[bi] = true;
+        }
+        let targets = [];
+        for (let i = 0; i < aligned.length; i++) if (!used[i]) targets.push(aligned[i].clone());
+        // If not enough targets, extend via max-spread around heavyDirs
+        if (targets.length < hIdx.length) {
+          const need = hIdx.length - targets.length;
+          const cand = fibonacciSphereDirs(96);
+          function scoreDir(u) {
+            let s = 1.0;
+            for (const d of heavyDirs) s = Math.min(s, 1 - Math.abs(THREE.MathUtils.clamp(u.dot(d), -1, 1)));
+            for (const d of targets) s = Math.min(s, 1 - Math.abs(THREE.MathUtils.clamp(u.dot(d), -1, 1)));
+            return s;
+          }
+          const chosen = [];
+          for (let k = 0; k < need; k++) {
+            let bestU = cand[0], bestS = -Infinity;
+            for (const u of cand) { const sc = scoreDir(u); if (sc > bestS) { bestS = sc; bestU = u; } }
+            targets.push(bestU.clone());
+            chosen.push(bestU);
+          }
+        } else if (targets.length > hIdx.length) {
+          targets = targets.slice(0, hIdx.length);
+        }
+        // Assign hydrogens to targets to minimize movement
+        const rX = covalentRadius(ZX) || 0.7;
+        const rH = covalentRadius(1) || 0.31;
+        const bondLen = Math.min(1.3, Math.max(0.7, rX + rH));
+        const hDirs = hIdx.map(j => atomUnitsToAng(vol, atoms[j]).sub(center).normalize());
+        const assigned = new Array(hIdx.length).fill(false);
+        for (const t of targets) {
+          let bestI = -1, bestDot = -Infinity;
+          for (let i = 0; i < hDirs.length; i++) {
+            if (assigned[i]) continue;
+            const d = hDirs[i].dot(t);
+            if (d > bestDot) { bestDot = d; bestI = i; }
+          }
+          if (bestI >= 0) {
+            const j = hIdx[bestI];
+            const pos = center.clone().addScaledVector(t, bondLen);
+            const [x, y, z] = worldToAtomUnits(vol, pos);
+            atoms[j].x = x; atoms[j].y = y; atoms[j].z = z;
+            assigned[bestI] = true;
+          }
+        }
+      }
+
       function trimHydrogensIfExcess(vol, idx) {
         if (!autoHydrogens) return;
         ensureBonds(vol);
@@ -1096,6 +1178,7 @@
         if (!autoHydrogens) return;
         trimHydrogensIfExcess(vol, idx);
         addHydrogensIfNeeded(vol, idx);
+        repositionHydrogens(vol, idx);
       }
 
       function clearSceneMeshes() {
