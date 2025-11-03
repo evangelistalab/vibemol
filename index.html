@@ -351,6 +351,11 @@
         <label>Speed</label><input type="number" id="autoRotSpeed" step="1" title="Speed of auto-rotation" />
       </div>
       <div class="row">
+        <label style="width: 80px;">FPS</label>
+        <div id="fpsValue" style="font-variant-numeric: tabular-nums; color: var(--muted);">--</div>
+        <span></span><span></span>
+      </div>
+      <div class="row">
         <label style="width: 80px;">Color scheme</label>
         <select id="schemeSelect" title="Choose default +/- surface colors">
           <option value="emory" selected>Emory (gold/blue)</option>
@@ -368,11 +373,6 @@
           <option value="surface" selected>Surfaces</option>
           <option value="cloud">Cloud</option>
         </select>
-        <span></span><span></span>
-      </div>
-      <div class="row">
-        <label>FPS</label>
-        <div id="fpsValue" style="font-variant-numeric: tabular-nums; color: var(--muted);">--</div>
         <span></span><span></span>
       </div>
       <div class="row" id="rowStyle">
