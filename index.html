@@ -1278,6 +1278,7 @@
       let dragPlaneStart = null;
       let dragAxis = 'none';
       let axisLock = 'none'; // 'none'|'x'|'y'|'z'
+      let axisKeyDown = null; // current held axis key ('x'|'y'|'z') to avoid auto-repeat toggling
 
       const raycaster = new THREE.Raycaster();
       const ndc = new THREE.Vector2();
@@ -1942,21 +1943,28 @@
           }
         }
         if (editMode && !editing) {
-          const prev = axisLock;
-          if (e.key === 'x' || e.key === 'X') axisLock = (axisLock === 'x' ? 'none' : 'x');
-          if (e.key === 'y' || e.key === 'Y') axisLock = (axisLock === 'y' ? 'none' : 'y');
-          if (e.key === 'z' || e.key === 'Z') axisLock = (axisLock === 'z' ? 'none' : 'z');
-          if (axisLock !== prev) {
-            updateAxisButtons();
-            if (dragActive) { dragAxis = axisLock; }
-          }
+          let changed = false;
+          if ((e.key === 'x' || e.key === 'X') && !e.repeat) { axisKeyDown = 'x'; axisLock = 'x'; changed = true; }
+          if ((e.key === 'y' || e.key === 'Y') && !e.repeat) { axisKeyDown = 'y'; axisLock = 'y'; changed = true; }
+          if ((e.key === 'z' || e.key === 'Z') && !e.repeat) { axisKeyDown = 'z'; axisLock = 'z'; changed = true; }
+          if (changed) { updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
         }
-        if ((e.key === 'e' || e.key === 'E') && !editing) {
-          editMode = !editMode;
-          axisLock = 'none'; updateAxisButtons();
-          renderRibbon(editMode ? 'edit' : 'default');
-          if (!editMode) { clearHover(); }
-        }
+      if ((e.key === 'e' || e.key === 'E') && !editing) {
+        editMode = !editMode;
+        axisLock = 'none'; updateAxisButtons();
+        renderRibbon(editMode ? 'edit' : 'default');
+        if (!editMode) { clearHover(); }
+      }
+
+      // Release axis lock on keyup (prevents flip-flop when holding key)
+      window.addEventListener('keyup', (ev) => {
+        const tag2 = (document.activeElement && document.activeElement.tagName) || '';
+        const editing2 = tag2 === 'INPUT' || tag2 === 'TEXTAREA' || tag2 === 'SELECT';
+        if (!editMode || editing2) return;
+        if ((ev.key === 'x' || ev.key === 'X') && axisKeyDown === 'x') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
+        if ((ev.key === 'y' || ev.key === 'Y') && axisKeyDown === 'y') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
+        if ((ev.key === 'z' || ev.key === 'Z') && axisKeyDown === 'z') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
+      });
 
         // Arrow keys: switch files (preserve camera)
         if (!editing && volumes.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
