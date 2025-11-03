@@ -1298,6 +1298,27 @@
       }
       function clearHover() { setHover(null); }
 
+      // Compute closest point on axis line to the camera ray (robust for all view angles)
+      function closestTOnAxisForRay(p0, axis, ray) {
+        const ax = axis.clone().normalize();
+        const ro = ray.origin.clone();
+        const rd = ray.direction.clone().normalize();
+        const v = ro.sub(p0);
+        const a = 1.0;                 // ax normalized
+        const b = ax.dot(rd);
+        const c = 1.0;                 // rd normalized
+        const d = ax.dot(v);
+        const e = rd.dot(v);
+        const D = b * b - a * c;       // = b^2 - 1
+        if (Math.abs(D) < 1e-8) {
+          // Nearly parallel: fallback to simple projection of v onto axis
+          return d; // since a == 1
+        }
+        // Derived from two-line closest points system
+        const t = (-c * d + b * e) / D;
+        return t;
+      }
+
       function updateAxisButtons() {
         if (!axisLockEl) return;
         axisLockEl.style.display = editMode ? 'flex' : 'none';
@@ -1326,18 +1347,8 @@
           let newPos = null;
           if (dragAxis !== 'none') {
             const ax = dragAxis === 'x' ? new THREE.Vector3(1,0,0) : dragAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
-            // Build a plane that contains the axis and the ray
-            const rayDir = raycaster.ray.direction.clone().normalize();
-            let n = new THREE.Vector3().crossVectors(ax, rayDir);
-            if (n.lengthSq() < 1e-8) { // degenerate, pick a fallback
-              n = new THREE.Vector3().crossVectors(ax, new THREE.Vector3(0,1,0));
-              if (n.lengthSq() < 1e-8) n = new THREE.Vector3().crossVectors(ax, new THREE.Vector3(1,0,0));
-            }
-            const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(n.normalize(), dragStartPos);
-            if (raycaster.ray.intersectPlane(plane, hit)) {
-              const t = hit.clone().sub(dragStartPos).dot(ax);
-              newPos = dragStartPos.clone().add(ax.multiplyScalar(t));
-            }
+            const t = closestTOnAxisForRay(dragStartPos, ax, raycaster.ray);
+            newPos = dragStartPos.clone().add(ax.multiplyScalar(t));
           } else if (dragPlane && raycaster.ray.intersectPlane(dragPlane, hit)) {
             const move = hit.clone().sub(dragPlaneStart);
             newPos = dragStartPos.clone().add(move);
