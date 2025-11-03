@@ -330,6 +330,11 @@
         </select>
         <span></span><span></span>
       </div>
+      <div class="row">
+        <label>FPS</label>
+        <div id="fpsValue" style="font-variant-numeric: tabular-nums; color: var(--muted);">--</div>
+        <span></span><span></span>
+      </div>
       <div class="row" id="rowStyle">
         <label style="width: 80px;">Surface style</label>
         <select id="styleSelect" title="Choose iso-surface material style">
@@ -1323,8 +1328,26 @@
         controls.update();
       }
 
+      // Simple FPS meter (EMA smoothed)
+      let __fpsLast = performance.now();
+      let __fpsAccMs = 0;
+      let __fpsFrames = 0;
+      let __fpsEMA = 0;
+
       function render() {
         controls.update();
+
+        // FPS update
+        const now = performance.now();
+        const dt = now - __fpsLast; __fpsLast = now;
+        __fpsAccMs += dt; __fpsFrames += 1;
+        if (__fpsAccMs >= 500) {
+          const inst = (__fpsFrames * 1000) / __fpsAccMs;
+          __fpsEMA = (__fpsEMA === 0) ? inst : (__fpsEMA * 0.8 + inst * 0.2);
+          const el = document.getElementById('fpsValue');
+          if (el) el.textContent = __fpsEMA.toFixed(1);
+          __fpsAccMs = 0; __fpsFrames = 0;
+        }
 
         // Main scene
         renderer.clear();
