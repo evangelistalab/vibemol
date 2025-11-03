@@ -786,11 +786,37 @@
       const tmpQ = new THREE.Quaternion();
       const tmpUp = new THREE.Vector3(0,1,0);
 
-      // Drag-bond preview
-      let dragFromAtom = null; // index
+      // Drag-bond preview / hover highlight
+      let dragFromAtom = null; // index for drag origin
       let dragGhost = null;    // Mesh (preview atom)
       let dragBond = null;     // Mesh (preview bond)
-      let dragSnapTo = null;   // index
+      let dragSnapTo = null;   // index to snap target
+      let dragActive = false;  // becomes true after small movement threshold
+      let createdStartAtomOnDown = false; // created a new atom on pointerdown
+      let lastHoverMesh = null; // hovered atom mesh for highlight
+
+      function clearHover() {
+        if (lastHoverMesh && lastHoverMesh.material && lastHoverMesh.material.emissive) {
+          const prev = lastHoverMesh.userData.prevEmissive;
+          if (prev) lastHoverMesh.material.emissive.copy(prev);
+        }
+        lastHoverMesh = null;
+      }
+
+      function setHover(mesh) {
+        if (!editEnabled) return;
+        if (mesh === lastHoverMesh) return;
+        if (lastHoverMesh && lastHoverMesh.material && lastHoverMesh.material.emissive) {
+          const prev = lastHoverMesh.userData.prevEmissive;
+          if (prev) lastHoverMesh.material.emissive.copy(prev);
+        }
+        lastHoverMesh = null;
+        if (mesh && mesh.material && mesh.material.emissive) {
+          mesh.userData.prevEmissive = mesh.material.emissive.clone();
+          mesh.material.emissive.set(0xffff66);
+          lastHoverMesh = mesh;
+        }
+      }
 
       function ensureBonds(vol) {
         if (Array.isArray(vol.bonds)) return;
@@ -1637,6 +1663,8 @@
         if (e.button === 0) downPos = { x: e.clientX, y: e.clientY };
         else downPos = null;
         if (!editEnabled) return;
+        dragActive = false;
+        createdStartAtomOnDown = false;
         // Begin edit interactions
         ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
         ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
@@ -1647,16 +1675,24 @@
           if (atomHits.length > 0) {
             const h = atomHits[0].object;
             if (h && h.userData && h.userData.type === 'atom') {
+              // Start possible drag from existing atom; preview will appear once movement exceeds threshold
               dragFromAtom = h.userData.index;
-              // Create preview ghost
-              const ghostGeo = new THREE.SphereGeometry(0.4, 18, 10);
-              const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
-              dragGhost = new THREE.Mesh(ghostGeo, ghostMat);
-              contentGroup.add(dragGhost);
-              const bondGeo = new THREE.CylinderGeometry(0.08, 0.08, 1, 12);
-              const bondMat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.7 });
-              dragBond = new THREE.Mesh(bondGeo, bondMat);
-              contentGroup.add(dragBond);
+              controls.enabled = false;
+              return;
+            }
+          }
+          // Not on an atom: create a new atom at the clicked point (on target plane), and prepare for drag
+          const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
+          if (vol && Array.isArray(vol.atoms)) {
+            const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), controls.target.clone());
+            const hit = new THREE.Vector3();
+            if (raycaster.ray.intersectPlane(plane, hit)) {
+              const [x, y, z] = worldToAtomUnits(vol, hit);
+              vol.atoms.push({ Z: selectedZ || symToZ(selectedElement), q: 0, x, y, z });
+              dragFromAtom = vol.atoms.length - 1;
+              createdStartAtomOnDown = true;
+              // Show the newly created atom immediately
+              rebuildScene({ preserveView: true });
               controls.enabled = false;
             }
           }
@@ -1677,11 +1713,11 @@
           const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
           if (vol && Array.isArray(vol.atoms)) {
             if (dragFromAtom != null) {
-              // Finalize bond creation
+              // Finalize if there was an actual drag; otherwise treat as a click
               const a0 = atomUnitsToAng(vol, vol.atoms[dragFromAtom]);
               let targetIndex = dragSnapTo;
               let placePos = null;
-              if (targetIndex == null) {
+              if (targetIndex == null && dragActive) {
                 // Intersect plane through origin atom, normal camera dir
                 const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), a0.clone());
                 const hit = new THREE.Vector3();
@@ -1691,8 +1727,7 @@
               // cleanup preview
               if (dragGhost) { contentGroup.remove(dragGhost); dragGhost.geometry.dispose(); dragGhost.material.dispose(); dragGhost = null; }
               if (dragBond) { contentGroup.remove(dragBond); dragBond.geometry.dispose(); dragBond.material.dispose(); dragBond = null; }
-              // Create bond (and possibly new atom)
-              if (targetIndex != null && targetIndex !== dragFromAtom) {
+              if (dragActive && targetIndex != null && targetIndex !== dragFromAtom) {
                 const ai = dragFromAtom, aj = targetIndex;
                 let order = 1;
                 if (newBondOrderSetting === 'auto') {
@@ -1703,8 +1738,8 @@
                 addBond(vol, ai, aj, order);
                 if (autoHydrogens) { trimHydrogensIfExcess(vol, ai); trimHydrogensIfExcess(vol, aj); }
                 rebuildScene({ preserveView: true });
-              } else if (placePos) {
-                // Create new atom and bond
+              } else if (dragActive && placePos) {
+                // Drag created a new atom and bond target
                 const [x, y, z] = worldToAtomUnits(vol, placePos);
                 const newAtom = { Z: selectedZ || symToZ(selectedElement), q: 0, x, y, z };
                 vol.atoms.push(newAtom);
@@ -1718,8 +1753,23 @@
                 addBond(vol, ai, aj, order);
                 addHydrogensIfNeeded(vol, aj);
                 rebuildScene({ preserveView: true });
+              } else if (!dragActive) {
+                // No actual drag: treat as a simple click
+                if (createdStartAtomOnDown) {
+                  // We already placed a new atom on down; finalize H adjustment
+                  const idx = dragFromAtom;
+                  addHydrogensIfNeeded(vol, idx);
+                  rebuildScene({ preserveView: true });
+                } else {
+                  // Clicked on existing atom: change element
+                  const idx = dragFromAtom;
+                  vol.atoms[idx].Z = selectedZ || symToZ(selectedElement);
+                  if (autoHydrogens) { addHydrogensIfNeeded(vol, idx); trimHydrogensIfExcess(vol, idx); }
+                  rebuildScene({ preserveView: true });
+                }
               }
               dragFromAtom = null; dragSnapTo = null;
+              dragActive = false; createdStartAtomOnDown = false;
             } else {
               // Click without drag: atom change, bond cycle, or add atom in empty space
               // Try bond click
@@ -1760,17 +1810,36 @@
       });
       drop.addEventListener('pointermove', (e) => {
         if (!editEnabled) return;
-        if (dragFromAtom == null) return;
         ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
         ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
         raycaster.setFromCamera(ndc, camera);
+        // Hover highlight
+        const hoverHits = raycaster.intersectObjects(atomGroup.children, false);
+        setHover(hoverHits.length > 0 ? hoverHits[0].object : null);
+
         const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
-        if (!vol) return;
+        if (!vol || dragFromAtom == null) return;
+        const moved = downPos ? (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) > 4) : true;
+        if (!dragActive && moved) {
+          dragActive = true;
+          // Create preview assets lazily
+          if (!dragGhost) {
+            const ghostGeo = new THREE.SphereGeometry(0.4, 18, 10);
+            const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+            dragGhost = new THREE.Mesh(ghostGeo, ghostMat);
+            contentGroup.add(dragGhost);
+          }
+          if (!dragBond) {
+            const bondGeo = new THREE.CylinderGeometry(0.08, 0.08, 1, 12);
+            const bondMat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.7 });
+            dragBond = new THREE.Mesh(bondGeo, bondMat);
+            contentGroup.add(dragBond);
+          }
+        }
         const a0 = atomUnitsToAng(vol, vol.atoms[dragFromAtom]);
         // Try snap to other atom
-        const atomHits = raycaster.intersectObjects(atomGroup.children, false);
-        if (atomHits.length > 0) {
-          const h = atomHits[0].object;
+        if (hoverHits.length > 0) {
+          const h = hoverHits[0].object;
           if (h && h.userData && h.userData.type === 'atom') {
             const idx = h.userData.index;
             if (idx !== dragFromAtom) {
@@ -1779,10 +1848,12 @@
               const bPos = atomUnitsToAng(vol, vol.atoms[idx]);
               const mid = tmpV.copy(a0).add(bPos).multiplyScalar(0.5);
               const len = a0.distanceTo(bPos);
-              dragBond.position.copy(mid);
-              dragBond.scale.set(1, len, 1);
-              dragBond.quaternion.setFromUnitVectors(tmpUp, tmpV.copy(bPos).sub(a0).normalize());
-              dragGhost.visible = false;
+              if (dragBond) {
+                dragBond.position.copy(mid);
+                dragBond.scale.set(1, len, 1);
+                dragBond.quaternion.setFromUnitVectors(tmpUp, tmpV.copy(bPos).sub(a0).normalize());
+              }
+              if (dragGhost) dragGhost.visible = false;
               return;
             }
           }
@@ -1793,13 +1864,14 @@
         const hit = new THREE.Vector3();
         raycaster.ray.intersectPlane(plane, hit);
         if (hit) {
-          dragGhost.visible = true;
-          dragGhost.position.copy(hit);
+          if (dragGhost) { dragGhost.visible = true; dragGhost.position.copy(hit); }
           const mid = tmpV.copy(a0).add(hit).multiplyScalar(0.5);
           const len = a0.distanceTo(hit);
-          dragBond.position.copy(mid);
-          dragBond.scale.set(1, len, 1);
-          dragBond.quaternion.setFromUnitVectors(tmpUp, tmpV.copy(hit).sub(a0).normalize());
+          if (dragBond) {
+            dragBond.position.copy(mid);
+            dragBond.scale.set(1, len, 1);
+            dragBond.quaternion.setFromUnitVectors(tmpUp, tmpV.copy(hit).sub(a0).normalize());
+          }
         }
       });
       // Delete with right-click
@@ -1966,6 +2038,7 @@
         }
         console.log('[CUBE] Rebuilt scene. iso=', iso, 'opacity=', opacity, 'min/max=', min, max);
         updateSidePanel();
+        clearHover();
       }
 
       function updateOpacityAndColors() {
