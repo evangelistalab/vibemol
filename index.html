@@ -215,12 +215,14 @@
     #hint {
       position: fixed;
       left: 12px;
-      bottom: 40px; /* sit above the shortcuts ribbon */
+      bottom: 40px;
+      /* sit above the shortcuts ribbon */
       color: #9ab;
       background: #0f141d90;
       padding: 6px 8px;
       border-radius: 6px;
-      z-index: 31; /* above the ribbon (z-index:30) */
+      z-index: 31;
+      /* above the ribbon (z-index:30) */
     }
 
     /* Edit axis lock widget */
@@ -236,6 +238,7 @@
       border-radius: 8px;
       z-index: 32;
     }
+
     #axisLock button {
       pointer-events: auto;
       background: #1a2230;
@@ -246,7 +249,10 @@
       font-weight: 600;
       cursor: pointer;
     }
-    #axisLock button.active { background: #2c3a52; }
+
+    #axisLock button.active {
+      background: #2c3a52;
+    }
   </style>
 </head>
 
@@ -293,7 +299,8 @@
     <button id="axisZ" title="Lock movement to Z">Z</button>
   </div>
   <div id="shortcutRibbon" aria-hidden="true"
-    style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid #223; pointer-events:none; z-index:30;"></div>
+    style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid #223; pointer-events:none; z-index:30;">
+  </div>
 
   <!-- Right side panel (toggle) -->
   <div id="sidePanel" aria-hidden="true">
@@ -543,7 +550,7 @@
         }
         if (natoms === 0) natoms = atoms.length;
         const idx = (i, j, k) => 0;
-        return { title: 'XYZ', comment: '', natoms, origin:[0,0,0], nxyz:[0,0,0], axes:[[1,0,0],[0,1,0],[0,0,1]], atoms, data:new Float32Array(0), idx, units: 'angstrom', kind: 'xyz' };
+        return { title: 'XYZ', comment: '', natoms, origin: [0, 0, 0], nxyz: [0, 0, 0], axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], atoms, data: new Float32Array(0), idx, units: 'angstrom', kind: 'xyz' };
       }
 
       // (subsample removed)
@@ -807,7 +814,7 @@
         const vol = volumes[currentIndex].vol; if (!vol) return;
         const toAng = (vol.units === 'angstrom');
         const toV3 = (a) => new THREE.Vector3(toAng ? a.x : a.x * BOHR_TO_ANG, toAng ? a.y : a.y * BOHR_TO_ANG, toAng ? a.z : a.z * BOHR_TO_ANG);
-        const up = new THREE.Vector3(0,1,0);
+        const up = new THREE.Vector3(0, 1, 0);
         for (const obj of bondGroup.children) {
           if (!obj.isMesh || !obj.userData) continue;
           const { i, j, baseLen } = obj.userData;
@@ -1095,7 +1102,7 @@
         renderer.clear();
         renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
         renderer.setScissorTest(false);
-      renderer.render(scene, camera);
+        renderer.render(scene, camera);
 
         // FPS update
         const now = performance.now();
@@ -1329,8 +1336,8 @@
           if (dragPlane && raycaster.ray.intersectPlane(dragPlane, hit)) {
             const move = hit.clone().sub(dragPlaneStart);
             if (dragAxis !== 'none') {
-              const ax = dragAxis === 'x' ? new THREE.Vector3(1,0,0) : dragAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
-              const t = move.dot(ax);
+              const ax = dragAxis === 'x' ? new THREE.Vector3(1, 0, 0) : dragAxis === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+              const t = move.x;
               newPos = dragStartPos.clone().add(ax.multiplyScalar(t));
             } else {
               newPos = dragStartPos.clone().add(move);
