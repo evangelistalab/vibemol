@@ -467,6 +467,23 @@
         // Split lines, handle CRLF
         const lines = text.replace(/\r/g, '').split('\n');
 
+        // ORCA-specific quirk: some ORCA CUBE files include an extra header
+        // line at the 9th line (1-based indexing) that contains only two numbers.
+        // Detect ORCA from the first line and, if present, remove that line so
+        // that atom records start where we expect.
+        try {
+          const isORCA = /ORCA/i.test(lines[0] || '');
+          const l9 = (lines[8] || '').trim();
+          if (isORCA && l9) {
+            const parts = l9.split(/\s+/);
+            const twoNums = parts.length === 2 && parts.every(s => isFinite(parseFloat(s)));
+            if (twoNums) {
+              // Remove the 9th line so downstream fixed indexing remains valid
+              lines.splice(8, 1);
+            }
+          }
+        } catch { /* keep default if anything goes wrong */ }
+
         if (lines.length < 6) throw new Error("Not enough lines for a CUBE file.");
 
         const title = lines[0];
