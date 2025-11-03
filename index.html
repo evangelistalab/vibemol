@@ -416,7 +416,10 @@
       style="background:var(--panel); color:var(--text); width:min(680px,92vw); max-height:80vh; overflow:auto; border:1px solid #223; border-radius:10px; box-shadow:0 10px 30px #000a;">
       <div
         style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #223;">
-        <div style="font-weight:700;">Help & Shortcuts</div>
+        <div style="font-weight:700;">
+          Help & Shortcuts
+          <span id="versionText" style="font-weight:500; font-size:12px; opacity:.75; margin-left:8px;"></span>
+        </div>
         <button id="helpClose" class="secondary" title="Close">✕</button>
       </div>
       <div style="padding:12px 14px; font-size:13px; line-height:1.45;">
@@ -452,6 +455,8 @@
     (function () {
       // --- Constants & helpers ---
       const BOHR_TO_ANG = 0.529177210903;
+      // App version displayed in Help
+      const APP_VERSION = 'v0.1.0';
 
       function arrayMinMax(a) {
         let min = Infinity, max = -Infinity;
@@ -1193,6 +1198,8 @@
       const sideClose = document.getElementById('sideClose');
       const helpOverlay = document.getElementById('helpOverlay');
       const helpClose = document.getElementById('helpClose');
+      const versionText = document.getElementById('versionText');
+      if (versionText) versionText.textContent = APP_VERSION;
       const coordsContent = document.getElementById('coordsContent');
       const copyXYZBtn = document.getElementById('copyXYZ');
       const downloadXYZBtn = document.getElementById('downloadXYZ');
