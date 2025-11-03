@@ -801,19 +801,28 @@
         return group;
       }
 
-      // Rebuild bonds only (keeps atoms/surfaces as-is to avoid flicker)
-      function rebuildBondsOnly() {
-        if (currentIndex < 0 || !volumes[currentIndex]) return;
-        const vol = volumes[currentIndex].vol;
-        if (!vol) return;
-        contentGroup.remove(bondGroup);
-        // dispose previous to avoid leaks
-        bondGroup.traverse(obj => {
-          if (obj.isMesh) { obj.geometry?.dispose?.(); obj.material?.dispose?.(); }
-        });
-        bondGroup.clear();
-        bondGroup = buildBonds(vol);
-        contentGroup.add(bondGroup);
+      // Update existing bond cylinders transforms in place (to avoid flicker)
+      function updateBondsInPlace() {
+        if (!bondGroup || !bondGroup.children || currentIndex < 0 || !volumes[currentIndex]) return;
+        const vol = volumes[currentIndex].vol; if (!vol) return;
+        const toAng = (vol.units === 'angstrom');
+        const toV3 = (a) => new THREE.Vector3(toAng ? a.x : a.x * BOHR_TO_ANG, toAng ? a.y : a.y * BOHR_TO_ANG, toAng ? a.z : a.z * BOHR_TO_ANG);
+        const up = new THREE.Vector3(0,1,0);
+        for (const obj of bondGroup.children) {
+          if (!obj.isMesh || !obj.userData) continue;
+          const { i, j, baseLen } = obj.userData;
+          if (i == null || j == null) continue;
+          const ai = vol.atoms[i]; const aj = vol.atoms[j];
+          if (!ai || !aj) continue;
+          const aPos = toV3(ai); const bPos = toV3(aj);
+          const dir = new THREE.Vector3().subVectors(bPos, aPos);
+          const len = dir.length(); if (len < 1e-6) continue;
+          const mid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
+          obj.position.copy(mid);
+          obj.quaternion.setFromUnitVectors(up, dir.normalize());
+          const s = len / (obj.userData.baseLen || len);
+          obj.scale.set(1, s, 1);
+        }
       }
 
       function buildBox(vol) {
@@ -1260,6 +1269,7 @@
       let dragOrigAtomUnits = null;
       let dragPlane = null;
       let dragPlaneStart = null;
+      let dragAxis = 'none';
       let axisLock = 'none'; // 'none'|'x'|'y'|'z'
 
       const raycaster = new THREE.Raycaster();
@@ -1313,14 +1323,26 @@
           setNDCFromEvent(e);
           raycaster.setFromCamera(ndc, camera);
           const hit = new THREE.Vector3();
-          if (dragPlane && raycaster.ray.intersectPlane(dragPlane, hit)) {
-            const move = hit.clone().sub(dragPlaneStart);
-            let newPos = dragStartPos.clone().add(move);
-            if (axisLock !== 'none') {
-              const ax = axisLock === 'x' ? new THREE.Vector3(1,0,0) : axisLock === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
-              const t = move.dot(ax);
+          let newPos = null;
+          if (dragAxis !== 'none') {
+            const ax = dragAxis === 'x' ? new THREE.Vector3(1,0,0) : dragAxis === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
+            // Build a plane that contains the axis and the ray
+            const rayDir = raycaster.ray.direction.clone().normalize();
+            let n = new THREE.Vector3().crossVectors(ax, rayDir);
+            if (n.lengthSq() < 1e-8) { // degenerate, pick a fallback
+              n = new THREE.Vector3().crossVectors(ax, new THREE.Vector3(0,1,0));
+              if (n.lengthSq() < 1e-8) n = new THREE.Vector3().crossVectors(ax, new THREE.Vector3(1,0,0));
+            }
+            const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(n.normalize(), dragStartPos);
+            if (raycaster.ray.intersectPlane(plane, hit)) {
+              const t = hit.clone().sub(dragStartPos).dot(ax);
               newPos = dragStartPos.clone().add(ax.multiplyScalar(t));
             }
+          } else if (dragPlane && raycaster.ray.intersectPlane(dragPlane, hit)) {
+            const move = hit.clone().sub(dragPlaneStart);
+            newPos = dragStartPos.clone().add(move);
+          }
+          if (newPos) {
             // Apply to mesh and data (defer full rebuild until pointerup to avoid flicker)
             if (dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
               const m = atomGroup.children[dragAtomIndex];
@@ -1332,7 +1354,7 @@
               }
               // Update bonds in-place at ~30 FPS to minimize flicker
               const now = performance.now();
-              if (now - __lastBondUpdate > 33) { rebuildBondsOnly(); __lastBondUpdate = now; }
+              if (now - __lastBondUpdate > 33) { updateBondsInPlace(); __lastBondUpdate = now; }
             }
           }
           return;
@@ -1360,6 +1382,7 @@
         dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, dragStartPos);
         const hit = new THREE.Vector3(); raycaster.ray.intersectPlane(dragPlane, hit);
         dragPlaneStart = hit.clone();
+        dragAxis = axisLock;
         e.preventDefault();
       });
 
@@ -1367,7 +1390,7 @@
         if (!dragActive) return;
         // Final rebuild to update bonds/geometry once after drag
         rebuildScene({ preserveView: true });
-        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null;
+        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
         controls.enabled = true;
         if (editMode) renderRibbon('edit');
       });
@@ -1918,9 +1941,14 @@
           }
         }
         if (editMode && !editing) {
-          if (e.key === 'x' || e.key === 'X') { axisLock = (axisLock === 'x' ? 'none' : 'x'); updateAxisButtons(); }
-          if (e.key === 'y' || e.key === 'Y') { axisLock = (axisLock === 'y' ? 'none' : 'y'); updateAxisButtons(); }
-          if (e.key === 'z' || e.key === 'Z') { axisLock = (axisLock === 'z' ? 'none' : 'z'); updateAxisButtons(); }
+          const prev = axisLock;
+          if (e.key === 'x' || e.key === 'X') axisLock = (axisLock === 'x' ? 'none' : 'x');
+          if (e.key === 'y' || e.key === 'Y') axisLock = (axisLock === 'y' ? 'none' : 'y');
+          if (e.key === 'z' || e.key === 'Z') axisLock = (axisLock === 'z' ? 'none' : 'z');
+          if (axisLock !== prev) {
+            updateAxisButtons();
+            if (dragActive) { dragAxis = axisLock; }
+          }
         }
         if ((e.key === 'e' || e.key === 'E') && !editing) {
           editMode = !editMode;
