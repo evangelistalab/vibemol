@@ -782,6 +782,11 @@
 
       const raycaster = new THREE.Raycaster();
       const ndc = new THREE.Vector2();
+      function setNDCFromEvent(e) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      }
       const tmpV = new THREE.Vector3();
       const tmpQ = new THREE.Quaternion();
       const tmpUp = new THREE.Vector3(0,1,0);
@@ -1666,8 +1671,7 @@
         dragActive = false;
         createdStartAtomOnDown = false;
         // Begin edit interactions
-        ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
-        ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        setNDCFromEvent(e);
         raycaster.setFromCamera(ndc, camera);
         // Try atoms first
         const atomHits = raycaster.intersectObjects(atomGroup.children, false);
@@ -1707,8 +1711,7 @@
         // Finish edit interactions
         if (editEnabled) {
           controls.enabled = !editEnabled;
-          ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
-          ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+          setNDCFromEvent(e);
           raycaster.setFromCamera(ndc, camera);
           const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
           if (vol && Array.isArray(vol.atoms)) {
@@ -1810,8 +1813,7 @@
       });
       drop.addEventListener('pointermove', (e) => {
         if (!editEnabled) return;
-        ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
-        ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        setNDCFromEvent(e);
         raycaster.setFromCamera(ndc, camera);
         // Hover highlight
         const hoverHits = raycaster.intersectObjects(atomGroup.children, false);
@@ -1878,8 +1880,7 @@
       drop.addEventListener('contextmenu', (e) => {
         if (!editEnabled) return;
         e.preventDefault();
-        ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
-        ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        setNDCFromEvent(e);
         raycaster.setFromCamera(ndc, camera);
         const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
         if (!vol) return false;
