@@ -858,8 +858,11 @@
       }
 
       function removeBond(vol, hitBondIndex) {
-        if (!vol.bonds) return;
-        if (hitBondIndex >= 0 && hitBondIndex < vol.bonds.length) vol.bonds.splice(hitBondIndex, 1);
+        if (!vol.bonds) return null;
+        if (hitBondIndex >= 0 && hitBondIndex < vol.bonds.length) {
+          return vol.bonds.splice(hitBondIndex, 1)[0] || null;
+        }
+        return null;
       }
 
       function removeAtom(vol, idx) {
@@ -878,6 +881,64 @@
         }
       }
 
+      function fibonacciSphereDirs(n) {
+        const dirs = [];
+        const g = (1 + Math.sqrt(5)) / 2; // golden ratio
+        for (let i = 0; i < n; i++) {
+          const t = i / Math.max(1, n);
+          const z = 1 - 2 * t;
+          const r = Math.sqrt(Math.max(0, 1 - z * z));
+          const phi = 2 * Math.PI * i / g;
+          dirs.push(new THREE.Vector3(r * Math.cos(phi), z, r * Math.sin(phi)));
+        }
+        return dirs;
+      }
+
+      function placeHydrogensMaxSpread(vol, idx, count) {
+        if (count <= 0) return;
+        ensureBonds(vol);
+        const atoms = vol.atoms;
+        const center = atomUnitsToAng(vol, atoms[idx]);
+        // Determine target bond length (Å) ~ covalent radii sum
+        const rX = covalentRadius(atoms[idx].Z | 0) || 0.7;
+        const rH = covalentRadius(1) || 0.31;
+        const bondLen = Math.min(1.3, Math.max(0.7, rX + rH));
+        // Existing neighbor directions
+        const neighbors = [];
+        for (const b of vol.bonds) {
+          const other = (b.i === idx) ? b.j : (b.j === idx ? b.i : -1);
+          if (other >= 0) {
+            const p = atomUnitsToAng(vol, atoms[other]);
+            const d = p.clone().sub(center).normalize();
+            neighbors.push(d);
+          }
+        }
+        // Greedy pick candidates far from neighbors and prior picks
+        const candidates = fibonacciSphereDirs(96);
+        const chosen = [];
+        function scoreDir(u) {
+          let best = 1.0;
+          for (const d of neighbors) { best = Math.min(best, 1 - Math.abs(THREE.MathUtils.clamp(u.dot(d), -1, 1))); }
+          for (const d of chosen) { best = Math.min(best, 1 - Math.abs(THREE.MathUtils.clamp(u.dot(d), -1, 1))); }
+          return best;
+        }
+        for (let k = 0; k < count; k++) {
+          let bestU = candidates[0];
+          let bestS = -Infinity;
+          for (const u of candidates) {
+            const s = scoreDir(u);
+            if (s > bestS) { bestS = s; bestU = u; }
+          }
+          chosen.push(bestU.clone());
+          // Place hydrogen
+          const pos = center.clone().addScaledVector(bestU, bondLen);
+          const [x, y, z] = worldToAtomUnits(vol, pos);
+          atoms.push({ Z: 1, q: 0, x, y, z });
+          const j = atoms.length - 1;
+          addBond(vol, idx, j, 1);
+        }
+      }
+
       function addHydrogensIfNeeded(vol, idx) {
         if (!autoHydrogens) return;
         const atoms = vol.atoms || [];
@@ -893,18 +954,7 @@
         }
         let need = Math.max(0, val - used);
         if (need <= 0) return;
-        // Place hydrogens around idx, radial placement
-        const origin = atomUnitsToAng(vol, atoms[idx]);
-        for (let n = 0; n < need; n++) {
-          const angle = (n / need) * Math.PI * 2;
-          const dir = new THREE.Vector3(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
-          const dist = 1.0; // ~1 Å
-          const pos = origin.clone().addScaledVector(dir, dist);
-          const [x, y, z] = worldToAtomUnits(vol, pos);
-          atoms.push({ Z: 1, q: 0, x, y, z });
-          const j = atoms.length - 1;
-          addBond(vol, idx, j, 1);
-        }
+        placeHydrogensMaxSpread(vol, idx, need);
       }
 
       function trimHydrogensIfExcess(vol, idx) {
@@ -914,24 +964,34 @@
         const Zi = (atoms[idx] && atoms[idx].Z) | 0;
         const val = defaultValence(Zi);
         if (val <= 0) return;
-        let used = 0;
-        const hydrogens = [];
-        for (let bi = 0; bi < vol.bonds.length; bi++) {
-          const b = vol.bonds[bi];
-          if (b.i === idx || b.j === idx) {
-            used += b.order || 1;
+        // Compute current used valence
+        const usedValence = () => {
+          let u = 0;
+          for (const b of vol.bonds) if (b.i === idx || b.j === idx) u += b.order || 1;
+          return u;
+        };
+        // If over valence, remove bonded hydrogens first (one by one, re-scanning each time)
+        while (usedValence() > val) {
+          let removed = false;
+          for (let bi = 0; bi < vol.bonds.length; bi++) {
+            const b = vol.bonds[bi];
+            if (!(b.i === idx || b.j === idx)) continue;
             const other = (b.i === idx) ? b.j : b.i;
-            if ((atoms[other].Z | 0) === 1) hydrogens.push({ bi, other });
+            if ((atoms[other].Z | 0) === 1) {
+              removeBond(vol, bi);
+              removeAtom(vol, other);
+              removed = true;
+              break;
+            }
           }
+          if (!removed) break; // nothing left to remove safely
         }
-        // If over valence, remove H first
-        while (used > val && hydrogens.length > 0) {
-          const h = hydrogens.pop();
-          // remove H atom and the bond
-          removeBond(vol, h.bi);
-          removeAtom(vol, h.other);
-          used--; // single bond removed
-        }
+      }
+
+      function adjustHydrogens(vol, idx) {
+        if (!autoHydrogens) return;
+        trimHydrogensIfExcess(vol, idx);
+        addHydrogensIfNeeded(vol, idx);
       }
 
       function clearSceneMeshes() {
@@ -1739,7 +1799,7 @@
                   order = computeBondOrderByLength(vol.atoms[ai].Z|0, vol.atoms[aj].Z|0, p1.distanceTo(p2));
                 } else { order = parseInt(newBondOrderSetting, 10) || 1; }
                 addBond(vol, ai, aj, order);
-                if (autoHydrogens) { trimHydrogensIfExcess(vol, ai); trimHydrogensIfExcess(vol, aj); }
+                if (autoHydrogens) { adjustHydrogens(vol, ai); adjustHydrogens(vol, aj); }
                 rebuildScene({ preserveView: true });
               } else if (dragActive && placePos) {
                 // Drag created a new atom and bond target
@@ -1754,20 +1814,20 @@
                   order = computeBondOrderByLength(vol.atoms[ai].Z|0, newAtom.Z|0, p1.distanceTo(p2));
                 } else { order = parseInt(newBondOrderSetting, 10) || 1; }
                 addBond(vol, ai, aj, order);
-                addHydrogensIfNeeded(vol, aj);
+                if (autoHydrogens) { adjustHydrogens(vol, ai); adjustHydrogens(vol, aj); }
                 rebuildScene({ preserveView: true });
               } else if (!dragActive) {
                 // No actual drag: treat as a simple click
                 if (createdStartAtomOnDown) {
                   // We already placed a new atom on down; finalize H adjustment
                   const idx = dragFromAtom;
-                  addHydrogensIfNeeded(vol, idx);
+                  adjustHydrogens(vol, idx);
                   rebuildScene({ preserveView: true });
                 } else {
                   // Clicked on existing atom: change element
                   const idx = dragFromAtom;
                   vol.atoms[idx].Z = selectedZ || symToZ(selectedElement);
-                  if (autoHydrogens) { addHydrogensIfNeeded(vol, idx); trimHydrogensIfExcess(vol, idx); }
+                  if (autoHydrogens) { adjustHydrogens(vol, idx); }
                   rebuildScene({ preserveView: true });
                 }
               }
