@@ -1301,7 +1301,7 @@
               const t = move.dot(ax);
               newPos = dragStartPos.clone().add(ax.multiplyScalar(t));
             }
-            // Apply to mesh and data
+            // Apply to mesh and data (defer full rebuild until pointerup to avoid flicker)
             if (dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
               const m = atomGroup.children[dragAtomIndex];
               m.position.copy(newPos);
@@ -1310,7 +1310,7 @@
                 const a = vol.atoms[dragAtomIndex];
                 a.x = arr[0]; a.y = arr[1]; a.z = arr[2];
               }
-              if (toggleBonds && toggleBonds.checked) rebuildScene({ preserveView: true });
+              // Avoid rebuild during drag to prevent duplicate meshes/flicker
             }
           }
           return;
@@ -1343,8 +1343,11 @@
 
       canvasEl.addEventListener('pointerup', (e) => {
         if (!dragActive) return;
-        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null;
+        // Final rebuild to update bonds/geometry once after drag
+        rebuildScene({ preserveView: true });
+        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null;
         controls.enabled = true;
+        if (editMode) renderRibbon('edit');
       });
 
       // Reset view to the initial camera/target/shift
@@ -1871,7 +1874,9 @@
         }
         if (!editing && (e.key === 'h' || e.key === 'H' || e.key === '?')) { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); }
         if (e.key === 'Escape') {
-          closeSide(); if (helpOverlay) closeHelp();
+          let closed = false;
+          if (helpOverlay && helpOverlay.style.display === 'flex') { closeHelp(); closed = true; }
+          else if (sidePanel && sidePanel.classList.contains('open')) { closeSide(); closed = true; }
           if (dragActive) {
             // Revert to original position
             const vol = volumes[currentIndex]?.vol;
@@ -1884,6 +1889,10 @@
             }
             rebuildScene({ preserveView: true });
             dragActive = false; dragAtomIndex = -1; controls.enabled = true; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null;
+            if (editMode) { renderRibbon('edit'); updateAxisButtons(); }
+          } else {
+            // No active drag; keep context ribbon consistent
+            renderRibbon(editMode ? 'edit' : (closed ? 'default' : currentShortcutContext));
           }
         }
         if (editMode && !editing) {
