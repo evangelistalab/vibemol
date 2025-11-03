@@ -425,7 +425,7 @@
           <li><strong>S</strong> — Save PNG</li>
           <li><strong>B</strong> — Batch export all files</li>
           <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
-          <li><strong>X</strong> — Toggle axis gizmo on/off</li>
+          <li><strong>A</strong> — Toggle axis gizmo on/off</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
           <li><strong>Esc</strong> — Close open menus/dialogs</li>
         </ul>
@@ -1171,7 +1171,7 @@
           { k: 'S', d: 'Save PNG' },
           { k: 'B', d: 'Batch export' },
           { k: 'I', d: 'Toggle surfaces' },
-          { k: 'X', d: 'Toggle axes' },
+          { k: 'A', d: 'Toggle axes' },
           { k: '←/→', d: 'Prev/Next file' },
           { k: '?', d: 'Help' },
         ],
@@ -1240,6 +1240,8 @@
       let dragActive = false;
       let dragAtomIndex = -1;
       let dragStartPos = null;
+      let dragOrigMeshPos = null;
+      let dragOrigAtomUnits = null;
       let dragPlane = null;
       let dragPlaneStart = null;
       let axisLock = 'none'; // 'none'|'x'|'y'|'z'
@@ -1325,6 +1327,11 @@
         dragActive = true;
         controls.enabled = false;
         dragStartPos = obj.position.clone();
+        dragOrigMeshPos = obj.position.clone();
+        const vol = volumes[currentIndex]?.vol; if (vol) {
+          const a = vol.atoms[dragAtomIndex];
+          dragOrigAtomUnits = [a.x, a.y, a.z];
+        }
         const normal = new THREE.Vector3();
         // plane orthogonal to camera-to-target axis
         camera.getWorldDirection(normal);
@@ -1858,12 +1865,32 @@
         if (e.key === 's' && !editing) saveBtn.click();
         if (e.key === 'b' && !editing) batchBtn.click();
         if ((e.key === 'i' || e.key === 'I') && !editing) { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); }
-        if ((e.key === 'x' || e.key === 'X') && !editing) {
+        if ((e.key === 'a' || e.key === 'A') && !editing) {
           window.__showAxes__ = !window.__showAxes__;
           if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
         }
         if (!editing && (e.key === 'h' || e.key === 'H' || e.key === '?')) { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); }
-        if (e.key === 'Escape') { closeSide(); if (helpOverlay) closeHelp(); if (dragActive) { dragActive = false; dragAtomIndex = -1; controls.enabled = true; } }
+        if (e.key === 'Escape') {
+          closeSide(); if (helpOverlay) closeHelp();
+          if (dragActive) {
+            // Revert to original position
+            const vol = volumes[currentIndex]?.vol;
+            if (vol && dragAtomIndex >= 0 && vol.atoms[dragAtomIndex]) {
+              const a = vol.atoms[dragAtomIndex];
+              if (dragOrigAtomUnits) { a.x = dragOrigAtomUnits[0]; a.y = dragOrigAtomUnits[1]; a.z = dragOrigAtomUnits[2]; }
+            }
+            if (dragOrigMeshPos && dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
+              atomGroup.children[dragAtomIndex].position.copy(dragOrigMeshPos);
+            }
+            rebuildScene({ preserveView: true });
+            dragActive = false; dragAtomIndex = -1; controls.enabled = true; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null;
+          }
+        }
+        if (editMode && !editing) {
+          if (e.key === 'x' || e.key === 'X') { axisLock = (axisLock === 'x' ? 'none' : 'x'); updateAxisButtons(); }
+          if (e.key === 'y' || e.key === 'Y') { axisLock = (axisLock === 'y' ? 'none' : 'y'); updateAxisButtons(); }
+          if (e.key === 'z' || e.key === 'Z') { axisLock = (axisLock === 'z' ? 'none' : 'z'); updateAxisButtons(); }
+        }
         if ((e.key === 'e' || e.key === 'E') && !editing) {
           editMode = !editMode;
           axisLock = 'none'; updateAxisButtons();
