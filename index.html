@@ -832,28 +832,6 @@
         }
       }
 
-      // Fast path: update only cylinders that touch a moved atom, using mesh positions
-      function updateBondsForAtomMeshes(idx) {
-        if (!bondGroup || !bondGroup.children || !atomGroup || !atomGroup.children) return;
-        const moved = atomGroup.children[idx]; if (!moved) return;
-        const up = new THREE.Vector3(0, 1, 0);
-        for (const obj of bondGroup.children) {
-          if (!obj.isMesh || !obj.userData) continue;
-          const i = obj.userData.i, j = obj.userData.j;
-          if (i !== idx && j !== idx) continue;
-          const ai = atomGroup.children[i]; const aj = atomGroup.children[j];
-          if (!ai || !aj) continue;
-          const aPos = ai.position; const bPos = aj.position;
-          const dir = new THREE.Vector3().subVectors(bPos, aPos);
-          const len = dir.length(); if (len < 1e-6) continue;
-          const mid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
-          obj.position.copy(mid);
-          obj.quaternion.setFromUnitVectors(up, dir.clone().normalize());
-          const s = len / (obj.userData.baseLen || len);
-          obj.scale.set(1, s, 1);
-        }
-      }
-
       // Rebuild bonds from current atom positions (full rescan, bonds only)
       function rebuildBondsFromAtoms() {
         if (currentIndex < 0 || !volumes[currentIndex]) return;
@@ -1374,7 +1352,7 @@
             const move = hit.clone().sub(dragPlaneStart);
             if (dragAxis !== 'none') {
               const ax = dragAxis === 'x' ? new THREE.Vector3(1, 0, 0) : dragAxis === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-              const t = move.dot(ax);
+              const t = move.x;
               newPos = dragStartPos.clone().add(ax.multiplyScalar(t));
             } else {
               newPos = dragStartPos.clone().add(move);
@@ -1390,11 +1368,9 @@
                 const a = vol.atoms[dragAtomIndex];
                 a.x = arr[0]; a.y = arr[1]; a.z = arr[2];
               }
-              // Immediate visual update for bonds touching this atom
-              updateBondsForAtomMeshes(dragAtomIndex);
-              // Update only bonds involving the moved atom (add/remove/transform), ~30 FPS
+              // Update bonds by rescanning (bonds only) at ~30 FPS
               const now = performance.now();
-              if (now - __lastBondUpdate > 33) { adjustBondsConnectivityForAtom(dragAtomIndex); updateBondsInPlace(); __lastBondUpdate = now; }
+              if (now - __lastBondUpdate > 33) { rebuildBondsFromAtoms(); __lastBondUpdate = now; }
             }
           }
           return;
