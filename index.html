@@ -370,7 +370,7 @@
   </div>
 
   <!-- Independent Edit panel (does not auto-close on scene clicks) -->
-  <div id="editPanel" aria-hidden="true" style="display:none; position:fixed; top:56px; right:8px; width:340px; max-height:80vh; overflow:auto; background:var(--panel); color:var(--text); border:1px solid #223; border-radius:10px; box-shadow:0 10px 30px #000a; z-index:40;">
+  <div id="editPanel" aria-hidden="true" style="display:none; position:fixed; top:56px; right:8px; width:360px; max-height:80vh; overflow:auto; background:var(--panel); color:var(--text); border:1px solid #223; border-radius:10px; box-shadow:0 10px 30px #000a; z-index:40;">
     <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #223;">
       <div style="font-weight:700;">Edit</div>
       <div>
@@ -408,7 +408,13 @@
         <label>Adjust Hydrogens</label>
         <input type="checkbox" id="autoHydrogen" checked />
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; align-items:center; margin-top:6px;">
+        <label title="Hydrogen relax iterations (more = better spread, slower)">H relax iters</label>
+        <input id="hRelaxIter" type="number" min="0" max="200" step="1" value="32" />
+        <label title="Heavy-atom repulsion weight vs H–H (1.0)">Heavy push</label>
+        <input id="hHeavyWeight" type="number" min="0" max="3" step="0.1" value="0.9" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
         <button id="clearMolecule" class="secondary" title="Remove all atoms/bonds from this molecule">Clear molecule</button>
       </div>
     </div>
@@ -784,6 +790,9 @@
       let selectedZ = 6;
       let newBondOrderSetting = 'auto'; // 'auto' | '1' | '2' | '3'
       let autoHydrogens = true;
+      // H optimization parameters (tweakable)
+      let H_RELAX_ITERS = 32;
+      let H_HEAVY_WEIGHT = 0.9; // relative to H–H repulsion (=1.0)
 
       const raycaster = new THREE.Raycaster();
       const ndc = new THREE.Vector2();
@@ -1154,7 +1163,7 @@
         }
 
         // After initial assignment, perform a quick relaxation so H–H repel
-        function relaxDirections(dirs, heavy, iterations = 24, step = 0.18, wHH = 1.0, wHX = 0.6) {
+      function relaxDirections(dirs, heavy, iterations = H_RELAX_ITERS, step = 0.18, wHH = 1.0, wHX = H_HEAVY_WEIGHT) {
           const u = dirs.map(d => d.clone().normalize());
           for (let it = 0; it < iterations; it++) {
             for (let i = 0; i < u.length; i++) {
@@ -1178,7 +1187,7 @@
 
         // Build current H direction list and relax
         const curHDirs = hIdx.map(j => atomUnitsToAng(vol, atoms[j]).sub(center).normalize());
-        const relaxed = relaxDirections(curHDirs, heavyDirs);
+        const relaxed = relaxDirections(curHDirs, heavyDirs, H_RELAX_ITERS);
         for (let k = 0; k < hIdx.length; k++) {
           const j = hIdx[k];
           const pos = center.clone().addScaledVector(relaxed[k], bondLen);
@@ -1699,6 +1708,8 @@
       const ptGrid = document.getElementById('ptGrid');
       const ptSearch = document.getElementById('ptSearch');
       function openPT() { if (ptOverlay) { ptOverlay.style.display = 'flex'; buildPT(''); } }
+      const hRelaxIterEl = document.getElementById('hRelaxIter');
+      const hHeavyWeightEl = document.getElementById('hHeavyWeight');
       function closePT() { if (ptOverlay) ptOverlay.style.display = 'none'; }
       function buildPT(query) {
         if (!ptGrid) return;
@@ -1724,6 +1735,8 @@
       if (bondOrderEl) bondOrderEl.onchange = () => { newBondOrderSetting = bondOrderEl.value; };
       if (autoHydrogenEl) autoHydrogenEl.onchange = () => { autoHydrogens = !!autoHydrogenEl.checked; };
       if (editEnableEl) editEnableEl.onchange = () => { editEnabled = !!editEnableEl.checked; controls.enabled = !editEnabled; };
+      if (hRelaxIterEl) hRelaxIterEl.oninput = () => { const v = parseInt(hRelaxIterEl.value, 10); if (Number.isFinite(v)) H_RELAX_ITERS = Math.max(0, Math.min(200, v)); };
+      if (hHeavyWeightEl) hHeavyWeightEl.oninput = () => { const v = parseFloat(hHeavyWeightEl.value); if (Number.isFinite(v)) H_HEAVY_WEIGHT = Math.max(0, Math.min(3, v)); };
 
       function refreshViewUI() {
         const notEditing = (el) => document.activeElement !== el;
@@ -1745,6 +1758,8 @@
         if (elemSelectEl && notEditing(elemSelectEl)) elemSelectEl.value = selectedElement;
         if (bondOrderEl && notEditing(bondOrderEl)) bondOrderEl.value = String(newBondOrderSetting);
         if (autoHydrogenEl) autoHydrogenEl.checked = !!autoHydrogens;
+        if (hRelaxIterEl && notEditing(hRelaxIterEl)) hRelaxIterEl.value = String(H_RELAX_ITERS);
+        if (hHeavyWeightEl && notEditing(hHeavyWeightEl)) hHeavyWeightEl.value = H_HEAVY_WEIGHT.toFixed(2);
       }
 
       // Initialize view UI
