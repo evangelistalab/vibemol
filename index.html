@@ -252,6 +252,7 @@
     <button id="batchBtn" class="secondary" title="Export all views as PNG images">Batch export</button>
     <button id="surfBtn" class="secondary" title="Toggle iso-surface rendering">Hide Surfaces</button>
     <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear</button>
+    <button id="editBtn" class="secondary" title="Enable molecule editing tools">Edit</button>
     <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
     <button id="helpBtn" class="secondary" title="Help and shortcuts">Help</button>
   </div>
@@ -263,6 +264,46 @@
 
   <!-- Right side panel (toggle) -->
   <div id="sidePanel" aria-hidden="true">
+    <div id="sideHeader">
+      <div class="title">Edit</div>
+      <div>
+        <label style="margin-right:8px; color: var(--muted); font-size:12px;"><input type="checkbox" id="editEnable" checked={false} /> Enable</label>
+        <button id="sideClose" title="Close">✕</button>
+      </div>
+    </div>
+    <div id="viewControls">
+      <div class="row">
+        <label style="width:100px;">Element</label>
+        <select id="elemSelect" title="Element for new atoms / changes">
+          <option>H</option>
+          <option>He</option>
+          <option>C</option>
+          <option>N</option>
+          <option>O</option>
+          <option>F</option>
+          <option>Si</option>
+          <option>P</option>
+          <option>S</option>
+          <option>Cl</option>
+          <option>Br</option>
+          <option>I</option>
+        </select>
+        <button id="elemOther" class="secondary" title="Pick from periodic table">Other…</button>
+      </div>
+      <div class="row">
+        <label style="width:100px;">Bond order</label>
+        <select id="bondOrder" title="Order for new bonds">
+          <option value="auto" selected>Automatic</option>
+          <option value="1">Single</option>
+          <option value="2">Double</option>
+          <option value="3">Triple</option>
+        </select>
+        <label style="width:auto;"><input type="checkbox" id="autoHydrogen" checked /> Adjust Hydrogens</label>
+      </div>
+      <div class="row" style="color:var(--muted); font-size:12px;">
+        <span>Tips: Click empty to add atom • Drag from atom to bond • Click atom to change element • Click bond to cycle order • Right‑click atom/bond to delete • Type element symbol (e.g., C, O, Si) or 1/2/3 for order</span>
+      </div>
+    </div>
     <div id="sideHeader">
       <div class="title">View</div>
       <div>
@@ -363,6 +404,20 @@
     </div>
   </div>
 
+  <!-- Periodic table modal -->
+  <div id="ptOverlay" aria-hidden="true" style="display:none; position:fixed; inset:0; background:#0008; z-index:60; align-items:center; justify-content:center;">
+    <div role="dialog" aria-modal="true" style="background:var(--panel); color:var(--text); width:min(760px,92vw); max-height:80vh; overflow:auto; border:1px solid #223; border-radius:10px; box-shadow:0 10px 30px #000a;">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #223;">
+        <div style="font-weight:700;">Pick Element</div>
+        <button id="ptClose" class="secondary" title="Close">✕</button>
+      </div>
+      <div style="padding:12px 12px;">
+        <input id="ptSearch" placeholder="Search symbol or name…" style="width:100%; padding:6px 8px; margin-bottom:8px; background:#1a2230; color:var(--text); border:1px solid #223; border-radius:6px;" />
+        <div id="ptGrid" style="display:grid; grid-template-columns: repeat(12, minmax(40px, 1fr)); gap:6px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Help / Shortcuts modal -->
   <div id="helpOverlay" aria-hidden="true"
     style="display:none; position:fixed; inset:0; background:#0008; z-index:50; align-items:center; justify-content:center;">
@@ -406,6 +461,7 @@
     (function () {
       // --- Constants & helpers ---
       const BOHR_TO_ANG = 0.529177210903;
+      const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
 
       function arrayMinMax(a) {
         let min = Infinity, max = -Infinity;
@@ -415,6 +471,57 @@
           if (v > max) max = v;
         }
         return { min, max };
+      }
+
+      function symToZ(sym) {
+        return (window.ATOM_SYMBOL_TO_Z && window.ATOM_SYMBOL_TO_Z[String(sym || '').toUpperCase()]) || 0;
+      }
+
+      function zToData(z) {
+        return (window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z]) || null;
+      }
+
+      function covalentRadius(z) {
+        const d = zToData(z);
+        return (d && typeof d.radius_covalent === 'number') ? d.radius_covalent : 0.7;
+      }
+
+      function defaultValence(z) {
+        // Simple defaults for common elements
+        const m = {
+          1: 1, // H
+          5: 3, // B
+          6: 4, // C
+          7: 3, // N
+          8: 2, // O
+          9: 1, // F
+          15: 3, // P
+          16: 2, // S (simplified)
+          17: 1, // Cl
+          35: 1, // Br
+          53: 1, // I
+          14: 4, // Si
+        };
+        return m[z] || 1;
+      }
+
+      function computeBondOrderByLength(z1, z2, distAng) {
+        const sumR = covalentRadius(z1) + covalentRadius(z2);
+        if (!isFinite(sumR) || sumR <= 0) return 1;
+        if (distAng >= sumR) return 1;
+        if (distAng >= 0.91 * sumR) return 2;
+        return 3;
+      }
+
+      function worldToAtomUnits(vol, v3) {
+        if (vol.units === 'angstrom') return [v3.x, v3.y, v3.z];
+        return [v3.x * ANG_TO_BOHR, v3.y * ANG_TO_BOHR, v3.z * ANG_TO_BOHR];
+      }
+
+      function atomUnitsToAng(vol, a) {
+        // a: {x,y,z}
+        if (vol.units === 'angstrom') return new THREE.Vector3(a.x, a.y, a.z);
+        return new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
       }
 
       function parseCube(text) {
@@ -668,6 +775,136 @@
       contentGroup.add(bondGroup);
       contentGroup.add(cloudGroup);
 
+      // --- Editing state & helpers ---
+      let editEnabled = false;
+      let selectedElement = 'C';
+      let selectedZ = 6;
+      let newBondOrderSetting = 'auto'; // 'auto' | '1' | '2' | '3'
+      let autoHydrogens = true;
+
+      const raycaster = new THREE.Raycaster();
+      const ndc = new THREE.Vector2();
+      const tmpV = new THREE.Vector3();
+      const tmpQ = new THREE.Quaternion();
+      const tmpUp = new THREE.Vector3(0,1,0);
+
+      // Drag-bond preview
+      let dragFromAtom = null; // index
+      let dragGhost = null;    // Mesh (preview atom)
+      let dragBond = null;     // Mesh (preview bond)
+      let dragSnapTo = null;   // index
+
+      function ensureBonds(vol) {
+        if (Array.isArray(vol.bonds)) return;
+        // Heuristic bonds with order=1
+        const atoms = vol.atoms || [];
+        const N = atoms.length;
+        const bonds = [];
+        for (let i = 0; i < N; i++) {
+          const ai = atomUnitsToAng(vol, atoms[i]);
+          for (let j = i + 1; j < N; j++) {
+            const aj = atomUnitsToAng(vol, atoms[j]);
+            const rij = ai.distanceTo(aj);
+            const cutoff = 1.15 * (covalentRadius(atoms[i].Z|0) + covalentRadius(atoms[j].Z|0));
+            if (rij > 0.4 && rij <= cutoff) bonds.push({ i, j, order: 1 });
+          }
+        }
+        vol.bonds = bonds;
+      }
+
+      function addBond(vol, i, j, order) {
+        if (i === j) return;
+        ensureBonds(vol);
+        // deduplicate
+        for (const b of vol.bonds) {
+          if ((b.i === i && b.j === j) || (b.i === j && b.j === i)) return;
+        }
+        vol.bonds.push({ i, j, order: Math.max(1, Math.min(3, order|0)) });
+      }
+
+      function cycleBondOrder(vol, hitBondIndex) {
+        if (!vol.bonds || !vol.bonds[hitBondIndex]) return;
+        const b = vol.bonds[hitBondIndex];
+        b.order = (b.order % 3) + 1;
+      }
+
+      function removeBond(vol, hitBondIndex) {
+        if (!vol.bonds) return;
+        if (hitBondIndex >= 0 && hitBondIndex < vol.bonds.length) vol.bonds.splice(hitBondIndex, 1);
+      }
+
+      function removeAtom(vol, idx) {
+        const atoms = vol.atoms || [];
+        if (idx < 0 || idx >= atoms.length) return;
+        atoms.splice(idx, 1);
+        if (Array.isArray(vol.bonds)) {
+          const mapped = [];
+          for (const b of vol.bonds) {
+            if (b.i === idx || b.j === idx) continue;
+            const ni = b.i > idx ? b.i - 1 : b.i;
+            const nj = b.j > idx ? b.j - 1 : b.j;
+            mapped.push({ i: ni, j: nj, order: b.order });
+          }
+          vol.bonds = mapped;
+        }
+      }
+
+      function addHydrogensIfNeeded(vol, idx) {
+        if (!autoHydrogens) return;
+        const atoms = vol.atoms || [];
+        if (!atoms[idx]) return;
+        const Zi = atoms[idx].Z | 0;
+        if (Zi === 1) return; // skip H itself
+        const val = defaultValence(Zi);
+        if (val <= 0) return;
+        ensureBonds(vol);
+        let used = 0;
+        for (const b of vol.bonds) {
+          if (b.i === idx || b.j === idx) used += b.order || 1;
+        }
+        let need = Math.max(0, val - used);
+        if (need <= 0) return;
+        // Place hydrogens around idx, radial placement
+        const origin = atomUnitsToAng(vol, atoms[idx]);
+        for (let n = 0; n < need; n++) {
+          const angle = (n / need) * Math.PI * 2;
+          const dir = new THREE.Vector3(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
+          const dist = 1.0; // ~1 Å
+          const pos = origin.clone().addScaledVector(dir, dist);
+          const [x, y, z] = worldToAtomUnits(vol, pos);
+          atoms.push({ Z: 1, q: 0, x, y, z });
+          const j = atoms.length - 1;
+          addBond(vol, idx, j, 1);
+        }
+      }
+
+      function trimHydrogensIfExcess(vol, idx) {
+        if (!autoHydrogens) return;
+        ensureBonds(vol);
+        const atoms = vol.atoms || [];
+        const Zi = (atoms[idx] && atoms[idx].Z) | 0;
+        const val = defaultValence(Zi);
+        if (val <= 0) return;
+        let used = 0;
+        const hydrogens = [];
+        for (let bi = 0; bi < vol.bonds.length; bi++) {
+          const b = vol.bonds[bi];
+          if (b.i === idx || b.j === idx) {
+            used += b.order || 1;
+            const other = (b.i === idx) ? b.j : b.i;
+            if ((atoms[other].Z | 0) === 1) hydrogens.push({ bi, other });
+          }
+        }
+        // If over valence, remove H first
+        while (used > val && hydrogens.length > 0) {
+          const h = hydrogens.pop();
+          // remove H atom and the bond
+          removeBond(vol, h.bi);
+          removeAtom(vol, h.other);
+          used--; // single bond removed
+        }
+      }
+
       function clearSceneMeshes() {
         for (const m of meshes) contentGroup.remove(m), m.geometry.dispose(), m.material.dispose();
         meshes = [];
@@ -705,6 +942,7 @@
           const pos = new THREE.Vector3(px, py, pz);
           mesh.position.copy(pos);
           mesh.scale.setScalar(r * 1.2);
+          mesh.userData = { type: 'atom', index: atomPositions.length };
           group.add(mesh);
           atomPositions.push({ pos, Z: a.Z | 0 });
         }
@@ -713,38 +951,28 @@
 
       function buildBonds(vol) {
         const group = new THREE.Group();
-        const covR = (z) => (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
-        const atomPositions = [];
-        const toAng = (vol.units === 'angstrom');
-        for (const a of vol.atoms) {
-          const px = toAng ? a.x : a.x * BOHR_TO_ANG;
-          const py = toAng ? a.y : a.y * BOHR_TO_ANG;
-          const pz = toAng ? a.z : a.z * BOHR_TO_ANG;
-          const pos = new THREE.Vector3(px, py, pz);
-          atomPositions.push({ pos, Z: a.Z | 0 });
-        }
+        ensureBonds(vol);
+        const atomPositions = vol.atoms.map(a => atomUnitsToAng(vol, a));
         const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.1, metalness: 0.1 });
         const up = new THREE.Vector3(0, 1, 0);
-        const N = atomPositions.length;
-        const bondRadius = 0.12; // Å
-        for (let i = 0; i < N; i++) {
-          for (let j = i + 1; j < N; j++) {
-            const a = atomPositions[i];
-            const b = atomPositions[j];
-            const ri = covR(a.Z);
-            const rj = covR(b.Z);
-            const cutoff = 1.15 * (ri + rj); // heuristic
-            const dir = new THREE.Vector3().subVectors(b.pos, a.pos);
-            const len = dir.length();
-            if (len < 0.4 || len > cutoff) continue;
-            const mid = new THREE.Vector3().addVectors(a.pos, b.pos).multiplyScalar(0.5);
-            const geom = new THREE.CylinderGeometry(bondRadius, bondRadius, len, 12, 1, false);
-            const cyl = new THREE.Mesh(geom, bondMat);
-            cyl.position.copy(mid);
-            const q = new THREE.Quaternion().setFromUnitVectors(up, dir.normalize());
-            cyl.setRotationFromQuaternion(q);
-            group.add(cyl);
-          }
+        const baseR = 0.12;
+        for (let bi = 0; bi < vol.bonds.length; bi++) {
+          const b = vol.bonds[bi];
+          const aPos = atomPositions[b.i];
+          const bPos = atomPositions[b.j];
+          if (!aPos || !bPos) continue;
+          const dir = new THREE.Vector3().subVectors(bPos, aPos);
+          const len = dir.length();
+          if (len < 0.1) continue;
+          const mid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
+          const order = Math.max(1, Math.min(3, (b.order|0) || 1));
+          const geom = new THREE.CylinderGeometry(baseR * (0.9 + 0.35*(order-1)), baseR * (0.9 + 0.35*(order-1)), len, 16, 1, false);
+          const cyl = new THREE.Mesh(geom, bondMat);
+          cyl.position.copy(mid);
+          const q = new THREE.Quaternion().setFromUnitVectors(up, dir.normalize());
+          cyl.setRotationFromQuaternion(q);
+          cyl.userData = { type: 'bond', index: bi };
+          group.add(cyl);
         }
         return group;
       }
@@ -1055,6 +1283,7 @@
       const surfBtn = document.getElementById('surfBtn');
       const clearBtn = document.getElementById('clearBtn');
       const helpBtn = document.getElementById('helpBtn');
+      const editBtn = document.getElementById('editBtn');
       // Side panel controls
       const panelBtn = document.getElementById('panelBtn');
       const sidePanel = document.getElementById('sidePanel');
@@ -1094,6 +1323,7 @@
       const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); };
       const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); } };
       panelBtn.onclick = toggleSide;
+      if (editBtn) editBtn.onclick = toggleSide;
       sideClose.onclick = toggleSide;
       // Help modal logic
       function openHelp() { helpOverlay.style.display = 'flex'; helpOverlay.setAttribute('aria-hidden', 'false'); }
@@ -1101,6 +1331,43 @@
       if (helpBtn) helpBtn.onclick = openHelp;
       if (helpClose) helpClose.onclick = closeHelp;
       if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
+
+      // --- Edit UI elements ---
+      const editEnableEl = document.getElementById('editEnable');
+      const elemSelectEl = document.getElementById('elemSelect');
+      const elemOtherBtn = document.getElementById('elemOther');
+      const bondOrderEl = document.getElementById('bondOrder');
+      const autoHydrogenEl = document.getElementById('autoHydrogen');
+      const ptOverlay = document.getElementById('ptOverlay');
+      const ptClose = document.getElementById('ptClose');
+      const ptGrid = document.getElementById('ptGrid');
+      const ptSearch = document.getElementById('ptSearch');
+      function openPT() { if (ptOverlay) { ptOverlay.style.display = 'flex'; buildPT(''); } }
+      function closePT() { if (ptOverlay) ptOverlay.style.display = 'none'; }
+      function buildPT(query) {
+        if (!ptGrid) return;
+        const q = String(query || '').trim().toLowerCase();
+        ptGrid.innerHTML = '';
+        const data = (window.ATOM_DATA || []).filter(d => {
+          if (!q) return true;
+          return d.symbol.toLowerCase().includes(q) || (d.name||'').toLowerCase().includes(q);
+        });
+        for (const d of data) {
+          const btn = document.createElement('button');
+          btn.textContent = d.symbol;
+          btn.style.cssText = 'padding:8px 6px; border-radius:6px; border:1px solid #223; background:#1a2230; color:var(--text); cursor:pointer;';
+          btn.onclick = () => { selectedElement = d.symbol; selectedZ = symToZ(d.symbol); if (elemSelectEl) elemSelectEl.value = d.symbol; closePT(); };
+          ptGrid.appendChild(btn);
+        }
+      }
+      if (ptClose) ptClose.onclick = closePT;
+      if (ptOverlay) ptOverlay.addEventListener('click', (e) => { if (e.target === ptOverlay) closePT(); });
+      if (ptSearch) ptSearch.oninput = () => buildPT(ptSearch.value);
+      if (elemSelectEl) { elemSelectEl.value = selectedElement; elemSelectEl.onchange = () => { selectedElement = elemSelectEl.value; selectedZ = symToZ(selectedElement); }; }
+      if (elemOtherBtn) elemOtherBtn.onclick = () => openPT();
+      if (bondOrderEl) bondOrderEl.onchange = () => { newBondOrderSetting = bondOrderEl.value; };
+      if (autoHydrogenEl) autoHydrogenEl.onchange = () => { autoHydrogens = !!autoHydrogenEl.checked; };
+      if (editEnableEl) editEnableEl.onchange = () => { editEnabled = !!editEnableEl.checked; };
 
       function refreshViewUI() {
         const notEditing = (el) => document.activeElement !== el;
@@ -1117,6 +1384,11 @@
         if (notEditing(rotSpeed)) rotSpeed.value = (controls.rotateSpeed ?? 1.0).toFixed(2);
         if (notEditing(damp)) damp.value = (controls.dampingFactor ?? 0.05).toFixed(2);
         if (notEditing(autoRotSpeed)) autoRotSpeed.value = (controls.autoRotateSpeed ?? 2.0).toFixed(2);
+        // Edit UI
+        if (editEnableEl) editEnableEl.checked = !!editEnabled;
+        if (elemSelectEl && notEditing(elemSelectEl)) elemSelectEl.value = selectedElement;
+        if (bondOrderEl && notEditing(bondOrderEl)) bondOrderEl.value = String(newBondOrderSetting);
+        if (autoHydrogenEl) autoHydrogenEl.checked = !!autoHydrogens;
       }
 
       // Initialize view UI
@@ -1348,14 +1620,200 @@
       drop.addEventListener('pointerdown', (e) => {
         if (e.button === 0) downPos = { x: e.clientX, y: e.clientY };
         else downPos = null;
+        if (!editEnabled) return;
+        // Begin edit interactions
+        ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
+        ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        raycaster.setFromCamera(ndc, camera);
+        // Try atoms first
+        const atomHits = raycaster.intersectObjects(atomGroup.children, false);
+        if (e.button === 0) {
+          if (atomHits.length > 0) {
+            const h = atomHits[0].object;
+            if (h && h.userData && h.userData.type === 'atom') {
+              dragFromAtom = h.userData.index;
+              // Create preview ghost
+              const ghostGeo = new THREE.SphereGeometry(0.4, 18, 10);
+              const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+              dragGhost = new THREE.Mesh(ghostGeo, ghostMat);
+              contentGroup.add(dragGhost);
+              const bondGeo = new THREE.CylinderGeometry(0.08, 0.08, 1, 12);
+              const bondMat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.7 });
+              dragBond = new THREE.Mesh(bondGeo, bondMat);
+              contentGroup.add(dragBond);
+              controls.enabled = false;
+            }
+          }
+        }
       });
       drop.addEventListener('pointerup', (e) => {
-        if (!sidePanel.classList.contains('open')) { downPos = null; return; }
         if (!downPos) return;
         const dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
         const moved = Math.hypot(dx, dy) > 4; // threshold to distinguish drag
         downPos = null;
-        if (!moved) closeSide();
+        if (!moved && sidePanel.classList.contains('open')) closeSide();
+        // Finish edit interactions
+        if (editEnabled) {
+          controls.enabled = true;
+          ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
+          ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+          raycaster.setFromCamera(ndc, camera);
+          const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
+          if (vol && Array.isArray(vol.atoms)) {
+            if (dragFromAtom != null) {
+              // Finalize bond creation
+              const a0 = atomUnitsToAng(vol, vol.atoms[dragFromAtom]);
+              let targetIndex = dragSnapTo;
+              let placePos = null;
+              if (targetIndex == null) {
+                // Intersect plane through origin atom, normal camera dir
+                const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), a0.clone());
+                const hit = new THREE.Vector3();
+                raycaster.ray.intersectPlane(plane, hit);
+                placePos = hit.clone();
+              }
+              // cleanup preview
+              if (dragGhost) { contentGroup.remove(dragGhost); dragGhost.geometry.dispose(); dragGhost.material.dispose(); dragGhost = null; }
+              if (dragBond) { contentGroup.remove(dragBond); dragBond.geometry.dispose(); dragBond.material.dispose(); dragBond = null; }
+              // Create bond (and possibly new atom)
+              if (targetIndex != null && targetIndex !== dragFromAtom) {
+                const ai = dragFromAtom, aj = targetIndex;
+                let order = 1;
+                if (newBondOrderSetting === 'auto') {
+                  const p1 = atomUnitsToAng(vol, vol.atoms[ai]);
+                  const p2 = atomUnitsToAng(vol, vol.atoms[aj]);
+                  order = computeBondOrderByLength(vol.atoms[ai].Z|0, vol.atoms[aj].Z|0, p1.distanceTo(p2));
+                } else { order = parseInt(newBondOrderSetting, 10) || 1; }
+                addBond(vol, ai, aj, order);
+                if (autoHydrogens) { trimHydrogensIfExcess(vol, ai); trimHydrogensIfExcess(vol, aj); }
+                rebuildScene({ preserveView: true });
+              } else if (placePos) {
+                // Create new atom and bond
+                const [x, y, z] = worldToAtomUnits(vol, placePos);
+                const newAtom = { Z: selectedZ || symToZ(selectedElement), q: 0, x, y, z };
+                vol.atoms.push(newAtom);
+                const ai = dragFromAtom, aj = vol.atoms.length - 1;
+                let order = 1;
+                if (newBondOrderSetting === 'auto') {
+                  const p1 = atomUnitsToAng(vol, vol.atoms[ai]);
+                  const p2 = atomUnitsToAng(vol, newAtom);
+                  order = computeBondOrderByLength(vol.atoms[ai].Z|0, newAtom.Z|0, p1.distanceTo(p2));
+                } else { order = parseInt(newBondOrderSetting, 10) || 1; }
+                addBond(vol, ai, aj, order);
+                addHydrogensIfNeeded(vol, aj);
+                rebuildScene({ preserveView: true });
+              }
+              dragFromAtom = null; dragSnapTo = null;
+            } else {
+              // Click without drag: atom change, bond cycle, or add atom in empty space
+              // Try bond click
+              const bondHits = raycaster.intersectObjects(bondGroup.children, false);
+              if (bondHits.length > 0) {
+                const obj = bondHits[0].object;
+                if (obj.userData && obj.userData.type === 'bond') {
+                  cycleBondOrder(vol, obj.userData.index);
+                  rebuildScene({ preserveView: true });
+                  return;
+                }
+              }
+              // Try atom click
+              const atomHits = raycaster.intersectObjects(atomGroup.children, false);
+              if (atomHits.length > 0) {
+                const obj = atomHits[0].object;
+                if (obj.userData && obj.userData.type === 'atom') {
+                  const idx = obj.userData.index;
+                  vol.atoms[idx].Z = selectedZ || symToZ(selectedElement);
+                  if (autoHydrogens) { addHydrogensIfNeeded(vol, idx); trimHydrogensIfExcess(vol, idx); }
+                  rebuildScene({ preserveView: true });
+                  return;
+                }
+              }
+              // Else empty: place atom on target plane
+              const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), controls.target.clone());
+              const hit = new THREE.Vector3();
+              if (raycaster.ray.intersectPlane(plane, hit)) {
+                const [x, y, z] = worldToAtomUnits(vol, hit);
+                vol.atoms.push({ Z: selectedZ || symToZ(selectedElement), q: 0, x, y, z });
+                const idx = vol.atoms.length - 1;
+                addHydrogensIfNeeded(vol, idx);
+                rebuildScene({ preserveView: true });
+              }
+            }
+          }
+        }
+      });
+      drop.addEventListener('pointermove', (e) => {
+        if (!editEnabled) return;
+        if (dragFromAtom == null) return;
+        ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
+        ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        raycaster.setFromCamera(ndc, camera);
+        const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
+        if (!vol) return;
+        const a0 = atomUnitsToAng(vol, vol.atoms[dragFromAtom]);
+        // Try snap to other atom
+        const atomHits = raycaster.intersectObjects(atomGroup.children, false);
+        if (atomHits.length > 0) {
+          const h = atomHits[0].object;
+          if (h && h.userData && h.userData.type === 'atom') {
+            const idx = h.userData.index;
+            if (idx !== dragFromAtom) {
+              dragSnapTo = idx;
+              // Position preview bond to this atom; hide ghost
+              const bPos = atomUnitsToAng(vol, vol.atoms[idx]);
+              const mid = tmpV.copy(a0).add(bPos).multiplyScalar(0.5);
+              const len = a0.distanceTo(bPos);
+              dragBond.position.copy(mid);
+              dragBond.scale.set(1, len, 1);
+              dragBond.quaternion.setFromUnitVectors(tmpUp, tmpV.copy(bPos).sub(a0).normalize());
+              dragGhost.visible = false;
+              return;
+            }
+          }
+        }
+        dragSnapTo = null;
+        // Intersect plane through origin atom
+        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), a0.clone());
+        const hit = new THREE.Vector3();
+        raycaster.ray.intersectPlane(plane, hit);
+        if (hit) {
+          dragGhost.visible = true;
+          dragGhost.position.copy(hit);
+          const mid = tmpV.copy(a0).add(hit).multiplyScalar(0.5);
+          const len = a0.distanceTo(hit);
+          dragBond.position.copy(mid);
+          dragBond.scale.set(1, len, 1);
+          dragBond.quaternion.setFromUnitVectors(tmpUp, tmpV.copy(hit).sub(a0).normalize());
+        }
+      });
+      // Delete with right-click
+      drop.addEventListener('contextmenu', (e) => {
+        if (!editEnabled) return;
+        e.preventDefault();
+        ndc.x = (e.clientX / renderer.domElement.clientWidth) * 2 - 1;
+        ndc.y = -(e.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        raycaster.setFromCamera(ndc, camera);
+        const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
+        if (!vol) return false;
+        const atomHits = raycaster.intersectObjects(atomGroup.children, false);
+        if (atomHits.length > 0) {
+          const obj = atomHits[0].object;
+          if (obj.userData && obj.userData.type === 'atom') {
+            removeAtom(vol, obj.userData.index);
+            rebuildScene({ preserveView: true });
+            return false;
+          }
+        }
+        const bondHits = raycaster.intersectObjects(bondGroup.children, false);
+        if (bondHits.length > 0) {
+          const obj = bondHits[0].object;
+          if (obj.userData && obj.userData.type === 'bond') {
+            removeBond(vol, obj.userData.index);
+            rebuildScene({ preserveView: true });
+            return false;
+          }
+        }
+        return false;
       });
 
       // Clear cubes and show sample again
@@ -1429,6 +1887,9 @@
         const opacity = parseFloat(opInput.value || "1.00");
         const posMat = createIsoMaterial('pos', opacity);
         const negMat = createIsoMaterial('neg', opacity);
+
+        // Ensure bonds exist (for edit/xyz)
+        if (Array.isArray(vol.atoms)) ensureBonds(vol);
 
         const hasGrid = Array.isArray(vol.nxyz) && (vol.nxyz[0] > 0 && vol.nxyz[1] > 0 && vol.nxyz[2] > 0);
         if (renderMode === 'surface' && showSurfaces && hasGrid) {
@@ -1658,6 +2119,32 @@
             rebuildScene({ preserveView: true });
             updateSidePanel();
             e.preventDefault();
+          }
+        }
+
+        // Edit shortcuts: element symbols and bond order 1/2/3
+        if (editEnabled && !editing) {
+          const k = e.key;
+          if (k === '1' || k === '2' || k === '3') {
+            newBondOrderSetting = k;
+            if (bondOrderEl) bondOrderEl.value = k;
+          } else if (/^[a-zA-Z]$/.test(k)) {
+            // Simple symbol capture: first letter uppercase, optional second collected briefly
+            const first = k.toUpperCase();
+            let sym = first;
+            // Peek at next key within 500ms
+            let handled = false;
+            const onNext = (ev) => {
+              if (handled) return;
+              handled = true;
+              window.removeEventListener('keypress', onNext, true);
+              const kk = ev.key;
+              if (/^[a-z]$/.test(kk)) { sym = first + kk; }
+              selectedElement = sym; selectedZ = symToZ(selectedElement);
+              if (elemSelectEl) elemSelectEl.value = selectedElement;
+            };
+            window.addEventListener('keypress', onNext, true);
+            setTimeout(() => { if (!handled) { window.removeEventListener('keypress', onNext, true); selectedElement = sym; selectedZ = symToZ(selectedElement); if (elemSelectEl) elemSelectEl.value = selectedElement; } }, 500);
           }
         }
       });
