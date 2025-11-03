@@ -794,10 +794,26 @@
             cyl.position.copy(mid);
             const q = new THREE.Quaternion().setFromUnitVectors(up, dir.normalize());
             cyl.setRotationFromQuaternion(q);
+            cyl.userData = { baseLen: len, i, j };
             group.add(cyl);
           }
         }
         return group;
+      }
+
+      // Rebuild bonds only (keeps atoms/surfaces as-is to avoid flicker)
+      function rebuildBondsOnly() {
+        if (currentIndex < 0 || !volumes[currentIndex]) return;
+        const vol = volumes[currentIndex].vol;
+        if (!vol) return;
+        contentGroup.remove(bondGroup);
+        // dispose previous to avoid leaks
+        bondGroup.traverse(obj => {
+          if (obj.isMesh) { obj.geometry?.dispose?.(); obj.material?.dispose?.(); }
+        });
+        bondGroup.clear();
+        bondGroup = buildBonds(vol);
+        contentGroup.add(bondGroup);
       }
 
       function buildBox(vol) {
@@ -1259,11 +1275,14 @@
         if (hoverAtomMesh && hoverAtomMesh.material && hoverAtomMesh.material.emissive) {
           const prev = hoverAtomMesh.userData.prevEmissive;
           if (prev) hoverAtomMesh.material.emissive.copy(prev);
+          if (hoverAtomMesh.userData.prevEI != null) hoverAtomMesh.material.emissiveIntensity = hoverAtomMesh.userData.prevEI;
         }
         hoverAtomMesh = null;
         if (mesh && mesh.material && mesh.material.emissive) {
           mesh.userData.prevEmissive = mesh.material.emissive.clone();
-          mesh.material.emissive.set(0xffff66);
+          mesh.userData.prevEI = mesh.material.emissiveIntensity ?? 1.0;
+          mesh.material.emissive.set(0xfff199);
+          mesh.material.emissiveIntensity = 0.25;
           hoverAtomMesh = mesh;
         }
       }
@@ -1287,6 +1306,7 @@
         return hits.length > 0 ? hits[0].object : null;
       }
 
+      let __lastBondUpdate = 0;
       canvasEl.addEventListener('pointermove', (e) => {
         if (!editMode) return;
         if (dragActive) {
@@ -1310,7 +1330,9 @@
                 const a = vol.atoms[dragAtomIndex];
                 a.x = arr[0]; a.y = arr[1]; a.z = arr[2];
               }
-              // Avoid rebuild during drag to prevent duplicate meshes/flicker
+              // Update bonds in-place at ~30 FPS to minimize flicker
+              const now = performance.now();
+              if (now - __lastBondUpdate > 33) { rebuildBondsOnly(); __lastBondUpdate = now; }
             }
           }
           return;
