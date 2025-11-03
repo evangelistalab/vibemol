@@ -215,12 +215,38 @@
     #hint {
       position: fixed;
       left: 12px;
-      bottom: 10px;
+      bottom: 40px; /* sit above the shortcuts ribbon */
       color: #9ab;
       background: #0f141d90;
       padding: 6px 8px;
       border-radius: 6px;
+      z-index: 31; /* above the ribbon (z-index:30) */
     }
+
+    /* Edit axis lock widget */
+    #axisLock {
+      position: fixed;
+      right: 12px;
+      bottom: 40px;
+      display: none;
+      gap: 6px;
+      background: #0f141d90;
+      padding: 6px 8px;
+      border: 1px solid #223;
+      border-radius: 8px;
+      z-index: 32;
+    }
+    #axisLock button {
+      pointer-events: auto;
+      background: #1a2230;
+      color: #e9f1ff;
+      border: 1px solid #2a3546;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #axisLock button.active { background: #2c3a52; }
   </style>
 </head>
 
@@ -260,6 +286,12 @@
     <canvas id="canvas"></canvas>
   </div>
   <div id="hint">Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
+  <!-- Edit mode axis lock toolbar -->
+  <div id="axisLock" aria-hidden="true">
+    <button id="axisX" title="Lock movement to X">X</button>
+    <button id="axisY" title="Lock movement to Y">Y</button>
+    <button id="axisZ" title="Lock movement to Z">Z</button>
+  </div>
   <div id="shortcutRibbon" aria-hidden="true"
     style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid #223; pointer-events:none; z-index:30;"></div>
 
@@ -516,6 +548,17 @@
 
       // (subsample removed)
 
+      // Coordinate conversions between stored atom units and world Å
+      const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
+      function atomUnitsToAng(vol, a) {
+        if (vol.units === 'angstrom') return new THREE.Vector3(a.x, a.y, a.z);
+        return new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
+      }
+      function worldToAtomUnits(vol, v3) {
+        if (vol.units === 'angstrom') return [v3.x, v3.y, v3.z];
+        return [v3.x * ANG_TO_BOHR, v3.y * ANG_TO_BOHR, v3.z * ANG_TO_BOHR];
+      }
+
       // Map a point in voxel grid coords (x,y,z in [0..nx-1], etc.) to world (Å)
       function voxelToWorld(vol, p) {
         const a = vol.axes[0].map(v => v * BOHR_TO_ANG);
@@ -712,6 +755,7 @@
           const pos = new THREE.Vector3(px, py, pz);
           mesh.position.copy(pos);
           mesh.scale.setScalar(r * 1.2);
+          mesh.userData = { type: 'atom', index: atomPositions.length };
           group.add(mesh);
           atomPositions.push({ pos, Z: a.Z | 0 });
         }
@@ -1026,7 +1070,7 @@
         renderer.clear();
         renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
         renderer.setScissorTest(false);
-        renderer.render(scene, camera);
+      renderer.render(scene, camera);
 
         // FPS update
         const now = performance.now();
@@ -1110,6 +1154,10 @@
       const cloudTypeSel = document.getElementById('cloudType');
       const cloudStrideEl = document.getElementById('cloudStride');
       const cloudAlphaEl = document.getElementById('cloudAlpha');
+      const axisLockEl = document.getElementById('axisLock');
+      const axisXBtn = document.getElementById('axisX');
+      const axisYBtn = document.getElementById('axisY');
+      const axisZBtn = document.getElementById('axisZ');
       const shortcutRibbon = document.getElementById('shortcutRibbon');
 
       openBtn.onclick = () => fileInput.click();
@@ -1135,6 +1183,12 @@
         help: [
           { k: 'Esc', d: 'Close Help' },
           { k: '←/→', d: 'Prev/Next file' },
+        ],
+        edit: [
+          { k: 'E', d: 'Exit edit' },
+          { k: 'Click+Drag', d: 'Move atom' },
+          { k: 'X/Y/Z', d: 'Axis lock' },
+          { k: 'Esc', d: 'Cancel drag' },
         ],
       };
       let currentShortcutContext = 'default';
@@ -1179,6 +1233,112 @@
       // Initialize view UI
       refreshViewUI();
       controls.addEventListener('change', refreshViewUI);
+
+      // --- Edit mode: toggle with 'E', hover highlight, drag to move ---
+      let editMode = false;
+      let hoverAtomMesh = null;
+      let dragActive = false;
+      let dragAtomIndex = -1;
+      let dragStartPos = null;
+      let dragPlane = null;
+      let dragPlaneStart = null;
+      let axisLock = 'none'; // 'none'|'x'|'y'|'z'
+
+      const raycaster = new THREE.Raycaster();
+      const ndc = new THREE.Vector2();
+      const canvasEl = document.getElementById('canvas');
+      function setNDCFromEvent(e) {
+        const rect = canvasEl.getBoundingClientRect();
+        ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      }
+      function setHover(mesh) {
+        if (hoverAtomMesh === mesh) return;
+        if (hoverAtomMesh && hoverAtomMesh.material && hoverAtomMesh.material.emissive) {
+          const prev = hoverAtomMesh.userData.prevEmissive;
+          if (prev) hoverAtomMesh.material.emissive.copy(prev);
+        }
+        hoverAtomMesh = null;
+        if (mesh && mesh.material && mesh.material.emissive) {
+          mesh.userData.prevEmissive = mesh.material.emissive.clone();
+          mesh.material.emissive.set(0xffff66);
+          hoverAtomMesh = mesh;
+        }
+      }
+      function clearHover() { setHover(null); }
+
+      function updateAxisButtons() {
+        if (!axisLockEl) return;
+        axisLockEl.style.display = editMode ? 'flex' : 'none';
+        const set = (btn, on) => { if (!btn) return; btn.classList.toggle('active', !!on); };
+        set(axisXBtn, axisLock === 'x'); set(axisYBtn, axisLock === 'y'); set(axisZBtn, axisLock === 'z');
+      }
+      if (axisXBtn) axisXBtn.onclick = () => { axisLock = (axisLock === 'x' ? 'none' : 'x'); updateAxisButtons(); };
+      if (axisYBtn) axisYBtn.onclick = () => { axisLock = (axisLock === 'y' ? 'none' : 'y'); updateAxisButtons(); };
+      if (axisZBtn) axisZBtn.onclick = () => { axisLock = (axisLock === 'z' ? 'none' : 'z'); updateAxisButtons(); };
+
+      function pickAtom(e) {
+        if (!atomGroup || !atomGroup.children || atomGroup.children.length === 0) return null;
+        setNDCFromEvent(e);
+        raycaster.setFromCamera(ndc, camera);
+        const hits = raycaster.intersectObjects(atomGroup.children, false);
+        return hits.length > 0 ? hits[0].object : null;
+      }
+
+      canvasEl.addEventListener('pointermove', (e) => {
+        if (!editMode) return;
+        if (dragActive) {
+          setNDCFromEvent(e);
+          raycaster.setFromCamera(ndc, camera);
+          const hit = new THREE.Vector3();
+          if (dragPlane && raycaster.ray.intersectPlane(dragPlane, hit)) {
+            const move = hit.clone().sub(dragPlaneStart);
+            let newPos = dragStartPos.clone().add(move);
+            if (axisLock !== 'none') {
+              const ax = axisLock === 'x' ? new THREE.Vector3(1,0,0) : axisLock === 'y' ? new THREE.Vector3(0,1,0) : new THREE.Vector3(0,0,1);
+              const t = move.dot(ax);
+              newPos = dragStartPos.clone().add(ax.multiplyScalar(t));
+            }
+            // Apply to mesh and data
+            if (dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
+              const m = atomGroup.children[dragAtomIndex];
+              m.position.copy(newPos);
+              const vol = volumes[currentIndex]?.vol; if (vol) {
+                const arr = worldToAtomUnits(vol, newPos);
+                const a = vol.atoms[dragAtomIndex];
+                a.x = arr[0]; a.y = arr[1]; a.z = arr[2];
+              }
+              if (toggleBonds && toggleBonds.checked) rebuildScene({ preserveView: true });
+            }
+          }
+          return;
+        }
+        const obj = pickAtom(e);
+        setHover(obj);
+      });
+
+      canvasEl.addEventListener('pointerdown', (e) => {
+        if (!editMode || e.button !== 0) return;
+        const obj = pickAtom(e);
+        if (!obj || !obj.userData) return;
+        dragAtomIndex = obj.userData.index | 0;
+        dragActive = true;
+        controls.enabled = false;
+        dragStartPos = obj.position.clone();
+        const normal = new THREE.Vector3();
+        // plane orthogonal to camera-to-target axis
+        camera.getWorldDirection(normal);
+        dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, dragStartPos);
+        const hit = new THREE.Vector3(); raycaster.ray.intersectPlane(dragPlane, hit);
+        dragPlaneStart = hit.clone();
+        e.preventDefault();
+      });
+
+      canvasEl.addEventListener('pointerup', (e) => {
+        if (!dragActive) return;
+        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null;
+        controls.enabled = true;
+      });
 
       // Reset view to the initial camera/target/shift
       viewReset.onclick = () => {
@@ -1703,7 +1863,13 @@
           if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
         }
         if (!editing && (e.key === 'h' || e.key === 'H' || e.key === '?')) { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); }
-        if (e.key === 'Escape') { closeSide(); if (helpOverlay) closeHelp(); }
+        if (e.key === 'Escape') { closeSide(); if (helpOverlay) closeHelp(); if (dragActive) { dragActive = false; dragAtomIndex = -1; controls.enabled = true; } }
+        if ((e.key === 'e' || e.key === 'E') && !editing) {
+          editMode = !editMode;
+          axisLock = 'none'; updateAxisButtons();
+          renderRibbon(editMode ? 'edit' : 'default');
+          if (!editMode) { clearHover(); }
+        }
 
         // Arrow keys: switch files (preserve camera)
         if (!editing && volumes.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
