@@ -1294,6 +1294,61 @@
       let axisLock = 'none'; // 'none'|'x'|'y'|'z'
       let axisKeyDown = null; // current held axis key ('x'|'y'|'z') to avoid auto-repeat toggling
 
+      // Faint axis guide line shown while holding X/Y/Z in edit mode
+      let axisGuideLine = null; // THREE.Line
+      function ensureAxisGuideLine() {
+        if (axisGuideLine && axisGuideLine.isLine) return axisGuideLine;
+        const geom = new THREE.BufferGeometry();
+        // two points (start, end)
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+        const mat = new THREE.LineBasicMaterial({ color: 0xff4136, transparent: true, opacity: 0.5, depthTest: false });
+        axisGuideLine = new THREE.Line(geom, mat);
+        axisGuideLine.visible = false;
+        axisGuideLine.renderOrder = 9999; // draw last
+        contentGroup.add(axisGuideLine);
+        return axisGuideLine;
+      }
+      function getSelectedAtomPosition() {
+        if (dragActive && dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
+          return atomGroup.children[dragAtomIndex].position.clone();
+        }
+        if (hoverAtomMesh && hoverAtomMesh.position) return hoverAtomMesh.position.clone();
+        return null;
+      }
+      function updateAxisGuideLine() {
+        try {
+          const axis = axisKeyDown; // only show while key is held
+          if (!editMode || !axis || !('xyz'.includes(axis))) { if (axisGuideLine) axisGuideLine.visible = false; return; }
+          const pos = getSelectedAtomPosition();
+          if (!pos) { if (axisGuideLine) axisGuideLine.visible = false; return; }
+          ensureAxisGuideLine();
+          // Determine extents along the chosen axis from current atom positions
+          let minVal = Infinity, maxVal = -Infinity;
+          if (atomGroup && atomGroup.children && atomGroup.children.length) {
+            for (const ch of atomGroup.children) {
+              if (!ch || !ch.position) continue;
+              const v = axis === 'x' ? ch.position.x : axis === 'y' ? ch.position.y : ch.position.z;
+              if (v < minVal) minVal = v;
+              if (v > maxVal) maxVal = v;
+            }
+          }
+          const centerVal = axis === 'x' ? pos.x : axis === 'y' ? pos.y : pos.z;
+          if (!isFinite(minVal) || !isFinite(maxVal)) { minVal = centerVal - 10; maxVal = centerVal + 10; }
+          const margin = 100; // set large margin // Math.max(0.5, (maxVal - minVal) * 0.1);
+          minVal -= margin; maxVal += margin;
+          const p0 = pos.clone();
+          const p1 = pos.clone();
+          if (axis === 'x') { p0.x = minVal; p1.x = maxVal; axisGuideLine.material.color.setHex(0xff4136); }
+          else if (axis === 'y') { p0.y = minVal; p1.y = maxVal; axisGuideLine.material.color.setHex(0x2ecc40); }
+          else { p0.z = minVal; p1.z = maxVal; axisGuideLine.material.color.setHex(0x0074d9); }
+          const arr = axisGuideLine.geometry.getAttribute('position').array;
+          arr[0] = p0.x; arr[1] = p0.y; arr[2] = p0.z;
+          arr[3] = p1.x; arr[4] = p1.y; arr[5] = p1.z;
+          axisGuideLine.geometry.attributes.position.needsUpdate = true;
+          axisGuideLine.visible = true;
+        } catch (e) { /* ignore */ }
+      }
+
       const raycaster = new THREE.Raycaster();
       const ndc = new THREE.Vector2();
       const canvasEl = document.getElementById('canvas');
@@ -1342,6 +1397,8 @@
           mesh.userData.hoverHalo = halo;
           hoverAtomMesh = mesh;
         }
+        // If user is holding an axis key, keep the guide line in sync
+        updateAxisGuideLine();
       }
       function clearHover() { setHover(null); }
 
@@ -1397,6 +1454,8 @@
               const now = performance.now();
               if (now - __lastBondUpdate > 33) { rebuildBondsFromAtoms(); __lastBondUpdate = now; }
             }
+            // Move the guide line with the dragged atom
+            updateAxisGuideLine();
           }
           return;
         }
@@ -1424,6 +1483,8 @@
         const hit = new THREE.Vector3(); raycaster.ray.intersectPlane(dragPlane, hit);
         dragPlaneStart = hit.clone();
         dragAxis = axisLock;
+        // Update guide line at drag start if an axis key is held
+        updateAxisGuideLine();
         e.preventDefault();
       });
 
@@ -1434,6 +1495,8 @@
         dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
         controls.enabled = true;
         if (editMode) renderRibbon('edit');
+        // Refresh/hide guide line after drag ends
+        updateAxisGuideLine();
       });
 
       // Reset view to the initial camera/target/shift
@@ -1986,13 +2049,15 @@
           if ((e.key === 'x' || e.key === 'X') && !e.repeat) { axisKeyDown = 'x'; axisLock = 'x'; changed = true; }
           if ((e.key === 'y' || e.key === 'Y') && !e.repeat) { axisKeyDown = 'y'; axisLock = 'y'; changed = true; }
           if ((e.key === 'z' || e.key === 'Z') && !e.repeat) { axisKeyDown = 'z'; axisLock = 'z'; changed = true; }
-          if (changed) { updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
+          if (changed) { updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
         }
         if ((e.key === 'e' || e.key === 'E') && !editing) {
           editMode = !editMode;
           axisLock = 'none'; updateAxisButtons();
           renderRibbon(editMode ? 'edit' : 'default');
           if (!editMode) { clearHover(); }
+          // Hide guide line when leaving edit mode
+          updateAxisGuideLine();
         }
 
         // Release axis lock on keyup (prevents flip-flop when holding key)
@@ -2000,9 +2065,9 @@
           const tag2 = (document.activeElement && document.activeElement.tagName) || '';
           const editing2 = tag2 === 'INPUT' || tag2 === 'TEXTAREA' || tag2 === 'SELECT';
           if (!editMode || editing2) return;
-          if ((ev.key === 'x' || ev.key === 'X') && axisKeyDown === 'x') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
-          if ((ev.key === 'y' || ev.key === 'Y') && axisKeyDown === 'y') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
-          if ((ev.key === 'z' || ev.key === 'Z') && axisKeyDown === 'z') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
+          if ((ev.key === 'x' || ev.key === 'X') && axisKeyDown === 'x') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
+          if ((ev.key === 'y' || ev.key === 'Y') && axisKeyDown === 'y') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
+          if ((ev.key === 'z' || ev.key === 'Z') && axisKeyDown === 'z') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
         });
 
         // Arrow keys: switch files (preserve camera)
