@@ -1304,17 +1304,42 @@
       }
       function setHover(mesh) {
         if (hoverAtomMesh === mesh) return;
-        if (hoverAtomMesh && hoverAtomMesh.material && hoverAtomMesh.material.emissive) {
-          const prev = hoverAtomMesh.userData.prevEmissive;
-          if (prev) hoverAtomMesh.material.emissive.copy(prev);
-          if (hoverAtomMesh.userData.prevEI != null) hoverAtomMesh.material.emissiveIntensity = hoverAtomMesh.userData.prevEI;
+        // Remove previous halo
+        if (hoverAtomMesh && hoverAtomMesh.userData && hoverAtomMesh.userData.hoverHalo) {
+          const halo = hoverAtomMesh.userData.hoverHalo;
+          hoverAtomMesh.remove(halo);
+          try { halo.geometry && halo.geometry.dispose && halo.geometry.dispose(); } catch { }
+          try { halo.material && halo.material.dispose && halo.material.dispose(); } catch { }
+          hoverAtomMesh.userData.hoverHalo = null;
         }
         hoverAtomMesh = null;
-        if (mesh && mesh.material && mesh.material.emissive) {
-          mesh.userData.prevEmissive = mesh.material.emissive.clone();
-          mesh.userData.prevEI = mesh.material.emissiveIntensity ?? 1.0;
-          mesh.material.emissive.set(0xfff199);
-          mesh.material.emissiveIntensity = 0.25;
+        // Add orange halo to new mesh
+        if (mesh && mesh.isMesh && mesh.geometry) {
+          const haloGeom = mesh.geometry.clone();
+          const haloMat = new THREE.MeshBasicMaterial({
+            color: 0x00a5ff,
+            side: THREE.BackSide,
+            transparent: true,
+            opacity: 0.85,
+            depthWrite: false,
+          });
+          const halo = new THREE.Mesh(haloGeom, haloMat);
+          // Expand by a fixed world excess (e.g., 0.06 Å) regardless of atom size
+          const excess = 0.06; // Å
+          let baseR = 0.5; // our atom SphereGeometry radius
+          try {
+            if (mesh.geometry && mesh.geometry.parameters && typeof mesh.geometry.parameters.radius === 'number') {
+              baseR = mesh.geometry.parameters.radius;
+            }
+          } catch { }
+          const parentScale = (mesh.scale && mesh.scale.x) ? mesh.scale.x : 1.0; // atoms are uniformly scaled
+          const worldR = Math.max(1e-6, baseR * parentScale);
+          const k = 1.0 + (excess / worldR); // child local scale factor so that R*k = R + excess
+          halo.scale.set(k, k, k);
+          halo.renderOrder = (mesh.renderOrder || 0) - 1;
+          mesh.add(halo);
+          if (!mesh.userData) mesh.userData = {};
+          mesh.userData.hoverHalo = halo;
           hoverAtomMesh = mesh;
         }
       }
