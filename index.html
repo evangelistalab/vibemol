@@ -214,11 +214,11 @@
 
     #hint {
       position: fixed;
-      left: 12px;
+      left: 160px;
       bottom: 40px;
       /* sit above the shortcuts ribbon */
-      color: #9ab;
-      background: #0f141d90;
+      color: rgb(20, 22, 24);
+      background: #9ab;
       padding: 6px 8px;
       border-radius: 6px;
       z-index: 31;
@@ -232,7 +232,7 @@
       bottom: 40px;
       display: none;
       gap: 6px;
-      background: #0f141d90;
+      background: #9ab;
       padding: 6px 8px;
       border: 1px solid #223;
       border-radius: 8px;
@@ -251,7 +251,7 @@
     }
 
     #axisLock button.active {
-      background: #2c3a52;
+      background: #9ab;
     }
   </style>
 </head>
@@ -1963,22 +1963,22 @@
           if ((e.key === 'z' || e.key === 'Z') && !e.repeat) { axisKeyDown = 'z'; axisLock = 'z'; changed = true; }
           if (changed) { updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
         }
-      if ((e.key === 'e' || e.key === 'E') && !editing) {
-        editMode = !editMode;
-        axisLock = 'none'; updateAxisButtons();
-        renderRibbon(editMode ? 'edit' : 'default');
-        if (!editMode) { clearHover(); }
-      }
+        if ((e.key === 'e' || e.key === 'E') && !editing) {
+          editMode = !editMode;
+          axisLock = 'none'; updateAxisButtons();
+          renderRibbon(editMode ? 'edit' : 'default');
+          if (!editMode) { clearHover(); }
+        }
 
-      // Release axis lock on keyup (prevents flip-flop when holding key)
-      window.addEventListener('keyup', (ev) => {
-        const tag2 = (document.activeElement && document.activeElement.tagName) || '';
-        const editing2 = tag2 === 'INPUT' || tag2 === 'TEXTAREA' || tag2 === 'SELECT';
-        if (!editMode || editing2) return;
-        if ((ev.key === 'x' || ev.key === 'X') && axisKeyDown === 'x') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
-        if ((ev.key === 'y' || ev.key === 'Y') && axisKeyDown === 'y') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
-        if ((ev.key === 'z' || ev.key === 'Z') && axisKeyDown === 'z') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
-      });
+        // Release axis lock on keyup (prevents flip-flop when holding key)
+        window.addEventListener('keyup', (ev) => {
+          const tag2 = (document.activeElement && document.activeElement.tagName) || '';
+          const editing2 = tag2 === 'INPUT' || tag2 === 'TEXTAREA' || tag2 === 'SELECT';
+          if (!editMode || editing2) return;
+          if ((ev.key === 'x' || ev.key === 'X') && axisKeyDown === 'x') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
+          if ((ev.key === 'y' || ev.key === 'Y') && axisKeyDown === 'y') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
+          if ((ev.key === 'z' || ev.key === 'Z') && axisKeyDown === 'z') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; }
+        });
 
         // Arrow keys: switch files (preserve camera)
         if (!editing && volumes.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
