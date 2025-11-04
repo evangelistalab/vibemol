@@ -437,7 +437,6 @@
           <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
           <li><strong>A</strong> — Toggle axis gizmo on/off</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
-          <li><strong>Esc</strong> — Close open menus/dialogs</li>
         </ul>
       </div>
     </div>
@@ -1247,19 +1246,16 @@
           { k: '?', d: 'Help' },
         ],
         panel: [
-          { k: 'Esc', d: 'Close View/Coords' },
           { k: 'S', d: 'Save PNG' },
           { k: 'I', d: 'Toggle surfaces' },
         ],
         help: [
-          { k: 'Esc', d: 'Close Help' },
           { k: '←/→', d: 'Prev/Next file' },
         ],
         edit: [
           { k: 'E', d: 'Exit edit' },
           { k: 'Click+Drag', d: 'Move atom' },
           { k: 'X/Y/Z', d: 'Axis lock' },
-          { k: 'Esc', d: 'Cancel drag' },
         ],
         measure: [
           { k: 'M', d: 'Exit measurement' },
@@ -1609,29 +1605,7 @@
       bind('down', 'global', 'ArrowLeft', () => nextPrev(-1));
       bind('down', 'global', 'ArrowUp', () => nextPrev(-1));
 
-      // Global: Escape closes panels or cancels drag
-      bind('down', 'global', 'Escape', () => {
-        let closed = false;
-        if (helpOverlay && helpOverlay.style.display === 'flex') { closeHelp(); closed = true; }
-        else if (sidePanel && sidePanel.classList.contains('open')) { closeSide(); closed = true; }
-        if (dragActive) {
-          // Revert to original position
-          const vol = volumes[currentIndex]?.vol;
-          if (vol && dragAtomIndex >= 0 && vol.atoms[dragAtomIndex]) {
-            const a = vol.atoms[dragAtomIndex];
-            if (dragOrigAtomUnits) { a.x = dragOrigAtomUnits[0]; a.y = dragOrigAtomUnits[1]; a.z = dragOrigAtomUnits[2]; }
-          }
-          if (dragOrigMeshPos && dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
-            atomGroup.children[dragAtomIndex].position.copy(dragOrigMeshPos);
-          }
-          rebuildScene({ preserveView: true });
-          dragActive = false; dragAtomIndex = -1; controls.enabled = true; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null;
-          if (editMode) { renderRibbon('edit'); updateAxisButtons(); }
-        } else {
-          // No active drag; keep context ribbon consistent
-          renderRibbon(editMode ? 'edit' : (closed ? 'default' : currentShortcutContext));
-        }
-      });
+      // Note: Esc handling removed per request. Use on-screen UI to close dialogs.
 
       // Display mode bindings
       bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
