@@ -1465,7 +1465,7 @@
       function clearEditSelection() { editSel = []; updateEditSelectionVisuals(); updateSelectedHalos(); }
       function addEditSelection(i) {
         if (i == null || i < 0) return;
-        if (editSel.length >= 3) editSel = editSel.slice(1); // keep last 2, then push new -> last 3
+        if (editSel.length >= 4) editSel = editSel.slice(1); // keep last 3, then push new -> last 4
         if (editSel.length && editSel[editSel.length - 1] === i) return; // ignore duplicate consecutive
         editSel.push(i);
         updateEditSelectionVisuals();
@@ -1512,11 +1512,12 @@
         if (currentMode !== MODES.MEASURE || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
         const posOf = (idx) => (atomGroup.children[idx] && atomGroup.children[idx].position) ? atomGroup.children[idx].position.clone() : null;
         const fmtDist = (d) => d.toFixed(4) + ' Å';
-        const addEdge = (i, j) => {
+        const fmtDeg = (r) => (r * 180 / Math.PI).toFixed(2) + '°';
+        const addEdge = (i, j, color = 0xd3d3d3) => {
           const a = posOf(i), b = posOf(j); if (!a || !b) return;
           const g = new THREE.BufferGeometry();
           g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([a.x, a.y, a.z, b.x, b.y, b.z]), 3));
-          const m = new THREE.LineBasicMaterial({ color: 0xd3d3d3, transparent: true, opacity: 0.9, depthTest: false });
+          const m = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9, depthTest: false });
           editSelGroup.add(new THREE.Line(g, m));
           // label at midpoint
           const mid = a.clone().add(b).multiplyScalar(0.5);
@@ -1527,16 +1528,13 @@
           const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir); label.position.add(camDir.multiplyScalar(0.01));
           editSelGroup.add(label);
         };
-        if (editSel.length === 2) {
-          addEdge(editSel[0], editSel[1]);
-          return;
-        }
-        if (editSel.length >= 3) {
-          const i = editSel[0], j = editSel[1], k = editSel[2];
-          addEdge(i, j); addEdge(j, k);
-          const pa = posOf(i), pb = posOf(j), pc = posOf(k);
+        // Draw distances for adjacent pairs
+        for (let t = 0; t < editSel.length - 1; t++) addEdge(editSel[t], editSel[t + 1]);
+
+        // Helper to draw angle fan and numeric label for triplet a-b-c (angle at b)
+        const addAngle = (ia, ib, ic) => {
+          const pa = posOf(ia), pb = posOf(ib), pc = posOf(ic);
           if (!pa || !pb || !pc) return;
-          // angle wedge at j between vectors ja and jc
           const v1 = pa.clone().sub(pb).normalize();
           const v2 = pc.clone().sub(pb).normalize();
           let dot = v1.dot(v2); dot = Math.max(-1, Math.min(1, dot));
@@ -1547,17 +1545,68 @@
           const e1 = v1.clone();
           const e3 = n.clone();
           const e2 = new THREE.Vector3().crossVectors(e3, e1).normalize();
-          const radius = Math.max(0.4, Math.min(pa.distanceTo(pb), pc.distanceTo(pb)) * 0.5);
+          const radius = Math.max(0.4, Math.min(pa.distanceTo(pb), pc.distanceTo(pb)) * 0.45);
           const segs = 48;
           const geom = new THREE.CircleGeometry(radius, segs, 0, theta);
           const mat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
           const fan = new THREE.Mesh(geom, mat);
-          // orient fan to plane (e1 -> local +X, e2 -> local +Y, e3 -> local +Z)
           const basis = new THREE.Matrix4(); basis.makeBasis(e1, e2, e3);
           const q = new THREE.Quaternion().setFromRotationMatrix(basis);
           fan.quaternion.copy(q);
-          fan.position.copy(pb.clone().add(e3.clone().multiplyScalar(0.002))); // slight offset along normal
+          fan.position.copy(pb.clone().add(e3.clone().multiplyScalar(0.002)));
           editSelGroup.add(fan);
+          // Angle label at arc midpoint
+          const midDir = e1.clone().multiplyScalar(Math.cos(theta / 2)).add(e2.clone().multiplyScalar(Math.sin(theta / 2)));
+          const label = makeTextSprite(fmtDeg(theta));
+          label.position.copy(pb.clone().add(midDir.multiplyScalar(radius + 0.06)));
+          editSelGroup.add(label);
+        };
+
+        if (editSel.length >= 3) {
+          for (let t = 0; t <= editSel.length - 3; t++) addAngle(editSel[t], editSel[t + 1], editSel[t + 2]);
+        }
+
+        // Dihedral for four atoms: 1-2-3-4
+        if (editSel.length >= 4) {
+          const i = editSel[0], j = editSel[1], k = editSel[2], l = editSel[3];
+          const p1 = posOf(i), p2 = posOf(j), p3 = posOf(k), p4 = posOf(l);
+          if (p1 && p2 && p3 && p4) {
+            const b1 = p2.clone().sub(p1);
+            const b2 = p3.clone().sub(p2);
+            const b3 = p4.clone().sub(p3);
+            const n1 = new THREE.Vector3().crossVectors(b1, b2).normalize();
+            const n2 = new THREE.Vector3().crossVectors(b2, b3).normalize();
+            const u = b2.clone().normalize();
+            if (n1.lengthSq() > 1e-8 && n2.lengthSq() > 1e-8 && u.lengthSq() > 1e-8) {
+              // signed dihedral using atan2
+              const x = n1.dot(n2);
+              const y = u.dot(new THREE.Vector3().crossVectors(n1, n2));
+              const phi = Math.atan2(y, x); // [-pi, pi]
+              // Visualize as a wedge around axis u at midpoint of 2-3
+              const mid = p2.clone().add(p3).multiplyScalar(0.5);
+              const eZ = u.clone();
+              const eX = n1.clone().normalize();
+              let eY = new THREE.Vector3().crossVectors(eZ, eX).normalize();
+              const theta = Math.abs(phi);
+              const segs = 64;
+              const radius = Math.max(0.35, Math.min(b2.length() * 0.35, 1.2));
+              const geom = new THREE.CircleGeometry(radius, segs, 0, theta);
+              const mat = new THREE.MeshBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
+              const fan = new THREE.Mesh(geom, mat);
+              const basis = new THREE.Matrix4(); basis.makeBasis(eX, eY, eZ);
+              const q = new THREE.Quaternion().setFromRotationMatrix(basis);
+              fan.quaternion.copy(q);
+              fan.position.copy(mid.clone().add(eZ.clone().multiplyScalar(0.002)));
+              editSelGroup.add(fan);
+              // Emphasize the central bond axis
+              addEdge(j, k, 0x8e44ad);
+              // Dihedral label
+              const midDir = eX.clone().multiplyScalar(Math.cos(theta / 2)).add(eY.clone().multiplyScalar(Math.sin(theta / 2)));
+              const label = makeTextSprite(fmtDeg(theta));
+              label.position.copy(mid.clone().add(midDir.multiplyScalar(radius + 0.08)));
+              editSelGroup.add(label);
+            }
+          }
         }
       }
       function setNDCFromEvent(e) {
