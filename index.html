@@ -1273,7 +1273,7 @@
         updateAxisButtons();
         const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
         renderRibbon(ctx);
-        if (!editMode) { clearHover(); }
+        if (!editMode) { clearHover(); clearEditSelection && clearEditSelection(); }
         updateAxisGuideLine && updateAxisGuideLine();
       }
 
@@ -1417,6 +1417,107 @@
       const raycaster = new THREE.Raycaster();
       const ndc = new THREE.Vector2();
       const canvasEl = document.getElementById('canvas');
+      // --- Edit selection (temporary list) and visuals ---
+      let editSel = []; // array of atom indices (max 3)
+      let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
+      let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
+      function clearEditSelection() { editSel = []; updateEditSelectionVisuals(); }
+      function addEditSelection(i) {
+        if (i == null || i < 0) return;
+        if (editSel.length >= 3) editSel = editSel.slice(1); // keep last 2, then push new -> last 3
+        if (editSel.length && editSel[editSel.length - 1] === i) return; // ignore duplicate consecutive
+        editSel.push(i);
+        updateEditSelectionVisuals();
+      }
+      function disposeObj(o) {
+        try { o.geometry && o.geometry.dispose && o.geometry.dispose(); } catch {}
+        try { if (o.material && o.material.map && o.material.map.dispose) o.material.map.dispose(); } catch {}
+        try { o.material && o.material.dispose && o.material.dispose(); } catch {}
+      }
+      function clearGroup(g) {
+        if (!g) return;
+        for (let i = g.children.length - 1; i >= 0; i--) {
+          const c = g.children[i];
+          g.remove(c);
+          disposeObj(c);
+        }
+      }
+      function makeTextSprite(txt) {
+        const pad = 4;
+        const font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+        const c = document.createElement('canvas');
+        const ctx = c.getContext('2d');
+        ctx.font = font;
+        const w = Math.ceil(ctx.measureText(txt).width) + pad * 2;
+        const h = 18 + pad * 2;
+        c.width = w * 2; c.height = h * 2; // hi-DPI
+        ctx.scale(2, 2);
+        ctx.font = font;
+        ctx.fillStyle = 'rgba(20,22,24,0.85)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#e8eef6';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(txt, pad, h / 2);
+        const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
+        const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+        const spr = new THREE.Sprite(mat);
+        const scale = 0.012; // tune label size relative to pixels
+        spr.scale.set(w * scale, h * scale, 1);
+        return spr;
+      }
+      function updateEditSelectionVisuals() {
+        clearGroup(editSelGroup);
+        if (!editMode || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
+        const posOf = (idx) => (atomGroup.children[idx] && atomGroup.children[idx].position) ? atomGroup.children[idx].position.clone() : null;
+        const fmtDist = (d) => d.toFixed(4) + ' Å';
+        const addEdge = (i, j) => {
+          const a = posOf(i), b = posOf(j); if (!a || !b) return;
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([a.x, a.y, a.z, b.x, b.y, b.z]), 3));
+          const m = new THREE.LineBasicMaterial({ color: 0xd3d3d3, transparent: true, opacity: 0.9, depthTest: false });
+          editSelGroup.add(new THREE.Line(g, m));
+          // label at midpoint
+          const mid = a.clone().add(b).multiplyScalar(0.5);
+          const dist = a.distanceTo(b);
+          const label = makeTextSprite(fmtDist(dist));
+          label.position.copy(mid);
+          // slight lift towards camera to avoid z-fighting
+          const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir); label.position.add(camDir.multiplyScalar(0.01));
+          editSelGroup.add(label);
+        };
+        if (editSel.length === 2) {
+          addEdge(editSel[0], editSel[1]);
+          return;
+        }
+        if (editSel.length >= 3) {
+          const i = editSel[0], j = editSel[1], k = editSel[2];
+          addEdge(i, j); addEdge(j, k);
+          const pa = posOf(i), pb = posOf(j), pc = posOf(k);
+          if (!pa || !pb || !pc) return;
+          // angle wedge at j between vectors ja and jc
+          const v1 = pa.clone().sub(pb).normalize();
+          const v2 = pc.clone().sub(pb).normalize();
+          let dot = v1.dot(v2); dot = Math.max(-1, Math.min(1, dot));
+          const theta = Math.acos(dot);
+          const n = new THREE.Vector3().crossVectors(v1, v2);
+          if (n.lengthSq() < 1e-8 || !isFinite(theta) || theta <= 0) return;
+          n.normalize();
+          const e1 = v1.clone();
+          const e3 = n.clone();
+          const e2 = new THREE.Vector3().crossVectors(e3, e1).normalize();
+          const radius = Math.max(0.4, Math.min(pa.distanceTo(pb), pc.distanceTo(pb)) * 0.5);
+          const segs = 48;
+          const geom = new THREE.CircleGeometry(radius, segs, 0, theta);
+          const mat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
+          const fan = new THREE.Mesh(geom, mat);
+          // orient fan to plane (e1 -> local +X, e2 -> local +Y, e3 -> local +Z)
+          const basis = new THREE.Matrix4(); basis.makeBasis(e1, e2, e3);
+          const q = new THREE.Quaternion().setFromRotationMatrix(basis);
+          fan.quaternion.copy(q);
+          fan.position.copy(pb.clone().add(e3.clone().multiplyScalar(0.002))); // slight offset along normal
+          editSelGroup.add(fan);
+        }
+      }
       function setNDCFromEvent(e) {
         const rect = canvasEl.getBoundingClientRect();
         ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -1493,6 +1594,7 @@
         const allowHover = (currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
         if (!allowHover) return;
         if (dragActive) {
+          __editMoved = true;
           setNDCFromEvent(e);
           raycaster.setFromCamera(ndc, camera);
           const hit = new THREE.Vector3();
@@ -1523,6 +1625,8 @@
             }
             // Move the guide line with the dragged atom
             updateAxisGuideLine();
+            // Update selection overlays if any
+            updateEditSelectionVisuals();
           }
           return;
         }
@@ -1532,9 +1636,11 @@
 
       canvasEl.addEventListener('pointerdown', (e) => {
         if (!editMode || e.button !== 0) return;
+        __editDownPt = { x: e.clientX, y: e.clientY }; __editMoved = false; __editClickIdx = -1;
         const obj = pickAtom(e);
-        if (!obj || !obj.userData) return;
+        if (!obj || !obj.userData) { clearEditSelection(); return; }
         dragAtomIndex = obj.userData.index | 0;
+        __editClickIdx = dragAtomIndex;
         dragActive = true;
         controls.enabled = false;
         dragStartPos = obj.position.clone();
@@ -1556,14 +1662,22 @@
       });
 
       canvasEl.addEventListener('pointerup', (e) => {
-        if (!dragActive) return;
-        // Final rebuild to update bonds/geometry once after drag
-        rebuildScene({ preserveView: true });
-        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
-        controls.enabled = true;
-        if (editMode) renderRibbon('edit');
-        // Refresh/hide guide line after drag ends
-        updateAxisGuideLine();
+        if (!editMode) return;
+        const wasDragging = dragActive;
+        if (wasDragging) {
+          // Final rebuild to update bonds/geometry once after drag
+          rebuildScene({ preserveView: true });
+          dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
+          controls.enabled = true;
+          if (editMode) renderRibbon('edit');
+          // Refresh/hide guide line after drag ends
+          updateAxisGuideLine();
+          updateEditSelectionVisuals();
+        }
+        // Click (no significant motion) selects/accumulates
+        if (!__editMoved && __editClickIdx >= 0) {
+          addEditSelection(__editClickIdx);
+        }
       });
 
       // Reset view to the initial camera/target/shift
