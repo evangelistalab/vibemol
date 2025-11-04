@@ -1242,6 +1242,7 @@
           { k: 'B', d: 'Batch export' },
           { k: 'I', d: 'Toggle surfaces' },
           { k: 'A', d: 'Toggle axes' },
+          { k: 'M', d: 'Measurement mode' },
           { k: '←/→', d: 'Prev/Next file' },
           { k: '?', d: 'Help' },
         ],
@@ -1260,17 +1261,22 @@
           { k: 'X/Y/Z', d: 'Axis lock' },
           { k: 'Esc', d: 'Cancel drag' },
         ],
+        measure: [
+          { k: 'M', d: 'Exit measurement' },
+          { k: 'Click', d: 'Select points' },
+        ],
       };
 
       // --- Mode system + shortcut routing ---
-      const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit' });
+      const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
       let currentMode = MODES.DISPLAY;
       function setMode(newMode) {
         if (currentMode === newMode) return;
         currentMode = newMode;
         editMode = (currentMode === MODES.EDIT);
         updateAxisButtons();
-        renderRibbon(editMode ? 'edit' : 'default');
+        const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
+        renderRibbon(ctx);
         if (!editMode) { clearHover(); }
         updateAxisGuideLine && updateAxisGuideLine();
       }
@@ -1285,8 +1291,8 @@
         return k;
       }
       const shortcuts = {
-        down: { global: Object.create(null), [MODES.DISPLAY]: Object.create(null), [MODES.EDIT]: Object.create(null) },
-        up: { global: Object.create(null), [MODES.DISPLAY]: Object.create(null), [MODES.EDIT]: Object.create(null) },
+        down: { global: Object.create(null), [MODES.DISPLAY]: Object.create(null), [MODES.EDIT]: Object.create(null), [MODES.MEASURE]: Object.create(null) },
+        up: { global: Object.create(null), [MODES.DISPLAY]: Object.create(null), [MODES.EDIT]: Object.create(null), [MODES.MEASURE]: Object.create(null) },
       };
       function bind(kind, scope, key, fn) {
         shortcuts[kind][scope][key] = fn;
@@ -1629,9 +1635,11 @@
 
       // Display mode bindings
       bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
+      bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
 
       // Edit mode bindings
       bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
+      bind('down', MODES.EDIT, 'm', () => { setMode(MODES.MEASURE); });
       const axisDown = (axis) => { axisKeyDown = axis; axisLock = axis; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); };
       const axisUp = (axis) => { if (axisKeyDown === axis) { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); } };
       bind('down', MODES.EDIT, 'x', () => axisDown('x'));
@@ -1640,6 +1648,9 @@
       bind('up', MODES.EDIT, 'x', () => axisUp('x'));
       bind('up', MODES.EDIT, 'y', () => axisUp('y'));
       bind('up', MODES.EDIT, 'z', () => axisUp('z'));
+
+      // Measurement mode bindings
+      bind('down', MODES.MEASURE, 'm', () => { setMode(MODES.DISPLAY); });
 
       // Global key listeners delegate to router
       window.addEventListener('keydown', (e) => handleShortcut(e, 'down'));
