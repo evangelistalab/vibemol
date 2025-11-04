@@ -464,7 +464,7 @@
       // --- Constants & helpers ---
       const BOHR_TO_ANG = 0.529177210903;
       // App version displayed in Help
-      const APP_VERSION = '0.2.1';
+      const APP_VERSION = '0.2.2';
 
       function arrayMinMax(a) {
         let min = Infinity, max = -Infinity;
@@ -744,7 +744,7 @@
       let cloudGroup = new THREE.Group();
       let boxHelper = null;
       let showSurfaces = true; // toggle iso-surface visibility
-      // Remember surface visibility when entering measurement mode to restore on exit
+      // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
       let __savedShowSurfaces = null;
       // Default view reference (captured on first non-preserved fit)
       let defaultView = null;
@@ -1288,9 +1288,18 @@
         renderRibbon(ctx);
         // Camera: keep rotation enabled in all modes
         try { controls.enableRotate = true; } catch {}
-        // Entering measurement mode: hide surfaces (preserve view), save prior state
+        // Entering measurement mode: hide surfaces (preserve view), save prior state (once)
         if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
-          __savedShowSurfaces = showSurfaces;
+          if (__savedShowSurfaces === null) __savedShowSurfaces = showSurfaces;
+          if (showSurfaces) {
+            showSurfaces = false;
+            if (typeof updateSurfBtn === 'function') updateSurfBtn();
+            rebuildScene({ preserveView: true });
+          }
+        }
+        // Entering edit mode: hide surfaces (preserve view), save prior state (once)
+        if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
+          if (__savedShowSurfaces === null) __savedShowSurfaces = showSurfaces;
           if (showSurfaces) {
             showSurfaces = false;
             if (typeof updateSurfBtn === 'function') updateSurfBtn();
@@ -1299,8 +1308,8 @@
         }
         // Clear hover when leaving interactive modes
         if (currentMode === MODES.DISPLAY) { clearHover(); }
-        // Leaving measurement mode: restore surfaces state and clear selection
-        if (prevMode === MODES.MEASURE && currentMode !== MODES.MEASURE) {
+        // Leaving measurement mode to display: restore surfaces and clear selection
+        if (prevMode === MODES.MEASURE && currentMode === MODES.DISPLAY) {
           if (__savedShowSurfaces != null && showSurfaces !== !!__savedShowSurfaces) {
             showSurfaces = !!__savedShowSurfaces;
             if (typeof updateSurfBtn === 'function') updateSurfBtn();
@@ -1309,6 +1318,15 @@
           __savedShowSurfaces = null;
           clearEditSelection && clearEditSelection();
           updateSelectedHalos && updateSelectedHalos();
+        }
+        // Leaving edit mode to display: restore surfaces
+        if (prevMode === MODES.EDIT && currentMode === MODES.DISPLAY) {
+          if (__savedShowSurfaces != null && showSurfaces !== !!__savedShowSurfaces) {
+            showSurfaces = !!__savedShowSurfaces;
+            if (typeof updateSurfBtn === 'function') updateSurfBtn();
+            rebuildScene({ preserveView: true });
+          }
+          __savedShowSurfaces = null;
         }
         updateAxisGuideLine && updateAxisGuideLine();
       }
