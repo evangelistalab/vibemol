@@ -446,7 +446,6 @@
           <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
           <li><strong>A</strong> — Toggle axis gizmo on/off</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
-          <li><strong>Esc</strong> — Close open menus/dialogs</li>
         </ul>
       </div>
     </div>
@@ -465,7 +464,7 @@
       // --- Constants & helpers ---
       const BOHR_TO_ANG = 0.529177210903;
       // App version displayed in Help
-      const APP_VERSION = '0.2.0';
+      const APP_VERSION = '0.2.1';
 
       function arrayMinMax(a) {
         let min = Infinity, max = -Infinity;
@@ -1251,25 +1250,80 @@
           { k: 'B', d: 'Batch export' },
           { k: 'I', d: 'Toggle surfaces' },
           { k: 'A', d: 'Toggle axes' },
+          { k: 'M', d: 'Measurement mode' },
           { k: '←/→', d: 'Prev/Next file' },
           { k: '?', d: 'Help' },
         ],
         panel: [
-          { k: 'Esc', d: 'Close View/Coords' },
           { k: 'S', d: 'Save PNG' },
           { k: 'I', d: 'Toggle surfaces' },
         ],
         help: [
-          { k: 'Esc', d: 'Close Help' },
           { k: '←/→', d: 'Prev/Next file' },
         ],
         edit: [
           { k: 'E', d: 'Exit edit' },
           { k: 'Click+Drag', d: 'Move atom' },
           { k: 'X/Y/Z', d: 'Axis lock' },
-          { k: 'Esc', d: 'Cancel drag' },
+        ],
+        measure: [
+          { k: 'M', d: 'Exit measurement' },
+          { k: 'Click', d: 'Select points' },
+          { k: 'Esc', d: 'Clear measurement' },
         ],
       };
+
+      // --- Mode system + shortcut routing ---
+      const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
+      let currentMode = MODES.DISPLAY;
+      function setMode(newMode) {
+        if (currentMode === newMode) return;
+        const prevMode = currentMode;
+        currentMode = newMode;
+        editMode = (currentMode === MODES.EDIT);
+        updateAxisButtons();
+        const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
+        renderRibbon(ctx);
+        // Camera: keep rotation enabled in all modes
+        try { controls.enableRotate = true; } catch {}
+        // Entering measurement mode: hide surfaces first (preserve view)
+        if (currentMode === MODES.MEASURE && showSurfaces) {
+          showSurfaces = false;
+          if (typeof updateSurfBtn === 'function') updateSurfBtn();
+          rebuildScene({ preserveView: true });
+        }
+        // Clear hover when leaving interactive modes
+        if (currentMode === MODES.DISPLAY) { clearHover(); }
+        // Clear measurement selection when leaving measurement mode
+        if (prevMode === MODES.MEASURE && currentMode !== MODES.MEASURE) { clearEditSelection && clearEditSelection(); updateSelectedHalos && updateSelectedHalos(); }
+        updateAxisGuideLine && updateAxisGuideLine();
+      }
+
+      function isTypingInInput() {
+        const tag = (document.activeElement && document.activeElement.tagName) || '';
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      }
+      function normKey(e) {
+        let k = e.key || '';
+        if (k.length === 1) k = k.toLowerCase();
+        return k;
+      }
+      const shortcuts = {
+        down: { global: Object.create(null), [MODES.DISPLAY]: Object.create(null), [MODES.EDIT]: Object.create(null), [MODES.MEASURE]: Object.create(null) },
+        up: { global: Object.create(null), [MODES.DISPLAY]: Object.create(null), [MODES.EDIT]: Object.create(null), [MODES.MEASURE]: Object.create(null) },
+      };
+      function bind(kind, scope, key, fn) {
+        shortcuts[kind][scope][key] = fn;
+      }
+      function handleShortcut(e, kind) {
+        if (isTypingInInput()) return;
+        const k = normKey(e);
+        const reg = shortcuts[kind];
+        const fn = (reg[currentMode] && reg[currentMode][k]) || reg.global[k];
+        if (typeof fn === 'function') {
+          fn(e);
+        }
+      }
       let currentShortcutContext = 'default';
       function renderRibbon(ctx = currentShortcutContext) {
         currentShortcutContext = ctx;
@@ -1314,7 +1368,7 @@
       controls.addEventListener('change', refreshViewUI);
 
       // --- Edit mode: toggle with 'E', hover highlight, drag to move ---
-      let editMode = false;
+      let editMode = false; // mirrors currentMode === MODES.EDIT
       let hoverAtomMesh = null;
       let dragActive = false;
       let dragAtomIndex = -1;
@@ -1385,6 +1439,192 @@
       const raycaster = new THREE.Raycaster();
       const ndc = new THREE.Vector2();
       const canvasEl = document.getElementById('canvas');
+      // --- Edit selection (temporary list) and visuals ---
+      let editSel = []; // array of atom indices (max 3) — used in measurement mode
+      let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
+      // persistent selection halos (by atom index) for measurement mode
+      const selHaloColor = 0xffa500;
+      function ensureSelectHalo(mesh) {
+        if (!mesh) return null;
+        if (mesh.userData && mesh.userData.selectHalo) return mesh.userData.selectHalo;
+        const haloGeom = mesh.geometry && mesh.geometry.clone ? mesh.geometry.clone() : null;
+        if (!haloGeom) return null;
+        const haloMat = new THREE.MeshBasicMaterial({ color: selHaloColor, side: THREE.BackSide, transparent: true, opacity: 0.6, depthWrite: false });
+        const halo = new THREE.Mesh(haloGeom, haloMat);
+        // Expand by a fixed world excess, same approach as hover halo
+        let baseR = 0.5;
+        try { if (mesh.geometry && mesh.geometry.parameters && typeof mesh.geometry.parameters.radius === 'number') baseR = mesh.geometry.parameters.radius; } catch { }
+        const parentScale = (mesh.scale && mesh.scale.x) ? mesh.scale.x : 1.0;
+        const worldR = Math.max(1e-6, baseR * parentScale);
+        const k = 1.0 + (0.06 / worldR);
+        halo.scale.set(k, k, k);
+        halo.renderOrder = (mesh.renderOrder || 0) - 1;
+        if (!mesh.userData) mesh.userData = {};
+        mesh.userData.selectHalo = halo;
+        mesh.add(halo);
+        return halo;
+      }
+      function removeSelectHalo(mesh) {
+        if (!mesh || !mesh.userData || !mesh.userData.selectHalo) return;
+        const halo = mesh.userData.selectHalo; mesh.userData.selectHalo = null;
+        try { mesh.remove(halo); disposeObj(halo); } catch { }
+      }
+      function updateSelectedHalos() {
+        if (!atomGroup || !atomGroup.children) return;
+        for (let i = 0; i < atomGroup.children.length; i++) {
+          const mesh = atomGroup.children[i];
+          const selected = editSel.includes(i);
+          if (selected) ensureSelectHalo(mesh); else removeSelectHalo(mesh);
+        }
+      }
+      let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
+      function clearEditSelection() { editSel = []; updateEditSelectionVisuals(); updateSelectedHalos(); }
+      function addEditSelection(i) {
+        if (i == null || i < 0) return;
+        if (editSel.length >= 4) editSel = editSel.slice(1); // keep last 3, then push new -> last 4
+        if (editSel.length && editSel[editSel.length - 1] === i) return; // ignore duplicate consecutive
+        editSel.push(i);
+        updateEditSelectionVisuals();
+      }
+      function disposeObj(o) {
+        try { o.geometry && o.geometry.dispose && o.geometry.dispose(); } catch {}
+        try { if (o.material && o.material.map && o.material.map.dispose) o.material.map.dispose(); } catch {}
+        try { o.material && o.material.dispose && o.material.dispose(); } catch {}
+      }
+      function clearGroup(g) {
+        if (!g) return;
+        for (let i = g.children.length - 1; i >= 0; i--) {
+          const c = g.children[i];
+          g.remove(c);
+          disposeObj(c);
+        }
+      }
+      function makeTextSprite(txt) {
+        const pad = 4;
+        const font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+        const c = document.createElement('canvas');
+        const ctx = c.getContext('2d');
+        ctx.font = font;
+        const w = Math.ceil(ctx.measureText(txt).width) + pad * 2;
+        const h = 18 + pad * 2;
+        c.width = w * 2; c.height = h * 2; // hi-DPI
+        ctx.scale(2, 2);
+        ctx.font = font;
+        ctx.fillStyle = 'rgba(20,22,24,0.85)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#e8eef6';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(txt, pad, h / 2);
+        const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
+        const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+        const spr = new THREE.Sprite(mat);
+        const scale = 0.012; // tune label size relative to pixels
+        spr.scale.set(w * scale, h * scale, 1);
+        return spr;
+      }
+      function updateEditSelectionVisuals() {
+        clearGroup(editSelGroup);
+        // Only render measurement overlays in measurement mode
+        if (currentMode !== MODES.MEASURE || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
+        const posOf = (idx) => (atomGroup.children[idx] && atomGroup.children[idx].position) ? atomGroup.children[idx].position.clone() : null;
+        const fmtDist = (d) => d.toFixed(4) + ' Å';
+        const fmtDeg = (r) => (r * 180 / Math.PI).toFixed(2) + '°';
+        const addEdge = (i, j, color = 0xd3d3d3) => {
+          const a = posOf(i), b = posOf(j); if (!a || !b) return;
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([a.x, a.y, a.z, b.x, b.y, b.z]), 3));
+          const m = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9, depthTest: false });
+          editSelGroup.add(new THREE.Line(g, m));
+          // label at midpoint
+          const mid = a.clone().add(b).multiplyScalar(0.5);
+          const dist = a.distanceTo(b);
+          const label = makeTextSprite(fmtDist(dist));
+          label.position.copy(mid);
+          // slight lift towards camera to avoid z-fighting
+          const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir); label.position.add(camDir.multiplyScalar(0.01));
+          editSelGroup.add(label);
+        };
+        // Draw distances for adjacent pairs
+        for (let t = 0; t < editSel.length - 1; t++) addEdge(editSel[t], editSel[t + 1]);
+
+        // Helper to draw angle fan and numeric label for triplet a-b-c (angle at b)
+        const addAngle = (ia, ib, ic) => {
+          const pa = posOf(ia), pb = posOf(ib), pc = posOf(ic);
+          if (!pa || !pb || !pc) return;
+          const v1 = pa.clone().sub(pb).normalize();
+          const v2 = pc.clone().sub(pb).normalize();
+          let dot = v1.dot(v2); dot = Math.max(-1, Math.min(1, dot));
+          const theta = Math.acos(dot);
+          const n = new THREE.Vector3().crossVectors(v1, v2);
+          if (n.lengthSq() < 1e-8 || !isFinite(theta) || theta <= 0) return;
+          n.normalize();
+          const e1 = v1.clone();
+          const e3 = n.clone();
+          const e2 = new THREE.Vector3().crossVectors(e3, e1).normalize();
+          const radius = Math.max(0.4, Math.min(pa.distanceTo(pb), pc.distanceTo(pb)) * 0.45);
+          const segs = 48;
+          const geom = new THREE.CircleGeometry(radius, segs, 0, theta);
+          const mat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
+          const fan = new THREE.Mesh(geom, mat);
+          const basis = new THREE.Matrix4(); basis.makeBasis(e1, e2, e3);
+          const q = new THREE.Quaternion().setFromRotationMatrix(basis);
+          fan.quaternion.copy(q);
+          fan.position.copy(pb.clone().add(e3.clone().multiplyScalar(0.002)));
+          editSelGroup.add(fan);
+          // Angle label at arc midpoint
+          const midDir = e1.clone().multiplyScalar(Math.cos(theta / 2)).add(e2.clone().multiplyScalar(Math.sin(theta / 2)));
+          const label = makeTextSprite(fmtDeg(theta));
+          label.position.copy(pb.clone().add(midDir.multiplyScalar(radius + 0.06)));
+          editSelGroup.add(label);
+        };
+
+        if (editSel.length >= 3) {
+          for (let t = 0; t <= editSel.length - 3; t++) addAngle(editSel[t], editSel[t + 1], editSel[t + 2]);
+        }
+
+        // Dihedral for four atoms: 1-2-3-4
+        if (editSel.length >= 4) {
+          const i = editSel[0], j = editSel[1], k = editSel[2], l = editSel[3];
+          const p1 = posOf(i), p2 = posOf(j), p3 = posOf(k), p4 = posOf(l);
+          if (p1 && p2 && p3 && p4) {
+            const b1 = p2.clone().sub(p1);
+            const b2 = p3.clone().sub(p2);
+            const b3 = p4.clone().sub(p3);
+            const n1 = new THREE.Vector3().crossVectors(b1, b2).normalize();
+            const n2 = new THREE.Vector3().crossVectors(b2, b3).normalize();
+            const u = b2.clone().normalize();
+            if (n1.lengthSq() > 1e-8 && n2.lengthSq() > 1e-8 && u.lengthSq() > 1e-8) {
+              // signed dihedral using atan2
+              const x = n1.dot(n2);
+              const y = u.dot(new THREE.Vector3().crossVectors(n1, n2));
+              const phi = Math.atan2(y, x); // [-pi, pi]
+              // Visualize as a wedge around axis u at midpoint of 2-3
+              const mid = p2.clone().add(p3).multiplyScalar(0.5);
+              const eZ = u.clone();
+              const eX = n1.clone().normalize();
+              let eY = new THREE.Vector3().crossVectors(eZ, eX).normalize();
+              const theta = Math.abs(phi);
+              const segs = 64;
+              const radius = Math.max(0.35, Math.min(b2.length() * 0.35, 1.2));
+              const geom = new THREE.CircleGeometry(radius, segs, 0, theta);
+              const mat = new THREE.MeshBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
+              const fan = new THREE.Mesh(geom, mat);
+              const basis = new THREE.Matrix4(); basis.makeBasis(eX, eY, eZ);
+              const q = new THREE.Quaternion().setFromRotationMatrix(basis);
+              fan.quaternion.copy(q);
+              fan.position.copy(mid.clone().add(eZ.clone().multiplyScalar(0.002)));
+              editSelGroup.add(fan);
+              // Emphasize the central bond axis
+              addEdge(j, k, 0x8e44ad);
+              // Dihedral label
+              const midDir = eX.clone().multiplyScalar(Math.cos(theta / 2)).add(eY.clone().multiplyScalar(Math.sin(theta / 2)));
+              const label = makeTextSprite(fmtDeg(theta));
+              label.position.copy(mid.clone().add(midDir.multiplyScalar(radius + 0.08)));
+              editSelGroup.add(label);
+            }
+          }
+        }
+      }
       function setNDCFromEvent(e) {
         const rect = canvasEl.getBoundingClientRect();
         ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -1457,8 +1697,16 @@
 
       let __lastBondUpdate = 0;
       canvasEl.addEventListener('pointermove', (e) => {
-        if (!editMode) return;
+        // Allow hover highlighting in Edit and Measurement modes
+        const allowHover = (currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
+        if (!allowHover) return;
+        // Track movement to distinguish click vs drag in measurement mode
+        if (currentMode === MODES.MEASURE && __editDownPt) {
+          const dx = e.clientX - __editDownPt.x, dy = e.clientY - __editDownPt.y;
+          if (Math.hypot(dx, dy) > 4) __editMoved = true;
+        }
         if (dragActive) {
+          __editMoved = true;
           setNDCFromEvent(e);
           raycaster.setFromCamera(ndc, camera);
           const hit = new THREE.Vector3();
@@ -1489,6 +1737,8 @@
             }
             // Move the guide line with the dragged atom
             updateAxisGuideLine();
+            // Update selection overlays if any
+            updateEditSelectionVisuals();
           }
           return;
         }
@@ -1497,39 +1747,64 @@
       });
 
       canvasEl.addEventListener('pointerdown', (e) => {
-        if (!editMode || e.button !== 0) return;
+        if (e.button !== 0) return;
+        __editDownPt = { x: e.clientX, y: e.clientY }; __editMoved = false; __editClickIdx = -1;
         const obj = pickAtom(e);
-        if (!obj || !obj.userData) return;
-        dragAtomIndex = obj.userData.index | 0;
-        dragActive = true;
-        controls.enabled = false;
-        dragStartPos = obj.position.clone();
-        dragOrigMeshPos = obj.position.clone();
-        const vol = volumes[currentIndex]?.vol; if (vol) {
-          const a = vol.atoms[dragAtomIndex];
-          dragOrigAtomUnits = [a.x, a.y, a.z];
+        if (currentMode === MODES.EDIT) {
+          if (!obj || !obj.userData) return;
+          dragAtomIndex = obj.userData.index | 0;
+          __editClickIdx = dragAtomIndex;
+          dragActive = true;
+          controls.enabled = false;
+          dragStartPos = obj.position.clone();
+          dragOrigMeshPos = obj.position.clone();
+          const vol = volumes[currentIndex]?.vol; if (vol) {
+            const a = vol.atoms[dragAtomIndex];
+            dragOrigAtomUnits = [a.x, a.y, a.z];
+          }
+          const normal = new THREE.Vector3();
+          // plane orthogonal to camera-to-target axis
+          camera.getWorldDirection(normal);
+          dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, dragStartPos);
+          const hit = new THREE.Vector3(); raycaster.ray.intersectPlane(dragPlane, hit);
+          dragPlaneStart = hit.clone();
+          dragAxis = axisLock;
+          // Update guide line at drag start if an axis key is held
+          updateAxisGuideLine();
+          e.preventDefault();
+        } else if (currentMode === MODES.MEASURE) {
+          if (!obj || !obj.userData) { __editClickIdx = -1; return; }
+          __editClickIdx = obj.userData.index | 0;
+          // Pause rotation while making a measurement selection
+          try { controls.enableRotate = false; } catch {}
+          // selection is applied on pointerup if not moved
         }
-        const normal = new THREE.Vector3();
-        // plane orthogonal to camera-to-target axis
-        camera.getWorldDirection(normal);
-        dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, dragStartPos);
-        const hit = new THREE.Vector3(); raycaster.ray.intersectPlane(dragPlane, hit);
-        dragPlaneStart = hit.clone();
-        dragAxis = axisLock;
-        // Update guide line at drag start if an axis key is held
-        updateAxisGuideLine();
-        e.preventDefault();
       });
 
       canvasEl.addEventListener('pointerup', (e) => {
-        if (!dragActive) return;
-        // Final rebuild to update bonds/geometry once after drag
-        rebuildScene({ preserveView: true });
-        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
-        controls.enabled = true;
-        if (editMode) renderRibbon('edit');
-        // Refresh/hide guide line after drag ends
-        updateAxisGuideLine();
+        if (currentMode === MODES.EDIT) {
+          const wasDragging = dragActive;
+          if (wasDragging) {
+            // Final rebuild to update bonds/geometry once after drag
+            rebuildScene({ preserveView: true });
+            dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
+            controls.enabled = true;
+            if (editMode) renderRibbon('edit');
+            // Refresh/hide guide line after drag ends
+            updateAxisGuideLine();
+            updateEditSelectionVisuals();
+          }
+        } else if (currentMode === MODES.MEASURE) {
+          // Resume rotation after selection gesture
+          try { controls.enableRotate = true; } catch {}
+          // Click (no significant motion) selects/accumulates
+          if (!__editMoved && __editClickIdx >= 0) {
+            addEditSelection(__editClickIdx);
+            updateSelectedHalos();
+            updateEditSelectionVisuals();
+          }
+        }
+        __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       });
 
       // Reset view to the initial camera/target/shift
@@ -1545,6 +1820,60 @@
           refreshViewUI();
         }
       };
+
+      // --- Shortcut bindings ---
+      // Global: help toggle
+      const toggleHelp = () => { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); };
+      bind('down', 'global', 'h', () => toggleHelp());
+      bind('down', 'global', '?', () => toggleHelp());
+
+      // Global: save, batch, toggle surfaces/axes
+      bind('down', 'global', 's', () => saveBtn && saveBtn.click());
+      bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
+      bind('down', 'global', 'i', () => { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); });
+      bind('down', 'global', 'a', () => { window.__showAxes__ = !window.__showAxes__; if (toggleAxes) toggleAxes.checked = !!window.__showAxes__; });
+
+      // Global: arrows switch files
+      const nextPrev = (delta) => {
+        if (isTypingInInput()) return;
+        if (!Array.isArray(volumes) || volumes.length === 0) return;
+        const n = volumes.length;
+        currentIndex = ((currentIndex + delta) % n + n) % n;
+        if (fileSelect) fileSelect.value = String(currentIndex);
+        rebuildScene({ preserveView: true });
+        updateSidePanel();
+      };
+      bind('down', 'global', 'ArrowRight', () => nextPrev(1));
+      bind('down', 'global', 'ArrowDown', () => nextPrev(1));
+      bind('down', 'global', 'ArrowLeft', () => nextPrev(-1));
+      bind('down', 'global', 'ArrowUp', () => nextPrev(-1));
+
+      // Note: Esc handling removed per request. Use on-screen UI to close dialogs.
+
+      // Display mode bindings
+      bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
+      bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
+
+      // Edit mode bindings
+      bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
+      bind('down', MODES.EDIT, 'm', () => { setMode(MODES.MEASURE); });
+      const axisDown = (axis) => { axisKeyDown = axis; axisLock = axis; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); };
+      const axisUp = (axis) => { if (axisKeyDown === axis) { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); } };
+      bind('down', MODES.EDIT, 'x', () => axisDown('x'));
+      bind('down', MODES.EDIT, 'y', () => axisDown('y'));
+      bind('down', MODES.EDIT, 'z', () => axisDown('z'));
+      bind('up', MODES.EDIT, 'x', () => axisUp('x'));
+      bind('up', MODES.EDIT, 'y', () => axisUp('y'));
+      bind('up', MODES.EDIT, 'z', () => axisUp('z'));
+
+      // Measurement mode bindings
+      bind('down', MODES.MEASURE, 'm', () => { setMode(MODES.DISPLAY); });
+      // Esc clears current measurement selection (but does not change mode)
+      bind('down', MODES.MEASURE, 'Escape', () => { clearEditSelection(); updateSelectedHalos(); updateEditSelectionVisuals(); });
+
+      // Global key listeners delegate to router
+      window.addEventListener('keydown', (e) => handleShortcut(e, 'down'));
+      window.addEventListener('keyup', (e) => handleShortcut(e, 'up'));
 
       // Surface style selector
       if (styleSelect) {
@@ -2042,80 +2371,7 @@
         if (!ok) loadDemo();
       })();
 
-      // Keyboard shortcuts
-      window.addEventListener('keydown', (e) => {
-        // Ignore shortcuts while typing in inputs
-        const tag = (document.activeElement && document.activeElement.tagName) || '';
-        const editing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
-        if (e.key === 's' && !editing) saveBtn.click();
-        if (e.key === 'b' && !editing) batchBtn.click();
-        if ((e.key === 'i' || e.key === 'I') && !editing) { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); }
-        if ((e.key === 'a' || e.key === 'A') && !editing) {
-          window.__showAxes__ = !window.__showAxes__;
-          if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
-        }
-        if (!editing && (e.key === 'h' || e.key === 'H' || e.key === '?')) { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); }
-        if (e.key === 'Escape') {
-          let closed = false;
-          if (helpOverlay && helpOverlay.style.display === 'flex') { closeHelp(); closed = true; }
-          else if (sidePanel && sidePanel.classList.contains('open')) { closeSide(); closed = true; }
-          if (dragActive) {
-            // Revert to original position
-            const vol = volumes[currentIndex]?.vol;
-            if (vol && dragAtomIndex >= 0 && vol.atoms[dragAtomIndex]) {
-              const a = vol.atoms[dragAtomIndex];
-              if (dragOrigAtomUnits) { a.x = dragOrigAtomUnits[0]; a.y = dragOrigAtomUnits[1]; a.z = dragOrigAtomUnits[2]; }
-            }
-            if (dragOrigMeshPos && dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
-              atomGroup.children[dragAtomIndex].position.copy(dragOrigMeshPos);
-            }
-            rebuildScene({ preserveView: true });
-            dragActive = false; dragAtomIndex = -1; controls.enabled = true; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null;
-            if (editMode) { renderRibbon('edit'); updateAxisButtons(); }
-          } else {
-            // No active drag; keep context ribbon consistent
-            renderRibbon(editMode ? 'edit' : (closed ? 'default' : currentShortcutContext));
-          }
-        }
-        if (editMode && !editing) {
-          let changed = false;
-          if ((e.key === 'x' || e.key === 'X') && !e.repeat) { axisKeyDown = 'x'; axisLock = 'x'; changed = true; }
-          if ((e.key === 'y' || e.key === 'Y') && !e.repeat) { axisKeyDown = 'y'; axisLock = 'y'; changed = true; }
-          if ((e.key === 'z' || e.key === 'Z') && !e.repeat) { axisKeyDown = 'z'; axisLock = 'z'; changed = true; }
-          if (changed) { updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
-        }
-        if ((e.key === 'e' || e.key === 'E') && !editing) {
-          editMode = !editMode;
-          axisLock = 'none'; updateAxisButtons();
-          renderRibbon(editMode ? 'edit' : 'default');
-          if (!editMode) { clearHover(); }
-          // Hide guide line when leaving edit mode
-          updateAxisGuideLine();
-        }
-
-        // Release axis lock on keyup (prevents flip-flop when holding key)
-        window.addEventListener('keyup', (ev) => {
-          const tag2 = (document.activeElement && document.activeElement.tagName) || '';
-          const editing2 = tag2 === 'INPUT' || tag2 === 'TEXTAREA' || tag2 === 'SELECT';
-          if (!editMode || editing2) return;
-          if ((ev.key === 'x' || ev.key === 'X') && axisKeyDown === 'x') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
-          if ((ev.key === 'y' || ev.key === 'Y') && axisKeyDown === 'y') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
-          if ((ev.key === 'z' || ev.key === 'Z') && axisKeyDown === 'z') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
-        });
-
-        // Arrow keys: switch files (preserve camera)
-        if (!editing && volumes.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
-          let delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
-          const n = volumes.length;
-          if (n > 0) {
-            currentIndex = ((currentIndex + delta) % n + n) % n; // wrap safely
-            if (fileSelect) fileSelect.value = String(currentIndex);
-            rebuildScene({ preserveView: true });
-            updateSidePanel();
-            e.preventDefault();
-          }
-        }
-      });
+      // Keyboard shortcuts are handled by the mode-aware router defined above.
 
     })();
   </script>
