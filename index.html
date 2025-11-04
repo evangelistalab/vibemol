@@ -1489,7 +1489,9 @@
 
       let __lastBondUpdate = 0;
       canvasEl.addEventListener('pointermove', (e) => {
-        if (!editMode) return;
+        // Allow hover highlighting in Edit and Measurement modes
+        const allowHover = (currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
+        if (!allowHover) return;
         if (dragActive) {
           setNDCFromEvent(e);
           raycaster.setFromCamera(ndc, camera);
