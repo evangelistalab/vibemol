@@ -1261,6 +1261,45 @@
           { k: 'Esc', d: 'Cancel drag' },
         ],
       };
+
+      // --- Mode system + shortcut routing ---
+      const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit' });
+      let currentMode = MODES.DISPLAY;
+      function setMode(newMode) {
+        if (currentMode === newMode) return;
+        currentMode = newMode;
+        editMode = (currentMode === MODES.EDIT);
+        updateAxisButtons();
+        renderRibbon(editMode ? 'edit' : 'default');
+        if (!editMode) { clearHover(); }
+        updateAxisGuideLine && updateAxisGuideLine();
+      }
+
+      function isTypingInInput() {
+        const tag = (document.activeElement && document.activeElement.tagName) || '';
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      }
+      function normKey(e) {
+        let k = e.key || '';
+        if (k.length === 1) k = k.toLowerCase();
+        return k;
+      }
+      const shortcuts = {
+        down: { global: Object.create(null), [MODES.DISPLAY]: Object.create(null), [MODES.EDIT]: Object.create(null) },
+        up: { global: Object.create(null), [MODES.DISPLAY]: Object.create(null), [MODES.EDIT]: Object.create(null) },
+      };
+      function bind(kind, scope, key, fn) {
+        shortcuts[kind][scope][key] = fn;
+      }
+      function handleShortcut(e, kind) {
+        if (isTypingInInput()) return;
+        const k = normKey(e);
+        const reg = shortcuts[kind];
+        const fn = (reg[currentMode] && reg[currentMode][k]) || reg.global[k];
+        if (typeof fn === 'function') {
+          fn(e);
+        }
+      }
       let currentShortcutContext = 'default';
       function renderRibbon(ctx = currentShortcutContext) {
         currentShortcutContext = ctx;
@@ -1305,7 +1344,7 @@
       controls.addEventListener('change', refreshViewUI);
 
       // --- Edit mode: toggle with 'E', hover highlight, drag to move ---
-      let editMode = false;
+      let editMode = false; // mirrors currentMode === MODES.EDIT
       let hoverAtomMesh = null;
       let dragActive = false;
       let dragAtomIndex = -1;
@@ -1536,6 +1575,75 @@
           refreshViewUI();
         }
       };
+
+      // --- Shortcut bindings ---
+      // Global: help toggle
+      const toggleHelp = () => { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); };
+      bind('down', 'global', 'h', () => toggleHelp());
+      bind('down', 'global', '?', () => toggleHelp());
+
+      // Global: save, batch, toggle surfaces/axes
+      bind('down', 'global', 's', () => saveBtn && saveBtn.click());
+      bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
+      bind('down', 'global', 'i', () => { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); });
+      bind('down', 'global', 'a', () => { window.__showAxes__ = !window.__showAxes__; if (toggleAxes) toggleAxes.checked = !!window.__showAxes__; });
+
+      // Global: arrows switch files
+      const nextPrev = (delta) => {
+        if (isTypingInInput()) return;
+        if (!Array.isArray(volumes) || volumes.length === 0) return;
+        const n = volumes.length;
+        currentIndex = ((currentIndex + delta) % n + n) % n;
+        if (fileSelect) fileSelect.value = String(currentIndex);
+        rebuildScene({ preserveView: true });
+        updateSidePanel();
+      };
+      bind('down', 'global', 'ArrowRight', () => nextPrev(1));
+      bind('down', 'global', 'ArrowDown', () => nextPrev(1));
+      bind('down', 'global', 'ArrowLeft', () => nextPrev(-1));
+      bind('down', 'global', 'ArrowUp', () => nextPrev(-1));
+
+      // Global: Escape closes panels or cancels drag
+      bind('down', 'global', 'Escape', () => {
+        let closed = false;
+        if (helpOverlay && helpOverlay.style.display === 'flex') { closeHelp(); closed = true; }
+        else if (sidePanel && sidePanel.classList.contains('open')) { closeSide(); closed = true; }
+        if (dragActive) {
+          // Revert to original position
+          const vol = volumes[currentIndex]?.vol;
+          if (vol && dragAtomIndex >= 0 && vol.atoms[dragAtomIndex]) {
+            const a = vol.atoms[dragAtomIndex];
+            if (dragOrigAtomUnits) { a.x = dragOrigAtomUnits[0]; a.y = dragOrigAtomUnits[1]; a.z = dragOrigAtomUnits[2]; }
+          }
+          if (dragOrigMeshPos && dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
+            atomGroup.children[dragAtomIndex].position.copy(dragOrigMeshPos);
+          }
+          rebuildScene({ preserveView: true });
+          dragActive = false; dragAtomIndex = -1; controls.enabled = true; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null;
+          if (editMode) { renderRibbon('edit'); updateAxisButtons(); }
+        } else {
+          // No active drag; keep context ribbon consistent
+          renderRibbon(editMode ? 'edit' : (closed ? 'default' : currentShortcutContext));
+        }
+      });
+
+      // Display mode bindings
+      bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
+
+      // Edit mode bindings
+      bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
+      const axisDown = (axis) => { axisKeyDown = axis; axisLock = axis; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); };
+      const axisUp = (axis) => { if (axisKeyDown === axis) { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); } };
+      bind('down', MODES.EDIT, 'x', () => axisDown('x'));
+      bind('down', MODES.EDIT, 'y', () => axisDown('y'));
+      bind('down', MODES.EDIT, 'z', () => axisDown('z'));
+      bind('up', MODES.EDIT, 'x', () => axisUp('x'));
+      bind('up', MODES.EDIT, 'y', () => axisUp('y'));
+      bind('up', MODES.EDIT, 'z', () => axisUp('z'));
+
+      // Global key listeners delegate to router
+      window.addEventListener('keydown', (e) => handleShortcut(e, 'down'));
+      window.addEventListener('keyup', (e) => handleShortcut(e, 'up'));
 
       // Surface style selector
       if (styleSelect) {
@@ -2033,80 +2141,7 @@
         if (!ok) loadDemo();
       })();
 
-      // Keyboard shortcuts
-      window.addEventListener('keydown', (e) => {
-        // Ignore shortcuts while typing in inputs
-        const tag = (document.activeElement && document.activeElement.tagName) || '';
-        const editing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
-        if (e.key === 's' && !editing) saveBtn.click();
-        if (e.key === 'b' && !editing) batchBtn.click();
-        if ((e.key === 'i' || e.key === 'I') && !editing) { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); }
-        if ((e.key === 'a' || e.key === 'A') && !editing) {
-          window.__showAxes__ = !window.__showAxes__;
-          if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
-        }
-        if (!editing && (e.key === 'h' || e.key === 'H' || e.key === '?')) { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); }
-        if (e.key === 'Escape') {
-          let closed = false;
-          if (helpOverlay && helpOverlay.style.display === 'flex') { closeHelp(); closed = true; }
-          else if (sidePanel && sidePanel.classList.contains('open')) { closeSide(); closed = true; }
-          if (dragActive) {
-            // Revert to original position
-            const vol = volumes[currentIndex]?.vol;
-            if (vol && dragAtomIndex >= 0 && vol.atoms[dragAtomIndex]) {
-              const a = vol.atoms[dragAtomIndex];
-              if (dragOrigAtomUnits) { a.x = dragOrigAtomUnits[0]; a.y = dragOrigAtomUnits[1]; a.z = dragOrigAtomUnits[2]; }
-            }
-            if (dragOrigMeshPos && dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
-              atomGroup.children[dragAtomIndex].position.copy(dragOrigMeshPos);
-            }
-            rebuildScene({ preserveView: true });
-            dragActive = false; dragAtomIndex = -1; controls.enabled = true; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null;
-            if (editMode) { renderRibbon('edit'); updateAxisButtons(); }
-          } else {
-            // No active drag; keep context ribbon consistent
-            renderRibbon(editMode ? 'edit' : (closed ? 'default' : currentShortcutContext));
-          }
-        }
-        if (editMode && !editing) {
-          let changed = false;
-          if ((e.key === 'x' || e.key === 'X') && !e.repeat) { axisKeyDown = 'x'; axisLock = 'x'; changed = true; }
-          if ((e.key === 'y' || e.key === 'Y') && !e.repeat) { axisKeyDown = 'y'; axisLock = 'y'; changed = true; }
-          if ((e.key === 'z' || e.key === 'Z') && !e.repeat) { axisKeyDown = 'z'; axisLock = 'z'; changed = true; }
-          if (changed) { updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
-        }
-        if ((e.key === 'e' || e.key === 'E') && !editing) {
-          editMode = !editMode;
-          axisLock = 'none'; updateAxisButtons();
-          renderRibbon(editMode ? 'edit' : 'default');
-          if (!editMode) { clearHover(); }
-          // Hide guide line when leaving edit mode
-          updateAxisGuideLine();
-        }
-
-        // Release axis lock on keyup (prevents flip-flop when holding key)
-        window.addEventListener('keyup', (ev) => {
-          const tag2 = (document.activeElement && document.activeElement.tagName) || '';
-          const editing2 = tag2 === 'INPUT' || tag2 === 'TEXTAREA' || tag2 === 'SELECT';
-          if (!editMode || editing2) return;
-          if ((ev.key === 'x' || ev.key === 'X') && axisKeyDown === 'x') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
-          if ((ev.key === 'y' || ev.key === 'Y') && axisKeyDown === 'y') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
-          if ((ev.key === 'z' || ev.key === 'Z') && axisKeyDown === 'z') { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine(); }
-        });
-
-        // Arrow keys: switch files (preserve camera)
-        if (!editing && volumes.length > 0 && (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
-          let delta = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
-          const n = volumes.length;
-          if (n > 0) {
-            currentIndex = ((currentIndex + delta) % n + n) % n; // wrap safely
-            if (fileSelect) fileSelect.value = String(currentIndex);
-            rebuildScene({ preserveView: true });
-            updateSidePanel();
-            e.preventDefault();
-          }
-        }
-      });
+      // Keyboard shortcuts are handled by the mode-aware router defined above.
 
     })();
   </script>
