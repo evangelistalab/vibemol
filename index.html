@@ -1619,40 +1619,53 @@
           const i = editSel[0], j = editSel[1], k = editSel[2], l = editSel[3];
           const p1 = posOf(i), p2 = posOf(j), p3 = posOf(k), p4 = posOf(l);
           if (p1 && p2 && p3 && p4) {
+            // Bond vectors
             const b1 = p2.clone().sub(p1);
             const b2 = p3.clone().sub(p2);
             const b3 = p4.clone().sub(p3);
-            const n1 = new THREE.Vector3().crossVectors(b1, b2).normalize();
-            const n2 = new THREE.Vector3().crossVectors(b2, b3).normalize();
+            // Axis of rotation (normalized 2->3)
             const u = b2.clone().normalize();
-            if (n1.lengthSq() > 1e-8 && n2.lengthSq() > 1e-8 && u.lengthSq() > 1e-8) {
-              // signed dihedral using atan2
-              const x = n1.dot(n2);
-              const y = u.dot(new THREE.Vector3().crossVectors(n1, n2));
-              const phi = Math.atan2(y, x); // [-pi, pi]
-              // Visualize as a wedge around axis u at midpoint of 2-3
-              const mid = p2.clone().add(p3).multiplyScalar(0.5);
-              const eZ = u.clone();
-              const eX = n1.clone().normalize();
-              let eY = new THREE.Vector3().crossVectors(eZ, eX).normalize();
-              const theta = Math.abs(phi);
-              const segs = 64;
-              const radius = Math.max(0.35, Math.min(b2.length() * 0.35, 1.2));
-              const geom = new THREE.CircleGeometry(radius, segs, 0, theta);
-              const mat = new THREE.MeshBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
-              const fan = new THREE.Mesh(geom, mat);
-              const basis = new THREE.Matrix4(); basis.makeBasis(eX, eY, eZ);
-              const q = new THREE.Quaternion().setFromRotationMatrix(basis);
-              fan.quaternion.copy(q);
-              fan.position.copy(mid.clone().add(eZ.clone().multiplyScalar(0.002)));
-              editSelGroup.add(fan);
-              // Emphasize the central bond axis
-              addEdge(j, k, 0x8e44ad);
-              // Dihedral label
-              const midDir = eX.clone().multiplyScalar(Math.cos(theta / 2)).add(eY.clone().multiplyScalar(Math.sin(theta / 2)));
-              const label = makeTextSprite(fmtDeg(theta));
-              label.position.copy(mid.clone().add(midDir.multiplyScalar(radius + 0.08)));
-              editSelGroup.add(label);
+            if (!isFinite(u.length()) || u.lengthSq() < 1e-10) { /* skip */ }
+            else {
+              // Project (-b1) and (b3) onto plane perpendicular to u (spanning vectors)
+              const vAraw = b1.clone().negate();
+              const vBraw = b3.clone();
+              const vA = vAraw.clone().sub(u.clone().multiplyScalar(vAraw.dot(u)));
+              const vB = vBraw.clone().sub(u.clone().multiplyScalar(vBraw.dot(u)));
+              const lenA = vA.length(), lenB = vB.length();
+              if (lenA > 1e-6 && lenB > 1e-6) {
+                vA.multiplyScalar(1 / lenA);
+                vB.multiplyScalar(1 / lenB);
+                // Signed dihedral angle φ from vA -> vB around axis u
+                const cosPhi = vA.dot(vB);
+                const sinPhi = u.dot(new THREE.Vector3().crossVectors(vA, vB));
+                const phi = Math.atan2(sinPhi, cosPhi); // [-pi, pi]
+                const mid = p2.clone().add(p3).multiplyScalar(0.5);
+                // Local basis: eZ along u, eX along vA, eY = eZ × eX
+                const eZ = u.clone();
+                const eX = vA.clone();
+                const eY = new THREE.Vector3().crossVectors(eZ, eX).normalize();
+                // Arc parameters so ends align with vA and vB
+                const thetaStart = (phi < 0 ? phi : 0);
+                const thetaLen = Math.abs(phi);
+                const segs = 64;
+                const radius = Math.max(0.35, Math.min(b2.length() * 0.35, 1.2));
+                const geom = new THREE.CircleGeometry(radius, segs, thetaStart, thetaLen);
+                const mat = new THREE.MeshBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
+                const fan = new THREE.Mesh(geom, mat);
+                const basis = new THREE.Matrix4().makeBasis(eX, eY, eZ);
+                fan.quaternion.setFromRotationMatrix(basis);
+                fan.position.copy(mid.clone().add(eZ.clone().multiplyScalar(0.002)));
+                editSelGroup.add(fan);
+                // Emphasize the central bond axis
+                addEdge(j, k, 0x8e44ad);
+                // Dihedral label (abs degrees, 2 digits) along arc bisector
+                const half = phi / 2;
+                const midDir = eX.clone().multiplyScalar(Math.cos(half)).add(eY.clone().multiplyScalar(Math.sin(half))).normalize();
+                const label = makeTextSprite(fmtDeg(Math.abs(phi)));
+                label.position.copy(mid.clone().add(midDir.multiplyScalar(radius + 0.08)));
+                editSelGroup.add(label);
+              }
             }
           }
         }
