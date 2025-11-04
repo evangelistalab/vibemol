@@ -1274,8 +1274,8 @@
         updateAxisButtons();
         const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
         renderRibbon(ctx);
-        // Camera: disable rotation in measurement mode, enable otherwise
-        try { controls.enableRotate = (currentMode !== MODES.MEASURE); } catch {}
+        // Camera: keep rotation enabled in all modes
+        try { controls.enableRotate = true; } catch {}
         // Clear hover when leaving interactive modes
         if (currentMode === MODES.DISPLAY) { clearHover(); }
         // Clear measurement selection when leaving measurement mode
