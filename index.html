@@ -1268,12 +1268,18 @@
       let currentMode = MODES.DISPLAY;
       function setMode(newMode) {
         if (currentMode === newMode) return;
+        const prevMode = currentMode;
         currentMode = newMode;
         editMode = (currentMode === MODES.EDIT);
         updateAxisButtons();
         const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
         renderRibbon(ctx);
-        if (!editMode) { clearHover(); clearEditSelection && clearEditSelection(); }
+        // Camera: disable rotation in measurement mode, enable otherwise
+        try { controls.enableRotate = (currentMode !== MODES.MEASURE); } catch {}
+        // Clear hover when leaving interactive modes
+        if (currentMode === MODES.DISPLAY) { clearHover(); }
+        // Clear measurement selection when leaving measurement mode
+        if (prevMode === MODES.MEASURE && currentMode !== MODES.MEASURE) { clearEditSelection && clearEditSelection(); updateSelectedHalos && updateSelectedHalos(); }
         updateAxisGuideLine && updateAxisGuideLine();
       }
 
@@ -1418,10 +1424,45 @@
       const ndc = new THREE.Vector2();
       const canvasEl = document.getElementById('canvas');
       // --- Edit selection (temporary list) and visuals ---
-      let editSel = []; // array of atom indices (max 3)
+      let editSel = []; // array of atom indices (max 3) — used in measurement mode
       let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
+      // persistent selection halos (by atom index) for measurement mode
+      const selHaloColor = 0xffa500;
+      function ensureSelectHalo(mesh) {
+        if (!mesh) return null;
+        if (mesh.userData && mesh.userData.selectHalo) return mesh.userData.selectHalo;
+        const haloGeom = mesh.geometry && mesh.geometry.clone ? mesh.geometry.clone() : null;
+        if (!haloGeom) return null;
+        const haloMat = new THREE.MeshBasicMaterial({ color: selHaloColor, side: THREE.BackSide, transparent: true, opacity: 0.6, depthWrite: false });
+        const halo = new THREE.Mesh(haloGeom, haloMat);
+        // Expand by a fixed world excess, same approach as hover halo
+        let baseR = 0.5;
+        try { if (mesh.geometry && mesh.geometry.parameters && typeof mesh.geometry.parameters.radius === 'number') baseR = mesh.geometry.parameters.radius; } catch { }
+        const parentScale = (mesh.scale && mesh.scale.x) ? mesh.scale.x : 1.0;
+        const worldR = Math.max(1e-6, baseR * parentScale);
+        const k = 1.0 + (0.06 / worldR);
+        halo.scale.set(k, k, k);
+        halo.renderOrder = (mesh.renderOrder || 0) - 1;
+        if (!mesh.userData) mesh.userData = {};
+        mesh.userData.selectHalo = halo;
+        mesh.add(halo);
+        return halo;
+      }
+      function removeSelectHalo(mesh) {
+        if (!mesh || !mesh.userData || !mesh.userData.selectHalo) return;
+        const halo = mesh.userData.selectHalo; mesh.userData.selectHalo = null;
+        try { mesh.remove(halo); disposeObj(halo); } catch { }
+      }
+      function updateSelectedHalos() {
+        if (!atomGroup || !atomGroup.children) return;
+        for (let i = 0; i < atomGroup.children.length; i++) {
+          const mesh = atomGroup.children[i];
+          const selected = editSel.includes(i);
+          if (selected) ensureSelectHalo(mesh); else removeSelectHalo(mesh);
+        }
+      }
       let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
-      function clearEditSelection() { editSel = []; updateEditSelectionVisuals(); }
+      function clearEditSelection() { editSel = []; updateEditSelectionVisuals(); updateSelectedHalos(); }
       function addEditSelection(i) {
         if (i == null || i < 0) return;
         if (editSel.length >= 3) editSel = editSel.slice(1); // keep last 2, then push new -> last 3
@@ -1467,7 +1508,8 @@
       }
       function updateEditSelectionVisuals() {
         clearGroup(editSelGroup);
-        if (!editMode || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
+        // Only render measurement overlays in measurement mode
+        if (currentMode !== MODES.MEASURE || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
         const posOf = (idx) => (atomGroup.children[idx] && atomGroup.children[idx].position) ? atomGroup.children[idx].position.clone() : null;
         const fmtDist = (d) => d.toFixed(4) + ' Å';
         const addEdge = (i, j) => {
@@ -1593,6 +1635,11 @@
         // Allow hover highlighting in Edit and Measurement modes
         const allowHover = (currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
         if (!allowHover) return;
+        // Track movement to distinguish click vs drag in measurement mode
+        if (currentMode === MODES.MEASURE && __editDownPt) {
+          const dx = e.clientX - __editDownPt.x, dy = e.clientY - __editDownPt.y;
+          if (Math.hypot(dx, dy) > 4) __editMoved = true;
+        }
         if (dragActive) {
           __editMoved = true;
           setNDCFromEvent(e);
@@ -1635,49 +1682,60 @@
       });
 
       canvasEl.addEventListener('pointerdown', (e) => {
-        if (!editMode || e.button !== 0) return;
+        if (e.button !== 0) return;
         __editDownPt = { x: e.clientX, y: e.clientY }; __editMoved = false; __editClickIdx = -1;
         const obj = pickAtom(e);
-        if (!obj || !obj.userData) { clearEditSelection(); return; }
-        dragAtomIndex = obj.userData.index | 0;
-        __editClickIdx = dragAtomIndex;
-        dragActive = true;
-        controls.enabled = false;
-        dragStartPos = obj.position.clone();
-        dragOrigMeshPos = obj.position.clone();
-        const vol = volumes[currentIndex]?.vol; if (vol) {
-          const a = vol.atoms[dragAtomIndex];
-          dragOrigAtomUnits = [a.x, a.y, a.z];
+        if (currentMode === MODES.EDIT) {
+          if (!obj || !obj.userData) return;
+          dragAtomIndex = obj.userData.index | 0;
+          __editClickIdx = dragAtomIndex;
+          dragActive = true;
+          controls.enabled = false;
+          dragStartPos = obj.position.clone();
+          dragOrigMeshPos = obj.position.clone();
+          const vol = volumes[currentIndex]?.vol; if (vol) {
+            const a = vol.atoms[dragAtomIndex];
+            dragOrigAtomUnits = [a.x, a.y, a.z];
+          }
+          const normal = new THREE.Vector3();
+          // plane orthogonal to camera-to-target axis
+          camera.getWorldDirection(normal);
+          dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, dragStartPos);
+          const hit = new THREE.Vector3(); raycaster.ray.intersectPlane(dragPlane, hit);
+          dragPlaneStart = hit.clone();
+          dragAxis = axisLock;
+          // Update guide line at drag start if an axis key is held
+          updateAxisGuideLine();
+          e.preventDefault();
+        } else if (currentMode === MODES.MEASURE) {
+          if (!obj || !obj.userData) { clearEditSelection(); return; }
+          __editClickIdx = obj.userData.index | 0;
+          // selection is applied on pointerup if not moved
         }
-        const normal = new THREE.Vector3();
-        // plane orthogonal to camera-to-target axis
-        camera.getWorldDirection(normal);
-        dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, dragStartPos);
-        const hit = new THREE.Vector3(); raycaster.ray.intersectPlane(dragPlane, hit);
-        dragPlaneStart = hit.clone();
-        dragAxis = axisLock;
-        // Update guide line at drag start if an axis key is held
-        updateAxisGuideLine();
-        e.preventDefault();
       });
 
       canvasEl.addEventListener('pointerup', (e) => {
-        if (!editMode) return;
-        const wasDragging = dragActive;
-        if (wasDragging) {
-          // Final rebuild to update bonds/geometry once after drag
-          rebuildScene({ preserveView: true });
-          dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
-          controls.enabled = true;
-          if (editMode) renderRibbon('edit');
-          // Refresh/hide guide line after drag ends
-          updateAxisGuideLine();
-          updateEditSelectionVisuals();
+        if (currentMode === MODES.EDIT) {
+          const wasDragging = dragActive;
+          if (wasDragging) {
+            // Final rebuild to update bonds/geometry once after drag
+            rebuildScene({ preserveView: true });
+            dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
+            controls.enabled = true;
+            if (editMode) renderRibbon('edit');
+            // Refresh/hide guide line after drag ends
+            updateAxisGuideLine();
+            updateEditSelectionVisuals();
+          }
+        } else if (currentMode === MODES.MEASURE) {
+          // Click (no significant motion) selects/accumulates
+          if (!__editMoved && __editClickIdx >= 0) {
+            addEditSelection(__editClickIdx);
+            updateSelectedHalos();
+            updateEditSelectionVisuals();
+          }
         }
-        // Click (no significant motion) selects/accumulates
-        if (!__editMoved && __editClickIdx >= 0) {
-          addEditSelection(__editClickIdx);
-        }
+        __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       });
 
       // Reset view to the initial camera/target/shift
