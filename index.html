@@ -455,7 +455,7 @@
       // --- Constants & helpers ---
       const BOHR_TO_ANG = 0.529177210903;
       // App version displayed in Help
-      const APP_VERSION = 'v0.1.0';
+      const APP_VERSION = '0.2.1';
 
       function arrayMinMax(a) {
         let min = Infinity, max = -Infinity;
@@ -1277,6 +1277,12 @@
         renderRibbon(ctx);
         // Camera: keep rotation enabled in all modes
         try { controls.enableRotate = true; } catch {}
+        // Entering measurement mode: hide surfaces first (preserve view)
+        if (currentMode === MODES.MEASURE && showSurfaces) {
+          showSurfaces = false;
+          if (typeof updateSurfBtn === 'function') updateSurfBtn();
+          rebuildScene({ preserveView: true });
+        }
         // Clear hover when leaving interactive modes
         if (currentMode === MODES.DISPLAY) { clearHover(); }
         // Clear measurement selection when leaving measurement mode
