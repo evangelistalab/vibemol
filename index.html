@@ -1757,8 +1757,10 @@
           updateAxisGuideLine();
           e.preventDefault();
         } else if (currentMode === MODES.MEASURE) {
-          if (!obj || !obj.userData) { clearEditSelection(); return; }
+          if (!obj || !obj.userData) { __editClickIdx = -1; return; }
           __editClickIdx = obj.userData.index | 0;
+          // Pause rotation while making a measurement selection
+          try { controls.enableRotate = false; } catch {}
           // selection is applied on pointerup if not moved
         }
       });
@@ -1777,6 +1779,8 @@
             updateEditSelectionVisuals();
           }
         } else if (currentMode === MODES.MEASURE) {
+          // Resume rotation after selection gesture
+          try { controls.enableRotate = true; } catch {}
           // Click (no significant motion) selects/accumulates
           if (!__editMoved && __editClickIdx >= 0) {
             addEditSelection(__editClickIdx);
@@ -1848,6 +1852,8 @@
 
       // Measurement mode bindings
       bind('down', MODES.MEASURE, 'm', () => { setMode(MODES.DISPLAY); });
+      // Esc clears current measurement selection (but does not change mode)
+      bind('down', MODES.MEASURE, 'Escape', () => { clearEditSelection(); updateSelectedHalos(); updateEditSelectionVisuals(); });
 
       // Global key listeners delegate to router
       window.addEventListener('keydown', (e) => handleShortcut(e, 'down'));
