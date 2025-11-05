@@ -6,7 +6,7 @@
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-WSP0EFW68E"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+    function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
 
     gtag('config', 'G-WSP0EFW68E');
@@ -1287,7 +1287,7 @@
         const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
         renderRibbon(ctx);
         // Camera: keep rotation enabled in all modes
-        try { controls.enableRotate = true; } catch {}
+        try { controls.enableRotate = true; } catch { }
         // Entering measurement mode: hide surfaces (preserve view), save prior state (once)
         if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
           if (__savedShowSurfaces === null) __savedShowSurfaces = showSurfaces;
@@ -1519,9 +1519,9 @@
         updateEditSelectionVisuals();
       }
       function disposeObj(o) {
-        try { o.geometry && o.geometry.dispose && o.geometry.dispose(); } catch {}
-        try { if (o.material && o.material.map && o.material.map.dispose) o.material.map.dispose(); } catch {}
-        try { o.material && o.material.dispose && o.material.dispose(); } catch {}
+        try { o.geometry && o.geometry.dispose && o.geometry.dispose(); } catch { }
+        try { if (o.material && o.material.map && o.material.map.dispose) o.material.map.dispose(); } catch { }
+        try { o.material && o.material.dispose && o.material.dispose(); } catch { }
       }
       function clearGroup(g) {
         if (!g) return;
@@ -1532,25 +1532,45 @@
         }
       }
       function makeTextSprite(txt) {
-        const pad = 4;
-        const font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+        // make a rounded rectangle canvas with text, then make a sprite from it
+        const hpad = 6;
+        const wpad = 8;
+        const radius = 16; // px rounded corner radius (pre-scale)
+        // make the font bold
+        const font = 'bold 20px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
         const c = document.createElement('canvas');
         const ctx = c.getContext('2d');
         ctx.font = font;
-        const w = Math.ceil(ctx.measureText(txt).width) + pad * 2;
-        const h = 18 + pad * 2;
-        c.width = w * 2; c.height = h * 2; // hi-DPI
+        const textW = Math.ceil(ctx.measureText(txt).width);
+        const w = textW + wpad * 2;
+        const h = 18 + hpad * 2;
+        // hi-DPI backing store
+        c.width = w * 2; c.height = h * 2;
         ctx.scale(2, 2);
         ctx.font = font;
+
+        // rounded rectangle background
+        const rr = Math.min(radius, w / 2, h / 2);
         ctx.fillStyle = 'rgba(20,22,24,0.85)';
-        ctx.fillRect(0, 0, w, h);
+        ctx.beginPath();
+        ctx.moveTo(rr, 0);
+        ctx.arcTo(w, 0, w, h, rr);
+        ctx.arcTo(w, h, 0, h, rr);
+        ctx.arcTo(0, h, 0, 0, rr);
+        ctx.arcTo(0, 0, w, 0, rr);
+        ctx.closePath();
+        ctx.fill();
+
+        // text
         ctx.fillStyle = '#e8eef6';
         ctx.textBaseline = 'middle';
-        ctx.fillText(txt, pad, h / 2);
+        ctx.fillText(txt, wpad, h / 2);
+
+        // sprite from canvas
         const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
         const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
         const spr = new THREE.Sprite(mat);
-        const scale = 0.012; // tune label size relative to pixels
+        const scale = 0.008; // tune label size relative to pixels
         spr.scale.set(w * scale, h * scale, 1);
         return spr;
       }
@@ -1821,7 +1841,7 @@
           if (!obj || !obj.userData) { __editClickIdx = -1; return; }
           __editClickIdx = obj.userData.index | 0;
           // Pause rotation while making a measurement selection
-          try { controls.enableRotate = false; } catch {}
+          try { controls.enableRotate = false; } catch { }
           // selection is applied on pointerup if not moved
         }
       });
@@ -1841,7 +1861,7 @@
           }
         } else if (currentMode === MODES.MEASURE) {
           // Resume rotation after selection gesture
-          try { controls.enableRotate = true; } catch {}
+          try { controls.enableRotate = true; } catch { }
           // Click (no significant motion) selects/accumulates
           if (!__editMoved && __editClickIdx >= 0) {
             addEditSelection(__editClickIdx);
