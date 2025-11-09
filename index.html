@@ -359,8 +359,19 @@
           title="Speed at which the view rotates" />
         <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
       </div>
+
+      <div class="row">
+        <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
+          Auto-rotate</label>
+        <label>Speed</label><input type="number" id="autoRotSpeed" step="1" title="Speed of auto-rotation" />
+      </div>
+      <div class="row">
+        <label style="width: 80px;">FPS</label>
+        <div id="fpsValue" style="font-variant-numeric: tabular-nums; color: var(--muted);">--</div>
+        <span></span><span></span>
+      </div>
       <div class="row" id="componentRow" style="display:none;">
-        <label>2C Surface</label>
+        <label style="width: 80px;">2C Surface</label>
         <select id="componentSelect" title="Select 2C cube component or phase surface">
           <option value="alphaRe">alphaRe</option>
           <option value="alphaIm">alphaIm</option>
@@ -371,16 +382,6 @@
           <option value="alphaBetaPhase">Alpha/Beta (split)</option>
           <option value="totalBloch">Total (Bloch color)</option>
         </select>
-        <span></span><span></span>
-      </div>
-      <div class="row">
-        <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
-          Auto-rotate</label>
-        <label>Speed</label><input type="number" id="autoRotSpeed" step="1" title="Speed of auto-rotation" />
-      </div>
-      <div class="row">
-        <label style="width: 80px;">FPS</label>
-        <div id="fpsValue" style="font-variant-numeric: tabular-nums; color: var(--muted);">--</div>
         <span></span><span></span>
       </div>
       <div class="row">
@@ -483,7 +484,7 @@
       // --- Constants & helpers ---
       const BOHR_TO_ANG = 0.529177210903;
       // App version displayed in Help
-      const APP_VERSION = '0.2.3';
+      const APP_VERSION = '0.3.0';
 
       function arrayMinMax(a) {
         let min = Infinity, max = -Infinity;
@@ -954,7 +955,7 @@
           const t = idx(i, j, k);
           const a2 = reA[t] * reA[t] + imA[t] * imA[t];
           const b2 = reB[t] * reB[t] + imB[t] * imB[t];
-          return a2 + b2; // total density ρ
+          return Math.sqrt(a2 + b2); // square root of the total density ρ
         };
         const res = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => densSampler(x, y, z) - level);
         const voxPos = res.positions;
@@ -1431,6 +1432,384 @@
         return g;
       }
 
+      // --- 2C Cloud: phase‑hued cubes (alpha/beta) ---
+      function buildCloudCubes2CPhase(vol, which, opts) {
+        const g = new THREE.Group();
+        const [nx, ny, nz] = vol.nxyz;
+        const stride = Math.max(1, opts.stride | 0);
+        const re = which === 'alpha' ? vol.alphaRe : vol.betaRe;
+        const im = which === 'alpha' ? vol.alphaIm : vol.betaIm;
+        // Voxel scaling (Å)
+        const ax = vol.axes[0].map(v => v * BOHR_TO_ANG);
+        const ay = vol.axes[1].map(v => v * BOHR_TO_ANG);
+        const az = vol.axes[2].map(v => v * BOHR_TO_ANG);
+        const len = v => Math.hypot(v[0], v[1], v[2]);
+        const scaleVec = new THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
+        // Count
+        let count = 0;
+        const tLow = opts.tLow;
+        for (let i = 0; i < nx; i += stride) {
+          for (let j = 0; j < ny; j += stride) {
+            for (let k = 0; k < nz; k += stride) {
+              const t = vol.idx(i, j, k);
+              const mag = Math.hypot(re[t], im[t]);
+              if (mag >= tLow) count++;
+            }
+          }
+        }
+        if (count === 0) return g;
+        // Instanced cubes with per‑instance color (phase hue)
+        const geom = new THREE.BoxGeometry(1, 1, 1);
+        // Ensure a per-vertex color attribute exists (white) so vertexColors is active
+        try {
+          const n = geom.getAttribute('position').count;
+          const carr = new Float32Array(n * 3);
+          for (let i = 0; i < carr.length; i++) carr[i] = 1.0;
+          geom.setAttribute('color', new THREE.BufferAttribute(carr, 3));
+        } catch { }
+        const alpha = Math.min(1, opts.alphaMax * stride);
+        // Unlit shader that uses per-instance color (like points)
+        const mat = new THREE.ShaderMaterial({
+          uniforms: { uAlpha: { value: alpha } },
+          vertexShader: `
+            varying vec3 vColor;
+            void main() {
+              vColor = instanceColor;
+              gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform float uAlpha;
+            varying vec3 vColor;
+            void main() {
+              gl_FragColor = vec4(vColor, uAlpha);
+            }
+          `,
+          transparent: alpha < 1.0,
+          depthWrite: alpha >= 1.0,
+          depthTest: true,
+          dithering: true,
+          polygonOffset: true,
+          polygonOffsetFactor: -0.5,
+          polygonOffsetUnits: -1.0,
+          side: THREE.DoubleSide,
+        });
+        const inst = new THREE.InstancedMesh(geom, mat, count);
+        inst.userData = { phaseHue: true, which };
+        // Preallocate instanceColor for robust support across three.js versions
+        inst.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
+        // Fill
+        const m4 = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const s = new THREE.Vector3();
+        // Use setColorAt for broad three.js compatibility
+        let idx = 0;
+        for (let i = 0; i < nx; i += stride) {
+          for (let j = 0; j < ny; j += stride) {
+            for (let k = 0; k < nz; k += stride) {
+              const t = vol.idx(i, j, k);
+              const rr = re[t], ii = im[t];
+              const mag = Math.hypot(rr, ii);
+              if (mag < tLow) continue;
+              const pos = voxelCenterToWorld(vol, i, j, k);
+              m4.compose(new THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(0.99));
+              inst.setMatrixAt(idx, m4);
+              const phase = Math.atan2(ii, rr);
+              const hue = (phase + Math.PI) / (2 * Math.PI);
+              const rgb = hsvToRgb(hue, 1.0, 1.0);
+              inst.instanceColor.setXYZ(idx, rgb[0], rgb[1], rgb[2]);
+              idx++;
+            }
+          }
+        }
+        if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+        inst.instanceMatrix.needsUpdate = true;
+        g.add(inst);
+        return g;
+      }
+
+      // --- 2C Cloud: phase‑hued points (alpha/beta) ---
+      function buildCloudPoints2CPhase(vol, which, opts) {
+        const g = new THREE.Group();
+        const [nx, ny, nz] = vol.nxyz;
+        const stride = Math.max(1, opts.stride | 0);
+        const re = which === 'alpha' ? vol.alphaRe : vol.betaRe;
+        const im = which === 'alpha' ? vol.alphaIm : vol.betaIm;
+        const tLow = opts.tLow;
+        // Determine hi bound for strength mapping from magnitudes
+        const arr = [];
+        for (let i = 0; i < nx; i += stride) {
+          for (let j = 0; j < ny; j += stride) {
+            for (let k = 0; k < nz; k += stride) {
+              const t = vol.idx(i, j, k);
+              arr.push(Math.hypot(re[t], im[t]));
+            }
+          }
+        }
+        if (!arr.length) return g;
+        arr.sort((a, b) => a - b);
+        const hi = arr[Math.floor(0.99 * (arr.length - 1))] || 0.0;
+        const clamp01 = x => Math.max(0, Math.min(1, x));
+        const pos = [];
+        const str = [];
+        const col = [];
+        for (let i = 0; i < nx; i += stride) {
+          for (let j = 0; j < ny; j += stride) {
+            for (let k = 0; k < nz; k += stride) {
+              const t = vol.idx(i, j, k);
+              const rr = re[t], ii = im[t];
+              const mag = Math.hypot(rr, ii);
+              if (mag < tLow) continue;
+              const s = clamp01((mag - tLow) / Math.max(1e-12, (hi - tLow)));
+              const p = voxelCenterToWorld(vol, i, j, k);
+              pos.push(p[0], p[1], p[2]);
+              str.push(s);
+              const phase = Math.atan2(ii, rr);
+              const hue = (phase + Math.PI) / (2 * Math.PI);
+              const [r, g1, b] = hsvToRgb(hue, 1.0, 1.0);
+              col.push(r, g1, b);
+            }
+          }
+        }
+        if (pos.length === 0) return g;
+        // Shader material with per‑vertex color
+        const baseSize = estimateCellSize(vol) * 12.0;
+        const mat = new THREE.ShaderMaterial({
+          uniforms: { uAlpha: { value: Math.min(1.0, opts.alphaMax * stride) }, uSize: { value: baseSize } },
+          vertexShader: `
+            uniform float uSize;
+            attribute float aStrength;
+            attribute vec3 aColor;
+            varying float vStrength;
+            varying vec3 vColor;
+            void main() {
+              vStrength = aStrength;
+              vColor = aColor;
+              vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+              float dist = -mvPosition.z;
+              gl_PointSize = uSize * (300.0 / max(1.0, dist));
+              gl_Position = projectionMatrix * mvPosition;
+            }
+          `,
+          fragmentShader: `
+            uniform float uAlpha;
+            varying float vStrength;
+            varying vec3 vColor;
+            void main() {
+              vec2 uv = gl_PointCoord - vec2(0.5);
+              float d = length(uv);
+              if (d > 0.5) discard;
+              float fall = smoothstep(0.5, 0.0, d);
+              float a = uAlpha * vStrength * fall;
+              gl_FragColor = vec4(vColor, a);
+            }
+          `,
+          transparent: true,
+          depthWrite: false,
+          depthTest: false,
+          blending: THREE.NormalBlending,
+        });
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+        geo.setAttribute('aStrength', new THREE.BufferAttribute(new Float32Array(str), 1));
+        geo.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(col), 3));
+        const pts = new THREE.Points(geo, mat);
+        pts.userData = { phaseHue: true, which };
+        g.add(pts);
+        return g;
+      }
+
+      // --- 2C Cloud: Bloch‑colored cubes (total density) ---
+      function buildCloudCubes2CTotal(vol, opts) {
+        const g = new THREE.Group();
+        const [nx, ny, nz] = vol.nxyz;
+        const stride = Math.max(1, opts.stride | 0);
+        const reA = vol.alphaRe, imA = vol.alphaIm, reB = vol.betaRe, imB = vol.betaIm;
+        const tLow = opts.tLow;
+        // Voxel scaling (Å)
+        const ax = vol.axes[0].map(v => v * BOHR_TO_ANG);
+        const ay = vol.axes[1].map(v => v * BOHR_TO_ANG);
+        const az = vol.axes[2].map(v => v * BOHR_TO_ANG);
+        const len = v => Math.hypot(v[0], v[1], v[2]);
+        const scaleVec = new THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
+        // Count
+        let count = 0;
+        for (let i = 0; i < nx; i += stride) {
+          for (let j = 0; j < ny; j += stride) {
+            for (let k = 0; k < nz; k += stride) {
+              const t = vol.idx(i, j, k);
+              const a2 = reA[t] * reA[t] + imA[t] * imA[t];
+              const b2 = reB[t] * reB[t] + imB[t] * imB[t];
+              const rho = Math.sqrt(a2 + b2);
+              if (rho >= tLow) count++;
+            }
+          }
+        }
+        if (count === 0) return g;
+        const geom = new THREE.BoxGeometry(1, 1, 1);
+        try {
+          const n = geom.getAttribute('position').count;
+          const carr = new Float32Array(n * 3);
+          for (let i = 0; i < carr.length; i++) carr[i] = 1.0;
+          geom.setAttribute('color', new THREE.BufferAttribute(carr, 3));
+        } catch { }
+        const alpha = Math.min(1, opts.alphaMax * stride);
+        const mat = new THREE.ShaderMaterial({
+          uniforms: { uAlpha: { value: alpha } },
+          vertexShader: `
+            varying vec3 vColor;
+            void main() {
+              vColor = instanceColor;
+              gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform float uAlpha;
+            varying vec3 vColor;
+            void main() {
+              gl_FragColor = vec4(vColor, uAlpha);
+            }
+          `,
+          transparent: alpha < 1.0,
+          depthWrite: alpha >= 1.0,
+          depthTest: true,
+          dithering: true,
+          polygonOffset: true,
+          polygonOffsetFactor: -0.5,
+          polygonOffsetUnits: -1.0,
+          side: THREE.DoubleSide,
+        });
+        const inst = new THREE.InstancedMesh(geom, mat, count);
+        inst.userData = { phaseHue: true, totalBloch: true };
+        inst.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
+        const m4 = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const s = new THREE.Vector3();
+        // Use setColorAt for broad three.js compatibility
+        let idx = 0;
+        for (let i = 0; i < nx; i += stride) {
+          for (let j = 0; j < ny; j += stride) {
+            for (let k = 0; k < nz; k += stride) {
+              const t = vol.idx(i, j, k);
+              const ar = reA[t], ai = imA[t], br = reB[t], bi = imB[t];
+              const a2 = ar * ar + ai * ai, b2 = br * br + bi * bi;
+              const rho = a2 + b2; if (Math.sqrt(rho) < tLow) continue;
+              const pos = voxelCenterToWorld(vol, i, j, k);
+              m4.compose(new THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(0.99));
+              inst.setMatrixAt(idx, m4);
+              const re_ab = ar * br + ai * bi;
+              const im_ab = -ar * bi + ai * br;
+              const nxv = 2 * re_ab / rho;
+              const nyv = 2 * im_ab / rho;
+              const nzv = (a2 - b2) / rho;
+              const hue = (Math.atan2(nyv, nxv) + Math.PI) / (2 * Math.PI);
+              const value = 0.6 + 0.4 * (1 - Math.abs(nzv));
+              const rgb = hsvToRgb(hue, 1.0, value);
+              inst.instanceColor.setXYZ(idx, rgb[0], rgb[1], rgb[2]);
+              idx++;
+            }
+          }
+        }
+        if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+        inst.instanceMatrix.needsUpdate = true;
+        g.add(inst);
+        return g;
+      }
+
+      // --- 2C Cloud: Bloch‑colored points (total density) ---
+      function buildCloudPoints2CTotal(vol, opts) {
+        const g = new THREE.Group();
+        const [nx, ny, nz] = vol.nxyz;
+        const stride = Math.max(1, opts.stride | 0);
+        const reA = vol.alphaRe, imA = vol.alphaIm, reB = vol.betaRe, imB = vol.betaIm;
+        const tLow = opts.tLow;
+        // Build arrays
+        const vals = [];
+        for (let i = 0; i < nx; i += stride) {
+          for (let j = 0; j < ny; j += stride) {
+            for (let k = 0; k < nz; k += stride) {
+              const t = vol.idx(i, j, k);
+              const a2 = reA[t] * reA[t] + imA[t] * imA[t];
+              const b2 = reB[t] * reB[t] + imB[t] * imB[t];
+              vals.push(Math.sqrt(a2 + b2));
+            }
+          }
+        }
+        if (!vals.length) return g;
+        vals.sort((a, b) => a - b);
+        const hi = vals[Math.floor(0.99 * (vals.length - 1))] || 0.0;
+        const clamp01 = x => Math.max(0, Math.min(1, x));
+        const pos = [], str = [], col = [];
+        for (let i = 0; i < nx; i += stride) {
+          for (let j = 0; j < ny; j += stride) {
+            for (let k = 0; k < nz; k += stride) {
+              const t = vol.idx(i, j, k);
+              const ar = reA[t], ai = imA[t], br = reB[t], bi = imB[t];
+              const a2 = ar * ar + ai * ai, b2 = br * br + bi * bi;
+              const rho = a2 + b2; if (Math.sqrt(rho) < tLow) continue;
+              const s = clamp01((Math.sqrt(rho) - tLow) / Math.max(1e-12, (hi - tLow)));
+              const p = voxelCenterToWorld(vol, i, j, k);
+              pos.push(p[0], p[1], p[2]);
+              str.push(s);
+              const re_ab = ar * br + ai * bi;
+              const im_ab = -ar * bi + ai * br;
+              const nxv = 2 * re_ab / rho;
+              const nyv = 2 * im_ab / rho;
+              const nzv = (a2 - b2) / rho;
+              const hue = (Math.atan2(nyv, nxv) + Math.PI) / (2 * Math.PI);
+              const value = 0.6 + 0.4 * (1 - Math.abs(nzv));
+              const [r, g1, b] = hsvToRgb(hue, 1.0, value);
+              col.push(r, g1, b);
+            }
+          }
+        }
+        if (!pos.length) return g;
+        const baseSize = estimateCellSize(vol) * 12.0;
+        const mat = new THREE.ShaderMaterial({
+          uniforms: { uAlpha: { value: Math.min(1.0, opts.alphaMax * stride) }, uSize: { value: baseSize } },
+          vertexShader: `
+            uniform float uSize;
+            attribute float aStrength;
+            attribute vec3 aColor;
+            varying float vStrength;
+            varying vec3 vColor;
+            void main() {
+              vStrength = aStrength;
+              vColor = aColor;
+              vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+              float dist = -mvPosition.z;
+              gl_PointSize = uSize * (300.0 / max(1.0, dist));
+              gl_Position = projectionMatrix * mvPosition;
+            }
+          `,
+          fragmentShader: `
+            uniform float uAlpha;
+            varying float vStrength;
+            varying vec3 vColor;
+            void main() {
+              vec2 uv = gl_PointCoord - vec2(0.5);
+              float d = length(uv);
+              if (d > 0.5) discard;
+              float fall = smoothstep(0.5, 0.0, d);
+              float a = uAlpha * vStrength * fall;
+              gl_FragColor = vec4(vColor, a);
+            }
+          `,
+          transparent: true,
+          depthWrite: false,
+          depthTest: false,
+          blending: THREE.NormalBlending,
+        });
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+        geo.setAttribute('aStrength', new THREE.BufferAttribute(new Float32Array(str), 1));
+        geo.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(col), 3));
+        const pts = new THREE.Points(geo, mat);
+        pts.userData = { phaseHue: true, totalBloch: true };
+        g.add(pts);
+        return g;
+      }
+
       function buildCloudPoints(vol, opts) {
         const g = new THREE.Group();
         const [nx, ny, nz] = vol.nxyz;
@@ -1550,8 +1929,14 @@
             const w = renderer.domElement.width | 0;
             const h = renderer.domElement.height | 0;
             const half = Math.max(1, (w / 2) | 0);
-            const alphaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'alpha');
-            const betaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'beta');
+            let alphaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'alpha');
+            let betaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'beta');
+            // Fallback to cloud objects if surfaces are not present
+            if ((!alphaMesh || !betaMesh) && cloudGroup && cloudGroup.children) {
+              const findInCloud = (which) => cloudGroup.children.find(o => o && o.userData && o.userData.phaseHue && o.userData.which === which);
+              if (!alphaMesh) alphaMesh = findInCloud('alpha');
+              if (!betaMesh) betaMesh = findInCloud('beta');
+            }
             if (alphaMesh && betaMesh) {
               didSplit = true;
               renderer.clear();
@@ -1693,6 +2078,7 @@
           { k: 'B', d: 'Batch export' },
           { k: 'I', d: 'Toggle surfaces' },
           { k: 'A', d: 'Toggle axes' },
+          { k: 'V', d: 'View/Coords panel' },
           { k: 'M', d: 'Measurement mode' },
           { k: '←/→', d: 'Prev/Next file' },
           { k: '?', d: 'Help' },
@@ -1809,6 +2195,7 @@
       renderRibbon('default');
       surfBtn.onclick = () => { showSurfaces = !showSurfaces; updateSurfBtn(); rebuildScene({ preserveView: true }); };
       const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); renderRibbon(sidePanel.classList.contains('open') ? 'panel' : 'default'); };
+      const openSide = () => { if (!sidePanel.classList.contains('open')) toggleSide(); };
       const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); renderRibbon('default'); } };
       panelBtn.onclick = toggleSide;
       sideClose.onclick = toggleSide;
@@ -2359,6 +2746,8 @@
       // Display mode bindings
       bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
       bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
+      // Show View/Coords side panel in standard (display) mode
+      bind('down', MODES.DISPLAY, 'v', () => { openSide(); });
 
       // Edit mode bindings
       bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
@@ -2772,8 +3161,43 @@
           }
         } else if (renderMode === 'cloud' && showSurfaces && hasGrid) {
           const opts = readCloudOpts();
-          cloudGroup = (opts.type === 'points') ? buildCloudPoints(vol, opts) : buildCloudCubes(vol, opts);
-          contentGroup.add(cloudGroup);
+          // 2C cloud modes: phase hue and Bloch color
+          if (vol && vol.isTwoComponent && (compMode === 'alphaPhase' || compMode === 'betaPhase' || compMode === 'alphaBetaPhase' || compMode === 'totalBloch')) {
+            if (compMode === 'alphaPhase' || compMode === 'betaPhase') {
+              // Use precomputed max (magnitude) from above; render only if iso <= max
+              if (max >= iso) {
+                cloudGroup = (opts.type === 'points')
+                  ? buildCloudPoints2CPhase(vol, compMode === 'alphaPhase' ? 'alpha' : 'beta', opts)
+                  : buildCloudCubes2CPhase(vol, compMode === 'alphaPhase' ? 'alpha' : 'beta', opts);
+                contentGroup.add(cloudGroup);
+              }
+            } else if (compMode === 'alphaBetaPhase') {
+              // Compute separate maxima for alpha and beta magnitudes
+              let maxA = 0.0, maxB = 0.0;
+              for (let i = 0; i < vol.alphaRe.length; i++) { const m = Math.hypot(vol.alphaRe[i], vol.alphaIm[i]); if (m > maxA) maxA = m; }
+              for (let i = 0; i < vol.betaRe.length; i++) { const m = Math.hypot(vol.betaRe[i], vol.betaIm[i]); if (m > maxB) maxB = m; }
+              const grp = new THREE.Group();
+              if (maxA >= iso) {
+                const a = (opts.type === 'points') ? buildCloudPoints2CPhase(vol, 'alpha', opts) : buildCloudCubes2CPhase(vol, 'alpha', opts);
+                for (const c of a.children) grp.add(c);
+              }
+              if (maxB >= iso) {
+                const b = (opts.type === 'points') ? buildCloudPoints2CPhase(vol, 'beta', opts) : buildCloudCubes2CPhase(vol, 'beta', opts);
+                for (const c of b.children) grp.add(c);
+              }
+              cloudGroup = grp;
+              contentGroup.add(cloudGroup);
+            } else if (compMode === 'totalBloch') {
+              if (max >= iso) {
+                cloudGroup = (opts.type === 'points') ? buildCloudPoints2CTotal(vol, opts) : buildCloudCubes2CTotal(vol, opts);
+                contentGroup.add(cloudGroup);
+              }
+            }
+          } else {
+            // Standard scalar cloud from vol.data
+            cloudGroup = (opts.type === 'points') ? buildCloudPoints(vol, opts) : buildCloudCubes(vol, opts);
+            contentGroup.add(cloudGroup);
+          }
         }
 
         // Atoms
@@ -2819,6 +3243,18 @@
             componentSelect.value = compv;
           }
         }
+        // Disable color scheme when using 2C representations (alpha/beta/alphaBeta/bloch)
+        (function updateSchemeEnabled() {
+          try {
+            if (!schemeSelect) return;
+            const is2c = !!(vol && vol.isTwoComponent);
+            const compv = (volumes[currentIndex] && volumes[currentIndex].component) || 'alphaRe';
+            const isPhaseLike = (compv === 'alphaPhase' || compv === 'betaPhase' || compv === 'alphaBetaPhase' || compv === 'totalBloch');
+            schemeSelect.disabled = is2c && isPhaseLike;
+            // Optional: set title to clarify why
+            schemeSelect.title = schemeSelect.disabled ? 'Disabled: 2C mode uses intrinsic colors' : 'Choose default +/- surface colors';
+          } catch { }
+        })();
         // Phase wheel visibility in phase-hue modes
         (function updatePhaseWheel() {
           const wheel = document.getElementById('phaseWheel');
@@ -2845,6 +3281,9 @@
               // Glass style: drive transmission instead of opacity
               mat.transmission = Math.max(0, Math.min(1, op));
               mat.opacity = 1.0;
+            } else if (mat.isShaderMaterial && mat.uniforms && mat.uniforms.uAlpha) {
+              // Custom shader materials (e.g., 2C cloud cubes)
+              mat.uniforms.uAlpha.value = Math.max(0, Math.min(1, op));
             } else {
               mat.opacity = op;
               mat.transparent = true;
@@ -2878,14 +3317,20 @@
           }
           mat.needsUpdate = true;
         }
-        // Update cloud colors as well
+        // Update cloud colors and alpha as well
         if (cloudGroup && cloudGroup.children && cloudGroup.children.length) {
           for (const obj of cloudGroup.children) {
+            if (!obj || !obj.material) continue;
+            const mat = obj.material;
+            // Update custom shader alpha if present (points and 2C cubes)
+            if (mat.isShaderMaterial && mat.uniforms && mat.uniforms.uAlpha) {
+              mat.uniforms.uAlpha.value = Math.max(0, Math.min(1, op));
+              mat.needsUpdate = true;
+            }
+            // Update signed color for standard scalar clouds that use uColor
             const sign = obj.userData && obj.userData.sign;
             const colStr = sign === 'neg' ? negColor.value : posColor.value;
-            if (!colStr) continue;
-            if (obj.material) {
-              const mat = obj.material;
+            if (colStr) {
               if (mat.isShaderMaterial && mat.uniforms && mat.uniforms.uColor) {
                 mat.uniforms.uColor.value.set(colStr);
                 mat.needsUpdate = true;
