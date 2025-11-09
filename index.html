@@ -268,7 +268,7 @@
 <body>
   <div id="toolbar">
     <label><strong>CUBE/XYZ files</strong>
-      <input type="file" id="fileInput" accept=".cube,.cub,.xyz" multiple />
+      <input type="file" id="fileInput" accept=".cube,.cub,.xyz,.2ccube" multiple />
       <button id="openBtn" class="secondary">Open…</button>
     </label>
     <label>Active file
@@ -301,6 +301,11 @@
     <canvas id="canvas"></canvas>
   </div>
   <div id="hint">Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
+  <!-- Phase wheel legend (shown in phase-hue modes) -->
+  <div id="phaseWheel" aria-hidden="true"
+    style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
+    <canvas id="phaseWheelCanvas" width="96" height="120" style="width:100%; height:100%;"></canvas>
+  </div>
   <!-- Edit mode axis lock toolbar -->
   <div id="axisLock" aria-hidden="true">
     <button id="axisX" title="Lock movement to X">X</button>
@@ -353,6 +358,20 @@
         <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
           title="Speed at which the view rotates" />
         <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
+      </div>
+      <div class="row" id="componentRow" style="display:none;">
+        <label>2C Surface</label>
+        <select id="componentSelect" title="Select 2C cube component or phase surface">
+          <option value="alphaRe">alphaRe</option>
+          <option value="alphaIm">alphaIm</option>
+          <option value="betaRe">betaRe</option>
+          <option value="betaIm">betaIm</option>
+          <option value="alphaPhase">Alpha (phase hue)</option>
+          <option value="betaPhase">Beta (phase hue)</option>
+          <option value="alphaBetaPhase">Alpha/Beta (split)</option>
+          <option value="totalBloch">Total (Bloch color)</option>
+        </select>
+        <span></span><span></span>
       </div>
       <div class="row">
         <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
@@ -552,6 +571,72 @@
         };
       }
 
+      // Parse two-component cube files (.2ccube) with four datasets
+      function parseTwoComponentCube(text) {
+        const lines = text.replace(/\r/g, '').split('\n');
+        // ORCA-specific quirk: remove extra 9th line if present
+        try {
+          const isORCA = /ORCA/i.test(lines[0] || '');
+          const l9 = (lines[8] || '').trim();
+          if (isORCA && l9) {
+            const parts = l9.split(/\s+/);
+            const twoNums = parts.length === 2 && parts.every(s => isFinite(parseFloat(s)));
+            if (twoNums) lines.splice(8, 1);
+          }
+        } catch { }
+        if (lines.length < 6) throw new Error('Not enough lines for a CUBE file.');
+        const title = lines[0];
+        const comment = lines[1] || '';
+        let isoHint = null;
+        try {
+          const m = comment.match(/\(([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\)/);
+          if (m) isoHint = parseFloat(m[1]);
+        } catch { }
+        const L3 = lines[2].trim().split(/\s+/);
+        const natoms = Math.abs(parseInt(L3[0], 10));
+        const origin = [parseFloat(L3[1]), parseFloat(L3[2]), parseFloat(L3[3])];
+        const sx = lines[3].trim().split(/\s+/).map(Number);
+        const sy = lines[4].trim().split(/\s+/).map(Number);
+        const sz = lines[5].trim().split(/\s+/).map(Number);
+        const numx = Math.abs(sx[0]) | 0, numy = Math.abs(sy[0]) | 0, numz = Math.abs(sz[0]) | 0;
+        const ax = sx.slice(1, 4);
+        const ay = sy.slice(1, 4);
+        const az = sz.slice(1, 4);
+        const atoms = [];
+        for (let i = 0; i < natoms; i++) {
+          const p = lines[6 + i].trim().split(/\s+/).map(Number);
+          atoms.push({ Z: p[0], q: p[1], x: p[2], y: p[3], z: p[4] });
+        }
+        const flat = lines.slice(6 + natoms).join(' ').trim().split(/\s+/);
+        const total = numx * numy * numz;
+        let alphaRe, alphaIm, betaRe, betaIm, isTwoComponent = false;
+        if (flat.length === total) {
+          alphaRe = new Float32Array(total);
+          for (let i = 0; i < total; i++) alphaRe[i] = parseFloat(flat[i]);
+          alphaIm = new Float32Array(total);
+          betaRe = new Float32Array(total);
+          betaIm = new Float32Array(total);
+        } else if (flat.length === 4 * total) {
+          isTwoComponent = true;
+          alphaRe = new Float32Array(total);
+          alphaIm = new Float32Array(total);
+          betaRe = new Float32Array(total);
+          betaIm = new Float32Array(total);
+          let off = 0;
+          for (let i = 0; i < total; i++) alphaRe[i] = parseFloat(flat[off++]);
+          for (let i = 0; i < total; i++) alphaIm[i] = parseFloat(flat[off++]);
+          for (let i = 0; i < total; i++) betaRe[i] = parseFloat(flat[off++]);
+          for (let i = 0; i < total; i++) betaIm[i] = parseFloat(flat[off++]);
+        } else {
+          throw new Error(`Data size mismatch. Expected ${total} or ${4 * total}, got ${flat.length}`);
+        }
+        const idx = (i, j, k) => (i * numy + j) * numz + k;
+        const vol = { title, comment, natoms, origin, nxyz: [numx, numy, numz], axes: [ax, ay, az], atoms, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent };
+        // default dataset
+        vol.data = isTwoComponent ? alphaRe : alphaRe;
+        return vol;
+      }
+
       function parseXYZ(text) {
         const lines = text.replace(/\r/g, '').split('\n');
         let i = 0;
@@ -666,6 +751,268 @@
         return geom;
       }
 
+      // --- Two‑component phase‑hued isosurface (Alpha/Beta) ---
+      function hsvToRgb(h, s, v) {
+        let r = 0, g = 0, b = 0;
+        const i = Math.floor(h * 6);
+        const f = h * 6 - i;
+        const p = v * (1 - s);
+        const q = v * (1 - f * s);
+        const t = v * (1 - (1 - f) * s);
+        switch (i % 6) {
+          case 0: r = v; g = t; b = p; break;
+          case 1: r = q; g = v; b = p; break;
+          case 2: r = p; g = v; b = t; break;
+          case 3: r = p; g = q; b = v; break;
+          case 4: r = t; g = p; b = v; break;
+          case 5: r = v; g = p; b = q; break;
+        }
+        return [r, g, b];
+      }
+
+      function make2CPhaseIsosurface(vol, which, level) {
+        const [nx, ny, nz] = vol.nxyz;
+        const isAlpha = which === 'alpha';
+        const re = isAlpha ? vol.alphaRe : vol.betaRe;
+        const im = isAlpha ? vol.alphaIm : vol.betaIm;
+        const idx = vol.idx;
+        const clampi = (x, n) => Math.max(0, Math.min(n - 1, x | 0));
+        const magSampler = (x, y, z) => {
+          const i = clampi(Math.floor(x), nx);
+          const j = clampi(Math.floor(y), ny);
+          const k = clampi(Math.floor(z), nz);
+          const t = idx(i, j, k);
+          const rr = re[t], ii = im[t];
+          return Math.hypot(rr, ii);
+        };
+        const res = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => magSampler(x, y, z) - level);
+        const voxPos = res.positions;
+        const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
+        const map = new Map();
+        const unique = [];
+        const oldToNew = new Uint32Array(voxPos.length);
+        for (let i = 0; i < voxPos.length; i++) {
+          const k = key(voxPos[i]);
+          let id = map.get(k);
+          if (id === undefined) { id = unique.length; map.set(k, id); unique.push(voxPos[i]); }
+          oldToNew[i] = id;
+        }
+        const cells = res.cells;
+        const indices = new Uint32Array(cells.length * 3);
+        for (let t = 0; t < cells.length; t++) {
+          const c = cells[t];
+          indices[3 * t + 0] = oldToNew[c[0]];
+          indices[3 * t + 1] = oldToNew[c[1]];
+          indices[3 * t + 2] = oldToNew[c[2]];
+        }
+        const positions = new Float32Array(unique.length * 3);
+        const colors = new Float32Array(unique.length * 3);
+        for (let i = 0; i < unique.length; i++) {
+          const p = voxelToWorld(vol, unique[i]);
+          positions[3 * i + 0] = p[0];
+          positions[3 * i + 1] = p[1];
+          positions[3 * i + 2] = p[2];
+          // Sample phase at nearest grid point
+          const vi = clampi(Math.floor(unique[i][0]), nx);
+          const vj = clampi(Math.floor(unique[i][1]), ny);
+          const vk = clampi(Math.floor(unique[i][2]), nz);
+          const t = idx(vi, vj, vk);
+          const rr = re[t], ii = im[t];
+          const phase = Math.atan2(ii, rr); // [-pi,pi]
+          const hue = (phase + Math.PI) / (2 * Math.PI); // [0,1)
+          const [r, g, b] = hsvToRgb(hue, 1.0, 1.0);
+          colors[3 * i + 0] = r; colors[3 * i + 1] = g; colors[3 * i + 2] = b;
+        }
+        const geom = new THREE.BufferGeometry();
+        geom.setIndex(new THREE.BufferAttribute(indices, 1));
+        geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        try { geom.computeVertexNormals(); } catch { }
+        return geom;
+      }
+
+      // Draw a phase color wheel in the top-left corner (hue = angle)
+      function drawPhaseWheel(modeLabel, kind = 'phase') {
+        const el = document.getElementById('phaseWheelCanvas'); if (!el) return;
+        const dpr = window.devicePixelRatio || 1;
+        // Work entirely in device pixels for precise centering
+        const pxW = Math.max(1, Math.floor((el.clientWidth || 96) * dpr));
+        const pxH = Math.max(1, Math.floor((el.clientHeight || 96) * dpr));
+        el.width = pxW; el.height = pxH;
+        const ctx = el.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, pxW, pxH);
+        const cx = pxW / 2;
+        const labelSpace = Math.max(18 * dpr, 18); // reserve space at bottom for the label
+        const cy = Math.floor((pxH - labelSpace) / 2);
+        const R = Math.floor(Math.min(cx, cy) - 1);
+        const img = ctx.createImageData(pxW, pxH);
+        for (let y = 0; y < pxH; y++) {
+          for (let x = 0; x < pxW; x++) {
+            const dx = x - cx, dy = y - cy;
+            const r2 = dx * dx + dy * dy;
+            const ii = (y * pxW + x) * 4;
+            if (r2 <= R * R) {
+              const angle = Math.atan2(dy, dx); // [-pi,pi]
+              const hue = (angle + Math.PI) / (2 * Math.PI);
+              let v = 1.0;
+              if (kind === 'bloch') {
+                // brightness encodes |nz| with stereographic disk: r in [0,1] => |nz| = sqrt(1-r^2)
+                const rNorm = Math.min(1, Math.sqrt(r2) / R);
+                const nzAbs = Math.sqrt(Math.max(0, 1 - rNorm * rNorm));
+                v = 0.6 + 0.4 * (1 - nzAbs);
+              }
+              const [r, g, b] = hsvToRgb(hue, 1.0, v);
+              img.data[ii + 0] = Math.round(r * 255);
+              img.data[ii + 1] = Math.round(g * 255);
+              img.data[ii + 2] = Math.round(b * 255);
+              img.data[ii + 3] = 255;
+            } else {
+              img.data[ii + 3] = 0;
+            }
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+        // Draw outer border circle centered around the fill
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, Math.PI * 2);
+        // double stroke for contrast
+        ctx.lineWidth = Math.max(2, Math.round(2 * dpr)); ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.stroke();
+        ctx.lineWidth = Math.max(1, Math.round(1 * dpr)); ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke();
+
+        // Draw tick marks and labels for −π, −π/2, 0, π/2, π
+        const ticks = [
+          { a: 0, label: '0' },
+          { a: -Math.PI / 2, label: 'π/2' },
+          { a: Math.PI, label: 'π' },
+          { a: -Math.PI / 2, label: '−π/2' },
+        ];
+        ctx.font = `${Math.max(10, Math.round(10 * dpr))}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+        ctx.textBaseline = 'middle';
+        const tickGap = Math.max(8, Math.round(8 * dpr));
+        const innerGap = Math.max(10, Math.round(10 * dpr));
+        for (const t of ticks) {
+          const ca = Math.cos(t.a), sa = Math.sin(t.a);
+          const r1 = R - Math.max(2, Math.round(3 * dpr));
+          const r2 = R;
+          const x1 = cx + r1 * ca, y1 = cy + r1 * sa;
+          const x2 = cx + r2 * ca, y2 = cy + r2 * sa;
+          // double-stroke tick for contrast
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+          ctx.lineWidth = Math.max(2, Math.round(2 * dpr)); ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+          ctx.lineWidth = Math.max(1, Math.round(1 * dpr)); ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke();
+
+          // Place text with collision-aware offsets
+          let tx, ty;
+          if (Math.abs(ca) > 0.85) {
+            // Left or right: place outside horizontally
+            tx = cx + (R + tickGap) * ca;
+            ty = cy;
+            ctx.textAlign = (ca > 0 ? 'left' : 'right');
+            ctx.textBaseline = 'middle';
+          } else if (sa < 0) {
+            // Top: place outside above the circle
+            tx = cx;
+            ty = cy - (R + tickGap);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+          } else {
+            // Bottom: place just inside the circle to avoid colliding with mode label
+            tx = cx;
+            ty = cy + (R - innerGap);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+          }
+          // stroke + fill text for contrast
+          ctx.lineWidth = Math.max(3, Math.round(3 * dpr)); ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(t.label, tx, ty);
+          ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText(t.label, tx, ty);
+        }
+
+        // Mode label below the wheel
+        let label;
+        if (modeLabel === 'alphaPhase') label = 'α phase';
+        else if (modeLabel === 'betaPhase') label = 'β phase';
+        else if (modeLabel === 'alphaBetaPhase') label = 'α/β phase';
+        else if (modeLabel === 'totalBloch') label = 'Bloch color';
+        else label = '';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        const ly = Math.min(pxH - Math.max(4, Math.round(4 * dpr)), cy + R + Math.max(18, Math.round(18 * dpr)));
+        ctx.lineWidth = Math.max(3, Math.round(3 * dpr)); ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(label, cx, ly);
+        ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText(label, cx, ly);
+      }
+
+      function make2CTotalColoredIsosurface(vol, level) {
+        const [nx, ny, nz] = vol.nxyz;
+        const reA = vol.alphaRe, imA = vol.alphaIm, reB = vol.betaRe, imB = vol.betaIm;
+        const idx = vol.idx;
+        const clampi = (x, n) => Math.max(0, Math.min(n - 1, x | 0));
+        const densSampler = (x, y, z) => {
+          const i = clampi(Math.floor(x), nx);
+          const j = clampi(Math.floor(y), ny);
+          const k = clampi(Math.floor(z), nz);
+          const t = idx(i, j, k);
+          const a2 = reA[t] * reA[t] + imA[t] * imA[t];
+          const b2 = reB[t] * reB[t] + imB[t] * imB[t];
+          return a2 + b2; // total density ρ
+        };
+        const res = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => densSampler(x, y, z) - level);
+        const voxPos = res.positions;
+        const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
+        const map = new Map();
+        const unique = [];
+        const oldToNew = new Uint32Array(voxPos.length);
+        for (let i = 0; i < voxPos.length; i++) {
+          const k = key(voxPos[i]);
+          let id = map.get(k);
+          if (id === undefined) { id = unique.length; map.set(k, id); unique.push(voxPos[i]); }
+          oldToNew[i] = id;
+        }
+        const cells = res.cells;
+        const indices = new Uint32Array(cells.length * 3);
+        for (let t = 0; t < cells.length; t++) {
+          const c = cells[t];
+          indices[3 * t + 0] = oldToNew[c[0]];
+          indices[3 * t + 1] = oldToNew[c[1]];
+          indices[3 * t + 2] = oldToNew[c[2]];
+        }
+        const positions = new Float32Array(unique.length * 3);
+        for (let i = 0; i < unique.length; i++) {
+          const p = voxelToWorld(vol, unique[i]);
+          positions[3 * i + 0] = p[0];
+          positions[3 * i + 1] = p[1];
+          positions[3 * i + 2] = p[2];
+        }
+        // Vertex colors from Bloch sphere direction: hue = azimuth, brightness = polar
+        const colors = new Float32Array(unique.length * 3);
+        for (let i = 0; i < unique.length; i++) {
+          const v = unique[i];
+          const vi = clampi(Math.floor(v[0]), nx);
+          const vj = clampi(Math.floor(v[1]), ny);
+          const vk = clampi(Math.floor(v[2]), nz);
+          const t = idx(vi, vj, vk);
+          const ar = reA[t], ai = imA[t], br = reB[t], bi = imB[t];
+          const a2 = ar * ar + ai * ai, b2 = br * br + bi * bi;
+          const rho = a2 + b2; if (rho <= 1e-12) { colors[3 * i] = colors[3 * i + 1] = colors[3 * i + 2] = 0; continue; }
+          const re_ab = ar * br + ai * bi;
+          const im_ab = -ar * bi + ai * br;
+          const nxv = 2 * re_ab / rho;
+          const nyv = 2 * im_ab / rho;
+          const nzv = (a2 - b2) / rho;
+          // Hue from azimuth, brightness from polar angle (|nz|)
+          const hue = (Math.atan2(nyv, nxv) + Math.PI) / (2 * Math.PI);
+          const value = 0.6 + 0.4 * (1 - Math.abs(nzv));
+          const [r, g, b] = hsvToRgb(hue, 1.0, value);
+          colors[3 * i + 0] = r; colors[3 * i + 1] = g; colors[3 * i + 2] = b;
+        }
+        const geom = new THREE.BufferGeometry();
+        geom.setIndex(new THREE.BufferAttribute(indices, 1));
+        geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        try { geom.computeVertexNormals(); } catch { }
+        return geom;
+      }
+
       // --- Three.js scene setup ---
       const canvas = document.getElementById('canvas');
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -757,8 +1104,20 @@
       contentGroup.add(bondGroup);
       contentGroup.add(cloudGroup);
 
+      function disposeDeep(obj) {
+        try {
+          obj.traverse && obj.traverse((o) => {
+            if (o.geometry && o.geometry.dispose) try { o.geometry.dispose(); } catch { }
+            const mat = o.material;
+            if (Array.isArray(mat)) { for (const m of mat) { try { m.dispose && m.dispose(); } catch { } } }
+            else if (mat && mat.dispose) { try { mat.dispose(); } catch { } }
+          });
+        } catch { }
+        try { if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose(); } catch { }
+        try { if (obj.material && obj.material.dispose) obj.material.dispose(); } catch { }
+      }
       function clearSceneMeshes() {
-        for (const m of meshes) contentGroup.remove(m), m.geometry.dispose(), m.material.dispose();
+        for (const m of meshes) { try { contentGroup.remove(m); disposeDeep(m); } catch { } }
         meshes = [];
         // Reset atom and bond groups
         contentGroup.remove(atomGroup); atomGroup.clear(); atomGroup = new THREE.Group();
@@ -932,6 +1291,43 @@
         }
         // Fallback standard
         return new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
+      }
+
+      // Material for 2C colored surfaces (vertex colors), matching style selection
+      function createIsoMaterial2C(opacity) {
+        if (surfaceStyle === 'glass') {
+          // Glassy, tinted by vertex colors; drive transmission with slider
+          return new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            vertexColors: true,
+            transmission: 1.0,
+            roughness: 0.1,
+            metalness: 0.0,
+            clearcoat: 0.8,
+            clearcoatRoughness: 0.025,
+            reflectivity: 0.1,
+            ior: 1.2,
+            thickness: 1.0,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 1.0,
+          });
+        }
+        if (surfaceStyle === 'emissive') {
+          // Emissive physical with vertex color tint
+          return new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            vertexColors: true,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1,
+            emissiveIntensity: 0.0,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity,
+          });
+        }
+        // Fallback standard
+        return new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
       }
 
       // --- Cloud builders ---
@@ -1144,11 +1540,54 @@
       function render() {
         controls.update();
 
-        // Main scene
-        renderer.clear();
-        renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
-        renderer.setScissorTest(false);
-        renderer.render(scene, camera);
+        // Split render for 2C alpha/beta phase side-by-side
+        let didSplit = false;
+        try {
+          const vrec = volumes[currentIndex];
+          const v = vrec && vrec.vol;
+          const mode = vrec && vrec.component;
+          if (v && v.isTwoComponent && mode === 'alphaBetaPhase') {
+            const w = renderer.domElement.width | 0;
+            const h = renderer.domElement.height | 0;
+            const half = Math.max(1, (w / 2) | 0);
+            const alphaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'alpha');
+            const betaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'beta');
+            if (alphaMesh && betaMesh) {
+              didSplit = true;
+              renderer.clear();
+              renderer.setScissorTest(true);
+              const oldAspect = camera.aspect;
+              const fullAspect = w / h;
+              const halfAspect = half / h;
+              // Left: alpha
+              if (betaMesh) betaMesh.visible = false; alphaMesh.visible = true;
+              renderer.setScissor(0, 0, half, h);
+              renderer.setViewport(0, 0, half, h);
+              camera.aspect = halfAspect; camera.updateProjectionMatrix();
+              renderer.render(scene, camera);
+              // Right: beta
+              renderer.clearDepth();
+              alphaMesh.visible = false; if (betaMesh) betaMesh.visible = true;
+              renderer.setScissor(half, 0, w - half, h);
+              renderer.setViewport(half, 0, w - half, h);
+              camera.aspect = halfAspect; camera.updateProjectionMatrix();
+              renderer.render(scene, camera);
+              // Restore visibility
+              alphaMesh.visible = true; if (betaMesh) betaMesh.visible = true;
+              renderer.setScissorTest(false);
+              // Restore full-aspect projection
+              camera.aspect = fullAspect; camera.updateProjectionMatrix();
+            }
+          }
+        } catch { }
+
+        if (!didSplit) {
+          // Main scene (single viewport)
+          renderer.clear();
+          renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
+          renderer.setScissorTest(false);
+          renderer.render(scene, camera);
+        }
 
         // FPS update
         const now = performance.now();
@@ -1231,6 +1670,8 @@
       const styleSelect = document.getElementById('styleSelect');
       const schemeSelect = document.getElementById('schemeSelect');
       const renderModeSel = document.getElementById('renderMode');
+      const componentRow = document.getElementById('componentRow');
+      const componentSelect = document.getElementById('componentSelect');
       const cloudTypeSel = document.getElementById('cloudType');
       const cloudStrideEl = document.getElementById('cloudStride');
       const cloudAlphaEl = document.getElementById('cloudAlpha');
@@ -1945,6 +2386,20 @@
         styleSelect.value = surfaceStyle;
         styleSelect.onchange = () => { surfaceStyle = styleSelect.value; rebuildScene({ preserveView: true }); };
       }
+      if (componentSelect) {
+        componentSelect.onchange = () => {
+          if (currentIndex < 0 || !volumes[currentIndex]) return;
+          const vol = volumes[currentIndex].vol;
+          if (!vol || !vol.isTwoComponent) return;
+          const comp = componentSelect.value;
+          volumes[currentIndex].component = comp;
+          // Only set vol.data for raw grid selections; phase modes are handled in rebuildScene
+          if (comp === 'alphaRe' || comp === 'alphaIm' || comp === 'betaRe' || comp === 'betaIm') {
+            vol.data = vol[comp] || vol.alphaRe;
+          }
+          rebuildScene({ preserveView: true });
+        };
+      }
 
       // Default color schemes for +/- surfaces
       if (schemeSelect) {
@@ -2112,8 +2567,13 @@
         for (const f of arr) {
           const text = await f.text();
           const lower = f.name.toLowerCase();
-          const vol = (lower.endsWith('.xyz')) ? parseXYZ(text) : parseCube(text);
-          volumes.push({ name: f.name, vol });
+          let vol;
+          if (lower.endsWith('.xyz')) vol = parseXYZ(text);
+          else if (lower.endsWith('.2ccube')) vol = parseTwoComponentCube(text);
+          else vol = parseCube(text);
+          const meta = { name: f.name, vol };
+          if (vol && vol.isTwoComponent) meta.component = 'alphaRe';
+          volumes.push(meta);
           // adopt hinted iso if the user hasn’t interacted yet
           if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
             isoInput.value = String(vol.isoHint);
@@ -2212,22 +2672,32 @@
         if (currentIndex < 0) return;
         clearSceneMeshes();
         const vol = volumes[currentIndex].vol;
+        // Two-component: select active dataset (for raw grids). Phase modes handled later
+        if (vol && vol.isTwoComponent) {
+          const compSel = volumes[currentIndex].component || 'alphaRe';
+          if (compSel === 'alphaRe' || compSel === 'alphaIm' || compSel === 'betaRe' || compSel === 'betaIm') {
+            vol.data = vol[compSel] || vol.alphaRe;
+          }
+        }
 
         // Compute robust min/max
-        const { min, max } = arrayMinMax(vol.data || []);
-
-        // Auto-iso fallback: if requested iso shows nothing, lower it to ~95th percentile of |field|
-        let iso = parseFloat(isoInput.value || "0.02");
-        if (!(max >= iso || min <= -iso)) {
-          // compute ~95th percentile on a sampled subset for speed
-          const sampleStep = Math.max(1, Math.floor(vol.data.length / 50000));
-          const absVals = [];
-          for (let i = 0; i < vol.data.length; i += sampleStep) absVals.push(Math.abs(vol.data[i]));
-          absVals.sort((a, b) => a - b);
-          const p95 = absVals[Math.floor(0.95 * (absVals.length - 1))] || 0.0;
-          iso = p95 || Math.max(Math.abs(min), Math.abs(max)) * 0.5;
-          console.warn('[CUBE] Requested iso produced no surface. Falling back to', iso.toFixed(6));
+        // Stats depend on field used; for 2C phase surfaces, compute on magnitude
+        let min, max;
+        const compMode = (vol && vol.isTwoComponent) ? (volumes[currentIndex].component || 'alphaRe') : 'alphaRe';
+        if (vol && vol.isTwoComponent && (compMode === 'alphaPhase' || compMode === 'betaPhase' || compMode === 'alphaBetaPhase' || compMode === 'totalBloch')) {
+          // compute stats on magnitude (alpha, beta, or both)
+          min = Infinity; max = -Infinity;
+          const updtMag = (re, im) => { for (let i = 0; i < re.length; i++) { const m = Math.hypot(re[i], im[i]); if (m < min) min = m; if (m > max) max = m; } };
+          const updtDens = (reA, imA, reB, imB) => { for (let i = 0; i < reA.length; i++) { const d = reA[i] * reA[i] + imA[i] * imA[i] + reB[i] * reB[i] + imB[i] * imB[i]; if (d < min) min = d; if (d > max) max = d; } };
+          if (compMode === 'alphaPhase' || compMode === 'alphaBetaPhase') updtMag(vol.alphaRe, vol.alphaIm);
+          if (compMode === 'betaPhase' || compMode === 'alphaBetaPhase') updtMag(vol.betaRe, vol.betaIm);
+          if (compMode === 'totalBloch') updtDens(vol.alphaRe, vol.alphaIm, vol.betaRe, vol.betaIm);
+        } else {
+          const mm = arrayMinMax(vol.data || []); min = mm.min; max = mm.max;
         }
+
+        // Use the requested iso value as-is; do not auto-adjust if it produces no surface.
+        const iso = parseFloat(isoInput.value || "0.02");
 
         const opacity = parseFloat(opInput.value || "1.00");
         const posMat = createIsoMaterial('pos', opacity);
@@ -2235,22 +2705,70 @@
 
         const hasGrid = Array.isArray(vol.nxyz) && (vol.nxyz[0] > 0 && vol.nxyz[1] > 0 && vol.nxyz[2] > 0);
         if (renderMode === 'surface' && showSurfaces && hasGrid) {
-          // Positive iso (+iso value, + color)
-          if (max >= iso) {
-            const geomP = makeIsosurface(vol, iso);
-            const meshP = new THREE.Mesh(geomP, posMat);
-            meshP.userData.sign = 'pos';
-            contentGroup.add(meshP); meshes.push(meshP);
-            // Debug: triangle count
-            if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count / 3) | 0);
-          }
-          // Negative iso (−iso value, − color)
-          if (min <= -iso) {
-            const geomN = makeIsosurface(vol, -iso);
-            const meshN = new THREE.Mesh(geomN, negMat);
-            meshN.userData.sign = 'neg';
-            contentGroup.add(meshN); meshes.push(meshN);
-            if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
+          if (vol && vol.isTwoComponent && (compMode === 'alphaPhase' || compMode === 'betaPhase' || compMode === 'alphaBetaPhase' || compMode === 'totalBloch')) {
+            // Magnitude iso of chosen component, phase→hue vertex colors
+            if (compMode === 'alphaPhase' || compMode === 'betaPhase') {
+              // Render only if requested iso <= max magnitude of the chosen component
+              const re = compMode === 'alphaPhase' ? vol.alphaRe : vol.betaRe;
+              const im = compMode === 'alphaPhase' ? vol.alphaIm : vol.betaIm;
+              let maxMag = 0.0;
+              for (let i = 0; i < re.length; i++) { const m = Math.hypot(re[i], im[i]); if (m > maxMag) maxMag = m; }
+              if (maxMag >= iso) {
+                const geom = make2CPhaseIsosurface(vol, compMode === 'alphaPhase' ? 'alpha' : 'beta', iso);
+                const mat = createIsoMaterial2C(opacity);
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.userData = { phaseHue: true, which: (compMode === 'alphaPhase' ? 'alpha' : 'beta') };
+                contentGroup.add(mesh); meshes.push(mesh);
+              }
+            } else if (compMode === 'alphaBetaPhase') {
+              // Build alpha if iso <= max|alpha|, beta if iso <= max|beta|
+              let maxA = 0.0, maxB = 0.0;
+              for (let i = 0; i < vol.alphaRe.length; i++) { const m = Math.hypot(vol.alphaRe[i], vol.alphaIm[i]); if (m > maxA) maxA = m; }
+              for (let i = 0; i < vol.betaRe.length; i++) { const m = Math.hypot(vol.betaRe[i], vol.betaIm[i]); if (m > maxB) maxB = m; }
+              const matA = createIsoMaterial2C(opacity);
+              const matB = createIsoMaterial2C(opacity);
+              if (maxA >= iso) {
+                const gA = make2CPhaseIsosurface(vol, 'alpha', iso);
+                const mA = new THREE.Mesh(gA, matA); mA.userData = { phaseHue: true, which: 'alpha' };
+                contentGroup.add(mA); meshes.push(mA);
+              }
+              if (maxB >= iso) {
+                const gB = make2CPhaseIsosurface(vol, 'beta', iso);
+                const mB = new THREE.Mesh(gB, matB); mB.userData = { phaseHue: true, which: 'beta' };
+                contentGroup.add(mB); meshes.push(mB);
+              }
+            } else if (compMode === 'totalBloch') {
+              // Total density magnitude: render only if iso <= max density
+              const reA = vol.alphaRe, imA = vol.alphaIm, reB = vol.betaRe, imB = vol.betaIm;
+              let maxD = 0.0;
+              for (let i = 0; i < reA.length; i++) {
+                const d = reA[i] * reA[i] + imA[i] * imA[i] + reB[i] * reB[i] + imB[i] * imB[i];
+                if (d > maxD) maxD = d;
+              }
+              if (maxD >= iso) {
+                const geom = make2CTotalColoredIsosurface(vol, iso);
+                const mat = createIsoMaterial2C(opacity);
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.userData = { phaseHue: true, totalBloch: true };
+                contentGroup.add(mesh); meshes.push(mesh);
+              }
+            }
+          } else {
+            // Standard +/- isosurfaces using current vol.data
+            if (max >= iso) {
+              const geomP = makeIsosurface(vol, iso);
+              const meshP = new THREE.Mesh(geomP, posMat);
+              meshP.userData.sign = 'pos';
+              contentGroup.add(meshP); meshes.push(meshP);
+              if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count / 3) | 0);
+            }
+            if (min <= -iso) {
+              const geomN = makeIsosurface(vol, -iso);
+              const meshN = new THREE.Mesh(geomN, negMat);
+              meshN.userData.sign = 'neg';
+              contentGroup.add(meshN); meshes.push(meshN);
+              if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
+            }
           }
         } else if (renderMode === 'cloud' && showSurfaces && hasGrid) {
           const opts = readCloudOpts();
@@ -2292,12 +2810,48 @@
         }
         console.log('[CUBE] Rebuilt scene. iso=', iso, 'opacity=', opacity, 'min/max=', min, max);
         updateSidePanel();
+        // Update component selector visibility/state
+        if (componentRow) {
+          const is2c = !!(vol && vol.isTwoComponent);
+          componentRow.style.display = is2c ? 'grid' : 'none';
+          if (is2c && componentSelect) {
+            const compv = volumes[currentIndex].component || 'alphaRe';
+            componentSelect.value = compv;
+          }
+        }
+        // Phase wheel visibility in phase-hue modes
+        (function updatePhaseWheel() {
+          const wheel = document.getElementById('phaseWheel');
+          if (!wheel) return;
+          const is2c = !!(vol && vol.isTwoComponent);
+          const compv = (volumes[currentIndex] && volumes[currentIndex].component) || 'alphaRe';
+          const show = is2c && (compv === 'alphaPhase' || compv === 'betaPhase' || compv === 'alphaBetaPhase' || compv === 'totalBloch');
+          wheel.style.display = show ? 'block' : 'none';
+          if (show) {
+            const kind = (compv === 'totalBloch') ? 'bloch' : 'phase';
+            drawPhaseWheel(compv, kind);
+          }
+        })();
       }
 
       function updateOpacityAndColors() {
         const op = parseFloat(opInput.value || "1.00");
         for (const m of meshes) {
           if (!m || !m.material) continue;
+          if (m.userData && m.userData.phaseHue) {
+            // For phase‑hued meshes, keep vertex colors, update style‑specific transparency/glassness
+            const mat = m.material;
+            if (mat.isMeshPhysicalMaterial && 'transmission' in mat && surfaceStyle === 'glass') {
+              // Glass style: drive transmission instead of opacity
+              mat.transmission = Math.max(0, Math.min(1, op));
+              mat.opacity = 1.0;
+            } else {
+              mat.opacity = op;
+              mat.transparent = true;
+            }
+            mat.needsUpdate = true;
+            continue;
+          }
           const sign = m.userData && m.userData.sign;
           const colStr = sign === 'neg' ? negColor.value : posColor.value;
           const col = new THREE.Color(colStr);
