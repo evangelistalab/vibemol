@@ -1,4 +1,15 @@
 (function (global) {
+/**
+ * Atom record used by parsed molecular files.
+ * Coordinates are stored in file-native units.
+ * @typedef {{Z:number,q:number,x:number,y:number,z:number}} ParsedAtom
+ */
+
+/**
+ * Compute numeric bounds for an array-like sequence.
+ * @param {ArrayLike<number>} a
+ * @returns {{min:number,max:number}}
+ */
 function arrayMinMax(a) {
   let min = Infinity, max = -Infinity;
   for (let i = 0; i < a.length; i++) {
@@ -9,11 +20,22 @@ function arrayMinMax(a) {
   return { min, max };
 }
 
+/**
+ * Create a streaming numeric reader over whitespace-delimited text lines.
+ * Invalid numeric tokens are skipped; `null` is returned once input is exhausted.
+ * @param {string[]} lines
+ * @param {number} startLine
+ * @returns {() => (number|null)}
+ */
 function createNumberTokenizer(lines, startLine) {
   let lineIndex = startLine | 0;
   let parts = [];
   let partIndex = 0;
 
+  /**
+   * Advance to the next non-empty tokenized line.
+   * @returns {boolean}
+   */
   function loadNextLine() {
     while (lineIndex < lines.length) {
       const line = lines[lineIndex++];
@@ -40,6 +62,12 @@ function createNumberTokenizer(lines, startLine) {
   };
 }
 
+/**
+ * Read exactly `length` values from a tokenizer into a `Float32Array`.
+ * @param {() => (number|null)} nextNumber
+ * @param {number} length
+ * @returns {Float32Array}
+ */
 function readFloatArray(nextNumber, length) {
   const out = new Float32Array(length);
   for (let i = 0; i < length; i++) {
@@ -52,6 +80,24 @@ function readFloatArray(nextNumber, length) {
   return out;
 }
 
+/**
+ * Parse a Gaussian `.cube/.cub` file into the internal volume shape.
+ * Handles an ORCA-specific extra header line when present.
+ * @param {string} text
+ * @returns {{
+ *   title:string,
+ *   comment:string,
+ *   natoms:number,
+ *   origin:number[],
+ *   nxyz:number[],
+ *   axes:number[][],
+ *   atoms:ParsedAtom[],
+ *   data:Float32Array,
+ *   idx:(i:number,j:number,k:number)=>number,
+ *   units:'bohr',
+ *   isoHint:(number|null)
+ * }}
+ */
 function parseCube(text) {
   // Split lines, handle CRLF
   const lines = text.replace(/\r/g, '').split('\n');
@@ -113,6 +159,14 @@ function parseCube(text) {
   const data = readFloatArray(nextNumber, total);
 
   // index helper matching your reshape: data[i,j,k]
+  /**
+   * Map voxel coordinates to a flat array index.
+   * Layout is `[x][y][z]` with `z` as the fastest axis.
+   * @param {number} i
+   * @param {number} j
+   * @param {number} k
+   * @returns {number}
+   */
   const idx = (i, j, k) => (i * numy + j) * numz + k;
 
   return {
@@ -127,7 +181,30 @@ function parseCube(text) {
   };
 }
 
-// Parse two-component cube files (.2ccube) with four datasets
+/**
+ * Parse a two-component CUBE (`.2ccube`) file.
+ * Expected channel order: `alphaRe`, `alphaIm`, `betaRe`, `betaIm`.
+ * For single-channel fallback files, companion channels are zero-filled.
+ * @param {string} text
+ * @returns {{
+ *   title:string,
+ *   comment:string,
+ *   natoms:number,
+ *   origin:number[],
+ *   nxyz:number[],
+ *   axes:number[][],
+ *   atoms:ParsedAtom[],
+ *   alphaRe:Float32Array,
+ *   alphaIm:Float32Array,
+ *   betaRe:Float32Array,
+ *   betaIm:Float32Array,
+ *   data:Float32Array,
+ *   idx:(i:number,j:number,k:number)=>number,
+ *   units:'bohr',
+ *   isoHint:(number|null),
+ *   isTwoComponent:boolean
+ * }}
+ */
 function parseTwoComponentCube(text) {
   const lines = text.replace(/\r/g, '').split('\n');
   // ORCA-specific quirk: remove extra 9th line if present
@@ -199,6 +276,13 @@ function parseTwoComponentCube(text) {
       betaIm[i] = n;
     }
   }
+  /**
+   * Map voxel coordinates to a flat array index.
+   * @param {number} i
+   * @param {number} j
+   * @param {number} k
+   * @returns {number}
+   */
   const idx = (i, j, k) => (i * numy + j) * numz + k;
   const vol = { title, comment, natoms, origin, nxyz: [numx, numy, numz], axes: [ax, ay, az], atoms, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent };
   // default dataset
@@ -206,6 +290,24 @@ function parseTwoComponentCube(text) {
   return vol;
 }
 
+/**
+ * Parse an XYZ file into atom-only volume metadata used by the UI/export paths.
+ * XYZ coordinates are interpreted as angstrom values.
+ * @param {string} text
+ * @returns {{
+ *   title:string,
+ *   comment:string,
+ *   natoms:number,
+ *   origin:number[],
+ *   nxyz:number[],
+ *   axes:number[][],
+ *   atoms:ParsedAtom[],
+ *   data:Float32Array,
+ *   idx:(i:number,j:number,k:number)=>number,
+ *   units:'angstrom',
+ *   kind:'xyz'
+ * }}
+ */
 function parseXYZ(text) {
   const lines = text.replace(/\r/g, '').split('\n');
   let i = 0;
@@ -233,6 +335,13 @@ function parseXYZ(text) {
     }
   }
   if (natoms === 0) natoms = atoms.length;
+  /**
+   * Placeholder indexer for atom-only XYZ records (no voxel grid).
+   * @param {number} i
+   * @param {number} j
+   * @param {number} k
+   * @returns {number}
+   */
   const idx = (i, j, k) => 0;
   return { title: 'XYZ', comment: '', natoms, origin: [0, 0, 0], nxyz: [0, 0, 0], axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], atoms, data: new Float32Array(0), idx, units: 'angstrom', kind: 'xyz' };
 }

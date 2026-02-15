@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.3.1';
+  const APP_VERSION = '0.3.2';
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -35,16 +35,33 @@
 
   // Coordinate conversions between stored atom units and world Å
   const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
+  /**
+   * Convert atom coordinates from file units to angstrom world coordinates.
+   * @param {{units?:string}} vol
+   * @param {{x:number,y:number,z:number}} a
+   * @returns {THREE.Vector3}
+   */
   function atomUnitsToAng(vol, a) {
     if (vol.units === 'angstrom') return new THREE.Vector3(a.x, a.y, a.z);
     return new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
   }
+  /**
+   * Convert world-space angstrom coordinates back to the volume's native units.
+   * @param {{units?:string}} vol
+   * @param {THREE.Vector3} v3
+   * @returns {[number, number, number]}
+   */
   function worldToAtomUnits(vol, v3) {
     if (vol.units === 'angstrom') return [v3.x, v3.y, v3.z];
     return [v3.x * ANG_TO_BOHR, v3.y * ANG_TO_BOHR, v3.z * ANG_TO_BOHR];
   }
 
-  // Map a point in voxel grid coords (x,y,z in [0..nx-1], etc.) to world (Å)
+  /**
+   * Map voxel-space coordinates to world-space angstroms.
+   * @param {{axes:number[][],origin:number[]}} vol
+   * @param {[number, number, number]} p
+   * @returns {[number, number, number]}
+   */
   function voxelToWorld(vol, p) {
     const a = vol.axes[0].map(v => v * BOHR_TO_ANG);
     const b = vol.axes[1].map(v => v * BOHR_TO_ANG);
@@ -57,10 +74,24 @@
     ];
   }
 
+  /**
+   * Extract an isosurface mesh for a scalar field at a target level.
+   * Vertices are welded in voxel space and then transformed into angstroms.
+   * @param {{nxyz:number[],data:Float32Array,idx:(i:number,j:number,k:number)=>number,axes:number[][],origin:number[]}} vol
+   * @param {number} level
+   * @returns {THREE.BufferGeometry}
+   */
   function makeIsosurface(vol, level) {
     const [nx, ny, nz] = vol.nxyz;
     // MarchingCubes extracts the 0-level set of the potential.
     // To get an iso-surface at `level`, return field(x)-level.
+    /**
+     * Sample scalar volume values in voxel space with clamped indices.
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z
+     * @returns {number}
+     */
     const sampler = (x, y, z) => {
       const i = Math.max(0, Math.min(nx - 1, Math.floor(x)));
       const j = Math.max(0, Math.min(ny - 1, Math.floor(y)));
@@ -73,6 +104,11 @@
     // Weld vertices across cube boundaries by deduplicating identical voxel-space positions.
     // Quantize voxel coords to a small grid to ensure stable keys.
     const voxPos = result.positions; // array of [x,y,z] in voxel units
+    /**
+     * Build a stable quantized key for vertex deduplication.
+     * @param {number[]} p
+     * @returns {string}
+     */
     const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
     const map = new Map();
     const unique = [];
@@ -115,6 +151,13 @@
   }
 
   // --- Two‑component phase‑hued isosurface (Alpha/Beta) ---
+  /**
+   * Convert HSV color values in [0,1] to RGB.
+   * @param {number} h
+   * @param {number} s
+   * @param {number} v
+   * @returns {[number, number, number]}
+   */
   function hsvToRgb(h, s, v) {
     let r = 0, g = 0, b = 0;
     const i = Math.floor(h * 6);
@@ -133,13 +176,34 @@
     return [r, g, b];
   }
 
+  /**
+   * Build a phase-colored isosurface for alpha or beta complex components.
+   * Vertex hue encodes the local complex phase angle.
+   * @param {{nxyz:number[],idx:(i:number,j:number,k:number)=>number,alphaRe:Float32Array,alphaIm:Float32Array,betaRe:Float32Array,betaIm:Float32Array}} vol
+   * @param {'alpha'|'beta'} which
+   * @param {number} level
+   * @returns {THREE.BufferGeometry}
+   */
   function make2CPhaseIsosurface(vol, which, level) {
     const [nx, ny, nz] = vol.nxyz;
     const isAlpha = which === 'alpha';
     const re = isAlpha ? vol.alphaRe : vol.betaRe;
     const im = isAlpha ? vol.alphaIm : vol.betaIm;
     const idx = vol.idx;
+    /**
+     * Clamp an index to `[0, n-1]`.
+     * @param {number} x
+     * @param {number} n
+     * @returns {number}
+     */
     const clampi = (x, n) => Math.max(0, Math.min(n - 1, x | 0));
+    /**
+     * Sample complex magnitude in voxel space.
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z
+     * @returns {number}
+     */
     const magSampler = (x, y, z) => {
       const i = clampi(Math.floor(x), nx);
       const j = clampi(Math.floor(y), ny);
@@ -150,6 +214,11 @@
     };
     const res = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => magSampler(x, y, z) - level);
     const voxPos = res.positions;
+    /**
+     * Build a stable quantized key for vertex deduplication.
+     * @param {number[]} p
+     * @returns {string}
+     */
     const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
     const map = new Map();
     const unique = [];
@@ -194,7 +263,12 @@
     return geom;
   }
 
-  // Draw a phase color wheel in the top-left corner (hue = angle)
+  /**
+   * Draw the phase/Bloch legend wheel in the top-left overlay.
+   * Used for all phase-like 2C render modes.
+   * @param {string} modeLabel
+   * @param {'phase'|'bloch'} kind
+   */
   function drawPhaseWheel(modeLabel, kind = 'phase') {
     const el = document.getElementById('phaseWheelCanvas'); if (!el) return;
     const dpr = window.devicePixelRatio || 1;
@@ -305,11 +379,30 @@
     ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText(label, cx, ly);
   }
 
+  /**
+   * Build a total-density isosurface colored with Bloch-sphere direction mapping.
+   * @param {{nxyz:number[],idx:(i:number,j:number,k:number)=>number,alphaRe:Float32Array,alphaIm:Float32Array,betaRe:Float32Array,betaIm:Float32Array}} vol
+   * @param {number} level
+   * @returns {THREE.BufferGeometry}
+   */
   function make2CTotalColoredIsosurface(vol, level) {
     const [nx, ny, nz] = vol.nxyz;
     const reA = vol.alphaRe, imA = vol.alphaIm, reB = vol.betaRe, imB = vol.betaIm;
     const idx = vol.idx;
+    /**
+     * Clamp an index to `[0, n-1]`.
+     * @param {number} x
+     * @param {number} n
+     * @returns {number}
+     */
     const clampi = (x, n) => Math.max(0, Math.min(n - 1, x | 0));
+    /**
+     * Sample total spinor density magnitude in voxel space.
+     * @param {number} x
+     * @param {number} y
+     * @param {number} z
+     * @returns {number}
+     */
     const densSampler = (x, y, z) => {
       const i = clampi(Math.floor(x), nx);
       const j = clampi(Math.floor(y), ny);
@@ -321,6 +414,11 @@
     };
     const res = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => densSampler(x, y, z) - level);
     const voxPos = res.positions;
+    /**
+     * Build a stable quantized key for vertex deduplication.
+     * @param {number[]} p
+     * @returns {string}
+     */
     const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
     const map = new Map();
     const unique = [];
@@ -398,6 +496,9 @@
   scene.add(hemi, dir, amb);
 
   // Resizer
+  /**
+   * Resize the renderer and camera to match the viewport.
+   */
   function resize() {
     const panelH = 56; // toolbar height
     const w = window.innerWidth;
@@ -422,6 +523,11 @@
     const aDir = new THREE.DirectionalLight(0xffffff, 1.2); aDir.position.set(1, 1, 1);
     axisScene.add(aHemi, aDir);
   }
+  /**
+   * Add shaded arrow.
+   * @param {*} dir
+   * @param {*} color
+   */
   function addShadedArrow(dir, color) {
     const g = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.15 });
@@ -467,6 +573,10 @@
   contentGroup.add(bondGroup);
   contentGroup.add(cloudGroup);
 
+  /**
+   * Create per-pass registries used to avoid double-disposing shared GPU resources.
+   * @returns {{geometries:Set<any>,materials:Set<any>,textures:Set<any>}}
+   */
   function createDisposeState() {
     return {
       geometries: new Set(),
@@ -475,11 +585,20 @@
     };
   }
 
+  /**
+   * Dispose a material and any owned textures exactly once.
+   * @param {THREE.Material} mat
+   * @param {{materials:Set<any>,textures:Set<any>}} state
+   */
   function disposeMaterial(mat, state) {
     if (!mat || state.materials.has(mat)) return;
     state.materials.add(mat);
 
     try {
+      /**
+       * Dispose a texture if it has not already been released.
+       * @param {THREE.Texture} tex
+       */
       const maybeDisposeTexture = (tex) => {
         if (!tex || !tex.dispose || state.textures.has(tex)) return;
         state.textures.add(tex);
@@ -517,6 +636,11 @@
     try { if (mat.dispose) mat.dispose(); } catch { }
   }
 
+  /**
+   * Dispose geometry/material resources attached to a scene node.
+   * @param {THREE.Object3D} node
+   * @param {{geometries:Set<any>,materials:Set<any>,textures:Set<any>}} state
+   */
   function disposeNode(node, state) {
     if (!node) return;
 
@@ -534,6 +658,11 @@
     }
   }
 
+  /**
+   * Traverse and dispose all disposable resources in an object subtree.
+   * @param {THREE.Object3D} obj
+   * @param {{geometries:Set<any>,materials:Set<any>,textures:Set<any>}} state
+   */
   function disposeDeep(obj, state = createDisposeState()) {
     if (!obj) return;
     try {
@@ -542,6 +671,11 @@
     } catch { }
   }
 
+  /**
+   * Remove a group from the scene, dispose its resources, and return a fresh group.
+   * @param {THREE.Group} group
+   * @returns {THREE.Group}
+   */
   function disposeAndReplaceGroup(group) {
     const state = createDisposeState();
     try { contentGroup.remove(group); } catch { }
@@ -551,6 +685,9 @@
     return next;
   }
 
+  /**
+   * Remove all currently rendered geometry groups and release GPU resources.
+   */
   function clearSceneMeshes() {
     const state = createDisposeState();
     for (const m of meshes) {
@@ -571,11 +708,21 @@
     }
   }
 
+  /**
+   * Build atom sphere meshes for the current volume.
+   * Radius and color are derived from atomic metadata when available.
+   * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
+   * @returns {THREE.Group}
+   */
   function buildAtoms(vol) {
     const group = new THREE.Group();
     // Atoms (spheres)
     const sphere = new THREE.SphereGeometry(0.5, 20, 12);
     // Covalent radii from atomic data (Å)
+    /**
+     * Look up the covalent radius for an atomic number.
+     * @param {*} z
+     */
     const covR = (z) => (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
     const atomPositions = [];
     const toAng = (vol.units === 'angstrom');
@@ -605,8 +752,18 @@
     return group;
   }
 
+  /**
+   * Build bond cylinder meshes using covalent-radii distance heuristics.
+   * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
+   * @returns {THREE.Group}
+   */
   function buildBonds(vol) {
     const group = new THREE.Group();
+    /**
+     * Look up the covalent radius for an atomic number.
+     * @param {number} z
+     * @returns {number}
+     */
     const covR = (z) => (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
     const atomPositions = [];
     const toAng = (vol.units === 'angstrom');
@@ -645,10 +802,18 @@
   }
 
   // Update existing bond cylinders transforms in place (to avoid flicker)
+  /**
+   * Update existing bond meshes after atom positions change.
+   */
   function updateBondsInPlace() {
     if (!bondGroup || !bondGroup.children || currentIndex < 0 || !volumes[currentIndex]) return;
     const vol = volumes[currentIndex].vol; if (!vol) return;
     const toAng = (vol.units === 'angstrom');
+    /**
+     * Convert stored atom coordinates to a `THREE.Vector3` in angstrom units.
+     * @param {{x:number,y:number,z:number}} a
+     * @returns {THREE.Vector3}
+     */
     const toV3 = (a) => new THREE.Vector3(toAng ? a.x : a.x * BOHR_TO_ANG, toAng ? a.y : a.y * BOHR_TO_ANG, toAng ? a.z : a.z * BOHR_TO_ANG);
     const up = new THREE.Vector3(0, 1, 0);
     for (const obj of bondGroup.children) {
@@ -669,6 +834,9 @@
   }
 
   // Rebuild bonds from current atom positions (full rescan, bonds only)
+  /**
+   * Recompute the bond group from current atom positions.
+   */
   function rebuildBondsFromAtoms() {
     if (currentIndex < 0 || !volumes[currentIndex]) return;
     const vol = volumes[currentIndex].vol; if (!vol) return;
@@ -682,6 +850,11 @@
     contentGroup.add(bondGroup);
   }
 
+  /**
+   * Build a wireframe bounding box around the sampled voxel domain.
+   * @param {{nxyz:number[]}} vol
+   * @returns {THREE.LineSegments}
+   */
   function buildBox(vol) {
     const [nx, ny, nz] = vol.nxyz;
     // Use cell-corner indexing: far corner at (nx,ny,nz) works visually, but try (nx-1,...) to stay within data
@@ -705,6 +878,13 @@
   }
 
   // --- Surface material helpers ---
+  /**
+   * Create a material for positive/negative standard isosurfaces.
+   * Style behavior depends on the current `surfaceStyle` selection.
+   * @param {'pos'|'neg'} sign
+   * @param {number} opacity
+   * @returns {THREE.Material}
+   */
   function createIsoMaterial(sign, opacity) {
     const col = new THREE.Color(sign === 'neg' ? negColor.value : posColor.value);
     if (surfaceStyle === 'glass') {
@@ -739,6 +919,12 @@
   }
 
   // Material for 2C colored surfaces (vertex colors), matching style selection
+  /**
+   * Create a material for two-component vertex-colored surfaces.
+   * Style behavior depends on the current `surfaceStyle` selection.
+   * @param {number} opacity
+   * @returns {THREE.Material}
+   */
   function createIsoMaterial2C(opacity) {
     if (surfaceStyle === 'glass') {
       // Glassy, tinted by vertex colors; drive transmission with slider
@@ -776,20 +962,46 @@
   }
 
   // --- Cloud builders ---
+  /**
+   * Convert voxel indices to world-space cell-center coordinates.
+   * @param {{axes:number[][],origin:number[]}} vol
+   * @param {number} i
+   * @param {number} j
+   * @param {number} k
+   * @returns {[number, number, number]}
+   */
   function voxelCenterToWorld(vol, i, j, k) {
     // position at cell center: (i+0.5, j+0.5, k+0.5)
     return voxelToWorld(vol, [i + 0.5, j + 0.5, k + 0.5]);
   }
 
+  /**
+   * Estimate average voxel spacing in angstroms from lattice axis vectors.
+   * @param {{axes:number[][]}} vol
+   * @returns {number}
+   */
   function estimateCellSize(vol) {
     // average step magnitude in Å
     const ax = vol.axes[0].map(v => v * BOHR_TO_ANG);
     const ay = vol.axes[1].map(v => v * BOHR_TO_ANG);
     const az = vol.axes[2].map(v => v * BOHR_TO_ANG);
+    /**
+     * Compute vector magnitude.
+     * @param {number[]} v
+     * @returns {number}
+     */
     const len = v => Math.hypot(v[0], v[1], v[2]);
     return (len(ax) + len(ay) + len(az)) / 3;
   }
 
+  /**
+   * Estimate an absolute-value percentile from sampled voxels.
+   * Used to derive robust upper bounds for cloud opacity mapping.
+   * @param {{nxyz:number[],data:Float32Array,idx:(i:number,j:number,k:number)=>number}} vol
+   * @param {number} p
+   * @param {number} stride
+   * @returns {number}
+   */
   function absPercentile(vol, p, stride) {
     const [nx, ny, nz] = vol.nxyz;
     const step = Math.max(1, stride | 0);
@@ -808,6 +1020,13 @@
     return arr[idx];
   }
 
+  /**
+   * Build signed scalar cloud geometry using instanced cubes.
+   * Positive/negative values are emitted as separate meshes for color control.
+   * @param {{nxyz:number[],axes:number[][],data:Float32Array,idx:(i:number,j:number,k:number)=>number}} vol
+   * @param {{stride:number,tLow:number,alphaMax:number,hiMode?:string}} opts
+   * @returns {THREE.Group}
+   */
   function buildCloudCubes(vol, opts) {
     const g = new THREE.Group();
     const [nx, ny, nz] = vol.nxyz;
@@ -816,11 +1035,21 @@
     const ax = vol.axes[0].map(v => v * BOHR_TO_ANG);
     const ay = vol.axes[1].map(v => v * BOHR_TO_ANG);
     const az = vol.axes[2].map(v => v * BOHR_TO_ANG);
+    /**
+     * Compute vector magnitude.
+     * @param {number[]} v
+     * @returns {number}
+     */
     const len = v => Math.hypot(v[0], v[1], v[2]);
     const scaleVec = new THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
     // Determine high bound
     const hi = opts.hiMode === 'max' ? maxAbs(vol.data) : absPercentile(vol, 0.99, Math.max(1, stride));
     const tLow = opts.tLow;
+    /**
+     * Clamp scalar values to [0, 1].
+     * @param {number} x
+     * @returns {number}
+     */
     const clamp01 = x => Math.max(0, Math.min(1, x));
     // Count instances per sign
     let nPos = 0, nNeg = 0;
@@ -834,6 +1063,12 @@
         }
       }
     }
+    /**
+     * Create an instanced cube mesh for one sign channel.
+     * @param {number} count
+     * @param {string} color
+     * @returns {THREE.InstancedMesh}
+     */
     const makeInst = (count, color) => {
       const geom = new THREE.BoxGeometry(1, 1, 1);
       const alpha = Math.min(1, opts.alphaMax * stride);
@@ -877,6 +1112,14 @@
   }
 
   // --- 2C Cloud: phase‑hued cubes (alpha/beta) ---
+  /**
+   * Build phase-hued cube clouds for alpha/beta components.
+   * Hue encodes local complex phase; cube alpha comes from cloud options.
+   * @param {{nxyz:number[],axes:number[][],idx:(i:number,j:number,k:number)=>number,alphaRe:Float32Array,alphaIm:Float32Array,betaRe:Float32Array,betaIm:Float32Array}} vol
+   * @param {'alpha'|'beta'} which
+   * @param {{stride:number,tLow:number,alphaMax:number}} opts
+   * @returns {THREE.Group}
+   */
   function buildCloudCubes2CPhase(vol, which, opts) {
     const g = new THREE.Group();
     const [nx, ny, nz] = vol.nxyz;
@@ -887,6 +1130,11 @@
     const ax = vol.axes[0].map(v => v * BOHR_TO_ANG);
     const ay = vol.axes[1].map(v => v * BOHR_TO_ANG);
     const az = vol.axes[2].map(v => v * BOHR_TO_ANG);
+    /**
+     * Compute vector magnitude.
+     * @param {number[]} v
+     * @returns {number}
+     */
     const len = v => Math.hypot(v[0], v[1], v[2]);
     const scaleVec = new THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
     // Count
@@ -973,6 +1221,13 @@
   }
 
   // --- 2C Cloud: phase‑hued points (alpha/beta) ---
+  /**
+   * Build phase-hued point clouds for alpha/beta components.
+   * @param {{nxyz:number[],idx:(i:number,j:number,k:number)=>number,alphaRe:Float32Array,alphaIm:Float32Array,betaRe:Float32Array,betaIm:Float32Array}} vol
+   * @param {'alpha'|'beta'} which
+   * @param {{stride:number,tLow:number,alphaMax:number}} opts
+   * @returns {THREE.Group}
+   */
   function buildCloudPoints2CPhase(vol, which, opts) {
     const g = new THREE.Group();
     const [nx, ny, nz] = vol.nxyz;
@@ -993,6 +1248,11 @@
     if (!arr.length) return g;
     arr.sort((a, b) => a - b);
     const hi = arr[Math.floor(0.99 * (arr.length - 1))] || 0.0;
+    /**
+     * Clamp scalar values to [0, 1].
+     * @param {number} x
+     * @returns {number}
+     */
     const clamp01 = x => Math.max(0, Math.min(1, x));
     const pos = [];
     const str = [];
@@ -1064,6 +1324,13 @@
   }
 
   // --- 2C Cloud: Bloch‑colored cubes (total density) ---
+  /**
+   * Build Bloch-colored cube clouds from total spinor density.
+   * Hue/value encode Bloch direction while thresholding uses total density.
+   * @param {{nxyz:number[],axes:number[][],idx:(i:number,j:number,k:number)=>number,alphaRe:Float32Array,alphaIm:Float32Array,betaRe:Float32Array,betaIm:Float32Array}} vol
+   * @param {{stride:number,tLow:number,alphaMax:number}} opts
+   * @returns {THREE.Group}
+   */
   function buildCloudCubes2CTotal(vol, opts) {
     const g = new THREE.Group();
     const [nx, ny, nz] = vol.nxyz;
@@ -1074,6 +1341,11 @@
     const ax = vol.axes[0].map(v => v * BOHR_TO_ANG);
     const ay = vol.axes[1].map(v => v * BOHR_TO_ANG);
     const az = vol.axes[2].map(v => v * BOHR_TO_ANG);
+    /**
+     * Compute vector magnitude.
+     * @param {number[]} v
+     * @returns {number}
+     */
     const len = v => Math.hypot(v[0], v[1], v[2]);
     const scaleVec = new THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
     // Count
@@ -1161,6 +1433,12 @@
   }
 
   // --- 2C Cloud: Bloch‑colored points (total density) ---
+  /**
+   * Build Bloch-colored point clouds from total spinor density.
+   * @param {{nxyz:number[],idx:(i:number,j:number,k:number)=>number,alphaRe:Float32Array,alphaIm:Float32Array,betaRe:Float32Array,betaIm:Float32Array}} vol
+   * @param {{stride:number,tLow:number,alphaMax:number}} opts
+   * @returns {THREE.Group}
+   */
   function buildCloudPoints2CTotal(vol, opts) {
     const g = new THREE.Group();
     const [nx, ny, nz] = vol.nxyz;
@@ -1182,6 +1460,11 @@
     if (!vals.length) return g;
     vals.sort((a, b) => a - b);
     const hi = vals[Math.floor(0.99 * (vals.length - 1))] || 0.0;
+    /**
+     * Clamp scalar values to [0, 1].
+     * @param {number} x
+     * @returns {number}
+     */
     const clamp01 = x => Math.max(0, Math.min(1, x));
     const pos = [], str = [], col = [];
     for (let i = 0; i < nx; i += stride) {
@@ -1254,6 +1537,12 @@
     return g;
   }
 
+  /**
+   * Build signed scalar cloud geometry using soft point sprites.
+   * @param {{nxyz:number[],data:Float32Array,idx:(i:number,j:number,k:number)=>number}} vol
+   * @param {{stride:number,tLow:number,alphaMax:number}} opts
+   * @returns {THREE.Group}
+   */
   function buildCloudPoints(vol, opts) {
     const g = new THREE.Group();
     const [nx, ny, nz] = vol.nxyz;
@@ -1261,6 +1550,11 @@
     const tLow = opts.tLow;
     // Determine hi bound for strength mapping
     const hi = absPercentile(vol, 0.99, Math.max(1, stride));
+    /**
+     * Clamp scalar values to [0, 1].
+     * @param {number} x
+     * @returns {number}
+     */
     const clamp01 = x => Math.max(0, Math.min(1, x));
     // Collect positions and strength per sign
     const posPos = [], posNeg = [], strPos = [], strNeg = [];
@@ -1279,6 +1573,11 @@
     }
     // Shader material for round, shaded sprites
     const baseSize = estimateCellSize(vol) * 12.0; // uniform size, independent of stride/strength
+    /**
+     * Build a shader material for circular point sprites.
+     * @param {string} colorHex
+     * @returns {THREE.ShaderMaterial}
+     */
     const makeSpriteMat = (colorHex) => new THREE.ShaderMaterial({
       uniforms: {
         uColor: { value: new THREE.Color(colorHex) },
@@ -1316,6 +1615,14 @@
       depthTest: false,
       blending: THREE.NormalBlending,
     });
+    /**
+     * Build a point cloud object for one sign channel.
+     * @param {number[]} posArr
+     * @param {number[]} strArr
+     * @param {string} color
+     * @param {'pos'|'neg'} sign
+     * @returns {THREE.Points}
+     */
     const makePoints = (posArr, strArr, color, sign) => {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(posArr), 3));
@@ -1330,6 +1637,9 @@
     return g;
   }
 
+  /**
+   * Fit camera position and clipping planes to the current visible content bounds.
+   */
   function fitCameraToScene() {
     const box = new THREE.Box3();
     let hasSomething = false;
@@ -1360,6 +1670,9 @@
   let __fpsFrames = 0;
   let __fpsEMA = 0;
 
+  /**
+   * Main animation loop: render scene, optional split-view, FPS meter, and axis overlay.
+   */
   function render() {
     controls.update();
 
@@ -1377,6 +1690,10 @@
         let betaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'beta');
         // Fallback to cloud objects if surfaces are not present
         if ((!alphaMesh || !betaMesh) && cloudGroup && cloudGroup.children) {
+          /**
+           * Find in cloud.
+           * @param {*} which
+           */
           const findInCloud = (which) => cloudGroup.children.find(o => o && o.userData && o.userData.phaseHue && o.userData.which === which);
           if (!alphaMesh) alphaMesh = findInCloud('alpha');
           if (!betaMesh) betaMesh = findInCloud('beta');
@@ -1513,6 +1830,9 @@
 
   openBtn.onclick = () => fileInput.click();
   // Toggle surface rendering button
+  /**
+   * Refresh the surface-toggle button label.
+   */
   const updateSurfBtn = () => { surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces'; };
   updateSurfBtn();
 
@@ -1550,6 +1870,11 @@
   // --- Mode system + shortcut routing ---
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
   let currentMode = MODES.DISPLAY;
+  /**
+   * Transition between display/edit/measurement modes and apply side effects.
+   * This keeps surface visibility and interaction state consistent across mode changes.
+   * @param {string} newMode
+   */
   function setMode(newMode) {
     if (currentMode === newMode) return;
     const prevMode = currentMode;
@@ -1607,6 +1932,10 @@
   const bind = shortcutRegistry.bind;
   const routeShortcut = shortcutRegistry.handle;
   let currentShortcutContext = 'default';
+  /**
+   * Render shortcut hints for the active interaction context.
+   * @param {string} ctx
+   */
   function renderRibbon(ctx = currentShortcutContext) {
     currentShortcutContext = ctx;
     const list = SHORTCUTS[ctx] || SHORTCUTS.default;
@@ -1617,19 +1946,42 @@
   }
   renderRibbon('default');
   surfBtn.onclick = () => { showSurfaces = !showSurfaces; updateSurfBtn(); rebuildScene({ preserveView: true }); };
+  /**
+   * Toggle side.
+   */
   const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); renderRibbon(sidePanel.classList.contains('open') ? 'panel' : 'default'); };
+  /**
+   * Open the side panel.
+   */
   const openSide = () => { if (!sidePanel.classList.contains('open')) toggleSide(); };
+  /**
+   * Close the side panel.
+   */
   const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); renderRibbon('default'); } };
   panelBtn.onclick = toggleSide;
   sideClose.onclick = toggleSide;
   // Help modal logic
+  /**
+   * Open the shortcuts/help modal.
+   */
   function openHelp() { helpOverlay.style.display = 'flex'; helpOverlay.setAttribute('aria-hidden', 'false'); renderRibbon('help'); }
+  /**
+   * Close the shortcuts/help modal.
+   */
   function closeHelp() { helpOverlay.style.display = 'none'; helpOverlay.setAttribute('aria-hidden', 'true'); renderRibbon('default'); }
   if (helpBtn) helpBtn.onclick = openHelp;
   if (helpClose) helpClose.onclick = closeHelp;
   if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
 
+  /**
+   * Synchronize camera/target/shift form controls from the current scene state.
+   */
   function refreshViewUI() {
+    /**
+     * Check that an input is not currently focused (to avoid overwriting edits).
+     * @param {HTMLElement} el
+     * @returns {boolean}
+     */
     const notEditing = (el) => document.activeElement !== el;
     if (notEditing(shiftX)) shiftX.value = contentGroup.position.x.toFixed(3);
     if (notEditing(shiftY)) shiftY.value = contentGroup.position.y.toFixed(3);
@@ -1666,6 +2018,9 @@
 
   // Faint axis guide line shown while holding X/Y/Z in edit mode
   let axisGuideLine = null; // THREE.Line
+  /**
+   * Ensure the edit-mode axis guide helper exists in the scene.
+   */
   function ensureAxisGuideLine() {
     if (axisGuideLine && axisGuideLine.isLine) return axisGuideLine;
     const geom = new THREE.BufferGeometry();
@@ -1678,6 +2033,9 @@
     contentGroup.add(axisGuideLine);
     return axisGuideLine;
   }
+  /**
+   * Return the world position of the currently selected draggable atom, if any.
+   */
   function getSelectedAtomPosition() {
     if (dragActive && dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
       return atomGroup.children[dragAtomIndex].position.clone();
@@ -1685,6 +2043,9 @@
     if (hoverAtomMesh && hoverAtomMesh.position) return hoverAtomMesh.position.clone();
     return null;
   }
+  /**
+   * Update axis guide visibility, orientation, and placement during edit operations.
+   */
   function updateAxisGuideLine() {
     try {
       const axis = axisKeyDown; // only show while key is held
@@ -1727,6 +2088,10 @@
   let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
   // persistent selection halos (by atom index) for measurement mode
   const selHaloColor = 0xffa500;
+  /**
+   * Attach (or refresh) a visible selection halo around an atom mesh.
+   * @param {THREE.Mesh} mesh
+   */
   function ensureSelectHalo(mesh) {
     if (!mesh) return null;
     if (mesh.userData && mesh.userData.selectHalo) return mesh.userData.selectHalo;
@@ -1747,11 +2112,18 @@
     mesh.add(halo);
     return halo;
   }
+  /**
+   * Remove and dispose a selection halo from an atom mesh.
+   * @param {THREE.Mesh} mesh
+   */
   function removeSelectHalo(mesh) {
     if (!mesh || !mesh.userData || !mesh.userData.selectHalo) return;
     const halo = mesh.userData.selectHalo; mesh.userData.selectHalo = null;
     try { mesh.remove(halo); disposeObj(halo); } catch { }
   }
+  /**
+   * Recompute which atoms should display persistent selection halos.
+   */
   function updateSelectedHalos() {
     if (!atomGroup || !atomGroup.children) return;
     for (let i = 0; i < atomGroup.children.length; i++) {
@@ -1761,7 +2133,14 @@
     }
   }
   let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
+  /**
+   * Clear the current measurement/edit atom selection.
+   */
   function clearEditSelection() { editSel = []; updateEditSelectionVisuals(); updateSelectedHalos(); }
+  /**
+   * Append an atom index to the current selection (up to 4 points).
+   * @param {number} i
+   */
   function addEditSelection(i) {
     if (i == null || i < 0) return;
     if (editSel.length >= 4) editSel = editSel.slice(1); // keep last 3, then push new -> last 4
@@ -1769,11 +2148,19 @@
     editSel.push(i);
     updateEditSelectionVisuals();
   }
+  /**
+   * Dispose geometry/material resources on a single object.
+   * @param {THREE.Object3D} o
+   */
   function disposeObj(o) {
     try { o.geometry && o.geometry.dispose && o.geometry.dispose(); } catch { }
     try { if (o.material && o.material.map && o.material.map.dispose) o.material.map.dispose(); } catch { }
     try { o.material && o.material.dispose && o.material.dispose(); } catch { }
   }
+  /**
+   * Dispose and remove all children of a group.
+   * @param {THREE.Group} g
+   */
   function clearGroup(g) {
     if (!g) return;
     for (let i = g.children.length - 1; i >= 0; i--) {
@@ -1782,6 +2169,11 @@
       disposeObj(c);
     }
   }
+  /**
+   * Create a screen-facing text sprite used for measurements/labels.
+   * @param {string} txt
+   * @returns {THREE.Sprite}
+   */
   function makeTextSprite(txt) {
     // make a rounded rectangle canvas with text, then make a sprite from it
     const hpad = 6;
@@ -1825,13 +2217,37 @@
     spr.scale.set(w * scale, h * scale, 1);
     return spr;
   }
+  /**
+   * Render distance, angle, and dihedral overlays for the current selection.
+   */
   function updateEditSelectionVisuals() {
     clearGroup(editSelGroup);
     // Only render measurement overlays in measurement mode
     if (currentMode !== MODES.MEASURE || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
+    /**
+     * Get atom position by atom index.
+     * @param {number} idx
+     * @returns {THREE.Vector3|null}
+     */
     const posOf = (idx) => (atomGroup.children[idx] && atomGroup.children[idx].position) ? atomGroup.children[idx].position.clone() : null;
+    /**
+     * Format a distance value for labels.
+     * @param {number} d
+     * @returns {string}
+     */
     const fmtDist = (d) => d.toFixed(4) + ' Å';
+    /**
+     * Format an angle in radians as a degree label.
+     * @param {number} r
+     * @returns {string}
+     */
     const fmtDeg = (r) => (r * 180 / Math.PI).toFixed(2) + '°';
+    /**
+     * Draw a measurement edge and midpoint distance label.
+     * @param {number} i
+     * @param {number} j
+     * @param {number} color
+     */
     const addEdge = (i, j, color = 0xd3d3d3) => {
       const a = posOf(i), b = posOf(j); if (!a || !b) return;
       const g = new THREE.BufferGeometry();
@@ -1851,6 +2267,12 @@
     for (let t = 0; t < editSel.length - 1; t++) addEdge(editSel[t], editSel[t + 1]);
 
     // Helper to draw angle fan and numeric label for triplet a-b-c (angle at b)
+    /**
+     * Draw an angle fan and label for a three-atom selection.
+     * @param {*} ia
+     * @param {*} ib
+     * @param {*} ic
+     */
     const addAngle = (ia, ib, ic) => {
       const pa = posOf(ia), pb = posOf(ib), pc = posOf(ic);
       if (!pa || !pb || !pc) return;
@@ -1941,11 +2363,19 @@
       }
     }
   }
+  /**
+   * Update normalized device coordinates from a pointer event.
+   * @param {PointerEvent} e
+   */
   function setNDCFromEvent(e) {
     const rect = canvasEl.getBoundingClientRect();
     ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   }
+  /**
+   * Update hover highlighting for the currently pointed atom mesh.
+   * @param {THREE.Mesh|null} mesh
+   */
   function setHover(mesh) {
     if (hoverAtomMesh === mesh) return;
     // Remove previous halo
@@ -1989,13 +2419,24 @@
     // If user is holding an axis key, keep the guide line in sync
     updateAxisGuideLine();
   }
+  /**
+   * Clear hover highlight state.
+   */
   function clearHover() { setHover(null); }
 
   // (axis lock uses simple axis component of the view-plane delta)
 
+  /**
+   * Refresh the axis-lock button visibility and active state.
+   */
   function updateAxisButtons() {
     if (!axisLockEl) return;
     axisLockEl.style.display = editMode ? 'flex' : 'none';
+    /**
+     * Toggle the active class for one axis-lock button.
+     * @param {HTMLElement} btn
+     * @param {boolean} on
+     */
     const set = (btn, on) => { if (!btn) return; btn.classList.toggle('active', !!on); };
     set(axisXBtn, axisLock === 'x'); set(axisYBtn, axisLock === 'y'); set(axisZBtn, axisLock === 'z');
   }
@@ -2003,6 +2444,11 @@
   if (axisYBtn) axisYBtn.onclick = () => { axisLock = (axisLock === 'y' ? 'none' : 'y'); updateAxisButtons(); };
   if (axisZBtn) axisZBtn.onclick = () => { axisLock = (axisLock === 'z' ? 'none' : 'z'); updateAxisButtons(); };
 
+  /**
+   * Raycast and return the first intersected atom mesh under the pointer.
+   * @param {PointerEvent} e
+   * @returns {THREE.Intersection|null}
+   */
   function pickAtom(e) {
     if (!atomGroup || !atomGroup.children || atomGroup.children.length === 0) return null;
     setNDCFromEvent(e);
@@ -2139,6 +2585,9 @@
 
   // --- Shortcut bindings ---
   // Global: help toggle
+  /**
+   * Toggle the help modal open/closed.
+   */
   const toggleHelp = () => { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); };
   bind('down', 'global', 'h', () => toggleHelp());
   bind('down', 'global', '?', () => toggleHelp());
@@ -2150,6 +2599,10 @@
   bind('down', 'global', 'a', () => { window.__showAxes__ = !window.__showAxes__; if (toggleAxes) toggleAxes.checked = !!window.__showAxes__; });
 
   // Global: arrows switch files
+  /**
+   * Move to the next/previous loaded file.
+   * @param {number} delta
+   */
   const nextPrev = (delta) => {
     if (isTypingInInput()) return;
     if (!Array.isArray(volumes) || volumes.length === 0) return;
@@ -2175,7 +2628,15 @@
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
   bind('down', MODES.EDIT, 'm', () => { setMode(MODES.MEASURE); });
+  /**
+   * Enable temporary axis lock while an axis key is held.
+   * @param {'x'|'y'|'z'} axis
+   */
   const axisDown = (axis) => { axisKeyDown = axis; axisLock = axis; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); };
+  /**
+   * Disable temporary axis lock when an axis key is released.
+   * @param {'x'|'y'|'z'} axis
+   */
   const axisUp = (axis) => { if (axisKeyDown === axis) { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); } };
   bind('down', MODES.EDIT, 'x', () => axisDown('x'));
   bind('down', MODES.EDIT, 'y', () => axisDown('y'));
@@ -2229,6 +2690,9 @@
   // Render mode / cloud params
   let renderMode = (renderModeSel && renderModeSel.value) || 'surface';
   let cloudType = (cloudTypeSel && cloudTypeSel.value) || 'cubes';
+  /**
+   * Show/hide control rows based on whether surface or cloud mode is active.
+   */
   function updateRenderModeUI() {
     const isCloud = renderMode === 'cloud';
     const rowStyle = document.getElementById('rowStyle');
@@ -2238,6 +2702,10 @@
     if (rowCloudType) rowCloudType.style.display = isCloud ? '' : 'none';
     if (rowCloudParams) rowCloudParams.style.display = isCloud ? '' : 'none';
   }
+  /**
+   * Read and normalize cloud-rendering options from UI controls.
+   * @returns {{type:string,stride:number,tLow:number,alphaMax:number}}
+   */
   function readCloudOpts() {
     const iso = Math.abs(parseFloat((isoInput && isoInput.value) || '0')) || 0;
     return {
@@ -2259,6 +2727,12 @@
   if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
 
   // Apply handlers
+  /**
+   * Parse a numeric input with fallback default.
+   * @param {string|number} v
+   * @param {number} def
+   * @returns {number}
+   */
   const toNum = (v, def = 0) => { const n = parseFloat(v); return Number.isFinite(n) ? n : def; };
   for (const el of [shiftX, shiftY, shiftZ]) {
     el.oninput = () => {
@@ -2282,11 +2756,18 @@
   damp.oninput = () => { const v = toNum(damp.value, 0.05); if (Number.isFinite(v)) controls.dampingFactor = v; };
   autoRotSpeed.oninput = () => { const v = toNum(autoRotSpeed.value, 2.0); if (Number.isFinite(v)) controls.autoRotateSpeed = v; };
 
+  /**
+   * Refresh coordinates panel contents for the active file.
+   */
   function updateSidePanel() {
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     coordsContent.innerHTML = renderCoordsContent(record, BOHR_TO_ANG, window.ATOM_Z_TO_DATA);
   }
 
+  /**
+   * Build XYZ text for the active record.
+   * @returns {string}
+   */
   function toXYZString() {
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     return volumeToXYZ(record, BOHR_TO_ANG, window.ATOM_Z_TO_DATA);
@@ -2320,6 +2801,12 @@
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Parse and append newly selected/dropped files, then focus the first added file.
+   * Existing demo/sample placeholder data is removed before importing user files.
+   * @param {FileList|File[]} fileList
+   * @returns {Promise<void>}
+   */
   async function handleFiles(fileList) {
     const arr = Array.from(fileList);
     // If demo is present and this is the first real load, clear it
@@ -2404,6 +2891,9 @@
     if (!ok) loadDemo();
   };
 
+  /**
+   * Rebuild the file selector options from the current `volumes` list.
+   */
   function refreshFileSelect() {
     fileSelect.innerHTML = "";
     volumes.forEach((v, i) => {
@@ -2437,10 +2927,21 @@
   toggleBox.onchange = () => rebuildScene({ preserveView: true });
   if (toggleAxes) toggleAxes.onchange = () => { window.__showAxes__ = !!toggleAxes.checked; };
 
+  /**
+   * Check whether a 2C component mode maps directly to one raw data channel.
+   * @param {string} compMode
+   * @returns {boolean}
+   */
   function isRaw2CComponent(compMode) {
     return compMode === 'alphaRe' || compMode === 'alphaIm' || compMode === 'betaRe' || compMode === 'betaIm';
   }
 
+  /**
+   * Apply a selected 2C component mode to one loaded volume record.
+   * For raw-channel modes, `vol.data` is pointed at the chosen channel array.
+   * @param {{vol?:any,component?:string}} record
+   * @param {string} compMode
+   */
   function setVolume2CComponent(record, compMode) {
     if (!record || !record.vol || !record.vol.isTwoComponent) return;
     record.component = compMode;
@@ -2449,15 +2950,29 @@
     }
   }
 
+  /**
+   * Apply one 2C component mode across all loaded two-component files.
+   * @param {string} compMode
+   */
   function applyGlobal2CComponent(compMode) {
     global2CComponentMode = compMode || 'alphaRe';
     for (const record of volumes) setVolume2CComponent(record, global2CComponentMode);
   }
 
+  /**
+   * Resolve the active component mode for the current file.
+   * @param {{isTwoComponent?:boolean}} vol
+   * @returns {string}
+   */
   function getComponentMode(vol) {
     return (vol && vol.isTwoComponent) ? (volumes[currentIndex].component || global2CComponentMode || 'alphaRe') : 'alphaRe';
   }
 
+  /**
+   * Point `vol.data` to the active raw component when a raw mode is selected.
+   * @param {{isTwoComponent?:boolean,data?:Float32Array,alphaRe?:Float32Array}} vol
+   * @param {string} compMode
+   */
   function selectActiveRawComponent(vol, compMode) {
     if (!vol || !vol.isTwoComponent) return;
     if (isRaw2CComponent(compMode)) {
@@ -2465,11 +2980,22 @@
     }
   }
 
+  /**
+   * Register and attach a rendered surface mesh to scene content.
+   * @param {THREE.Mesh} mesh
+   */
   function addSurfaceMesh(mesh) {
     contentGroup.add(mesh);
     meshes.push(mesh);
   }
 
+  /**
+   * Render isosurfaces for two-component phase/Bloch visualization modes.
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} iso
+   * @param {number} opacity
+   */
   function renderTwoComponentSurfaces(vol, compMode, iso, opacity) {
     if (compMode === 'alphaPhase' || compMode === 'betaPhase') {
       const which = compMode === 'alphaPhase' ? 'alpha' : 'beta';
@@ -2511,6 +3037,15 @@
     }
   }
 
+  /**
+   * Render positive and/or negative scalar isosurfaces for standard volumes.
+   * @param {*} vol
+   * @param {number} iso
+   * @param {number} min
+   * @param {number} max
+   * @param {THREE.Material} posMat
+   * @param {THREE.Material} negMat
+   */
   function renderStandardSurfaces(vol, iso, min, max, posMat, negMat) {
     if (max >= iso) {
       const geomP = makeIsosurface(vol, iso);
@@ -2528,6 +3063,13 @@
     }
   }
 
+  /**
+   * Render cloud geometry for scalar and 2C modes according to UI settings.
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} iso
+   * @param {number} max
+   */
   function renderClouds(vol, compMode, iso, max) {
     const opts = readCloudOpts();
     if (vol && vol.isTwoComponent && isPhaseLikeComponent(compMode)) {
@@ -2569,6 +3111,11 @@
     contentGroup.add(cloudGroup);
   }
 
+  /**
+   * Update UI controls and phase legend visibility after scene rebuild.
+   * @param {*} vol
+   * @param {string} compMode
+   */
   function updatePostRebuildUI(vol, compMode) {
     if (componentRow) {
       const is2c = !!(vol && vol.isTwoComponent);
@@ -2598,6 +3145,11 @@
     }
   }
 
+  /**
+   * Build non-surface geometry layers (atoms/bonds/box) after core rendering.
+   * @param {*} vol
+   * @param {boolean} hasGrid
+   */
   function applyPostGeometry(vol, hasGrid) {
     if (toggleAtoms.checked) {
       atomGroup = buildAtoms(vol);
@@ -2614,6 +3166,12 @@
     }
   }
 
+  /**
+   * Apply camera policy for rebuilds: preserve current view or fit to content.
+   * @param {boolean} preserveView
+   * @param {THREE.Camera|null} savedCam
+   * @param {THREE.Vector3|null} savedTarget
+   */
   function applyCameraStrategy(preserveView, savedCam, savedTarget) {
     if (preserveView && savedCam && savedTarget) {
       camera.copy(savedCam);
@@ -2631,6 +3189,10 @@
     }
   }
 
+  /**
+   * Recompute scene content for the active file and current render settings.
+   * @param {{preserveView?:boolean}} options
+   */
   function rebuildScene(options = {}) {
     const preserveView = !!options.preserveView;
     const savedCam = preserveView ? camera.clone() : null;
@@ -2666,6 +3228,9 @@
     updatePostRebuildUI(vol, compMode);
   }
 
+  /**
+   * Update material opacity/color state in-place for already-built meshes/clouds.
+   */
   function updateOpacityAndColors() {
     const op = parseFloat(opInput.value || "1.00");
     for (const m of meshes) {
@@ -2767,6 +3332,10 @@
   };
 
   // Helpers to load the sample cube or demo
+  /**
+   * Load bundled sample data and make it the active record.
+   * @returns {Promise<boolean>} `true` on success, `false` on fetch/parse failure.
+   */
   async function loadSampleCube() {
     try {
       const resp = await fetch('./assets/data/sample.cube', { cache: 'no-store' });
@@ -2799,6 +3368,9 @@
     }
   }
 
+  /**
+   * Create a small synthetic water-like demo volume as an offline fallback.
+   */
   function loadDemo() {
     const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
     const r = 0.9572; // O–H bond length
@@ -2815,6 +3387,13 @@
     const axes = [[step, 0, 0], [0, step, 0], [0, 0, step]];
     const origin = [-(nx * step) / 2, -(ny * step) / 2, -(nz * step) / 2]; // Bohr
     const data = new Float32Array(nx * ny * nz);
+    /**
+     * Map voxel coordinates to a flat array index.
+     * @param {number} i
+     * @param {number} j
+     * @param {number} k
+     * @returns {number}
+     */
     const idx = (i, j, k) => (i * ny + j) * nz + k;
     const vol = { title: 'Demo Water', comment: '', natoms: 3, origin, nxyz: [nx, ny, nz], axes, atoms, data, idx, isoHint: null };
     volumes.push({ name: 'Demo Water', vol });

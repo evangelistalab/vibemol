@@ -1,13 +1,34 @@
 (function (global) {
+  /**
+   * Resolve an element symbol from atomic number.
+   * Falls back to the numeric `Z` string if lookup data is unavailable.
+   * @param {number} z
+   * @param {Record<number, {symbol?:string}>} atomData
+   * @returns {string}
+   */
   function symbolForZ(z, atomData) {
     return (atomData && atomData[z] && atomData[z].symbol) || String(z);
   }
 
+  /**
+   * Return atom coordinates in angstrom units regardless of source units.
+   * @param {{units?:string}} vol
+   * @param {{x:number,y:number,z:number}} atom
+   * @param {number} bohrToAng
+   * @returns {[number, number, number]}
+   */
   function atomCoordsAng(vol, atom, bohrToAng) {
     if (vol.units === 'angstrom') return [atom.x, atom.y, atom.z];
     return [atom.x * bohrToAng, atom.y * bohrToAng, atom.z * bohrToAng];
   }
 
+  /**
+   * Render the side-panel atom table as HTML.
+   * @param {{name:string,vol?:{atoms?:Array<{Z:number,x:number,y:number,z:number}>,units?:string}}|null} record
+   * @param {number} bohrToAng
+   * @param {Record<number, {symbol?:string}>} atomData
+   * @returns {string}
+   */
   function renderCoordsContent(record, bohrToAng, atomData) {
     if (!record) return '<em>No file loaded</em>';
 
@@ -31,6 +52,13 @@
       </table>`;
   }
 
+  /**
+   * Convert the active record into XYZ text for clipboard/download export.
+   * @param {{name:string,vol?:{title?:string,atoms?:Array<{Z:number,x:number,y:number,z:number}>,units?:string}}|null} record
+   * @param {number} bohrToAng
+   * @param {Record<number, {symbol?:string}>} atomData
+   * @returns {string}
+   */
   function volumeToXYZ(record, bohrToAng, atomData) {
     if (!record) return '';
 
