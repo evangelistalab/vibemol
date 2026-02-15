@@ -9,6 +9,49 @@ function arrayMinMax(a) {
   return { min, max };
 }
 
+function createNumberTokenizer(lines, startLine) {
+  let lineIndex = startLine | 0;
+  let parts = [];
+  let partIndex = 0;
+
+  function loadNextLine() {
+    while (lineIndex < lines.length) {
+      const line = lines[lineIndex++];
+      if (!line) continue;
+      const nextParts = line.trim().split(/\s+/);
+      if (nextParts.length && nextParts[0] !== '') {
+        parts = nextParts;
+        partIndex = 0;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  return function nextNumber() {
+    while (true) {
+      if (partIndex < parts.length) {
+        const n = parseFloat(parts[partIndex++]);
+        if (Number.isFinite(n)) return n;
+        continue;
+      }
+      if (!loadNextLine()) return null;
+    }
+  };
+}
+
+function readFloatArray(nextNumber, length) {
+  const out = new Float32Array(length);
+  for (let i = 0; i < length; i++) {
+    const n = nextNumber();
+    if (n == null) {
+      throw new Error(`Data size mismatch. Expected ${length}, got ${i}`);
+    }
+    out[i] = n;
+  }
+  return out;
+}
+
 function parseCube(text) {
   // Split lines, handle CRLF
   const lines = text.replace(/\r/g, '').split('\n');
@@ -64,11 +107,10 @@ function parseCube(text) {
   }
 
   // volumetric data (z fastest, then y, then x) — reshape (numx,numy,numz)
-  const flat = lines.slice(6 + Math.abs(natoms)).join(' ').trim().split(/\s+/);
+  const dataStartLine = 6 + Math.abs(natoms);
   const total = numx * numy * numz;
-  if (flat.length < total) throw new Error(`Data size mismatch. Expected ${total}, got ${flat.length}`);
-  const data = new Float32Array(total);
-  for (let i = 0; i < total; i++) data[i] = parseFloat(flat[i]);
+  const nextNumber = createNumberTokenizer(lines, dataStartLine);
+  const data = readFloatArray(nextNumber, total);
 
   // index helper matching your reshape: data[i,j,k]
   const idx = (i, j, k) => (i * numy + j) * numz + k;
@@ -121,28 +163,41 @@ function parseTwoComponentCube(text) {
     const p = lines[6 + i].trim().split(/\s+/).map(Number);
     atoms.push({ Z: p[0], q: p[1], x: p[2], y: p[3], z: p[4] });
   }
-  const flat = lines.slice(6 + natoms).join(' ').trim().split(/\s+/);
+  const dataStartLine = 6 + natoms;
+  const nextNumber = createNumberTokenizer(lines, dataStartLine);
   const total = numx * numy * numz;
   let alphaRe, alphaIm, betaRe, betaIm, isTwoComponent = false;
-  if (flat.length === total) {
-    alphaRe = new Float32Array(total);
-    for (let i = 0; i < total; i++) alphaRe[i] = parseFloat(flat[i]);
+
+  alphaRe = readFloatArray(nextNumber, total);
+
+  const maybeAlphaIm0 = nextNumber();
+  if (maybeAlphaIm0 == null) {
+    // single-dataset file; keep compat by exposing zeroed companion arrays
     alphaIm = new Float32Array(total);
     betaRe = new Float32Array(total);
     betaIm = new Float32Array(total);
-  } else if (flat.length === 4 * total) {
-    isTwoComponent = true;
-    alphaRe = new Float32Array(total);
-    alphaIm = new Float32Array(total);
-    betaRe = new Float32Array(total);
-    betaIm = new Float32Array(total);
-    let off = 0;
-    for (let i = 0; i < total; i++) alphaRe[i] = parseFloat(flat[off++]);
-    for (let i = 0; i < total; i++) alphaIm[i] = parseFloat(flat[off++]);
-    for (let i = 0; i < total; i++) betaRe[i] = parseFloat(flat[off++]);
-    for (let i = 0; i < total; i++) betaIm[i] = parseFloat(flat[off++]);
   } else {
-    throw new Error(`Data size mismatch. Expected ${total} or ${4 * total}, got ${flat.length}`);
+    isTwoComponent = true;
+    alphaIm = new Float32Array(total);
+    betaRe = new Float32Array(total);
+    betaIm = new Float32Array(total);
+
+    alphaIm[0] = maybeAlphaIm0;
+    for (let i = 1; i < total; i++) {
+      const n = nextNumber();
+      if (n == null) throw new Error(`Data size mismatch. Expected ${4 * total}, got ${total + i}`);
+      alphaIm[i] = n;
+    }
+    for (let i = 0; i < total; i++) {
+      const n = nextNumber();
+      if (n == null) throw new Error(`Data size mismatch. Expected ${4 * total}, got ${2 * total + i}`);
+      betaRe[i] = n;
+    }
+    for (let i = 0; i < total; i++) {
+      const n = nextNumber();
+      if (n == null) throw new Error(`Data size mismatch. Expected ${4 * total}, got ${3 * total + i}`);
+      betaIm[i] = n;
+    }
   }
   const idx = (i, j, k) => (i * numy + j) * numz + k;
   const vol = { title, comment, natoms, origin, nxyz: [numx, numy, numz], axes: [ax, ay, az], atoms, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent };

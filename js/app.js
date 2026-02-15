@@ -467,26 +467,108 @@
   contentGroup.add(bondGroup);
   contentGroup.add(cloudGroup);
 
-  function disposeDeep(obj) {
-    try {
-      obj.traverse && obj.traverse((o) => {
-        if (o.geometry && o.geometry.dispose) try { o.geometry.dispose(); } catch { }
-        const mat = o.material;
-        if (Array.isArray(mat)) { for (const m of mat) { try { m.dispose && m.dispose(); } catch { } } }
-        else if (mat && mat.dispose) { try { mat.dispose(); } catch { } }
-      });
-    } catch { }
-    try { if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose(); } catch { }
-    try { if (obj.material && obj.material.dispose) obj.material.dispose(); } catch { }
+  function createDisposeState() {
+    return {
+      geometries: new Set(),
+      materials: new Set(),
+      textures: new Set(),
+    };
   }
+
+  function disposeMaterial(mat, state) {
+    if (!mat || state.materials.has(mat)) return;
+    state.materials.add(mat);
+
+    try {
+      const maybeDisposeTexture = (tex) => {
+        if (!tex || !tex.dispose || state.textures.has(tex)) return;
+        state.textures.add(tex);
+        tex.dispose();
+      };
+
+      if (mat.map) maybeDisposeTexture(mat.map);
+      if (mat.alphaMap) maybeDisposeTexture(mat.alphaMap);
+      if (mat.emissiveMap) maybeDisposeTexture(mat.emissiveMap);
+      if (mat.bumpMap) maybeDisposeTexture(mat.bumpMap);
+      if (mat.normalMap) maybeDisposeTexture(mat.normalMap);
+      if (mat.metalnessMap) maybeDisposeTexture(mat.metalnessMap);
+      if (mat.roughnessMap) maybeDisposeTexture(mat.roughnessMap);
+      if (mat.envMap) maybeDisposeTexture(mat.envMap);
+      if (mat.transmissionMap) maybeDisposeTexture(mat.transmissionMap);
+      if (mat.clearcoatMap) maybeDisposeTexture(mat.clearcoatMap);
+      if (mat.clearcoatNormalMap) maybeDisposeTexture(mat.clearcoatNormalMap);
+      if (mat.clearcoatRoughnessMap) maybeDisposeTexture(mat.clearcoatRoughnessMap);
+      if (mat.thicknessMap) maybeDisposeTexture(mat.thicknessMap);
+      if (mat.specularIntensityMap) maybeDisposeTexture(mat.specularIntensityMap);
+      if (mat.specularColorMap) maybeDisposeTexture(mat.specularColorMap);
+      if (mat.sheenColorMap) maybeDisposeTexture(mat.sheenColorMap);
+      if (mat.sheenRoughnessMap) maybeDisposeTexture(mat.sheenRoughnessMap);
+
+      if (mat.uniforms) {
+        for (const key of Object.keys(mat.uniforms)) {
+          const uniform = mat.uniforms[key];
+          if (uniform && uniform.value && uniform.value.isTexture) {
+            maybeDisposeTexture(uniform.value);
+          }
+        }
+      }
+    } catch { }
+
+    try { if (mat.dispose) mat.dispose(); } catch { }
+  }
+
+  function disposeNode(node, state) {
+    if (!node) return;
+
+    const geom = node.geometry;
+    if (geom && geom.dispose && !state.geometries.has(geom)) {
+      state.geometries.add(geom);
+      try { geom.dispose(); } catch { }
+    }
+
+    const mat = node.material;
+    if (Array.isArray(mat)) {
+      for (const m of mat) disposeMaterial(m, state);
+    } else {
+      disposeMaterial(mat, state);
+    }
+  }
+
+  function disposeDeep(obj, state = createDisposeState()) {
+    if (!obj) return;
+    try {
+      if (obj.traverse) obj.traverse((o) => disposeNode(o, state));
+      else disposeNode(obj, state);
+    } catch { }
+  }
+
+  function disposeAndReplaceGroup(group) {
+    const state = createDisposeState();
+    try { contentGroup.remove(group); } catch { }
+    disposeDeep(group, state);
+    const next = new THREE.Group();
+    contentGroup.add(next);
+    return next;
+  }
+
   function clearSceneMeshes() {
-    for (const m of meshes) { try { contentGroup.remove(m); disposeDeep(m); } catch { } }
+    const state = createDisposeState();
+    for (const m of meshes) {
+      try { contentGroup.remove(m); } catch { }
+      disposeDeep(m, state);
+    }
     meshes = [];
-    // Reset atom and bond groups
-    contentGroup.remove(atomGroup); atomGroup.clear(); atomGroup = new THREE.Group();
-    contentGroup.remove(bondGroup); bondGroup.clear(); bondGroup = new THREE.Group();
-    contentGroup.remove(cloudGroup); cloudGroup.clear(); cloudGroup = new THREE.Group();
-    if (boxHelper) { contentGroup.remove(boxHelper); boxHelper.geometry.dispose(); boxHelper.material.dispose(); boxHelper = null; }
+
+    // Reset atom/bond/cloud groups with deep disposal.
+    atomGroup = disposeAndReplaceGroup(atomGroup);
+    bondGroup = disposeAndReplaceGroup(bondGroup);
+    cloudGroup = disposeAndReplaceGroup(cloudGroup);
+
+    if (boxHelper) {
+      try { contentGroup.remove(boxHelper); } catch { }
+      disposeDeep(boxHelper, state);
+      boxHelper = null;
+    }
   }
 
   function buildAtoms(vol) {
@@ -1427,6 +1509,7 @@
   const axisYBtn = document.getElementById('axisY');
   const axisZBtn = document.getElementById('axisZ');
   const shortcutRibbon = document.getElementById('shortcutRibbon');
+  let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
 
   openBtn.onclick = () => fileInput.click();
   // Toggle surface rendering button
@@ -2117,15 +2200,8 @@
   }
   if (componentSelect) {
     componentSelect.onchange = () => {
-      if (currentIndex < 0 || !volumes[currentIndex]) return;
-      const vol = volumes[currentIndex].vol;
-      if (!vol || !vol.isTwoComponent) return;
       const comp = componentSelect.value;
-      volumes[currentIndex].component = comp;
-      // Only set vol.data for raw grid selections; phase modes are handled in rebuildScene
-      if (comp === 'alphaRe' || comp === 'alphaIm' || comp === 'betaRe' || comp === 'betaIm') {
-        vol.data = vol[comp] || vol.alphaRe;
-      }
+      applyGlobal2CComponent(comp);
       rebuildScene({ preserveView: true });
     };
   }
@@ -2269,7 +2345,7 @@
       else if (lower.endsWith('.2ccube')) vol = parseTwoComponentCube(text);
       else vol = parseCube(text);
       const meta = { name: f.name, vol };
-      if (vol && vol.isTwoComponent) meta.component = 'alphaRe';
+      if (vol && vol.isTwoComponent) setVolume2CComponent(meta, global2CComponentMode);
       volumes.push(meta);
       // adopt hinted iso if the user hasn’t interacted yet
       if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
@@ -2361,13 +2437,30 @@
   toggleBox.onchange = () => rebuildScene({ preserveView: true });
   if (toggleAxes) toggleAxes.onchange = () => { window.__showAxes__ = !!toggleAxes.checked; };
 
+  function isRaw2CComponent(compMode) {
+    return compMode === 'alphaRe' || compMode === 'alphaIm' || compMode === 'betaRe' || compMode === 'betaIm';
+  }
+
+  function setVolume2CComponent(record, compMode) {
+    if (!record || !record.vol || !record.vol.isTwoComponent) return;
+    record.component = compMode;
+    if (isRaw2CComponent(compMode)) {
+      record.vol.data = record.vol[compMode] || record.vol.alphaRe;
+    }
+  }
+
+  function applyGlobal2CComponent(compMode) {
+    global2CComponentMode = compMode || 'alphaRe';
+    for (const record of volumes) setVolume2CComponent(record, global2CComponentMode);
+  }
+
   function getComponentMode(vol) {
-    return (vol && vol.isTwoComponent) ? (volumes[currentIndex].component || 'alphaRe') : 'alphaRe';
+    return (vol && vol.isTwoComponent) ? (volumes[currentIndex].component || global2CComponentMode || 'alphaRe') : 'alphaRe';
   }
 
   function selectActiveRawComponent(vol, compMode) {
     if (!vol || !vol.isTwoComponent) return;
-    if (compMode === 'alphaRe' || compMode === 'alphaIm' || compMode === 'betaRe' || compMode === 'betaIm') {
+    if (isRaw2CComponent(compMode)) {
       vol.data = vol[compMode] || vol.alphaRe;
     }
   }
@@ -2481,7 +2574,7 @@
       const is2c = !!(vol && vol.isTwoComponent);
       componentRow.style.display = is2c ? 'grid' : 'none';
       if (is2c && componentSelect) {
-        componentSelect.value = volumes[currentIndex].component || 'alphaRe';
+        componentSelect.value = global2CComponentMode || volumes[currentIndex].component || 'alphaRe';
       }
     }
 
