@@ -2,7 +2,7 @@
 
 Goal: render electron density as a colored cloud (positive vs negative) instead of iso-surfaces.
 
-Sample stats (from `sample.cube`)
+Sample stats (from `assets/data/sample.cube`)
 - grid: 79 × 74 × 57 → 333,222 voxels
 - value range (min/max): −9.9999e−05 … +9.9999e−05
 - abs percentiles: p95 ≈ 6.83e−05, p99 ≈ 9.33e−05, max ≈ 1.00e−04
@@ -41,4 +41,3 @@ Next steps (implementation sketch in index.html)
 - Add a “Cloud mode” toggle and a select: `Cubes` / `Points`.
 - Wire a `buildCloudCubes(vol, opts)` and `buildCloudPoints(vol, opts)` that return `THREE.Group` to add under `contentGroup`.
 - Expose UI for `stride`, `threshold`, `alpha max`, and `tHigh preset: max/p99`.
-

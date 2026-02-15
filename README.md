@@ -9,18 +9,19 @@ A lightweight, zero-install molecular isosurface viewer for Gaussian CUBE files.
 - Atom spheres + bond cylinders with element covalent radii
 - Interactive camera and view controls (shift, camera, target, rotation)
 - Background color, opacity, and color controls
-- Drag-and-drop or auto-load `sample.cube`
+- Drag-and-drop or auto-load `assets/data/sample.cube`
 
 Quick start
-- Serve the folder (recommended for local fetch of `sample.cube`):
+- Serve the folder (recommended for local fetch of `assets/data/sample.cube`):
   - `python3 -m http.server` then open http://localhost:8000/
 - Or open `index.html` directly (auto-load may be blocked by browser file:// policies)
 
 Notes
 - Repository name: VibeMol
 - Entry point: `index.html`
-- App scripts: `js/parsers.js`, `js/rendering.js`, `js/interaction.js`, `js/ui.js`, `js/app.js`
-- Local libs: `three.min.js`, `OrbitControls.global.js`, `isosurface.bundle.js`
+- App scripts: `assets/app/js/parsers.js`, `assets/app/js/rendering.js`, `assets/app/js/interaction.js`, `assets/app/js/ui.js`, `assets/app/js/app.js`
+- Local libs: `assets/vendor/js/three.min.js`, `assets/vendor/js/orbit-controls.global.js`, `assets/vendor/js/isosurface.bundle.js`, `assets/vendor/js/atomic-data.js`
+- Data assets: `assets/data/sample.cube`
 
 GitHub Pages
 - URL (after enabling Pages): https://evangelistalab.github.io/vibemol/

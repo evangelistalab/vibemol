@@ -6,7 +6,7 @@
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
-    throw new Error('VibeMolParsers is not loaded. Ensure js/parsers.js is included before js/app.js.');
+    throw new Error('VibeMolParsers is not loaded. Ensure assets/app/js/parsers.js is included before assets/app/js/app.js.');
   }
 
   const {
@@ -18,17 +18,17 @@
     computeVolumeStats,
   } = window.VibeMolRendering || {};
   if (![maxAbs, isPhaseLikeComponent, maxMagnitude, maxTotalDensity, getAlphaBetaMagnitudeMaxima, computeVolumeStats].every(fn => typeof fn === 'function')) {
-    throw new Error('VibeMolRendering is not loaded. Ensure js/rendering.js is included before js/app.js.');
+    throw new Error('VibeMolRendering is not loaded. Ensure assets/app/js/rendering.js is included before assets/app/js/app.js.');
   }
 
   const { isTypingInInput, createShortcutRegistry } = window.VibeMolInteraction || {};
   if (![isTypingInInput, createShortcutRegistry].every(fn => typeof fn === 'function')) {
-    throw new Error('VibeMolInteraction is not loaded. Ensure js/interaction.js is included before js/app.js.');
+    throw new Error('VibeMolInteraction is not loaded. Ensure assets/app/js/interaction.js is included before assets/app/js/app.js.');
   }
 
   const { renderCoordsContent, volumeToXYZ } = window.VibeMolUI || {};
   if (![renderCoordsContent, volumeToXYZ].every(fn => typeof fn === 'function')) {
-    throw new Error('VibeMolUI is not loaded. Ensure js/ui.js is included before js/app.js.');
+    throw new Error('VibeMolUI is not loaded. Ensure assets/app/js/ui.js is included before assets/app/js/app.js.');
   }
 
   // (subsample removed)
@@ -2769,7 +2769,7 @@
   // Helpers to load the sample cube or demo
   async function loadSampleCube() {
     try {
-      const resp = await fetch('./sample.cube', { cache: 'no-store' });
+      const resp = await fetch('./assets/data/sample.cube', { cache: 'no-store' });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const text = await resp.text();
       const vol = parseCube(text);
