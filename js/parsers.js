@@ -1,0 +1,186 @@
+(function (global) {
+function arrayMinMax(a) {
+  let min = Infinity, max = -Infinity;
+  for (let i = 0; i < a.length; i++) {
+    const v = a[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  return { min, max };
+}
+
+function parseCube(text) {
+  // Split lines, handle CRLF
+  const lines = text.replace(/\r/g, '').split('\n');
+
+  // ORCA-specific quirk: some ORCA CUBE files include an extra header
+  // line at the 9th line (1-based indexing) that contains only two numbers.
+  // Detect ORCA from the first line and, if present, remove that line so
+  // that atom records start where we expect.
+  try {
+    const isORCA = /ORCA/i.test(lines[0] || '');
+    const l9 = (lines[8] || '').trim();
+    if (isORCA && l9) {
+      const parts = l9.split(/\s+/);
+      const twoNums = parts.length === 2 && parts.every(s => isFinite(parseFloat(s)));
+      if (twoNums) {
+        // Remove the 9th line so downstream fixed indexing remains valid
+        lines.splice(8, 1);
+      }
+    }
+  } catch { /* keep default if anything goes wrong */ }
+
+  if (lines.length < 6) throw new Error("Not enough lines for a CUBE file.");
+
+  const title = lines[0];
+  const comment = lines[1];
+
+  // Generic "(x,y)" capture anywhere on the 2nd line (your regex)
+  let isoHint = null;
+  {
+    const m = comment.match(/\(([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\)/);
+    if (m) isoHint = parseFloat(m[1]); // take the first number as suggested level
+  }
+
+  // natoms / origin line
+  const L3 = lines[2].trim().split(/\s+/);
+  const natoms = parseInt(L3[0], 10);
+  const origin = [parseFloat(L3[1]), parseFloat(L3[2]), parseFloat(L3[3])];
+
+  // grid counts + per-voxel step vectors (Bohr)
+  const sx = lines[3].trim().split(/\s+/).map(Number); // [numx, ax, ay, az]
+  const sy = lines[4].trim().split(/\s+/).map(Number); // [numy, bx, by, bz]
+  const sz = lines[5].trim().split(/\s+/).map(Number); // [numz, cx, cy, cz]
+  const numx = Math.abs(sx[0]) | 0, numy = Math.abs(sy[0]) | 0, numz = Math.abs(sz[0]) | 0;
+  const ax = sx.slice(1, 4); // per-voxel step along i
+  const ay = sy.slice(1, 4); // per-voxel step along j
+  const az = sz.slice(1, 4); // per-voxel step along k
+
+  // atoms: Z, q, x, y, z  (positions in Bohr)
+  const atoms = [];
+  for (let i = 0; i < Math.abs(natoms); i++) {
+    const p = lines[6 + i].trim().split(/\s+/).map(Number);
+    atoms.push({ Z: p[0], q: p[1], x: p[2], y: p[3], z: p[4] });
+  }
+
+  // volumetric data (z fastest, then y, then x) — reshape (numx,numy,numz)
+  const flat = lines.slice(6 + Math.abs(natoms)).join(' ').trim().split(/\s+/);
+  const total = numx * numy * numz;
+  if (flat.length < total) throw new Error(`Data size mismatch. Expected ${total}, got ${flat.length}`);
+  const data = new Float32Array(total);
+  for (let i = 0; i < total; i++) data[i] = parseFloat(flat[i]);
+
+  // index helper matching your reshape: data[i,j,k]
+  const idx = (i, j, k) => (i * numy + j) * numz + k;
+
+  return {
+    title, comment,
+    natoms: Math.abs(natoms),
+    origin,                        // Bohr
+    nxyz: [numx, numy, numz],
+    axes: [ax, ay, az],            // per-voxel step vectors in Bohr
+    atoms, data, idx,
+    units: 'bohr',                 // positions stored in Bohr
+    isoHint                        // may be null if not present
+  };
+}
+
+// Parse two-component cube files (.2ccube) with four datasets
+function parseTwoComponentCube(text) {
+  const lines = text.replace(/\r/g, '').split('\n');
+  // ORCA-specific quirk: remove extra 9th line if present
+  try {
+    const isORCA = /ORCA/i.test(lines[0] || '');
+    const l9 = (lines[8] || '').trim();
+    if (isORCA && l9) {
+      const parts = l9.split(/\s+/);
+      const twoNums = parts.length === 2 && parts.every(s => isFinite(parseFloat(s)));
+      if (twoNums) lines.splice(8, 1);
+    }
+  } catch { }
+  if (lines.length < 6) throw new Error('Not enough lines for a CUBE file.');
+  const title = lines[0];
+  const comment = lines[1] || '';
+  let isoHint = null;
+  try {
+    const m = comment.match(/\(([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\)/);
+    if (m) isoHint = parseFloat(m[1]);
+  } catch { }
+  const L3 = lines[2].trim().split(/\s+/);
+  const natoms = Math.abs(parseInt(L3[0], 10));
+  const origin = [parseFloat(L3[1]), parseFloat(L3[2]), parseFloat(L3[3])];
+  const sx = lines[3].trim().split(/\s+/).map(Number);
+  const sy = lines[4].trim().split(/\s+/).map(Number);
+  const sz = lines[5].trim().split(/\s+/).map(Number);
+  const numx = Math.abs(sx[0]) | 0, numy = Math.abs(sy[0]) | 0, numz = Math.abs(sz[0]) | 0;
+  const ax = sx.slice(1, 4);
+  const ay = sy.slice(1, 4);
+  const az = sz.slice(1, 4);
+  const atoms = [];
+  for (let i = 0; i < natoms; i++) {
+    const p = lines[6 + i].trim().split(/\s+/).map(Number);
+    atoms.push({ Z: p[0], q: p[1], x: p[2], y: p[3], z: p[4] });
+  }
+  const flat = lines.slice(6 + natoms).join(' ').trim().split(/\s+/);
+  const total = numx * numy * numz;
+  let alphaRe, alphaIm, betaRe, betaIm, isTwoComponent = false;
+  if (flat.length === total) {
+    alphaRe = new Float32Array(total);
+    for (let i = 0; i < total; i++) alphaRe[i] = parseFloat(flat[i]);
+    alphaIm = new Float32Array(total);
+    betaRe = new Float32Array(total);
+    betaIm = new Float32Array(total);
+  } else if (flat.length === 4 * total) {
+    isTwoComponent = true;
+    alphaRe = new Float32Array(total);
+    alphaIm = new Float32Array(total);
+    betaRe = new Float32Array(total);
+    betaIm = new Float32Array(total);
+    let off = 0;
+    for (let i = 0; i < total; i++) alphaRe[i] = parseFloat(flat[off++]);
+    for (let i = 0; i < total; i++) alphaIm[i] = parseFloat(flat[off++]);
+    for (let i = 0; i < total; i++) betaRe[i] = parseFloat(flat[off++]);
+    for (let i = 0; i < total; i++) betaIm[i] = parseFloat(flat[off++]);
+  } else {
+    throw new Error(`Data size mismatch. Expected ${total} or ${4 * total}, got ${flat.length}`);
+  }
+  const idx = (i, j, k) => (i * numy + j) * numz + k;
+  const vol = { title, comment, natoms, origin, nxyz: [numx, numy, numz], axes: [ax, ay, az], atoms, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent };
+  // default dataset
+  vol.data = isTwoComponent ? alphaRe : alphaRe;
+  return vol;
+}
+
+function parseXYZ(text) {
+  const lines = text.replace(/\r/g, '').split('\n');
+  let i = 0;
+  // Optional first line atom count
+  let natoms = 0;
+  if (lines.length > 0) {
+    const maybeN = parseInt((lines[0] || '').trim(), 10);
+    if (!Number.isNaN(maybeN) && maybeN >= 0) {
+      natoms = maybeN | 0; i = 2; // skip count + optional comment
+    }
+  }
+  const atoms = [];
+  for (; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (!l) continue;
+    const parts = l.split(/\s+/);
+    if (parts.length < 4) continue;
+    const sym = parts[0];
+    const Z = (window.ATOM_SYMBOL_TO_Z && window.ATOM_SYMBOL_TO_Z[sym.toUpperCase()]) || 0;
+    const x = parseFloat(parts[1]);
+    const y = parseFloat(parts[2]);
+    const z = parseFloat(parts[3]);
+    if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+      atoms.push({ Z, q: 0, x, y, z }); // XYZ is in Å already
+    }
+  }
+  if (natoms === 0) natoms = atoms.length;
+  const idx = (i, j, k) => 0;
+  return { title: 'XYZ', comment: '', natoms, origin: [0, 0, 0], nxyz: [0, 0, 0], axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], atoms, data: new Float32Array(0), idx, units: 'angstrom', kind: 'xyz' };
+}
+
+  global.VibeMolParsers = { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ };
+})(window);

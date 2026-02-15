@@ -19,6 +19,7 @@ Quick start
 Notes
 - Repository name: VibeMol
 - Entry point: `index.html`
+- App scripts: `js/parsers.js`, `js/rendering.js`, `js/interaction.js`, `js/ui.js`, `js/app.js`
 - Local libs: `three.min.js`, `OrbitControls.global.js`, `isosurface.bundle.js`
 
 GitHub Pages
