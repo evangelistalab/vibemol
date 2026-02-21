@@ -412,6 +412,14 @@
         </select>
         <span></span><span></span>
       </div>
+      <div class="row">
+        <label style="width: 80px;">Molecule style</label>
+        <select id="moleculeStyle" title="Choose atom/bond rendering style">
+          <option value="default" selected>Default</option>
+          <option value="fancy">Fancy (toon luminous)</option>
+        </select>
+        <span></span><span></span>
+      </div>
       <div class="row" id="rowCloudType">
         <label style="width: 80px;">Cloud type</label>
         <select id="cloudType" title="Cloud renderer">
@@ -456,7 +464,7 @@
         <ul>
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
-          <li>Atoms and Bonds can be toggled independently; bonds are color‑graded between atoms.</li>
+          <li>Atoms and Bonds can be toggled independently; in Fancy molecule style, atoms, bonds, and surfaces use toon shading and bonds are color‑graded between atoms.</li>
           <li>The Cartesian coordinates are displayed as red (X), green (Y), and blue (Z) arrows.</li>
         </ul>
         <p>Shortcuts</p>

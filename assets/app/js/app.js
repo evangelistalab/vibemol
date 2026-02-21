@@ -493,7 +493,9 @@
   const dir = new THREE.DirectionalLight(0xffffff, 1.0);
   dir.position.set(1, 1, 1);
   const amb = new THREE.AmbientLight(0x999999, 0.65);
-  scene.add(hemi, dir, amb);
+  const rim = new THREE.DirectionalLight(0x9fb8ff, 0.0);
+  rim.position.set(-1.4, 1.0, -0.8);
+  scene.add(hemi, dir, amb, rim);
 
   // Resizer
   /**
@@ -566,6 +568,10 @@
   let defaultView = null;
   // Current iso-surface material style
   let surfaceStyle = 'emissive';
+  // Current atom/bond material style
+  let moleculeStyle = 'default';
+  const bondMaterialCache = new Map();
+  const toonGradientTextureCache = new Map();
   // Content group to allow whole-scene shifting
   const contentGroup = new THREE.Group();
   scene.add(contentGroup);
@@ -706,6 +712,289 @@
       disposeDeep(boxHelper, state);
       boxHelper = null;
     }
+
+    // Ensure any cached bond materials not attached to the current graph are released too.
+    for (const mat of bondMaterialCache.values()) disposeMaterial(mat, state);
+    bondMaterialCache.clear();
+  }
+
+  /**
+   * Update scene lighting to match the active molecule style.
+   */
+  function applyMoleculeStyleLighting() {
+    if (moleculeStyle === 'fancy') {
+      hemi.color.setHex(0xf8fbff);
+      hemi.groundColor.setHex(0x0f1826);
+      hemi.intensity = 1.28;
+      dir.color.setHex(0xffffff);
+      dir.intensity = 2.25;
+      dir.position.set(1.25, 1.2, 1.1);
+      amb.color.setHex(0x9aa6ba);
+      amb.intensity = 0.16;
+      rim.intensity = 1.18;
+      return;
+    }
+    hemi.color.setHex(0xffffff);
+    hemi.groundColor.setHex(0x081018);
+    hemi.intensity = 2.0;
+    dir.color.setHex(0xffffff);
+    dir.intensity = 1.0;
+    dir.position.set(1, 1, 1);
+    amb.color.setHex(0x999999);
+    amb.intensity = 0.65;
+    rim.intensity = 0.0;
+  }
+
+  /**
+   * Build a tiny stepped gradient texture for toon shading.
+   * @param {'atom'|'bond'|'surface'} kind
+   * @returns {THREE.Texture|null}
+   */
+  function getToonGradientTexture(kind) {
+    const key = (kind === 'bond' || kind === 'surface') ? kind : 'atom';
+    if (toonGradientTextureCache.has(key)) return toonGradientTextureCache.get(key);
+    if (typeof document === 'undefined') return null;
+    const steps = key === 'bond'
+      ? [10, 72, 150, 255]
+      : key === 'surface'
+        ? [8, 58, 132, 214, 255]
+        : [12, 64, 142, 255];
+    const canvas = document.createElement('canvas');
+    canvas.width = steps.length;
+    canvas.height = 1;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const img = ctx.createImageData(steps.length, 1);
+    for (let i = 0; i < steps.length; i++) {
+      const v = steps[i];
+      const o = i * 4;
+      img.data[o + 0] = v;
+      img.data[o + 1] = v;
+      img.data[o + 2] = v;
+      img.data[o + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.NearestFilter;
+    tex.magFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    toonGradientTextureCache.set(key, tex);
+    return tex;
+  }
+
+  /**
+   * Determine whether surfaces should use toon shading.
+   * @returns {boolean}
+   */
+  function useToonSurfaceStyle() {
+    return moleculeStyle === 'fancy';
+  }
+
+  /**
+   * Check whether an atomic number belongs to a transition metal block.
+   * @param {number} z
+   * @returns {boolean}
+   */
+  function isTransitionMetalAtomicNumber(z) {
+    const n = z | 0;
+    return (
+      (n >= 21 && n <= 30) ||
+      (n >= 39 && n <= 48) ||
+      (n >= 72 && n <= 80) ||
+      (n >= 104 && n <= 112)
+    );
+  }
+
+  /**
+   * Resolve the display color for an element under the active molecule style.
+   * @param {number} z
+   * @returns {THREE.Color}
+   */
+  function getAtomRenderColor(z) {
+    const useElementColors = !!(typeof elementColors !== 'undefined' && elementColors && elementColors.checked && ATOM_Z_TO_DATA);
+    let atomColor = new THREE.Color(0xffffff);
+    if (useElementColors) {
+      const info = ATOM_Z_TO_DATA[z];
+      if (info && Array.isArray(info.color)) {
+        const [cr, cg, cb] = info.color;
+        atomColor = new THREE.Color(cr / 255, cg / 255, cb / 255);
+      }
+    }
+
+    if (moleculeStyle !== 'fancy') return atomColor;
+    if (!useElementColors) return new THREE.Color(0xd0d9e6);
+    if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf2ad1f);
+
+    // Match the toon/luminous palette seen in the reference figure.
+    if (z === 6) return new THREE.Color(0x9ca9b9); // carbon
+    if (z === 1) return new THREE.Color(0xe4edf8); // hydrogen
+    if (z === 7) return new THREE.Color(0x3c73ff); // nitrogen
+
+    // For other elements, gently lift value while preserving hue identity.
+    const hsl = { h: 0, s: 0, l: 0 };
+    atomColor.getHSL(hsl);
+    atomColor.setHSL(hsl.h, Math.min(1, hsl.s * 0.9 + 0.05), Math.min(1, hsl.l * 0.92 + 0.1));
+    return atomColor;
+  }
+
+  /**
+   * Derive a bond-end color from atom color for smoother toon gradients.
+   * @param {THREE.Color} atomColor
+   * @param {number} z
+   * @returns {THREE.Color}
+   */
+  function getBondRenderColor(atomColor, z) {
+    if (moleculeStyle !== 'fancy') return atomColor;
+    if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xefbb55);
+    const c = atomColor.clone();
+    const hsl = { h: 0, s: 0, l: 0 };
+    c.getHSL(hsl);
+    c.setHSL(hsl.h, Math.max(0, hsl.s * 0.55), Math.min(1, hsl.l * 0.85 + 0.16));
+    return c;
+  }
+
+  /**
+   * Create an atom material that matches the active molecule style.
+   * @param {THREE.Color} color
+   * @param {number} z
+   * @returns {THREE.Material}
+   */
+  function createAtomMaterial(color, z) {
+    if (moleculeStyle === 'fancy') {
+      const isTransitionMetal = isTransitionMetalAtomicNumber(z);
+      const emissiveBoost = isTransitionMetal ? 0.42 : 0.26;
+      const emissiveTint = isTransitionMetal ? new THREE.Color(0xffe2a3) : new THREE.Color(0xffffff);
+      const emissive = color.clone().multiplyScalar(emissiveBoost).lerp(emissiveTint, isTransitionMetal ? 0.12 : 0.06);
+      return new THREE.MeshToonMaterial({
+        color,
+        gradientMap: getToonGradientTexture('atom'),
+        emissive,
+        emissiveIntensity: isTransitionMetal ? 0.82 : 0.56,
+      });
+    }
+    return new THREE.MeshStandardMaterial({ color, roughness: 0.25, metalness: 0.25 });
+  }
+
+  /**
+   * Create the additive specular shell used for glossy hotspots in fancy mode.
+   * @param {number} z
+   * @returns {THREE.Material}
+   */
+  function createAtomHighlightMaterial(z) {
+    const isTransitionMetal = isTransitionMetalAtomicNumber(z);
+    return new THREE.MeshPhongMaterial({
+      color: isTransitionMetal ? 0xffd39a : 0x88a4d2,
+      specular: 0xffffff,
+      shininess: isTransitionMetal ? 180 : 220,
+      emissive: isTransitionMetal ? new THREE.Color(0x5a3f00) : new THREE.Color(0x172236),
+      emissiveIntensity: isTransitionMetal ? 0.18 : 0.1,
+      transparent: true,
+      opacity: isTransitionMetal ? 0.52 : 0.34,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: true,
+      side: THREE.FrontSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -0.2,
+      polygonOffsetUnits: -0.2,
+    });
+  }
+
+  /**
+   * Get (or create) the shared bond material for the current molecule style.
+   * @returns {THREE.Material}
+   */
+  function getBondMaterial() {
+    const key = moleculeStyle === 'fancy' ? 'fancy' : 'default';
+    if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
+
+    let mat;
+    if (key === 'fancy') {
+      mat = new THREE.MeshToonMaterial({
+        color: 0xd9e2ee,
+        vertexColors: true,
+        gradientMap: getToonGradientTexture('bond'),
+        emissive: new THREE.Color(0x273244),
+        emissiveIntensity: 0.14,
+      });
+    } else {
+      mat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.1, metalness: 0.1 });
+    }
+    bondMaterialCache.set(key, mat);
+    return mat;
+  }
+
+  /**
+   * Get (or create) the shared outline material used by fancy bond shells.
+   * @returns {THREE.Material|null}
+   */
+  function getFancyBondOutlineMaterial() {
+    if (moleculeStyle !== 'fancy') return null;
+    const key = 'fancy:outline';
+    if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x334050,
+      side: THREE.BackSide,
+      transparent: true,
+      opacity: 0.86,
+    });
+    bondMaterialCache.set(key, mat);
+    return mat;
+  }
+
+  /**
+   * Get (or create) the shared highlight material used by fancy bond shells.
+   * @returns {THREE.Material|null}
+   */
+  function getFancyBondHighlightMaterial() {
+    if (moleculeStyle !== 'fancy') return null;
+    const key = 'fancy:highlight';
+    if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
+    const mat = new THREE.MeshPhongMaterial({
+      color: 0xa4c2f2,
+      specular: 0xffffff,
+      shininess: 160,
+      transparent: true,
+      opacity: 0.2,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: true,
+      side: THREE.FrontSide,
+    });
+    bondMaterialCache.set(key, mat);
+    return mat;
+  }
+
+  /**
+   * Apply end-to-end color interpolation to a cylinder so bonds are color-graded.
+   * @param {THREE.BufferGeometry} geom
+   * @param {THREE.Color} colorA
+   * @param {THREE.Color} colorB
+   */
+  function applyBondGradient(geom, colorA, colorB) {
+    const pos = geom.getAttribute('position');
+    if (!pos) return;
+
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+
+    const span = Math.max(1e-6, maxY - minY);
+    const tmp = new THREE.Color();
+    const colors = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const t = (pos.getY(i) - minY) / span;
+      tmp.copy(colorA).lerp(colorB, t);
+      colors[3 * i + 0] = tmp.r;
+      colors[3 * i + 1] = tmp.g;
+      colors[3 * i + 2] = tmp.b;
+    }
+    geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   }
 
   /**
@@ -713,41 +1002,63 @@
    * Radius and color are derived from atomic metadata when available.
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
    * @returns {THREE.Group}
-   */
+  */
   function buildAtoms(vol) {
     const group = new THREE.Group();
     // Atoms (spheres)
-    const sphere = new THREE.SphereGeometry(0.5, 20, 12);
+    const isFancyStyle = moleculeStyle === 'fancy';
+    const sphere = new THREE.SphereGeometry(0.5, isFancyStyle ? 30 : 20, isFancyStyle ? 20 : 12);
+    const fancyOutlineMat = isFancyStyle
+      ? new THREE.MeshBasicMaterial({ color: 0x303846, side: THREE.BackSide, transparent: true, opacity: 0.9 })
+      : null;
+    const materialCache = new Map();
+    const highlightMaterialCache = new Map();
     // Covalent radii from atomic data (Å)
     /**
      * Look up the covalent radius for an atomic number.
-     * @param {*} z
+     * @param {number} z
+     * @returns {number}
      */
     const covR = (z) => (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
-    const atomPositions = [];
     const toAng = (vol.units === 'angstrom');
     for (const a of vol.atoms) {
-      const r = covR(a.Z | 0);
-      // Element-based color if enabled
-      let atomColor = new THREE.Color(0xffffff);
-      if (typeof elementColors !== 'undefined' && elementColors && elementColors.checked && ATOM_Z_TO_DATA) {
-        const info = ATOM_Z_TO_DATA[a.Z | 0];
-        if (info && Array.isArray(info.color)) {
-          const [cr, cg, cb] = info.color;
-          atomColor = new THREE.Color(cr / 255, cg / 255, cb / 255);
-        }
+      const z = a.Z | 0;
+      const r = covR(z);
+      const atomColor = getAtomRenderColor(z);
+      const isTransitionMetal = isTransitionMetalAtomicNumber(z);
+      const matKey = `${moleculeStyle}:${atomColor.getHexString()}:${isTransitionMetal ? 'tm' : 'main'}`;
+      let mat = materialCache.get(matKey);
+      if (!mat) {
+        mat = createAtomMaterial(atomColor, z);
+        materialCache.set(matKey, mat);
       }
-      const mat = new THREE.MeshStandardMaterial({ color: atomColor, roughness: 0.25, metalness: 0.25 });
       const mesh = new THREE.Mesh(sphere, mat);
       const px = toAng ? a.x : a.x * BOHR_TO_ANG;
       const py = toAng ? a.y : a.y * BOHR_TO_ANG;
       const pz = toAng ? a.z : a.z * BOHR_TO_ANG;
       const pos = new THREE.Vector3(px, py, pz);
       mesh.position.copy(pos);
-      mesh.scale.setScalar(r * 1.2);
-      mesh.userData = { type: 'atom', index: atomPositions.length };
+      mesh.scale.setScalar(r * (isFancyStyle ? (isTransitionMetal ? 1.22 : 1.16) : 1.2));
+      if (fancyOutlineMat) {
+        const outline = new THREE.Mesh(sphere, fancyOutlineMat);
+        outline.scale.setScalar(isTransitionMetal ? 1.09 : 1.08);
+        outline.userData = { type: 'atomOutline' };
+        mesh.add(outline);
+      }
+      if (isFancyStyle) {
+        const highlightKey = isTransitionMetal ? 'tm' : 'main';
+        let highlightMat = highlightMaterialCache.get(highlightKey);
+        if (!highlightMat) {
+          highlightMat = createAtomHighlightMaterial(z);
+          highlightMaterialCache.set(highlightKey, highlightMat);
+        }
+        const highlight = new THREE.Mesh(sphere, highlightMat);
+        highlight.scale.setScalar(isTransitionMetal ? 1.035 : 1.028);
+        highlight.userData = { type: 'atomHighlight' };
+        mesh.add(highlight);
+      }
+      mesh.userData = { type: 'atom', index: group.children.length };
       group.add(mesh);
-      atomPositions.push({ pos, Z: a.Z | 0 });
     }
     return group;
   }
@@ -768,16 +1079,21 @@
     const atomPositions = [];
     const toAng = (vol.units === 'angstrom');
     for (const a of vol.atoms) {
+      const z = a.Z | 0;
       const px = toAng ? a.x : a.x * BOHR_TO_ANG;
       const py = toAng ? a.y : a.y * BOHR_TO_ANG;
       const pz = toAng ? a.z : a.z * BOHR_TO_ANG;
       const pos = new THREE.Vector3(px, py, pz);
-      atomPositions.push({ pos, Z: a.Z | 0 });
+      const atomColor = getAtomRenderColor(z);
+      atomPositions.push({ pos, Z: z, color: atomColor, bondColor: getBondRenderColor(atomColor, z) });
     }
-    const bondMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.1, metalness: 0.1 });
+    const bondMat = getBondMaterial();
+    const fancyBondOutlineMat = getFancyBondOutlineMaterial();
+    const fancyBondHighlightMat = getFancyBondHighlightMaterial();
     const up = new THREE.Vector3(0, 1, 0);
     const N = atomPositions.length;
-    const bondRadius = 0.12; // Å
+    const bondRadius = moleculeStyle === 'fancy' ? 0.102 : 0.12; // Å
+    const bondRadialSegments = moleculeStyle === 'fancy' ? 20 : 12;
     for (let i = 0; i < N; i++) {
       for (let j = i + 1; j < N; j++) {
         const a = atomPositions[i];
@@ -789,8 +1105,21 @@
         const len = dir.length();
         if (len < 0.4 || len > cutoff) continue;
         const mid = new THREE.Vector3().addVectors(a.pos, b.pos).multiplyScalar(0.5);
-        const geom = new THREE.CylinderGeometry(bondRadius, bondRadius, len, 12, 1, false);
+        const geom = new THREE.CylinderGeometry(bondRadius, bondRadius, len, bondRadialSegments, 1, false);
+        if (moleculeStyle === 'fancy') applyBondGradient(geom, a.bondColor, b.bondColor);
         const cyl = new THREE.Mesh(geom, bondMat);
+        if (fancyBondOutlineMat) {
+          const outline = new THREE.Mesh(geom, fancyBondOutlineMat);
+          outline.scale.set(1.18, 1.0, 1.18);
+          outline.userData = { type: 'bondOutline' };
+          cyl.add(outline);
+        }
+        if (fancyBondHighlightMat) {
+          const highlight = new THREE.Mesh(geom, fancyBondHighlightMat);
+          highlight.scale.set(1.03, 1.0, 1.03);
+          highlight.userData = { type: 'bondHighlight' };
+          cyl.add(highlight);
+        }
         cyl.position.copy(mid);
         const q = new THREE.Quaternion().setFromUnitVectors(up, dir.normalize());
         cyl.setRotationFromQuaternion(q);
@@ -879,6 +1208,15 @@
 
   // --- Surface material helpers ---
   /**
+   * Compute emissive tint for toon surfaces from a base sign color.
+   * @param {THREE.Color} col
+   * @returns {THREE.Color}
+   */
+  function getToonSurfaceEmissive(col) {
+    return col.clone().multiplyScalar(0.22).lerp(new THREE.Color(0xffffff), 0.05);
+  }
+
+  /**
    * Create a material for positive/negative standard isosurfaces.
    * Style behavior depends on the current `surfaceStyle` selection.
    * @param {'pos'|'neg'} sign
@@ -887,6 +1225,18 @@
    */
   function createIsoMaterial(sign, opacity) {
     const col = new THREE.Color(sign === 'neg' ? negColor.value : posColor.value);
+    if (useToonSurfaceStyle()) {
+      return new THREE.MeshToonMaterial({
+        color: col,
+        gradientMap: getToonGradientTexture('surface'),
+        emissive: getToonSurfaceEmissive(col),
+        emissiveIntensity: 0.4,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity,
+        depthWrite: opacity >= 0.999,
+      });
+    }
     if (surfaceStyle === 'glass') {
       col.multiplyScalar(2);
       return new THREE.MeshPhysicalMaterial({
@@ -926,6 +1276,19 @@
    * @returns {THREE.Material}
    */
   function createIsoMaterial2C(opacity) {
+    if (useToonSurfaceStyle()) {
+      return new THREE.MeshToonMaterial({
+        color: 0xffffff,
+        vertexColors: true,
+        gradientMap: getToonGradientTexture('surface'),
+        emissive: new THREE.Color(0x5f7392),
+        emissiveIntensity: 0.2,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity,
+        depthWrite: opacity >= 0.999,
+      });
+    }
     if (surfaceStyle === 'glass') {
       // Glassy, tinted by vertex colors; drive transmission with slider
       return new THREE.MeshPhysicalMaterial({
@@ -1814,6 +2177,7 @@
   const autoRotSpeed = document.getElementById('autoRotSpeed');
   const viewReset = document.getElementById('viewReset');
   const styleSelect = document.getElementById('styleSelect');
+  const moleculeStyleSel = document.getElementById('moleculeStyle');
   const schemeSelect = document.getElementById('schemeSelect');
   const renderModeSel = document.getElementById('renderMode');
   const componentRow = document.getElementById('componentRow');
@@ -2654,10 +3018,43 @@
   window.addEventListener('keydown', (e) => routeShortcut(e, 'down', currentMode));
   window.addEventListener('keyup', (e) => routeShortcut(e, 'up', currentMode));
 
+  /**
+   * Keep the surface-style control aligned with the active molecule style.
+   * Fancy mode drives surfaces through toon shading.
+   */
+  function syncSurfaceStyleControlState() {
+    if (!styleSelect) return;
+    const toonSurfaces = useToonSurfaceStyle();
+    styleSelect.disabled = toonSurfaces;
+    styleSelect.title = toonSurfaces
+      ? 'Disabled: Fancy molecule style enforces toon surfaces'
+      : 'Choose iso-surface material style';
+  }
+
   // Surface style selector
   if (styleSelect) {
     styleSelect.value = surfaceStyle;
     styleSelect.onchange = () => { surfaceStyle = styleSelect.value; rebuildScene({ preserveView: true }); };
+  }
+  if (moleculeStyleSel) {
+    moleculeStyle = moleculeStyleSel.value || moleculeStyle;
+    moleculeStyleSel.value = moleculeStyle;
+    applyMoleculeStyleLighting();
+    syncSurfaceStyleControlState();
+    moleculeStyleSel.onchange = () => {
+      moleculeStyle = moleculeStyleSel.value || 'default';
+      applyMoleculeStyleLighting();
+      syncSurfaceStyleControlState();
+      // Match the light gray backdrop in the reference style if still on pure white.
+      if (moleculeStyle === 'fancy' && bgColor && (bgColor.value || '').toLowerCase() === '#ffffff') {
+        bgColor.value = '#e7ebf1';
+        try { scene.background = new THREE.Color(bgColor.value); } catch { }
+      }
+      rebuildScene({ preserveView: true });
+    };
+  } else {
+    applyMoleculeStyleLighting();
+    syncSurfaceStyleControlState();
   }
   if (componentSelect) {
     componentSelect.onchange = () => {
@@ -3275,6 +3672,10 @@
         mat.opacity = op;
         mat.transparent = true;
         mat.color.copy(col);
+        // Keep toon surface glow synchronized with sign color updates.
+        if (mat.isMeshToonMaterial && mat.emissive) {
+          mat.emissive.copy(getToonSurfaceEmissive(col));
+        }
       }
       mat.needsUpdate = true;
     }
