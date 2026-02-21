@@ -713,7 +713,8 @@
       boxHelper = null;
     }
 
-    // Cached bond materials are disposed as part of group disposal; rebuild cache lazily.
+    // Ensure any cached bond materials not attached to the current graph are released too.
+    for (const mat of bondMaterialCache.values()) disposeMaterial(mat, state);
     bondMaterialCache.clear();
   }
 
@@ -746,16 +747,18 @@
 
   /**
    * Build a tiny stepped gradient texture for toon shading.
-   * @param {'atom'|'bond'} kind
+   * @param {'atom'|'bond'|'surface'} kind
    * @returns {THREE.Texture|null}
    */
   function getToonGradientTexture(kind) {
-    const key = kind === 'bond' ? 'bond' : 'atom';
+    const key = (kind === 'bond' || kind === 'surface') ? kind : 'atom';
     if (toonGradientTextureCache.has(key)) return toonGradientTextureCache.get(key);
     if (typeof document === 'undefined') return null;
     const steps = key === 'bond'
       ? [10, 72, 150, 255]
-      : [12, 64, 142, 255];
+      : key === 'surface'
+        ? [8, 58, 132, 214, 255]
+        : [12, 64, 142, 255];
     const canvas = document.createElement('canvas');
     canvas.width = steps.length;
     canvas.height = 1;
@@ -778,6 +781,14 @@
     tex.needsUpdate = true;
     toonGradientTextureCache.set(key, tex);
     return tex;
+  }
+
+  /**
+   * Determine whether surfaces should use toon shading.
+   * @returns {boolean}
+   */
+  function useToonSurfaceStyle() {
+    return moleculeStyle === 'fancy';
   }
 
   /**
@@ -915,6 +926,47 @@
   }
 
   /**
+   * Get (or create) the shared outline material used by fancy bond shells.
+   * @returns {THREE.Material|null}
+   */
+  function getFancyBondOutlineMaterial() {
+    if (moleculeStyle !== 'fancy') return null;
+    const key = 'fancy:outline';
+    if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x334050,
+      side: THREE.BackSide,
+      transparent: true,
+      opacity: 0.86,
+    });
+    bondMaterialCache.set(key, mat);
+    return mat;
+  }
+
+  /**
+   * Get (or create) the shared highlight material used by fancy bond shells.
+   * @returns {THREE.Material|null}
+   */
+  function getFancyBondHighlightMaterial() {
+    if (moleculeStyle !== 'fancy') return null;
+    const key = 'fancy:highlight';
+    if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
+    const mat = new THREE.MeshPhongMaterial({
+      color: 0xa4c2f2,
+      specular: 0xffffff,
+      shininess: 160,
+      transparent: true,
+      opacity: 0.2,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: true,
+      side: THREE.FrontSide,
+    });
+    bondMaterialCache.set(key, mat);
+    return mat;
+  }
+
+  /**
    * Apply end-to-end color interpolation to a cylinder so bonds are color-graded.
    * @param {THREE.BufferGeometry} geom
    * @param {THREE.Color} colorA
@@ -1036,22 +1088,8 @@
       atomPositions.push({ pos, Z: z, color: atomColor, bondColor: getBondRenderColor(atomColor, z) });
     }
     const bondMat = getBondMaterial();
-    const fancyBondOutlineMat = moleculeStyle === 'fancy'
-      ? new THREE.MeshBasicMaterial({ color: 0x334050, side: THREE.BackSide, transparent: true, opacity: 0.86 })
-      : null;
-    const fancyBondHighlightMat = moleculeStyle === 'fancy'
-      ? new THREE.MeshPhongMaterial({
-        color: 0xa4c2f2,
-        specular: 0xffffff,
-        shininess: 160,
-        transparent: true,
-        opacity: 0.2,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        depthTest: true,
-        side: THREE.FrontSide,
-      })
-      : null;
+    const fancyBondOutlineMat = getFancyBondOutlineMaterial();
+    const fancyBondHighlightMat = getFancyBondHighlightMaterial();
     const up = new THREE.Vector3(0, 1, 0);
     const N = atomPositions.length;
     const bondRadius = moleculeStyle === 'fancy' ? 0.102 : 0.12; // Å
@@ -1170,6 +1208,15 @@
 
   // --- Surface material helpers ---
   /**
+   * Compute emissive tint for toon surfaces from a base sign color.
+   * @param {THREE.Color} col
+   * @returns {THREE.Color}
+   */
+  function getToonSurfaceEmissive(col) {
+    return col.clone().multiplyScalar(0.22).lerp(new THREE.Color(0xffffff), 0.05);
+  }
+
+  /**
    * Create a material for positive/negative standard isosurfaces.
    * Style behavior depends on the current `surfaceStyle` selection.
    * @param {'pos'|'neg'} sign
@@ -1178,6 +1225,18 @@
    */
   function createIsoMaterial(sign, opacity) {
     const col = new THREE.Color(sign === 'neg' ? negColor.value : posColor.value);
+    if (useToonSurfaceStyle()) {
+      return new THREE.MeshToonMaterial({
+        color: col,
+        gradientMap: getToonGradientTexture('surface'),
+        emissive: getToonSurfaceEmissive(col),
+        emissiveIntensity: 0.4,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity,
+        depthWrite: opacity >= 0.999,
+      });
+    }
     if (surfaceStyle === 'glass') {
       col.multiplyScalar(2);
       return new THREE.MeshPhysicalMaterial({
@@ -1217,6 +1276,19 @@
    * @returns {THREE.Material}
    */
   function createIsoMaterial2C(opacity) {
+    if (useToonSurfaceStyle()) {
+      return new THREE.MeshToonMaterial({
+        color: 0xffffff,
+        vertexColors: true,
+        gradientMap: getToonGradientTexture('surface'),
+        emissive: new THREE.Color(0x5f7392),
+        emissiveIntensity: 0.2,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity,
+        depthWrite: opacity >= 0.999,
+      });
+    }
     if (surfaceStyle === 'glass') {
       // Glassy, tinted by vertex colors; drive transmission with slider
       return new THREE.MeshPhysicalMaterial({
@@ -2946,6 +3018,19 @@
   window.addEventListener('keydown', (e) => routeShortcut(e, 'down', currentMode));
   window.addEventListener('keyup', (e) => routeShortcut(e, 'up', currentMode));
 
+  /**
+   * Keep the surface-style control aligned with the active molecule style.
+   * Fancy mode drives surfaces through toon shading.
+   */
+  function syncSurfaceStyleControlState() {
+    if (!styleSelect) return;
+    const toonSurfaces = useToonSurfaceStyle();
+    styleSelect.disabled = toonSurfaces;
+    styleSelect.title = toonSurfaces
+      ? 'Disabled: Fancy molecule style enforces toon surfaces'
+      : 'Choose iso-surface material style';
+  }
+
   // Surface style selector
   if (styleSelect) {
     styleSelect.value = surfaceStyle;
@@ -2955,9 +3040,11 @@
     moleculeStyle = moleculeStyleSel.value || moleculeStyle;
     moleculeStyleSel.value = moleculeStyle;
     applyMoleculeStyleLighting();
+    syncSurfaceStyleControlState();
     moleculeStyleSel.onchange = () => {
       moleculeStyle = moleculeStyleSel.value || 'default';
       applyMoleculeStyleLighting();
+      syncSurfaceStyleControlState();
       // Match the light gray backdrop in the reference style if still on pure white.
       if (moleculeStyle === 'fancy' && bgColor && (bgColor.value || '').toLowerCase() === '#ffffff') {
         bgColor.value = '#e7ebf1';
@@ -2967,6 +3054,7 @@
     };
   } else {
     applyMoleculeStyleLighting();
+    syncSurfaceStyleControlState();
   }
   if (componentSelect) {
     componentSelect.onchange = () => {
@@ -3584,6 +3672,10 @@
         mat.opacity = op;
         mat.transparent = true;
         mat.color.copy(col);
+        // Keep toon surface glow synchronized with sign color updates.
+        if (mat.isMeshToonMaterial && mat.emissive) {
+          mat.emissive.copy(getToonSurfaceEmissive(col));
+        }
       }
       mat.needsUpdate = true;
     }
