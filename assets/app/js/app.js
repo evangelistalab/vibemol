@@ -750,6 +750,19 @@
       rim.intensity = 1.52;
       return;
     }
+    if (moleculeStyle === 'studio') {
+      hemi.color.setHex(0xfafcff);
+      hemi.groundColor.setHex(0x515965);
+      hemi.intensity = 1.35;
+      dir.color.setHex(0xffffff);
+      dir.intensity = 2.1;
+      dir.position.set(1.35, 1.28, 1.18);
+      amb.color.setHex(0x9ea7b2);
+      amb.intensity = 0.18;
+      rim.color.setHex(0xdfe7f2);
+      rim.intensity = 0.75;
+      return;
+    }
     hemi.color.setHex(0xffffff);
     hemi.groundColor.setHex(0x081018);
     hemi.intensity = 2.0;
@@ -822,6 +835,14 @@
    */
   function useGlossyMoleculeStyle() {
     return moleculeStyle === 'glossy';
+  }
+
+  /**
+   * Determine whether molecule rendering should use the studio collar-joint style.
+   * @returns {boolean}
+   */
+  function useStudioMoleculeStyle() {
+    return moleculeStyle === 'studio';
   }
 
   /**
@@ -902,6 +923,18 @@
     const useElementColors = isElementColoringEnabled();
     let atomColor = getElementBaseColor(z);
 
+    if (useStudioMoleculeStyle()) {
+      if (!useElementColors) return new THREE.Color(0xd6dde6);
+      if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xa78546);
+      if (z === 1) return new THREE.Color(0xf4f6fa);
+      if (z === 6) return new THREE.Color(0x1f2734);
+      if (z === 7) return new THREE.Color(0x2ab5ff);
+      if (z === 8) return new THREE.Color(0xc31722);
+      const hsl = { h: 0, s: 0, l: 0 };
+      atomColor.getHSL(hsl);
+      atomColor.setHSL(hsl.h, Math.min(1, hsl.s * 0.95 + 0.03), Math.min(1, hsl.l * 0.9 + 0.06));
+      return atomColor;
+    }
     if (useGlossyMoleculeStyle()) {
       if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf1c970);
       if (z === 1) return new THREE.Color(0xe5f2ff);
@@ -930,6 +963,10 @@
    * @returns {THREE.Color}
    */
   function getBondRenderColor(atomColor, z) {
+    if (useStudioMoleculeStyle()) {
+      if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xd3ba8e);
+      return new THREE.Color(0xe2e7ee);
+    }
     if (useGlossyMoleculeStyle()) {
       if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf4d089);
       return new THREE.Color(0xbad4f8);
@@ -977,6 +1014,7 @@
    * @returns {number}
    */
   function getAtomRenderScaleFactor(z) {
+    if (moleculeStyle === 'studio') return isTransitionMetalAtomicNumber(z) ? 1.14 : 1.08;
     if (moleculeStyle === 'glossy') return isTransitionMetalAtomicNumber(z) ? 1.24 : 1.18;
     if (moleculeStyle === 'fancy') return isTransitionMetalAtomicNumber(z) ? 1.22 : 1.16;
     return 1.2;
@@ -989,6 +1027,18 @@
    * @returns {THREE.Material}
    */
   function createAtomMaterial(color, z) {
+    if (useStudioMoleculeStyle()) {
+      const isTransitionMetal = isTransitionMetalAtomicNumber(z);
+      return new THREE.MeshPhongMaterial({
+        color,
+        specular: isTransitionMetal ? 0xffe7b8 : 0xffffff,
+        shininess: isTransitionMetal ? 175 : 145,
+        emissive: isTransitionMetal
+          ? new THREE.Color(0x2b2213)
+          : color.clone().multiplyScalar(z === 6 ? 0.012 : 0.02),
+        emissiveIntensity: isTransitionMetal ? 0.18 : 0.06,
+      });
+    }
     if (useGlossyMoleculeStyle()) {
       const isTransitionMetal = isTransitionMetalAtomicNumber(z);
       const baseShellOpacity = 0.46;
@@ -1105,6 +1155,8 @@
       ? 'fancy'
       : moleculeStyle === 'glossy'
         ? 'glossy'
+        : moleculeStyle === 'studio'
+          ? 'studio'
         : 'default';
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
 
@@ -1127,6 +1179,14 @@
         attenuationColor: new THREE.Color(0xbad8ff),
         emissive: new THREE.Color(0x1e355c),
         emissiveIntensity: 0.06,
+      });
+    } else if (key === 'studio') {
+      mat = new THREE.MeshPhongMaterial({
+        color: 0xe7ebf2,
+        specular: 0xffffff,
+        shininess: 185,
+        emissive: new THREE.Color(0x161b24),
+        emissiveIntensity: 0.02,
       });
     } else if (key === 'fancy') {
       mat = new THREE.MeshToonMaterial({
@@ -1272,6 +1332,53 @@
   }
 
   /**
+   * Build a studio-style connector with a slim shaft and collar-like flares near atom joints.
+   * The profile includes a shallow groove inside each collar to produce a dark ring under light.
+   * @param {number} length
+   * @param {number} centerRadius
+   * @param {number} collarRadius
+   * @returns {THREE.BufferGeometry}
+   */
+  function createStudioCollaredBondGeometry(length, centerRadius, collarRadius) {
+    const L = Math.max(1e-4, length);
+    const cR = Math.max(1e-4, centerRadius);
+    const kR = Math.max(cR * 1.2, collarRadius);
+    const samples = 26;
+    const profile = [];
+    const smooth01 = (edge0, edge1, x) => {
+      const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(1e-8, edge1 - edge0)));
+      return t * t * (3 - 2 * t);
+    };
+    const collarStrength = Math.min(1, L / Math.max(1e-6, cR * 6.0));
+
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
+      const y = -L / 2 + t * L;
+      const endness = Math.abs(t - 0.5) * 2; // 0 center -> 1 end
+
+      // Slightly slimmer midsection so the connector reads like a shaft.
+      let r = cR * (0.96 + 0.08 * Math.pow(endness, 1.35));
+
+      // Collar flare near atom joints.
+      const flareRise = smooth01(0.72, 0.86, endness);
+      const flarePlateau = flareRise * (1 - smooth01(0.97, 1.0, endness));
+      r += (kR - cR) * collarStrength * flarePlateau;
+
+      // A shallow groove creates the socket ring shadow.
+      const grooveWindow = smooth01(0.62, 0.72, endness) * (1 - smooth01(0.78, 0.88, endness));
+      r -= (kR - cR) * 0.22 * collarStrength * grooveWindow;
+
+      if (i === 0 || i === samples) r = kR;
+      r = Math.max(cR * 0.88, Math.min(kR, r));
+      profile.push(new THREE.Vector2(r, y));
+    }
+
+    const geom = new THREE.LatheGeometry(profile, 32);
+    try { geom.computeVertexNormals(); } catch { }
+    return geom;
+  }
+
+  /**
    * Build atom sphere meshes for the current volume.
    * Radius and color are derived from atomic metadata when available.
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
@@ -1282,11 +1389,12 @@
     // Atoms (spheres)
     const isFancyStyle = moleculeStyle === 'fancy';
     const isGlossyStyle = moleculeStyle === 'glossy';
+    const isStudioStyle = moleculeStyle === 'studio';
     const isStylizedStyle = isFancyStyle || isGlossyStyle;
     const sphere = new THREE.SphereGeometry(
       0.5,
-      isGlossyStyle ? 36 : isStylizedStyle ? 30 : 20,
-      isGlossyStyle ? 24 : isStylizedStyle ? 20 : 12
+      (isGlossyStyle || isStudioStyle) ? 36 : isStylizedStyle ? 30 : 20,
+      (isGlossyStyle || isStudioStyle) ? 24 : isStylizedStyle ? 20 : 12
     );
     const stylizedOutlineMat = isStylizedStyle
       ? new THREE.MeshBasicMaterial({
@@ -1375,7 +1483,9 @@
     const group = new THREE.Group();
     const isFancyStyle = moleculeStyle === 'fancy';
     const isGlossyStyle = moleculeStyle === 'glossy';
+    const isStudioStyle = moleculeStyle === 'studio';
     const isStylizedStyle = isFancyStyle || isGlossyStyle;
+    const usesTrimmedConnector = isGlossyStyle || isStudioStyle;
     const atomPositions = [];
     const toAng = (vol.units === 'angstrom');
     for (const a of vol.atoms) {
@@ -1401,8 +1511,10 @@
     const N = atomPositions.length;
     const glossyCenterRadius = getGlossyBondCenterRadius();
     const glossyEndRadius = getGlossyBondEndRadius();
-    const bondRadius = isGlossyStyle ? glossyCenterRadius : isFancyStyle ? 0.102 : 0.12; // Å (center radius for glossy)
-    const bondRadialSegments = isGlossyStyle ? 28 : isFancyStyle ? 20 : 12;
+    const studioCenterRadius = 0.078;
+    const studioCollarRadius = 0.126;
+    const bondRadius = isGlossyStyle ? glossyCenterRadius : isStudioStyle ? studioCenterRadius : isFancyStyle ? 0.102 : 0.12;
+    const bondRadialSegments = isGlossyStyle ? 28 : isStudioStyle ? 20 : isFancyStyle ? 20 : 12;
     for (let i = 0; i < N; i++) {
       for (let j = i + 1; j < N; j++) {
         const a = atomPositions[i];
@@ -1418,12 +1530,15 @@
         let trimB = 0;
         let geomLen = len;
         let mid = new THREE.Vector3().addVectors(a.pos, b.pos).multiplyScalar(0.5);
-        if (isGlossyStyle) {
-          // Stop bonds near the atom surfaces (slight inset to visually blend into the sphere shell).
-          const trimInset = Math.min(0.03, Math.max(0.012, glossyEndRadius * 0.18));
+        if (usesTrimmedConnector) {
+          const connectorEndRadius = isGlossyStyle ? glossyEndRadius : studioCollarRadius;
+          // Stop bonds near the atom surfaces with a slight inset so the connector appears seated.
+          const trimInset = isGlossyStyle
+            ? Math.min(0.03, Math.max(0.012, connectorEndRadius * 0.18))
+            : Math.min(0.018, Math.max(0.006, connectorEndRadius * 0.09));
           trimA = Math.max(0, a.displayRadius - trimInset);
           trimB = Math.max(0, b.displayRadius - trimInset);
-          const maxTrim = Math.max(0, len - 0.16);
+          const maxTrim = Math.max(0, len - (isStudioStyle ? 0.12 : 0.16));
           const trimSum = trimA + trimB;
           if (trimSum > maxTrim && trimSum > 1e-8) {
             const s = maxTrim / trimSum;
@@ -1431,13 +1546,15 @@
             trimB *= s;
           }
           geomLen = len - trimA - trimB;
-          if (geomLen < 0.08) continue;
+          if (geomLen < (isStudioStyle ? 0.06 : 0.08)) continue;
           const aEnd = a.pos.clone().addScaledVector(dirNorm, trimA);
           const bEnd = a.pos.clone().addScaledVector(dirNorm, len - trimB);
           mid = aEnd.add(bEnd).multiplyScalar(0.5);
         }
         const geom = isGlossyStyle
           ? createGlossyBondConnectorGeometry(geomLen, bondRadius, glossyEndRadius)
+          : isStudioStyle
+            ? createStudioCollaredBondGeometry(geomLen, bondRadius, studioCollarRadius)
           : new THREE.CylinderGeometry(bondRadius, bondRadius, geomLen, bondRadialSegments, 1, false);
         if (isStylizedStyle) applyBondGradient(geom, a.bondColor, b.bondColor);
         const cyl = new THREE.Mesh(geom, bondMat);
@@ -3463,7 +3580,7 @@
       moleculeStyle = moleculeStyleSel.value || 'default';
       applyMoleculeStyleUiState();
       // Match a light gray backdrop for stylized molecule styles if still on pure white.
-      if (useStylizedMoleculeStyle() && bgColor && (bgColor.value || '').toLowerCase() === '#ffffff') {
+      if ((useStylizedMoleculeStyle() || useStudioMoleculeStyle()) && bgColor && (bgColor.value || '').toLowerCase() === '#ffffff') {
         bgColor.value = '#e7ebf1';
         try { scene.background = new THREE.Color(bgColor.value); } catch { }
       }
