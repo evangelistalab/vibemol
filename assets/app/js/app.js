@@ -1340,7 +1340,7 @@
           glossyCoreMaterialCache.set(coreKey, coreMat);
         }
         const core = new THREE.Mesh(sphere, coreMat);
-        core.scale.setScalar(isTransitionMetal ? 0.62 : 0.58);
+        core.scale.setScalar(isTransitionMetal ? 0.8 : 0.7);
         core.userData = { type: 'atomCore' };
         mesh.add(core);
       }
