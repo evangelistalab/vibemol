@@ -1349,33 +1349,66 @@
       const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(1e-8, edge1 - edge0)));
       return t * t * (3 - 2 * t);
     };
-    const collarStrength = Math.min(1, L / Math.max(1e-6, cR * 6.0));
+    const halfL = L * 0.5;
+    // User-specified flange profile (z measured from the atom-facing end plane):
+    // r(0) = R0, r(0.04) = R0, r(0.10) = Rb.
+    // The user also mentioned 0.03; we interpret that as an intermediate plateau point
+    // and implement a flat flange up to 0.04 A.
+    const targetPlateauEnd = 0.02;
+    const targetTaperEnd = 0.03;
+    // On short bonds, uniformly shrink these axial distances so two flanges still fit.
+    const dimScale = halfL < (targetTaperEnd + 0.005)
+      ? Math.max(0.25, halfL / (targetTaperEnd + 0.005))
+      : 1.0;
+    const flangePlateauEnd = targetPlateauEnd * dimScale;
+    const flangeTaperEnd = Math.max(flangePlateauEnd + 1e-4, targetTaperEnd * dimScale);
 
     for (let i = 0; i <= samples; i++) {
       const t = i / samples;
       const y = -L / 2 + t * L;
-      const endness = Math.abs(t - 0.5) * 2; // 0 center -> 1 end
+      const distToEnd = Math.min(t * L, (1 - t) * L); // absolute distance (A) to nearest end plane
 
-      // Slightly slimmer midsection so the connector reads like a shaft.
-      let r = cR * (0.96 + 0.08 * Math.pow(endness, 1.35));
-
-      // Collar flare near atom joints.
-      const flareRise = smooth01(0.72, 0.86, endness);
-      const flarePlateau = flareRise * (1 - smooth01(0.97, 1.0, endness));
-      r += (kR - cR) * collarStrength * flarePlateau;
-
-      // A shallow groove creates the socket ring shadow.
-      const grooveWindow = smooth01(0.62, 0.72, endness) * (1 - smooth01(0.78, 0.88, endness));
-      r -= (kR - cR) * 0.22 * collarStrength * grooveWindow;
+      // Piecewise flange profile:
+      // 0..0.04 A: flat flange at R0
+      // 0.04..0.10 A: smooth transition R0 -> Rb
+      // >0.10 A: shaft at Rb
+      let r = cR;
+      if (distToEnd <= flangePlateauEnd) {
+        r = kR;
+      } else if (distToEnd < flangeTaperEnd) {
+        const u = smooth01(flangePlateauEnd, flangeTaperEnd, distToEnd);
+        r = kR + (cR - kR) * u;
+      }
 
       if (i === 0 || i === samples) r = kR;
-      r = Math.max(cR * 0.88, Math.min(kR, r));
+      r = Math.max(cR, Math.min(kR, r));
       profile.push(new THREE.Vector2(r, y));
     }
 
     const geom = new THREE.LatheGeometry(profile, 32);
     try { geom.computeVertexNormals(); } catch { }
     return geom;
+  }
+
+  /**
+   * Compute where a studio connector should start relative to an atom center so the
+   * flange rim (radius R0) contacts the sphere surface. Smaller spheres naturally
+   * require deeper insertion because their curvature is higher.
+   * @param {number} sphereRadius Rendered atom radius in angstroms.
+   * @param {number} flangeRadius Studio flange outer radius R0 in angstroms.
+   * @returns {number} Distance from atom center to connector start plane along bond axis.
+   */
+  function getStudioConnectorTrimDistance(sphereRadius, flangeRadius) {
+    const Rs = Math.max(1e-6, Number(sphereRadius) || 0);
+    const R0raw = Math.max(1e-6, Number(flangeRadius) || 0);
+    // Keep the flange radius strictly below the sphere radius for the tangent geometry.
+    const R0 = Math.min(R0raw, Math.max(1e-6, Rs - 1e-4));
+    // Tangency condition for the end plane cross-section: sqrt(Rs^2 - x^2) = R0.
+    let x = Math.sqrt(Math.max(0, Rs * Rs - R0 * R0));
+    // Small extra overlap hides seams; tangent geometry already provides the curvature scaling.
+    const seatOverlap = Math.min(0.010, Math.max(0.003, R0 * 0.035));
+    x = Math.max(0, x - seatOverlap);
+    return x;
   }
 
   /**
@@ -1511,8 +1544,8 @@
     const N = atomPositions.length;
     const glossyCenterRadius = getGlossyBondCenterRadius();
     const glossyEndRadius = getGlossyBondEndRadius();
-    const studioCenterRadius = 0.078;
-    const studioCollarRadius = 0.126;
+    const studioCenterRadius = 0.068;
+    const studioCollarRadius = 0.114;
     const bondRadius = isGlossyStyle ? glossyCenterRadius : isStudioStyle ? studioCenterRadius : isFancyStyle ? 0.102 : 0.12;
     const bondRadialSegments = isGlossyStyle ? 28 : isStudioStyle ? 20 : isFancyStyle ? 20 : 12;
     for (let i = 0; i < N; i++) {
@@ -1532,12 +1565,16 @@
         let mid = new THREE.Vector3().addVectors(a.pos, b.pos).multiplyScalar(0.5);
         if (usesTrimmedConnector) {
           const connectorEndRadius = isGlossyStyle ? glossyEndRadius : studioCollarRadius;
-          // Stop bonds near the atom surfaces with a slight inset so the connector appears seated.
-          const trimInset = isGlossyStyle
-            ? Math.min(0.03, Math.max(0.012, connectorEndRadius * 0.18))
-            : Math.min(0.018, Math.max(0.006, connectorEndRadius * 0.09));
-          trimA = Math.max(0, a.displayRadius - trimInset);
-          trimB = Math.max(0, b.displayRadius - trimInset);
+          if (isGlossyStyle) {
+            // Stop glossy bonds near the atom surfaces with a slight inset.
+            const trimInset = Math.min(0.03, Math.max(0.012, connectorEndRadius * 0.18));
+            trimA = Math.max(0, a.displayRadius - trimInset);
+            trimB = Math.max(0, b.displayRadius - trimInset);
+          } else {
+            // Studio seating depends on sphere curvature; small atoms need deeper insertion.
+            trimA = getStudioConnectorTrimDistance(a.displayRadius, connectorEndRadius);
+            trimB = getStudioConnectorTrimDistance(b.displayRadius, connectorEndRadius);
+          }
           const maxTrim = Math.max(0, len - (isStudioStyle ? 0.12 : 0.16));
           const trimSum = trimA + trimB;
           if (trimSum > maxTrim && trimSum > 1e-8) {
@@ -1575,7 +1612,17 @@
         cyl.position.copy(mid);
         const q = new THREE.Quaternion().setFromUnitVectors(up, dirNorm);
         cyl.setRotationFromQuaternion(q);
-        cyl.userData = { baseLen: len, baseGeomLen: geomLen, trimA, trimB, i, j };
+        cyl.userData = {
+          baseLen: len,
+          baseGeomLen: geomLen,
+          trimA,
+          trimB,
+          i,
+          j,
+          connectorStyle: isStudioStyle ? 'studio' : isGlossyStyle ? 'glossy' : 'default',
+          connectorCenterRadius: bondRadius,
+          connectorEndRadius: isStudioStyle ? studioCollarRadius : isGlossyStyle ? glossyEndRadius : bondRadius,
+        };
         group.add(cyl);
       }
     }
@@ -1599,7 +1646,12 @@
     const up = new THREE.Vector3(0, 1, 0);
     for (const obj of bondGroup.children) {
       if (!obj.isMesh || !obj.userData) continue;
-      const { i, j, baseLen, baseGeomLen, trimA = 0, trimB = 0 } = obj.userData;
+      const {
+        i, j, baseLen, baseGeomLen, trimA = 0, trimB = 0,
+        connectorStyle = 'default',
+        connectorCenterRadius,
+        connectorEndRadius
+      } = obj.userData;
       if (i == null || j == null) continue;
       const ai = vol.atoms[i]; const aj = vol.atoms[j];
       if (!ai || !aj) continue;
@@ -1617,9 +1669,28 @@
       }
       obj.position.copy(mid);
       obj.quaternion.setFromUnitVectors(up, dirNorm);
-      const base = baseGeomLen || baseLen || geomLen;
-      const s = geomLen / (base || geomLen);
-      obj.scale.set(1, s, 1);
+      if (connectorStyle === 'studio') {
+        // Rebuild studio connector geometry to preserve fixed flange height/profile when bond length changes.
+        const prevGeom = obj.geometry;
+        const newGeom = createStudioCollaredBondGeometry(
+          geomLen,
+          Number.isFinite(connectorCenterRadius) ? connectorCenterRadius : 0.068,
+          Number.isFinite(connectorEndRadius) ? connectorEndRadius : 0.114
+        );
+        obj.geometry = newGeom;
+        if (obj.children && obj.children.length) {
+          for (const child of obj.children) {
+            if (child && child.isMesh) child.geometry = newGeom;
+          }
+        }
+        try { if (prevGeom && prevGeom !== newGeom && prevGeom.dispose) prevGeom.dispose(); } catch { }
+        obj.scale.set(1, 1, 1);
+        obj.userData.baseGeomLen = geomLen;
+      } else {
+        const base = baseGeomLen || baseLen || geomLen;
+        const s = geomLen / (base || geomLen);
+        obj.scale.set(1, s, 1);
+      }
       obj.visible = geomLen > 0.04;
     }
   }
