@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.0';
+  const APP_VERSION = '0.4.1';
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -1343,46 +1343,32 @@
     const L = Math.max(1e-4, length);
     const cR = Math.max(1e-4, centerRadius);
     const kR = Math.max(cR * 1.2, collarRadius);
-    const samples = 26;
-    const profile = [];
-    const smooth01 = (edge0, edge1, x) => {
-      const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(1e-8, edge1 - edge0)));
-      return t * t * (3 - 2 * t);
-    };
     const halfL = L * 0.5;
-    // User-specified flange profile (z measured from the atom-facing end plane):
-    // r(0) = R0, r(0.04) = R0, r(0.10) = Rb.
-    // The user also mentioned 0.03; we interpret that as an intermediate plateau point
-    // and implement a flat flange up to 0.04 A.
-    const targetPlateauEnd = 0.02;
-    const targetTaperEnd = 0.03;
-    // On short bonds, uniformly shrink these axial distances so two flanges still fit.
-    const dimScale = halfL < (targetTaperEnd + 0.005)
-      ? Math.max(0.25, halfL / (targetTaperEnd + 0.005))
-      : 1.0;
-    const flangePlateauEnd = targetPlateauEnd * dimScale;
-    const flangeTaperEnd = Math.max(flangePlateauEnd + 1e-4, targetTaperEnd * dimScale);
+    const profile = [];
 
-    for (let i = 0; i <= samples; i++) {
-      const t = i / samples;
-      const y = -L / 2 + t * L;
-      const distToEnd = Math.min(t * L, (1 - t) * L); // absolute distance (A) to nearest end plane
+    // Fixed flange profile distances in angstrom from each end plane.
+    const flangePlateauEnd = 0.02;
+    const flangeTaperEnd = 0.04;
 
-      // Piecewise flange profile:
-      // 0..0.04 A: flat flange at R0
-      // 0.04..0.10 A: smooth transition R0 -> Rb
-      // >0.10 A: shaft at Rb
-      let r = cR;
-      if (distToEnd <= flangePlateauEnd) {
-        r = kR;
-      } else if (distToEnd < flangeTaperEnd) {
-        const u = smooth01(flangePlateauEnd, flangeTaperEnd, distToEnd);
-        r = kR + (cR - kR) * u;
-      }
+    // Clamp transition distances for very short bonds while preserving:
+    // 0 <= plateau <= taper <= halfL.
+    const eps = 1e-5;
+    const plateau = Math.min(flangePlateauEnd, Math.max(0, halfL - 2 * eps));
+    const taper = Math.min(flangeTaperEnd, Math.max(plateau + eps, halfL - eps));
 
-      if (i === 0 || i === samples) r = kR;
-      r = Math.max(cR, Math.min(kR, r));
-      profile.push(new THREE.Vector2(r, y));
+    // Hard-coded 6 points where radius changes:
+    // [-halfL, R0], [-halfL+plateau, R0], [-halfL+taper, Rb],
+    // [ halfL-taper, Rb], [ halfL-plateau, R0], [ halfL, R0]
+    profile.push(new THREE.Vector2(kR, -halfL));
+    profile.push(new THREE.Vector2(kR, -halfL + plateau));
+    profile.push(new THREE.Vector2(cR, -halfL + taper));
+    profile.push(new THREE.Vector2(cR, halfL - taper));
+    profile.push(new THREE.Vector2(kR, halfL - plateau));
+    profile.push(new THREE.Vector2(kR, halfL));
+
+    // Ensure strictly increasing y for LatheGeometry when bond is extremely short.
+    for (let i = 1; i < profile.length; i++) {
+      if (profile[i].y <= profile[i - 1].y) profile[i].y = profile[i - 1].y + eps;
     }
 
     const geom = new THREE.LatheGeometry(profile, 32);
@@ -3650,11 +3636,6 @@
     moleculeStyleSel.onchange = () => {
       moleculeStyle = moleculeStyleSel.value || 'default';
       applyMoleculeStyleUiState();
-      // Match a light gray backdrop for stylized molecule styles if still on pure white.
-      if ((useStylizedMoleculeStyle() || useStudioMoleculeStyle()) && bgColor && (bgColor.value || '').toLowerCase() === '#ffffff') {
-        bgColor.value = '#e7ebf1';
-        try { scene.background = new THREE.Color(bgColor.value); } catch { }
-      }
       rebuildScene({ preserveView: true });
     };
   } else {
