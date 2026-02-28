@@ -300,7 +300,7 @@
   <div id="drop">
     <canvas id="canvas"></canvas>
   </div>
-  <div id="hint">Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
+  <div id="hint">Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy</div>
   <!-- Phase wheel legend (shown in phase-hue modes) -->
   <div id="phaseWheel" aria-hidden="true"
     style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
@@ -413,12 +413,12 @@
         <span></span><span></span>
       </div>
       <div class="row">
-        <label style="width: 80px;">Molecule style</label>
-        <select id="moleculeStyle" title="Choose atom/bond rendering style">
+        <label style="width: 80px;">Molecule style (1-4)</label>
+        <select id="moleculeStyle" title="Choose atom/bond rendering style (shortcuts: 1=Default, 2=Toon, 3=Kit, 4=Glossy)">
           <option value="default" selected>Default</option>
-          <option value="fancy">Fancy (toon luminous)</option>
-          <option value="glossy">Glossy (glass edge)</option>
+          <option value="fancy">Toon (luminous)</option>
           <option value="studio">Kit (collar joints)</option>
+          <option value="glossy">Glossy (glass edge)</option>
         </select>
         <span></span><span></span>
       </div>
@@ -472,7 +472,7 @@
         <ul>
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
-          <li>Atoms and Bonds can be toggled independently; Fancy uses toon shading (including surfaces), Glossy uses glassy blue atoms/bonds with dark edge shells, and Kit uses glossy atoms with collar-joint connectors.</li>
+          <li>Atoms and Bonds can be toggled independently; Toon uses toon shading (including surfaces), Glossy uses glassy blue atoms/bonds with dark edge shells, and Kit uses glossy atoms with collar-joint connectors.</li>
           <li>The Cartesian coordinates are displayed as red (X), green (Y), and blue (Z) arrows.</li>
         </ul>
         <p>Shortcuts</p>
@@ -481,6 +481,7 @@
           <li><strong>B</strong> — Batch export all files</li>
           <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
           <li><strong>A</strong> — Toggle axis gizmo on/off</li>
+          <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
         </ul>
       </div>

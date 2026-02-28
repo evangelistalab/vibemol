@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.1';
+  const APP_VERSION = '0.4.2';
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -1083,7 +1083,14 @@
         emissiveIntensity: isTransitionMetal ? 0.82 : 0.56,
       });
     }
-    return new THREE.MeshStandardMaterial({ color, roughness: 0.25, metalness: 0.25 });
+    return new THREE.MeshPhysicalMaterial({
+      color,
+      roughness: 0.16,
+      metalness: 0.08,
+      clearcoat: 0.82,
+      clearcoatRoughness: 0.12,
+      reflectivity: 0.62,
+    });
   }
 
   /**
@@ -1197,7 +1204,14 @@
         emissiveIntensity: 0.14,
       });
     } else {
-      mat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.1, metalness: 0.1 });
+      mat = new THREE.MeshPhysicalMaterial({
+        color: 0x99a5b8,
+        roughness: 0.14,
+        metalness: 0.08,
+        clearcoat: 0.68,
+        clearcoatRoughness: 0.14,
+        reflectivity: 0.58,
+      });
     }
     bondMaterialCache.set(key, mat);
     return mat;
@@ -1410,10 +1424,12 @@
     const isGlossyStyle = moleculeStyle === 'glossy';
     const isStudioStyle = moleculeStyle === 'studio';
     const isStylizedStyle = isFancyStyle || isGlossyStyle;
+    const sphereWidthSegments = (isGlossyStyle || isStudioStyle) ? 36 : isFancyStyle ? 30 : 28;
+    const sphereHeightSegments = (isGlossyStyle || isStudioStyle) ? 24 : isFancyStyle ? 20 : 18;
     const sphere = new THREE.SphereGeometry(
       0.5,
-      (isGlossyStyle || isStudioStyle) ? 36 : isStylizedStyle ? 30 : 20,
-      (isGlossyStyle || isStudioStyle) ? 24 : isStylizedStyle ? 20 : 12
+      sphereWidthSegments,
+      sphereHeightSegments
     );
     const stylizedOutlineMat = isStylizedStyle
       ? new THREE.MeshBasicMaterial({
@@ -1533,7 +1549,8 @@
     const studioCenterRadius = 0.068;
     const studioCollarRadius = 0.114;
     const bondRadius = isGlossyStyle ? glossyCenterRadius : isStudioStyle ? studioCenterRadius : isFancyStyle ? 0.102 : 0.12;
-    const bondRadialSegments = isGlossyStyle ? 28 : isStudioStyle ? 20 : isFancyStyle ? 20 : 12;
+    const bondRadialSegments = isGlossyStyle ? 28 : isStudioStyle ? 20 : isFancyStyle ? 20 : 16;
+    const bondHeightSegments = (isGlossyStyle || isStudioStyle || isFancyStyle) ? 1 : 2;
     for (let i = 0; i < N; i++) {
       for (let j = i + 1; j < N; j++) {
         const a = atomPositions[i];
@@ -1578,7 +1595,7 @@
           ? createGlossyBondConnectorGeometry(geomLen, bondRadius, glossyEndRadius)
           : isStudioStyle
             ? createStudioCollaredBondGeometry(geomLen, bondRadius, studioCollarRadius)
-          : new THREE.CylinderGeometry(bondRadius, bondRadius, geomLen, bondRadialSegments, 1, false);
+          : new THREE.CylinderGeometry(bondRadius, bondRadius, geomLen, bondRadialSegments, bondHeightSegments, false);
         if (isStylizedStyle) applyBondGradient(geom, a.bondColor, b.bondColor);
         const cyl = new THREE.Mesh(geom, bondMat);
         if (stylizedBondOutlineMat) {
@@ -2730,6 +2747,7 @@
       { k: 'A', d: 'Toggle axes' },
       { k: 'V', d: 'View/Coords panel' },
       { k: 'M', d: 'Measurement mode' },
+      { k: '1/2/3/4', d: 'Style: Default/Toon/Kit/Glossy' },
       { k: '←/→', d: 'Prev/Next file' },
       { k: '?', d: 'Help' },
     ],
@@ -2857,6 +2875,21 @@
   if (helpBtn) helpBtn.onclick = openHelp;
   if (helpClose) helpClose.onclick = closeHelp;
   if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
+
+  /**
+   * Apply a molecule style selection from UI or keyboard shortcuts.
+   * @param {'default'|'fancy'|'studio'|'glossy'} nextStyle
+   */
+  function setMoleculeStyle(nextStyle) {
+    if (!moleculeStyleSel) return;
+    const allowed = new Set(['default', 'fancy', 'studio', 'glossy']);
+    const target = allowed.has(nextStyle) ? nextStyle : 'default';
+    if (moleculeStyle === target && moleculeStyleSel.value === target) return;
+    moleculeStyle = target;
+    moleculeStyleSel.value = target;
+    applyMoleculeStyleUiState();
+    rebuildScene({ preserveView: true });
+  }
 
   /**
    * Synchronize camera/target/shift form controls from the current scene state.
@@ -3482,6 +3515,11 @@
   bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
   bind('down', 'global', 'i', () => { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); });
   bind('down', 'global', 'a', () => { window.__showAxes__ = !window.__showAxes__; if (toggleAxes) toggleAxes.checked = !!window.__showAxes__; });
+  // Global: molecule style presets (1=Default, 2=Toon, 3=Kit, 4=Glossy)
+  bind('down', 'global', '1', () => setMoleculeStyle('default'));
+  bind('down', 'global', '2', () => setMoleculeStyle('fancy'));
+  bind('down', 'global', '3', () => setMoleculeStyle('studio'));
+  bind('down', 'global', '4', () => setMoleculeStyle('glossy'));
 
   // Global: arrows switch files
   /**
@@ -3541,14 +3579,14 @@
 
   /**
    * Keep the surface-style control aligned with the active molecule style.
-   * Fancy mode drives surfaces through toon shading.
+   * Toon mode drives surfaces through toon shading.
    */
   function syncSurfaceStyleControlState() {
     if (!styleSelect) return;
     const toonSurfaces = useToonSurfaceStyle();
     styleSelect.disabled = toonSurfaces;
     styleSelect.title = toonSurfaces
-      ? 'Disabled: Fancy molecule style enforces toon surfaces'
+      ? 'Disabled: Toon molecule style enforces toon surfaces'
       : 'Choose iso-surface material style';
   }
 
@@ -3634,9 +3672,7 @@
     moleculeStyleSel.value = moleculeStyle;
     applyMoleculeStyleUiState();
     moleculeStyleSel.onchange = () => {
-      moleculeStyle = moleculeStyleSel.value || 'default';
-      applyMoleculeStyleUiState();
-      rebuildScene({ preserveView: true });
+      setMoleculeStyle(moleculeStyleSel.value || 'default');
     };
   } else {
     applyMoleculeStyleUiState();
@@ -4346,7 +4382,7 @@
       rebuildScene();
       updateSidePanel();
       const hint = document.getElementById('hint');
-      if (hint) hint.textContent = 'Loaded sample.cube • Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
+      if (hint) hint.textContent = 'Loaded sample.cube • Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy';
       return true;
     } catch (err) {
       console.warn('[CUBE] Could not auto-load sample.cube:', err);
