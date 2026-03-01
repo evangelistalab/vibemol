@@ -562,6 +562,8 @@
   let cloudGroup = new THREE.Group();
   let boxHelper = null;
   let showSurfaces = true; // toggle iso-surface visibility
+  // Display inferred multiple bonds (double/triple) as parallel connectors.
+  let showMultiBonds = false;
   // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
   let __savedShowSurfaces = null;
   // Default view reference (captured on first non-preserved fit)
@@ -863,6 +865,301 @@
    */
   function getCovalentRadiusAngstrom(z) {
     return (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z] && ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
+  }
+
+  /**
+   * Check whether an atomic number belongs to lanthanides/actinides.
+   * @param {number} z
+   * @returns {boolean}
+   */
+  function isLanthanideOrActinideAtomicNumber(z) {
+    const n = z | 0;
+    return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);
+  }
+
+  /**
+   * Detect whether an element is typically monovalent in organic chemistry.
+   * @param {number} z
+   * @returns {boolean}
+   */
+  function isMonovalentMainGroupAtomicNumber(z) {
+    return z === 1 || z === 9 || z === 17 || z === 35 || z === 53;
+  }
+
+  /**
+   * Return preferred valence states for a main-group element.
+   * Empty result means "do not infer bond order by valence".
+   * @param {number} z
+   * @returns {number[]}
+   */
+  function getAllowedMainGroupValences(z) {
+    switch (z | 0) {
+      case 1: return [1]; // H
+      case 5: return [3]; // B
+      case 6: return [4]; // C
+      case 7: return [3, 5]; // N
+      case 8: return [2]; // O
+      case 9: return [1]; // F
+      case 14: return [4]; // Si
+      case 15: return [3, 5]; // P
+      case 16: return [2, 4, 6]; // S
+      case 17: return [1]; // Cl
+      case 35: return [1]; // Br
+      case 53: return [1]; // I
+      default: return [];
+    }
+  }
+
+  /**
+   * Pick the nearest plausible target valence that is not below the
+   * current connectivity count, if possible.
+   * @param {number} z
+   * @param {number} currentValence
+   * @returns {number}
+   */
+  function chooseTargetValence(z, currentValence) {
+    const allowed = getAllowedMainGroupValences(z);
+    if (!allowed.length) return currentValence;
+    for (const v of allowed) {
+      if (v >= currentValence) return v;
+    }
+    return allowed[allowed.length - 1];
+  }
+
+  /**
+   * Resolve the maximum supported bond order for an element pair.
+   * Conservative by design: only common organic/main-group pairs are promoted.
+   * @param {number} zi
+   * @param {number} zj
+   * @returns {number}
+   */
+  function getPairMaxBondOrder(zi, zj) {
+    const a = zi | 0;
+    const b = zj | 0;
+    if (isTransitionMetalAtomicNumber(a) || isTransitionMetalAtomicNumber(b)) return 1;
+    if (isLanthanideOrActinideAtomicNumber(a) || isLanthanideOrActinideAtomicNumber(b)) return 1;
+    if (isMonovalentMainGroupAtomicNumber(a) || isMonovalentMainGroupAtomicNumber(b)) return 1;
+
+    const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+    switch (key) {
+      case '6-6': // C-C
+      case '6-7': // C-N
+      case '7-7': // N-N
+        return 3;
+      case '6-8': // C-O
+      case '6-15': // C-P
+      case '6-16': // C-S
+      case '7-8': // N-O
+      case '7-15': // N-P
+      case '7-16': // N-S
+      case '8-8': // O-O
+      case '8-15': // O-P
+      case '8-16': // O-S
+      case '6-14': // Si-C (normalized by sorting)
+      case '15-15': // P-P
+      case '15-16': // P-S
+      case '16-16': // S-S
+        return 2;
+      default:
+        return 1;
+    }
+  }
+
+  /**
+   * Build candidate bonds from atom positions using covalent-radius heuristics.
+   * @param {Array<{pos:THREE.Vector3,Z:number}>} atomPositions
+   * @returns {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,order:number,maxOrder:number}>}
+   */
+  function collectBondCandidates(atomPositions) {
+    const edges = [];
+    const n = atomPositions.length;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const ai = atomPositions[i];
+        const aj = atomPositions[j];
+        const ri = getCovalentRadiusAngstrom(ai.Z);
+        const rj = getCovalentRadiusAngstrom(aj.Z);
+        const singleRef = ri + rj;
+        const cutoff = 1.15 * singleRef;
+        const len = ai.pos.distanceTo(aj.pos);
+        if (len < 0.4 || len > cutoff) continue;
+        edges.push({
+          i,
+          j,
+          len,
+          singleRef,
+          cutoff,
+          order: 1,
+          maxOrder: getPairMaxBondOrder(ai.Z, aj.Z),
+        });
+      }
+    }
+    return edges;
+  }
+
+  /**
+   * Infer bond orders by promoting single bonds while satisfying valence deficits.
+   * This intentionally targets organic/main-group chemistry and avoids metals/f-block.
+   * @param {Array<{Z:number}>} atomPositions
+   * @param {Array<{i:number,j:number,len:number,singleRef:number,order:number,maxOrder:number}>} edges
+   */
+  function inferBondOrders(atomPositions, edges) {
+    if (!edges.length) return;
+    const n = atomPositions.length;
+    const currentValence = new Array(n).fill(0);
+    for (const e of edges) {
+      currentValence[e.i] += e.order;
+      currentValence[e.j] += e.order;
+    }
+    const targetValence = currentValence.map((v, idx) => {
+      const z = atomPositions[idx].Z | 0;
+      if (isTransitionMetalAtomicNumber(z) || isLanthanideOrActinideAtomicNumber(z)) return v;
+      return chooseTargetValence(z, v);
+    });
+    const deficit = targetValence.map((v, idx) => Math.max(0, v - currentValence[idx]));
+
+    const maxPromotions = edges.reduce((sum, e) => sum + Math.max(0, (e.maxOrder | 0) - 1), 0);
+    let promotions = 0;
+    while (promotions < maxPromotions) {
+      let bestIdx = -1;
+      let bestScore = 0;
+      for (let k = 0; k < edges.length; k++) {
+        const e = edges[k];
+        if (e.order >= e.maxOrder) continue;
+        if (deficit[e.i] <= 0 || deficit[e.j] <= 0) continue;
+        const ratio = e.len / Math.max(1e-6, e.singleRef);
+        const distanceBonus = Math.max(0, 1.15 - ratio) * 2.5;
+        const valenceBonus = deficit[e.i] + deficit[e.j];
+        const score = valenceBonus + distanceBonus;
+        if (score > bestScore + 1e-8) {
+          bestScore = score;
+          bestIdx = k;
+        }
+      }
+      if (bestIdx < 0) break;
+      const e = edges[bestIdx];
+      e.order += 1;
+      deficit[e.i] = Math.max(0, deficit[e.i] - 1);
+      deficit[e.j] = Math.max(0, deficit[e.j] - 1);
+      promotions += 1;
+    }
+  }
+
+  /**
+   * Get centered lateral offset coefficients for drawing multiple bond components.
+   * Coefficients are expressed in the local (u, v) frame orthogonal to the bond axis.
+   * For order=3, components are arranged at 120 degrees around the bond axis.
+   * @param {number} order
+   * @returns {Array<[number, number]>}
+   */
+  function getBondComponentOffsets(order) {
+    if (order >= 3) {
+      const h = Math.sqrt(3) * 0.5;
+      return [[1, 0], [-0.5, h], [-0.5, -h]];
+    }
+    if (order === 2) return [[-0.5, 0], [0.5, 0]];
+    return [[0, 0]];
+  }
+
+  /**
+   * Compute a stable vector perpendicular to the bond direction.
+   * @param {THREE.Vector3} dirNorm
+   * @returns {THREE.Vector3}
+   */
+  function getBondPerpendicular(dirNorm) {
+    const aux = Math.abs(dirNorm.z) < 0.9
+      ? new THREE.Vector3(0, 0, 1)
+      : new THREE.Vector3(1, 0, 0);
+    const perp = new THREE.Vector3().crossVectors(dirNorm, aux);
+    if (perp.lengthSq() < 1e-10) {
+      perp.set(0, 1, 0).cross(dirNorm);
+    }
+    return perp.normalize();
+  }
+
+  /**
+   * Build an undirected adjacency list from bond edges.
+   * @param {Array<{i:number,j:number}>} edges
+   * @param {number} atomCount
+   * @returns {number[][]}
+   */
+  function buildBondAdjacency(edges, atomCount) {
+    const n = Math.max(0, atomCount | 0);
+    const adjacency = Array.from({ length: n }, () => []);
+    for (const edge of edges) {
+      if (!edge) continue;
+      const i = edge.i | 0;
+      const j = edge.j | 0;
+      if (i < 0 || j < 0 || i >= n || j >= n || i === j) continue;
+      adjacency[i].push(j);
+      adjacency[j].push(i);
+    }
+    return adjacency;
+  }
+
+  /**
+   * Infer the lateral offset direction for multi-component bonds from
+   * neighboring bonded atoms, so double/triple bonds roughly follow the
+   * local molecular plane around the i-j bond.
+   * @param {number} i
+   * @param {number} j
+   * @param {THREE.Vector3} dirNorm Unit direction from i -> j.
+   * @param {Array<{pos:THREE.Vector3}>} atomPositions
+   * @param {number[][]} adjacency
+   * @returns {THREE.Vector3}
+   */
+  function getBondPlaneOffsetDirection(i, j, dirNorm, atomPositions, adjacency) {
+    const fallback = getBondPerpendicular(dirNorm);
+    const sideVectors = [];
+
+    /**
+     * Collect neighbor vectors for one endpoint projected onto the plane
+     * perpendicular to the bond direction.
+     * @param {number} center
+     * @param {number} skip
+     */
+    function collectEndpointNeighbors(center, skip) {
+      const neighbors = adjacency[center];
+      if (!Array.isArray(neighbors) || !neighbors.length) return;
+      const centerPos = atomPositions[center] && atomPositions[center].pos;
+      if (!centerPos) return;
+      for (const k of neighbors) {
+        if (k === skip) continue;
+        const neighborPos = atomPositions[k] && atomPositions[k].pos;
+        if (!neighborPos) continue;
+        const vec = new THREE.Vector3().subVectors(neighborPos, centerPos);
+        const axial = dirNorm.dot(vec);
+        const lateral = vec.addScaledVector(dirNorm, -axial);
+        if (lateral.lengthSq() > 1e-10) sideVectors.push(lateral);
+      }
+    }
+
+    collectEndpointNeighbors(i, j);
+    collectEndpointNeighbors(j, i);
+    if (!sideVectors.length) return fallback;
+
+    // Build a stable local 2D frame in the plane normal to dirNorm.
+    const basisA = fallback.clone().normalize();
+    const basisB = new THREE.Vector3().crossVectors(dirNorm, basisA);
+    if (basisB.lengthSq() < 1e-12) return fallback;
+    basisB.normalize();
+
+    // Principal direction of neighbor spread in that 2D frame.
+    let xx = 0;
+    let xy = 0;
+    let yy = 0;
+    for (const v of sideVectors) {
+      const x = v.dot(basisA);
+      const y = v.dot(basisB);
+      xx += x * x;
+      xy += x * y;
+      yy += y * y;
+    }
+    if ((xx + yy) < 1e-10) return fallback;
+    const angle = 0.5 * Math.atan2(2 * xy, xx - yy);
+    const perp = basisA.multiplyScalar(Math.cos(angle)).addScaledVector(basisB, Math.sin(angle));
+    if (perp.lengthSq() < 1e-12) return fallback;
+    return perp.normalize();
   }
 
   /**
@@ -1347,6 +1644,37 @@
     return geom;
   }
 
+  const STUDIO_FLANGE_PLATEAU_END = 0.02;
+  const STUDIO_FLANGE_TAPER_END = 0.04;
+  const STUDIO_DOUBLE_BOND_CURVE_GAIN = 4.0;
+  const STUDIO_MULTI_BOND_SEAT_SPREAD_GAIN = 1.8;
+  const STUDIO_FLANGE_SPHERE_OVERLAP = 0.001;
+  const STUDIO_FLANGE_SHAFT_OVERLAP = 0.006;
+  const STUDIO_CURVED_HANDLE_SCALE = 0.44;
+  const STUDIO_CURVED_HANDLE_OFFSET_SCALE = 0.55;
+
+  /**
+   * Build one studio flange profile revolved around Y.
+   * The flange starts at y=0 (atom side) and transitions to shaft radius at y=taper.
+   * @param {number} centerRadius
+   * @param {number} collarRadius
+   * @returns {THREE.BufferGeometry}
+   */
+  function createStudioFlangeGeometry(centerRadius, collarRadius) {
+    const cR = Math.max(1e-4, centerRadius);
+    const kR = Math.max(cR * 1.2, collarRadius);
+    const plateau = Math.max(1e-5, STUDIO_FLANGE_PLATEAU_END);
+    const taper = Math.max(plateau + 1e-5, STUDIO_FLANGE_TAPER_END);
+    const profile = [
+      new THREE.Vector2(kR, 0),
+      new THREE.Vector2(kR, plateau),
+      new THREE.Vector2(cR, taper),
+    ];
+    const geom = new THREE.LatheGeometry(profile, 28);
+    try { geom.computeVertexNormals(); } catch { }
+    return geom;
+  }
+
   /**
    * Build a studio-style connector with a slim shaft and collar-like flares near atom joints.
    * The profile includes a shallow groove inside each collar to produce a dark ring under light.
@@ -1363,8 +1691,8 @@
     const profile = [];
 
     // Fixed flange profile distances in angstrom from each end plane.
-    const flangePlateauEnd = 0.02;
-    const flangeTaperEnd = 0.04;
+    const flangePlateauEnd = STUDIO_FLANGE_PLATEAU_END;
+    const flangeTaperEnd = STUDIO_FLANGE_TAPER_END;
 
     // Clamp transition distances for very short bonds while preserving:
     // 0 <= plateau <= taper <= halfL.
@@ -1393,6 +1721,19 @@
   }
 
   /**
+   * Compute axis distance from a sphere center where a cross-section has a given radius.
+   * @param {number} sphereRadius
+   * @param {number} sectionRadius
+   * @returns {number}
+   */
+  function getSphereSectionAxisDistance(sphereRadius, sectionRadius) {
+    const Rs = Math.max(1e-6, Number(sphereRadius) || 0);
+    const R0raw = Math.max(1e-6, Number(sectionRadius) || 0);
+    const R0 = Math.min(R0raw, Math.max(1e-6, Rs - 1e-4));
+    return Math.sqrt(Math.max(0, Rs * Rs - R0 * R0));
+  }
+
+  /**
    * Compute where a studio connector should start relative to an atom center so the
    * flange rim (radius R0) contacts the sphere surface. Smaller spheres naturally
    * require deeper insertion because their curvature is higher.
@@ -1401,16 +1742,55 @@
    * @returns {number} Distance from atom center to connector start plane along bond axis.
    */
   function getStudioConnectorTrimDistance(sphereRadius, flangeRadius) {
-    const Rs = Math.max(1e-6, Number(sphereRadius) || 0);
-    const R0raw = Math.max(1e-6, Number(flangeRadius) || 0);
-    // Keep the flange radius strictly below the sphere radius for the tangent geometry.
-    const R0 = Math.min(R0raw, Math.max(1e-6, Rs - 1e-4));
-    // Tangency condition for the end plane cross-section: sqrt(Rs^2 - x^2) = R0.
-    let x = Math.sqrt(Math.max(0, Rs * Rs - R0 * R0));
+    const R0 = Math.max(1e-6, Number(flangeRadius) || 0);
+    let x = getSphereSectionAxisDistance(sphereRadius, R0);
     // Small extra overlap hides seams; tangent geometry already provides the curvature scaling.
     const seatOverlap = Math.min(0.010, Math.max(0.003, R0 * 0.035));
     x = Math.max(0, x - seatOverlap);
     return x;
+  }
+
+  /**
+   * Compute a connector seat point from an atom center using an axial distance
+   * (along bond direction) plus a lateral displacement (in the local normal plane).
+   * Lateral displacement is clamped to stay inside the atom sphere.
+   * @param {THREE.Vector3} center
+   * @param {THREE.Vector3} axisDir Unit vector along bond axis from the atom center.
+   * @param {number} seatDistance
+   * @param {number} sphereRadius
+   * @param {THREE.Vector3} lateralDir Unit vector in the plane normal to axisDir.
+   * @param {number} lateralDistance
+   * @returns {THREE.Vector3}
+   */
+  function getCurvedConnectorSeatPoint(center, axisDir, seatDistance, sphereRadius, lateralDir, lateralDistance) {
+    const Rs = Math.max(1e-6, Number(sphereRadius) || 0);
+    const axis = (axisDir && axisDir.lengthSq && axisDir.lengthSq() > 1e-12)
+      ? axisDir.clone().normalize()
+      : new THREE.Vector3(0, 1, 0);
+    const lateral = (lateralDir && lateralDir.lengthSq && lateralDir.lengthSq() > 1e-12)
+      ? lateralDir.clone().normalize()
+      : new THREE.Vector3(1, 0, 0);
+    const axial = Math.max(0, Math.min(Rs - 1e-6, Number(seatDistance) || 0));
+    const maxLateral = Math.sqrt(Math.max(0, Rs * Rs - axial * axial));
+    const lat = Math.min(Math.max(0, Number(lateralDistance) || 0), Math.max(0, maxLateral - 1e-4));
+    const p = center.clone().addScaledVector(axis, axial);
+    if (lat > 1e-8) p.addScaledVector(lateral, lat);
+    return p;
+  }
+
+  /**
+   * Reflect a point across a plane.
+   * @param {THREE.Vector3} point
+   * @param {THREE.Vector3} planePoint Any point on the plane.
+   * @param {THREE.Vector3} planeNormal Plane normal vector.
+   * @returns {THREE.Vector3}
+   */
+  function reflectPointAcrossPlane(point, planePoint, planeNormal) {
+    const n = (planeNormal && planeNormal.lengthSq && planeNormal.lengthSq() > 1e-12)
+      ? planeNormal.clone().normalize()
+      : new THREE.Vector3(0, 1, 0);
+    const signed = new THREE.Vector3().subVectors(point, planePoint).dot(n);
+    return point.clone().addScaledVector(n, -2 * signed);
   }
 
   /**
@@ -1545,90 +1925,261 @@
     const stylizedBondOutlineMat = getStylizedBondOutlineMaterial();
     const stylizedBondHighlightMat = getStylizedBondHighlightMaterial();
     const up = new THREE.Vector3(0, 1, 0);
-    const N = atomPositions.length;
     const glossyCenterRadius = getGlossyBondCenterRadius();
     const glossyEndRadius = getGlossyBondEndRadius();
     const studioCenterRadius = 0.068;
     const studioCollarRadius = 0.114;
-    const bondRadius = isGlossyStyle ? glossyCenterRadius : isStudioStyle ? studioCenterRadius : isToonStyle ? 0.102 : 0.12;
+    const bondRadius = isGlossyStyle ? glossyCenterRadius : isStudioStyle ? studioCenterRadius : isToonStyle ? 0.095 : 0.11;
     const bondRadialSegments = isGlossyStyle ? 28 : isStudioStyle ? 20 : isToonStyle ? 20 : 16;
     const bondHeightSegments = (isGlossyStyle || isStudioStyle || isToonStyle) ? 1 : 2;
-    for (let i = 0; i < N; i++) {
-      for (let j = i + 1; j < N; j++) {
-        const a = atomPositions[i];
-        const b = atomPositions[j];
-        const ri = getCovalentRadiusAngstrom(a.Z);
-        const rj = getCovalentRadiusAngstrom(b.Z);
-        const cutoff = 1.15 * (ri + rj); // heuristic
-        const dir = new THREE.Vector3().subVectors(b.pos, a.pos);
-        const len = dir.length();
-        if (len < 0.4 || len > cutoff) continue;
-        const dirNorm = dir.clone().multiplyScalar(1 / Math.max(1e-12, len));
-        let trimA = 0;
-        let trimB = 0;
-        let geomLen = len;
-        let mid = new THREE.Vector3().addVectors(a.pos, b.pos).multiplyScalar(0.5);
-        if (usesTrimmedConnector) {
-          const connectorEndRadius = isGlossyStyle ? glossyEndRadius : studioCollarRadius;
-          if (isGlossyStyle) {
-            // Stop glossy bonds near the atom surfaces with a slight inset.
-            const trimInset = Math.min(0.03, Math.max(0.012, connectorEndRadius * 0.18));
-            trimA = Math.max(0, a.displayRadius - trimInset);
-            trimB = Math.max(0, b.displayRadius - trimInset);
-          } else {
-            // Studio seating depends on sphere curvature; small atoms need deeper insertion.
-            trimA = getStudioConnectorTrimDistance(a.displayRadius, connectorEndRadius);
-            trimB = getStudioConnectorTrimDistance(b.displayRadius, connectorEndRadius);
-          }
-          const maxTrim = Math.max(0, len - (isStudioStyle ? 0.12 : 0.16));
-          const trimSum = trimA + trimB;
-          if (trimSum > maxTrim && trimSum > 1e-8) {
-            const s = maxTrim / trimSum;
-            trimA *= s;
-            trimB *= s;
-          }
-          geomLen = len - trimA - trimB;
-          if (geomLen < (isStudioStyle ? 0.06 : 0.08)) continue;
-          const aEnd = a.pos.clone().addScaledVector(dirNorm, trimA);
-          const bEnd = a.pos.clone().addScaledVector(dirNorm, len - trimB);
-          mid = aEnd.add(bEnd).multiplyScalar(0.5);
-        }
-        const geom = isGlossyStyle
-          ? createGlossyBondConnectorGeometry(geomLen, bondRadius, glossyEndRadius)
-          : isStudioStyle
-            ? createStudioCollaredBondGeometry(geomLen, bondRadius, studioCollarRadius)
+    const bondEdges = collectBondCandidates(atomPositions);
+    const multiBondRenderingEnabled = !!showMultiBonds;
+    if (multiBondRenderingEnabled) inferBondOrders(atomPositions, bondEdges);
+    const bondAdjacency = multiBondRenderingEnabled
+      ? buildBondAdjacency(bondEdges, atomPositions.length)
+      : [];
+    const componentSpacing = Math.max(0.13, bondRadius * 2.1);
+
+    /**
+     * Build and add one visible connector component for a bond.
+     * @param {{bondColor:THREE.Color}} a
+     * @param {{bondColor:THREE.Color}} b
+     * @param {number} i
+     * @param {number} j
+     * @param {THREE.Vector3} dirNorm
+     * @param {number} len
+     * @param {number} geomLen
+     * @param {THREE.Vector3} mid
+     * @param {number} trimA
+     * @param {number} trimB
+     * @param {number} order
+     * @param {number} componentOffsetU
+     * @param {number} componentOffsetV
+     */
+    function addBondComponent(a, b, i, j, dirNorm, len, geomLen, mid, trimA, trimB, order, componentOffsetU, componentOffsetV) {
+      const geom = isGlossyStyle
+        ? createGlossyBondConnectorGeometry(geomLen, bondRadius, glossyEndRadius)
+        : isStudioStyle
+          ? createStudioCollaredBondGeometry(geomLen, bondRadius, studioCollarRadius)
           : new THREE.CylinderGeometry(bondRadius, bondRadius, geomLen, bondRadialSegments, bondHeightSegments, false);
-        if (isStylizedStyle) applyBondGradient(geom, a.bondColor, b.bondColor);
-        const cyl = new THREE.Mesh(geom, bondMat);
-        if (stylizedBondOutlineMat) {
-          const outline = new THREE.Mesh(geom, stylizedBondOutlineMat);
-          const outlineScale = isGlossyStyle ? 1.06 : 1.18;
-          outline.scale.set(outlineScale, 1.0, outlineScale);
-          outline.userData = { type: 'bondOutline' };
-          cyl.add(outline);
+      if (isStylizedStyle) applyBondGradient(geom, a.bondColor, b.bondColor);
+      const cyl = new THREE.Mesh(geom, bondMat);
+      if (stylizedBondOutlineMat) {
+        const outline = new THREE.Mesh(geom, stylizedBondOutlineMat);
+        const outlineScale = isGlossyStyle ? 1.06 : 1.18;
+        outline.scale.set(outlineScale, 1.0, outlineScale);
+        outline.userData = { type: 'bondOutline' };
+        cyl.add(outline);
+      }
+      if (stylizedBondHighlightMat) {
+        const highlight = new THREE.Mesh(geom, stylizedBondHighlightMat);
+        const highlightScale = isGlossyStyle ? 1.012 : 1.03;
+        highlight.scale.set(highlightScale, 1.0, highlightScale);
+        highlight.userData = { type: 'bondHighlight' };
+        cyl.add(highlight);
+      }
+      cyl.position.copy(mid);
+      const q = new THREE.Quaternion().setFromUnitVectors(up, dirNorm);
+      cyl.setRotationFromQuaternion(q);
+      cyl.userData = {
+        baseLen: len,
+        baseGeomLen: geomLen,
+        trimA,
+        trimB,
+        i,
+        j,
+        bondOrder: order,
+        bondComponentOffset: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
+        bondComponentOffsetU: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
+        bondComponentOffsetV: Number.isFinite(componentOffsetV) ? componentOffsetV : 0,
+        connectorStyle: isStudioStyle ? 'studio' : isGlossyStyle ? 'glossy' : 'default',
+        connectorCenterRadius: bondRadius,
+        connectorEndRadius: isStudioStyle ? studioCollarRadius : isGlossyStyle ? glossyEndRadius : bondRadius,
+      };
+      group.add(cyl);
+    }
+
+    /**
+     * Build one curved studio multi-bond component using a tube shaft plus
+     * fixed-shape flanges at each atom-side endpoint.
+     * @param {number} i
+     * @param {number} j
+     * @param {number} order
+     * @param {number} len
+     * @param {number} geomLen
+     * @param {number} trimA
+     * @param {number} trimB
+     * @param {THREE.Vector3} aPos
+     * @param {THREE.Vector3} bPos
+     * @param {number} aRadius
+     * @param {number} bRadius
+     * @param {THREE.Vector3} dirNorm
+     * @param {THREE.Vector3} offsetDirection
+     * @param {number} offsetDistance
+     * @param {number} componentOffsetU
+     * @param {number} componentOffsetV
+     */
+    function addStudioCurvedBondComponent(i, j, order, len, geomLen, trimA, trimB, aPos, bPos, aRadius, bRadius, dirNorm, offsetDirection, offsetDistance, componentOffsetU, componentOffsetV) {
+      const seatSpreadTarget = offsetDistance * STUDIO_MULTI_BOND_SEAT_SPREAD_GAIN;
+      // Enforce bond-centered symmetry for multi-bond seats.
+      const seatAxial = Math.max(0, Math.min(Number(trimA) || 0, Number(trimB) || 0));
+      const maxLatA = Math.sqrt(Math.max(0, aRadius * aRadius - seatAxial * seatAxial));
+      const maxLatB = Math.sqrt(Math.max(0, bRadius * bRadius - seatAxial * seatAxial));
+      const seatSpread = Math.max(0, Math.min(seatSpreadTarget, maxLatA, maxLatB));
+      // Place each endpoint on its own component-specific seat around the atom.
+      const start = getCurvedConnectorSeatPoint(aPos, dirNorm, seatAxial, aRadius, offsetDirection, seatSpread);
+      const end = getCurvedConnectorSeatPoint(
+        bPos,
+        dirNorm.clone().multiplyScalar(-1),
+        seatAxial,
+        bRadius,
+        offsetDirection,
+        seatSpread
+      );
+      const startNormal = new THREE.Vector3().subVectors(start, aPos);
+      if (startNormal.lengthSq() < 1e-10) startNormal.copy(dirNorm); else startNormal.normalize();
+      const endNormal = new THREE.Vector3().subVectors(end, bPos);
+      if (endNormal.lengthSq() < 1e-10) endNormal.copy(dirNorm).multiplyScalar(-1); else endNormal.normalize();
+
+      // Place flange base planes where their outer radius matches sphere cross-sections.
+      const flangeBaseStartAxial = Math.max(
+        0,
+        getSphereSectionAxisDistance(aRadius, studioCollarRadius) - STUDIO_FLANGE_SPHERE_OVERLAP
+      );
+      const flangeBaseEndAxial = Math.max(
+        0,
+        getSphereSectionAxisDistance(bRadius, studioCollarRadius) - STUDIO_FLANGE_SPHERE_OVERLAP
+      );
+      const flangeBaseStart = aPos.clone().addScaledVector(startNormal, flangeBaseStartAxial);
+      const flangeBaseEnd = bPos.clone().addScaledVector(endNormal, flangeBaseEndAxial);
+
+      // Shaft starts near the flange tip and overlaps into it slightly to avoid gaps.
+      const shaftStart = flangeBaseStart.clone().addScaledVector(
+        startNormal,
+        Math.max(0.002, STUDIO_FLANGE_TAPER_END - STUDIO_FLANGE_SHAFT_OVERLAP)
+      );
+      const shaftEnd = flangeBaseEnd.clone().addScaledVector(
+        endNormal,
+        Math.max(0.002, STUDIO_FLANGE_TAPER_END - STUDIO_FLANGE_SHAFT_OVERLAP)
+      );
+
+      // Enforce tangent continuity with flange normals at both ends:
+      // cubic handles are constrained to lie on each endpoint normal line.
+      const chordLen = Math.max(1e-6, shaftStart.distanceTo(shaftEnd));
+      const bendWeight = Math.max(1.0, STUDIO_DOUBLE_BOND_CURVE_GAIN * 0.65);
+      const handleLenRaw = chordLen * STUDIO_CURVED_HANDLE_SCALE
+        + offsetDistance * STUDIO_CURVED_HANDLE_OFFSET_SCALE * bendWeight;
+      const handleLen = Math.max(0.02, Math.min(chordLen * 0.9, handleLenRaw));
+      const control1 = shaftStart.clone().addScaledVector(startNormal, handleLen);
+      const bondMid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
+      const control2 = reflectPointAcrossPlane(control1, bondMid, dirNorm);
+      const shaftCurve = new THREE.CubicBezierCurve3(shaftStart, control1, control2, shaftEnd);
+      const shaftLen = Math.max(1e-6, shaftCurve.getLength());
+      const shaftSegments = Math.max(12, Math.min(56, Math.ceil(shaftLen * 22)));
+      const shaftGeom = new THREE.TubeGeometry(shaftCurve, shaftSegments, bondRadius, 18, false);
+
+      const flangeStartGeom = createStudioFlangeGeometry(bondRadius, studioCollarRadius);
+      const flangeEndGeom = createStudioFlangeGeometry(bondRadius, studioCollarRadius);
+      const shaft = new THREE.Mesh(shaftGeom, bondMat);
+      const flangeStart = new THREE.Mesh(flangeStartGeom, bondMat);
+      const flangeEnd = new THREE.Mesh(flangeEndGeom, bondMat);
+
+      // Align flange axis with local sphere normal (requested).
+      flangeStart.position.copy(flangeBaseStart);
+      flangeStart.quaternion.setFromUnitVectors(up, startNormal);
+      flangeEnd.position.copy(flangeBaseEnd);
+      flangeEnd.quaternion.setFromUnitVectors(up, endNormal);
+
+      const connector = new THREE.Group();
+      connector.add(shaft, flangeStart, flangeEnd);
+      connector.userData = {
+        baseLen: len,
+        baseGeomLen: geomLen,
+        trimA,
+        trimB,
+        i,
+        j,
+        bondOrder: Math.max(2, Math.min(3, order | 0)),
+        bondComponentOffset: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
+        bondComponentOffsetU: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
+        bondComponentOffsetV: Number.isFinite(componentOffsetV) ? componentOffsetV : 0,
+        connectorStyle: 'studioCurved',
+        connectorCenterRadius: bondRadius,
+        connectorEndRadius: studioCollarRadius,
+      };
+      group.add(connector);
+    }
+
+    for (const edge of bondEdges) {
+      const i = edge.i;
+      const j = edge.j;
+      const a = atomPositions[i];
+      const b = atomPositions[j];
+      const order = multiBondRenderingEnabled ? Math.max(1, Math.min(3, edge.order | 0)) : 1;
+      const dir = new THREE.Vector3().subVectors(b.pos, a.pos);
+      const len = dir.length();
+      if (len < 1e-6) continue;
+      const dirNorm = dir.clone().multiplyScalar(1 / Math.max(1e-12, len));
+
+      let trimA = 0;
+      let trimB = 0;
+      let geomLen = len;
+      let mid = new THREE.Vector3().addVectors(a.pos, b.pos).multiplyScalar(0.5);
+      let aEnd = a.pos.clone();
+      let bEnd = b.pos.clone();
+      if (usesTrimmedConnector) {
+        const connectorEndRadius = isGlossyStyle ? glossyEndRadius : studioCollarRadius;
+        if (isGlossyStyle) {
+          // Stop glossy bonds near the atom surfaces with a slight inset.
+          const trimInset = Math.min(0.03, Math.max(0.012, connectorEndRadius * 0.18));
+          trimA = Math.max(0, a.displayRadius - trimInset);
+          trimB = Math.max(0, b.displayRadius - trimInset);
+        } else {
+          // Studio seating depends on sphere curvature; small atoms need deeper insertion.
+          trimA = getStudioConnectorTrimDistance(a.displayRadius, connectorEndRadius);
+          trimB = getStudioConnectorTrimDistance(b.displayRadius, connectorEndRadius);
         }
-        if (stylizedBondHighlightMat) {
-          const highlight = new THREE.Mesh(geom, stylizedBondHighlightMat);
-          const highlightScale = isGlossyStyle ? 1.012 : 1.03;
-          highlight.scale.set(highlightScale, 1.0, highlightScale);
-          highlight.userData = { type: 'bondHighlight' };
-          cyl.add(highlight);
+        const maxTrim = Math.max(0, len - (isStudioStyle ? 0.12 : 0.16));
+        const trimSum = trimA + trimB;
+        if (trimSum > maxTrim && trimSum > 1e-8) {
+          const s = maxTrim / trimSum;
+          trimA *= s;
+          trimB *= s;
         }
-        cyl.position.copy(mid);
-        const q = new THREE.Quaternion().setFromUnitVectors(up, dirNorm);
-        cyl.setRotationFromQuaternion(q);
-        cyl.userData = {
-          baseLen: len,
-          baseGeomLen: geomLen,
-          trimA,
-          trimB,
-          i,
-          j,
-          connectorStyle: isStudioStyle ? 'studio' : isGlossyStyle ? 'glossy' : 'default',
-          connectorCenterRadius: bondRadius,
-          connectorEndRadius: isStudioStyle ? studioCollarRadius : isGlossyStyle ? glossyEndRadius : bondRadius,
-        };
-        group.add(cyl);
+        geomLen = len - trimA - trimB;
+        if (geomLen < (isStudioStyle ? 0.06 : 0.08)) continue;
+        aEnd = a.pos.clone().addScaledVector(dirNorm, trimA);
+        bEnd = a.pos.clone().addScaledVector(dirNorm, len - trimB);
+        mid = new THREE.Vector3().addVectors(aEnd, bEnd).multiplyScalar(0.5);
+      }
+
+      const offsets = multiBondRenderingEnabled ? getBondComponentOffsets(order) : [[0, 0]];
+      if (offsets.length <= 1) {
+        addBondComponent(a, b, i, j, dirNorm, len, geomLen, mid, trimA, trimB, order, 0, 0);
+        continue;
+      }
+      const perp = getBondPlaneOffsetDirection(i, j, dirNorm, atomPositions, bondAdjacency);
+      const perpOrtho = new THREE.Vector3().crossVectors(dirNorm, perp).normalize();
+      for (const [offsetUUnit, offsetVUnit] of offsets) {
+        const componentOffsetU = offsetUUnit * componentSpacing;
+        const componentOffsetV = offsetVUnit * componentSpacing;
+        const componentVec = perp.clone().multiplyScalar(componentOffsetU).addScaledVector(perpOrtho, componentOffsetV);
+        if (isStudioStyle && order >= 2) {
+          const offsetDistance = componentVec.length();
+          const offsetDirection = offsetDistance > 1e-8
+            ? componentVec.clone().multiplyScalar(1 / offsetDistance)
+            : perp.clone();
+          addStudioCurvedBondComponent(
+            i, j, order, len, geomLen, trimA, trimB,
+            a.pos, b.pos, a.displayRadius, b.displayRadius, dirNorm,
+            offsetDirection, offsetDistance, componentOffsetU, componentOffsetV
+          );
+          continue;
+        }
+        const componentMid = mid.clone().add(componentVec);
+        addBondComponent(
+          a, b, i, j, dirNorm, len, geomLen, componentMid, trimA, trimB, order, componentOffsetU, componentOffsetV
+        );
       }
     }
     return group;
@@ -1648,19 +2199,46 @@
      * @returns {THREE.Vector3}
      */
     const toV3 = (a) => new THREE.Vector3(toAng ? a.x : a.x * BOHR_TO_ANG, toAng ? a.y : a.y * BOHR_TO_ANG, toAng ? a.z : a.z * BOHR_TO_ANG);
-    const up = new THREE.Vector3(0, 1, 0);
+    const atomPositions = vol.atoms.map((a) => ({ pos: toV3(a) }));
+    const uniqueEdges = [];
+    const seenEdgeKeys = new Set();
     for (const obj of bondGroup.children) {
-      if (!obj.isMesh || !obj.userData) continue;
+      if (!obj || !obj.userData) continue;
+      const i = obj.userData.i;
+      const j = obj.userData.j;
+      if (!Number.isInteger(i) || !Number.isInteger(j) || i === j) continue;
+      const a = i < j ? i : j;
+      const b = i < j ? j : i;
+      const key = `${a}:${b}`;
+      if (seenEdgeKeys.has(key)) continue;
+      seenEdgeKeys.add(key);
+      uniqueEdges.push({ i: a, j: b });
+    }
+    const bondAdjacency = buildBondAdjacency(uniqueEdges, atomPositions.length);
+    const up = new THREE.Vector3(0, 1, 0);
+    let needsFullRebuild = false;
+    for (const obj of bondGroup.children) {
+      if (!obj || !obj.userData) continue;
       const {
         i, j, baseLen, baseGeomLen, trimA = 0, trimB = 0,
         connectorStyle = 'default',
+        bondComponentOffset = 0,
+        bondComponentOffsetU,
+        bondComponentOffsetV = 0,
         connectorCenterRadius,
         connectorEndRadius
       } = obj.userData;
+      if (!obj.isMesh) {
+        // Curved studio connectors are composite groups; rebuild to keep geometry consistent.
+        if (connectorStyle === 'studioCurved') { needsFullRebuild = true; break; }
+        continue;
+      }
       if (i == null || j == null) continue;
-      const ai = vol.atoms[i]; const aj = vol.atoms[j];
-      if (!ai || !aj) continue;
-      const aPos = toV3(ai); const bPos = toV3(aj);
+      const aInfo = atomPositions[i];
+      const bInfo = atomPositions[j];
+      if (!aInfo || !bInfo) continue;
+      const aPos = aInfo.pos;
+      const bPos = bInfo.pos;
       const dir = new THREE.Vector3().subVectors(bPos, aPos);
       const len = dir.length(); if (len < 1e-6) continue;
       const dirNorm = dir.clone().multiplyScalar(1 / len);
@@ -1670,7 +2248,17 @@
         geomLen = Math.max(1e-4, len - trimA - trimB);
         const aEnd = aPos.clone().addScaledVector(dirNorm, trimA);
         const bEnd = aPos.clone().addScaledVector(dirNorm, len - trimB);
-        mid = aEnd.add(bEnd).multiplyScalar(0.5);
+        mid = new THREE.Vector3().addVectors(aEnd, bEnd).multiplyScalar(0.5);
+      }
+      const componentOffsetUValue = Number.isFinite(bondComponentOffsetU)
+        ? bondComponentOffsetU
+        : (Number.isFinite(bondComponentOffset) ? bondComponentOffset : 0);
+      const componentOffsetVValue = Number.isFinite(bondComponentOffsetV) ? bondComponentOffsetV : 0;
+      if (Math.abs(componentOffsetUValue) > 1e-8 || Math.abs(componentOffsetVValue) > 1e-8) {
+        const perp = getBondPlaneOffsetDirection(i, j, dirNorm, atomPositions, bondAdjacency);
+        const perpOrtho = new THREE.Vector3().crossVectors(dirNorm, perp).normalize();
+        mid.addScaledVector(perp, componentOffsetUValue);
+        mid.addScaledVector(perpOrtho, componentOffsetVValue);
       }
       obj.position.copy(mid);
       obj.quaternion.setFromUnitVectors(up, dirNorm);
@@ -1698,6 +2286,7 @@
       }
       obj.visible = geomLen > 0.04;
     }
+    if (needsFullRebuild) rebuildBondsFromAtoms();
   }
 
   // Rebuild bonds from current atom positions (full rescan, bonds only)
@@ -2680,6 +3269,7 @@
   const bgColor = document.getElementById('bgColor');
   const toggleAtoms = document.getElementById('showAtoms');
   const toggleBonds = document.getElementById('showBonds');
+  const toggleMultiBonds = document.getElementById('showMultiBonds');
   const elementColors = document.getElementById('elementColors');
   const toggleBox = document.getElementById('showBox');
   const toggleAxes = document.getElementById('showAxes');
@@ -2716,6 +3306,7 @@
   const rotSpeed = document.getElementById('rotSpeed');
   const damp = document.getElementById('damp');
   const autoRotSpeed = document.getElementById('autoRotSpeed');
+  if (toggleMultiBonds) showMultiBonds = !!toggleMultiBonds.checked;
   const viewReset = document.getElementById('viewReset');
   const styleSelect = document.getElementById('styleSelect');
   const moleculeStyleSel = document.getElementById('moleculeStyle');
@@ -3895,6 +4486,10 @@
   registerPresetSetting('global.showBonds', () => !!(toggleBonds && toggleBonds.checked), (value) => {
     if (toggleBonds) toggleBonds.checked = asBoolean(value);
   });
+  registerPresetSetting('global.showMultiBonds', () => !!showMultiBonds, (value) => {
+    showMultiBonds = asBoolean(value);
+    if (toggleMultiBonds) toggleMultiBonds.checked = showMultiBonds;
+  });
   registerPresetSetting('global.elementColors', () => !!(elementColors && elementColors.checked), (value) => {
     if (elementColors) elementColors.checked = asBoolean(value);
   });
@@ -4357,6 +4952,12 @@
   };
   toggleAtoms.onchange = () => rebuildScene({ preserveView: true });
   toggleBonds.onchange = () => rebuildScene({ preserveView: true });
+  if (toggleMultiBonds) {
+    toggleMultiBonds.onchange = () => {
+      showMultiBonds = !!toggleMultiBonds.checked;
+      rebuildScene({ preserveView: true });
+    };
+  }
   elementColors.onchange = () => rebuildScene({ preserveView: true });
   toggleBox.onchange = () => rebuildScene({ preserveView: true });
   if (toggleAxes) toggleAxes.onchange = () => { window.__showAxes__ = !!toggleAxes.checked; };
