@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import glob
 import json
 import pathlib
 import sys
@@ -19,14 +20,39 @@ from typing import Any
 
 DEFAULT_URL = "https://evangelistalab.org/vibemol/"
 DEFAULT_RC_CANDIDATES = (".vibemolrc", ".vibemolrc.json")
+RenderJob = tuple[pathlib.Path, pathlib.Path]
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Upload a molecular file to VibeMol and save a rendered PNG locally."
+        description="Upload one or more molecular files to VibeMol and save rendered PNGs locally."
     )
-    parser.add_argument("input_file", help="Path to .cube/.cub/.2ccube/.xyz file")
-    parser.add_argument("output_png", help="Path to output PNG file")
+    parser.add_argument("input_file", nargs="?", help="Path to .cube/.cub/.2ccube/.xyz file (single-file mode)")
+    parser.add_argument("output_png", nargs="?", help="Path to output PNG file (single-file mode)")
+    parser.add_argument(
+        "--inputs",
+        nargs="+",
+        default=None,
+        help="Batch mode: one or more input files/patterns to render (glob patterns supported)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Batch mode: output directory for rendered PNGs",
+    )
+    parser.add_argument(
+        "--name-template",
+        default="{stem}.png",
+        help=(
+            "Batch mode output naming template (default: {stem}.png). "
+            "Supported fields: {index}, {stem}, {name}, {ext}"
+        ),
+    )
+    parser.add_argument(
+        "--continue-on-error",
+        action="store_true",
+        help="Batch mode: continue rendering remaining files when one file fails",
+    )
     parser.add_argument("--url", default=DEFAULT_URL, help=f"VibeMol URL (default: {DEFAULT_URL})")
     parser.add_argument("--iso", type=float, default=None, help="Optional iso value")
     parser.add_argument(
@@ -158,6 +184,133 @@ def _extract_preset_from_rc(rc_data: dict[str, Any], rc_path: pathlib.Path) -> d
             raise FileNotFoundError(f"Preset file from rc does not exist: {preset_path}")
         return _read_json_file(preset_path)
     raise ValueError("rc key preset must be either a JSON object or a file path string")
+
+
+def _resolve_input_paths(paths: list[str]) -> list[pathlib.Path]:
+    resolved: list[pathlib.Path] = []
+    seen: set[pathlib.Path] = set()
+    for raw in paths:
+        expanded = pathlib.Path(raw).expanduser()
+        pattern = str(expanded)
+        if glob.has_magic(pattern):
+            matches = sorted(pathlib.Path(p).resolve() for p in glob.glob(pattern, recursive=True))
+            files = [p for p in matches if p.is_file()]
+            if not files:
+                raise FileNotFoundError(f"No input files matched pattern: {raw}")
+            for p in files:
+                if p in seen:
+                    continue
+                seen.add(p)
+                resolved.append(p)
+            continue
+
+        p = expanded.resolve()
+        if not p.is_file():
+            raise FileNotFoundError(f"Input file does not exist: {p}")
+        if p in seen:
+            continue
+        seen.add(p)
+        resolved.append(p)
+    return resolved
+
+
+def _format_batch_output_name(template: str, input_path: pathlib.Path, index: int) -> str:
+    try:
+        name = template.format(
+            index=index,
+            stem=input_path.stem,
+            name=input_path.name,
+            ext=input_path.suffix.lstrip(".").lower(),
+        )
+    except KeyError as exc:
+        raise ValueError(
+            f"Unsupported placeholder in --name-template: {exc}. "
+            "Allowed: {index}, {stem}, {name}, {ext}"
+        ) from exc
+
+    name = str(name).strip()
+    if not name:
+        raise ValueError("--name-template produced an empty file name")
+
+    if pathlib.Path(name).name != name:
+        raise ValueError("--name-template must not include path separators; use --output-dir for folder selection")
+
+    if not name.lower().endswith(".png"):
+        name += ".png"
+
+    return name
+
+
+def _build_render_jobs(args: argparse.Namespace) -> list[RenderJob]:
+    if args.inputs:
+        if args.input_file or args.output_png:
+            raise ValueError("Do not mix positional input/output with --inputs batch mode.")
+        if args.output_dir is None:
+            raise ValueError("--output-dir is required when using --inputs.")
+
+        input_paths = _resolve_input_paths(list(args.inputs))
+        output_dir = pathlib.Path(args.output_dir).expanduser().resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        jobs: list[RenderJob] = []
+        used_output_paths: set[pathlib.Path] = set()
+        for index, input_path in enumerate(input_paths, start=1):
+            base_name = _format_batch_output_name(args.name_template, input_path, index)
+            output_path = (output_dir / base_name).resolve()
+            if output_path in used_output_paths:
+                output_path = output_path.with_name(f"{output_path.stem}_{index}{output_path.suffix}")
+            used_output_paths.add(output_path)
+            jobs.append((input_path, output_path))
+        return jobs
+
+    if args.output_dir is not None:
+        raise ValueError("--output-dir is only valid when using --inputs.")
+    if args.name_template != "{stem}.png":
+        raise ValueError("--name-template is only valid when using --inputs.")
+
+    if not args.input_file or not args.output_png:
+        raise ValueError("Provide input_file and output_png, or use --inputs with --output-dir.")
+
+    input_paths = _resolve_input_paths([args.input_file])
+    if len(input_paths) != 1:
+        raise ValueError(
+            "Single-file mode input resolved to multiple files. "
+            "Use --inputs with --output-dir for wildcard or multi-file rendering."
+        )
+    input_path = input_paths[0]
+    output_path = pathlib.Path(args.output_png).expanduser().resolve()
+    return [(input_path, output_path)]
+
+
+def _resolve_save_preset_path(args: argparse.Namespace, jobs: list[RenderJob]) -> pathlib.Path | None:
+    if not args.save_preset:
+        return None
+    if len(jobs) > 1:
+        raise ValueError("--save-preset is only supported in single-file mode.")
+    return pathlib.Path(args.save_preset).expanduser().resolve()
+
+
+def _load_preset_from_sources(args: argparse.Namespace) -> tuple[dict[str, Any] | None, str]:
+    preset_obj: dict[str, Any] | None = None
+    rc_mode: str | None = None
+    rc_path = _resolve_rc_path(args.rc, no_rc=args.no_rc)
+    if rc_path is not None:
+        rc_data = _read_json_file(rc_path)
+        rc_mode = _extract_preset_mode_from_rc(rc_data)
+        if not args.preset:
+            preset_obj = _extract_preset_from_rc(rc_data, rc_path)
+            if preset_obj is not None:
+                print(f"[rc] loaded preset from {rc_path}", file=sys.stderr)
+
+    if args.preset:
+        preset_path = pathlib.Path(args.preset).expanduser().resolve()
+        if not preset_path.is_file():
+            raise FileNotFoundError(f"Preset file does not exist: {preset_path}")
+        preset_obj = _read_json_file(preset_path)
+        print(f"[cli] loaded preset from {preset_path}", file=sys.stderr)
+
+    preset_mode = _normalize_preset_mode(args.preset_mode if args.preset_mode is not None else rc_mode)
+    return preset_obj, preset_mode
 
 
 def _set_input_value(page: Any, selector: str, value: Any, event_name: str = "change") -> bool:
@@ -484,45 +637,48 @@ def main() -> int:
     args = _parse_args()
     start = time.time()
     try:
-        preset_obj: dict[str, Any] | None = None
-        rc_mode: str | None = None
-        rc_path = _resolve_rc_path(args.rc, no_rc=args.no_rc)
-        if rc_path is not None:
-            rc_data = _read_json_file(rc_path)
-            rc_mode = _extract_preset_mode_from_rc(rc_data)
-            if not args.preset:
-                preset_obj = _extract_preset_from_rc(rc_data, rc_path)
-                if preset_obj is not None:
-                    print(f"[rc] loaded preset from {rc_path}", file=sys.stderr)
+        jobs = _build_render_jobs(args)
+        save_preset_path = _resolve_save_preset_path(args, jobs)
+        preset_obj, preset_mode = _load_preset_from_sources(args)
+        failures: list[tuple[pathlib.Path, Exception]] = []
+        for index, (input_path, output_path) in enumerate(jobs, start=1):
+            run_start = time.time()
+            try:
+                render_to_png(
+                    input_path,
+                    output_path,
+                    url=args.url,
+                    iso=args.iso,
+                    style=args.style,
+                    preset=preset_obj,
+                    preset_mode=preset_mode,
+                    save_preset_path=save_preset_path,
+                    preset_name=args.preset_name,
+                    wait_ms=args.wait_ms,
+                    headed=args.headed,
+                )
+            except Exception as exc:
+                if not args.continue_on_error:
+                    raise
+                failures.append((input_path, exc))
+                print(f"ERROR [{index}/{len(jobs)}] {input_path}: {exc}", file=sys.stderr)
+                continue
 
-        if args.preset:
-            preset_path = pathlib.Path(args.preset).expanduser().resolve()
-            if not preset_path.is_file():
-                raise FileNotFoundError(f"Preset file does not exist: {preset_path}")
-            preset_obj = _read_json_file(preset_path)
-            print(f"[cli] loaded preset from {preset_path}", file=sys.stderr)
+            dt = time.time() - run_start
+            print(f"Saved [{index}/{len(jobs)}]: {output_path} ({dt:.2f}s)")
 
-        preset_mode = _normalize_preset_mode(args.preset_mode if args.preset_mode is not None else rc_mode)
-
-        render_to_png(
-            pathlib.Path(args.input_file),
-            pathlib.Path(args.output_png),
-            url=args.url,
-            iso=args.iso,
-            style=args.style,
-            preset=preset_obj,
-            preset_mode=preset_mode,
-            save_preset_path=pathlib.Path(args.save_preset) if args.save_preset else None,
-            preset_name=args.preset_name,
-            wait_ms=args.wait_ms,
-            headed=args.headed,
-        )
+        if failures:
+            print(f"Completed with failures: {len(failures)}/{len(jobs)} file(s) failed.", file=sys.stderr)
+            return 1
     except Exception as exc:  # pragma: no cover - prototype cli
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
     dt = time.time() - start
-    print(f"Saved: {pathlib.Path(args.output_png).expanduser().resolve()} ({dt:.2f}s)")
+    if len(jobs) > 1:
+        print(f"Batch complete: {len(jobs)} file(s) in {dt:.2f}s")
+    else:
+        print(f"Done: {dt:.2f}s")
     return 0
 
 
