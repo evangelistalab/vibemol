@@ -8,7 +8,7 @@ Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files
 - Molecule styles:
   - `Default`
   - `Toon (luminous)`
-  - `Kit (collar joints)` (internal style id: `studio`)
+  - `Kit (collar joints)` (internal style id: `kit`)
   - `Glossy (glass edge)`
 - Edit mode and measurement mode
 - Save PNG, batch export, and XYZ export

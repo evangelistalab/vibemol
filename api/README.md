@@ -105,7 +105,7 @@ Style mapping:
 - `default` = Default
 - `toon` = Toon
 - `fancy` = alias for `toon` (for compatibility)
-- `studio` = Kit
+- `kit` = Kit
 - `glossy` = Glossy
 
 ## Notes

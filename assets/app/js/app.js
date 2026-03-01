@@ -579,6 +579,144 @@
   let surfaceStyle = 'emissive';
   // Current atom/bond material style
   let moleculeStyle = 'default';
+  const MOLECULE_STYLE_KEYS = Object.freeze(['default', 'toon', 'kit', 'glossy']);
+  const MOLECULE_STYLE_ALIASES = Object.freeze({
+    fancy: 'toon',
+  });
+  const MOLECULE_STYLE_SET = new Set(MOLECULE_STYLE_KEYS);
+  const MOLECULE_STYLE_PROFILE = Object.freeze({
+    default: Object.freeze({
+      key: 'default',
+      atomScaleMain: 1.2,
+      atomScaleTransitionMetal: 1.2,
+      sphereWidthSegments: 28,
+      sphereHeightSegments: 18,
+      bondRadius: 0.11,
+      bondRadialSegments: 16,
+      bondHeightSegments: 2,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: false,
+      aromaticDashColor: 0x4f5560,
+      aromaticDashOpacity: 0.96,
+      lighting: Object.freeze({
+        hemiColor: 0xffffff,
+        hemiGroundColor: 0x081018,
+        hemiIntensity: 2.0,
+        dirColor: 0xffffff,
+        dirIntensity: 1.0,
+        dirPos: Object.freeze([1, 1, 1]),
+        ambColor: 0x999999,
+        ambIntensity: 0.65,
+        rimColor: 0x9fb8ff,
+        rimIntensity: 0.0,
+      }),
+    }),
+    toon: Object.freeze({
+      key: 'toon',
+      atomScaleMain: 1.16,
+      atomScaleTransitionMetal: 1.22,
+      sphereWidthSegments: 30,
+      sphereHeightSegments: 20,
+      bondRadius: 0.095,
+      bondRadialSegments: 20,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: true,
+      aromaticDashColor: 0x515a66,
+      aromaticDashOpacity: 0.96,
+      lighting: Object.freeze({
+        hemiColor: 0xf8fbff,
+        hemiGroundColor: 0x0f1826,
+        hemiIntensity: 1.28,
+        dirColor: 0xffffff,
+        dirIntensity: 2.25,
+        dirPos: Object.freeze([1.25, 1.2, 1.1]),
+        ambColor: 0x9aa6ba,
+        ambIntensity: 0.16,
+        rimColor: 0x9fb8ff,
+        rimIntensity: 1.18,
+      }),
+    }),
+    kit: Object.freeze({
+      key: 'kit',
+      atomScaleMain: 1.08,
+      atomScaleTransitionMetal: 1.14,
+      sphereWidthSegments: 36,
+      sphereHeightSegments: 24,
+      bondRadius: 0.068,
+      bondRadialSegments: 20,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: true,
+      usesKitCurvedMultiBond: true,
+      stylizedMolecule: false,
+      kitCollarRadius: 0.114,
+      aromaticDashColor: 0x59616d,
+      aromaticDashOpacity: 0.96,
+      lighting: Object.freeze({
+        hemiColor: 0xfafcff,
+        hemiGroundColor: 0x515965,
+        hemiIntensity: 1.35,
+        dirColor: 0xffffff,
+        dirIntensity: 2.1,
+        dirPos: Object.freeze([1.35, 1.28, 1.18]),
+        ambColor: 0x9ea7b2,
+        ambIntensity: 0.18,
+        rimColor: 0xdfe7f2,
+        rimIntensity: 0.75,
+      }),
+    }),
+    glossy: Object.freeze({
+      key: 'glossy',
+      atomScaleMain: 1.18,
+      atomScaleTransitionMetal: 1.24,
+      sphereWidthSegments: 36,
+      sphereHeightSegments: 24,
+      // Bond radius/end radius are derived dynamically from glossyBondRadius control.
+      bondRadius: 0.072,
+      bondRadialSegments: 28,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: true,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: true,
+      aromaticDashColor: 0x2f4a74,
+      aromaticDashOpacity: 0.94,
+      lighting: Object.freeze({
+        hemiColor: 0xf4f9ff,
+        hemiGroundColor: 0x0a1324,
+        hemiIntensity: 1.1,
+        dirColor: 0xffffff,
+        dirIntensity: 2.6,
+        dirPos: Object.freeze([1.45, 1.32, 1.24]),
+        ambColor: 0x7d93b2,
+        ambIntensity: 0.12,
+        rimColor: 0x8db5ff,
+        rimIntensity: 1.52,
+      }),
+    }),
+  });
+
+  /**
+   * Normalize molecule-style keys and compatibility aliases.
+   * @param {*} value
+   * @returns {'default'|'toon'|'kit'|'glossy'}
+   */
+  function normalizeMoleculeStyleKey(value) {
+    const raw = (typeof value === 'string') ? value.trim().toLowerCase() : '';
+    const mapped = MOLECULE_STYLE_ALIASES[raw] || raw;
+    return MOLECULE_STYLE_SET.has(mapped) ? mapped : 'default';
+  }
+
+  /**
+   * Resolve one style profile.
+   * @param {*} [styleKey]
+   * @returns {typeof MOLECULE_STYLE_PROFILE['default']}
+   */
+  function getMoleculeStyleProfile(styleKey = moleculeStyle) {
+    const key = normalizeMoleculeStyleKey(styleKey);
+    return MOLECULE_STYLE_PROFILE[key] || MOLECULE_STYLE_PROFILE.default;
+  }
   // Center radius (Å) for glossy bond connectors
   let glossyBondRadius = 0.072;
   // Disable expensive scene rebuild fanout while applying batched preset updates.
@@ -736,55 +874,17 @@
    * Update scene lighting to match the active molecule style.
    */
   function applyMoleculeStyleLighting() {
-    if (moleculeStyle === 'toon') {
-      hemi.color.setHex(0xf8fbff);
-      hemi.groundColor.setHex(0x0f1826);
-      hemi.intensity = 1.28;
-      dir.color.setHex(0xffffff);
-      dir.intensity = 2.25;
-      dir.position.set(1.25, 1.2, 1.1);
-      amb.color.setHex(0x9aa6ba);
-      amb.intensity = 0.16;
-      rim.color.setHex(0x9fb8ff);
-      rim.intensity = 1.18;
-      return;
-    }
-    if (moleculeStyle === 'glossy') {
-      hemi.color.setHex(0xf4f9ff);
-      hemi.groundColor.setHex(0x0a1324);
-      hemi.intensity = 1.1;
-      dir.color.setHex(0xffffff);
-      dir.intensity = 2.6;
-      dir.position.set(1.45, 1.32, 1.24);
-      amb.color.setHex(0x7d93b2);
-      amb.intensity = 0.12;
-      rim.color.setHex(0x8db5ff);
-      rim.intensity = 1.52;
-      return;
-    }
-    if (moleculeStyle === 'studio') {
-      hemi.color.setHex(0xfafcff);
-      hemi.groundColor.setHex(0x515965);
-      hemi.intensity = 1.35;
-      dir.color.setHex(0xffffff);
-      dir.intensity = 2.1;
-      dir.position.set(1.35, 1.28, 1.18);
-      amb.color.setHex(0x9ea7b2);
-      amb.intensity = 0.18;
-      rim.color.setHex(0xdfe7f2);
-      rim.intensity = 0.75;
-      return;
-    }
-    hemi.color.setHex(0xffffff);
-    hemi.groundColor.setHex(0x081018);
-    hemi.intensity = 2.0;
-    dir.color.setHex(0xffffff);
-    dir.intensity = 1.0;
-    dir.position.set(1, 1, 1);
-    amb.color.setHex(0x999999);
-    amb.intensity = 0.65;
-    rim.color.setHex(0x9fb8ff);
-    rim.intensity = 0.0;
+    const lighting = getMoleculeStyleProfile().lighting;
+    hemi.color.setHex(lighting.hemiColor);
+    hemi.groundColor.setHex(lighting.hemiGroundColor);
+    hemi.intensity = lighting.hemiIntensity;
+    dir.color.setHex(lighting.dirColor);
+    dir.intensity = lighting.dirIntensity;
+    dir.position.set(lighting.dirPos[0], lighting.dirPos[1], lighting.dirPos[2]);
+    amb.color.setHex(lighting.ambColor);
+    amb.intensity = lighting.ambIntensity;
+    rim.color.setHex(lighting.rimColor);
+    rim.intensity = lighting.rimIntensity;
   }
 
   /**
@@ -830,7 +930,7 @@
    * @returns {boolean}
    */
   function useToonSurfaceStyle() {
-    return moleculeStyle === 'toon';
+    return getMoleculeStyleProfile().key === 'toon';
   }
 
   /**
@@ -838,7 +938,7 @@
    * @returns {boolean}
    */
   function useStylizedMoleculeStyle() {
-    return moleculeStyle === 'toon' || moleculeStyle === 'glossy';
+    return !!getMoleculeStyleProfile().stylizedMolecule;
   }
 
   /**
@@ -846,15 +946,15 @@
    * @returns {boolean}
    */
   function useGlossyMoleculeStyle() {
-    return moleculeStyle === 'glossy';
+    return getMoleculeStyleProfile().key === 'glossy';
   }
 
   /**
-   * Determine whether molecule rendering should use the studio collar-joint style.
+   * Determine whether molecule rendering should use the kit collar-joint style.
    * @returns {boolean}
    */
-  function useStudioMoleculeStyle() {
-    return moleculeStyle === 'studio';
+  function useKitMoleculeStyle() {
+    return getMoleculeStyleProfile().key === 'kit';
   }
 
   /**
@@ -1588,11 +1688,12 @@
    * @returns {THREE.Color}
    */
   function getAtomRenderColor(z) {
+    const styleKey = getMoleculeStyleProfile().key;
     const useElementColors = isElementColoringEnabled();
     const hasColorOverride = elementColorOverrides.has(z | 0);
     let atomColor = getElementBaseColor(z);
 
-    if (useStudioMoleculeStyle()) {
+    if (styleKey === 'kit') {
       if (!useElementColors) return new THREE.Color(0xd6dde6);
       if (!hasColorOverride) {
         if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xa78546);
@@ -1606,7 +1707,7 @@
       atomColor.setHSL(hsl.h, Math.min(1, hsl.s * 0.95 + 0.03), Math.min(1, hsl.l * 0.9 + 0.06));
       return atomColor;
     }
-    if (useGlossyMoleculeStyle()) {
+    if (styleKey === 'glossy') {
       if (!hasColorOverride) {
         if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf1c970);
         if (z === 1) return new THREE.Color(0xe5f2ff);
@@ -1614,7 +1715,7 @@
       if (hasColorOverride) return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.42);
       return new THREE.Color(0xbfd8ff);
     }
-    if (moleculeStyle !== 'toon') return atomColor;
+    if (styleKey !== 'toon') return atomColor;
     if (!useElementColors) return new THREE.Color(0xd0d9e6);
     if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf2ad1f);
 
@@ -1639,18 +1740,19 @@
    * @returns {THREE.Color}
    */
   function getBondRenderColor(atomColor, z) {
+    const styleKey = getMoleculeStyleProfile().key;
     const hasColorOverride = elementColorOverrides.has(z | 0);
-    if (useStudioMoleculeStyle()) {
+    if (styleKey === 'kit') {
       if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xd3ba8e);
       if (hasColorOverride) return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.32);
       return new THREE.Color(0xe2e7ee);
     }
-    if (useGlossyMoleculeStyle()) {
+    if (styleKey === 'glossy') {
       if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf4d089);
       if (hasColorOverride) return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.22);
       return new THREE.Color(0xbad4f8);
     }
-    if (moleculeStyle !== 'toon') return atomColor;
+    if (styleKey !== 'toon') return atomColor;
     if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xefbb55);
     const c = atomColor.clone();
     const hsl = { h: 0, s: 0, l: 0 };
@@ -1693,10 +1795,10 @@
    * @returns {number}
    */
   function getAtomRenderScaleFactor(z) {
-    if (moleculeStyle === 'studio') return isTransitionMetalAtomicNumber(z) ? 1.14 : 1.08;
-    if (moleculeStyle === 'glossy') return isTransitionMetalAtomicNumber(z) ? 1.24 : 1.18;
-    if (moleculeStyle === 'toon') return isTransitionMetalAtomicNumber(z) ? 1.22 : 1.16;
-    return 1.2;
+    const profile = getMoleculeStyleProfile();
+    return isTransitionMetalAtomicNumber(z)
+      ? profile.atomScaleTransitionMetal
+      : profile.atomScaleMain;
   }
 
   /**
@@ -1706,7 +1808,8 @@
    * @returns {THREE.Material}
    */
   function createAtomMaterial(color, z) {
-    if (useStudioMoleculeStyle()) {
+    const styleKey = getMoleculeStyleProfile().key;
+    if (styleKey === 'kit') {
       const isTransitionMetal = isTransitionMetalAtomicNumber(z);
       return new THREE.MeshPhongMaterial({
         color,
@@ -1718,7 +1821,7 @@
         emissiveIntensity: isTransitionMetal ? 0.18 : 0.06,
       });
     }
-    if (useGlossyMoleculeStyle()) {
+    if (styleKey === 'glossy') {
       const isTransitionMetal = isTransitionMetalAtomicNumber(z);
       const baseShellOpacity = 0.46;
       const baseShellThickness = 0.22;
@@ -1750,7 +1853,7 @@
         emissiveIntensity: isTransitionMetal ? 0.02 : 0.008,
       });
     }
-    if (moleculeStyle === 'toon') {
+    if (styleKey === 'toon') {
       const isTransitionMetal = isTransitionMetalAtomicNumber(z);
       const emissiveBoost = isTransitionMetal ? 0.42 : 0.26;
       const emissiveTint = isTransitionMetal ? new THREE.Color(0xffe2a3) : new THREE.Color(0xffffff);
@@ -1837,13 +1940,7 @@
    * @returns {THREE.Material}
    */
   function getBondMaterial() {
-    const key = moleculeStyle === 'toon'
-      ? 'toon'
-      : moleculeStyle === 'glossy'
-        ? 'glossy'
-        : moleculeStyle === 'studio'
-          ? 'studio'
-        : 'default';
+    const key = getMoleculeStyleProfile().key;
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
 
     let mat;
@@ -1866,7 +1963,7 @@
         emissive: new THREE.Color(0x1e355c),
         emissiveIntensity: 0.06,
       });
-    } else if (key === 'studio') {
+    } else if (key === 'kit') {
       mat = new THREE.MeshPhongMaterial({
         color: 0xe7ebf2,
         specular: 0xffffff,
@@ -1942,23 +2039,12 @@
    * @returns {THREE.Material}
    */
   function getAromaticRingMaterial() {
-    const styleKey = moleculeStyle === 'glossy'
-      ? 'glossy'
-      : moleculeStyle === 'studio'
-        ? 'studio'
-        : moleculeStyle === 'toon'
-          ? 'toon'
-          : 'default';
+    const profile = getMoleculeStyleProfile();
+    const styleKey = profile.key;
     const key = `aromatic:ring:${styleKey}`;
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
-    const color = styleKey === 'glossy'
-      ? 0x2f4a74
-      : styleKey === 'studio'
-        ? 0x59616d
-        : styleKey === 'toon'
-          ? 0x515a66
-          : 0x4f5560;
-    const opacity = styleKey === 'glossy' ? 0.94 : 0.96;
+    const color = profile.aromaticDashColor;
+    const opacity = profile.aromaticDashOpacity;
     const mat = new THREE.LineDashedMaterial({
       color,
       dashSize: 0.10,
@@ -2103,30 +2189,30 @@
     return geom;
   }
 
-  const STUDIO_FLANGE_PLATEAU_END = 0.02;
-  const STUDIO_FLANGE_TAPER_END = 0.04;
-  const STUDIO_DOUBLE_BOND_CURVE_GAIN = 4.0;
-  const STUDIO_MULTI_BOND_SEAT_SPREAD_GAIN = 1.8;
-  const STUDIO_FLANGE_SPHERE_OVERLAP = 0.001;
+  const KIT_FLANGE_PLATEAU_END = 0.02;
+  const KIT_FLANGE_TAPER_END = 0.04;
+  const KIT_DOUBLE_BOND_CURVE_GAIN = 4.0;
+  const KIT_MULTI_BOND_SEAT_SPREAD_GAIN = 1.8;
+  const KIT_FLANGE_SPHERE_OVERLAP = 0.001;
   // Keep a tiny shaft overlap inside flange tips to avoid seam flicker/tearing.
-  const STUDIO_FLANGE_SHAFT_OVERLAP = 0.003;
+  const KIT_FLANGE_SHAFT_OVERLAP = 0.003;
   // Cap curve bulge more aggressively on short chords to avoid endpoint artifacts.
-  const STUDIO_CURVED_SHORT_CHORD_BULGE_FRACTION = 0.30;
-  const STUDIO_CURVED_HANDLE_SCALE = 0.44;
-  const STUDIO_CURVED_HANDLE_OFFSET_SCALE = 0.55;
+  const KIT_CURVED_SHORT_CHORD_BULGE_FRACTION = 0.30;
+  const KIT_CURVED_HANDLE_SCALE = 0.44;
+  const KIT_CURVED_HANDLE_OFFSET_SCALE = 0.55;
 
   /**
-   * Build one studio flange profile revolved around Y.
+   * Build one kit flange profile revolved around Y.
    * The flange starts at y=0 (atom side) and transitions to shaft radius at y=taper.
    * @param {number} centerRadius
    * @param {number} collarRadius
    * @returns {THREE.BufferGeometry}
    */
-  function createStudioFlangeGeometry(centerRadius, collarRadius) {
+  function createKitFlangeGeometry(centerRadius, collarRadius) {
     const cR = Math.max(1e-4, centerRadius);
     const kR = Math.max(cR * 1.2, collarRadius);
-    const plateau = Math.max(1e-5, STUDIO_FLANGE_PLATEAU_END);
-    const taper = Math.max(plateau + 1e-5, STUDIO_FLANGE_TAPER_END);
+    const plateau = Math.max(1e-5, KIT_FLANGE_PLATEAU_END);
+    const taper = Math.max(plateau + 1e-5, KIT_FLANGE_TAPER_END);
     const profile = [
       new THREE.Vector2(kR, 0),
       new THREE.Vector2(kR, plateau),
@@ -2312,14 +2398,14 @@
   }
 
   /**
-   * Build a studio-style connector with a slim shaft and collar-like flares near atom joints.
+   * Build a kit-style connector with a slim shaft and collar-like flares near atom joints.
    * The profile includes a shallow groove inside each collar to produce a dark ring under light.
    * @param {number} length
    * @param {number} centerRadius
    * @param {number} collarRadius
    * @returns {THREE.BufferGeometry}
    */
-  function createStudioCollaredBondGeometry(length, centerRadius, collarRadius) {
+  function createKitCollaredBondGeometry(length, centerRadius, collarRadius) {
     const L = Math.max(1e-4, length);
     const cR = Math.max(1e-4, centerRadius);
     const kR = Math.max(cR * 1.2, collarRadius);
@@ -2327,8 +2413,8 @@
     const profile = [];
 
     // Fixed flange profile distances in angstrom from each end plane.
-    const flangePlateauEnd = STUDIO_FLANGE_PLATEAU_END;
-    const flangeTaperEnd = STUDIO_FLANGE_TAPER_END;
+    const flangePlateauEnd = KIT_FLANGE_PLATEAU_END;
+    const flangeTaperEnd = KIT_FLANGE_TAPER_END;
 
     // Clamp transition distances for very short bonds while preserving:
     // 0 <= plateau <= taper <= halfL.
@@ -2370,14 +2456,14 @@
   }
 
   /**
-   * Compute where a studio connector should start relative to an atom center so the
+   * Compute where a kit connector should start relative to an atom center so the
    * flange rim (radius R0) contacts the sphere surface. Smaller spheres naturally
    * require deeper insertion because their curvature is higher.
    * @param {number} sphereRadius Rendered atom radius in angstroms.
-   * @param {number} flangeRadius Studio flange outer radius R0 in angstroms.
+   * @param {number} flangeRadius Kit flange outer radius R0 in angstroms.
    * @returns {number} Distance from atom center to connector start plane along bond axis.
    */
-  function getStudioConnectorTrimDistance(sphereRadius, flangeRadius) {
+  function getKitConnectorTrimDistance(sphereRadius, flangeRadius) {
     const R0 = Math.max(1e-6, Number(flangeRadius) || 0);
     let x = getSphereSectionAxisDistance(sphereRadius, R0);
     // Small extra overlap hides seams; tangent geometry already provides the curvature scaling.
@@ -2620,16 +2706,14 @@
     const group = new THREE.Group();
     atomLabelTrackTargets.length = 0;
     // Atoms (spheres)
-    const isToonStyle = moleculeStyle === 'toon';
-    const isGlossyStyle = moleculeStyle === 'glossy';
-    const isStudioStyle = moleculeStyle === 'studio';
+    const profile = getMoleculeStyleProfile();
+    const isToonStyle = profile.key === 'toon';
+    const isGlossyStyle = profile.key === 'glossy';
     const isStylizedStyle = isToonStyle || isGlossyStyle;
-    const sphereWidthSegments = (isGlossyStyle || isStudioStyle) ? 36 : isToonStyle ? 30 : 28;
-    const sphereHeightSegments = (isGlossyStyle || isStudioStyle) ? 24 : isToonStyle ? 20 : 18;
     const sphere = new THREE.SphereGeometry(
       0.5,
-      sphereWidthSegments,
-      sphereHeightSegments
+      profile.sphereWidthSegments,
+      profile.sphereHeightSegments
     );
     const stylizedOutlineMat = isStylizedStyle
       ? new THREE.MeshBasicMaterial({
@@ -2751,17 +2835,13 @@
   }
 
   /**
-   * Build bond cylinder meshes using covalent-radii distance heuristics.
+   * Build per-atom bond-render records in angstrom units.
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
-   * @returns {THREE.Group}
+   * @param {{includeRenderColor?:boolean}=} options
+   * @returns {Array<{pos:THREE.Vector3,Z:number,color:THREE.Color,bondColor:THREE.Color,displayRadius:number}>}
    */
-  function buildBonds(vol) {
-    const group = new THREE.Group();
-    const isToonStyle = moleculeStyle === 'toon';
-    const isGlossyStyle = moleculeStyle === 'glossy';
-    const isStudioStyle = moleculeStyle === 'studio';
-    const isStylizedStyle = isToonStyle || isGlossyStyle;
-    const usesTrimmedConnector = isGlossyStyle || isStudioStyle;
+  function buildBondAtomRecords(vol, options = {}) {
+    const includeRenderColor = options.includeRenderColor !== false;
     const atomPositions = [];
     const toAng = (vol.units === 'angstrom');
     for (const a of vol.atoms) {
@@ -2770,27 +2850,83 @@
       const py = toAng ? a.y : a.y * BOHR_TO_ANG;
       const pz = toAng ? a.z : a.z * BOHR_TO_ANG;
       const pos = new THREE.Vector3(px, py, pz);
-      const atomColor = getAtomRenderColor(z);
+      const atomColor = includeRenderColor ? getAtomRenderColor(z) : null;
       atomPositions.push({
         pos,
         Z: z,
         color: atomColor,
-        bondColor: getBondRenderColor(atomColor, z),
+        bondColor: atomColor ? getBondRenderColor(atomColor, z) : null,
         // Sphere geometry radius is 0.5, then scaled by the style-dependent atom scale factor.
         displayRadius: 0.5 * getCovalentRadiusAngstrom(z) * getAtomRenderScaleFactor(z),
       });
     }
+    return atomPositions;
+  }
+
+  /**
+   * Compute one bond segment placement after optional per-end trimming.
+   * @param {THREE.Vector3} aPos
+   * @param {THREE.Vector3} bPos
+   * @param {number} trimA
+   * @param {number} trimB
+   * @param {number} minGeomLen
+   * @returns {{valid:boolean,len:number,dirNorm:THREE.Vector3,geomLen:number,mid:THREE.Vector3,aEnd:THREE.Vector3,bEnd:THREE.Vector3}}
+   */
+  function computeBondSegmentPlacement(aPos, bPos, trimA = 0, trimB = 0, minGeomLen = 0.0) {
+    const dir = new THREE.Vector3().subVectors(bPos, aPos);
+    const len = dir.length();
+    if (len < 1e-6) {
+      return {
+        valid: false,
+        len: 0,
+        dirNorm: new THREE.Vector3(0, 1, 0),
+        geomLen: 0,
+        mid: new THREE.Vector3(),
+        aEnd: aPos.clone(),
+        bEnd: bPos.clone(),
+      };
+    }
+    const dirNorm = dir.clone().multiplyScalar(1 / Math.max(1e-12, len));
+    const aEnd = aPos.clone().addScaledVector(dirNorm, trimA);
+    const bEnd = aPos.clone().addScaledVector(dirNorm, len - trimB);
+    const geomLen = Math.max(0, len - trimA - trimB);
+    const mid = new THREE.Vector3().addVectors(aEnd, bEnd).multiplyScalar(0.5);
+    return {
+      valid: geomLen >= Math.max(0, minGeomLen),
+      len,
+      dirNorm,
+      geomLen,
+      mid,
+      aEnd,
+      bEnd,
+    };
+  }
+
+  /**
+   * Build bond cylinder meshes using covalent-radii distance heuristics.
+   * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
+   * @returns {THREE.Group}
+   */
+  function buildBonds(vol) {
+    const group = new THREE.Group();
+    const profile = getMoleculeStyleProfile();
+    const isToonStyle = profile.key === 'toon';
+    const isGlossyStyle = profile.key === 'glossy';
+    const isKitStyle = profile.key === 'kit';
+    const isStylizedStyle = !!profile.stylizedMolecule;
+    const usesTrimmedConnector = !!profile.usesTrimmedConnector;
+    const atomPositions = buildBondAtomRecords(vol);
     const bondMat = getBondMaterial();
     const stylizedBondOutlineMat = getStylizedBondOutlineMaterial();
     const stylizedBondHighlightMat = getStylizedBondHighlightMaterial();
     const up = new THREE.Vector3(0, 1, 0);
     const glossyCenterRadius = getGlossyBondCenterRadius();
     const glossyEndRadius = getGlossyBondEndRadius();
-    const studioCenterRadius = 0.068;
-    const studioCollarRadius = 0.114;
-    const bondRadius = isGlossyStyle ? glossyCenterRadius : isStudioStyle ? studioCenterRadius : isToonStyle ? 0.095 : 0.11;
-    const bondRadialSegments = isGlossyStyle ? 28 : isStudioStyle ? 20 : isToonStyle ? 20 : 16;
-    const bondHeightSegments = (isGlossyStyle || isStudioStyle || isToonStyle) ? 1 : 2;
+    const kitCenterRadius = profile.bondRadius;
+    const kitCollarRadius = profile.kitCollarRadius || 0.114;
+    const bondRadius = isGlossyStyle ? glossyCenterRadius : profile.bondRadius;
+    const bondRadialSegments = profile.bondRadialSegments;
+    const bondHeightSegments = profile.bondHeightSegments;
     const bondEdges = collectBondCandidates(atomPositions);
     const multiBondRenderingEnabled = !!showMultiBonds;
     if (multiBondRenderingEnabled) inferBondOrders(atomPositions, bondEdges);
@@ -2821,8 +2957,8 @@
     function addBondComponent(a, b, i, j, dirNorm, len, geomLen, mid, trimA, trimB, order, componentOffsetU, componentOffsetV) {
       const geom = isGlossyStyle
         ? createGlossyBondConnectorGeometry(geomLen, bondRadius, glossyEndRadius)
-        : isStudioStyle
-          ? createStudioCollaredBondGeometry(geomLen, bondRadius, studioCollarRadius)
+        : isKitStyle
+          ? createKitCollaredBondGeometry(geomLen, bondRadius, kitCollarRadius)
           : new THREE.CylinderGeometry(bondRadius, bondRadius, geomLen, bondRadialSegments, bondHeightSegments, false);
       if (isStylizedStyle) applyBondGradient(geom, a.bondColor, b.bondColor);
       const cyl = new THREE.Mesh(geom, bondMat);
@@ -2854,15 +2990,15 @@
         bondComponentOffset: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
         bondComponentOffsetU: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
         bondComponentOffsetV: Number.isFinite(componentOffsetV) ? componentOffsetV : 0,
-        connectorStyle: isStudioStyle ? 'studio' : isGlossyStyle ? 'glossy' : 'default',
+        connectorStyle: isKitStyle ? 'kit' : isGlossyStyle ? 'glossy' : 'default',
         connectorCenterRadius: bondRadius,
-        connectorEndRadius: isStudioStyle ? studioCollarRadius : isGlossyStyle ? glossyEndRadius : bondRadius,
+        connectorEndRadius: isKitStyle ? kitCollarRadius : isGlossyStyle ? glossyEndRadius : bondRadius,
       };
       group.add(cyl);
     }
 
     /**
-     * Build one curved studio multi-bond component using a tube shaft plus
+     * Build one curved kit multi-bond component using a tube shaft plus
      * fixed-shape flanges at each atom-side endpoint.
      * @param {number} i
      * @param {number} j
@@ -2881,11 +3017,11 @@
      * @param {number} componentOffsetU
      * @param {number} componentOffsetV
      */
-    function addStudioCurvedBondComponent(i, j, order, len, geomLen, trimA, trimB, aPos, bPos, aRadius, bRadius, dirNorm, offsetDirection, offsetDistance, componentOffsetU, componentOffsetV) {
+    function addKitCurvedBondComponent(i, j, order, len, geomLen, trimA, trimB, aPos, bPos, aRadius, bRadius, dirNorm, offsetDirection, offsetDistance, componentOffsetU, componentOffsetV) {
       const bondMid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
       const symmetricEligible = isMirrorSymmetryEligible(aRadius, bRadius, trimA, trimB);
 
-      const seatSpreadTarget = offsetDistance * STUDIO_MULTI_BOND_SEAT_SPREAD_GAIN;
+      const seatSpreadTarget = offsetDistance * KIT_MULTI_BOND_SEAT_SPREAD_GAIN;
       // Enforce bond-centered symmetry for multi-bond seats.
       const seatAxial = Math.max(0, Math.min(Number(trimA) || 0, Number(trimB) || 0));
       const maxLatA = Math.sqrt(Math.max(0, aRadius * aRadius - seatAxial * seatAxial));
@@ -2918,11 +3054,11 @@
       // Place flange base planes where their outer radius matches sphere cross-sections.
       const flangeBaseStartAxial = Math.max(
         0,
-        getSphereSectionAxisDistance(aRadius, studioCollarRadius) - STUDIO_FLANGE_SPHERE_OVERLAP
+        getSphereSectionAxisDistance(aRadius, kitCollarRadius) - KIT_FLANGE_SPHERE_OVERLAP
       );
       const flangeBaseEndAxial = Math.max(
         0,
-        getSphereSectionAxisDistance(bRadius, studioCollarRadius) - STUDIO_FLANGE_SPHERE_OVERLAP
+        getSphereSectionAxisDistance(bRadius, kitCollarRadius) - KIT_FLANGE_SPHERE_OVERLAP
       );
       const flangeBaseStart = aPos.clone().addScaledVector(startNormal, flangeBaseStartAxial);
       let flangeBaseEnd = bPos.clone().addScaledVector(endNormal, flangeBaseEndAxial);
@@ -2933,8 +3069,8 @@
       // Compute flange tip centers first, then apply a small adaptive overlap per end.
       // High-bend/short-chord cases get less overlap to avoid tube self-intersection
       // artifacts at one endpoint.
-      const flangeTipStart = flangeBaseStart.clone().addScaledVector(startNormal, STUDIO_FLANGE_TAPER_END);
-      const flangeTipEnd = flangeBaseEnd.clone().addScaledVector(endNormal, STUDIO_FLANGE_TAPER_END);
+      const flangeTipStart = flangeBaseStart.clone().addScaledVector(startNormal, KIT_FLANGE_TAPER_END);
+      const flangeTipEnd = flangeBaseEnd.clone().addScaledVector(endNormal, KIT_FLANGE_TAPER_END);
       const tipChordLen = Math.max(1e-6, flangeTipStart.distanceTo(flangeTipEnd));
       const axisDotStart = Math.abs(startNormal.dot(dirNorm));
       const axisDotEnd = Math.abs(endNormal.dot(dirNorm));
@@ -2943,11 +3079,11 @@
       const overlapLimitByLength = Math.max(0.0005, tipChordLen * 0.12);
       const overlapStart = Math.min(
         overlapLimitByLength,
-        Math.max(0.0005, STUDIO_FLANGE_SHAFT_OVERLAP * (1 - 0.7 * bendStart))
+        Math.max(0.0005, KIT_FLANGE_SHAFT_OVERLAP * (1 - 0.7 * bendStart))
       );
       const overlapEnd = Math.min(
         overlapLimitByLength,
-        Math.max(0.0005, STUDIO_FLANGE_SHAFT_OVERLAP * (1 - 0.7 * bendEnd))
+        Math.max(0.0005, KIT_FLANGE_SHAFT_OVERLAP * (1 - 0.7 * bendEnd))
       );
       const shaftStart = flangeTipStart.clone().addScaledVector(startNormal, -overlapStart);
       let shaftEnd = flangeTipEnd.clone().addScaledVector(endNormal, -overlapEnd);
@@ -2973,12 +3109,12 @@
       const bulgeGain = order >= 3 ? 1.75 : 1.4;
       const arcBulge = Math.max(
         0.008,
-        Math.min(chordLen * STUDIO_CURVED_SHORT_CHORD_BULGE_FRACTION, offsetDistance * bulgeGain)
+        Math.min(chordLen * KIT_CURVED_SHORT_CHORD_BULGE_FRACTION, offsetDistance * bulgeGain)
       );
       const arcMidTarget = arcMidBase.addScaledVector(lateralDir, arcBulge);
 
-      const endHandleLenRaw = chordLen * STUDIO_CURVED_HANDLE_SCALE
-        + offsetDistance * STUDIO_CURVED_HANDLE_OFFSET_SCALE * Math.max(1.0, STUDIO_DOUBLE_BOND_CURVE_GAIN * 0.65);
+      const endHandleLenRaw = chordLen * KIT_CURVED_HANDLE_SCALE
+        + offsetDistance * KIT_CURVED_HANDLE_OFFSET_SCALE * Math.max(1.0, KIT_DOUBLE_BOND_CURVE_GAIN * 0.65);
       const baseHandleLen = Math.max(0.02, Math.min(chordLen * 0.5, endHandleLenRaw));
       const minHandleLen = Math.max(0.008, chordLen * 0.05);
       const maxHandleLen = Math.max(minHandleLen, chordLen * 0.75);
@@ -3014,8 +3150,8 @@
         endNormal
       );
 
-      const flangeStartGeom = createStudioFlangeGeometry(bondRadius, studioCollarRadius);
-      const flangeEndGeom = createStudioFlangeGeometry(bondRadius, studioCollarRadius);
+      const flangeStartGeom = createKitFlangeGeometry(bondRadius, kitCollarRadius);
+      const flangeEndGeom = createKitFlangeGeometry(bondRadius, kitCollarRadius);
       const shaft = new THREE.Mesh(shaftGeom, bondMat);
       const flangeStart = new THREE.Mesh(flangeStartGeom, bondMat);
       const flangeEnd = new THREE.Mesh(flangeEndGeom, bondMat);
@@ -3039,9 +3175,9 @@
         bondComponentOffset: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
         bondComponentOffsetU: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
         bondComponentOffsetV: Number.isFinite(componentOffsetV) ? componentOffsetV : 0,
-        connectorStyle: 'studioCurved',
+        connectorStyle: 'kitCurved',
         connectorCenterRadius: bondRadius,
-        connectorEndRadius: studioCollarRadius,
+        connectorEndRadius: kitCollarRadius,
       };
       group.add(connector);
     }
@@ -3052,41 +3188,39 @@
       const a = atomPositions[i];
       const b = atomPositions[j];
       const order = multiBondRenderingEnabled ? Math.max(1, Math.min(3, edge.order | 0)) : 1;
-      const dir = new THREE.Vector3().subVectors(b.pos, a.pos);
-      const len = dir.length();
-      if (len < 1e-6) continue;
-      const dirNorm = dir.clone().multiplyScalar(1 / Math.max(1e-12, len));
+      const basePlacement = computeBondSegmentPlacement(a.pos, b.pos, 0, 0, 0);
+      if (!basePlacement.valid) continue;
+      const len = basePlacement.len;
+      const dirNorm = basePlacement.dirNorm;
 
       let trimA = 0;
       let trimB = 0;
-      let geomLen = len;
-      let mid = new THREE.Vector3().addVectors(a.pos, b.pos).multiplyScalar(0.5);
-      let aEnd = a.pos.clone();
-      let bEnd = b.pos.clone();
+      let geomLen = basePlacement.geomLen;
+      let mid = basePlacement.mid;
       if (usesTrimmedConnector) {
-        const connectorEndRadius = isGlossyStyle ? glossyEndRadius : studioCollarRadius;
+        const connectorEndRadius = isGlossyStyle ? glossyEndRadius : kitCollarRadius;
         if (isGlossyStyle) {
           // Stop glossy bonds near the atom surfaces with a slight inset.
           const trimInset = Math.min(0.03, Math.max(0.012, connectorEndRadius * 0.18));
           trimA = Math.max(0, a.displayRadius - trimInset);
           trimB = Math.max(0, b.displayRadius - trimInset);
         } else {
-          // Studio seating depends on sphere curvature; small atoms need deeper insertion.
-          trimA = getStudioConnectorTrimDistance(a.displayRadius, connectorEndRadius);
-          trimB = getStudioConnectorTrimDistance(b.displayRadius, connectorEndRadius);
+          // Kit seating depends on sphere curvature; small atoms need deeper insertion.
+          trimA = getKitConnectorTrimDistance(a.displayRadius, connectorEndRadius);
+          trimB = getKitConnectorTrimDistance(b.displayRadius, connectorEndRadius);
         }
-        const maxTrim = Math.max(0, len - (isStudioStyle ? 0.12 : 0.16));
+        const maxTrim = Math.max(0, len - (isKitStyle ? 0.12 : 0.16));
         const trimSum = trimA + trimB;
         if (trimSum > maxTrim && trimSum > 1e-8) {
           const s = maxTrim / trimSum;
           trimA *= s;
           trimB *= s;
         }
-        geomLen = len - trimA - trimB;
-        if (geomLen < (isStudioStyle ? 0.06 : 0.08)) continue;
-        aEnd = a.pos.clone().addScaledVector(dirNorm, trimA);
-        bEnd = a.pos.clone().addScaledVector(dirNorm, len - trimB);
-        mid = new THREE.Vector3().addVectors(aEnd, bEnd).multiplyScalar(0.5);
+        const minGeomLen = isKitStyle ? 0.06 : 0.08;
+        const trimmedPlacement = computeBondSegmentPlacement(a.pos, b.pos, trimA, trimB, minGeomLen);
+        if (!trimmedPlacement.valid) continue;
+        geomLen = trimmedPlacement.geomLen;
+        mid = trimmedPlacement.mid;
       }
 
       const offsets = multiBondRenderingEnabled ? getBondComponentOffsets(order) : [[0, 0]];
@@ -3103,15 +3237,15 @@
           order,
           componentOffsetUBase,
           componentOffsetVBase,
-          isStudioStyle
+          isKitStyle
         );
         const componentVec = perp.clone().multiplyScalar(componentOffsetU).addScaledVector(perpOrtho, componentOffsetV);
-        if (isStudioStyle && order >= 2) {
+        if (isKitStyle && order >= 2) {
           const offsetDistance = componentVec.length();
           const offsetDirection = offsetDistance > 1e-8
             ? componentVec.clone().multiplyScalar(1 / offsetDistance)
             : perp.clone();
-          addStudioCurvedBondComponent(
+          addKitCurvedBondComponent(
             i, j, order, len, geomLen, trimA, trimB,
             a.pos, b.pos, a.displayRadius, b.displayRadius, dirNorm,
             offsetDirection, offsetDistance, componentOffsetU, componentOffsetV
@@ -3139,14 +3273,7 @@
   function updateBondsInPlace() {
     if (!bondGroup || !bondGroup.children || currentIndex < 0 || !volumes[currentIndex]) return;
     const vol = volumes[currentIndex].vol; if (!vol) return;
-    const toAng = (vol.units === 'angstrom');
-    /**
-     * Convert stored atom coordinates to a `THREE.Vector3` in angstrom units.
-     * @param {{x:number,y:number,z:number}} a
-     * @returns {THREE.Vector3}
-     */
-    const toV3 = (a) => new THREE.Vector3(toAng ? a.x : a.x * BOHR_TO_ANG, toAng ? a.y : a.y * BOHR_TO_ANG, toAng ? a.z : a.z * BOHR_TO_ANG);
-    const atomPositions = vol.atoms.map((a) => ({ pos: toV3(a) }));
+    const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false }).map((a) => ({ pos: a.pos }));
     const uniqueEdges = [];
     const seenEdgeKeys = new Set();
     for (const obj of bondGroup.children) {
@@ -3176,8 +3303,8 @@
         connectorEndRadius
       } = obj.userData;
       if (!obj.isMesh) {
-        // Curved studio connectors are composite groups; rebuild to keep geometry consistent.
-        if (connectorStyle === 'studioCurved') { needsFullRebuild = true; break; }
+        // Curved kit connectors are composite groups; rebuild to keep geometry consistent.
+        if (connectorStyle === 'kitCurved') { needsFullRebuild = true; break; }
         continue;
       }
       if (i == null || j == null) continue;
@@ -3186,17 +3313,12 @@
       if (!aInfo || !bInfo) continue;
       const aPos = aInfo.pos;
       const bPos = bInfo.pos;
-      const dir = new THREE.Vector3().subVectors(bPos, aPos);
-      const len = dir.length(); if (len < 1e-6) continue;
-      const dirNorm = dir.clone().multiplyScalar(1 / len);
-      let geomLen = len;
-      let mid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
-      if (trimA || trimB) {
-        geomLen = Math.max(1e-4, len - trimA - trimB);
-        const aEnd = aPos.clone().addScaledVector(dirNorm, trimA);
-        const bEnd = aPos.clone().addScaledVector(dirNorm, len - trimB);
-        mid = new THREE.Vector3().addVectors(aEnd, bEnd).multiplyScalar(0.5);
-      }
+      const placement = computeBondSegmentPlacement(aPos, bPos, trimA, trimB, 1e-4);
+      if (!placement.valid) continue;
+      const len = placement.len;
+      const dirNorm = placement.dirNorm;
+      let geomLen = placement.geomLen;
+      let mid = placement.mid;
       const componentOffsetUValue = Number.isFinite(bondComponentOffsetU)
         ? bondComponentOffsetU
         : (Number.isFinite(bondComponentOffset) ? bondComponentOffset : 0);
@@ -3209,10 +3331,10 @@
       }
       obj.position.copy(mid);
       obj.quaternion.setFromUnitVectors(up, dirNorm);
-      if (connectorStyle === 'studio') {
-        // Rebuild studio connector geometry to preserve fixed flange height/profile when bond length changes.
+      if (connectorStyle === 'kit') {
+        // Rebuild kit connector geometry to preserve fixed flange height/profile when bond length changes.
         const prevGeom = obj.geometry;
-        const newGeom = createStudioCollaredBondGeometry(
+        const newGeom = createKitCollaredBondGeometry(
           geomLen,
           Number.isFinite(connectorCenterRadius) ? connectorCenterRadius : 0.068,
           Number.isFinite(connectorEndRadius) ? connectorEndRadius : 0.114
@@ -4779,13 +4901,12 @@
 
   /**
    * Apply a molecule style selection from UI or keyboard shortcuts.
-   * @param {'default'|'toon'|'studio'|'glossy'} nextStyle
+   * @param {'default'|'toon'|'kit'|'glossy'} nextStyle
    * @param {{rebuild?:boolean}=} options
    */
   function setMoleculeStyle(nextStyle, options = {}) {
     if (!moleculeStyleSel) return;
-    const allowed = new Set(['default', 'toon', 'studio', 'glossy']);
-    const target = allowed.has(nextStyle) ? nextStyle : 'default';
+    const target = normalizeMoleculeStyleKey(nextStyle);
     const shouldRebuild = options.rebuild !== false && !suspendPresetRebuild;
     if (moleculeStyle === target && moleculeStyleSel.value === target) return;
     moleculeStyle = target;
@@ -5421,7 +5542,7 @@
   // Global: molecule style presets (1=Default, 2=Toon, 3=Kit, 4=Glossy)
   bind('down', 'global', '1', () => setMoleculeStyle('default'));
   bind('down', 'global', '2', () => setMoleculeStyle('toon'));
-  bind('down', 'global', '3', () => setMoleculeStyle('studio'));
+  bind('down', 'global', '3', () => setMoleculeStyle('kit'));
   bind('down', 'global', '4', () => setMoleculeStyle('glossy'));
 
   // Global: arrows switch files
@@ -5578,7 +5699,7 @@
     useGlossyMoleculeStyle
   );
   if (moleculeStyleSel) {
-    moleculeStyle = moleculeStyleSel.value || moleculeStyle;
+    moleculeStyle = normalizeMoleculeStyleKey(moleculeStyleSel.value || moleculeStyle);
     moleculeStyleSel.value = moleculeStyle;
     applyMoleculeStyleUiState();
     moleculeStyleSel.onchange = () => {
@@ -5828,8 +5949,7 @@
     if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
   });
   registerPresetSetting('molecule.style', () => moleculeStyle, (value) => {
-    const raw = typeof value === 'string' ? value : 'default';
-    const normalized = raw === 'fancy' ? 'toon' : raw;
+    const normalized = normalizeMoleculeStyleKey(value);
     setMoleculeStyle(normalized, { rebuild: false });
   });
   registerPresetSetting('molecule.glossyBondRadius', () => getGlossyBondCenterRadius(), (value) => {
@@ -5947,9 +6067,13 @@
       for (const [key, def] of presetSettingRegistry.entries()) {
         if (!(key in flatSettings)) continue;
         let value = flatSettings[key];
-        if (key === 'molecule.style' && value === 'fancy') {
-          value = 'toon';
-          warnings.push('Mapped deprecated style value fancy -> toon');
+        if (key === 'molecule.style') {
+          const raw = (typeof value === 'string') ? value : '';
+          const normalized = normalizeMoleculeStyleKey(raw);
+          if (normalized !== raw) {
+            warnings.push(`Mapped deprecated style value ${raw || '(empty)'} -> ${normalized}`);
+          }
+          value = normalized;
         }
         try {
           def.set(value);

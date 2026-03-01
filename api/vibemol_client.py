@@ -57,7 +57,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--iso", type=float, default=None, help="Optional iso value")
     parser.add_argument(
         "--style",
-        choices=["default", "toon", "fancy", "studio", "glossy"],
+        choices=["default", "toon", "fancy", "kit", "glossy"],
         default=None,
         help="Optional molecule style (fancy is accepted as an alias for toon)",
     )

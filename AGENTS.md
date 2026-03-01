@@ -58,7 +58,7 @@ Preset automation contract exposed globally:
 
 ## Key Behavior Notes
 - 2C surface mode is global across loaded 2C files.
-- Molecule styles are: `default`, `toon`, `studio` (shown as Kit), `glossy`.
+- Molecule styles are: `default`, `toon`, `kit` (shown as Kit), `glossy`.
 - Keyboard shortcuts `1/2/3/4` map to molecule styles in that order.
 - `fancy` is treated as a deprecated alias for `toon` in preset/CLI compatibility paths.
 - Toon molecule style enforces toon-shaded surfaces.
@@ -148,7 +148,7 @@ After non-trivial changes:
 3. Load at least one `.cube`, one `.2ccube`, and one `.xyz`.
 4. Confirm 2C mode selection persists across file switches.
 5. Toggle surface/cloud modes and verify rendering updates.
-6. Check molecule styles (`default`, `toon`, `studio/Kit`, `glossy`) and keyboard shortcuts `1/2/3/4`.
+6. Check molecule styles (`default`, `toon`, `kit/Kit`, `glossy`) and keyboard shortcuts `1/2/3/4`.
 7. Enter edit mode and measurement mode; verify interactions still work.
 8. Save/load a preset in web UI and verify settings round-trip.
 9. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
