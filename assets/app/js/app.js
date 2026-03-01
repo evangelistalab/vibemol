@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.6';
+  const APP_VERSION = '0.4.7';
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -5065,6 +5065,85 @@
   }
 
   /**
+   * Build a canonical PubChem compound URL for one CID.
+   * @param {number} cid
+   * @returns {string}
+   */
+  function getPubChemCompoundUrl(cid) {
+    return `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}`;
+  }
+
+  /**
+   * Fetch JSON from PubChem with consistent error handling.
+   * @param {string} url
+   * @param {string} context
+   * @param {{allow404?:boolean}=} options
+   * @returns {Promise<object|null>}
+   */
+  async function fetchPubChemJson(url, context, options = {}) {
+    const allow404 = !!options.allow404;
+    const res = await fetch(url);
+    if (allow404 && res.status === 404) return null;
+    if (!res.ok) throw new Error(`${context} failed (${res.status})`);
+    return await res.json();
+  }
+
+  /**
+   * Fetch text from PubChem with consistent error handling.
+   * @param {string} url
+   * @param {string} context
+   * @returns {Promise<string>}
+   */
+  async function fetchPubChemText(url, context) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${context} failed (${res.status})`);
+    return await res.text();
+  }
+
+  /**
+   * Read CID list from a PUG JSON payload.
+   * @param {*} data
+   * @returns {number[]}
+   */
+  function extractPubChemCidList(data) {
+    const cidsRaw = data && data.IdentifierList && Array.isArray(data.IdentifierList.CID)
+      ? data.IdentifierList.CID
+      : [];
+    return cidsRaw.map((v) => Number(v)).filter((v) => Number.isFinite(v));
+  }
+
+  /**
+   * Build minimal metadata when PubChem property lookup is unavailable.
+   * @param {number} cid
+   * @param {string} query
+   * @returns {{cid:number,query:string,source:string,url:string}}
+   */
+  function buildPubChemMetadataFallback(cid, query) {
+    return {
+      cid,
+      query: normalizePubChemQuery(query),
+      source: 'PubChem',
+      url: getPubChemCompoundUrl(cid),
+    };
+  }
+
+  /**
+   * Check whether a conformer endpoint exists for one PubChem lookup target.
+   * @param {string} cacheKey
+   * @param {Map<string|number,boolean>} cache
+   * @param {string} url
+   * @param {string} context
+   * @returns {Promise<boolean>}
+   */
+  async function hasPubChemConformer(cacheKey, cache, url, context) {
+    if (cache.has(cacheKey)) return cache.get(cacheKey);
+    const data = await fetchPubChemJson(url, context, { allow404: true });
+    const has3D = !!data;
+    cache.set(cacheKey, has3D);
+    return has3D;
+  }
+
+  /**
    * Fetch compound name suggestions from PubChem autocomplete API.
    * @param {string} query
    * @param {number} limit
@@ -5074,9 +5153,7 @@
     const q = normalizePubChemQuery(query);
     if (!q) return [];
     const url = `https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(q)}/JSON?limit=${Math.max(1, Math.min(25, limit | 0))}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`PubChem autocomplete failed (${res.status})`);
-    const data = await res.json();
+    const data = await fetchPubChemJson(url, 'PubChem autocomplete');
     const terms = (data && data.dictionary_terms && Array.isArray(data.dictionary_terms.compound))
       ? data.dictionary_terms.compound
       : [];
@@ -5120,20 +5197,8 @@
     const q = normalizePubChemQuery(name);
     if (!q) return false;
     const cacheKey = q.toLowerCase();
-    if (pubchemHas3DByNameCache.has(cacheKey)) return pubchemHas3DByNameCache.get(cacheKey);
-
     const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/conformers/JSON`;
-    const res = await fetch(url);
-    let has3D = false;
-    if (res.ok) {
-      has3D = true;
-    } else if (res.status === 404) {
-      has3D = false;
-    } else {
-      throw new Error(`PubChem conformer lookup failed (${res.status})`);
-    }
-    pubchemHas3DByNameCache.set(cacheKey, has3D);
-    return has3D;
+    return await hasPubChemConformer(cacheKey, pubchemHas3DByNameCache, url, 'PubChem conformer lookup');
   }
 
   /**
@@ -5144,19 +5209,8 @@
   async function hasPubChem3DByCid(cid) {
     const n = Number(cid);
     if (!Number.isFinite(n)) return false;
-    if (pubchemHas3DByCidCache.has(n)) return pubchemHas3DByCidCache.get(n);
     const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${n}/conformers/JSON`;
-    const res = await fetch(url);
-    let has3D = false;
-    if (res.ok) {
-      has3D = true;
-    } else if (res.status === 404) {
-      has3D = false;
-    } else {
-      throw new Error(`PubChem CID conformer lookup failed (${res.status})`);
-    }
-    pubchemHas3DByCidCache.set(n, has3D);
-    return has3D;
+    return await hasPubChemConformer(n, pubchemHas3DByCidCache, url, 'PubChem CID conformer lookup');
   }
 
   /**
@@ -5171,11 +5225,8 @@
     const q = normalizePubChemQuery(name);
     if (!q) throw new Error('Empty PubChem query.');
     const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/cids/JSON`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`PubChem CID lookup failed (${res.status})`);
-    const data = await res.json();
-    const cidsRaw = data && data.IdentifierList && Array.isArray(data.IdentifierList.CID) ? data.IdentifierList.CID : [];
-    const cids = cidsRaw.map((v) => Number(v)).filter((v) => Number.isFinite(v));
+    const data = await fetchPubChemJson(url, 'PubChem CID lookup');
+    const cids = extractPubChemCidList(data);
     if (cids.length === 0) throw new Error(`No PubChem CID found for "${q}".`);
     if (!require3D) return cids[0];
 
@@ -5202,12 +5253,13 @@
     let lastStatus = 0;
     for (const recordType of modes) {
       const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/SDF?record_type=${recordType}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        lastStatus = res.status;
-        continue;
+      try {
+        return await fetchPubChemText(url, 'PubChem SDF fetch');
+      } catch (err) {
+        const msg = String((err && err.message) || err || '');
+        const m = msg.match(/\((\d+)\)$/);
+        lastStatus = m ? Number(m[1]) : lastStatus;
       }
-      return await res.text();
     }
     throw new Error(`PubChem SDF fetch failed for CID ${cid} (${lastStatus || 'no response'}).`);
   }
@@ -5229,9 +5281,7 @@
       'ConnectivitySMILES'
     ].join(',');
     const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${n}/property/${fields}/JSON`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`PubChem metadata lookup failed (${res.status})`);
-    const data = await res.json();
+    const data = await fetchPubChemJson(url, 'PubChem metadata lookup');
     const prop = data && data.PropertyTable && Array.isArray(data.PropertyTable.Properties)
       ? data.PropertyTable.Properties[0]
       : null;
@@ -5245,7 +5295,7 @@
       iupacName: typeof prop.IUPACName === 'string' ? prop.IUPACName : '',
       connectivitySmiles: typeof prop.ConnectivitySMILES === 'string' ? prop.ConnectivitySMILES : '',
       source: 'PubChem',
-      url: `https://pubchem.ncbi.nlm.nih.gov/compound/${n}`
+      url: getPubChemCompoundUrl(n)
     };
   }
 
@@ -5333,7 +5383,7 @@
       appendParsedVolumeRecord(
         `${query} [CID ${cid}].xyz`,
         vol,
-        { pubchemMeta: pubchemMeta || { cid, query, source: 'PubChem', url: `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}` } }
+        { pubchemMeta: pubchemMeta || buildPubChemMetadataFallback(cid, query) }
       );
       finalizeLoadedVolumes(startIndex);
       setHintMessage(`Loaded PubChem: ${query} (CID ${cid}) • Orbit: mouse drag • Zoom: wheel • Pan: right-drag`);
