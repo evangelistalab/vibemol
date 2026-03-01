@@ -1062,6 +1062,23 @@
   }
 
   /**
+   * Re-orient bond-component offsets in the local (u, v) frame.
+   * For Kit style double bonds, rotate by +90 degrees around the bond axis so
+   * the pair lies in the plane orthogonal to the nearby-atom plane estimate.
+   * Triple-bond placement remains unchanged.
+   * @param {number} order
+   * @param {number} offsetU
+   * @param {number} offsetV
+   * @param {boolean} rotateDouble
+   * @returns {[number, number]}
+   */
+  function orientBondComponentOffset(order, offsetU, offsetV, rotateDouble) {
+    if (!rotateDouble || (order | 0) !== 2) return [offsetU, offsetV];
+    // (u, v) -> (-v, u): +90° rotation in the local plane.
+    return [-offsetV, offsetU];
+  }
+
+  /**
    * Compute a stable vector perpendicular to the bond direction.
    * @param {THREE.Vector3} dirNorm
    * @returns {THREE.Vector3}
@@ -2211,8 +2228,14 @@
       const perp = getBondPlaneOffsetDirection(i, j, dirNorm, atomPositions, bondAdjacency);
       const perpOrtho = new THREE.Vector3().crossVectors(dirNorm, perp).normalize();
       for (const [offsetUUnit, offsetVUnit] of offsets) {
-        const componentOffsetU = offsetUUnit * componentSpacing;
-        const componentOffsetV = offsetVUnit * componentSpacing;
+        const componentOffsetUBase = offsetUUnit * componentSpacing;
+        const componentOffsetVBase = offsetVUnit * componentSpacing;
+        const [componentOffsetU, componentOffsetV] = orientBondComponentOffset(
+          order,
+          componentOffsetUBase,
+          componentOffsetVBase,
+          isStudioStyle
+        );
         const componentVec = perp.clone().multiplyScalar(componentOffsetU).addScaledVector(perpOrtho, componentOffsetV);
         if (isStudioStyle && order >= 2) {
           const offsetDistance = componentVec.length();
