@@ -508,6 +508,7 @@
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    resizePeriodicTableScene();
   }
   window.addEventListener('resize', resize);
   resize();
@@ -3775,7 +3776,8 @@
   const elementColorBtn = document.getElementById('elementColorBtn');
   const elementColorOverlay = document.getElementById('elementColorOverlay');
   const elementColorClose = document.getElementById('elementColorClose');
-  const periodicTableGrid = document.getElementById('periodicTableGrid');
+  const periodicTableViewport = document.getElementById('periodicTableViewport');
+  const periodicTableCanvas = document.getElementById('periodicTableCanvas');
   const elementColorName = document.getElementById('elementColorName');
   const elementColorPicker = document.getElementById('elementColorPicker');
   const elementColorResetOne = document.getElementById('elementColorResetOne');
@@ -3860,40 +3862,237 @@
     ['', '', '', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', ''],
     ['', '', '', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', '', '', '', ''],
   ];
-  const periodicCellsByZ = new Map();
+  const periodicNodesByZ = new Map();
+  const periodicPickTargets = [];
+  let periodicTableRenderer = null;
+  let periodicTableScene = null;
+  let periodicTableCamera = null;
+  let periodicTableControls = null;
+  let periodicTableRoot = null;
+  let periodicTableRaf = 0;
+  const periodicRaycaster = new THREE.Raycaster();
+  const periodicPointer = new THREE.Vector2();
   let selectedElementForEditor = 6;
 
   /**
-   * Pick readable text color for one hex swatch.
-   * @param {string} hex
-   * @returns {string}
+   * Build a compact symbol sprite for one periodic table sphere.
+   * @param {string} symbol
+   * @returns {THREE.Sprite}
    */
-  function getContrastingTextForHex(hex) {
-    const c = new THREE.Color(normalizeHexColor(hex, '#ffffff'));
-    const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-    return lum > 0.62 ? '#0d1522' : '#f4f8ff';
+  function makePeriodicSymbolSprite(symbol) {
+    const txt = (symbol || '?').trim().slice(0, 3);
+    const c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 64;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 36px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    ctx.fillStyle = 'rgba(235,242,252,0.95)';
+    ctx.strokeStyle = 'rgba(10,16,26,0.8)';
+    ctx.lineWidth = 5;
+    ctx.strokeText(txt, c.width * 0.5, c.height * 0.52);
+    ctx.fillText(txt, c.width * 0.5, c.height * 0.52);
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+    const spr = new THREE.Sprite(mat);
+    spr.scale.set(0.72, 0.36, 1);
+    spr.renderOrder = 22;
+    return spr;
   }
 
   /**
-   * Refresh one periodic-table cell swatch from current color state.
+   * Return the 3D position for a periodic table slot.
+   * @param {number} row
+   * @param {number} col
+   * @returns {THREE.Vector3}
+   */
+  function getPeriodicTablePosition(row, col) {
+    const sx = 1.28;
+    const sy = 1.12;
+    const x = (col - 8.5) * sx;
+    const y = (4 - row) * sy;
+    const z = row >= 7 ? -1.85 - (row - 7) * 0.22 : 0;
+    return new THREE.Vector3(x, y, z);
+  }
+
+  /**
+   * Resize the periodic-table renderer and camera to viewport size.
+   */
+  function resizePeriodicTableScene() {
+    if (!periodicTableRenderer || !periodicTableCamera || !periodicTableViewport) return;
+    const w = Math.max(10, periodicTableViewport.clientWidth | 0);
+    const h = Math.max(10, periodicTableViewport.clientHeight | 0);
+    periodicTableRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    periodicTableRenderer.setSize(w, h, false);
+    periodicTableCamera.aspect = w / h;
+    periodicTableCamera.updateProjectionMatrix();
+  }
+
+  /**
+   * Render one periodic-table frame.
+   */
+  function renderPeriodicTableFrame() {
+    if (!periodicTableRenderer || !periodicTableScene || !periodicTableCamera) return;
+    if (periodicTableControls) periodicTableControls.update();
+    periodicTableRenderer.render(periodicTableScene, periodicTableCamera);
+  }
+
+  /**
+   * Periodic-table animation loop while popup is open.
+   */
+  function periodicTableLoop() {
+    if (!elementColorOverlay || elementColorOverlay.style.display !== 'flex') {
+      periodicTableRaf = 0;
+      return;
+    }
+    renderPeriodicTableFrame();
+    periodicTableRaf = requestAnimationFrame(periodicTableLoop);
+  }
+
+  /**
+   * Start periodic-table rendering loop if not already active.
+   */
+  function startPeriodicTableLoop() {
+    if (periodicTableRaf) return;
+    periodicTableRaf = requestAnimationFrame(periodicTableLoop);
+  }
+
+  /**
+   * Stop periodic-table rendering loop.
+   */
+  function stopPeriodicTableLoop() {
+    if (!periodicTableRaf) return;
+    cancelAnimationFrame(periodicTableRaf);
+    periodicTableRaf = 0;
+  }
+
+  /**
+   * Ensure periodic-table scene resources are created.
+   */
+  function ensurePeriodicTableScene() {
+    if (periodicTableScene || !periodicTableCanvas) return;
+
+    periodicTableRenderer = new THREE.WebGLRenderer({
+      canvas: periodicTableCanvas,
+      antialias: true,
+      alpha: true,
+    });
+    periodicTableScene = new THREE.Scene();
+    periodicTableCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 300);
+    periodicTableCamera.position.set(0, 2.4, 31.5);
+
+    periodicTableScene.add(
+      new THREE.AmbientLight(0xffffff, 0.85)
+    );
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.95);
+    d1.position.set(2.0, 2.8, 3.8);
+    periodicTableScene.add(d1);
+    const d2 = new THREE.DirectionalLight(0x9fc2ff, 0.5);
+    d2.position.set(-2.8, -1.6, -2.4);
+    periodicTableScene.add(d2);
+
+    periodicTableRoot = new THREE.Group();
+    periodicTableRoot.rotation.x = -0.32;
+    periodicTableRoot.rotation.y = 0.10;
+    periodicTableScene.add(periodicTableRoot);
+
+    const sphereGeom = new THREE.SphereGeometry(0.34, 24, 18);
+    periodicNodesByZ.clear();
+    periodicPickTargets.length = 0;
+    for (let row = 0; row < PERIODIC_TABLE_LAYOUT.length; row++) {
+      const cols = PERIODIC_TABLE_LAYOUT[row];
+      for (let col = 0; col < cols.length; col++) {
+        const symbol = (cols[col] || '').trim();
+        if (!symbol) continue;
+        const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];
+        if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
+
+        const colorHex = getActiveElementHexColor(z);
+        const mat = new THREE.MeshPhongMaterial({
+          color: new THREE.Color(colorHex),
+          specular: 0xffffff,
+          shininess: 120,
+          emissive: new THREE.Color(0x08111c),
+          emissiveIntensity: 0.06,
+        });
+        const mesh = new THREE.Mesh(sphereGeom, mat);
+        mesh.position.copy(getPeriodicTablePosition(row, col));
+        mesh.userData = { periodicZ: z };
+
+        const outlineMat = new THREE.MeshBasicMaterial({
+          color: 0x0c1624,
+          side: THREE.BackSide,
+          transparent: true,
+          opacity: 0.62,
+        });
+        const outline = new THREE.Mesh(sphereGeom, outlineMat);
+        outline.scale.setScalar(1.12);
+        mesh.add(outline);
+
+        const label = makePeriodicSymbolSprite(symbol);
+        label.position.set(0, 0, 0.52);
+        mesh.add(label);
+
+        periodicTableRoot.add(mesh);
+        periodicNodesByZ.set(z, { mesh, outlineMat, label, symbol });
+        periodicPickTargets.push(mesh);
+      }
+    }
+
+    periodicTableControls = new THREE.OrbitControls(periodicTableCamera, periodicTableCanvas);
+    periodicTableControls.enablePan = false;
+    periodicTableControls.enableDamping = true;
+    periodicTableControls.dampingFactor = 0.08;
+    periodicTableControls.minDistance = 16;
+    periodicTableControls.maxDistance = 54;
+    periodicTableControls.target.set(0, 0, -0.25);
+    periodicTableControls.update();
+
+    periodicTableCanvas.addEventListener('pointerdown', (e) => {
+      if (!periodicTableCamera || !periodicPickTargets.length) return;
+      const rect = periodicTableCanvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      periodicPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      periodicPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      periodicRaycaster.setFromCamera(periodicPointer, periodicTableCamera);
+      const hits = periodicRaycaster.intersectObjects(periodicPickTargets, false);
+      if (!hits.length) return;
+      const hit = hits[0].object;
+      const z = hit && hit.userData ? hit.userData.periodicZ : null;
+      if (!Number.isInteger(z)) return;
+      selectElementForColorEditor(z);
+      renderPeriodicTableFrame();
+    });
+
+    resizePeriodicTableScene();
+  }
+
+  /**
+   * Refresh one periodic-table node color/highlight from current state.
    * @param {number} z
    */
   function refreshPeriodicCell(z) {
-    const btn = periodicCellsByZ.get(z | 0);
-    if (!btn) return;
+    const node = periodicNodesByZ.get(z | 0);
+    if (!node || !node.mesh || !node.mesh.material) return;
     const hex = getActiveElementHexColor(z);
-    const symbol = getElementSymbol(z);
-    const name = getElementName(z);
-    btn.style.background = hex;
-    btn.style.color = getContrastingTextForHex(hex);
-    btn.title = `${symbol} (${name}) — ${hex}`;
+    node.mesh.material.color.set(hex);
+    const selected = (z | 0) === selectedElementForEditor;
+    node.mesh.scale.setScalar(selected ? 1.3 : 1.0);
+    node.mesh.material.emissiveIntensity = selected ? 0.28 : 0.06;
+    if (node.outlineMat) node.outlineMat.opacity = selected ? 0.92 : 0.62;
+    if (node.label) node.label.material.opacity = selected ? 1.0 : 0.9;
   }
 
   /**
    * Refresh all periodic table cell swatches.
    */
   function refreshPeriodicCells() {
-    for (const z of periodicCellsByZ.keys()) refreshPeriodicCell(z);
+    for (const z of periodicNodesByZ.keys()) refreshPeriodicCell(z);
   }
 
   /**
@@ -3904,9 +4103,6 @@
     const next = z | 0;
     if (next < 0) return;
     selectedElementForEditor = next;
-    for (const [cellZ, btn] of periodicCellsByZ.entries()) {
-      btn.classList.toggle('active', cellZ === selectedElementForEditor);
-    }
     if (elementColorPicker) {
       elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
     }
@@ -3915,43 +4111,18 @@
       const name = getElementName(selectedElementForEditor);
       elementColorName.textContent = `${symbol} — ${name} (Z=${selectedElementForEditor})`;
     }
+    refreshPeriodicCells();
   }
 
   /**
-   * Build the periodic table editor grid once.
+   * Build the periodic table editor scene once.
    */
   function buildPeriodicTableEditor() {
-    if (!periodicTableGrid || periodicTableGrid.childElementCount > 0 || !ATOM_SYMBOL_TO_Z) return;
-    periodicCellsByZ.clear();
-    for (const row of PERIODIC_TABLE_LAYOUT) {
-      for (const symbolRaw of row) {
-        const symbol = (symbolRaw || '').trim();
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        if (!symbol) {
-          btn.className = 'pt-cell empty';
-          btn.tabIndex = -1;
-          btn.disabled = true;
-          periodicTableGrid.appendChild(btn);
-          continue;
-        }
-        const z = ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];
-        if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) {
-          btn.className = 'pt-cell empty';
-          btn.tabIndex = -1;
-          btn.disabled = true;
-          periodicTableGrid.appendChild(btn);
-          continue;
-        }
-        btn.className = 'pt-cell';
-        btn.textContent = symbol;
-        btn.onclick = () => selectElementForColorEditor(z);
-        periodicCellsByZ.set(z, btn);
-        periodicTableGrid.appendChild(btn);
-      }
-    }
+    ensurePeriodicTableScene();
     refreshPeriodicCells();
     selectElementForColorEditor(selectedElementForEditor);
+    resizePeriodicTableScene();
+    renderPeriodicTableFrame();
   }
 
   /**
@@ -3967,6 +4138,9 @@
       buildPeriodicTableEditor();
       refreshPeriodicCells();
       selectElementForColorEditor(selectedElementForEditor);
+      startPeriodicTableLoop();
+    } else {
+      stopPeriodicTableLoop();
     }
   }
 
