@@ -221,6 +221,10 @@
       display: none;
     }
 
+    #presetInput {
+      display: none;
+    }
+
     #hint {
       position: fixed;
       left: 160px;
@@ -291,6 +295,9 @@
     <div class="spacer"></div>
     <button id="saveBtn" title="Save the current view as a PNG image">Save PNG</button>
     <button id="batchBtn" class="secondary" title="Export all views as PNG images">Batch export</button>
+    <input type="file" id="presetInput" accept=".json,.vmpreset,application/json" />
+    <button id="savePresetBtn" class="secondary" title="Download current visualization preset as JSON">Save Preset</button>
+    <button id="loadPresetBtn" class="secondary" title="Load visualization preset from JSON">Load Preset</button>
     <button id="surfBtn" class="secondary" title="Toggle iso-surface rendering">Hide Surfaces</button>
     <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear</button>
     <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
@@ -473,6 +480,7 @@
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
           <li>Atoms and Bonds can be toggled independently; Toon uses toon shading (including surfaces), Glossy uses glassy blue atoms/bonds with dark edge shells, and Kit uses glossy atoms with collar-joint connectors.</li>
+          <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
           <li>The Cartesian coordinates are displayed as red (X), green (Y), and blue (Z) arrows.</li>
         </ul>
         <p>Shortcuts</p>

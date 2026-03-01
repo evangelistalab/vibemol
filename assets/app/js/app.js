@@ -572,6 +572,8 @@
   let moleculeStyle = 'default';
   // Center radius (Å) for glossy bond connectors
   let glossyBondRadius = 0.072;
+  // Disable expensive scene rebuild fanout while applying batched preset updates.
+  let suspendPresetRebuild = false;
   const bondMaterialCache = new Map();
   const toonGradientTextureCache = new Map();
   // Content group to allow whole-scene shifting
@@ -2683,6 +2685,9 @@
   const toggleAxes = document.getElementById('showAxes');
   const saveBtn = document.getElementById('saveBtn');
   const batchBtn = document.getElementById('batchBtn');
+  const savePresetBtn = document.getElementById('savePresetBtn');
+  const loadPresetBtn = document.getElementById('loadPresetBtn');
+  const presetInput = document.getElementById('presetInput');
   const surfBtn = document.getElementById('surfBtn');
   const clearBtn = document.getElementById('clearBtn');
   const helpBtn = document.getElementById('helpBtn');
@@ -2879,16 +2884,18 @@
   /**
    * Apply a molecule style selection from UI or keyboard shortcuts.
    * @param {'default'|'toon'|'studio'|'glossy'} nextStyle
+   * @param {{rebuild?:boolean}=} options
    */
-  function setMoleculeStyle(nextStyle) {
+  function setMoleculeStyle(nextStyle, options = {}) {
     if (!moleculeStyleSel) return;
     const allowed = new Set(['default', 'toon', 'studio', 'glossy']);
     const target = allowed.has(nextStyle) ? nextStyle : 'default';
+    const shouldRebuild = options.rebuild !== false && !suspendPresetRebuild;
     if (moleculeStyle === target && moleculeStyleSel.value === target) return;
     moleculeStyle = target;
     moleculeStyleSel.value = target;
     applyMoleculeStyleUiState();
-    rebuildScene({ preserveView: true });
+    if (shouldRebuild) rebuildScene({ preserveView: true });
   }
 
   /**
@@ -3739,6 +3746,415 @@
   if (cloudAlphaEl) cloudAlphaEl.onchange = () => rebuildScene({ preserveView: true });
   // Initialize UI visibility based on current mode
   updateRenderModeUI();
+
+  // --- Preset import/export (shared with CLI via window.VibeMolPreset) ---
+  const PRESET_KIND = 'vibemol.preset';
+  const PRESET_VERSION = 1;
+  const PRESET_TOP_LEVEL_KEYS = new Set([
+    'kind',
+    'presetVersion',
+    'appVersion',
+    'name',
+    'settings',
+    'meta',
+    'extensions',
+  ]);
+  const PRESET_MODE = Object.freeze({ STRICT: 'strict', RELAXED: 'relaxed' });
+  const presetSettingRegistry = new Map();
+  let presetUnknownTop = {};
+  let presetUnknownSettings = {};
+  let presetName = 'VibeMol Preset';
+  let presetMeta = {};
+  let presetExtensions = {};
+
+  /**
+   * Clone JSON-compatible data. Non-serializable values are returned as-is.
+   * @template T
+   * @param {T} value
+   * @returns {T}
+   */
+  function cloneJsonLike(value) {
+    try { return JSON.parse(JSON.stringify(value)); } catch { return value; }
+  }
+
+  /**
+   * Check if a value is a plain object.
+   * @param {*} value
+   * @returns {boolean}
+   */
+  function isPlainObject(value) {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  /**
+   * Normalize strict/relaxed preset apply mode.
+   * @param {*} mode
+   * @returns {'strict'|'relaxed'}
+   */
+  function normalizePresetMode(mode) {
+    return mode === PRESET_MODE.STRICT ? PRESET_MODE.STRICT : PRESET_MODE.RELAXED;
+  }
+
+  /**
+   * Flatten a nested settings tree to dot-delimited keys.
+   * @param {*} node
+   * @param {string} prefix
+   * @param {Record<string, any>} out
+   * @returns {Record<string, any>}
+   */
+  function flattenSettingsTree(node, prefix = '', out = {}) {
+    if (!isPlainObject(node)) return out;
+    for (const [key, value] of Object.entries(node)) {
+      const nextKey = prefix ? `${prefix}.${key}` : key;
+      if (isPlainObject(value)) flattenSettingsTree(value, nextKey, out);
+      else out[nextKey] = value;
+    }
+    return out;
+  }
+
+  /**
+   * Coerce a value to a finite number.
+   * @param {*} value
+   * @param {number} fallback
+   * @returns {number}
+   */
+  function asFiniteNumber(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  /**
+   * Coerce a value to boolean.
+   * @param {*} value
+   * @returns {boolean}
+   */
+  function asBoolean(value) {
+    return !!value;
+  }
+
+  /**
+   * Normalize CSS hex color inputs to `#rrggbb`.
+   * @param {*} value
+   * @param {string} fallback
+   * @returns {string}
+   */
+  function asHexColor(value, fallback) {
+    if (typeof value !== 'string') return fallback;
+    const v = value.trim().toLowerCase();
+    if (/^#[0-9a-f]{6}$/.test(v)) return v;
+    return fallback;
+  }
+
+  /**
+   * Register one setting key in the preset registry.
+   * @param {string} key
+   * @param {() => any} getter
+   * @param {(value:any) => void} setter
+   */
+  function registerPresetSetting(key, getter, setter) {
+    presetSettingRegistry.set(key, { get: getter, set: setter });
+  }
+
+  registerPresetSetting('surface.iso', () => asFiniteNumber(isoInput && isoInput.value, 0.02), (value) => {
+    const n = Math.max(0, asFiniteNumber(value, 0.02));
+    if (isoInput) isoInput.value = String(n);
+  });
+  registerPresetSetting('surface.opacity', () => asFiniteNumber(opInput && opInput.value, 1), (value) => {
+    const n = Math.min(1, Math.max(0.05, asFiniteNumber(value, 1)));
+    if (opInput) opInput.value = String(n);
+  });
+  registerPresetSetting('surface.enabled', () => !!showSurfaces, (value) => { showSurfaces = asBoolean(value); });
+  registerPresetSetting('surface.style', () => surfaceStyle, (value) => {
+    const next = (value === 'glass' || value === 'emissive') ? value : 'emissive';
+    surfaceStyle = next;
+    if (styleSelect) styleSelect.value = next;
+  });
+  registerPresetSetting('surface.posColor', () => (posColor && posColor.value) || '#f2a900', (value) => {
+    if (posColor) posColor.value = asHexColor(value, posColor.value || '#f2a900');
+    if (schemeSelect) schemeSelect.value = 'custom';
+  });
+  registerPresetSetting('surface.negColor', () => (negColor && negColor.value) || '#0033a0', (value) => {
+    if (negColor) negColor.value = asHexColor(value, negColor.value || '#0033a0');
+    if (schemeSelect) schemeSelect.value = 'custom';
+  });
+  registerPresetSetting('surface.colorScheme', () => (schemeSelect && schemeSelect.value) || 'custom', (value) => {
+    if (!schemeSelect) return;
+    const options = new Set(Array.from(schemeSelect.options).map((o) => o.value));
+    const next = (typeof value === 'string' && options.has(value)) ? value : 'custom';
+    schemeSelect.value = next;
+    if (next !== 'custom' && typeof schemeSelect.onchange === 'function') schemeSelect.onchange();
+  });
+  registerPresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || '#ffffff', (value) => {
+    if (!bgColor) return;
+    bgColor.value = asHexColor(value, bgColor.value || '#ffffff');
+    try { scene.background = new THREE.Color(bgColor.value); } catch { }
+  });
+  registerPresetSetting('global.showAtoms', () => !!(toggleAtoms && toggleAtoms.checked), (value) => {
+    if (toggleAtoms) toggleAtoms.checked = asBoolean(value);
+  });
+  registerPresetSetting('global.showBonds', () => !!(toggleBonds && toggleBonds.checked), (value) => {
+    if (toggleBonds) toggleBonds.checked = asBoolean(value);
+  });
+  registerPresetSetting('global.elementColors', () => !!(elementColors && elementColors.checked), (value) => {
+    if (elementColors) elementColors.checked = asBoolean(value);
+  });
+  registerPresetSetting('global.showBox', () => !!(toggleBox && toggleBox.checked), (value) => {
+    if (toggleBox) toggleBox.checked = asBoolean(value);
+  });
+  registerPresetSetting('global.showAxes', () => !!window.__showAxes__, (value) => {
+    window.__showAxes__ = asBoolean(value);
+    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
+  });
+  registerPresetSetting('molecule.style', () => moleculeStyle, (value) => {
+    const raw = typeof value === 'string' ? value : 'default';
+    const normalized = raw === 'fancy' ? 'toon' : raw;
+    setMoleculeStyle(normalized, { rebuild: false });
+  });
+  registerPresetSetting('molecule.glossyBondRadius', () => getGlossyBondCenterRadius(), (value) => {
+    glossyBondRadius = asFiniteNumber(value, getGlossyBondCenterRadius());
+    glossyBondRadius = getGlossyBondCenterRadius();
+    if (glossyBondRadiusEl) glossyBondRadiusEl.value = String(glossyBondRadius);
+  });
+  registerPresetSetting('render.mode', () => renderMode, (value) => {
+    const next = value === 'cloud' ? 'cloud' : 'surface';
+    renderMode = next;
+    if (renderModeSel) renderModeSel.value = next;
+    updateRenderModeUI();
+  });
+  registerPresetSetting('render.cloudType', () => cloudType, (value) => {
+    const next = value === 'points' ? 'points' : 'cubes';
+    cloudType = next;
+    if (cloudTypeSel) cloudTypeSel.value = next;
+  });
+  registerPresetSetting('render.cloudStride', () => asFiniteNumber(cloudStrideEl && cloudStrideEl.value, 1), (value) => {
+    const n = Math.max(1, Math.min(8, Math.round(asFiniteNumber(value, 1))));
+    if (cloudStrideEl) cloudStrideEl.value = String(n);
+  });
+  registerPresetSetting('render.cloudAlpha', () => asFiniteNumber(cloudAlphaEl && cloudAlphaEl.value, 0.1), (value) => {
+    const n = Math.max(0.025, Math.min(1, asFiniteNumber(value, 0.1)));
+    if (cloudAlphaEl) cloudAlphaEl.value = String(n);
+  });
+  registerPresetSetting('twoComponent.mode', () => global2CComponentMode, (value) => {
+    const next = (typeof value === 'string' && value) ? value : 'alphaRe';
+    applyGlobal2CComponent(next);
+    if (componentSelect) componentSelect.value = next;
+  });
+  registerPresetSetting('view.shift.x', () => contentGroup.position.x, (value) => {
+    contentGroup.position.x = asFiniteNumber(value, contentGroup.position.x);
+    if (shiftX) shiftX.value = contentGroup.position.x.toFixed(3);
+  });
+  registerPresetSetting('view.shift.y', () => contentGroup.position.y, (value) => {
+    contentGroup.position.y = asFiniteNumber(value, contentGroup.position.y);
+    if (shiftY) shiftY.value = contentGroup.position.y.toFixed(3);
+  });
+  registerPresetSetting('view.shift.z', () => contentGroup.position.z, (value) => {
+    contentGroup.position.z = asFiniteNumber(value, contentGroup.position.z);
+    if (shiftZ) shiftZ.value = contentGroup.position.z.toFixed(3);
+  });
+  registerPresetSetting('view.camera.x', () => camera.position.x, (value) => { camera.position.x = asFiniteNumber(value, camera.position.x); });
+  registerPresetSetting('view.camera.y', () => camera.position.y, (value) => { camera.position.y = asFiniteNumber(value, camera.position.y); });
+  registerPresetSetting('view.camera.z', () => camera.position.z, (value) => { camera.position.z = asFiniteNumber(value, camera.position.z); });
+  registerPresetSetting('view.target.x', () => controls.target.x, (value) => { controls.target.x = asFiniteNumber(value, controls.target.x); });
+  registerPresetSetting('view.target.y', () => controls.target.y, (value) => { controls.target.y = asFiniteNumber(value, controls.target.y); });
+  registerPresetSetting('view.target.z', () => controls.target.z, (value) => { controls.target.z = asFiniteNumber(value, controls.target.z); });
+  registerPresetSetting('view.autoRotate', () => !!controls.autoRotate, (value) => { controls.autoRotate = asBoolean(value); if (autoRot) autoRot.checked = !!controls.autoRotate; });
+  registerPresetSetting('view.rotateSpeed', () => controls.rotateSpeed ?? 1.0, (value) => {
+    controls.rotateSpeed = asFiniteNumber(value, controls.rotateSpeed ?? 1.0);
+    if (rotSpeed) rotSpeed.value = Number(controls.rotateSpeed).toFixed(2);
+  });
+  registerPresetSetting('view.damping', () => controls.dampingFactor ?? 0.05, (value) => {
+    controls.dampingFactor = asFiniteNumber(value, controls.dampingFactor ?? 0.05);
+    if (damp) damp.value = Number(controls.dampingFactor).toFixed(2);
+  });
+  registerPresetSetting('view.autoRotateSpeed', () => controls.autoRotateSpeed ?? 2.0, (value) => {
+    controls.autoRotateSpeed = asFiniteNumber(value, controls.autoRotateSpeed ?? 2.0);
+    if (autoRotSpeed) autoRotSpeed.value = Number(controls.autoRotateSpeed).toFixed(2);
+  });
+
+  /**
+   * Export current app settings as a portable preset envelope.
+   * Unknown fields from an imported preset are preserved on round-trip.
+   * @param {{name?:string}=} options
+   */
+  function exportPresetEnvelope(options = {}) {
+    const settings = cloneJsonLike(presetUnknownSettings) || {};
+    for (const [key, def] of presetSettingRegistry.entries()) settings[key] = def.get();
+    const name = (typeof options.name === 'string' && options.name.trim())
+      ? options.name.trim()
+      : presetName;
+    const now = new Date().toISOString();
+    const mergedMeta = Object.assign({}, cloneJsonLike(presetMeta) || {}, {
+      source: 'web',
+      updatedAt: now,
+    });
+    if (!mergedMeta.createdAt) mergedMeta.createdAt = now;
+    return Object.assign({}, cloneJsonLike(presetUnknownTop) || {}, {
+      kind: PRESET_KIND,
+      presetVersion: PRESET_VERSION,
+      appVersion: APP_VERSION,
+      name,
+      settings,
+      meta: mergedMeta,
+      extensions: cloneJsonLike(presetExtensions) || {},
+    });
+  }
+
+  /**
+   * Apply one settings object to the current app.
+   * @param {*} settingsLike
+   * @param {{mode?:'strict'|'relaxed'}=} options
+   */
+  function applyPresetSettings(settingsLike, options = {}) {
+    const mode = normalizePresetMode(options.mode);
+    const warnings = [];
+    const flatSettings = flattenSettingsTree(settingsLike);
+    const unknownSettings = {};
+    for (const key of Object.keys(flatSettings)) {
+      if (!presetSettingRegistry.has(key)) {
+        unknownSettings[key] = flatSettings[key];
+        warnings.push(`Unknown setting key ignored: ${key}`);
+      }
+    }
+    if (mode === PRESET_MODE.STRICT && Object.keys(unknownSettings).length > 0) {
+      throw new Error(`Unknown setting keys: ${Object.keys(unknownSettings).join(', ')}`);
+    }
+
+    const applied = [];
+    suspendPresetRebuild = true;
+    try {
+      for (const [key, def] of presetSettingRegistry.entries()) {
+        if (!(key in flatSettings)) continue;
+        let value = flatSettings[key];
+        if (key === 'molecule.style' && value === 'fancy') {
+          value = 'toon';
+          warnings.push('Mapped deprecated style value fancy -> toon');
+        }
+        try {
+          def.set(value);
+          applied.push(key);
+        } catch (err) {
+          const message = `Failed setting ${key}: ${err && err.message ? err.message : String(err)}`;
+          if (mode === PRESET_MODE.STRICT) throw new Error(message);
+          warnings.push(message);
+        }
+      }
+    } finally {
+      suspendPresetRebuild = false;
+    }
+
+    controls.update();
+    refreshViewUI();
+    applyMoleculeStyleUiState();
+    updateRenderModeUI();
+    updateSurfBtn();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    updateOpacityAndColors();
+
+    presetUnknownSettings = cloneJsonLike(unknownSettings) || {};
+    return {
+      ok: true,
+      mode,
+      applied,
+      warnings,
+      unknownSettings: Object.keys(unknownSettings),
+    };
+  }
+
+  /**
+   * Import and apply a preset envelope.
+   * @param {*} preset
+   * @param {{mode?:'strict'|'relaxed'}=} options
+   */
+  function importPresetEnvelope(preset, options = {}) {
+    const mode = normalizePresetMode(options.mode);
+    if (!isPlainObject(preset)) throw new Error('Preset must be an object.');
+    const warnings = [];
+
+    const kind = preset.kind;
+    if (kind !== PRESET_KIND) {
+      const msg = `Unexpected preset kind: ${String(kind)} (expected ${PRESET_KIND})`;
+      if (mode === PRESET_MODE.STRICT) throw new Error(msg);
+      warnings.push(msg);
+    }
+    const parsedVersion = Number(preset.presetVersion);
+    if (Number.isFinite(parsedVersion) && parsedVersion > PRESET_VERSION) {
+      const msg = `Preset version ${parsedVersion} is newer than supported ${PRESET_VERSION}`;
+      if (mode === PRESET_MODE.STRICT) throw new Error(msg);
+      warnings.push(msg);
+    }
+
+    const unknownTop = {};
+    for (const [key, value] of Object.entries(preset)) {
+      if (!PRESET_TOP_LEVEL_KEYS.has(key)) unknownTop[key] = value;
+    }
+    presetUnknownTop = cloneJsonLike(unknownTop) || {};
+
+    if (typeof preset.name === 'string' && preset.name.trim()) presetName = preset.name.trim();
+    if (isPlainObject(preset.meta)) presetMeta = cloneJsonLike(preset.meta) || {};
+    if (isPlainObject(preset.extensions)) presetExtensions = cloneJsonLike(preset.extensions) || {};
+
+    const applyResult = applyPresetSettings(preset.settings || {}, { mode });
+    return {
+      ok: true,
+      mode,
+      kind: PRESET_KIND,
+      presetVersion: PRESET_VERSION,
+      applied: applyResult.applied,
+      warnings: warnings.concat(applyResult.warnings),
+      unknownTop: Object.keys(unknownTop),
+      unknownSettings: applyResult.unknownSettings,
+      name: presetName,
+    };
+  }
+
+  /**
+   * Save current settings to a downloadable preset file.
+   */
+  function saveCurrentPresetToFile() {
+    const preset = exportPresetEnvelope();
+    const blob = new Blob([`${JSON.stringify(preset, null, 2)}\n`], { type: 'application/json' });
+    const link = document.createElement('a');
+    const date = new Date().toISOString().replace(/[:]/g, '-').replace(/\..+/, '');
+    link.download = `vibemol-preset-${date}.json`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  /**
+   * Parse and apply one uploaded preset JSON file.
+   * @param {FileList|null} fileList
+   */
+  async function handlePresetFileUpload(fileList) {
+    const file = fileList && fileList[0];
+    if (!file) return;
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const result = importPresetEnvelope(parsed, { mode: PRESET_MODE.RELAXED });
+    const hint = document.getElementById('hint');
+    if (hint) hint.textContent = `Loaded preset: ${result.name} • Orbit: mouse drag • Zoom: wheel • Pan: right-drag`;
+    if (result.warnings.length > 0) console.warn('[Preset] import warnings', result.warnings);
+  }
+
+  // Public API for browser automation and future integrations.
+  window.VibeMolPreset = Object.freeze({
+    kind: PRESET_KIND,
+    version: PRESET_VERSION,
+    listKeys: () => Array.from(presetSettingRegistry.keys()),
+    export: (options = {}) => exportPresetEnvelope(options),
+    import: (preset, options = {}) => importPresetEnvelope(preset, options),
+  });
+
+  if (savePresetBtn) savePresetBtn.onclick = () => saveCurrentPresetToFile();
+  if (loadPresetBtn) loadPresetBtn.onclick = () => { if (presetInput) presetInput.click(); };
+  if (presetInput) {
+    presetInput.addEventListener('change', async (e) => {
+      try { await handlePresetFileUpload(e.target && e.target.files); }
+      catch (err) { console.error('[Preset] failed to import', err); alert(`Preset import failed: ${err.message || err}`); }
+      finally { presetInput.value = ''; }
+    });
+  }
 
   // Axes gizmo state
   window.__showAxes__ = true;
