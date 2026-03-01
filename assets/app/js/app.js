@@ -1123,6 +1123,242 @@
   }
 
   /**
+   * Build a canonical undirected key for an atom pair.
+   * @param {number} i
+   * @param {number} j
+   * @returns {string}
+   */
+  function getUndirectedPairKey(i, j) {
+    const a = (i | 0);
+    const b = (j | 0);
+    return a < b ? `${a}:${b}` : `${b}:${a}`;
+  }
+
+  /**
+   * Canonicalize a simple cycle so duplicates (rotation/reversal) map to one key.
+   * @param {number[]} cycle
+   * @returns {{key:string, nodes:number[]}}
+   */
+  function canonicalizeCycle(cycle) {
+    const n = cycle.length | 0;
+    if (n <= 0) return { key: '', nodes: [] };
+    let best = null;
+    let bestKey = '';
+    const tryVariant = (arr) => {
+      for (let shift = 0; shift < n; shift++) {
+        const seq = new Array(n);
+        for (let k = 0; k < n; k++) seq[k] = arr[(shift + k) % n];
+        const key = seq.join('-');
+        if (!best || key < bestKey) {
+          best = seq;
+          bestKey = key;
+        }
+      }
+    };
+    tryVariant(cycle);
+    tryVariant([...cycle].reverse());
+    return { key: bestKey, nodes: best || cycle.slice() };
+  }
+
+  /**
+   * Find simple cycles of a fixed size in an undirected adjacency list.
+   * @param {number[][]} adjacency
+   * @param {number} size
+   * @returns {number[][]}
+   */
+  function findSimpleCyclesOfSize(adjacency, size) {
+    const n = adjacency.length | 0;
+    const target = Math.max(3, size | 0);
+    const cycles = [];
+    const seen = new Set();
+    const path = [];
+    const inPath = new Array(n).fill(false);
+
+    /**
+     * Depth-first cycle walk with start-index pruning for speed.
+     * @param {number} start
+     * @param {number} current
+     * @param {number} depth
+     */
+    function dfs(start, current, depth) {
+      const neighbors = adjacency[current];
+      if (!Array.isArray(neighbors)) return;
+      for (const next of neighbors) {
+        if (next === start) {
+          if (depth === target) {
+            const canonical = canonicalizeCycle(path);
+            if (canonical.key && !seen.has(canonical.key)) {
+              seen.add(canonical.key);
+              cycles.push(canonical.nodes);
+            }
+          }
+          continue;
+        }
+        if (depth >= target) continue;
+        if ((next | 0) < (start | 0)) continue;
+        if (inPath[next]) continue;
+        inPath[next] = true;
+        path.push(next);
+        dfs(start, next, depth + 1);
+        path.pop();
+        inPath[next] = false;
+      }
+    }
+
+    for (let start = 0; start < n; start++) {
+      path.length = 0;
+      path.push(start);
+      inPath[start] = true;
+      dfs(start, start, 1);
+      inPath[start] = false;
+    }
+    return cycles;
+  }
+
+  /**
+   * Select one of the two alternating patterns for a six-member ring and apply
+   * it as single/double bonds.
+   * @param {Array<{order:number,maxOrder:number}>} edges
+   * @param {number[]} ringEdgeIndices
+   */
+  function enforceAlternatingSixRingBondOrders(edges, ringEdgeIndices) {
+    if (!Array.isArray(ringEdgeIndices) || ringEdgeIndices.length !== 6) return;
+    for (const edgeIdx of ringEdgeIndices) {
+      const e = edges[edgeIdx];
+      if (!e || (e.maxOrder | 0) < 2) return;
+    }
+    const scorePattern = (phase) => {
+      let score = 0;
+      for (let k = 0; k < ringEdgeIndices.length; k++) {
+        const e = edges[ringEdgeIndices[k]];
+        const wantDouble = ((k + phase) % 2) === 0;
+        const order = e.order | 0;
+        if (wantDouble) {
+          if (order >= 2) score += 3;
+          else score += 1;
+        } else if (order === 1) {
+          score += 2;
+        }
+      }
+      return score;
+    };
+    const phase = scorePattern(1) > scorePattern(0) ? 1 : 0;
+    for (let k = 0; k < ringEdgeIndices.length; k++) {
+      const edge = edges[ringEdgeIndices[k]];
+      const wantDouble = ((k + phase) % 2) === 0;
+      edge.order = wantDouble ? 2 : 1;
+    }
+  }
+
+  /**
+   * Detect benzene-like aromatic six-member carbon rings from inferred bonds.
+   * Matching rings are normalized to alternating single/double order and
+   * returned for dashed inner-ring rendering.
+   * @param {Array<{pos:THREE.Vector3,Z:number}>} atomPositions
+   * @param {Array<{i:number,j:number,len:number,order:number,maxOrder:number}>} edges
+   * @returns {Array<{atoms:number[],center:THREE.Vector3,normal:THREE.Vector3,radius:number}>}
+   */
+  function inferAromaticSixRings(atomPositions, edges) {
+    if (!Array.isArray(edges) || !edges.length) return [];
+    const n = atomPositions.length | 0;
+    const carbonAdj = Array.from({ length: n }, () => []);
+    const edgeIndexByPair = new Map();
+    for (let idx = 0; idx < edges.length; idx++) {
+      const e = edges[idx];
+      if (!e) continue;
+      edgeIndexByPair.set(getUndirectedPairKey(e.i, e.j), idx);
+    }
+    for (const e of edges) {
+      if (!e) continue;
+      const ai = atomPositions[e.i];
+      const aj = atomPositions[e.j];
+      if (!ai || !aj) continue;
+      if ((ai.Z | 0) !== 6 || (aj.Z | 0) !== 6) continue;
+      if (e.len < 1.2 || e.len > 1.55) continue;
+      carbonAdj[e.i].push(e.j);
+      carbonAdj[e.j].push(e.i);
+    }
+    const cycles = findSimpleCyclesOfSize(carbonAdj, 6);
+    const aromaticRings = [];
+    for (const cycle of cycles) {
+      if (!Array.isArray(cycle) || cycle.length !== 6) continue;
+      let valid = true;
+      const cycleSet = new Set(cycle);
+      const cycleEdgeLengths = [];
+      for (const atomIdx of cycle) {
+        const atom = atomPositions[atomIdx];
+        if (!atom || (atom.Z | 0) !== 6) { valid = false; break; }
+        const neighbors = Array.isArray(carbonAdj[atomIdx]) ? carbonAdj[atomIdx] : null;
+        if (!neighbors || neighbors.length < 2 || neighbors.length > 3) { valid = false; break; }
+        let neighborsInCycle = 0;
+        for (const nb of neighbors) {
+          if (cycleSet.has(nb)) neighborsInCycle += 1;
+        }
+        // Ring atom must connect to exactly two ring-adjacent carbons.
+        if (neighborsInCycle !== 2) { valid = false; break; }
+      }
+      if (!valid) continue;
+
+      const edgeIndices = [];
+      for (let k = 0; k < cycle.length; k++) {
+        const i = cycle[k];
+        const j = cycle[(k + 1) % cycle.length];
+        const edgeIdx = edgeIndexByPair.get(getUndirectedPairKey(i, j));
+        if (!Number.isInteger(edgeIdx)) { valid = false; break; }
+        const edgeLen = Number(edges[edgeIdx] && edges[edgeIdx].len);
+        if (!Number.isFinite(edgeLen)) { valid = false; break; }
+        cycleEdgeLengths.push(edgeLen);
+        edgeIndices.push(edgeIdx);
+      }
+      if (!valid || edgeIndices.length !== 6) continue;
+
+      // Aromatic C6 ring edges should be relatively equalized around ~1.4 A.
+      const meanLen = cycleEdgeLengths.reduce((s, v) => s + v, 0) / cycleEdgeLengths.length;
+      let varLen = 0;
+      for (const v of cycleEdgeLengths) {
+        const d = v - meanLen;
+        varLen += d * d;
+      }
+      const stdLen = Math.sqrt(varLen / cycleEdgeLengths.length);
+      if (meanLen < 1.32 || meanLen > 1.47 || stdLen > 0.09) continue;
+
+      const center = new THREE.Vector3();
+      for (const atomIdx of cycle) center.add(atomPositions[atomIdx].pos);
+      center.multiplyScalar(1 / cycle.length);
+
+      const normal = new THREE.Vector3();
+      for (let k = 0; k < cycle.length; k++) {
+        const p0 = atomPositions[cycle[k]].pos.clone().sub(center);
+        const p1 = atomPositions[cycle[(k + 1) % cycle.length]].pos.clone().sub(center);
+        normal.add(new THREE.Vector3().crossVectors(p0, p1));
+      }
+      if (normal.lengthSq() < 1e-10) continue;
+      normal.normalize();
+
+      let maxPlaneDeviation = 0;
+      let avgRadius = 0;
+      for (const atomIdx of cycle) {
+        const rel = atomPositions[atomIdx].pos.clone().sub(center);
+        maxPlaneDeviation = Math.max(maxPlaneDeviation, Math.abs(rel.dot(normal)));
+        const projected = rel.clone().addScaledVector(normal, -rel.dot(normal));
+        avgRadius += projected.length();
+      }
+      avgRadius /= cycle.length;
+      if (!Number.isFinite(avgRadius) || avgRadius < 0.2) continue;
+      if (maxPlaneDeviation > 0.12) continue;
+
+      enforceAlternatingSixRingBondOrders(edges, edgeIndices);
+      aromaticRings.push({
+        atoms: cycle.slice(),
+        center,
+        normal,
+        radius: avgRadius * 0.56,
+      });
+    }
+    return aromaticRings;
+  }
+
+  /**
    * Infer the lateral offset direction for multi-component bonds from
    * neighboring bonded atoms, so double/triple bonds roughly follow the
    * local molecular plane around the i-j bond.
@@ -1699,6 +1935,85 @@
     });
     bondMaterialCache.set(key, mat);
     return mat;
+  }
+
+  /**
+   * Get (or create) the dashed-line material used for aromatic ring guides.
+   * @returns {THREE.Material}
+   */
+  function getAromaticRingMaterial() {
+    const styleKey = moleculeStyle === 'glossy'
+      ? 'glossy'
+      : moleculeStyle === 'studio'
+        ? 'studio'
+        : moleculeStyle === 'toon'
+          ? 'toon'
+          : 'default';
+    const key = `aromatic:ring:${styleKey}`;
+    if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
+    const color = styleKey === 'glossy'
+      ? 0x2f4a74
+      : styleKey === 'studio'
+        ? 0x59616d
+        : styleKey === 'toon'
+          ? 0x515a66
+          : 0x4f5560;
+    const opacity = styleKey === 'glossy' ? 0.94 : 0.96;
+    const mat = new THREE.LineDashedMaterial({
+      color,
+      dashSize: 0.10,
+      gapSize: 0.07,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      depthTest: false,
+    });
+    bondMaterialCache.set(key, mat);
+    return mat;
+  }
+
+  /**
+   * Add a dashed aromatic ring guide inside a planar six-member ring.
+   * @param {THREE.Group} group
+   * @param {{atoms:number[],center:THREE.Vector3,normal:THREE.Vector3,radius:number}} ring
+   * @param {Array<{pos:THREE.Vector3}>} atomPositions
+   */
+  function addAromaticDashedRing(group, ring, atomPositions) {
+    if (!group || !ring || !Array.isArray(ring.atoms) || ring.atoms.length !== 6) return;
+    const center = ring.center ? ring.center.clone() : new THREE.Vector3();
+    const normal = ring.normal ? ring.normal.clone() : new THREE.Vector3(0, 0, 1);
+    if (normal.lengthSq() < 1e-10) return;
+    normal.normalize();
+    let basisU = null;
+    for (const atomIdx of ring.atoms) {
+      const p = atomPositions[atomIdx] && atomPositions[atomIdx].pos;
+      if (!p) continue;
+      const candidate = p.clone().sub(center);
+      candidate.addScaledVector(normal, -candidate.dot(normal));
+      if (candidate.lengthSq() > 1e-10) {
+        basisU = candidate.normalize();
+        break;
+      }
+    }
+    if (!basisU) basisU = getBondPerpendicular(normal);
+    const basisV = new THREE.Vector3().crossVectors(normal, basisU).normalize();
+    const radius = Math.max(0.16, Number.isFinite(ring.radius) ? ring.radius : 0.7);
+    const points = [];
+    const steps = 96;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * Math.PI * 2;
+      const p = center.clone()
+        .addScaledVector(basisU, Math.cos(t) * radius)
+        .addScaledVector(basisV, Math.sin(t) * radius)
+        .addScaledVector(normal, 0.01);
+      points.push(p);
+    }
+    const geom = new THREE.BufferGeometry().setFromPoints(points);
+    const line = new THREE.Line(geom, getAromaticRingMaterial());
+    line.computeLineDistances();
+    line.renderOrder = 48;
+    line.userData = { type: 'aromaticRing' };
+    group.add(line);
   }
 
   /**
@@ -2479,6 +2794,9 @@
     const bondEdges = collectBondCandidates(atomPositions);
     const multiBondRenderingEnabled = !!showMultiBonds;
     if (multiBondRenderingEnabled) inferBondOrders(atomPositions, bondEdges);
+    const aromaticRings = multiBondRenderingEnabled
+      ? inferAromaticSixRings(atomPositions, bondEdges)
+      : [];
     const bondAdjacency = multiBondRenderingEnabled
       ? buildBondAdjacency(bondEdges, atomPositions.length)
       : [];
@@ -2806,6 +3124,11 @@
         );
       }
     }
+    if (multiBondRenderingEnabled && aromaticRings.length) {
+      for (const ring of aromaticRings) {
+        addAromaticDashedRing(group, ring, atomPositions);
+      }
+    }
     return group;
   }
 
@@ -2923,7 +3246,11 @@
     // Remove and dispose previous cylinders
     if (bondGroup) {
       contentGroup.remove(bondGroup);
-      bondGroup.traverse(obj => { if (obj.isMesh) { obj.geometry?.dispose?.(); /* keep shared material */ } });
+      bondGroup.traverse(obj => {
+        if (obj.isMesh || obj.isLine) {
+          obj.geometry?.dispose?.(); // keep shared material caches
+        }
+      });
       bondGroup.clear();
     }
     bondGroup = buildBonds(vol);
