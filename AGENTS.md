@@ -66,6 +66,44 @@ Preset automation contract exposed globally:
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
 
+## Bond Order Inference Algorithm
+Bond-order inference lives in `assets/app/js/app.js` and is enabled only when the `multi bonds` toggle is on.
+
+1. Candidate bond generation (`collectBondCandidates`):
+- Build edges from interatomic distances using covalent radii.
+- Keep pairs where `0.4 Å < d(i,j) <= 1.15 * (r_cov(i) + r_cov(j))`.
+- Initialize each kept edge with `order = 1`.
+
+2. Conservative chemistry limits (`getPairMaxBondOrder`):
+- Never promote transition-metal, lanthanide, or actinide pairs.
+- Never promote pairs containing monovalent main-group atoms (`H`, `F`, `Cl`, `Br`, `I`).
+- Otherwise allow up to:
+  - triple: `C-C`, `C-N`, `N-N`
+  - double: common main-group pairs (`C-O`, `C-S`, `N-O`, `O-O`, `P-S`, etc.)
+  - single: everything else
+
+3. Target valence assignment (`chooseTargetValence`):
+- Use a small main-group valence table (for example `C:4`, `N:3/5`, `O:2`, `S:2/4/6`).
+- Pick the smallest allowed valence that is `>=` current connectivity; if none, pick the largest allowed.
+- Metals/f-block keep their current connectivity as target (no valence-driven promotion).
+
+4. Greedy bond promotion (`inferBondOrders`):
+- Compute per-atom valence deficits: `deficit = targetValence - currentValence`.
+- Repeatedly choose the promotable edge with highest score:
+  - edge must still be below `maxOrder`
+  - both endpoint deficits must be positive
+  - score = `(deficit_i + deficit_j) + distanceBonus`
+  - `distanceBonus` favors shorter-than-reference bonds via `len/singleRef`
+- Promote that edge by `+1` bond order, decrement both deficits, repeat until no valid promotion.
+
+5. Rendering usage:
+- The inferred `order` drives single/double/triple component generation.
+- For double/triple bonds, component offsets are placed in a local plane estimated from neighbor geometry (`getBondPlaneOffsetDirection`) so orientation roughly follows local molecular structure.
+
+Scope note:
+- This is a pragmatic heuristic for organic/main-group systems.
+- It is not a formal bond-order solver and intentionally avoids aggressive inference for metals and f-block chemistry.
+
 ## Commands
 Run web app locally:
 - `python3 -m http.server`

@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.5';
+  const APP_VERSION = '0.4.6';
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -1794,6 +1794,38 @@
   }
 
   /**
+   * Reflect a direction vector across a plane through the origin.
+   * @param {THREE.Vector3} vector
+   * @param {THREE.Vector3} planeNormal
+   * @returns {THREE.Vector3}
+   */
+  function reflectVectorAcrossPlane(vector, planeNormal) {
+    const n = (planeNormal && planeNormal.lengthSq && planeNormal.lengthSq() > 1e-12)
+      ? planeNormal.clone().normalize()
+      : new THREE.Vector3(0, 1, 0);
+    const v = (vector && vector.lengthSq && vector.lengthSq() > 1e-12)
+      ? vector.clone()
+      : new THREE.Vector3(1, 0, 0);
+    return v.addScaledVector(n, -2 * v.dot(n));
+  }
+
+  /**
+   * Check whether a bond component can be mirrored across the bond-midpoint plane
+   * without changing endpoint seat constraints.
+   * @param {number} aRadius
+   * @param {number} bRadius
+   * @param {number} trimA
+   * @param {number} trimB
+   * @returns {boolean}
+   */
+  function isMirrorSymmetryEligible(aRadius, bRadius, trimA, trimB) {
+    return (
+      Math.abs((aRadius || 0) - (bRadius || 0)) <= 1e-4
+      && Math.abs((trimA || 0) - (trimB || 0)) <= 1e-4
+    );
+  }
+
+  /**
    * Build atom sphere meshes for the current volume.
    * Radius and color are derived from atomic metadata when available.
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
@@ -2020,6 +2052,9 @@
      * @param {number} componentOffsetV
      */
     function addStudioCurvedBondComponent(i, j, order, len, geomLen, trimA, trimB, aPos, bPos, aRadius, bRadius, dirNorm, offsetDirection, offsetDistance, componentOffsetU, componentOffsetV) {
+      const bondMid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
+      const symmetricEligible = isMirrorSymmetryEligible(aRadius, bRadius, trimA, trimB);
+
       const seatSpreadTarget = offsetDistance * STUDIO_MULTI_BOND_SEAT_SPREAD_GAIN;
       // Enforce bond-centered symmetry for multi-bond seats.
       const seatAxial = Math.max(0, Math.min(Number(trimA) || 0, Number(trimB) || 0));
@@ -2028,7 +2063,7 @@
       const seatSpread = Math.max(0, Math.min(seatSpreadTarget, maxLatA, maxLatB));
       // Place each endpoint on its own component-specific seat around the atom.
       const start = getCurvedConnectorSeatPoint(aPos, dirNorm, seatAxial, aRadius, offsetDirection, seatSpread);
-      const end = getCurvedConnectorSeatPoint(
+      let end = getCurvedConnectorSeatPoint(
         bPos,
         dirNorm.clone().multiplyScalar(-1),
         seatAxial,
@@ -2036,10 +2071,19 @@
         offsetDirection,
         seatSpread
       );
+      if (symmetricEligible) {
+        end = reflectPointAcrossPlane(start, bondMid, dirNorm);
+      }
       const startNormal = new THREE.Vector3().subVectors(start, aPos);
       if (startNormal.lengthSq() < 1e-10) startNormal.copy(dirNorm); else startNormal.normalize();
-      const endNormal = new THREE.Vector3().subVectors(end, bPos);
-      if (endNormal.lengthSq() < 1e-10) endNormal.copy(dirNorm).multiplyScalar(-1); else endNormal.normalize();
+      let endNormal = new THREE.Vector3().subVectors(end, bPos);
+      if (symmetricEligible) {
+        endNormal = reflectVectorAcrossPlane(startNormal, dirNorm).normalize();
+      } else if (endNormal.lengthSq() < 1e-10) {
+        endNormal.copy(dirNorm).multiplyScalar(-1);
+      } else {
+        endNormal.normalize();
+      }
 
       // Place flange base planes where their outer radius matches sphere cross-sections.
       const flangeBaseStartAxial = Math.max(
@@ -2051,17 +2095,24 @@
         getSphereSectionAxisDistance(bRadius, studioCollarRadius) - STUDIO_FLANGE_SPHERE_OVERLAP
       );
       const flangeBaseStart = aPos.clone().addScaledVector(startNormal, flangeBaseStartAxial);
-      const flangeBaseEnd = bPos.clone().addScaledVector(endNormal, flangeBaseEndAxial);
+      let flangeBaseEnd = bPos.clone().addScaledVector(endNormal, flangeBaseEndAxial);
+      if (symmetricEligible) {
+        flangeBaseEnd = reflectPointAcrossPlane(flangeBaseStart, bondMid, dirNorm);
+      }
 
       // Shaft starts near the flange tip and overlaps into it slightly to avoid gaps.
+      const shaftInset = Math.max(0.002, STUDIO_FLANGE_TAPER_END - STUDIO_FLANGE_SHAFT_OVERLAP);
       const shaftStart = flangeBaseStart.clone().addScaledVector(
         startNormal,
-        Math.max(0.002, STUDIO_FLANGE_TAPER_END - STUDIO_FLANGE_SHAFT_OVERLAP)
+        shaftInset
       );
-      const shaftEnd = flangeBaseEnd.clone().addScaledVector(
+      let shaftEnd = flangeBaseEnd.clone().addScaledVector(
         endNormal,
-        Math.max(0.002, STUDIO_FLANGE_TAPER_END - STUDIO_FLANGE_SHAFT_OVERLAP)
+        shaftInset
       );
+      if (symmetricEligible) {
+        shaftEnd = reflectPointAcrossPlane(shaftStart, bondMid, dirNorm);
+      }
 
       // Enforce tangent continuity with flange normals at both ends:
       // cubic handles are constrained to lie on each endpoint normal line.
@@ -2071,7 +2122,6 @@
         + offsetDistance * STUDIO_CURVED_HANDLE_OFFSET_SCALE * bendWeight;
       const handleLen = Math.max(0.02, Math.min(chordLen * 0.9, handleLenRaw));
       const control1 = shaftStart.clone().addScaledVector(startNormal, handleLen);
-      const bondMid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
       const control2 = reflectPointAcrossPlane(control1, bondMid, dirNorm);
       const shaftCurve = new THREE.CubicBezierCurve3(shaftStart, control1, control2, shaftEnd);
       const shaftLen = Math.max(1e-6, shaftCurve.getLength());
