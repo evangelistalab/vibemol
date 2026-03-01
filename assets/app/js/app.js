@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.2';
+  const APP_VERSION = '0.4.3';
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -724,7 +724,7 @@
    * Update scene lighting to match the active molecule style.
    */
   function applyMoleculeStyleLighting() {
-    if (moleculeStyle === 'fancy') {
+    if (moleculeStyle === 'toon') {
       hemi.color.setHex(0xf8fbff);
       hemi.groundColor.setHex(0x0f1826);
       hemi.intensity = 1.28;
@@ -818,7 +818,7 @@
    * @returns {boolean}
    */
   function useToonSurfaceStyle() {
-    return moleculeStyle === 'fancy';
+    return moleculeStyle === 'toon';
   }
 
   /**
@@ -826,7 +826,7 @@
    * @returns {boolean}
    */
   function useStylizedMoleculeStyle() {
-    return moleculeStyle === 'fancy' || moleculeStyle === 'glossy';
+    return moleculeStyle === 'toon' || moleculeStyle === 'glossy';
   }
 
   /**
@@ -940,7 +940,7 @@
       if (z === 1) return new THREE.Color(0xe5f2ff);
       return new THREE.Color(0xbfd8ff);
     }
-    if (moleculeStyle !== 'fancy') return atomColor;
+    if (moleculeStyle !== 'toon') return atomColor;
     if (!useElementColors) return new THREE.Color(0xd0d9e6);
     if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf2ad1f);
 
@@ -971,7 +971,7 @@
       if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf4d089);
       return new THREE.Color(0xbad4f8);
     }
-    if (moleculeStyle !== 'fancy') return atomColor;
+    if (moleculeStyle !== 'toon') return atomColor;
     if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xefbb55);
     const c = atomColor.clone();
     const hsl = { h: 0, s: 0, l: 0 };
@@ -1016,7 +1016,7 @@
   function getAtomRenderScaleFactor(z) {
     if (moleculeStyle === 'studio') return isTransitionMetalAtomicNumber(z) ? 1.14 : 1.08;
     if (moleculeStyle === 'glossy') return isTransitionMetalAtomicNumber(z) ? 1.24 : 1.18;
-    if (moleculeStyle === 'fancy') return isTransitionMetalAtomicNumber(z) ? 1.22 : 1.16;
+    if (moleculeStyle === 'toon') return isTransitionMetalAtomicNumber(z) ? 1.22 : 1.16;
     return 1.2;
   }
 
@@ -1071,7 +1071,7 @@
         emissiveIntensity: isTransitionMetal ? 0.02 : 0.008,
       });
     }
-    if (moleculeStyle === 'fancy') {
+    if (moleculeStyle === 'toon') {
       const isTransitionMetal = isTransitionMetalAtomicNumber(z);
       const emissiveBoost = isTransitionMetal ? 0.42 : 0.26;
       const emissiveTint = isTransitionMetal ? new THREE.Color(0xffe2a3) : new THREE.Color(0xffffff);
@@ -1158,8 +1158,8 @@
    * @returns {THREE.Material}
    */
   function getBondMaterial() {
-    const key = moleculeStyle === 'fancy'
-      ? 'fancy'
+    const key = moleculeStyle === 'toon'
+      ? 'toon'
       : moleculeStyle === 'glossy'
         ? 'glossy'
         : moleculeStyle === 'studio'
@@ -1195,7 +1195,7 @@
         emissive: new THREE.Color(0x161b24),
         emissiveIntensity: 0.02,
       });
-    } else if (key === 'fancy') {
+    } else if (key === 'toon') {
       mat = new THREE.MeshToonMaterial({
         color: 0xd9e2ee,
         vertexColors: true,
@@ -1223,7 +1223,7 @@
    */
   function getStylizedBondOutlineMaterial() {
     if (!useStylizedMoleculeStyle()) return null;
-    const key = useGlossyMoleculeStyle() ? 'glossy:outline' : 'fancy:outline';
+    const key = useGlossyMoleculeStyle() ? 'glossy:outline' : 'toon:outline';
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
     const mat = new THREE.MeshBasicMaterial({
       color: useGlossyMoleculeStyle() ? 0x07142c : 0x334050,
@@ -1241,7 +1241,7 @@
    */
   function getStylizedBondHighlightMaterial() {
     if (!useStylizedMoleculeStyle()) return null;
-    const key = useGlossyMoleculeStyle() ? 'glossy:highlight' : 'fancy:highlight';
+    const key = useGlossyMoleculeStyle() ? 'glossy:highlight' : 'toon:highlight';
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
     const mat = new THREE.MeshPhongMaterial({
       color: useGlossyMoleculeStyle() ? 0xe8f5ff : 0xa4c2f2,
@@ -1420,12 +1420,12 @@
   function buildAtoms(vol) {
     const group = new THREE.Group();
     // Atoms (spheres)
-    const isFancyStyle = moleculeStyle === 'fancy';
+    const isToonStyle = moleculeStyle === 'toon';
     const isGlossyStyle = moleculeStyle === 'glossy';
     const isStudioStyle = moleculeStyle === 'studio';
-    const isStylizedStyle = isFancyStyle || isGlossyStyle;
-    const sphereWidthSegments = (isGlossyStyle || isStudioStyle) ? 36 : isFancyStyle ? 30 : 28;
-    const sphereHeightSegments = (isGlossyStyle || isStudioStyle) ? 24 : isFancyStyle ? 20 : 18;
+    const isStylizedStyle = isToonStyle || isGlossyStyle;
+    const sphereWidthSegments = (isGlossyStyle || isStudioStyle) ? 36 : isToonStyle ? 30 : 28;
+    const sphereHeightSegments = (isGlossyStyle || isStudioStyle) ? 24 : isToonStyle ? 20 : 18;
     const sphere = new THREE.SphereGeometry(
       0.5,
       sphereWidthSegments,
@@ -1444,7 +1444,7 @@
     const highlightMaterialCache = new Map();
     const toAng = (vol.units === 'angstrom');
     const hydrogenDisplayRadius = 0.5 * getCovalentRadiusAngstrom(1) * getAtomRenderScaleFactor(1);
-    const baseOutlineScale = isGlossyStyle ? 1.05 : isFancyStyle ? 1.08 : 1.0;
+    const baseOutlineScale = isGlossyStyle ? 1.05 : isToonStyle ? 1.08 : 1.0;
     // Keep atom outline shell thickness constant across atom sizes (match hydrogen).
     const targetOutlineThickness = Math.max(1e-4, hydrogenDisplayRadius * Math.max(0, baseOutlineScale - 1));
     for (const a of vol.atoms) {
@@ -1516,10 +1516,10 @@
    */
   function buildBonds(vol) {
     const group = new THREE.Group();
-    const isFancyStyle = moleculeStyle === 'fancy';
+    const isToonStyle = moleculeStyle === 'toon';
     const isGlossyStyle = moleculeStyle === 'glossy';
     const isStudioStyle = moleculeStyle === 'studio';
-    const isStylizedStyle = isFancyStyle || isGlossyStyle;
+    const isStylizedStyle = isToonStyle || isGlossyStyle;
     const usesTrimmedConnector = isGlossyStyle || isStudioStyle;
     const atomPositions = [];
     const toAng = (vol.units === 'angstrom');
@@ -1548,9 +1548,9 @@
     const glossyEndRadius = getGlossyBondEndRadius();
     const studioCenterRadius = 0.068;
     const studioCollarRadius = 0.114;
-    const bondRadius = isGlossyStyle ? glossyCenterRadius : isStudioStyle ? studioCenterRadius : isFancyStyle ? 0.102 : 0.12;
-    const bondRadialSegments = isGlossyStyle ? 28 : isStudioStyle ? 20 : isFancyStyle ? 20 : 16;
-    const bondHeightSegments = (isGlossyStyle || isStudioStyle || isFancyStyle) ? 1 : 2;
+    const bondRadius = isGlossyStyle ? glossyCenterRadius : isStudioStyle ? studioCenterRadius : isToonStyle ? 0.102 : 0.12;
+    const bondRadialSegments = isGlossyStyle ? 28 : isStudioStyle ? 20 : isToonStyle ? 20 : 16;
+    const bondHeightSegments = (isGlossyStyle || isStudioStyle || isToonStyle) ? 1 : 2;
     for (let i = 0; i < N; i++) {
       for (let j = i + 1; j < N; j++) {
         const a = atomPositions[i];
@@ -2878,11 +2878,11 @@
 
   /**
    * Apply a molecule style selection from UI or keyboard shortcuts.
-   * @param {'default'|'fancy'|'studio'|'glossy'} nextStyle
+   * @param {'default'|'toon'|'studio'|'glossy'} nextStyle
    */
   function setMoleculeStyle(nextStyle) {
     if (!moleculeStyleSel) return;
-    const allowed = new Set(['default', 'fancy', 'studio', 'glossy']);
+    const allowed = new Set(['default', 'toon', 'studio', 'glossy']);
     const target = allowed.has(nextStyle) ? nextStyle : 'default';
     if (moleculeStyle === target && moleculeStyleSel.value === target) return;
     moleculeStyle = target;
@@ -3517,7 +3517,7 @@
   bind('down', 'global', 'a', () => { window.__showAxes__ = !window.__showAxes__; if (toggleAxes) toggleAxes.checked = !!window.__showAxes__; });
   // Global: molecule style presets (1=Default, 2=Toon, 3=Kit, 4=Glossy)
   bind('down', 'global', '1', () => setMoleculeStyle('default'));
-  bind('down', 'global', '2', () => setMoleculeStyle('fancy'));
+  bind('down', 'global', '2', () => setMoleculeStyle('toon'));
   bind('down', 'global', '3', () => setMoleculeStyle('studio'));
   bind('down', 'global', '4', () => setMoleculeStyle('glossy'));
 
