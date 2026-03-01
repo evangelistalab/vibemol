@@ -18,6 +18,7 @@ import time
 from typing import Any
 
 DEFAULT_URL = "https://evangelistalab.org/vibemol/"
+DEFAULT_RC_CANDIDATES = (".vibemolrc", ".vibemolrc.json")
 
 
 def _parse_args() -> argparse.Namespace:
@@ -42,8 +43,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--preset-mode",
         choices=["strict", "relaxed"],
-        default="relaxed",
-        help="Preset import mode (default: relaxed)",
+        default=None,
+        help="Preset import mode (default: relaxed, can also come from rc file)",
     )
     parser.add_argument(
         "--save-preset",
@@ -54,6 +55,16 @@ def _parse_args() -> argparse.Namespace:
         "--preset-name",
         default=None,
         help="Optional name to use when saving preset via --save-preset",
+    )
+    parser.add_argument(
+        "--rc",
+        default=None,
+        help="Optional config file path (default auto-discovery: .vibemolrc in cwd/home)",
+    )
+    parser.add_argument(
+        "--no-rc",
+        action="store_true",
+        help="Disable .vibemolrc auto-discovery",
     )
     parser.add_argument(
         "--wait-ms",
@@ -75,6 +86,14 @@ def _normalize_style(style: str | None) -> str | None:
     return "toon" if style == "fancy" else style
 
 
+def _normalize_preset_mode(mode: str | None) -> str:
+    if mode in (None, ""):
+        return "relaxed"
+    if mode not in ("strict", "relaxed"):
+        raise ValueError(f"Unsupported preset mode: {mode}")
+    return mode
+
+
 def _read_json_file(path: pathlib.Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
@@ -88,6 +107,57 @@ def _write_json_file(path: pathlib.Path, payload: dict[str, Any]) -> None:
     with path.open("w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, sort_keys=True)
         f.write("\n")
+
+
+def _resolve_rc_path(explicit_rc: str | None, *, no_rc: bool = False) -> pathlib.Path | None:
+    if no_rc:
+        return None
+    if explicit_rc:
+        p = pathlib.Path(explicit_rc).expanduser().resolve()
+        if not p.is_file():
+            raise FileNotFoundError(f"Config file does not exist: {p}")
+        return p
+    search_roots = [pathlib.Path.cwd(), pathlib.Path.home()]
+    for root in search_roots:
+        for name in DEFAULT_RC_CANDIDATES:
+            candidate = root / name
+            if candidate.is_file():
+                return candidate.resolve()
+    return None
+
+
+def _extract_preset_mode_from_rc(rc_data: dict[str, Any]) -> str | None:
+    mode = rc_data.get("preset_mode", rc_data.get("presetMode"))
+    if mode is None:
+        return None
+    if not isinstance(mode, str):
+        raise ValueError("rc key preset_mode must be a string")
+    return mode
+
+
+def _extract_preset_from_rc(rc_data: dict[str, Any], rc_path: pathlib.Path) -> dict[str, Any] | None:
+    if rc_data.get("kind") == "vibemol.preset":
+        return rc_data
+    if "settings" in rc_data and isinstance(rc_data["settings"], dict):
+        # Allow .vibemolrc to directly contain preset payload.
+        return rc_data
+
+    preset_ref = rc_data.get("preset", rc_data.get("preset_path", rc_data.get("presetPath")))
+    if preset_ref is None:
+        return None
+
+    if isinstance(preset_ref, dict):
+        return preset_ref
+    if isinstance(preset_ref, str):
+        preset_path = pathlib.Path(preset_ref).expanduser()
+        if not preset_path.is_absolute():
+            preset_path = (rc_path.parent / preset_path).resolve()
+        else:
+            preset_path = preset_path.resolve()
+        if not preset_path.is_file():
+            raise FileNotFoundError(f"Preset file from rc does not exist: {preset_path}")
+        return _read_json_file(preset_path)
+    raise ValueError("rc key preset must be either a JSON object or a file path string")
 
 
 def _set_input_value(page: Any, selector: str, value: Any, event_name: str = "change") -> bool:
@@ -415,11 +485,24 @@ def main() -> int:
     start = time.time()
     try:
         preset_obj: dict[str, Any] | None = None
+        rc_mode: str | None = None
+        rc_path = _resolve_rc_path(args.rc, no_rc=args.no_rc)
+        if rc_path is not None:
+            rc_data = _read_json_file(rc_path)
+            rc_mode = _extract_preset_mode_from_rc(rc_data)
+            if not args.preset:
+                preset_obj = _extract_preset_from_rc(rc_data, rc_path)
+                if preset_obj is not None:
+                    print(f"[rc] loaded preset from {rc_path}", file=sys.stderr)
+
         if args.preset:
             preset_path = pathlib.Path(args.preset).expanduser().resolve()
             if not preset_path.is_file():
                 raise FileNotFoundError(f"Preset file does not exist: {preset_path}")
             preset_obj = _read_json_file(preset_path)
+            print(f"[cli] loaded preset from {preset_path}", file=sys.stderr)
+
+        preset_mode = _normalize_preset_mode(args.preset_mode if args.preset_mode is not None else rc_mode)
 
         render_to_png(
             pathlib.Path(args.input_file),
@@ -428,7 +511,7 @@ def main() -> int:
             iso=args.iso,
             style=args.style,
             preset=preset_obj,
-            preset_mode=args.preset_mode,
+            preset_mode=preset_mode,
             save_preset_path=pathlib.Path(args.save_preset) if args.save_preset else None,
             preset_name=args.preset_name,
             wait_ms=args.wait_ms,

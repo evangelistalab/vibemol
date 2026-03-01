@@ -44,6 +44,40 @@ python api/vibemol_client.py assets/data/sample.cube out/sample.png \
   --preset-name "CLI export"
 ```
 
+## `.vibemolrc` automation
+The client auto-discovers a config file at:
+- `./.vibemolrc` or `./.vibemolrc.json`
+- `~/.vibemolrc` or `~/.vibemolrc.json`
+
+If `--preset` is not passed, it loads a preset from rc automatically.
+
+Minimal rc examples:
+
+Direct preset payload:
+```json
+{
+  "kind": "vibemol.preset",
+  "presetVersion": 1,
+  "settings": {
+    "molecule.style": "toon",
+    "surface.iso": 0.02
+  }
+}
+```
+
+Reference a preset file:
+```json
+{
+  "preset": "my-favorite-preset.json",
+  "preset_mode": "relaxed"
+}
+```
+
+CLI control:
+- `--rc /path/to/config.json` use explicit rc file
+- `--no-rc` disable rc auto-discovery
+- `--preset` always overrides rc preset
+
 Style mapping:
 - `default` = Default
 - `toon` = Toon
