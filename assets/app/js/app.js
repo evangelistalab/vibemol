@@ -564,6 +564,10 @@
   let showSurfaces = true; // toggle iso-surface visibility
   // Display inferred multiple bonds (double/triple) as parallel connectors.
   let showMultiBonds = true;
+  // Display element symbols over atoms.
+  let showAtomLabels = false;
+  // Per-element color overrides (z -> "#rrggbb"), used when element colors are enabled.
+  const elementColorOverrides = new Map();
   // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
   let __savedShowSurfaces = null;
   // Default view reference (captured on first non-preserved fit)
@@ -1215,6 +1219,117 @@
   }
 
   /**
+   * Convert RGB tuple ([0..255]) to lowercase hex string.
+   * @param {number[]} rgb
+   * @returns {string}
+   */
+  function rgbTupleToHex(rgb) {
+    if (!Array.isArray(rgb) || rgb.length < 3) return '#ffffff';
+    const toHex = (n) => Math.max(0, Math.min(255, n | 0)).toString(16).padStart(2, '0');
+    return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
+  }
+
+  /**
+   * Normalize a CSS hex color string.
+   * @param {*} value
+   * @param {string} fallback
+   * @returns {string}
+   */
+  function normalizeHexColor(value, fallback = '#ffffff') {
+    const s = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    if (/^#[0-9a-f]{6}$/.test(s)) return s;
+    if (/^#[0-9a-f]{3}$/.test(s)) return `#${s[1]}${s[1]}${s[2]}${s[2]}${s[3]}${s[3]}`;
+    return fallback;
+  }
+
+  /**
+   * Resolve an element symbol from atomic metadata.
+   * @param {number} z
+   * @returns {string}
+   */
+  function getElementSymbol(z) {
+    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];
+    if (info && typeof info.symbol === 'string' && info.symbol.trim()) return info.symbol.trim();
+    return `Z${z | 0}`;
+  }
+
+  /**
+   * Resolve an element display name from atomic metadata.
+   * @param {number} z
+   * @returns {string}
+   */
+  function getElementName(z) {
+    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];
+    if (info && typeof info.name === 'string' && info.name.trim()) return info.name.trim();
+    return getElementSymbol(z);
+  }
+
+  /**
+   * Resolve the base/default element hex color from atomic metadata.
+   * @param {number} z
+   * @returns {string}
+   */
+  function getDefaultElementHexColor(z) {
+    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];
+    if (info && Array.isArray(info.color)) return rgbTupleToHex(info.color);
+    return '#ffffff';
+  }
+
+  /**
+   * Resolve the active element hex color (override if present, else default).
+   * @param {number} z
+   * @returns {string}
+   */
+  function getActiveElementHexColor(z) {
+    const key = z | 0;
+    if (elementColorOverrides.has(key)) return elementColorOverrides.get(key);
+    return getDefaultElementHexColor(key);
+  }
+
+  /**
+   * Set or clear one element color override.
+   * Override is removed if equal to default color to keep preset payload minimal.
+   * @param {number} z
+   * @param {string} hex
+   */
+  function setElementColorOverride(z, hex) {
+    const key = z | 0;
+    if (key < 0) return;
+    const normalized = normalizeHexColor(hex, getDefaultElementHexColor(key));
+    const baseHex = getDefaultElementHexColor(key);
+    if (normalized === baseHex) {
+      elementColorOverrides.delete(key);
+      return;
+    }
+    elementColorOverrides.set(key, normalized);
+  }
+
+  /**
+   * Export element color overrides as a plain object.
+   * @returns {Record<string,string>}
+   */
+  function exportElementColorOverrides() {
+    const out = {};
+    for (const [z, hex] of elementColorOverrides.entries()) out[String(z)] = hex;
+    return out;
+  }
+
+  /**
+   * Import element color overrides from an object-like value.
+   * @param {*} value
+   */
+  function importElementColorOverrides(value) {
+    elementColorOverrides.clear();
+    if (!value || typeof value !== 'object') return;
+    for (const [key, raw] of Object.entries(value)) {
+      const z = Number(key);
+      if (!Number.isInteger(z) || z < 0) continue;
+      const normalized = normalizeHexColor(raw, getDefaultElementHexColor(z));
+      setElementColorOverride(z, normalized);
+    }
+  }
+
+  /**
    * Resolve the raw element color from atomic metadata when enabled.
    * Falls back to white if element coloring is disabled or unavailable.
    * @param {number} z
@@ -1222,12 +1337,7 @@
    */
   function getElementBaseColor(z) {
     if (!isElementColoringEnabled()) return new THREE.Color(0xffffff);
-    const info = ATOM_Z_TO_DATA[z];
-    if (info && Array.isArray(info.color)) {
-      const [cr, cg, cb] = info.color;
-      return new THREE.Color(cr / 255, cg / 255, cb / 255);
-    }
-    return new THREE.Color(0xffffff);
+    return new THREE.Color(getActiveElementHexColor(z));
   }
 
   /**
@@ -1237,33 +1347,41 @@
    */
   function getAtomRenderColor(z) {
     const useElementColors = isElementColoringEnabled();
+    const hasColorOverride = elementColorOverrides.has(z | 0);
     let atomColor = getElementBaseColor(z);
 
     if (useStudioMoleculeStyle()) {
       if (!useElementColors) return new THREE.Color(0xd6dde6);
-      if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xa78546);
-      if (z === 1) return new THREE.Color(0xf4f6fa);
-      if (z === 6) return new THREE.Color(0x1f2734);
-      if (z === 7) return new THREE.Color(0x2ab5ff);
-      if (z === 8) return new THREE.Color(0xc31722);
+      if (!hasColorOverride) {
+        if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xa78546);
+        if (z === 1) return new THREE.Color(0xf4f6fa);
+        if (z === 6) return new THREE.Color(0x1f2734);
+        if (z === 7) return new THREE.Color(0x2ab5ff);
+        if (z === 8) return new THREE.Color(0xc31722);
+      }
       const hsl = { h: 0, s: 0, l: 0 };
       atomColor.getHSL(hsl);
       atomColor.setHSL(hsl.h, Math.min(1, hsl.s * 0.95 + 0.03), Math.min(1, hsl.l * 0.9 + 0.06));
       return atomColor;
     }
     if (useGlossyMoleculeStyle()) {
-      if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf1c970);
-      if (z === 1) return new THREE.Color(0xe5f2ff);
+      if (!hasColorOverride) {
+        if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf1c970);
+        if (z === 1) return new THREE.Color(0xe5f2ff);
+      }
+      if (hasColorOverride) return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.42);
       return new THREE.Color(0xbfd8ff);
     }
     if (moleculeStyle !== 'toon') return atomColor;
     if (!useElementColors) return new THREE.Color(0xd0d9e6);
-    if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf2ad1f);
+    if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf2ad1f);
 
     // Match the toon/luminous palette seen in the reference figure.
-    if (z === 6) return new THREE.Color(0x9ca9b9); // carbon
-    if (z === 1) return new THREE.Color(0xe4edf8); // hydrogen
-    if (z === 7) return new THREE.Color(0x3c73ff); // nitrogen
+    if (!hasColorOverride) {
+      if (z === 6) return new THREE.Color(0x9ca9b9); // carbon
+      if (z === 1) return new THREE.Color(0xe4edf8); // hydrogen
+      if (z === 7) return new THREE.Color(0x3c73ff); // nitrogen
+    }
 
     // For other elements, gently lift value while preserving hue identity.
     const hsl = { h: 0, s: 0, l: 0 };
@@ -1279,16 +1397,19 @@
    * @returns {THREE.Color}
    */
   function getBondRenderColor(atomColor, z) {
+    const hasColorOverride = elementColorOverrides.has(z | 0);
     if (useStudioMoleculeStyle()) {
-      if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xd3ba8e);
+      if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xd3ba8e);
+      if (hasColorOverride) return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.32);
       return new THREE.Color(0xe2e7ee);
     }
     if (useGlossyMoleculeStyle()) {
-      if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf4d089);
+      if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf4d089);
+      if (hasColorOverride) return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.22);
       return new THREE.Color(0xbad4f8);
     }
     if (moleculeStyle !== 'toon') return atomColor;
-    if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xefbb55);
+    if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xefbb55);
     const c = atomColor.clone();
     const hsl = { h: 0, s: 0, l: 0 };
     c.getHSL(hsl);
@@ -2020,6 +2141,70 @@
   }
 
   /**
+   * Pick a readable text color (dark/light) for a given atom color.
+   * @param {THREE.Color} atomColor
+   * @returns {string}
+   */
+  function getReadableLabelTextHex(atomColor) {
+    const c = atomColor || new THREE.Color(0xffffff);
+    const r = Math.max(0, Math.min(1, c.r));
+    const g = Math.max(0, Math.min(1, c.g));
+    const b = Math.max(0, Math.min(1, c.b));
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return lum > 0.62 ? '#1b2635' : '#f3f7ff';
+  }
+
+  /**
+   * Build a billboard sprite for one atom label symbol.
+   * @param {string} symbol
+   * @param {string} textHex
+   * @returns {THREE.Sprite}
+   */
+  function makeAtomLabelSprite(symbol, textHex) {
+    const text = typeof symbol === 'string' ? symbol.trim().slice(0, 3) : '?';
+    const fg = normalizeHexColor(textHex, '#f3f7ff');
+    const bg = fg === '#1b2635' ? 'rgba(248,252,255,0.52)' : 'rgba(18,26,38,0.48)';
+    const stroke = fg === '#1b2635' ? 'rgba(18,26,38,0.35)' : 'rgba(244,248,255,0.34)';
+
+    const c = document.createElement('canvas');
+    c.width = 192;
+    c.height = 192;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+
+    // subtle circular badge improves readability across lighting styles
+    ctx.beginPath();
+    ctx.arc(96, 96, 64, 0, Math.PI * 2);
+    ctx.fillStyle = bg;
+    ctx.fill();
+
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${text.length >= 3 ? 76 : 92}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+    ctx.fillStyle = fg;
+    ctx.fillText(text, 96, 102);
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const spr = new THREE.Sprite(mat);
+    spr.userData = { type: 'atomLabel' };
+    return spr;
+  }
+
+  /**
    * Build atom sphere meshes for the current volume.
    * Radius and color are derived from atomic metadata when available.
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
@@ -2074,6 +2259,15 @@
       mesh.position.copy(pos);
       const atomScale = r * getAtomRenderScaleFactor(z);
       mesh.scale.setScalar(atomScale);
+      if (showAtomLabels) {
+        const symbol = getElementSymbol(z);
+        const label = makeAtomLabelSprite(symbol, getReadableLabelTextHex(atomColor));
+        // Local sprite size is relative to unit-radius sphere (0.5 local radius).
+        const labelScale = z === 1 ? 0.30 : 0.40;
+        label.scale.set(labelScale, labelScale, 1);
+        label.renderOrder = 40;
+        mesh.add(label);
+      }
       if (stylizedOutlineMat) {
         const outline = new THREE.Mesh(sphere, stylizedOutlineMat);
         const displayRadius = 0.5 * atomScale;
@@ -3576,7 +3770,16 @@
   const toggleAtoms = document.getElementById('showAtoms');
   const toggleBonds = document.getElementById('showBonds');
   const toggleMultiBonds = document.getElementById('showMultiBonds');
+  const toggleAtomLabels = document.getElementById('showAtomLabels');
   const elementColors = document.getElementById('elementColors');
+  const elementColorBtn = document.getElementById('elementColorBtn');
+  const elementColorOverlay = document.getElementById('elementColorOverlay');
+  const elementColorClose = document.getElementById('elementColorClose');
+  const periodicTableGrid = document.getElementById('periodicTableGrid');
+  const elementColorName = document.getElementById('elementColorName');
+  const elementColorPicker = document.getElementById('elementColorPicker');
+  const elementColorResetOne = document.getElementById('elementColorResetOne');
+  const elementColorResetAll = document.getElementById('elementColorResetAll');
   const toggleBox = document.getElementById('showBox');
   const toggleAxes = document.getElementById('showAxes');
   const saveBtn = document.getElementById('saveBtn');
@@ -3614,6 +3817,7 @@
   const damp = document.getElementById('damp');
   const autoRotSpeed = document.getElementById('autoRotSpeed');
   if (toggleMultiBonds) showMultiBonds = !!toggleMultiBonds.checked;
+  if (toggleAtomLabels) showAtomLabels = !!toggleAtomLabels.checked;
   const viewReset = document.getElementById('viewReset');
   const styleSelect = document.getElementById('styleSelect');
   const moleculeStyleSel = document.getElementById('moleculeStyle');
@@ -3644,6 +3848,127 @@
    */
   const updateSurfBtn = () => { surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces'; };
   updateSurfBtn();
+
+  const PERIODIC_TABLE_LAYOUT = [
+    ['H', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'He'],
+    ['Li', 'Be', '', '', '', '', '', '', '', '', '', '', 'B', 'C', 'N', 'O', 'F', 'Ne'],
+    ['Na', 'Mg', '', '', '', '', '', '', '', '', '', '', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar'],
+    ['K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr'],
+    ['Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe'],
+    ['Cs', 'Ba', 'La', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn'],
+    ['Fr', 'Ra', 'Ac', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    ['', '', '', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', ''],
+    ['', '', '', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', '', '', '', ''],
+  ];
+  const periodicCellsByZ = new Map();
+  let selectedElementForEditor = 6;
+
+  /**
+   * Pick readable text color for one hex swatch.
+   * @param {string} hex
+   * @returns {string}
+   */
+  function getContrastingTextForHex(hex) {
+    const c = new THREE.Color(normalizeHexColor(hex, '#ffffff'));
+    const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+    return lum > 0.62 ? '#0d1522' : '#f4f8ff';
+  }
+
+  /**
+   * Refresh one periodic-table cell swatch from current color state.
+   * @param {number} z
+   */
+  function refreshPeriodicCell(z) {
+    const btn = periodicCellsByZ.get(z | 0);
+    if (!btn) return;
+    const hex = getActiveElementHexColor(z);
+    const symbol = getElementSymbol(z);
+    const name = getElementName(z);
+    btn.style.background = hex;
+    btn.style.color = getContrastingTextForHex(hex);
+    btn.title = `${symbol} (${name}) — ${hex}`;
+  }
+
+  /**
+   * Refresh all periodic table cell swatches.
+   */
+  function refreshPeriodicCells() {
+    for (const z of periodicCellsByZ.keys()) refreshPeriodicCell(z);
+  }
+
+  /**
+   * Mark one element as selected in the color editor.
+   * @param {number} z
+   */
+  function selectElementForColorEditor(z) {
+    const next = z | 0;
+    if (next < 0) return;
+    selectedElementForEditor = next;
+    for (const [cellZ, btn] of periodicCellsByZ.entries()) {
+      btn.classList.toggle('active', cellZ === selectedElementForEditor);
+    }
+    if (elementColorPicker) {
+      elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
+    }
+    if (elementColorName) {
+      const symbol = getElementSymbol(selectedElementForEditor);
+      const name = getElementName(selectedElementForEditor);
+      elementColorName.textContent = `${symbol} — ${name} (Z=${selectedElementForEditor})`;
+    }
+  }
+
+  /**
+   * Build the periodic table editor grid once.
+   */
+  function buildPeriodicTableEditor() {
+    if (!periodicTableGrid || periodicTableGrid.childElementCount > 0 || !ATOM_SYMBOL_TO_Z) return;
+    periodicCellsByZ.clear();
+    for (const row of PERIODIC_TABLE_LAYOUT) {
+      for (const symbolRaw of row) {
+        const symbol = (symbolRaw || '').trim();
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        if (!symbol) {
+          btn.className = 'pt-cell empty';
+          btn.tabIndex = -1;
+          btn.disabled = true;
+          periodicTableGrid.appendChild(btn);
+          continue;
+        }
+        const z = ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];
+        if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) {
+          btn.className = 'pt-cell empty';
+          btn.tabIndex = -1;
+          btn.disabled = true;
+          periodicTableGrid.appendChild(btn);
+          continue;
+        }
+        btn.className = 'pt-cell';
+        btn.textContent = symbol;
+        btn.onclick = () => selectElementForColorEditor(z);
+        periodicCellsByZ.set(z, btn);
+        periodicTableGrid.appendChild(btn);
+      }
+    }
+    refreshPeriodicCells();
+    selectElementForColorEditor(selectedElementForEditor);
+  }
+
+  /**
+   * Toggle periodic-table overlay visibility.
+   * @param {boolean} open
+   */
+  function setElementColorOverlayOpen(open) {
+    if (!elementColorOverlay) return;
+    const isOpen = !!open;
+    elementColorOverlay.style.display = isOpen ? 'flex' : 'none';
+    elementColorOverlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    if (isOpen) {
+      buildPeriodicTableEditor();
+      refreshPeriodicCells();
+      selectElementForColorEditor(selectedElementForEditor);
+    }
+  }
 
   // Keyboard shortcuts registry and ribbon
   const SHORTCUTS = {
@@ -4483,7 +4808,14 @@
   bind('down', MODES.MEASURE, 'Escape', () => { clearEditSelection(); updateSelectedHalos(); updateEditSelectionVisuals(); });
 
   // Global key listeners delegate to router
-  window.addEventListener('keydown', (e) => routeShortcut(e, 'down', currentMode));
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && elementColorOverlay && elementColorOverlay.style.display === 'flex') {
+      e.preventDefault();
+      setElementColorOverlayOpen(false);
+      return;
+    }
+    routeShortcut(e, 'down', currentMode);
+  });
   window.addEventListener('keyup', (e) => routeShortcut(e, 'up', currentMode));
 
   /**
@@ -4652,6 +4984,9 @@
   // --- Preset import/export (shared with CLI via window.VibeMolPreset) ---
   const PRESET_KIND = 'vibemol.preset';
   const PRESET_VERSION = 1;
+  const PRESET_OBJECT_VALUE_KEYS = new Set([
+    'global.elementColorOverrides',
+  ]);
   const PRESET_TOP_LEVEL_KEYS = new Set([
     'kind',
     'presetVersion',
@@ -4708,7 +5043,10 @@
     if (!isPlainObject(node)) return out;
     for (const [key, value] of Object.entries(node)) {
       const nextKey = prefix ? `${prefix}.${key}` : key;
-      if (isPlainObject(value)) flattenSettingsTree(value, nextKey, out);
+      if (isPlainObject(value)) {
+        if (PRESET_OBJECT_VALUE_KEYS.has(nextKey)) out[nextKey] = cloneJsonLike(value);
+        else flattenSettingsTree(value, nextKey, out);
+      }
       else out[nextKey] = value;
     }
     return out;
@@ -4794,6 +5132,10 @@
   registerPresetSetting('global.showAtoms', () => !!(toggleAtoms && toggleAtoms.checked), (value) => {
     if (toggleAtoms) toggleAtoms.checked = asBoolean(value);
   });
+  registerPresetSetting('global.showAtomLabels', () => !!showAtomLabels, (value) => {
+    showAtomLabels = asBoolean(value);
+    if (toggleAtomLabels) toggleAtomLabels.checked = showAtomLabels;
+  });
   registerPresetSetting('global.showBonds', () => !!(toggleBonds && toggleBonds.checked), (value) => {
     if (toggleBonds) toggleBonds.checked = asBoolean(value);
   });
@@ -4803,6 +5145,11 @@
   });
   registerPresetSetting('global.elementColors', () => !!(elementColors && elementColors.checked), (value) => {
     if (elementColors) elementColors.checked = asBoolean(value);
+  });
+  registerPresetSetting('global.elementColorOverrides', () => exportElementColorOverrides(), (value) => {
+    importElementColorOverrides(value);
+    refreshPeriodicCells();
+    if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
   });
   registerPresetSetting('global.showBox', () => !!(toggleBox && toggleBox.checked), (value) => {
     if (toggleBox) toggleBox.checked = asBoolean(value);
@@ -5755,7 +6102,46 @@
       rebuildScene({ preserveView: true });
     };
   }
-  elementColors.onchange = () => rebuildScene({ preserveView: true });
+  if (toggleAtomLabels) {
+    toggleAtomLabels.onchange = () => {
+      showAtomLabels = !!toggleAtomLabels.checked;
+      rebuildScene({ preserveView: true });
+    };
+  }
+  elementColors.onchange = () => {
+    refreshPeriodicCells();
+    rebuildScene({ preserveView: true });
+  };
+  if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);
+  if (elementColorClose) elementColorClose.onclick = () => setElementColorOverlayOpen(false);
+  if (elementColorOverlay) {
+    elementColorOverlay.addEventListener('click', (e) => {
+      if (e.target === elementColorOverlay) setElementColorOverlayOpen(false);
+    });
+  }
+  if (elementColorPicker) {
+    elementColorPicker.oninput = () => {
+      setElementColorOverride(selectedElementForEditor, elementColorPicker.value);
+      refreshPeriodicCell(selectedElementForEditor);
+      rebuildScene({ preserveView: true });
+    };
+  }
+  if (elementColorResetOne) {
+    elementColorResetOne.onclick = () => {
+      elementColorOverrides.delete(selectedElementForEditor);
+      refreshPeriodicCell(selectedElementForEditor);
+      if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
+      rebuildScene({ preserveView: true });
+    };
+  }
+  if (elementColorResetAll) {
+    elementColorResetAll.onclick = () => {
+      elementColorOverrides.clear();
+      refreshPeriodicCells();
+      if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
+      rebuildScene({ preserveView: true });
+    };
+  }
   toggleBox.onchange = () => rebuildScene({ preserveView: true });
   if (toggleAxes) toggleAxes.onchange = () => { window.__showAxes__ = !!toggleAxes.checked; };
 

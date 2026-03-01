@@ -311,6 +311,97 @@
     #axisLock button.active {
       background: #9ab;
     }
+
+    #elementColorOverlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.52);
+      z-index: 60;
+    }
+
+    #elementColorModal {
+      width: min(920px, 96vw);
+      max-height: 86vh;
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid #223;
+      border-radius: 10px;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+      padding: 10px 12px 12px;
+    }
+
+    #elementColorHead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    #elementColorHead .title {
+      font-weight: 700;
+    }
+
+    #elementColorPickerRow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--muted);
+    }
+
+    #elementColorName {
+      min-width: 180px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    #periodicTableGrid {
+      display: grid;
+      grid-template-columns: repeat(18, minmax(28px, 1fr));
+      gap: 4px;
+      background: #0f151f;
+      border: 1px solid #223;
+      border-radius: 8px;
+      padding: 8px;
+    }
+
+    .pt-cell {
+      min-height: 28px;
+      border: 1px solid #2b374b;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #0b0f14;
+      background: #7f8aa1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      padding: 0;
+    }
+
+    .pt-cell.empty {
+      border: none;
+      background: transparent;
+      cursor: default;
+    }
+
+    .pt-cell.active {
+      outline: 2px solid #4aa3ff;
+      outline-offset: 1px;
+    }
+
+    .pt-legend {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
   </style>
 </head>
 
@@ -344,6 +435,8 @@
     <label><input type="checkbox" id="showBonds" checked /> bonds</label>
     <label><input type="checkbox" id="showMultiBonds" checked /> multi bonds</label>
     <label><input type="checkbox" id="elementColors" checked /> elem colors</label>
+    <label><input type="checkbox" id="showAtomLabels" /> atom labels</label>
+    <button id="elementColorBtn" class="secondary" title="Edit per-element default colors">Element colors…</button>
     <label><input type="checkbox" id="showBox" /> box</label>
     <label><input type="checkbox" id="showAxes" checked /> axes</label>
     <div class="spacer"></div>
@@ -541,6 +634,7 @@
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
           <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred double/triple-bond rendering. Toon uses toon shading (including surfaces), Glossy uses glassy blue atoms/bonds with dark edge shells, and Kit uses glossy atoms with collar-joint connectors.</li>
+          <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show element symbols over atoms.</li>
           <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
           <li>The Cartesian coordinates are displayed as red (X), green (Y), and blue (Z) arrows.</li>
         </ul>
@@ -554,6 +648,23 @@
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
         </ul>
       </div>
+    </div>
+  </div>
+
+  <div id="elementColorOverlay" aria-hidden="true">
+    <div id="elementColorModal" role="dialog" aria-modal="true" aria-label="Element Color Editor">
+      <div id="elementColorHead">
+        <div class="title">Element Colors</div>
+        <button id="elementColorClose" class="secondary" title="Close">✕</button>
+      </div>
+      <div id="elementColorPickerRow">
+        <span id="elementColorName">Select an element</span>
+        <input type="color" id="elementColorPicker" value="#ffffff" />
+        <button id="elementColorResetOne" class="secondary" title="Reset selected element color">Reset Selected</button>
+        <button id="elementColorResetAll" class="secondary" title="Reset all element colors to defaults">Reset All</button>
+      </div>
+      <div id="periodicTableGrid" aria-label="Periodic table color editor"></div>
+      <div class="pt-legend">Click an element, choose a color, and the scene updates immediately.</div>
     </div>
   </div>
 
