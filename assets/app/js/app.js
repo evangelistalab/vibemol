@@ -508,7 +508,6 @@
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    resizePeriodicTableScene();
   }
   window.addEventListener('resize', resize);
   resize();
@@ -567,6 +566,9 @@
   let showMultiBonds = true;
   // Display element symbols over atoms.
   let showAtomLabels = false;
+  // Atom label shell meshes that should rotate to keep text visible to camera.
+  const atomLabelTrackTargets = [];
+  let atomLabelCapGeometry = null;
   // Per-element color overrides (z -> "#rrggbb"), used when element colors are enabled.
   const elementColorOverrides = new Map();
   // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
@@ -717,6 +719,7 @@
     atomGroup = disposeAndReplaceGroup(atomGroup);
     bondGroup = disposeAndReplaceGroup(bondGroup);
     cloudGroup = disposeAndReplaceGroup(cloudGroup);
+    atomLabelTrackTargets.length = 0;
 
     if (boxHelper) {
       try { contentGroup.remove(boxHelper); } catch { }
@@ -1311,7 +1314,9 @@
    */
   function exportElementColorOverrides() {
     const out = {};
-    for (const [z, hex] of elementColorOverrides.entries()) out[String(z)] = hex;
+    const sorted = Array.from(elementColorOverrides.entries())
+      .sort((a, b) => (a[0] | 0) - (b[0] | 0));
+    for (const [z, hex] of sorted) out[String(z)] = hex;
     return out;
   }
 
@@ -2142,67 +2147,152 @@
   }
 
   /**
-   * Pick a readable text color (dark/light) for a given atom color.
+   * Derive a darker label color from the atom hue using HSV brightness scaling.
    * @param {THREE.Color} atomColor
+   * @param {number} dimming Brightness scale in [0,1], lower values are darker.
    * @returns {string}
    */
-  function getReadableLabelTextHex(atomColor) {
+  function getReadableLabelDarkenedHex(atomColor, dimming) {
     const c = atomColor || new THREE.Color(0xffffff);
-    const r = Math.max(0, Math.min(1, c.r));
-    const g = Math.max(0, Math.min(1, c.g));
-    const b = Math.max(0, Math.min(1, c.b));
-    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    return lum > 0.62 ? '#1b2635' : '#f3f7ff';
+    const rr = Math.max(0, Math.min(1, c.r));
+    const gg = Math.max(0, Math.min(1, c.g));
+    const bb = Math.max(0, Math.min(1, c.b));
+    const max = Math.max(rr, gg, bb);
+    const min = Math.min(rr, gg, bb);
+    const d = max - min;
+
+    // Convert RGB -> HSV so we can darken via V (brightness) while preserving hue.
+    let h = 0;
+    if (d > 1e-8) {
+      if (max === rr) h = ((gg - bb) / d + (gg < bb ? 6 : 0)) / 6;
+      else if (max === gg) h = ((bb - rr) / d + 2) / 6;
+      else h = ((rr - gg) / d + 4) / 6;
+    }
+    const s = max <= 1e-8 ? 0 : d / max;
+    const v = max;
+
+    const factor = Math.max(0, Math.min(1, Number.isFinite(dimming) ? dimming : 0.36));
+    const darkV = Math.max(0.02, Math.min(1, v * factor));
+    const [r, g, b] = hsvToRgb(h, s, darkV);
+    const out = new THREE.Color(r, g, b);
+    return `#${out.getHexString()}`;
   }
 
   /**
-   * Build a billboard sprite for one atom label symbol.
+   * Build a transparent text texture for one atom label.
    * @param {string} symbol
    * @param {string} textHex
-   * @returns {THREE.Sprite}
+   * @param {string} strokeHex
+   * @returns {THREE.CanvasTexture}
    */
-  function makeAtomLabelSprite(symbol, textHex) {
+  function makeAtomLabelTexture(symbol, textHex, strokeHex) {
     const text = typeof symbol === 'string' ? symbol.trim().slice(0, 3) : '?';
     const fg = normalizeHexColor(textHex, '#f3f7ff');
-    const bg = fg === '#1b2635' ? 'rgba(248,252,255,0.52)' : 'rgba(18,26,38,0.48)';
-    const stroke = fg === '#1b2635' ? 'rgba(18,26,38,0.35)' : 'rgba(244,248,255,0.34)';
-
+    const stroke = normalizeHexColor(strokeHex, '#000000');
+    const size = 1024;
+    const fontScale = 20;
+    const textX = Math.round(size * 0.5);
+    const textY = Math.round(size * 0.515);
     const c = document.createElement('canvas');
-    c.width = 192;
-    c.height = 192;
+    c.width = size;
+    c.height = size;
     const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-
-    // subtle circular badge improves readability across lighting styles
-    ctx.beginPath();
-    ctx.arc(96, 96, 64, 0, Math.PI * 2);
-    ctx.fillStyle = bg;
-    ctx.fill();
-
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = stroke;
-    ctx.stroke();
-
+    ctx.clearRect(0, 0, size, size);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `bold ${text.length >= 3 ? 76 : 92}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+    let fontPx = Math.round((text.length >= 3 ? 108 : 128) * fontScale);
+    const family = 'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    ctx.font = `bold ${fontPx}px ${family}`;
+    // Prevent clipping when large font scales are used.
+    const maxWidth = size * 0.82;
+    const measured = Math.max(1, ctx.measureText(text).width || 1);
+    if (measured > maxWidth) {
+      fontPx = Math.max(72, Math.round(fontPx * (maxWidth / measured)));
+      ctx.font = `bold ${fontPx}px ${family}`;
+    }
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    // Increase border thickness to stabilize edge visibility while rotating.
+    ctx.lineWidth = Math.max(10, Math.round(fontPx * 0.028));
+    ctx.strokeStyle = stroke;
     ctx.fillStyle = fg;
-    ctx.fillText(text, 96, 102);
-
+    // Slight horizontal squeeze for narrower glyphs without changing height.
+    const fontWidthScale = 0.9;
+    ctx.save();
+    ctx.translate(textX, textY);
+    ctx.scale(fontWidthScale, 1);
+    ctx.strokeText(text, 0, 0);
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
     const tex = new THREE.CanvasTexture(c);
-    tex.minFilter = THREE.LinearFilter;
+    if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+    else if ('encoding' in tex && THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
-    tex.generateMipmaps = false;
+    tex.generateMipmaps = true;
+    tex.premultiplyAlpha = true;
+    try { tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy() || 1); } catch { }
+    tex.needsUpdate = true;
+    return tex;
+  }
 
-    const mat = new THREE.SpriteMaterial({
+  /**
+   * Get a curved, camera-facing cap geometry used for engraved labels.
+   * The cap is built from a plane patch projected onto a sphere so UV text
+   * distortion is much smaller than mapping over a full sphere.
+   * @returns {THREE.BufferGeometry}
+   */
+  function getAtomLabelCapGeometry() {
+    if (atomLabelCapGeometry) return atomLabelCapGeometry;
+    const patchWidth = 0.66;
+    const patchHeight = 0.56;
+    const segX = 28;
+    const segY = 24;
+    const radius = 0.5;
+    const curvatureScale = 1.5;
+    const base = new THREE.PlaneGeometry(patchWidth, patchHeight, segX, segY);
+    const pos = base.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) {
+      const px = pos.getX(i);
+      const py = pos.getY(i);
+      const nx = px / (radius * curvatureScale);
+      const ny = py / (radius * curvatureScale);
+      const rr = nx * nx + ny * ny;
+      const nz = rr < 0.998 ? Math.sqrt(1 - rr) : 0.045;
+      pos.setXYZ(i, nx * radius, ny * radius, nz * radius);
+    }
+    pos.needsUpdate = true;
+    try { base.computeVertexNormals(); } catch { }
+    atomLabelCapGeometry = base;
+    return atomLabelCapGeometry;
+  }
+
+  /**
+   * Create a surface label material that renders only text pixels.
+   * @param {string} symbol
+   * @param {string} textHex
+   * @param {string} strokeHex
+   * @returns {THREE.Material}
+   */
+  function createAtomLabelSurfaceMaterial(symbol, textHex, strokeHex) {
+    const tex = makeAtomLabelTexture(symbol, textHex, strokeHex);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
       map: tex,
-      transparent: true,
-      depthTest: false,
-      depthWrite: false,
+      // Use alpha test cutout (instead of alpha blending) to avoid triangle
+      // sorting artifacts when the curved label shell is viewed at glancing angles.
+      transparent: false,
+      alphaTest: 0.18,
+      side: THREE.DoubleSide,
+      depthTest: true,
+      depthWrite: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -0.35,
+      polygonOffsetUnits: -0.35,
     });
-    const spr = new THREE.Sprite(mat);
-    spr.userData = { type: 'atomLabel' };
-    return spr;
+    // Keep label colors stable regardless of scene lighting/tone mapping.
+    if ('toneMapped' in mat) mat.toneMapped = false;
+    return mat;
   }
 
   /**
@@ -2213,6 +2303,7 @@
   */
   function buildAtoms(vol) {
     const group = new THREE.Group();
+    atomLabelTrackTargets.length = 0;
     // Atoms (spheres)
     const isToonStyle = moleculeStyle === 'toon';
     const isGlossyStyle = moleculeStyle === 'glossy';
@@ -2236,6 +2327,7 @@
     const materialCache = new Map();
     const glossyCoreMaterialCache = new Map();
     const highlightMaterialCache = new Map();
+    const labelMaterialCache = new Map();
     const toAng = (vol.units === 'angstrom');
     const hydrogenDisplayRadius = 0.5 * getCovalentRadiusAngstrom(1) * getAtomRenderScaleFactor(1);
     const baseOutlineScale = isGlossyStyle ? 1.05 : isToonStyle ? 1.08 : 1.0;
@@ -2260,15 +2352,6 @@
       mesh.position.copy(pos);
       const atomScale = r * getAtomRenderScaleFactor(z);
       mesh.scale.setScalar(atomScale);
-      if (showAtomLabels) {
-        const symbol = getElementSymbol(z);
-        const label = makeAtomLabelSprite(symbol, getReadableLabelTextHex(atomColor));
-        // Local sprite size is relative to unit-radius sphere (0.5 local radius).
-        const labelScale = z === 1 ? 0.30 : 0.40;
-        label.scale.set(labelScale, labelScale, 1);
-        label.renderOrder = 40;
-        mesh.add(label);
-      }
       if (stylizedOutlineMat) {
         const outline = new THREE.Mesh(sphere, stylizedOutlineMat);
         const displayRadius = 0.5 * atomScale;
@@ -2306,10 +2389,50 @@
         highlight.userData = { type: 'atomHighlight' };
         mesh.add(highlight);
       }
+      if (showAtomLabels) {
+        const symbol = getElementSymbol(z);
+        const labelHex = '#ffffff';
+        const labelStrokeHex = getReadableLabelDarkenedHex(atomColor, 0.25);
+        const labelKey = `${symbol}:${labelHex}:${labelStrokeHex}`;
+        let labelMat = labelMaterialCache.get(labelKey);
+        if (!labelMat) {
+          labelMat = createAtomLabelSurfaceMaterial(symbol, labelHex, labelStrokeHex);
+          labelMaterialCache.set(labelKey, labelMat);
+        }
+        const label = new THREE.Mesh(getAtomLabelCapGeometry(), labelMat);
+        // Keep label tightly seated on the atom shell while avoiding z-fighting.
+        const labelLift = isGlossyStyle ? 1.009 : isToonStyle ? 1.008 : 1.007;
+        // Double visible label size while preserving a small radial lift.
+        const labelSizeScale = 1.425;
+        label.scale.set(labelLift * labelSizeScale, labelLift * labelSizeScale, labelLift);
+        label.renderOrder = 52;
+        label.userData = { type: 'atomLabel' };
+        mesh.add(label);
+        atomLabelTrackTargets.push(label);
+      }
       mesh.userData = { type: 'atom', index: group.children.length };
       group.add(mesh);
     }
     return group;
+  }
+
+  const atomLabelParentWorldQuat = new THREE.Quaternion();
+  const atomLabelParentInvQuat = new THREE.Quaternion();
+  const atomLabelCameraWorldQuat = new THREE.Quaternion();
+  /**
+   * Rotate each atom-label shell so its text patch stays visible to the camera.
+   * Labels remain embedded on the atom surface while tracking the current view.
+   */
+  function updateTrackedAtomLabelOrientation() {
+    if (!showAtomLabels || atomLabelTrackTargets.length === 0) return;
+    camera.getWorldQuaternion(atomLabelCameraWorldQuat);
+    for (const label of atomLabelTrackTargets) {
+      if (!label || !label.parent) continue;
+      label.parent.getWorldQuaternion(atomLabelParentWorldQuat);
+      atomLabelParentInvQuat.copy(atomLabelParentWorldQuat).invert();
+      // Keep label upright in screen space by matching camera orientation.
+      label.quaternion.copy(atomLabelParentInvQuat).multiply(atomLabelCameraWorldQuat);
+    }
   }
 
   /**
@@ -3666,6 +3789,7 @@
    */
   function render() {
     controls.update();
+    updateTrackedAtomLabelOrientation();
 
     // Split render for 2C alpha/beta phase side-by-side
     let didSplit = false;
@@ -3873,6 +3997,11 @@
   const periodicRaycaster = new THREE.Raycaster();
   const periodicPointer = new THREE.Vector2();
   let selectedElementForEditor = 6;
+  const PERIODIC_TABLE_NODE_SCALE = 1.25;
+  const PERIODIC_TABLE_SELECTED_SCALE = 1.3;
+  const PERIODIC_TABLE_SPHERE_RADIUS = 0.34;
+  const PERIODIC_TABLE_OUTLINE_SCALE = 1.12;
+  const PERIODIC_TABLE_VIEW_MARGIN = 1.08;
 
   /**
    * Build a compact symbol sprite for one periodic table sphere.
@@ -3888,7 +4017,7 @@
     ctx.clearRect(0, 0, c.width, c.height);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = 'bold 36px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    ctx.font = 'bold 54px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
     ctx.fillStyle = 'rgba(235,242,252,0.95)';
     ctx.strokeStyle = 'rgba(10,16,26,0.8)';
     ctx.lineWidth = 5;
@@ -3916,8 +4045,40 @@
     const sy = 1.12;
     const x = (col - 8.5) * sx;
     const y = (4 - row) * sy;
-    const z = row >= 7 ? -1.85 - (row - 7) * 0.22 : 0;
+    // Keep lanthanides/actinides on the same depth plane as the main table.
+    const z = 0;
     return new THREE.Vector3(x, y, z);
+  }
+
+  /**
+   * Compute half-extents of visible periodic-table content in local scene space.
+   * Includes selected-node enlargement and outline shell padding.
+   * @returns {{halfW:number, halfH:number}}
+   */
+  function getPeriodicTableHalfExtents() {
+    let maxX = 0;
+    let maxY = 0;
+    for (let row = 0; row < PERIODIC_TABLE_LAYOUT.length; row++) {
+      const cols = PERIODIC_TABLE_LAYOUT[row];
+      for (let col = 0; col < cols.length; col++) {
+        const symbol = (cols[col] || '').trim();
+        if (!symbol) continue;
+        const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];
+        if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
+        const p = getPeriodicTablePosition(row, col);
+        maxX = Math.max(maxX, Math.abs(p.x));
+        maxY = Math.max(maxY, Math.abs(p.y));
+      }
+    }
+    const shellPad = PERIODIC_TABLE_SPHERE_RADIUS
+      * PERIODIC_TABLE_NODE_SCALE
+      * PERIODIC_TABLE_SELECTED_SCALE
+      * PERIODIC_TABLE_OUTLINE_SCALE
+      + 0.12;
+    return {
+      halfW: maxX + shellPad,
+      halfH: maxY + shellPad,
+    };
   }
 
   /**
@@ -3929,7 +4090,18 @@
     const h = Math.max(10, periodicTableViewport.clientHeight | 0);
     periodicTableRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     periodicTableRenderer.setSize(w, h, false);
-    periodicTableCamera.aspect = w / h;
+    const aspect = w / h;
+    if (periodicTableCamera.isOrthographicCamera) {
+      const ext = getPeriodicTableHalfExtents();
+      const orthoHalfHeight = Math.max(ext.halfH, ext.halfW / Math.max(1e-6, aspect)) * PERIODIC_TABLE_VIEW_MARGIN;
+      periodicTableCamera.left = -orthoHalfHeight * aspect;
+      periodicTableCamera.right = orthoHalfHeight * aspect;
+      periodicTableCamera.top = orthoHalfHeight;
+      periodicTableCamera.bottom = -orthoHalfHeight;
+      periodicTableCamera.zoom = 1;
+    } else {
+      periodicTableCamera.aspect = aspect;
+    }
     periodicTableCamera.updateProjectionMatrix();
   }
 
@@ -3983,8 +4155,9 @@
       alpha: true,
     });
     periodicTableScene = new THREE.Scene();
-    periodicTableCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 300);
-    periodicTableCamera.position.set(0, 2.4, 31.5);
+    periodicTableCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);
+    periodicTableCamera.position.set(0, 0, 32);
+    periodicTableCamera.lookAt(0, 0, 0);
 
     periodicTableScene.add(
       new THREE.AmbientLight(0xffffff, 0.85)
@@ -3997,11 +4170,11 @@
     periodicTableScene.add(d2);
 
     periodicTableRoot = new THREE.Group();
-    periodicTableRoot.rotation.x = -0.32;
-    periodicTableRoot.rotation.y = 0.10;
+    periodicTableRoot.rotation.x = 0;
+    periodicTableRoot.rotation.y = 0;
     periodicTableScene.add(periodicTableRoot);
 
-    const sphereGeom = new THREE.SphereGeometry(0.34, 24, 18);
+    const sphereGeom = new THREE.SphereGeometry(PERIODIC_TABLE_SPHERE_RADIUS, 24, 18);
     periodicNodesByZ.clear();
     periodicPickTargets.length = 0;
     for (let row = 0; row < PERIODIC_TABLE_LAYOUT.length; row++) {
@@ -4023,6 +4196,7 @@
         const mesh = new THREE.Mesh(sphereGeom, mat);
         mesh.position.copy(getPeriodicTablePosition(row, col));
         mesh.userData = { periodicZ: z };
+        mesh.scale.setScalar(PERIODIC_TABLE_NODE_SCALE);
 
         const outlineMat = new THREE.MeshBasicMaterial({
           color: 0x0c1624,
@@ -4031,7 +4205,7 @@
           opacity: 0.62,
         });
         const outline = new THREE.Mesh(sphereGeom, outlineMat);
-        outline.scale.setScalar(1.12);
+        outline.scale.setScalar(PERIODIC_TABLE_OUTLINE_SCALE);
         mesh.add(outline);
 
         const label = makePeriodicSymbolSprite(symbol);
@@ -4044,14 +4218,8 @@
       }
     }
 
-    periodicTableControls = new THREE.OrbitControls(periodicTableCamera, periodicTableCanvas);
-    periodicTableControls.enablePan = false;
-    periodicTableControls.enableDamping = true;
-    periodicTableControls.dampingFactor = 0.08;
-    periodicTableControls.minDistance = 16;
-    periodicTableControls.maxDistance = 54;
-    periodicTableControls.target.set(0, 0, -0.25);
-    periodicTableControls.update();
+    // Static preview: disable pan/zoom interactions in this panel.
+    periodicTableControls = null;
 
     periodicTableCanvas.addEventListener('pointerdown', (e) => {
       if (!periodicTableCamera || !periodicPickTargets.length) return;
@@ -4082,7 +4250,7 @@
     const hex = getActiveElementHexColor(z);
     node.mesh.material.color.set(hex);
     const selected = (z | 0) === selectedElementForEditor;
-    node.mesh.scale.setScalar(selected ? 1.3 : 1.0);
+    node.mesh.scale.setScalar((selected ? PERIODIC_TABLE_SELECTED_SCALE : 1.0) * PERIODIC_TABLE_NODE_SCALE);
     node.mesh.material.emissiveIntensity = selected ? 0.28 : 0.06;
     if (node.outlineMat) node.outlineMat.opacity = selected ? 0.92 : 0.62;
     if (node.label) node.label.material.opacity = selected ? 1.0 : 0.9;
@@ -5539,6 +5707,12 @@
    * Save current settings to a downloadable preset file.
    */
   function saveCurrentPresetToFile() {
+    // Flush pending color-picker edits so saved presets include the latest color.
+    if (elementColorPicker) {
+      const active = getActiveElementHexColor(selectedElementForEditor);
+      const pending = normalizeHexColor(elementColorPicker.value, active);
+      if (pending !== active) setElementColorOverride(selectedElementForEditor, pending);
+    }
     const preset = exportPresetEnvelope();
     const blob = new Blob([`${JSON.stringify(preset, null, 2)}\n`], { type: 'application/json' });
     const link = document.createElement('a');
@@ -6293,12 +6467,19 @@
       if (e.target === elementColorOverlay) setElementColorOverlayOpen(false);
     });
   }
+  /**
+   * Apply the current picker value as an override for the selected element.
+   */
+  function applyElementColorPickerValue() {
+    if (!elementColorPicker) return;
+    setElementColorOverride(selectedElementForEditor, elementColorPicker.value);
+    refreshPeriodicCell(selectedElementForEditor);
+    rebuildScene({ preserveView: true });
+  }
   if (elementColorPicker) {
-    elementColorPicker.oninput = () => {
-      setElementColorOverride(selectedElementForEditor, elementColorPicker.value);
-      refreshPeriodicCell(selectedElementForEditor);
-      rebuildScene({ preserveView: true });
-    };
+    // Some browsers commit `<input type="color">` on `change` only.
+    elementColorPicker.oninput = applyElementColorPickerValue;
+    elementColorPicker.onchange = applyElementColorPickerValue;
   }
   if (elementColorResetOne) {
     elementColorResetOne.onclick = () => {

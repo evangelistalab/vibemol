@@ -374,7 +374,7 @@
       width: 100%;
       height: 100%;
       display: block;
-      cursor: pointer;
+      cursor: default;
     }
 
     .pt-legend {
@@ -416,7 +416,6 @@
     <label><input type="checkbox" id="showMultiBonds" checked /> multi bonds</label>
     <label><input type="checkbox" id="elementColors" checked /> elem colors</label>
     <label><input type="checkbox" id="showAtomLabels" /> atom labels</label>
-    <button id="elementColorBtn" class="secondary" title="Edit per-element default colors">Element colors…</button>
     <label><input type="checkbox" id="showBox" /> box</label>
     <label><input type="checkbox" id="showAxes" checked /> axes</label>
     <div class="spacer"></div>
@@ -428,6 +427,7 @@
     <button id="surfBtn" class="secondary" title="Toggle iso-surface rendering">Hide Surfaces</button>
     <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear</button>
     <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
+    <button id="elementColorBtn" class="secondary" title="Edit per-element default colors">Element colors…</button>
     <button id="helpBtn" class="secondary" title="Help and shortcuts">Help</button>
   </div>
 
@@ -646,7 +646,7 @@
       <div id="periodicTableViewport" aria-label="Periodic table color editor">
         <canvas id="periodicTableCanvas"></canvas>
       </div>
-      <div class="pt-legend">Click a sphere to select an element. Drag to rotate. Wheel to zoom.</div>
+      <div class="pt-legend">Click a sphere to select an element.</div>
     </div>
   </div>
 
