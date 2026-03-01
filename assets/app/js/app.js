@@ -2733,6 +2733,10 @@
   const axisYBtn = document.getElementById('axisY');
   const axisZBtn = document.getElementById('axisZ');
   const shortcutRibbon = document.getElementById('shortcutRibbon');
+  const hintEl = document.getElementById('hint');
+  const pubchemQueryInput = document.getElementById('pubchemQuery');
+  const pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
+  const pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
   let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
 
   openBtn.onclick = () => fileInput.click();
@@ -4236,58 +4240,77 @@
   };
 
   /**
-   * Parse and append newly selected/dropped files, then focus the first added file.
-   * Existing demo/sample placeholder data is removed before importing user files.
-   * @param {FileList|File[]} fileList
-   * @returns {Promise<void>}
+   * Remove demo/sample placeholders before importing user-provided data.
    */
-  async function handleFiles(fileList) {
-    const arr = Array.from(fileList);
-    // If demo is present and this is the first real load, clear it
+  function clearPlaceholderVolumesForUserLoad() {
     if (volumes.length === 1 && volumes[0].name === 'Demo Water') {
-      console.log('[CUBE] Replacing demo with loaded file(s).');
+      console.log('[CUBE] Replacing demo with loaded data.');
       volumes = [];
       currentIndex = -1;
       clearSceneMeshes();
     }
-    // Remove sample cube if present
     if (volumes.some(v => v.isSample)) {
-      console.log('[CUBE] Removing sample.cube from list before adding user files.');
+      console.log('[CUBE] Removing sample.cube from list before adding user data.');
       volumes = volumes.filter(v => !v.isSample);
       currentIndex = -1;
       clearSceneMeshes();
     }
-    const startIndex = volumes.length; // index of first newly added
-    for (const f of arr) {
-      const text = await f.text();
-      const lower = f.name.toLowerCase();
-      let vol;
-      if (lower.endsWith('.xyz')) vol = parseXYZ(text);
-      else if (lower.endsWith('.2ccube')) vol = parseTwoComponentCube(text);
-      else vol = parseCube(text);
-      const meta = { name: f.name, vol };
-      if (vol && vol.isTwoComponent) setVolume2CComponent(meta, global2CComponentMode);
-      volumes.push(meta);
-      // adopt hinted iso if the user hasn’t interacted yet
-      if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
-        isoInput.value = String(vol.isoHint);
-      }
-      // Debug: print parsed volume info
-      if (vol.data && vol.data.length) {
-        try {
-          const stats = arrayMinMax(vol.data);
-          console.log('[CUBE] Loaded', f.name, { title: vol.title, nxyz: vol.nxyz, origin: vol.origin, axes: vol.axes, natoms: vol.natoms, isoHint: vol.isoHint, min: stats.min, max: stats.max });
-        } catch (e) {
-          console.warn('[CUBE] Stats failed for', f.name, e);
-        }
-      } else {
-        console.log('[XYZ] Loaded', f.name, { natoms: vol.natoms });
-      }
+  }
+
+  /**
+   * Parse one file payload into a volume using extension-based dispatch.
+   * @param {string} name
+   * @param {string} text
+   * @returns {*}
+   */
+  function parseVolumeByName(name, text) {
+    const lower = name.toLowerCase();
+    if (lower.endsWith('.xyz')) return parseXYZ(text);
+    if (lower.endsWith('.2ccube')) return parseTwoComponentCube(text);
+    return parseCube(text);
+  }
+
+  /**
+   * Append one parsed volume record and apply common post-processing.
+   * @param {string} name
+   * @param {*} vol
+   */
+  function appendParsedVolumeRecord(name, vol) {
+    const meta = { name, vol };
+    if (vol && vol.isTwoComponent) setVolume2CComponent(meta, global2CComponentMode);
+    volumes.push(meta);
+    if (vol && vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
+      isoInput.value = String(vol.isoHint);
     }
+    if (vol && vol.data && vol.data.length) {
+      try {
+        const stats = arrayMinMax(vol.data);
+        console.log('[CUBE] Loaded', name, {
+          title: vol.title,
+          nxyz: vol.nxyz,
+          origin: vol.origin,
+          axes: vol.axes,
+          natoms: vol.natoms,
+          isoHint: vol.isoHint,
+          min: stats.min,
+          max: stats.max
+        });
+      } catch (e) {
+        console.warn('[CUBE] Stats failed for', name, e);
+      }
+    } else {
+      console.log('[XYZ] Loaded', name, { natoms: vol ? vol.natoms : 0 });
+    }
+  }
+
+  /**
+   * Refresh selector, focus first newly added item, and rebuild scene.
+   * @param {number} startIndex
+   */
+  function finalizeLoadedVolumes(startIndex) {
     refreshFileSelect();
     if (volumes.length > 0) {
-      // Select the first of the newly added files
-      currentIndex = startIndex;
+      currentIndex = Math.max(0, Math.min(startIndex, volumes.length - 1));
       if (fileSelect && fileSelect.options.length > currentIndex) {
         fileSelect.value = String(currentIndex);
       }
@@ -4295,6 +4318,334 @@
       updateSidePanel();
     }
   }
+
+  /**
+   * Parse and append newly selected/dropped files, then focus the first added file.
+   * Existing demo/sample placeholder data is removed before importing user files.
+   * @param {FileList|File[]} fileList
+   * @returns {Promise<void>}
+   */
+  async function handleFiles(fileList) {
+    const arr = Array.from(fileList);
+    if (arr.length === 0) return;
+    clearPlaceholderVolumesForUserLoad();
+    const startIndex = volumes.length; // index of first newly added
+    for (const f of arr) {
+      const text = await f.text();
+      const vol = parseVolumeByName(f.name, text);
+      appendParsedVolumeRecord(f.name, vol);
+    }
+    finalizeLoadedVolumes(startIndex);
+  }
+
+  const PUBCHEM_AUTOCOMPLETE_LIMIT = 10;
+  let pubchemBusy = false;
+  let pubchemSuggestTimer = null;
+  let pubchemSuggestToken = 0;
+  const pubchemHas3DByNameCache = new Map();
+  const pubchemHas3DByCidCache = new Map();
+
+  /**
+   * Update the hint message if the hint UI element exists.
+   * @param {string} message
+   */
+  function setHintMessage(message) {
+    if (hintEl) hintEl.textContent = message;
+  }
+
+  /**
+   * Update PubChem autocomplete options.
+   * @param {string[]} terms
+   */
+  function setPubChemSuggestions(terms) {
+    if (!pubchemSuggestionsEl) return;
+    pubchemSuggestionsEl.innerHTML = '';
+    for (const term of terms) {
+      const opt = document.createElement('option');
+      opt.value = term;
+      pubchemSuggestionsEl.appendChild(opt);
+    }
+  }
+
+  /**
+   * Normalize a PubChem search string.
+   * @param {*} value
+   * @returns {string}
+   */
+  function normalizePubChemQuery(value) {
+    return String(value || '').trim();
+  }
+
+  /**
+   * Fetch compound name suggestions from PubChem autocomplete API.
+   * @param {string} query
+   * @param {number} limit
+   * @returns {Promise<string[]>}
+   */
+  async function fetchPubChemSuggestions(query, limit = PUBCHEM_AUTOCOMPLETE_LIMIT) {
+    const q = normalizePubChemQuery(query);
+    if (!q) return [];
+    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(q)}/JSON?limit=${Math.max(1, Math.min(25, limit | 0))}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`PubChem autocomplete failed (${res.status})`);
+    const data = await res.json();
+    const terms = (data && data.dictionary_terms && Array.isArray(data.dictionary_terms.compound))
+      ? data.dictionary_terms.compound
+      : [];
+    const seen = new Set();
+    const unique = [];
+    for (const t of terms) {
+      if (typeof t !== 'string') continue;
+      const key = t.trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      unique.push(t.trim());
+    }
+    if (unique.length === 0) return unique;
+
+    // Keep only entries that have at least one 3D conformer record.
+    const checks = await Promise.all(
+      unique.map(async (term) => {
+        try {
+          return await hasPubChem3DByName(term);
+        } catch (err) {
+          console.warn('[PubChem] 3D availability check failed', term, err);
+          return false;
+        }
+      })
+    );
+
+    const filtered = [];
+    for (let i = 0; i < unique.length; i++) {
+      if (checks[i]) filtered.push(unique[i]);
+    }
+    return filtered;
+  }
+
+  /**
+   * Check whether a PubChem name has at least one 3D conformer entry.
+   * Results are memoized to keep autocomplete responsive.
+   * @param {string} name
+   * @returns {Promise<boolean>}
+   */
+  async function hasPubChem3DByName(name) {
+    const q = normalizePubChemQuery(name);
+    if (!q) return false;
+    const cacheKey = q.toLowerCase();
+    if (pubchemHas3DByNameCache.has(cacheKey)) return pubchemHas3DByNameCache.get(cacheKey);
+
+    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/conformers/JSON`;
+    const res = await fetch(url);
+    let has3D = false;
+    if (res.ok) {
+      has3D = true;
+    } else if (res.status === 404) {
+      has3D = false;
+    } else {
+      throw new Error(`PubChem conformer lookup failed (${res.status})`);
+    }
+    pubchemHas3DByNameCache.set(cacheKey, has3D);
+    return has3D;
+  }
+
+  /**
+   * Check whether one CID has at least one 3D conformer.
+   * @param {number} cid
+   * @returns {Promise<boolean>}
+   */
+  async function hasPubChem3DByCid(cid) {
+    const n = Number(cid);
+    if (!Number.isFinite(n)) return false;
+    if (pubchemHas3DByCidCache.has(n)) return pubchemHas3DByCidCache.get(n);
+    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${n}/conformers/JSON`;
+    const res = await fetch(url);
+    let has3D = false;
+    if (res.ok) {
+      has3D = true;
+    } else if (res.status === 404) {
+      has3D = false;
+    } else {
+      throw new Error(`PubChem CID conformer lookup failed (${res.status})`);
+    }
+    pubchemHas3DByCidCache.set(n, has3D);
+    return has3D;
+  }
+
+  /**
+   * Resolve the first CID that matches a PubChem name query.
+   * When `require3D` is set, returns the first CID with a 3D conformer.
+   * @param {string} name
+   * @param {{require3D?:boolean}=} options
+   * @returns {Promise<number>}
+   */
+  async function fetchPubChemCidByName(name, options = {}) {
+    const require3D = !!options.require3D;
+    const q = normalizePubChemQuery(name);
+    if (!q) throw new Error('Empty PubChem query.');
+    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/cids/JSON`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`PubChem CID lookup failed (${res.status})`);
+    const data = await res.json();
+    const cidsRaw = data && data.IdentifierList && Array.isArray(data.IdentifierList.CID) ? data.IdentifierList.CID : [];
+    const cids = cidsRaw.map((v) => Number(v)).filter((v) => Number.isFinite(v));
+    if (cids.length === 0) throw new Error(`No PubChem CID found for "${q}".`);
+    if (!require3D) return cids[0];
+
+    for (const cid of cids.slice(0, 24)) {
+      try {
+        if (await hasPubChem3DByCid(cid)) return cid;
+      } catch (err) {
+        console.warn('[PubChem] CID 3D check failed', cid, err);
+      }
+    }
+    throw new Error(`No PubChem 3D structure found for "${q}".`);
+  }
+
+  /**
+   * Fetch an SDF record for one PubChem CID.
+   * Prefers 3D coordinates and optionally requires 3D-only mode.
+   * @param {number} cid
+   * @param {{require3D?:boolean}=} options
+   * @returns {Promise<string>}
+   */
+  async function fetchPubChemSdfByCid(cid, options = {}) {
+    const require3D = !!options.require3D;
+    const modes = require3D ? ['3d'] : ['3d', '2d'];
+    let lastStatus = 0;
+    for (const recordType of modes) {
+      const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/SDF?record_type=${recordType}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        lastStatus = res.status;
+        continue;
+      }
+      return await res.text();
+    }
+    throw new Error(`PubChem SDF fetch failed for CID ${cid} (${lastStatus || 'no response'}).`);
+  }
+
+  /**
+   * Convert an SDF mol block to XYZ text for existing parser reuse.
+   * @param {string} sdfText
+   * @param {string} fallbackTitle
+   * @returns {string}
+   */
+  function sdfToXYZText(sdfText, fallbackTitle) {
+    const lines = String(sdfText || '').replace(/\r/g, '').split('\n');
+    if (lines.length < 5) throw new Error('Invalid SDF payload from PubChem.');
+    const countsLine = lines[3] || '';
+    let natoms = parseInt(countsLine.slice(0, 3).trim(), 10);
+    if (!Number.isFinite(natoms)) {
+      const c = countsLine.trim().split(/\s+/);
+      natoms = parseInt(c[0] || '', 10);
+    }
+    if (!Number.isFinite(natoms) || natoms <= 0) throw new Error('Could not parse atom count from PubChem SDF.');
+
+    const atomLines = lines.slice(4, 4 + natoms);
+    if (atomLines.length !== natoms) throw new Error('PubChem SDF ended before atom block completed.');
+
+    const xyzRows = [];
+    for (const line of atomLines) {
+      let x = parseFloat(line.slice(0, 10));
+      let y = parseFloat(line.slice(10, 20));
+      let z = parseFloat(line.slice(20, 30));
+      let sym = line.slice(31, 34).trim();
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) || !sym) {
+        const p = line.trim().split(/\s+/);
+        x = parseFloat(p[0]);
+        y = parseFloat(p[1]);
+        z = parseFloat(p[2]);
+        sym = p[3] || '';
+      }
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) || !sym) {
+        throw new Error('Failed to parse PubChem SDF atom coordinates.');
+      }
+      xyzRows.push(`${sym} ${x.toFixed(6)} ${y.toFixed(6)} ${z.toFixed(6)}`);
+    }
+
+    return `${xyzRows.length}\n${fallbackTitle}\n${xyzRows.join('\n')}\n`;
+  }
+
+  /**
+   * Enable/disable the PubChem load button during network calls.
+   * @param {boolean} busy
+   */
+  function setPubChemBusy(busy) {
+    pubchemBusy = !!busy;
+    if (!pubchemLoadBtn) return;
+    pubchemLoadBtn.disabled = pubchemBusy;
+    pubchemLoadBtn.textContent = pubchemBusy ? 'Loading…' : 'Load';
+  }
+
+  /**
+   * Import one molecule from PubChem name query and append it as XYZ.
+   * @param {string} rawQuery
+   * @returns {Promise<void>}
+   */
+  async function loadPubChemCompound(rawQuery) {
+    const query = normalizePubChemQuery(rawQuery);
+    if (!query || pubchemBusy) return;
+    setPubChemBusy(true);
+    try {
+      setHintMessage(`PubChem: searching "${query}"...`);
+      const cid = await fetchPubChemCidByName(query, { require3D: true });
+      const sdfText = await fetchPubChemSdfByCid(cid, { require3D: true });
+      const xyzText = sdfToXYZText(sdfText, `PubChem CID ${cid} ${query}`);
+      const vol = parseXYZ(xyzText);
+      if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) {
+        throw new Error('PubChem import produced an empty structure.');
+      }
+      vol.title = `PubChem CID ${cid}`;
+      vol.comment = query;
+      clearPlaceholderVolumesForUserLoad();
+      const startIndex = volumes.length;
+      appendParsedVolumeRecord(`${query} [CID ${cid}].xyz`, vol);
+      finalizeLoadedVolumes(startIndex);
+      setHintMessage(`Loaded PubChem: ${query} (CID ${cid}) • Orbit: mouse drag • Zoom: wheel • Pan: right-drag`);
+    } catch (err) {
+      const msg = err && err.message ? err.message : String(err);
+      console.error('[PubChem] import failed', err);
+      setHintMessage(`PubChem import failed: ${msg}`);
+      alert(`PubChem import failed: ${msg}`);
+    } finally {
+      setPubChemBusy(false);
+    }
+  }
+
+  /**
+   * Debounced autocomplete lookup for the PubChem query input.
+   */
+  function schedulePubChemSuggestions() {
+    if (!pubchemQueryInput) return;
+    if (pubchemSuggestTimer) clearTimeout(pubchemSuggestTimer);
+    const query = normalizePubChemQuery(pubchemQueryInput.value);
+    if (query.length < 2) {
+      setPubChemSuggestions([]);
+      return;
+    }
+    const token = ++pubchemSuggestToken;
+    pubchemSuggestTimer = setTimeout(async () => {
+      try {
+        const terms = await fetchPubChemSuggestions(query, PUBCHEM_AUTOCOMPLETE_LIMIT);
+        if (token !== pubchemSuggestToken) return;
+        setPubChemSuggestions(terms);
+      } catch (err) {
+        if (token !== pubchemSuggestToken) return;
+        console.warn('[PubChem] autocomplete failed', err);
+        setPubChemSuggestions([]);
+      }
+    }, 240);
+  }
+
+  if (pubchemQueryInput) {
+    pubchemQueryInput.addEventListener('input', schedulePubChemSuggestions);
+    pubchemQueryInput.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      loadPubChemCompound(pubchemQueryInput.value);
+    });
+  }
+  if (pubchemLoadBtn) pubchemLoadBtn.onclick = () => loadPubChemCompound(pubchemQueryInput ? pubchemQueryInput.value : '');
 
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
   const drop = document.getElementById('drop');

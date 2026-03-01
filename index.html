@@ -58,6 +58,11 @@
       width: 6.5em;
     }
 
+    #toolbar input.pubchem-query {
+      width: 14em;
+      max-width: 36vw;
+    }
+
     #toolbar input[type="range"] {
       width: 140px;
     }
@@ -275,6 +280,14 @@
       <input type="file" id="fileInput" accept=".cube,.cub,.xyz,.2ccube" multiple />
       <button id="openBtn" class="secondary">Open…</button>
     </label>
+    <label>PubChem
+      <input type="text" id="pubchemQuery" class="pubchem-query" placeholder="Search (e.g. ben)"
+        title="Type a compound name. Suggestions are filtered to PubChem entries with 3D structures."
+        list="pubchemSuggestions"
+        autocomplete="off" />
+      <button id="pubchemLoadBtn" class="secondary" title="Search PubChem and load the selected molecule">Load</button>
+    </label>
+    <datalist id="pubchemSuggestions"></datalist>
     <label>Active file
       <select id="fileSelect"></select>
     </label>
