@@ -2131,8 +2131,9 @@
         shaftEnd = reflectPointAcrossPlane(shaftStart, bondMid, dirNorm);
       }
 
-      // Build a single parabolic arc (quadratic Bezier) to keep the middle
-      // continuously smooth and avoid center-direction kinks.
+      // Build one smooth cubic arc that enforces endpoint tangents along
+      // the local sphere normals. This removes short-bond seam gaps while
+      // keeping a parabola-like center bulge.
       const chordLen = Math.max(1e-6, shaftStart.distanceTo(shaftEnd));
       const chordDir = new THREE.Vector3().subVectors(shaftEnd, shaftStart);
       const chordDirLen = Math.max(1e-8, chordDir.length());
@@ -2147,20 +2148,33 @@
       const arcMidBase = new THREE.Vector3().addVectors(shaftStart, shaftEnd).multiplyScalar(0.5);
       const bulgeGain = order >= 3 ? 1.75 : 1.4;
       const arcBulge = Math.max(0.01, Math.min(chordLen * 0.45, offsetDistance * bulgeGain));
-      const arcMid = arcMidBase.addScaledVector(lateralDir, arcBulge);
+      const arcMidTarget = arcMidBase.addScaledVector(lateralDir, arcBulge);
 
-      // Blend parabola apex control with endpoint-normal guides to reduce seam harshness.
       const endHandleLenRaw = chordLen * STUDIO_CURVED_HANDLE_SCALE
         + offsetDistance * STUDIO_CURVED_HANDLE_OFFSET_SCALE * Math.max(1.0, STUDIO_DOUBLE_BOND_CURVE_GAIN * 0.65);
-      const endHandleLen = Math.max(0.03, Math.min(chordLen * 0.5, endHandleLenRaw));
-      const normalGuideMid = new THREE.Vector3().addVectors(
-        shaftStart.clone().addScaledVector(startNormal, endHandleLen),
-        shaftEnd.clone().addScaledVector(endNormal, endHandleLen)
-      );
-      normalGuideMid.multiplyScalar(0.5);
-      const controlMid = arcMid.clone().lerp(normalGuideMid, 0.32);
+      const baseHandleLen = Math.max(0.02, Math.min(chordLen * 0.5, endHandleLenRaw));
+      const minHandleLen = Math.max(0.008, chordLen * 0.05);
+      const maxHandleLen = Math.max(minHandleLen, chordLen * 0.75);
 
-      const shaftCurve = new THREE.QuadraticBezierCurve3(shaftStart, controlMid, shaftEnd);
+      // Solve cubic midpoint relation in least squares:
+      // B(0.5) = (P0 + 3P1 + 3P2 + P3)/8 with
+      // P1 = P0 + n0*h0, P2 = P3 - n1*h1.
+      const midpoint = new THREE.Vector3().addVectors(shaftStart, shaftEnd).multiplyScalar(0.5);
+      const rhs = new THREE.Vector3().subVectors(arcMidTarget, midpoint).multiplyScalar(8 / 3);
+      const ab = startNormal.dot(endNormal);
+      const det = Math.max(1e-6, 1 - ab * ab);
+      const aR = startNormal.dot(rhs);
+      const bR = endNormal.dot(rhs);
+      const solvedH0 = (aR - ab * bR) / det;
+      const solvedH1 = (-bR + ab * aR) / det;
+
+      const blend = 0.55;
+      const h0 = Math.max(minHandleLen, Math.min(maxHandleLen, baseHandleLen * (1 - blend) + solvedH0 * blend));
+      const h1 = Math.max(minHandleLen, Math.min(maxHandleLen, baseHandleLen * (1 - blend) + solvedH1 * blend));
+      const control1 = shaftStart.clone().addScaledVector(startNormal, h0);
+      const control2 = shaftEnd.clone().addScaledVector(endNormal, -h1);
+
+      const shaftCurve = new THREE.CubicBezierCurve3(shaftStart, control1, control2, shaftEnd);
       const shaftLen = Math.max(1e-6, shaftCurve.getLength());
       const shaftSegments = Math.max(24, Math.min(96, Math.ceil(shaftLen * 36)));
       const shaftGeom = new THREE.TubeGeometry(shaftCurve, shaftSegments, bondRadius, 22, false);
