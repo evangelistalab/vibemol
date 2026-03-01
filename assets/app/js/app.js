@@ -2700,6 +2700,7 @@
   const versionText = document.getElementById('versionText');
   if (versionText) versionText.textContent = APP_VERSION;
   const coordsContent = document.getElementById('coordsContent');
+  const pubchemMetaContent = document.getElementById('pubchemMetaContent');
   const copyXYZBtn = document.getElementById('copyXYZ');
   const downloadXYZBtn = document.getElementById('downloadXYZ');
   // View controls
@@ -4200,6 +4201,7 @@
   function updateSidePanel() {
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     coordsContent.innerHTML = renderCoordsContent(record, BOHR_TO_ANG, window.ATOM_Z_TO_DATA);
+    updatePubChemMetadataPanel(record);
   }
 
   /**
@@ -4274,9 +4276,10 @@
    * Append one parsed volume record and apply common post-processing.
    * @param {string} name
    * @param {*} vol
+   * @param {Object=} extras
    */
-  function appendParsedVolumeRecord(name, vol) {
-    const meta = { name, vol };
+  function appendParsedVolumeRecord(name, vol, extras = null) {
+    const meta = Object.assign({ name, vol }, extras || {});
     if (vol && vol.isTwoComponent) setVolume2CComponent(meta, global2CComponentMode);
     volumes.push(meta);
     if (vol && vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
@@ -4301,6 +4304,46 @@
     } else {
       console.log('[XYZ] Loaded', name, { natoms: vol ? vol.natoms : 0 });
     }
+  }
+
+  /**
+   * Escape text for safe insertion into HTML.
+   * @param {*} value
+   * @returns {string}
+   */
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Render PubChem metadata for the active record.
+   * @param {*} record
+   */
+  function updatePubChemMetadataPanel(record) {
+    if (!pubchemMetaContent) return;
+    const meta = record && record.pubchemMeta;
+    if (!meta) {
+      pubchemMetaContent.innerHTML = '<div class="meta-empty">No PubChem metadata for active file.</div>';
+      return;
+    }
+    const rows = [
+      ['Name', meta.title || '—'],
+      ['CID', meta.cid != null ? String(meta.cid) : '—'],
+      ['Formula', meta.molecularFormula || '—'],
+      ['Weight', meta.molecularWeight || '—'],
+      ['IUPAC', meta.iupacName || '—'],
+      ['SMILES', meta.connectivitySmiles || '—'],
+      ['Source', meta.source || 'PubChem']
+    ];
+    if (meta.query) rows.splice(1, 0, ['Query', meta.query]);
+    if (meta.url) rows.push(['URL', meta.url]);
+    const body = rows.map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('');
+    pubchemMetaContent.innerHTML = `<table class="meta-table"><tbody>${body}</tbody></table>`;
   }
 
   /**
@@ -4525,6 +4568,43 @@
   }
 
   /**
+   * Fetch selected metadata fields for one PubChem CID.
+   * @param {number} cid
+   * @param {string} query
+   * @returns {Promise<{cid:number,query:string,title:string,molecularFormula:string,molecularWeight:string,iupacName:string,connectivitySmiles:string,source:string,url:string}>}
+   */
+  async function fetchPubChemMetadata(cid, query = '') {
+    const n = Number(cid);
+    if (!Number.isFinite(n)) throw new Error(`Invalid PubChem CID: ${cid}`);
+    const fields = [
+      'Title',
+      'IUPACName',
+      'MolecularFormula',
+      'MolecularWeight',
+      'ConnectivitySMILES'
+    ].join(',');
+    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${n}/property/${fields}/JSON`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`PubChem metadata lookup failed (${res.status})`);
+    const data = await res.json();
+    const prop = data && data.PropertyTable && Array.isArray(data.PropertyTable.Properties)
+      ? data.PropertyTable.Properties[0]
+      : null;
+    if (!prop || typeof prop !== 'object') throw new Error(`No PubChem metadata found for CID ${n}.`);
+    return {
+      cid: n,
+      query: normalizePubChemQuery(query),
+      title: (typeof prop.Title === 'string' && prop.Title.trim()) ? prop.Title.trim() : '',
+      molecularFormula: typeof prop.MolecularFormula === 'string' ? prop.MolecularFormula : '',
+      molecularWeight: typeof prop.MolecularWeight === 'string' ? prop.MolecularWeight : '',
+      iupacName: typeof prop.IUPACName === 'string' ? prop.IUPACName : '',
+      connectivitySmiles: typeof prop.ConnectivitySMILES === 'string' ? prop.ConnectivitySMILES : '',
+      source: 'PubChem',
+      url: `https://pubchem.ncbi.nlm.nih.gov/compound/${n}`
+    };
+  }
+
+  /**
    * Convert an SDF mol block to XYZ text for existing parser reuse.
    * @param {string} sdfText
    * @param {string} fallbackTitle
@@ -4590,6 +4670,12 @@
       setHintMessage(`PubChem: searching "${query}"...`);
       const cid = await fetchPubChemCidByName(query, { require3D: true });
       const sdfText = await fetchPubChemSdfByCid(cid, { require3D: true });
+      let pubchemMeta = null;
+      try {
+        pubchemMeta = await fetchPubChemMetadata(cid, query);
+      } catch (metaErr) {
+        console.warn('[PubChem] metadata lookup failed', metaErr);
+      }
       const xyzText = sdfToXYZText(sdfText, `PubChem CID ${cid} ${query}`);
       const vol = parseXYZ(xyzText);
       if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) {
@@ -4599,7 +4685,11 @@
       vol.comment = query;
       clearPlaceholderVolumesForUserLoad();
       const startIndex = volumes.length;
-      appendParsedVolumeRecord(`${query} [CID ${cid}].xyz`, vol);
+      appendParsedVolumeRecord(
+        `${query} [CID ${cid}].xyz`,
+        vol,
+        { pubchemMeta: pubchemMeta || { cid, query, source: 'PubChem', url: `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}` } }
+      );
       finalizeLoadedVolumes(startIndex);
       setHintMessage(`Loaded PubChem: ${query} (CID ${cid}) • Orbit: mouse drag • Zoom: wheel • Pan: right-drag`);
     } catch (err) {
