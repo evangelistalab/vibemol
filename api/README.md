@@ -21,6 +21,28 @@ python -m playwright install chromium
 python api/vibemol_client.py assets/data/sample.cube out/sample.png
 ```
 
+Batch render multiple files:
+```bash
+python api/vibemol_client.py \
+  --inputs assets/data/a.cube assets/data/b.cube assets/data/c.xyz \
+  --output-dir out/batch
+```
+
+Batch render with wildcards (quoted patterns are supported):
+```bash
+python api/vibemol_client.py \
+  --inputs "assets/data/*.cube" "assets/data/*.xyz" \
+  --output-dir out/batch
+```
+
+Custom output naming in batch mode:
+```bash
+python api/vibemol_client.py \
+  --inputs assets/data/a.cube assets/data/b.cube \
+  --output-dir out/batch \
+  --name-template "{index:03d}_{stem}.png"
+```
+
 Optional controls:
 ```bash
 python api/vibemol_client.py assets/data/sample.cube out/sample_toon.png \
@@ -77,6 +99,7 @@ CLI control:
 - `--rc /path/to/config.json` use explicit rc file
 - `--no-rc` disable rc auto-discovery
 - `--preset` always overrides rc preset
+- `--continue-on-error` keeps batch rendering after one file fails
 
 Style mapping:
 - `default` = Default
@@ -86,6 +109,9 @@ Style mapping:
 - `glossy` = Glossy
 
 ## Notes
-- This is a prototype for single-file rendering.
+- Single-file mode is `input_file output_png`.
+- Batch mode is `--inputs ... --output-dir ...`.
+- Wildcard patterns are supported in `--inputs` (for example `"*.cube"`).
+- `--save-preset` is only supported in single-file mode.
 - It captures the main canvas output as PNG.
 - The CLI prefers `window.VibeMolPreset` when available; otherwise it falls back to best-effort DOM application/export.
