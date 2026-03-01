@@ -2131,19 +2131,39 @@
         shaftEnd = reflectPointAcrossPlane(shaftStart, bondMid, dirNorm);
       }
 
-      // Enforce tangent continuity with flange normals at both ends:
-      // cubic handles are constrained to lie on each endpoint normal line.
+      // Build a single parabolic arc (quadratic Bezier) to keep the middle
+      // continuously smooth and avoid center-direction kinks.
       const chordLen = Math.max(1e-6, shaftStart.distanceTo(shaftEnd));
-      const bendWeight = Math.max(1.0, STUDIO_DOUBLE_BOND_CURVE_GAIN * 0.65);
-      const handleLenRaw = chordLen * STUDIO_CURVED_HANDLE_SCALE
-        + offsetDistance * STUDIO_CURVED_HANDLE_OFFSET_SCALE * bendWeight;
-      const handleLen = Math.max(0.02, Math.min(chordLen * 0.9, handleLenRaw));
-      const control1 = shaftStart.clone().addScaledVector(startNormal, handleLen);
-      const control2 = reflectPointAcrossPlane(control1, bondMid, dirNorm);
-      const shaftCurve = new THREE.CubicBezierCurve3(shaftStart, control1, control2, shaftEnd);
+      const chordDir = new THREE.Vector3().subVectors(shaftEnd, shaftStart);
+      const chordDirLen = Math.max(1e-8, chordDir.length());
+      chordDir.multiplyScalar(1 / chordDirLen);
+      let lateralDir = (offsetDirection && offsetDirection.lengthSq && offsetDirection.lengthSq() > 1e-12)
+        ? offsetDirection.clone().normalize()
+        : getBondPerpendicular(dirNorm);
+      lateralDir.addScaledVector(chordDir, -lateralDir.dot(chordDir));
+      if (lateralDir.lengthSq() < 1e-10) lateralDir = getBondPerpendicular(chordDir);
+      lateralDir.normalize();
+
+      const arcMidBase = new THREE.Vector3().addVectors(shaftStart, shaftEnd).multiplyScalar(0.5);
+      const bulgeGain = order >= 3 ? 1.75 : 1.4;
+      const arcBulge = Math.max(0.01, Math.min(chordLen * 0.45, offsetDistance * bulgeGain));
+      const arcMid = arcMidBase.addScaledVector(lateralDir, arcBulge);
+
+      // Blend parabola apex control with endpoint-normal guides to reduce seam harshness.
+      const endHandleLenRaw = chordLen * STUDIO_CURVED_HANDLE_SCALE
+        + offsetDistance * STUDIO_CURVED_HANDLE_OFFSET_SCALE * Math.max(1.0, STUDIO_DOUBLE_BOND_CURVE_GAIN * 0.65);
+      const endHandleLen = Math.max(0.03, Math.min(chordLen * 0.5, endHandleLenRaw));
+      const normalGuideMid = new THREE.Vector3().addVectors(
+        shaftStart.clone().addScaledVector(startNormal, endHandleLen),
+        shaftEnd.clone().addScaledVector(endNormal, endHandleLen)
+      );
+      normalGuideMid.multiplyScalar(0.5);
+      const controlMid = arcMid.clone().lerp(normalGuideMid, 0.32);
+
+      const shaftCurve = new THREE.QuadraticBezierCurve3(shaftStart, controlMid, shaftEnd);
       const shaftLen = Math.max(1e-6, shaftCurve.getLength());
-      const shaftSegments = Math.max(12, Math.min(56, Math.ceil(shaftLen * 22)));
-      const shaftGeom = new THREE.TubeGeometry(shaftCurve, shaftSegments, bondRadius, 18, false);
+      const shaftSegments = Math.max(24, Math.min(96, Math.ceil(shaftLen * 36)));
+      const shaftGeom = new THREE.TubeGeometry(shaftCurve, shaftSegments, bondRadius, 22, false);
 
       const flangeStartGeom = createStudioFlangeGeometry(bondRadius, studioCollarRadius);
       const flangeEndGeom = createStudioFlangeGeometry(bondRadius, studioCollarRadius);
