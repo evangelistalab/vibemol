@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.7';
+  const APP_VERSION = '0.4.8';
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -563,7 +563,7 @@
   let boxHelper = null;
   let showSurfaces = true; // toggle iso-surface visibility
   // Display inferred multiple bonds (double/triple) as parallel connectors.
-  let showMultiBonds = false;
+  let showMultiBonds = true;
   // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
   let __savedShowSurfaces = null;
   // Default view reference (captured on first non-preserved fit)
@@ -1521,7 +1521,7 @@
       });
     } else {
       mat = new THREE.MeshPhysicalMaterial({
-        color: 0x99a5b8,
+        color: 0xeaecf0,
         roughness: 0.14,
         metalness: 0.08,
         clearcoat: 0.68,
@@ -1666,7 +1666,10 @@
   const STUDIO_DOUBLE_BOND_CURVE_GAIN = 4.0;
   const STUDIO_MULTI_BOND_SEAT_SPREAD_GAIN = 1.8;
   const STUDIO_FLANGE_SPHERE_OVERLAP = 0.001;
-  const STUDIO_FLANGE_SHAFT_OVERLAP = 0.006;
+  // Keep a tiny shaft overlap inside flange tips to avoid seam flicker/tearing.
+  const STUDIO_FLANGE_SHAFT_OVERLAP = 0.003;
+  // Cap curve bulge more aggressively on short chords to avoid endpoint artifacts.
+  const STUDIO_CURVED_SHORT_CHORD_BULGE_FRACTION = 0.30;
   const STUDIO_CURVED_HANDLE_SCALE = 0.44;
   const STUDIO_CURVED_HANDLE_OFFSET_SCALE = 0.55;
 
@@ -1689,6 +1692,180 @@
     ];
     const geom = new THREE.LatheGeometry(profile, 28);
     try { geom.computeVertexNormals(); } catch { }
+    return geom;
+  }
+
+  /**
+   * Build an open tube mesh around a curve using parallel-transport frames.
+   * This avoids endpoint frame flips that can appear with Frenet-based tubes
+   * on short/high-curvature paths.
+   * @param {THREE.Curve<THREE.Vector3>} curve
+   * @param {number} tubularSegments
+   * @param {number} radius
+   * @param {number} radialSegments
+   * @param {THREE.Vector3} normalHint
+   * @param {THREE.Vector3} startTangentHint
+   * @param {THREE.Vector3} endTangentHint
+   * @returns {THREE.BufferGeometry}
+   */
+  function createTransportTubeGeometry(
+    curve,
+    tubularSegments,
+    radius,
+    radialSegments,
+    normalHint,
+    startTangentHint,
+    endTangentHint
+  ) {
+    const tSeg = Math.max(2, tubularSegments | 0);
+    const rSeg = Math.max(8, radialSegments | 0);
+    const r = Math.max(1e-5, Number(radius) || 0);
+
+    const points = new Array(tSeg + 1);
+    const tangents = new Array(tSeg + 1);
+    for (let i = 0; i <= tSeg; i++) {
+      const u = i / tSeg;
+      points[i] = curve.getPointAt(u);
+    }
+
+    // Build tangents from sampled points (finite differences) instead of
+    // curve endpoint derivatives, which are more prone to instability in the
+    // final strip on short/high-curvature curves.
+    const chord = new THREE.Vector3().subVectors(points[tSeg], points[0]);
+    const chordDir = chord.lengthSq() > 1e-14 ? chord.normalize() : new THREE.Vector3(0, 1, 0);
+    for (let i = 0; i <= tSeg; i++) {
+      const prev = points[Math.max(0, i - 1)];
+      const next = points[Math.min(tSeg, i + 1)];
+      let tan = new THREE.Vector3().subVectors(next, prev);
+      if (tan.lengthSq() < 1e-14) {
+        if (i > 0) tan = new THREE.Vector3().subVectors(points[i], points[i - 1]);
+        else tan = new THREE.Vector3().subVectors(points[Math.min(tSeg, i + 1)], points[i]);
+      }
+      if (tan.lengthSq() < 1e-14) tan = chordDir.clone();
+      tangents[i] = tan.normalize();
+    }
+    // Keep tangent direction continuous to prevent ring-frame flips.
+    for (let i = 1; i <= tSeg; i++) {
+      if (tangents[i].dot(tangents[i - 1]) < 0) tangents[i].negate();
+    }
+
+    // Endpoint tangents must match the intended sphere normals so the end ring
+    // plane aligns with the local atom surface normal.
+    if (startTangentHint && startTangentHint.lengthSq && startTangentHint.lengthSq() > 1e-14) {
+      const t0 = startTangentHint.clone().normalize();
+      if (tSeg >= 1 && tangents[1].dot(t0) < 0) t0.negate();
+      tangents[0] = t0;
+    }
+    if (endTangentHint && endTangentHint.lengthSq && endTangentHint.lengthSq() > 1e-14) {
+      const te = endTangentHint.clone().normalize();
+      if (tSeg >= 1 && tangents[tSeg - 1].dot(te) < 0) te.negate();
+      tangents[tSeg] = te;
+    }
+
+    const normals = new Array(tSeg + 1);
+    const binormals = new Array(tSeg + 1);
+
+    let n0 = (normalHint && normalHint.lengthSq && normalHint.lengthSq() > 1e-14)
+      ? normalHint.clone()
+      : getBondPerpendicular(tangents[0]);
+    n0.addScaledVector(tangents[0], -n0.dot(tangents[0]));
+    if (n0.lengthSq() < 1e-14) n0 = getBondPerpendicular(tangents[0]);
+    n0.normalize();
+    let b0 = new THREE.Vector3().crossVectors(tangents[0], n0);
+    if (b0.lengthSq() < 1e-14) {
+      n0 = getBondPerpendicular(tangents[0]);
+      b0.crossVectors(tangents[0], n0);
+    }
+    b0.normalize();
+    normals[0] = n0;
+    binormals[0] = b0;
+
+    const axis = new THREE.Vector3();
+    for (let i = 1; i <= tSeg; i++) {
+      const tPrev = tangents[i - 1];
+      const tCur = tangents[i];
+      let n = normals[i - 1].clone();
+
+      axis.crossVectors(tPrev, tCur);
+      const axisLen = axis.length();
+      if (axisLen > 1e-8) {
+        axis.multiplyScalar(1 / axisLen);
+        const c = Math.max(-1, Math.min(1, tPrev.dot(tCur)));
+        const angle = Math.acos(c);
+        n.applyAxisAngle(axis, angle);
+      }
+
+      n.addScaledVector(tCur, -n.dot(tCur));
+      if (n.lengthSq() < 1e-14) n = getBondPerpendicular(tCur); else n.normalize();
+
+      let b = new THREE.Vector3().crossVectors(tCur, n);
+      if (b.lengthSq() < 1e-14) {
+        const fb = getBondPerpendicular(tCur);
+        b = new THREE.Vector3().crossVectors(tCur, fb);
+      }
+      b.normalize();
+
+      normals[i] = n;
+      binormals[i] = b;
+    }
+
+    const ringCount = tSeg + 1;
+    const vertCount = ringCount * rSeg;
+    const positions = new Float32Array(vertCount * 3);
+    const vertexNormals = new Float32Array(vertCount * 3);
+    const twoPi = Math.PI * 2;
+
+    let v = 0;
+    for (let i = 0; i < ringCount; i++) {
+      const p = points[i];
+      const n = normals[i];
+      const b = binormals[i];
+      for (let j = 0; j < rSeg; j++) {
+        const theta = (j / rSeg) * twoPi;
+        const ct = Math.cos(theta);
+        const st = Math.sin(theta);
+
+        const nx = n.x * ct + b.x * st;
+        const ny = n.y * ct + b.y * st;
+        const nz = n.z * ct + b.z * st;
+
+        positions[v + 0] = p.x + r * nx;
+        positions[v + 1] = p.y + r * ny;
+        positions[v + 2] = p.z + r * nz;
+        vertexNormals[v + 0] = nx;
+        vertexNormals[v + 1] = ny;
+        vertexNormals[v + 2] = nz;
+        v += 3;
+      }
+    }
+
+    const indexCount = tSeg * rSeg * 6;
+    const IndArray = vertCount > 65535 ? Uint32Array : Uint16Array;
+    const indices = new IndArray(indexCount);
+    let ii = 0;
+    for (let i = 0; i < tSeg; i++) {
+      const row = i * rSeg;
+      const nextRow = (i + 1) * rSeg;
+      for (let j = 0; j < rSeg; j++) {
+        const jn = (j + 1) % rSeg;
+        const a = row + j;
+        const b = row + jn;
+        const c = nextRow + j;
+        const d = nextRow + jn;
+        indices[ii++] = a;
+        indices[ii++] = b;
+        indices[ii++] = c;
+        indices[ii++] = b;
+        indices[ii++] = d;
+        indices[ii++] = c;
+      }
+    }
+
+    const geom = new THREE.BufferGeometry();
+    geom.setIndex(new THREE.BufferAttribute(indices, 1));
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geom.setAttribute('normal', new THREE.BufferAttribute(vertexNormals, 3));
+    geom.computeBoundingSphere();
     return geom;
   }
 
@@ -2117,33 +2294,89 @@
         flangeBaseEnd = reflectPointAcrossPlane(flangeBaseStart, bondMid, dirNorm);
       }
 
-      // Shaft starts near the flange tip and overlaps into it slightly to avoid gaps.
-      const shaftInset = Math.max(0.002, STUDIO_FLANGE_TAPER_END - STUDIO_FLANGE_SHAFT_OVERLAP);
-      const shaftStart = flangeBaseStart.clone().addScaledVector(
-        startNormal,
-        shaftInset
+      // Compute flange tip centers first, then apply a small adaptive overlap per end.
+      // High-bend/short-chord cases get less overlap to avoid tube self-intersection
+      // artifacts at one endpoint.
+      const flangeTipStart = flangeBaseStart.clone().addScaledVector(startNormal, STUDIO_FLANGE_TAPER_END);
+      const flangeTipEnd = flangeBaseEnd.clone().addScaledVector(endNormal, STUDIO_FLANGE_TAPER_END);
+      const tipChordLen = Math.max(1e-6, flangeTipStart.distanceTo(flangeTipEnd));
+      const axisDotStart = Math.abs(startNormal.dot(dirNorm));
+      const axisDotEnd = Math.abs(endNormal.dot(dirNorm));
+      const bendStart = Math.sqrt(Math.max(0, 1 - axisDotStart * axisDotStart));
+      const bendEnd = Math.sqrt(Math.max(0, 1 - axisDotEnd * axisDotEnd));
+      const overlapLimitByLength = Math.max(0.0005, tipChordLen * 0.12);
+      const overlapStart = Math.min(
+        overlapLimitByLength,
+        Math.max(0.0005, STUDIO_FLANGE_SHAFT_OVERLAP * (1 - 0.7 * bendStart))
       );
-      let shaftEnd = flangeBaseEnd.clone().addScaledVector(
-        endNormal,
-        shaftInset
+      const overlapEnd = Math.min(
+        overlapLimitByLength,
+        Math.max(0.0005, STUDIO_FLANGE_SHAFT_OVERLAP * (1 - 0.7 * bendEnd))
       );
+      const shaftStart = flangeTipStart.clone().addScaledVector(startNormal, -overlapStart);
+      let shaftEnd = flangeTipEnd.clone().addScaledVector(endNormal, -overlapEnd);
       if (symmetricEligible) {
         shaftEnd = reflectPointAcrossPlane(shaftStart, bondMid, dirNorm);
       }
 
-      // Enforce tangent continuity with flange normals at both ends:
-      // cubic handles are constrained to lie on each endpoint normal line.
+      // Build one smooth cubic arc that enforces endpoint tangents along
+      // the local sphere normals. This removes short-bond seam gaps while
+      // keeping a parabola-like center bulge.
       const chordLen = Math.max(1e-6, shaftStart.distanceTo(shaftEnd));
-      const bendWeight = Math.max(1.0, STUDIO_DOUBLE_BOND_CURVE_GAIN * 0.65);
-      const handleLenRaw = chordLen * STUDIO_CURVED_HANDLE_SCALE
-        + offsetDistance * STUDIO_CURVED_HANDLE_OFFSET_SCALE * bendWeight;
-      const handleLen = Math.max(0.02, Math.min(chordLen * 0.9, handleLenRaw));
-      const control1 = shaftStart.clone().addScaledVector(startNormal, handleLen);
-      const control2 = reflectPointAcrossPlane(control1, bondMid, dirNorm);
+      const chordDir = new THREE.Vector3().subVectors(shaftEnd, shaftStart);
+      const chordDirLen = Math.max(1e-8, chordDir.length());
+      chordDir.multiplyScalar(1 / chordDirLen);
+      let lateralDir = (offsetDirection && offsetDirection.lengthSq && offsetDirection.lengthSq() > 1e-12)
+        ? offsetDirection.clone().normalize()
+        : getBondPerpendicular(dirNorm);
+      lateralDir.addScaledVector(chordDir, -lateralDir.dot(chordDir));
+      if (lateralDir.lengthSq() < 1e-10) lateralDir = getBondPerpendicular(chordDir);
+      lateralDir.normalize();
+
+      const arcMidBase = new THREE.Vector3().addVectors(shaftStart, shaftEnd).multiplyScalar(0.5);
+      const bulgeGain = order >= 3 ? 1.75 : 1.4;
+      const arcBulge = Math.max(
+        0.008,
+        Math.min(chordLen * STUDIO_CURVED_SHORT_CHORD_BULGE_FRACTION, offsetDistance * bulgeGain)
+      );
+      const arcMidTarget = arcMidBase.addScaledVector(lateralDir, arcBulge);
+
+      const endHandleLenRaw = chordLen * STUDIO_CURVED_HANDLE_SCALE
+        + offsetDistance * STUDIO_CURVED_HANDLE_OFFSET_SCALE * Math.max(1.0, STUDIO_DOUBLE_BOND_CURVE_GAIN * 0.65);
+      const baseHandleLen = Math.max(0.02, Math.min(chordLen * 0.5, endHandleLenRaw));
+      const minHandleLen = Math.max(0.008, chordLen * 0.05);
+      const maxHandleLen = Math.max(minHandleLen, chordLen * 0.75);
+
+      // Solve cubic midpoint relation in least squares:
+      // B(0.5) = (P0 + 3P1 + 3P2 + P3)/8 with
+      // P1 = P0 + n0*h0, P2 = P3 - n1*h1.
+      const midpoint = new THREE.Vector3().addVectors(shaftStart, shaftEnd).multiplyScalar(0.5);
+      const rhs = new THREE.Vector3().subVectors(arcMidTarget, midpoint).multiplyScalar(8 / 3);
+      const ab = startNormal.dot(endNormal);
+      const det = Math.max(1e-6, 1 - ab * ab);
+      const aR = startNormal.dot(rhs);
+      const bR = endNormal.dot(rhs);
+      const solvedH0 = (aR - ab * bR) / det;
+      const solvedH1 = (-bR + ab * aR) / det;
+
+      const blend = 0.55;
+      const h0 = Math.max(minHandleLen, Math.min(maxHandleLen, baseHandleLen * (1 - blend) + solvedH0 * blend));
+      const h1 = Math.max(minHandleLen, Math.min(maxHandleLen, baseHandleLen * (1 - blend) + solvedH1 * blend));
+      const control1 = shaftStart.clone().addScaledVector(startNormal, h0);
+      const control2 = shaftEnd.clone().addScaledVector(endNormal, -h1);
+
       const shaftCurve = new THREE.CubicBezierCurve3(shaftStart, control1, control2, shaftEnd);
       const shaftLen = Math.max(1e-6, shaftCurve.getLength());
-      const shaftSegments = Math.max(12, Math.min(56, Math.ceil(shaftLen * 22)));
-      const shaftGeom = new THREE.TubeGeometry(shaftCurve, shaftSegments, bondRadius, 18, false);
+      const shaftSegments = Math.max(24, Math.min(96, Math.ceil(shaftLen * 36)));
+      const shaftGeom = createTransportTubeGeometry(
+        shaftCurve,
+        shaftSegments,
+        bondRadius,
+        22,
+        lateralDir,
+        startNormal,
+        endNormal
+      );
 
       const flangeStartGeom = createStudioFlangeGeometry(bondRadius, studioCollarRadius);
       const flangeEndGeom = createStudioFlangeGeometry(bondRadius, studioCollarRadius);
@@ -2151,7 +2384,7 @@
       const flangeStart = new THREE.Mesh(flangeStartGeom, bondMat);
       const flangeEnd = new THREE.Mesh(flangeEndGeom, bondMat);
 
-      // Align flange axis with local sphere normal (requested).
+      // Align flange axis with local sphere normals.
       flangeStart.position.copy(flangeBaseStart);
       flangeStart.quaternion.setFromUnitVectors(up, startNormal);
       flangeEnd.position.copy(flangeBaseEnd);
