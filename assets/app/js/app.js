@@ -482,8 +482,10 @@
   // Default to white background
   scene.background = new THREE.Color(0xffffff);
   const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 1e6);
-  camera.position.set(60, 50, 60);
+  camera.position.set(6, 6, 6);
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0, 0);
+  controls.update();
   controls.enableDamping = true;
   // Default rotate speed
   controls.rotateSpeed = 1.5;
@@ -4409,6 +4411,14 @@
   const axisXBtn = document.getElementById('axisX');
   const axisYBtn = document.getElementById('axisY');
   const axisZBtn = document.getElementById('axisZ');
+  const editToolboxEl = document.getElementById('editToolbox');
+  const editToolMoveBtn = document.getElementById('editToolMoveBtn');
+  const editToolAddBtn = document.getElementById('editToolAddBtn');
+  const editAddPaneEl = document.getElementById('editAddPane');
+  const editAddSearchEl = document.getElementById('editAddSearch');
+  const editAddSuggestionsEl = document.getElementById('editAddSuggestions');
+  const editAddQuickEl = document.getElementById('editAddQuick');
+  const editAddCurrentEl = document.getElementById('editAddCurrent');
   const shortcutRibbon = document.getElementById('shortcutRibbon');
   const hintEl = document.getElementById('hint');
   const emptyStateEl = document.getElementById('emptyState');
@@ -4787,7 +4797,10 @@
     ],
     edit: [
       { k: 'E', d: 'Exit edit' },
-      { k: 'Click+Drag', d: 'Move atom' },
+      { k: 'G', d: 'Move tool' },
+      { k: 'N', d: 'Add-atom tool' },
+      { k: 'Click+Drag', d: 'Move atom (Move tool)' },
+      { k: 'Click', d: 'Add atom (Add tool)' },
       { k: 'X/Y/Z', d: 'Axis lock' },
     ],
     measure: [
@@ -4810,7 +4823,12 @@
     const prevMode = currentMode;
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
+    if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
+      // Always start edit sessions in move mode.
+      setEditTool(EDIT_TOOL.MOVE, { announce: false });
+    }
     updateAxisButtons();
+    updateEditToolboxUi();
     const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
     renderRibbon(ctx);
     // Camera: keep rotation enabled in all modes
@@ -4961,6 +4979,200 @@
   let dragAxis = 'none';
   let axisLock = 'none'; // 'none'|'x'|'y'|'z'
   let axisKeyDown = null; // current held axis key ('x'|'y'|'z') to avoid auto-repeat toggling
+  const EDIT_TOOL = Object.freeze({ MOVE: 'move', ADD: 'add' });
+  let editTool = EDIT_TOOL.MOVE;
+  let editAddElementZ = 6;
+  const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
+
+  /**
+   * Return sorted atomic numbers available in the loaded atomic data table.
+   * @returns {number[]}
+   */
+  function getKnownElementNumbers() {
+    if (!ATOM_Z_TO_DATA) return [];
+    return Object.keys(ATOM_Z_TO_DATA)
+      .map((k) => Number(k))
+      .filter((z) => Number.isInteger(z) && z > 0 && ATOM_Z_TO_DATA[z])
+      .sort((a, b) => a - b);
+  }
+
+  /**
+   * Resolve a user query to an element atomic number.
+   * Accepts symbol, name, or atomic number.
+   * @param {*} query
+   * @returns {number|null}
+   */
+  function resolveElementQueryToZ(query) {
+    const raw = String(query || '').trim();
+    if (!raw) return null;
+    if (/^\d+$/.test(raw)) {
+      const z = Number(raw);
+      return (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z]) ? z : null;
+    }
+    const trailingZ = raw.match(/\((\d{1,3})\)\s*$/);
+    if (trailingZ) {
+      const z = Number(trailingZ[1]);
+      if (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z]) return z;
+    }
+    const upper = raw.toUpperCase();
+    if (ATOM_SYMBOL_TO_Z && Number.isInteger(ATOM_SYMBOL_TO_Z[upper])) {
+      const z = ATOM_SYMBOL_TO_Z[upper];
+      if (ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z]) return z;
+    }
+    const rawSymbol = raw.match(/^([A-Za-z]{1,3})\b/);
+    if (rawSymbol) {
+      const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[rawSymbol[1].toUpperCase()];
+      if (Number.isInteger(z) && ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z]) return z;
+    }
+    const lower = raw.toLowerCase();
+    for (const z of getKnownElementNumbers()) {
+      const info = ATOM_Z_TO_DATA[z];
+      const name = (info && info.name ? String(info.name) : '').toLowerCase();
+      if (name === lower) return z;
+    }
+    for (const z of getKnownElementNumbers()) {
+      const info = ATOM_Z_TO_DATA[z];
+      const name = (info && info.name ? String(info.name) : '').toLowerCase();
+      if (name.startsWith(lower)) return z;
+    }
+    return null;
+  }
+
+  /**
+   * Keep edit-tool controls synchronized with current edit state.
+   * @param {{syncSearch?:boolean}=} options
+   */
+  function updateEditToolboxUi(options = {}) {
+    const syncSearch = options.syncSearch !== false;
+    const isEdit = editMode;
+    const isMove = editTool === EDIT_TOOL.MOVE;
+    const isAdd = editTool === EDIT_TOOL.ADD;
+
+    if (editToolboxEl) {
+      editToolboxEl.setAttribute('aria-hidden', isEdit ? 'false' : 'true');
+    }
+    if (editToolMoveBtn) editToolMoveBtn.classList.toggle('active', isMove);
+    if (editToolAddBtn) editToolAddBtn.classList.toggle('active', isAdd);
+    if (editAddPaneEl) editAddPaneEl.classList.toggle('active', isEdit && isAdd);
+
+    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
+    const symbol = info && info.symbol ? info.symbol : `Z${editAddElementZ}`;
+    const name = info && info.name ? info.name : symbol;
+    if (editAddCurrentEl) editAddCurrentEl.textContent = `Adding: ${name} (${symbol})`;
+
+    if (syncSearch && editAddSearchEl && document.activeElement !== editAddSearchEl) {
+      editAddSearchEl.value = `${symbol} — ${name} (${editAddElementZ})`;
+    }
+
+    if (editAddQuickEl) {
+      const quickButtons = editAddQuickEl.querySelectorAll('button[data-z]');
+      quickButtons.forEach((btn) => {
+        const z = Number(btn.getAttribute('data-z'));
+        const isSelected = z === editAddElementZ;
+        btn.classList.toggle('active', isSelected);
+        const bgHex = getActiveElementHexColor(z);
+        try {
+          const color = new THREE.Color(bgHex);
+          const lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+          btn.style.background = bgHex;
+          btn.style.color = lum > 0.6 ? '#0b1220' : '#f4f8ff';
+        } catch {
+          btn.style.background = '#1a2230';
+          btn.style.color = '#eef6ff';
+        }
+      });
+    }
+  }
+
+  /**
+   * Change the active edit sub-tool.
+   * @param {'move'|'add'} nextTool
+   * @param {{announce?:boolean}=} options
+   */
+  function setEditTool(nextTool, options = {}) {
+    const announce = options.announce !== false;
+    editTool = (nextTool === EDIT_TOOL.ADD) ? EDIT_TOOL.ADD : EDIT_TOOL.MOVE;
+    if (editTool === EDIT_TOOL.ADD) {
+      axisLock = 'none';
+      axisKeyDown = null;
+      updateAxisGuideLine();
+    }
+    updateEditToolboxUi();
+    updateAxisButtons();
+    if (!announce || !editMode) return;
+    if (editTool === EDIT_TOOL.ADD) {
+      const symbol = getElementSymbol(editAddElementZ);
+      setHintMessage(`Edit tool: Add atom (${symbol}) • Click atom/scene to place`);
+    } else {
+      setHintMessage('Edit tool: Move • Click+drag atom (X/Y/Z for axis lock)');
+    }
+  }
+
+  /**
+   * Select which element gets added in Add-atom edit sub-mode.
+   * @param {number} z
+   * @param {{announce?:boolean,syncSearch?:boolean}=} options
+   * @returns {boolean}
+   */
+  function setEditAddElement(z, options = {}) {
+    const announce = !!options.announce;
+    const syncSearch = options.syncSearch !== false;
+    if (!Number.isInteger(z) || z <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
+    editAddElementZ = z;
+    updateEditToolboxUi({ syncSearch });
+    if (announce && editMode && editTool === EDIT_TOOL.ADD) {
+      setHintMessage(`Add atom: ${getElementName(z)} (${getElementSymbol(z)})`);
+    }
+    return true;
+  }
+
+  /**
+   * Populate search suggestions and quick-add chips for Add-atom mode.
+   */
+  function buildEditAddControls() {
+    if (editAddSuggestionsEl) {
+      editAddSuggestionsEl.innerHTML = '';
+      for (const z of getKnownElementNumbers()) {
+        const info = ATOM_Z_TO_DATA[z];
+        const opt = document.createElement('option');
+        opt.value = `${info.symbol} — ${info.name} (${z})`;
+        editAddSuggestionsEl.appendChild(opt);
+      }
+    }
+    if (editAddQuickEl) {
+      editAddQuickEl.innerHTML = '';
+      for (const z of EDIT_QUICK_ADD_ELEMENTS) {
+        if (!ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
+        const info = ATOM_Z_TO_DATA[z];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-z', String(z));
+        btn.title = `${info.name} (${info.symbol})`;
+        btn.textContent = info.symbol;
+        btn.onclick = () => { setEditAddElement(z, { announce: true }); };
+        editAddQuickEl.appendChild(btn);
+      }
+    }
+    if (editAddSearchEl) {
+      const commit = () => {
+        const z = resolveElementQueryToZ(editAddSearchEl.value);
+        if (!setEditAddElement(z, { announce: true, syncSearch: true })) {
+          updateEditToolboxUi({ syncSearch: true });
+          setHintMessage(`Element not recognized: "${String(editAddSearchEl.value || '').trim()}"`);
+        }
+      };
+      editAddSearchEl.addEventListener('change', commit);
+      editAddSearchEl.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        commit();
+      });
+      editAddSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
+    }
+    if (editToolMoveBtn) editToolMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
+    if (editToolAddBtn) editToolAddBtn.onclick = () => setEditTool(EDIT_TOOL.ADD);
+    updateEditToolboxUi();
+  }
 
   // Faint axis guide line shown while holding X/Y/Z in edit mode
   let axisGuideLine = null; // THREE.Line
@@ -5318,6 +5530,15 @@
     ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   }
+
+  /**
+   * Update the shared raycaster from a pointer event.
+   * @param {PointerEvent} e
+   */
+  function setRaycasterFromEvent(e) {
+    setNDCFromEvent(e);
+    raycaster.setFromCamera(ndc, camera);
+  }
   /**
    * Update hover highlighting for the currently pointed atom mesh.
    * @param {THREE.Mesh|null} mesh
@@ -5377,7 +5598,7 @@
    */
   function updateAxisButtons() {
     if (!axisLockEl) return;
-    axisLockEl.style.display = editMode ? 'flex' : 'none';
+    axisLockEl.style.display = (editMode && editTool === EDIT_TOOL.MOVE) ? 'flex' : 'none';
     /**
      * Toggle the active class for one axis-lock button.
      * @param {HTMLElement} btn
@@ -5389,6 +5610,7 @@
   if (axisXBtn) axisXBtn.onclick = () => { axisLock = (axisLock === 'x' ? 'none' : 'x'); updateAxisButtons(); };
   if (axisYBtn) axisYBtn.onclick = () => { axisLock = (axisLock === 'y' ? 'none' : 'y'); updateAxisButtons(); };
   if (axisZBtn) axisZBtn.onclick = () => { axisLock = (axisLock === 'z' ? 'none' : 'z'); updateAxisButtons(); };
+  buildEditAddControls();
 
   /**
    * Raycast and return the first intersected atom mesh under the pointer.
@@ -5397,10 +5619,88 @@
    */
   function pickAtom(e) {
     if (!atomGroup || !atomGroup.children || atomGroup.children.length === 0) return null;
-    setNDCFromEvent(e);
-    raycaster.setFromCamera(ndc, camera);
+    setRaycasterFromEvent(e);
     const hits = raycaster.intersectObjects(atomGroup.children, false);
     return hits.length > 0 ? hits[0].object : null;
+  }
+
+  /**
+   * Raycast and return the first full hit record on an atom mesh.
+   * @param {PointerEvent} e
+   * @returns {THREE.Intersection|null}
+   */
+  function pickAtomHit(e) {
+    if (!atomGroup || !atomGroup.children || atomGroup.children.length === 0) return null;
+    setRaycasterFromEvent(e);
+    const hits = raycaster.intersectObjects(atomGroup.children, false);
+    return hits.length > 0 ? hits[0] : null;
+  }
+
+  /**
+   * Place a new atom into the active file at one world-space coordinate.
+   * @param {THREE.Vector3} worldPos
+   * @returns {boolean}
+   */
+  function appendAtomAtWorld(worldPos) {
+    /**
+     * Ensure there is an active editable volume target.
+     * If none is loaded, create an empty angstrom XYZ-like record.
+     * @returns {*}
+     */
+    function ensureEditableVolumeRecord() {
+      if (currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].vol) return volumes[currentIndex].vol;
+      const idx0 = () => 0;
+      const vol = {
+        title: 'Untitled molecule',
+        comment: 'Created in edit mode',
+        natoms: 0,
+        origin: [0, 0, 0],
+        nxyz: [0, 0, 0],
+        axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        atoms: [],
+        data: new Float32Array(0),
+        idx: idx0,
+        units: 'angstrom',
+        isoHint: null,
+      };
+      const name = `untitled-${volumes.length + 1}.xyz`;
+      volumes.push({ name, vol });
+      currentIndex = volumes.length - 1;
+      refreshFileSelect();
+      if (fileSelect) fileSelect.value = String(currentIndex);
+      updateSidePanel();
+      return vol;
+    }
+
+    const vol = ensureEditableVolumeRecord();
+    if (!vol || !Array.isArray(vol.atoms)) return false;
+    const z = editAddElementZ | 0;
+    if (!z || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
+    const [x, y, zCoord] = worldToAtomUnits(vol, worldPos);
+    vol.atoms.push({ Z: z, q: 0, x, y, z: zCoord });
+    vol.natoms = vol.atoms.length;
+    rebuildScene({ preserveView: true });
+    setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Total atoms: ${vol.atoms.length}`);
+    return true;
+  }
+
+  /**
+   * Compute where a newly added atom should be placed for one pointer click.
+   * Place atoms on a camera-facing plane (parallel to screen) through target.
+   * @param {PointerEvent} e
+   * @param {THREE.Intersection|null} atomHit
+   * @returns {THREE.Vector3|null}
+   */
+  function computeAddAtomPosition(e, atomHit) {
+    void atomHit;
+    setRaycasterFromEvent(e);
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    const planePoint = new THREE.Vector3(0, 0, 0);
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, planePoint);
+    const p = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(plane, p)) return p;
+    return planePoint;
   }
 
   let __lastBondUpdate = 0;
@@ -5409,7 +5709,7 @@
     const allowHover = (currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
     if (!allowHover) return;
     // Track movement to distinguish click vs drag in measurement mode
-    if (currentMode === MODES.MEASURE && __editDownPt) {
+    if ((currentMode === MODES.MEASURE || (currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD)) && __editDownPt) {
       const dx = e.clientX - __editDownPt.x, dy = e.clientY - __editDownPt.y;
       if (Math.hypot(dx, dy) > 4) __editMoved = true;
     }
@@ -5459,6 +5759,10 @@
     __editDownPt = { x: e.clientX, y: e.clientY }; __editMoved = false; __editClickIdx = -1;
     const obj = pickAtom(e);
     if (currentMode === MODES.EDIT) {
+      if (editTool === EDIT_TOOL.ADD) {
+        // Add mode uses click-on-release; dragging keeps orbit behavior.
+        return;
+      }
       if (!obj || !obj.userData) return;
       dragAtomIndex = obj.userData.index | 0;
       __editClickIdx = dragAtomIndex;
@@ -5501,6 +5805,10 @@
         // Refresh/hide guide line after drag ends
         updateAxisGuideLine();
         updateEditSelectionVisuals();
+      } else if (editTool === EDIT_TOOL.ADD && !__editMoved) {
+        const hit = pickAtomHit(e);
+        const addPos = computeAddAtomPosition(e, hit);
+        if (addPos) appendAtomAtWorld(addPos);
       }
     } else if (currentMode === MODES.MEASURE) {
       // Resume rotation after selection gesture
@@ -5579,16 +5887,33 @@
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
   bind('down', MODES.EDIT, 'm', () => { setMode(MODES.MEASURE); });
+  bind('down', MODES.EDIT, 'g', () => { setEditTool(EDIT_TOOL.MOVE); });
+  bind('down', MODES.EDIT, 'n', () => { setEditTool(EDIT_TOOL.ADD); });
   /**
    * Enable temporary axis lock while an axis key is held.
    * @param {'x'|'y'|'z'} axis
    */
-  const axisDown = (axis) => { axisKeyDown = axis; axisLock = axis; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); };
+  const axisDown = (axis) => {
+    if (editTool !== EDIT_TOOL.MOVE) return;
+    axisKeyDown = axis;
+    axisLock = axis;
+    updateAxisButtons();
+    if (dragActive) dragAxis = axisLock;
+    updateAxisGuideLine && updateAxisGuideLine();
+  };
   /**
    * Disable temporary axis lock when an axis key is released.
    * @param {'x'|'y'|'z'} axis
    */
-  const axisUp = (axis) => { if (axisKeyDown === axis) { axisKeyDown = null; axisLock = 'none'; updateAxisButtons(); if (dragActive) dragAxis = axisLock; updateAxisGuideLine && updateAxisGuideLine(); } };
+  const axisUp = (axis) => {
+    if (axisKeyDown === axis) {
+      axisKeyDown = null;
+      axisLock = 'none';
+      updateAxisButtons();
+      if (dragActive) dragAxis = axisLock;
+      updateAxisGuideLine && updateAxisGuideLine();
+    }
+  };
   bind('down', MODES.EDIT, 'x', () => axisDown('x'));
   bind('down', MODES.EDIT, 'y', () => axisDown('y'));
   bind('down', MODES.EDIT, 'z', () => axisDown('z'));
@@ -6454,7 +6779,8 @@
   function updateEmptyStateVisibility() {
     if (!emptyStateEl) return;
     const hasActiveVolume = currentIndex >= 0 && !!volumes[currentIndex];
-    emptyStateEl.classList.toggle('hidden', hasActiveVolume);
+    const showEmptyState = !hasActiveVolume && currentMode === MODES.DISPLAY;
+    emptyStateEl.classList.toggle('hidden', !showEmptyState);
   }
 
   /**

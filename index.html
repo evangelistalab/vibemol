@@ -374,6 +374,118 @@
       background: #9ab;
     }
 
+    #editToolbox {
+      position: fixed;
+      right: 12px;
+      bottom: 92px;
+      display: none;
+      width: min(320px, calc(100vw - 24px));
+      background: rgba(18, 24, 34, 0.95);
+      border: 1px solid #223;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+      z-index: 33;
+      pointer-events: auto;
+      color: #dce7f5;
+    }
+
+    #editToolbox[aria-hidden="false"] {
+      display: block;
+    }
+
+    #editToolHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: #c9d7ea;
+    }
+
+    #editToolButtons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    #editToolButtons button {
+      appearance: none;
+      border: 1px solid #2a3546;
+      background: #1a2230;
+      color: #e9f1ff;
+      border-radius: 8px;
+      padding: 6px 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    #editToolButtons button.active {
+      border-color: #4aa3ff;
+      background: rgba(74, 163, 255, 0.18);
+      color: #eef7ff;
+    }
+
+    #editAddPane {
+      display: none;
+      margin-top: 8px;
+      border-top: 1px solid #223;
+      padding-top: 8px;
+    }
+
+    #editAddPane.active {
+      display: block;
+    }
+
+    #editAddPane label {
+      display: block;
+      font-size: 12px;
+      color: #a9bdd6;
+      margin-bottom: 5px;
+    }
+
+    #editAddSearch {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #2a3546;
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: #101823;
+      color: #e9f1ff;
+    }
+
+    #editAddQuick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    #editAddQuick button {
+      appearance: none;
+      border: 1px solid #2a3546;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #1a2230;
+      color: #eef6ff;
+      cursor: pointer;
+    }
+
+    #editAddQuick button.active {
+      border-color: #4aa3ff;
+      box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.35) inset;
+    }
+
+    #editAddCurrent {
+      margin-top: 7px;
+      font-size: 12px;
+      color: #c8d8ec;
+      min-height: 1.4em;
+    }
+
     #elementColorOverlay {
       position: fixed;
       inset: 0;
@@ -516,6 +628,23 @@
     <button id="axisX" title="Lock movement to X">X</button>
     <button id="axisY" title="Lock movement to Y">Y</button>
     <button id="axisZ" title="Lock movement to Z">Z</button>
+  </div>
+  <div id="editToolbox" aria-hidden="true">
+    <div id="editToolHeader">
+      <span>Edit Tool</span>
+      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">G move • N add</span>
+    </div>
+    <div id="editToolButtons">
+      <button id="editToolMoveBtn" type="button" class="active" title="Move atoms in edit mode">Move</button>
+      <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add atom</button>
+    </div>
+    <div id="editAddPane">
+      <label for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
+      <input id="editAddSearch" type="text" list="editAddSuggestions" autocomplete="off" placeholder="e.g. C, Carbon, 6" />
+      <datalist id="editAddSuggestions"></datalist>
+      <div id="editAddQuick"></div>
+      <div id="editAddCurrent"></div>
+    </div>
   </div>
   <div id="shortcutRibbon" aria-hidden="true"
     style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid #223; pointer-events:none; z-index:30;">
