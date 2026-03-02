@@ -506,39 +506,6 @@
       font-weight: 700;
     }
 
-    #editSnapRow {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    #editSnapToggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #dce7f5;
-      font-weight: 700;
-      user-select: none;
-      cursor: pointer;
-    }
-
-    #editSnapEnabled {
-      accent-color: #4aa3ff;
-      cursor: pointer;
-    }
-
-    #editSnapStep {
-      border: 1px solid #2a3546;
-      border-radius: 7px;
-      padding: 3px 6px;
-      background: #101823;
-      color: #e9f1ff;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
     #editSnapHint {
       margin-top: 5px;
       font-size: 11px;
@@ -614,6 +581,46 @@
       font-size: 10px;
       color: #8fa6c2;
       letter-spacing: 0.01em;
+    }
+
+    #editCursorBadge {
+      position: fixed;
+      left: 0;
+      top: 0;
+      transform: translate(-9999px, -9999px);
+      display: none;
+      min-width: 154px;
+      background: rgba(14, 20, 30, 0.92);
+      border: 1px solid #304055;
+      border-radius: 9px;
+      padding: 6px 8px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+      pointer-events: none;
+      z-index: 35;
+      color: #dce8f8;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    #editCursorBadge[aria-hidden="false"] {
+      display: block;
+    }
+
+    #editCursorBadge .mode {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid #4aa3ff;
+      background: rgba(74, 163, 255, 0.18);
+      color: #eff7ff;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      margin-bottom: 4px;
+    }
+
+    #editCursorBadge .meta {
+      color: #a9c1dd;
+      font-weight: 700;
     }
 
     #elementColorOverlay {
@@ -777,23 +784,8 @@
       <div id="editAddCurrent"></div>
     </div>
     <div id="editSnapPane">
-      <span class="title">Geometry snapping</span>
-      <div id="editSnapRow">
-        <label id="editSnapToggle" for="editSnapEnabled">
-          <input id="editSnapEnabled" type="checkbox" checked />
-          Snap
-        </label>
-        <label for="editSnapStep" style="font-size:12px; color:#a9bdd6;">Step</label>
-        <select id="editSnapStep" title="Grid snap step in angstroms">
-          <option value="0.05">0.05 A</option>
-          <option value="0.10" selected>0.10 A</option>
-          <option value="0.20">0.20 A</option>
-          <option value="0.25">0.25 A</option>
-          <option value="0.50">0.50 A</option>
-          <option value="1.00">1.00 A</option>
-        </select>
-      </div>
-      <div id="editSnapHint">Applies to move/add placement. Hold Alt to bypass temporarily.</div>
+      <span class="title">Angle snapping</span>
+      <div id="editSnapHint">In Add mode, cursor direction around the anchor atom drives placement. Snapping picks the nearest valid angle (180°, 120°, 109.5°, 90°, 60°).</div>
     </div>
   </div>
   <div id="editAddCursorHud" aria-hidden="true">
@@ -812,6 +804,11 @@
       <button type="button" data-order="3" title="Triple bond (key 3)">3</button>
     </div>
     <div class="hint">Keys: H/C/N/O and 1/2/3</div>
+  </div>
+  <div id="editCursorBadge" aria-hidden="true">
+    <div class="mode" id="editCursorBadgeMode">Move</div>
+    <div class="meta">Elem: <span id="editCursorBadgeElement">C</span></div>
+    <div class="meta">Bond: <span id="editCursorBadgeBond">1</span></div>
   </div>
   <div id="shortcutRibbon" aria-hidden="true"
     style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid #223; pointer-events:none; z-index:30;">
@@ -836,6 +833,10 @@
           title="Shift the molecule in the Y-direction" />
         <span class="axis">Z</span><input type="number" id="shiftZ" step="0.1"
           title="Shift the molecule in the Z-direction" />
+      </div>
+      <div class="row">
+        <button id="centerMassBtn" class="secondary" style="grid-column:1 / -1;"
+          title="Shift active molecule center of mass to the origin (shortcut: R)">COM → Origin</button>
       </div>
       <div class="row-vec">
         <label>Cam</label>
@@ -981,6 +982,7 @@
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
           <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred double/triple-bond rendering. Toon uses toon shading (including surfaces), Glossy uses glassy blue atoms/bonds with dark edge shells, and Kit uses glossy atoms with collar-joint connectors.</li>
+          <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) with in-scene guide overlays.</li>
           <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show element symbols over atoms.</li>
           <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
           <li>The Cartesian coordinates are displayed as red (X), green (Y), and blue (Z) arrows.</li>
@@ -991,9 +993,10 @@
           <li><strong>B</strong> — Batch export all files</li>
           <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
           <li><strong>A</strong> — Toggle axis gizmo on/off</li>
+          <li><strong>R</strong> — Shift active molecule center of mass to origin</li>
           <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
           <li><strong>Cmd/Ctrl+Z</strong> / <strong>Cmd/Ctrl+Shift+Z</strong> — Undo / Redo edit action</li>
-          <li><strong>Edit mode:</strong> <strong>Q</strong> toggles snap, <strong>[</strong>/<strong>]</strong> changes snap step, <strong>Alt</strong> bypasses snap for one action</li>
+          <li><strong>Edit mode:</strong> hold <strong>Shift</strong> while placing to bypass auto angle snapping</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
         </ul>
       </div>

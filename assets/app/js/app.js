@@ -1607,6 +1607,21 @@
   }
 
   /**
+   * Resolve one atomic mass value for center-of-mass calculations.
+   * Falls back to atomic number, then 1, if metadata is missing.
+   * @param {number} z
+   * @returns {number}
+   */
+  function getAtomicMass(z) {
+    const key = z | 0;
+    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[key];
+    const mass = info ? Number(info.mass) : NaN;
+    if (Number.isFinite(mass) && mass > 0) return mass;
+    if (Number.isFinite(key) && key > 0) return key;
+    return 1;
+  }
+
+  /**
    * Resolve the base/default element hex color from atomic metadata.
    * @param {number} z
    * @returns {string}
@@ -4383,6 +4398,7 @@
   const shiftX = document.getElementById('shiftX');
   const shiftY = document.getElementById('shiftY');
   const shiftZ = document.getElementById('shiftZ');
+  const centerMassBtn = document.getElementById('centerMassBtn');
   const camX = document.getElementById('camX');
   const camY = document.getElementById('camY');
   const camZ = document.getElementById('camZ');
@@ -4420,9 +4436,11 @@
   const editAddSuggestionsEl = document.getElementById('editAddSuggestions');
   const editAddQuickEl = document.getElementById('editAddQuick');
   const editAddCurrentEl = document.getElementById('editAddCurrent');
-  const editSnapEnabledEl = document.getElementById('editSnapEnabled');
-  const editSnapStepEl = document.getElementById('editSnapStep');
   const editAddCursorHudEl = document.getElementById('editAddCursorHud');
+  const editCursorBadgeEl = document.getElementById('editCursorBadge');
+  const editCursorBadgeModeEl = document.getElementById('editCursorBadgeMode');
+  const editCursorBadgeElementEl = document.getElementById('editCursorBadgeElement');
+  const editCursorBadgeBondEl = document.getElementById('editCursorBadgeBond');
   const shortcutRibbon = document.getElementById('shortcutRibbon');
   const hintEl = document.getElementById('hint');
   const emptyStateEl = document.getElementById('emptyState');
@@ -4786,6 +4804,7 @@
       { k: 'B', d: 'Batch export' },
       { k: 'I', d: 'Toggle surfaces' },
       { k: 'A', d: 'Toggle axes' },
+      { k: 'R', d: 'Center mass at origin' },
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
       { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
       { k: 'V', d: 'View/Coords panel' },
@@ -4812,16 +4831,16 @@
       { k: 'Click', d: 'Add atom (Add tool)' },
       { k: 'Click', d: 'Delete atom (Delete tool)' },
       { k: 'Backspace/Delete', d: 'Delete hovered atom' },
+      { k: 'R', d: 'Center mass at origin' },
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
       { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
       { k: 'X/Y/Z', d: 'Axis lock' },
-      { k: 'Q', d: 'Toggle geometry snap' },
-      { k: '[/]', d: 'Snap step down/up' },
-      { k: 'Alt+Drag/Click', d: 'Bypass snap once' },
+      { k: 'Shift+Drag', d: 'Bypass auto angle snap (Add tool)' },
     ],
     measure: [
       { k: 'M', d: 'Exit measurement' },
       { k: 'Click', d: 'Select points' },
+      { k: 'R', d: 'Center mass at origin' },
       { k: 'Esc', d: 'Clear measurement' },
     ],
   };
@@ -5001,9 +5020,8 @@
   let editTool = EDIT_TOOL.MOVE;
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
-  const EDIT_SNAP_STEPS = Object.freeze([0.05, 0.1, 0.2, 0.25, 0.5, 1.0]);
-  let editSnapEnabled = true;
-  let editSnapStep = 0.1;
+  const EDIT_ANGLE_SNAP_OPTIONS = Object.freeze([60, 90, 109.5, 120, 180]);
+  let addGrowDetectedAngleDeg = 0;
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
   const EDIT_HISTORY_LIMIT = 200;
   let editUndoStack = [];
@@ -5017,6 +5035,8 @@
   let addGrowPreviewPos = null;
   const addPreviewGroup = new THREE.Group();
   contentGroup.add(addPreviewGroup);
+  const addAngleGuideGroup = new THREE.Group();
+  contentGroup.add(addAngleGuideGroup);
   let addPreviewAtomMesh = null;
   let addPreviewBondMesh = null;
   let dragBeforeAtomsSnapshot = null;
@@ -5235,20 +5255,20 @@
   }
 
   /**
-   * Normalize snap step to one of the supported edit snap increments.
+   * Normalize angle snap value to supported options.
    * @param {*} value
    * @returns {number}
    */
-  function normalizeEditSnapStep(value) {
+  function normalizeEditAngleSnap(value) {
     const n = Number(value);
-    if (!Number.isFinite(n) || n <= 0) return 0.1;
-    let best = EDIT_SNAP_STEPS[0];
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    let best = EDIT_ANGLE_SNAP_OPTIONS[0];
     let bestDiff = Math.abs(n - best);
-    for (let i = 1; i < EDIT_SNAP_STEPS.length; i++) {
-      const s = EDIT_SNAP_STEPS[i];
-      const d = Math.abs(n - s);
+    for (let i = 1; i < EDIT_ANGLE_SNAP_OPTIONS.length; i++) {
+      const opt = EDIT_ANGLE_SNAP_OPTIONS[i];
+      const d = Math.abs(n - opt);
       if (d < bestDiff) {
-        best = s;
+        best = opt;
         bestDiff = d;
       }
     }
@@ -5256,90 +5276,99 @@
   }
 
   /**
-   * Round one scalar to the nearest snap step.
-   * @param {number} value
-   * @param {number} step
-   * @returns {number}
+   * Normalize one direction projected onto a plane.
+   * @param {THREE.Vector3} dir
+   * @param {THREE.Vector3|null} planeNormal
+   * @returns {THREE.Vector3|null}
    */
-  function snapScalar(value, step) {
-    const s = Math.max(1e-6, Number(step) || 0.1);
-    return Math.round(value / s) * s;
+  function getProjectedUnitDirection(dir, planeNormal) {
+    if (!dir || !dir.isVector3 || !planeNormal || !planeNormal.isVector3) return null;
+    const n = planeNormal.clone();
+    if (n.lengthSq() < 1e-12) return null;
+    n.normalize();
+    const p = dir.clone().sub(n.multiplyScalar(dir.dot(n)));
+    if (p.lengthSq() < 1e-12) return null;
+    return p.normalize();
   }
 
   /**
-   * Apply geometry snapping to a candidate world-space position.
-   * @param {THREE.Vector3} pos
-   * @param {{axis?:'none'|'x'|'y'|'z',anchor?:THREE.Vector3,event?:PointerEvent|KeyboardEvent|null}=} options
-   * @returns {THREE.Vector3}
+   * Apply one bond-angle constraint to add direction against neighbor bonds.
+   * Chooses the candidate closest to requested direction and returns guide metadata.
+   * @param {THREE.Vector3} direction
+   * @param {THREE.Vector3[]} neighborDirs
+   * @param {number|null|undefined} angleDeg
+   * If `angleDeg` is positive, force that angle.
+   * If `angleDeg` is null/undefined/0, choose the nearest among allowed angles.
+   * If `angleDeg` is negative, disable angle snap (passthrough).
+   * @param {THREE.Vector3|null=} viewNormal
+   * Optional camera-forward direction to prioritize screen-angle tracking.
+   * @returns {{dir:THREE.Vector3,targetDeg:number,measuredDeg:number,refDir:THREE.Vector3|null}}
    */
-  function getSnappedEditWorldPosition(pos, options = {}) {
-    if (!pos || !(pos.isVector3)) return pos;
-    if (!editSnapEnabled) return pos;
-    const ev = options.event || null;
-    if (ev && ev.altKey) return pos;
-    const step = editSnapStep;
-    const axis = options.axis || 'none';
-    const anchor = options.anchor && options.anchor.isVector3 ? options.anchor : null;
-    if (axis === 'x') {
-      pos.x = snapScalar(pos.x, step);
-      if (anchor) { pos.y = anchor.y; pos.z = anchor.z; }
-      return pos;
+  function applyEditAddAngleSnap(direction, neighborDirs, angleDeg, viewNormal = null) {
+    if (!direction || !direction.isVector3) {
+      return { dir: direction || new THREE.Vector3(1, 0, 0), targetDeg: 0, measuredDeg: 0, refDir: null };
     }
-    if (axis === 'y') {
-      pos.y = snapScalar(pos.y, step);
-      if (anchor) { pos.x = anchor.x; pos.z = anchor.z; }
-      return pos;
+    if (!Array.isArray(neighborDirs) || neighborDirs.length === 0) {
+      const d = direction.clone().normalize();
+      return { dir: d, targetDeg: 0, measuredDeg: 0, refDir: null };
     }
-    if (axis === 'z') {
-      pos.z = snapScalar(pos.z, step);
-      if (anchor) { pos.x = anchor.x; pos.y = anchor.y; }
-      return pos;
+    const angleRaw = Number(angleDeg);
+    if (Number.isFinite(angleRaw) && angleRaw < 0) {
+      const d = direction.clone().normalize();
+      return { dir: d, targetDeg: 0, measuredDeg: 0, refDir: null };
     }
-    pos.x = snapScalar(pos.x, step);
-    pos.y = snapScalar(pos.y, step);
-    pos.z = snapScalar(pos.z, step);
-    return pos;
-  }
-
-  /**
-   * Set geometry snapping enabled state.
-   * @param {*} enabled
-   * @param {{announce?:boolean}=} options
-   */
-  function setEditSnapEnabled(enabled, options = {}) {
-    const announce = options.announce !== false;
-    editSnapEnabled = !!enabled;
-    updateEditToolboxUi({ syncSearch: false });
-    if (announce && editMode) {
-      const state = editSnapEnabled ? `ON (${editSnapStep.toFixed(2)} A)` : 'OFF';
-      setHintMessage(`Geometry snap: ${state}`);
+    const forcedTargetDeg = normalizeEditAngleSnap(angleRaw);
+    const targetAngles = forcedTargetDeg > 0 ? [forcedTargetDeg] : EDIT_ANGLE_SNAP_OPTIONS;
+    const targetDir = direction.clone().normalize();
+    const targetScreenDir = getProjectedUnitDirection(targetDir, viewNormal);
+    let best = null;
+    let bestDot = -Infinity;
+    let bestRef = null;
+    let bestTargetDeg = 0;
+    let bestMeasured = 0;
+    for (const n of neighborDirs) {
+      if (!n || !n.isVector3 || n.lengthSq() < 1e-12) continue;
+      const axis = n.clone().normalize();
+      for (const targetDeg of targetAngles) {
+        let cand = null;
+        if (targetDeg >= 179.999) {
+          cand = axis.clone().multiplyScalar(-1);
+        } else {
+          const theta = THREE.MathUtils.degToRad(targetDeg);
+          const cosT = Math.cos(theta);
+          const sinT = Math.sin(theta);
+          let tangent = targetDir.clone().sub(axis.clone().multiplyScalar(targetDir.dot(axis)));
+          if (tangent.lengthSq() < 1e-12) {
+            tangent = new THREE.Vector3(0, 1, 0);
+            if (Math.abs(tangent.dot(axis)) > 0.9) tangent.set(1, 0, 0);
+            tangent.sub(axis.clone().multiplyScalar(tangent.dot(axis)));
+          }
+          if (tangent.lengthSq() < 1e-12) continue;
+          tangent.normalize();
+          cand = tangent.multiplyScalar(sinT).add(axis.clone().multiplyScalar(cosT)).normalize();
+        }
+        const d = cand.dot(targetDir);
+        let score = d;
+        if (targetScreenDir) {
+          const candScreen = getProjectedUnitDirection(cand, viewNormal);
+          if (candScreen) score = candScreen.dot(targetScreenDir);
+        }
+        if (score > bestDot) {
+          bestDot = score;
+          best = cand;
+          bestRef = axis;
+          bestTargetDeg = targetDeg;
+          const measured = THREE.MathUtils.radToDeg(Math.acos(Math.max(-1, Math.min(1, cand.dot(axis)))));
+          bestMeasured = measured;
+        }
+      }
     }
-  }
-
-  /**
-   * Set geometry snapping step.
-   * @param {*} step
-   * @param {{announce?:boolean}=} options
-   */
-  function setEditSnapStep(step, options = {}) {
-    const announce = options.announce !== false;
-    editSnapStep = normalizeEditSnapStep(step);
-    updateEditToolboxUi({ syncSearch: false });
-    if (announce && editMode && editSnapEnabled) {
-      setHintMessage(`Geometry snap step: ${editSnapStep.toFixed(2)} A`);
-    }
-  }
-
-  /**
-   * Nudge snap step to the next available value.
-   * @param {number} direction +1 or -1
-   */
-  function bumpEditSnapStep(direction) {
-    const current = normalizeEditSnapStep(editSnapStep);
-    let idx = EDIT_SNAP_STEPS.indexOf(current);
-    if (idx < 0) idx = EDIT_SNAP_STEPS.indexOf(0.1);
-    idx = Math.max(0, Math.min(EDIT_SNAP_STEPS.length - 1, idx + (direction > 0 ? 1 : -1)));
-    setEditSnapStep(EDIT_SNAP_STEPS[idx], { announce: true });
+    return {
+      dir: best || targetDir,
+      targetDeg: bestTargetDeg,
+      measuredDeg: bestMeasured || bestTargetDeg,
+      refDir: bestRef ? bestRef.clone() : null,
+    };
   }
 
   /**
@@ -5355,27 +5384,6 @@
     const base = Math.max(0.6, 0.92 * (rA + rB));
     const scale = order >= 3 ? 0.82 : order === 2 ? 0.88 : 1.0;
     return Math.max(0.5, base * scale);
-  }
-
-  /**
-   * Heuristic valence target used for add-grow orientation preferences.
-   * @param {number} z
-   * @returns {number}
-   */
-  function getApproxTargetValence(z) {
-    switch (z | 0) {
-      case 1: return 1;
-      case 5: return 3;
-      case 6: return 4;
-      case 7: return 3;
-      case 8: return 2;
-      case 9: return 1;
-      case 14: return 4;
-      case 15: return 3;
-      case 16: return 2;
-      case 17: return 1;
-      default: return 4;
-    }
   }
 
   /**
@@ -5402,23 +5410,63 @@
   }
 
   /**
-   * Apply a simple valence-aware snapping tendency to add-grow direction.
-   * @param {THREE.Vector3} rawDir
-   * @param {number} anchorZ
-   * @param {THREE.Vector3[]} neighborDirs
-   * @returns {THREE.Vector3}
+   * Human-readable label for the active edit sub-tool.
+   * @param {'move'|'add'|'delete'} tool
+   * @returns {string}
    */
-  function getValenceBiasedGrowDirection(rawDir, anchorZ, neighborDirs) {
-    const out = rawDir.clone().normalize();
-    if (!neighborDirs || neighborDirs.length === 0) return out;
-    const repel = new THREE.Vector3();
-    for (const d of neighborDirs) repel.add(d);
-    if (repel.lengthSq() < 1e-12) return out;
-    repel.normalize().multiplyScalar(-1);
-    const valence = getApproxTargetValence(anchorZ);
-    const pressure = Math.max(0, neighborDirs.length / Math.max(1, valence));
-    const blend = Math.max(0.35, Math.min(0.82, 0.35 + 0.4 * pressure));
-    return out.lerp(repel, blend).normalize();
+  function getEditToolLabel(tool) {
+    if (tool === EDIT_TOOL.ADD) return 'Add';
+    if (tool === EDIT_TOOL.DELETE) return 'Delete';
+    return 'Move';
+  }
+
+  /**
+   * Position the edit cursor badge near the latest pointer location.
+   * @param {number} clientX
+   * @param {number} clientY
+   */
+  function setEditCursorBadgePointer(clientX, clientY) {
+    if (!editCursorBadgeEl || editCursorBadgeEl.getAttribute('aria-hidden') !== 'false') return;
+    const px = Number.isFinite(clientX) ? clientX : editAddHudPointerX;
+    const py = Number.isFinite(clientY) ? clientY : editAddHudPointerY;
+    const vw = window.innerWidth || 1;
+    const vh = window.innerHeight || 1;
+    const rect = editCursorBadgeEl.getBoundingClientRect();
+    let x = px + 16;
+    let y = py + 16;
+    if (x + rect.width > vw - 8) x = px - rect.width - 16;
+    if (y + rect.height > vh - 8) y = py - rect.height - 16;
+    x = Math.max(8, Math.min(vw - rect.width - 8, x));
+    y = Math.max(64, Math.min(vh - rect.height - 8, y));
+    editCursorBadgeEl.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+  }
+
+  /**
+   * Keep the edit cursor badge text/style synchronized with edit state.
+   */
+  function updateEditCursorBadge() {
+    if (!editCursorBadgeEl) return;
+    const show = !!editMode;
+    editCursorBadgeEl.setAttribute('aria-hidden', show ? 'false' : 'true');
+    if (!show) return;
+    const modeLabel = getEditToolLabel(editTool);
+    if (editCursorBadgeModeEl) {
+      editCursorBadgeModeEl.textContent = modeLabel;
+      let border = '#4aa3ff';
+      let bg = 'rgba(74, 163, 255, 0.18)';
+      if (editTool === EDIT_TOOL.ADD) {
+        border = '#57cd8a';
+        bg = 'rgba(87, 205, 138, 0.2)';
+      } else if (editTool === EDIT_TOOL.DELETE) {
+        border = '#ff7373';
+        bg = 'rgba(255, 115, 115, 0.2)';
+      }
+      editCursorBadgeModeEl.style.borderColor = border;
+      editCursorBadgeModeEl.style.background = bg;
+    }
+    if (editCursorBadgeElementEl) editCursorBadgeElementEl.textContent = getElementSymbol(editAddElementZ);
+    if (editCursorBadgeBondEl) editCursorBadgeBondEl.textContent = String(editAddBondOrder);
+    setEditCursorBadgePointer(editAddHudPointerX, editAddHudPointerY);
   }
 
   /**
@@ -5429,6 +5477,7 @@
   function setEditAddHudPointer(clientX, clientY) {
     editAddHudPointerX = Number.isFinite(clientX) ? clientX : editAddHudPointerX;
     editAddHudPointerY = Number.isFinite(clientY) ? clientY : editAddHudPointerY;
+    setEditCursorBadgePointer(editAddHudPointerX, editAddHudPointerY);
     if (!editAddCursorHudEl || editAddCursorHudEl.getAttribute('aria-hidden') !== 'false') return;
     const vw = window.innerWidth || 1;
     const vh = window.innerHeight || 1;
@@ -5507,6 +5556,7 @@
     addGrowAnchorPos = null;
     addGrowNeighborDirs = [];
     addGrowPreviewPos = null;
+    addGrowDetectedAngleDeg = 0;
     if (addPreviewAtomMesh) {
       addPreviewGroup.remove(addPreviewAtomMesh);
       disposeObj(addPreviewAtomMesh);
@@ -5517,7 +5567,9 @@
       disposeObj(addPreviewBondMesh);
       addPreviewBondMesh = null;
     }
+    clearGroup(addAngleGuideGroup);
     try { controls.enabled = true; } catch { }
+    updateEditToolboxUi({ syncSearch: false });
     updateEditAddCursorHud();
   }
 
@@ -5579,6 +5631,78 @@
   }
 
   /**
+   * Draw one in-scene angle guide for the active add-grow direction.
+   * @param {THREE.Vector3} anchorPos
+   * @param {THREE.Vector3} newPos
+   * @param {{targetDeg:number,measuredDeg:number,refDir:THREE.Vector3|null}=} snapMeta
+   */
+  function updateAddGrowAngleGuide(anchorPos, newPos, snapMeta = null) {
+    clearGroup(addAngleGuideGroup);
+    if (!anchorPos || !newPos || !snapMeta || !snapMeta.refDir || !snapMeta.targetDeg) return;
+    const outDir = newPos.clone().sub(anchorPos);
+    if (outDir.lengthSq() < 1e-10) return;
+    outDir.normalize();
+    const refDir = snapMeta.refDir.clone().normalize();
+    let dot = Math.max(-1, Math.min(1, refDir.dot(outDir)));
+    const theta = Math.acos(dot);
+    if (!Number.isFinite(theta) || theta <= 1e-6) return;
+    const normal = new THREE.Vector3().crossVectors(refDir, outDir);
+    if (normal.lengthSq() < 1e-12) return;
+    normal.normalize();
+    const e1 = refDir.clone();
+    const e3 = normal.clone();
+    const e2 = new THREE.Vector3().crossVectors(e3, e1).normalize();
+    const bondLen = anchorPos.distanceTo(newPos);
+    const radius = Math.max(0.24, Math.min(0.62, bondLen * 0.42));
+
+    const spokeGeom = new THREE.BufferGeometry();
+    spokeGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      anchorPos.x, anchorPos.y, anchorPos.z,
+      anchorPos.x + e1.x * radius, anchorPos.y + e1.y * radius, anchorPos.z + e1.z * radius,
+      anchorPos.x, anchorPos.y, anchorPos.z,
+      anchorPos.x + outDir.x * radius, anchorPos.y + outDir.y * radius, anchorPos.z + outDir.z * radius,
+    ]), 3));
+    const spokeMat = new THREE.LineBasicMaterial({ color: 0x57cd8a, transparent: true, opacity: 0.9, depthTest: false });
+    const spokes = new THREE.LineSegments(spokeGeom, spokeMat);
+    spokes.renderOrder = 120;
+    addAngleGuideGroup.add(spokes);
+
+    const fanGeom = new THREE.CircleGeometry(radius, 40, 0, theta);
+    const fanMat = new THREE.MeshBasicMaterial({
+      color: 0x57cd8a,
+      transparent: true,
+      opacity: 0.2,
+      side: THREE.DoubleSide,
+      depthTest: false,
+    });
+    const fan = new THREE.Mesh(fanGeom, fanMat);
+    const basis = new THREE.Matrix4().makeBasis(e1, e2, e3);
+    fan.quaternion.setFromRotationMatrix(basis);
+    fan.position.copy(anchorPos.clone().add(e3.clone().multiplyScalar(0.003)));
+    fan.renderOrder = 119;
+    addAngleGuideGroup.add(fan);
+
+    const segs = 32;
+    const arcPoints = [];
+    for (let i = 0; i <= segs; i++) {
+      const t = theta * (i / segs);
+      const d = e1.clone().multiplyScalar(Math.cos(t)).add(e2.clone().multiplyScalar(Math.sin(t)));
+      arcPoints.push(anchorPos.clone().add(d.multiplyScalar(radius)));
+    }
+    const arcGeom = new THREE.BufferGeometry().setFromPoints(arcPoints);
+    const arcMat = new THREE.LineBasicMaterial({ color: 0x57cd8a, transparent: true, opacity: 0.96, depthTest: false });
+    const arc = new THREE.Line(arcGeom, arcMat);
+    arc.renderOrder = 121;
+    addAngleGuideGroup.add(arc);
+
+    const midDir = e1.clone().multiplyScalar(Math.cos(theta * 0.5)).add(e2.clone().multiplyScalar(Math.sin(theta * 0.5)));
+    const label = makeTextSprite(`${Number(snapMeta.measuredDeg || snapMeta.targetDeg).toFixed(1)}°`);
+    label.position.copy(anchorPos.clone().add(midDir.multiplyScalar(radius + 0.08)));
+    label.renderOrder = 122;
+    addAngleGuideGroup.add(label);
+  }
+
+  /**
    * Recompute the active grow preview using current element/order settings.
    */
   function refreshActiveAddGrowPreview() {
@@ -5587,13 +5711,17 @@
     if (!vol || !Array.isArray(vol.atoms) || addGrowAnchorIndex < 0 || addGrowAnchorIndex >= vol.atoms.length) return;
     const rawDir = addGrowPreviewPos.clone().sub(addGrowAnchorPos);
     if (rawDir.lengthSq() < 1e-8) return;
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    const snapMeta = applyEditAddAngleSnap(rawDir, addGrowNeighborDirs, null, camDir);
+    const snapped = snapMeta.dir.clone().normalize();
+    addGrowDetectedAngleDeg = snapMeta.targetDeg || 0;
     const anchorZ = vol.atoms[addGrowAnchorIndex].Z | 0;
-    const snapped = getValenceBiasedGrowDirection(rawDir, anchorZ, addGrowNeighborDirs);
     const dist = getEditAddBondLength(anchorZ, editAddElementZ, editAddBondOrder);
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
-    getSnappedEditWorldPosition(newPos);
     addGrowPreviewPos = newPos;
     updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, editAddElementZ);
+    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, snapMeta);
   }
 
   /**
@@ -5615,13 +5743,21 @@
       rawDir = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     }
     rawDir.normalize();
+    const bypassAngleSnap = !!(e && e.shiftKey);
+    const snapMeta = applyEditAddAngleSnap(
+      rawDir,
+      addGrowNeighborDirs,
+      bypassAngleSnap ? -1 : null,
+      camDir
+    );
+    const snapped = snapMeta.dir.clone().normalize();
+    if (!bypassAngleSnap) addGrowDetectedAngleDeg = snapMeta.targetDeg || 0;
     const anchorZ = vol.atoms[addGrowAnchorIndex].Z | 0;
-    const snapped = getValenceBiasedGrowDirection(rawDir, anchorZ, addGrowNeighborDirs);
     const dist = getEditAddBondLength(anchorZ, editAddElementZ, editAddBondOrder);
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
-    getSnappedEditWorldPosition(newPos, { event: e });
     addGrowPreviewPos = newPos;
     updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, editAddElementZ);
+    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, snapMeta);
   }
 
   /**
@@ -5642,20 +5778,12 @@
     if (editToolAddBtn) editToolAddBtn.classList.toggle('active', isAdd);
     if (editToolDeleteBtn) editToolDeleteBtn.classList.toggle('active', isDelete);
     if (editAddPaneEl) editAddPaneEl.classList.toggle('active', isEdit && isAdd);
-    if (editSnapEnabledEl) {
-      editSnapEnabledEl.checked = !!editSnapEnabled;
-      editSnapEnabledEl.disabled = !isEdit;
-    }
-    if (editSnapStepEl) {
-      const snapStr = editSnapStep.toFixed(2);
-      if (editSnapStepEl.value !== snapStr) editSnapStepEl.value = snapStr;
-      editSnapStepEl.disabled = !isEdit || !editSnapEnabled;
-    }
 
     const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
     const symbol = info && info.symbol ? info.symbol : `Z${editAddElementZ}`;
     const name = info && info.name ? info.name : symbol;
-    if (editAddCurrentEl) editAddCurrentEl.textContent = `Adding: ${name} (${symbol}) • bond ${editAddBondOrder}`;
+    const angleLabel = addGrowDetectedAngleDeg > 0 ? `${addGrowDetectedAngleDeg.toFixed(1)}°` : 'auto';
+    if (editAddCurrentEl) editAddCurrentEl.textContent = `Adding: ${name} (${symbol}) • bond ${editAddBondOrder} • angle ${angleLabel}`;
 
     if (syncSearch && editAddSearchEl && document.activeElement !== editAddSearchEl) {
       editAddSearchEl.value = `${symbol} — ${name} (${editAddElementZ})`;
@@ -5679,6 +5807,7 @@
         }
       });
     }
+    updateEditCursorBadge();
     updateEditAddCursorHud();
   }
 
@@ -5706,7 +5835,7 @@
     if (!announce || !editMode) return;
     if (editTool === EDIT_TOOL.ADD) {
       const symbol = getElementSymbol(editAddElementZ);
-      setHintMessage(`Edit tool: Add atom (${symbol}) • Click atom/scene to place`);
+      setHintMessage(`Edit tool: Add atom (${symbol}) • Cursor angle controls placement • Hold Shift to bypass angle snap`);
     } else if (editTool === EDIT_TOOL.DELETE) {
       setHintMessage('Edit tool: Delete • Click an atom or press Backspace/Delete on hovered atom');
     } else {
@@ -5776,16 +5905,6 @@
       });
       editAddSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
     }
-    if (editSnapEnabledEl) {
-      editSnapEnabledEl.addEventListener('change', () => {
-        setEditSnapEnabled(!!editSnapEnabledEl.checked, { announce: true });
-      });
-    }
-    if (editSnapStepEl) {
-      editSnapStepEl.addEventListener('change', () => {
-        setEditSnapStep(editSnapStepEl.value, { announce: true });
-      });
-    }
     if (editAddCursorHudEl) {
       const buttons = editAddCursorHudEl.querySelectorAll('button');
       buttons.forEach((btn) => {
@@ -5807,8 +5926,6 @@
     if (editToolMoveBtn) editToolMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
     if (editToolAddBtn) editToolAddBtn.onclick = () => setEditTool(EDIT_TOOL.ADD);
     if (editToolDeleteBtn) editToolDeleteBtn.onclick = () => setEditTool(EDIT_TOOL.DELETE);
-    if (editSnapEnabledEl) editSnapEnabled = !!editSnapEnabledEl.checked;
-    if (editSnapStepEl) editSnapStep = normalizeEditSnapStep(editSnapStepEl.value);
     setEditAddBondOrder(1, { announce: false });
     updateEditToolboxUi();
   }
@@ -6369,6 +6486,82 @@
   }
 
   /**
+   * Shift active molecule coordinates so its center of mass is at (0,0,0).
+   * Applies to the active file and records one undoable edit entry.
+   * @returns {boolean}
+   */
+  function centerActiveMoleculeMassAtOrigin() {
+    if (dragActive) {
+      setHintMessage('Finish moving the current atom before recentering mass.');
+      return false;
+    }
+    if (currentIndex < 0 || !volumes[currentIndex] || !volumes[currentIndex].vol) {
+      setHintMessage('No active molecule to recenter.');
+      return false;
+    }
+
+    const record = volumes[currentIndex];
+    const vol = record.vol;
+    if (!Array.isArray(vol.atoms) || vol.atoms.length === 0) {
+      setHintMessage('Active file has no atoms.');
+      return false;
+    }
+
+    let totalMass = 0;
+    let weightedX = 0;
+    let weightedY = 0;
+    let weightedZ = 0;
+    for (const atom of vol.atoms) {
+      const mass = getAtomicMass(atom.Z | 0);
+      if (!(Number.isFinite(mass) && mass > 0)) continue;
+      const x = Number(atom.x) || 0;
+      const y = Number(atom.y) || 0;
+      const z = Number(atom.z) || 0;
+      totalMass += mass;
+      weightedX += mass * x;
+      weightedY += mass * y;
+      weightedZ += mass * z;
+    }
+    if (!(Number.isFinite(totalMass) && totalMass > 0)) {
+      setHintMessage('Could not compute a valid center of mass.');
+      return false;
+    }
+
+    const comX = weightedX / totalMass;
+    const comY = weightedY / totalMass;
+    const comZ = weightedZ / totalMass;
+    const shiftNormNative = Math.hypot(comX, comY, comZ);
+    if (!Number.isFinite(shiftNormNative) || shiftNormNative <= 1e-12) {
+      setHintMessage('Center of mass is already at the origin.');
+      return false;
+    }
+
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    for (const atom of vol.atoms) {
+      atom.x = (Number(atom.x) || 0) - comX;
+      atom.y = (Number(atom.y) || 0) - comY;
+      atom.z = (Number(atom.z) || 0) - comZ;
+    }
+    vol.natoms = vol.atoms.length;
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, 'Center mass at origin');
+
+    clearAddGrowPreview();
+    clearHover();
+    if (currentMode === MODES.MEASURE) {
+      clearEditSelection();
+      updateSelectedHalos();
+      updateEditSelectionVisuals();
+    }
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+
+    const shiftAngstrom = vol.units === 'angstrom' ? shiftNormNative : shiftNormNative * BOHR_TO_ANG;
+    setHintMessage(`Shifted active molecule COM to origin (delta ${shiftAngstrom.toFixed(3)} A).`);
+    return true;
+  }
+
+  /**
    * Compute where a newly added atom should be placed for one pointer click.
    * Place atoms on a camera-facing plane (parallel to screen) through target.
    * @param {PointerEvent} e
@@ -6383,8 +6576,8 @@
     const planePoint = new THREE.Vector3(0, 0, 0);
     const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, planePoint);
     const p = new THREE.Vector3();
-    if (raycaster.ray.intersectPlane(plane, p)) return getSnappedEditWorldPosition(p, { event: e });
-    return getSnappedEditWorldPosition(planePoint, { event: e });
+    if (raycaster.ray.intersectPlane(plane, p)) return p;
+    return planePoint;
   }
 
   let __lastBondUpdate = 0;
@@ -6413,7 +6606,6 @@
           } else {
             newPos = dragStartPos.clone().add(move);
           }
-          getSnappedEditWorldPosition(newPos, { axis: dragAxis, anchor: dragStartPos, event: e });
       }
       if (newPos) {
         // Apply to mesh and data (defer full rebuild until pointerup to avoid flicker)
@@ -6468,8 +6660,10 @@
             addGrowAnchorIndex = idx;
             addGrowAnchorPos = hit.object.position.clone();
             addGrowNeighborDirs = getEditAddNeighborDirections(vol, idx);
+            addGrowDetectedAngleDeg = 0;
             addGrowPreviewPos = null;
             controls.enabled = false;
+            updateEditToolboxUi({ syncSearch: false });
             updateEditAddCursorHud();
             updateAddGrowPreviewFromEvent(e);
             e.preventDefault();
@@ -6568,6 +6762,7 @@
       refreshViewUI();
     }
   };
+  if (centerMassBtn) centerMassBtn.onclick = () => centerActiveMoleculeMassAtOrigin();
 
   // --- Shortcut bindings ---
   // Global: help toggle
@@ -6583,6 +6778,7 @@
   bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
   bind('down', 'global', 'i', () => { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); });
   bind('down', 'global', 'a', () => { window.__showAxes__ = !window.__showAxes__; if (toggleAxes) toggleAxes.checked = !!window.__showAxes__; });
+  bind('down', 'global', 'r', () => centerActiveMoleculeMassAtOrigin());
   // Global: molecule style presets (1=Default, 2=Toon, 3=Kit, 4=Glossy)
   bind('down', 'global', '1', () => setMoleculeStyle('default'));
   bind('down', 'global', '2', () => setMoleculeStyle('toon'));
@@ -6631,9 +6827,6 @@
   });
   bind('down', MODES.EDIT, 'c', () => { if (editTool === EDIT_TOOL.ADD) setEditAddElement(6, { announce: true }); });
   bind('down', MODES.EDIT, 'o', () => { if (editTool === EDIT_TOOL.ADD) setEditAddElement(8, { announce: true }); });
-  bind('down', MODES.EDIT, 'q', () => setEditSnapEnabled(!editSnapEnabled, { announce: true }));
-  bind('down', MODES.EDIT, '[', () => bumpEditSnapStep(-1));
-  bind('down', MODES.EDIT, ']', () => bumpEditSnapStep(1));
   bind('down', MODES.EDIT, '1', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(1); else setMoleculeStyle('default'); });
   bind('down', MODES.EDIT, '2', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(2); else setMoleculeStyle('toon'); });
   bind('down', MODES.EDIT, '3', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(3); else setMoleculeStyle('kit'); });
