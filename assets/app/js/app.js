@@ -4411,12 +4411,16 @@
   const axisZBtn = document.getElementById('axisZ');
   const shortcutRibbon = document.getElementById('shortcutRibbon');
   const hintEl = document.getElementById('hint');
+  const emptyStateEl = document.getElementById('emptyState');
+  const emptyStateOpenBtn = document.getElementById('emptyStateOpenBtn');
   const pubchemQueryInput = document.getElementById('pubchemQuery');
   const pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
   const pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
   let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
 
-  openBtn.onclick = () => fileInput.click();
+  const triggerOpenFiles = () => fileInput.click();
+  openBtn.onclick = triggerOpenFiles;
+  if (emptyStateOpenBtn) emptyStateOpenBtn.onclick = triggerOpenFiles;
   // Toggle surface rendering button
   /**
    * Refresh the surface-toggle button label.
@@ -6407,6 +6411,7 @@
       rebuildScene();
       updateSidePanel();
     }
+    updateEmptyStateVisibility();
   }
 
   /**
@@ -6441,6 +6446,15 @@
    */
   function setHintMessage(message) {
     if (hintEl) hintEl.textContent = message;
+  }
+
+  /**
+   * Show startup instructions only when no active file is loaded.
+   */
+  function updateEmptyStateVisibility() {
+    if (!emptyStateEl) return;
+    const hasActiveVolume = currentIndex >= 0 && !!volumes[currentIndex];
+    emptyStateEl.classList.toggle('hidden', hasActiveVolume);
   }
 
   /**
@@ -6853,14 +6867,15 @@
     if (!moved) closeSide();
   });
 
-  // Clear cubes and show sample again
-  clearBtn.onclick = async () => {
+  // Clear all loaded files and return to startup state.
+  clearBtn.onclick = () => {
     volumes = [];
     currentIndex = -1;
     refreshFileSelect();
     clearSceneMeshes();
-    const ok = await loadSampleCube();
-    if (!ok) loadDemo();
+    updateSidePanel();
+    updateEmptyStateVisibility();
+    setHintMessage('Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy');
   };
 
   /**
@@ -7221,7 +7236,10 @@
     const preserveView = !!options.preserveView;
     const savedCam = preserveView ? camera.clone() : null;
     const savedTarget = preserveView ? controls.target.clone() : null;
-    if (currentIndex < 0) return;
+    if (currentIndex < 0) {
+      updateEmptyStateVisibility();
+      return;
+    }
 
     clearSceneMeshes();
     const vol = volumes[currentIndex].vol;
@@ -7250,6 +7268,7 @@
     console.log('[CUBE] Rebuilt scene. iso=', iso, 'opacity=', opacity, 'min/max=', min, max);
     updateSidePanel();
     updatePostRebuildUI(vol, compMode);
+    updateEmptyStateVisibility();
   }
 
   /**
@@ -7431,12 +7450,8 @@
     updateSidePanel();
   }
 
-  // Startup: show sample cube, fallback to demo
-  (async function initLoad() {
-    if (volumes.length > 0) return;
-    const ok = await loadSampleCube();
-    if (!ok) loadDemo();
-  })();
+  // Startup: begin with an empty scene and onboarding text.
+  updateEmptyStateVisibility();
 
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 

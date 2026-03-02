@@ -283,6 +283,68 @@
       /* above the ribbon (z-index:30) */
     }
 
+    #emptyState {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    #emptyState.hidden {
+      display: none;
+    }
+
+    #emptyStateCard {
+      max-width: min(720px, 88vw);
+      text-align: center;
+      color: #d7dfeb;
+      background: rgba(18, 24, 34, 0.72);
+      border: 1px solid #223;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: clamp(18px, 2.2vw, 28px);
+      line-height: 1.32;
+      font-weight: 600;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
+      pointer-events: auto;
+    }
+
+    #emptyStateTitle {
+      margin: 0;
+    }
+
+    #emptyStateMeta {
+      margin-top: 8px;
+      font-size: clamp(12px, 1.1vw, 14px);
+      font-weight: 500;
+      color: #aebccf;
+    }
+
+    #emptyStateActions {
+      margin-top: 12px;
+    }
+
+    #emptyStateOpenBtn {
+      appearance: none;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 11px;
+      background: var(--accent);
+      color: #00162b;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #emptyStateOpenBtn:hover {
+      filter: brightness(1.06);
+    }
+
     /* Edit axis lock widget */
     #axisLock {
       position: fixed;
@@ -433,6 +495,15 @@
 
   <div id="drop">
     <canvas id="canvas"></canvas>
+  </div>
+  <div id="emptyState">
+    <div id="emptyStateCard">
+      <div id="emptyStateTitle">Start by dragging and dropping one or more CUBE or XYZ files.</div>
+      <div id="emptyStateMeta">Or use Open… • Shortcuts: 1 Default, 2 Toon, 3 Kit, 4 Glossy.</div>
+      <div id="emptyStateActions">
+        <button id="emptyStateOpenBtn" type="button">Open file(s)…</button>
+      </div>
+    </div>
   </div>
   <div id="hint">Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy</div>
   <!-- Phase wheel legend (shown in phase-hue modes) -->
