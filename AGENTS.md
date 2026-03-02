@@ -67,10 +67,11 @@ Preset automation contract exposed globally:
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
 - View panel includes `COM → Origin` action; shortcut `R` shifts active molecule center of mass to origin.
+- Invalid `.xyz`, `.cube`, or `.2ccube` imports now surface parser errors in popup warnings.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
 
-## Edit UX Status (0.4.10)
+## Edit UX Status (0.4.11)
 Implemented:
 - Edit mode defaults to `Move` on entry.
 - Add tool includes cursor-relative placement with automatic angle snapping (`180°`, `120°`, `109.5°`, `90°`, `60°`).

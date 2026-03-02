@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.10';
+  const APP_VERSION = '0.4.11';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = 'Drag & drop .cube/.cub/.2ccube/.xyz files here';
@@ -7735,14 +7735,37 @@
   async function handleFiles(fileList) {
     const arr = Array.from(fileList);
     if (arr.length === 0) return;
-    clearPlaceholderVolumesForUserLoad();
-    const startIndex = volumes.length; // index of first newly added
+    const failures = [];
+    let hasPreparedTarget = false;
+    let startIndex = -1; // index of first newly added
+    let loadedCount = 0;
     for (const f of arr) {
-      const text = await f.text();
-      const vol = parseVolumeByName(f.name, text);
-      appendParsedVolumeRecord(f.name, vol);
+      try {
+        const text = await f.text();
+        const vol = parseVolumeByName(f.name, text);
+        if (!hasPreparedTarget) {
+          clearPlaceholderVolumesForUserLoad();
+          startIndex = volumes.length;
+          hasPreparedTarget = true;
+        }
+        appendParsedVolumeRecord(f.name, vol);
+        loadedCount++;
+      } catch (err) {
+        const msg = err && err.message ? err.message : String(err);
+        console.error('[File import] Failed to parse', f && f.name ? f.name : '(unnamed file)', err);
+        failures.push(`${f && f.name ? f.name : 'Unknown file'}: ${msg}`);
+      }
     }
-    finalizeLoadedVolumes(startIndex);
+    if (loadedCount > 0 && startIndex >= 0) finalizeLoadedVolumes(startIndex);
+    else updateEmptyStateVisibility();
+    if (failures.length > 0) {
+      const header = failures.length === 1
+        ? 'Could not load one file due to invalid format:'
+        : `Could not load ${failures.length} files due to invalid format:`;
+      const popup = `${header}\n\n${failures.map((f, i) => `${i + 1}. ${f}`).join('\n')}`;
+      setHintMessage(failures[0]);
+      alert(popup);
+    }
   }
 
   const PUBCHEM_AUTOCOMPLETE_LIMIT = 10;
