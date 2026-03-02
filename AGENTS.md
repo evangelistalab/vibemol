@@ -23,7 +23,7 @@ Primary capabilities:
 - `assets/app/js/interaction.js`: keyboard shortcut routing and input-focus guards.
 - `assets/app/js/ui.js`: UI formatting helpers for coordinates and XYZ export text.
 - `assets/vendor/js/*.js`: vendored runtime dependencies loaded as globals.
-- `assets/data/sample.cube`: startup sample file.
+- `assets/data/sample.cube`: bundled sample file used by onboarding quick action.
 - `docs/experiments/`: visual/style experiments and notes.
 - `api/vibemol_client.py`: Playwright-based Python client for automated renders.
 - `api/README.md`: CLI usage, presets, and `.vibemolrc` behavior.
@@ -59,12 +59,30 @@ Preset automation contract exposed globally:
 ## Key Behavior Notes
 - 2C surface mode is global across loaded 2C files.
 - Molecule styles are: `default`, `toon`, `kit` (shown as Kit), `glossy`.
-- Keyboard shortcuts `1/2/3/4` map to molecule styles in that order.
+- Global/display shortcuts `1/2/3/4` map to molecule styles in that order.
+- In edit mode, `4` is reserved and does not switch to `glossy`.
 - `fancy` is treated as a deprecated alias for `toon` in preset/CLI compatibility paths.
 - Toon molecule style enforces toon-shaded surfaces.
 - Glossy style exposes a configurable glossy bond center radius (`molecule.glossyBondRadius`).
+- Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
+- Drag/drop file loading works on both the scene and onboarding card/drop zone.
+- View panel includes `COM → Origin` action; shortcut `R` shifts active molecule center of mass to origin.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
+
+## Edit UX Status (0.4.10)
+Implemented:
+- Edit mode defaults to `Move` on entry.
+- Add tool includes cursor-relative placement with automatic angle snapping (`180°`, `120°`, `109.5°`, `90°`, `60°`).
+- Hold `Shift` during add-grow placement to bypass angle snap.
+- Inline add HUD (element + bond-order quick picks) and cursor mode badge are active.
+- Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
+- Delete tool and hover-delete (`Backspace`/`Delete`) are active.
+
+Discussed but not implemented yet (carry-forward backlog):
+- Fragment-based builder (preset fragments/rings/chains with click-to-place workflow).
+- Onboarding “recent files” quick action (sample action exists; recent list not implemented).
+- Next-pass builder UX around fragment insertion + constrained attachment flow (single-click attach/replace behavior).
 
 ## Bond Order Inference Algorithm
 Bond-order inference lives in `assets/app/js/app.js` and is enabled only when the `multi bonds` toggle is on.
@@ -144,7 +162,7 @@ Repo checks:
 ## Manual Validation Checklist
 After non-trivial changes:
 1. Launch local server and load app.
-2. Verify `assets/data/sample.cube` autoloads.
+2. Verify startup shows the empty onboarding card; test both `Choose files` and `Open sample file`.
 3. Load at least one `.cube`, one `.2ccube`, and one `.xyz`.
 4. Confirm 2C mode selection persists across file switches.
 5. Toggle surface/cloud modes and verify rendering updates.
