@@ -4447,6 +4447,8 @@
   const shortcutRibbon = document.getElementById('shortcutRibbon');
   const hintEl = document.getElementById('hint');
   const emptyStateEl = document.getElementById('emptyState');
+  const emptyStateCardEl = document.getElementById('emptyStateCard');
+  const emptyStateDropZoneEl = document.getElementById('emptyStateDropZone');
   const emptyStateOpenBtn = document.getElementById('emptyStateOpenBtn');
   const emptyStateSampleBtn = document.getElementById('emptyStateSampleBtn');
   const pubchemQueryInput = document.getElementById('pubchemQuery');
@@ -8172,9 +8174,41 @@
   if (pubchemLoadBtn) pubchemLoadBtn.onclick = () => loadPubChemCompound(pubchemQueryInput ? pubchemQueryInput.value : '');
 
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+  /**
+   * Allow file drops on UI surfaces and route them to standard file loading.
+   * @param {DragEvent} e
+   */
+  function handleFileDragOver(e) {
+    if (!e) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  }
+  /**
+   * Handle one dropped file payload.
+   * @param {DragEvent} e
+   */
+  function handleFileDrop(e) {
+    if (!e) return;
+    e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length > 0) void handleFiles(files);
+  }
   const drop = document.getElementById('drop');
-  drop.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
-  drop.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+  drop.addEventListener('dragover', handleFileDragOver);
+  drop.addEventListener('drop', handleFileDrop);
+  if (emptyStateEl) {
+    emptyStateEl.addEventListener('dragover', handleFileDragOver);
+    emptyStateEl.addEventListener('drop', handleFileDrop);
+  }
+  if (emptyStateCardEl) {
+    emptyStateCardEl.addEventListener('dragover', handleFileDragOver);
+    emptyStateCardEl.addEventListener('drop', handleFileDrop);
+  }
+  if (emptyStateDropZoneEl) {
+    emptyStateDropZoneEl.addEventListener('dragover', handleFileDragOver);
+    emptyStateDropZoneEl.addEventListener('drop', handleFileDrop);
+  }
   // Close side panel when clicking on the scene (not during drags)
   let downPos = null;
   drop.addEventListener('pointerdown', (e) => {
