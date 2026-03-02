@@ -294,6 +294,7 @@
       justify-content: center;
       pointer-events: none;
       z-index: 6;
+      padding: 20px;
     }
 
     #emptyState.hidden {
@@ -301,48 +302,103 @@
     }
 
     #emptyStateCard {
-      max-width: min(720px, 88vw);
-      text-align: center;
-      color: #d7dfeb;
-      background: rgba(18, 24, 34, 0.72);
-      border: 1px solid #223;
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-size: clamp(18px, 2.2vw, 28px);
-      line-height: 1.32;
-      font-weight: 600;
-      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
+      width: min(620px, 92vw);
+      color: #0d1728;
+      background: rgba(249, 251, 255, 0.96);
+      border: 1px solid #d6dfec;
+      border-radius: 16px;
+      padding: 22px 24px;
+      line-height: 1.35;
+      box-shadow: 0 18px 34px rgba(10, 20, 40, 0.18);
       pointer-events: auto;
     }
 
-    #emptyStateTitle {
-      margin: 0;
+    #emptyStateLead {
+      margin: 0 0 12px 0;
+      font-size: clamp(22px, 2.4vw, 29px);
+      font-weight: 700;
+      text-align: center;
     }
 
-    #emptyStateMeta {
-      margin-top: 8px;
-      font-size: clamp(12px, 1.1vw, 14px);
-      font-weight: 500;
-      color: #aebccf;
+    #emptyStateDropZone {
+      border: 2px dashed #b7c6da;
+      background: #f5f9ff;
+      border-radius: 12px;
+      padding: 16px 14px;
+      text-align: center;
+      color: #31435d;
+      font-weight: 600;
+      font-size: clamp(15px, 1.8vw, 18px);
     }
 
-    #emptyStateActions {
-      margin-top: 12px;
+    #emptyStateDropZone code {
+      background: #edf4ff;
+      border: 1px solid #d6e4f7;
+      border-radius: 5px;
+      padding: 1px 5px;
+      color: #274363;
+      font-size: 0.92em;
+      font-weight: 700;
+    }
+
+    #emptyStateDropIcon {
+      display: block;
+      font-size: 30px;
+      line-height: 1;
+      margin-bottom: 8px;
+      color: #4a6d9b;
+    }
+
+    #emptyStatePrimaryAction {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      pointer-events: auto;
     }
 
     #emptyStateOpenBtn {
       appearance: none;
       border: none;
-      border-radius: 8px;
-      padding: 7px 11px;
-      background: var(--accent);
-      color: #00162b;
+      border-radius: 10px;
+      padding: 10px 16px;
+      min-width: 160px;
+      background: #2f8bff;
+      color: #ffffff;
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
     }
 
     #emptyStateOpenBtn:hover {
-      filter: brightness(1.06);
+      filter: brightness(1.05);
+    }
+
+    #emptyStateSecondary {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      pointer-events: auto;
+    }
+
+    #emptyStateSampleBtn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: #315d93;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 4px;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    #emptyStateMeta {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: #516986;
     }
 
     /* Edit axis lock widget */
@@ -747,10 +803,20 @@
   </div>
   <div id="emptyState">
     <div id="emptyStateCard">
-      <div id="emptyStateTitle">Start by dragging and dropping one or more CUBE or XYZ files.</div>
-      <div id="emptyStateMeta">Or use Open… • Shortcuts: 1 Default, 2 Toon, 3 Kit, 4 Glossy.</div>
-      <div id="emptyStateActions">
-        <button id="emptyStateOpenBtn" type="button">Open file(s)…</button>
+      <div id="emptyStateLead">Open a molecule file</div>
+      <div id="emptyStateDropZone">
+        <span id="emptyStateDropIcon">⬆</span>
+        Drag and drop <code>.xyz</code> or <code>.cube</code> files here
+      </div>
+      <div id="emptyStatePrimaryAction">
+        <button id="emptyStateOpenBtn" type="button">Choose files</button>
+      </div>
+      <div id="emptyStateSecondary">
+        <button id="emptyStateSampleBtn" type="button">Open sample file</button>
+      </div>
+      <div id="emptyStateMeta">
+        Edit structures, explore volumetric data, and render molecules.<br />
+        Render styles: [1] Default · [2] Toon · [3] Kit · [4] Glossy
       </div>
     </div>
   </div>

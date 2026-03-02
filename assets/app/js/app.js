@@ -4445,6 +4445,7 @@
   const hintEl = document.getElementById('hint');
   const emptyStateEl = document.getElementById('emptyState');
   const emptyStateOpenBtn = document.getElementById('emptyStateOpenBtn');
+  const emptyStateSampleBtn = document.getElementById('emptyStateSampleBtn');
   const pubchemQueryInput = document.getElementById('pubchemQuery');
   const pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
   const pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
@@ -4453,6 +4454,12 @@
   const triggerOpenFiles = () => fileInput.click();
   openBtn.onclick = triggerOpenFiles;
   if (emptyStateOpenBtn) emptyStateOpenBtn.onclick = triggerOpenFiles;
+  if (emptyStateSampleBtn) {
+    emptyStateSampleBtn.onclick = async () => {
+      const ok = await loadSampleCube();
+      if (!ok) setHintMessage('Could not load sample.cube. Check assets/data/sample.cube.');
+    };
+  }
   // Toggle surface rendering button
   /**
    * Refresh the surface-toggle button label.
@@ -6830,7 +6837,8 @@
   bind('down', MODES.EDIT, '1', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(1); else setMoleculeStyle('default'); });
   bind('down', MODES.EDIT, '2', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(2); else setMoleculeStyle('toon'); });
   bind('down', MODES.EDIT, '3', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(3); else setMoleculeStyle('kit'); });
-  bind('down', MODES.EDIT, '4', () => { setMoleculeStyle('glossy'); });
+  // Reserve "4" in edit mode so it does not trigger the global Glossy style shortcut.
+  bind('down', MODES.EDIT, '4', () => { });
   bind('down', MODES.EDIT, 'Backspace', (e) => {
     if (editTool !== EDIT_TOOL.DELETE) return;
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
