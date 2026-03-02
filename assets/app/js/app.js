@@ -2,7 +2,10 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.9';
+  const APP_VERSION = '0.4.10';
+  const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
+  const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
+  const HINT_START = 'Drag & drop .cube/.cub/.2ccube/.xyz files here';
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -6838,7 +6841,7 @@
   bind('down', MODES.EDIT, '2', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(2); else setMoleculeStyle('toon'); });
   bind('down', MODES.EDIT, '3', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(3); else setMoleculeStyle('kit'); });
   // Reserve "4" in edit mode so it does not trigger the global Glossy style shortcut.
-  bind('down', MODES.EDIT, '4', () => { });
+  bind('down', MODES.EDIT, '4', (e) => { if (e && typeof e.preventDefault === 'function') e.preventDefault(); });
   bind('down', MODES.EDIT, 'Backspace', (e) => {
     if (editTool !== EDIT_TOOL.DELETE) return;
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -7492,8 +7495,7 @@
     const text = await file.text();
     const parsed = JSON.parse(text);
     const result = importPresetEnvelope(parsed, { mode: PRESET_MODE.RELAXED });
-    const hint = document.getElementById('hint');
-    if (hint) hint.textContent = `Loaded preset: ${result.name} • Orbit: mouse drag • Zoom: wheel • Pan: right-drag`;
+    setNavigationHint(`Loaded preset: ${result.name}`);
     if (result.warnings.length > 0) console.warn('[Preset] import warnings', result.warnings);
   }
 
@@ -7754,6 +7756,18 @@
    */
   function setHintMessage(message) {
     if (hintEl) hintEl.textContent = message;
+  }
+
+  /**
+   * Compose and show a standard navigation hint.
+   * @param {string} prefix
+   * @param {{includeStyles?:boolean}=} options
+   */
+  function setNavigationHint(prefix, options = {}) {
+    const includeStyles = !!options.includeStyles;
+    const parts = [String(prefix || '').trim(), HINT_NAVIGATION];
+    if (includeStyles) parts.push(HINT_STYLE_KEYS);
+    setHintMessage(parts.filter(Boolean).join(' • '));
   }
 
   /**
@@ -8111,7 +8125,7 @@
         { pubchemMeta: pubchemMeta || buildPubChemMetadataFallback(cid, query) }
       );
       finalizeLoadedVolumes(startIndex);
-      setHintMessage(`Loaded PubChem: ${query} (CID ${cid}) • Orbit: mouse drag • Zoom: wheel • Pan: right-drag`);
+      setNavigationHint(`Loaded PubChem: ${query} (CID ${cid})`);
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
       console.error('[PubChem] import failed', err);
@@ -8185,7 +8199,7 @@
     clearSceneMeshes();
     updateSidePanel();
     updateEmptyStateVisibility();
-    setHintMessage('Drag & drop .cube or .xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy');
+    setNavigationHint(HINT_START, { includeStyles: true });
   };
 
   /**
@@ -8717,8 +8731,7 @@
       refreshFileSelect();
       rebuildScene();
       updateSidePanel();
-      const hint = document.getElementById('hint');
-      if (hint) hint.textContent = 'Loaded sample.cube • Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy';
+      setNavigationHint('Loaded sample.cube', { includeStyles: true });
       return true;
     } catch (err) {
       console.warn('[CUBE] Could not auto-load sample.cube:', err);
