@@ -406,7 +406,7 @@
 
     #editToolButtons {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 6px;
     }
 
@@ -425,6 +425,12 @@
       border-color: #4aa3ff;
       background: rgba(74, 163, 255, 0.18);
       color: #eef7ff;
+    }
+
+    #editToolButtons button.delete.active {
+      border-color: #ff6b6b;
+      background: rgba(255, 107, 107, 0.18);
+      color: #ffeaea;
     }
 
     #editAddPane {
@@ -484,6 +490,61 @@
       font-size: 12px;
       color: #c8d8ec;
       min-height: 1.4em;
+    }
+
+    #editAddCursorHud {
+      position: fixed;
+      left: 0;
+      top: 0;
+      transform: translate(-9999px, -9999px);
+      display: none;
+      background: rgba(18, 24, 34, 0.96);
+      border: 1px solid #2a3546;
+      border-radius: 10px;
+      padding: 6px 7px;
+      z-index: 34;
+      pointer-events: auto;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+      min-width: 152px;
+    }
+
+    #editAddCursorHud[aria-hidden="false"] {
+      display: block;
+    }
+
+    #editAddCursorHud .row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin: 2px 0;
+      flex-wrap: wrap;
+    }
+
+    #editAddCursorHud .label {
+      min-width: 30px;
+      font-size: 11px;
+      color: #9eb4cf;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    #editAddCursorHud button {
+      appearance: none;
+      border: 1px solid #2a3546;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #1a2230;
+      color: #eef6ff;
+      cursor: pointer;
+      min-width: 24px;
+      line-height: 1.25;
+    }
+
+    #editAddCursorHud button.active {
+      border-color: #4aa3ff;
+      box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.3) inset;
     }
 
     #elementColorOverlay {
@@ -632,11 +693,12 @@
   <div id="editToolbox" aria-hidden="true">
     <div id="editToolHeader">
       <span>Edit Tool</span>
-      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">G move • N add</span>
+      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">G move • N add • D delete</span>
     </div>
     <div id="editToolButtons">
       <button id="editToolMoveBtn" type="button" class="active" title="Move atoms in edit mode">Move</button>
       <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add atom</button>
+      <button id="editToolDeleteBtn" type="button" class="delete" title="Delete atoms in edit mode">Delete</button>
     </div>
     <div id="editAddPane">
       <label for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
@@ -644,6 +706,21 @@
       <datalist id="editAddSuggestions"></datalist>
       <div id="editAddQuick"></div>
       <div id="editAddCurrent"></div>
+    </div>
+  </div>
+  <div id="editAddCursorHud" aria-hidden="true">
+    <div class="row">
+      <span class="label">Elem</span>
+      <button type="button" data-z="1">H</button>
+      <button type="button" data-z="6">C</button>
+      <button type="button" data-z="7">N</button>
+      <button type="button" data-z="8">O</button>
+    </div>
+    <div class="row">
+      <span class="label">Bond</span>
+      <button type="button" data-order="1" title="Single bond (key 1)">1</button>
+      <button type="button" data-order="2" title="Double bond (key 2)">2</button>
+      <button type="button" data-order="3" title="Triple bond (key 3)">3</button>
     </div>
   </div>
   <div id="shortcutRibbon" aria-hidden="true"
