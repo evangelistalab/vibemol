@@ -4784,6 +4784,8 @@
       { k: 'B', d: 'Batch export' },
       { k: 'I', d: 'Toggle surfaces' },
       { k: 'A', d: 'Toggle axes' },
+      { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
+      { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
       { k: 'V', d: 'View/Coords panel' },
       { k: 'M', d: 'Measurement mode' },
       { k: '1/2/3/4', d: 'Style: Default/Toon/Kit/Glossy' },
@@ -4808,6 +4810,8 @@
       { k: 'Click', d: 'Add atom (Add tool)' },
       { k: 'Click', d: 'Delete atom (Delete tool)' },
       { k: 'Backspace/Delete', d: 'Delete hovered atom' },
+      { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
+      { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
       { k: 'X/Y/Z', d: 'Axis lock' },
     ],
     measure: [
@@ -4993,6 +4997,9 @@
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
+  const EDIT_HISTORY_LIMIT = 200;
+  let editUndoStack = [];
+  let editRedoStack = [];
   let editAddHudPointerX = window.innerWidth * 0.5;
   let editAddHudPointerY = window.innerHeight * 0.5;
   let addGrowActive = false;
@@ -5004,6 +5011,155 @@
   contentGroup.add(addPreviewGroup);
   let addPreviewAtomMesh = null;
   let addPreviewBondMesh = null;
+  let dragBeforeAtomsSnapshot = null;
+
+  /**
+   * Deep-copy one atom array for history snapshots.
+   * @param {{atoms?:Array<{Z:number,q:number,x:number,y:number,z:number}>}} vol
+   * @returns {Array<{Z:number,q:number,x:number,y:number,z:number}>}
+   */
+  function cloneAtomsSnapshot(vol) {
+    const atoms = vol && Array.isArray(vol.atoms) ? vol.atoms : [];
+    return atoms.map((a) => ({
+      Z: a.Z | 0,
+      q: Number.isFinite(a.q) ? Number(a.q) : 0,
+      x: Number(a.x),
+      y: Number(a.y),
+      z: Number(a.z),
+    }));
+  }
+
+  /**
+   * Compare two atom snapshots by value.
+   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} a
+   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} b
+   * @returns {boolean}
+   */
+  function atomsSnapshotsEqual(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i], y = b[i];
+      if (!x || !y) return false;
+      if ((x.Z | 0) !== (y.Z | 0)) return false;
+      if (Math.abs((x.q || 0) - (y.q || 0)) > 1e-12) return false;
+      if (Math.abs((x.x || 0) - (y.x || 0)) > 1e-12) return false;
+      if (Math.abs((x.y || 0) - (y.y || 0)) > 1e-12) return false;
+      if (Math.abs((x.z || 0) - (y.z || 0)) > 1e-12) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Remove history entries whose volume records are no longer loaded.
+   */
+  function pruneEditHistory() {
+    const keep = (entry) => !!entry && !!entry.record && volumes.includes(entry.record);
+    editUndoStack = editUndoStack.filter(keep);
+    editRedoStack = editRedoStack.filter(keep);
+  }
+
+  /**
+   * Reset edit history stacks.
+   */
+  function clearEditHistory() {
+    editUndoStack = [];
+    editRedoStack = [];
+  }
+
+  /**
+   * Record one reversible edit mutation for the active history stack.
+   * @param {*} record
+   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} beforeAtoms
+   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} afterAtoms
+   * @param {string} label
+   */
+  function pushEditHistoryEntry(record, beforeAtoms, afterAtoms, label) {
+    if (!record || !record.vol) return;
+    if (!Array.isArray(beforeAtoms) || !Array.isArray(afterAtoms)) return;
+    if (atomsSnapshotsEqual(beforeAtoms, afterAtoms)) return;
+    editUndoStack.push({
+      record,
+      before: beforeAtoms,
+      after: afterAtoms,
+      label: String(label || 'Edit'),
+      at: Date.now(),
+    });
+    if (editUndoStack.length > EDIT_HISTORY_LIMIT) editUndoStack.splice(0, editUndoStack.length - EDIT_HISTORY_LIMIT);
+    editRedoStack.length = 0;
+  }
+
+  /**
+   * Apply one stored atom snapshot to its volume record.
+   * @param {*} record
+   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} atoms
+   * @returns {boolean}
+   */
+  function applyAtomsSnapshotToRecord(record, atoms) {
+    if (!record || !record.vol || !Array.isArray(atoms)) return false;
+    const idx = volumes.indexOf(record);
+    if (idx < 0) return false;
+    record.vol.atoms = atoms.map((a) => ({
+      Z: a.Z | 0,
+      q: Number.isFinite(a.q) ? Number(a.q) : 0,
+      x: Number(a.x),
+      y: Number(a.y),
+      z: Number(a.z),
+    }));
+    record.vol.natoms = record.vol.atoms.length;
+    currentIndex = idx;
+    refreshFileSelect();
+    if (fileSelect) fileSelect.value = String(currentIndex);
+    clearAddGrowPreview();
+    clearHover();
+    clearEditSelection();
+    updateSelectedHalos();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    return true;
+  }
+
+  /**
+   * Undo the most recent edit mutation.
+   * @returns {boolean}
+   */
+  function undoLastEditAction() {
+    pruneEditHistory();
+    if (editUndoStack.length === 0) {
+      setHintMessage('Nothing to undo.');
+      return false;
+    }
+    const entry = editUndoStack.pop();
+    if (!applyAtomsSnapshotToRecord(entry.record, entry.before)) {
+      setHintMessage('Undo failed: target structure is no longer available.');
+      return false;
+    }
+    editRedoStack.push(entry);
+    if (editRedoStack.length > EDIT_HISTORY_LIMIT) editRedoStack.splice(0, editRedoStack.length - EDIT_HISTORY_LIMIT);
+    setHintMessage(`Undo: ${entry.label}`);
+    return true;
+  }
+
+  /**
+   * Redo the most recently undone edit mutation.
+   * @returns {boolean}
+   */
+  function redoLastEditAction() {
+    pruneEditHistory();
+    if (editRedoStack.length === 0) {
+      setHintMessage('Nothing to redo.');
+      return false;
+    }
+    const entry = editRedoStack.pop();
+    if (!applyAtomsSnapshotToRecord(entry.record, entry.after)) {
+      setHintMessage('Redo failed: target structure is no longer available.');
+      return false;
+    }
+    editUndoStack.push(entry);
+    if (editUndoStack.length > EDIT_HISTORY_LIMIT) editUndoStack.splice(0, editUndoStack.length - EDIT_HISTORY_LIMIT);
+    setHintMessage(`Redo: ${entry.label}`);
+    return true;
+  }
 
   /**
    * Return sorted atomic numbers available in the loaded atomic data table.
@@ -6017,12 +6173,16 @@
     }
 
     const vol = ensureEditableVolumeRecord();
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     if (!vol || !Array.isArray(vol.atoms)) return false;
+    const beforeAtoms = cloneAtomsSnapshot(vol);
     const z = editAddElementZ | 0;
     if (!z || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
     const [x, y, zCoord] = worldToAtomUnits(vol, worldPos);
     vol.atoms.push({ Z: z, q: 0, x, y, z: zCoord });
     vol.natoms = vol.atoms.length;
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add ${getElementSymbol(z)}`);
     rebuildScene({ preserveView: true });
     setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Total atoms: ${vol.atoms.length}`);
     return true;
@@ -6036,12 +6196,16 @@
   function deleteAtomAtIndex(atomIndex) {
     if (currentIndex < 0 || !volumes[currentIndex]) return false;
     const vol = volumes[currentIndex].vol;
+    const record = volumes[currentIndex];
     if (!vol || !Array.isArray(vol.atoms)) return false;
     const idx = atomIndex | 0;
     if (idx < 0 || idx >= vol.atoms.length) return false;
+    const beforeAtoms = cloneAtomsSnapshot(vol);
     const removed = vol.atoms[idx];
     vol.atoms.splice(idx, 1);
     vol.natoms = vol.atoms.length;
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Delete ${getElementSymbol(removed.Z | 0)}`);
     editSel = editSel
       .filter((i) => i !== idx)
       .map((i) => (i > idx ? i - 1 : i));
@@ -6143,6 +6307,7 @@
     if (e.button !== 0) return;
     setEditAddHudPointer(e.clientX, e.clientY);
     __editDownPt = { x: e.clientX, y: e.clientY }; __editMoved = false; __editClickIdx = -1;
+    dragBeforeAtomsSnapshot = null;
     const obj = pickAtom(e);
     if (currentMode === MODES.EDIT) {
       if (editTool === EDIT_TOOL.DELETE) {
@@ -6181,6 +6346,7 @@
       const vol = volumes[currentIndex]?.vol; if (vol) {
         const a = vol.atoms[dragAtomIndex];
         dragOrigAtomUnits = [a.x, a.y, a.z];
+        dragBeforeAtomsSnapshot = cloneAtomsSnapshot(vol);
       }
       const normal = new THREE.Vector3();
       // plane orthogonal to camera-to-target axis
@@ -6205,9 +6371,15 @@
     if (currentMode === MODES.EDIT) {
       const wasDragging = dragActive;
       if (wasDragging) {
+        const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+        const vol = record && record.vol;
+        const afterAtoms = vol ? cloneAtomsSnapshot(vol) : null;
+        if (record && dragBeforeAtomsSnapshot && afterAtoms) {
+          pushEditHistoryEntry(record, dragBeforeAtomsSnapshot, afterAtoms, 'Move atom');
+        }
         // Final rebuild to update bonds/geometry once after drag
         rebuildScene({ preserveView: true });
-        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragAxis = 'none';
+        dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragBeforeAtomsSnapshot = null; dragAxis = 'none';
         controls.enabled = true;
         if (editMode) renderRibbon('edit');
         // Refresh/hide guide line after drag ends
@@ -6237,6 +6409,7 @@
         updateEditSelectionVisuals();
       }
     }
+    if (!dragActive) dragBeforeAtomsSnapshot = null;
     __editDownPt = null; __editClickIdx = -1; __editMoved = false;
   });
 
@@ -6367,6 +6540,24 @@
   // Esc clears current measurement selection (but does not change mode)
   bind('down', MODES.MEASURE, 'Escape', () => { clearEditSelection(); updateSelectedHalos(); updateEditSelectionVisuals(); });
 
+  /**
+   * Handle Cmd/Ctrl undo/redo shortcuts.
+   * @param {KeyboardEvent} e
+   * @returns {boolean} True when one undo/redo action was handled.
+   */
+  function handleUndoRedoHotkey(e) {
+    if (isTypingInInput()) return false;
+    if (!(e.ctrlKey || e.metaKey)) return false;
+    const key = String(e.key || '').toLowerCase();
+    const isUndo = key === 'z' && !e.shiftKey;
+    const isRedo = (key === 'z' && e.shiftKey) || key === 'y';
+    if (!isUndo && !isRedo) return false;
+    e.preventDefault();
+    if (isUndo) undoLastEditAction();
+    else redoLastEditAction();
+    return true;
+  }
+
   // Global key listeners delegate to router
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && elementColorOverlay && elementColorOverlay.style.display === 'flex') {
@@ -6374,6 +6565,7 @@
       setElementColorOverlayOpen(false);
       return;
     }
+    if (handleUndoRedoHotkey(e)) return;
     routeShortcut(e, 'down', currentMode);
   });
   window.addEventListener('keyup', (e) => routeShortcut(e, 'up', currentMode));
@@ -7062,18 +7254,22 @@
    * Remove demo/sample placeholders before importing user-provided data.
    */
   function clearPlaceholderVolumesForUserLoad() {
+    let changed = false;
     if (volumes.length === 1 && volumes[0].name === 'Demo Water') {
       console.log('[CUBE] Replacing demo with loaded data.');
       volumes = [];
       currentIndex = -1;
       clearSceneMeshes();
+      changed = true;
     }
     if (volumes.some(v => v.isSample)) {
       console.log('[CUBE] Removing sample.cube from list before adding user data.');
       volumes = volumes.filter(v => !v.isSample);
       currentIndex = -1;
       clearSceneMeshes();
+      changed = true;
     }
+    if (changed) pruneEditHistory();
   }
 
   /**
@@ -7638,6 +7834,7 @@
   clearBtn.onclick = () => {
     volumes = [];
     currentIndex = -1;
+    clearEditHistory();
     refreshFileSelect();
     clearSceneMeshes();
     updateSidePanel();
@@ -8158,6 +8355,7 @@
       const vol = parseCube(text);
       volumes = [];
       currentIndex = -1;
+      clearEditHistory();
       clearSceneMeshes();
       volumes.push({ name: 'sample.cube', vol, isSample: true });
       if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
