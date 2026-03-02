@@ -492,6 +492,59 @@
       min-height: 1.4em;
     }
 
+    #editSnapPane {
+      margin-top: 8px;
+      border-top: 1px solid #223;
+      padding-top: 8px;
+    }
+
+    #editSnapPane .title {
+      display: block;
+      font-size: 12px;
+      color: #a9bdd6;
+      margin-bottom: 5px;
+      font-weight: 700;
+    }
+
+    #editSnapRow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    #editSnapToggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #dce7f5;
+      font-weight: 700;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    #editSnapEnabled {
+      accent-color: #4aa3ff;
+      cursor: pointer;
+    }
+
+    #editSnapStep {
+      border: 1px solid #2a3546;
+      border-radius: 7px;
+      padding: 3px 6px;
+      background: #101823;
+      color: #e9f1ff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    #editSnapHint {
+      margin-top: 5px;
+      font-size: 11px;
+      color: #96adca;
+    }
+
     #editAddCursorHud {
       position: fixed;
       left: 0;
@@ -520,6 +573,15 @@
       flex-wrap: wrap;
     }
 
+    #editAddCursorHud .title {
+      font-size: 11px;
+      color: #9eb4cf;
+      font-weight: 700;
+      margin-bottom: 2px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
     #editAddCursorHud .label {
       min-width: 30px;
       font-size: 11px;
@@ -545,6 +607,13 @@
     #editAddCursorHud button.active {
       border-color: #4aa3ff;
       box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.3) inset;
+    }
+
+    #editAddCursorHud .hint {
+      margin-top: 2px;
+      font-size: 10px;
+      color: #8fa6c2;
+      letter-spacing: 0.01em;
     }
 
     #elementColorOverlay {
@@ -707,8 +776,28 @@
       <div id="editAddQuick"></div>
       <div id="editAddCurrent"></div>
     </div>
+    <div id="editSnapPane">
+      <span class="title">Geometry snapping</span>
+      <div id="editSnapRow">
+        <label id="editSnapToggle" for="editSnapEnabled">
+          <input id="editSnapEnabled" type="checkbox" checked />
+          Snap
+        </label>
+        <label for="editSnapStep" style="font-size:12px; color:#a9bdd6;">Step</label>
+        <select id="editSnapStep" title="Grid snap step in angstroms">
+          <option value="0.05">0.05 A</option>
+          <option value="0.10" selected>0.10 A</option>
+          <option value="0.20">0.20 A</option>
+          <option value="0.25">0.25 A</option>
+          <option value="0.50">0.50 A</option>
+          <option value="1.00">1.00 A</option>
+        </select>
+      </div>
+      <div id="editSnapHint">Applies to move/add placement. Hold Alt to bypass temporarily.</div>
+    </div>
   </div>
   <div id="editAddCursorHud" aria-hidden="true">
+    <div class="title">Quick Build</div>
     <div class="row">
       <span class="label">Elem</span>
       <button type="button" data-z="1">H</button>
@@ -722,6 +811,7 @@
       <button type="button" data-order="2" title="Double bond (key 2)">2</button>
       <button type="button" data-order="3" title="Triple bond (key 3)">3</button>
     </div>
+    <div class="hint">Keys: H/C/N/O and 1/2/3</div>
   </div>
   <div id="shortcutRibbon" aria-hidden="true"
     style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid #223; pointer-events:none; z-index:30;">
@@ -903,6 +993,7 @@
           <li><strong>A</strong> — Toggle axis gizmo on/off</li>
           <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
           <li><strong>Cmd/Ctrl+Z</strong> / <strong>Cmd/Ctrl+Shift+Z</strong> — Undo / Redo edit action</li>
+          <li><strong>Edit mode:</strong> <strong>Q</strong> toggles snap, <strong>[</strong>/<strong>]</strong> changes snap step, <strong>Alt</strong> bypasses snap for one action</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
         </ul>
       </div>

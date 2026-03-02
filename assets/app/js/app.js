@@ -4420,6 +4420,8 @@
   const editAddSuggestionsEl = document.getElementById('editAddSuggestions');
   const editAddQuickEl = document.getElementById('editAddQuick');
   const editAddCurrentEl = document.getElementById('editAddCurrent');
+  const editSnapEnabledEl = document.getElementById('editSnapEnabled');
+  const editSnapStepEl = document.getElementById('editSnapStep');
   const editAddCursorHudEl = document.getElementById('editAddCursorHud');
   const shortcutRibbon = document.getElementById('shortcutRibbon');
   const hintEl = document.getElementById('hint');
@@ -4813,6 +4815,9 @@
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
       { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
       { k: 'X/Y/Z', d: 'Axis lock' },
+      { k: 'Q', d: 'Toggle geometry snap' },
+      { k: '[/]', d: 'Snap step down/up' },
+      { k: 'Alt+Drag/Click', d: 'Bypass snap once' },
     ],
     measure: [
       { k: 'M', d: 'Exit measurement' },
@@ -4996,6 +5001,9 @@
   let editTool = EDIT_TOOL.MOVE;
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
+  const EDIT_SNAP_STEPS = Object.freeze([0.05, 0.1, 0.2, 0.25, 0.5, 1.0]);
+  let editSnapEnabled = true;
+  let editSnapStep = 0.1;
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
   const EDIT_HISTORY_LIMIT = 200;
   let editUndoStack = [];
@@ -5227,6 +5235,114 @@
   }
 
   /**
+   * Normalize snap step to one of the supported edit snap increments.
+   * @param {*} value
+   * @returns {number}
+   */
+  function normalizeEditSnapStep(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return 0.1;
+    let best = EDIT_SNAP_STEPS[0];
+    let bestDiff = Math.abs(n - best);
+    for (let i = 1; i < EDIT_SNAP_STEPS.length; i++) {
+      const s = EDIT_SNAP_STEPS[i];
+      const d = Math.abs(n - s);
+      if (d < bestDiff) {
+        best = s;
+        bestDiff = d;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Round one scalar to the nearest snap step.
+   * @param {number} value
+   * @param {number} step
+   * @returns {number}
+   */
+  function snapScalar(value, step) {
+    const s = Math.max(1e-6, Number(step) || 0.1);
+    return Math.round(value / s) * s;
+  }
+
+  /**
+   * Apply geometry snapping to a candidate world-space position.
+   * @param {THREE.Vector3} pos
+   * @param {{axis?:'none'|'x'|'y'|'z',anchor?:THREE.Vector3,event?:PointerEvent|KeyboardEvent|null}=} options
+   * @returns {THREE.Vector3}
+   */
+  function getSnappedEditWorldPosition(pos, options = {}) {
+    if (!pos || !(pos.isVector3)) return pos;
+    if (!editSnapEnabled) return pos;
+    const ev = options.event || null;
+    if (ev && ev.altKey) return pos;
+    const step = editSnapStep;
+    const axis = options.axis || 'none';
+    const anchor = options.anchor && options.anchor.isVector3 ? options.anchor : null;
+    if (axis === 'x') {
+      pos.x = snapScalar(pos.x, step);
+      if (anchor) { pos.y = anchor.y; pos.z = anchor.z; }
+      return pos;
+    }
+    if (axis === 'y') {
+      pos.y = snapScalar(pos.y, step);
+      if (anchor) { pos.x = anchor.x; pos.z = anchor.z; }
+      return pos;
+    }
+    if (axis === 'z') {
+      pos.z = snapScalar(pos.z, step);
+      if (anchor) { pos.x = anchor.x; pos.y = anchor.y; }
+      return pos;
+    }
+    pos.x = snapScalar(pos.x, step);
+    pos.y = snapScalar(pos.y, step);
+    pos.z = snapScalar(pos.z, step);
+    return pos;
+  }
+
+  /**
+   * Set geometry snapping enabled state.
+   * @param {*} enabled
+   * @param {{announce?:boolean}=} options
+   */
+  function setEditSnapEnabled(enabled, options = {}) {
+    const announce = options.announce !== false;
+    editSnapEnabled = !!enabled;
+    updateEditToolboxUi({ syncSearch: false });
+    if (announce && editMode) {
+      const state = editSnapEnabled ? `ON (${editSnapStep.toFixed(2)} A)` : 'OFF';
+      setHintMessage(`Geometry snap: ${state}`);
+    }
+  }
+
+  /**
+   * Set geometry snapping step.
+   * @param {*} step
+   * @param {{announce?:boolean}=} options
+   */
+  function setEditSnapStep(step, options = {}) {
+    const announce = options.announce !== false;
+    editSnapStep = normalizeEditSnapStep(step);
+    updateEditToolboxUi({ syncSearch: false });
+    if (announce && editMode && editSnapEnabled) {
+      setHintMessage(`Geometry snap step: ${editSnapStep.toFixed(2)} A`);
+    }
+  }
+
+  /**
+   * Nudge snap step to the next available value.
+   * @param {number} direction +1 or -1
+   */
+  function bumpEditSnapStep(direction) {
+    const current = normalizeEditSnapStep(editSnapStep);
+    let idx = EDIT_SNAP_STEPS.indexOf(current);
+    if (idx < 0) idx = EDIT_SNAP_STEPS.indexOf(0.1);
+    idx = Math.max(0, Math.min(EDIT_SNAP_STEPS.length - 1, idx + (direction > 0 ? 1 : -1)));
+    setEditSnapStep(EDIT_SNAP_STEPS[idx], { announce: true });
+  }
+
+  /**
    * Estimate placement distance for add-grow preview by bond order.
    * @param {number} anchorZ
    * @param {number} newZ
@@ -5306,7 +5422,7 @@
   }
 
   /**
-   * Update the cursor mini-picker position near pointer coordinates.
+   * Update the add quick-HUD dock position.
    * @param {number} clientX
    * @param {number} clientY
    */
@@ -5322,7 +5438,7 @@
     if (editToolboxEl && editToolboxEl.getAttribute('aria-hidden') === 'false') {
       const toolRect = editToolboxEl.getBoundingClientRect();
       x = Math.max(8, Math.round(toolRect.left));
-      y = Math.max(64, Math.round(toolRect.top - rect.height - 8));
+      y = Math.max(64, Math.round(toolRect.bottom + 8));
     }
     x = Math.max(8, Math.min(vw - rect.width - 8, x));
     y = Math.max(64, Math.min(vh - rect.height - 8, y));
@@ -5334,7 +5450,7 @@
    */
   function updateEditAddCursorHud() {
     if (!editAddCursorHudEl) return;
-    const showHud = editMode && editTool === EDIT_TOOL.ADD;
+    const showHud = editMode && editTool === EDIT_TOOL.ADD && addGrowActive;
     editAddCursorHudEl.setAttribute('aria-hidden', showHud ? 'false' : 'true');
     if (!showHud) return;
     const buttons = editAddCursorHudEl.querySelectorAll('button');
@@ -5402,6 +5518,7 @@
       addPreviewBondMesh = null;
     }
     try { controls.enabled = true; } catch { }
+    updateEditAddCursorHud();
   }
 
   /**
@@ -5474,6 +5591,7 @@
     const snapped = getValenceBiasedGrowDirection(rawDir, anchorZ, addGrowNeighborDirs);
     const dist = getEditAddBondLength(anchorZ, editAddElementZ, editAddBondOrder);
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
+    getSnappedEditWorldPosition(newPos);
     addGrowPreviewPos = newPos;
     updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, editAddElementZ);
   }
@@ -5501,6 +5619,7 @@
     const snapped = getValenceBiasedGrowDirection(rawDir, anchorZ, addGrowNeighborDirs);
     const dist = getEditAddBondLength(anchorZ, editAddElementZ, editAddBondOrder);
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
+    getSnappedEditWorldPosition(newPos, { event: e });
     addGrowPreviewPos = newPos;
     updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, editAddElementZ);
   }
@@ -5523,6 +5642,15 @@
     if (editToolAddBtn) editToolAddBtn.classList.toggle('active', isAdd);
     if (editToolDeleteBtn) editToolDeleteBtn.classList.toggle('active', isDelete);
     if (editAddPaneEl) editAddPaneEl.classList.toggle('active', isEdit && isAdd);
+    if (editSnapEnabledEl) {
+      editSnapEnabledEl.checked = !!editSnapEnabled;
+      editSnapEnabledEl.disabled = !isEdit;
+    }
+    if (editSnapStepEl) {
+      const snapStr = editSnapStep.toFixed(2);
+      if (editSnapStepEl.value !== snapStr) editSnapStepEl.value = snapStr;
+      editSnapStepEl.disabled = !isEdit || !editSnapEnabled;
+    }
 
     const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
     const symbol = info && info.symbol ? info.symbol : `Z${editAddElementZ}`;
@@ -5648,6 +5776,16 @@
       });
       editAddSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
     }
+    if (editSnapEnabledEl) {
+      editSnapEnabledEl.addEventListener('change', () => {
+        setEditSnapEnabled(!!editSnapEnabledEl.checked, { announce: true });
+      });
+    }
+    if (editSnapStepEl) {
+      editSnapStepEl.addEventListener('change', () => {
+        setEditSnapStep(editSnapStepEl.value, { announce: true });
+      });
+    }
     if (editAddCursorHudEl) {
       const buttons = editAddCursorHudEl.querySelectorAll('button');
       buttons.forEach((btn) => {
@@ -5669,6 +5807,8 @@
     if (editToolMoveBtn) editToolMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
     if (editToolAddBtn) editToolAddBtn.onclick = () => setEditTool(EDIT_TOOL.ADD);
     if (editToolDeleteBtn) editToolDeleteBtn.onclick = () => setEditTool(EDIT_TOOL.DELETE);
+    if (editSnapEnabledEl) editSnapEnabled = !!editSnapEnabledEl.checked;
+    if (editSnapStepEl) editSnapStep = normalizeEditSnapStep(editSnapStepEl.value);
     setEditAddBondOrder(1, { announce: false });
     updateEditToolboxUi();
   }
@@ -6243,8 +6383,8 @@
     const planePoint = new THREE.Vector3(0, 0, 0);
     const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, planePoint);
     const p = new THREE.Vector3();
-    if (raycaster.ray.intersectPlane(plane, p)) return p;
-    return planePoint;
+    if (raycaster.ray.intersectPlane(plane, p)) return getSnappedEditWorldPosition(p, { event: e });
+    return getSnappedEditWorldPosition(planePoint, { event: e });
   }
 
   let __lastBondUpdate = 0;
@@ -6273,6 +6413,7 @@
           } else {
             newPos = dragStartPos.clone().add(move);
           }
+          getSnappedEditWorldPosition(newPos, { axis: dragAxis, anchor: dragStartPos, event: e });
       }
       if (newPos) {
         // Apply to mesh and data (defer full rebuild until pointerup to avoid flicker)
@@ -6329,6 +6470,7 @@
             addGrowNeighborDirs = getEditAddNeighborDirections(vol, idx);
             addGrowPreviewPos = null;
             controls.enabled = false;
+            updateEditAddCursorHud();
             updateAddGrowPreviewFromEvent(e);
             e.preventDefault();
           }
@@ -6489,6 +6631,9 @@
   });
   bind('down', MODES.EDIT, 'c', () => { if (editTool === EDIT_TOOL.ADD) setEditAddElement(6, { announce: true }); });
   bind('down', MODES.EDIT, 'o', () => { if (editTool === EDIT_TOOL.ADD) setEditAddElement(8, { announce: true }); });
+  bind('down', MODES.EDIT, 'q', () => setEditSnapEnabled(!editSnapEnabled, { announce: true }));
+  bind('down', MODES.EDIT, '[', () => bumpEditSnapStep(-1));
+  bind('down', MODES.EDIT, ']', () => bumpEditSnapStep(1));
   bind('down', MODES.EDIT, '1', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(1); else setMoleculeStyle('default'); });
   bind('down', MODES.EDIT, '2', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(2); else setMoleculeStyle('toon'); });
   bind('down', MODES.EDIT, '3', () => { if (editTool === EDIT_TOOL.ADD) setEditAddBondOrder(3); else setMoleculeStyle('kit'); });
