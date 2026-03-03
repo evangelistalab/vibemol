@@ -754,8 +754,8 @@
 
 <body>
   <div id="toolbar">
-    <label><strong>CUBE/XYZ files</strong>
-      <input type="file" id="fileInput" accept=".cube,.cub,.xyz,.2ccube" multiple />
+    <label><strong>CUBE/XYZ/VIB files</strong>
+      <input type="file" id="fileInput" accept=".cube,.cub,.xyz,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.molden,.molden.input,.dat,.out,.output,.json,application/json,text/plain" multiple />
       <button id="openBtn" class="secondary">Open…</button>
     </label>
     <label>PubChem
@@ -806,7 +806,7 @@
       <div id="emptyStateLead">Open a molecule file</div>
       <div id="emptyStateDropZone">
         <span id="emptyStateDropIcon">⬆</span>
-        Drag and drop <code>.xyz</code> or <code>.cube</code> files here
+        Drag and drop <code>.xyz</code>, <code>.cube</code>, <code>.vib.json</code>, <code>.hess</code>, <code>.molden</code>, or Psi4 <code>.dat/.out</code> files here
       </div>
       <div id="emptyStatePrimaryAction">
         <button id="emptyStateOpenBtn" type="button">Choose files</button>
@@ -820,7 +820,7 @@
       </div>
     </div>
   </div>
-  <div id="hint">Drag & drop .cube/.cub/.2ccube/.xyz files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy</div>
+  <div id="hint">Drag & drop .cube/.cub/.2ccube/.xyz/.vib.json/.hess/.molden/.dat files here • Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy</div>
   <!-- Phase wheel legend (shown in phase-hue modes) -->
   <div id="phaseWheel" aria-hidden="true"
     style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
@@ -965,6 +965,22 @@
         <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked /> Loop</label>
         <span></span>
       </div>
+      <div class="row" id="vibrationRow" style="display:none; grid-template-columns:auto auto auto 1fr auto;">
+        <button id="vibrationPrevBtn" class="secondary" title="Previous vibrational mode">◀</button>
+        <button id="vibrationPlayBtn" class="secondary" title="Play/Pause vibrational mode">Play</button>
+        <button id="vibrationNextBtn" class="secondary" title="Next vibrational mode">▶</button>
+        <input type="range" id="vibrationMode" min="0" max="0" step="1" value="0" title="Vibrational mode index" />
+        <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">1/1</div>
+      </div>
+      <div class="row" id="vibrationRow2" style="display:none; grid-template-columns:58px 94px 64px 94px 1fr;">
+        <label style="width:auto;">Vib Amp</label>
+        <input type="number" id="vibrationAmplitude" min="0" max="8" step="0.05" value="1.00"
+          title="Mode displacement scale factor" />
+        <label style="width:auto;">Speed</label>
+        <input type="number" id="vibrationSpeed" min="0.1" max="30" step="0.05" value="0.75"
+          title="Oscillation speed in cycles per second" />
+        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">-- cm^-1</div>
+      </div>
       <div class="row">
         <label style="width: 80px;">Color scheme</label>
         <select id="schemeSelect" title="Choose default +/- surface colors">
@@ -1062,6 +1078,7 @@
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
           <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred double/triple-bond rendering. Toon uses toon shading (including surfaces), Glossy uses glassy blue atoms/bonds with dark edge shells, and Kit uses glossy atoms with collar-joint connectors.</li>
           <li>Multi-frame XYZ trajectories expose playback controls in the View panel (play, frame slider, FPS, loop).</li>
+          <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, Psi4 Molden files, and Psi4 output logs) expose mode playback controls (mode index, amplitude, speed).</li>
           <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) with in-scene guide overlays.</li>
           <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show element symbols over atoms.</li>
           <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
