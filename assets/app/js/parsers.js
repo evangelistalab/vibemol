@@ -380,48 +380,86 @@ function parseTwoComponentCube(text) {
  */
 function parseXYZ(text) {
   const lines = text.replace(/\r/g, '').split('\n');
-  if (lines.length === 0) throw new Error('Empty XYZ file.');
-  const countRaw = (lines[0] || '').trim();
-  if (!countRaw) throw new Error('Malformed XYZ file: first line must be the atom count.');
-  const natomsVal = Number(countRaw);
-  if (!Number.isFinite(natomsVal) || !Number.isInteger(natomsVal) || natomsVal < 0) {
-    throw new Error('Malformed XYZ file: first line must be a non-negative integer atom count.');
-  }
-  const natoms = natomsVal | 0;
-  if (lines.length < natoms + 2) {
-    throw new Error(`Malformed XYZ file: expected ${natoms} atom lines after the comment line, found ${Math.max(0, lines.length - 2)}.`);
-  }
-  const comment = lines[1] || '';
-  const atoms = [];
-  for (let i = 0; i < natoms; i++) {
-    const lineNo = i + 3;
-    const l = (lines[i + 2] || '').trim();
-    if (!l) throw new Error(`Malformed XYZ file at line ${lineNo}: missing atom record.`);
-    const parts = l.split(/\s+/);
-    if (parts.length < 4) {
-      throw new Error(`Malformed XYZ file at line ${lineNo}: expected "Symbol X Y Z".`);
+  let cursor = 0;
+  while (cursor < lines.length && !(lines[cursor] || '').trim()) cursor++;
+  if (cursor >= lines.length) throw new Error('Empty XYZ file.');
+
+  const frames = [];
+  const frameComments = [];
+  let natoms = null;
+  let atomSymbols = null;
+  let firstFrameAtoms = null;
+
+  while (cursor < lines.length) {
+    while (cursor < lines.length && !(lines[cursor] || '').trim()) cursor++;
+    if (cursor >= lines.length) break;
+
+    const blockStartLine = cursor + 1;
+    const countRaw = (lines[cursor] || '').trim();
+    if (!countRaw) throw new Error(`Malformed XYZ file at line ${blockStartLine}: missing atom count.`);
+    const natomsVal = Number(countRaw);
+    if (!Number.isFinite(natomsVal) || !Number.isInteger(natomsVal) || natomsVal < 0) {
+      throw new Error(`Malformed XYZ file at line ${blockStartLine}: atom count must be a non-negative integer.`);
     }
-    const sym = parts[0];
-    const symbolKey = sym.toUpperCase();
-    const hasSymbol = !!(window.ATOM_SYMBOL_TO_Z && Object.prototype.hasOwnProperty.call(window.ATOM_SYMBOL_TO_Z, symbolKey));
-    if (!hasSymbol) {
-      throw new Error(`Malformed XYZ file at line ${lineNo}: unknown element symbol "${sym}".`);
+    const frameNatoms = natomsVal | 0;
+    if (natoms == null) natoms = frameNatoms;
+    else if (frameNatoms !== natoms) {
+      throw new Error(`Malformed XYZ trajectory at line ${blockStartLine}: atom count ${frameNatoms} does not match first frame count ${natoms}.`);
     }
-    const Z = window.ATOM_SYMBOL_TO_Z[symbolKey];
-    const x = parseFloat(parts[1]);
-    const y = parseFloat(parts[2]);
-    const z = parseFloat(parts[3]);
-    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
-      throw new Error(`Malformed XYZ file at line ${lineNo}: coordinates must be numeric.`);
+
+    const commentIndex = cursor + 1;
+    if (commentIndex >= lines.length) {
+      throw new Error(`Malformed XYZ file: missing comment line after atom count at line ${blockStartLine}.`);
     }
-    atoms.push({ Z, q: 0, x, y, z }); // XYZ is in Å already
+    const comment = lines[commentIndex] || '';
+
+    const frame = new Float32Array(frameNatoms * 3);
+    const frameAtoms = [];
+    for (let i = 0; i < frameNatoms; i++) {
+      const rowIndex = cursor + 2 + i;
+      const lineNo = rowIndex + 1;
+      if (rowIndex >= lines.length) {
+        throw new Error(`Malformed XYZ file: expected ${frameNatoms} atom lines after line ${commentIndex + 1}, but file ended early.`);
+      }
+      const l = (lines[rowIndex] || '').trim();
+      if (!l) throw new Error(`Malformed XYZ file at line ${lineNo}: missing atom record.`);
+      const parts = l.split(/\s+/);
+      if (parts.length < 4) {
+        throw new Error(`Malformed XYZ file at line ${lineNo}: expected "Symbol X Y Z".`);
+      }
+      const sym = parts[0];
+      const symbolKey = sym.toUpperCase();
+      const hasSymbol = !!(window.ATOM_SYMBOL_TO_Z && Object.prototype.hasOwnProperty.call(window.ATOM_SYMBOL_TO_Z, symbolKey));
+      if (!hasSymbol) {
+        throw new Error(`Malformed XYZ file at line ${lineNo}: unknown element symbol "${sym}".`);
+      }
+      const Z = window.ATOM_SYMBOL_TO_Z[symbolKey];
+      const x = parseFloat(parts[1]);
+      const y = parseFloat(parts[2]);
+      const z = parseFloat(parts[3]);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+        throw new Error(`Malformed XYZ file at line ${lineNo}: coordinates must be numeric.`);
+      }
+
+      if (!atomSymbols) atomSymbols = [];
+      if (atomSymbols.length <= i) atomSymbols.push(symbolKey);
+      else if (atomSymbols[i] !== symbolKey) {
+        throw new Error(`Malformed XYZ trajectory at line ${lineNo}: element sequence differs from first frame.`);
+      }
+
+      frame[3 * i + 0] = x;
+      frame[3 * i + 1] = y;
+      frame[3 * i + 2] = z;
+      frameAtoms.push({ Z, q: 0, x, y, z });
+    }
+    frames.push(frame);
+    frameComments.push(comment);
+    if (!firstFrameAtoms) firstFrameAtoms = frameAtoms;
+    cursor += frameNatoms + 2;
   }
 
-  for (let i = 2 + natoms; i < lines.length; i++) {
-    if ((lines[i] || '').trim()) {
-      throw new Error(`Malformed XYZ file: unexpected extra content at line ${i + 1}.`);
-    }
-  }
+  if (!firstFrameAtoms || natoms == null) throw new Error('Malformed XYZ file: no atom frame found.');
+  const atoms = firstFrameAtoms;
   /**
    * Placeholder indexer for atom-only XYZ records (no voxel grid).
    * @param {number} i
@@ -430,7 +468,17 @@ function parseXYZ(text) {
    * @returns {number}
    */
   const idx = (i, j, k) => 0;
-  return { title: 'XYZ', comment, natoms, origin: [0, 0, 0], nxyz: [0, 0, 0], axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], atoms, data: new Float32Array(0), idx, units: 'angstrom', kind: 'xyz' };
+  const vol = { title: 'XYZ', comment: frameComments[0] || '', natoms, origin: [0, 0, 0], nxyz: [0, 0, 0], axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], atoms, data: new Float32Array(0), idx, units: 'angstrom', kind: 'xyz' };
+  if (frames.length > 1) {
+    vol.trajectory = {
+      frames,
+      comments: frameComments,
+      frameIndex: 0,
+      fps: 12,
+      loop: true,
+    };
+  }
+  return vol;
 }
 
   global.VibeMolParsers = { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ };

@@ -12,6 +12,7 @@ Primary capabilities:
 - Iso-surface rendering and cloud rendering
 - Atom/bond rendering with multiple molecule styles
 - Edit mode and measurement mode
+- Multi-frame XYZ trajectory playback (play/pause, frame slider, FPS, loop)
 - PNG export and XYZ export
 - Portable preset save/load (web and CLI compatible)
 
@@ -67,7 +68,8 @@ Preset automation contract exposed globally:
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
 - View panel includes `COM → Origin` action; shortcut `R` shifts active molecule center of mass to origin.
-- Invalid `.xyz`, `.cube`, or `.2ccube` imports now surface parser errors in popup warnings.
+- Malformed file imports (`.xyz`, `.cube`, `.2ccube`) are surfaced via popup errors.
+- Multi-frame `.xyz` files are parsed as trajectories and can be animated from View panel controls.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
 

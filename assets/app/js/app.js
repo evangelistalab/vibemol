@@ -4247,6 +4247,148 @@
     controls.update();
   }
 
+  let trajectoryPlaying = false;
+  let trajectoryLastStepMs = 0;
+  /**
+   * Resolve trajectory metadata for the active volume.
+   * @returns {{enabled:boolean,record:*,vol:*,traj:*,atomCount:number,frameCount:number}}
+   */
+  function getActiveTrajectoryInfo() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const atomCount = (vol && Array.isArray(vol.atoms)) ? vol.atoms.length : 0;
+    const traj = vol && vol.trajectory;
+    if (!traj || !Array.isArray(traj.frames) || traj.frames.length <= 1 || atomCount <= 0) {
+      return { enabled: false, record, vol, traj: null, atomCount, frameCount: 0 };
+    }
+    const frameSize = atomCount * 3;
+    const valid = traj.frames.every((frame) => frame && frame.length === frameSize);
+    if (!valid) return { enabled: false, record, vol, traj: null, atomCount, frameCount: 0 };
+    return { enabled: true, record, vol, traj, atomCount, frameCount: traj.frames.length };
+  }
+  /**
+   * Update trajectory controls visibility and values for the active file.
+   */
+  function syncTrajectoryControls() {
+    const info = getActiveTrajectoryInfo();
+    if (trajectoryRow) trajectoryRow.style.display = info.enabled ? 'grid' : 'none';
+    if (trajectoryRow2) trajectoryRow2.style.display = info.enabled ? 'grid' : 'none';
+    if (!info.enabled) {
+      trajectoryPlaying = false;
+      trajectoryLastStepMs = 0;
+      return;
+    }
+
+    const traj = info.traj;
+    traj.frameIndex = Math.max(0, Math.min(info.frameCount - 1, Number(traj.frameIndex) | 0));
+    traj.fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
+    traj.loop = traj.loop !== false;
+
+    if (trajectoryFrameEl) {
+      trajectoryFrameEl.max = String(Math.max(0, info.frameCount - 1));
+      trajectoryFrameEl.value = String(traj.frameIndex);
+    }
+    if (trajectoryFrameLabel) trajectoryFrameLabel.textContent = `${traj.frameIndex + 1}/${info.frameCount}`;
+    if (trajectoryPlayBtn) trajectoryPlayBtn.textContent = trajectoryPlaying ? 'Pause' : 'Play';
+    if (trajectoryLoopEl) trajectoryLoopEl.checked = !!traj.loop;
+    if (trajectoryFpsEl && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
+  }
+  /**
+   * Apply one trajectory frame to active atom positions and refresh geometry transforms.
+   * @param {number} frameIndex
+   * @param {{syncUi?:boolean}=} options
+   * @returns {boolean}
+   */
+  function applyTrajectoryFrame(frameIndex, options = {}) {
+    const info = getActiveTrajectoryInfo();
+    if (!info.enabled) return false;
+    const syncUi = options.syncUi !== false;
+    const traj = info.traj;
+    const frame = traj.frames[Math.max(0, Math.min(info.frameCount - 1, Number(frameIndex) | 0))];
+    if (!frame) return false;
+    const nextIndex = Math.max(0, Math.min(info.frameCount - 1, Number(frameIndex) | 0));
+    traj.frameIndex = nextIndex;
+    const toAng = info.vol.units === 'angstrom';
+    for (let i = 0; i < info.atomCount; i++) {
+      const x = frame[3 * i + 0];
+      const y = frame[3 * i + 1];
+      const z = frame[3 * i + 2];
+      const a = info.vol.atoms[i];
+      if (!a) continue;
+      a.x = x; a.y = y; a.z = z;
+      if (atomGroup && atomGroup.children && atomGroup.children[i]) {
+        const mesh = atomGroup.children[i];
+        if (mesh && mesh.position) {
+          if (toAng) mesh.position.set(x, y, z);
+          else mesh.position.set(x * BOHR_TO_ANG, y * BOHR_TO_ANG, z * BOHR_TO_ANG);
+        }
+      }
+    }
+    if (bondGroup && bondGroup.children && bondGroup.children.length) updateBondsInPlace();
+    if (currentMode === MODES.MEASURE) {
+      updateSelectedHalos();
+      updateEditSelectionVisuals();
+    }
+    if (syncUi) syncTrajectoryControls();
+    return true;
+  }
+  /**
+   * Move trajectory one frame backward/forward.
+   * @param {number} delta
+   */
+  function stepTrajectoryFrame(delta) {
+    const info = getActiveTrajectoryInfo();
+    if (!info.enabled) return;
+    const traj = info.traj;
+    let next = (traj.frameIndex | 0) + (delta | 0);
+    if (traj.loop) next = ((next % info.frameCount) + info.frameCount) % info.frameCount;
+    else next = Math.max(0, Math.min(info.frameCount - 1, next));
+    trajectoryPlaying = false;
+    trajectoryLastStepMs = 0;
+    applyTrajectoryFrame(next, { syncUi: true });
+  }
+  /**
+   * Advance trajectory playback based on elapsed wall clock time.
+   * @param {number} nowMs
+   */
+  function updateTrajectoryPlayback(nowMs) {
+    const info = getActiveTrajectoryInfo();
+    if (!info.enabled) {
+      if (trajectoryPlaying) {
+        trajectoryPlaying = false;
+        trajectoryLastStepMs = 0;
+        syncTrajectoryControls();
+      }
+      return;
+    }
+    if (!trajectoryPlaying) return;
+    if (currentMode === MODES.EDIT) return;
+
+    const traj = info.traj;
+    const fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
+    traj.fps = fps;
+    const stepMs = 1000 / fps;
+    if (trajectoryLastStepMs <= 0) {
+      trajectoryLastStepMs = nowMs;
+      return;
+    }
+    const elapsed = nowMs - trajectoryLastStepMs;
+    if (elapsed < stepMs) return;
+    const steps = Math.max(1, Math.floor(elapsed / stepMs));
+    trajectoryLastStepMs += steps * stepMs;
+
+    let next = (traj.frameIndex | 0) + steps;
+    if (next >= info.frameCount) {
+      if (traj.loop) next = next % info.frameCount;
+      else {
+        next = info.frameCount - 1;
+        trajectoryPlaying = false;
+        trajectoryLastStepMs = 0;
+      }
+    }
+    applyTrajectoryFrame(next, { syncUi: true });
+  }
+
   // Simple FPS meter (EMA smoothed)
   let __fpsLast = performance.now();
   let __fpsAccMs = 0;
@@ -4257,6 +4399,8 @@
    * Main animation loop: render scene, optional split-view, FPS meter, and axis overlay.
    */
   function render() {
+    const now = performance.now();
+    updateTrajectoryPlayback(now);
     controls.update();
     updateTrackedAtomLabelOrientation();
 
@@ -4320,7 +4464,6 @@
     }
 
     // FPS update
-    const now = performance.now();
     const dt = now - __fpsLast; __fpsLast = now;
     __fpsAccMs += dt; __fpsFrames += 1;
     if (__fpsAccMs >= 500) {
@@ -4412,6 +4555,15 @@
   const rotSpeed = document.getElementById('rotSpeed');
   const damp = document.getElementById('damp');
   const autoRotSpeed = document.getElementById('autoRotSpeed');
+  const trajectoryRow = document.getElementById('trajectoryRow');
+  const trajectoryRow2 = document.getElementById('trajectoryRow2');
+  const trajectoryPrevBtn = document.getElementById('trajectoryPrevBtn');
+  const trajectoryPlayBtn = document.getElementById('trajectoryPlayBtn');
+  const trajectoryNextBtn = document.getElementById('trajectoryNextBtn');
+  const trajectoryFrameEl = document.getElementById('trajectoryFrame');
+  const trajectoryFrameLabel = document.getElementById('trajectoryFrameLabel');
+  const trajectoryFpsEl = document.getElementById('trajectoryFps');
+  const trajectoryLoopEl = document.getElementById('trajectoryLoop');
   if (toggleMultiBonds) showMultiBonds = !!toggleMultiBonds.checked;
   if (toggleAtomLabels) showAtomLabels = !!toggleAtomLabels.checked;
   const viewReset = document.getElementById('viewReset');
@@ -4870,6 +5022,11 @@
     const prevMode = currentMode;
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
+    if (currentMode === MODES.EDIT && trajectoryPlaying) {
+      trajectoryPlaying = false;
+      trajectoryLastStepMs = 0;
+      syncTrajectoryControls();
+    }
     if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
       // Always start edit sessions in move mode.
       setEditTool(EDIT_TOOL.MOVE, { announce: false });
@@ -7553,6 +7710,43 @@
   rotSpeed.oninput = () => { const v = toNum(rotSpeed.value, 1.0); if (Number.isFinite(v)) controls.rotateSpeed = v; };
   damp.oninput = () => { const v = toNum(damp.value, 0.05); if (Number.isFinite(v)) controls.dampingFactor = v; };
   autoRotSpeed.oninput = () => { const v = toNum(autoRotSpeed.value, 2.0); if (Number.isFinite(v)) controls.autoRotateSpeed = v; };
+  if (trajectoryPlayBtn) {
+    trajectoryPlayBtn.onclick = () => {
+      const info = getActiveTrajectoryInfo();
+      if (!info.enabled) return;
+      trajectoryPlaying = !trajectoryPlaying;
+      trajectoryLastStepMs = 0;
+      syncTrajectoryControls();
+    };
+  }
+  if (trajectoryPrevBtn) trajectoryPrevBtn.onclick = () => stepTrajectoryFrame(-1);
+  if (trajectoryNextBtn) trajectoryNextBtn.onclick = () => stepTrajectoryFrame(1);
+  if (trajectoryFrameEl) {
+    trajectoryFrameEl.oninput = () => {
+      trajectoryPlaying = false;
+      trajectoryLastStepMs = 0;
+      const idx = Number(trajectoryFrameEl.value);
+      applyTrajectoryFrame(idx, { syncUi: true });
+    };
+  }
+  if (trajectoryFpsEl) {
+    trajectoryFpsEl.onchange = () => {
+      const info = getActiveTrajectoryInfo();
+      if (!info.enabled) return;
+      const n = Math.max(1, Math.min(120, Math.round(toNum(trajectoryFpsEl.value, info.traj.fps || 12))));
+      info.traj.fps = n;
+      trajectoryFpsEl.value = String(n);
+      syncTrajectoryControls();
+    };
+  }
+  if (trajectoryLoopEl) {
+    trajectoryLoopEl.onchange = () => {
+      const info = getActiveTrajectoryInfo();
+      if (!info.enabled) return;
+      info.traj.loop = !!trajectoryLoopEl.checked;
+      syncTrajectoryControls();
+    };
+  }
 
   /**
    * Refresh coordinates panel contents for the active file.
@@ -7561,6 +7755,7 @@
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     coordsContent.innerHTML = renderCoordsContent(record, BOHR_TO_ANG, window.ATOM_Z_TO_DATA);
     updatePubChemMetadataPanel(record);
+    syncTrajectoryControls();
   }
 
   /**

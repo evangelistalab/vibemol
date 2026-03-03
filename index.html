@@ -952,6 +952,19 @@
         </select>
         <span></span><span></span>
       </div>
+      <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:auto auto auto 1fr auto;">
+        <button id="trajectoryPrevBtn" class="secondary" title="Previous trajectory frame">◀</button>
+        <button id="trajectoryPlayBtn" class="secondary" title="Play/Pause trajectory">Play</button>
+        <button id="trajectoryNextBtn" class="secondary" title="Next trajectory frame">▶</button>
+        <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" title="Trajectory frame index" />
+        <div id="trajectoryFrameLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">1/1</div>
+      </div>
+      <div class="row" id="trajectoryRow2" style="display:none; grid-template-columns:60px 1fr 74px auto;">
+        <label style="width:auto;">Traj FPS</label>
+        <input type="number" id="trajectoryFps" min="1" max="120" step="1" value="12" title="Trajectory playback speed (frames per second)" />
+        <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked /> Loop</label>
+        <span></span>
+      </div>
       <div class="row">
         <label style="width: 80px;">Color scheme</label>
         <select id="schemeSelect" title="Choose default +/- surface colors">
@@ -1048,6 +1061,7 @@
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
           <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred double/triple-bond rendering. Toon uses toon shading (including surfaces), Glossy uses glassy blue atoms/bonds with dark edge shells, and Kit uses glossy atoms with collar-joint connectors.</li>
+          <li>Multi-frame XYZ trajectories expose playback controls in the View panel (play, frame slider, FPS, loop).</li>
           <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) with in-scene guide overlays.</li>
           <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show element symbols over atoms.</li>
           <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
