@@ -81,6 +81,49 @@ function readFloatArray(nextNumber, length) {
 }
 
 /**
+ * Build a tokenizer positioned at the first scalar voxel value for CUBE data.
+ * Handles negative-`natoms` dataset-id headers and ORCA legacy extra data-id lines.
+ * @param {string[]} lines
+ * @param {number} dataStartLine
+ * @param {number} natomsRaw
+ * @param {boolean} isORCA
+ * @returns {() => (number|null)}
+ */
+function createCubeDataTokenizer(lines, dataStartLine, natomsRaw, isORCA) {
+  // Standard CUBE with natoms < 0: one dataset header value (N) followed by N ids.
+  if ((natomsRaw | 0) < 0) {
+    const nextNumber = createNumberTokenizer(lines, dataStartLine);
+    const nDatasetsRaw = nextNumber();
+    if (nDatasetsRaw == null || !Number.isFinite(nDatasetsRaw) || !Number.isInteger(nDatasetsRaw) || nDatasetsRaw <= 0) {
+      throw new Error('Malformed CUBE dataset header (invalid dataset count after atom block).');
+    }
+    const nDatasets = nDatasetsRaw | 0;
+    for (let i = 0; i < nDatasets; i++) {
+      const datasetId = nextNumber();
+      if (datasetId == null || !Number.isFinite(datasetId)) {
+        throw new Error('Malformed CUBE dataset header (missing dataset ids after atom block).');
+      }
+    }
+    return nextNumber;
+  }
+
+  // ORCA compatibility: some files include one extra "<count> <id>" line before data.
+  if (isORCA) {
+    const raw = (lines[dataStartLine] || '').trim();
+    if (raw) {
+      const parts = raw.split(/\s+/);
+      const maybeLegacyIds = (
+        parts.length === 2
+        && /^[-+]?\d+$/.test(parts[0])
+        && /^[-+]?\d+$/.test(parts[1])
+      );
+      if (maybeLegacyIds) return createNumberTokenizer(lines, dataStartLine + 1);
+    }
+  }
+  return createNumberTokenizer(lines, dataStartLine);
+}
+
+/**
  * Parse a Gaussian `.cube/.cub` file into the internal volume shape.
  * Handles an ORCA-specific extra header line when present.
  * @param {string} text
@@ -101,23 +144,7 @@ function readFloatArray(nextNumber, length) {
 function parseCube(text) {
   // Split lines, handle CRLF
   const lines = text.replace(/\r/g, '').split('\n');
-
-  // ORCA-specific quirk: some ORCA CUBE files include an extra header
-  // line at the 9th line (1-based indexing) that contains only two numbers.
-  // Detect ORCA from the first line and, if present, remove that line so
-  // that atom records start where we expect.
-  try {
-    const isORCA = /ORCA/i.test(lines[0] || '');
-    const l9 = (lines[8] || '').trim();
-    if (isORCA && l9) {
-      const parts = l9.split(/\s+/);
-      const twoNums = parts.length === 2 && parts.every(s => isFinite(parseFloat(s)));
-      if (twoNums) {
-        // Remove the 9th line so downstream fixed indexing remains valid
-        lines.splice(8, 1);
-      }
-    }
-  } catch { /* keep default if anything goes wrong */ }
+  const isORCA = /ORCA/i.test(lines[0] || '');
 
   if (lines.length < 6) throw new Error('Not enough lines for a CUBE file.');
 
@@ -141,6 +168,7 @@ function parseCube(text) {
     throw new Error('Malformed CUBE header at line 3 (invalid atom count).');
   }
   const natoms = natomsRaw | 0;
+  const atomCount = Math.abs(natoms);
   const origin = [Number(L3[1]), Number(L3[2]), Number(L3[3])];
   if (!origin.every(Number.isFinite)) {
     throw new Error('Malformed CUBE header at line 3 (invalid origin coordinates).');
@@ -166,7 +194,7 @@ function parseCube(text) {
 
   // atoms: Z, q, x, y, z  (positions in Bohr)
   const atoms = [];
-  for (let i = 0; i < Math.abs(natoms); i++) {
+  for (let i = 0; i < atomCount; i++) {
     const lineNo = 7 + i;
     const raw = (lines[6 + i] || '').trim();
     if (!raw) throw new Error(`Malformed CUBE atom line ${lineNo} (missing atom record).`);
@@ -178,9 +206,9 @@ function parseCube(text) {
   }
 
   // volumetric data (z fastest, then y, then x) — reshape (numx,numy,numz)
-  const dataStartLine = 6 + Math.abs(natoms);
+  const dataStartLine = 6 + atomCount;
   const total = numx * numy * numz;
-  const nextNumber = createNumberTokenizer(lines, dataStartLine);
+  const nextNumber = createCubeDataTokenizer(lines, dataStartLine, natoms, isORCA);
   const data = readFloatArray(nextNumber, total);
 
   // index helper matching your reshape: data[i,j,k]
@@ -196,7 +224,7 @@ function parseCube(text) {
 
   return {
     title, comment,
-    natoms: Math.abs(natoms),
+    natoms: atomCount,
     origin,                        // Bohr
     nxyz: [numx, numy, numz],
     axes: [ax, ay, az],            // per-voxel step vectors in Bohr
@@ -232,16 +260,7 @@ function parseCube(text) {
  */
 function parseTwoComponentCube(text) {
   const lines = text.replace(/\r/g, '').split('\n');
-  // ORCA-specific quirk: remove extra 9th line if present
-  try {
-    const isORCA = /ORCA/i.test(lines[0] || '');
-    const l9 = (lines[8] || '').trim();
-    if (isORCA && l9) {
-      const parts = l9.split(/\s+/);
-      const twoNums = parts.length === 2 && parts.every(s => isFinite(parseFloat(s)));
-      if (twoNums) lines.splice(8, 1);
-    }
-  } catch { }
+  const isORCA = /ORCA/i.test(lines[0] || '');
   if (lines.length < 6) throw new Error('Not enough lines for a CUBE file.');
   const title = lines[0];
   const comment = lines[1] || '';
@@ -258,7 +277,8 @@ function parseTwoComponentCube(text) {
   if (!Number.isFinite(natomsRaw) || !Number.isInteger(natomsRaw)) {
     throw new Error('Malformed 2C CUBE header at line 3 (invalid atom count).');
   }
-  const natoms = Math.abs(natomsRaw | 0);
+  const natoms = natomsRaw | 0;
+  const atomCount = Math.abs(natoms);
   const origin = [Number(L3[1]), Number(L3[2]), Number(L3[3])];
   if (!origin.every(Number.isFinite)) {
     throw new Error('Malformed 2C CUBE header at line 3 (invalid origin coordinates).');
@@ -280,7 +300,7 @@ function parseTwoComponentCube(text) {
   const ay = sy.slice(1, 4);
   const az = sz.slice(1, 4);
   const atoms = [];
-  for (let i = 0; i < natoms; i++) {
+  for (let i = 0; i < atomCount; i++) {
     const lineNo = 7 + i;
     const raw = (lines[6 + i] || '').trim();
     if (!raw) throw new Error(`Malformed 2C CUBE atom line ${lineNo} (missing atom record).`);
@@ -290,8 +310,8 @@ function parseTwoComponentCube(text) {
     }
     atoms.push({ Z: p[0], q: p[1], x: p[2], y: p[3], z: p[4] });
   }
-  const dataStartLine = 6 + natoms;
-  const nextNumber = createNumberTokenizer(lines, dataStartLine);
+  const dataStartLine = 6 + atomCount;
+  const nextNumber = createCubeDataTokenizer(lines, dataStartLine, natoms, isORCA);
   const total = numx * numy * numz;
   let alphaRe, alphaIm, betaRe, betaIm, isTwoComponent = false;
 
@@ -334,7 +354,7 @@ function parseTwoComponentCube(text) {
    * @returns {number}
    */
   const idx = (i, j, k) => (i * numy + j) * numz + k;
-  const vol = { title, comment, natoms, origin, nxyz: [numx, numy, numz], axes: [ax, ay, az], atoms, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent };
+  const vol = { title, comment, natoms: atomCount, origin, nxyz: [numx, numy, numz], axes: [ax, ay, az], atoms, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent };
   // default dataset
   vol.data = isTwoComponent ? alphaRe : alphaRe;
   return vol;

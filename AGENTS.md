@@ -71,7 +71,7 @@ Preset automation contract exposed globally:
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
 
-## Edit UX Status (0.4.11)
+## Edit UX Status (0.4.12)
 Implemented:
 - Edit mode defaults to `Move` on entry.
 - Add tool includes cursor-relative placement with automatic angle snapping (`180°`, `120°`, `109.5°`, `90°`, `60°`).
