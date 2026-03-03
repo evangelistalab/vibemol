@@ -7,6 +7,7 @@
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = 'Drag & drop .cube/.cub/.2ccube/.xyz/.vib.json/.hess files here';
   const VIBRATION_KIND = 'vibemol.vibrations';
+  const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
   const VIBRATION_DEFAULT_SPEED = 0.75;
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
@@ -4325,9 +4326,16 @@
    */
   function syncTrajectoryControls() {
     const info = getActiveTrajectoryInfo();
+    if (trajectoryPanelBtn) {
+      trajectoryPanelBtn.disabled = !info.enabled;
+      trajectoryPanelBtn.title = info.enabled
+        ? 'Trajectory controls'
+        : 'No trajectory data in active file';
+    }
     if (trajectoryRow) trajectoryRow.style.display = info.enabled ? 'grid' : 'none';
     if (trajectoryRow2) trajectoryRow2.style.display = info.enabled ? 'grid' : 'none';
     if (!info.enabled) {
+      setTrajectoryPanelOpen(false);
       trajectoryPlaying = false;
       trajectoryLastStepMs = 0;
       return;
@@ -4349,24 +4357,15 @@
   }
   /**
    * Resolve vibrational-mode metadata for the active volume.
-   * Playback is disabled when trajectory playback is available on the same record.
-   * @param {{allowWithTrajectory?:boolean}=} options
    * @returns {{enabled:boolean,record:*,vol:*,vib:*,atomCount:number,modeCount:number,mode:*}}
    */
-  function getActiveVibrationInfo(options = {}) {
-    const allowWithTrajectory = !!options.allowWithTrajectory;
+  function getActiveVibrationInfo() {
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const atomCount = (vol && Array.isArray(vol.atoms)) ? vol.atoms.length : 0;
     const vib = vol && vol.vibration;
     if (!vib || !Array.isArray(vib.modes) || vib.modes.length === 0 || atomCount <= 0) {
       return { enabled: false, record, vol, vib: null, atomCount, modeCount: 0, mode: null };
-    }
-    if (!allowWithTrajectory) {
-      const traj = getActiveTrajectoryInfo();
-      if (traj.enabled && traj.record === record) {
-        return { enabled: false, record, vol, vib: null, atomCount, modeCount: 0, mode: null };
-      }
     }
     const frameSize = atomCount * 3;
     const validModes = vib.modes.every((m) => m && m.displacements && m.displacements.length === frameSize);
@@ -4379,43 +4378,98 @@
     }
     const modeCount = vib.modes.length;
     vib.modeIndex = Math.max(0, Math.min(modeCount - 1, Number(vib.modeIndex) | 0));
-    vib.amplitude = Math.max(0, Math.min(8, Number.isFinite(Number(vib.amplitude)) ? Number(vib.amplitude) : 1));
+    vib.amplitude = Math.max(0, Math.min(8, Number.isFinite(Number(vib.amplitude)) ? Number(vib.amplitude) : VIBRATION_DEFAULT_AMPLITUDE));
     vib.speed = Math.max(0.1, Math.min(30, Number.isFinite(Number(vib.speed)) ? Number(vib.speed) : VIBRATION_DEFAULT_SPEED));
     const mode = vib.modes[vib.modeIndex] || vib.modes[0];
     return { enabled: true, record, vol, vib, atomCount, modeCount, mode };
   }
+
+  /**
+   * Format one mode frequency for the vibration table.
+   * Negative values are shown as imaginary frequencies (`|w|i`).
+   * @param {*} value
+   * @returns {string}
+   */
+  function formatVibrationFrequencyCell(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '--';
+    const mag = Math.abs(n).toFixed(1);
+    return n < 0 ? `${mag}i` : mag;
+  }
+
+  /**
+   * Render the clickable vibration frequency table.
+   * @param {{enabled:boolean,vib?:*,modeCount?:number}=} info
+   */
+  function renderVibrationModeTable(info) {
+    if (!vibrationModeTableWrap || !vibrationModeTableBody || !vibrationModeEmpty) return;
+    if (!(info && info.enabled && info.vib && Array.isArray(info.vib.modes) && info.vib.modes.length > 0)) {
+      vibrationModeTableWrap.style.display = 'none';
+      vibrationModeEmpty.style.display = 'none';
+      vibrationModeTableBody.innerHTML = '';
+      return;
+    }
+    const vib = info.vib;
+    const modeCount = Math.max(0, info.modeCount | 0);
+    const rows = [];
+    for (let i = 0; i < modeCount; i++) {
+      const mode = vib.modes[i] || {};
+      const rawLabel = (typeof mode.label === 'string' && mode.label.trim()) ? mode.label.trim() : `Mode ${i + 1}`;
+      const activeClass = (i === (vib.modeIndex | 0)) ? ' active' : '';
+      const freqCell = formatVibrationFrequencyCell(mode.frequencyCm1);
+      rows.push(
+        `<tr class="mode-row${activeClass}" data-mode-index="${i}" title="Select ${escapeHtml(rawLabel)}">`
+        + `<td><button class="vibrationPlayCell" data-action="play" data-mode-index="${i}" title="Play ${escapeHtml(rawLabel)}">${(i === (vib.modeIndex | 0) && vibrationPlaying) ? '⏸' : '▶'}</button></td>`
+        + `<td>${i + 1}</td>`
+        + `<td>${escapeHtml(rawLabel)}</td>`
+        + `<td>${escapeHtml(freqCell)}</td>`
+        + '</tr>'
+      );
+    }
+    vibrationModeTableBody.innerHTML = rows.join('');
+    vibrationModeTableWrap.style.display = modeCount > 0 ? 'block' : 'none';
+    vibrationModeEmpty.style.display = modeCount > 0 ? 'none' : 'block';
+  }
+
   /**
    * Update vibrational-mode controls for the active record.
    */
   function syncVibrationControls() {
     const info = getActiveVibrationInfo();
+    if (vibrationPanelBtn) {
+      vibrationPanelBtn.style.display = info.enabled ? '' : 'none';
+      vibrationPanelBtn.title = info.enabled
+        ? 'Vibrational mode controls'
+        : 'No vibrational mode data in active file';
+    }
     if (vibrationRow) vibrationRow.style.display = info.enabled ? 'grid' : 'none';
     if (vibrationRow2) vibrationRow2.style.display = info.enabled ? 'grid' : 'none';
+    renderVibrationModeTable(info);
     if (!info.enabled) {
+      setVibrationPanelOpen(false);
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
+      if (vibrationNowPlaying) vibrationNowPlaying.textContent = 'No mode selected';
       return;
     }
     const vib = info.vib;
     const mode = info.mode;
-    if (vibrationModeEl) {
-      vibrationModeEl.max = String(Math.max(0, info.modeCount - 1));
-      vibrationModeEl.value = String(vib.modeIndex);
-    }
     const labelSuffix = (mode && typeof mode.label === 'string' && mode.label.trim())
       ? ` ${mode.label.trim()}`
       : '';
+    const freq = Number(mode && mode.frequencyCm1);
+    const freqText = Number.isFinite(freq) ? `${freq.toFixed(1)} cm^-1` : '-- cm^-1';
     if (vibrationModeLabel) vibrationModeLabel.textContent = `${vib.modeIndex + 1}/${info.modeCount}${labelSuffix}`;
-    if (vibrationPlayBtn) vibrationPlayBtn.textContent = vibrationPlaying ? 'Pause' : 'Play';
+    if (vibrationNowPlaying) vibrationNowPlaying.textContent = `Selected: ${vib.modeIndex + 1}/${info.modeCount}${labelSuffix} • ${freqText}`;
+    if (vibrationPlayBtn) vibrationPlayBtn.textContent = vibrationPlaying ? '⏸' : '▶';
     if (vibrationAmplitudeEl && document.activeElement !== vibrationAmplitudeEl) {
       vibrationAmplitudeEl.value = Number(vib.amplitude).toFixed(2);
     }
     if (vibrationSpeedEl && document.activeElement !== vibrationSpeedEl) {
       vibrationSpeedEl.value = Number(vib.speed).toFixed(2);
     }
-    const freq = Number(mode && mode.frequencyCm1);
     if (vibrationFreqLabel) {
-      vibrationFreqLabel.textContent = Number.isFinite(freq) ? `${freq.toFixed(1)} cm^-1` : '-- cm^-1';
+      vibrationFreqLabel.textContent = freqText;
     }
   }
   /**
@@ -4424,7 +4478,7 @@
    * @returns {boolean}
    */
   function restoreActiveVibrationEquilibrium(options = {}) {
-    const info = getActiveVibrationInfo({ allowWithTrajectory: true });
+    const info = getActiveVibrationInfo();
     if (!info.enabled) return false;
     const syncUi = options.syncUi !== false;
     const vib = info.vib;
@@ -4457,22 +4511,6 @@
     applyAtomCoordinateFrame(info.vol, frame, info.atomCount);
     if (syncUi) syncVibrationControls();
     return true;
-  }
-  /**
-   * Move vibrational mode selection backward/forward.
-   * @param {number} delta
-   */
-  function stepVibrationMode(delta) {
-    const info = getActiveVibrationInfo();
-    if (!info.enabled) return;
-    const vib = info.vib;
-    const modeCount = Math.max(1, info.modeCount | 0);
-    const next = ((vib.modeIndex | 0) + (delta | 0) + modeCount) % modeCount;
-    vib.modeIndex = next;
-    vib.phase = 0;
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
-    applyActiveVibrationPhase(0, { syncUi: true });
   }
   /**
    * Advance active vibrational playback from wall-clock time.
@@ -4721,8 +4759,15 @@
   const helpBtn = document.getElementById('helpBtn');
   // Side panel controls
   const panelBtn = document.getElementById('panelBtn');
+  const trajectoryPanelBtn = document.getElementById('trajectoryPanelBtn');
+  const vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
   const sidePanel = document.getElementById('sidePanel');
   const sideClose = document.getElementById('sideClose');
+  const trajectoryPanel = document.getElementById('trajectoryPanel');
+  const trajectoryPanelClose = document.getElementById('trajectoryPanelClose');
+  const vibrationPanel = document.getElementById('vibrationPanel');
+  const vibrationResetBtn = document.getElementById('vibrationResetBtn');
+  const vibrationPanelClose = document.getElementById('vibrationPanelClose');
   const helpOverlay = document.getElementById('helpOverlay');
   const helpClose = document.getElementById('helpClose');
   const versionText = document.getElementById('versionText');
@@ -4757,14 +4802,15 @@
   const trajectoryLoopEl = document.getElementById('trajectoryLoop');
   const vibrationRow = document.getElementById('vibrationRow');
   const vibrationRow2 = document.getElementById('vibrationRow2');
-  const vibrationPrevBtn = document.getElementById('vibrationPrevBtn');
   const vibrationPlayBtn = document.getElementById('vibrationPlayBtn');
-  const vibrationNextBtn = document.getElementById('vibrationNextBtn');
-  const vibrationModeEl = document.getElementById('vibrationMode');
+  const vibrationNowPlaying = document.getElementById('vibrationNowPlaying');
   const vibrationModeLabel = document.getElementById('vibrationModeLabel');
   const vibrationAmplitudeEl = document.getElementById('vibrationAmplitude');
   const vibrationSpeedEl = document.getElementById('vibrationSpeed');
   const vibrationFreqLabel = document.getElementById('vibrationFreqLabel');
+  const vibrationModeTableWrap = document.getElementById('vibrationModeTableWrap');
+  const vibrationModeTableBody = document.getElementById('vibrationModeTableBody');
+  const vibrationModeEmpty = document.getElementById('vibrationModeEmpty');
   if (toggleMultiBonds) showMultiBonds = !!toggleMultiBonds.checked;
   if (toggleAtomLabels) showAtomLabels = !!toggleAtomLabels.checked;
   const viewReset = document.getElementById('viewReset');
@@ -5229,7 +5275,7 @@
       syncTrajectoryControls();
     }
     if (currentMode === MODES.EDIT) {
-      const vibInfo = getActiveVibrationInfo({ allowWithTrajectory: true });
+      const vibInfo = getActiveVibrationInfo();
       if (vibInfo.enabled) {
         vibrationPlaying = false;
         vibrationLastStepMs = 0;
@@ -5324,6 +5370,55 @@
   const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); renderRibbon('default'); } };
   panelBtn.onclick = toggleSide;
   sideClose.onclick = toggleSide;
+
+  /**
+   * Toggle a dedicated floating motion panel.
+   * @param {HTMLElement|null} panelEl
+   * @param {boolean} open
+   */
+  function setFloatingPanelOpen(panelEl, open) {
+    if (!panelEl) return;
+    const shouldOpen = !!open;
+    panelEl.classList.toggle('open', shouldOpen);
+    panelEl.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+  }
+
+  /**
+   * Open/close trajectory controls panel.
+   * @param {boolean} open
+   */
+  function setTrajectoryPanelOpen(open) {
+    setFloatingPanelOpen(trajectoryPanel, open);
+  }
+
+  /**
+   * Open/close vibration controls panel.
+   * @param {boolean} open
+   */
+  function setVibrationPanelOpen(open) {
+    const shouldOpen = !!open;
+    if (!shouldOpen) {
+      vibrationPlaying = false;
+      vibrationLastStepMs = 0;
+      restoreActiveVibrationEquilibrium({ syncUi: false });
+    }
+    setFloatingPanelOpen(vibrationPanel, shouldOpen);
+  }
+
+  if (trajectoryPanelBtn) {
+    trajectoryPanelBtn.onclick = () => {
+      if (trajectoryPanelBtn.disabled) return;
+      setTrajectoryPanelOpen(!(trajectoryPanel && trajectoryPanel.classList.contains('open')));
+    };
+  }
+  if (vibrationPanelBtn) {
+    vibrationPanelBtn.onclick = () => {
+      setVibrationPanelOpen(!(vibrationPanel && vibrationPanel.classList.contains('open')));
+    };
+  }
+  if (trajectoryPanelClose) trajectoryPanelClose.onclick = () => setTrajectoryPanelOpen(false);
+  if (vibrationPanelClose) vibrationPanelClose.onclick = () => setVibrationPanelOpen(false);
+
   // Help modal logic
   /**
    * Open the shortcuts/help modal.
@@ -7283,6 +7378,21 @@
       setElementColorOverlayOpen(false);
       return;
     }
+    if (e.key === 'Escape') {
+      let closed = false;
+      if (trajectoryPanel && trajectoryPanel.classList.contains('open')) {
+        setTrajectoryPanelOpen(false);
+        closed = true;
+      }
+      if (vibrationPanel && vibrationPanel.classList.contains('open')) {
+        setVibrationPanelOpen(false);
+        closed = true;
+      }
+      if (closed) {
+        e.preventDefault();
+        return;
+      }
+    }
     if (handleUndoRedoHotkey(e)) return;
     routeShortcut(e, 'down', currentMode);
   });
@@ -7693,10 +7803,10 @@
     if (autoRotSpeed) autoRotSpeed.value = Number(controls.autoRotateSpeed).toFixed(2);
   });
   registerPresetSetting('vibration.modeIndex', () => {
-    const info = getActiveVibrationInfo({ allowWithTrajectory: true });
+    const info = getActiveVibrationInfo();
     return info.enabled ? (info.vib.modeIndex | 0) : 0;
   }, (value) => {
-    const info = getActiveVibrationInfo({ allowWithTrajectory: true });
+    const info = getActiveVibrationInfo();
     if (!info.enabled) return;
     info.vib.modeIndex = Math.max(0, Math.min(info.modeCount - 1, Math.round(asFiniteNumber(value, info.vib.modeIndex || 0))));
     info.vib.phase = 0;
@@ -7706,22 +7816,22 @@
     syncVibrationControls();
   });
   registerPresetSetting('vibration.amplitude', () => {
-    const info = getActiveVibrationInfo({ allowWithTrajectory: true });
-    return info.enabled ? Number(info.vib.amplitude) : 1;
+    const info = getActiveVibrationInfo();
+    return info.enabled ? Number(info.vib.amplitude) : VIBRATION_DEFAULT_AMPLITUDE;
   }, (value) => {
-    const info = getActiveVibrationInfo({ allowWithTrajectory: true });
+    const info = getActiveVibrationInfo();
     if (!info.enabled) return;
-    info.vib.amplitude = Math.max(0, Math.min(8, asFiniteNumber(value, info.vib.amplitude || 1)));
+    info.vib.amplitude = Math.max(0, Math.min(8, asFiniteNumber(value, info.vib.amplitude || VIBRATION_DEFAULT_AMPLITUDE)));
     if (info.record === volumes[currentIndex] && !getActiveTrajectoryInfo().enabled) {
       applyActiveVibrationPhase(info.vib.phase || 0, { syncUi: false });
     }
     syncVibrationControls();
   });
   registerPresetSetting('vibration.speed', () => {
-    const info = getActiveVibrationInfo({ allowWithTrajectory: true });
+    const info = getActiveVibrationInfo();
     return info.enabled ? Number(info.vib.speed) : VIBRATION_DEFAULT_SPEED;
   }, (value) => {
-    const info = getActiveVibrationInfo({ allowWithTrajectory: true });
+    const info = getActiveVibrationInfo();
     if (!info.enabled) return;
     info.vib.speed = Math.max(0.1, Math.min(30, asFiniteNumber(value, info.vib.speed || VIBRATION_DEFAULT_SPEED)));
     syncVibrationControls();
@@ -8030,24 +8140,45 @@
       syncVibrationControls();
     };
   }
-  if (vibrationPrevBtn) vibrationPrevBtn.onclick = () => stepVibrationMode(-1);
-  if (vibrationNextBtn) vibrationNextBtn.onclick = () => stepVibrationMode(1);
-  if (vibrationModeEl) {
-    vibrationModeEl.oninput = () => {
-      const info = getActiveVibrationInfo();
-      if (!info.enabled) return;
+  if (vibrationResetBtn) {
+    vibrationResetBtn.onclick = () => {
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
-      info.vib.modeIndex = Math.max(0, Math.min(info.modeCount - 1, Number(vibrationModeEl.value) | 0));
+      restoreActiveVibrationEquilibrium({ syncUi: true });
+    };
+  }
+  if (vibrationModeTableBody) {
+    vibrationModeTableBody.onclick = (e) => {
+      const row = e.target && e.target.closest ? e.target.closest('tr[data-mode-index]') : null;
+      if (!row) return;
+      const info = getActiveVibrationInfo();
+      if (!info.enabled) return;
+      const modeIndex = Number(row.getAttribute('data-mode-index'));
+      if (!Number.isInteger(modeIndex) || modeIndex < 0 || modeIndex >= info.modeCount) return;
+      const playBtn = e.target && e.target.closest ? e.target.closest('button[data-action=\"play\"]') : null;
+      const sameMode = modeIndex === (info.vib.modeIndex | 0);
+      const shouldTogglePlayback = !!playBtn && sameMode;
+
+      info.vib.modeIndex = modeIndex;
       info.vib.phase = 0;
-      applyActiveVibrationPhase(0, { syncUi: true });
+      trajectoryPlaying = false;
+      trajectoryLastStepMs = 0;
+      if (shouldTogglePlayback) {
+        vibrationPlaying = !vibrationPlaying;
+      } else {
+        vibrationPlaying = true;
+      }
+      vibrationLastStepMs = 0;
+      applyActiveVibrationPhase(0, { syncUi: false });
+      syncTrajectoryControls();
+      syncVibrationControls();
     };
   }
   if (vibrationAmplitudeEl) {
     vibrationAmplitudeEl.onchange = () => {
       const info = getActiveVibrationInfo();
       if (!info.enabled) return;
-      const n = Math.max(0, Math.min(8, toNum(vibrationAmplitudeEl.value, info.vib.amplitude || 1)));
+      const n = Math.max(0, Math.min(8, toNum(vibrationAmplitudeEl.value, info.vib.amplitude || VIBRATION_DEFAULT_AMPLITUDE)));
       info.vib.amplitude = n;
       vibrationAmplitudeEl.value = n.toFixed(2);
       applyActiveVibrationPhase(info.vib.phase || 0, { syncUi: true });
@@ -9201,7 +9332,7 @@
     const atomCount = payload.atomCount | 0;
     const modeCount = convertedModes.length;
     const prevModeIndex = Number.isFinite(Number(prev.modeIndex)) ? Number(prev.modeIndex) | 0 : 0;
-    const prevAmp = Number.isFinite(Number(prev.amplitude)) ? Number(prev.amplitude) : 1;
+    const prevAmp = Number.isFinite(Number(prev.amplitude)) ? Number(prev.amplitude) : VIBRATION_DEFAULT_AMPLITUDE;
     const prevSpeed = Number.isFinite(Number(prev.speed)) ? Number(prev.speed) : VIBRATION_DEFAULT_SPEED;
     vol.vibration = {
       kind: VIBRATION_KIND,
@@ -9431,6 +9562,9 @@
     }
     if (attachedVibrationCount > 0) {
       updateSidePanel();
+      if (getActiveVibrationInfo().enabled) {
+        setVibrationPanelOpen(true);
+      }
       setNavigationHint(`Loaded ${attachedVibrationCount} vibrational mode file${attachedVibrationCount === 1 ? '' : 's'}`);
     }
     if (failures.length > 0) {

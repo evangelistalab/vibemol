@@ -122,6 +122,225 @@
       transform: translateX(0);
     }
 
+    /* Dedicated motion control windows */
+    .motionPanel {
+      position: fixed;
+      right: 12px;
+      width: min(420px, calc(100vw - 24px));
+      background: var(--panel);
+      border: 1px solid #223;
+      border-radius: 10px;
+      box-shadow: 0 12px 24px #0007;
+      z-index: 24;
+      display: none;
+    }
+
+    .motionPanel.open {
+      display: block;
+    }
+
+    #trajectoryPanel {
+      top: 68px;
+    }
+
+    #vibrationPanel {
+      top: 236px;
+    }
+
+    .motionPanelHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid #223;
+      color: var(--text);
+    }
+
+    .motionPanelHeader .title {
+      font-weight: 600;
+    }
+
+    .motionPanelHeader .actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .motionPanelIconBtn {
+      min-width: 30px;
+      height: 28px;
+      border: 1px solid #2d3a4f;
+      border-radius: 7px;
+      background: #1a2434;
+      color: #e3ecf8;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 8px;
+    }
+
+    .motionPanelIconBtn:hover {
+      background: #23314a;
+    }
+
+    .motionPanelClose {
+      background: #2a3344;
+      color: #dfe7f3;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .motionPanelBody {
+      padding: 10px 12px;
+      color: var(--text);
+      background: #0f151f;
+      border-radius: 0 0 10px 10px;
+    }
+
+    .motionPanelBody .row {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .motionPanelBody .row:last-child {
+      margin-bottom: 0;
+    }
+
+    .motionPanelBody label {
+      color: var(--muted);
+      font-size: 12px;
+      width: auto;
+    }
+
+    .motionPanelBody input[type="number"] {
+      width: 100%;
+      padding: 3px 6px;
+      background: #1a2230;
+      color: var(--text);
+      border: 1px solid #223;
+      border-radius: 4px;
+    }
+
+    #vibrationModeTableWrap {
+      display: none;
+      margin-top: 8px;
+      border: 1px solid #223;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #101722;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    #vibrationModeTable {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    #vibrationModeTable th,
+    #vibrationModeTable td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #223;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    #vibrationModeTable th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #0f151f;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    #vibrationModeTable td:nth-child(1) {
+      width: 46px;
+      text-align: center;
+    }
+
+    #vibrationModeTable td:nth-child(2) {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #vibrationModeTable td:nth-child(4) {
+      width: 120px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: #cfd8e3;
+    }
+
+    #vibrationModeTable tr.mode-row {
+      cursor: pointer;
+      transition: background-color 120ms ease;
+    }
+
+    #vibrationModeTable tr.mode-row:hover {
+      background: #1b273a;
+    }
+
+    #vibrationModeTable tr.mode-row.active {
+      background: #1f3551;
+    }
+
+    #vibrationModeTable tr.mode-row.active td {
+      color: #e8f1ff;
+      font-weight: 600;
+    }
+
+    .vibrationPlayCell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid #2b3950;
+      background: #162131;
+      color: #d8e4f4;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .vibrationPlayCell:hover {
+      background: #1f3048;
+    }
+
+    #vibrationNowPlaying {
+      margin-top: 4px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #vibrationModeEmpty {
+      display: none;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 10px 2px 2px;
+    }
+
+    @media (max-width: 900px) {
+      #trajectoryPanel {
+        top: 68px;
+      }
+
+      #vibrationPanel {
+        top: 278px;
+      }
+    }
+
     #sideHeader {
       display: flex;
       align-items: center;
@@ -794,6 +1013,8 @@
     <button id="surfBtn" class="secondary" title="Toggle iso-surface rendering">Hide Surfaces</button>
     <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear</button>
     <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
+    <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file" disabled>Trajectory</button>
+    <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file" style="display:none;">Vibration</button>
     <button id="elementColorBtn" class="secondary" title="Edit per-element default colors">Element colors…</button>
     <button id="helpBtn" class="secondary" title="Help and shortcuts">Help</button>
   </div>
@@ -952,35 +1173,6 @@
         </select>
         <span></span><span></span>
       </div>
-      <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:auto auto auto 1fr auto;">
-        <button id="trajectoryPrevBtn" class="secondary" title="Previous trajectory frame">◀</button>
-        <button id="trajectoryPlayBtn" class="secondary" title="Play/Pause trajectory">Play</button>
-        <button id="trajectoryNextBtn" class="secondary" title="Next trajectory frame">▶</button>
-        <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" title="Trajectory frame index" />
-        <div id="trajectoryFrameLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">1/1</div>
-      </div>
-      <div class="row" id="trajectoryRow2" style="display:none; grid-template-columns:60px 1fr 74px auto;">
-        <label style="width:auto;">Traj FPS</label>
-        <input type="number" id="trajectoryFps" min="1" max="120" step="1" value="12" title="Trajectory playback speed (frames per second)" />
-        <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked /> Loop</label>
-        <span></span>
-      </div>
-      <div class="row" id="vibrationRow" style="display:none; grid-template-columns:auto auto auto 1fr auto;">
-        <button id="vibrationPrevBtn" class="secondary" title="Previous vibrational mode">◀</button>
-        <button id="vibrationPlayBtn" class="secondary" title="Play/Pause vibrational mode">Play</button>
-        <button id="vibrationNextBtn" class="secondary" title="Next vibrational mode">▶</button>
-        <input type="range" id="vibrationMode" min="0" max="0" step="1" value="0" title="Vibrational mode index" />
-        <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">1/1</div>
-      </div>
-      <div class="row" id="vibrationRow2" style="display:none; grid-template-columns:58px 94px 64px 94px 1fr;">
-        <label style="width:auto;">Vib Amp</label>
-        <input type="number" id="vibrationAmplitude" min="0" max="8" step="0.05" value="1.00"
-          title="Mode displacement scale factor" />
-        <label style="width:auto;">Speed</label>
-        <input type="number" id="vibrationSpeed" min="0.1" max="30" step="0.05" value="0.75"
-          title="Oscillation speed in cycles per second" />
-        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">-- cm^-1</div>
-      </div>
       <div class="row">
         <label style="width: 80px;">Color scheme</label>
         <select id="schemeSelect" title="Choose default +/- surface colors">
@@ -1058,6 +1250,68 @@
     </div>
   </div>
 
+  <div id="trajectoryPanel" class="motionPanel" aria-hidden="true">
+    <div class="motionPanelHeader">
+      <div class="title">Trajectory</div>
+      <button id="trajectoryPanelClose" class="motionPanelClose" title="Close trajectory controls">✕</button>
+    </div>
+    <div class="motionPanelBody">
+      <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:auto auto auto 1fr auto;">
+        <button id="trajectoryPrevBtn" class="secondary" title="Previous trajectory frame">◀</button>
+        <button id="trajectoryPlayBtn" class="secondary" title="Play/Pause trajectory">Play</button>
+        <button id="trajectoryNextBtn" class="secondary" title="Next trajectory frame">▶</button>
+        <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" title="Trajectory frame index" />
+        <div id="trajectoryFrameLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">1/1</div>
+      </div>
+      <div class="row" id="trajectoryRow2" style="display:none; grid-template-columns:60px 1fr 74px auto;">
+        <label style="width:auto;">Traj FPS</label>
+        <input type="number" id="trajectoryFps" min="1" max="120" step="1" value="12" title="Trajectory playback speed (frames per second)" />
+        <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked /> Loop</label>
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="vibrationPanel" class="motionPanel" aria-hidden="true">
+    <div class="motionPanelHeader">
+      <div class="title">Vibration</div>
+      <div class="actions">
+        <button id="vibrationPlayBtn" class="motionPanelIconBtn" title="Play/Pause vibrational mode">▶</button>
+        <button id="vibrationResetBtn" class="motionPanelIconBtn" title="Reset to equilibrium geometry">↻</button>
+        <button id="vibrationPanelClose" class="motionPanelClose" title="Close vibration controls">✕</button>
+      </div>
+    </div>
+    <div class="motionPanelBody">
+      <div id="vibrationNowPlaying">No mode selected</div>
+      <div class="row" id="vibrationRow" style="display:none; grid-template-columns:1fr;">
+        <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:left;">No mode selected</div>
+      </div>
+      <div class="row" id="vibrationRow2" style="display:none; grid-template-columns:58px 94px 64px 94px 1fr;">
+        <label style="width:auto;">Vib Amp</label>
+        <input type="number" id="vibrationAmplitude" min="0" max="8" step="0.05" value="0.50"
+          title="Mode displacement scale factor" />
+        <label style="width:auto;">Speed</label>
+        <input type="number" id="vibrationSpeed" min="0.1" max="30" step="0.05" value="0.75"
+          title="Oscillation speed in cycles per second" />
+        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">-- cm^-1</div>
+      </div>
+      <div id="vibrationModeTableWrap">
+        <table id="vibrationModeTable" aria-label="Vibrational mode frequencies">
+          <thead>
+            <tr>
+              <th>Play</th>
+              <th>#</th>
+              <th>Mode</th>
+              <th>Freq (cm^-1)</th>
+            </tr>
+          </thead>
+          <tbody id="vibrationModeTableBody"></tbody>
+        </table>
+      </div>
+      <div id="vibrationModeEmpty">No vibrational modes available for the active file.</div>
+    </div>
+  </div>
+
   <!-- Help / Shortcuts modal -->
   <div id="helpOverlay" aria-hidden="true"
     style="display:none; position:fixed; inset:0; background:#0008; z-index:50; align-items:center; justify-content:center;">
@@ -1078,7 +1332,7 @@
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
           <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred double/triple-bond rendering. Toon uses toon shading (including surfaces), Glossy uses glassy blue atoms/bonds with dark edge shells, and Kit uses glossy atoms with collar-joint connectors.</li>
           <li>Multi-frame XYZ trajectories expose playback controls in the View panel (play, frame slider, FPS, loop).</li>
-          <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, Psi4 Molden files, and Psi4 output logs) expose mode playback controls (mode index, amplitude, speed).</li>
+          <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, Psi4 Molden files, and Psi4 output logs) expose mode playback controls in the dedicated Vibration window; click a frequency row to select and animate that mode.</li>
           <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) with in-scene guide overlays.</li>
           <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show element symbols over atoms.</li>
           <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
