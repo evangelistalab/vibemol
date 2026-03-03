@@ -4327,7 +4327,7 @@
   function syncTrajectoryControls() {
     const info = getActiveTrajectoryInfo();
     if (trajectoryPanelBtn) {
-      trajectoryPanelBtn.disabled = !info.enabled;
+      trajectoryPanelBtn.style.display = info.enabled ? '' : 'none';
       trajectoryPanelBtn.title = info.enabled
         ? 'Trajectory controls'
         : 'No trajectory data in active file';
@@ -4338,6 +4338,7 @@
       setTrajectoryPanelOpen(false);
       trajectoryPlaying = false;
       trajectoryLastStepMs = 0;
+      if (trajectoryNowPlaying) trajectoryNowPlaying.textContent = 'No trajectory selected';
       return;
     }
 
@@ -4351,7 +4352,10 @@
       trajectoryFrameEl.value = String(traj.frameIndex);
     }
     if (trajectoryFrameLabel) trajectoryFrameLabel.textContent = `${traj.frameIndex + 1}/${info.frameCount}`;
-    if (trajectoryPlayBtn) trajectoryPlayBtn.textContent = trajectoryPlaying ? 'Pause' : 'Play';
+    if (trajectoryNowPlaying) {
+      trajectoryNowPlaying.textContent = `Frame ${traj.frameIndex + 1}/${info.frameCount} • ${traj.fps} fps${traj.loop ? ' • loop' : ''}`;
+    }
+    if (trajectoryPlayBtn) trajectoryPlayBtn.textContent = trajectoryPlaying ? '⏸' : '▶';
     if (trajectoryLoopEl) trajectoryLoopEl.checked = !!traj.loop;
     if (trajectoryFpsEl && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
   }
@@ -4561,21 +4565,6 @@
     return true;
   }
   /**
-   * Move trajectory one frame backward/forward.
-   * @param {number} delta
-   */
-  function stepTrajectoryFrame(delta) {
-    const info = getActiveTrajectoryInfo();
-    if (!info.enabled) return;
-    const traj = info.traj;
-    let next = (traj.frameIndex | 0) + (delta | 0);
-    if (traj.loop) next = ((next % info.frameCount) + info.frameCount) % info.frameCount;
-    else next = Math.max(0, Math.min(info.frameCount - 1, next));
-    trajectoryPlaying = false;
-    trajectoryLastStepMs = 0;
-    applyTrajectoryFrame(next, { syncUi: true });
-  }
-  /**
    * Advance trajectory playback based on elapsed wall clock time.
    * @param {number} nowMs
    */
@@ -4759,11 +4748,14 @@
   const helpBtn = document.getElementById('helpBtn');
   // Side panel controls
   const panelBtn = document.getElementById('panelBtn');
+  const displayInspectorBtn = document.getElementById('displayInspectorBtn');
+  const displayInspector = document.getElementById('displayInspector');
   const trajectoryPanelBtn = document.getElementById('trajectoryPanelBtn');
   const vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
   const sidePanel = document.getElementById('sidePanel');
   const sideClose = document.getElementById('sideClose');
   const trajectoryPanel = document.getElementById('trajectoryPanel');
+  const trajectoryResetBtn = document.getElementById('trajectoryResetBtn');
   const trajectoryPanelClose = document.getElementById('trajectoryPanelClose');
   const vibrationPanel = document.getElementById('vibrationPanel');
   const vibrationResetBtn = document.getElementById('vibrationResetBtn');
@@ -4793,9 +4785,8 @@
   const autoRotSpeed = document.getElementById('autoRotSpeed');
   const trajectoryRow = document.getElementById('trajectoryRow');
   const trajectoryRow2 = document.getElementById('trajectoryRow2');
-  const trajectoryPrevBtn = document.getElementById('trajectoryPrevBtn');
   const trajectoryPlayBtn = document.getElementById('trajectoryPlayBtn');
-  const trajectoryNextBtn = document.getElementById('trajectoryNextBtn');
+  const trajectoryNowPlaying = document.getElementById('trajectoryNowPlaying');
   const trajectoryFrameEl = document.getElementById('trajectoryFrame');
   const trajectoryFrameLabel = document.getElementById('trajectoryFrameLabel');
   const trajectoryFpsEl = document.getElementById('trajectoryFps');
@@ -5372,6 +5363,24 @@
   sideClose.onclick = toggleSide;
 
   /**
+   * Open/close the compact display inspector panel.
+   * @param {boolean} open
+   */
+  function setDisplayInspectorOpen(open) {
+    if (!displayInspector) return;
+    const shouldOpen = !!open;
+    displayInspector.classList.toggle('open', shouldOpen);
+    displayInspector.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+    if (displayInspectorBtn) displayInspectorBtn.classList.toggle('active', shouldOpen);
+  }
+  if (displayInspectorBtn) {
+    displayInspectorBtn.onclick = () => {
+      const open = !!(displayInspector && displayInspector.classList.contains('open'));
+      setDisplayInspectorOpen(!open);
+    };
+  }
+
+  /**
    * Toggle a dedicated floating motion panel.
    * @param {HTMLElement|null} panelEl
    * @param {boolean} open
@@ -5407,7 +5416,6 @@
 
   if (trajectoryPanelBtn) {
     trajectoryPanelBtn.onclick = () => {
-      if (trajectoryPanelBtn.disabled) return;
       setTrajectoryPanelOpen(!(trajectoryPanel && trajectoryPanel.classList.contains('open')));
     };
   }
@@ -7283,8 +7291,8 @@
   // Display mode bindings
   bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
   bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
-  // Show View/Coords side panel in standard (display) mode
-  bind('down', MODES.DISPLAY, 'v', () => { openSide(); });
+  // Toggle View/Coords side panel in standard (display) mode
+  bind('down', MODES.DISPLAY, 'v', () => { toggleSide(); });
 
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
@@ -7380,6 +7388,10 @@
     }
     if (e.key === 'Escape') {
       let closed = false;
+      if (displayInspector && displayInspector.classList.contains('open')) {
+        setDisplayInspectorOpen(false);
+        closed = true;
+      }
       if (trajectoryPanel && trajectoryPanel.classList.contains('open')) {
         setTrajectoryPanelOpen(false);
         closed = true;
@@ -8080,20 +8092,19 @@
       syncVibrationControls();
     };
   }
-  if (trajectoryPrevBtn) trajectoryPrevBtn.onclick = () => {
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
-    restoreActiveVibrationEquilibrium({ syncUi: false });
-    stepTrajectoryFrame(-1);
-    syncVibrationControls();
-  };
-  if (trajectoryNextBtn) trajectoryNextBtn.onclick = () => {
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
-    restoreActiveVibrationEquilibrium({ syncUi: false });
-    stepTrajectoryFrame(1);
-    syncVibrationControls();
-  };
+  if (trajectoryResetBtn) {
+    trajectoryResetBtn.onclick = () => {
+      const info = getActiveTrajectoryInfo();
+      if (!info.enabled) return;
+      vibrationPlaying = false;
+      vibrationLastStepMs = 0;
+      restoreActiveVibrationEquilibrium({ syncUi: false });
+      trajectoryPlaying = false;
+      trajectoryLastStepMs = 0;
+      applyTrajectoryFrame(0, { syncUi: true });
+      syncVibrationControls();
+    };
+  }
   if (trajectoryFrameEl) {
     trajectoryFrameEl.oninput = () => {
       vibrationPlaying = false;
@@ -9545,8 +9556,12 @@
         failures.push(`${f && f.name ? f.name : 'Unknown file'}: ${msg}`);
       }
     }
-    if (loadedCount > 0 && startIndex >= 0) finalizeLoadedVolumes(startIndex);
-    else updateEmptyStateVisibility();
+    if (loadedCount > 0 && startIndex >= 0) {
+      finalizeLoadedVolumes(startIndex);
+      if (getActiveTrajectoryInfo().enabled) {
+        setTrajectoryPanelOpen(true);
+      }
+    } else updateEmptyStateVisibility();
     let attachedVibrationCount = 0;
     for (const item of pendingVibrationPayloads) {
       const result = attachVibrationPayloadToBestVolume(
