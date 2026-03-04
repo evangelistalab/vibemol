@@ -41,6 +41,30 @@
     throw new Error('VibeMolUI is not loaded. Ensure assets/app/js/ui.js is included before assets/app/js/app.js.');
   }
 
+  const {
+    copyCameraPose: copyCameraPoseUtil,
+    getViewportSize: getViewportSizeUtil,
+    computePerspectiveFitDistance,
+    computeOrthographicFrustum,
+  } = window.VibeMolViewUtils || {};
+  if (![copyCameraPoseUtil, getViewportSizeUtil, computePerspectiveFitDistance, computeOrthographicFrustum].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolViewUtils is not loaded. Ensure assets/app/js/view-utils.js is included before assets/app/js/app.js.');
+  }
+
+  const {
+    computeMassPropertiesFromAtoms,
+    computeInertiaTensorFromAtoms,
+    eigenSymmetric3x3,
+  } = window.VibeMolEditUtils || {};
+  if (![computeMassPropertiesFromAtoms, computeInertiaTensorFromAtoms, eigenSymmetric3x3].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolEditUtils is not loaded. Ensure assets/app/js/edit-utils.js is included before assets/app/js/app.js.');
+  }
+
+  const { detectInputFileKind } = window.VibeMolIOUtils || {};
+  if (![detectInputFileKind].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolIOUtils is not loaded. Ensure assets/app/js/io-utils.js is included before assets/app/js/app.js.');
+  }
+
   // (subsample removed)
 
   // Coordinate conversions between stored atom units and world Å
@@ -518,14 +542,13 @@
     const aspect = w / h;
     if (projectionMode === 'orthographic') {
       const dist = Math.max(0.01, orthographicCamera.position.distanceTo(controls.target));
-      const fovRef = THREE.MathUtils.degToRad(Math.max(5, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV));
-      const halfH = Math.max(0.01, dist * Math.tan(fovRef * 0.5));
-      orthographicCamera.left = -halfH * aspect;
-      orthographicCamera.right = halfH * aspect;
-      orthographicCamera.top = halfH;
-      orthographicCamera.bottom = -halfH;
+      const frustum = computeOrthographicFrustum(aspect, dist, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV);
+      orthographicCamera.left = frustum.left;
+      orthographicCamera.right = frustum.right;
+      orthographicCamera.top = frustum.top;
+      orthographicCamera.bottom = frustum.bottom;
       orthographicCamera.near = Math.max(0.01, dist / 100);
-      orthographicCamera.far = Math.max(orthographicCamera.near + 10, dist * 20 + halfH * 10);
+      orthographicCamera.far = Math.max(orthographicCamera.near + 10, dist * 20 + Math.abs(frustum.top) * 10);
       orthographicCamera.updateProjectionMatrix();
       return;
     }
@@ -4420,17 +4443,16 @@
     const maxDim = Math.max(size.x, size.y, size.z);
     // Tighten fit so the model appears ~1.75x larger
     const FIT_TIGHTNESS = 1.6 / 1.75;
-    const fovRef = THREE.MathUtils.degToRad(Math.max(5, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV));
-    const dist = maxDim * FIT_TIGHTNESS / Math.tan(fovRef / 2);
+    const dist = computePerspectiveFitDistance(maxDim, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV, FIT_TIGHTNESS);
     const dir = new THREE.Vector3(1, 1, 1).normalize();
     camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
     if (projectionMode === 'orthographic') {
       const aspect = Math.max(1e-6, (renderer.domElement.width || 1) / Math.max(1, (renderer.domElement.height || 1)));
-      const halfH = Math.max(maxDim * FIT_TIGHTNESS, 0.05);
-      orthographicCamera.left = -halfH * aspect;
-      orthographicCamera.right = halfH * aspect;
-      orthographicCamera.top = halfH;
-      orthographicCamera.bottom = -halfH;
+      const frustum = computeOrthographicFrustum(aspect, dist, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV);
+      orthographicCamera.left = frustum.left;
+      orthographicCamera.right = frustum.right;
+      orthographicCamera.top = frustum.top;
+      orthographicCamera.bottom = frustum.bottom;
       orthographicCamera.near = Math.max(0.01, dist / 100);
       orthographicCamera.far = Math.max(orthographicCamera.near + 10, dist * 10 + maxDim);
       orthographicCamera.updateProjectionMatrix();
@@ -5796,10 +5818,7 @@
    * @param {THREE.Camera} dst
    */
   function copyCameraPose(src, dst) {
-    if (!src || !dst) return;
-    dst.position.copy(src.position);
-    dst.quaternion.copy(src.quaternion);
-    dst.up.copy(src.up);
+    copyCameraPoseUtil(src, dst);
   }
 
   /**
@@ -5807,9 +5826,7 @@
    * @returns {{w:number,h:number}}
    */
   function getViewportSize() {
-    const w = renderer && renderer.domElement ? (renderer.domElement.width || 1) : window.innerWidth;
-    const h = renderer && renderer.domElement ? (renderer.domElement.height || 1) : window.innerHeight;
-    return { w: Math.max(1, w), h: Math.max(1, h) };
+    return getViewportSizeUtil(renderer, window.innerWidth, window.innerHeight);
   }
 
   /**
@@ -7357,29 +7374,7 @@
    * @returns {{totalMass:number,comX:number,comY:number,comZ:number}|null}
    */
   function computeMassProperties(vol) {
-    if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return null;
-    let totalMass = 0;
-    let weightedX = 0;
-    let weightedY = 0;
-    let weightedZ = 0;
-    for (const atom of vol.atoms) {
-      const mass = getAtomicMass(atom.Z | 0);
-      if (!(Number.isFinite(mass) && mass > 0)) continue;
-      const x = Number(atom.x) || 0;
-      const y = Number(atom.y) || 0;
-      const z = Number(atom.z) || 0;
-      totalMass += mass;
-      weightedX += mass * x;
-      weightedY += mass * y;
-      weightedZ += mass * z;
-    }
-    if (!(Number.isFinite(totalMass) && totalMass > 0)) return null;
-    return {
-      totalMass,
-      comX: weightedX / totalMass,
-      comY: weightedY / totalMass,
-      comZ: weightedZ / totalMass,
-    };
+    return computeMassPropertiesFromAtoms(vol && vol.atoms, getAtomicMass);
   }
 
   /**
@@ -7460,76 +7455,25 @@
    * @returns {{values:number[], vectors:THREE.Vector3[]}}
    */
   function eigenSymmetric3x3Jacobi(m) {
-    const a = [
-      [Number(m[0][0]) || 0, Number(m[0][1]) || 0, Number(m[0][2]) || 0],
-      [Number(m[1][0]) || 0, Number(m[1][1]) || 0, Number(m[1][2]) || 0],
-      [Number(m[2][0]) || 0, Number(m[2][1]) || 0, Number(m[2][2]) || 0],
-    ];
-    const v = [
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1],
-    ];
-    const offDiagPairs = [[0, 1], [0, 2], [1, 2]];
-    const maxIter = 24;
-    for (let iter = 0; iter < maxIter; iter++) {
-      let p = 0; let q = 1;
-      let maxAbs = Math.abs(a[p][q]);
-      for (let i = 1; i < offDiagPairs.length; i++) {
-        const ii = offDiagPairs[i][0];
-        const jj = offDiagPairs[i][1];
-        const absVal = Math.abs(a[ii][jj]);
-        if (absVal > maxAbs) {
-          maxAbs = absVal;
-          p = ii;
-          q = jj;
-        }
-      }
-      if (maxAbs < 1e-12) break;
-      const app = a[p][p];
-      const aqq = a[q][q];
-      const apq = a[p][q];
-      const phi = 0.5 * Math.atan2(2 * apq, (aqq - app));
-      const c = Math.cos(phi);
-      const s = Math.sin(phi);
-
-      for (let k = 0; k < 3; k++) {
-        const akp = a[k][p];
-        const akq = a[k][q];
-        a[k][p] = c * akp - s * akq;
-        a[k][q] = s * akp + c * akq;
-      }
-      for (let k = 0; k < 3; k++) {
-        const apk = a[p][k];
-        const aqk = a[q][k];
-        a[p][k] = c * apk - s * aqk;
-        a[q][k] = s * apk + c * aqk;
-      }
-      a[p][q] = 0;
-      a[q][p] = 0;
-
-      for (let k = 0; k < 3; k++) {
-        const vkp = v[k][p];
-        const vkq = v[k][q];
-        v[k][p] = c * vkp - s * vkq;
-        v[k][q] = s * vkp + c * vkq;
-      }
+    const eig = eigenSymmetric3x3(m);
+    const vectors = [];
+    for (const v of (eig && Array.isArray(eig.vectors) ? eig.vectors : [])) {
+      const x = Number(v && v[0]) || 0;
+      const y = Number(v && v[1]) || 0;
+      const z = Number(v && v[2]) || 0;
+      const vec = new THREE.Vector3(x, y, z);
+      if (vec.lengthSq() <= 1e-20) continue;
+      vectors.push(vec.normalize());
     }
-
-    const values = [a[0][0], a[1][1], a[2][2]];
-    const vectors = [
-      new THREE.Vector3(v[0][0], v[1][0], v[2][0]).normalize(),
-      new THREE.Vector3(v[0][1], v[1][1], v[2][1]).normalize(),
-      new THREE.Vector3(v[0][2], v[1][2], v[2][2]).normalize(),
-    ];
-    const order = [0, 1, 2].sort((i, j) => values[i] - values[j]);
-    const sortedValues = order.map((i) => values[i]);
-    const sortedVectors = order.map((i) => vectors[i].clone().normalize());
-
-    // Ensure a right-handed frame to avoid accidental mirroring.
-    const cross01 = new THREE.Vector3().copy(sortedVectors[0]).cross(sortedVectors[1]);
-    if (cross01.dot(sortedVectors[2]) < 0) sortedVectors[2].negate();
-    return { values: sortedValues, vectors: sortedVectors };
+    while (vectors.length < 3) {
+      if (vectors.length === 0) vectors.push(new THREE.Vector3(1, 0, 0));
+      else if (vectors.length === 1) vectors.push(new THREE.Vector3(0, 1, 0));
+      else vectors.push(new THREE.Vector3(0, 0, 1));
+    }
+    return {
+      values: eig && Array.isArray(eig.values) ? eig.values.slice(0, 3) : [0, 0, 0],
+      vectors: vectors.slice(0, 3),
+    };
   }
 
   /**
@@ -7567,27 +7511,7 @@
 
     const { comX, comY, comZ } = massProps;
 
-    let ixx = 0; let iyy = 0; let izz = 0;
-    let ixy = 0; let ixz = 0; let iyz = 0;
-    for (const atom of vol.atoms) {
-      const m = getAtomicMass(atom.Z | 0);
-      if (!(Number.isFinite(m) && m > 0)) continue;
-      const x = (Number(atom.x) || 0) - comX;
-      const y = (Number(atom.y) || 0) - comY;
-      const z = (Number(atom.z) || 0) - comZ;
-      ixx += m * (y * y + z * z);
-      iyy += m * (x * x + z * z);
-      izz += m * (x * x + y * y);
-      ixy -= m * x * y;
-      ixz -= m * x * z;
-      iyz -= m * y * z;
-    }
-
-    const inertia = [
-      [ixx, ixy, ixz],
-      [ixy, iyy, iyz],
-      [ixz, iyz, izz],
-    ];
+    const inertia = computeInertiaTensorFromAtoms(vol.atoms, { comX, comY, comZ }, getAtomicMass);
     const eig = eigenSymmetric3x3Jacobi(inertia);
     if (!eig || !Array.isArray(eig.vectors) || eig.vectors.length !== 3) {
       setHintMessage('Principal-axis alignment failed (eigendecomposition).');
@@ -8917,56 +8841,6 @@
   }
 
   /**
-   * Check if one filename is a supported vibrational sidecar payload.
-   * @param {string} name
-   * @returns {boolean}
-   */
-  function isVibrationPayloadFilename(name) {
-    const lower = String(name || '').toLowerCase();
-    return (
-      lower.endsWith('.vib.json')
-      || lower.endsWith('.vmodes.json')
-      || lower.endsWith('.modes.json')
-      || lower.endsWith('.vibration.json')
-      || lower.endsWith('.vibrations.json')
-    );
-  }
-
-  /**
-   * Check if one filename should be treated as generic JSON input.
-   * @param {string} name
-   * @returns {boolean}
-   */
-  function isJsonFilename(name) {
-    return String(name || '').toLowerCase().endsWith('.json');
-  }
-
-  /**
-   * Check if one filename looks like an ORCA Hessian file.
-   * @param {string} name
-   * @returns {boolean}
-   */
-  function isOrcaHessianFilename(name) {
-    const lower = String(name || '').toLowerCase();
-    return lower.endsWith('.hess') || lower.endsWith('.orca.hess');
-  }
-
-  /**
-   * Check if one filename looks like a Psi4 Molden vibrational file.
-   * @param {string} name
-   * @returns {boolean}
-   */
-  function isPsi4MoldenFilename(name) {
-    const lower = String(name || '').toLowerCase();
-    return (
-      lower.endsWith('.molden')
-      || lower.endsWith('.molden.input')
-      || lower.endsWith('.psi4.molden')
-      || lower.endsWith('.molden.normal_modes')
-    );
-  }
-
-  /**
    * Lightweight detection for Molden vibrational payload text.
    * @param {string} text
    * @returns {boolean}
@@ -10016,9 +9890,9 @@
    * @returns {*}
    */
   function parseVolumeByName(name, text) {
-    const lower = name.toLowerCase();
-    if (lower.endsWith('.xyz')) return parseXYZ(text);
-    if (lower.endsWith('.2ccube')) return parseTwoComponentCube(text);
+    const kind = detectInputFileKind(name, text);
+    if (kind === 'xyz') return parseXYZ(text);
+    if (kind === 'two_component_cube') return parseTwoComponentCube(text);
     return parseCube(text);
   }
 
@@ -10131,12 +10005,13 @@
       try {
         const text = await f.text();
         const name = f && f.name ? f.name : '';
-        if (isPsi4MoldenFilename(name) || looksLikeMoldenVibrationText(text)) {
+        const fileKind = detectInputFileKind(name, text);
+        if (fileKind === 'molden' || looksLikeMoldenVibrationText(text)) {
           const payload = parsePsi4MoldenVibrationPayload(text, name || 'Psi4 Molden vibration');
           pendingVibrationPayloads.push({ name: name || 'Psi4 Molden vibration', payload });
           continue;
         }
-        if (looksLikePsi4OutputText(text)) {
+        if (fileKind === 'psi4_output' || looksLikePsi4OutputText(text)) {
           const bundle = parsePsi4OutputVibrationBundle(text, name || 'Psi4 output');
           if (!hasPreparedTarget) {
             clearPlaceholderVolumesForUserLoad();
@@ -10152,18 +10027,18 @@
           });
           continue;
         }
-        if (isOrcaHessianFilename(name)) {
+        if (fileKind === 'orca_hess') {
           const payload = parseOrcaHessianVibrationPayload(text, name || 'ORCA Hessian');
           pendingVibrationPayloads.push({ name: name || 'ORCA Hessian', payload });
           continue;
         }
-        const explicitVibrationFile = isVibrationPayloadFilename(name);
+        const explicitVibrationFile = fileKind === 'vibration_payload';
         if (explicitVibrationFile) {
           const payload = parseVibrationPayload(text, f.name || 'vibration payload');
           pendingVibrationPayloads.push({ name: f.name || 'vibration payload', payload });
           continue;
         }
-        if (isJsonFilename(name)) {
+        if (fileKind === 'json') {
           let parsedJson = null;
           try { parsedJson = JSON.parse(text); } catch { }
           const looksLikeVibration = !!(
