@@ -701,6 +701,15 @@
       text-align: center;
     }
 
+    #emptyStateVersion {
+      font-size: 0.52em;
+      font-weight: 600;
+      color: #667c99;
+      margin-left: 8px;
+      vertical-align: middle;
+      letter-spacing: 0.02em;
+    }
+
     #emptyStateDropZone {
       border: 2px dashed #b7c6da;
       background: #f5f9ff;
@@ -1726,6 +1735,12 @@
       left: calc(var(--workspace-left-offset) + 12px);
     }
 
+    body:not(.sidebar-collapsed) #hint,
+    body:not(.sidebar-collapsed) #shortcutRibbon {
+      display: none !important;
+      visibility: hidden;
+    }
+
     #sidePanel {
       top: 0;
     }
@@ -1877,7 +1892,7 @@
   </div>
   <div id="emptyState">
     <div id="emptyStateCard">
-      <div id="emptyStateLead">Open a molecule file</div>
+      <div id="emptyStateLead">Open a molecule file <span id="emptyStateVersion"></span></div>
       <div id="emptyStateDropZone">
         <span id="emptyStateDropIcon">⬆</span>
         Drag and drop <code>.xyz</code>, <code>.cube</code>, <code>.vib.json</code>, <code>.hess</code>, or Psi4 <code>.dat/.out</code> files here
@@ -2145,6 +2160,9 @@
       </div>
     </div>
     <div class="motionPanelBody">
+      <div class="row" id="vibrationFilterRow" style="grid-template-columns:1fr;">
+        <label style="width:auto;"><input type="checkbox" id="vibrationHideLowFreq" checked /> Hide small frequencies</label>
+      </div>
       <div id="vibrationNowPlaying">No mode selected</div>
       <div class="row" id="vibrationRow" style="display:none; grid-template-columns:1fr;">
         <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:left;">No mode selected</div>
@@ -2156,7 +2174,7 @@
         <label style="width:auto;">Speed</label>
         <input type="number" id="vibrationSpeed" min="0.1" max="30" step="0.05" value="0.75"
           title="Oscillation speed in cycles per second" />
-        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">-- cm^-1</div>
+        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">-- cm<sup>−1</sup></div>
       </div>
       <div id="vibrationModeTableWrap">
         <table id="vibrationModeTable" aria-label="Vibrational mode frequencies">
@@ -2165,7 +2183,7 @@
               <th>Play</th>
               <th>#</th>
               <th>Mode</th>
-              <th>Freq (cm^-1)</th>
+              <th>Freq (cm<sup>−1</sup>)</th>
             </tr>
           </thead>
           <tbody id="vibrationModeTableBody"></tbody>
