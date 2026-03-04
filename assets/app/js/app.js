@@ -491,14 +491,47 @@
   const scene = new THREE.Scene();
   // Default to white background
   scene.background = new THREE.Color(0xffffff);
-  const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 1e6);
-  camera.position.set(6, 6, 6);
+  const DEFAULT_PERSPECTIVE_FOV = 45;
+  const perspectiveCamera = new THREE.PerspectiveCamera(DEFAULT_PERSPECTIVE_FOV, 2, 0.1, 1e6);
+  perspectiveCamera.position.set(6, 6, 6);
+  const orthographicCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1e6);
+  orthographicCamera.position.copy(perspectiveCamera.position);
+  orthographicCamera.quaternion.copy(perspectiveCamera.quaternion);
+  orthographicCamera.up.copy(perspectiveCamera.up);
+  let projectionMode = 'perspective';
+  let camera = perspectiveCamera;
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0, 0);
   controls.update();
   controls.enableDamping = true;
   // Default rotate speed
   controls.rotateSpeed = 1.5;
+
+  /**
+   * Update the active camera projection parameters for one viewport size.
+   * @param {number} width
+   * @param {number} height
+   */
+  function updateActiveCameraProjection(width, height) {
+    const w = Math.max(1, Number(width) || 1);
+    const h = Math.max(1, Number(height) || 1);
+    const aspect = w / h;
+    if (projectionMode === 'orthographic') {
+      const dist = Math.max(0.01, orthographicCamera.position.distanceTo(controls.target));
+      const fovRef = THREE.MathUtils.degToRad(Math.max(5, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV));
+      const halfH = Math.max(0.01, dist * Math.tan(fovRef * 0.5));
+      orthographicCamera.left = -halfH * aspect;
+      orthographicCamera.right = halfH * aspect;
+      orthographicCamera.top = halfH;
+      orthographicCamera.bottom = -halfH;
+      orthographicCamera.near = Math.max(0.01, dist / 100);
+      orthographicCamera.far = Math.max(orthographicCamera.near + 10, dist * 20 + halfH * 10);
+      orthographicCamera.updateProjectionMatrix();
+      return;
+    }
+    perspectiveCamera.aspect = aspect;
+    perspectiveCamera.updateProjectionMatrix();
+  }
 
   // Lights
   const hemi = new THREE.HemisphereLight(0xffffff, 0x081018, 2.0);
@@ -522,8 +555,7 @@
     const w = Math.max(1, Math.round(rect ? rect.width : window.innerWidth));
     const h = Math.max(1, Math.round(rect ? rect.height : window.innerHeight));
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    updateActiveCameraProjection(w, h);
   }
   window.addEventListener('resize', resize);
   if (typeof ResizeObserver !== 'undefined' && dropViewportEl) {
@@ -4388,12 +4420,25 @@
     const maxDim = Math.max(size.x, size.y, size.z);
     // Tighten fit so the model appears ~1.75x larger
     const FIT_TIGHTNESS = 1.6 / 1.75;
-    const dist = maxDim * FIT_TIGHTNESS / Math.tan((camera.fov * Math.PI / 180) / 2);
+    const fovRef = THREE.MathUtils.degToRad(Math.max(5, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV));
+    const dist = maxDim * FIT_TIGHTNESS / Math.tan(fovRef / 2);
     const dir = new THREE.Vector3(1, 1, 1).normalize();
     camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
-    camera.near = Math.max(0.01, dist / 100);
-    camera.far = dist * 10 + maxDim;
-    camera.updateProjectionMatrix();
+    if (projectionMode === 'orthographic') {
+      const aspect = Math.max(1e-6, (renderer.domElement.width || 1) / Math.max(1, (renderer.domElement.height || 1)));
+      const halfH = Math.max(maxDim * FIT_TIGHTNESS, 0.05);
+      orthographicCamera.left = -halfH * aspect;
+      orthographicCamera.right = halfH * aspect;
+      orthographicCamera.top = halfH;
+      orthographicCamera.bottom = -halfH;
+      orthographicCamera.near = Math.max(0.01, dist / 100);
+      orthographicCamera.far = Math.max(orthographicCamera.near + 10, dist * 10 + maxDim);
+      orthographicCamera.updateProjectionMatrix();
+    } else {
+      perspectiveCamera.near = Math.max(0.01, dist / 100);
+      perspectiveCamera.far = dist * 10 + maxDim;
+      perspectiveCamera.updateProjectionMatrix();
+    }
     controls.target.copy(center);
     controls.update();
   }
@@ -4796,27 +4841,24 @@
           didSplit = true;
           renderer.clear();
           renderer.setScissorTest(true);
-          const oldAspect = camera.aspect;
-          const fullAspect = w / h;
-          const halfAspect = half / h;
           // Left: alpha
           if (betaMesh) betaMesh.visible = false; alphaMesh.visible = true;
           renderer.setScissor(0, 0, half, h);
           renderer.setViewport(0, 0, half, h);
-          camera.aspect = halfAspect; camera.updateProjectionMatrix();
+          updateActiveCameraProjection(half, h);
           renderer.render(scene, camera);
           // Right: beta
           renderer.clearDepth();
           alphaMesh.visible = false; if (betaMesh) betaMesh.visible = true;
           renderer.setScissor(half, 0, w - half, h);
           renderer.setViewport(half, 0, w - half, h);
-          camera.aspect = halfAspect; camera.updateProjectionMatrix();
+          updateActiveCameraProjection(half, h);
           renderer.render(scene, camera);
           // Restore visibility
           alphaMesh.visible = true; if (betaMesh) betaMesh.visible = true;
           renderer.setScissorTest(false);
           // Restore full-aspect projection
-          camera.aspect = fullAspect; camera.updateProjectionMatrix();
+          updateActiveCameraProjection(w, h);
         }
       }
     } catch { }
@@ -4931,6 +4973,7 @@
   const shiftZ = document.getElementById('shiftZ');
   const centerMassBtn = document.getElementById('centerMassBtn');
   const alignInertiaBtn = document.getElementById('alignInertiaBtn');
+  const projectionModeBtn = document.getElementById('projectionModeBtn');
   const camX = document.getElementById('camX');
   const camY = document.getElementById('camY');
   const camZ = document.getElementById('camZ');
@@ -5734,6 +5777,69 @@
   }
 
   /**
+   * Update the projection toggle button text/title to reflect current camera mode.
+   */
+  function updateProjectionModeUI() {
+    if (!projectionModeBtn) return;
+    if (projectionMode === 'orthographic') {
+      projectionModeBtn.textContent = 'Projection: Orthographic';
+      projectionModeBtn.title = 'Switch to perspective projection';
+      return;
+    }
+    projectionModeBtn.textContent = 'Projection: Perspective';
+    projectionModeBtn.title = 'Switch to orthographic projection';
+  }
+
+  /**
+   * Copy one camera pose (position/orientation/up vector) between cameras.
+   * @param {THREE.Camera} src
+   * @param {THREE.Camera} dst
+   */
+  function copyCameraPose(src, dst) {
+    if (!src || !dst) return;
+    dst.position.copy(src.position);
+    dst.quaternion.copy(src.quaternion);
+    dst.up.copy(src.up);
+  }
+
+  /**
+   * Read current renderer viewport size with safe fallback.
+   * @returns {{w:number,h:number}}
+   */
+  function getViewportSize() {
+    const w = renderer && renderer.domElement ? (renderer.domElement.width || 1) : window.innerWidth;
+    const h = renderer && renderer.domElement ? (renderer.domElement.height || 1) : window.innerHeight;
+    return { w: Math.max(1, w), h: Math.max(1, h) };
+  }
+
+  /**
+   * Toggle camera projection mode between perspective and orthographic.
+   * @param {'perspective'|'orthographic'} nextMode
+   * @param {{refreshUi?:boolean}=} options
+   */
+  function setProjectionMode(nextMode, options = {}) {
+    const targetMode = nextMode === 'orthographic' ? 'orthographic' : 'perspective';
+    if (targetMode === projectionMode) {
+      updateProjectionModeUI();
+      return;
+    }
+    if (targetMode === 'orthographic') {
+      copyCameraPose(perspectiveCamera, orthographicCamera);
+      camera = orthographicCamera;
+    } else {
+      copyCameraPose(orthographicCamera, perspectiveCamera);
+      camera = perspectiveCamera;
+    }
+    projectionMode = targetMode;
+    controls.object = camera;
+    const { w, h } = getViewportSize();
+    updateActiveCameraProjection(w, h);
+    controls.update();
+    updateProjectionModeUI();
+    if (options.refreshUi !== false) refreshViewUI();
+  }
+
+  /**
    * Synchronize camera/target/shift form controls from the current scene state.
    */
   function refreshViewUI() {
@@ -5756,6 +5862,7 @@
     if (notEditing(rotSpeed)) rotSpeed.value = (controls.rotateSpeed ?? 1.0).toFixed(2);
     if (notEditing(damp)) damp.value = (controls.dampingFactor ?? 0.05).toFixed(2);
     if (notEditing(autoRotSpeed)) autoRotSpeed.value = (controls.autoRotateSpeed ?? 2.0).toFixed(2);
+    updateProjectionModeUI();
   }
 
   // Initialize view UI
@@ -7245,6 +7352,60 @@
   }
 
   /**
+   * Compute mass-weighted center (native units) for one molecule.
+   * @param {*} vol
+   * @returns {{totalMass:number,comX:number,comY:number,comZ:number}|null}
+   */
+  function computeMassProperties(vol) {
+    if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return null;
+    let totalMass = 0;
+    let weightedX = 0;
+    let weightedY = 0;
+    let weightedZ = 0;
+    for (const atom of vol.atoms) {
+      const mass = getAtomicMass(atom.Z | 0);
+      if (!(Number.isFinite(mass) && mass > 0)) continue;
+      const x = Number(atom.x) || 0;
+      const y = Number(atom.y) || 0;
+      const z = Number(atom.z) || 0;
+      totalMass += mass;
+      weightedX += mass * x;
+      weightedY += mass * y;
+      weightedZ += mass * z;
+    }
+    if (!(Number.isFinite(totalMass) && totalMass > 0)) return null;
+    return {
+      totalMass,
+      comX: weightedX / totalMass,
+      comY: weightedY / totalMass,
+      comZ: weightedZ / totalMass,
+    };
+  }
+
+  /**
+   * Finalize one atom-coordinate edit action with undo snapshot + scene/UI refresh.
+   * @param {*} record
+   * @param {*} vol
+   * @param {Array<object>} beforeAtoms
+   * @param {string} actionLabel
+   */
+  function finalizeAtomCoordinateEdit(record, vol, beforeAtoms, actionLabel) {
+    vol.natoms = vol.atoms.length;
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, actionLabel);
+
+    clearAddGrowPreview();
+    clearHover();
+    if (currentMode === MODES.MEASURE) {
+      clearEditSelection();
+      updateSelectedHalos();
+      updateEditSelectionVisuals();
+    }
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+  }
+
+  /**
    * Shift active molecule coordinates so its center of mass is at (0,0,0).
    * Applies to the active file and records one undoable edit entry.
    * @returns {boolean}
@@ -7266,29 +7427,13 @@
       return false;
     }
 
-    let totalMass = 0;
-    let weightedX = 0;
-    let weightedY = 0;
-    let weightedZ = 0;
-    for (const atom of vol.atoms) {
-      const mass = getAtomicMass(atom.Z | 0);
-      if (!(Number.isFinite(mass) && mass > 0)) continue;
-      const x = Number(atom.x) || 0;
-      const y = Number(atom.y) || 0;
-      const z = Number(atom.z) || 0;
-      totalMass += mass;
-      weightedX += mass * x;
-      weightedY += mass * y;
-      weightedZ += mass * z;
-    }
-    if (!(Number.isFinite(totalMass) && totalMass > 0)) {
+    const massProps = computeMassProperties(vol);
+    if (!massProps) {
       setHintMessage('Could not compute a valid center of mass.');
       return false;
     }
 
-    const comX = weightedX / totalMass;
-    const comY = weightedY / totalMass;
-    const comZ = weightedZ / totalMass;
+    const { comX, comY, comZ } = massProps;
     const shiftNormNative = Math.hypot(comX, comY, comZ);
     if (!Number.isFinite(shiftNormNative) || shiftNormNative <= 1e-12) {
       setHintMessage('Center of mass is already at the origin.');
@@ -7301,19 +7446,7 @@
       atom.y = (Number(atom.y) || 0) - comY;
       atom.z = (Number(atom.z) || 0) - comZ;
     }
-    vol.natoms = vol.atoms.length;
-    const afterAtoms = cloneAtomsSnapshot(vol);
-    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, 'Center mass at origin');
-
-    clearAddGrowPreview();
-    clearHover();
-    if (currentMode === MODES.MEASURE) {
-      clearEditSelection();
-      updateSelectedHalos();
-      updateEditSelectionVisuals();
-    }
-    rebuildScene({ preserveView: true });
-    updateSidePanel();
+    finalizeAtomCoordinateEdit(record, vol, beforeAtoms, 'Center mass at origin');
 
     const shiftAngstrom = vol.units === 'angstrom' ? shiftNormNative : shiftNormNative * BOHR_TO_ANG;
     setHintMessage(`Shifted active molecule COM to origin (delta ${shiftAngstrom.toFixed(3)} A).`);
@@ -7426,29 +7559,13 @@
       return false;
     }
 
-    let totalMass = 0;
-    let weightedX = 0;
-    let weightedY = 0;
-    let weightedZ = 0;
-    for (const atom of vol.atoms) {
-      const mass = getAtomicMass(atom.Z | 0);
-      if (!(Number.isFinite(mass) && mass > 0)) continue;
-      const x = Number(atom.x) || 0;
-      const y = Number(atom.y) || 0;
-      const z = Number(atom.z) || 0;
-      totalMass += mass;
-      weightedX += mass * x;
-      weightedY += mass * y;
-      weightedZ += mass * z;
-    }
-    if (!(Number.isFinite(totalMass) && totalMass > 0)) {
+    const massProps = computeMassProperties(vol);
+    if (!massProps) {
       setHintMessage('Could not compute a valid center of mass for principal-axis alignment.');
       return false;
     }
 
-    const comX = weightedX / totalMass;
-    const comY = weightedY / totalMass;
-    const comZ = weightedZ / totalMass;
+    const { comX, comY, comZ } = massProps;
 
     let ixx = 0; let iyy = 0; let izz = 0;
     let ixy = 0; let ixz = 0; let iyz = 0;
@@ -7492,19 +7609,7 @@
       atom.y = comY + ny;
       atom.z = comZ + nz;
     }
-    vol.natoms = vol.atoms.length;
-    const afterAtoms = cloneAtomsSnapshot(vol);
-    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, 'Align principal axes');
-
-    clearAddGrowPreview();
-    clearHover();
-    if (currentMode === MODES.MEASURE) {
-      clearEditSelection();
-      updateSelectedHalos();
-      updateEditSelectionVisuals();
-    }
-    rebuildScene({ preserveView: true });
-    updateSidePanel();
+    finalizeAtomCoordinateEdit(record, vol, beforeAtoms, 'Align principal axes');
     setHintMessage('Aligned principal inertia axes to X/Y/Z.');
     return true;
   }
@@ -7700,8 +7805,13 @@
   // Reset view to the initial camera/target/shift
   viewReset.onclick = () => {
     if (defaultView) {
+      const defaultMode = defaultView.projectionMode === 'orthographic' ? 'orthographic' : 'perspective';
+      if (defaultMode !== projectionMode) setProjectionMode(defaultMode, { refreshUi: false });
       contentGroup.position.copy(defaultView.contentPos);
       camera.copy(defaultView.cam);
+      controls.object = camera;
+      const { w, h } = getViewportSize();
+      updateActiveCameraProjection(w, h);
       controls.target.copy(defaultView.target);
       controls.update();
       refreshViewUI();
@@ -7710,8 +7820,17 @@
       refreshViewUI();
     }
   };
+  // View action: translate active molecule so mass center is at world origin.
   if (centerMassBtn) centerMassBtn.onclick = () => centerActiveMoleculeMassAtOrigin();
+  // View action: rotate active molecule to principal-inertia frame.
   if (alignInertiaBtn) alignInertiaBtn.onclick = () => alignActiveMoleculePrincipalAxes();
+  // View action: toggle camera projection model while preserving pose/target.
+  if (projectionModeBtn) {
+    projectionModeBtn.onclick = () => {
+      const next = projectionMode === 'orthographic' ? 'perspective' : 'orthographic';
+      setProjectionMode(next);
+    };
+  }
 
   // --- Shortcut bindings ---
   // Global: help toggle
@@ -8278,6 +8397,10 @@
   registerPresetSetting('view.target.x', () => controls.target.x, (value) => { controls.target.x = asFiniteNumber(value, controls.target.x); });
   registerPresetSetting('view.target.y', () => controls.target.y, (value) => { controls.target.y = asFiniteNumber(value, controls.target.y); });
   registerPresetSetting('view.target.z', () => controls.target.z, (value) => { controls.target.z = asFiniteNumber(value, controls.target.z); });
+  registerPresetSetting('view.projection', () => projectionMode, (value) => {
+    const next = value === 'orthographic' ? 'orthographic' : 'perspective';
+    setProjectionMode(next, { refreshUi: false });
+  });
   registerPresetSetting('view.autoRotate', () => !!controls.autoRotate, (value) => { controls.autoRotate = asBoolean(value); if (autoRot) autoRot.checked = !!controls.autoRotate; });
   registerPresetSetting('view.rotateSpeed', () => controls.rotateSpeed ?? 1.0, (value) => {
     controls.rotateSpeed = asFiniteNumber(value, controls.rotateSpeed ?? 1.0);
@@ -10976,6 +11099,7 @@
         cam: camera.clone(),
         target: controls.target.clone(),
         contentPos: contentGroup.position.clone(),
+        projectionMode,
       };
     }
   }
