@@ -12,6 +12,8 @@
   const AUTO_ISO_TARGET_FRACTION = 0.85;
   const AUTO_ISO_HISTOGRAM_BINS = 512;
   const AUTO_ISO_MAX_SAMPLES = 650000;
+  const AUTO_ISO_WORKER_THRESHOLD_SAMPLES = 250000;
+  const AUTO_ISO_WORKER_TIMEOUT_MS = 15000;
   const HEADER_HAPPY_EMOJIS = Object.freeze(['🙂', '😊', '😄', '😃', '😁', '😎', '🤓', '😺', '🤠', '🫡', '😇', '😍', '🫡', '🥳']);
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
@@ -651,6 +653,9 @@
   let showSurfaces = true; // toggle iso-surface visibility
   // Autoiso mode applies one cached 85%-density isovalue per orbital/component.
   let autoIsoEnabled = false;
+  let autoIsoWorker = null;
+  let autoIsoWorkerSeq = 0;
+  const autoIsoWorkerRequests = new Map();
   // Display inferred multiple bonds (double/triple) as parallel connectors.
   let showMultiBonds = true;
   // Display element symbols over atoms.
@@ -3818,6 +3823,136 @@
     }
     return 0;
   }
+
+  /**
+   * Decide whether one auto-iso estimate should run in a worker.
+   * @param {*} vol
+   * @returns {boolean}
+   */
+  function shouldUseAutoIsoWorker(vol) {
+    if (typeof Worker === 'undefined') return false;
+    const nx = (vol && vol.nxyz && vol.nxyz[0]) | 0;
+    const ny = (vol && vol.nxyz && vol.nxyz[1]) | 0;
+    const nz = (vol && vol.nxyz && vol.nxyz[2]) | 0;
+    return (nx * ny * nz) >= AUTO_ISO_WORKER_THRESHOLD_SAMPLES;
+  }
+
+  /**
+   * Build one worker payload with cloned scalar data channels.
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} targetFraction
+   * @param {number} stride
+   * @returns {*}
+   */
+  function buildAutoIsoWorkerPayload(vol, compMode, targetFraction, stride) {
+    const payload = {
+      nxyz: Array.isArray(vol && vol.nxyz) ? [vol.nxyz[0] | 0, vol.nxyz[1] | 0, vol.nxyz[2] | 0] : [0, 0, 0],
+      compMode,
+      targetFraction,
+      bins: AUTO_ISO_HISTOGRAM_BINS,
+      maxSamples: AUTO_ISO_MAX_SAMPLES,
+      stride,
+      isTwoComponent: !!(vol && vol.isTwoComponent && isPhaseLikeComponent(compMode)),
+    };
+    if (payload.isTwoComponent) {
+      payload.alphaRe = vol.alphaRe ? vol.alphaRe.slice() : null;
+      payload.alphaIm = vol.alphaIm ? vol.alphaIm.slice() : null;
+      payload.betaRe = vol.betaRe ? vol.betaRe.slice() : null;
+      payload.betaIm = vol.betaIm ? vol.betaIm.slice() : null;
+    } else {
+      payload.data = vol && vol.data ? vol.data.slice() : null;
+    }
+    return payload;
+  }
+
+  /**
+   * Create/reuse one dedicated worker instance for auto-iso estimation.
+   * @returns {Worker|null}
+   */
+  function ensureAutoIsoWorker() {
+    if (autoIsoWorker) return autoIsoWorker;
+    if (typeof Worker === 'undefined') return null;
+    try {
+      autoIsoWorker = new Worker('./assets/app/js/autoiso-worker.js');
+    } catch {
+      autoIsoWorker = null;
+      return null;
+    }
+    autoIsoWorker.onmessage = (event) => {
+      const data = event && event.data ? event.data : {};
+      const id = data.id;
+      const pending = autoIsoWorkerRequests.get(id);
+      if (!pending) return;
+      autoIsoWorkerRequests.delete(id);
+      clearTimeout(pending.timer);
+      if (data.ok) pending.resolve({ value: Number(data.value), stride: Number(data.stride) | 0, source: 'worker' });
+      else pending.reject(new Error(data.error || 'Autoiso worker failed'));
+    };
+    autoIsoWorker.onerror = () => {
+      for (const pending of autoIsoWorkerRequests.values()) {
+        clearTimeout(pending.timer);
+        pending.reject(new Error('Autoiso worker crashed'));
+      }
+      autoIsoWorkerRequests.clear();
+      try { autoIsoWorker.terminate(); } catch { }
+      autoIsoWorker = null;
+    };
+    return autoIsoWorker;
+  }
+
+  /**
+   * Terminate the auto-iso worker and clear pending requests.
+   */
+  function shutdownAutoIsoWorker() {
+    for (const pending of autoIsoWorkerRequests.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(new Error('Autoiso worker stopped'));
+    }
+    autoIsoWorkerRequests.clear();
+    if (autoIsoWorker) {
+      try { autoIsoWorker.terminate(); } catch { }
+      autoIsoWorker = null;
+    }
+  }
+
+  /**
+   * Estimate auto-iso asynchronously using worker for large uncached grids.
+   * Falls back to in-thread estimation when worker is unavailable.
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} targetFraction
+   * @param {number} stride
+   * @returns {Promise<{value:number,stride:number,source:'worker'|'sync'}>}
+   */
+  async function estimateAutoIsoValueAsync(vol, compMode, targetFraction, stride) {
+    if (!shouldUseAutoIsoWorker(vol)) {
+      return {
+        value: estimateAutoIsoValue(vol, compMode, targetFraction, stride),
+        stride,
+        source: 'sync',
+      };
+    }
+    const worker = ensureAutoIsoWorker();
+    if (!worker) {
+      return {
+        value: estimateAutoIsoValue(vol, compMode, targetFraction, stride),
+        stride,
+        source: 'sync',
+      };
+    }
+    const payload = buildAutoIsoWorkerPayload(vol, compMode, targetFraction, stride);
+    const id = ++autoIsoWorkerSeq;
+    return await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        autoIsoWorkerRequests.delete(id);
+        reject(new Error('Autoiso worker timeout'));
+      }, AUTO_ISO_WORKER_TIMEOUT_MS);
+      autoIsoWorkerRequests.set(id, { resolve, reject, timer });
+      worker.postMessage({ id, payload });
+    });
+  }
+  window.addEventListener('beforeunload', shutdownAutoIsoWorker);
 
   /**
    * Build signed scalar cloud geometry using instanced cubes.
@@ -8756,42 +8891,98 @@
   }
 
   /**
-   * Read or compute one cached auto-iso value for one record/component.
-   * @param {*} record
+   * Build one stable cache key for auto-iso per record/component/grid/stride.
    * @param {*} vol
    * @param {string} compMode
-   * @returns {{value:number,cached:boolean,stride:number}}
+   * @param {number} stride
+   * @returns {string}
    */
-  function getCachedAutoIsoResult(record, vol, compMode) {
-    const stride = pickAutoIsoSampleStride(vol);
-    if (record) {
-      if (!(record.autoIsoCache instanceof Map)) record.autoIsoCache = new Map();
-      const dimsKey = Array.isArray(vol && vol.nxyz) ? vol.nxyz.join('x') : 'grid';
-      const cacheKey = `${String(compMode || 'alphaRe')}|${dimsKey}|${AUTO_ISO_TARGET_FRACTION.toFixed(4)}|${stride}`;
-      if (record.autoIsoCache.has(cacheKey)) {
-        return { value: record.autoIsoCache.get(cacheKey), cached: true, stride };
-      }
-      const computed = estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
-      record.autoIsoCache.set(cacheKey, computed);
-      return { value: computed, cached: false, stride };
-    }
-    return { value: estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride), cached: false, stride };
+  function getAutoIsoCacheKey(vol, compMode, stride) {
+    const dimsKey = Array.isArray(vol && vol.nxyz) ? vol.nxyz.join('x') : 'grid';
+    return `${String(compMode || 'alphaRe')}|${dimsKey}|${AUTO_ISO_TARGET_FRACTION.toFixed(4)}|${stride}`;
   }
 
   /**
-   * Resolve one auto-iso estimate for one record and apply it to the iso input.
+   * Ensure one record has maps for cached and in-flight auto-iso estimates.
+   * @param {*} record
+   */
+  function ensureAutoIsoRecordState(record) {
+    if (!record) return;
+    if (!(record.autoIsoCache instanceof Map)) record.autoIsoCache = new Map();
+    if (!(record.autoIsoPending instanceof Map)) record.autoIsoPending = new Map();
+  }
+
+  /**
+   * Start one asynchronous auto-iso computation and cache its result.
+   * Rebuilds only if this record/component is still active when result arrives.
    * @param {*} record
    * @param {*} vol
    * @param {string} compMode
-   * @returns {{iso:number,cached:boolean,stride:number}|null}
+   * @param {number} stride
+   * @param {string} cacheKey
+   */
+  function scheduleAutoIsoComputation(record, vol, compMode, stride, cacheKey) {
+    ensureAutoIsoRecordState(record);
+    if (!record || !record.autoIsoPending || record.autoIsoPending.has(cacheKey)) return;
+    const promise = estimateAutoIsoValueAsync(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride)
+      .then((result) => {
+        const autoIso = result && Number(result.value);
+        if (!(Number.isFinite(autoIso) && autoIso > 0)) return;
+        if (record.autoIsoCache instanceof Map) record.autoIsoCache.set(cacheKey, autoIso);
+        const activeRecord = currentIndex >= 0 ? volumes[currentIndex] : null;
+        const activeCompMode = activeRecord && activeRecord.vol ? getComponentMode(activeRecord.vol) : '';
+        if (!autoIsoEnabled || activeRecord !== record || activeCompMode !== compMode || !isoInput) return;
+        isoInput.value = formatIsoInputValue(autoIso);
+        rebuildScene({ preserveView: true });
+      })
+      .catch((err) => {
+        console.warn('[Autoiso] async estimation failed', err);
+      })
+      .finally(() => {
+        if (record.autoIsoPending instanceof Map) record.autoIsoPending.delete(cacheKey);
+      });
+    record.autoIsoPending.set(cacheKey, promise);
+  }
+
+  /**
+   * Resolve one auto-iso estimate for one record and apply it to iso input.
+   * - Cached values apply synchronously.
+   * - Uncached large grids are computed in a worker, cached on completion, then applied.
+   * - Uncached small grids are computed synchronously.
+   * @param {*} record
+   * @param {*} vol
+   * @param {string} compMode
+   * @returns {{iso:number,cached:boolean,stride:number,pending?:boolean}|null}
    */
   function applyAutoIsoToIsoInput(record, vol, compMode) {
     if (!isoInput || !hasVolumetricGrid(vol)) return null;
-    const result = getCachedAutoIsoResult(record, vol, compMode);
-    const autoIso = result.value;
-    if (!Number.isFinite(autoIso) || autoIso <= 0) return null;
-    isoInput.value = formatIsoInputValue(autoIso);
-    return { iso: autoIso, cached: result.cached, stride: result.stride };
+    const stride = pickAutoIsoSampleStride(vol);
+    const cacheKey = getAutoIsoCacheKey(vol, compMode, stride);
+    if (record) {
+      ensureAutoIsoRecordState(record);
+      if (record.autoIsoCache.has(cacheKey)) {
+        const value = Number(record.autoIsoCache.get(cacheKey));
+        if (Number.isFinite(value) && value > 0) {
+          isoInput.value = formatIsoInputValue(value);
+          return { iso: value, cached: true, stride };
+        }
+      }
+      if (shouldUseAutoIsoWorker(vol)) {
+        scheduleAutoIsoComputation(record, vol, compMode, stride, cacheKey);
+        return { iso: NaN, cached: false, stride, pending: true };
+      }
+      const computed = estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
+      if (Number.isFinite(computed) && computed > 0) {
+        record.autoIsoCache.set(cacheKey, computed);
+        isoInput.value = formatIsoInputValue(computed);
+        return { iso: computed, cached: false, stride };
+      }
+      return null;
+    }
+    const fallback = estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
+    if (!Number.isFinite(fallback) || fallback <= 0) return null;
+    isoInput.value = formatIsoInputValue(fallback);
+    return { iso: fallback, cached: false, stride };
   }
 
   /**
