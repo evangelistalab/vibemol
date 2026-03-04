@@ -4930,6 +4930,7 @@
   const shiftY = document.getElementById('shiftY');
   const shiftZ = document.getElementById('shiftZ');
   const centerMassBtn = document.getElementById('centerMassBtn');
+  const alignInertiaBtn = document.getElementById('alignInertiaBtn');
   const camX = document.getElementById('camX');
   const camY = document.getElementById('camY');
   const camZ = document.getElementById('camZ');
@@ -7320,6 +7321,195 @@
   }
 
   /**
+   * Compute eigenvalues/eigenvectors of one symmetric 3x3 matrix using Jacobi sweeps.
+   * Returns eigenvectors as orthonormal basis vectors in original coordinates.
+   * @param {number[][]} m
+   * @returns {{values:number[], vectors:THREE.Vector3[]}}
+   */
+  function eigenSymmetric3x3Jacobi(m) {
+    const a = [
+      [Number(m[0][0]) || 0, Number(m[0][1]) || 0, Number(m[0][2]) || 0],
+      [Number(m[1][0]) || 0, Number(m[1][1]) || 0, Number(m[1][2]) || 0],
+      [Number(m[2][0]) || 0, Number(m[2][1]) || 0, Number(m[2][2]) || 0],
+    ];
+    const v = [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ];
+    const offDiagPairs = [[0, 1], [0, 2], [1, 2]];
+    const maxIter = 24;
+    for (let iter = 0; iter < maxIter; iter++) {
+      let p = 0; let q = 1;
+      let maxAbs = Math.abs(a[p][q]);
+      for (let i = 1; i < offDiagPairs.length; i++) {
+        const ii = offDiagPairs[i][0];
+        const jj = offDiagPairs[i][1];
+        const absVal = Math.abs(a[ii][jj]);
+        if (absVal > maxAbs) {
+          maxAbs = absVal;
+          p = ii;
+          q = jj;
+        }
+      }
+      if (maxAbs < 1e-12) break;
+      const app = a[p][p];
+      const aqq = a[q][q];
+      const apq = a[p][q];
+      const phi = 0.5 * Math.atan2(2 * apq, (aqq - app));
+      const c = Math.cos(phi);
+      const s = Math.sin(phi);
+
+      for (let k = 0; k < 3; k++) {
+        const akp = a[k][p];
+        const akq = a[k][q];
+        a[k][p] = c * akp - s * akq;
+        a[k][q] = s * akp + c * akq;
+      }
+      for (let k = 0; k < 3; k++) {
+        const apk = a[p][k];
+        const aqk = a[q][k];
+        a[p][k] = c * apk - s * aqk;
+        a[q][k] = s * apk + c * aqk;
+      }
+      a[p][q] = 0;
+      a[q][p] = 0;
+
+      for (let k = 0; k < 3; k++) {
+        const vkp = v[k][p];
+        const vkq = v[k][q];
+        v[k][p] = c * vkp - s * vkq;
+        v[k][q] = s * vkp + c * vkq;
+      }
+    }
+
+    const values = [a[0][0], a[1][1], a[2][2]];
+    const vectors = [
+      new THREE.Vector3(v[0][0], v[1][0], v[2][0]).normalize(),
+      new THREE.Vector3(v[0][1], v[1][1], v[2][1]).normalize(),
+      new THREE.Vector3(v[0][2], v[1][2], v[2][2]).normalize(),
+    ];
+    const order = [0, 1, 2].sort((i, j) => values[i] - values[j]);
+    const sortedValues = order.map((i) => values[i]);
+    const sortedVectors = order.map((i) => vectors[i].clone().normalize());
+
+    // Ensure a right-handed frame to avoid accidental mirroring.
+    const cross01 = new THREE.Vector3().copy(sortedVectors[0]).cross(sortedVectors[1]);
+    if (cross01.dot(sortedVectors[2]) < 0) sortedVectors[2].negate();
+    return { values: sortedValues, vectors: sortedVectors };
+  }
+
+  /**
+   * Rotate active molecule about its center of mass so principal inertia axes align to XYZ.
+   * Applies to atom coordinates of the active record and records one undo entry.
+   * @returns {boolean}
+   */
+  function alignActiveMoleculePrincipalAxes() {
+    if (dragActive) {
+      setHintMessage('Finish moving the current atom before aligning principal axes.');
+      return false;
+    }
+    if (currentIndex < 0 || !volumes[currentIndex] || !volumes[currentIndex].vol) {
+      setHintMessage('No active molecule to align.');
+      return false;
+    }
+
+    const record = volumes[currentIndex];
+    const vol = record.vol;
+    if (!Array.isArray(vol.atoms) || vol.atoms.length < 2) {
+      setHintMessage('Need at least two atoms to align principal axes.');
+      return false;
+    }
+
+    if (hasVolumetricGrid(vol)) {
+      setHintMessage('Principal-axis alignment is available for coordinate-only molecules (not volumetric grids).');
+      return false;
+    }
+
+    let totalMass = 0;
+    let weightedX = 0;
+    let weightedY = 0;
+    let weightedZ = 0;
+    for (const atom of vol.atoms) {
+      const mass = getAtomicMass(atom.Z | 0);
+      if (!(Number.isFinite(mass) && mass > 0)) continue;
+      const x = Number(atom.x) || 0;
+      const y = Number(atom.y) || 0;
+      const z = Number(atom.z) || 0;
+      totalMass += mass;
+      weightedX += mass * x;
+      weightedY += mass * y;
+      weightedZ += mass * z;
+    }
+    if (!(Number.isFinite(totalMass) && totalMass > 0)) {
+      setHintMessage('Could not compute a valid center of mass for principal-axis alignment.');
+      return false;
+    }
+
+    const comX = weightedX / totalMass;
+    const comY = weightedY / totalMass;
+    const comZ = weightedZ / totalMass;
+
+    let ixx = 0; let iyy = 0; let izz = 0;
+    let ixy = 0; let ixz = 0; let iyz = 0;
+    for (const atom of vol.atoms) {
+      const m = getAtomicMass(atom.Z | 0);
+      if (!(Number.isFinite(m) && m > 0)) continue;
+      const x = (Number(atom.x) || 0) - comX;
+      const y = (Number(atom.y) || 0) - comY;
+      const z = (Number(atom.z) || 0) - comZ;
+      ixx += m * (y * y + z * z);
+      iyy += m * (x * x + z * z);
+      izz += m * (x * x + y * y);
+      ixy -= m * x * y;
+      ixz -= m * x * z;
+      iyz -= m * y * z;
+    }
+
+    const inertia = [
+      [ixx, ixy, ixz],
+      [ixy, iyy, iyz],
+      [ixz, iyz, izz],
+    ];
+    const eig = eigenSymmetric3x3Jacobi(inertia);
+    if (!eig || !Array.isArray(eig.vectors) || eig.vectors.length !== 3) {
+      setHintMessage('Principal-axis alignment failed (eigendecomposition).');
+      return false;
+    }
+    const ex = eig.vectors[0];
+    const ey = eig.vectors[1];
+    const ez = eig.vectors[2];
+
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    for (const atom of vol.atoms) {
+      const x = (Number(atom.x) || 0) - comX;
+      const y = (Number(atom.y) || 0) - comY;
+      const z = (Number(atom.z) || 0) - comZ;
+      const nx = ex.x * x + ex.y * y + ex.z * z;
+      const ny = ey.x * x + ey.y * y + ey.z * z;
+      const nz = ez.x * x + ez.y * y + ez.z * z;
+      atom.x = comX + nx;
+      atom.y = comY + ny;
+      atom.z = comZ + nz;
+    }
+    vol.natoms = vol.atoms.length;
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, 'Align principal axes');
+
+    clearAddGrowPreview();
+    clearHover();
+    if (currentMode === MODES.MEASURE) {
+      clearEditSelection();
+      updateSelectedHalos();
+      updateEditSelectionVisuals();
+    }
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    setHintMessage('Aligned principal inertia axes to X/Y/Z.');
+    return true;
+  }
+
+  /**
    * Compute where a newly added atom should be placed for one pointer click.
    * Place atoms on a camera-facing plane (parallel to screen) through target.
    * @param {PointerEvent} e
@@ -7521,6 +7711,7 @@
     }
   };
   if (centerMassBtn) centerMassBtn.onclick = () => centerActiveMoleculeMassAtOrigin();
+  if (alignInertiaBtn) alignInertiaBtn.onclick = () => alignActiveMoleculePrincipalAxes();
 
   // --- Shortcut bindings ---
   // Global: help toggle
