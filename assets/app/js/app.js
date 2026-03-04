@@ -60,6 +60,11 @@
     throw new Error('VibeMolEditUtils is not loaded. Ensure assets/app/js/edit-utils.js is included before assets/app/js/app.js.');
   }
 
+  const { createAtomSnapshotCommand } = window.VibeMolEditCommands || {};
+  if (![createAtomSnapshotCommand].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolEditCommands is not loaded. Ensure assets/app/js/edit-commands.js is included before assets/app/js/app.js.');
+  }
+
   const { detectInputFileKind } = window.VibeMolIOUtils || {};
   if (![detectInputFileKind].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolIOUtils is not loaded. Ensure assets/app/js/io-utils.js is included before assets/app/js/app.js.');
@@ -5995,13 +6000,15 @@
     if (!record || !record.vol) return;
     if (!Array.isArray(beforeAtoms) || !Array.isArray(afterAtoms)) return;
     if (atomsSnapshotsEqual(beforeAtoms, afterAtoms)) return;
-    editUndoStack.push({
+    const command = createAtomSnapshotCommand({
       record,
       before: beforeAtoms,
       after: afterAtoms,
       label: String(label || 'Edit'),
       at: Date.now(),
     });
+    if (!command) return;
+    editUndoStack.push(command);
     if (editUndoStack.length > EDIT_HISTORY_LIMIT) editUndoStack.splice(0, editUndoStack.length - EDIT_HISTORY_LIMIT);
     editRedoStack.length = 0;
   }
@@ -6046,14 +6053,14 @@
       setHintMessage('Nothing to undo.');
       return false;
     }
-    const entry = editUndoStack.pop();
-    if (!applyAtomsSnapshotToRecord(entry.record, entry.before)) {
+    const command = editUndoStack.pop();
+    if (!command || typeof command.undo !== 'function' || !command.undo({ applyAtomsSnapshotToRecord })) {
       setHintMessage('Undo failed: target structure is no longer available.');
       return false;
     }
-    editRedoStack.push(entry);
+    editRedoStack.push(command);
     if (editRedoStack.length > EDIT_HISTORY_LIMIT) editRedoStack.splice(0, editRedoStack.length - EDIT_HISTORY_LIMIT);
-    setHintMessage(`Undo: ${entry.label}`);
+    setHintMessage(`Undo: ${command.label || 'Edit'}`);
     return true;
   }
 
@@ -6067,14 +6074,14 @@
       setHintMessage('Nothing to redo.');
       return false;
     }
-    const entry = editRedoStack.pop();
-    if (!applyAtomsSnapshotToRecord(entry.record, entry.after)) {
+    const command = editRedoStack.pop();
+    if (!command || typeof command.redo !== 'function' || !command.redo({ applyAtomsSnapshotToRecord })) {
       setHintMessage('Redo failed: target structure is no longer available.');
       return false;
     }
-    editUndoStack.push(entry);
+    editUndoStack.push(command);
     if (editUndoStack.length > EDIT_HISTORY_LIMIT) editUndoStack.splice(0, editUndoStack.length - EDIT_HISTORY_LIMIT);
-    setHintMessage(`Redo: ${entry.label}`);
+    setHintMessage(`Redo: ${command.label || 'Edit'}`);
     return true;
   }
 
