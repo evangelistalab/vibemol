@@ -8249,6 +8249,7 @@
   ]);
   const PRESET_MODE = Object.freeze({ STRICT: 'strict', RELAXED: 'relaxed' });
   const presetSettingRegistry = new Map();
+  const presetSettingSchema = new Map();
   let presetUnknownTop = {};
   let presetUnknownSettings = {};
   let presetName = 'VibeMol Preset';
@@ -8341,9 +8342,22 @@
    * @param {string} key
    * @param {() => any} getter
    * @param {(value:any) => void} setter
+   * @param {{section?:string,type?:string,description?:string}=} options
    */
-  function registerPresetSetting(key, getter, setter) {
+  function registerPresetSetting(key, getter, setter, options = {}) {
+    const section = (typeof options.section === 'string' && options.section.trim()) ? options.section.trim() : String(key).split('.')[0];
+    const type = (typeof options.type === 'string' && options.type.trim()) ? options.type.trim() : 'any';
+    const description = (typeof options.description === 'string') ? options.description : '';
     presetSettingRegistry.set(key, { get: getter, set: setter });
+    presetSettingSchema.set(key, Object.freeze({ key, section, type, description }));
+  }
+
+  /**
+   * Export a stable snapshot of the preset schema metadata.
+   * @returns {{key:string,section:string,type:string,description:string}[]}
+   */
+  function listPresetSettingSchema() {
+    return Array.from(presetSettingSchema.values()).map((entry) => Object.assign({}, entry));
   }
 
   registerPresetSetting('surface.iso', () => asFiniteNumber(isoInput && isoInput.value, 0.02), (value) => {
@@ -8451,24 +8465,27 @@
     applyGlobal2CComponent(next);
     if (componentSelect) componentSelect.value = next;
   });
-  registerPresetSetting('view.shift.x', () => contentGroup.position.x, (value) => {
-    contentGroup.position.x = asFiniteNumber(value, contentGroup.position.x);
-    if (shiftX) shiftX.value = contentGroup.position.x.toFixed(3);
-  });
-  registerPresetSetting('view.shift.y', () => contentGroup.position.y, (value) => {
-    contentGroup.position.y = asFiniteNumber(value, contentGroup.position.y);
-    if (shiftY) shiftY.value = contentGroup.position.y.toFixed(3);
-  });
-  registerPresetSetting('view.shift.z', () => contentGroup.position.z, (value) => {
-    contentGroup.position.z = asFiniteNumber(value, contentGroup.position.z);
-    if (shiftZ) shiftZ.value = contentGroup.position.z.toFixed(3);
-  });
-  registerPresetSetting('view.camera.x', () => camera.position.x, (value) => { camera.position.x = asFiniteNumber(value, camera.position.x); });
-  registerPresetSetting('view.camera.y', () => camera.position.y, (value) => { camera.position.y = asFiniteNumber(value, camera.position.y); });
-  registerPresetSetting('view.camera.z', () => camera.position.z, (value) => { camera.position.z = asFiniteNumber(value, camera.position.z); });
-  registerPresetSetting('view.target.x', () => controls.target.x, (value) => { controls.target.x = asFiniteNumber(value, controls.target.x); });
-  registerPresetSetting('view.target.y', () => controls.target.y, (value) => { controls.target.y = asFiniteNumber(value, controls.target.y); });
-  registerPresetSetting('view.target.z', () => controls.target.z, (value) => { controls.target.z = asFiniteNumber(value, controls.target.z); });
+  const viewShiftBindings = [
+    { axis: 'x', input: shiftX },
+    { axis: 'y', input: shiftY },
+    { axis: 'z', input: shiftZ },
+  ];
+  for (const { axis, input } of viewShiftBindings) {
+    registerPresetSetting(`view.shift.${axis}`, () => contentGroup.position[axis], (value) => {
+      contentGroup.position[axis] = asFiniteNumber(value, contentGroup.position[axis]);
+      if (input) input.value = Number(contentGroup.position[axis]).toFixed(3);
+    }, { section: 'view', type: 'number' });
+  }
+  for (const axis of ['x', 'y', 'z']) {
+    registerPresetSetting(`view.camera.${axis}`, () => camera.position[axis], (value) => {
+      camera.position[axis] = asFiniteNumber(value, camera.position[axis]);
+    }, { section: 'view', type: 'number' });
+  }
+  for (const axis of ['x', 'y', 'z']) {
+    registerPresetSetting(`view.target.${axis}`, () => controls.target[axis], (value) => {
+      controls.target[axis] = asFiniteNumber(value, controls.target[axis]);
+    }, { section: 'view', type: 'number' });
+  }
   registerPresetSetting('view.projection', () => viewState.mode, (value) => {
     const next = value === 'orthographic' ? 'orthographic' : 'perspective';
     setProjectionMode(next, { refreshUi: false });
@@ -8701,6 +8718,7 @@
     kind: PRESET_KIND,
     version: PRESET_VERSION,
     listKeys: () => Array.from(presetSettingRegistry.keys()),
+    listSchema: () => listPresetSettingSchema(),
     export: (options = {}) => exportPresetEnvelope(options),
     import: (preset, options = {}) => importPresetEnvelope(preset, options),
   });
