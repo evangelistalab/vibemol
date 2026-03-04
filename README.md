@@ -1,7 +1,7 @@
 # VibeMol
 
 Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files, with a companion Python automation client.
-It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes.json`, ORCA `.hess`, Psi4 Molden normal-mode files, and Psi4 `.dat/.out` frequency outputs).
+It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes.json`, ORCA `.hess`, and Psi4 `.dat/.out` frequency outputs).
 
 ## Features
 - Surface rendering and cloud rendering modes
@@ -15,7 +15,7 @@ It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes
 - Save PNG, batch export, and XYZ export
 - Portable preset save/load in the web UI
 - Shared preset model with CLI (`window.VibeMolPreset` + Python client)
-- Vibrational mode playback from sidecar JSON (`.vib.json`), ORCA Hessian files (`.hess`), and Psi4 vibration outputs (`.molden`, `.dat`, `.out`)
+- Vibrational mode playback from sidecar JSON (`.vib.json`), ORCA Hessian files (`.hess`), and Psi4 vibration outputs (`.dat`, `.out`)
 
 ## Web Quick Start
 ```bash

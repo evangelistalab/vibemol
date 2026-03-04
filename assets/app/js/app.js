@@ -9064,17 +9064,6 @@
   }
 
   /**
-   * Lightweight detection for Molden vibrational payload text.
-   * @param {string} text
-   * @returns {boolean}
-   */
-  function looksLikeMoldenVibrationText(text) {
-    const raw = String(text || '');
-    return (/\[molden format\]/i.test(raw) || /\[fr-norm-coord\]/i.test(raw))
-      && /\[fr-norm-coord\]/i.test(raw);
-  }
-
-  /**
    * Detect whether one text payload looks like Psi4 output with vibrational data.
    * @param {string} text
    * @returns {boolean}
@@ -9361,12 +9350,12 @@
   }
 
   /**
-   * Resolve one element symbol token from Molden atom sections.
+   * Resolve one element symbol token (symbol text or atomic number).
    * @param {*} symbolToken
    * @param {*} zToken
    * @returns {string|null}
    */
-  function resolveMoldenElementSymbol(symbolToken, zToken = null) {
+  function resolveElementSymbolToken(symbolToken, zToken = null) {
     const raw = String(symbolToken == null ? '' : symbolToken).trim();
     if (raw) {
       const upper = raw.toUpperCase();
@@ -9390,191 +9379,6 @@
       }
     }
     return null;
-  }
-
-  /**
-   * Parse sections from Molden text.
-   * @param {string} text
-   * @returns {Map<string,string[]>}
-   */
-  function parseMoldenSections(text) {
-    const lines = String(text || '').replace(/\r/g, '').split('\n');
-    const sections = new Map();
-    let current = '';
-    for (const line of lines) {
-      const m = String(line || '').match(/^\s*\[([^\]]+)\]\s*(.*)$/);
-      if (m) {
-        current = String(m[1] || '').trim().toUpperCase();
-        if (!sections.has(current)) sections.set(current, []);
-        continue;
-      }
-      if (!current) continue;
-      sections.get(current).push(line);
-    }
-    return sections;
-  }
-
-  /**
-   * Get one Molden section by possible aliases.
-   * @param {Map<string,string[]>} sections
-   * @param {string[]} keys
-   * @returns {string[]}
-   */
-  function getMoldenSectionLines(sections, keys) {
-    for (const key of keys) {
-      const lines = sections.get(String(key || '').trim().toUpperCase());
-      if (Array.isArray(lines) && lines.length > 0) return lines;
-    }
-    return [];
-  }
-
-  /**
-   * Parse frequency values from Molden sections.
-   * @param {Map<string,string[]>} sections
-   * @param {string} sourceName
-   * @returns {number[]}
-   */
-  function parseMoldenFrequencies(sections, sourceName) {
-    const lines = getMoldenSectionLines(sections, ['FREQ', 'FREQUENCIES']);
-    if (!lines.length) {
-      throw new Error(`Psi4 integration: missing [FREQ] section in "${sourceName}".`);
-    }
-    const freqs = [];
-    for (const line of lines) {
-      const nums = extractOrcaLineNumbers(line);
-      for (const n of nums) freqs.push(n);
-    }
-    if (!freqs.length) {
-      throw new Error(`Psi4 integration: [FREQ] section has no numeric values in "${sourceName}".`);
-    }
-    return freqs;
-  }
-
-  /**
-   * Parse atom symbols from Molden coordinate sections when available.
-   * @param {Map<string,string[]>} sections
-   * @returns {string[]|null}
-   */
-  function parseMoldenAtomSymbols(sections) {
-    const frCoord = getMoldenSectionLines(sections, ['FR-COORD']);
-    if (frCoord.length) {
-      const symbols = [];
-      for (const raw of frCoord) {
-        const line = String(raw || '').trim();
-        if (!line) continue;
-        const parts = line.split(/\s+/);
-        if (parts.length < 1) continue;
-        const sym = resolveMoldenElementSymbol(parts[0], parts.length > 2 ? parts[2] : null);
-        if (!sym) continue;
-        symbols.push(sym);
-      }
-      if (symbols.length > 0) return symbols;
-    }
-
-    const atoms = getMoldenSectionLines(sections, ['ATOMS']);
-    if (!atoms.length) return null;
-    const symbols = [];
-    for (const raw of atoms) {
-      const line = String(raw || '').trim();
-      if (!line) continue;
-      const parts = line.split(/\s+/);
-      if (parts.length < 1) continue;
-      // Molden [Atoms] commonly uses: Symbol  Index  Z  x y z
-      const sym = resolveMoldenElementSymbol(parts[0], parts.length > 2 ? parts[2] : null);
-      if (!sym) continue;
-      symbols.push(sym);
-    }
-    return symbols.length > 0 ? symbols : null;
-  }
-
-  /**
-   * Parse vibrational mode vectors from Molden [FR-NORM-COORD].
-   * @param {Map<string,string[]>} sections
-   * @param {number|null} atomCountHint
-   * @param {string} sourceName
-   * @returns {Float32Array[]}
-   */
-  function parseMoldenModeVectors(sections, atomCountHint, sourceName) {
-    const lines = getMoldenSectionLines(sections, ['FR-NORM-COORD']);
-    if (!lines.length) {
-      throw new Error(`Psi4 integration: missing [FR-NORM-COORD] section in "${sourceName}".`);
-    }
-    const modeVectors = [];
-    let currentTriplets = [];
-    /**
-     * Finalize one parsed mode block.
-     */
-    function flushMode() {
-      if (!currentTriplets.length) return;
-      const atomCount = atomCountHint != null ? atomCountHint : currentTriplets.length;
-      if (currentTriplets.length !== atomCount) {
-        throw new Error(`Psi4 integration: mode vector length ${currentTriplets.length} does not match atom count ${atomCount} in "${sourceName}".`);
-      }
-      const out = new Float32Array(atomCount * 3);
-      for (let i = 0; i < atomCount; i++) {
-        const t = currentTriplets[i];
-        out[3 * i + 0] = t[0];
-        out[3 * i + 1] = t[1];
-        out[3 * i + 2] = t[2];
-      }
-      modeVectors.push(out);
-      currentTriplets = [];
-    }
-    for (const raw of lines) {
-      const line = String(raw || '').trim();
-      if (!line) continue;
-      if (/^(vibration|mode)\s+\d+/i.test(line) || /^\d+$/.test(line)) {
-        flushMode();
-        continue;
-      }
-      const nums = extractOrcaLineNumbers(line);
-      if (nums.length < 3) continue;
-      currentTriplets.push([nums[0], nums[1], nums[2]]);
-    }
-    flushMode();
-    if (!modeVectors.length) {
-      throw new Error(`Psi4 integration: no mode vectors found in [FR-NORM-COORD] for "${sourceName}".`);
-    }
-    return modeVectors;
-  }
-
-  /**
-   * Parse Psi4 Molden vibrational text into internal vibration payload.
-   * @param {string} text
-   * @param {string} sourceName
-   * @returns {{kind:string,version:number,units:'angstrom'|'bohr',atomCount:number,atomSymbols:(string[]|null),modes:Array<{label:string,frequencyCm1:number,displacements:Float32Array}>}}
-   */
-  function parsePsi4MoldenVibrationPayload(text, sourceName) {
-    if (!looksLikeMoldenVibrationText(text)) {
-      throw new Error(`Psi4 integration: "${sourceName}" does not look like a Molden vibrational file.`);
-    }
-    const sections = parseMoldenSections(text);
-    const freqs = parseMoldenFrequencies(sections, sourceName);
-    const atomSymbols = parseMoldenAtomSymbols(sections);
-    const atomCountHint = atomSymbols && atomSymbols.length > 0 ? atomSymbols.length : null;
-    const vectors = parseMoldenModeVectors(sections, atomCountHint, sourceName);
-    const atomCount = vectors[0].length / 3;
-    const modeCount = Math.min(freqs.length, vectors.length);
-    const modes = [];
-    for (let i = 0; i < modeCount; i++) {
-      modes.push({
-        label: `Mode ${i + 1}`,
-        frequencyCm1: Number.isFinite(freqs[i]) ? Number(freqs[i]) : NaN,
-        displacements: vectors[i],
-      });
-    }
-    if (!modes.length) {
-      throw new Error(`Psi4 integration: no modes/frequencies overlap in "${sourceName}".`);
-    }
-    return {
-      kind: VIBRATION_KIND,
-      version: 1,
-      // Molden normal-mode vectors are unitless/relative in practice.
-      units: 'angstrom',
-      atomCount,
-      atomSymbols: atomSymbols && atomSymbols.length === atomCount ? atomSymbols : null,
-      modes,
-    };
   }
 
   /**
@@ -9640,13 +9444,13 @@
         let symbol = null;
         let x = NaN, y = NaN, z = NaN;
         // Common Psi4 geometry row: `H  x  y  z [mass]`
-        symbol = resolveMoldenElementSymbol(parts[0], null);
+        symbol = resolveElementSymbolToken(parts[0], null);
         x = Number(parts[1]);
         y = Number(parts[2]);
         z = Number(parts[3]);
         if (!(symbol && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z))) {
           // Fallback row with leading index: `1 H x y z`
-          symbol = resolveMoldenElementSymbol(parts[1], null);
+          symbol = resolveElementSymbolToken(parts[1], null);
           x = Number(parts[2]);
           y = Number(parts[3]);
           z = Number(parts[4]);
@@ -9786,7 +9590,7 @@
           rowIdx += 1;
           continue;
         }
-        const symbol = resolveMoldenElementSymbol(m[2], null);
+        const symbol = resolveElementSymbolToken(m[2], null);
         const nums = extractOrcaLineNumbers(m[3]);
         const needed = 3 * modeIndices.length;
         if (!(symbol && nums.length >= needed)) {
@@ -10235,11 +10039,6 @@
         const text = await f.text();
         const name = f && f.name ? f.name : '';
         const fileKind = detectInputFileKind(name, text);
-        if (fileKind === 'molden' || looksLikeMoldenVibrationText(text)) {
-          const payload = parsePsi4MoldenVibrationPayload(text, name || 'Psi4 Molden vibration');
-          pendingVibrationPayloads.push({ name: name || 'Psi4 Molden vibration', payload });
-          continue;
-        }
         if (fileKind === 'psi4_output' || looksLikePsi4OutputText(text)) {
           const bundle = parsePsi4OutputVibrationBundle(text, name || 'Psi4 output');
           if (!hasPreparedTarget) {

@@ -9,7 +9,6 @@ Supported molecular file types:
 - `.xyz`
 - `.vib.json` / `.vmodes.json` / `.modes.json` (vibrational mode sidecar data)
 - `.hess` (ORCA Hessian vibrational mode source)
-- `.molden` / `.molden.input` (Psi4 Molden vibrational mode source)
 - `.dat` / `.out` / `.output` (Psi4 text output with harmonic analysis)
 
 Primary capabilities:
@@ -73,7 +72,6 @@ Preset automation contract exposed globally:
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
 - Vibrational sidecar JSON files can be attached to a loaded molecule (matched by atom count, and atom symbol sequence when provided).
 - ORCA `.hess` files are parsed for `$vibrational_frequencies` + `$normal_modes` and attached using the same matching logic.
-- Psi4 Molden vibrational files are parsed from `[FREQ]` + `[FR-NORM-COORD]` sections and attached using the same matching logic.
 - Psi4 output logs (`.dat/.out`) are parsed from the harmonic table and create a molecule from the **last** `Geometry (in Angstrom)` block before attaching modes.
 - Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency) are shown in View panel when available.
 - Trajectory playback and vibrational playback are mutually exclusive for one active file.
