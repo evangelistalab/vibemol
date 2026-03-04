@@ -9,6 +9,10 @@
   const VIBRATION_KIND = 'vibemol.vibrations';
   const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
   const VIBRATION_DEFAULT_SPEED = 0.75;
+  const AUTO_ISO_TARGET_FRACTION = 0.85;
+  const AUTO_ISO_HISTOGRAM_BINS = 512;
+  const AUTO_ISO_MAX_SAMPLES = 650000;
+  const HEADER_HAPPY_EMOJIS = Object.freeze(['🙂', '😊', '😄', '😃', '😁', '😎', '🤓', '😺', '🤠', '🫡', '😇', '😍', '🫡', '🥳']);
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -506,18 +510,26 @@
   scene.add(hemi, dir, amb, rim);
 
   // Resizer
+  const dropViewportEl = document.getElementById('drop');
   /**
-   * Resize the renderer and camera to match the viewport.
+   * Resize the renderer and camera to match the active viewport area.
+   * Uses the drop container bounds so sidebar layout changes keep correct aspect.
    */
   function resize() {
-    const panelH = 56; // toolbar height
-    const w = window.innerWidth;
-    const h = window.innerHeight - panelH;
+    const rect = dropViewportEl && typeof dropViewportEl.getBoundingClientRect === 'function'
+      ? dropViewportEl.getBoundingClientRect()
+      : null;
+    const w = Math.max(1, Math.round(rect ? rect.width : window.innerWidth));
+    const h = Math.max(1, Math.round(rect ? rect.height : window.innerHeight));
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize);
+  if (typeof ResizeObserver !== 'undefined' && dropViewportEl) {
+    const dropResizeObserver = new ResizeObserver(() => resize());
+    dropResizeObserver.observe(dropViewportEl);
+  }
   resize();
 
   // --- Corner axes (overlay) ---
@@ -570,6 +582,8 @@
   let cloudGroup = new THREE.Group();
   let boxHelper = null;
   let showSurfaces = true; // toggle iso-surface visibility
+  // Autoiso mode applies one cached 85%-density isovalue per orbital/component.
+  let autoIsoEnabled = false;
   // Display inferred multiple bonds (double/triple) as parallel connectors.
   let showMultiBonds = true;
   // Display element symbols over atoms.
@@ -3607,6 +3621,140 @@
   }
 
   /**
+   * Choose one sampling stride for auto-iso estimation.
+   * Keeps work bounded on very large grids while using stride 1 when practical.
+   * @param {{nxyz:number[]}} vol
+   * @returns {number}
+   */
+  function pickAutoIsoSampleStride(vol) {
+    const nx = (vol && vol.nxyz && vol.nxyz[0]) | 0;
+    const ny = (vol && vol.nxyz && vol.nxyz[1]) | 0;
+    const nz = (vol && vol.nxyz && vol.nxyz[2]) | 0;
+    const total = nx * ny * nz;
+    if (total <= 0 || total <= AUTO_ISO_MAX_SAMPLES) return 1;
+    return Math.max(1, Math.ceil(Math.cbrt(total / AUTO_ISO_MAX_SAMPLES)));
+  }
+
+  /**
+   * Iterate scalar samples used by auto-iso estimation for the active component mode.
+   * Visitor receives `(metric, weight)` where thresholding uses `metric` and contribution uses `weight`.
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} stride
+   * @param {(metric:number, weight:number) => void} visitor
+   */
+  function forEachAutoIsoSample(vol, compMode, stride, visitor) {
+    if (!vol || !Array.isArray(vol.nxyz) || typeof vol.idx !== 'function') return;
+    const [nx, ny, nz] = vol.nxyz;
+    if (!(nx > 0 && ny > 0 && nz > 0)) return;
+    const step = Math.max(1, stride | 0);
+
+    if (vol.isTwoComponent && isPhaseLikeComponent(compMode)) {
+      const reA = vol.alphaRe;
+      const imA = vol.alphaIm;
+      const reB = vol.betaRe;
+      const imB = vol.betaIm;
+      if (!reA || !imA || !reB || !imB) return;
+      for (let i = 0; i < nx; i += step) {
+        for (let j = 0; j < ny; j += step) {
+          for (let k = 0; k < nz; k += step) {
+            const t = vol.idx(i, j, k);
+            if (compMode === 'alphaPhase') {
+              const mA = Math.hypot(reA[t], imA[t]);
+              visitor(mA, mA * mA);
+              continue;
+            }
+            if (compMode === 'betaPhase') {
+              const mB = Math.hypot(reB[t], imB[t]);
+              visitor(mB, mB * mB);
+              continue;
+            }
+            if (compMode === 'alphaBetaPhase') {
+              const mA = Math.hypot(reA[t], imA[t]);
+              const mB = Math.hypot(reB[t], imB[t]);
+              visitor(mA, mA * mA);
+              visitor(mB, mB * mB);
+              continue;
+            }
+            if (compMode === 'totalBloch') {
+              const d = reA[t] * reA[t] + imA[t] * imA[t] + reB[t] * reB[t] + imB[t] * imB[t];
+              visitor(d, d);
+              continue;
+            }
+          }
+        }
+      }
+      return;
+    }
+
+    const data = vol.data;
+    if (!data || !data.length) return;
+    for (let i = 0; i < nx; i += step) {
+      for (let j = 0; j < ny; j += step) {
+        for (let k = 0; k < nz; k += step) {
+          const v = data[vol.idx(i, j, k)];
+          const av = Math.abs(v);
+          visitor(av, v * v);
+        }
+      }
+    }
+  }
+
+  /**
+   * Estimate an isovalue threshold that captures a target fraction of density weight.
+   * Density weight is `psi^2` for orbital-like fields and total density for Bloch total mode.
+   * Uses a histogram approximation for speed and caches results by file+component mode.
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} targetFraction
+   * @param {number=} strideOverride
+   * @returns {number}
+   */
+  function estimateAutoIsoValue(vol, compMode, targetFraction, strideOverride) {
+    if (!vol) return NaN;
+    const stride = Math.max(1, (strideOverride == null ? pickAutoIsoSampleStride(vol) : strideOverride) | 0);
+    let totalWeight = 0;
+    let maxMetric = 0;
+
+    forEachAutoIsoSample(vol, compMode, stride, (metric, weight) => {
+      if (!Number.isFinite(metric) || !Number.isFinite(weight) || metric <= 0 || weight <= 0) return;
+      totalWeight += weight;
+      if (metric > maxMetric) maxMetric = metric;
+    });
+
+    if (!(totalWeight > 0) || !(maxMetric > 0)) return NaN;
+
+    const bins = Math.max(64, AUTO_ISO_HISTOGRAM_BINS | 0);
+    const hist = new Float64Array(bins);
+    const invScale = bins / maxMetric;
+
+    forEachAutoIsoSample(vol, compMode, stride, (metric, weight) => {
+      if (!Number.isFinite(metric) || !Number.isFinite(weight) || metric <= 0 || weight <= 0) return;
+      const bi = Math.max(0, Math.min(bins - 1, Math.floor(metric * invScale)));
+      hist[bi] += weight;
+    });
+
+    const clampedTarget = Math.max(0, Math.min(1, Number.isFinite(targetFraction) ? targetFraction : AUTO_ISO_TARGET_FRACTION));
+    const targetWeight = totalWeight * clampedTarget;
+    const binWidth = maxMetric / bins;
+    let cumulative = 0;
+    for (let b = bins - 1; b >= 0; b--) {
+      const w = hist[b];
+      const next = cumulative + w;
+      if (next >= targetWeight) {
+        if (w <= 0) return Math.max(0, b * binWidth);
+        const needed = Math.max(0, targetWeight - cumulative);
+        const frac = Math.max(0, Math.min(1, needed / w));
+        const binHi = (b + 1) * binWidth;
+        const iso = binHi - frac * binWidth;
+        return Math.max(0, Math.min(maxMetric, iso));
+      }
+      cumulative = next;
+    }
+    return 0;
+  }
+
+  /**
    * Build signed scalar cloud geometry using instanced cubes.
    * Positive/negative values are emitted as separate meshes for color control.
    * @param {{nxyz:number[],axes:number[][],data:Float32Array,idx:(i:number,j:number,k:number)=>number}} vol
@@ -4718,10 +4866,18 @@
   const openBtn = document.getElementById('openBtn');
   const fileSelect = document.getElementById('fileSelect');
   const isoInput = document.getElementById('iso');
+  const autoIsoBtn = document.getElementById('autoIsoBtn');
   const opInput = document.getElementById('opacity');
+  const opacityPercentEl = document.getElementById('opacityPercent');
   const posColor = document.getElementById('posColor');
+  const posColorHexEl = document.getElementById('posColorHex');
+  const posColorSwatchEl = document.getElementById('posColorSwatch');
   const negColor = document.getElementById('negColor');
+  const negColorHexEl = document.getElementById('negColorHex');
+  const negColorSwatchEl = document.getElementById('negColorSwatch');
   const bgColor = document.getElementById('bgColor');
+  const bgColorHexEl = document.getElementById('bgColorHex');
+  const bgColorSwatchEl = document.getElementById('bgColorSwatch');
   const toggleAtoms = document.getElementById('showAtoms');
   const toggleBonds = document.getElementById('showBonds');
   const toggleMultiBonds = document.getElementById('showMultiBonds');
@@ -4749,6 +4905,7 @@
   // Side panel controls
   const panelBtn = document.getElementById('panelBtn');
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
+  const displayInspectorToggleIcon = document.getElementById('displayInspectorToggleIcon');
   const displayInspector = document.getElementById('displayInspector');
   const trajectoryPanelBtn = document.getElementById('trajectoryPanelBtn');
   const vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
@@ -4844,6 +5001,10 @@
   const pubchemQueryInput = document.getElementById('pubchemQuery');
   const pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
   const pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
+  const toolbarEl = document.getElementById('toolbar');
+  const toolbarCollapseBtn = document.getElementById('toolbarCollapseBtn');
+  const toolbarShowBtn = document.getElementById('toolbarShowBtn');
+  const brandEmojiEl = document.getElementById('brandEmoji');
   let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
 
   const triggerOpenFiles = () => fileInput.click();
@@ -4857,10 +5018,116 @@
   }
   // Toggle surface rendering button
   /**
-   * Refresh the surface-toggle button label.
+   * Synchronize surface toggle UI state.
    */
-  const updateSurfBtn = () => { surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces'; };
+  const updateSurfBtn = () => {
+    if (!surfBtn) return;
+    const isCheckbox = typeof surfBtn.type === 'string' && surfBtn.type.toLowerCase() === 'checkbox';
+    if (isCheckbox) {
+      surfBtn.checked = !!showSurfaces;
+      surfBtn.title = 'Toggle iso-surface rendering';
+      return;
+    }
+    surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces';
+  };
   updateSurfBtn();
+
+  /**
+   * Sync opacity readout text (`NN%`) beside the surface opacity slider.
+   */
+  function updateOpacityPercentLabel() {
+    if (!opacityPercentEl) return;
+    const raw = parseFloat((opInput && opInput.value) || '1');
+    const clamped = Math.max(0.05, Math.min(1, Number.isFinite(raw) ? raw : 1));
+    opacityPercentEl.textContent = `${Math.round(clamped * 100)}%`;
+  }
+  updateOpacityPercentLabel();
+
+  /**
+   * Synchronize custom color picker chips (swatch + uppercase hex text).
+   */
+  function syncColorPickerFields() {
+    /** @type {Array<[HTMLInputElement|null, HTMLElement|null, HTMLElement|null]>} */
+    const fields = [
+      [posColor, posColorHexEl, posColorSwatchEl],
+      [negColor, negColorHexEl, negColorSwatchEl],
+      [bgColor, bgColorHexEl, bgColorSwatchEl],
+    ];
+    for (const [inputEl, hexEl, swatchEl] of fields) {
+      if (!inputEl) continue;
+      const hex = String(inputEl.value || '#000000').replace('#', '').toUpperCase();
+      if (hexEl) hexEl.textContent = hex;
+      if (swatchEl) swatchEl.style.backgroundColor = inputEl.value || '#000000';
+    }
+  }
+  syncColorPickerFields();
+
+  /**
+   * Format one isovalue for compact display in the numeric input.
+   * @param {number} value
+   * @returns {string}
+   */
+  function formatIsoInputValue(value) {
+    const v = Math.max(0, Number.isFinite(value) ? value : 0);
+    return v.toFixed(4).replace(/(\.\d*?[1-9])0+$/u, '$1').replace(/\.0+$/u, '');
+  }
+
+  /**
+   * Check whether one parsed record provides a valid volumetric grid.
+   * @param {*} vol
+   * @returns {boolean}
+   */
+  function hasVolumetricGrid(vol) {
+    return !!(vol
+      && Array.isArray(vol.nxyz)
+      && vol.nxyz[0] > 0
+      && vol.nxyz[1] > 0
+      && vol.nxyz[2] > 0
+      && typeof vol.idx === 'function');
+  }
+
+  /**
+   * Enable/disable the Autoiso button depending on whether one volumetric grid is active.
+   */
+  function updateAutoIsoButtonState() {
+    if (!autoIsoBtn) return;
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const hasGrid = hasVolumetricGrid(vol);
+    autoIsoBtn.disabled = false;
+    autoIsoBtn.classList.toggle('active', autoIsoEnabled);
+    autoIsoBtn.setAttribute('aria-pressed', autoIsoEnabled ? 'true' : 'false');
+    autoIsoBtn.title = hasGrid
+      ? `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: target ${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% density (cached per orbital/component).`
+      : `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube file to apply.`;
+  }
+  updateAutoIsoButtonState();
+
+  /**
+   * Collapse/expand the left workspace sidebar.
+   * @param {boolean} collapsed
+   */
+  function setWorkspaceSidebarCollapsed(collapsed) {
+    const isCollapsed = !!collapsed;
+    document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+    if (toolbarEl) toolbarEl.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    // Refresh projection immediately because sidebar open/close is now non-animated.
+    resize();
+  }
+
+  if (toolbarCollapseBtn) toolbarCollapseBtn.onclick = () => setWorkspaceSidebarCollapsed(true);
+  if (toolbarShowBtn) toolbarShowBtn.onclick = () => setWorkspaceSidebarCollapsed(false);
+  setWorkspaceSidebarCollapsed(false);
+
+  /**
+   * Pick one happy emoji for the toolbar brand on each page load.
+   */
+  function setRandomBrandEmoji() {
+    if (!brandEmojiEl || HEADER_HAPPY_EMOJIS.length === 0) return;
+    const idx = Math.floor(Math.random() * HEADER_HAPPY_EMOJIS.length);
+    brandEmojiEl.textContent = HEADER_HAPPY_EMOJIS[idx];
+  }
+  setRandomBrandEmoji();
 
   const PERIODIC_TABLE_LAYOUT = [
     ['H', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'He'],
@@ -5346,7 +5613,15 @@
     shortcutRibbon.setAttribute('aria-hidden', 'false');
   }
   renderRibbon('default');
-  surfBtn.onclick = () => { showSurfaces = !showSurfaces; updateSurfBtn(); rebuildScene({ preserveView: true }); };
+  if (surfBtn && typeof surfBtn.type === 'string' && surfBtn.type.toLowerCase() === 'checkbox') {
+    surfBtn.onchange = () => {
+      showSurfaces = !!surfBtn.checked;
+      updateSurfBtn();
+      rebuildScene({ preserveView: true });
+    };
+  } else if (surfBtn) {
+    surfBtn.onclick = () => { showSurfaces = !showSurfaces; updateSurfBtn(); rebuildScene({ preserveView: true }); };
+  }
   /**
    * Toggle side.
    */
@@ -5372,6 +5647,7 @@
     displayInspector.classList.toggle('open', shouldOpen);
     displayInspector.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
     if (displayInspectorBtn) displayInspectorBtn.classList.toggle('active', shouldOpen);
+    if (displayInspectorToggleIcon) displayInspectorToggleIcon.textContent = shouldOpen ? '−' : '+';
   }
   if (displayInspectorBtn) {
     displayInspectorBtn.onclick = () => {
@@ -7533,6 +7809,7 @@
       if (s) {
         posColor.value = s.pos;
         negColor.value = s.neg;
+        syncColorPickerFields();
         updateOpacityAndColors();
       }
     };
@@ -7693,7 +7970,9 @@
   });
   registerPresetSetting('surface.opacity', () => asFiniteNumber(opInput && opInput.value, 1), (value) => {
     const n = Math.min(1, Math.max(0.05, asFiniteNumber(value, 1)));
-    if (opInput) opInput.value = String(n);
+    const snapped = Math.round(n / 0.05) * 0.05;
+    if (opInput) opInput.value = snapped.toFixed(2);
+    updateOpacityPercentLabel();
   });
   registerPresetSetting('surface.enabled', () => !!showSurfaces, (value) => { showSurfaces = asBoolean(value); });
   registerPresetSetting('surface.style', () => surfaceStyle, (value) => {
@@ -7701,13 +7980,19 @@
     surfaceStyle = next;
     if (styleSelect) styleSelect.value = next;
   });
+  registerPresetSetting('surface.autoIsoEnabled', () => !!autoIsoEnabled, (value) => {
+    autoIsoEnabled = asBoolean(value);
+    updateAutoIsoButtonState();
+  });
   registerPresetSetting('surface.posColor', () => (posColor && posColor.value) || '#f2a900', (value) => {
     if (posColor) posColor.value = asHexColor(value, posColor.value || '#f2a900');
     if (schemeSelect) schemeSelect.value = 'custom';
+    syncColorPickerFields();
   });
   registerPresetSetting('surface.negColor', () => (negColor && negColor.value) || '#0033a0', (value) => {
     if (negColor) negColor.value = asHexColor(value, negColor.value || '#0033a0');
     if (schemeSelect) schemeSelect.value = 'custom';
+    syncColorPickerFields();
   });
   registerPresetSetting('surface.colorScheme', () => (schemeSelect && schemeSelect.value) || 'custom', (value) => {
     if (!schemeSelect) return;
@@ -7719,6 +8004,7 @@
   registerPresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || '#ffffff', (value) => {
     if (!bgColor) return;
     bgColor.value = asHexColor(value, bgColor.value || '#ffffff');
+    syncColorPickerFields();
     try { scene.background = new THREE.Color(bgColor.value); } catch { }
   });
   registerPresetSetting('global.showAtoms', () => !!(toggleAtoms && toggleAtoms.checked), (value) => {
@@ -8215,6 +8501,46 @@
     updatePubChemMetadataPanel(record);
     syncTrajectoryControls();
     syncVibrationControls();
+    updateAutoIsoButtonState();
+  }
+
+  /**
+   * Read or compute one cached auto-iso value for one record/component.
+   * @param {*} record
+   * @param {*} vol
+   * @param {string} compMode
+   * @returns {{value:number,cached:boolean,stride:number}}
+   */
+  function getCachedAutoIsoResult(record, vol, compMode) {
+    const stride = pickAutoIsoSampleStride(vol);
+    if (record) {
+      if (!(record.autoIsoCache instanceof Map)) record.autoIsoCache = new Map();
+      const dimsKey = Array.isArray(vol && vol.nxyz) ? vol.nxyz.join('x') : 'grid';
+      const cacheKey = `${String(compMode || 'alphaRe')}|${dimsKey}|${AUTO_ISO_TARGET_FRACTION.toFixed(4)}|${stride}`;
+      if (record.autoIsoCache.has(cacheKey)) {
+        return { value: record.autoIsoCache.get(cacheKey), cached: true, stride };
+      }
+      const computed = estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
+      record.autoIsoCache.set(cacheKey, computed);
+      return { value: computed, cached: false, stride };
+    }
+    return { value: estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride), cached: false, stride };
+  }
+
+  /**
+   * Resolve one auto-iso estimate for one record and apply it to the iso input.
+   * @param {*} record
+   * @param {*} vol
+   * @param {string} compMode
+   * @returns {{iso:number,cached:boolean,stride:number}|null}
+   */
+  function applyAutoIsoToIsoInput(record, vol, compMode) {
+    if (!isoInput || !hasVolumetricGrid(vol)) return null;
+    const result = getCachedAutoIsoResult(record, vol, compMode);
+    const autoIso = result.value;
+    if (!Number.isFinite(autoIso) || autoIso <= 0) return null;
+    isoInput.value = formatIsoInputValue(autoIso);
+    return { iso: autoIso, cached: result.cached, stride: result.stride };
   }
 
   /**
@@ -9937,7 +10263,11 @@
     pubchemBusy = !!busy;
     if (!pubchemLoadBtn) return;
     pubchemLoadBtn.disabled = pubchemBusy;
-    pubchemLoadBtn.textContent = pubchemBusy ? 'Loading…' : 'Load';
+    pubchemLoadBtn.textContent = pubchemBusy ? '…' : '↓';
+    pubchemLoadBtn.title = pubchemBusy
+      ? 'Loading PubChem…'
+      : 'Search PubChem and load the selected molecule';
+    pubchemLoadBtn.setAttribute('aria-label', pubchemBusy ? 'Loading PubChem' : 'Load from PubChem');
   }
 
   /**
@@ -10106,10 +10436,36 @@
   // (subsample controls removed)
 
   isoInput.onchange = () => rebuildScene({ preserveView: true });
+  if (autoIsoBtn) {
+    autoIsoBtn.onclick = () => {
+      autoIsoEnabled = !autoIsoEnabled;
+      updateAutoIsoButtonState();
+      if (!autoIsoEnabled) {
+        setHintMessage('Autoiso OFF');
+        return;
+      }
+      const active = currentIndex >= 0 ? volumes[currentIndex] : null;
+      if (!active || !hasVolumetricGrid(active.vol)) {
+        setHintMessage('Autoiso ON: load/select a .cube/.2ccube file to apply.');
+        return;
+      }
+      rebuildScene({ preserveView: true });
+      setHintMessage(`Autoiso ON (${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% target): cached per orbital/component.`);
+    };
+  }
   opInput.oninput = updateOpacityAndColors;
-  posColor.oninput = () => { if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom'; updateOpacityAndColors(); };
-  negColor.oninput = () => { if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom'; updateOpacityAndColors(); };
+  posColor.oninput = () => {
+    if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
+    syncColorPickerFields();
+    updateOpacityAndColors();
+  };
+  negColor.oninput = () => {
+    if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
+    syncColorPickerFields();
+    updateOpacityAndColors();
+  };
   bgColor.oninput = () => {
+    syncColorPickerFields();
     // Update scene background to selected color
     try { scene.background = new THREE.Color(bgColor.value); } catch { }
   };
@@ -10447,16 +10803,25 @@
     }
 
     clearSceneMeshes();
-    const vol = volumes[currentIndex].vol;
+    const record = volumes[currentIndex];
+    const vol = record && record.vol;
     const compMode = getComponentMode(vol);
     selectActiveRawComponent(vol, compMode);
+    const hasGrid = hasVolumetricGrid(vol);
+
+    if (autoIsoEnabled && hasGrid) {
+      try {
+        applyAutoIsoToIsoInput(record, vol, compMode);
+      } catch {
+        // Keep manual iso value when auto-iso estimation fails.
+      }
+    }
 
     const { min, max } = computeVolumeStats(vol, compMode, arrayMinMax);
     const iso = parseFloat(isoInput.value || "0.02");
     const opacity = parseFloat(opInput.value || "1.00");
     const posMat = createIsoMaterial('pos', opacity);
     const negMat = createIsoMaterial('neg', opacity);
-    const hasGrid = Array.isArray(vol.nxyz) && (vol.nxyz[0] > 0 && vol.nxyz[1] > 0 && vol.nxyz[2] > 0);
 
     if (renderMode === 'surface' && showSurfaces && hasGrid) {
       if (vol && vol.isTwoComponent && isPhaseLikeComponent(compMode)) {
@@ -10481,6 +10846,7 @@
    */
   function updateOpacityAndColors() {
     const op = parseFloat(opInput.value || "1.00");
+    updateOpacityPercentLabel();
     for (const m of meshes) {
       if (!m || !m.material) continue;
       if (m.userData && m.userData.phaseHue) {
