@@ -10,6 +10,8 @@
   const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
   const VIBRATION_DEFAULT_SPEED = 0.75;
   const VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1 = 5.0;
+  const VIBRATION_IR_MIN_FREQ_CM1 = 20;
+  const VIBRATION_IR_DEFAULT_SIGMA_CM1 = 28;
   const CM_INV_TEXT = 'cm⁻¹';
   const CM_INV_HTML = 'cm<sup>−1</sup>';
   const AUTO_ISO_TARGET_FRACTION = 0.85;
@@ -4767,6 +4769,243 @@
   }
 
   /**
+   * Resolve one mode IR intensity in km/mol when available.
+   * Accepts a few compatibility aliases used by sidecar payloads.
+   * @param {*} mode
+   * @returns {number}
+   */
+  function getVibrationModeIrIntensity(mode) {
+    const n = Number(
+      mode && (mode.irIntensityKmMol ?? mode.irIntensity ?? mode.intensityKmMol ?? mode.intensity)
+    );
+    if (!Number.isFinite(n)) return NaN;
+    return Math.max(0, n);
+  }
+
+  /**
+   * Build one list of spectrum peaks from the currently visible modes.
+   * @param {*} vib
+   * @param {number[]} visibleIndices
+   * @returns {{peaks:Array<{modeIndex:number,freqCm1:number,intensity:number}>,hasExplicitIntensities:boolean}}
+   */
+  function collectVisibleVibrationSpectrumPeaks(vib, visibleIndices) {
+    const peaks = [];
+    let hasExplicitIntensities = false;
+    const indices = Array.isArray(visibleIndices) ? visibleIndices : [];
+    for (const idx of indices) {
+      const mode = vib && vib.modes ? vib.modes[idx] : null;
+      const rawFreq = Number(mode && mode.frequencyCm1);
+      if (!Number.isFinite(rawFreq)) continue;
+      const freqCm1 = Math.abs(rawFreq);
+      if (!(freqCm1 >= VIBRATION_IR_MIN_FREQ_CM1)) continue;
+      const parsedIntensity = getVibrationModeIrIntensity(mode);
+      let intensity = parsedIntensity;
+      if (Number.isFinite(parsedIntensity)) {
+        hasExplicitIntensities = true;
+      }
+      peaks.push({
+        modeIndex: idx,
+        freqCm1,
+        intensity,
+      });
+    }
+    if (hasExplicitIntensities) {
+      for (const p of peaks) {
+        if (!Number.isFinite(p.intensity)) p.intensity = 0;
+      }
+    } else {
+      for (const p of peaks) p.intensity = 1;
+    }
+    if (hasExplicitIntensities) {
+      const maxExplicit = peaks.reduce((m, p) => Number.isFinite(p.intensity) ? Math.max(m, p.intensity) : m, 0);
+      if (!(maxExplicit > 0)) {
+        for (const p of peaks) p.intensity = 1;
+        hasExplicitIntensities = false;
+      }
+    }
+    return { peaks, hasExplicitIntensities };
+  }
+
+  /**
+   * Draw the IR spectrum preview for the active vibrational payload.
+   * Peaks are rendered as Gaussian-broadened sticks and the selected mode
+   * is highlighted in bright orange.
+   * @param {{enabled:boolean,vib?:*}} info
+   * @param {{visibleIndices:number[]}=} tableState
+   */
+  function renderVibrationSpectrum(info, tableState = null) {
+    if (!vibrationSpectrumWrap || !vibrationSpectrumCanvas) return;
+    if (!(info && info.enabled && info.vib && Array.isArray(info.vib.modes) && info.vib.modes.length > 0)) {
+      vibrationSpectrumWrap.style.display = 'none';
+      if (vibrationSpectrumMeta) vibrationSpectrumMeta.textContent = 'IR spectrum preview';
+      return;
+    }
+    const vib = info.vib;
+    const visibleIndices = (tableState && Array.isArray(tableState.visibleIndices))
+      ? tableState.visibleIndices
+      : getVisibleVibrationModeIndices(vib);
+    const peakData = collectVisibleVibrationSpectrumPeaks(vib, visibleIndices);
+    const peaks = peakData.peaks;
+    const hasExplicitIntensities = peakData.hasExplicitIntensities;
+
+    vibrationSpectrumWrap.style.display = 'block';
+    if (vibrationSpectrumMeta) {
+      vibrationSpectrumMeta.textContent = hasExplicitIntensities
+        ? `IR spectrum (${CM_INV_TEXT}, using parsed intensities)`
+        : `IR spectrum (${CM_INV_TEXT}, relative intensities)`;
+    }
+
+    const ctx = vibrationSpectrumCanvas.getContext('2d');
+    if (!ctx) return;
+    const cssW = Math.max(220, Math.round(vibrationSpectrumCanvas.clientWidth || 0));
+    const cssH = Math.max(88, Math.round(vibrationSpectrumCanvas.clientHeight || 128));
+    const dpr = Math.max(1, Math.min(2, Number(window.devicePixelRatio) || 1));
+    const pxW = Math.max(1, Math.round(cssW * dpr));
+    const pxH = Math.max(1, Math.round(cssH * dpr));
+    if (vibrationSpectrumCanvas.width !== pxW || vibrationSpectrumCanvas.height !== pxH) {
+      vibrationSpectrumCanvas.width = pxW;
+      vibrationSpectrumCanvas.height = pxH;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const padL = 36;
+    const padR = 10;
+    const padT = 8;
+    const padB = 20;
+    const innerW = Math.max(1, cssW - padL - padR);
+    const innerH = Math.max(1, cssH - padT - padB);
+
+    ctx.strokeStyle = 'rgba(142, 168, 200, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT + innerH + 0.5);
+    ctx.lineTo(padL + innerW, padT + innerH + 0.5);
+    ctx.stroke();
+
+    if (peaks.length === 0) {
+      ctx.fillStyle = '#93a6bf';
+      ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No visible IR-active frequencies', padL + innerW * 0.5, padT + innerH * 0.58);
+      if (vibrationSpectrumMeta) {
+        vibrationSpectrumMeta.textContent = `IR spectrum (${CM_INV_TEXT}) unavailable for current visible modes`;
+      }
+      return;
+    }
+
+    let minFreq = peaks[0].freqCm1;
+    let maxFreq = peaks[0].freqCm1;
+    for (let i = 1; i < peaks.length; i++) {
+      const f = peaks[i].freqCm1;
+      if (f < minFreq) minFreq = f;
+      if (f > maxFreq) maxFreq = f;
+    }
+    const spanRaw = Math.max(1, maxFreq - minFreq);
+    const minSpan = 420;
+    const span = Math.max(minSpan, spanRaw * 1.18);
+    const centerFreq = 0.5 * (minFreq + maxFreq);
+    const xMin = Math.max(0, centerFreq - span * 0.5);
+    const xMax = xMin + span;
+    const sigma = Math.max(12, Math.min(48, Math.max(VIBRATION_IR_DEFAULT_SIGMA_CM1, span * 0.04)));
+
+    let maxIntensity = 0;
+    for (const p of peaks) maxIntensity = Math.max(maxIntensity, Number(p.intensity) || 0);
+    maxIntensity = Math.max(1e-8, maxIntensity);
+    const normalized = peaks.map((p) => ({
+      modeIndex: p.modeIndex,
+      freqCm1: p.freqCm1,
+      amp: Math.max(0, (Number(p.intensity) || 0) / maxIntensity),
+    }));
+
+    /**
+     * Evaluate broadened intensity at one frequency coordinate.
+     * @param {number} xFreq
+     * @returns {number}
+     */
+    function spectrumAt(xFreq) {
+      let y = 0;
+      for (const p of normalized) {
+        const z = (xFreq - p.freqCm1) / sigma;
+        y += p.amp * Math.exp(-0.5 * z * z);
+      }
+      return y;
+    }
+
+    const ySamples = new Float32Array(innerW + 1);
+    let yMax = 0;
+    for (let i = 0; i <= innerW; i++) {
+      const xFreq = xMin + (i / innerW) * (xMax - xMin);
+      const y = spectrumAt(xFreq);
+      ySamples[i] = y;
+      if (y > yMax) yMax = y;
+    }
+    yMax = Math.max(1e-8, yMax);
+
+    ctx.strokeStyle = '#8fc5ff';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (let i = 0; i <= innerW; i++) {
+      const x = padL + i;
+      const y = padT + innerH - (ySamples[i] / yMax) * innerH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    const selected = normalized.find((p) => p.modeIndex === (vib.modeIndex | 0));
+    if (selected && Number.isFinite(selected.freqCm1)) {
+      const xSel = padL + ((selected.freqCm1 - xMin) / (xMax - xMin)) * innerW;
+      if (xSel >= padL - 2 && xSel <= padL + innerW + 2) {
+        const ySel = spectrumAt(selected.freqCm1);
+        const yPx = padT + innerH - (ySel / yMax) * innerH;
+        ctx.strokeStyle = '#ff9d21';
+        ctx.fillStyle = 'rgba(255, 157, 33, 0.22)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(xSel, padT + innerH);
+        ctx.lineTo(xSel, yPx);
+        ctx.stroke();
+
+        const bandHalfFreq = Math.max(14, sigma * 0.9);
+        const leftFreq = Math.max(xMin, selected.freqCm1 - bandHalfFreq);
+        const rightFreq = Math.min(xMax, selected.freqCm1 + bandHalfFreq);
+        const leftIdx = Math.max(0, Math.min(innerW, Math.floor(((leftFreq - xMin) / (xMax - xMin)) * innerW)));
+        const rightIdx = Math.max(0, Math.min(innerW, Math.ceil(((rightFreq - xMin) / (xMax - xMin)) * innerW)));
+        if (rightIdx > leftIdx) {
+          ctx.beginPath();
+          ctx.moveTo(padL + leftIdx, padT + innerH);
+          for (let i = leftIdx; i <= rightIdx; i++) {
+            const x = padL + i;
+            const y = padT + innerH - (ySamples[i] / yMax) * innerH;
+            ctx.lineTo(x, y);
+          }
+          ctx.lineTo(padL + rightIdx, padT + innerH);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        ctx.fillStyle = '#ffb155';
+        ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'left';
+        const selectedLabel = `${selected.freqCm1.toFixed(1)} ${CM_INV_TEXT}`;
+        const textX = Math.min(padL + innerW - 92, Math.max(padL + 2, xSel + 5));
+        const textY = Math.max(padT + 12, yPx - 6);
+        ctx.fillText(selectedLabel, textX, textY);
+      }
+    }
+
+    ctx.fillStyle = '#92a5bf';
+    ctx.font = '10px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${Math.round(xMin)}`, padL, cssH - 6);
+    ctx.textAlign = 'center';
+    ctx.fillText(`${Math.round((xMin + xMax) * 0.5)}`, padL + innerW * 0.5, cssH - 6);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.round(xMax)} ${CM_INV_TEXT}`, padL + innerW, cssH - 6);
+  }
+
+  /**
    * Return true when a mode should be hidden by the low-frequency filter.
    * @param {*} mode
    * @returns {boolean}
@@ -4849,8 +5088,10 @@
     }
     if (vibrationRow) vibrationRow.style.display = info.enabled ? 'grid' : 'none';
     if (vibrationRow2) vibrationRow2.style.display = info.enabled ? 'grid' : 'none';
+    if (vibrationSpectrumWrap) vibrationSpectrumWrap.style.display = info.enabled ? 'block' : 'none';
     if (!info.enabled) {
       renderVibrationModeTable(info);
+      renderVibrationSpectrum(info);
       setVibrationPanelOpen(false);
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
@@ -4882,6 +5123,7 @@
       }
       if (vibrationPlayBtn) vibrationPlayBtn.textContent = '▶';
       if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = `-- ${CM_INV_HTML}`;
+      renderVibrationSpectrum(info, tableState);
       return;
     }
 
@@ -4907,6 +5149,7 @@
     if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = Number.isFinite(freq)
       ? `${freq.toFixed(1)} ${CM_INV_HTML}`
       : `-- ${CM_INV_HTML}`;
+    renderVibrationSpectrum(info, tableState);
   }
   /**
    * Restore active vibrational displacement to equilibrium geometry.
@@ -5242,6 +5485,9 @@
   const vibrationAmplitudeEl = document.getElementById('vibrationAmplitude');
   const vibrationSpeedEl = document.getElementById('vibrationSpeed');
   const vibrationFreqLabel = document.getElementById('vibrationFreqLabel');
+  const vibrationSpectrumWrap = document.getElementById('vibrationSpectrumWrap');
+  const vibrationSpectrumCanvas = document.getElementById('vibrationSpectrumCanvas');
+  const vibrationSpectrumMeta = document.getElementById('vibrationSpectrumMeta');
   const vibrationModeTableWrap = document.getElementById('vibrationModeTableWrap');
   const vibrationModeTableBody = document.getElementById('vibrationModeTableBody');
   const vibrationModeEmpty = document.getElementById('vibrationModeEmpty');
@@ -9237,37 +9483,54 @@
   }
 
   /**
-   * Parse atom symbols from ORCA `$atoms` section when available.
+   * Parse atom symbols and coordinates from ORCA `$atoms` section.
+   * Coordinates are in bohr when present in the Hessian payload.
    * @param {string[]} lines
-   * @returns {{atomCount:number|null,atomSymbols:(string[]|null)}}
+   * @returns {{atomCount:number|null,atomSymbols:(string[]|null),atoms:(Array<{symbol:string,x:number,y:number,z:number}>|null)}}
    */
   function parseOrcaAtomsSection(lines) {
     const sectionLine = findOrcaSectionLine(lines, 'atoms');
-    if (sectionLine < 0) return { atomCount: null, atomSymbols: null };
+    if (sectionLine < 0) return { atomCount: null, atomSymbols: null, atoms: null };
     let lineIdx = sectionLine + 1;
     while (lineIdx < lines.length && !String(lines[lineIdx] || '').trim()) lineIdx++;
     if (lineIdx >= lines.length || String(lines[lineIdx] || '').trim().startsWith('$')) {
-      return { atomCount: null, atomSymbols: null };
+      return { atomCount: null, atomSymbols: null, atoms: null };
     }
     const countNums = extractOrcaLineNumbers(lines[lineIdx]);
     const atomCount = countNums.length > 0 ? Math.round(countNums[0]) : NaN;
     if (!Number.isInteger(atomCount) || atomCount <= 0) {
-      return { atomCount: null, atomSymbols: null };
+      return { atomCount: null, atomSymbols: null, atoms: null };
     }
     lineIdx += 1;
     const atomSymbols = [];
+    const atoms = [];
+    let hasCoordinates = true;
     while (lineIdx < lines.length && atomSymbols.length < atomCount) {
       const raw = String(lines[lineIdx] || '').trim();
       if (!raw) { lineIdx += 1; continue; }
       if (raw.startsWith('$')) break;
-      const token = raw.split(/\s+/)[0] || '';
-      const m = token.match(/[A-Za-z]{1,3}/);
-      if (!m) break;
-      atomSymbols.push(m[0].toUpperCase());
+      const parts = raw.split(/\s+/).filter(Boolean);
+      const symbol = resolveElementSymbolToken(parts[0], parts[1]);
+      if (!symbol) break;
+      atomSymbols.push(symbol);
+      if (hasCoordinates) {
+        const x = parseOrcaNumberToken(parts[parts.length - 3]);
+        const y = parseOrcaNumberToken(parts[parts.length - 2]);
+        const z = parseOrcaNumberToken(parts[parts.length - 1]);
+        if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+          atoms.push({ symbol, x, y, z });
+        } else {
+          hasCoordinates = false;
+        }
+      }
       lineIdx += 1;
     }
-    if (atomSymbols.length !== atomCount) return { atomCount, atomSymbols: null };
-    return { atomCount, atomSymbols };
+    if (atomSymbols.length !== atomCount) return { atomCount, atomSymbols: null, atoms: null };
+    return {
+      atomCount,
+      atomSymbols,
+      atoms: hasCoordinates && atoms.length === atomCount ? atoms : null,
+    };
   }
 
   /**
@@ -9313,6 +9576,38 @@
       throw new Error(`ORCA integration: expected ${modeCount} frequencies, found ${frequencies.length} in "${sourceName}".`);
     }
     return frequencies.slice(0, modeCount);
+  }
+
+  /**
+   * Parse ORCA `$ir_spectrum` section and return per-mode IR intensities (km/mol).
+   * Returns null when section is absent.
+   * @param {string[]} lines
+   * @returns {number[]|null}
+   */
+  function parseOrcaIrSpectrumIntensities(lines) {
+    const sectionLine = findOrcaSectionLine(lines, 'ir_spectrum');
+    if (sectionLine < 0) return null;
+    let lineIdx = sectionLine + 1;
+    while (lineIdx < lines.length && !String(lines[lineIdx] || '').trim()) lineIdx++;
+    if (lineIdx >= lines.length || String(lines[lineIdx] || '').trim().startsWith('$')) return null;
+    const countNums = extractOrcaLineNumbers(lines[lineIdx]);
+    const modeCount = countNums.length > 0 ? Math.round(countNums[0]) : NaN;
+    if (!Number.isInteger(modeCount) || modeCount <= 0) return null;
+    lineIdx += 1;
+    const out = [];
+    while (lineIdx < lines.length && out.length < modeCount) {
+      const raw = String(lines[lineIdx] || '').trim();
+      if (!raw) { lineIdx += 1; continue; }
+      if (raw.startsWith('$')) break;
+      const nums = extractOrcaLineNumbers(raw);
+      if (nums.length >= 3) out.push(nums[2]);
+      else if (nums.length >= 2) out.push(nums[1]);
+      else if (nums.length >= 1) out.push(nums[0]);
+      lineIdx += 1;
+    }
+    if (out.length === 0) return null;
+    while (out.length < modeCount) out.push(NaN);
+    return out.slice(0, modeCount);
   }
 
   /**
@@ -9429,6 +9724,7 @@
       throw new Error(`ORCA integration: "${sourceName}" does not look like an ORCA Hessian file.`);
     }
     const freqs = parseOrcaVibrationalFrequencies(lines, sourceName);
+    const irIntensities = parseOrcaIrSpectrumIntensities(lines);
     const normalModes = parseOrcaNormalModesMatrix(lines, sourceName);
     if (normalModes.rows % 3 !== 0) {
       throw new Error(`ORCA integration: normal-mode row count ${normalModes.rows} is not divisible by 3 in "${sourceName}".`);
@@ -9451,6 +9747,9 @@
       modes.push({
         label: `Mode ${modeIdx + 1}`,
         frequencyCm1: Number.isFinite(freqs[modeIdx]) ? Number(freqs[modeIdx]) : NaN,
+        irIntensityKmMol: Number.isFinite(Number(irIntensities && irIntensities[modeIdx]))
+          ? Number(irIntensities[modeIdx])
+          : NaN,
         displacements: disp,
       });
     }
@@ -9467,6 +9766,58 @@
       atomSymbols: atomMeta.atomSymbols,
       modes,
     };
+  }
+
+  /**
+   * Build one XYZ-like volume from ORCA `$atoms` coordinates.
+   * ORCA Hessian atom coordinates are in bohr.
+   * @param {{atoms:(Array<{symbol:string,x:number,y:number,z:number}>|null)}} atomMeta
+   * @param {string} sourceName
+   * @returns {*|null}
+   */
+  function buildXyzVolumeFromOrcaAtoms(atomMeta, sourceName) {
+    if (!atomMeta || !Array.isArray(atomMeta.atoms) || atomMeta.atoms.length === 0) return null;
+    const atoms = [];
+    for (let i = 0; i < atomMeta.atoms.length; i++) {
+      const row = atomMeta.atoms[i];
+      const symbol = String(row && row.symbol ? row.symbol : '').toUpperCase();
+      const atomicNumber = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol];
+      if (!Number.isInteger(atomicNumber)) return null;
+      const x = Number(row && row.x);
+      const y = Number(row && row.y);
+      const z = Number(row && row.z);
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return null;
+      atoms.push({ Z: atomicNumber, q: 0, x, y, z });
+    }
+    const idx = () => 0;
+    return {
+      title: 'ORCA Hessian',
+      comment: sourceName || '',
+      natoms: atoms.length,
+      origin: [0, 0, 0],
+      nxyz: [0, 0, 0],
+      axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+      atoms,
+      data: new Float32Array(0),
+      idx,
+      units: 'bohr',
+      kind: 'xyz',
+    };
+  }
+
+  /**
+   * Parse ORCA Hessian text into geometry + vibration payload.
+   * When `$atoms` coordinates are present, geometry is built directly.
+   * @param {string} text
+   * @param {string} sourceName
+   * @returns {{vol:*,payload:*}}
+   */
+  function parseOrcaHessianVibrationBundle(text, sourceName) {
+    const payload = parseOrcaHessianVibrationPayload(text, sourceName);
+    const lines = String(text || '').replace(/\r/g, '').split('\n');
+    const atomMeta = parseOrcaAtomsSection(lines);
+    const vol = buildXyzVolumeFromOrcaAtoms(atomMeta, sourceName);
+    return { vol, payload };
   }
 
   /**
@@ -9530,6 +9881,26 @@
     for (const tok of tail.trim().split(/\s+/)) {
       const f = parsePsi4FrequencyToken(tok);
       if (Number.isFinite(f)) out.push(f);
+      if (out.length >= expectedCount) break;
+    }
+    if (out.length >= expectedCount) return out.slice(0, expectedCount);
+    const fallback = extractOrcaLineNumbers(s);
+    return fallback.slice(0, expectedCount);
+  }
+
+  /**
+   * Parse one Psi4 `IR activ [km/mol] ...` row.
+   * @param {string} line
+   * @param {number} expectedCount
+   * @returns {number[]}
+   */
+  function parsePsi4IrActivityRow(line, expectedCount) {
+    const s = String(line || '');
+    const tail = s.replace(/.*IR\s*activ(?:ity)?\s*\[[^\]]+\]\s*/i, '');
+    const out = [];
+    for (const tok of tail.trim().split(/\s+/)) {
+      const v = Number(tok);
+      if (Number.isFinite(v)) out.push(v);
       if (out.length >= expectedCount) break;
     }
     if (out.length >= expectedCount) return out.slice(0, expectedCount);
@@ -9688,6 +10059,15 @@
       if (freqs.length < modeIndices.length) {
         throw new Error(`Psi4 integration: malformed Freq row near line ${freqLineIndex + 1} in "${sourceName}".`);
       }
+      let irIntensities = null;
+      for (let j = freqLineIndex + 1; j < Math.min(lines.length, freqLineIndex + 12); j++) {
+        if (!/^\s*IR\s*activ(?:ity)?\s*\[[^\]]+\]/i.test(String(lines[j] || ''))) continue;
+        const parsed = parsePsi4IrActivityRow(lines[j], modeIndices.length);
+        if (parsed.length >= modeIndices.length) {
+          irIntensities = parsed.slice(0, modeIndices.length);
+          break;
+        }
+      }
 
       const atomRows = [];
       let rowIdx = freqLineIndex + 1;
@@ -9735,11 +10115,17 @@
           rec = {
             modeIndex,
             frequencyCm1: freqs[m],
+            irIntensityKmMol: Number.isFinite(Number(irIntensities && irIntensities[m]))
+              ? Number(irIntensities[m])
+              : NaN,
             displacements: new Float32Array(atomCount * 3),
           };
           modeMap.set(modeIndex, rec);
         }
         rec.frequencyCm1 = freqs[m];
+        if (Number.isFinite(Number(irIntensities && irIntensities[m]))) {
+          rec.irIntensityKmMol = Number(irIntensities[m]);
+        }
         for (let a = 0; a < atomCount; a++) {
           const vals = atomRows[a].values;
           rec.displacements[3 * a + 0] = vals[3 * m + 0];
@@ -9764,6 +10150,7 @@
       modes: modeList.map((m) => ({
         label: `Mode ${hasZeroBasedModeNumbering ? (m.modeIndex + 1) : m.modeIndex}`,
         frequencyCm1: Number.isFinite(m.frequencyCm1) ? Number(m.frequencyCm1) : NaN,
+        irIntensityKmMol: Number.isFinite(m.irIntensityKmMol) ? Number(m.irIntensityKmMol) : NaN,
         displacements: m.displacements,
       })),
     };
@@ -9881,12 +10268,16 @@
 
     let atomCount = Number.isInteger(parsed.atomCount) && parsed.atomCount > 0 ? (parsed.atomCount | 0) : null;
     const frequencies = Array.isArray(parsed.frequencies) ? parsed.frequencies : null;
+    const irIntensities = Array.isArray(parsed.irIntensities)
+      ? parsed.irIntensities
+      : (Array.isArray(parsed.intensities) ? parsed.intensities : null);
     const modes = [];
     for (let i = 0; i < modesRaw.length; i++) {
       const modeRaw = modesRaw[i];
       let displacementRaw = null;
       let label = `Mode ${i + 1}`;
       let frequencyCm1 = NaN;
+      let irIntensityKmMol = NaN;
       if (Array.isArray(modeRaw)) {
         displacementRaw = modeRaw;
       } else if (modeRaw && typeof modeRaw === 'object') {
@@ -9896,17 +10287,24 @@
         frequencyCm1 = Number(
           modeRaw.frequencyCm1 ?? modeRaw.frequency ?? modeRaw.wavenumber ?? modeRaw.cm1
         );
+        irIntensityKmMol = Number(
+          modeRaw.irIntensityKmMol ?? modeRaw.irIntensity ?? modeRaw.intensityKmMol ?? modeRaw.intensity
+        );
       } else {
         throw new Error(`Malformed vibration payload "${sourceName}": mode ${i + 1} must be an object or array.`);
       }
       if (!Number.isFinite(frequencyCm1) && frequencies && i < frequencies.length) {
         frequencyCm1 = Number(frequencies[i]);
       }
+      if (!Number.isFinite(irIntensityKmMol) && irIntensities && i < irIntensities.length) {
+        irIntensityKmMol = Number(irIntensities[i]);
+      }
       const parsedDisp = parseVibrationDisplacements(displacementRaw, atomCount, i + 1);
       atomCount = parsedDisp.atomCount;
       modes.push({
         label,
         frequencyCm1: Number.isFinite(frequencyCm1) ? frequencyCm1 : NaN,
+        irIntensityKmMol: Number.isFinite(irIntensityKmMol) ? Math.max(0, irIntensityKmMol) : NaN,
         displacements: parsedDisp.values,
       });
     }
@@ -9948,13 +10346,11 @@
   }
 
   /**
-   * Attach one parsed vibrational payload to the best matching loaded molecule.
-   * @param {string} sourceName
+   * Find loaded molecules that are compatible with one vibration payload.
    * @param {*} payload
-   * @param {{preferredIndex?:number}=} options
-   * @returns {{ok:boolean,error?:string,targetName?:string}}
+   * @returns {Array<{index:number,record:*,vol:*}>}
    */
-  function attachVibrationPayloadToBestVolume(sourceName, payload, options = null) {
+  function findMatchingVolumesForVibrationPayload(payload) {
     const candidates = [];
     for (let i = 0; i < volumes.length; i++) {
       const record = volumes[i];
@@ -9971,6 +10367,18 @@
       }
       candidates.push({ index: i, record, vol });
     }
+    return candidates;
+  }
+
+  /**
+   * Attach one parsed vibrational payload to the best matching loaded molecule.
+   * @param {string} sourceName
+   * @param {*} payload
+   * @param {{preferredIndex?:number}=} options
+   * @returns {{ok:boolean,error?:string,targetName?:string}}
+   */
+  function attachVibrationPayloadToBestVolume(sourceName, payload, options = null) {
+    const candidates = findMatchingVolumesForVibrationPayload(payload);
     if (candidates.length === 0) {
       return {
         ok: false,
@@ -9998,6 +10406,7 @@
       return {
         label: mode.label || `Mode ${idx + 1}`,
         frequencyCm1: Number.isFinite(mode.frequencyCm1) ? Number(mode.frequencyCm1) : NaN,
+        irIntensityKmMol: Number.isFinite(mode.irIntensityKmMol) ? Math.max(0, Number(mode.irIntensityKmMol)) : NaN,
         displacements: out,
       };
     });
@@ -10176,8 +10585,27 @@
           continue;
         }
         if (fileKind === 'orca_hess') {
-          const payload = parseOrcaHessianVibrationPayload(text, name || 'ORCA Hessian');
-          pendingVibrationPayloads.push({ name: name || 'ORCA Hessian', payload });
+          const bundle = parseOrcaHessianVibrationBundle(text, name || 'ORCA Hessian');
+          const matchCandidates = findMatchingVolumesForVibrationPayload(bundle.payload);
+          const matchedCurrent = matchCandidates.find((c) => c.index === currentIndex);
+          let preferredIndex = matchedCurrent
+            ? matchedCurrent.index
+            : (matchCandidates.length > 0 ? matchCandidates[0].index : undefined);
+          if (bundle.vol && preferredIndex == null) {
+            if (!hasPreparedTarget) {
+              clearPlaceholderVolumesForUserLoad();
+              startIndex = volumes.length;
+              hasPreparedTarget = true;
+            }
+            appendParsedVolumeRecord(name || 'ORCA Hessian', bundle.vol);
+            loadedCount++;
+            preferredIndex = volumes.length - 1;
+          }
+          pendingVibrationPayloads.push({
+            name: name || 'ORCA Hessian',
+            payload: bundle.payload,
+            preferredIndex,
+          });
           continue;
         }
         const explicitVibrationFile = fileKind === 'vibration_payload';
