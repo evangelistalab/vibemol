@@ -522,8 +522,15 @@
   orthographicCamera.position.copy(perspectiveCamera.position);
   orthographicCamera.quaternion.copy(perspectiveCamera.quaternion);
   orthographicCamera.up.copy(perspectiveCamera.up);
-  let projectionMode = 'perspective';
-  let camera = perspectiveCamera;
+  // Centralized camera/view state (mode + active camera + remembered default view pose).
+  const viewState = {
+    mode: 'perspective',
+    camera: perspectiveCamera,
+    perspectiveCamera,
+    orthographicCamera,
+    defaultView: null,
+  };
+  let camera = viewState.camera;
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0, 0);
   controls.update();
@@ -540,7 +547,7 @@
     const w = Math.max(1, Number(width) || 1);
     const h = Math.max(1, Number(height) || 1);
     const aspect = w / h;
-    if (projectionMode === 'orthographic') {
+    if (viewState.mode === 'orthographic') {
       const dist = Math.max(0.01, orthographicCamera.position.distanceTo(controls.target));
       const frustum = computeOrthographicFrustum(aspect, dist, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV);
       orthographicCamera.left = frustum.left;
@@ -650,8 +657,6 @@
   const elementColorOverrides = new Map();
   // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
   let __savedShowSurfaces = null;
-  // Default view reference (captured on first non-preserved fit)
-  let defaultView = null;
   // Current iso-surface material style
   let surfaceStyle = 'emissive';
   // Current atom/bond material style
@@ -4446,7 +4451,7 @@
     const dist = computePerspectiveFitDistance(maxDim, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV, FIT_TIGHTNESS);
     const dir = new THREE.Vector3(1, 1, 1).normalize();
     camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
-    if (projectionMode === 'orthographic') {
+    if (viewState.mode === 'orthographic') {
       const aspect = Math.max(1e-6, (renderer.domElement.width || 1) / Math.max(1, (renderer.domElement.height || 1)));
       const frustum = computeOrthographicFrustum(aspect, dist, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV);
       orthographicCamera.left = frustum.left;
@@ -5803,7 +5808,7 @@
    */
   function updateProjectionModeUI() {
     if (!projectionModeBtn) return;
-    if (projectionMode === 'orthographic') {
+    if (viewState.mode === 'orthographic') {
       projectionModeBtn.textContent = 'Projection: Orthographic';
       projectionModeBtn.title = 'Switch to perspective projection';
       return;
@@ -5836,7 +5841,7 @@
    */
   function setProjectionMode(nextMode, options = {}) {
     const targetMode = nextMode === 'orthographic' ? 'orthographic' : 'perspective';
-    if (targetMode === projectionMode) {
+    if (targetMode === viewState.mode) {
       updateProjectionModeUI();
       return;
     }
@@ -5847,7 +5852,8 @@
       copyCameraPose(orthographicCamera, perspectiveCamera);
       camera = perspectiveCamera;
     }
-    projectionMode = targetMode;
+    viewState.mode = targetMode;
+    viewState.camera = camera;
     controls.object = camera;
     const { w, h } = getViewportSize();
     updateActiveCameraProjection(w, h);
@@ -7728,15 +7734,15 @@
 
   // Reset view to the initial camera/target/shift
   viewReset.onclick = () => {
-    if (defaultView) {
-      const defaultMode = defaultView.projectionMode === 'orthographic' ? 'orthographic' : 'perspective';
-      if (defaultMode !== projectionMode) setProjectionMode(defaultMode, { refreshUi: false });
-      contentGroup.position.copy(defaultView.contentPos);
-      camera.copy(defaultView.cam);
+    if (viewState.defaultView) {
+      const defaultMode = viewState.defaultView.projectionMode === 'orthographic' ? 'orthographic' : 'perspective';
+      if (defaultMode !== viewState.mode) setProjectionMode(defaultMode, { refreshUi: false });
+      contentGroup.position.copy(viewState.defaultView.contentPos);
+      camera.copy(viewState.defaultView.cam);
       controls.object = camera;
       const { w, h } = getViewportSize();
       updateActiveCameraProjection(w, h);
-      controls.target.copy(defaultView.target);
+      controls.target.copy(viewState.defaultView.target);
       controls.update();
       refreshViewUI();
     } else {
@@ -7751,7 +7757,7 @@
   // View action: toggle camera projection model while preserving pose/target.
   if (projectionModeBtn) {
     projectionModeBtn.onclick = () => {
-      const next = projectionMode === 'orthographic' ? 'perspective' : 'orthographic';
+      const next = viewState.mode === 'orthographic' ? 'perspective' : 'orthographic';
       setProjectionMode(next);
     };
   }
@@ -8321,7 +8327,7 @@
   registerPresetSetting('view.target.x', () => controls.target.x, (value) => { controls.target.x = asFiniteNumber(value, controls.target.x); });
   registerPresetSetting('view.target.y', () => controls.target.y, (value) => { controls.target.y = asFiniteNumber(value, controls.target.y); });
   registerPresetSetting('view.target.z', () => controls.target.z, (value) => { controls.target.z = asFiniteNumber(value, controls.target.z); });
-  registerPresetSetting('view.projection', () => projectionMode, (value) => {
+  registerPresetSetting('view.projection', () => viewState.mode, (value) => {
     const next = value === 'orthographic' ? 'orthographic' : 'perspective';
     setProjectionMode(next, { refreshUi: false });
   });
@@ -10969,12 +10975,12 @@
       return;
     }
     fitCameraToScene();
-    if (!defaultView) {
-      defaultView = {
+    if (!viewState.defaultView) {
+      viewState.defaultView = {
         cam: camera.clone(),
         target: controls.target.clone(),
         contentPos: contentGroup.position.clone(),
-        projectionMode,
+        projectionMode: viewState.mode,
       };
     }
   }
