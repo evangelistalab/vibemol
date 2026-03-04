@@ -4727,7 +4727,7 @@
     if (trajectoryNowPlaying) {
       trajectoryNowPlaying.textContent = `Frame ${traj.frameIndex + 1}/${info.frameCount} • ${traj.fps} fps${traj.loop ? ' • loop' : ''}`;
     }
-    if (trajectoryPlayBtn) trajectoryPlayBtn.textContent = trajectoryPlaying ? '⏸' : '▶';
+    if (trajectoryPlayBtn) trajectoryPlayBtn.textContent = trajectoryPlaying ? 'pause' : 'play_arrow';
     if (trajectoryLoopEl) trajectoryLoopEl.checked = !!traj.loop;
     if (trajectoryFpsEl && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
   }
@@ -5061,7 +5061,7 @@
       const freqCell = formatVibrationFrequencyCell(mode.frequencyCm1);
       rows.push(
         `<tr class="mode-row${activeClass}" data-mode-index="${i}" title="Select ${escapeHtml(rawLabel)}">`
-        + `<td><button class="vibrationPlayCell" data-action="play" data-mode-index="${i}" title="Play ${escapeHtml(rawLabel)}">${(i === (vib.modeIndex | 0) && vibrationPlaying) ? '⏸' : '▶'}</button></td>`
+        + `<td><button class="vibrationPlayCell" data-action="play" data-mode-index="${i}" title="Play ${escapeHtml(rawLabel)}">${(i === (vib.modeIndex | 0) && vibrationPlaying) ? 'pause' : 'play_arrow'}</button></td>`
         + `<td>${i + 1}</td>`
         + `<td>${escapeHtml(rawLabel)}</td>`
         + `<td>${escapeHtml(freqCell)}</td>`
@@ -5126,7 +5126,7 @@
           ? `No visible mode (|freq| < ${VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1.toFixed(1)} ${CM_INV_TEXT} hidden)`
           : 'No mode selected';
       }
-      if (vibrationPlayBtn) vibrationPlayBtn.textContent = '▶';
+      if (vibrationPlayBtn) vibrationPlayBtn.textContent = 'play_arrow';
       if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = `-- ${CM_INV_HTML}`;
       renderVibrationSpectrum(info, tableState);
       return;
@@ -5144,7 +5144,7 @@
     const freqText = Number.isFinite(freq) ? `${freq.toFixed(1)} ${CM_INV_TEXT}` : `-- ${CM_INV_TEXT}`;
     if (vibrationModeLabel) vibrationModeLabel.textContent = `${vib.modeIndex + 1}/${info.modeCount}${labelSuffix}`;
     if (vibrationNowPlaying) vibrationNowPlaying.textContent = `Selected: ${vib.modeIndex + 1}/${info.modeCount}${labelSuffix} • ${freqText}`;
-    if (vibrationPlayBtn) vibrationPlayBtn.textContent = vibrationPlaying ? '⏸' : '▶';
+    if (vibrationPlayBtn) vibrationPlayBtn.textContent = vibrationPlaying ? 'pause' : 'play_arrow';
     if (vibrationAmplitudeEl && document.activeElement !== vibrationAmplitudeEl) {
       vibrationAmplitudeEl.value = Number(vib.amplitude).toFixed(2);
     }
@@ -6243,7 +6243,7 @@
     displayInspector.classList.toggle('open', shouldOpen);
     displayInspector.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
     if (displayInspectorBtn) displayInspectorBtn.classList.toggle('active', shouldOpen);
-    if (displayInspectorToggleIcon) displayInspectorToggleIcon.textContent = shouldOpen ? '−' : '+';
+    if (displayInspectorToggleIcon) displayInspectorToggleIcon.textContent = shouldOpen ? 'remove' : 'add';
   }
   if (displayInspectorBtn) {
     displayInspectorBtn.onclick = () => {
@@ -11070,7 +11070,7 @@
     pubchemBusy = !!busy;
     if (!pubchemLoadBtn) return;
     pubchemLoadBtn.disabled = pubchemBusy;
-    pubchemLoadBtn.textContent = pubchemBusy ? '…' : '↓';
+    pubchemLoadBtn.textContent = pubchemBusy ? 'hourglass_top' : 'arrow_downward';
     pubchemLoadBtn.title = pubchemBusy
       ? 'Loading PubChem…'
       : 'Search PubChem and load the selected molecule';
