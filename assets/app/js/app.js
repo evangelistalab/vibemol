@@ -14,6 +14,7 @@
   const AUTO_ISO_MAX_SAMPLES = 650000;
   const AUTO_ISO_WORKER_THRESHOLD_SAMPLES = 250000;
   const AUTO_ISO_WORKER_TIMEOUT_MS = 15000;
+  const DEFAULT_ISO_VALUE = 0.02;
   const HEADER_HAPPY_EMOJIS = Object.freeze(['🙂', '😊', '😄', '😃', '😁', '😎', '🤓', '😺', '🤠', '🫡', '😇', '😍', '🫡', '🥳']);
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
@@ -10128,7 +10129,9 @@
     const meta = Object.assign({ name, vol }, extras || {});
     if (vol && vol.isTwoComponent) setVolume2CComponent(meta, global2CComponentMode);
     volumes.push(meta);
-    if (vol && vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
+    // Keep the user/default iso when importing files; only fall back to isoHint
+    // if the iso field is actually empty.
+    if (vol && vol.isoHint != null && isoInput.value === '') {
       isoInput.value = String(vol.isoHint);
     }
     if (vol && vol.data && vol.data.length) {
@@ -10196,14 +10199,17 @@
    * Refresh selector, focus first newly added item, and rebuild scene.
    * @param {number} startIndex
    */
-  function finalizeLoadedVolumes(startIndex) {
+  function finalizeLoadedVolumes(startIndex, options = {}) {
+    const resetIsoToDefault = !!options.resetIsoToDefault;
+    const skipAutoIsoOnInitialRebuild = !!options.skipAutoIsoOnInitialRebuild;
     refreshFileSelect();
     if (volumes.length > 0) {
       currentIndex = Math.max(0, Math.min(startIndex, volumes.length - 1));
       if (fileSelect && fileSelect.options.length > currentIndex) {
         fileSelect.value = String(currentIndex);
       }
-      rebuildScene();
+      if (resetIsoToDefault && isoInput) isoInput.value = formatIsoInputValue(DEFAULT_ISO_VALUE);
+      rebuildScene({ skipAutoIso: skipAutoIsoOnInitialRebuild });
       updateSidePanel();
     }
     updateEmptyStateVisibility();
@@ -10223,6 +10229,7 @@
     let hasPreparedTarget = false;
     let startIndex = -1; // index of first newly added
     let loadedCount = 0;
+    let loadedVolumetricCount = 0;
     for (const f of arr) {
       try {
         const text = await f.text();
@@ -10286,6 +10293,7 @@
           hasPreparedTarget = true;
         }
         appendParsedVolumeRecord(f.name, vol);
+        if (hasVolumetricGrid(vol)) loadedVolumetricCount++;
         loadedCount++;
       } catch (err) {
         const msg = err && err.message ? err.message : String(err);
@@ -10294,7 +10302,10 @@
       }
     }
     if (loadedCount > 0 && startIndex >= 0) {
-      finalizeLoadedVolumes(startIndex);
+      finalizeLoadedVolumes(startIndex, {
+        resetIsoToDefault: loadedVolumetricCount > 0,
+        skipAutoIsoOnInitialRebuild: loadedVolumetricCount > 0,
+      });
       if (getActiveTrajectoryInfo().enabled) {
         setTrajectoryPanelOpen(true);
       }
@@ -11203,10 +11214,11 @@
 
   /**
    * Recompute scene content for the active file and current render settings.
-   * @param {{preserveView?:boolean}} options
+   * @param {{preserveView?:boolean, skipAutoIso?:boolean}} options
    */
   function rebuildScene(options = {}) {
     const preserveView = !!options.preserveView;
+    const skipAutoIso = !!options.skipAutoIso;
     const savedCam = preserveView ? camera.clone() : null;
     const savedTarget = preserveView ? controls.target.clone() : null;
     if (currentIndex < 0) {
@@ -11221,7 +11233,7 @@
     selectActiveRawComponent(vol, compMode);
     const hasGrid = hasVolumetricGrid(vol);
 
-    if (autoIsoEnabled && hasGrid) {
+    if (!skipAutoIso && autoIsoEnabled && hasGrid) {
       try {
         applyAutoIsoToIsoInput(record, vol, compMode);
       } catch {
