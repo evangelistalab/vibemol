@@ -599,6 +599,10 @@
     const h = Math.max(1, Math.round(rect ? rect.height : window.innerHeight));
     renderer.setSize(w, h, false);
     updateActiveCameraProjection(w, h);
+    const vibrationPanelEl = document.getElementById('vibrationPanel');
+    if (vibrationPanelEl && vibrationPanelEl.classList.contains('open')) {
+      scheduleVibrationPanelLayoutSync(1);
+    }
   }
   window.addEventListener('resize', resize);
   if (typeof ResizeObserver !== 'undefined' && dropViewportEl) {
@@ -4621,6 +4625,7 @@
   let vibrationPlaying = false;
   let vibrationLastStepMs = 0;
   let vibrationHideSmallFrequencies = true;
+  let vibrationPanelLayoutRaf = 0;
   /**
    * Snapshot atom coordinates from one volume into a flat native-units array.
    * @param {*} vol
@@ -5150,6 +5155,34 @@
       ? `${freq.toFixed(1)} ${CM_INV_HTML}`
       : `-- ${CM_INV_HTML}`;
     renderVibrationSpectrum(info, tableState);
+  }
+
+  /**
+   * Redraw vibration UI after the floating panel has entered layout.
+   * This avoids first-open canvas stretch when initial render happens while hidden.
+   * @param {number=} rafFrames
+   */
+  function scheduleVibrationPanelLayoutSync(rafFrames = 2) {
+    const frames = Math.max(1, Math.round(Number(rafFrames) || 1));
+    if (vibrationPanelLayoutRaf) {
+      cancelAnimationFrame(vibrationPanelLayoutRaf);
+      vibrationPanelLayoutRaf = 0;
+    }
+    /**
+     * @param {number} remaining
+     */
+    const tick = (remaining) => {
+      vibrationPanelLayoutRaf = requestAnimationFrame(() => {
+        if (remaining > 1) {
+          tick(remaining - 1);
+          return;
+        }
+        vibrationPanelLayoutRaf = 0;
+        if (!vibrationPanel || !vibrationPanel.classList.contains('open')) return;
+        syncVibrationControls();
+      });
+    };
+    tick(frames);
   }
   /**
    * Restore active vibrational displacement to equilibrium geometry.
@@ -6249,8 +6282,13 @@
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       restoreActiveVibrationEquilibrium({ syncUi: false });
+      if (vibrationPanelLayoutRaf) {
+        cancelAnimationFrame(vibrationPanelLayoutRaf);
+        vibrationPanelLayoutRaf = 0;
+      }
     }
     setFloatingPanelOpen(vibrationPanel, shouldOpen);
+    if (shouldOpen) scheduleVibrationPanelLayoutSync(2);
   }
 
   if (trajectoryPanelBtn) {
