@@ -2,13 +2,16 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.12';
+  const APP_VERSION = '0.4.13';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
-  const HINT_START = 'Drag & drop .cube/.cub/.2ccube/.xyz/.vib.json/.hess files here';
+  const HINT_START = '';
   const VIBRATION_KIND = 'vibemol.vibrations';
   const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
   const VIBRATION_DEFAULT_SPEED = 0.75;
+  const VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1 = 5.0;
+  const CM_INV_TEXT = 'cm⁻¹';
+  const CM_INV_HTML = 'cm<sup>−1</sup>';
   const AUTO_ISO_TARGET_FRACTION = 0.85;
   const AUTO_ISO_HISTOGRAM_BINS = 512;
   const AUTO_ISO_MAX_SAMPLES = 650000;
@@ -4615,6 +4618,7 @@
   let trajectoryLastStepMs = 0;
   let vibrationPlaying = false;
   let vibrationLastStepMs = 0;
+  let vibrationHideSmallFrequencies = true;
   /**
    * Snapshot atom coordinates from one volume into a flat native-units array.
    * @param {*} vol
@@ -4763,21 +4767,50 @@
   }
 
   /**
+   * Return true when a mode should be hidden by the low-frequency filter.
+   * @param {*} mode
+   * @returns {boolean}
+   */
+  function shouldHideVibrationMode(mode) {
+    if (!vibrationHideSmallFrequencies) return false;
+    const freq = Number(mode && mode.frequencyCm1);
+    if (!Number.isFinite(freq)) return false;
+    return Math.abs(freq) < VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1;
+  }
+
+  /**
+   * Build a list of visible mode indices for the current vibration payload.
+   * @param {*} vib
+   * @returns {number[]}
+   */
+  function getVisibleVibrationModeIndices(vib) {
+    if (!vib || !Array.isArray(vib.modes)) return [];
+    const out = [];
+    for (let i = 0; i < vib.modes.length; i++) {
+      if (!shouldHideVibrationMode(vib.modes[i])) out.push(i);
+    }
+    return out;
+  }
+
+  /**
    * Render the clickable vibration frequency table.
    * @param {{enabled:boolean,vib?:*,modeCount?:number}=} info
+   * @returns {{visibleIndices:number[],visibleCount:number,modeCount:number}}
    */
   function renderVibrationModeTable(info) {
-    if (!vibrationModeTableWrap || !vibrationModeTableBody || !vibrationModeEmpty) return;
+    const emptyState = { visibleIndices: [], visibleCount: 0, modeCount: 0 };
+    if (!vibrationModeTableWrap || !vibrationModeTableBody || !vibrationModeEmpty) return emptyState;
     if (!(info && info.enabled && info.vib && Array.isArray(info.vib.modes) && info.vib.modes.length > 0)) {
       vibrationModeTableWrap.style.display = 'none';
       vibrationModeEmpty.style.display = 'none';
       vibrationModeTableBody.innerHTML = '';
-      return;
+      return emptyState;
     }
     const vib = info.vib;
     const modeCount = Math.max(0, info.modeCount | 0);
+    const visibleIndices = getVisibleVibrationModeIndices(vib);
     const rows = [];
-    for (let i = 0; i < modeCount; i++) {
+    for (const i of visibleIndices) {
       const mode = vib.modes[i] || {};
       const rawLabel = (typeof mode.label === 'string' && mode.label.trim()) ? mode.label.trim() : `Mode ${i + 1}`;
       const activeClass = (i === (vib.modeIndex | 0)) ? ' active' : '';
@@ -4792,8 +4825,15 @@
       );
     }
     vibrationModeTableBody.innerHTML = rows.join('');
-    vibrationModeTableWrap.style.display = modeCount > 0 ? 'block' : 'none';
-    vibrationModeEmpty.style.display = modeCount > 0 ? 'none' : 'block';
+    const visibleCount = visibleIndices.length;
+    vibrationModeTableWrap.style.display = visibleCount > 0 ? 'block' : 'none';
+    vibrationModeEmpty.style.display = modeCount > 0 && visibleCount === 0 ? 'block' : 'none';
+    if (modeCount > 0 && visibleCount === 0 && vibrationHideSmallFrequencies) {
+      vibrationModeEmpty.textContent = `No visible modes: |freq| < ${VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1.toFixed(1)} ${CM_INV_TEXT} are hidden.`;
+    } else {
+      vibrationModeEmpty.textContent = 'No vibrational modes available for the active file.';
+    }
+    return { visibleIndices, visibleCount, modeCount };
   }
 
   /**
@@ -4809,8 +4849,8 @@
     }
     if (vibrationRow) vibrationRow.style.display = info.enabled ? 'grid' : 'none';
     if (vibrationRow2) vibrationRow2.style.display = info.enabled ? 'grid' : 'none';
-    renderVibrationModeTable(info);
     if (!info.enabled) {
+      renderVibrationModeTable(info);
       setVibrationPanelOpen(false);
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
@@ -4818,12 +4858,43 @@
       return;
     }
     const vib = info.vib;
-    const mode = info.mode;
+    const visibleIndices = getVisibleVibrationModeIndices(vib);
+    const currentModeIndex = vib.modeIndex | 0;
+    const hasCurrentVisible = visibleIndices.includes(currentModeIndex);
+    let activeModeChanged = false;
+    if (!hasCurrentVisible && visibleIndices.length > 0) {
+      vib.modeIndex = visibleIndices[0];
+      vib.phase = 0;
+      activeModeChanged = true;
+    }
+
+    const tableState = renderVibrationModeTable(info);
+    if (tableState.visibleCount <= 0) {
+      vibrationPlaying = false;
+      vibrationLastStepMs = 0;
+      vib.phase = 0;
+      applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount);
+      if (vibrationModeLabel) vibrationModeLabel.textContent = 'No visible mode';
+      if (vibrationNowPlaying) {
+        vibrationNowPlaying.textContent = vibrationHideSmallFrequencies
+          ? `No visible mode (|freq| < ${VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1.toFixed(1)} ${CM_INV_TEXT} hidden)`
+          : 'No mode selected';
+      }
+      if (vibrationPlayBtn) vibrationPlayBtn.textContent = '▶';
+      if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = `-- ${CM_INV_HTML}`;
+      return;
+    }
+
+    if (activeModeChanged) {
+      if (vibrationPlaying) vibrationLastStepMs = 0;
+      else applyActiveVibrationPhase(0, { syncUi: false });
+    }
+    const mode = vib.modes[vib.modeIndex] || info.mode;
     const labelSuffix = (mode && typeof mode.label === 'string' && mode.label.trim())
       ? ` ${mode.label.trim()}`
       : '';
     const freq = Number(mode && mode.frequencyCm1);
-    const freqText = Number.isFinite(freq) ? `${freq.toFixed(1)} cm^-1` : '-- cm^-1';
+    const freqText = Number.isFinite(freq) ? `${freq.toFixed(1)} ${CM_INV_TEXT}` : `-- ${CM_INV_TEXT}`;
     if (vibrationModeLabel) vibrationModeLabel.textContent = `${vib.modeIndex + 1}/${info.modeCount}${labelSuffix}`;
     if (vibrationNowPlaying) vibrationNowPlaying.textContent = `Selected: ${vib.modeIndex + 1}/${info.modeCount}${labelSuffix} • ${freqText}`;
     if (vibrationPlayBtn) vibrationPlayBtn.textContent = vibrationPlaying ? '⏸' : '▶';
@@ -4833,9 +4904,9 @@
     if (vibrationSpeedEl && document.activeElement !== vibrationSpeedEl) {
       vibrationSpeedEl.value = Number(vib.speed).toFixed(2);
     }
-    if (vibrationFreqLabel) {
-      vibrationFreqLabel.textContent = freqText;
-    }
+    if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = Number.isFinite(freq)
+      ? `${freq.toFixed(1)} ${CM_INV_HTML}`
+      : `-- ${CM_INV_HTML}`;
   }
   /**
    * Restore active vibrational displacement to equilibrium geometry.
@@ -5131,6 +5202,8 @@
   const helpClose = document.getElementById('helpClose');
   const versionText = document.getElementById('versionText');
   if (versionText) versionText.textContent = APP_VERSION;
+  const emptyStateVersion = document.getElementById('emptyStateVersion');
+  if (emptyStateVersion) emptyStateVersion.textContent = `v${APP_VERSION}`;
   const coordsContent = document.getElementById('coordsContent');
   const pubchemMetaContent = document.getElementById('pubchemMetaContent');
   const copyXYZBtn = document.getElementById('copyXYZ');
@@ -5162,6 +5235,7 @@
   const trajectoryLoopEl = document.getElementById('trajectoryLoop');
   const vibrationRow = document.getElementById('vibrationRow');
   const vibrationRow2 = document.getElementById('vibrationRow2');
+  const vibrationHideLowFreqEl = document.getElementById('vibrationHideLowFreq');
   const vibrationPlayBtn = document.getElementById('vibrationPlayBtn');
   const vibrationNowPlaying = document.getElementById('vibrationNowPlaying');
   const vibrationModeLabel = document.getElementById('vibrationModeLabel');
@@ -5216,6 +5290,9 @@
   const toolbarEl = document.getElementById('toolbar');
   const toolbarCollapseBtn = document.getElementById('toolbarCollapseBtn');
   const toolbarShowBtn = document.getElementById('toolbarShowBtn');
+  const modeDisplayBtn = document.getElementById('modeDisplayBtn');
+  const modeMeasureBtn = document.getElementById('modeMeasureBtn');
+  const modeEditBtn = document.getElementById('modeEditBtn');
   const brandEmojiEl = document.getElementById('brandEmoji');
   let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
 
@@ -5689,6 +5766,7 @@
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
       { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
       { k: 'V', d: 'View/Coords panel' },
+      { k: 'E', d: 'Edit mode' },
       { k: 'M', d: 'Measurement mode' },
       { k: '1/2/3/4', d: 'Style: Default/Toon/Kit/Glossy' },
       { k: '←/→', d: 'Prev/Next file' },
@@ -5719,7 +5797,8 @@
       { k: 'Shift+Drag', d: 'Bypass auto angle snap (Add tool)' },
     ],
     measure: [
-      { k: 'M', d: 'Exit measurement' },
+      { k: 'M', d: 'Display mode' },
+      { k: 'E', d: 'Edit mode' },
       { k: 'Click', d: 'Select points' },
       { k: 'R', d: 'Center mass at origin' },
       { k: 'Esc', d: 'Clear measurement' },
@@ -5730,12 +5809,32 @@
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
   let currentMode = MODES.DISPLAY;
   /**
+   * Reflect the active interaction mode in toolbar mode buttons.
+   */
+  function updateModeButtons() {
+    /** @type {Array<[HTMLElement|null, string]>} */
+    const buttons = [
+      [modeDisplayBtn, MODES.DISPLAY],
+      [modeMeasureBtn, MODES.MEASURE],
+      [modeEditBtn, MODES.EDIT],
+    ];
+    for (const [btn, mode] of buttons) {
+      if (!btn) continue;
+      const active = currentMode === mode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+  }
+  /**
    * Transition between display/edit/measurement modes and apply side effects.
    * This keeps surface visibility and interaction state consistent across mode changes.
    * @param {string} newMode
    */
   function setMode(newMode) {
-    if (currentMode === newMode) return;
+    if (currentMode === newMode) {
+      updateModeButtons();
+      return;
+    }
     const prevMode = currentMode;
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
@@ -5806,7 +5905,13 @@
     }
     updateAxisGuideLine && updateAxisGuideLine();
     updateEmptyStateVisibility();
+    updateModeButtons();
   }
+
+  if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
+  if (modeMeasureBtn) modeMeasureBtn.onclick = () => setMode(MODES.MEASURE);
+  if (modeEditBtn) modeEditBtn.onclick = () => setMode(MODES.EDIT);
+  updateModeButtons();
 
   const shortcutRegistry = createShortcutRegistry([MODES.DISPLAY, MODES.EDIT, MODES.MEASURE]);
   const bind = shortcutRegistry.bind;
@@ -6670,7 +6775,7 @@
    */
   function updateAddGrowAngleGuide(anchorPos, newPos, snapMeta = null) {
     clearGroup(addAngleGuideGroup);
-    if (!anchorPos || !newPos || !snapMeta || !snapMeta.refDir || !snapMeta.targetDeg) return;
+    if (!anchorPos || !newPos || !snapMeta || !snapMeta.refDir) return;
     const outDir = newPos.clone().sub(anchorPos);
     if (outDir.lengthSq() < 1e-10) return;
     outDir.normalize();
@@ -6728,7 +6833,8 @@
     addAngleGuideGroup.add(arc);
 
     const midDir = e1.clone().multiplyScalar(Math.cos(theta * 0.5)).add(e2.clone().multiplyScalar(Math.sin(theta * 0.5)));
-    const label = makeTextSprite(`${Number(snapMeta.measuredDeg || snapMeta.targetDeg).toFixed(1)}°`);
+    const measuredDeg = THREE.MathUtils.radToDeg(theta);
+    const label = makeTextSprite(`${Number(measuredDeg).toFixed(1)}°`);
     label.position.copy(anchorPos.clone().add(midDir.multiplyScalar(radius + 0.08)));
     label.renderOrder = 122;
     addAngleGuideGroup.add(label);
@@ -6783,13 +6889,16 @@
       camDir
     );
     const snapped = snapMeta.dir.clone().normalize();
-    if (!bypassAngleSnap) addGrowDetectedAngleDeg = snapMeta.targetDeg || 0;
+    addGrowDetectedAngleDeg = bypassAngleSnap ? 0 : (snapMeta.targetDeg || 0);
     const anchorZ = vol.atoms[addGrowAnchorIndex].Z | 0;
     const dist = getEditAddBondLength(anchorZ, editAddElementZ, editAddBondOrder);
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
     addGrowPreviewPos = newPos;
     updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, editAddElementZ);
-    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, snapMeta);
+    const guideMeta = bypassAngleSnap
+      ? applyEditAddAngleSnap(rawDir, addGrowNeighborDirs, null, camDir)
+      : snapMeta;
+    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, guideMeta);
   }
 
   /**
@@ -8017,8 +8126,12 @@
 
   // Measurement mode bindings
   bind('down', MODES.MEASURE, 'm', () => { setMode(MODES.DISPLAY); });
+  bind('down', MODES.MEASURE, 'e', () => { setMode(MODES.EDIT); });
   // Esc clears current measurement selection (but does not change mode)
   bind('down', MODES.MEASURE, 'Escape', () => { clearEditSelection(); updateSelectedHalos(); updateEditSelectionVisuals(); });
+
+  // App default starts in display mode.
+  setMode(MODES.DISPLAY);
 
   /**
    * Handle Cmd/Ctrl undo/redo shortcuts.
@@ -8893,6 +9006,13 @@
       const n = Math.max(0.1, Math.min(30, toNum(vibrationSpeedEl.value, info.vib.speed || VIBRATION_DEFAULT_SPEED)));
       info.vib.speed = n;
       vibrationSpeedEl.value = n.toFixed(2);
+      syncVibrationControls();
+    };
+  }
+  if (vibrationHideLowFreqEl) {
+    vibrationHideLowFreqEl.checked = !!vibrationHideSmallFrequencies;
+    vibrationHideLowFreqEl.onchange = () => {
+      vibrationHideSmallFrequencies = !!vibrationHideLowFreqEl.checked;
       syncVibrationControls();
     };
   }
