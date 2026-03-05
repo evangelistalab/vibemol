@@ -32,6 +32,7 @@ Primary capabilities:
 - `api/vibemol_client.py`: Playwright-based Python client for automated renders.
 - `api/README.md`: CLI usage, presets, and `.vibemolrc` behavior.
 - `api/requirements.txt`: Python dependencies.
+- `notebooks/vibemol_notebook_demo.ipynb`: notebook demo (PNG render + iframe auto-load via postMessage).
 
 ## Runtime Model
 No build step is required for the web app. It runs directly from static files.
@@ -71,6 +72,10 @@ Preset automation contract exposed globally:
 - Glossy style exposes a configurable glossy bond center radius (`molecule.glossyBondRadius`).
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
+- Embedded integrations can auto-load files via:
+  - `window.VibeMolEmbed.loadFiles(files, options?)`
+  - `window.postMessage({ type: 'vibemol:load-files', files, options, requestId? }, targetOrigin)`
+  - Response event: `vibemol:load-files:result` with `ok`, `loadedCount`, `loadedNames`, and optional `error`.
 - Vibrational sidecar JSON files can be attached to a loaded molecule (matched by atom count, and atom symbol sequence when provided).
 - ORCA `.hess` files are parsed for `$vibrational_frequencies` + `$normal_modes` and attached using the same matching logic.
 - Psi4 output logs (`.dat/.out`) are parsed from the harmonic table and create a molecule from the **last** `Geometry (in Angstrom)` block before attaching modes.
@@ -84,6 +89,7 @@ Preset automation contract exposed globally:
 
 ## Python API Notes
 - Primary script: `api/vibemol_client.py`.
+- Notebook helper: `vibemol(...)` returns/displays an iframe embed and auto-loads provided files via postMessage.
 - Supports single-file mode (`input_file output_png`) and batch mode (`--inputs ... --output-dir ...`).
 - Supports wildcard expansion in both `--inputs` and `--extra-file`.
 - `--extra-file` uploads additional sidecar files in the same request (for example `.vib.json` with `.xyz`).

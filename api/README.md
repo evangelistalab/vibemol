@@ -22,6 +22,21 @@ python -m playwright install chromium
 python api/vibemol_client.py assets/data/sample.cube out/sample.png
 ```
 
+Notebook embed helper (`vibemol(...)`):
+```python
+from api.vibemol_client import vibemol
+
+# Hosted VibeMol
+vibemol("assets/data/sample.cube", source="web", height=760)
+
+# Local static server mode (python3 -m http.server 8000)
+vibemol("assets/data/sample.cube", source="local", local_port=8000, height=760)
+```
+
+Note:
+- `vibemol(...)` displays inline by default and returns `None`.
+- Use `auto_display=False` if you want to capture and manually display the returned `HTML` object.
+
 Batch render multiple files:
 ```bash
 python api/vibemol_client.py \
@@ -56,6 +71,16 @@ Upload a molecule and a vibration sidecar together:
 ```bash
 python api/vibemol_client.py assets/data/water.xyz out/water.png \
   --extra-file assets/data/water.vib.json
+```
+
+Notebook helper with multiple files:
+```python
+vibemol(
+  ["assets/data/water.xyz", "assets/data/water.vib.json"],
+  source="local",
+  local_port=8000,
+  options={"clearFirst": True}
+)
 ```
 
 Import preset then override a couple of fields:

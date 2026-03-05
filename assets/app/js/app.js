@@ -11450,6 +11450,115 @@
   }
   if (pubchemLoadBtn) pubchemLoadBtn.onclick = () => loadPubChemCompound(pubchemQueryInput ? pubchemQueryInput.value : '');
 
+  /**
+   * Decode one base64 string into bytes.
+   * @param {string} raw
+   * @returns {Uint8Array}
+   */
+  function decodeBase64Bytes(raw) {
+    const input = String(raw || '').replace(/\s+/g, '');
+    const out = atob(input);
+    const bytes = new Uint8Array(out.length);
+    for (let i = 0; i < out.length; i++) bytes[i] = out.charCodeAt(i);
+    return bytes;
+  }
+
+  /**
+   * Build one File object from embed payload data.
+   * Expected shape: {name, text?, base64?, mimeType?}
+   * @param {*} record
+   * @param {number} index
+   * @returns {File}
+   */
+  function buildEmbeddedFile(record, index) {
+    if (!record || typeof record !== 'object') {
+      throw new Error(`Embedded file entry ${index + 1} must be an object.`);
+    }
+    const name = String(record.name || '').trim();
+    if (!name) throw new Error(`Embedded file entry ${index + 1} is missing a valid "name".`);
+    const mimeType = String(record.mimeType || 'text/plain');
+    if (Object.prototype.hasOwnProperty.call(record, 'text')) {
+      return new File([String(record.text == null ? '' : record.text)], name, { type: mimeType });
+    }
+    if (Object.prototype.hasOwnProperty.call(record, 'base64')) {
+      return new File([decodeBase64Bytes(record.base64)], name, { type: mimeType });
+    }
+    throw new Error(`Embedded file "${name}" must include "text" or "base64" content.`);
+  }
+
+  /**
+   * Clear all loaded files and return to startup state.
+   * @param {{includeHint?:boolean}=} options
+   */
+  function clearAllLoadedFiles(options = {}) {
+    const includeHint = options.includeHint !== false;
+    volumes = [];
+    currentIndex = -1;
+    clearEditHistory();
+    refreshFileSelect();
+    clearSceneMeshes();
+    updateSidePanel();
+    updateEmptyStateVisibility();
+    if (includeHint) setNavigationHint(HINT_START, { includeStyles: true });
+  }
+
+  /**
+   * Load files passed from embedded/iframe integrations.
+   * @param {Array<{name:string,text?:string,base64?:string,mimeType?:string}>} files
+   * @param {{clearFirst?:boolean}=} options
+   * @returns {Promise<{ok:boolean,loadedCount:number,loadedNames:string[]}>}
+   */
+  async function loadEmbeddedFiles(files, options = {}) {
+    const arr = Array.isArray(files) ? files : [];
+    if (arr.length === 0) throw new Error('No files were provided for embedded load.');
+    const fileObjects = arr.map((entry, i) => buildEmbeddedFile(entry, i));
+    const clearFirst = options.clearFirst !== false;
+    if (clearFirst) clearAllLoadedFiles({ includeHint: false });
+    const before = volumes.length;
+    await handleFiles(fileObjects);
+    const loadedCount = Math.max(0, volumes.length - before);
+    return {
+      ok: loadedCount > 0,
+      loadedCount,
+      loadedNames: fileObjects.map((f) => f.name),
+    };
+  }
+
+  /**
+   * Handle postMessage events used by notebook/embed integrations.
+   * Request:  {type:'vibemol:load-files', requestId?, files:[...], options?}
+   * Response: {type:'vibemol:load-files:result', requestId?, ok, loadedCount?, loadedNames?, error?}
+   * @param {MessageEvent} event
+   * @returns {Promise<void>}
+   */
+  async function handleEmbeddedLoadMessage(event) {
+    const data = event && event.data;
+    if (!data || typeof data !== 'object' || data.type !== 'vibemol:load-files') return;
+    const requestId = data.requestId || null;
+    const source = event && event.source;
+    const postResult = (payload) => {
+      if (!source || typeof source.postMessage !== 'function') return;
+      const targetOrigin = (event.origin && event.origin !== 'null') ? event.origin : '*';
+      source.postMessage(Object.assign({
+        type: 'vibemol:load-files:result',
+        requestId,
+      }, payload), targetOrigin);
+    };
+    try {
+      const result = await loadEmbeddedFiles(data.files, data.options || {});
+      postResult(result);
+    } catch (err) {
+      const message = err && err.message ? err.message : String(err);
+      postResult({ ok: false, error: message });
+    }
+  }
+
+  window.addEventListener('message', (event) => { void handleEmbeddedLoadMessage(event); });
+  window.VibeMolEmbed = Object.freeze({
+    version: 1,
+    loadFiles: (files, options = {}) => loadEmbeddedFiles(files, options),
+  });
+
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
   /**
    * Allow file drops on UI surfaces and route them to standard file loading.
@@ -11502,16 +11611,7 @@
   });
 
   // Clear all loaded files and return to startup state.
-  clearBtn.onclick = () => {
-    volumes = [];
-    currentIndex = -1;
-    clearEditHistory();
-    refreshFileSelect();
-    clearSceneMeshes();
-    updateSidePanel();
-    updateEmptyStateVisibility();
-    setNavigationHint(HINT_START, { includeStyles: true });
-  };
+  clearBtn.onclick = () => clearAllLoadedFiles();
 
   /**
    * Rebuild the file selector options from the current `volumes` list.

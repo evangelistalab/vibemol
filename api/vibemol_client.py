@@ -16,6 +16,7 @@ import json
 import pathlib
 import sys
 import time
+import uuid
 from typing import Any
 
 DEFAULT_URL = "https://evangelistalab.org/vibemol/"
@@ -624,6 +625,224 @@ def _export_preset(page: Any, preset_name: str | None) -> dict[str, Any]:
     if _has_preset_api(page):
         return _export_preset_via_api(page, preset_name)
     return _export_preset_dom_fallback(page, preset_name)
+
+
+def _resolve_embed_url(url: str | None, source: str, local_port: int) -> str:
+    if url:
+        return str(url)
+    mode = str(source or "web").strip().lower()
+    if mode == "local":
+        port = int(local_port)
+        if port <= 0:
+            raise ValueError(f"local_port must be > 0, got: {local_port}")
+        return f"http://localhost:{port}/index.html"
+    if mode == "web":
+        return DEFAULT_URL
+    raise ValueError(f"Unsupported source mode: {source!r} (expected 'web' or 'local')")
+
+
+def _coerce_embed_file_entry(entry: Any, *, encoding: str) -> dict[str, Any]:
+    if isinstance(entry, (str, pathlib.Path)):
+        p = pathlib.Path(entry).expanduser().resolve()
+        if not p.is_file():
+            raise FileNotFoundError(f"Embed file does not exist: {p}")
+        return {"name": p.name, "mimeType": "text/plain", "text": p.read_text(encoding=encoding)}
+
+    if isinstance(entry, dict):
+        payload = dict(entry)
+        if "path" in payload and ("text" not in payload and "base64" not in payload):
+            p = pathlib.Path(payload["path"]).expanduser().resolve()
+            if not p.is_file():
+                raise FileNotFoundError(f"Embed file does not exist: {p}")
+            payload.setdefault("name", p.name)
+            payload.setdefault("mimeType", "text/plain")
+            payload["text"] = p.read_text(encoding=encoding)
+
+        name = str(payload.get("name", "")).strip()
+        if not name:
+            raise ValueError("Embed file dict must include non-empty 'name' (or provide 'path').")
+
+        has_text = "text" in payload
+        has_base64 = "base64" in payload
+        if not has_text and not has_base64:
+            raise ValueError(f"Embed file '{name}' must include 'text' or 'base64'.")
+
+        out = {"name": name, "mimeType": str(payload.get("mimeType", "text/plain"))}
+        if has_text:
+            text_value = payload["text"]
+            if isinstance(text_value, (bytes, bytearray)):
+                out["text"] = bytes(text_value).decode(encoding, errors="replace")
+            else:
+                out["text"] = str(text_value if text_value is not None else "")
+        else:
+            out["base64"] = str(payload["base64"])
+        return out
+
+    if isinstance(entry, (tuple, list)) and len(entry) == 2:
+        name, text = entry
+        if isinstance(text, (bytes, bytearray)):
+            text_value = bytes(text).decode(encoding, errors="replace")
+        else:
+            text_value = str(text if text is not None else "")
+        return {
+            "name": str(name),
+            "mimeType": "text/plain",
+            "text": text_value,
+        }
+
+    raise TypeError(
+        "Unsupported embed file entry. Use path-like, dict({name,text|base64|path}), "
+        "or (name, text) tuple."
+    )
+
+
+def _normalize_embed_files(files: Any, *, encoding: str) -> list[dict[str, Any]]:
+    if files is None:
+        raise ValueError("files cannot be None")
+
+    if isinstance(files, (str, pathlib.Path, dict)):
+        raw_items = [files]
+    elif isinstance(files, (list, tuple)):
+        # Keep `(name, text)` shorthand as a single file record.
+        if len(files) == 2 and isinstance(files[0], str) and isinstance(files[1], (str, bytes)):
+            raw_items = [files]
+        else:
+            raw_items = list(files)
+    else:
+        raw_items = [files]
+
+    result = [_coerce_embed_file_entry(item, encoding=encoding) for item in raw_items]
+    if len(result) == 0:
+        raise ValueError("At least one file must be provided.")
+    return result
+
+
+def vibemol(
+    files: Any,
+    *,
+    options: dict[str, Any] | None = None,
+    url: str | None = None,
+    source: str = "web",
+    local_port: int = 8000,
+    width: str = "100%",
+    height: int = 760,
+    clear_first: bool = True,
+    show_status: bool = True,
+    request_id: str | None = None,
+    encoding: str = "utf-8",
+    auto_display: bool = True,
+) -> Any:
+    """Embed VibeMol in a Jupyter notebook and auto-load files into the iframe.
+
+    Parameters
+    ----------
+    files
+        One file or many files. Supported forms:
+        - path-like (`str`/`Path`) to a local text file
+        - dict with `{name, text}` or `{name, base64}` or `{path}`
+        - tuple `(name, text)`
+        - list of the above
+    options
+        Extra load options passed to VibeMol (`clearFirst` is set from `clear_first`
+        unless explicitly present here).
+    url
+        Explicit iframe URL. If omitted, selected from `source`.
+    source
+        `'web'` (default hosted URL) or `'local'` (`http://localhost:{local_port}/index.html`).
+    local_port
+        Port used when `source='local'`.
+    width, height
+        Iframe dimensions.
+    clear_first
+        Whether to clear existing files before loading payload.
+    show_status
+        Show a status line under the iframe.
+    request_id
+        Optional request id for postMessage correlation.
+    encoding
+        Text encoding for path-like files.
+    auto_display
+        If True (default), call IPython `display(...)` and return `None`.
+        If False, return the `IPython.display.HTML` object without displaying it.
+    """
+    try:
+        from IPython.display import HTML, display
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("vibemol(...) requires IPython/Jupyter (IPython.display.HTML).") from exc
+
+    embed_url = _resolve_embed_url(url, source, local_port)
+    payload_files = _normalize_embed_files(files, encoding=encoding)
+    load_options = dict(options or {})
+    load_options.setdefault("clearFirst", bool(clear_first))
+    request_token = str(request_id or f"vibemol-{uuid.uuid4().hex}")
+
+    uid = uuid.uuid4().hex[:10]
+    frame_id = f"vibemolEmbedFrame_{uid}"
+    status_id = f"vibemolEmbedStatus_{uid}"
+    payload = {
+        "type": "vibemol:load-files",
+        "requestId": request_token,
+        "options": load_options,
+        "files": payload_files,
+    }
+    payload_js = json.dumps(payload)
+    status_block = (
+        f'<div id="{status_id}" style="font:13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#1f2b45;">'
+        'Waiting for iframe load…'
+        '</div>'
+    ) if show_status else f'<div id="{status_id}" style="display:none;"></div>'
+
+    width_css = f"{width}px" if isinstance(width, (int, float)) else str(width)
+
+    html = f"""
+<div style="display:grid; gap:8px;">
+  <iframe id="{frame_id}" src="{embed_url}" style="width:{width_css}; height:{int(height)}px; border:1px solid #ccd1dd; border-radius:8px;"></iframe>
+  {status_block}
+</div>
+<script>
+(function() {{
+  const frame = document.getElementById({json.dumps(frame_id)});
+  const status = document.getElementById({json.dumps(status_id)});
+  const payload = {payload_js};
+  let posted = false;
+
+  function setStatus(text) {{
+    if (status) status.textContent = String(text || '');
+  }}
+
+  function postFiles() {{
+    if (posted || !frame || !frame.contentWindow) return;
+    posted = true;
+    frame.contentWindow.postMessage(payload, '*');
+    setStatus('Posted files to iframe. Waiting for VibeMol response…');
+  }}
+
+  if (frame) {{
+    frame.addEventListener('load', function() {{
+      setStatus('Iframe loaded. Sending files…');
+      setTimeout(postFiles, 250);
+    }});
+  }}
+
+  window.addEventListener('message', function(event) {{
+    const data = event && event.data;
+    if (!data || data.type !== 'vibemol:load-files:result') return;
+    if (data.requestId !== payload.requestId) return;
+    if (data.ok) {{
+      const names = Array.isArray(data.loadedNames) ? data.loadedNames.join(', ') : '';
+      setStatus(`Loaded ${{data.loadedCount || 0}} file(s): ${{names}}`);
+    }} else {{
+      setStatus(`Load failed: ${{data.error || 'Unknown error'}}`);
+    }}
+  }});
+}})();
+</script>
+"""
+    result = HTML(html)
+    if auto_display:
+        display(result)
+        return None
+    return result
 
 
 def _wait_for_import_ready(page: Any, timeout_ms: int = 20_000) -> None:
