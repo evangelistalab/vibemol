@@ -16,13 +16,14 @@
   <title>VibeMol — CUBE Isosurface Viewer</title>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="assets/app/css/palette.css" />
   <style>
     :root {
-      --bg: #0b0f14;
-      --panel: #121822;
-      --text: #e8eef6;
-      --muted: #9ab;
-      --accent: #4aa3ff;
+      --bg: var(--vm-color-bg-main);
+      --panel: var(--vm-color-bg-panel);
+      --text: var(--vm-color-text-main);
+      --muted: var(--vm-color-text-muted);
+      --accent: var(--vm-color-accent-primary);
     }
 
     html,
@@ -40,7 +41,7 @@
       left: 0;
       right: 0;
       background: linear-gradient(180deg, #111b2a 0%, #0f1723 100%);
-      border-bottom: 1px solid #223;
+      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
       padding: 8px 10px;
       display: grid;
       grid-template-columns: minmax(380px, 1.2fr) auto minmax(340px, 1fr);
@@ -55,7 +56,7 @@
       align-items: center;
       gap: 8px;
       padding: 4px 6px;
-      border: 1px solid #223041;
+      border: 1px solid var(--vm-color-legacy-border-mid);
       border-radius: 10px;
       background: #121c2a;
     }
@@ -78,7 +79,7 @@
     #toolbar .tb-brand {
       font-weight: 700;
       letter-spacing: 0.02em;
-      color: #e9f1ff;
+      color: var(--vm-color-legacy-text-on-dark);
       padding: 0 4px;
       white-space: nowrap;
     }
@@ -96,10 +97,10 @@
     #toolbar input[type="number"],
     #toolbar input[type="text"] {
       height: 30px;
-      border: 1px solid #2a3648;
+      border: 1px solid var(--vm-color-legacy-input-border);
       border-radius: 8px;
-      background: #1a2333;
-      color: #e5edf8;
+      background: var(--vm-color-legacy-input-bg);
+      color: var(--vm-color-legacy-input-fg);
       padding: 0 8px;
     }
 
@@ -125,13 +126,13 @@
     }
 
     #toolbar button.secondary {
-      background: #2a3344;
-      color: #dfe7f3;
+      background: var(--vm-color-legacy-secondary-bg);
+      color: var(--vm-color-legacy-secondary-fg);
     }
 
     #toolbar button.secondary.active {
-      background: #355a87;
-      color: #eef6ff;
+      background: var(--vm-color-legacy-secondary-active-bg);
+      color: var(--vm-color-legacy-secondary-active-fg);
     }
 
     #toolbar button:disabled {
@@ -148,7 +149,7 @@
       gap: 10px;
       z-index: 31;
       background: rgba(10, 16, 24, 0.94);
-      border: 1px solid #223041;
+      border: 1px solid var(--vm-color-legacy-border-mid);
       border-radius: 12px;
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
       padding: 10px;
@@ -199,10 +200,10 @@
     #displayInspector input[type="number"] {
       width: 76px;
       height: 28px;
-      border: 1px solid #2a3648;
+      border: 1px solid var(--vm-color-legacy-input-border);
       border-radius: 8px;
-      background: #1a2333;
-      color: #e5edf8;
+      background: var(--vm-color-legacy-input-bg);
+      color: var(--vm-color-legacy-input-fg);
       padding: 0 8px;
     }
 
@@ -213,7 +214,7 @@
     #displayInspector input[type="color"] {
       width: 28px;
       height: 28px;
-      border: 1px solid #2a3648;
+      border: 1px solid var(--vm-color-legacy-input-border);
       border-radius: 7px;
       background: transparent;
       padding: 0;
@@ -229,7 +230,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border: 1px solid #2a3648;
+      border: 1px solid var(--vm-color-legacy-input-border);
       border-radius: 8px;
       padding: 6px 8px;
       background: #162130;
@@ -273,7 +274,7 @@
       bottom: 0;
       width: 320px;
       background: var(--panel);
-      border-left: 1px solid #223;
+      border-left: 1px solid var(--vm-color-legacy-border-strong);
       box-shadow: -6px 0 16px #0006;
       transform: translateX(100%);
       z-index: 20;
@@ -291,7 +292,7 @@
       right: 12px;
       width: min(420px, calc(100vw - 24px));
       background: var(--panel);
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 10px;
       box-shadow: 0 12px 24px #0007;
       z-index: 24;
@@ -317,7 +318,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 10px 12px;
-      border-bottom: 1px solid #223;
+      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
       color: var(--text);
     }
 
@@ -371,8 +372,8 @@
     }
 
     .motionPanelClose {
-      background: #2a3344;
-      color: #dfe7f3;
+      background: var(--vm-color-legacy-secondary-bg);
+      color: var(--vm-color-legacy-secondary-fg);
       border: none;
       min-width: 32px;
       height: 30px;
@@ -388,7 +389,7 @@
     .motionPanelBody {
       padding: 10px 12px;
       color: var(--text);
-      background: #0f151f;
+      background: var(--vm-color-legacy-muted-chip);
       border-radius: 0 0 10px 10px;
     }
 
@@ -424,19 +425,19 @@
     .motionPanelBody input[type="number"] {
       width: 100%;
       padding: 3px 6px;
-      background: #1a2230;
+      background: var(--vm-color-legacy-dark-surface);
       color: var(--text);
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 4px;
     }
 
     #vibrationModeTableWrap {
       display: none;
       margin-top: 8px;
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 8px;
       overflow: hidden;
-      background: #101722;
+      background: var(--vm-color-legacy-muted-chip-2);
       max-height: 260px;
       overflow-y: auto;
     }
@@ -444,9 +445,9 @@
     #vibrationSpectrumWrap {
       display: none;
       margin-top: 8px;
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 8px;
-      background: #101722;
+      background: var(--vm-color-legacy-muted-chip-2);
       padding: 6px 8px 4px;
     }
 
@@ -476,7 +477,7 @@
     #vibrationModeTable th,
     #vibrationModeTable td {
       padding: 6px 8px;
-      border-bottom: 1px solid #223;
+      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
       text-align: left;
       vertical-align: middle;
       white-space: nowrap;
@@ -486,7 +487,7 @@
       position: sticky;
       top: 0;
       z-index: 1;
-      background: #0f151f;
+      background: var(--vm-color-legacy-muted-chip);
       color: var(--muted);
       font-weight: 600;
     }
@@ -577,7 +578,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 10px 12px;
-      border-bottom: 1px solid #223;
+      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
       color: var(--text);
     }
 
@@ -586,8 +587,8 @@
     }
 
     #sideClose {
-      background: #2a3344;
-      color: #dfe7f3;
+      background: var(--vm-color-legacy-secondary-bg);
+      color: var(--vm-color-legacy-secondary-fg);
       border: none;
       padding: 4px 8px;
       border-radius: 6px;
@@ -659,9 +660,9 @@
 
     #viewControls {
       padding: 10px 12px;
-      border-bottom: 1px solid #223;
+      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
       color: var(--text);
-      background: #0f151f;
+      background: var(--vm-color-legacy-muted-chip);
     }
 
     #viewControls .row {
@@ -688,9 +689,9 @@
     #viewControls input[type="number"] {
       width: 100%;
       padding: 3px 6px;
-      background: #1a2230;
+      background: var(--vm-color-legacy-dark-surface);
       color: var(--text);
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 4px;
     }
 
@@ -713,7 +714,7 @@
     #coordsContent td {
       text-align: right;
       padding: 4px 6px;
-      border-bottom: 1px solid #223;
+      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
     }
 
     #coordsContent th {
@@ -746,7 +747,7 @@
       box-sizing: border-box;
       white-space: normal;
       color: rgb(20, 22, 24);
-      background: #9ab;
+      background: var(--vm-color-text-muted);
       padding: 6px 8px;
       border-radius: 6px;
       z-index: 31;
@@ -887,18 +888,18 @@
       bottom: 40px;
       display: none;
       gap: 6px;
-      background: #9ab;
+      background: var(--vm-color-text-muted);
       padding: 6px 8px;
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 8px;
       z-index: 32;
     }
 
     #axisLock button {
       pointer-events: auto;
-      background: #1a2230;
-      color: #e9f1ff;
-      border: 1px solid #2a3546;
+      background: var(--vm-color-legacy-dark-surface);
+      color: var(--vm-color-legacy-text-on-dark);
+      border: 1px solid var(--vm-color-legacy-border-soft);
       border-radius: 6px;
       padding: 2px 8px;
       font-weight: 600;
@@ -906,7 +907,7 @@
     }
 
     #axisLock button.active {
-      background: #9ab;
+      background: var(--vm-color-text-muted);
     }
 
     #editToolbox {
@@ -916,7 +917,7 @@
       display: none;
       width: min(320px, calc(100vw - 24px));
       background: rgba(18, 24, 34, 0.95);
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 10px;
       padding: 10px;
       box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
@@ -947,9 +948,9 @@
 
     #editToolButtons button {
       appearance: none;
-      border: 1px solid #2a3546;
-      background: #1a2230;
-      color: #e9f1ff;
+      border: 1px solid var(--vm-color-legacy-border-soft);
+      background: var(--vm-color-legacy-dark-surface);
+      color: var(--vm-color-legacy-text-on-dark);
       border-radius: 8px;
       padding: 6px 8px;
       cursor: pointer;
@@ -957,8 +958,8 @@
     }
 
     #editToolButtons button.active {
-      border-color: #4aa3ff;
-      background: rgba(74, 163, 255, 0.18);
+      border-color: var(--vm-color-accent-primary);
+      background: var(--vm-color-accent-primary-soft);
       color: #eef7ff;
     }
 
@@ -971,7 +972,7 @@
     #editAddPane {
       display: none;
       margin-top: 8px;
-      border-top: 1px solid #223;
+      border-top: 1px solid var(--vm-color-legacy-border-strong);
       padding-top: 8px;
     }
 
@@ -989,11 +990,11 @@
     #editAddSearch {
       width: 100%;
       box-sizing: border-box;
-      border: 1px solid #2a3546;
+      border: 1px solid var(--vm-color-legacy-border-soft);
       border-radius: 8px;
       padding: 6px 8px;
-      background: #101823;
-      color: #e9f1ff;
+      background: var(--vm-color-legacy-muted-chip-3);
+      color: var(--vm-color-legacy-text-on-dark);
     }
 
     #editAddQuick {
@@ -1005,18 +1006,18 @@
 
     #editAddQuick button {
       appearance: none;
-      border: 1px solid #2a3546;
+      border: 1px solid var(--vm-color-legacy-border-soft);
       border-radius: 999px;
       padding: 3px 8px;
       font-size: 12px;
       font-weight: 700;
-      background: #1a2230;
-      color: #eef6ff;
+      background: var(--vm-color-legacy-dark-surface);
+      color: var(--vm-color-legacy-secondary-active-fg);
       cursor: pointer;
     }
 
     #editAddQuick button.active {
-      border-color: #4aa3ff;
+      border-color: var(--vm-color-accent-primary);
       box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.35) inset;
     }
 
@@ -1029,7 +1030,7 @@
 
     #editSnapPane {
       margin-top: 8px;
-      border-top: 1px solid #223;
+      border-top: 1px solid var(--vm-color-legacy-border-strong);
       padding-top: 8px;
     }
 
@@ -1054,7 +1055,7 @@
       transform: translate(-9999px, -9999px);
       display: none;
       background: rgba(18, 24, 34, 0.96);
-      border: 1px solid #2a3546;
+      border: 1px solid var(--vm-color-legacy-border-soft);
       border-radius: 10px;
       padding: 6px 7px;
       z-index: 34;
@@ -1094,20 +1095,20 @@
 
     #editAddCursorHud button {
       appearance: none;
-      border: 1px solid #2a3546;
+      border: 1px solid var(--vm-color-legacy-border-soft);
       border-radius: 999px;
       padding: 2px 7px;
       font-size: 11px;
       font-weight: 700;
-      background: #1a2230;
-      color: #eef6ff;
+      background: var(--vm-color-legacy-dark-surface);
+      color: var(--vm-color-legacy-secondary-active-fg);
       cursor: pointer;
       min-width: 24px;
       line-height: 1.25;
     }
 
     #editAddCursorHud button.active {
-      border-color: #4aa3ff;
+      border-color: var(--vm-color-accent-primary);
       box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.3) inset;
     }
 
@@ -1145,8 +1146,8 @@
       display: inline-block;
       padding: 2px 7px;
       border-radius: 999px;
-      border: 1px solid #4aa3ff;
-      background: rgba(74, 163, 255, 0.18);
+      border: 1px solid var(--vm-color-accent-primary);
+      background: var(--vm-color-accent-primary-soft);
       color: #eff7ff;
       font-weight: 800;
       letter-spacing: 0.01em;
@@ -1173,7 +1174,7 @@
       max-height: 86vh;
       overflow: auto;
       background: var(--panel);
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 10px;
       box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
       padding: 10px 12px 12px;
@@ -1209,9 +1210,9 @@
     #periodicTableViewport {
       width: 100%;
       height: 420px;
-      border: 1px solid #223;
+      border: 1px solid var(--vm-color-panel-border-strong);
       border-radius: 8px;
-      background: radial-gradient(circle at 35% 28%, #182334 0%, #101722 52%, #0c121c 100%);
+      background: radial-gradient(circle at 35% 28%, var(--vm-color-periodic-grad-a) 0%, var(--vm-color-periodic-grad-b) 52%, var(--vm-color-periodic-grad-c) 100%);
       position: relative;
       overflow: hidden;
     }
@@ -1234,7 +1235,7 @@
       --workspace-sidebar-width: 200px;
       --workspace-left-offset: var(--workspace-sidebar-width);
       --vibration-panel-bottom-clearance: 52px;
-      --toolbar-divider: #d8d9df;
+      --toolbar-divider: var(--vm-color-toolbar-divider);
       /* Toolbar typography tokens */
       --tb-font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       --tb-text-size-title: 15px;
@@ -1244,30 +1245,42 @@
       --tb-text-weight-regular: 400;
       --tb-text-weight-semibold: 600;
       --tb-text-weight-bold: 700;
-      --tb-text-color-primary: #2b2f36;
-      --tb-text-color-strong: #1f232a;
-      --tb-text-color-muted: #606876;
-      --tb-text-color-subtle: #5b6475;
-      --tb-text-color-emphasis: #3f4756;
-      --tb-text-color-icon: #2f343d;
-      --tb-text-color-tooltip: #f2f5fb;
-      --tb-text-color-meta-key: #636d80;
-      --tb-text-color-meta-empty: #7b8596;
-      --tb-text-color-chip: #4f5766;
-      --tb-text-color-chip-muted: #4d586b;
-      --tb-text-color-code: #3e4655;
-      --tb-text-color-inverse: #ffffff;
+      --tb-text-color-primary: var(--vm-color-toolbar-text-primary);
+      --tb-text-color-strong: var(--vm-color-toolbar-text-strong);
+      --tb-text-color-muted: var(--vm-color-toolbar-text-muted);
+      --tb-text-color-subtle: var(--vm-color-toolbar-text-subtle);
+      --tb-text-color-emphasis: var(--vm-color-toolbar-text-emphasis);
+      --tb-text-color-icon: var(--vm-color-toolbar-icon-strong);
+      --tb-text-color-tooltip: var(--vm-color-toolbar-text-tooltip);
+      --tb-text-color-meta-key: var(--vm-color-toolbar-text-meta-key);
+      --tb-text-color-meta-empty: var(--vm-color-toolbar-text-meta-empty);
+      --tb-text-color-chip: var(--vm-color-toolbar-text-chip);
+      --tb-text-color-chip-muted: var(--vm-color-toolbar-text-chip-muted);
+      --tb-text-color-code: var(--vm-color-toolbar-text-code);
+      --tb-text-color-inverse: var(--vm-color-toolbar-text-inverse);
       --tb-radius-tight: 3px;
       --toolbar-font-size: var(--tb-text-size-ui);
       --toolbar-font-weight: var(--tb-text-weight-semibold);
       --toolbar-mode-tab-height: 23px;
       --toolbar-mode-tab-radius: var(--tb-radius-tight);
-      --toolbar-mode-tab-bg: #eaebef;
-      --toolbar-mode-tab-bg-hover: #e2e5eb;
-      --toolbar-mode-tab-bg-active: #e7e8ec;
-      --toolbar-mode-tab-fg: #7a7f89;
-      --toolbar-mode-tab-fg-hover: #4b5160;
-      --toolbar-mode-tab-fg-active: #1f232a;
+      --toolbar-mode-tab-bg: var(--vm-color-toolbar-control-bg);
+      --toolbar-mode-tab-bg-hover: var(--vm-color-toolbar-control-bg-hover);
+      --toolbar-mode-tab-bg-active: var(--vm-color-toolbar-control-bg);
+      --toolbar-mode-tab-fg: var(--vm-color-toolbar-tab-fg);
+      --toolbar-mode-tab-fg-hover: var(--vm-color-toolbar-tab-fg-hover);
+      --toolbar-mode-tab-fg-active: var(--vm-color-toolbar-tab-fg-active);
+      --toolbar-mode-tab-accent: var(--vm-color-toolbar-tab-accent);
+      --tb-surface-base: var(--vm-color-toolbar-bg);
+      --tb-surface-emphasis: var(--vm-color-toolbar-control-bg);
+      --tb-surface-emphasis-hover: var(--vm-color-toolbar-control-bg-hover);
+      --tb-surface-button: var(--vm-color-toolbar-button-bg);
+      --tb-surface-input: var(--vm-color-toolbar-input-bg);
+      --tb-border-input: var(--vm-color-toolbar-input-border);
+      --tb-tooltip-bg: var(--vm-color-toolbar-tooltip-bg);
+      --tb-section-divider: var(--vm-color-toolbar-section-divider);
+      --tb-color-accent: var(--vm-color-toolbar-action);
+      --tb-color-accent-outline: var(--vm-color-toolbar-action-outline);
+      --tb-swatch-outline: rgba(40, 44, 52, 0.22);
     }
 
     body.sidebar-collapsed {
@@ -1280,9 +1293,9 @@
       inset: 0 auto 0 0;
       width: var(--workspace-sidebar-width);
       right: auto;
-      border-right: 1px solid #d7d8dd;
+      border-right: 1px solid var(--vm-color-toolbar-border);
       border-bottom: none;
-      background: #f3f3f5;
+      background: var(--tb-surface-base);
       color: var(--tb-text-color-primary);
       font-family: var(--tb-font-family);
       box-shadow: none;
@@ -1341,20 +1354,22 @@
     #toolbarModeRow {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 6px;
+      gap: 0;
       width: 100%;
       padding-right: 0;
       box-sizing: border-box;
+      border-bottom: 1px solid var(--toolbar-divider);
+      margin-bottom: 2px;
     }
 
-    /* Mode tabs: text-only controls that inherit shared toolbar typography. */
-    #toolbar .tb-modeBtn {
+    /* Mode tabs: text-only controls with active underline accent. */
+    #toolbarModeRow .tb-modeBtn {
       width: 100%;
       min-width: 0;
-      height: var(--toolbar-mode-tab-height);
+      height: 30px;
       padding: 0 8px;
-      border-radius: var(--toolbar-mode-tab-radius);
-      background: var(--toolbar-mode-tab-bg) !important;
+      border-radius: 0;
+      background: transparent !important;
       color: var(--toolbar-mode-tab-fg) !important;
       justify-content: center !important;
       text-align: center !important;
@@ -1365,17 +1380,40 @@
       letter-spacing: normal;
       position: relative;
       overflow: visible;
+      border: none !important;
+      box-shadow: none !important;
     }
 
-    #toolbar .tb-modeBtn:hover {
-      background: var(--toolbar-mode-tab-bg-hover) !important;
+    #toolbarModeRow .tb-modeBtn::after {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: -1px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--toolbar-mode-tab-accent);
+      transform: scaleX(0);
+      transform-origin: center;
+      opacity: 0;
+      transition: transform 120ms ease, opacity 120ms ease;
+      pointer-events: none;
+    }
+
+    #toolbarModeRow .tb-modeBtn:hover {
+      background: transparent !important;
       color: var(--toolbar-mode-tab-fg-hover) !important;
     }
 
-    #toolbar .tb-modeBtn.active {
-      background: var(--toolbar-mode-tab-bg-active) !important;
-      color: var(--toolbar-mode-tab-fg-active) !important;
+    #toolbarModeRow .tb-modeBtn.active {
+      background: transparent !important;
+      color: var(--toolbar-mode-tab-accent) !important;
       box-shadow: none;
+    }
+
+    #toolbarModeRow .tb-modeBtn.active::after {
+      transform: scaleX(1);
+      opacity: 1;
     }
 
     .material-symbols-outlined,
@@ -1459,7 +1497,7 @@
     }
 
     #toolbar button.secondary.active {
-      background: #e5e6ea;
+      background: var(--tb-surface-emphasis-hover);
       color: var(--tb-text-color-strong);
     }
 
@@ -1499,7 +1537,7 @@
       justify-content: center;
       font-size: 16px;
       line-height: 1;
-      background: #ececf0;
+      background: var(--tb-surface-button);
       box-shadow: none;
       text-align: center;
     }
@@ -1587,7 +1625,7 @@
       max-width: min(260px, calc(100vw - 16px));
       padding: 6px 8px;
       border-radius: var(--tb-radius-tight);
-      background: #1f2430;
+      background: var(--tb-tooltip-bg);
       color: var(--tb-text-color-tooltip);
       font-size: var(--tb-text-size-meta);
       font-weight: var(--tb-text-weight-semibold);
@@ -1598,7 +1636,7 @@
       white-space: normal;
       pointer-events: none;
       z-index: 1200;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 3px 10px var(--vm-color-toolbar-tooltip-shadow);
       opacity: 0;
       transition: opacity 80ms linear;
     }
@@ -1617,14 +1655,14 @@
       height: 0;
       border-top: 5px solid transparent;
       border-bottom: 5px solid transparent;
-      border-right: 5px solid #1f2430;
+      border-right: 5px solid var(--tb-tooltip-bg);
     }
 
     #toolbarTooltip[data-side="left"]::before {
       left: auto;
       right: -5px;
       border-right: none;
-      border-left: 5px solid #1f2430;
+      border-left: 5px solid var(--tb-tooltip-bg);
     }
 
     #openBtn {
@@ -1667,9 +1705,9 @@
       width: 100%;
       box-sizing: border-box;
       height: 32px;
-      border: 1px solid #d0d3da;
+      border: 1px solid var(--tb-border-input);
       border-radius: var(--tb-radius-tight);
-      background: #fafbfc;
+      background: var(--tb-surface-input);
       color: var(--tb-text-color-primary);
       padding: 0 9px;
     }
@@ -1701,7 +1739,7 @@
       height: 30px;
       padding: 0;
       border-radius: var(--tb-radius-tight);
-      background: #e7e8ec !important;
+      background: var(--tb-surface-emphasis) !important;
       color: var(--tb-text-color-icon) !important;
       font-size: 20px;
       font-weight: var(--tb-text-weight-regular);
@@ -1733,7 +1771,7 @@
 
     #toolbar #displayInspector .inspectorGroup {
       border: none;
-      border-top: 1px solid #dde0e6;
+      border-top: 1px solid var(--tb-section-divider);
       border-radius: 0;
       padding: 8px 0 4px 0;
       background: transparent;
@@ -1787,7 +1825,7 @@
       border: none;
       box-shadow: none;
       border-radius: var(--tb-radius-tight);
-      background: #e7e8ec;
+      background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-icon);
       padding: 0 10px;
     }
@@ -1861,7 +1899,7 @@
       height: 30px;
       padding: 0 10px;
       border-radius: var(--tb-radius-tight);
-      background: #e7e8ec;
+      background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-icon);
       overflow: hidden;
       cursor: pointer;
@@ -1886,7 +1924,7 @@
       width: 18px;
       height: 18px;
       border-radius: var(--tb-radius-tight);
-      box-shadow: inset 0 0 0 1px rgba(40, 44, 52, 0.22);
+      box-shadow: inset 0 0 0 1px var(--tb-swatch-outline);
       pointer-events: none;
     }
 
@@ -1914,7 +1952,7 @@
       height: 32px;
       border-radius: var(--tb-radius-tight);
       overflow: hidden;
-      background: #e7e8ec;
+      background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-icon);
       font-weight: var(--tb-text-weight-bold);
     }
@@ -1937,7 +1975,7 @@
       height: 32px;
       padding: 0;
       border-radius: var(--tb-radius-tight);
-      background: #e7e8ec !important;
+      background: var(--tb-surface-emphasis) !important;
       color: var(--tb-text-color-icon) !important;
       font-size: 20px;
       font-weight: var(--tb-text-weight-regular);
@@ -1948,9 +1986,9 @@
 
     #toolbar #displayInspector .isoAutoBtn.active,
     #toolbar #displayInspector .isoAutoBtn[aria-pressed="true"] {
-      background: #2374eb !important;
+      background: var(--tb-color-accent) !important;
       color: var(--tb-text-color-inverse) !important;
-      box-shadow: inset 0 0 0 1px rgba(17, 28, 48, 0.22);
+      box-shadow: inset 0 0 0 1px var(--tb-color-accent-outline);
     }
 
     #toolbar #displayInspector .isoField .isoTag {
@@ -1958,7 +1996,7 @@
       align-items: center;
       height: 100%;
       padding: 0 10px;
-      background: #e7e8ec;
+      background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-icon);
       letter-spacing: 0.01em;
     }
@@ -1971,7 +2009,7 @@
       outline: none;
       box-shadow: none;
       border-radius: 0;
-      background: #e7e8ec;
+      background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-icon);
       padding: 0 10px 0 6px;
       font-weight: var(--tb-text-weight-bold);
@@ -2313,7 +2351,7 @@
     <div class="meta">Bond: <span id="editCursorBadgeBond">1</span></div>
   </div>
   <div id="shortcutRibbon" aria-hidden="true"
-    style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid #223; pointer-events:none; z-index:30;">
+    style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid var(--vm-color-legacy-border-strong); pointer-events:none; z-index:30;">
   </div>
 
   <!-- Right side panel (toggle) -->
@@ -2484,9 +2522,9 @@
   <div id="helpOverlay" aria-hidden="true"
     style="display:none; position:fixed; inset:0; background:#0008; z-index:50; align-items:center; justify-content:center;">
     <div id="helpModal" role="dialog" aria-modal="true"
-      style="background:var(--panel); color:var(--text); width:min(680px,92vw); max-height:80vh; overflow:auto; border:1px solid #223; border-radius:10px; box-shadow:0 10px 30px #000a;">
+      style="background:var(--panel); color:var(--text); width:min(680px,92vw); max-height:80vh; overflow:auto; border:1px solid var(--vm-color-legacy-border-strong); border-radius:10px; box-shadow:0 10px 30px #000a;">
       <div
-        style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #223;">
+        style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--vm-color-legacy-border-strong);">
         <div style="font-weight:700;">
           Help & Shortcuts
           <span id="versionText" style="font-weight:500; font-size:12px; opacity:.75; margin-left:8px;"></span>

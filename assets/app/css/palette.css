@@ -1,0 +1,69 @@
+:root {
+  /* App palette (single source of color truth) */
+  --vm-color-white: #ffffff;
+  --vm-color-bg-main: #0b0f14;
+  --vm-color-bg-panel: #121822;
+  --vm-color-text-main: #e8eef6;
+  --vm-color-text-muted: #99aabb;
+  --vm-color-accent-primary: #4aa3ff;
+  --vm-color-accent-primary-soft: rgba(74, 163, 255, 0.18);
+
+  /* Sidebar / toolbar neutrals */
+  --vm-color-toolbar-bg: #f3f3f5;
+  --vm-color-toolbar-border: #d7d8dd;
+  --vm-color-toolbar-divider: #d8d9df;
+  --vm-color-toolbar-control-bg: #e7e8ec;
+  --vm-color-toolbar-control-bg-hover: #e5e6ea;
+  --vm-color-toolbar-button-bg: #ececf0;
+  --vm-color-toolbar-input-bg: #fafbfc;
+  --vm-color-toolbar-input-border: #d0d3da;
+  --vm-color-toolbar-tooltip-bg: #1f2430;
+  --vm-color-toolbar-section-divider: #dde0e6;
+  --vm-color-toolbar-icon-strong: #2f343d;
+  --vm-color-toolbar-action: #2374eb;
+  --vm-color-toolbar-action-outline: rgba(17, 28, 48, 0.22);
+  --vm-color-toolbar-tooltip-shadow: rgba(0, 0, 0, 0.2);
+
+  /* Legacy dark panels/inputs still used by floating dialogs and side panes */
+  --vm-color-legacy-border-strong: #223;
+  --vm-color-legacy-border-mid: #223041;
+  --vm-color-legacy-border-soft: #2a3546;
+  --vm-color-legacy-input-border: #2a3648;
+  --vm-color-legacy-input-bg: #1a2333;
+  --vm-color-legacy-input-fg: #e5edf8;
+  --vm-color-legacy-secondary-bg: #2a3344;
+  --vm-color-legacy-secondary-fg: #dfe7f3;
+  --vm-color-legacy-secondary-active-bg: #355a87;
+  --vm-color-legacy-secondary-active-fg: #eef6ff;
+  --vm-color-legacy-text-on-dark: #e9f1ff;
+  --vm-color-legacy-dark-surface: #1a2230;
+  --vm-color-legacy-muted-chip: #0f151f;
+  --vm-color-legacy-muted-chip-2: #101722;
+  --vm-color-legacy-muted-chip-3: #101823;
+
+  /* Auxiliary panels */
+  --vm-color-panel-border-strong: #223;
+  --vm-color-periodic-grad-a: #182334;
+  --vm-color-periodic-grad-b: #101722;
+  --vm-color-periodic-grad-c: #0c121c;
+
+  /* Toolbar text hierarchy */
+  --vm-color-toolbar-text-primary: #2b2f36;
+  --vm-color-toolbar-text-strong: #1f232a;
+  --vm-color-toolbar-text-muted: #606876;
+  --vm-color-toolbar-text-subtle: #5b6475;
+  --vm-color-toolbar-text-emphasis: #3f4756;
+  --vm-color-toolbar-text-tooltip: #f2f5fb;
+  --vm-color-toolbar-text-meta-key: #636d80;
+  --vm-color-toolbar-text-meta-empty: #7b8596;
+  --vm-color-toolbar-text-chip: #4f5766;
+  --vm-color-toolbar-text-chip-muted: #4d586b;
+  --vm-color-toolbar-text-code: #3e4655;
+  --vm-color-toolbar-text-inverse: #ffffff;
+
+  /* Mode tabs */
+  --vm-color-toolbar-tab-fg: #7a7f89;
+  --vm-color-toolbar-tab-fg-hover: #4b5160;
+  --vm-color-toolbar-tab-fg-active: #1f232a;
+  --vm-color-toolbar-tab-accent: #4a63e7;
+}

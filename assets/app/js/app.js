@@ -21,6 +21,52 @@
   const AUTO_ISO_WORKER_TIMEOUT_MS = 15000;
   const DEFAULT_ISO_VALUE = 0.02;
   const HEADER_HAPPY_EMOJIS = Object.freeze(['🙂', '😊', '😄', '😃', '😁', '😎', '🤓', '😺', '🤠', '🫡', '😇', '😍', '🫡', '🥳']);
+  /**
+   * Centralized app color palette used by canvas drawing and inline style snippets.
+   * Keep color edits here so visual tuning stays coherent.
+   */
+  const UI_PALETTE = Object.freeze({
+    white: '#ffffff',
+    black: '#000000',
+    phaseWheelStrokeDark: 'rgba(0,0,0,0.9)',
+    phaseWheelStrokeLight: 'rgba(255,255,255,0.95)',
+    periodicSymbolFill: 'rgba(235,242,252,0.95)',
+    periodicSymbolStroke: 'rgba(10,16,26,0.8)',
+    irAxisStroke: 'rgba(142, 168, 200, 0.35)',
+    irTextMuted: '#93a6bf',
+    irCurve: '#8fc5ff',
+    irSelectedLine: '#ff9d21',
+    irSelectedBand: 'rgba(255, 157, 33, 0.22)',
+    irSelectedText: '#ffb155',
+    irAxisText: '#92a5bf',
+    shortcutKeyBg: '#1a2230',
+    shortcutKeyText: '#e9f1ff',
+    shortcutKeyBorder: '#2a3546',
+    editBadgeDisplayBorder: '#4aa3ff',
+    editBadgeDisplayBg: 'rgba(74, 163, 255, 0.18)',
+    editBadgeAddBorder: '#57cd8a',
+    editBadgeAddBg: 'rgba(87, 205, 138, 0.2)',
+    editBadgeDeleteBorder: '#ff7373',
+    editBadgeDeleteBg: 'rgba(255, 115, 115, 0.2)',
+    quickPickTextOnLight: '#0f1a2b',
+    quickPickTextOnLightAlt: '#0b1220',
+    quickPickTextOnDark: '#f4f8ff',
+    quickPickFallbackBg: '#1a2230',
+    quickPickFallbackFg: '#eef6ff',
+    measurementLabelBg: 'rgba(20,22,24,0.85)',
+    measurementLabelText: '#e8eef6',
+    atomLabelTextDefault: '#f3f7ff',
+  });
+  const SURFACE_COLOR_SCHEMES = Object.freeze({
+    emory: Object.freeze({ pos: '#f2a900', neg: '#0033a0' }),
+    national: Object.freeze({ pos: '#e60000', neg: '#0033a0' }),
+    bright: Object.freeze({ pos: '#ffcc00', neg: '#00bfff' }),
+    electron: Object.freeze({ pos: '#ff00bf', neg: '#2eb82e' }),
+    classic: Object.freeze({ pos: '#1f77b4', neg: '#d62728' }),
+  });
+  const DEFAULT_SURFACE_SCHEME = SURFACE_COLOR_SCHEMES.emory;
+  const DEFAULT_POS_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.pos;
+  const DEFAULT_NEG_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.neg;
 
   const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
@@ -361,8 +407,8 @@
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, Math.PI * 2);
     // double stroke for contrast
-    ctx.lineWidth = Math.max(2, Math.round(2 * dpr)); ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.stroke();
-    ctx.lineWidth = Math.max(1, Math.round(1 * dpr)); ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke();
+    ctx.lineWidth = Math.max(2, Math.round(2 * dpr)); ctx.strokeStyle = UI_PALETTE.phaseWheelStrokeDark; ctx.stroke();
+    ctx.lineWidth = Math.max(1, Math.round(1 * dpr)); ctx.strokeStyle = UI_PALETTE.phaseWheelStrokeLight; ctx.stroke();
 
     // Draw tick marks and labels for −π, −π/2, 0, π/2, π
     const ticks = [
@@ -383,9 +429,9 @@
       const x2 = cx + r2 * ca, y2 = cy + r2 * sa;
       // double-stroke tick for contrast
       ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
-      ctx.lineWidth = Math.max(2, Math.round(2 * dpr)); ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.stroke();
+      ctx.lineWidth = Math.max(2, Math.round(2 * dpr)); ctx.strokeStyle = UI_PALETTE.phaseWheelStrokeDark; ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
-      ctx.lineWidth = Math.max(1, Math.round(1 * dpr)); ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke();
+      ctx.lineWidth = Math.max(1, Math.round(1 * dpr)); ctx.strokeStyle = UI_PALETTE.phaseWheelStrokeLight; ctx.stroke();
 
       // Place text with collision-aware offsets
       let tx, ty;
@@ -409,8 +455,8 @@
         ctx.textBaseline = 'top';
       }
       // stroke + fill text for contrast
-      ctx.lineWidth = Math.max(3, Math.round(3 * dpr)); ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(t.label, tx, ty);
-      ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText(t.label, tx, ty);
+      ctx.lineWidth = Math.max(3, Math.round(3 * dpr)); ctx.strokeStyle = UI_PALETTE.phaseWheelStrokeDark; ctx.strokeText(t.label, tx, ty);
+      ctx.fillStyle = UI_PALETTE.phaseWheelStrokeLight; ctx.fillText(t.label, tx, ty);
     }
 
     // Mode label below the wheel
@@ -422,8 +468,8 @@
     else label = '';
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     const ly = Math.min(pxH - Math.max(4, Math.round(4 * dpr)), cy + R + Math.max(18, Math.round(18 * dpr)));
-    ctx.lineWidth = Math.max(3, Math.round(3 * dpr)); ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(label, cx, ly);
-    ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText(label, cx, ly);
+    ctx.lineWidth = Math.max(3, Math.round(3 * dpr)); ctx.strokeStyle = UI_PALETTE.phaseWheelStrokeDark; ctx.strokeText(label, cx, ly);
+    ctx.fillStyle = UI_PALETTE.phaseWheelStrokeLight; ctx.fillText(label, cx, ly);
   }
 
   /**
@@ -1666,7 +1712,7 @@
    * @returns {string}
    */
   function rgbTupleToHex(rgb) {
-    if (!Array.isArray(rgb) || rgb.length < 3) return '#ffffff';
+    if (!Array.isArray(rgb) || rgb.length < 3) return UI_PALETTE.white;
     const toHex = (n) => Math.max(0, Math.min(255, n | 0)).toString(16).padStart(2, '0');
     return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
   }
@@ -1677,7 +1723,7 @@
    * @param {string} fallback
    * @returns {string}
    */
-  function normalizeHexColor(value, fallback = '#ffffff') {
+  function normalizeHexColor(value, fallback = UI_PALETTE.white) {
     const s = typeof value === 'string' ? value.trim().toLowerCase() : '';
     if (/^#[0-9a-f]{6}$/.test(s)) return s;
     if (/^#[0-9a-f]{3}$/.test(s)) return `#${s[1]}${s[1]}${s[2]}${s[2]}${s[3]}${s[3]}`;
@@ -1729,7 +1775,7 @@
   function getDefaultElementHexColor(z) {
     const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];
     if (info && Array.isArray(info.color)) return rgbTupleToHex(info.color);
-    return '#ffffff';
+    return UI_PALETTE.white;
   }
 
   /**
@@ -2749,8 +2795,8 @@
    */
   function makeAtomLabelTexture(symbol, textHex, strokeHex) {
     const text = typeof symbol === 'string' ? symbol.trim().slice(0, 3) : '?';
-    const fg = normalizeHexColor(textHex, '#f3f7ff');
-    const stroke = normalizeHexColor(strokeHex, '#000000');
+    const fg = normalizeHexColor(textHex, UI_PALETTE.atomLabelTextDefault);
+    const stroke = normalizeHexColor(strokeHex, UI_PALETTE.black);
     const size = 1024;
     const fontScale = 20;
     const textX = Math.round(size * 0.5);
@@ -2951,7 +2997,7 @@
       }
       if (showAtomLabels) {
         const symbol = getElementSymbol(z);
-        const labelHex = '#ffffff';
+        const labelHex = UI_PALETTE.white;
         const labelStrokeHex = getReadableLabelDarkenedHex(atomColor, 0.25);
         const labelKey = `${symbol}:${labelHex}:${labelStrokeHex}`;
         let labelMat = labelMaterialCache.get(labelKey);
@@ -4936,7 +4982,7 @@
     const innerW = Math.max(1, cssW - padL - padR);
     const innerH = Math.max(1, cssH - padT - padB);
 
-    ctx.strokeStyle = 'rgba(142, 168, 200, 0.35)';
+    ctx.strokeStyle = UI_PALETTE.irAxisStroke;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padL, padT + innerH + 0.5);
@@ -4944,7 +4990,7 @@
     ctx.stroke();
 
     if (peaks.length === 0) {
-      ctx.fillStyle = '#93a6bf';
+      ctx.fillStyle = UI_PALETTE.irTextMuted;
       ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No visible IR-active frequencies', padL + innerW * 0.5, padT + innerH * 0.58);
@@ -5002,7 +5048,7 @@
     }
     yMax = Math.max(1e-8, yMax);
 
-    ctx.strokeStyle = '#8fc5ff';
+    ctx.strokeStyle = UI_PALETTE.irCurve;
     ctx.lineWidth = 1.6;
     ctx.beginPath();
     for (let i = 0; i <= innerW; i++) {
@@ -5019,8 +5065,8 @@
       if (xSel >= padL - 2 && xSel <= padL + innerW + 2) {
         const ySel = spectrumAt(selected.freqCm1);
         const yPx = padT + innerH - (ySel / yMax) * innerH;
-        ctx.strokeStyle = '#ff9d21';
-        ctx.fillStyle = 'rgba(255, 157, 33, 0.22)';
+        ctx.strokeStyle = UI_PALETTE.irSelectedLine;
+        ctx.fillStyle = UI_PALETTE.irSelectedBand;
         ctx.lineWidth = 1.6;
         ctx.beginPath();
         ctx.moveTo(xSel, padT + innerH);
@@ -5045,7 +5091,7 @@
           ctx.fill();
         }
 
-        ctx.fillStyle = '#ffb155';
+        ctx.fillStyle = UI_PALETTE.irSelectedText;
         ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
         ctx.textAlign = 'left';
         const selectedLabel = `${selected.freqCm1.toFixed(1)} ${CM_INV_TEXT}`;
@@ -5055,7 +5101,7 @@
       }
     }
 
-    ctx.fillStyle = '#92a5bf';
+    ctx.fillStyle = UI_PALETTE.irAxisText;
     ctx.font = '10px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`${Math.round(xMin)}`, padL, cssH - 6);
@@ -5691,9 +5737,9 @@
     ];
     for (const [inputEl, hexEl, swatchEl] of fields) {
       if (!inputEl) continue;
-      const hex = String(inputEl.value || '#000000').replace('#', '').toUpperCase();
+      const hex = String(inputEl.value || UI_PALETTE.black).replace('#', '').toUpperCase();
       if (hexEl) hexEl.textContent = hex;
-      if (swatchEl) swatchEl.style.backgroundColor = inputEl.value || '#000000';
+      if (swatchEl) swatchEl.style.backgroundColor = inputEl.value || UI_PALETTE.black;
     }
   }
   syncColorPickerFields();
@@ -5908,8 +5954,8 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = 'bold 54px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
-    ctx.fillStyle = 'rgba(235,242,252,0.95)';
-    ctx.strokeStyle = 'rgba(10,16,26,0.8)';
+    ctx.fillStyle = UI_PALETTE.periodicSymbolFill;
+    ctx.strokeStyle = UI_PALETTE.periodicSymbolStroke;
     ctx.lineWidth = 5;
     ctx.strokeText(txt, c.width * 0.5, c.height * 0.52);
     ctx.fillText(txt, c.width * 0.5, c.height * 0.52);
@@ -6370,7 +6416,8 @@
     currentShortcutContext = ctx;
     const list = SHORTCUTS[ctx] || SHORTCUTS.default;
     if (!shortcutRibbon) return;
-    const parts = list.map(s => `<span style="opacity:.85"><span style=\"background:#1a2230; color:#e9f1ff; padding:1px 6px; border:1px solid #2a3546; border-radius:4px;\">${s.k}</span> ${s.d}</span>`);
+    const shortcutKeyStyle = `background:${UI_PALETTE.shortcutKeyBg}; color:${UI_PALETTE.shortcutKeyText}; padding:1px 6px; border:1px solid ${UI_PALETTE.shortcutKeyBorder}; border-radius:4px;`;
+    const parts = list.map(s => `<span style="opacity:.85"><span style="${shortcutKeyStyle}">${s.k}</span> ${s.d}</span>`);
     shortcutRibbon.innerHTML = parts.join('<span style="opacity:.35"> • </span>');
     shortcutRibbon.setAttribute('aria-hidden', 'false');
   }
@@ -7049,14 +7096,14 @@
     const modeLabel = getEditToolLabel(editTool);
     if (editCursorBadgeModeEl) {
       editCursorBadgeModeEl.textContent = modeLabel;
-      let border = '#4aa3ff';
-      let bg = 'rgba(74, 163, 255, 0.18)';
+      let border = UI_PALETTE.editBadgeDisplayBorder;
+      let bg = UI_PALETTE.editBadgeDisplayBg;
       if (editTool === EDIT_TOOL.ADD) {
-        border = '#57cd8a';
-        bg = 'rgba(87, 205, 138, 0.2)';
+        border = UI_PALETTE.editBadgeAddBorder;
+        bg = UI_PALETTE.editBadgeAddBg;
       } else if (editTool === EDIT_TOOL.DELETE) {
-        border = '#ff7373';
-        bg = 'rgba(255, 115, 115, 0.2)';
+        border = UI_PALETTE.editBadgeDeleteBorder;
+        bg = UI_PALETTE.editBadgeDeleteBg;
       }
       editCursorBadgeModeEl.style.borderColor = border;
       editCursorBadgeModeEl.style.background = bg;
@@ -7112,10 +7159,10 @@
           const c = new THREE.Color(hex);
           const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
           btn.style.background = hex;
-          btn.style.color = lum > 0.6 ? '#0f1a2b' : '#f4f8ff';
+          btn.style.color = lum > 0.6 ? UI_PALETTE.quickPickTextOnLight : UI_PALETTE.quickPickTextOnDark;
         } catch {
-          btn.style.background = '#1a2230';
-          btn.style.color = '#eef6ff';
+          btn.style.background = UI_PALETTE.quickPickFallbackBg;
+          btn.style.color = UI_PALETTE.quickPickFallbackFg;
         }
       } else if (orderAttr != null) {
         const ord = Number(orderAttr);
@@ -7401,10 +7448,10 @@
           const color = new THREE.Color(bgHex);
           const lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
           btn.style.background = bgHex;
-          btn.style.color = lum > 0.6 ? '#0b1220' : '#f4f8ff';
+          btn.style.color = lum > 0.6 ? UI_PALETTE.quickPickTextOnLightAlt : UI_PALETTE.quickPickTextOnDark;
         } catch {
-          btn.style.background = '#1a2230';
-          btn.style.color = '#eef6ff';
+          btn.style.background = UI_PALETTE.quickPickFallbackBg;
+          btn.style.color = UI_PALETTE.quickPickFallbackFg;
         }
       });
     }
@@ -7709,7 +7756,7 @@
 
     // rounded rectangle background
     const rr = Math.min(radius, w / 2, h / 2);
-    ctx.fillStyle = 'rgba(20,22,24,0.85)';
+    ctx.fillStyle = UI_PALETTE.measurementLabelBg;
     ctx.beginPath();
     ctx.moveTo(rr, 0);
     ctx.arcTo(w, 0, w, h, rr);
@@ -7720,7 +7767,7 @@
     ctx.fill();
 
     // text
-    ctx.fillStyle = '#e8eef6';
+    ctx.fillStyle = UI_PALETTE.measurementLabelText;
     ctx.textBaseline = 'middle';
     ctx.fillText(txt, wpad, h / 2);
 
@@ -8752,16 +8799,9 @@
 
   // Default color schemes for +/- surfaces
   if (schemeSelect) {
-    const schemes = {
-      emory: { pos: '#f2a900', neg: '#0033a0' },
-      national: { pos: '#e60000', neg: '#0033a0' },
-      bright: { pos: '#ffcc00', neg: '#00bfff' },
-      electron: { pos: '#ff00bf', neg: '#2eb82e' },
-      classic: { pos: '#1f77b4', neg: '#d62728' },
-    };
     schemeSelect.onchange = () => {
       const v = schemeSelect.value;
-      const s = schemes[v];
+      const s = SURFACE_COLOR_SCHEMES[v];
       if (s) {
         posColor.value = s.pos;
         negColor.value = s.neg;
@@ -8954,13 +8994,13 @@
     autoIsoEnabled = asBoolean(value);
     updateAutoIsoButtonState();
   });
-  registerPresetSetting('surface.posColor', () => (posColor && posColor.value) || '#f2a900', (value) => {
-    if (posColor) posColor.value = asHexColor(value, posColor.value || '#f2a900');
+  registerPresetSetting('surface.posColor', () => (posColor && posColor.value) || DEFAULT_POS_SURFACE_COLOR, (value) => {
+    if (posColor) posColor.value = asHexColor(value, posColor.value || DEFAULT_POS_SURFACE_COLOR);
     if (schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
   });
-  registerPresetSetting('surface.negColor', () => (negColor && negColor.value) || '#0033a0', (value) => {
-    if (negColor) negColor.value = asHexColor(value, negColor.value || '#0033a0');
+  registerPresetSetting('surface.negColor', () => (negColor && negColor.value) || DEFAULT_NEG_SURFACE_COLOR, (value) => {
+    if (negColor) negColor.value = asHexColor(value, negColor.value || DEFAULT_NEG_SURFACE_COLOR);
     if (schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
   });
@@ -8971,9 +9011,9 @@
     schemeSelect.value = next;
     if (next !== 'custom' && typeof schemeSelect.onchange === 'function') schemeSelect.onchange();
   });
-  registerPresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || '#ffffff', (value) => {
+  registerPresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || UI_PALETTE.white, (value) => {
     if (!bgColor) return;
-    bgColor.value = asHexColor(value, bgColor.value || '#ffffff');
+    bgColor.value = asHexColor(value, bgColor.value || UI_PALETTE.white);
     syncColorPickerFields();
     try { scene.background = new THREE.Color(bgColor.value); } catch { }
   });
