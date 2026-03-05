@@ -604,9 +604,9 @@
     #toolbar #pubchemMetaContent {
       padding: 6px 8px;
       border: 1px solid #dde0e6;
-      border-radius: 6px;
-      color: #2f3746;
-      font-size: 11px;
+      border-radius: var(--tb-radius-tight);
+      color: var(--tb-text-color-primary);
+      font-size: var(--tb-text-size-meta);
       max-height: 140px;
       overflow: auto;
       background: #eaecf0;
@@ -620,16 +620,16 @@
     }
 
     #toolbar #pubchemMetaTitle {
-      color: #606876;
-      font-size: 11px;
-      font-weight: 700;
+      color: var(--tb-text-color-muted);
+      font-size: var(--tb-text-size-meta);
+      font-weight: var(--tb-text-weight-bold);
       margin: 0 0 4px 1px;
       text-transform: none;
       letter-spacing: 0.01em;
     }
 
     #toolbar #pubchemMetaContent .meta-empty {
-      color: #7b8596;
+      color: var(--tb-text-color-meta-empty);
       font-style: italic;
     }
 
@@ -649,12 +649,12 @@
 
     #toolbar #pubchemMetaContent table.meta-table th {
       width: 68px;
-      color: #636d80;
-      font-weight: 600;
+      color: var(--tb-text-color-meta-key);
+      font-weight: var(--tb-text-weight-semibold);
     }
 
     #toolbar #pubchemMetaContent table.meta-table td {
-      color: #2f3746;
+      color: var(--tb-text-color-primary);
     }
 
     #viewControls {
@@ -1235,10 +1235,33 @@
       --workspace-left-offset: var(--workspace-sidebar-width);
       --vibration-panel-bottom-clearance: 52px;
       --toolbar-divider: #d8d9df;
-      --toolbar-font-size: 13px;
-      --toolbar-font-weight: 600;
+      /* Toolbar typography tokens */
+      --tb-font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      --tb-text-size-title: 15px;
+      --tb-text-size-ui: 13px;
+      --tb-text-size-label: 12px;
+      --tb-text-size-meta: 11px;
+      --tb-text-weight-regular: 400;
+      --tb-text-weight-semibold: 600;
+      --tb-text-weight-bold: 700;
+      --tb-text-color-primary: #2b2f36;
+      --tb-text-color-strong: #1f232a;
+      --tb-text-color-muted: #606876;
+      --tb-text-color-subtle: #5b6475;
+      --tb-text-color-emphasis: #3f4756;
+      --tb-text-color-icon: #2f343d;
+      --tb-text-color-tooltip: #f2f5fb;
+      --tb-text-color-meta-key: #636d80;
+      --tb-text-color-meta-empty: #7b8596;
+      --tb-text-color-chip: #4f5766;
+      --tb-text-color-chip-muted: #4d586b;
+      --tb-text-color-code: #3e4655;
+      --tb-text-color-inverse: #ffffff;
+      --tb-radius-tight: 3px;
+      --toolbar-font-size: var(--tb-text-size-ui);
+      --toolbar-font-weight: var(--tb-text-weight-semibold);
       --toolbar-mode-tab-height: 23px;
-      --toolbar-mode-tab-radius: 8px;
+      --toolbar-mode-tab-radius: var(--tb-radius-tight);
       --toolbar-mode-tab-bg: #eaebef;
       --toolbar-mode-tab-bg-hover: #e2e5eb;
       --toolbar-mode-tab-bg-active: #e7e8ec;
@@ -1260,7 +1283,8 @@
       border-right: 1px solid #d7d8dd;
       border-bottom: none;
       background: #f3f3f5;
-      color: #24272d;
+      color: var(--tb-text-color-primary);
+      font-family: var(--tb-font-family);
       box-shadow: none;
       z-index: 42;
       padding: 8px 10px 10px;
@@ -1298,9 +1322,9 @@
     }
 
     #toolbar .tb-brand {
-      color: #20232a;
-      font-size: 15px;
-      font-weight: 700;
+      color: var(--tb-text-color-strong);
+      font-size: var(--tb-text-size-title);
+      font-weight: var(--tb-text-weight-bold);
       letter-spacing: 0.01em;
       padding: 0;
       display: inline-flex;
@@ -1334,9 +1358,9 @@
       color: var(--toolbar-mode-tab-fg) !important;
       justify-content: center !important;
       text-align: center !important;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      font-size: var(--toolbar-font-size);
-      font-weight: var(--toolbar-font-weight);
+      font-family: var(--tb-font-family);
+      font-size: var(--tb-text-size-ui);
+      font-weight: var(--tb-text-weight-semibold);
       line-height: 1.2;
       letter-spacing: normal;
       position: relative;
@@ -1388,12 +1412,12 @@
       appearance: none;
       border: none;
       background: transparent;
-      color: #2b2f36;
+      color: var(--tb-text-color-primary);
       height: 32px;
-      border-radius: 3px;
+      border-radius: var(--tb-radius-tight);
       padding: 0 10px;
-      font-size: var(--toolbar-font-size);
-      font-weight: var(--toolbar-font-weight);
+      font-size: var(--tb-text-size-ui);
+      font-weight: var(--tb-text-weight-semibold);
       line-height: 1.2;
       cursor: pointer;
       transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
@@ -1431,12 +1455,12 @@
     #toolbar button.secondary,
     #toolbarShowBtn.secondary {
       background: transparent;
-      color: #2b2f36;
+      color: var(--tb-text-color-primary);
     }
 
     #toolbar button.secondary.active {
       background: #e5e6ea;
-      color: #1f232a;
+      color: var(--tb-text-color-strong);
     }
 
     #toolbar button:disabled {
@@ -1538,13 +1562,13 @@
       max-width: 32px;
       height: 32px;
       padding: 0;
-      border-radius: 4px;
+      border-radius: var(--tb-radius-tight);
       background: transparent !important;
-      color: #2f343d !important;
+      color: var(--tb-text-color-icon) !important;
       justify-content: center !important;
       text-align: center !important;
       font-size: 20px;
-      font-weight: 400;
+      font-weight: var(--tb-text-weight-regular);
       line-height: 1;
       position: relative;
       overflow: visible;
@@ -1552,55 +1576,55 @@
 
     #toolbar .tb-iconBtn:hover {
       background: transparent !important;
-      color: #1f232b !important;
+      color: var(--tb-text-color-strong) !important;
     }
 
-    #toolbar .tb-iconBtn[data-tip]:hover::after,
-    #toolbar .tb-iconBtn[data-tip]:focus-visible::after,
-    #toolbar .tb-modeBtn[data-tip]:hover::after,
-    #toolbar .tb-modeBtn[data-tip]:focus-visible::after {
-      content: attr(data-tip);
-      position: absolute;
-      left: calc(100% + 10px);
-      top: 50%;
-      bottom: auto;
-      transform: translateY(-50%);
+    #toolbarTooltip {
+      position: fixed;
+      left: -9999px;
+      top: -9999px;
       min-width: 176px;
-      max-width: min(260px, calc(100vw - 248px));
+      max-width: min(260px, calc(100vw - 16px));
       padding: 6px 8px;
-      border-radius: 6px;
+      border-radius: var(--tb-radius-tight);
       background: #1f2430;
-      color: #f2f5fb;
-      font-size: 11px;
-      font-weight: 600;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      font-variation-settings: normal;
+      color: var(--tb-text-color-tooltip);
+      font-size: var(--tb-text-size-meta);
+      font-weight: var(--tb-text-weight-semibold);
+      font-family: var(--tb-font-family);
       line-height: 1.3;
       letter-spacing: normal;
       text-align: left;
       white-space: normal;
       pointer-events: none;
-      z-index: 80;
+      z-index: 1200;
       box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      transition: opacity 80ms linear;
     }
 
-    #toolbar .tb-iconBtn[data-tip]:hover::before,
-    #toolbar .tb-iconBtn[data-tip]:focus-visible::before,
-    #toolbar .tb-modeBtn[data-tip]:hover::before,
-    #toolbar .tb-modeBtn[data-tip]:focus-visible::before {
+    #toolbarTooltip.open {
+      opacity: 1;
+    }
+
+    #toolbarTooltip::before {
       content: "";
       position: absolute;
-      left: calc(100% + 5px);
+      left: -5px;
       top: 50%;
-      bottom: auto;
       transform: translateY(-50%);
       width: 0;
       height: 0;
       border-top: 5px solid transparent;
       border-bottom: 5px solid transparent;
       border-right: 5px solid #1f2430;
-      pointer-events: none;
-      z-index: 79;
+    }
+
+    #toolbarTooltip[data-side="left"]::before {
+      left: auto;
+      right: -5px;
+      border-right: none;
+      border-left: 5px solid #1f2430;
     }
 
     #openBtn {
@@ -1629,9 +1653,9 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      color: #606876;
-      font-size: 12px;
-      font-weight: 600;
+      color: var(--tb-text-color-muted);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
       white-space: normal;
       align-items: stretch;
       justify-content: flex-start;
@@ -1644,9 +1668,9 @@
       box-sizing: border-box;
       height: 32px;
       border: 1px solid #d0d3da;
-      border-radius: 3px;
+      border-radius: var(--tb-radius-tight);
       background: #fafbfc;
-      color: #232a36;
+      color: var(--tb-text-color-primary);
       padding: 0 9px;
     }
 
@@ -1676,11 +1700,11 @@
       min-width: 30px;
       height: 30px;
       padding: 0;
-      border-radius: 4px;
+      border-radius: var(--tb-radius-tight);
       background: #e7e8ec !important;
-      color: #2f343d !important;
+      color: var(--tb-text-color-icon) !important;
       font-size: 20px;
-      font-weight: 400;
+      font-weight: var(--tb-text-weight-regular);
       line-height: 1;
       justify-content: center !important;
       text-align: center !important;
@@ -1716,14 +1740,14 @@
     }
 
     #toolbar #displayInspector .inspectorTitle {
-      color: #3f4756;
-      font-size: 12px;
-      font-weight: 700;
+      color: var(--tb-text-color-emphasis);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-bold);
       margin-bottom: 6px;
     }
 
     #toolbar #displayInspector label {
-      color: #5b6475;
+      color: var(--tb-text-color-subtle);
     }
 
     #toolbar #displayInspector .inspectorRow {
@@ -1750,9 +1774,9 @@
       width: auto;
       min-width: 0;
       white-space: nowrap;
-      color: #5b6475;
-      font-size: 12px;
-      font-weight: 600;
+      color: var(--tb-text-color-subtle);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
     }
 
     #toolbar #displayInspector .inspectorSelectRow select,
@@ -1762,9 +1786,9 @@
       height: 30px;
       border: none;
       box-shadow: none;
-      border-radius: 4px;
+      border-radius: var(--tb-radius-tight);
       background: #e7e8ec;
-      color: #2f343d;
+      color: var(--tb-text-color-icon);
       padding: 0 10px;
     }
 
@@ -1794,8 +1818,8 @@
     #toolbar #displayInspector .opacityPercent {
       min-width: 42px;
       text-align: right;
-      color: #3f4756;
-      font-weight: 700;
+      color: var(--tb-text-color-emphasis);
+      font-weight: var(--tb-text-weight-bold);
       font-variant-numeric: tabular-nums;
     }
 
@@ -1820,9 +1844,9 @@
 
     #toolbar #displayInspector .colorPickerTag {
       flex: 0 0 20px;
-      color: #4f5766;
-      font-weight: 700;
-      font-size: 12px;
+      color: var(--tb-text-color-chip);
+      font-weight: var(--tb-text-weight-bold);
+      font-size: var(--tb-text-size-label);
       letter-spacing: 0.01em;
       text-align: center;
     }
@@ -1836,9 +1860,9 @@
       min-width: 0;
       height: 30px;
       padding: 0 10px;
-      border-radius: 4px;
+      border-radius: var(--tb-radius-tight);
       background: #e7e8ec;
-      color: #2f343d;
+      color: var(--tb-text-color-icon);
       overflow: hidden;
       cursor: pointer;
       user-select: none;
@@ -1861,15 +1885,15 @@
       flex: 0 0 18px;
       width: 18px;
       height: 18px;
-      border-radius: 4px;
+      border-radius: var(--tb-radius-tight);
       box-shadow: inset 0 0 0 1px rgba(40, 44, 52, 0.22);
       pointer-events: none;
     }
 
     #toolbar #displayInspector .colorPickerHex {
-      color: #3e4655;
-      font-weight: 700;
-      font-size: 11px;
+      color: var(--tb-text-color-code);
+      font-weight: var(--tb-text-weight-bold);
+      font-size: var(--tb-text-size-meta);
       letter-spacing: 0.03em;
       font-variant-numeric: tabular-nums;
       pointer-events: none;
@@ -1879,26 +1903,20 @@
     #toolbar #displayInspector .toggleChip {
       border: none;
       background: transparent;
-      color: #4d586b;
+      color: var(--tb-text-color-chip-muted);
       border-radius: 0;
       padding: 2px 0;
-    }
-
-    #toolbar #displayInspector .inspectorActionBtn {
-      width: 100%;
-      justify-content: flex-start !important;
-      text-align: left;
     }
 
     #toolbar #displayInspector .isoField {
       display: inline-flex;
       align-items: center;
       height: 32px;
-      border-radius: 8px;
+      border-radius: var(--tb-radius-tight);
       overflow: hidden;
       background: #e7e8ec;
-      color: #2f343d;
-      font-weight: 700;
+      color: var(--tb-text-color-icon);
+      font-weight: var(--tb-text-weight-bold);
     }
 
     #toolbar #displayInspector .isoRow {
@@ -1918,11 +1936,11 @@
       max-width: 32px;
       height: 32px;
       padding: 0;
-      border-radius: 4px;
+      border-radius: var(--tb-radius-tight);
       background: #e7e8ec !important;
-      color: #2f343d !important;
+      color: var(--tb-text-color-icon) !important;
       font-size: 20px;
-      font-weight: 400;
+      font-weight: var(--tb-text-weight-regular);
       line-height: 1;
       justify-content: center !important;
       text-align: center !important;
@@ -1931,7 +1949,7 @@
     #toolbar #displayInspector .isoAutoBtn.active,
     #toolbar #displayInspector .isoAutoBtn[aria-pressed="true"] {
       background: #2374eb !important;
-      color: #ffffff !important;
+      color: var(--tb-text-color-inverse) !important;
       box-shadow: inset 0 0 0 1px rgba(17, 28, 48, 0.22);
     }
 
@@ -1941,7 +1959,7 @@
       height: 100%;
       padding: 0 10px;
       background: #e7e8ec;
-      color: #2f343d;
+      color: var(--tb-text-color-icon);
       letter-spacing: 0.01em;
     }
 
@@ -1954,9 +1972,9 @@
       box-shadow: none;
       border-radius: 0;
       background: #e7e8ec;
-      color: #2f343d;
+      color: var(--tb-text-color-icon);
       padding: 0 10px 0 6px;
-      font-weight: 700;
+      font-weight: var(--tb-text-weight-bold);
     }
 
     #drop {
@@ -2198,7 +2216,7 @@
         </div>
         <div class="inspectorGroup">
           <div class="inspectorTitle">Elements</div>
-          <button id="elementColorBtn" class="secondary inspectorActionBtn" title="Edit per-element default colors">Element colors...</button>
+          <button id="elementColorBtn" class="secondary tb-modeBtn" title="Edit per-element default colors">Element colors...</button>
         </div>
       </div>
     </div>
@@ -2214,6 +2232,7 @@
     </div>
   </div>
   <button id="toolbarShowBtn" class="secondary ms-icon-button" type="button" title="Show sidebar">menu</button>
+  <div id="toolbarTooltip" role="tooltip" aria-hidden="true"></div>
 
   <div id="drop">
     <canvas id="canvas"></canvas>

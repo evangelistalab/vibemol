@@ -5633,12 +5633,14 @@
   const pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
   const pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
   const toolbarEl = document.getElementById('toolbar');
+  const toolbarTooltipEl = document.getElementById('toolbarTooltip');
   const toolbarCollapseBtn = document.getElementById('toolbarCollapseBtn');
   const toolbarShowBtn = document.getElementById('toolbarShowBtn');
   const modeDisplayBtn = document.getElementById('modeDisplayBtn');
   const modeMeasureBtn = document.getElementById('modeMeasureBtn');
   const modeEditBtn = document.getElementById('modeEditBtn');
   const brandEmojiEl = document.getElementById('brandEmoji');
+  let toolbarTooltipAnchorEl = null;
   let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
 
   const triggerOpenFiles = () => fileInput.click();
@@ -5745,6 +5747,7 @@
     const isCollapsed = !!collapsed;
     document.body.classList.toggle('sidebar-collapsed', isCollapsed);
     if (toolbarEl) toolbarEl.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    hideToolbarTooltip();
     // Refresh projection immediately because sidebar open/close is now non-animated.
     resize();
   }
@@ -5762,6 +5765,105 @@
     brandEmojiEl.textContent = HEADER_HAPPY_EMOJIS[idx];
   }
   setRandomBrandEmoji();
+
+  /**
+   * Hide the floating toolbar tooltip.
+   */
+  function hideToolbarTooltip() {
+    if (!toolbarTooltipEl) return;
+    toolbarTooltipAnchorEl = null;
+    toolbarTooltipEl.classList.remove('open');
+    toolbarTooltipEl.setAttribute('aria-hidden', 'true');
+    toolbarTooltipEl.style.left = '-9999px';
+    toolbarTooltipEl.style.top = '-9999px';
+    toolbarTooltipEl.textContent = '';
+    toolbarTooltipEl.removeAttribute('data-side');
+  }
+
+  /**
+   * Position the floating toolbar tooltip near one anchor control.
+   * @param {HTMLElement} anchorEl
+   */
+  function positionToolbarTooltip(anchorEl) {
+    if (!toolbarTooltipEl || !anchorEl) return;
+    const rect = anchorEl.getBoundingClientRect();
+    const margin = 8;
+    const gap = 10;
+
+    toolbarTooltipEl.style.left = '-9999px';
+    toolbarTooltipEl.style.top = '-9999px';
+    toolbarTooltipEl.classList.add('open');
+    toolbarTooltipEl.setAttribute('aria-hidden', 'false');
+
+    const tooltipW = Math.max(176, toolbarTooltipEl.offsetWidth || 0);
+    const tooltipH = Math.max(22, toolbarTooltipEl.offsetHeight || 0);
+
+    let side = 'right';
+    let left = rect.right + gap;
+    if (left + tooltipW > window.innerWidth - margin) {
+      side = 'left';
+      left = rect.left - gap - tooltipW;
+    }
+    if (left < margin) left = margin;
+
+    let top = rect.top + ((rect.height - tooltipH) * 0.5);
+    if (top < margin) top = margin;
+    const maxTop = window.innerHeight - margin - tooltipH;
+    if (top > maxTop) top = Math.max(margin, maxTop);
+
+    toolbarTooltipEl.setAttribute('data-side', side);
+    toolbarTooltipEl.style.left = `${Math.round(left)}px`;
+    toolbarTooltipEl.style.top = `${Math.round(top)}px`;
+  }
+
+  /**
+   * Show the floating toolbar tooltip for one control.
+   * @param {HTMLElement} anchorEl
+   */
+  function showToolbarTooltip(anchorEl) {
+    if (!toolbarTooltipEl || !anchorEl) return;
+    const text = String(anchorEl.getAttribute('data-tip') || '').trim();
+    if (!text) {
+      hideToolbarTooltip();
+      return;
+    }
+    toolbarTooltipAnchorEl = anchorEl;
+    toolbarTooltipEl.textContent = text;
+    positionToolbarTooltip(anchorEl);
+  }
+
+  /**
+   * Attach floating tooltip behavior to toolbar controls with `data-tip`.
+   */
+  function initializeToolbarTooltips() {
+    if (!toolbarEl || !toolbarTooltipEl) return;
+    const targets = toolbarEl.querySelectorAll('.tb-iconBtn[data-tip], .tb-modeBtn[data-tip]');
+    targets.forEach((el) => {
+      el.addEventListener('mouseenter', () => showToolbarTooltip(el));
+      el.addEventListener('focus', () => showToolbarTooltip(el));
+      el.addEventListener('mouseleave', () => {
+        if (toolbarTooltipAnchorEl === el) hideToolbarTooltip();
+      });
+      el.addEventListener('blur', () => {
+        if (toolbarTooltipAnchorEl === el) hideToolbarTooltip();
+      });
+      el.addEventListener('click', () => {
+        if (toolbarTooltipAnchorEl === el) hideToolbarTooltip();
+      });
+    });
+
+    window.addEventListener('resize', () => {
+      if (toolbarTooltipAnchorEl) positionToolbarTooltip(toolbarTooltipAnchorEl);
+    });
+    document.addEventListener('scroll', () => {
+      if (toolbarTooltipAnchorEl) positionToolbarTooltip(toolbarTooltipAnchorEl);
+    }, true);
+    document.addEventListener('pointerdown', (evt) => {
+      if (!toolbarTooltipAnchorEl) return;
+      if (!(toolbarEl && toolbarEl.contains(evt.target))) hideToolbarTooltip();
+    });
+  }
+  initializeToolbarTooltips();
 
   const PERIODIC_TABLE_LAYOUT = [
     ['H', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'He'],
