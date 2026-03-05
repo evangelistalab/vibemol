@@ -307,7 +307,9 @@
     }
 
     #vibrationPanel {
-      top: 236px;
+      top: 12px;
+      max-height: calc(100vh - 12px - var(--vibration-panel-bottom-clearance, 84px));
+      overflow: hidden;
     }
 
     .motionPanelHeader {
@@ -360,6 +362,18 @@
       color: var(--text);
       background: #0f151f;
       border-radius: 0 0 10px 10px;
+    }
+
+    #vibrationPanel.open {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #vibrationPanel .motionPanelBody {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     .motionPanelBody .row {
@@ -527,10 +541,6 @@
     @media (max-width: 900px) {
       #trajectoryPanel {
         top: 68px;
-      }
-
-      #vibrationPanel {
-        top: 278px;
       }
     }
 
@@ -1195,6 +1205,7 @@
     body {
       --workspace-sidebar-width: 200px;
       --workspace-left-offset: var(--workspace-sidebar-width);
+      --vibration-panel-bottom-clearance: 52px;
       --toolbar-divider: #d8d9df;
       --toolbar-font-size: 13px;
       --toolbar-font-weight: 600;
@@ -1210,6 +1221,7 @@
 
     body.sidebar-collapsed {
       --workspace-left-offset: 0px;
+      --vibration-panel-bottom-clearance: 86px;
     }
 
     #toolbar {
@@ -1959,7 +1971,7 @@
     }
 
     #vibrationPanel {
-      top: 226px;
+      top: 12px;
     }
 
     @media (max-width: 980px) {
@@ -2376,7 +2388,7 @@
 
   <div id="vibrationPanel" class="motionPanel" aria-hidden="true">
     <div class="motionPanelHeader">
-      <div class="title">Vibration</div>
+      <div class="title">Vibrational Frequencies</div>
       <div class="actions">
         <button id="vibrationPlayBtn" class="motionPanelIconBtn ms-icon-button" title="Play/Pause vibrational mode">play_arrow</button>
         <button id="vibrationResetBtn" class="motionPanelIconBtn ms-icon-button" title="Reset to equilibrium geometry">replay</button>

@@ -4751,9 +4751,8 @@
     if (trajectoryRow) trajectoryRow.style.display = info.enabled ? 'grid' : 'none';
     if (trajectoryRow2) trajectoryRow2.style.display = info.enabled ? 'grid' : 'none';
     if (!info.enabled) {
-      setTrajectoryPanelOpen(false);
-      trajectoryPlaying = false;
-      trajectoryLastStepMs = 0;
+      setTrajectoryPanelOpen(false, { syncUi: false });
+      stopTrajectoryPlayback({ syncUi: false });
       if (trajectoryNowPlaying) trajectoryNowPlaying.textContent = 'No trajectory selected';
       return;
     }
@@ -5356,6 +5355,16 @@
       }
     }
     applyTrajectoryFrame(next, { syncUi: true });
+  }
+
+  /**
+   * Stop trajectory playback and optionally refresh trajectory controls.
+   * @param {{syncUi?:boolean}=} options
+   */
+  function stopTrajectoryPlayback(options = {}) {
+    trajectoryPlaying = false;
+    trajectoryLastStepMs = 0;
+    if (options.syncUi !== false) syncTrajectoryControls();
   }
 
   // Simple FPS meter (EMA smoothed)
@@ -6163,9 +6172,7 @@
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
     if (currentMode === MODES.EDIT && trajectoryPlaying) {
-      trajectoryPlaying = false;
-      trajectoryLastStepMs = 0;
-      syncTrajectoryControls();
+      stopTrajectoryPlayback({ syncUi: true });
     }
     if (currentMode === MODES.EDIT) {
       const vibInfo = getActiveVibrationInfo();
@@ -6312,9 +6319,13 @@
   /**
    * Open/close trajectory controls panel.
    * @param {boolean} open
+   * @param {{syncUi?:boolean}=} options
    */
-  function setTrajectoryPanelOpen(open) {
-    setFloatingPanelOpen(trajectoryPanel, open);
+  function setTrajectoryPanelOpen(open, options = {}) {
+    const shouldOpen = !!open;
+    if (!shouldOpen) stopTrajectoryPlayback({ syncUi: false });
+    setFloatingPanelOpen(trajectoryPanel, shouldOpen);
+    if (options.syncUi !== false) syncTrajectoryControls();
   }
 
   /**
@@ -6346,7 +6357,13 @@
       setVibrationPanelOpen(!(vibrationPanel && vibrationPanel.classList.contains('open')));
     };
   }
-  if (trajectoryPanelClose) trajectoryPanelClose.onclick = () => setTrajectoryPanelOpen(false);
+  if (trajectoryPanelClose) {
+    trajectoryPanelClose.onclick = (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
+      setTrajectoryPanelOpen(false);
+    };
+  }
   if (vibrationPanelClose) vibrationPanelClose.onclick = () => setVibrationPanelOpen(false);
 
   // Help modal logic
@@ -9210,7 +9227,9 @@
   damp.oninput = () => { const v = toNum(damp.value, 0.05); if (Number.isFinite(v)) controls.dampingFactor = v; };
   autoRotSpeed.oninput = () => { const v = toNum(autoRotSpeed.value, 2.0); if (Number.isFinite(v)) controls.autoRotateSpeed = v; };
   if (trajectoryPlayBtn) {
-    trajectoryPlayBtn.onclick = () => {
+    trajectoryPlayBtn.onclick = (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      if (e && e.stopPropagation) e.stopPropagation();
       const info = getActiveTrajectoryInfo();
       if (!info.enabled) return;
       const nextPlaying = !trajectoryPlaying;
@@ -9218,6 +9237,8 @@
         vibrationPlaying = false;
         vibrationLastStepMs = 0;
         restoreActiveVibrationEquilibrium({ syncUi: false });
+      } else {
+        stopTrajectoryPlayback({ syncUi: false });
       }
       trajectoryPlaying = nextPlaying;
       trajectoryLastStepMs = 0;
@@ -9232,8 +9253,7 @@
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       restoreActiveVibrationEquilibrium({ syncUi: false });
-      trajectoryPlaying = false;
-      trajectoryLastStepMs = 0;
+      stopTrajectoryPlayback({ syncUi: false });
       applyTrajectoryFrame(0, { syncUi: true });
       syncVibrationControls();
     };
@@ -9243,8 +9263,7 @@
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       restoreActiveVibrationEquilibrium({ syncUi: false });
-      trajectoryPlaying = false;
-      trajectoryLastStepMs = 0;
+      stopTrajectoryPlayback({ syncUi: false });
       const idx = Number(trajectoryFrameEl.value);
       applyTrajectoryFrame(idx, { syncUi: true });
       syncVibrationControls();
@@ -9274,8 +9293,7 @@
       if (!info.enabled) return;
       const nextPlaying = !vibrationPlaying;
       if (nextPlaying) {
-        trajectoryPlaying = false;
-        trajectoryLastStepMs = 0;
+        stopTrajectoryPlayback({ syncUi: false });
       }
       vibrationPlaying = nextPlaying;
       vibrationLastStepMs = 0;
@@ -9305,8 +9323,7 @@
 
       info.vib.modeIndex = modeIndex;
       info.vib.phase = 0;
-      trajectoryPlaying = false;
-      trajectoryLastStepMs = 0;
+      stopTrajectoryPlayback({ syncUi: false });
       if (shouldTogglePlayback) {
         vibrationPlaying = !vibrationPlaying;
       } else {
@@ -10429,11 +10446,80 @@
   }
 
   /**
+   * Normalize a file stem for cross-file pairing (for example `water` from
+   * `water.xyz`, `water.hess`, or `water.vib.json`).
+   * @param {*} name
+   * @returns {string}
+   */
+  function normalizeFileStem(name) {
+    const raw = String(name || '').trim();
+    if (!raw) return '';
+    const leaf = raw.split(/[\\/]/).pop() || '';
+    const lower = leaf.toLowerCase();
+    const suffixes = [
+      '.vib.json',
+      '.vmodes.json',
+      '.modes.json',
+      '.2ccube',
+      '.output',
+      '.cube',
+      '.hess',
+      '.xyz',
+      '.cub',
+      '.out',
+      '.dat',
+      '.json',
+    ];
+    for (const suffix of suffixes) {
+      if (lower.endsWith(suffix) && lower.length > suffix.length) {
+        return lower.slice(0, -suffix.length);
+      }
+    }
+    const dot = lower.lastIndexOf('.');
+    return dot > 0 ? lower.slice(0, dot) : lower;
+  }
+
+  /**
+   * Compare two uppercase element-symbol arrays for exact sequence equality.
+   * @param {string[]} a
+   * @param {string[]} b
+   * @returns {boolean}
+   */
+  function areSymbolSequencesEqual(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Compare two element-symbol arrays as multisets (order-insensitive).
+   * @param {string[]} a
+   * @param {string[]} b
+   * @returns {boolean}
+   */
+  function areSymbolMultisetsEqual(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    const counts = new Map();
+    for (const s of a) counts.set(s, (counts.get(s) || 0) + 1);
+    for (const s of b) {
+      const n = counts.get(s) || 0;
+      if (n <= 0) return false;
+      if (n === 1) counts.delete(s);
+      else counts.set(s, n - 1);
+    }
+    return counts.size === 0;
+  }
+
+  /**
    * Find loaded molecules that are compatible with one vibration payload.
    * @param {*} payload
-   * @returns {Array<{index:number,record:*,vol:*}>}
+   * @param {{allowPermutation?:boolean}=} options
+   * @returns {Array<{index:number,record:*,vol:*,matchType:'exact'|'permuted'|'count'}>}
    */
-  function findMatchingVolumesForVibrationPayload(payload) {
+  function findMatchingVolumesForVibrationPayload(payload, options = null) {
+    const allowPermutation = !!(options && options.allowPermutation);
     const candidates = [];
     for (let i = 0; i < volumes.length; i++) {
       const record = volumes[i];
@@ -10442,13 +10528,15 @@
       if (vol.atoms.length !== payload.atomCount) continue;
       if (payload.atomSymbols && payload.atomSymbols.length) {
         const symbols = getVolumeAtomSymbols(vol);
-        let same = true;
-        for (let k = 0; k < symbols.length; k++) {
-          if (symbols[k] !== payload.atomSymbols[k]) { same = false; break; }
+        if (areSymbolSequencesEqual(symbols, payload.atomSymbols)) {
+          candidates.push({ index: i, record, vol, matchType: 'exact' });
+          continue;
         }
-        if (!same) continue;
+        if (!allowPermutation || !areSymbolMultisetsEqual(symbols, payload.atomSymbols)) continue;
+        candidates.push({ index: i, record, vol, matchType: 'permuted' });
+        continue;
       }
-      candidates.push({ index: i, record, vol });
+      candidates.push({ index: i, record, vol, matchType: 'count' });
     }
     return candidates;
   }
@@ -10457,11 +10545,21 @@
    * Attach one parsed vibrational payload to the best matching loaded molecule.
    * @param {string} sourceName
    * @param {*} payload
-   * @param {{preferredIndex?:number}=} options
+   * @param {{preferredIndex?:number,sourceStem?:string}=} options
    * @returns {{ok:boolean,error?:string,targetName?:string}}
    */
   function attachVibrationPayloadToBestVolume(sourceName, payload, options = null) {
-    const candidates = findMatchingVolumesForVibrationPayload(payload);
+    let candidates = findMatchingVolumesForVibrationPayload(payload);
+    let usedPermutationMatch = false;
+    if (
+      candidates.length === 0
+      && payload
+      && Array.isArray(payload.atomSymbols)
+      && payload.atomSymbols.length > 0
+    ) {
+      candidates = findMatchingVolumesForVibrationPayload(payload, { allowPermutation: true });
+      usedPermutationMatch = candidates.some((c) => c && c.matchType === 'permuted');
+    }
     if (candidates.length === 0) {
       return {
         ok: false,
@@ -10472,7 +10570,12 @@
     const preferredIndex = Number.isFinite(options && options.preferredIndex)
       ? Math.max(0, options.preferredIndex | 0)
       : -1;
-    const target = candidates.find((c) => c.index === preferredIndex)
+    const preferredStem = normalizeFileStem(options && options.sourceStem);
+    const stemMatched = preferredStem
+      ? candidates.find((c) => normalizeFileStem(c && c.record && c.record.name) === preferredStem)
+      : null;
+    const target = stemMatched
+      || candidates.find((c) => c.index === preferredIndex)
       || candidates.find((c) => c.index === currentIndex)
       || candidates[0];
     const vol = target.vol;
@@ -10518,6 +10621,12 @@
       vibrationLastStepMs = 0;
       applyActiveVibrationPhase(0, { syncUi: false });
       syncVibrationControls();
+    }
+    if (usedPermutationMatch) {
+      console.warn('[Vibration] Attached payload using order-insensitive symbol matching.', {
+        sourceName,
+        targetName: target.record && target.record.name ? target.record.name : '',
+      });
     }
     return { ok: true, targetName: target.record && target.record.name ? target.record.name : '' };
   }
@@ -10644,6 +10753,13 @@
     if (arr.length === 0) return;
     const failures = [];
     const pendingVibrationPayloads = [];
+    const batchXyzStems = new Set();
+    for (const f of arr) {
+      const name = f && f.name ? f.name : '';
+      if (detectInputFileKind(name, '') !== 'xyz') continue;
+      const stem = normalizeFileStem(name);
+      if (stem) batchXyzStems.add(stem);
+    }
     let hasPreparedTarget = false;
     let startIndex = -1; // index of first newly added
     let loadedCount = 0;
@@ -10666,37 +10782,34 @@
             name: name || 'Psi4 output',
             payload: bundle.payload,
             preferredIndex: volumes.length - 1,
+            sourceStem: normalizeFileStem(name || 'Psi4 output'),
           });
           continue;
         }
         if (fileKind === 'orca_hess') {
-          const bundle = parseOrcaHessianVibrationBundle(text, name || 'ORCA Hessian');
-          const matchCandidates = findMatchingVolumesForVibrationPayload(bundle.payload);
-          const matchedCurrent = matchCandidates.find((c) => c.index === currentIndex);
-          let preferredIndex = matchedCurrent
-            ? matchedCurrent.index
-            : (matchCandidates.length > 0 ? matchCandidates[0].index : undefined);
-          if (bundle.vol && preferredIndex == null) {
-            if (!hasPreparedTarget) {
-              clearPlaceholderVolumesForUserLoad();
-              startIndex = volumes.length;
-              hasPreparedTarget = true;
-            }
-            appendParsedVolumeRecord(name || 'ORCA Hessian', bundle.vol);
-            loadedCount++;
-            preferredIndex = volumes.length - 1;
+          const hessStem = normalizeFileStem(name || '');
+          if (!hessStem || !batchXyzStems.has(hessStem)) {
+            failures.push(
+              `${name || 'ORCA Hessian'}: ORCA .hess requires a companion .xyz file in the same upload batch (same base name).`
+            );
+            continue;
           }
+          const bundle = parseOrcaHessianVibrationBundle(text, name || 'ORCA Hessian');
           pendingVibrationPayloads.push({
             name: name || 'ORCA Hessian',
             payload: bundle.payload,
-            preferredIndex,
+            sourceStem: hessStem,
           });
           continue;
         }
         const explicitVibrationFile = fileKind === 'vibration_payload';
         if (explicitVibrationFile) {
           const payload = parseVibrationPayload(text, f.name || 'vibration payload');
-          pendingVibrationPayloads.push({ name: f.name || 'vibration payload', payload });
+          pendingVibrationPayloads.push({
+            name: f.name || 'vibration payload',
+            payload,
+            sourceStem: normalizeFileStem(f.name || 'vibration payload'),
+          });
           continue;
         }
         if (fileKind === 'json') {
@@ -10714,7 +10827,11 @@
           );
           if (looksLikeVibration) {
             const payload = parseVibrationPayload(text, f.name || 'vibration payload');
-            pendingVibrationPayloads.push({ name: f.name || 'vibration payload', payload });
+            pendingVibrationPayloads.push({
+              name: f.name || 'vibration payload',
+              payload,
+              sourceStem: normalizeFileStem(f.name || 'vibration payload'),
+            });
             continue;
           }
         }
@@ -10747,7 +10864,7 @@
       const result = attachVibrationPayloadToBestVolume(
         item.name,
         item.payload,
-        { preferredIndex: item.preferredIndex }
+        { preferredIndex: item.preferredIndex, sourceStem: item.sourceStem }
       );
       if (!result.ok) {
         failures.push(`${item.name}: ${result.error || 'Could not attach vibration payload.'}`);
