@@ -5481,6 +5481,7 @@
   const emptyStateVersion = document.getElementById('emptyStateVersion');
   if (emptyStateVersion) emptyStateVersion.textContent = `v${APP_VERSION}`;
   const coordsContent = document.getElementById('coordsContent');
+  const pubchemMetaWrap = document.getElementById('pubchemMetaWrap');
   const pubchemMetaContent = document.getElementById('pubchemMetaContent');
   const copyXYZBtn = document.getElementById('copyXYZ');
   const downloadXYZBtn = document.getElementById('downloadXYZ');
@@ -10548,9 +10549,11 @@
     if (!pubchemMetaContent) return;
     const meta = record && record.pubchemMeta;
     if (!meta) {
-      pubchemMetaContent.innerHTML = '<div class="meta-empty">No PubChem metadata for active file.</div>';
+      if (pubchemMetaWrap) pubchemMetaWrap.style.display = 'none';
+      pubchemMetaContent.innerHTML = '';
       return;
     }
+    if (pubchemMetaWrap) pubchemMetaWrap.style.display = 'block';
     const rows = [
       ['Name', meta.title || '—'],
       ['CID', meta.cid != null ? String(meta.cid) : '—'],

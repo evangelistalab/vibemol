@@ -563,44 +563,60 @@
       font-size: 13px;
     }
 
-    #pubchemMetaContent {
-      padding: 10px 12px;
-      border-bottom: 1px solid #223;
-      color: var(--text);
-      font-size: 12px;
-      max-height: 190px;
+    #toolbar #pubchemMetaContent {
+      padding: 6px 8px;
+      border: 1px solid #dde0e6;
+      border-radius: 6px;
+      color: #2f3746;
+      font-size: 11px;
+      max-height: 140px;
       overflow: auto;
-      background: #101722;
+      background: #eaecf0;
+      scrollbar-width: thin;
     }
 
-    #pubchemMetaContent .meta-empty {
-      color: var(--muted);
+    #toolbar #pubchemMetaWrap {
+      display: none;
+      width: 100%;
+      margin-top: 2px;
+    }
+
+    #toolbar #pubchemMetaTitle {
+      color: #606876;
+      font-size: 11px;
+      font-weight: 700;
+      margin: 0 0 4px 1px;
+      text-transform: none;
+      letter-spacing: 0.01em;
+    }
+
+    #toolbar #pubchemMetaContent .meta-empty {
+      color: #7b8596;
       font-style: italic;
     }
 
-    #pubchemMetaContent table.meta-table {
+    #toolbar #pubchemMetaContent table.meta-table {
       width: 100%;
       border-collapse: collapse;
     }
 
-    #pubchemMetaContent table.meta-table th,
-    #pubchemMetaContent table.meta-table td {
-      padding: 4px 6px;
-      border-bottom: 1px solid #223;
+    #toolbar #pubchemMetaContent table.meta-table th,
+    #toolbar #pubchemMetaContent table.meta-table td {
+      padding: 3px 4px;
+      border-bottom: 1px solid #d5d9e2;
       vertical-align: top;
       word-break: break-word;
+      text-align: left;
     }
 
-    #pubchemMetaContent table.meta-table th {
-      width: 96px;
-      text-align: left;
-      color: var(--muted);
+    #toolbar #pubchemMetaContent table.meta-table th {
+      width: 68px;
+      color: #636d80;
       font-weight: 600;
     }
 
-    #pubchemMetaContent table.meta-table td {
-      text-align: left;
-      color: var(--text);
+    #toolbar #pubchemMetaContent table.meta-table td {
+      color: #2f3746;
     }
 
     #viewControls {
@@ -1212,6 +1228,10 @@
       flex-direction: column;
       gap: 0;
       transform: translateX(0);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
     }
 
     body.sidebar-collapsed #toolbar {
@@ -1699,6 +1719,19 @@
     #toolbar #displayInspector .inspectorSelectRow input[type="number"] {
       width: 100%;
       min-width: 0;
+      height: 30px;
+      border: none;
+      box-shadow: none;
+      border-radius: 4px;
+      background: #e7e8ec;
+      color: #2f343d;
+      padding: 0 10px;
+    }
+
+    #toolbar #displayInspector .inspectorSelectRow select:focus,
+    #toolbar #displayInspector .inspectorSelectRow input[type="number"]:focus {
+      outline: none;
+      box-shadow: none;
     }
 
     #toolbar #displayInspector label[for="opacity"],
@@ -1809,6 +1842,12 @@
       color: #4d586b;
       border-radius: 0;
       padding: 2px 0;
+    }
+
+    #toolbar #displayInspector .inspectorActionBtn {
+      width: 100%;
+      justify-content: flex-start !important;
+      text-align: left;
     }
 
     #toolbar #displayInspector .isoField {
@@ -1989,6 +2028,10 @@
           <button id="pubchemLoadBtn" class="secondary ms-icon-button" title="Search PubChem and load the selected molecule" aria-label="Load from PubChem">arrow_downward</button>
         </span>
       </label>
+      <div id="pubchemMetaWrap" style="display:none;">
+        <div id="pubchemMetaTitle">PubChem metadata</div>
+        <div id="pubchemMetaContent"></div>
+      </div>
       <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear files</button>
     </div>
 
@@ -2113,6 +2156,10 @@
             <label class="toggleChip"><input type="checkbox" id="surfBtn" checked /> surfaces</label>
           </div>
         </div>
+        <div class="inspectorGroup">
+          <div class="inspectorTitle">Elements</div>
+          <button id="elementColorBtn" class="secondary inspectorActionBtn" title="Edit per-element default colors">Element colors...</button>
+        </div>
       </div>
     </div>
 
@@ -2123,7 +2170,6 @@
     </div>
 
     <div class="tb-section tb-actions">
-      <button id="elementColorBtn" class="secondary" title="Edit per-element default colors">Elements</button>
       <button id="helpBtn" class="secondary" title="Help and shortcuts">Help</button>
     </div>
   </div>
@@ -2291,13 +2337,6 @@
         </select>
         <span></span><span></span>
       </div>
-    </div>
-    <div id="sideHeader">
-      <div class="title">PubChem Metadata</div>
-      <div></div>
-    </div>
-    <div id="pubchemMetaContent">
-      <!-- Filled dynamically -->
     </div>
     <div id="sideHeader">
       <div class="title">Coordinates (Å)</div>
