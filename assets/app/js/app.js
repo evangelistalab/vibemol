@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.4.14';
+  const APP_VERSION = '0.4.15';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -2152,7 +2152,7 @@
   }
 
   /**
-   * Get (or create) the dashed-line material used for aromatic ring guides.
+   * Get (or create) the material used by 3D aromatic ring dash segments.
    * @returns {THREE.Material}
    */
   function getAromaticRingMaterial() {
@@ -2160,23 +2160,40 @@
     const styleKey = profile.key;
     const key = `aromatic:ring:${styleKey}`;
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
+
     const color = profile.aromaticDashColor;
-    const opacity = profile.aromaticDashOpacity;
-    const mat = new THREE.LineDashedMaterial({
-      color,
-      dashSize: 0.10,
-      gapSize: 0.07,
-      transparent: true,
-      opacity,
-      depthWrite: false,
-      depthTest: false,
-    });
+    const opacity = Number.isFinite(profile.aromaticDashOpacity) ? profile.aromaticDashOpacity : 1.0;
+    let mat;
+    if (styleKey === 'toon') {
+      mat = new THREE.MeshToonMaterial({
+        color,
+        gradientMap: getToonGradientTexture('bond'),
+      });
+    } else if (styleKey === 'glossy') {
+      mat = new THREE.MeshPhongMaterial({
+        color,
+        specular: 0xeaf4ff,
+        shininess: 210,
+      });
+    } else {
+      mat = new THREE.MeshPhongMaterial({
+        color,
+        specular: 0xaab2c2,
+        shininess: 90,
+      });
+    }
+    mat.transparent = opacity < 0.999;
+    mat.opacity = opacity;
+    mat.depthWrite = true;
+    mat.depthTest = true;
     bondMaterialCache.set(key, mat);
     return mat;
   }
 
   /**
-   * Add a dashed aromatic ring guide inside a planar six-member ring.
+   * Add a 3D dashed aromatic ring guide inside a planar six-member ring.
+   * Dash segments are rendered as short capped cylinders so they obey depth
+   * testing and clip correctly behind atoms/bonds.
    * @param {THREE.Group} group
    * @param {{atoms:number[],center:THREE.Vector3,normal:THREE.Vector3,radius:number}} ring
    * @param {Array<{pos:THREE.Vector3}>} atomPositions
@@ -2187,6 +2204,7 @@
     const normal = ring.normal ? ring.normal.clone() : new THREE.Vector3(0, 0, 1);
     if (normal.lengthSq() < 1e-10) return;
     normal.normalize();
+
     let basisU = null;
     for (const atomIdx of ring.atoms) {
       const p = atomPositions[atomIdx] && atomPositions[atomIdx].pos;
@@ -2201,22 +2219,48 @@
     if (!basisU) basisU = getBondPerpendicular(normal);
     const basisV = new THREE.Vector3().crossVectors(normal, basisU).normalize();
     const radius = Math.max(0.16, Number.isFinite(ring.radius) ? ring.radius : 0.7);
-    const points = [];
-    const steps = 96;
-    for (let i = 0; i <= steps; i++) {
-      const t = (i / steps) * Math.PI * 2;
-      const p = center.clone()
-        .addScaledVector(basisU, Math.cos(t) * radius)
-        .addScaledVector(basisV, Math.sin(t) * radius)
-        .addScaledVector(normal, 0.01);
-      points.push(p);
+
+    const profile = getMoleculeStyleProfile();
+    const baseBondRadius = profile.key === 'glossy' ? getGlossyBondCenterRadius() : profile.bondRadius;
+    const dashRadius = Math.max(0.012, Math.min(0.042, baseBondRadius * 0.42));
+    const circumference = 2 * Math.PI * radius;
+    const dashCount = Math.max(10, Math.min(28, Math.round(circumference / 0.26)));
+    const sectorAngle = (2 * Math.PI) / dashCount;
+    const dashAngle = sectorAngle * 0.58;
+    const halfDashAngle = dashAngle * 0.5;
+    const dashChordLength = Math.max(0.02, 2 * radius * Math.sin(halfDashAngle));
+    const radialSegments = useStylizedMoleculeStyle() ? 14 : 10;
+    const dashGeom = new THREE.CylinderGeometry(
+      dashRadius,
+      dashRadius,
+      dashChordLength,
+      radialSegments,
+      1,
+      false
+    );
+    const dashLift = dashRadius * 0.1;
+    const yAxis = new THREE.Vector3(0, 1, 0);
+    const material = getAromaticRingMaterial();
+
+    const pointOnRing = (angle) => center.clone()
+      .addScaledVector(basisU, Math.cos(angle) * radius)
+      .addScaledVector(basisV, Math.sin(angle) * radius);
+
+    for (let k = 0; k < dashCount; k++) {
+      const midAngle = k * sectorAngle;
+      const p0 = pointOnRing(midAngle - halfDashAngle);
+      const p1 = pointOnRing(midAngle + halfDashAngle);
+      const seg = p1.clone().sub(p0);
+      const segLenSq = seg.lengthSq();
+      if (segLenSq < 1e-12) continue;
+      const segDir = seg.clone().multiplyScalar(1 / Math.sqrt(segLenSq));
+      const dash = new THREE.Mesh(dashGeom, material);
+      dash.position.copy(p0).addScaledVector(seg, 0.5).addScaledVector(normal, dashLift);
+      dash.quaternion.setFromUnitVectors(yAxis, segDir);
+      dash.renderOrder = 14;
+      dash.userData = { type: 'aromaticRingDash' };
+      group.add(dash);
     }
-    const geom = new THREE.BufferGeometry().setFromPoints(points);
-    const line = new THREE.Line(geom, getAromaticRingMaterial());
-    line.computeLineDistances();
-    line.renderOrder = 48;
-    line.userData = { type: 'aromaticRing' };
-    group.add(line);
   }
 
   /**
