@@ -4875,6 +4875,17 @@
   }
 
   /**
+   * Format one mode IR intensity cell.
+   * @param {*} value
+   * @returns {string}
+   */
+  function formatVibrationIntensityCell(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '--';
+    return n.toFixed(1);
+  }
+
+  /**
    * Resolve one mode IR intensity in km/mol when available.
    * Accepts a few compatibility aliases used by sidecar payloads.
    * @param {*} mode
@@ -5144,28 +5155,37 @@
    */
   function renderVibrationModeTable(info) {
     const emptyState = { visibleIndices: [], visibleCount: 0, modeCount: 0 };
-    if (!vibrationModeTableWrap || !vibrationModeTableBody || !vibrationModeEmpty) return emptyState;
+    if (!vibrationModeTableWrap || !vibrationModeTable || !vibrationModeTableBody || !vibrationModeEmpty) return emptyState;
     if (!(info && info.enabled && info.vib && Array.isArray(info.vib.modes) && info.vib.modes.length > 0)) {
       vibrationModeTableWrap.style.display = 'none';
       vibrationModeEmpty.style.display = 'none';
       vibrationModeTableBody.innerHTML = '';
+      vibrationModeTable.setAttribute('data-has-intensity', 'false');
       return emptyState;
     }
     const vib = info.vib;
     const modeCount = Math.max(0, info.modeCount | 0);
     const visibleIndices = getVisibleVibrationModeIndices(vib);
+    const hasAnyIntensity = visibleIndices.some((i) => {
+      const mode = vib.modes[i] || null;
+      return Number.isFinite(getVibrationModeIrIntensity(mode));
+    });
+    vibrationModeTable.setAttribute('data-has-intensity', hasAnyIntensity ? 'true' : 'false');
     const rows = [];
     for (const i of visibleIndices) {
       const mode = vib.modes[i] || {};
       const rawLabel = (typeof mode.label === 'string' && mode.label.trim()) ? mode.label.trim() : `Mode ${i + 1}`;
       const activeClass = (i === (vib.modeIndex | 0)) ? ' active' : '';
       const freqCell = formatVibrationFrequencyCell(mode.frequencyCm1);
+      const intensity = getVibrationModeIrIntensity(mode);
+      const intensityCell = hasAnyIntensity ? formatVibrationIntensityCell(intensity) : '--';
       rows.push(
         `<tr class="mode-row${activeClass}" data-mode-index="${i}" title="Select ${escapeHtml(rawLabel)}">`
         + `<td><button class="vibrationPlayCell" data-action="play" data-mode-index="${i}" title="Play ${escapeHtml(rawLabel)}">${(i === (vib.modeIndex | 0) && vibrationPlaying) ? 'pause' : 'play_arrow'}</button></td>`
         + `<td>${i + 1}</td>`
         + `<td>${escapeHtml(rawLabel)}</td>`
         + `<td>${escapeHtml(freqCell)}</td>`
+        + `<td class="vibrationIntensityCol">${escapeHtml(intensityCell)}</td>`
         + '</tr>'
       );
     }
@@ -5589,6 +5609,8 @@
   const helpClose = document.getElementById('helpClose');
   const versionText = document.getElementById('versionText');
   if (versionText) versionText.textContent = APP_VERSION;
+  const toolbarVersion = document.getElementById('toolbarVersion');
+  if (toolbarVersion) toolbarVersion.textContent = `v${APP_VERSION}`;
   const emptyStateVersion = document.getElementById('emptyStateVersion');
   if (emptyStateVersion) emptyStateVersion.textContent = `v${APP_VERSION}`;
   const coordsContent = document.getElementById('coordsContent');
@@ -5633,6 +5655,7 @@
   const vibrationSpectrumWrap = document.getElementById('vibrationSpectrumWrap');
   const vibrationSpectrumCanvas = document.getElementById('vibrationSpectrumCanvas');
   const vibrationSpectrumMeta = document.getElementById('vibrationSpectrumMeta');
+  const vibrationModeTable = document.getElementById('vibrationModeTable');
   const vibrationModeTableWrap = document.getElementById('vibrationModeTableWrap');
   const vibrationModeTableBody = document.getElementById('vibrationModeTableBody');
   const vibrationModeEmpty = document.getElementById('vibrationModeEmpty');
@@ -8952,6 +8975,49 @@
   }
 
   /**
+   * Convert `#rrggbb` to RGB triplet.
+   * @param {string} hex
+   * @returns {[number, number, number]}
+   */
+  function hexToRgbTriplet(hex) {
+    const h = asHexColor(hex, '#000000');
+    return [
+      parseInt(h.slice(1, 3), 16),
+      parseInt(h.slice(3, 5), 16),
+      parseInt(h.slice(5, 7), 16),
+    ];
+  }
+
+  /**
+   * Read current UI accent color from CSS custom properties.
+   * @returns {string}
+   */
+  function getCurrentAccentHexColor() {
+    const root = document.documentElement;
+    const inlineValue = root && root.style ? root.style.getPropertyValue('--vm-accent') : '';
+    const computedValue = root ? getComputedStyle(root).getPropertyValue('--vm-accent') : '';
+    const fallback = '#2373eb';
+    return asHexColor((inlineValue || computedValue || '').trim(), fallback);
+  }
+
+  /**
+   * Apply accent palette overrides to CSS custom properties.
+   * This keeps soft/outline accent variants in sync with the main accent color.
+   * @param {*} value
+   * @returns {string}
+   */
+  function applyAccentPaletteFromHex(value) {
+    const root = document.documentElement;
+    if (!root || !root.style) return getCurrentAccentHexColor();
+    const normalized = asHexColor(value, getCurrentAccentHexColor());
+    const [r, g, b] = hexToRgbTriplet(normalized);
+    root.style.setProperty('--vm-accent', normalized);
+    root.style.setProperty('--vm-accent-soft', `rgba(${r}, ${g}, ${b}, 0.18)`);
+    root.style.setProperty('--vm-accent-outline', `rgba(${r}, ${g}, ${b}, 0.22)`);
+    return normalized;
+  }
+
+  /**
    * Register one setting key in the preset registry.
    * @param {string} key
    * @param {() => any} getter
@@ -9017,6 +9083,12 @@
     syncColorPickerFields();
     try { scene.background = new THREE.Color(bgColor.value); } catch { }
   });
+  registerPresetSetting(
+    'global.accentColor',
+    () => getCurrentAccentHexColor(),
+    (value) => { applyAccentPaletteFromHex(value); },
+    { section: 'global', type: 'color', description: 'Primary UI accent color.' }
+  );
   registerPresetSetting('global.showAtoms', () => !!(toggleAtoms && toggleAtoms.checked), (value) => {
     if (toggleAtoms) toggleAtoms.checked = asBoolean(value);
   });

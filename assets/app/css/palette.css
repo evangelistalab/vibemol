@@ -1,69 +1,101 @@
 :root {
+  /* Foundation tones: keep this small and coherent. */
+  --vm-neutral-050: #f3f3f5;
+  --vm-neutral-150: #e7e8ec;
+  --vm-neutral-250: #d0d3da;
+  --vm-neutral-400: #7a7f89;
+  --vm-neutral-600: #4d586b;
+
+  --vm-accent: #2373eb;
+  --vm-accent-soft: rgba(35, 116, 235, 0.18);
+  --vm-accent-outline: rgba(17, 28, 48, 0.22);
+
+  --vm-dark-900: #121822;
+  --vm-shadow-soft: rgba(0, 0, 0, 0.2);
+
   /* App palette (single source of color truth) */
   --vm-color-white: #ffffff;
-  --vm-color-bg-main: #0b0f14;
-  --vm-color-bg-panel: #121822;
+  --vm-color-bg-main: var(--vm-dark-900);
+  --vm-color-bg-panel: var(--vm-dark-900);
   --vm-color-text-main: #e8eef6;
-  --vm-color-text-muted: #99aabb;
-  --vm-color-accent-primary: #4aa3ff;
-  --vm-color-accent-primary-soft: rgba(74, 163, 255, 0.18);
+  --vm-color-text-muted: var(--vm-neutral-400);
+  --vm-color-accent-primary: var(--vm-accent);
+  --vm-color-accent-primary-soft: var(--vm-accent-soft);
 
   /* Sidebar / toolbar neutrals */
-  --vm-color-toolbar-bg: #f3f3f5;
-  --vm-color-toolbar-border: #d7d8dd;
-  --vm-color-toolbar-divider: #d8d9df;
-  --vm-color-toolbar-control-bg: #e7e8ec;
-  --vm-color-toolbar-control-bg-hover: #e5e6ea;
-  --vm-color-toolbar-button-bg: #ececf0;
-  --vm-color-toolbar-input-bg: #fafbfc;
-  --vm-color-toolbar-input-border: #d0d3da;
-  --vm-color-toolbar-tooltip-bg: #1f2430;
-  --vm-color-toolbar-section-divider: #dde0e6;
-  --vm-color-toolbar-icon-strong: #2f343d;
-  --vm-color-toolbar-action: #2374eb;
-  --vm-color-toolbar-action-outline: rgba(17, 28, 48, 0.22);
-  --vm-color-toolbar-tooltip-shadow: rgba(0, 0, 0, 0.2);
+  --vm-color-toolbar-bg: var(--vm-neutral-050);
+  --vm-color-toolbar-border: var(--vm-neutral-250);
+  --vm-color-toolbar-divider: var(--vm-color-toolbar-border);
+  --vm-color-toolbar-control-bg: var(--vm-neutral-150);
+  --vm-color-toolbar-control-bg-hover: var(--vm-neutral-150);
+  --vm-color-toolbar-button-bg: var(--vm-neutral-150);
+  --vm-color-toolbar-input-bg: var(--vm-color-white);
+  --vm-color-toolbar-input-border: var(--vm-neutral-250);
+  --vm-color-toolbar-tooltip-bg: var(--vm-dark-900);
+  --vm-color-toolbar-section-divider: var(--vm-color-toolbar-divider);
+  --vm-color-toolbar-icon-strong: var(--vm-neutral-600);
+  --vm-color-toolbar-action: var(--vm-accent);
+  --vm-color-toolbar-action-outline: var(--vm-accent-outline);
+  --vm-color-toolbar-tooltip-shadow: var(--vm-shadow-soft);
 
   /* Legacy dark panels/inputs still used by floating dialogs and side panes */
-  --vm-color-legacy-border-strong: #223;
-  --vm-color-legacy-border-mid: #223041;
-  --vm-color-legacy-border-soft: #2a3546;
-  --vm-color-legacy-input-border: #2a3648;
-  --vm-color-legacy-input-bg: #1a2333;
-  --vm-color-legacy-input-fg: #e5edf8;
-  --vm-color-legacy-secondary-bg: #2a3344;
-  --vm-color-legacy-secondary-fg: #dfe7f3;
-  --vm-color-legacy-secondary-active-bg: #355a87;
-  --vm-color-legacy-secondary-active-fg: #eef6ff;
-  --vm-color-legacy-text-on-dark: #e9f1ff;
-  --vm-color-legacy-dark-surface: #1a2230;
-  --vm-color-legacy-muted-chip: #0f151f;
-  --vm-color-legacy-muted-chip-2: #101722;
-  --vm-color-legacy-muted-chip-3: #101823;
+  --vm-color-legacy-border-strong: var(--vm-dark-900);
+  --vm-color-legacy-border-mid: var(--vm-neutral-600);
+  --vm-color-legacy-border-soft: var(--vm-neutral-600);
+  --vm-color-legacy-input-border: var(--vm-neutral-600);
+  --vm-color-legacy-input-bg: var(--vm-dark-900);
+  --vm-color-legacy-input-fg: var(--vm-color-text-main);
+  --vm-color-legacy-secondary-bg: var(--vm-neutral-600);
+  --vm-color-legacy-secondary-fg: var(--vm-color-text-main);
+  --vm-color-legacy-secondary-active-bg: var(--vm-accent);
+  --vm-color-legacy-secondary-active-fg: var(--vm-color-text-main);
+  --vm-color-legacy-text-on-dark: var(--vm-color-text-main);
+  --vm-color-legacy-dark-surface: var(--vm-dark-900);
+  --vm-color-legacy-muted-chip: var(--vm-dark-900);
+  --vm-color-legacy-muted-chip-2: var(--vm-dark-900);
+  --vm-color-legacy-muted-chip-3: var(--vm-dark-900);
 
   /* Auxiliary panels */
-  --vm-color-panel-border-strong: #223;
+  --vm-color-panel-border-strong: var(--vm-color-legacy-border-strong);
   --vm-color-periodic-grad-a: #182334;
-  --vm-color-periodic-grad-b: #101722;
+  --vm-color-periodic-grad-b: var(--vm-dark-900);
   --vm-color-periodic-grad-c: #0c121c;
 
   /* Toolbar text hierarchy */
-  --vm-color-toolbar-text-primary: #2b2f36;
-  --vm-color-toolbar-text-strong: #1f232a;
-  --vm-color-toolbar-text-muted: #606876;
-  --vm-color-toolbar-text-subtle: #5b6475;
-  --vm-color-toolbar-text-emphasis: #3f4756;
-  --vm-color-toolbar-text-tooltip: #f2f5fb;
-  --vm-color-toolbar-text-meta-key: #636d80;
-  --vm-color-toolbar-text-meta-empty: #7b8596;
-  --vm-color-toolbar-text-chip: #4f5766;
-  --vm-color-toolbar-text-chip-muted: #4d586b;
-  --vm-color-toolbar-text-code: #3e4655;
-  --vm-color-toolbar-text-inverse: #ffffff;
+  --vm-color-toolbar-text-primary: var(--vm-neutral-600);
+  --vm-color-toolbar-text-strong: var(--vm-neutral-600);
+  --vm-color-toolbar-text-muted: var(--vm-neutral-600);
+  --vm-color-toolbar-text-subtle: var(--vm-neutral-600);
+  --vm-color-toolbar-text-emphasis: var(--vm-neutral-600);
+  --vm-color-toolbar-text-tooltip: var(--vm-color-text-main);
+  --vm-color-toolbar-text-meta-key: var(--vm-neutral-600);
+  --vm-color-toolbar-text-meta-empty: var(--vm-neutral-400);
+  --vm-color-toolbar-text-chip: var(--vm-neutral-600);
+  --vm-color-toolbar-text-chip-muted: var(--vm-neutral-600);
+  --vm-color-toolbar-text-code: var(--vm-neutral-600);
+  --vm-color-toolbar-text-inverse: var(--vm-color-white);
 
   /* Mode tabs */
-  --vm-color-toolbar-tab-fg: #7a7f89;
-  --vm-color-toolbar-tab-fg-hover: #4b5160;
-  --vm-color-toolbar-tab-fg-active: #1f232a;
-  --vm-color-toolbar-tab-accent: #4a63e7;
+  --vm-color-toolbar-tab-fg: var(--vm-neutral-400);
+  --vm-color-toolbar-tab-fg-hover: var(--vm-neutral-600);
+  --vm-color-toolbar-tab-fg-active: var(--vm-neutral-600);
+  --vm-color-toolbar-tab-accent: var(--vm-accent);
+
+  /* Onboarding / splash card */
+  --vm-color-splash-card-fg: #0d1728;
+  --vm-color-splash-card-bg: rgba(249, 251, 255, 0.96);
+  --vm-color-splash-card-border: #d6dfec;
+  --vm-color-splash-card-shadow: rgba(10, 20, 40, 0.18);
+  --vm-color-splash-version: #667c99;
+  --vm-color-splash-drop-border: #b7c6da;
+  --vm-color-splash-drop-bg: #f5f9ff;
+  --vm-color-splash-drop-fg: #31435d;
+  --vm-color-splash-drop-code-bg: #edf4ff;
+  --vm-color-splash-drop-code-border: #d6e4f7;
+  --vm-color-splash-drop-code-fg: #274363;
+  --vm-color-splash-drop-icon: #4a6d9b;
+  --vm-color-splash-cta-bg: var(--vm-accent);
+  --vm-color-splash-cta-fg: var(--vm-color-white);
+  --vm-color-splash-link: #315d93;
+  --vm-color-splash-meta: #516986;
 }

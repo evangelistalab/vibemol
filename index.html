@@ -502,11 +502,17 @@
       font-variant-numeric: tabular-nums;
     }
 
-    #vibrationModeTable td:nth-child(4) {
+    #vibrationModeTable td:nth-child(4),
+    #vibrationModeTable td:nth-child(5) {
       width: 120px;
       text-align: right;
       font-variant-numeric: tabular-nums;
       color: #cfd8e3;
+    }
+
+    #vibrationModeTable[data-has-intensity="false"] th.vibrationIntensityCol,
+    #vibrationModeTable[data-has-intensity="false"] td.vibrationIntensityCol {
+      display: none;
     }
 
     #vibrationModeTable tr.mode-row {
@@ -774,13 +780,13 @@
 
     #emptyStateCard {
       width: min(620px, 92vw);
-      color: #0d1728;
-      background: rgba(249, 251, 255, 0.96);
-      border: 1px solid #d6dfec;
+      color: var(--vm-color-splash-card-fg);
+      background: var(--vm-color-splash-card-bg);
+      border: 1px solid var(--vm-color-splash-card-border);
       border-radius: 16px;
       padding: 22px 24px;
       line-height: 1.35;
-      box-shadow: 0 18px 34px rgba(10, 20, 40, 0.18);
+      box-shadow: 0 18px 34px var(--vm-color-splash-card-shadow);
       pointer-events: auto;
     }
 
@@ -794,29 +800,29 @@
     #emptyStateVersion {
       font-size: 0.52em;
       font-weight: 600;
-      color: #667c99;
+      color: var(--vm-color-splash-version);
       margin-left: 8px;
       vertical-align: middle;
       letter-spacing: 0.02em;
     }
 
     #emptyStateDropZone {
-      border: 2px dashed #b7c6da;
-      background: #f5f9ff;
+      border: 2px dashed var(--vm-color-splash-drop-border);
+      background: var(--vm-color-splash-drop-bg);
       border-radius: 12px;
       padding: 16px 14px;
       text-align: center;
-      color: #31435d;
+      color: var(--vm-color-splash-drop-fg);
       font-weight: 600;
       font-size: clamp(15px, 1.8vw, 18px);
     }
 
     #emptyStateDropZone code {
-      background: #edf4ff;
-      border: 1px solid #d6e4f7;
+      background: var(--vm-color-splash-drop-code-bg);
+      border: 1px solid var(--vm-color-splash-drop-code-border);
       border-radius: 5px;
       padding: 1px 5px;
-      color: #274363;
+      color: var(--vm-color-splash-drop-code-fg);
       font-size: 0.92em;
       font-weight: 700;
     }
@@ -826,7 +832,7 @@
       font-size: 30px;
       line-height: 1;
       margin-bottom: 8px;
-      color: #4a6d9b;
+      color: var(--vm-color-splash-drop-icon);
     }
 
     #emptyStatePrimaryAction {
@@ -842,8 +848,8 @@
       border-radius: 10px;
       padding: 10px 16px;
       min-width: 160px;
-      background: #2f8bff;
-      color: #ffffff;
+      background: var(--vm-color-splash-cta-bg);
+      color: var(--vm-color-splash-cta-fg);
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
@@ -864,7 +870,7 @@
       appearance: none;
       border: none;
       background: transparent;
-      color: #315d93;
+      color: var(--vm-color-splash-link);
       cursor: pointer;
       font-size: 12px;
       font-weight: 600;
@@ -878,7 +884,7 @@
       text-align: center;
       font-size: 12px;
       font-weight: 500;
-      color: #516986;
+      color: var(--vm-color-splash-meta);
     }
 
     /* Edit axis lock widget */
@@ -1349,6 +1355,22 @@
     #toolbar .tb-brandEmoji {
       font-size: 14px;
       line-height: 1;
+    }
+
+    #toolbar .tb-versionBadge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 20px;
+      padding: 0 8px;
+      border-radius: 6px;
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-muted);
+      font-size: 12px;
+      font-weight: var(--tb-text-weight-semibold);
+      letter-spacing: 0.01em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
     }
 
     #toolbarModeRow {
@@ -2082,7 +2104,7 @@
 
     <div id="toolbarHead">
       <div class="tb-headTop">
-        <div class="tb-brand">VibeMol <span id="brandEmoji" class="tb-brandEmoji" aria-hidden="true">🙂</span></div>
+        <div class="tb-brand">VibeMol <span id="brandEmoji" class="tb-brandEmoji" aria-hidden="true">🙂</span><span id="toolbarVersion" class="tb-versionBadge" aria-label="VibeMol version">v0.0.0</span></div>
         <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button" title="Hide sidebar">chevron_left</button>
       </div>
     </div>
@@ -2277,7 +2299,7 @@
   </div>
   <div id="emptyState">
     <div id="emptyStateCard">
-      <div id="emptyStateLead">Open a molecule file <span id="emptyStateVersion"></span></div>
+      <div id="emptyStateLead">VibeMol <span id="emptyStateVersion"></span></div>
       <div id="emptyStateDropZone">
         <span id="emptyStateDropIcon" class="material-symbols-outlined">upload_file</span>
         Drag and drop <code>.xyz</code>, <code>.cube</code>, <code>.vib.json</code>, <code>.hess</code>, or Psi4 <code>.dat/.out</code> files here
@@ -2502,13 +2524,14 @@
         <div id="vibrationSpectrumMeta">IR spectrum preview</div>
       </div>
       <div id="vibrationModeTableWrap">
-        <table id="vibrationModeTable" aria-label="Vibrational mode frequencies">
+        <table id="vibrationModeTable" data-has-intensity="false" aria-label="Vibrational mode frequencies">
           <thead>
             <tr>
               <th>Play</th>
               <th>#</th>
               <th>Mode</th>
               <th>Freq (cm<sup>−1</sup>)</th>
+              <th class="vibrationIntensityCol">Intensity (km/mol)</th>
             </tr>
           </thead>
           <tbody id="vibrationModeTableBody"></tbody>
