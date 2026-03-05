@@ -4737,6 +4737,18 @@
     if (!valid) return { enabled: false, record, vol, traj: null, atomCount, frameCount: 0 };
     return { enabled: true, record, vol, traj, atomCount, frameCount: traj.frames.length };
   }
+
+  /**
+   * Update one floating-panel icon button glyph while preserving its element structure.
+   * @param {HTMLElement|null} btn
+   * @param {string} glyph
+   */
+  function setMotionPanelButtonGlyph(btn, glyph) {
+    if (!btn) return;
+    const iconEl = btn.querySelector ? btn.querySelector('.motionPanelIconGlyph') : null;
+    if (iconEl) iconEl.textContent = String(glyph || '');
+    else btn.textContent = String(glyph || '');
+  }
   /**
    * Update trajectory controls visibility and values for the active file.
    */
@@ -4770,7 +4782,7 @@
     if (trajectoryNowPlaying) {
       trajectoryNowPlaying.textContent = `Frame ${traj.frameIndex + 1}/${info.frameCount} • ${traj.fps} fps${traj.loop ? ' • loop' : ''}`;
     }
-    if (trajectoryPlayBtn) trajectoryPlayBtn.textContent = trajectoryPlaying ? 'pause' : 'play_arrow';
+    setMotionPanelButtonGlyph(trajectoryPlayBtn, trajectoryPlaying ? 'pause' : 'play_arrow');
     if (trajectoryLoopEl) trajectoryLoopEl.checked = !!traj.loop;
     if (trajectoryFpsEl && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
   }
@@ -5169,7 +5181,7 @@
           ? `No visible mode (|freq| < ${VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1.toFixed(1)} ${CM_INV_TEXT} hidden)`
           : 'No mode selected';
       }
-      if (vibrationPlayBtn) vibrationPlayBtn.textContent = 'play_arrow';
+      setMotionPanelButtonGlyph(vibrationPlayBtn, 'play_arrow');
       if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = `-- ${CM_INV_HTML}`;
       renderVibrationSpectrum(info, tableState);
       return;
@@ -5187,7 +5199,7 @@
     const freqText = Number.isFinite(freq) ? `${freq.toFixed(1)} ${CM_INV_TEXT}` : `-- ${CM_INV_TEXT}`;
     if (vibrationModeLabel) vibrationModeLabel.textContent = `${vib.modeIndex + 1}/${info.modeCount}${labelSuffix}`;
     if (vibrationNowPlaying) vibrationNowPlaying.textContent = `Selected: ${vib.modeIndex + 1}/${info.modeCount}${labelSuffix} • ${freqText}`;
-    if (vibrationPlayBtn) vibrationPlayBtn.textContent = vibrationPlaying ? 'pause' : 'play_arrow';
+    setMotionPanelButtonGlyph(vibrationPlayBtn, vibrationPlaying ? 'pause' : 'play_arrow');
     if (vibrationAmplitudeEl && document.activeElement !== vibrationAmplitudeEl) {
       vibrationAmplitudeEl.value = Number(vib.amplitude).toFixed(2);
     }
@@ -9227,9 +9239,10 @@
   damp.oninput = () => { const v = toNum(damp.value, 0.05); if (Number.isFinite(v)) controls.dampingFactor = v; };
   autoRotSpeed.oninput = () => { const v = toNum(autoRotSpeed.value, 2.0); if (Number.isFinite(v)) controls.autoRotateSpeed = v; };
   if (trajectoryPlayBtn) {
-    trajectoryPlayBtn.onclick = (e) => {
-      if (e && e.preventDefault) e.preventDefault();
-      if (e && e.stopPropagation) e.stopPropagation();
+    let suppressNextTrajectoryClick = false;
+    const toggleTrajectoryFromControl = (evt) => {
+      if (evt && evt.preventDefault) evt.preventDefault();
+      if (evt && evt.stopPropagation) evt.stopPropagation();
       const info = getActiveTrajectoryInfo();
       if (!info.enabled) return;
       const nextPlaying = !trajectoryPlaying;
@@ -9237,14 +9250,23 @@
         vibrationPlaying = false;
         vibrationLastStepMs = 0;
         restoreActiveVibrationEquilibrium({ syncUi: false });
-      } else {
-        stopTrajectoryPlayback({ syncUi: false });
       }
       trajectoryPlaying = nextPlaying;
       trajectoryLastStepMs = 0;
       syncTrajectoryControls();
       syncVibrationControls();
     };
+    trajectoryPlayBtn.addEventListener('pointerdown', (evt) => {
+      suppressNextTrajectoryClick = true;
+      toggleTrajectoryFromControl(evt);
+    });
+    trajectoryPlayBtn.addEventListener('click', (evt) => {
+      if (suppressNextTrajectoryClick) {
+        suppressNextTrajectoryClick = false;
+        return;
+      }
+      toggleTrajectoryFromControl(evt);
+    });
   }
   if (trajectoryResetBtn) {
     trajectoryResetBtn.onclick = () => {

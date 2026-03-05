@@ -332,8 +332,8 @@
     }
 
     .motionPanelIconBtn {
-      min-width: 30px;
-      height: 28px;
+      min-width: 32px;
+      height: 30px;
       border: 1px solid #2d3a4f;
       border-radius: 7px;
       background: #1a2434;
@@ -341,20 +341,48 @@
       font-size: 14px;
       line-height: 1;
       cursor: pointer;
-      padding: 0 8px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      overflow: hidden;
     }
 
     .motionPanelIconBtn:hover {
       background: #23314a;
     }
 
+    .motionPanelIconGlyph {
+      pointer-events: none;
+      font-family: 'Material Symbols Rounded';
+      font-weight: 400;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-feature-settings: 'liga';
+      font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+
     .motionPanelClose {
       background: #2a3344;
       color: #dfe7f3;
       border: none;
-      padding: 4px 8px;
+      min-width: 32px;
+      height: 30px;
+      padding: 0;
       border-radius: 6px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
     }
 
     .motionPanelBody {
@@ -2366,9 +2394,9 @@
     <div class="motionPanelHeader">
       <div class="title">Trajectory</div>
       <div class="actions">
-        <button id="trajectoryPlayBtn" class="motionPanelIconBtn ms-icon-button" title="Play/Pause trajectory">play_arrow</button>
-        <button id="trajectoryResetBtn" class="motionPanelIconBtn ms-icon-button" title="Reset to first frame">replay</button>
-        <button id="trajectoryPanelClose" class="motionPanelClose ms-icon-button" title="Close trajectory controls">close</button>
+        <button id="trajectoryPlayBtn" class="motionPanelIconBtn" title="Play/Pause trajectory"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
+        <button id="trajectoryResetBtn" class="motionPanelIconBtn" title="Reset to first frame"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
+        <button id="trajectoryPanelClose" class="motionPanelClose" title="Close trajectory controls"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
     <div class="motionPanelBody">
@@ -2390,9 +2418,9 @@
     <div class="motionPanelHeader">
       <div class="title">Vibrational Frequencies</div>
       <div class="actions">
-        <button id="vibrationPlayBtn" class="motionPanelIconBtn ms-icon-button" title="Play/Pause vibrational mode">play_arrow</button>
-        <button id="vibrationResetBtn" class="motionPanelIconBtn ms-icon-button" title="Reset to equilibrium geometry">replay</button>
-        <button id="vibrationPanelClose" class="motionPanelClose ms-icon-button" title="Close vibration controls">close</button>
+        <button id="vibrationPlayBtn" class="motionPanelIconBtn" title="Play/Pause vibrational mode"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
+        <button id="vibrationResetBtn" class="motionPanelIconBtn" title="Reset to equilibrium geometry"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
+        <button id="vibrationPanelClose" class="motionPanelClose" title="Close vibration controls"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
     <div class="motionPanelBody">
