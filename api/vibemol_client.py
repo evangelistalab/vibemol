@@ -3,7 +3,7 @@
 
 This prototype automates the hosted VibeMol page with Playwright:
 1. Opens https://evangelistalab.org/vibemol/
-2. Uploads a local .cube/.cub/.xyz/.2ccube file
+2. Uploads local molecule files (+ optional sidecars such as vibration payloads)
 3. Captures the rendered canvas as PNG on local disk
 """
 
@@ -21,13 +21,25 @@ from typing import Any
 DEFAULT_URL = "https://evangelistalab.org/vibemol/"
 DEFAULT_RC_CANDIDATES = (".vibemolrc", ".vibemolrc.json")
 RenderJob = tuple[pathlib.Path, pathlib.Path]
+IMPORT_ERROR_MARKERS = (
+    "could not load",
+    "invalid format",
+    "failed",
+    "malformed",
+    "no loaded molecule matches",
+    "integration:",
+)
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Upload one or more molecular files to VibeMol and save rendered PNGs locally."
     )
-    parser.add_argument("input_file", nargs="?", help="Path to .cube/.cub/.2ccube/.xyz file (single-file mode)")
+    parser.add_argument(
+        "input_file",
+        nargs="?",
+        help="Path to primary molecule file (e.g. .cube/.cub/.2ccube/.xyz/.hess/.dat/.out/.output) in single-file mode",
+    )
     parser.add_argument("output_png", nargs="?", help="Path to output PNG file (single-file mode)")
     parser.add_argument(
         "--inputs",
@@ -57,9 +69,18 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--iso", type=float, default=None, help="Optional iso value")
     parser.add_argument(
         "--style",
-        choices=["default", "toon", "fancy", "kit", "glossy"],
+        choices=["default", "toon", "fancy", "kit", "studio", "glossy"],
         default=None,
-        help="Optional molecule style (fancy is accepted as an alias for toon)",
+        help="Optional molecule style (aliases: fancy->toon, studio->kit)",
+    )
+    parser.add_argument(
+        "--extra-file",
+        action="append",
+        default=None,
+        help=(
+            "Optional additional file(s) to upload with every render job "
+            "(glob patterns supported), e.g. sidecar .vib.json with .xyz."
+        ),
     )
     parser.add_argument(
         "--preset",
@@ -109,7 +130,11 @@ def _parse_args() -> argparse.Namespace:
 def _normalize_style(style: str | None) -> str | None:
     if style is None:
         return None
-    return "toon" if style == "fancy" else style
+    if style == "fancy":
+        return "toon"
+    if style == "studio":
+        return "kit"
+    return style
 
 
 def _normalize_preset_mode(mode: str | None) -> str:
@@ -212,6 +237,19 @@ def _resolve_input_paths(paths: list[str]) -> list[pathlib.Path]:
         seen.add(p)
         resolved.append(p)
     return resolved
+
+
+def _resolve_extra_paths(paths: list[str] | None) -> list[pathlib.Path]:
+    if not paths:
+        return []
+    return _resolve_input_paths(paths)
+
+
+def _looks_like_import_error(message: str) -> bool:
+    text = (message or "").strip().lower()
+    if not text:
+        return False
+    return any(marker in text for marker in IMPORT_ERROR_MARKERS)
 
 
 def _format_batch_output_name(template: str, input_path: pathlib.Path, index: int) -> str:
@@ -343,6 +381,21 @@ def _set_checkbox(page: Any, selector: str, value: bool) -> bool:
     )
 
 
+def _set_toggle_button(page: Any, selector: str, value: bool) -> bool:
+    return bool(
+        page.evaluate(
+            """(payload) => {
+                const el = document.querySelector(payload.selector);
+                if (!el) return false;
+                const current = (el.getAttribute('aria-pressed') === 'true') || el.classList.contains('active');
+                if (current !== !!payload.value && typeof el.click === 'function') el.click();
+                return true;
+            }""",
+            {"selector": selector, "value": bool(value)},
+        )
+    )
+
+
 def _set_style_with_alias(page: Any, style: str) -> str | None:
     return page.evaluate(
         """(style) => {
@@ -353,6 +406,8 @@ def _set_style_with_alias(page: Any, style: str) -> str | None:
             if (style) candidates.push(style);
             if (style === 'toon') candidates.push('fancy');
             if (style === 'fancy') candidates.push('toon');
+            if (style === 'kit') candidates.push('studio');
+            if (style === 'studio') candidates.push('kit');
             const picked = candidates.find((v) => values.includes(v));
             if (!picked) return null;
             sel.value = picked;
@@ -422,9 +477,14 @@ def _import_preset_dom_fallback(page: Any, preset: dict[str, Any], mode: str) ->
         if key in settings and _set_checkbox(page, selector, bool(settings[key])):
             applied.append(key)
 
+    def _apply_toggle_button(key: str, selector: str) -> None:
+        if key in settings and _set_toggle_button(page, selector, bool(settings[key])):
+            applied.append(key)
+
     _apply_input("surface.iso", "#iso", "change")
     _apply_input("surface.opacity", "#opacity", "input")
     _apply_input("surface.style", "#styleSelect", "change")
+    _apply_input("surface.colorScheme", "#schemeSelect", "change")
     _apply_input("surface.posColor", "#posColor", "input")
     _apply_input("surface.negColor", "#negColor", "input")
     _apply_input("global.backgroundColor", "#bgColor", "input")
@@ -434,11 +494,16 @@ def _import_preset_dom_fallback(page: Any, preset: dict[str, Any], mode: str) ->
     _apply_input("render.cloudAlpha", "#cloudAlpha", "change")
     _apply_input("twoComponent.mode", "#componentSelect", "change")
     _apply_input("molecule.glossyBondRadius", "#glossyBondRadius", "change")
+    _apply_checkbox("surface.enabled", "#surfBtn")
     _apply_checkbox("global.showAtoms", "#showAtoms")
+    _apply_checkbox("global.showAtomLabels", "#showAtomLabels")
     _apply_checkbox("global.showBonds", "#showBonds")
+    _apply_checkbox("global.showMultiBonds", "#showMultiBonds")
     _apply_checkbox("global.elementColors", "#elementColors")
     _apply_checkbox("global.showBox", "#showBox")
     _apply_checkbox("global.showAxes", "#showAxes")
+    _apply_checkbox("vibration.hideSmallFrequencies", "#vibrationHideLowFreq")
+    _apply_toggle_button("surface.autoIsoEnabled", "#autoIsoBtn")
 
     if "molecule.style" in settings:
         picked = _set_style_with_alias(page, str(settings["molecule.style"]))
@@ -490,45 +555,69 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
                 const el = get(id);
                 return el && typeof el.value !== 'undefined' ? String(el.value) : fallback;
             };
+            const pressed = (id, fallback=false) => {
+                const el = get(id);
+                if (!el) return fallback;
+                return el.getAttribute('aria-pressed') === 'true' || el.classList.contains('active');
+            };
+            const appVersionText = (get('versionText')?.textContent || '').trim();
+            const appVersion = appVersionText.startsWith('v') ? appVersionText.slice(1) : appVersionText;
             return {
+                appVersion,
                 iso: str('iso', '0.02'),
                 opacity: str('opacity', '1.0'),
                 style: str('moleculeStyle', 'default'),
                 surfaceStyle: str('styleSelect', 'emissive'),
+                colorScheme: str('schemeSelect', 'custom'),
+                autoIsoEnabled: pressed('autoIsoBtn', false),
                 posColor: str('posColor', '#f2a900'),
                 negColor: str('negColor', '#0033a0'),
                 bgColor: str('bgColor', '#ffffff'),
+                surfaceEnabled: bool('surfBtn', true),
                 showAtoms: bool('showAtoms', true),
+                showAtomLabels: bool('showAtomLabels', false),
                 showBonds: bool('showBonds', true),
+                showMultiBonds: bool('showMultiBonds', true),
                 elementColors: bool('elementColors', true),
                 showBox: bool('showBox', false),
                 showAxes: bool('showAxes', true),
+                vibrationHideSmallFrequencies: bool('vibrationHideLowFreq', true),
                 renderMode: str('renderMode', 'surface'),
             };
         }"""
     )
     style = _normalize_style(values.get("style", "default"))
-    return {
+    preset = {
         "kind": "vibemol.preset",
         "presetVersion": 1,
         "name": preset_name or "VibeMol Preset",
         "settings": {
             "surface.iso": float(values.get("iso", 0.02)),
             "surface.opacity": float(values.get("opacity", 1.0)),
+            "surface.enabled": bool(values.get("surfaceEnabled", True)),
             "surface.style": values.get("surfaceStyle", "emissive"),
+            "surface.autoIsoEnabled": bool(values.get("autoIsoEnabled", False)),
             "surface.posColor": values.get("posColor", "#f2a900"),
             "surface.negColor": values.get("negColor", "#0033a0"),
+            "surface.colorScheme": values.get("colorScheme", "custom"),
             "global.backgroundColor": values.get("bgColor", "#ffffff"),
             "global.showAtoms": bool(values.get("showAtoms", True)),
+            "global.showAtomLabels": bool(values.get("showAtomLabels", False)),
             "global.showBonds": bool(values.get("showBonds", True)),
+            "global.showMultiBonds": bool(values.get("showMultiBonds", True)),
             "global.elementColors": bool(values.get("elementColors", True)),
             "global.showBox": bool(values.get("showBox", False)),
             "global.showAxes": bool(values.get("showAxes", True)),
+            "vibration.hideSmallFrequencies": bool(values.get("vibrationHideSmallFrequencies", True)),
             "render.mode": values.get("renderMode", "surface"),
             "molecule.style": style or "default",
         },
         "meta": {"source": "cli-dom-fallback", "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
     }
+    app_version = values.get("appVersion")
+    if isinstance(app_version, str) and app_version.strip():
+        preset["appVersion"] = app_version.strip()
+    return preset
 
 
 def _export_preset(page: Any, preset_name: str | None) -> dict[str, Any]:
@@ -537,10 +626,34 @@ def _export_preset(page: Any, preset_name: str | None) -> dict[str, Any]:
     return _export_preset_dom_fallback(page, preset_name)
 
 
+def _wait_for_import_ready(page: Any, timeout_ms: int = 20_000) -> None:
+    """Wait until at least one file appears loaded in UI state."""
+    page.wait_for_function(
+        """() => {
+            const sel = document.getElementById('fileSelect');
+            if (sel && sel.options && sel.options.length > 0) return true;
+            const hint = (document.getElementById('hint')?.textContent || '').toLowerCase();
+            if (hint.includes('loaded ') || hint.includes('pubchem')) return true;
+            const empty = document.getElementById('emptyState');
+            if (empty && typeof window.getComputedStyle === 'function') {
+                const style = window.getComputedStyle(empty);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return true;
+            }
+            return false;
+        }""",
+        timeout=timeout_ms,
+    )
+
+
+def _collect_import_dialog_errors(dialog_messages: list[str]) -> list[str]:
+    return [msg.strip() for msg in dialog_messages if _looks_like_import_error(msg)]
+
+
 def render_to_png(
     input_file: pathlib.Path,
     output_png: pathlib.Path,
     *,
+    extra_files: list[pathlib.Path] | None = None,
     url: str = DEFAULT_URL,
     iso: float | None = None,
     style: str | None = None,
@@ -565,6 +678,16 @@ def render_to_png(
     if not input_file.is_file():
         raise FileNotFoundError(f"Input file does not exist: {input_file}")
 
+    resolved_extra_files: list[pathlib.Path] = []
+    for extra in (extra_files or []):
+        p = extra.expanduser().resolve()
+        if not p.is_file():
+            raise FileNotFoundError(f"Extra file does not exist: {p}")
+        if p == input_file:
+            continue
+        if p not in resolved_extra_files:
+            resolved_extra_files.append(p)
+
     output_png = output_png.expanduser().resolve()
     output_png.parent.mkdir(parents=True, exist_ok=True)
 
@@ -574,6 +697,16 @@ def render_to_png(
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=not headed)
         page = browser.new_page(viewport={"width": 1600, "height": 1000})
+        import_dialog_messages: list[str] = []
+
+        def _on_dialog(dialog: Any) -> None:
+            import_dialog_messages.append(str(getattr(dialog, "message", "") or ""))
+            try:
+                dialog.accept()
+            except Exception:
+                pass
+
+        page.on("dialog", _on_dialog)
         page.goto(url, wait_until="domcontentloaded", timeout=45_000)
 
         # Wait for app shell.
@@ -589,8 +722,9 @@ def render_to_png(
                 for w in warnings:
                     print(f"[preset] {w}", file=sys.stderr)
 
-        # Upload molecular file.
-        page.set_input_files("#fileInput", str(input_file))
+        # Upload molecular file plus optional sidecars (vibration payloads, etc.).
+        upload_files = [str(input_file)] + [str(p) for p in resolved_extra_files]
+        page.set_input_files("#fileInput", upload_files)
 
         if iso is not None:
             _set_input_value(page, "#iso", iso, "change")
@@ -600,18 +734,20 @@ def render_to_png(
             if picked is None:
                 raise RuntimeError(f"Could not apply style '{style}' on this deployment")
 
-        # Heuristic: wait until hint mentions Loaded, then a short settle.
+        # Wait for a loaded file state; keep compatibility with older hints/UI.
         try:
-            page.wait_for_function(
-                "() => (document.getElementById('hint')?.textContent || '').includes('Loaded')",
-                timeout=20_000,
-            )
+            _wait_for_import_ready(page, timeout_ms=20_000)
         except PlaywrightTimeoutError:
-            # Fallback: continue even if hint message is different.
-            pass
+            # Continue to explicit error checks below.
+            ...
 
         if wait_ms > 0:
             page.wait_for_timeout(wait_ms)
+
+        import_errors = _collect_import_dialog_errors(import_dialog_messages)
+        if import_errors:
+            joined = "\n".join(f"- {msg}" for msg in import_errors)
+            raise RuntimeError(f"Page reported import error(s):\n{joined}")
 
         if save_preset_path is not None:
             exported = _export_preset(page, preset_name)
@@ -640,6 +776,7 @@ def main() -> int:
         jobs = _build_render_jobs(args)
         save_preset_path = _resolve_save_preset_path(args, jobs)
         preset_obj, preset_mode = _load_preset_from_sources(args)
+        extra_files = _resolve_extra_paths(args.extra_file)
         failures: list[tuple[pathlib.Path, Exception]] = []
         for index, (input_path, output_path) in enumerate(jobs, start=1):
             run_start = time.time()
@@ -647,6 +784,7 @@ def main() -> int:
                 render_to_png(
                     input_path,
                     output_path,
+                    extra_files=extra_files,
                     url=args.url,
                     iso=args.iso,
                     style=args.style,

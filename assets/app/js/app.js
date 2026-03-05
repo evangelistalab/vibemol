@@ -9111,6 +9111,11 @@
     info.vib.speed = Math.max(0.1, Math.min(30, asFiniteNumber(value, info.vib.speed || VIBRATION_DEFAULT_SPEED)));
     syncVibrationControls();
   });
+  registerPresetSetting('vibration.hideSmallFrequencies', () => !!vibrationHideSmallFrequencies, (value) => {
+    vibrationHideSmallFrequencies = asBoolean(value);
+    if (vibrationHideLowFreqEl) vibrationHideLowFreqEl.checked = !!vibrationHideSmallFrequencies;
+    syncVibrationControls();
+  });
 
   /**
    * Export current app settings as a portable preset envelope.

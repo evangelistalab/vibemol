@@ -66,6 +66,7 @@ Preset automation contract exposed globally:
 - Global/display shortcuts `1/2/3/4` map to molecule styles in that order.
 - In edit mode, `4` is reserved and does not switch to `glossy`.
 - `fancy` is treated as a deprecated alias for `toon` in preset/CLI compatibility paths.
+- Python CLI additionally accepts deprecated alias `studio` and maps it to `kit`.
 - Toon molecule style enforces toon-shaded surfaces.
 - Glossy style exposes a configurable glossy bond center radius (`molecule.glossyBondRadius`).
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
@@ -80,6 +81,24 @@ Preset automation contract exposed globally:
 - Multi-frame `.xyz` files are parsed as trajectories and can be animated from View panel controls.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
+
+## Python API Notes
+- Primary script: `api/vibemol_client.py`.
+- Supports single-file mode (`input_file output_png`) and batch mode (`--inputs ... --output-dir ...`).
+- Supports wildcard expansion in both `--inputs` and `--extra-file`.
+- `--extra-file` uploads additional sidecar files in the same request (for example `.vib.json` with `.xyz`).
+- Runtime preset API (`window.VibeMolPreset`) is preferred; DOM fallback is used only when runtime API is unavailable.
+- DOM fallback import/export includes newer settings:
+  - `surface.enabled`
+  - `surface.autoIsoEnabled`
+  - `surface.colorScheme`
+  - `global.showAtomLabels`
+  - `global.showMultiBonds`
+  - `vibration.hideSmallFrequencies`
+- Client listens for page alert dialogs after upload and surfaces import failures as CLI errors.
+- Style compatibility in CLI:
+  - `fancy` -> `toon`
+  - `studio` -> `kit`
 
 ## Edit UX Status (0.4.12)
 Implemented:
@@ -153,6 +172,8 @@ Python API setup:
 
 Python API smoke run:
 - `python api/vibemol_client.py assets/data/sample.cube out/sample_toon_cli.png --style toon`
+- `python api/vibemol_client.py assets/data/sample.cube out/sample_kit_cli.png --style studio`
+- `python api/vibemol_client.py assets/data/sample.xyz out/sample_vib_cli.png --extra-file assets/data/sample.vib.json`
 
 Repo checks:
 - `git status --short`

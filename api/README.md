@@ -4,7 +4,8 @@ Minimal automation client for rendering VibeMol images from local molecular file
 
 ## What it does
 - Opens hosted VibeMol: `https://evangelistalab.org/vibemol/`
-- Uploads one local file (`.cube`, `.cub`, `.2ccube`, or `.xyz`)
+- Uploads one local molecular file (`.cube`, `.cub`, `.2ccube`, `.xyz`, `.hess`, `.dat`, `.out`, `.output`)
+- Optionally uploads sidecar files in the same request (`.vib.json`, `.vmodes.json`, `.modes.json`, `.json`)
 - Saves the rendered canvas to a local PNG
 - Can import/export full visualization presets shared with the web UI
 
@@ -49,6 +50,12 @@ python api/vibemol_client.py assets/data/sample.cube out/sample_toon.png \
   --style toon \
   --iso 0.02 \
   --wait-ms 1500
+```
+
+Upload a molecule and a vibration sidecar together:
+```bash
+python api/vibemol_client.py assets/data/water.xyz out/water.png \
+  --extra-file assets/data/water.vib.json
 ```
 
 Import preset then override a couple of fields:
@@ -106,12 +113,14 @@ Style mapping:
 - `toon` = Toon
 - `fancy` = alias for `toon` (for compatibility)
 - `kit` = Kit
+- `studio` = alias for `kit` (legacy compatibility)
 - `glossy` = Glossy
 
 ## Notes
 - Single-file mode is `input_file output_png`.
 - Batch mode is `--inputs ... --output-dir ...`.
 - Wildcard patterns are supported in `--inputs` (for example `"*.cube"`).
+- Wildcard patterns are also supported in `--extra-file`.
 - `--save-preset` is only supported in single-file mode.
 - It captures the main canvas output as PNG.
 - The CLI prefers `window.VibeMolPreset` when available; otherwise it falls back to best-effort DOM application/export.
