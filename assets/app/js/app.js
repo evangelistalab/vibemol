@@ -7762,6 +7762,86 @@
   }
 
   /**
+   * For hydroxyl attachment, enforce a water-like L-O-H bend:
+   * - angle(linked atom -> new atom, O-H) = 104.5°.
+   * Azimuth around the linked-axis is deterministic (world-up projected plane).
+   * @param {*} vol
+   * @param {*} fragment
+   * @param {number[]} newIndices
+   * @param {THREE.Vector3} anchorWorld
+   * @param {THREE.Vector3} connectionWorld
+   */
+  function applyHydroxylAttachmentGeometry(vol, fragment, newIndices, anchorWorld, connectionWorld) {
+    if (!vol || !fragment || normalizeFragmentId(fragment.id) !== 'hydroxyl') return;
+    if (!Array.isArray(newIndices) || newIndices.length !== (Array.isArray(fragment.atoms) ? fragment.atoms.length : 0)) return;
+    const conn = getFragmentConnectionAtom(fragment);
+    if (!conn) return;
+
+    let localHydrogenIndex = -1;
+    if (Array.isArray(fragment.bonds)) {
+      for (const bond of fragment.bonds) {
+        if (!bond) continue;
+        const i = Number(bond.i) | 0;
+        const j = Number(bond.j) | 0;
+        let other = -1;
+        if (i === conn.index) other = j;
+        else if (j === conn.index) other = i;
+        if (other < 0 || !fragment.atoms[other]) continue;
+        if ((fragment.atoms[other].Z | 0) === 1) {
+          localHydrogenIndex = other;
+          break;
+        }
+      }
+    }
+    if (localHydrogenIndex < 0) {
+      for (let i = 0; i < fragment.atoms.length; i++) {
+        if (i === conn.index) continue;
+        if ((fragment.atoms[i].Z | 0) === 1) {
+          localHydrogenIndex = i;
+          break;
+        }
+      }
+    }
+    if (localHydrogenIndex < 0) return;
+
+    const globalHydrogenIndex = newIndices[localHydrogenIndex];
+    const hydrogenAtom = vol.atoms[globalHydrogenIndex];
+    if (!hydrogenAtom) return;
+
+    const axisToLink = anchorWorld.clone().sub(connectionWorld);
+    if (axisToLink.lengthSq() < 1e-12) return;
+    axisToLink.normalize();
+
+    let ref = new THREE.Vector3(0, 1, 0);
+    if (Math.abs(ref.dot(axisToLink)) > 0.95) ref.set(1, 0, 0);
+    const perp = ref.sub(axisToLink.clone().multiplyScalar(ref.dot(axisToLink)));
+    if (perp.lengthSq() < 1e-12) return;
+    perp.normalize();
+
+    const angleDeg = 104.5;
+    const angleRad = THREE.MathUtils.degToRad(angleDeg);
+    const dir = axisToLink.clone().multiplyScalar(Math.cos(angleRad))
+      .add(perp.multiplyScalar(Math.sin(angleRad)))
+      .normalize();
+
+    const connAtomLocal = fragment.atoms[conn.index];
+    const hAtomLocal = fragment.atoms[localHydrogenIndex];
+    const localOH = (connAtomLocal && hAtomLocal)
+      ? Math.hypot(
+        (Number(hAtomLocal.x) || 0) - (Number(connAtomLocal.x) || 0),
+        (Number(hAtomLocal.y) || 0) - (Number(connAtomLocal.y) || 0),
+        (Number(hAtomLocal.z) || 0) - (Number(connAtomLocal.z) || 0)
+      )
+      : NaN;
+    const ohLen = Number.isFinite(localOH) && localOH > 0.1 ? localOH : 0.96;
+    const hWorld = connectionWorld.clone().addScaledVector(dir, ohLen);
+    const coords = worldToAtomUnits(vol, hWorld);
+    hydrogenAtom.x = coords[0];
+    hydrogenAtom.y = coords[1];
+    hydrogenAtom.z = coords[2];
+  }
+
+  /**
    * Estimate local neighbor directions from one anchor atom.
    * @param {*} vol
    * @param {number} anchorIndex
@@ -9026,6 +9106,7 @@
       newIndices.push(vol.atoms.length - 1);
     }
     applyMethylAttachmentGeometry(vol, fragment, newIndices, anchorPos, connectionWorld, attachDir);
+    applyHydroxylAttachmentGeometry(vol, fragment, newIndices, anchorPos, connectionWorld);
     vol.natoms = vol.atoms.length;
 
     const overlap = detectSevereFragmentOverlaps(vol, newIndices, oldAtomIndexSet);
