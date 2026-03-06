@@ -727,9 +727,26 @@
   let surfaceStyle = 'emissive';
   // Current atom/bond material style
   let moleculeStyle = 'default';
-  const MOLECULE_STYLE_KEYS = Object.freeze(['default', 'toon', 'kit', 'glossy']);
+  const MOLECULE_STYLE_KEYS = Object.freeze([
+    'default',
+    'toon',
+    'kit',
+    'glossy',
+    'ink',
+    'depthfog',
+    'neon',
+    'watercolor',
+    'lego',
+    'hatching',
+    'xray',
+    'blackbody',
+  ]);
   const MOLECULE_STYLE_ALIASES = Object.freeze({
     fancy: 'toon',
+    'depth-fog': 'depthfog',
+    'neon-wireframe': 'neon',
+    'toon-hatching': 'hatching',
+    'xray-glass': 'xray',
   });
   const MOLECULE_STYLE_SET = new Set(MOLECULE_STYLE_KEYS);
   const MOLECULE_STYLE_PROFILE = Object.freeze({
@@ -843,12 +860,241 @@
         rimIntensity: 1.52,
       }),
     }),
+    ink: Object.freeze({
+      key: 'ink',
+      atomScaleMain: 1.16,
+      atomScaleTransitionMetal: 1.16,
+      sphereWidthSegments: 28,
+      sphereHeightSegments: 18,
+      bondRadius: 0.09,
+      bondRadialSegments: 12,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: false,
+      inkStyle: true,
+      aromaticDashColor: 0x222222,
+      aromaticDashOpacity: 0.98,
+      lighting: Object.freeze({
+        hemiColor: 0xffffff,
+        hemiGroundColor: 0xf2f2f2,
+        hemiIntensity: 1.0,
+        dirColor: 0xffffff,
+        dirIntensity: 1.45,
+        dirPos: Object.freeze([1.0, 1.3, 1.0]),
+        ambColor: 0xffffff,
+        ambIntensity: 0.5,
+        rimColor: 0x111111,
+        rimIntensity: 0.05,
+      }),
+    }),
+    depthfog: Object.freeze({
+      key: 'depthfog',
+      atomScaleMain: 1.18,
+      atomScaleTransitionMetal: 1.22,
+      sphereWidthSegments: 28,
+      sphereHeightSegments: 18,
+      bondRadius: 0.1,
+      bondRadialSegments: 16,
+      bondHeightSegments: 2,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: false,
+      depthFog: Object.freeze({ color: 0xbdd2ea, near: 3.2, far: 14.0 }),
+      aromaticDashColor: 0x536b84,
+      aromaticDashOpacity: 0.95,
+      lighting: Object.freeze({
+        hemiColor: 0xf7fbff,
+        hemiGroundColor: 0x93aac7,
+        hemiIntensity: 1.15,
+        dirColor: 0xffffff,
+        dirIntensity: 1.3,
+        dirPos: Object.freeze([1.1, 1.15, 1.0]),
+        ambColor: 0xb0c2d8,
+        ambIntensity: 0.42,
+        rimColor: 0xd2e6ff,
+        rimIntensity: 0.5,
+      }),
+    }),
+    neon: Object.freeze({
+      key: 'neon',
+      atomScaleMain: 1.0,
+      atomScaleTransitionMetal: 1.0,
+      sphereWidthSegments: 18,
+      sphereHeightSegments: 12,
+      bondRadius: 0.05,
+      bondRadialSegments: 10,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: false,
+      hideAtoms: true,
+      neonWireframe: true,
+      forceBackground: 0x070c18,
+      aromaticDashColor: 0x4fd9ff,
+      aromaticDashOpacity: 1.0,
+      lighting: Object.freeze({
+        hemiColor: 0x2a4f75,
+        hemiGroundColor: 0x040913,
+        hemiIntensity: 0.25,
+        dirColor: 0x7ed8ff,
+        dirIntensity: 0.4,
+        dirPos: Object.freeze([1.2, 1.15, 1.3]),
+        ambColor: 0x10243f,
+        ambIntensity: 0.2,
+        rimColor: 0x5ec5ff,
+        rimIntensity: 1.3,
+      }),
+    }),
+    watercolor: Object.freeze({
+      key: 'watercolor',
+      atomScaleMain: 1.2,
+      atomScaleTransitionMetal: 1.24,
+      sphereWidthSegments: 24,
+      sphereHeightSegments: 16,
+      bondRadius: 0.1,
+      bondRadialSegments: 14,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: false,
+      watercolorStyle: true,
+      forceBackground: 0xf8f4ea,
+      aromaticDashColor: 0x7f8796,
+      aromaticDashOpacity: 0.82,
+      lighting: Object.freeze({
+        hemiColor: 0xfffaf1,
+        hemiGroundColor: 0xd8cfbf,
+        hemiIntensity: 1.0,
+        dirColor: 0xfffdf8,
+        dirIntensity: 1.05,
+        dirPos: Object.freeze([0.9, 1.2, 0.95]),
+        ambColor: 0xb8b0a5,
+        ambIntensity: 0.5,
+        rimColor: 0xfaf0d8,
+        rimIntensity: 0.2,
+      }),
+    }),
+    lego: Object.freeze({
+      key: 'lego',
+      atomScaleMain: 1.12,
+      atomScaleTransitionMetal: 1.12,
+      sphereWidthSegments: 6,
+      sphereHeightSegments: 4,
+      bondRadius: 0.095,
+      bondRadialSegments: 6,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: false,
+      voxelStyle: true,
+      voxelGridStep: 0.22,
+      aromaticDashColor: 0x5e6672,
+      aromaticDashOpacity: 0.94,
+      lighting: Object.freeze({
+        hemiColor: 0xfdfdfd,
+        hemiGroundColor: 0x8a8f97,
+        hemiIntensity: 1.2,
+        dirColor: 0xffffff,
+        dirIntensity: 1.55,
+        dirPos: Object.freeze([1.25, 1.1, 1.0]),
+        ambColor: 0xa0a8b3,
+        ambIntensity: 0.34,
+        rimColor: 0xdde4ef,
+        rimIntensity: 0.35,
+      }),
+    }),
+    hatching: Object.freeze({
+      key: 'hatching',
+      atomScaleMain: 1.16,
+      atomScaleTransitionMetal: 1.2,
+      sphereWidthSegments: 28,
+      sphereHeightSegments: 18,
+      bondRadius: 0.095,
+      bondRadialSegments: 16,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: true,
+      hatchingStyle: true,
+      aromaticDashColor: 0x3a4350,
+      aromaticDashOpacity: 0.96,
+      lighting: Object.freeze({
+        hemiColor: 0xf7fbff,
+        hemiGroundColor: 0x0f1826,
+        hemiIntensity: 1.2,
+        dirColor: 0xffffff,
+        dirIntensity: 2.05,
+        dirPos: Object.freeze([1.2, 1.2, 1.05]),
+        ambColor: 0x8b99ae,
+        ambIntensity: 0.14,
+        rimColor: 0xa9c0e4,
+        rimIntensity: 0.82,
+      }),
+    }),
+    xray: Object.freeze({
+      key: 'xray',
+      atomScaleMain: 1.18,
+      atomScaleTransitionMetal: 1.22,
+      sphereWidthSegments: 30,
+      sphereHeightSegments: 20,
+      bondRadius: 0.085,
+      bondRadialSegments: 18,
+      bondHeightSegments: 1,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: false,
+      xrayStyle: true,
+      aromaticDashColor: 0x6d89ab,
+      aromaticDashOpacity: 0.76,
+      lighting: Object.freeze({
+        hemiColor: 0xeaf4ff,
+        hemiGroundColor: 0x101a2c,
+        hemiIntensity: 1.0,
+        dirColor: 0xffffff,
+        dirIntensity: 1.7,
+        dirPos: Object.freeze([1.25, 1.25, 1.1]),
+        ambColor: 0x5f7ea8,
+        ambIntensity: 0.24,
+        rimColor: 0xb4d2ff,
+        rimIntensity: 1.1,
+      }),
+    }),
+    blackbody: Object.freeze({
+      key: 'blackbody',
+      atomScaleMain: 1.18,
+      atomScaleTransitionMetal: 1.2,
+      sphereWidthSegments: 30,
+      sphereHeightSegments: 20,
+      bondRadius: 0.095,
+      bondRadialSegments: 18,
+      bondHeightSegments: 2,
+      usesTrimmedConnector: false,
+      usesKitCurvedMultiBond: false,
+      stylizedMolecule: false,
+      blackbodyStyle: true,
+      forceBackground: 0x050507,
+      aromaticDashColor: 0xff8a2d,
+      aromaticDashOpacity: 0.95,
+      lighting: Object.freeze({
+        hemiColor: 0x32271f,
+        hemiGroundColor: 0x030303,
+        hemiIntensity: 0.65,
+        dirColor: 0xffd4aa,
+        dirIntensity: 1.35,
+        dirPos: Object.freeze([1.15, 1.2, 1.1]),
+        ambColor: 0x3a2f29,
+        ambIntensity: 0.26,
+        rimColor: 0xffb457,
+        rimIntensity: 0.9,
+      }),
+    }),
   });
 
   /**
    * Normalize molecule-style keys and compatibility aliases.
    * @param {*} value
-   * @returns {'default'|'toon'|'kit'|'glossy'}
+   * @returns {'default'|'toon'|'kit'|'glossy'|'ink'|'depthfog'|'neon'|'watercolor'|'lego'|'hatching'|'xray'|'blackbody'}
    */
   function normalizeMoleculeStyleKey(value) {
     const raw = (typeof value === 'string') ? value.trim().toLowerCase() : '';
@@ -871,6 +1117,7 @@
   let suspendPresetRebuild = false;
   const bondMaterialCache = new Map();
   const toonGradientTextureCache = new Map();
+  const hatchTextureCache = new Map();
   // Content group to allow whole-scene shifting
   const contentGroup = new THREE.Group();
   scene.add(contentGroup);
@@ -1022,7 +1269,8 @@
    * Update scene lighting to match the active molecule style.
    */
   function applyMoleculeStyleLighting() {
-    const lighting = getMoleculeStyleProfile().lighting;
+    const profile = getMoleculeStyleProfile();
+    const lighting = profile.lighting;
     hemi.color.setHex(lighting.hemiColor);
     hemi.groundColor.setHex(lighting.hemiGroundColor);
     hemi.intensity = lighting.hemiIntensity;
@@ -1033,6 +1281,29 @@
     amb.intensity = lighting.ambIntensity;
     rim.color.setHex(lighting.rimColor);
     rim.intensity = lighting.rimIntensity;
+
+    if (profile && profile.depthFog && Number.isFinite(profile.depthFog.near) && Number.isFinite(profile.depthFog.far)) {
+      scene.fog = new THREE.Fog(profile.depthFog.color, profile.depthFog.near, profile.depthFog.far);
+    } else {
+      scene.fog = null;
+    }
+
+    let forcedBgHex = null;
+    if (Number.isInteger(profile.forceBackground)) {
+      forcedBgHex = profile.forceBackground;
+    } else if (profile.inkStyle) {
+      forcedBgHex = 0xffffff;
+    } else if (profile.depthFog) {
+      forcedBgHex = profile.depthFog.color;
+    } else if (profile.watercolorStyle) {
+      forcedBgHex = 0xf8f4ea;
+    }
+    if (forcedBgHex != null) {
+      try { scene.background = new THREE.Color(forcedBgHex); } catch { }
+      if (bgColor) {
+        try { bgColor.value = `#${new THREE.Color(forcedBgHex).getHexString()}`; } catch { }
+      }
+    }
   }
 
   /**
@@ -1070,6 +1341,48 @@
     tex.generateMipmaps = false;
     tex.needsUpdate = true;
     toonGradientTextureCache.set(key, tex);
+    return tex;
+  }
+
+  /**
+   * Build a subtle cross-hatching texture used by the hatching toon style.
+   * @param {'atom'|'bond'} kind
+   * @returns {THREE.Texture|null}
+   */
+  function getHatchingTexture(kind) {
+    const key = kind === 'bond' ? 'bond' : 'atom';
+    if (hatchTextureCache.has(key)) return hatchTextureCache.get(key);
+    if (typeof document === 'undefined') return null;
+    const size = key === 'bond' ? 24 : 32;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.strokeStyle = key === 'bond' ? 'rgba(40,48,62,0.22)' : 'rgba(32,40,54,0.28)';
+    ctx.lineWidth = 1;
+    const step = key === 'bond' ? 7 : 6;
+    for (let i = -size; i <= size * 2; i += step) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i - size, size);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(i, size);
+      ctx.lineTo(i - size, 0);
+      ctx.stroke();
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(key === 'bond' ? 2.0 : 1.6, key === 'bond' ? 2.0 : 1.6);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = true;
+    tex.needsUpdate = true;
+    hatchTextureCache.set(key, tex);
     return tex;
   }
 
@@ -1887,6 +2200,50 @@
         Math.min(1, hsl.l * 0.88 + 0.08)
       );
       return c;
+    }
+    if (styleKey === 'ink') {
+      if (!useElementColors) return new THREE.Color(0xf4f4f4);
+      return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.82);
+    }
+    if (styleKey === 'watercolor') {
+      if (!useElementColors) return new THREE.Color(0xe4dece);
+      const c = atomColor.clone();
+      const hsl = { h: 0, s: 0, l: 0 };
+      c.getHSL(hsl);
+      c.setHSL(hsl.h, Math.max(0, hsl.s * 0.45), Math.min(1, hsl.l * 0.9 + 0.18));
+      return c;
+    }
+    if (styleKey === 'neon') {
+      if (!useElementColors) return new THREE.Color(0x62d8ff);
+      const c = atomColor.clone();
+      const hsl = { h: 0, s: 0, l: 0 };
+      c.getHSL(hsl);
+      c.setHSL(hsl.h, Math.min(1, hsl.s * 1.08 + 0.1), Math.min(1, hsl.l * 0.65 + 0.16));
+      return c;
+    }
+    if (styleKey === 'lego') {
+      if (!useElementColors) return new THREE.Color(0xc6cbd4);
+      const c = atomColor.clone();
+      const hsl = { h: 0, s: 0, l: 0 };
+      c.getHSL(hsl);
+      c.setHSL(hsl.h, Math.min(1, hsl.s * 1.05 + 0.04), Math.min(1, hsl.l * 0.84 + 0.06));
+      return c;
+    }
+    if (styleKey === 'hatching') {
+      if (!useElementColors) return new THREE.Color(0xd0dae6);
+      const c = atomColor.clone();
+      const hsl = { h: 0, s: 0, l: 0 };
+      c.getHSL(hsl);
+      c.setHSL(hsl.h, Math.min(1, hsl.s * 0.82 + 0.07), Math.min(1, hsl.l * 0.86 + 0.1));
+      return c;
+    }
+    if (styleKey === 'xray') {
+      if (!useElementColors) return new THREE.Color(0xc4dbff);
+      return atomColor.clone().lerp(new THREE.Color(0xe8f3ff), 0.44);
+    }
+    if (styleKey === 'blackbody') {
+      const t = Math.max(0, Math.min(1, (z | 0) / 26));
+      return blackbodyColorFromScalar(t);
     }
     if (styleKey !== 'toon') return atomColor;
     if (!useElementColors) return new THREE.Color(0xd0d9e6);
