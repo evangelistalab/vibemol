@@ -70,7 +70,14 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--iso", type=float, default=None, help="Optional iso value")
     parser.add_argument(
         "--style",
-        choices=["default", "toon", "fancy", "kit", "studio", "glossy"],
+        choices=[
+            "default",
+            "toon",
+            "fancy",
+            "kit",
+            "studio",
+            "glossy",
+        ],
         default=None,
         help="Optional molecule style (aliases: fancy->toon, studio->kit)",
     )
@@ -131,11 +138,11 @@ def _parse_args() -> argparse.Namespace:
 def _normalize_style(style: str | None) -> str | None:
     if style is None:
         return None
-    if style == "fancy":
-        return "toon"
-    if style == "studio":
-        return "kit"
-    return style
+    aliases = {
+        "fancy": "toon",
+        "studio": "kit",
+    }
+    return aliases.get(style, style)
 
 
 def _normalize_preset_mode(mode: str | None) -> str:
