@@ -129,6 +129,7 @@
     resolveFragmentQuery,
     getFragmentById,
     buildFragmentInstance,
+    loadFragmentLibraryFromManifest,
   } = window.VibeMolFragments || {};
   if (!Array.isArray(FRAGMENT_LIBRARY) || ![resolveFragmentQuery, getFragmentById, buildFragmentInstance].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolFragments is not loaded. Ensure assets/app/js/fragments.js is included before assets/app/js/app.js.');
@@ -7574,6 +7575,19 @@
   function getFragmentConnectionOutwardDirection(fragment) {
     const conn = getFragmentConnectionAtom(fragment);
     if (!conn) return new THREE.Vector3(1, 0, 0);
+    if (fragment && Array.isArray(fragment.linkBondDirection) && fragment.linkBondDirection.length >= 3) {
+      const lx = Number(fragment.linkBondDirection[0]);
+      const ly = Number(fragment.linkBondDirection[1]);
+      const lz = Number(fragment.linkBondDirection[2]);
+      if ([lx, ly, lz].every(Number.isFinite)) {
+        const link = new THREE.Vector3(lx, ly, lz);
+        if (link.lengthSq() > 1e-12) {
+          // linkBondDirection points from connection atom toward anchor;
+          // for placement we need the opposite (toward fragment interior).
+          return link.multiplyScalar(-1).normalize();
+        }
+      }
+    }
     const connPos = new THREE.Vector3(conn.x, conn.y, conn.z);
     const neighbors = [];
     if (Array.isArray(fragment && fragment.bonds)) {
@@ -8412,32 +8426,9 @@
   }
 
   /**
-   * Populate search suggestions and quick-add chips for Add-atom mode.
+   * Rebuild fragment suggestions and quick chips from the active fragment catalog.
    */
-  function buildEditAddControls() {
-    if (editAddSuggestionsEl) {
-      editAddSuggestionsEl.innerHTML = '';
-      for (const z of getKnownElementNumbers()) {
-        const info = ATOM_Z_TO_DATA[z];
-        const opt = document.createElement('option');
-        opt.value = `${info.symbol} — ${info.name} (${z})`;
-        editAddSuggestionsEl.appendChild(opt);
-      }
-    }
-    if (editAddQuickEl) {
-      editAddQuickEl.innerHTML = '';
-      for (const z of EDIT_QUICK_ADD_ELEMENTS) {
-        if (!ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
-        const info = ATOM_Z_TO_DATA[z];
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.setAttribute('data-z', String(z));
-        btn.title = `${info.name} (${info.symbol})`;
-        btn.textContent = info.symbol;
-        btn.onclick = () => { setEditAddElement(z, { announce: true }); };
-        editAddQuickEl.appendChild(btn);
-      }
-    }
+  function refreshEditAddFragmentControls() {
     if (editFragmentSuggestionsEl) {
       editFragmentSuggestionsEl.innerHTML = '';
       for (const fragment of FRAGMENT_LIBRARY) {
@@ -8463,6 +8454,60 @@
         editFragmentQuickEl.appendChild(btn);
       }
     }
+    if (!getCurrentFragmentDefinition() && FRAGMENT_LIBRARY[0]) editAddFragmentId = FRAGMENT_LIBRARY[0].id;
+    if (!setEditAddFragment(editAddFragmentId, { announce: false, syncSearch: true }) && FRAGMENT_LIBRARY[0]) {
+      setEditAddFragment(FRAGMENT_LIBRARY[0].id, { announce: false, syncSearch: true });
+    }
+    updateEditToolboxUi({ syncSearch: true });
+  }
+
+  /**
+   * Load fragment catalog from static assets and refresh Add-fragment controls.
+   */
+  async function loadExternalFragmentLibrary() {
+    if (typeof loadFragmentLibraryFromManifest !== 'function') return;
+    try {
+      const result = await loadFragmentLibraryFromManifest('./assets/fragments/library.json');
+      refreshEditAddFragmentControls();
+      if (result && Array.isArray(result.errors) && result.errors.length) {
+        console.warn('[Fragments] Loaded with warnings:', result.errors);
+      }
+      if (result && result.count > 0) {
+        console.info(`[Fragments] Loaded ${result.count} fragment definitions from ${result.source || 'manifest'}.`);
+      }
+    } catch (error) {
+      console.warn('[Fragments] External fragment library load failed; using built-in defaults.', error);
+    }
+  }
+
+  /**
+   * Populate search suggestions and quick-add chips for Add mode.
+   */
+  function buildEditAddControls() {
+    if (editAddSuggestionsEl) {
+      editAddSuggestionsEl.innerHTML = '';
+      for (const z of getKnownElementNumbers()) {
+        const info = ATOM_Z_TO_DATA[z];
+        const opt = document.createElement('option');
+        opt.value = `${info.symbol} — ${info.name} (${z})`;
+        editAddSuggestionsEl.appendChild(opt);
+      }
+    }
+    if (editAddQuickEl) {
+      editAddQuickEl.innerHTML = '';
+      for (const z of EDIT_QUICK_ADD_ELEMENTS) {
+        if (!ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
+        const info = ATOM_Z_TO_DATA[z];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-z', String(z));
+        btn.title = `${info.name} (${info.symbol})`;
+        btn.textContent = info.symbol;
+        btn.onclick = () => { setEditAddElement(z, { announce: true }); };
+        editAddQuickEl.appendChild(btn);
+      }
+    }
+    refreshEditAddFragmentControls();
     if (editAddSearchEl) {
       const commit = () => {
         const z = resolveElementQueryToZ(editAddSearchEl.value);
@@ -8518,10 +8563,6 @@
     if (editToolMoveBtn) editToolMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
     if (editToolAddBtn) editToolAddBtn.onclick = () => setEditTool(EDIT_TOOL.ADD);
     if (editToolDeleteBtn) editToolDeleteBtn.onclick = () => setEditTool(EDIT_TOOL.DELETE);
-    if (!getCurrentFragmentDefinition() && FRAGMENT_LIBRARY[0]) editAddFragmentId = FRAGMENT_LIBRARY[0].id;
-    if (!setEditAddFragment(editAddFragmentId, { announce: false, syncSearch: true }) && FRAGMENT_LIBRARY[0]) {
-      setEditAddFragment(FRAGMENT_LIBRARY[0].id, { announce: false, syncSearch: true });
-    }
     setEditAddBondOrder(editAddBondOrder, { announce: false });
     setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
     updateEditToolboxUi();
@@ -8965,6 +9006,7 @@
   if (axisYBtn) axisYBtn.onclick = () => { axisLock = (axisLock === 'y' ? 'none' : 'y'); updateAxisButtons(); };
   if (axisZBtn) axisZBtn.onclick = () => { axisLock = (axisLock === 'z' ? 'none' : 'z'); updateAxisButtons(); };
   buildEditAddControls();
+  loadExternalFragmentLibrary();
 
   /**
    * Raycast and return the first intersected atom mesh under the pointer.
