@@ -70,9 +70,32 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--iso", type=float, default=None, help="Optional iso value")
     parser.add_argument(
         "--style",
-        choices=["default", "toon", "fancy", "kit", "studio", "glossy"],
+        choices=[
+            "default",
+            "toon",
+            "fancy",
+            "kit",
+            "studio",
+            "glossy",
+            "ink",
+            "depthfog",
+            "depth-fog",
+            "neon",
+            "neon-wireframe",
+            "watercolor",
+            "lego",
+            "hatching",
+            "toon-hatching",
+            "xray",
+            "xray-glass",
+            "blackbody",
+        ],
         default=None,
-        help="Optional molecule style (aliases: fancy->toon, studio->kit)",
+        help=(
+            "Optional molecule style "
+            "(aliases: fancy->toon, studio->kit, depth-fog->depthfog, "
+            "neon-wireframe->neon, toon-hatching->hatching, xray-glass->xray)"
+        ),
     )
     parser.add_argument(
         "--extra-file",
@@ -131,11 +154,15 @@ def _parse_args() -> argparse.Namespace:
 def _normalize_style(style: str | None) -> str | None:
     if style is None:
         return None
-    if style == "fancy":
-        return "toon"
-    if style == "studio":
-        return "kit"
-    return style
+    aliases = {
+        "fancy": "toon",
+        "studio": "kit",
+        "depth-fog": "depthfog",
+        "neon-wireframe": "neon",
+        "toon-hatching": "hatching",
+        "xray-glass": "xray",
+    }
+    return aliases.get(style, style)
 
 
 def _normalize_preset_mode(mode: str | None) -> str:
