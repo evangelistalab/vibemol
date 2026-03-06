@@ -1,0 +1,477 @@
+{
+  "kind": "vibemol.fragment-library",
+  "version": 1,
+  "generatedAt": "2026-03-06T16:07:10.141Z",
+  "fragments": [
+    {
+      "id": "amide",
+      "name": "Amide",
+      "formula": "CONH2",
+      "tags": [
+        "amide",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./amide.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 4,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "amino",
+      "name": "Amino",
+      "formula": "NH2",
+      "tags": [
+        "nitrogen",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./amino.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "benzene",
+      "name": "Benzene",
+      "formula": "C6H6",
+      "tags": [
+        "aromatic",
+        "ring",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./benzene.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 2
+        },
+        {
+          "i": 3,
+          "j": 9,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 10,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 11,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "carbonyl",
+      "name": "Carbonyl",
+      "formula": "CO",
+      "tags": [
+        "oxygen",
+        "double-bond",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./carbonyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "cyclohexane",
+      "name": "Cyclohexane",
+      "formula": "C6H12",
+      "tags": [
+        "ring",
+        "alkane",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./cyclohexane.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "hydroxyl",
+      "name": "Hydroxyl",
+      "formula": "OH",
+      "tags": [
+        "oxygen",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./hydroxyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "methyl",
+      "name": "Methyl",
+      "formula": "CH3",
+      "tags": [
+        "alkyl",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./methyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "methylene",
+      "name": "Methylene",
+      "formula": "CH2",
+      "tags": [
+        "alkyl",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./methylene.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "phenyl",
+      "name": "Phenyl",
+      "formula": "C6H5",
+      "tags": [
+        "aryl",
+        "ring",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./phenyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 2
+        },
+        {
+          "i": 3,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 9,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 10,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "pyridine",
+      "name": "Pyridine",
+      "formula": "C5H5N",
+      "tags": [
+        "heteroaromatic",
+        "ring",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./pyridine.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 10,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 2
+        },
+        {
+          "i": 3,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 9,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  ]
+}

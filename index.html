@@ -986,6 +986,41 @@
       display: block;
     }
 
+    #editAddModeToggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    #editAddModeToggle button {
+      appearance: none;
+      border: 1px solid var(--vm-color-legacy-border-soft);
+      background: var(--vm-color-legacy-dark-surface);
+      color: var(--vm-color-legacy-text-on-dark);
+      border-radius: 8px;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    #editAddModeToggle button.active {
+      border-color: var(--vm-color-accent-primary);
+      background: var(--vm-color-accent-primary-soft);
+      color: #eef7ff;
+    }
+
+    #editAddAtomPane,
+    #editAddFragmentPane {
+      display: none;
+    }
+
+    #editAddAtomPane.active,
+    #editAddFragmentPane.active {
+      display: block;
+    }
+
     #editAddPane label {
       display: block;
       font-size: 12px;
@@ -1003,14 +1038,26 @@
       color: var(--vm-color-legacy-text-on-dark);
     }
 
-    #editAddQuick {
+    #editFragmentSearch {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--vm-color-legacy-border-soft);
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: var(--vm-color-legacy-muted-chip-3);
+      color: var(--vm-color-legacy-text-on-dark);
+    }
+
+    #editAddQuick,
+    #editFragmentQuick {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
       margin-top: 8px;
     }
 
-    #editAddQuick button {
+    #editAddQuick button,
+    #editFragmentQuick button {
       appearance: none;
       border: 1px solid var(--vm-color-legacy-border-soft);
       border-radius: 999px;
@@ -1022,12 +1069,14 @@
       cursor: pointer;
     }
 
-    #editAddQuick button.active {
+    #editAddQuick button.active,
+    #editFragmentQuick button.active {
       border-color: var(--vm-color-accent-primary);
       box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.35) inset;
     }
 
-    #editAddCurrent {
+    #editAddCurrent,
+    #editFragmentCurrent {
       margin-top: 7px;
       font-size: 12px;
       color: #c8d8ec;
@@ -2437,15 +2486,28 @@
     </div>
     <div id="editToolButtons">
       <button id="editToolMoveBtn" type="button" class="active" title="Move atoms in edit mode">Move</button>
-      <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add atom</button>
+      <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add</button>
       <button id="editToolDeleteBtn" type="button" class="delete" title="Delete atoms in edit mode">Delete</button>
     </div>
     <div id="editAddPane">
-      <label for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
-      <input id="editAddSearch" type="text" list="editAddSuggestions" autocomplete="off" placeholder="e.g. C, Carbon, 6" />
-      <datalist id="editAddSuggestions"></datalist>
-      <div id="editAddQuick"></div>
-      <div id="editAddCurrent"></div>
+      <div id="editAddModeToggle">
+        <button id="editAddModeAtomBtn" type="button" class="active" title="Add single atoms">Atom</button>
+        <button id="editAddModeFragmentBtn" type="button" title="Attach predefined fragments">Fragment</button>
+      </div>
+      <div id="editAddAtomPane" class="active">
+        <label for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
+        <input id="editAddSearch" type="text" list="editAddSuggestions" autocomplete="off" placeholder="e.g. C, Carbon, 6" />
+        <datalist id="editAddSuggestions"></datalist>
+        <div id="editAddQuick"></div>
+        <div id="editAddCurrent"></div>
+      </div>
+      <div id="editAddFragmentPane">
+        <label for="editFragmentSearch">Fragment to add (name, id, or formula)</label>
+        <input id="editFragmentSearch" type="text" list="editFragmentSuggestions" autocomplete="off" placeholder="e.g. phenyl, hydroxyl, C6H5" />
+        <datalist id="editFragmentSuggestions"></datalist>
+        <div id="editFragmentQuick"></div>
+        <div id="editFragmentCurrent"></div>
+      </div>
     </div>
     <div id="editSnapPane">
       <span class="title">Angle snapping</span>
@@ -2727,6 +2789,8 @@
   <script src="./assets/app/js/edit-commands.js"></script>
   <!-- io helpers -->
   <script src="./assets/app/js/io-utils.js"></script>
+  <!-- fragment library helpers -->
+  <script src="./assets/app/js/fragments.js"></script>
 
   <script src="./assets/app/js/app.js"></script>
 </body>

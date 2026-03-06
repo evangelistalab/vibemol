@@ -1,0 +1,5 @@
+3
+Methylene | id=methylene | connectionAtomIndex=0 | linkBondDirection=0,0,1
+C 0.000000 0.000000 0.000000
+H 0.000000 0.600000 -0.700000
+H 0.000000 -0.600000 -0.700000

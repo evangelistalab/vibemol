@@ -124,6 +124,17 @@
     throw new Error('VibeMolIOUtils is not loaded. Ensure assets/app/js/io-utils.js is included before assets/app/js/app.js.');
   }
 
+  const {
+    FRAGMENT_LIBRARY,
+    resolveFragmentQuery,
+    getFragmentById,
+    buildFragmentInstance,
+    loadFragmentLibraryFromManifest,
+  } = window.VibeMolFragments || {};
+  if (!Array.isArray(FRAGMENT_LIBRARY) || ![resolveFragmentQuery, getFragmentById, buildFragmentInstance].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolFragments is not loaded. Ensure assets/app/js/fragments.js is included before assets/app/js/app.js.');
+  }
+
   // (subsample removed)
 
   // Coordinate conversions between stored atom units and world Å
@@ -6066,10 +6077,18 @@
   const editToolAddBtn = document.getElementById('editToolAddBtn');
   const editToolDeleteBtn = document.getElementById('editToolDeleteBtn');
   const editAddPaneEl = document.getElementById('editAddPane');
+  const editAddModeAtomBtn = document.getElementById('editAddModeAtomBtn');
+  const editAddModeFragmentBtn = document.getElementById('editAddModeFragmentBtn');
+  const editAddAtomPaneEl = document.getElementById('editAddAtomPane');
+  const editAddFragmentPaneEl = document.getElementById('editAddFragmentPane');
   const editAddSearchEl = document.getElementById('editAddSearch');
   const editAddSuggestionsEl = document.getElementById('editAddSuggestions');
   const editAddQuickEl = document.getElementById('editAddQuick');
   const editAddCurrentEl = document.getElementById('editAddCurrent');
+  const editFragmentSearchEl = document.getElementById('editFragmentSearch');
+  const editFragmentSuggestionsEl = document.getElementById('editFragmentSuggestions');
+  const editFragmentQuickEl = document.getElementById('editFragmentQuick');
+  const editFragmentCurrentEl = document.getElementById('editFragmentCurrent');
   const editAddCursorHudEl = document.getElementById('editAddCursorHud');
   const editCursorBadgeEl = document.getElementById('editCursorBadge');
   const editCursorBadgeModeEl = document.getElementById('editCursorBadgeMode');
@@ -7068,12 +7087,16 @@
   let axisLock = 'none'; // 'none'|'x'|'y'|'z'
   let axisKeyDown = null; // current held axis key ('x'|'y'|'z') to avoid auto-repeat toggling
   const EDIT_TOOL = Object.freeze({ MOVE: 'move', ADD: 'add', DELETE: 'delete' });
+  const EDIT_ADD_MODE = Object.freeze({ ATOM: 'atom', FRAGMENT: 'fragment' });
   let editTool = EDIT_TOOL.MOVE;
+  let editAddMode = EDIT_ADD_MODE.ATOM;
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
+  let editAddFragmentId = (getFragmentById('methyl') && getFragmentById('methyl').id) || ((FRAGMENT_LIBRARY[0] && FRAGMENT_LIBRARY[0].id) || 'methyl');
   const EDIT_ANGLE_SNAP_OPTIONS = Object.freeze([60, 90, 109.5, 120, 180]);
   let addGrowDetectedAngleDeg = 0;
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
+  const EDIT_QUICK_FRAGMENTS = ['methyl', 'methylene', 'hydroxyl', 'amino', 'carbonyl', 'amide', 'phenyl', 'benzene'];
   const EDIT_HISTORY_LIMIT = 200;
   let editUndoStack = [];
   let editRedoStack = [];
@@ -7440,6 +7463,399 @@
   }
 
   /**
+   * Normalize a fragment id-like value.
+   * @param {*} value
+   * @returns {string}
+   */
+  function normalizeFragmentId(value) {
+    return String(value == null ? '' : value).trim().toLowerCase();
+  }
+
+  /**
+   * Resolve and return the currently selected fragment record.
+   * @returns {*|null}
+   */
+  function getCurrentFragmentDefinition() {
+    let fragment = getFragmentById(editAddFragmentId);
+    if (fragment) return fragment;
+    if (!Array.isArray(FRAGMENT_LIBRARY) || FRAGMENT_LIBRARY.length === 0) return null;
+    fragment = FRAGMENT_LIBRARY[0];
+    editAddFragmentId = fragment.id;
+    return fragment;
+  }
+
+  /**
+   * Return one connection atom descriptor from a fragment.
+   * @param {*} fragment
+   * @returns {{Z:number,x:number,y:number,z:number,index:number}|null}
+   */
+  function getFragmentConnectionAtom(fragment) {
+    if (!fragment || !Array.isArray(fragment.atoms) || fragment.atoms.length === 0) return null;
+    const idx = Math.max(0, Math.min(fragment.atoms.length - 1, Number(fragment.connectionAtomIndex) | 0));
+    const atom = fragment.atoms[idx];
+    if (!atom) return null;
+    return {
+      index: idx,
+      Z: atom.Z | 0,
+      x: Number(atom.x) || 0,
+      y: Number(atom.y) || 0,
+      z: Number(atom.z) || 0,
+    };
+  }
+
+  /**
+   * Resolve active attach settings for Add mode (atom or fragment).
+   * @param {number} anchorZ
+   * @returns {{mode:'atom'|'fragment',previewZ:number,bondOrder:number,bondLength:number,fragment:*|null}}
+   */
+  function getActiveAddAttachSettings(anchorZ) {
+    if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+      const fragment = getCurrentFragmentDefinition();
+      const connAtom = getFragmentConnectionAtom(fragment);
+      const z = connAtom ? (connAtom.Z | 0) : (editAddElementZ | 0);
+      const preferred = fragment ? Number(fragment.preferredBondOrder) : NaN;
+      const fallbackOrder = Number.isFinite(preferred) ? preferred : editAddBondOrder;
+      const order = normalizeEditAddBondOrder(fallbackOrder);
+      return {
+        mode: EDIT_ADD_MODE.FRAGMENT,
+        previewZ: z,
+        bondOrder: order,
+        bondLength: getEditAddBondLength(anchorZ | 0, z | 0, order),
+        fragment: fragment || null,
+      };
+    }
+    const z = editAddElementZ | 0;
+    const order = normalizeEditAddBondOrder(editAddBondOrder);
+    return {
+      mode: EDIT_ADD_MODE.ATOM,
+      previewZ: z,
+      bondOrder: order,
+      bondLength: getEditAddBondLength(anchorZ | 0, z | 0, order),
+      fragment: null,
+    };
+  }
+
+  /**
+   * Ensure there is an active editable target volume and return its record.
+   * If no file is loaded, this creates an empty angstrom XYZ-like record.
+   * @returns {{name:string,vol:*}|null}
+   */
+  function ensureEditableVolumeRecord() {
+    if (currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].vol) return volumes[currentIndex];
+    const idx0 = () => 0;
+    const vol = {
+      title: 'Untitled molecule',
+      comment: 'Created in edit mode',
+      natoms: 0,
+      origin: [0, 0, 0],
+      nxyz: [0, 0, 0],
+      axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+      atoms: [],
+      data: new Float32Array(0),
+      idx: idx0,
+      units: 'angstrom',
+      isoHint: null,
+    };
+    const name = `untitled-${volumes.length + 1}.xyz`;
+    const record = { name, vol };
+    volumes.push(record);
+    currentIndex = volumes.length - 1;
+    refreshFileSelect();
+    if (fileSelect) fileSelect.value = String(currentIndex);
+    updateSidePanel();
+    return record;
+  }
+
+  /**
+   * Estimate the local \"outward\" axis from the fragment connection atom.
+   * This axis points from the connection atom toward the fragment interior.
+   * @param {*} fragment
+   * @returns {THREE.Vector3}
+   */
+  function getFragmentConnectionOutwardDirection(fragment) {
+    const conn = getFragmentConnectionAtom(fragment);
+    if (!conn) return new THREE.Vector3(1, 0, 0);
+    if (fragment && Array.isArray(fragment.linkBondDirection) && fragment.linkBondDirection.length >= 3) {
+      const lx = Number(fragment.linkBondDirection[0]);
+      const ly = Number(fragment.linkBondDirection[1]);
+      const lz = Number(fragment.linkBondDirection[2]);
+      if ([lx, ly, lz].every(Number.isFinite)) {
+        const link = new THREE.Vector3(lx, ly, lz);
+        if (link.lengthSq() > 1e-12) {
+          // linkBondDirection points from connection atom toward anchor;
+          // for placement we need the opposite (toward fragment interior).
+          return link.multiplyScalar(-1).normalize();
+        }
+      }
+    }
+    const connPos = new THREE.Vector3(conn.x, conn.y, conn.z);
+    const neighbors = [];
+    if (Array.isArray(fragment && fragment.bonds)) {
+      for (const bond of fragment.bonds) {
+        if (!bond) continue;
+        const i = Number(bond.i) | 0;
+        const j = Number(bond.j) | 0;
+        let other = -1;
+        if (i === conn.index) other = j;
+        else if (j === conn.index) other = i;
+        if (other < 0 || !fragment.atoms[other]) continue;
+        const a = fragment.atoms[other];
+        neighbors.push(new THREE.Vector3(Number(a.x) || 0, Number(a.y) || 0, Number(a.z) || 0));
+      }
+    }
+    if (neighbors.length > 0) {
+      const c = new THREE.Vector3();
+      for (const p of neighbors) c.add(p);
+      c.multiplyScalar(1 / neighbors.length);
+      const d = c.sub(connPos);
+      if (d.lengthSq() > 1e-12) return d.normalize();
+    }
+    if (Array.isArray(fragment && fragment.atoms)) {
+      const c = new THREE.Vector3();
+      let count = 0;
+      for (let i = 0; i < fragment.atoms.length; i++) {
+        if (i === conn.index) continue;
+        const a = fragment.atoms[i];
+        c.add(new THREE.Vector3(Number(a.x) || 0, Number(a.y) || 0, Number(a.z) || 0));
+        count += 1;
+      }
+      if (count > 0) {
+        c.multiplyScalar(1 / count);
+        const d = c.sub(connPos);
+        if (d.lengthSq() > 1e-12) return d.normalize();
+      }
+    }
+    return new THREE.Vector3(1, 0, 0);
+  }
+
+  /**
+   * Find one hydrogen bonded to the anchor atom, preferring collinearity with
+   * the requested placement direction.
+   * @param {*} vol
+   * @param {number} anchorIndex
+   * @param {THREE.Vector3|null} preferredDir
+   * @returns {{index:number,direction:THREE.Vector3,score:number}|null}
+   */
+  function findAnchorReplaceableHydrogen(vol, anchorIndex, preferredDir) {
+    if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return null;
+    const anchor = anchorIndex | 0;
+    if (anchor < 0 || anchor >= vol.atoms.length) return null;
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = collectBondCandidates(records);
+    let best = null;
+    let bestScore = -Infinity;
+    for (const edge of edges) {
+      if (!edge) continue;
+      let hIndex = -1;
+      if (edge.i === anchor) hIndex = edge.j;
+      else if (edge.j === anchor) hIndex = edge.i;
+      if (hIndex < 0) continue;
+      if (!vol.atoms[hIndex] || (vol.atoms[hIndex].Z | 0) !== 1) continue;
+      const dir = records[hIndex].pos.clone().sub(records[anchor].pos);
+      const dist = dir.length();
+      if (!(dist > 1e-8)) continue;
+      dir.normalize();
+      const dot = (preferredDir && preferredDir.isVector3) ? dir.dot(preferredDir) : 0;
+      // Favor collinearity first, then shorter H bond lengths.
+      const score = dot * 2.0 - dist * 0.05;
+      if (!best || score > bestScore) {
+        best = { index: hIndex, direction: dir, score };
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Count severe post-placement overlaps for user warnings.
+   * @param {*} vol
+   * @param {number[]} newAtomIndices
+   * @param {Set<number>} oldAtomIndexSet
+   * @returns {{count:number,minRatio:number}}
+   */
+  function detectSevereFragmentOverlaps(vol, newAtomIndices, oldAtomIndexSet) {
+    if (!vol || !Array.isArray(vol.atoms)) return { count: 0, minRatio: Infinity };
+    const newIdx = Array.isArray(newAtomIndices) ? newAtomIndices : [];
+    const oldSet = oldAtomIndexSet instanceof Set ? oldAtomIndexSet : new Set();
+    let count = 0;
+    let minRatio = Infinity;
+    for (const i of newIdx) {
+      const ai = vol.atoms[i];
+      if (!ai) continue;
+      const pi = atomUnitsToAng(vol, ai);
+      const ri = getCovalentRadiusAngstrom(ai.Z | 0);
+      for (const j of oldSet) {
+        const aj = vol.atoms[j];
+        if (!aj) continue;
+        const pj = atomUnitsToAng(vol, aj);
+        const rj = getCovalentRadiusAngstrom(aj.Z | 0);
+        const sumR = Math.max(0.1, ri + rj);
+        const d = pi.distanceTo(pj);
+        const ratio = d / sumR;
+        if (ratio < minRatio) minRatio = ratio;
+        if (ratio < 0.55) count += 1;
+      }
+    }
+    return { count, minRatio };
+  }
+
+  /**
+   * For methyl attachment, enforce a tetrahedral CH3 geometry relative to the
+   * anchor->connection axis:
+   * - angle(linked atom -> new atom, C-H) = 109.5°
+   * - methyl H dihedrals around the bond axis = 0°, 120°, 240°.
+   * @param {*} vol
+   * @param {*} fragment
+   * @param {number[]} newIndices
+   * @param {THREE.Vector3} anchorWorld
+   * @param {THREE.Vector3} connectionWorld
+   * @param {THREE.Vector3} attachDir
+   */
+  function applyMethylAttachmentGeometry(vol, fragment, newIndices, anchorWorld, connectionWorld, attachDir) {
+    if (!vol || !fragment || normalizeFragmentId(fragment.id) !== 'methyl') return;
+    if (!Array.isArray(newIndices) || newIndices.length !== (Array.isArray(fragment.atoms) ? fragment.atoms.length : 0)) return;
+    const conn = getFragmentConnectionAtom(fragment);
+    if (!conn) return;
+
+    const localHydrogenIndices = [];
+    if (Array.isArray(fragment.bonds)) {
+      for (const bond of fragment.bonds) {
+        if (!bond) continue;
+        const i = Number(bond.i) | 0;
+        const j = Number(bond.j) | 0;
+        let other = -1;
+        if (i === conn.index) other = j;
+        else if (j === conn.index) other = i;
+        if (other < 0 || !fragment.atoms[other]) continue;
+        if ((fragment.atoms[other].Z | 0) === 1) localHydrogenIndices.push(other);
+      }
+    }
+    if (localHydrogenIndices.length < 3) {
+      for (let i = 0; i < fragment.atoms.length; i++) {
+        if (i === conn.index) continue;
+        if ((fragment.atoms[i].Z | 0) === 1) localHydrogenIndices.push(i);
+      }
+    }
+    const uniqueHydrogenLocal = Array.from(new Set(localHydrogenIndices)).slice(0, 3);
+    if (uniqueHydrogenLocal.length < 3) return;
+
+    const axis = (attachDir && attachDir.isVector3 ? attachDir.clone() : connectionWorld.clone().sub(anchorWorld));
+    if (axis.lengthSq() < 1e-12) return;
+    axis.normalize();
+    const linkedDirectionFromCarbon = axis.clone().negate(); // C -> anchor
+    let ref = new THREE.Vector3(0, 1, 0);
+    if (Math.abs(ref.dot(linkedDirectionFromCarbon)) > 0.95) ref.set(1, 0, 0);
+    const u = ref.sub(linkedDirectionFromCarbon.clone().multiplyScalar(ref.dot(linkedDirectionFromCarbon)));
+    if (u.lengthSq() < 1e-12) return;
+    u.normalize();
+    const v = new THREE.Vector3().crossVectors(linkedDirectionFromCarbon, u).normalize();
+
+    const angleDeg = 109.5;
+    const angleRad = THREE.MathUtils.degToRad(angleDeg);
+    const sinA = Math.sin(angleRad);
+    const cosA = Math.cos(angleRad);
+    const dihedralsDeg = [0, 120, 240];
+    const chLen = getEditAddBondLength(conn.Z | 0, 1, 1);
+
+    for (let k = 0; k < 3; k++) {
+      const localIdx = uniqueHydrogenLocal[k];
+      const globalIdx = newIndices[localIdx];
+      const atom = vol.atoms[globalIdx];
+      if (!atom) continue;
+      const phi = THREE.MathUtils.degToRad(dihedralsDeg[k]);
+      const dir = linkedDirectionFromCarbon.clone().multiplyScalar(cosA)
+        .add(u.clone().multiplyScalar(sinA * Math.cos(phi)))
+        .add(v.clone().multiplyScalar(sinA * Math.sin(phi)))
+        .normalize();
+      const hWorld = connectionWorld.clone().addScaledVector(dir, chLen);
+      const coords = worldToAtomUnits(vol, hWorld);
+      atom.x = coords[0];
+      atom.y = coords[1];
+      atom.z = coords[2];
+    }
+  }
+
+  /**
+   * For hydroxyl attachment, enforce a water-like L-O-H bend:
+   * - angle(linked atom -> new atom, O-H) = 104.5°.
+   * Azimuth around the linked-axis is deterministic (world-up projected plane).
+   * @param {*} vol
+   * @param {*} fragment
+   * @param {number[]} newIndices
+   * @param {THREE.Vector3} anchorWorld
+   * @param {THREE.Vector3} connectionWorld
+   */
+  function applyHydroxylAttachmentGeometry(vol, fragment, newIndices, anchorWorld, connectionWorld) {
+    if (!vol || !fragment || normalizeFragmentId(fragment.id) !== 'hydroxyl') return;
+    if (!Array.isArray(newIndices) || newIndices.length !== (Array.isArray(fragment.atoms) ? fragment.atoms.length : 0)) return;
+    const conn = getFragmentConnectionAtom(fragment);
+    if (!conn) return;
+
+    let localHydrogenIndex = -1;
+    if (Array.isArray(fragment.bonds)) {
+      for (const bond of fragment.bonds) {
+        if (!bond) continue;
+        const i = Number(bond.i) | 0;
+        const j = Number(bond.j) | 0;
+        let other = -1;
+        if (i === conn.index) other = j;
+        else if (j === conn.index) other = i;
+        if (other < 0 || !fragment.atoms[other]) continue;
+        if ((fragment.atoms[other].Z | 0) === 1) {
+          localHydrogenIndex = other;
+          break;
+        }
+      }
+    }
+    if (localHydrogenIndex < 0) {
+      for (let i = 0; i < fragment.atoms.length; i++) {
+        if (i === conn.index) continue;
+        if ((fragment.atoms[i].Z | 0) === 1) {
+          localHydrogenIndex = i;
+          break;
+        }
+      }
+    }
+    if (localHydrogenIndex < 0) return;
+
+    const globalHydrogenIndex = newIndices[localHydrogenIndex];
+    const hydrogenAtom = vol.atoms[globalHydrogenIndex];
+    if (!hydrogenAtom) return;
+
+    const axisToLink = anchorWorld.clone().sub(connectionWorld);
+    if (axisToLink.lengthSq() < 1e-12) return;
+    axisToLink.normalize();
+
+    let ref = new THREE.Vector3(0, 1, 0);
+    if (Math.abs(ref.dot(axisToLink)) > 0.95) ref.set(1, 0, 0);
+    const perp = ref.sub(axisToLink.clone().multiplyScalar(ref.dot(axisToLink)));
+    if (perp.lengthSq() < 1e-12) return;
+    perp.normalize();
+
+    const angleDeg = 104.5;
+    const angleRad = THREE.MathUtils.degToRad(angleDeg);
+    const dir = axisToLink.clone().multiplyScalar(Math.cos(angleRad))
+      .add(perp.multiplyScalar(Math.sin(angleRad)))
+      .normalize();
+
+    const connAtomLocal = fragment.atoms[conn.index];
+    const hAtomLocal = fragment.atoms[localHydrogenIndex];
+    const localOH = (connAtomLocal && hAtomLocal)
+      ? Math.hypot(
+        (Number(hAtomLocal.x) || 0) - (Number(connAtomLocal.x) || 0),
+        (Number(hAtomLocal.y) || 0) - (Number(connAtomLocal.y) || 0),
+        (Number(hAtomLocal.z) || 0) - (Number(connAtomLocal.z) || 0)
+      )
+      : NaN;
+    const ohLen = Number.isFinite(localOH) && localOH > 0.1 ? localOH : 0.96;
+    const hWorld = connectionWorld.clone().addScaledVector(dir, ohLen);
+    const coords = worldToAtomUnits(vol, hWorld);
+    hydrogenAtom.x = coords[0];
+    hydrogenAtom.y = coords[1];
+    hydrogenAtom.z = coords[2];
+  }
+
+  /**
    * Estimate local neighbor directions from one anchor atom.
    * @param {*} vol
    * @param {number} anchorIndex
@@ -7517,7 +7933,14 @@
       editCursorBadgeModeEl.style.borderColor = border;
       editCursorBadgeModeEl.style.background = bg;
     }
-    if (editCursorBadgeElementEl) editCursorBadgeElementEl.textContent = getElementSymbol(editAddElementZ);
+    if (editCursorBadgeElementEl) {
+      if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+        const frag = getCurrentFragmentDefinition();
+        editCursorBadgeElementEl.textContent = frag ? frag.name : 'Fragment';
+      } else {
+        editCursorBadgeElementEl.textContent = getElementSymbol(editAddElementZ);
+      }
+    }
     if (editCursorBadgeBondEl) editCursorBadgeBondEl.textContent = String(editAddBondOrder);
     setEditCursorBadgePointer(editAddHudPointerX, editAddHudPointerY);
   }
@@ -7552,7 +7975,7 @@
    */
   function updateEditAddCursorHud() {
     if (!editAddCursorHudEl) return;
-    const showHud = editMode && editTool === EDIT_TOOL.ADD && addGrowActive;
+    const showHud = editMode && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.ATOM && addGrowActive;
     editAddCursorHudEl.setAttribute('aria-hidden', showHud ? 'false' : 'true');
     if (!showHud) return;
     const buttons = editAddCursorHudEl.querySelectorAll('button');
@@ -7596,7 +8019,8 @@
     updateEditToolboxUi({ syncSearch: false });
     updateEditAddCursorHud();
     if (announce && editMode && editTool === EDIT_TOOL.ADD) {
-      setHintMessage(`Add atom bond order: ${editAddBondOrder} (keys 1/2/3)`);
+      if (editAddMode === EDIT_ADD_MODE.FRAGMENT) setHintMessage(`Fragment attach bond order: ${editAddBondOrder} (keys 1/2/3)`);
+      else setHintMessage(`Add atom bond order: ${editAddBondOrder} (keys 1/2/3)`);
     }
   }
 
@@ -7771,10 +8195,11 @@
     const snapped = snapMeta.dir.clone().normalize();
     addGrowDetectedAngleDeg = snapMeta.targetDeg || 0;
     const anchorZ = vol.atoms[addGrowAnchorIndex].Z | 0;
-    const dist = getEditAddBondLength(anchorZ, editAddElementZ, editAddBondOrder);
+    const attach = getActiveAddAttachSettings(anchorZ);
+    const dist = attach.bondLength;
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
     addGrowPreviewPos = newPos;
-    updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, editAddElementZ);
+    updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, attach.previewZ);
     updateAddGrowAngleGuide(addGrowAnchorPos, newPos, snapMeta);
   }
 
@@ -7807,10 +8232,11 @@
     const snapped = snapMeta.dir.clone().normalize();
     addGrowDetectedAngleDeg = bypassAngleSnap ? 0 : (snapMeta.targetDeg || 0);
     const anchorZ = vol.atoms[addGrowAnchorIndex].Z | 0;
-    const dist = getEditAddBondLength(anchorZ, editAddElementZ, editAddBondOrder);
+    const attach = getActiveAddAttachSettings(anchorZ);
+    const dist = attach.bondLength;
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
     addGrowPreviewPos = newPos;
-    updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, editAddElementZ);
+    updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, attach.previewZ);
     const guideMeta = bypassAngleSnap
       ? applyEditAddAngleSnap(rawDir, addGrowNeighborDirs, null, camDir)
       : snapMeta;
@@ -7827,6 +8253,8 @@
     const isMove = editTool === EDIT_TOOL.MOVE;
     const isAdd = editTool === EDIT_TOOL.ADD;
     const isDelete = editTool === EDIT_TOOL.DELETE;
+    const isAtomAddMode = editAddMode === EDIT_ADD_MODE.ATOM;
+    const isFragmentAddMode = editAddMode === EDIT_ADD_MODE.FRAGMENT;
 
     if (editToolboxEl) {
       editToolboxEl.setAttribute('aria-hidden', isEdit ? 'false' : 'true');
@@ -7835,15 +8263,31 @@
     if (editToolAddBtn) editToolAddBtn.classList.toggle('active', isAdd);
     if (editToolDeleteBtn) editToolDeleteBtn.classList.toggle('active', isDelete);
     if (editAddPaneEl) editAddPaneEl.classList.toggle('active', isEdit && isAdd);
+    if (editAddModeAtomBtn) editAddModeAtomBtn.classList.toggle('active', isAtomAddMode);
+    if (editAddModeFragmentBtn) editAddModeFragmentBtn.classList.toggle('active', isFragmentAddMode);
+    if (editAddAtomPaneEl) editAddAtomPaneEl.classList.toggle('active', isAtomAddMode);
+    if (editAddFragmentPaneEl) editAddFragmentPaneEl.classList.toggle('active', isFragmentAddMode);
 
-    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
-    const symbol = info && info.symbol ? info.symbol : `Z${editAddElementZ}`;
-    const name = info && info.name ? info.name : symbol;
     const angleLabel = addGrowDetectedAngleDeg > 0 ? `${addGrowDetectedAngleDeg.toFixed(1)}°` : 'auto';
-    if (editAddCurrentEl) editAddCurrentEl.textContent = `Adding: ${name} (${symbol}) • bond ${editAddBondOrder} • angle ${angleLabel}`;
+    const atomInfo = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
+    const atomSymbol = atomInfo && atomInfo.symbol ? atomInfo.symbol : `Z${editAddElementZ}`;
+    const atomName = atomInfo && atomInfo.name ? atomInfo.name : atomSymbol;
+    if (editAddCurrentEl) editAddCurrentEl.textContent = `Adding atom: ${atomName} (${atomSymbol}) • bond ${editAddBondOrder} • angle ${angleLabel}`;
+    const fragment = getCurrentFragmentDefinition();
+    if (editFragmentCurrentEl) {
+      if (fragment) {
+        const atomCount = Array.isArray(fragment.atoms) ? fragment.atoms.length : 0;
+        editFragmentCurrentEl.textContent = `Adding fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • bond ${editAddBondOrder} • angle ${angleLabel}`;
+      } else {
+        editFragmentCurrentEl.textContent = 'No fragment selected';
+      }
+    }
 
-    if (syncSearch && editAddSearchEl && document.activeElement !== editAddSearchEl) {
-      editAddSearchEl.value = `${symbol} — ${name} (${editAddElementZ})`;
+    if (syncSearch && isAtomAddMode && editAddSearchEl && document.activeElement !== editAddSearchEl) {
+      editAddSearchEl.value = `${atomSymbol} — ${atomName} (${editAddElementZ})`;
+    }
+    if (syncSearch && isFragmentAddMode && editFragmentSearchEl && document.activeElement !== editFragmentSearchEl && fragment) {
+      editFragmentSearchEl.value = `${fragment.name} (${fragment.formula}) [${fragment.id}]`;
     }
 
     if (editAddQuickEl) {
@@ -7862,6 +8306,13 @@
           btn.style.background = UI_PALETTE.quickPickFallbackBg;
           btn.style.color = UI_PALETTE.quickPickFallbackFg;
         }
+      });
+    }
+    if (editFragmentQuickEl) {
+      const quickButtons = editFragmentQuickEl.querySelectorAll('button[data-fragment-id]');
+      quickButtons.forEach((btn) => {
+        const id = normalizeFragmentId(btn.getAttribute('data-fragment-id'));
+        btn.classList.toggle('active', id === normalizeFragmentId(editAddFragmentId));
       });
     }
     updateEditCursorBadge();
@@ -7891,12 +8342,45 @@
     updateAxisButtons();
     if (!announce || !editMode) return;
     if (editTool === EDIT_TOOL.ADD) {
-      const symbol = getElementSymbol(editAddElementZ);
-      setHintMessage(`Edit tool: Add atom (${symbol}) • Cursor angle controls placement • Hold Shift to bypass angle snap`);
+      if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+        const fragment = getCurrentFragmentDefinition();
+        const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
+        setHintMessage(`Edit tool: Add fragment (${label}) • Click an anchor atom • Hold Shift to bypass angle snap`);
+      } else {
+        const symbol = getElementSymbol(editAddElementZ);
+        setHintMessage(`Edit tool: Add atom (${symbol}) • Cursor angle controls placement • Hold Shift to bypass angle snap`);
+      }
     } else if (editTool === EDIT_TOOL.DELETE) {
       setHintMessage('Edit tool: Delete • Click an atom or press Backspace/Delete on hovered atom');
     } else {
       setHintMessage('Edit tool: Move • Click+drag atom (X/Y/Z for axis lock)');
+    }
+  }
+
+  /**
+   * Switch between add-atom and add-fragment submodes.
+   * @param {'atom'|'fragment'} nextMode
+   * @param {{announce?:boolean,syncSearch?:boolean}=} options
+   */
+  function setEditAddMode(nextMode, options = {}) {
+    const announce = options.announce !== false;
+    const syncSearch = options.syncSearch !== false;
+    editAddMode = nextMode === EDIT_ADD_MODE.FRAGMENT ? EDIT_ADD_MODE.FRAGMENT : EDIT_ADD_MODE.ATOM;
+    if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+      const fragment = getCurrentFragmentDefinition();
+      if (fragment) {
+        editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
+      }
+    }
+    refreshActiveAddGrowPreview();
+    updateEditToolboxUi({ syncSearch });
+    if (!announce || !editMode || editTool !== EDIT_TOOL.ADD) return;
+    if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+      const fragment = getCurrentFragmentDefinition();
+      const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
+      setHintMessage(`Add fragment: ${label} • Replace-H first attachment is enabled`);
+    } else {
+      setHintMessage(`Add atom: ${getElementName(editAddElementZ)} (${getElementSymbol(editAddElementZ)})`);
     }
   }
 
@@ -7920,7 +8404,84 @@
   }
 
   /**
-   * Populate search suggestions and quick-add chips for Add-atom mode.
+   * Select a fragment for Add-fragment mode.
+   * @param {*} fragmentId
+   * @param {{announce?:boolean,syncSearch?:boolean}=} options
+   * @returns {boolean}
+   */
+  function setEditAddFragment(fragmentId, options = {}) {
+    const announce = options.announce !== false;
+    const syncSearch = options.syncSearch !== false;
+    const normalizedId = normalizeFragmentId(fragmentId);
+    const fragment = getFragmentById(normalizedId) || resolveFragmentQuery(fragmentId);
+    if (!fragment) return false;
+    editAddFragmentId = fragment.id;
+    editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
+    refreshActiveAddGrowPreview();
+    updateEditToolboxUi({ syncSearch });
+    if (announce && editMode && editTool === EDIT_TOOL.ADD) {
+      setHintMessage(`Add fragment: ${fragment.name} (${fragment.formula})`);
+    }
+    return true;
+  }
+
+  /**
+   * Rebuild fragment suggestions and quick chips from the active fragment catalog.
+   */
+  function refreshEditAddFragmentControls() {
+    if (editFragmentSuggestionsEl) {
+      editFragmentSuggestionsEl.innerHTML = '';
+      for (const fragment of FRAGMENT_LIBRARY) {
+        const opt = document.createElement('option');
+        opt.value = `${fragment.name} (${fragment.formula}) [${fragment.id}]`;
+        editFragmentSuggestionsEl.appendChild(opt);
+      }
+    }
+    if (editFragmentQuickEl) {
+      editFragmentQuickEl.innerHTML = '';
+      for (const id of EDIT_QUICK_FRAGMENTS) {
+        const fragment = getFragmentById(id);
+        if (!fragment) continue;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-fragment-id', fragment.id);
+        btn.title = `${fragment.name} (${fragment.formula})`;
+        btn.textContent = fragment.name;
+        btn.onclick = () => {
+          setEditAddFragment(fragment.id, { announce: true, syncSearch: true });
+          setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch: true });
+        };
+        editFragmentQuickEl.appendChild(btn);
+      }
+    }
+    if (!getCurrentFragmentDefinition() && FRAGMENT_LIBRARY[0]) editAddFragmentId = FRAGMENT_LIBRARY[0].id;
+    if (!setEditAddFragment(editAddFragmentId, { announce: false, syncSearch: true }) && FRAGMENT_LIBRARY[0]) {
+      setEditAddFragment(FRAGMENT_LIBRARY[0].id, { announce: false, syncSearch: true });
+    }
+    updateEditToolboxUi({ syncSearch: true });
+  }
+
+  /**
+   * Load fragment catalog from static assets and refresh Add-fragment controls.
+   */
+  async function loadExternalFragmentLibrary() {
+    if (typeof loadFragmentLibraryFromManifest !== 'function') return;
+    try {
+      const result = await loadFragmentLibraryFromManifest('./assets/fragments/library.json');
+      refreshEditAddFragmentControls();
+      if (result && Array.isArray(result.errors) && result.errors.length) {
+        console.warn('[Fragments] Loaded with warnings:', result.errors);
+      }
+      if (result && result.count > 0) {
+        console.info(`[Fragments] Loaded ${result.count} fragment definitions from ${result.source || 'manifest'}.`);
+      }
+    } catch (error) {
+      console.warn('[Fragments] External fragment library load failed; using built-in defaults.', error);
+    }
+  }
+
+  /**
+   * Populate search suggestions and quick-add chips for Add mode.
    */
   function buildEditAddControls() {
     if (editAddSuggestionsEl) {
@@ -7946,6 +8507,7 @@
         editAddQuickEl.appendChild(btn);
       }
     }
+    refreshEditAddFragmentControls();
     if (editAddSearchEl) {
       const commit = () => {
         const z = resolveElementQueryToZ(editAddSearchEl.value);
@@ -7961,6 +8523,22 @@
         commit();
       });
       editAddSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
+    }
+    if (editFragmentSearchEl) {
+      const commit = () => {
+        const fragment = resolveFragmentQuery(editFragmentSearchEl.value);
+        if (!fragment || !setEditAddFragment(fragment.id, { announce: true, syncSearch: true })) {
+          updateEditToolboxUi({ syncSearch: true });
+          setHintMessage(`Fragment not recognized: "${String(editFragmentSearchEl.value || '').trim()}"`);
+        }
+      };
+      editFragmentSearchEl.addEventListener('change', commit);
+      editFragmentSearchEl.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        commit();
+      });
+      editFragmentSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
     }
     if (editAddCursorHudEl) {
       const buttons = editAddCursorHudEl.querySelectorAll('button');
@@ -7980,10 +8558,13 @@
         });
       });
     }
+    if (editAddModeAtomBtn) editAddModeAtomBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: true, syncSearch: true });
+    if (editAddModeFragmentBtn) editAddModeFragmentBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: true, syncSearch: true });
     if (editToolMoveBtn) editToolMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
     if (editToolAddBtn) editToolAddBtn.onclick = () => setEditTool(EDIT_TOOL.ADD);
     if (editToolDeleteBtn) editToolDeleteBtn.onclick = () => setEditTool(EDIT_TOOL.DELETE);
-    setEditAddBondOrder(1, { announce: false });
+    setEditAddBondOrder(editAddBondOrder, { announce: false });
+    setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
     updateEditToolboxUi();
   }
 
@@ -8425,6 +9006,7 @@
   if (axisYBtn) axisYBtn.onclick = () => { axisLock = (axisLock === 'y' ? 'none' : 'y'); updateAxisButtons(); };
   if (axisZBtn) axisZBtn.onclick = () => { axisLock = (axisLock === 'z' ? 'none' : 'z'); updateAxisButtons(); };
   buildEditAddControls();
+  loadExternalFragmentLibrary();
 
   /**
    * Raycast and return the first intersected atom mesh under the pointer.
@@ -8456,38 +9038,8 @@
    * @returns {boolean}
    */
   function appendAtomAtWorld(worldPos) {
-    /**
-     * Ensure there is an active editable volume target.
-     * If none is loaded, create an empty angstrom XYZ-like record.
-     * @returns {*}
-     */
-    function ensureEditableVolumeRecord() {
-      if (currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].vol) return volumes[currentIndex].vol;
-      const idx0 = () => 0;
-      const vol = {
-        title: 'Untitled molecule',
-        comment: 'Created in edit mode',
-        natoms: 0,
-        origin: [0, 0, 0],
-        nxyz: [0, 0, 0],
-        axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-        atoms: [],
-        data: new Float32Array(0),
-        idx: idx0,
-        units: 'angstrom',
-        isoHint: null,
-      };
-      const name = `untitled-${volumes.length + 1}.xyz`;
-      volumes.push({ name, vol });
-      currentIndex = volumes.length - 1;
-      refreshFileSelect();
-      if (fileSelect) fileSelect.value = String(currentIndex);
-      updateSidePanel();
-      return vol;
-    }
-
-    const vol = ensureEditableVolumeRecord();
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
     if (!vol || !Array.isArray(vol.atoms)) return false;
     const beforeAtoms = cloneAtomsSnapshot(vol);
     const z = editAddElementZ | 0;
@@ -8499,6 +9051,136 @@
     pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add ${getElementSymbol(z)}`);
     rebuildScene({ preserveView: true });
     setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Total atoms: ${vol.atoms.length}`);
+    return true;
+  }
+
+  /**
+   * Record one fragment builder operation on a volume and keep preset extension
+   * storage synchronized for export/reload.
+   * @param {*} record
+   * @param {object} entry
+   */
+  function recordFragmentOperation(record, entry) {
+    if (!record || !record.vol || !entry || typeof entry !== 'object') return;
+    const vol = record.vol;
+    if (!Array.isArray(vol.fragmentOps)) vol.fragmentOps = [];
+    vol.fragmentOps.push(entry);
+    syncBuilderExtensionFromVolumes();
+  }
+
+  /**
+   * Insert the selected fragment onto one anchor atom.
+   * Default attachment policy is replace-H-first, else append.
+   * @param {number} anchorIndex
+   * @param {THREE.Vector3} worldPos
+   * @returns {boolean}
+   */
+  function appendFragmentAtWorld(anchorIndex, worldPos) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) {
+      setHintMessage('Load or create at least one atom before adding a fragment.');
+      return false;
+    }
+    const fragment = buildFragmentInstance(editAddFragmentId);
+    if (!fragment || !Array.isArray(fragment.atoms) || fragment.atoms.length === 0) {
+      setHintMessage('Selected fragment is not available.');
+      return false;
+    }
+    let anchor = anchorIndex | 0;
+    if (anchor < 0 || anchor >= vol.atoms.length) {
+      setHintMessage('Click an anchor atom to place the fragment.');
+      return false;
+    }
+
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const anchorAtomBefore = vol.atoms[anchor];
+    const anchorPosBefore = atomUnitsToAng(vol, anchorAtomBefore);
+    let attachDir = worldPos && worldPos.isVector3
+      ? worldPos.clone().sub(anchorPosBefore)
+      : new THREE.Vector3(1, 0, 0);
+    if (attachDir.lengthSq() < 1e-10) {
+      camera.getWorldDirection(attachDir);
+      if (attachDir.lengthSq() < 1e-10) attachDir.set(1, 0, 0);
+    }
+    attachDir.normalize();
+
+    let attachMode = 'append';
+    const removedAtomIndices = [];
+    const replaceHydrogen = findAnchorReplaceableHydrogen(vol, anchor, attachDir);
+    if (replaceHydrogen && Number.isInteger(replaceHydrogen.index)) {
+      const hIdx = replaceHydrogen.index | 0;
+      if (hIdx >= 0 && hIdx < vol.atoms.length) {
+        vol.atoms.splice(hIdx, 1);
+        removedAtomIndices.push(hIdx);
+        if (hIdx < anchor) anchor -= 1;
+        attachDir.copy(replaceHydrogen.direction).normalize();
+        attachMode = 'replace_h';
+      }
+    }
+
+    const anchorAtom = vol.atoms[anchor];
+    if (!anchorAtom) {
+      setHintMessage('Fragment placement failed: anchor atom no longer exists.');
+      return false;
+    }
+    const anchorPos = atomUnitsToAng(vol, anchorAtom);
+    const conn = getFragmentConnectionAtom(fragment);
+    if (!conn) {
+      setHintMessage('Fragment placement failed: invalid connection atom.');
+      return false;
+    }
+    const bondOrder = normalizeEditAddBondOrder(editAddBondOrder || fragment.preferredBondOrder || 1);
+    const bondLength = getEditAddBondLength(anchorAtom.Z | 0, conn.Z | 0, bondOrder);
+    const connectionWorld = anchorPos.clone().addScaledVector(attachDir, bondLength);
+    const oldAtomIndexSet = new Set(Array.from({ length: vol.atoms.length }, (_, i) => i));
+
+    const connLocal = new THREE.Vector3(conn.x, conn.y, conn.z);
+    const localOutward = getFragmentConnectionOutwardDirection(fragment);
+    const rot = new THREE.Quaternion().setFromUnitVectors(localOutward, attachDir);
+    const newIndices = [];
+    for (let i = 0; i < fragment.atoms.length; i++) {
+      const a = fragment.atoms[i];
+      const local = new THREE.Vector3(Number(a.x) || 0, Number(a.y) || 0, Number(a.z) || 0).sub(connLocal);
+      const world = local.applyQuaternion(rot).add(connectionWorld);
+      const coords = worldToAtomUnits(vol, world);
+      vol.atoms.push({ Z: a.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] });
+      newIndices.push(vol.atoms.length - 1);
+    }
+    applyMethylAttachmentGeometry(vol, fragment, newIndices, anchorPos, connectionWorld, attachDir);
+    applyHydroxylAttachmentGeometry(vol, fragment, newIndices, anchorPos, connectionWorld);
+    vol.natoms = vol.atoms.length;
+
+    const overlap = detectSevereFragmentOverlaps(vol, newIndices, oldAtomIndexSet);
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add fragment: ${fragment.name}`);
+    recordFragmentOperation(record, {
+      timestamp: new Date().toISOString(),
+      fragmentId: fragment.id,
+      fragmentName: fragment.name,
+      anchorIndexPre: anchorIndex | 0,
+      anchorIndexPost: anchor | 0,
+      attachMode,
+      removedAtomIndices,
+      transform: {
+        connectionWorld: [connectionWorld.x, connectionWorld.y, connectionWorld.z],
+        direction: [attachDir.x, attachDir.y, attachDir.z],
+        quaternion: [rot.x, rot.y, rot.z, rot.w],
+        bondLengthAngstrom: bondLength,
+      },
+      resultingBondOrder: bondOrder,
+      atomCountAdded: fragment.atoms.length,
+      addedAtomIndices: newIndices.slice(),
+    });
+
+    clearAddGrowPreview();
+    clearHover();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    const overlapMsg = overlap.count > 0
+      ? ` • Warning: ${overlap.count} severe overlap${overlap.count === 1 ? '' : 's'} detected`
+      : '';
+    setHintMessage(`Added fragment ${fragment.name} (${fragment.formula}) via ${attachMode === 'replace_h' ? 'Replace H' : 'append'}${overlapMsg}`);
     return true;
   }
 
@@ -8820,7 +9502,11 @@
             e.preventDefault();
           }
         }
-        // If no anchor atom is hit, fallback remains click-to-add on release.
+        if (!hit && editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+          setHintMessage('Fragment mode: click an anchor atom first.');
+          e.preventDefault();
+        }
+        // In Atom mode, if no anchor is hit, fallback remains click-to-add on release.
         return;
       }
       if (!obj || !obj.userData) return;
@@ -8876,14 +9562,22 @@
         if (!__editMoved && __editClickIdx >= 0) deleteAtomAtIndex(__editClickIdx);
       } else if (editTool === EDIT_TOOL.ADD) {
         if (addGrowActive) {
+          const anchorIdx = addGrowAnchorIndex;
           const addPos = addGrowPreviewPos ? addGrowPreviewPos.clone() : null;
           clearAddGrowPreview();
           controls.enabled = true;
-          if (addPos) appendAtomAtWorld(addPos);
+          if (addPos) {
+            if (editAddMode === EDIT_ADD_MODE.FRAGMENT) appendFragmentAtWorld(anchorIdx, addPos);
+            else appendAtomAtWorld(addPos);
+          }
         } else if (!__editMoved) {
-          const hit = pickAtomHit(e);
-          const addPos = computeAddAtomPosition(e, hit);
-          if (addPos) appendAtomAtWorld(addPos);
+          if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+            setHintMessage('Fragment mode: click an anchor atom to place a fragment.');
+          } else {
+            const hit = pickAtomHit(e);
+            const addPos = computeAddAtomPosition(e, hit);
+            if (addPos) appendAtomAtWorld(addPos);
+          }
         }
       }
     } else if (currentMode === MODES.MEASURE) {
@@ -9364,6 +10058,61 @@
   let presetExtensions = {};
 
   /**
+   * Read fragment operation map from preset extensions.
+   * @returns {Record<string, any[]>}
+   */
+  function getBuilderFragmentOpsByFileFromExtensions() {
+    const builder = (presetExtensions && typeof presetExtensions === 'object') ? presetExtensions.builder : null;
+    if (!builder || typeof builder !== 'object') return {};
+    const map = builder.fragmentOpsByFile;
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return {};
+    return map;
+  }
+
+  /**
+   * Apply stored builder logs from preset extensions to currently loaded files.
+   * This restores in-memory operation history but intentionally does not replay ops.
+   */
+  function applyBuilderExtensionToLoadedVolumes() {
+    const map = getBuilderFragmentOpsByFileFromExtensions();
+    for (const record of volumes) {
+      if (!record || !record.vol) continue;
+      const key = String(record.name || '').trim();
+      const stored = key && Array.isArray(map[key]) ? map[key] : null;
+      if (stored) record.vol.fragmentOps = cloneJsonLike(stored) || [];
+      else if (!Array.isArray(record.vol.fragmentOps)) record.vol.fragmentOps = [];
+    }
+  }
+
+  /**
+   * Merge loaded-volume fragment logs into preset extensions for export.
+   * Unknown file keys from previously loaded presets are preserved.
+   */
+  function syncBuilderExtensionFromVolumes() {
+    const existingBuilder = (presetExtensions && typeof presetExtensions === 'object' && presetExtensions.builder && typeof presetExtensions.builder === 'object')
+      ? cloneJsonLike(presetExtensions.builder)
+      : {};
+    const existingMap = (existingBuilder && existingBuilder.fragmentOpsByFile && typeof existingBuilder.fragmentOpsByFile === 'object' && !Array.isArray(existingBuilder.fragmentOpsByFile))
+      ? cloneJsonLike(existingBuilder.fragmentOpsByFile)
+      : {};
+    for (const record of volumes) {
+      if (!record || !record.vol) continue;
+      const key = String(record.name || '').trim();
+      if (!key) continue;
+      if (Array.isArray(record.vol.fragmentOps) && record.vol.fragmentOps.length > 0) {
+        existingMap[key] = cloneJsonLike(record.vol.fragmentOps) || [];
+      } else if (!Array.isArray(record.vol.fragmentOps)) {
+        delete existingMap[key];
+      }
+    }
+    if (!presetExtensions || typeof presetExtensions !== 'object' || Array.isArray(presetExtensions)) presetExtensions = {};
+    presetExtensions.builder = Object.assign({}, existingBuilder || {}, {
+      version: 1,
+      fragmentOpsByFile: existingMap,
+    });
+  }
+
+  /**
    * Clone JSON-compatible data. Non-serializable values are returned as-is.
    * @template T
    * @param {T} value
@@ -9741,6 +10490,7 @@
    * @param {{name?:string}=} options
    */
   function exportPresetEnvelope(options = {}) {
+    syncBuilderExtensionFromVolumes();
     const settings = cloneJsonLike(presetUnknownSettings) || {};
     for (const [key, def] of presetSettingRegistry.entries()) settings[key] = def.get();
     const name = (typeof options.name === 'string' && options.name.trim())
@@ -9863,6 +10613,7 @@
     if (isPlainObject(preset.extensions)) presetExtensions = cloneJsonLike(preset.extensions) || {};
 
     const applyResult = applyPresetSettings(preset.settings || {}, { mode });
+    applyBuilderExtensionToLoadedVolumes();
     return {
       ok: true,
       mode,
@@ -11400,6 +12151,15 @@
   function appendParsedVolumeRecord(name, vol, extras = null) {
     const meta = Object.assign({ name, vol }, extras || {});
     if (vol && vol.isTwoComponent) setVolume2CComponent(meta, global2CComponentMode);
+    if (vol) {
+      const builderMap = getBuilderFragmentOpsByFileFromExtensions();
+      const fileKey = String(name || '').trim();
+      if (fileKey && Array.isArray(builderMap[fileKey])) {
+        vol.fragmentOps = cloneJsonLike(builderMap[fileKey]) || [];
+      } else if (!Array.isArray(vol.fragmentOps)) {
+        vol.fragmentOps = [];
+      }
+    }
     volumes.push(meta);
     // Keep the user/default iso when importing files; only fall back to isoHint
     // if the iso field is actually empty.
