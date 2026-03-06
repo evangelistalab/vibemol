@@ -77,25 +77,9 @@ def _parse_args() -> argparse.Namespace:
             "kit",
             "studio",
             "glossy",
-            "ink",
-            "depthfog",
-            "depth-fog",
-            "neon",
-            "neon-wireframe",
-            "watercolor",
-            "lego",
-            "hatching",
-            "toon-hatching",
-            "xray",
-            "xray-glass",
-            "blackbody",
         ],
         default=None,
-        help=(
-            "Optional molecule style "
-            "(aliases: fancy->toon, studio->kit, depth-fog->depthfog, "
-            "neon-wireframe->neon, toon-hatching->hatching, xray-glass->xray)"
-        ),
+        help="Optional molecule style (aliases: fancy->toon, studio->kit)",
     )
     parser.add_argument(
         "--extra-file",
@@ -157,10 +141,6 @@ def _normalize_style(style: str | None) -> str | None:
     aliases = {
         "fancy": "toon",
         "studio": "kit",
-        "depth-fog": "depthfog",
-        "neon-wireframe": "neon",
-        "toon-hatching": "hatching",
-        "xray-glass": "xray",
     }
     return aliases.get(style, style)
 
