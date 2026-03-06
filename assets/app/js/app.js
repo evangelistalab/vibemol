@@ -827,7 +827,7 @@
       bondHeightSegments: 1,
       usesTrimmedConnector: true,
       usesKitCurvedMultiBond: false,
-      stylizedMolecule: true,
+      stylizedMolecule: false,
       aromaticDashColor: 0x2f4a74,
       aromaticDashOpacity: 0.94,
       lighting: Object.freeze({
@@ -1871,12 +1871,22 @@
       return atomColor;
     }
     if (styleKey === 'glossy') {
-      if (!hasColorOverride) {
+      if (!useElementColors) {
         if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf1c970);
         if (z === 1) return new THREE.Color(0xe5f2ff);
+        return new THREE.Color(0xbfd8ff);
       }
-      if (hasColorOverride) return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.42);
-      return new THREE.Color(0xbfd8ff);
+      if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf1c970);
+      // Preserve element hue while shifting toward a glassy pastel tint.
+      const c = atomColor.clone();
+      const hsl = { h: 0, s: 0, l: 0 };
+      c.getHSL(hsl);
+      c.setHSL(
+        hsl.h,
+        Math.min(1, hsl.s * 0.84 + 0.08),
+        Math.min(1, hsl.l * 0.88 + 0.08)
+      );
+      return c;
     }
     if (styleKey !== 'toon') return atomColor;
     if (!useElementColors) return new THREE.Color(0xd0d9e6);
@@ -1911,9 +1921,19 @@
       return new THREE.Color(0xe2e7ee);
     }
     if (styleKey === 'glossy') {
-      if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf4d089);
-      if (hasColorOverride) return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.22);
-      return new THREE.Color(0xbad4f8);
+      if (!isElementColoringEnabled()) {
+        if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf4d089);
+        return new THREE.Color(0xbad4f8);
+      }
+      const c = atomColor.clone();
+      const hsl = { h: 0, s: 0, l: 0 };
+      c.getHSL(hsl);
+      c.setHSL(
+        hsl.h,
+        Math.min(1, hsl.s * 0.78 + 0.12),
+        Math.min(1, hsl.l * 0.9 + 0.06)
+      );
+      return c;
     }
     if (styleKey !== 'toon') return atomColor;
     if (!hasColorOverride && isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xefbb55);
@@ -1921,34 +1941,6 @@
     const hsl = { h: 0, s: 0, l: 0 };
     c.getHSL(hsl);
     c.setHSL(hsl.h, Math.max(0, hsl.s * 0.55), Math.min(1, hsl.l * 0.85 + 0.16));
-    return c;
-  }
-
-  /**
-   * Resolve the inner glossy-core color for an atom.
-   * In glossy mode the outer shell is glass-like, so this core carries most of
-   * the element identity (especially when element colors are enabled).
-   * @param {number} z
-   * @returns {THREE.Color}
-   */
-  function getGlossyAtomCoreColor(z) {
-    if (isTransitionMetalAtomicNumber(z)) return new THREE.Color(0xf2c14f);
-
-    if (!isElementColoringEnabled()) {
-      if (z === 1) return new THREE.Color(0xf8fbff);
-      return new THREE.Color(0xa8cbff);
-    }
-
-    const c = getElementBaseColor(z);
-    if (z === 1) return c.clone().lerp(new THREE.Color(0xffffff), 0.7);
-
-    const hsl = { h: 0, s: 0, l: 0 };
-    c.getHSL(hsl);
-    c.setHSL(
-      hsl.h,
-      Math.min(1, hsl.s * 0.95 + 0.03),
-      Math.min(1, hsl.l * 0.82 + 0.08)
-    );
     return c;
   }
 
@@ -1962,6 +1954,32 @@
     return isTransitionMetalAtomicNumber(z)
       ? profile.atomScaleTransitionMetal
       : profile.atomScaleMain;
+  }
+
+  /**
+   * Create the unified solid glossy material used by both atoms and bonds.
+   * Bond meshes pass `vertexColors: true` so gradients still render.
+   * @param {{color?:THREE.Color|number|string, vertexColors?:boolean}} [options]
+   * @returns {THREE.MeshPhysicalMaterial}
+   */
+  function createGlossySolidMaterial(options = {}) {
+    const {
+      color = 0xffffff,
+      vertexColors = false,
+    } = options;
+    return new THREE.MeshPhysicalMaterial({
+      color,
+      vertexColors: !!vertexColors,
+      roughness: 0.045,
+      metalness: 0.03,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.015,
+      reflectivity: 0.85,
+      transparent: false,
+      opacity: 1.0,
+      transmission: 0.0,
+      depthWrite: true,
+    });
   }
 
   /**
@@ -1985,36 +2003,8 @@
       });
     }
     if (styleKey === 'glossy') {
-      const isTransitionMetal = isTransitionMetalAtomicNumber(z);
-      const baseShellOpacity = 0.46;
-      const baseShellThickness = 0.22;
-      const shellColor = color.clone().lerp(
-        new THREE.Color(0xffffff),
-        isTransitionMetal ? 0.06 : 0.04
-      );
-      return new THREE.MeshPhysicalMaterial({
-        color: shellColor,
-        roughness: isTransitionMetal ? 0.08 : 0.05,
-        metalness: 0.0,
-        clearcoat: 1.0,
-        clearcoatRoughness: isTransitionMetal ? 0.03 : 0.02,
-        // Use a transmissive shell so the inner atom core reads through like glass.
-        transmission: isTransitionMetal ? 0.62 : 0.98,
-        ior: 1.2,
-        thickness: isTransitionMetal
-          ? Math.min(0.90, baseShellThickness + 0.06)
-          : baseShellThickness,
-        reflectivity: 0.12,
-        transparent: true,
-        opacity: isTransitionMetal
-          ? Math.min(0.95, baseShellOpacity + 0.18)
-          : Math.max(0.18, baseShellOpacity),
-        depthWrite: true,
-        attenuationDistance: isTransitionMetal ? 5.0 : 9.0,
-        attenuationColor: isTransitionMetal ? new THREE.Color(0xffe2ad) : new THREE.Color(0xcfe9ff),
-        emissive: isTransitionMetal ? new THREE.Color(0x33220a) : new THREE.Color(0x0b1730),
-        emissiveIntensity: isTransitionMetal ? 0.02 : 0.008,
-      });
+      const shellColor = color.clone();
+      return createGlossySolidMaterial({ color: shellColor, vertexColors: false });
     }
     if (styleKey === 'toon') {
       const isTransitionMetal = isTransitionMetalAtomicNumber(z);
@@ -2082,23 +2072,6 @@
   }
 
   /**
-   * Create the opaque inner core material used inside glossy glass-shell atoms.
-   * @param {THREE.Color} color
-   * @param {number} z
-   * @returns {THREE.Material}
-   */
-  function createGlossyAtomCoreMaterial(color, z) {
-    const isTransitionMetal = isTransitionMetalAtomicNumber(z);
-    return new THREE.MeshPhongMaterial({
-      color,
-      specular: isTransitionMetal ? 0xfff0cf : 0xf4fbff,
-      shininess: isTransitionMetal ? 170 : 120,
-      emissive: isTransitionMetal ? new THREE.Color(0x5a3d0a) : color.clone().multiplyScalar(0.08),
-      emissiveIntensity: isTransitionMetal ? 0.12 : 0.06,
-    });
-  }
-
-  /**
    * Get (or create) the shared bond material for the current molecule style.
    * @returns {THREE.Material}
    */
@@ -2108,24 +2081,7 @@
 
     let mat;
     if (key === 'glossy') {
-      mat = new THREE.MeshPhysicalMaterial({
-        color: 0xc2d8f8,
-        vertexColors: true,
-        roughness: 0.09,
-        metalness: 0.0,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.03,
-        transmission: 0.9,
-        ior: 1.2,
-        thickness: 0.46,
-        reflectivity: 0.1,
-        transparent: true,
-        opacity: 0.78,
-        attenuationDistance: 2.2,
-        attenuationColor: new THREE.Color(0xbad8ff),
-        emissive: new THREE.Color(0x1e355c),
-        emissiveIntensity: 0.06,
-      });
+      mat = createGlossySolidMaterial({ color: 0xffffff, vertexColors: true });
     } else if (key === 'kit') {
       mat = new THREE.MeshPhongMaterial({
         color: 0xe7ebf2,
@@ -2145,6 +2101,7 @@
     } else {
       mat = new THREE.MeshPhysicalMaterial({
         color: 0xeaecf0,
+        vertexColors: true,
         roughness: 0.14,
         metalness: 0.08,
         clearcoat: 0.68,
@@ -2161,14 +2118,16 @@
    * @returns {THREE.Material|null}
    */
   function getStylizedBondOutlineMaterial() {
-    if (!useStylizedMoleculeStyle()) return null;
+    // Allow glossy bond outlines even when glossy no longer uses the broader
+    // "stylized molecule" shading stack.
+    if (!useStylizedMoleculeStyle() && !useGlossyMoleculeStyle()) return null;
     const key = useGlossyMoleculeStyle() ? 'glossy:outline' : 'toon:outline';
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
     const mat = new THREE.MeshBasicMaterial({
       color: useGlossyMoleculeStyle() ? 0x07142c : 0x334050,
       side: THREE.BackSide,
       transparent: true,
-      opacity: useGlossyMoleculeStyle() ? 0.56 : 0.86,
+      opacity: useGlossyMoleculeStyle() ? 0.95 : 0.86,
     });
     bondMaterialCache.set(key, mat);
     return mat;
@@ -2341,53 +2300,125 @@
   }
 
   /**
+   * Apply an end-to-end gradient to a tube generated as ring-major vertices.
+   * @param {THREE.BufferGeometry} geom
+   * @param {number} tubularSegments
+   * @param {number} radialSegments
+   * @param {THREE.Color} colorA
+   * @param {THREE.Color} colorB
+   */
+  function applyTubeRingGradient(geom, tubularSegments, radialSegments, colorA, colorB) {
+    const pos = geom.getAttribute('position');
+    if (!pos) return;
+    const ringCount = Math.max(2, (tubularSegments | 0) + 1);
+    const rSeg = Math.max(3, radialSegments | 0);
+    const expectedCount = ringCount * rSeg;
+    if (pos.count < expectedCount) {
+      applyBondGradient(geom, colorA, colorB);
+      return;
+    }
+    const tmp = new THREE.Color();
+    const colors = new Float32Array(pos.count * 3);
+    for (let ring = 0; ring < ringCount; ring++) {
+      const t = ring / Math.max(1, ringCount - 1);
+      tmp.copy(colorA).lerp(colorB, t);
+      for (let j = 0; j < rSeg; j++) {
+        const idx = ring * rSeg + j;
+        const base = idx * 3;
+        colors[base + 0] = tmp.r;
+        colors[base + 1] = tmp.g;
+        colors[base + 2] = tmp.b;
+      }
+    }
+    geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  }
+
+  /**
+   * Fill one geometry with a single vertex color.
+   * @param {THREE.BufferGeometry} geom
+   * @param {THREE.Color} color
+   */
+  function applySolidVertexColor(geom, color) {
+    const pos = geom.getAttribute('position');
+    if (!pos) return;
+    const colors = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const base = i * 3;
+      colors[base + 0] = color.r;
+      colors[base + 1] = color.g;
+      colors[base + 2] = color.b;
+    }
+    geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  }
+
+  /**
    * Build a glossy connector geometry that is thinner in the center and fuller near the ends.
    * The geometry is revolved around the Y axis and later oriented along the bond vector.
    * @param {number} length
    * @param {number} centerRadius
-   * @param {number} endRadius
+   * @param {number} endRadiusA Radius at y=-L/2 (atom A side).
+   * @param {number} [endRadiusB=endRadiusA] Radius at y=+L/2 (atom B side).
+   * @param {number} [endSlopeA=-0.58] Endpoint slope dr/dy at y=-L/2.
+   * @param {number} [endSlopeB=0.58] Endpoint slope dr/dy at y=+L/2.
    * @returns {THREE.BufferGeometry}
    */
-  function createGlossyBondConnectorGeometry(length, centerRadius, endRadius) {
+  function createGlossyBondConnectorGeometry(
+    length,
+    centerRadius,
+    endRadiusA,
+    endRadiusB = endRadiusA,
+    endSlopeA = -0.58,
+    endSlopeB = 0.58
+  ) {
     const L = Math.max(1e-4, length);
     const cR = Math.max(1e-4, centerRadius);
-    const eR = Math.max(cR, endRadius);
+    const eRA = Math.max(cR, endRadiusA);
+    const eRB = Math.max(cR, endRadiusB);
     const samples = 20;
     const profile = [];
+    const halfL = L * 0.5;
+    const minEnd = Math.min(eRA, eRB);
+    // Slightly fuller center than previous necked profile, while staying below end radii.
+    const centerTarget = cR * 1.14;
+    const centerCap = minEnd * 0.96;
+    const cMid = Math.max(cR * 1.02, Math.min(centerTarget, centerCap));
+    const mA = Number.isFinite(endSlopeA) ? endSlopeA : -0.58;
+    const mB = Number.isFinite(endSlopeB) ? endSlopeB : 0.58;
+
     /**
-     * Smoothly clamp a scalar into [0, 1] with cubic easing.
-     * @param {number} edge0
-     * @param {number} edge1
-     * @param {number} x
+     * Cubic Hermite interpolation.
+     * @param {number} x 0..1
+     * @param {number} r0
+     * @param {number} r1
+     * @param {number} m0 Derivative wrt y at start.
+     * @param {number} m1 Derivative wrt y at end.
+     * @param {number} h Segment length in y.
      * @returns {number}
      */
-    const smooth01 = (edge0, edge1, x) => {
-      const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(1e-8, edge1 - edge0)));
-      return t * t * (3 - 2 * t);
+    const hermite = (x, r0, r1, m0, m1, h) => {
+      const x2 = x * x;
+      const x3 = x2 * x;
+      const h00 = 2 * x3 - 3 * x2 + 1;
+      const h10 = x3 - 2 * x2 + x;
+      const h01 = -2 * x3 + 3 * x2;
+      const h11 = x3 - x2;
+      return h00 * r0 + h10 * (h * m0) + h01 * r1 + h11 * (h * m1);
     };
 
     for (let i = 0; i <= samples; i++) {
       const t = i / samples; // 0..1 along bond
-      const y = -L / 2 + t * L;
-      // 0 at center, 1 at ends
-      const d = Math.abs(t - 0.5) * 2;
-
-      // Smooth transition from slender center to end radius.
-      const edgeBlend = smooth01(0.06, 0.96, d);
-      const baseR = cR + (eR - cR) * edgeBlend;
-
-      // Add a welded-looking shoulder bulge that fades before the exact endpoint.
-      const shoulderIn = smooth01(0.52, 0.84, d);
-      const shoulderOut = 1 - smooth01(0.9, 0.995, d);
-      const shoulderBulge = (eR - cR) * 0.18 * shoulderIn * shoulderOut;
-
-      // Gentle center neck so the connector reads slimmer in the middle.
-      const centerNeck = (eR - cR) * 0.05 * (1 - smooth01(0.0, 0.34, d));
-
-      let r = baseR + shoulderBulge - centerNeck;
-      // Keep exact endpoint radius to avoid visible lip/chunk.
-      if (i === 0 || i === samples) r = eR;
-      r = Math.max(cR * 0.95, Math.min(eR * 1.045, r));
+      const y = -halfL + t * L;
+      let r;
+      if (t <= 0.5) {
+        const x = t * 2;
+        r = hermite(x, eRA, cMid, mA, 0, halfL);
+      } else {
+        const x = (t - 0.5) * 2;
+        r = hermite(x, cMid, eRB, 0, mB, halfL);
+      }
+      if (i === 0) r = eRA;
+      if (i === samples) r = eRB;
+      r = Math.max(cR * 0.9, Math.min(Math.max(eRA, eRB) * 1.02, r));
       profile.push(new THREE.Vector2(r, y));
     }
 
@@ -2931,7 +2962,6 @@
       })
       : null;
     const materialCache = new Map();
-    const glossyCoreMaterialCache = new Map();
     const highlightMaterialCache = new Map();
     const labelMaterialCache = new Map();
     const toAng = (vol.units === 'angstrom');
@@ -2965,19 +2995,6 @@
         outline.scale.setScalar(Math.max(1.001, Math.min(1.2, outlineScale)));
         outline.userData = { type: 'atomOutline' };
         mesh.add(outline);
-      }
-      if (isGlossyStyle) {
-        const coreColor = getGlossyAtomCoreColor(z);
-        const coreKey = `${coreColor.getHexString()}:${isTransitionMetal ? 'tm' : 'main'}`;
-        let coreMat = glossyCoreMaterialCache.get(coreKey);
-        if (!coreMat) {
-          coreMat = createGlossyAtomCoreMaterial(coreColor, z);
-          glossyCoreMaterialCache.set(coreKey, coreMat);
-        }
-        const core = new THREE.Mesh(sphere, coreMat);
-        core.scale.setScalar(isTransitionMetal ? 0.8 : 0.7);
-        core.userData = { type: 'atomCore' };
-        mesh.add(core);
       }
       if (isStylizedStyle) {
         const highlightKey = `${moleculeStyle}:${isTransitionMetal ? 'tm' : 'main'}`;
@@ -3124,8 +3141,9 @@
     const usesTrimmedConnector = !!profile.usesTrimmedConnector;
     const atomPositions = buildBondAtomRecords(vol);
     const bondMat = getBondMaterial();
-    const stylizedBondOutlineMat = getStylizedBondOutlineMaterial();
-    const stylizedBondHighlightMat = getStylizedBondHighlightMaterial();
+    // Keep bond outlines in toon and glossy (glossy matches atom outline style).
+    const stylizedBondOutlineMat = (isToonStyle || isGlossyStyle) ? getStylizedBondOutlineMaterial() : null;
+    const stylizedBondHighlightMat = isToonStyle ? getStylizedBondHighlightMaterial() : null;
     const up = new THREE.Vector3(0, 1, 0);
     const glossyCenterRadius = getGlossyBondCenterRadius();
     const glossyEndRadius = getGlossyBondEndRadius();
@@ -3135,7 +3153,8 @@
     const bondRadialSegments = profile.bondRadialSegments;
     const bondHeightSegments = profile.bondHeightSegments;
     const bondEdges = collectBondCandidates(atomPositions);
-    const multiBondRenderingEnabled = !!showMultiBonds;
+    // Glossy mode forces single connectors to avoid multi-bond overlap artifacts.
+    const multiBondRenderingEnabled = !!showMultiBonds && !isGlossyStyle;
     if (multiBondRenderingEnabled) inferBondOrders(atomPositions, bondEdges);
     const aromaticRings = multiBondRenderingEnabled
       ? inferAromaticSixRings(atomPositions, bondEdges)
@@ -3162,12 +3181,56 @@
      * @param {number} componentOffsetV
      */
     function addBondComponent(a, b, i, j, dirNorm, len, geomLen, mid, trimA, trimB, order, componentOffsetU, componentOffsetV) {
+      const offsetU = Number.isFinite(componentOffsetU) ? componentOffsetU : 0;
+      const offsetV = Number.isFinite(componentOffsetV) ? componentOffsetV : 0;
+      const lateralOffset = Math.hypot(offsetU, offsetV);
+      const seatA = Math.max(0, Number.isFinite(trimA) ? trimA : 0);
+      const seatB = Math.max(0, Number.isFinite(trimB) ? trimB : 0);
+      const glossyEndRadiusRawA = isGlossyStyle
+        ? Math.sqrt(Math.max(
+          0,
+          a.displayRadius * a.displayRadius - seatA * seatA - lateralOffset * lateralOffset
+        ))
+        : glossyEndRadius;
+      const glossyEndRadiusRawB = isGlossyStyle
+        ? Math.sqrt(Math.max(
+          0,
+          b.displayRadius * b.displayRadius - seatB * seatB - lateralOffset * lateralOffset
+        ))
+        : glossyEndRadius;
+      // Use exact geometric contact radius at the sphere seat (no shrink gap).
+      const glossySeamRadiusScale = 1.0;
+      const glossyEndRadiusA = isGlossyStyle ? glossyEndRadiusRawA * glossySeamRadiusScale : glossyEndRadiusRawA;
+      const glossyEndRadiusB = isGlossyStyle ? glossyEndRadiusRawB * glossySeamRadiusScale : glossyEndRadiusRawB;
+      // Funnel-style join: do not match sphere tangents exactly, but keep seam
+      // curvature gentler than the local sphere slope to avoid dipping inside.
+      const glossyFunnelScale = 0.62;
+      const glossyFunnelMinSlope = 0.16;
+      const sphereSlopeMagA = seatA / Math.max(1e-5, glossyEndRadiusA);
+      const sphereSlopeMagB = seatB / Math.max(1e-5, glossyEndRadiusB);
+      const glossyEndSlopeA = isGlossyStyle
+        ? -Math.max(glossyFunnelMinSlope, sphereSlopeMagA * glossyFunnelScale)
+        : -0.58;
+      const glossyEndSlopeB = isGlossyStyle
+        ? +Math.max(glossyFunnelMinSlope, sphereSlopeMagB * glossyFunnelScale)
+        : 0.58;
       const geom = isGlossyStyle
-        ? createGlossyBondConnectorGeometry(geomLen, bondRadius, glossyEndRadius)
+        ? createGlossyBondConnectorGeometry(
+          geomLen,
+          bondRadius,
+          glossyEndRadiusA,
+          glossyEndRadiusB,
+          glossyEndSlopeA,
+          glossyEndSlopeB
+        )
         : isKitStyle
           ? createKitCollaredBondGeometry(geomLen, bondRadius, kitCollarRadius)
           : new THREE.CylinderGeometry(bondRadius, bondRadius, geomLen, bondRadialSegments, bondHeightSegments, false);
-      if (isStylizedStyle) applyBondGradient(geom, a.bondColor, b.bondColor);
+      if (!isKitStyle) {
+        const gradientColorA = isGlossyStyle ? (a.bondColor || a.color) : a.color;
+        const gradientColorB = isGlossyStyle ? (b.bondColor || b.color) : b.color;
+        if (gradientColorA && gradientColorB) applyBondGradient(geom, gradientColorA, gradientColorB);
+      }
       const cyl = new THREE.Mesh(geom, bondMat);
       if (stylizedBondOutlineMat) {
         const outline = new THREE.Mesh(geom, stylizedBondOutlineMat);
@@ -3194,12 +3257,14 @@
         i,
         j,
         bondOrder: order,
-        bondComponentOffset: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
-        bondComponentOffsetU: Number.isFinite(componentOffsetU) ? componentOffsetU : 0,
-        bondComponentOffsetV: Number.isFinite(componentOffsetV) ? componentOffsetV : 0,
+        bondComponentOffset: offsetU,
+        bondComponentOffsetU: offsetU,
+        bondComponentOffsetV: offsetV,
         connectorStyle: isKitStyle ? 'kit' : isGlossyStyle ? 'glossy' : 'default',
         connectorCenterRadius: bondRadius,
-        connectorEndRadius: isKitStyle ? kitCollarRadius : isGlossyStyle ? glossyEndRadius : bondRadius,
+        connectorEndRadius: isKitStyle ? kitCollarRadius : isGlossyStyle ? Math.max(glossyEndRadiusA, glossyEndRadiusB) : bondRadius,
+        connectorEndRadiusA: isGlossyStyle ? glossyEndRadiusA : undefined,
+        connectorEndRadiusB: isGlossyStyle ? glossyEndRadiusB : undefined,
       };
       group.add(cyl);
     }
@@ -3224,7 +3289,10 @@
      * @param {number} componentOffsetU
      * @param {number} componentOffsetV
      */
-    function addKitCurvedBondComponent(i, j, order, len, geomLen, trimA, trimB, aPos, bPos, aRadius, bRadius, dirNorm, offsetDirection, offsetDistance, componentOffsetU, componentOffsetV) {
+    function addKitCurvedBondComponent(
+      i, j, order, len, geomLen, trimA, trimB, aPos, bPos, aRadius, bRadius, dirNorm,
+      offsetDirection, offsetDistance, componentOffsetU, componentOffsetV
+    ) {
       const bondMid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
       const symmetricEligible = isMirrorSymmetryEligible(aRadius, bRadius, trimA, trimB);
 
@@ -3407,10 +3475,12 @@
       if (usesTrimmedConnector) {
         const connectorEndRadius = isGlossyStyle ? glossyEndRadius : kitCollarRadius;
         if (isGlossyStyle) {
-          // Stop glossy bonds near the atom surfaces with a slight inset.
-          const trimInset = Math.min(0.03, Math.max(0.012, connectorEndRadius * 0.18));
-          trimA = Math.max(0, a.displayRadius - trimInset);
-          trimB = Math.max(0, b.displayRadius - trimInset);
+          // In glossy mode, seat connectors 3/4 of the atom radius from the center.
+          // This shortens tube length and narrows the endpoint profile.
+          const glossySeatFraction = 0.75;
+          const glossySeatInset = 0.0;
+          trimA = Math.max(0, a.displayRadius * glossySeatFraction + glossySeatInset);
+          trimB = Math.max(0, b.displayRadius * glossySeatFraction + glossySeatInset);
         } else {
           // Kit seating depends on sphere curvature; small atoms need deeper insertion.
           trimA = getKitConnectorTrimDistance(a.displayRadius, connectorEndRadius);
