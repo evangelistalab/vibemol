@@ -4310,6 +4310,7 @@
    */
   function shouldUseAutoIsoWorker(vol) {
     if (typeof Worker === 'undefined') return false;
+    if (typeof location !== 'undefined' && String(location.protocol || '').toLowerCase() === 'file:') return false;
     const nx = (vol && vol.nxyz && vol.nxyz[0]) | 0;
     const ny = (vol && vol.nxyz && vol.nxyz[1]) | 0;
     const nz = (vol && vol.nxyz && vol.nxyz[2]) | 0;
