@@ -150,7 +150,7 @@
       const order = Number(b && b.order);
       if (!Number.isInteger(i) || !Number.isInteger(j)) continue;
       if (i < 0 || j < 0 || i >= atoms.length || j >= atoms.length || i === j) continue;
-      bonds.push({ i, j, order: Math.max(1, Math.min(3, Number.isFinite(order) ? Math.round(order) : 1)) });
+      bonds.push({ i, j, order: Math.max(1, Math.min(4, Number.isFinite(order) ? Math.round(order) : 1)) });
     }
 
     const connectionAtomIndexRaw = Number(raw.connectionAtomIndex);
@@ -159,7 +159,7 @@
       : 0;
     const preferredBondOrderRaw = Number(raw.preferredBondOrder);
     const preferredBondOrder = Number.isFinite(preferredBondOrderRaw)
-      ? Math.max(1, Math.min(3, Math.round(preferredBondOrderRaw)))
+      ? Math.max(1, Math.min(4, Math.round(preferredBondOrderRaw)))
       : 1;
     const linkBondDirection = normalizeDirectionVector(raw.linkBondDirection || raw.linkDirection || raw.connectionDirection);
 
@@ -500,9 +500,9 @@
       formula: src.formula,
       tags: Array.isArray(src.tags) ? src.tags.slice() : [],
       atoms: src.atoms.map((a) => ({ Z: a.Z | 0, x: Number(a.x), y: Number(a.y), z: Number(a.z) })),
-      bonds: src.bonds.map((b) => ({ i: b.i | 0, j: b.j | 0, order: Math.max(1, Math.min(3, b.order | 0)) })),
+      bonds: src.bonds.map((b) => ({ i: b.i | 0, j: b.j | 0, order: Math.max(1, Math.min(4, b.order | 0)) })),
       connectionAtomIndex: Math.max(0, Math.min(src.atoms.length - 1, src.connectionAtomIndex | 0)),
-      preferredBondOrder: Math.max(1, Math.min(3, src.preferredBondOrder | 0)),
+      preferredBondOrder: Math.max(1, Math.min(4, src.preferredBondOrder | 0)),
     };
     if (Array.isArray(src.linkBondDirection) && src.linkBondDirection.length >= 3) {
       instance.linkBondDirection = [

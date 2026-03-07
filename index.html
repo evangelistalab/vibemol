@@ -266,20 +266,24 @@
       bottom: 0;
     }
 
-    /* Side panel for dynamic info */
+    /* View window: floating panel that sizes to content. */
     #sidePanel {
       position: fixed;
-      top: 56px;
-      right: 0;
-      bottom: 0;
-      width: 320px;
+      top: 12px;
+      right: 12px;
+      width: min(420px, calc(100vw - 24px));
+      max-height: calc(100vh - 24px);
+      height: auto;
       background: var(--panel);
-      border-left: 1px solid var(--vm-color-legacy-border-strong);
-      box-shadow: -6px 0 16px #0006;
-      transform: translateX(100%);
-      z-index: 20;
+      border: 1px solid var(--vm-color-legacy-border-strong);
+      border-radius: 10px;
+      box-shadow: 0 12px 24px #0007;
+      transform: translateX(110%);
+      z-index: 24;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     #sidePanel.open {
@@ -970,7 +974,7 @@
 
     #editToolButtons {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 6px;
     }
 
@@ -997,14 +1001,16 @@
       color: #ffeaea;
     }
 
-    #editAddPane {
+    #editAddPane,
+    #editTransformPane {
       display: none;
       margin-top: 8px;
       border-top: 1px solid var(--vm-color-legacy-border-strong);
       padding-top: 8px;
     }
 
-    #editAddPane.active {
+    #editAddPane.active,
+    #editTransformPane.active {
       display: block;
     }
 
@@ -1043,14 +1049,17 @@
       display: block;
     }
 
-    #editAddPane label {
+    #editAddPane label,
+    #editTransformPane label {
       display: block;
       font-size: 12px;
       color: #a9bdd6;
       margin-bottom: 5px;
     }
 
-    #editAddSearch {
+    #editAddSearch,
+    #editTransformScope,
+    #editTransformMode {
       width: 100%;
       box-sizing: border-box;
       border: 1px solid var(--vm-color-legacy-border-soft);
@@ -1098,7 +1107,8 @@
     }
 
     #editAddCurrent,
-    #editFragmentCurrent {
+    #editFragmentCurrent,
+    #editTransformCurrent {
       margin-top: 7px;
       font-size: 12px;
       color: #c8d8ec;
@@ -1933,6 +1943,28 @@
       text-align: left;
     }
 
+    #toolbar #viewInspector .tb-windowBtn {
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-primary);
+      border-radius: var(--tb-radius-tight);
+    }
+
+    #toolbar #viewInspector .tb-windowBtn:hover,
+    #toolbar #viewInspector .tb-windowBtn.active {
+      background: var(--tb-surface-emphasis-hover);
+      color: var(--tb-text-color-strong);
+    }
+
+    #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: center;
+    }
+
+    #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows #trajectoryPanelBtn,
+    #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows #vibrationPanelBtn {
+      grid-column: 1 / -1;
+    }
+
     #toolbar #viewInspector .viewPresetRow {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2269,7 +2301,7 @@
     }
 
     #sidePanel {
-      top: 0;
+      top: 12px;
     }
 
     #trajectoryPanel {
@@ -2532,6 +2564,7 @@
             <label class="toggleChip"><input type="checkbox" id="elementColors" checked /> elem colors</label>
             <label class="toggleChip"><input type="checkbox" id="showAtomLabels" /> atom labels</label>
             <label class="toggleChip"><input type="checkbox" id="showBox" /> box</label>
+            <label class="toggleChip"><input type="checkbox" id="showAtomLabelNumbers" /> atom numbers</label>
             <label class="toggleChip"><input type="checkbox" id="showAxes" checked /> axes</label>
             <label class="toggleChip"><input type="checkbox" id="surfBtn" checked /> surfaces</label>
           </div>
@@ -2548,10 +2581,9 @@
         <span>View/Coords</span><span id="viewInspectorToggleIcon" class="material-symbols-outlined">add</span>
       </button>
       <div id="viewInspector" aria-hidden="true">
-        <div class="viewInspectorGroup">
-          <div class="viewInspectorTitle">Windows</div>
-          <button id="viewPanelBtn" class="secondary" title="Open/close View window">View window</button>
-          <button id="coordsPanelBtn" class="secondary" title="Open/close Coordinates window">Coordinates window</button>
+        <div class="viewInspectorGroup viewInspectorWindows">
+          <button id="viewPanelBtn" class="secondary tb-windowBtn" title="Open/close View window">View ...</button>
+          <button id="coordsPanelBtn" class="secondary tb-windowBtn" title="Open/close Coordinates window">Coordinates ...</button>
           <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file" style="display:none;">Trajectory</button>
           <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file" style="display:none;">Frequencies</button>
         </div>
@@ -2616,11 +2648,12 @@
   <div id="editToolbox" aria-hidden="true">
     <div id="editToolHeader">
       <span>Edit Tool</span>
-      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">G move • N add • D delete</span>
+      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">G move • N add • T transform • D delete</span>
     </div>
     <div id="editToolButtons">
       <button id="editToolMoveBtn" type="button" class="active" title="Move atoms in edit mode">Move</button>
       <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add</button>
+      <button id="editToolTransformBtn" type="button" title="Transform fragment/molecule in edit mode">Transform</button>
       <button id="editToolDeleteBtn" type="button" class="delete" title="Delete atoms in edit mode">Delete</button>
     </div>
     <div id="editAddPane">
@@ -2643,6 +2676,21 @@
         <div id="editFragmentCurrent"></div>
       </div>
     </div>
+    <div id="editTransformPane">
+      <label for="editTransformScope">Transform scope</label>
+      <select id="editTransformScope">
+        <option value="auto" selected>Auto (fragment if tagged, else molecule)</option>
+        <option value="fragment">Fragment</option>
+        <option value="molecule">Molecule</option>
+        <option value="all">All atoms</option>
+      </select>
+      <label for="editTransformMode" style="margin-top:7px;">Transform action</label>
+      <select id="editTransformMode">
+        <option value="move" selected>Move (drag)</option>
+        <option value="rotate">Rotate (drag around view axis)</option>
+      </select>
+      <div id="editTransformCurrent"></div>
+    </div>
     <div id="editSnapPane">
       <span class="title">Angle snapping</span>
       <div id="editSnapHint">In Add mode, cursor direction around the anchor atom drives placement. Snapping picks the nearest valid angle (180°, 120°, 109.5°, 90°, 60°).</div>
@@ -2662,8 +2710,9 @@
       <button type="button" data-order="1" title="Single bond (key 1)">1</button>
       <button type="button" data-order="2" title="Double bond (key 2)">2</button>
       <button type="button" data-order="3" title="Triple bond (key 3)">3</button>
+      <button type="button" data-order="4" title="Quadruple bond (key 4)">4</button>
     </div>
-    <div class="hint">Keys: H/C/N/O and 1/2/3</div>
+    <div class="hint">Keys: H/C/N/O and 1/2/3/4</div>
   </div>
   <div id="editCursorBadge" aria-hidden="true">
     <div class="mode" id="editCursorBadgeMode">Move</div>
@@ -2747,8 +2796,9 @@
 
   <div id="coordsPanel" class="motionPanel" aria-hidden="true">
     <div class="motionPanelHeader">
-      <div class="title">Coordinates (Å)</div>
+      <div class="title" id="coordsPanelTitle">Coordinates (Å)</div>
       <div class="actions">
+        <button id="coordsUnitsBtn" class="secondary" title="Toggle coordinate units">Bohr</button>
         <button id="copyXYZ" class="secondary" title="Copy XYZ">Copy</button>
         <button id="downloadXYZ" class="secondary" title="Download XYZ">Download</button>
         <button id="coordsPanelClose" class="motionPanelClose" title="Close coordinates"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
@@ -2851,7 +2901,7 @@
         <ul>
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
-          <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred double/triple-bond rendering. Keyboard shortcuts 1/2/3/4 switch Default/Toon/Kit/Glossy, while Fog, Ink scheme, Blackbody ramp, and atom/bond alpha are independent molecule feature toggles.</li>
+          <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred multiple-bond rendering. Keyboard shortcuts 1/2/3/4 switch Default/Toon/Kit/Glossy, while Fog, Ink scheme, Blackbody ramp, and atom/bond alpha are independent molecule feature toggles.</li>
           <li>Multi-frame XYZ trajectories expose playback controls in the dedicated Trajectory window (play, frame slider, FPS, loop).</li>
           <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, and Psi4 output logs) expose mode playback controls in the dedicated Vibration window; click a frequency row to select and animate that mode, and view the IR spectrum with the active mode highlighted.</li>
           <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) with in-scene guide overlays.</li>
@@ -2865,9 +2915,11 @@
           <li><strong>B</strong> — Batch export all files</li>
           <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
           <li><strong>A</strong> — Toggle axis gizmo on/off</li>
+          <li><strong>C</strong> — Toggle Coordinates window (in Edit/Add mode, C still selects Carbon)</li>
           <li><strong>R</strong> — Shift active molecule center of mass to origin</li>
           <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
           <li><strong>Cmd/Ctrl+Z</strong> / <strong>Cmd/Ctrl+Shift+Z</strong> — Undo / Redo edit action</li>
+          <li><strong>Edit tools:</strong> <strong>G</strong>=Move, <strong>N</strong>=Add, <strong>T</strong>=Transform, <strong>D</strong>=Delete</li>
           <li><strong>Edit mode:</strong> hold <strong>Shift</strong> while placing to bypass auto angle snapping</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
         </ul>

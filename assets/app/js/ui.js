@@ -23,13 +23,31 @@
   }
 
   /**
+   * Return atom coordinates in requested display units.
+   * @param {{units?:string}} vol
+   * @param {{x:number,y:number,z:number}} atom
+   * @param {number} bohrToAng
+   * @param {'angstrom'|'bohr'} displayUnits
+   * @returns {[number, number, number]}
+   */
+  function atomCoordsDisplay(vol, atom, bohrToAng, displayUnits) {
+    const units = displayUnits === 'bohr' ? 'bohr' : 'angstrom';
+    if (units === 'bohr') {
+      if (vol.units === 'bohr') return [atom.x, atom.y, atom.z];
+      return [atom.x / bohrToAng, atom.y / bohrToAng, atom.z / bohrToAng];
+    }
+    return atomCoordsAng(vol, atom, bohrToAng);
+  }
+
+  /**
    * Render the side-panel atom table as HTML.
    * @param {{name:string,vol?:{atoms?:Array<{Z:number,x:number,y:number,z:number}>,units?:string}}|null} record
    * @param {number} bohrToAng
    * @param {Record<number, {symbol?:string}>} atomData
+   * @param {'angstrom'|'bohr'} [displayUnits='angstrom']
    * @returns {string}
    */
-  function renderCoordsContent(record, bohrToAng, atomData) {
+  function renderCoordsContent(record, bohrToAng, atomData, displayUnits) {
     if (!record) return '<em>No file loaded</em>';
 
     const v = record.vol;
@@ -40,7 +58,7 @@
     const rows = v.atoms.map((a, i) => {
       const z = a.Z | 0;
       const sym = symbolForZ(z, atomData);
-      const [x, y, zA] = atomCoordsAng(v, a, bohrToAng);
+      const [x, y, zA] = atomCoordsDisplay(v, a, bohrToAng, displayUnits);
       return `<tr><td>${i + 1}</td><td>${sym}</td><td>${z}</td><td>${x.toFixed(3)}</td><td>${y.toFixed(3)}</td><td>${zA.toFixed(3)}</td></tr>`;
     }).join('');
 
@@ -57,9 +75,10 @@
    * @param {{name:string,vol?:{title?:string,atoms?:Array<{Z:number,x:number,y:number,z:number}>,units?:string}}|null} record
    * @param {number} bohrToAng
    * @param {Record<number, {symbol?:string}>} atomData
+   * @param {'angstrom'|'bohr'} [displayUnits='angstrom']
    * @returns {string}
    */
-  function volumeToXYZ(record, bohrToAng, atomData) {
+  function volumeToXYZ(record, bohrToAng, atomData, displayUnits) {
     if (!record) return '';
 
     const v = record.vol;
@@ -72,7 +91,7 @@
     for (const a of v.atoms) {
       const z = a.Z | 0;
       const sym = symbolForZ(z, atomData);
-      const [x, y, zA] = atomCoordsAng(v, a, bohrToAng);
+      const [x, y, zA] = atomCoordsDisplay(v, a, bohrToAng, displayUnits);
       lines.push(`${sym} ${x.toFixed(6)} ${y.toFixed(6)} ${zA.toFixed(6)}`);
     }
 
