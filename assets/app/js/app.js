@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.5.0';
+  const APP_VERSION = '0.5.1';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -3505,7 +3505,8 @@
       // For default-mode multiple bonds, compensate seat depth for lateral
       // component offset so connector ends remain hidden inside the spheres.
       if (profile.key === 'default' && !isKitStyle && !isGlossyStyle && order >= 2) {
-        const defaultMultiSeatOverlap = order >= 3 ? 0.024 : 0.02;
+        // Order-4 components need deeper seating so their clipped ends stay hidden.
+        const defaultMultiSeatOverlap = order >= 4 ? 0.045 : (order >= 3 ? 0.024 : 0.02);
         const seatAFromOffset = Math.sqrt(Math.max(
           0,
           a.displayRadius * a.displayRadius
@@ -6070,6 +6071,7 @@
   const alignInertiaBtn = document.getElementById('alignInertiaBtn');
   const projectionModeBtn = document.getElementById('projectionModeBtn');
   const projectionModeLabel = document.getElementById('projectionModeLabel');
+  const projectionModeState = document.getElementById('projectionModeState');
   const viewAxisXBtn = document.getElementById('viewAxisXBtn');
   const viewAxisYBtn = document.getElementById('viewAxisYBtn');
   const viewAxisZBtn = document.getElementById('viewAxisZBtn');
@@ -6153,8 +6155,10 @@
   const editTransformCurrentEl = document.getElementById('editTransformCurrent');
   const editAddModeAtomBtn = document.getElementById('editAddModeAtomBtn');
   const editAddModeFragmentBtn = document.getElementById('editAddModeFragmentBtn');
+  const editAddModeMoleculeBtn = document.getElementById('editAddModeMoleculeBtn');
   const editAddAtomPaneEl = document.getElementById('editAddAtomPane');
   const editAddFragmentPaneEl = document.getElementById('editAddFragmentPane');
+  const editAddMoleculePaneEl = document.getElementById('editAddMoleculePane');
   const editAddSearchEl = document.getElementById('editAddSearch');
   const editAddSuggestionsEl = document.getElementById('editAddSuggestions');
   const editAddQuickEl = document.getElementById('editAddQuick');
@@ -6163,7 +6167,13 @@
   const editFragmentSuggestionsEl = document.getElementById('editFragmentSuggestions');
   const editFragmentQuickEl = document.getElementById('editFragmentQuick');
   const editFragmentCurrentEl = document.getElementById('editFragmentCurrent');
-  const editAddCursorHudEl = document.getElementById('editAddCursorHud');
+  const editMoleculeSearchEl = document.getElementById('editMoleculeSearch');
+  const editMoleculeSuggestionsEl = document.getElementById('editMoleculeSuggestions');
+  const editMoleculeQuickEl = document.getElementById('editMoleculeQuick');
+  const editMoleculeCurrentEl = document.getElementById('editMoleculeCurrent');
+  const editMoleculeAlignXBtn = document.getElementById('editMoleculeAlignXBtn');
+  const editMoleculeAlignYBtn = document.getElementById('editMoleculeAlignYBtn');
+  const editMoleculeAlignZBtn = document.getElementById('editMoleculeAlignZBtn');
   const editCursorBadgeEl = document.getElementById('editCursorBadge');
   const editCursorBadgeModeEl = document.getElementById('editCursorBadgeMode');
   const editCursorBadgeElementEl = document.getElementById('editCursorBadgeElement');
@@ -6930,6 +6940,7 @@
     // Clear hover when leaving interactive modes
     if (currentMode === MODES.DISPLAY) { clearHover(); }
     if (currentMode !== MODES.EDIT) clearAddGrowPreview();
+    if (currentMode !== MODES.EDIT) clearMoleculePlacementPreview();
     if (currentMode !== MODES.EDIT) clearTransformState();
     // Leaving measurement mode to display: restore surfaces and clear selection
     if (prevMode === MODES.MEASURE && currentMode === MODES.DISPLAY) {
@@ -7167,14 +7178,20 @@
   function updateProjectionModeUI() {
     if (!projectionModeBtn) return;
     if (viewState.mode === 'orthographic') {
-      if (projectionModeLabel) projectionModeLabel.textContent = 'Projection: Orthographic';
-      projectionModeBtn.title = 'Switch to perspective projection';
-      projectionModeBtn.setAttribute('data-tip', 'Projection: currently Orthographic. Click to switch to Perspective.');
+      if (projectionModeLabel) projectionModeLabel.textContent = 'Orthographic';
+      if (projectionModeState) projectionModeState.textContent = 'On';
+      projectionModeBtn.classList.add('active');
+      projectionModeBtn.setAttribute('aria-pressed', 'true');
+      projectionModeBtn.title = 'Orthographic projection is ON. Click to switch to Perspective.';
+      projectionModeBtn.setAttribute('data-tip', 'Orthographic: ON. Click to switch to perspective projection.');
       return;
     }
-    if (projectionModeLabel) projectionModeLabel.textContent = 'Projection: Perspective';
-    projectionModeBtn.title = 'Switch to orthographic projection';
-    projectionModeBtn.setAttribute('data-tip', 'Projection: currently Perspective. Click to switch to Orthographic.');
+    if (projectionModeLabel) projectionModeLabel.textContent = 'Orthographic';
+    if (projectionModeState) projectionModeState.textContent = 'Off';
+    projectionModeBtn.classList.remove('active');
+    projectionModeBtn.setAttribute('aria-pressed', 'false');
+    projectionModeBtn.title = 'Orthographic projection is OFF. Click to turn it ON.';
+    projectionModeBtn.setAttribute('data-tip', 'Orthographic: OFF. Click to enable orthographic projection.');
   }
 
   /**
@@ -7266,7 +7283,7 @@
   let axisLock = 'none'; // 'none'|'x'|'y'|'z'
   let axisKeyDown = null; // current held axis key ('x'|'y'|'z') to avoid auto-repeat toggling
   const EDIT_TOOL = Object.freeze({ MOVE: 'move', ADD: 'add', TRANSFORM: 'transform', DELETE: 'delete' });
-  const EDIT_ADD_MODE = Object.freeze({ ATOM: 'atom', FRAGMENT: 'fragment' });
+  const EDIT_ADD_MODE = Object.freeze({ ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' });
   const EDIT_TRANSFORM_SCOPE = Object.freeze({
     AUTO: 'auto',
     FRAGMENT: 'fragment',
@@ -7282,12 +7299,14 @@
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
   let editAddFragmentId = (getFragmentById('methyl') && getFragmentById('methyl').id) || ((FRAGMENT_LIBRARY[0] && FRAGMENT_LIBRARY[0].id) || 'methyl');
+  let editAddMoleculeId = (getFragmentById('benzene') && getFragmentById('benzene').id) || ((FRAGMENT_LIBRARY[0] && FRAGMENT_LIBRARY[0].id) || 'benzene');
   let editTransformScope = EDIT_TRANSFORM_SCOPE.AUTO;
   let editTransformMode = EDIT_TRANSFORM_MODE.MOVE;
   const EDIT_ANGLE_SNAP_OPTIONS = Object.freeze([60, 90, 109.5, 120, 180]);
   let addGrowDetectedAngleDeg = 0;
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
   const EDIT_QUICK_FRAGMENTS = ['methyl', 'methylene', 'hydroxyl', 'amino', 'carbonyl', 'amide', 'phenyl', 'benzene'];
+  const EDIT_QUICK_MOLECULES = ['benzene', 'pyridine', 'cyclohexane', 'phenyl'];
   const EDIT_HISTORY_LIMIT = 200;
   let editUndoStack = [];
   let editRedoStack = [];
@@ -7298,6 +7317,15 @@
   let addGrowAnchorPos = null;
   let addGrowNeighborDirs = [];
   let addGrowPreviewPos = null;
+  let moleculePlaceActive = false;
+  let moleculePlaceRotating = false;
+  let moleculePlaceMoved = false;
+  let moleculePlaceTemplate = null;
+  let moleculePlaceTemplateData = null;
+  let moleculePlacePosition = new THREE.Vector3(0, 0, 0);
+  let moleculePlaceQuaternion = new THREE.Quaternion();
+  let moleculePlaceLastClientX = 0;
+  let moleculePlaceLastClientY = 0;
   let transformActive = false;
   let transformTargetIndices = [];
   let transformTargetKind = 'molecule';
@@ -7312,6 +7340,8 @@
   let transformMoved = false;
   const addPreviewGroup = new THREE.Group();
   contentGroup.add(addPreviewGroup);
+  const addMoleculePreviewGroup = new THREE.Group();
+  addPreviewGroup.add(addMoleculePreviewGroup);
   const addAngleGuideGroup = new THREE.Group();
   contentGroup.add(addAngleGuideGroup);
   let addPreviewAtomMesh = null;
@@ -7835,6 +7865,20 @@
   }
 
   /**
+   * Resolve and return the currently selected Add-molecule record.
+   * Molecules are sourced from the same catalog as fragments in V1.
+   * @returns {*|null}
+   */
+  function getCurrentMoleculeDefinition() {
+    let molecule = getFragmentById(editAddMoleculeId);
+    if (molecule) return molecule;
+    if (!Array.isArray(FRAGMENT_LIBRARY) || FRAGMENT_LIBRARY.length === 0) return null;
+    molecule = getFragmentById('benzene') || FRAGMENT_LIBRARY[0];
+    editAddMoleculeId = molecule.id;
+    return molecule;
+  }
+
+  /**
    * Return one connection atom descriptor from a fragment.
    * @param {*} fragment
    * @returns {{Z:number,x:number,y:number,z:number,index:number}|null}
@@ -7856,9 +7900,19 @@
   /**
    * Resolve active attach settings for Add mode (atom or fragment).
    * @param {number} anchorZ
-   * @returns {{mode:'atom'|'fragment',previewZ:number,bondOrder:number,bondLength:number,fragment:*|null}}
+   * @returns {{mode:'atom'|'fragment'|'molecule',previewZ:number,bondOrder:number,bondLength:number,fragment:*|null}}
    */
   function getActiveAddAttachSettings(anchorZ) {
+    if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+      const molecule = getCurrentMoleculeDefinition();
+      return {
+        mode: EDIT_ADD_MODE.MOLECULE,
+        previewZ: 6,
+        bondOrder: 1,
+        bondLength: 0,
+        fragment: molecule || null,
+      };
+    }
     if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
       const fragment = getCurrentFragmentDefinition();
       const connAtom = getFragmentConnectionAtom(fragment);
@@ -8603,6 +8657,9 @@
     if (editCursorBadgeElementEl) {
       if (editTool === EDIT_TOOL.TRANSFORM) {
         editCursorBadgeElementEl.textContent = getEditTransformScopeLabel(editTransformScope);
+      } else if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+        const mol = getCurrentMoleculeDefinition();
+        editCursorBadgeElementEl.textContent = mol ? mol.name : 'Molecule';
       } else if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
         const frag = getCurrentFragmentDefinition();
         editCursorBadgeElementEl.textContent = frag ? frag.name : 'Fragment';
@@ -8612,13 +8669,14 @@
     }
     if (editCursorBadgeBondEl) {
       if (editTool === EDIT_TOOL.TRANSFORM) editCursorBadgeBondEl.textContent = getEditTransformModeLabel(editTransformMode);
+      else if (editAddMode === EDIT_ADD_MODE.MOLECULE) editCursorBadgeBondEl.textContent = '—';
       else editCursorBadgeBondEl.textContent = String(editAddBondOrder);
     }
     setEditCursorBadgePointer(editAddHudPointerX, editAddHudPointerY);
   }
 
   /**
-   * Update the add quick-HUD dock position.
+   * Update the cached pointer location used by the edit cursor badge.
    * @param {number} clientX
    * @param {number} clientY
    */
@@ -8626,57 +8684,6 @@
     editAddHudPointerX = Number.isFinite(clientX) ? clientX : editAddHudPointerX;
     editAddHudPointerY = Number.isFinite(clientY) ? clientY : editAddHudPointerY;
     setEditCursorBadgePointer(editAddHudPointerX, editAddHudPointerY);
-    if (!editAddCursorHudEl || editAddCursorHudEl.getAttribute('aria-hidden') !== 'false') return;
-    const vw = window.innerWidth || 1;
-    const vh = window.innerHeight || 1;
-    const rect = editAddCursorHudEl.getBoundingClientRect();
-    let x = Math.max(8, vw - rect.width - 12);
-    let y = Math.max(64, vh - rect.height - 36);
-    if (editToolboxEl && editToolboxEl.getAttribute('aria-hidden') === 'false') {
-      const toolRect = editToolboxEl.getBoundingClientRect();
-      x = Math.max(8, Math.round(toolRect.left));
-      y = Math.max(64, Math.round(toolRect.bottom + 8));
-    }
-    x = Math.max(8, Math.min(vw - rect.width - 8, x));
-    y = Math.max(64, Math.min(vh - rect.height - 8, y));
-    editAddCursorHudEl.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
-  }
-
-  /**
-   * Synchronize the cursor mini-picker button state and visibility.
-   */
-  function updateEditAddCursorHud() {
-    if (!editAddCursorHudEl) return;
-    const showHud = editMode && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.ATOM && addGrowActive;
-    editAddCursorHudEl.setAttribute('aria-hidden', showHud ? 'false' : 'true');
-    if (!showHud) return;
-    const buttons = editAddCursorHudEl.querySelectorAll('button');
-    buttons.forEach((btn) => {
-      const zAttr = btn.getAttribute('data-z');
-      const orderAttr = btn.getAttribute('data-order');
-      let isActive = false;
-      if (zAttr != null) {
-        const z = Number(zAttr);
-        isActive = z === editAddElementZ;
-        const hex = getActiveElementHexColor(z);
-        try {
-          const c = new THREE.Color(hex);
-          const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-          btn.style.background = hex;
-          btn.style.color = lum > 0.6 ? UI_PALETTE.quickPickTextOnLight : UI_PALETTE.quickPickTextOnDark;
-        } catch {
-          btn.style.background = UI_PALETTE.quickPickFallbackBg;
-          btn.style.color = UI_PALETTE.quickPickFallbackFg;
-        }
-      } else if (orderAttr != null) {
-        const ord = Number(orderAttr);
-        isActive = ord === editAddBondOrder;
-        btn.style.background = '';
-        btn.style.color = '';
-      }
-      btn.classList.toggle('active', isActive);
-    });
-    setEditAddHudPointer(editAddHudPointerX, editAddHudPointerY);
   }
 
   /**
@@ -8689,9 +8696,9 @@
     editAddBondOrder = normalizeEditAddBondOrder(order);
     refreshActiveAddGrowPreview();
     updateEditToolboxUi({ syncSearch: false });
-    updateEditAddCursorHud();
     if (announce && editMode && editTool === EDIT_TOOL.ADD) {
       if (editAddMode === EDIT_ADD_MODE.FRAGMENT) setHintMessage(`Fragment attach bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
+      else if (editAddMode === EDIT_ADD_MODE.MOLECULE) setHintMessage('Molecule placement mode: bond order hotkeys are ignored.');
       else setHintMessage(`Add atom bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
     }
   }
@@ -8719,7 +8726,6 @@
     clearGroup(addAngleGuideGroup);
     try { controls.enabled = true; } catch { }
     updateEditToolboxUi({ syncSearch: false });
-    updateEditAddCursorHud();
   }
 
   /**
@@ -8916,6 +8922,236 @@
   }
 
   /**
+   * Build COM-centered molecule placement data from one catalog entry.
+   * @param {*} molecule
+   * @returns {{name:string,formula:string,atoms:Array<{Z:number,local:THREE.Vector3}>,bonds:Array<{i:number,j:number,order:number}>,principalAxis:THREE.Vector3}|null}
+   */
+  function buildMoleculePlacementData(molecule) {
+    if (!molecule || !Array.isArray(molecule.atoms) || molecule.atoms.length === 0) return null;
+    const massProps = computeMassPropertiesFromAtoms(molecule.atoms, getAtomicMass);
+    const com = massProps
+      ? new THREE.Vector3(massProps.comX, massProps.comY, massProps.comZ)
+      : molecule.atoms.reduce((acc, a) => {
+        acc.x += Number(a && a.x) || 0;
+        acc.y += Number(a && a.y) || 0;
+        acc.z += Number(a && a.z) || 0;
+        return acc;
+      }, new THREE.Vector3()).multiplyScalar(1 / Math.max(1, molecule.atoms.length));
+    const atoms = molecule.atoms.map((a) => ({
+      Z: a.Z | 0,
+      local: new THREE.Vector3(
+        (Number(a.x) || 0) - com.x,
+        (Number(a.y) || 0) - com.y,
+        (Number(a.z) || 0) - com.z
+      ),
+    }));
+    let principalAxis = new THREE.Vector3(0, 0, 1);
+    try {
+      const inertia = computeInertiaTensorFromAtoms(molecule.atoms, {
+        comX: com.x, comY: com.y, comZ: com.z,
+      }, getAtomicMass);
+      const eig = eigenSymmetric3x3Jacobi(inertia);
+      if (eig && Array.isArray(eig.vectors) && Array.isArray(eig.vectors[0])) {
+        const v = eig.vectors[0];
+        principalAxis = new THREE.Vector3(Number(v[0]) || 0, Number(v[1]) || 0, Number(v[2]) || 0);
+      }
+    } catch { }
+    if (principalAxis.lengthSq() < 1e-10) principalAxis.set(0, 0, 1);
+    principalAxis.normalize();
+    return {
+      name: String(molecule.name || 'Molecule'),
+      formula: String(molecule.formula || ''),
+      atoms,
+      bonds: Array.isArray(molecule.bonds) ? molecule.bonds.map((b) => ({
+        i: b.i | 0, j: b.j | 0, order: Math.max(1, Math.min(4, b.order | 0)),
+      })) : [],
+      principalAxis,
+    };
+  }
+
+  /**
+   * Apply current molecule-placement pose to preview root.
+   */
+  function updateMoleculePlacementPreviewTransform() {
+    addMoleculePreviewGroup.visible = !!moleculePlaceActive;
+    if (!moleculePlaceActive) return;
+    addMoleculePreviewGroup.position.copy(moleculePlacePosition);
+    addMoleculePreviewGroup.quaternion.copy(moleculePlaceQuaternion);
+  }
+
+  /**
+   * Rebuild molecule preview meshes from current template data.
+   */
+  function rebuildMoleculePlacementPreviewMeshes() {
+    clearGroup(addMoleculePreviewGroup);
+    if (!moleculePlaceTemplateData || !Array.isArray(moleculePlaceTemplateData.atoms)) return;
+    const bondMat = new THREE.MeshPhysicalMaterial({
+      color: 0xdbe3ef,
+      transparent: true,
+      opacity: 0.62,
+      roughness: 0.25,
+      metalness: 0.04,
+    });
+    for (const bond of moleculePlaceTemplateData.bonds || []) {
+      const i = bond.i | 0;
+      const j = bond.j | 0;
+      const ai = moleculePlaceTemplateData.atoms[i];
+      const aj = moleculePlaceTemplateData.atoms[j];
+      if (!ai || !aj) continue;
+      const dir = aj.local.clone().sub(ai.local);
+      const len = dir.length();
+      if (!(len > 1e-5)) continue;
+      const radius = 0.055;
+      const geom = new THREE.CylinderGeometry(radius, radius, len, 16, 1, false);
+      const mesh = new THREE.Mesh(geom, bondMat);
+      mesh.position.copy(ai.local).add(aj.local).multiplyScalar(0.5);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+      mesh.renderOrder = 56;
+      addMoleculePreviewGroup.add(mesh);
+    }
+    for (const atom of moleculePlaceTemplateData.atoms) {
+      const z = atom.Z | 0;
+      const radius = Math.max(0.14, getCovalentRadiusAngstrom(z) * getAtomRenderScaleFactor(z));
+      const geom = new THREE.SphereGeometry(radius, 20, 14);
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: getAtomRenderColor(z),
+        transparent: true,
+        opacity: 0.72,
+        roughness: 0.2,
+        metalness: 0.08,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.15,
+      });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.position.copy(atom.local);
+      mesh.renderOrder = 60;
+      addMoleculePreviewGroup.add(mesh);
+    }
+    updateMoleculePlacementPreviewTransform();
+  }
+
+  /**
+   * Clear molecule-placement preview state/meshes.
+   */
+  function clearMoleculePlacementPreview() {
+    moleculePlaceActive = false;
+    moleculePlaceRotating = false;
+    moleculePlaceMoved = false;
+    moleculePlaceTemplate = null;
+    moleculePlaceTemplateData = null;
+    moleculePlacePosition.set(0, 0, 0);
+    moleculePlaceQuaternion.identity();
+    moleculePlaceLastClientX = 0;
+    moleculePlaceLastClientY = 0;
+    clearGroup(addMoleculePreviewGroup);
+    addMoleculePreviewGroup.visible = false;
+    try { controls.enabled = true; } catch { }
+  }
+
+  /**
+   * Start one interactive molecule placement at a world-space center point.
+   * @param {THREE.Vector3} worldPos
+   * @returns {boolean}
+   */
+  function startMoleculePlacementAtWorld(worldPos) {
+    const molecule = buildFragmentInstance(editAddMoleculeId);
+    if (!molecule || !Array.isArray(molecule.atoms) || molecule.atoms.length === 0) {
+      setHintMessage('Selected molecule is not available.');
+      return false;
+    }
+    const data = buildMoleculePlacementData(molecule);
+    if (!data) {
+      setHintMessage('Could not prepare molecule placement preview.');
+      return false;
+    }
+    clearAddGrowPreview();
+    clearMoleculePlacementPreview();
+    moleculePlaceTemplate = molecule;
+    moleculePlaceTemplateData = data;
+    moleculePlaceActive = true;
+    moleculePlacePosition.copy(worldPos && worldPos.isVector3 ? worldPos : new THREE.Vector3(0, 0, 0));
+    moleculePlaceQuaternion.identity();
+    rebuildMoleculePlacementPreviewMeshes();
+    updateEditToolboxUi({ syncSearch: false });
+    setHintMessage(`Placing molecule ${data.name} • Drag to rotate • Click again to place • X/Y/Z align • Esc cancel`);
+    return true;
+  }
+
+  /**
+   * Rotate active molecule placement preview from pointer movement.
+   * @param {PointerEvent} e
+   */
+  function updateMoleculePlacementRotationFromEvent(e) {
+    if (!moleculePlaceActive || !moleculePlaceRotating) return;
+    const dx = (Number(e.clientX) || 0) - moleculePlaceLastClientX;
+    const dy = (Number(e.clientY) || 0) - moleculePlaceLastClientY;
+    moleculePlaceLastClientX = Number(e.clientX) || moleculePlaceLastClientX;
+    moleculePlaceLastClientY = Number(e.clientY) || moleculePlaceLastClientY;
+    if (!(Number.isFinite(dx) && Number.isFinite(dy))) return;
+    if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return;
+    const gain = 0.0085;
+    const upAxis = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).normalize();
+    const rightAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
+    const qYaw = new THREE.Quaternion().setFromAxisAngle(upAxis, dx * gain);
+    const qPitch = new THREE.Quaternion().setFromAxisAngle(rightAxis, dy * gain);
+    moleculePlaceQuaternion.premultiply(qYaw);
+    moleculePlaceQuaternion.premultiply(qPitch);
+    moleculePlaceQuaternion.normalize();
+    moleculePlaceMoved = true;
+    updateMoleculePlacementPreviewTransform();
+  }
+
+  /**
+   * Align active molecule placement orientation to one world axis.
+   * Uses the molecule principal axis as the source direction.
+   * @param {'x'|'y'|'z'} axis
+   * @returns {boolean}
+   */
+  function alignMoleculePlacementToAxis(axis) {
+    if (!moleculePlaceActive || !moleculePlaceTemplateData) return false;
+    const src = moleculePlaceTemplateData.principalAxis
+      ? moleculePlaceTemplateData.principalAxis.clone()
+      : new THREE.Vector3(0, 0, 1);
+    if (src.lengthSq() < 1e-10) src.set(0, 0, 1);
+    src.normalize();
+    const dst = axis === 'y'
+      ? new THREE.Vector3(0, 1, 0)
+      : (axis === 'z' ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0));
+    moleculePlaceQuaternion.setFromUnitVectors(src, dst);
+    moleculePlaceQuaternion.normalize();
+    updateMoleculePlacementPreviewTransform();
+    setHintMessage(`Molecule aligned to +${axis.toUpperCase()} axis.`);
+    return true;
+  }
+
+  /**
+   * Commit the current molecule placement preview into the active editable file.
+   * @returns {boolean}
+   */
+  function commitMoleculePlacement() {
+    if (!moleculePlaceActive || !moleculePlaceTemplateData || !Array.isArray(moleculePlaceTemplateData.atoms)) return false;
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms)) return false;
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    for (const atom of moleculePlaceTemplateData.atoms) {
+      const world = atom.local.clone().applyQuaternion(moleculePlaceQuaternion).add(moleculePlacePosition);
+      const coords = worldToAtomUnits(vol, world);
+      vol.atoms.push({ Z: atom.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] });
+    }
+    vol.natoms = vol.atoms.length;
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    const label = moleculePlaceTemplateData.name || 'molecule';
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add molecule: ${label}`);
+    clearMoleculePlacementPreview();
+    clearHover();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    setHintMessage(`Added molecule ${label}.`);
+    return true;
+  }
+
+  /**
    * Keep edit-tool controls synchronized with current edit state.
    * @param {{syncSearch?:boolean}=} options
    */
@@ -8928,6 +9164,7 @@
     const isDelete = editTool === EDIT_TOOL.DELETE;
     const isAtomAddMode = editAddMode === EDIT_ADD_MODE.ATOM;
     const isFragmentAddMode = editAddMode === EDIT_ADD_MODE.FRAGMENT;
+    const isMoleculeAddMode = editAddMode === EDIT_ADD_MODE.MOLECULE;
 
     if (editToolboxEl) {
       editToolboxEl.setAttribute('aria-hidden', isEdit ? 'false' : 'true');
@@ -8940,8 +9177,10 @@
     if (editTransformPaneEl) editTransformPaneEl.classList.toggle('active', isEdit && isTransform);
     if (editAddModeAtomBtn) editAddModeAtomBtn.classList.toggle('active', isAtomAddMode);
     if (editAddModeFragmentBtn) editAddModeFragmentBtn.classList.toggle('active', isFragmentAddMode);
+    if (editAddModeMoleculeBtn) editAddModeMoleculeBtn.classList.toggle('active', isMoleculeAddMode);
     if (editAddAtomPaneEl) editAddAtomPaneEl.classList.toggle('active', isAtomAddMode);
     if (editAddFragmentPaneEl) editAddFragmentPaneEl.classList.toggle('active', isFragmentAddMode);
+    if (editAddMoleculePaneEl) editAddMoleculePaneEl.classList.toggle('active', isMoleculeAddMode);
     if (editTransformScopeEl && document.activeElement !== editTransformScopeEl) editTransformScopeEl.value = normalizeEditTransformScope(editTransformScope);
     if (editTransformModeEl && document.activeElement !== editTransformModeEl) editTransformModeEl.value = normalizeEditTransformMode(editTransformMode);
 
@@ -8959,6 +9198,19 @@
         editFragmentCurrentEl.textContent = 'No fragment selected';
       }
     }
+    const molecule = getCurrentMoleculeDefinition();
+    if (editMoleculeCurrentEl) {
+      if (molecule) {
+        const atomCount = Array.isArray(molecule.atoms) ? molecule.atoms.length : 0;
+        if (moleculePlaceActive) {
+          editMoleculeCurrentEl.textContent = `Placing molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms • drag rotate • click to place`;
+        } else {
+          editMoleculeCurrentEl.textContent = `Molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`;
+        }
+      } else {
+        editMoleculeCurrentEl.textContent = 'No molecule selected';
+      }
+    }
     if (editTransformCurrentEl) {
       const scopeLabel = getEditTransformScopeLabel(editTransformScope);
       const modeLabel = getEditTransformModeLabel(editTransformMode);
@@ -8970,6 +9222,9 @@
     }
     if (syncSearch && isFragmentAddMode && editFragmentSearchEl && document.activeElement !== editFragmentSearchEl && fragment) {
       editFragmentSearchEl.value = `${fragment.name} (${fragment.formula}) [${fragment.id}]`;
+    }
+    if (syncSearch && isMoleculeAddMode && editMoleculeSearchEl && document.activeElement !== editMoleculeSearchEl && molecule) {
+      editMoleculeSearchEl.value = `${molecule.name} (${molecule.formula}) [${molecule.id}]`;
     }
 
     if (editAddQuickEl) {
@@ -8997,8 +9252,14 @@
         btn.classList.toggle('active', id === normalizeFragmentId(editAddFragmentId));
       });
     }
+    if (editMoleculeQuickEl) {
+      const quickButtons = editMoleculeQuickEl.querySelectorAll('button[data-molecule-id]');
+      quickButtons.forEach((btn) => {
+        const id = normalizeFragmentId(btn.getAttribute('data-molecule-id'));
+        btn.classList.toggle('active', id === normalizeFragmentId(editAddMoleculeId));
+      });
+    }
     updateEditCursorBadge();
-    updateEditAddCursorHud();
   }
 
   /**
@@ -9020,6 +9281,7 @@
     }
     if (editTool !== EDIT_TOOL.ADD && prevTool === EDIT_TOOL.ADD) {
       clearAddGrowPreview();
+      clearMoleculePlacementPreview();
     }
     if (editTool !== EDIT_TOOL.TRANSFORM && prevTool === EDIT_TOOL.TRANSFORM) {
       clearTransformState();
@@ -9033,6 +9295,10 @@
         const fragment = getCurrentFragmentDefinition();
         const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
         setHintMessage(`Edit tool: Add fragment (${label}) • Click an anchor atom • Hold Shift to bypass angle snap`);
+      } else if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+        const molecule = getCurrentMoleculeDefinition();
+        const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
+        setHintMessage(`Edit tool: Add molecule (${label}) • Click to place • Drag to rotate • Click again to confirm`);
       } else {
         const symbol = getElementSymbol(editAddElementZ);
         setHintMessage(`Edit tool: Add atom (${symbol}) • Cursor angle controls placement • Hold Shift to bypass angle snap`);
@@ -9048,18 +9314,25 @@
 
   /**
    * Switch between add-atom and add-fragment submodes.
-   * @param {'atom'|'fragment'} nextMode
+   * @param {'atom'|'fragment'|'molecule'} nextMode
    * @param {{announce?:boolean,syncSearch?:boolean}=} options
    */
   function setEditAddMode(nextMode, options = {}) {
     const announce = options.announce !== false;
     const syncSearch = options.syncSearch !== false;
-    editAddMode = nextMode === EDIT_ADD_MODE.FRAGMENT ? EDIT_ADD_MODE.FRAGMENT : EDIT_ADD_MODE.ATOM;
+    if (nextMode === EDIT_ADD_MODE.FRAGMENT) editAddMode = EDIT_ADD_MODE.FRAGMENT;
+    else if (nextMode === EDIT_ADD_MODE.MOLECULE) editAddMode = EDIT_ADD_MODE.MOLECULE;
+    else editAddMode = EDIT_ADD_MODE.ATOM;
+    if (editAddMode !== EDIT_ADD_MODE.MOLECULE) clearMoleculePlacementPreview();
+    if (editAddMode !== EDIT_ADD_MODE.ATOM) clearAddGrowPreview();
     if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
       const fragment = getCurrentFragmentDefinition();
       if (fragment) {
         editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
       }
+    } else if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+      const molecule = getCurrentMoleculeDefinition();
+      if (molecule) editAddMoleculeId = molecule.id;
     }
     refreshActiveAddGrowPreview();
     updateEditToolboxUi({ syncSearch });
@@ -9068,6 +9341,10 @@
       const fragment = getCurrentFragmentDefinition();
       const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
       setHintMessage(`Add fragment: ${label} • Replace-H first attachment is enabled`);
+    } else if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+      const molecule = getCurrentMoleculeDefinition();
+      const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
+      setHintMessage(`Add molecule: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`);
     } else {
       setHintMessage(`Add atom: ${getElementName(editAddElementZ)} (${getElementSymbol(editAddElementZ)})`);
     }
@@ -9115,6 +9392,27 @@
   }
 
   /**
+   * Select a molecule for Add-molecule mode.
+   * @param {*} moleculeId
+   * @param {{announce?:boolean,syncSearch?:boolean}=} options
+   * @returns {boolean}
+   */
+  function setEditAddMolecule(moleculeId, options = {}) {
+    const announce = options.announce !== false;
+    const syncSearch = options.syncSearch !== false;
+    const normalizedId = normalizeFragmentId(moleculeId);
+    const molecule = getFragmentById(normalizedId) || resolveFragmentQuery(moleculeId);
+    if (!molecule) return false;
+    editAddMoleculeId = molecule.id;
+    clearMoleculePlacementPreview();
+    updateEditToolboxUi({ syncSearch });
+    if (announce && editMode && editTool === EDIT_TOOL.ADD) {
+      setHintMessage(`Add molecule: ${molecule.name} (${molecule.formula})`);
+    }
+    return true;
+  }
+
+  /**
    * Rebuild fragment suggestions and quick chips from the active fragment catalog.
    */
   function refreshEditAddFragmentControls() {
@@ -9151,6 +9449,42 @@
   }
 
   /**
+   * Rebuild molecule suggestions and quick chips from the active catalog.
+   */
+  function refreshEditAddMoleculeControls() {
+    if (editMoleculeSuggestionsEl) {
+      editMoleculeSuggestionsEl.innerHTML = '';
+      for (const molecule of FRAGMENT_LIBRARY) {
+        const opt = document.createElement('option');
+        opt.value = `${molecule.name} (${molecule.formula}) [${molecule.id}]`;
+        editMoleculeSuggestionsEl.appendChild(opt);
+      }
+    }
+    if (editMoleculeQuickEl) {
+      editMoleculeQuickEl.innerHTML = '';
+      for (const id of EDIT_QUICK_MOLECULES) {
+        const molecule = getFragmentById(id);
+        if (!molecule) continue;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-molecule-id', molecule.id);
+        btn.title = `${molecule.name} (${molecule.formula})`;
+        btn.textContent = molecule.name;
+        btn.onclick = () => {
+          setEditAddMolecule(molecule.id, { announce: true, syncSearch: true });
+          setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: false, syncSearch: true });
+        };
+        editMoleculeQuickEl.appendChild(btn);
+      }
+    }
+    if (!getCurrentMoleculeDefinition() && FRAGMENT_LIBRARY[0]) editAddMoleculeId = FRAGMENT_LIBRARY[0].id;
+    if (!setEditAddMolecule(editAddMoleculeId, { announce: false, syncSearch: true }) && FRAGMENT_LIBRARY[0]) {
+      setEditAddMolecule(FRAGMENT_LIBRARY[0].id, { announce: false, syncSearch: true });
+    }
+    updateEditToolboxUi({ syncSearch: true });
+  }
+
+  /**
    * Load fragment catalog from static assets and refresh Add-fragment controls.
    */
   async function loadExternalFragmentLibrary() {
@@ -9158,6 +9492,7 @@
     try {
       const result = await loadFragmentLibraryFromManifest('./assets/fragments/library.json');
       refreshEditAddFragmentControls();
+      refreshEditAddMoleculeControls();
       if (result && Array.isArray(result.errors) && result.errors.length) {
         console.warn('[Fragments] Loaded with warnings:', result.errors);
       }
@@ -9197,6 +9532,7 @@
       }
     }
     refreshEditAddFragmentControls();
+    refreshEditAddMoleculeControls();
     if (editAddSearchEl) {
       const commit = () => {
         const z = resolveElementQueryToZ(editAddSearchEl.value);
@@ -9229,26 +9565,28 @@
       });
       editFragmentSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
     }
-    if (editAddCursorHudEl) {
-      const buttons = editAddCursorHudEl.querySelectorAll('button');
-      buttons.forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          const zAttr = btn.getAttribute('data-z');
-          const orderAttr = btn.getAttribute('data-order');
-          if (zAttr != null) {
-            const z = Number(zAttr);
-            setEditAddElement(z, { announce: true, syncSearch: true });
-            return;
-          }
-          if (orderAttr != null) {
-            setEditAddBondOrder(Number(orderAttr), { announce: true });
-          }
-        });
+    if (editMoleculeSearchEl) {
+      const commit = () => {
+        const molecule = resolveFragmentQuery(editMoleculeSearchEl.value);
+        if (!molecule || !setEditAddMolecule(molecule.id, { announce: true, syncSearch: true })) {
+          updateEditToolboxUi({ syncSearch: true });
+          setHintMessage(`Molecule not recognized: "${String(editMoleculeSearchEl.value || '').trim()}"`);
+        }
+      };
+      editMoleculeSearchEl.addEventListener('change', commit);
+      editMoleculeSearchEl.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        commit();
       });
+      editMoleculeSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
     }
     if (editAddModeAtomBtn) editAddModeAtomBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: true, syncSearch: true });
     if (editAddModeFragmentBtn) editAddModeFragmentBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: true, syncSearch: true });
+    if (editAddModeMoleculeBtn) editAddModeMoleculeBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: true, syncSearch: true });
+    if (editMoleculeAlignXBtn) editMoleculeAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a molecule first, then align to X.'); };
+    if (editMoleculeAlignYBtn) editMoleculeAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a molecule first, then align to Y.'); };
+    if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
     if (editToolMoveBtn) editToolMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
     if (editToolAddBtn) editToolAddBtn.onclick = () => setEditTool(EDIT_TOOL.ADD);
     if (editToolTransformBtn) editToolTransformBtn.onclick = () => setEditTool(EDIT_TOOL.TRANSFORM);
@@ -10372,6 +10710,11 @@
       updateTransformDragFromEvent(e);
       return;
     }
+    if (currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.MOLECULE && moleculePlaceActive && moleculePlaceRotating) {
+      __editMoved = true;
+      updateMoleculePlacementRotationFromEvent(e);
+      return;
+    }
     if (dragActive) {
       __editMoved = true;
       setNDCFromEvent(e);
@@ -10432,6 +10775,17 @@
         return;
       }
       if (editTool === EDIT_TOOL.ADD) {
+        if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+          if (moleculePlaceActive) {
+            moleculePlaceRotating = true;
+            moleculePlaceMoved = false;
+            moleculePlaceLastClientX = Number(e.clientX) || 0;
+            moleculePlaceLastClientY = Number(e.clientY) || 0;
+            try { controls.enabled = false; } catch { }
+            e.preventDefault();
+          }
+          return;
+        }
         const hit = pickAtomHit(e);
         if (hit && hit.object && hit.object.userData) {
           const idx = hit.object.userData.index | 0;
@@ -10445,7 +10799,6 @@
             addGrowPreviewPos = null;
             controls.enabled = false;
             updateEditToolboxUi({ syncSearch: false });
-            updateEditAddCursorHud();
             updateAddGrowPreviewFromEvent(e);
             e.preventDefault();
           }
@@ -10524,6 +10877,22 @@
         } else if (editTool === EDIT_TOOL.DELETE) {
           if (!__editMoved && __editClickIdx >= 0) deleteAtomAtIndex(__editClickIdx);
         } else if (editTool === EDIT_TOOL.ADD) {
+          if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+            if (moleculePlaceActive) {
+              const wasRotating = moleculePlaceRotating;
+              const rotated = moleculePlaceMoved || __editMoved;
+              moleculePlaceRotating = false;
+              moleculePlaceMoved = false;
+              try { controls.enabled = true; } catch { }
+              if (!wasRotating || !rotated) commitMoleculePlacement();
+            } else if (!__editMoved) {
+              const hit = pickAtomHit(e);
+              const addPos = computeAddAtomPosition(e, hit);
+              if (addPos) startMoleculePlacementAtWorld(addPos);
+            }
+            __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+            return;
+          }
           if (addGrowActive) {
             const anchorIdx = addGrowAnchorIndex;
             const addPos = addGrowPreviewPos ? addGrowPreviewPos.clone() : null;
@@ -10712,6 +11081,10 @@
    * @param {'x'|'y'|'z'} axis
    */
   const axisDown = (axis) => {
+    if (editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.MOLECULE && moleculePlaceActive) {
+      alignMoleculePlacementToAxis(axis);
+      return;
+    }
     if (editTool !== EDIT_TOOL.MOVE) return;
     axisKeyDown = axis;
     axisLock = axis;
@@ -10772,6 +11145,13 @@
     if (e.key === 'Escape' && elementColorOverlay && elementColorOverlay.style.display === 'flex') {
       e.preventDefault();
       setElementColorOverlayOpen(false);
+      return;
+    }
+    if (e.key === 'Escape' && currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.MOLECULE && moleculePlaceActive) {
+      e.preventDefault();
+      clearMoleculePlacementPreview();
+      updateEditToolboxUi({ syncSearch: false });
+      setHintMessage('Canceled molecule placement.');
       return;
     }
     if (e.key === 'Escape') {

@@ -1016,7 +1016,7 @@
 
     #editAddModeToggle {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 6px;
       margin-bottom: 8px;
     }
@@ -1040,12 +1040,14 @@
     }
 
     #editAddAtomPane,
-    #editAddFragmentPane {
+    #editAddFragmentPane,
+    #editAddMoleculePane {
       display: none;
     }
 
     #editAddAtomPane.active,
-    #editAddFragmentPane.active {
+    #editAddFragmentPane.active,
+    #editAddMoleculePane.active {
       display: block;
     }
 
@@ -1079,8 +1081,19 @@
       color: var(--vm-color-legacy-text-on-dark);
     }
 
+    #editMoleculeSearch {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--vm-color-legacy-border-soft);
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: var(--vm-color-legacy-muted-chip-3);
+      color: var(--vm-color-legacy-text-on-dark);
+    }
+
     #editAddQuick,
-    #editFragmentQuick {
+    #editFragmentQuick,
+    #editMoleculeQuick {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
@@ -1088,7 +1101,8 @@
     }
 
     #editAddQuick button,
-    #editFragmentQuick button {
+    #editFragmentQuick button,
+    #editMoleculeQuick button {
       appearance: none;
       border: 1px solid var(--vm-color-legacy-border-soft);
       border-radius: 999px;
@@ -1101,18 +1115,40 @@
     }
 
     #editAddQuick button.active,
-    #editFragmentQuick button.active {
+    #editFragmentQuick button.active,
+    #editMoleculeQuick button.active {
       border-color: var(--vm-color-accent-primary);
       box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.35) inset;
     }
 
     #editAddCurrent,
     #editFragmentCurrent,
+    #editMoleculeCurrent,
     #editTransformCurrent {
       margin-top: 7px;
       font-size: 12px;
       color: #c8d8ec;
       min-height: 1.4em;
+    }
+
+    #editMoleculeAlign {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    #editMoleculeAlign button {
+      appearance: none;
+      border: 1px solid var(--vm-color-legacy-border-soft);
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--vm-color-legacy-dark-surface);
+      color: var(--vm-color-legacy-secondary-active-fg);
+      cursor: pointer;
+      min-width: 0;
+      flex: 1 1 0;
     }
 
     #editSnapPane {
@@ -1133,77 +1169,6 @@
       margin-top: 5px;
       font-size: 11px;
       color: #96adca;
-    }
-
-    #editAddCursorHud {
-      position: fixed;
-      left: 0;
-      top: 0;
-      transform: translate(-9999px, -9999px);
-      display: none;
-      background: rgba(18, 24, 34, 0.96);
-      border: 1px solid var(--vm-color-legacy-border-soft);
-      border-radius: 10px;
-      padding: 6px 7px;
-      z-index: 34;
-      pointer-events: auto;
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
-      min-width: 152px;
-    }
-
-    #editAddCursorHud[aria-hidden="false"] {
-      display: block;
-    }
-
-    #editAddCursorHud .row {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      margin: 2px 0;
-      flex-wrap: wrap;
-    }
-
-    #editAddCursorHud .title {
-      font-size: 11px;
-      color: #9eb4cf;
-      font-weight: 700;
-      margin-bottom: 2px;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-    }
-
-    #editAddCursorHud .label {
-      min-width: 30px;
-      font-size: 11px;
-      color: #9eb4cf;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-    }
-
-    #editAddCursorHud button {
-      appearance: none;
-      border: 1px solid var(--vm-color-legacy-border-soft);
-      border-radius: 999px;
-      padding: 2px 7px;
-      font-size: 11px;
-      font-weight: 700;
-      background: var(--vm-color-legacy-dark-surface);
-      color: var(--vm-color-legacy-secondary-active-fg);
-      cursor: pointer;
-      min-width: 24px;
-      line-height: 1.25;
-    }
-
-    #editAddCursorHud button.active {
-      border-color: var(--vm-color-accent-primary);
-      box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.3) inset;
-    }
-
-    #editAddCursorHud .hint {
-      margin-top: 2px;
-      font-size: 10px;
-      color: #8fa6c2;
-      letter-spacing: 0.01em;
     }
 
     #editCursorBadge {
@@ -1962,10 +1927,47 @@
       flex: 1 1 auto;
     }
 
+    #toolbar #viewInspector #projectionModeBtn {
+      align-items: center;
+    }
+
+    #toolbar #viewInspector #projectionModeBtn .tb-quickActionIcon,
+    #toolbar #viewInspector #projectionModeBtn .tb-quickActionLabel,
+    #toolbar #viewInspector #projectionModeState {
+      pointer-events: none;
+    }
+
+    #toolbar #viewInspector #projectionModeState {
+      flex: 0 0 auto;
+      min-width: 36px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: calc(var(--tb-radius-tight) - 2px);
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-subtle);
+      font-size: 11px;
+      font-weight: var(--tb-text-weight-bold);
+      line-height: 20px;
+      text-align: center;
+    }
+
+    #toolbar #viewInspector #projectionModeBtn.active #projectionModeState {
+      background: var(--tb-surface-emphasis-hover);
+      color: var(--tb-text-color-strong);
+    }
+
     #toolbar #viewInspector .tb-windowBtn {
       background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-primary);
       border-radius: var(--tb-radius-tight);
+    }
+
+    #toolbar #viewInspector #viewPanelBtn,
+    #toolbar #viewInspector #coordsPanelBtn {
+      width: auto;
+      justify-self: start;
+      padding-left: 12px;
+      padding-right: 12px;
     }
 
     #toolbar #viewInspector .tb-windowBtn:hover,
@@ -1977,6 +1979,8 @@
     #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: center;
+      column-gap: 1px;
+      row-gap: 6px;
     }
 
     #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows #trajectoryPanelBtn,
@@ -2349,57 +2353,70 @@
 
 <body>
   <div id="toolbar" aria-expanded="true">
-    <input type="file" id="fileInput" accept=".cube,.cub,.xyz,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,application/json,text/plain" multiple />
+    <input type="file" id="fileInput"
+      accept=".cube,.cub,.xyz,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,application/json,text/plain"
+      multiple />
     <input type="file" id="presetInput" accept=".json,.vmpreset,application/json" />
     <datalist id="pubchemSuggestions"></datalist>
 
     <div id="toolbarHead">
       <div class="tb-headTop">
-        <div class="tb-brand">VibeMol <span id="brandEmoji" class="tb-brandEmoji" aria-hidden="true">🙂</span><span id="toolbarVersion" class="tb-versionBadge" aria-label="VibeMol version">v0.0.0</span></div>
-        <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button" title="Hide sidebar">chevron_left</button>
+        <div class="tb-brand">VibeMol <span id="brandEmoji" class="tb-brandEmoji" aria-hidden="true">🙂</span><span
+            id="toolbarVersion" class="tb-versionBadge" aria-label="VibeMol version">v0.0.0</span></div>
+        <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button"
+          title="Hide sidebar">chevron_left</button>
       </div>
     </div>
 
     <div class="tb-section tb-main tb-modes">
       <div id="toolbarModeRow" role="group" aria-label="Interaction mode">
         <button id="modeDisplayBtn" class="secondary tb-modeBtn" type="button" aria-label="Display mode"
-          title="Display mode" data-tip="Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.">View</button>
+          title="Display mode"
+          data-tip="Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.">View</button>
         <button id="modeMeasureBtn" class="secondary tb-modeBtn" type="button" aria-label="Measurement mode"
-          title="Measurement mode" data-tip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure</button>
-        <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode"
-          title="Edit mode" data-tip="Edit mode: move/add/delete atoms. Shortcut: E">Edit</button>
+          title="Measurement mode"
+          data-tip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure</button>
+        <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode" title="Edit mode"
+          data-tip="Edit mode: move/add/delete atoms. Shortcut: E">Edit</button>
       </div>
     </div>
 
     <div class="tb-section tb-file">
       <div class="tb-fileActionRow">
-        <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" title="Open molecule files" aria-label="Open files" data-tip="Open files (.xyz, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
-        <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Create a new empty file" aria-label="New file" data-tip="Create a new empty editable file">note_add</button>
+        <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" title="Open molecule files"
+          aria-label="Open files" data-tip="Open files (.xyz, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
+        <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Create a new empty file"
+          aria-label="New file" data-tip="Create a new empty editable file">note_add</button>
         <div class="tb-iconActions">
-          <button id="saveBtn" class="secondary tb-iconBtn ms-icon-button" title="Save the current view as a PNG image (S)"
-            aria-label="Save PNG" data-tip="Save the current view as a PNG image. Shortcut: S">image</button>
+          <button id="saveBtn" class="secondary tb-iconBtn ms-icon-button"
+            title="Save the current view as a PNG image (S)" aria-label="Save PNG"
+            data-tip="Save the current view as a PNG image. Shortcut: S">image</button>
           <button id="batchBtn" class="secondary tb-iconBtn ms-icon-button" title="Export all views as PNG images (B)"
-            aria-label="Batch export" data-tip="Export all loaded files as PNG images. Shortcut: B">photo_library</button>
-          <button id="savePresetBtn" class="secondary tb-iconBtn ms-icon-button" title="Download current visualization preset as JSON"
-            aria-label="Save preset" data-tip="Download current visualization preset as JSON">download</button>
-          <button id="loadPresetBtn" class="secondary tb-iconBtn ms-icon-button" title="Load visualization preset from JSON"
-            aria-label="Load preset" data-tip="Load visualization preset from JSON file">upload</button>
+            aria-label="Batch export"
+            data-tip="Export all loaded files as PNG images. Shortcut: B">photo_library</button>
+          <button id="savePresetBtn" class="secondary tb-iconBtn ms-icon-button"
+            title="Download current visualization preset as JSON" aria-label="Save preset"
+            data-tip="Download current visualization preset as JSON">download</button>
+          <button id="loadPresetBtn" class="secondary tb-iconBtn ms-icon-button"
+            title="Load visualization preset from JSON" aria-label="Load preset"
+            data-tip="Load visualization preset from JSON file">upload</button>
         </div>
       </div>
       <div class="tb-field">
         <label for="fileSelect">Active file</label>
         <span class="tb-inline">
           <select id="fileSelect"></select>
-          <button id="renameFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Rename active file" aria-label="Rename active file" data-tip="Rename active file">drive_file_rename_outline</button>
+          <button id="renameFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Rename active file"
+            aria-label="Rename active file" data-tip="Rename active file">drive_file_rename_outline</button>
         </span>
       </div>
       <label class="tb-field">PubChem
         <span class="tb-inline">
           <input type="text" id="pubchemQuery" class="pubchem-query" placeholder="Search (e.g. ben)"
             title="Type a compound name. Suggestions are filtered to PubChem entries with 3D structures."
-            list="pubchemSuggestions"
-            autocomplete="off" />
-          <button id="pubchemLoadBtn" class="secondary ms-icon-button" title="Search PubChem and load the selected molecule" aria-label="Load from PubChem">arrow_downward</button>
+            list="pubchemSuggestions" autocomplete="off" />
+          <button id="pubchemLoadBtn" class="secondary ms-icon-button"
+            title="Search PubChem and load the selected molecule" aria-label="Load from PubChem">arrow_downward</button>
         </span>
       </label>
       <div id="pubchemMetaWrap" style="display:none;">
@@ -2451,8 +2468,10 @@
           <div class="inspectorRow inspectorSelectRow" id="rowCloudParams">
             <label for="cloudStride">Cloud opts</label>
             <span style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; align-items:center;">
-              <input type="number" id="cloudStride" min="1" max="8" step="1" value="1" title="Sample every N voxels per axis" />
-              <input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1" title="Maximum cloud alpha" />
+              <input type="number" id="cloudStride" min="1" max="8" step="1" value="1"
+                title="Sample every N voxels per axis" />
+              <input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1"
+                title="Maximum cloud alpha" />
             </span>
           </div>
         </div>
@@ -2460,7 +2479,8 @@
           <div class="inspectorTitle">Molecule</div>
           <div class="inspectorRow inspectorSelectRow">
             <label for="moleculeStyle">Style</label>
-            <select id="moleculeStyle" title="Choose atom/bond rendering style (shortcuts: 1=Default, 2=Toon, 3=Kit, 4=Glossy)">
+            <select id="moleculeStyle"
+              title="Choose atom/bond rendering style (shortcuts: 1=Default, 2=Toon, 3=Kit, 4=Glossy)">
               <option value="default" selected>Default</option>
               <option value="toon">Toon (luminous)</option>
               <option value="kit">Kit (collar joints)</option>
@@ -2537,8 +2557,7 @@
               <span class="isoTag">Iso</span>
               <input type="number" id="iso" value="0.02" step="0.005" aria-label="Iso value" />
             </label>
-            <button id="autoIsoBtn" class="secondary isoAutoBtn ms-icon-button" type="button"
-              aria-pressed="false"
+            <button id="autoIsoBtn" class="secondary isoAutoBtn ms-icon-button" type="button" aria-pressed="false"
               title="Autoiso OFF: load/select a .cube/.2ccube file to apply.">auto_fix_high</button>
           </div>
           <div class="inspectorRow">
@@ -2590,7 +2609,8 @@
         </div>
         <div class="inspectorGroup">
           <div class="inspectorTitle">Elements</div>
-          <button id="elementColorBtn" class="secondary tb-modeBtn" title="Edit per-element default colors">Element colors...</button>
+          <button id="elementColorBtn" class="secondary tb-modeBtn" title="Edit per-element default colors">Element
+            colors...</button>
         </div>
       </div>
     </div>
@@ -2601,10 +2621,12 @@
       </button>
       <div id="viewInspector" aria-hidden="true">
         <div class="viewInspectorGroup viewInspectorWindows">
-          <button id="viewPanelBtn" class="secondary tb-windowBtn" title="Open/close View window">View ...</button>
-          <button id="coordsPanelBtn" class="secondary tb-windowBtn" title="Open/close Coordinates window">Coordinates ...</button>
-          <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file" style="display:none;">Trajectory</button>
-          <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file" style="display:none;">Frequencies</button>
+          <button id="viewPanelBtn" class="secondary tb-windowBtn" title="Open/close View window">View</button>
+          <button id="coordsPanelBtn" class="secondary tb-windowBtn" title="Open/close Coordinates window">Coordinates</button>
+          <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file"
+            style="display:none;">Trajectory</button>
+          <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file"
+            style="display:none;">Frequencies</button>
         </div>
         <div class="viewInspectorGroup">
           <div class="viewInspectorTitle">Quick actions</div>
@@ -2621,23 +2643,27 @@
             <span class="tb-quickActionLabel">Align Principal Axes</span>
           </button>
           <button id="projectionModeBtn" class="secondary tb-quickActionBtn"
-            title="Toggle between perspective and orthographic camera projection"
-            data-tip="Projection: currently Perspective. Click to switch to Orthographic.">
+            title="Orthographic projection is OFF. Click to turn it ON."
+            data-tip="Orthographic: OFF. Click to enable orthographic projection.">
             <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">view_in_ar</span>
-            <span class="tb-quickActionLabel" id="projectionModeLabel">Projection: Perspective</span>
+            <span class="tb-quickActionLabel" id="projectionModeLabel">Orthographic</span>
+            <span id="projectionModeState">Off</span>
           </button>
           <div class="viewPresetRow">
-            <button id="viewAxisXBtn" class="secondary tb-quickActionBtn" title="Set camera along +X axis looking toward target"
+            <button id="viewAxisXBtn" class="secondary tb-quickActionBtn"
+              title="Set camera along +X axis looking toward target"
               data-tip="View +X: place the camera on +X looking at the current target.">
               <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">east</span>
               <span class="tb-quickActionLabel">+X</span>
             </button>
-            <button id="viewAxisYBtn" class="secondary tb-quickActionBtn" title="Set camera along +Y axis looking toward target"
+            <button id="viewAxisYBtn" class="secondary tb-quickActionBtn"
+              title="Set camera along +Y axis looking toward target"
               data-tip="View +Y: place the camera on +Y looking at the current target.">
               <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north</span>
               <span class="tb-quickActionLabel">+Y</span>
             </button>
-            <button id="viewAxisZBtn" class="secondary tb-quickActionBtn" title="Set camera along +Z axis looking toward target"
+            <button id="viewAxisZBtn" class="secondary tb-quickActionBtn"
+              title="Set camera along +Z axis looking toward target"
               data-tip="View +Z: place the camera on +Z looking at the current target.">
               <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north_east</span>
               <span class="tb-quickActionLabel">+Z</span>
@@ -2662,7 +2688,8 @@
       <div id="emptyStateLead">VibeMol <span id="emptyStateVersion"></span></div>
       <div id="emptyStateDropZone">
         <span id="emptyStateDropIcon" class="material-symbols-outlined">upload_file</span>
-        Drag and drop <code>.xyz</code>, <code>.cube</code>, <code>.vib.json</code>, <code>.hess</code>, or Psi4 <code>.dat/.out</code> files here
+        Drag and drop <code>.xyz</code>, <code>.cube</code>, <code>.vib.json</code>, <code>.hess</code>, or Psi4
+        <code>.dat/.out</code> files here
       </div>
       <div id="emptyStatePrimaryAction">
         <button id="emptyStateOpenBtn" type="button">Choose files</button>
@@ -2696,27 +2723,44 @@
     <div id="editToolButtons">
       <button id="editToolMoveBtn" type="button" class="active" title="Move atoms in edit mode">Move</button>
       <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add</button>
-      <button id="editToolTransformBtn" type="button" title="Transform fragment/molecule in edit mode">Transform</button>
+      <button id="editToolTransformBtn" type="button"
+        title="Transform fragment/molecule in edit mode">Transform</button>
       <button id="editToolDeleteBtn" type="button" class="delete" title="Delete atoms in edit mode">Delete</button>
     </div>
     <div id="editAddPane">
       <div id="editAddModeToggle">
         <button id="editAddModeAtomBtn" type="button" class="active" title="Add single atoms">Atom</button>
         <button id="editAddModeFragmentBtn" type="button" title="Attach predefined fragments">Fragment</button>
+        <button id="editAddModeMoleculeBtn" type="button" title="Place standalone molecules">Molecule</button>
       </div>
       <div id="editAddAtomPane" class="active">
         <label for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
-        <input id="editAddSearch" type="text" list="editAddSuggestions" autocomplete="off" placeholder="e.g. C, Carbon, 6" />
+        <input id="editAddSearch" type="text" list="editAddSuggestions" autocomplete="off"
+          placeholder="e.g. C, Carbon, 6" />
         <datalist id="editAddSuggestions"></datalist>
         <div id="editAddQuick"></div>
         <div id="editAddCurrent"></div>
       </div>
       <div id="editAddFragmentPane">
         <label for="editFragmentSearch">Fragment to add (name, id, or formula)</label>
-        <input id="editFragmentSearch" type="text" list="editFragmentSuggestions" autocomplete="off" placeholder="e.g. phenyl, hydroxyl, C6H5" />
+        <input id="editFragmentSearch" type="text" list="editFragmentSuggestions" autocomplete="off"
+          placeholder="e.g. phenyl, hydroxyl, C6H5" />
         <datalist id="editFragmentSuggestions"></datalist>
         <div id="editFragmentQuick"></div>
         <div id="editFragmentCurrent"></div>
+      </div>
+      <div id="editAddMoleculePane">
+        <label for="editMoleculeSearch">Molecule to add (name, id, or formula)</label>
+        <input id="editMoleculeSearch" type="text" list="editMoleculeSuggestions" autocomplete="off"
+          placeholder="e.g. benzene, pyridine, C6H6" />
+        <datalist id="editMoleculeSuggestions"></datalist>
+        <div id="editMoleculeQuick"></div>
+        <div id="editMoleculeCurrent"></div>
+        <div id="editMoleculeAlign">
+          <button id="editMoleculeAlignXBtn" type="button" title="Align molecule principal axis to +X during placement">Align X</button>
+          <button id="editMoleculeAlignYBtn" type="button" title="Align molecule principal axis to +Y during placement">Align Y</button>
+          <button id="editMoleculeAlignZBtn" type="button" title="Align molecule principal axis to +Z during placement">Align Z</button>
+        </div>
       </div>
     </div>
     <div id="editTransformPane">
@@ -2736,26 +2780,9 @@
     </div>
     <div id="editSnapPane">
       <span class="title">Angle snapping</span>
-      <div id="editSnapHint">In Add mode, cursor direction around the anchor atom drives placement. Snapping picks the nearest valid angle (180°, 120°, 109.5°, 90°, 60°).</div>
+      <div id="editSnapHint">In Add mode, cursor direction around the anchor atom drives placement. Snapping picks the
+        nearest valid angle (180°, 120°, 109.5°, 90°, 60°).</div>
     </div>
-  </div>
-  <div id="editAddCursorHud" aria-hidden="true">
-    <div class="title">Quick Build</div>
-    <div class="row">
-      <span class="label">Elem</span>
-      <button type="button" data-z="1">H</button>
-      <button type="button" data-z="6">C</button>
-      <button type="button" data-z="7">N</button>
-      <button type="button" data-z="8">O</button>
-    </div>
-    <div class="row">
-      <span class="label">Bond</span>
-      <button type="button" data-order="1" title="Single bond (key 1)">1</button>
-      <button type="button" data-order="2" title="Double bond (key 2)">2</button>
-      <button type="button" data-order="3" title="Triple bond (key 3)">3</button>
-      <button type="button" data-order="4" title="Quadruple bond (key 4)">4</button>
-    </div>
-    <div class="hint">Keys: H/C/N/O and 1/2/3/4</div>
   </div>
   <div id="editCursorBadge" aria-hidden="true">
     <div class="mode" id="editCursorBadgeMode">Move</div>
@@ -2844,7 +2871,8 @@
         <button id="coordsUnitsBtn" class="secondary" title="Toggle coordinate units">Bohr</button>
         <button id="copyXYZ" class="secondary" title="Copy XYZ">Copy</button>
         <button id="downloadXYZ" class="secondary" title="Download XYZ">Download</button>
-        <button id="coordsPanelClose" class="motionPanelClose" title="Close coordinates"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
+        <button id="coordsPanelClose" class="motionPanelClose" title="Close coordinates"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
     <div class="motionPanelBody" style="padding:0;">
@@ -2858,20 +2886,25 @@
     <div class="motionPanelHeader">
       <div class="title">Trajectory</div>
       <div class="actions">
-        <button id="trajectoryPlayBtn" class="motionPanelIconBtn" title="Play/Pause trajectory"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
-        <button id="trajectoryResetBtn" class="motionPanelIconBtn" title="Reset to first frame"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
-        <button id="trajectoryPanelClose" class="motionPanelClose" title="Close trajectory controls"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
+        <button id="trajectoryPlayBtn" class="motionPanelIconBtn" title="Play/Pause trajectory"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
+        <button id="trajectoryResetBtn" class="motionPanelIconBtn" title="Reset to first frame"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
+        <button id="trajectoryPanelClose" class="motionPanelClose" title="Close trajectory controls"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
     <div class="motionPanelBody">
       <div id="trajectoryNowPlaying">No trajectory selected</div>
       <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:1fr auto;">
         <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" title="Trajectory frame index" />
-        <div id="trajectoryFrameLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">1/1</div>
+        <div id="trajectoryFrameLabel"
+          style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">1/1</div>
       </div>
       <div class="row" id="trajectoryRow2" style="display:none; grid-template-columns:50px 96px auto 1fr;">
         <label style="width:auto;">FPS</label>
-        <input type="number" id="trajectoryFps" min="1" max="120" step="1" value="12" title="Trajectory playback speed (frames per second)" />
+        <input type="number" id="trajectoryFps" min="1" max="120" step="1" value="12"
+          title="Trajectory playback speed (frames per second)" />
         <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked /> Loop</label>
         <span></span>
       </div>
@@ -2882,18 +2915,23 @@
     <div class="motionPanelHeader">
       <div class="title">Vibrational Frequencies</div>
       <div class="actions">
-        <button id="vibrationPlayBtn" class="motionPanelIconBtn" title="Play/Pause vibrational mode"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
-        <button id="vibrationResetBtn" class="motionPanelIconBtn" title="Reset to equilibrium geometry"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
-        <button id="vibrationPanelClose" class="motionPanelClose" title="Close vibration controls"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
+        <button id="vibrationPlayBtn" class="motionPanelIconBtn" title="Play/Pause vibrational mode"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
+        <button id="vibrationResetBtn" class="motionPanelIconBtn" title="Reset to equilibrium geometry"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
+        <button id="vibrationPanelClose" class="motionPanelClose" title="Close vibration controls"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
     <div class="motionPanelBody">
       <div class="row" id="vibrationFilterRow" style="grid-template-columns:1fr;">
-        <label style="width:auto;"><input type="checkbox" id="vibrationHideLowFreq" checked /> Hide small frequencies</label>
+        <label style="width:auto;"><input type="checkbox" id="vibrationHideLowFreq" checked /> Hide small
+          frequencies</label>
       </div>
       <div id="vibrationNowPlaying">No mode selected</div>
       <div class="row" id="vibrationRow" style="display:none; grid-template-columns:1fr;">
-        <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:left;">No mode selected</div>
+        <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:left;">
+          No mode selected</div>
       </div>
       <div class="row" id="vibrationRow2" style="display:none; grid-template-columns:58px 94px 64px 94px 1fr;">
         <label style="width:auto;">Vib Amp</label>
@@ -2902,7 +2940,8 @@
         <label style="width:auto;">Speed</label>
         <input type="number" id="vibrationSpeed" min="0.1" max="30" step="0.05" value="0.75"
           title="Oscillation speed in cycles per second" />
-        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">-- cm<sup>−1</sup></div>
+        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">
+          -- cm<sup>−1</sup></div>
       </div>
       <div id="vibrationSpectrumWrap" aria-label="IR spectrum">
         <canvas id="vibrationSpectrumCanvas" width="420" height="128"></canvas>
@@ -2944,11 +2983,18 @@
         <ul>
           <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
           <li>Use View/Coords to adjust camera, target, and scene shift.</li>
-          <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred multiple-bond rendering. Keyboard shortcuts 1/2/3/4 switch Default/Toon/Kit/Glossy, while Fog, Ink scheme, Blackbody ramp, and atom/bond alpha are independent molecule feature toggles.</li>
-          <li>Multi-frame XYZ trajectories expose playback controls in the dedicated Trajectory window (play, frame slider, FPS, loop).</li>
-          <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, and Psi4 output logs) expose mode playback controls in the dedicated Vibration window; click a frequency row to select and animate that mode, and view the IR spectrum with the active mode highlighted.</li>
-          <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) with in-scene guide overlays.</li>
-          <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show element symbols over atoms.</li>
+          <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred multiple-bond rendering.
+            Keyboard shortcuts 1/2/3/4 switch Default/Toon/Kit/Glossy, while Fog, Ink scheme, Blackbody ramp, and
+            atom/bond alpha are independent molecule feature toggles.</li>
+          <li>Multi-frame XYZ trajectories expose playback controls in the dedicated Trajectory window (play, frame
+            slider, FPS, loop).</li>
+          <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, and Psi4 output
+            logs) expose mode playback controls in the dedicated Vibration window; click a frequency row to select and
+            animate that mode, and view the IR spectrum with the active mode highlighted.</li>
+          <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) with in-scene guide
+            overlays.</li>
+          <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show
+            element symbols over atoms.</li>
           <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
           <li>The Cartesian coordinates are displayed as red (X), green (Y), and blue (Z) arrows.</li>
         </ul>
@@ -2962,7 +3008,9 @@
           <li><strong>R</strong> — Shift active molecule center of mass to origin</li>
           <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
           <li><strong>Cmd/Ctrl+Z</strong> / <strong>Cmd/Ctrl+Shift+Z</strong> — Undo / Redo edit action</li>
-          <li><strong>Edit tools:</strong> <strong>G</strong>=Move, <strong>N</strong>=Add, <strong>T</strong>=Transform, <strong>D</strong>=Delete</li>
+          <li><strong>Edit tools:</strong> <strong>G</strong>=Move, <strong>N</strong>=Add,
+            <strong>T</strong>=Transform, <strong>D</strong>=Delete
+          </li>
           <li><strong>Edit mode:</strong> hold <strong>Shift</strong> while placing to bypass auto angle snapping</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
         </ul>
@@ -2980,7 +3028,8 @@
         <span id="elementColorName">Select an element</span>
         <input type="color" id="elementColorPicker" value="#ffffff" />
         <button id="elementColorResetOne" class="secondary" title="Reset selected element color">Reset Selected</button>
-        <button id="elementColorResetAll" class="secondary" title="Reset all element colors to defaults">Reset All</button>
+        <button id="elementColorResetAll" class="secondary" title="Reset all element colors to defaults">Reset
+          All</button>
       </div>
       <div id="periodicTableViewport" aria-label="Periodic table color editor">
         <canvas id="periodicTableCanvas"></canvas>
