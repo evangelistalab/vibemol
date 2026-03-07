@@ -6135,6 +6135,7 @@
   if (toggleMultiBonds) showMultiBonds = !!toggleMultiBonds.checked;
   if (toggleAtomLabels) showAtomLabels = !!toggleAtomLabels.checked;
   if (toggleAtomLabelNumbers) showAtomLabelNumbers = !!toggleAtomLabelNumbers.checked;
+  syncAtomLabelNumberToggleState();
   const viewReset = document.getElementById('viewReset');
   const styleSelect = document.getElementById('styleSelect');
   const moleculeStyleSel = document.getElementById('moleculeStyle');
@@ -12892,6 +12893,23 @@
   }
 
   /**
+   * Keep atom-numbering availability in sync with atom-label visibility.
+   * When labels are off, numbering is forced off and the control is disabled.
+   */
+  function syncAtomLabelNumberToggleState() {
+    const labelsEnabled = !!showAtomLabels;
+    if (!labelsEnabled) showAtomLabelNumbers = false;
+    if (toggleAtomLabels) toggleAtomLabels.checked = labelsEnabled;
+    if (toggleAtomLabelNumbers) {
+      toggleAtomLabelNumbers.checked = !!showAtomLabelNumbers && labelsEnabled;
+      toggleAtomLabelNumbers.disabled = !labelsEnabled;
+      toggleAtomLabelNumbers.setAttribute('aria-disabled', labelsEnabled ? 'false' : 'true');
+      const chip = toggleAtomLabelNumbers.closest('.toggleChip');
+      if (chip) chip.style.opacity = labelsEnabled ? '1' : '0.55';
+    }
+  }
+
+  /**
    * Normalize CSS hex color inputs to `#rrggbb`.
    * @param {*} value
    * @param {string} fallback
@@ -13024,11 +13042,11 @@
   });
   registerPresetSetting('global.showAtomLabels', () => !!showAtomLabels, (value) => {
     showAtomLabels = asBoolean(value);
-    if (toggleAtomLabels) toggleAtomLabels.checked = showAtomLabels;
+    syncAtomLabelNumberToggleState();
   });
   registerPresetSetting('global.showAtomLabelNumbers', () => !!showAtomLabelNumbers, (value) => {
     showAtomLabelNumbers = asBoolean(value);
-    if (toggleAtomLabelNumbers) toggleAtomLabelNumbers.checked = showAtomLabelNumbers;
+    syncAtomLabelNumberToggleState();
   });
   registerPresetSetting('global.showBonds', () => !!(toggleBonds && toggleBonds.checked), (value) => {
     if (toggleBonds) toggleBonds.checked = asBoolean(value);
@@ -15842,12 +15860,19 @@
   if (toggleAtomLabels) {
     toggleAtomLabels.onchange = () => {
       showAtomLabels = !!toggleAtomLabels.checked;
+      syncAtomLabelNumberToggleState();
       rebuildScene({ preserveView: true });
     };
   }
   if (toggleAtomLabelNumbers) {
     toggleAtomLabelNumbers.onchange = () => {
+      if (!showAtomLabels) {
+        showAtomLabelNumbers = false;
+        syncAtomLabelNumberToggleState();
+        return;
+      }
       showAtomLabelNumbers = !!toggleAtomLabelNumbers.checked;
+      syncAtomLabelNumberToggleState();
       rebuildScene({ preserveView: true });
     };
   }

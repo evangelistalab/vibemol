@@ -2456,50 +2456,6 @@
       </button>
       <div id="displayInspector" aria-hidden="true">
         <div class="inspectorGroup">
-          <div class="inspectorTitle">Rendering</div>
-          <div class="inspectorRow inspectorSelectRow">
-            <label for="schemeSelect">Color scheme</label>
-            <select id="schemeSelect" title="Choose default +/- surface colors">
-              <option value="emory" selected>Emory (gold/blue)</option>
-              <option value="national">National (red/blue)</option>
-              <option value="bright">Bright (yellow/cyan)</option>
-              <option value="electron">Electron (magenta/green)</option>
-              <option value="classic">Classic (blue/red)</option>
-              <option value="custom">Custom (via color pickers)</option>
-            </select>
-          </div>
-          <div class="inspectorRow inspectorSelectRow">
-            <label for="renderMode">Render mode</label>
-            <select id="renderMode" title="Choose visualization mode">
-              <option value="surface" selected>Surfaces</option>
-              <option value="cloud">Cloud</option>
-            </select>
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowStyle">
-            <label for="styleSelect">Surface style</label>
-            <select id="styleSelect" title="Choose iso-surface material style">
-              <option value="emissive" selected>Emissive (physical)</option>
-              <option value="glass">Glass (physical)</option>
-            </select>
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowCloudType">
-            <label for="cloudType">Cloud type</label>
-            <select id="cloudType" title="Cloud renderer">
-              <option value="cubes" selected>Cubes</option>
-              <option value="points">Points</option>
-            </select>
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowCloudParams">
-            <label for="cloudStride">Cloud opts</label>
-            <span style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; align-items:center;">
-              <input type="number" id="cloudStride" min="1" max="8" step="1" value="1"
-                title="Sample every N voxels per axis" />
-              <input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1"
-                title="Maximum cloud alpha" />
-            </span>
-          </div>
-        </div>
-        <div class="inspectorGroup">
           <div class="inspectorTitle">Molecule</div>
           <div class="inspectorRow inspectorSelectRow">
             <label for="moleculeStyle">Style</label>
@@ -2576,6 +2532,47 @@
         </div>
         <div class="inspectorGroup">
           <div class="inspectorTitle">Surface</div>
+          <div class="inspectorRow inspectorSelectRow">
+            <label for="schemeSelect">Color scheme</label>
+            <select id="schemeSelect" title="Choose default +/- surface colors">
+              <option value="emory" selected>Emory (gold/blue)</option>
+              <option value="national">National (red/blue)</option>
+              <option value="bright">Bright (yellow/cyan)</option>
+              <option value="electron">Electron (magenta/green)</option>
+              <option value="classic">Classic (blue/red)</option>
+              <option value="custom">Custom (via color pickers)</option>
+            </select>
+          </div>
+          <div class="inspectorRow inspectorSelectRow">
+            <label for="renderMode">Render mode</label>
+            <select id="renderMode" title="Choose visualization mode">
+              <option value="surface" selected>Surfaces</option>
+              <option value="cloud">Cloud</option>
+            </select>
+          </div>
+          <div class="inspectorRow inspectorSelectRow" id="rowStyle">
+            <label for="styleSelect">Surface style</label>
+            <select id="styleSelect" title="Choose iso-surface material style">
+              <option value="emissive" selected>Emissive (physical)</option>
+              <option value="glass">Glass (physical)</option>
+            </select>
+          </div>
+          <div class="inspectorRow inspectorSelectRow" id="rowCloudType">
+            <label for="cloudType">Cloud type</label>
+            <select id="cloudType" title="Cloud renderer">
+              <option value="cubes" selected>Cubes</option>
+              <option value="points">Points</option>
+            </select>
+          </div>
+          <div class="inspectorRow inspectorSelectRow" id="rowCloudParams">
+            <label for="cloudStride">Cloud opts</label>
+            <span style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; align-items:center;">
+              <input type="number" id="cloudStride" min="1" max="8" step="1" value="1"
+                title="Sample every N voxels per axis" />
+              <input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1"
+                title="Maximum cloud alpha" />
+            </span>
+          </div>
           <div class="inspectorRow isoRow">
             <label class="isoField">
               <span class="isoTag">Iso</span>
