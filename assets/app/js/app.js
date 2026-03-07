@@ -6069,6 +6069,7 @@
   const centerMassBtn = document.getElementById('centerMassBtn');
   const alignInertiaBtn = document.getElementById('alignInertiaBtn');
   const projectionModeBtn = document.getElementById('projectionModeBtn');
+  const projectionModeLabel = document.getElementById('projectionModeLabel');
   const viewAxisXBtn = document.getElementById('viewAxisXBtn');
   const viewAxisYBtn = document.getElementById('viewAxisYBtn');
   const viewAxisZBtn = document.getElementById('viewAxisZBtn');
@@ -6431,7 +6432,7 @@
    */
   function initializeToolbarTooltips() {
     if (!toolbarEl || !toolbarTooltipEl) return;
-    const targets = toolbarEl.querySelectorAll('.tb-iconBtn[data-tip], .tb-modeBtn[data-tip]');
+    const targets = toolbarEl.querySelectorAll('button[data-tip]');
     targets.forEach((el) => {
       el.addEventListener('mouseenter', () => showToolbarTooltip(el));
       el.addEventListener('focus', () => showToolbarTooltip(el));
@@ -7166,12 +7167,14 @@
   function updateProjectionModeUI() {
     if (!projectionModeBtn) return;
     if (viewState.mode === 'orthographic') {
-      projectionModeBtn.textContent = 'Projection: Orthographic';
+      if (projectionModeLabel) projectionModeLabel.textContent = 'Projection: Orthographic';
       projectionModeBtn.title = 'Switch to perspective projection';
+      projectionModeBtn.setAttribute('data-tip', 'Projection: currently Orthographic. Click to switch to Perspective.');
       return;
     }
-    projectionModeBtn.textContent = 'Projection: Perspective';
+    if (projectionModeLabel) projectionModeLabel.textContent = 'Projection: Perspective';
     projectionModeBtn.title = 'Switch to orthographic projection';
+    projectionModeBtn.setAttribute('data-tip', 'Projection: currently Perspective. Click to switch to Orthographic.');
   }
 
   /**
