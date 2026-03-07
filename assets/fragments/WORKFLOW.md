@@ -1,18 +1,18 @@
 # Fragment Library Workflow
 
-This folder is the editable source for fragment definitions used by VibeMol.
+This folder is the editable source for the VibeMol builder catalog.
 
 ## Files
-- `library.json`: fragment manifest (metadata + bonding + paths to XYZ files)
-- `*.xyz`: per-fragment geometry files
+- `library.json`: catalog manifest (entries + bonding + paths to XYZ files)
+- `*.xyz`: per-entry geometry files
 
 ## Geometry Convention
-For each fragment `*.xyz`:
+For each fragment-like `*.xyz`:
 - Atom **1** (index `0`) is the **linker atom**.
 - Atom **2** (index `1`) defines the link direction and should lie on **+Z** after reorientation.
 
 ## Typical Edit Loop
-1. Edit one fragment XYZ (`assets/fragments/<id>.xyz`).
+1. Edit one entry XYZ (`assets/fragments/<id>.xyz`).
 2. Re-orient it to VibeMol convention:
    ```bash
    python3 tools/reorient_fragment_xyz.py assets/fragments/<id>.xyz --inplace
@@ -53,18 +53,23 @@ Recompute formulas from XYZ symbols:
 python3 tools/sync_fragment_library.py --write --refresh-formula
 ```
 
-## Manifest Fields (per fragment)
+## Manifest Fields (per entry)
 Required/expected fields in `library.json`:
+- `kind` (`fragment` or `molecule`)
 - `id` (lowercase unique key)
 - `name`
 - `formula`
 - `tags` (array)
 - `xyz` (relative path, usually `./<id>.xyz`)
-- `bonds` (`[{"i": int, "j": int, "order": 1|2|3}]`)
+- `bonds` (`[{"i": int, "j": int, "order": 1|2|3|4}]`)
+
+Fragment-only fields:
 - `connectionAtomIndex` (usually `0`)
-- `preferredBondOrder` (`1..3`)
+- `preferredBondOrder` (`1..4`)
 - `linkBondDirection` (unit vector, usually `[0,0,1]`)
+- `attachModes` (`append`, `replace_h`, `fuse_ring`)
+- `fuseBondLocalPair` (`[i, j]`) when `attachModes` includes `fuse_ring`
 
 ## Notes
-- `tools/sync_fragment_library.py` preserves unknown fields in the manifest for forward compatibility.
-- Keep fragment IDs stable once used in presets/operation logs.
+- `tools/sync_fragment_library.py` accepts legacy top-level `fragments`, but rewrites the manifest using top-level `entries`.
+- Keep entry IDs stable once used in presets/operation logs.

@@ -128,12 +128,27 @@
 
   const {
     FRAGMENT_LIBRARY,
+    getCatalogEntries,
+    resolveCatalogQuery,
+    getCatalogEntryById,
+    buildCatalogInstance,
     resolveFragmentQuery,
     getFragmentById,
     buildFragmentInstance,
     loadFragmentLibraryFromManifest,
   } = window.VibeMolFragments || {};
-  if (!Array.isArray(FRAGMENT_LIBRARY) || ![resolveFragmentQuery, getFragmentById, buildFragmentInstance].every(fn => typeof fn === 'function')) {
+  if (
+    !Array.isArray(FRAGMENT_LIBRARY)
+    || ![
+      getCatalogEntries,
+      resolveCatalogQuery,
+      getCatalogEntryById,
+      buildCatalogInstance,
+      resolveFragmentQuery,
+      getFragmentById,
+      buildFragmentInstance,
+    ].every(fn => typeof fn === 'function')
+  ) {
     throw new Error('VibeMolFragments is not loaded. Ensure assets/app/js/fragments.js is included before assets/app/js/app.js.');
   }
 
@@ -6174,6 +6189,7 @@
   const editFragmentSearchEl = document.getElementById('editFragmentSearch');
   const editFragmentSuggestionsEl = document.getElementById('editFragmentSuggestions');
   const editFragmentQuickEl = document.getElementById('editFragmentQuick');
+  const editFragmentAttachPolicyEl = document.getElementById('editFragmentAttachPolicy');
   const editFragmentCurrentEl = document.getElementById('editFragmentCurrent');
   const editMoleculeSearchEl = document.getElementById('editMoleculeSearch');
   const editMoleculeSuggestionsEl = document.getElementById('editMoleculeSuggestions');
@@ -7287,6 +7303,13 @@
   let axisKeyDown = null; // current held axis key ('x'|'y'|'z') to avoid auto-repeat toggling
   const EDIT_TOOL = Object.freeze({ MOVE: 'move', ADD: 'add', TRANSFORM: 'transform', DELETE: 'delete' });
   const EDIT_ADD_MODE = Object.freeze({ ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' });
+  const CATALOG_KIND = Object.freeze({ FRAGMENT: 'fragment', MOLECULE: 'molecule' });
+  const EDIT_FRAGMENT_ATTACH_POLICY = Object.freeze({
+    AUTO: 'auto',
+    APPEND: 'append',
+    REPLACE_H: 'replace_h',
+    FUSE_RING: 'fuse_ring',
+  });
   const EDIT_TRANSFORM_SCOPE = Object.freeze({
     AUTO: 'auto',
     FRAGMENT: 'fragment',
@@ -7301,23 +7324,28 @@
   let editAddMode = EDIT_ADD_MODE.ATOM;
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
-  let editAddFragmentId = (getFragmentById('methyl') && getFragmentById('methyl').id) || ((FRAGMENT_LIBRARY[0] && FRAGMENT_LIBRARY[0].id) || 'methyl');
-  let editAddMoleculeId = (getFragmentById('benzene') && getFragmentById('benzene').id) || ((FRAGMENT_LIBRARY[0] && FRAGMENT_LIBRARY[0].id) || 'benzene');
+  let editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
+  let editAddFragmentId = (getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT) && getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT).id) || ((getCatalogEntries(CATALOG_KIND.FRAGMENT)[0] && getCatalogEntries(CATALOG_KIND.FRAGMENT)[0].id) || 'methyl');
+  let editAddMoleculeId = (getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE) && getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE).id) || ((getCatalogEntries(CATALOG_KIND.MOLECULE)[0] && getCatalogEntries(CATALOG_KIND.MOLECULE)[0].id) || 'benzene');
   let editTransformScope = EDIT_TRANSFORM_SCOPE.AUTO;
   let editTransformMode = EDIT_TRANSFORM_MODE.MOVE;
   const EDIT_ANGLE_SNAP_OPTIONS = Object.freeze([60, 90, 109.5, 120, 180]);
   let addGrowDetectedAngleDeg = 0;
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
-  const EDIT_QUICK_FRAGMENTS = ['methyl', 'methylene', 'hydroxyl', 'amino', 'carbonyl', 'amide', 'phenyl', 'benzene'];
-  const EDIT_QUICK_MOLECULES = ['benzene', 'pyridine', 'cyclohexane', 'phenyl'];
+  const EDIT_QUICK_FRAGMENTS = ['methyl', 'methylene', 'hydroxyl', 'amino', 'carbonyl', 'amide', 'phenyl', 'benzene-ring', 'pyridine-ring'];
+  const EDIT_QUICK_MOLECULES = ['benzene', 'pyridine', 'cyclohexane'];
   const EDIT_HISTORY_LIMIT = 200;
   let editUndoStack = [];
   let editRedoStack = [];
+  let nextBuilderAtomId = 1;
+  let nextBuilderGroupId = 1;
+  let nextBuilderOpId = 1;
   let addGrowActive = false;
   let addGrowAnchorIndex = -1;
   let addGrowAnchorPos = null;
   let addGrowNeighborDirs = [];
   let addGrowPreviewPos = null;
+  let addGrowPreviewBondHit = null;
   let moleculePlaceActive = false;
   let moleculePlaceRotating = false;
   let moleculePlaceMoved = false;
@@ -7343,26 +7371,130 @@
   contentGroup.add(addPreviewGroup);
   const addMoleculePreviewGroup = new THREE.Group();
   addPreviewGroup.add(addMoleculePreviewGroup);
+  const addFusePreviewGroup = new THREE.Group();
+  addPreviewGroup.add(addFusePreviewGroup);
   const addAngleGuideGroup = new THREE.Group();
   contentGroup.add(addAngleGuideGroup);
   let addPreviewAtomMesh = null;
   let addPreviewBondMesh = null;
+  let addFusePreviewState = null;
   let dragBeforeAtomsSnapshot = null;
 
   /**
+   * Allocate one stable builder atom id.
+   * @returns {string}
+   */
+  function allocateBuilderAtomId() {
+    const id = `atom-${nextBuilderAtomId}`;
+    nextBuilderAtomId += 1;
+    return id;
+  }
+
+  /**
+   * Allocate one stable builder group id.
+   * @returns {string}
+   */
+  function allocateBuilderGroupId() {
+    const id = `group-${nextBuilderGroupId}`;
+    nextBuilderGroupId += 1;
+    return id;
+  }
+
+  /**
+   * Allocate one stable builder operation id.
+   * @returns {string}
+   */
+  function allocateBuilderOpId() {
+    const id = `op-${nextBuilderOpId}`;
+    nextBuilderOpId += 1;
+    return id;
+  }
+
+  /**
+   * Ensure counters advance past an observed builder id suffix.
+   * @param {*} raw
+   * @param {'atom'|'group'|'op'} prefix
+   */
+  function absorbObservedBuilderId(raw, prefix) {
+    const match = String(raw || '').match(new RegExp(`^${prefix}-(\\d+)$`));
+    if (!match) return;
+    const n = Number(match[1]);
+    if (!Number.isInteger(n) || n < 1) return;
+    if (prefix === 'atom') nextBuilderAtomId = Math.max(nextBuilderAtomId, n + 1);
+    else if (prefix === 'group') nextBuilderGroupId = Math.max(nextBuilderGroupId, n + 1);
+    else if (prefix === 'op') nextBuilderOpId = Math.max(nextBuilderOpId, n + 1);
+  }
+
+  /**
+   * Ensure one atom carries a stable builder id.
+   * @param {*} atom
+   * @returns {string}
+   */
+  function ensureAtomId(atom) {
+    if (!atom || typeof atom !== 'object') return '';
+    let id = String(atom.id || '').trim();
+    if (!id) {
+      id = allocateBuilderAtomId();
+      atom.id = id;
+    } else {
+      absorbObservedBuilderId(id, 'atom');
+    }
+    return id;
+  }
+
+  /**
+   * Ensure all atoms in one volume carry stable ids.
+   * @param {*} vol
+   */
+  function ensureVolumeAtomIds(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return;
+    for (const atom of vol.atoms) ensureAtomId(atom);
+  }
+
+  /**
+   * Apply builder group metadata to one atom.
+   * @param {*} atom
+   * @param {{groupId?:string|null,entryId?:string|null,entryKind?:string|null}=} meta
+   */
+  function setAtomBuilderMeta(atom, meta = {}) {
+    if (!atom || typeof atom !== 'object') return;
+    ensureAtomId(atom);
+    const groupId = meta.groupId == null ? atom.builderGroupId : String(meta.groupId || '').trim();
+    const entryId = meta.entryId == null ? atom.builderEntryId : String(meta.entryId || '').trim().toLowerCase();
+    const entryKind = meta.entryKind == null ? atom.builderEntryKind : String(meta.entryKind || '').trim().toLowerCase();
+    if (groupId) {
+      atom.builderGroupId = groupId;
+      absorbObservedBuilderId(groupId, 'group');
+    } else {
+      delete atom.builderGroupId;
+    }
+    if (entryId) atom.builderEntryId = entryId;
+    else delete atom.builderEntryId;
+    if (entryKind) atom.builderEntryKind = entryKind;
+    else delete atom.builderEntryKind;
+  }
+
+  /**
    * Deep-copy one atom array for history snapshots.
-   * @param {{atoms?:Array<{Z:number,q:number,x:number,y:number,z:number}>}} vol
-   * @returns {Array<{Z:number,q:number,x:number,y:number,z:number}>}
+   * @param {{atoms?:Array<{id?:string,Z:number,q:number,x:number,y:number,z:number}>}} vol
+   * @returns {Array<{id:string,Z:number,q:number,x:number,y:number,z:number,builderGroupId?:string,builderEntryId?:string,builderEntryKind?:string}>}
    */
   function cloneAtomsSnapshot(vol) {
     const atoms = vol && Array.isArray(vol.atoms) ? vol.atoms : [];
-    return atoms.map((a) => ({
-      Z: a.Z | 0,
-      q: Number.isFinite(a.q) ? Number(a.q) : 0,
-      x: Number(a.x),
-      y: Number(a.y),
-      z: Number(a.z),
-    }));
+    return atoms.map((a) => {
+      const clone = {
+        id: ensureAtomId(a),
+        Z: a.Z | 0,
+        q: Number.isFinite(a.q) ? Number(a.q) : 0,
+        x: Number(a.x),
+        y: Number(a.y),
+        z: Number(a.z),
+      };
+      if (a.builderGroupId) clone.builderGroupId = String(a.builderGroupId);
+      if (a.builderEntryId) clone.builderEntryId = String(a.builderEntryId);
+      if (a.builderEntryKind) clone.builderEntryKind = String(a.builderEntryKind);
+      return clone;
+    });
   }
 
   /**
@@ -7377,11 +7509,15 @@
     for (let i = 0; i < a.length; i++) {
       const x = a[i], y = b[i];
       if (!x || !y) return false;
+      if (String(x.id || '') !== String(y.id || '')) return false;
       if ((x.Z | 0) !== (y.Z | 0)) return false;
       if (Math.abs((x.q || 0) - (y.q || 0)) > 1e-12) return false;
       if (Math.abs((x.x || 0) - (y.x || 0)) > 1e-12) return false;
       if (Math.abs((x.y || 0) - (y.y || 0)) > 1e-12) return false;
       if (Math.abs((x.z || 0) - (y.z || 0)) > 1e-12) return false;
+      if (String(x.builderGroupId || '') !== String(y.builderGroupId || '')) return false;
+      if (String(x.builderEntryId || '') !== String(y.builderEntryId || '')) return false;
+      if (String(x.builderEntryKind || '') !== String(y.builderEntryKind || '')) return false;
     }
     return true;
   }
@@ -7488,15 +7624,24 @@
    * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} beforeAtoms
    * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} afterAtoms
    * @param {string} label
+   * @param {{beforeFragmentOps?:Array<object>|null,afterFragmentOps?:Array<object>|null}=} options
    */
-  function pushEditHistoryEntry(record, beforeAtoms, afterAtoms, label) {
+  function pushEditHistoryEntry(record, beforeAtoms, afterAtoms, label, options = {}) {
     if (!record || !record.vol) return;
     if (!Array.isArray(beforeAtoms) || !Array.isArray(afterAtoms)) return;
-    if (atomsSnapshotsEqual(beforeAtoms, afterAtoms)) return;
+    const beforeFragmentOps = Array.isArray(options.beforeFragmentOps) ? cloneJsonLike(options.beforeFragmentOps) : null;
+    const afterFragmentOps = Array.isArray(options.afterFragmentOps) ? cloneJsonLike(options.afterFragmentOps) : null;
+    if (atomsSnapshotsEqual(beforeAtoms, afterAtoms)) {
+      const beforeJson = beforeFragmentOps ? JSON.stringify(beforeFragmentOps) : '';
+      const afterJson = afterFragmentOps ? JSON.stringify(afterFragmentOps) : '';
+      if (beforeJson === afterJson) return;
+    }
     const command = createAtomSnapshotCommand({
       record,
       before: beforeAtoms,
       after: afterAtoms,
+      beforeFragmentOps,
+      afterFragmentOps,
       label: String(label || 'Edit'),
       at: Date.now(),
     });
@@ -7545,19 +7690,38 @@
    * @param {*} record
    * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} atoms
    * @param {{origin:number[],axes:number[][]}|null} grid
+   * @param {Array<object>|null=} fragmentOps
    * @returns {boolean}
    */
-  function applyRecordSpatialState(record, atoms, grid = null) {
+  function applyRecordSpatialState(record, atoms, grid = null, fragmentOps = undefined) {
     if (!record || !record.vol || !Array.isArray(atoms)) return false;
     const idx = volumes.indexOf(record);
     if (idx < 0) return false;
     record.vol.atoms = atoms.map((a) => ({
+      id: String(a.id || '').trim() || allocateBuilderAtomId(),
       Z: a.Z | 0,
       q: Number.isFinite(a.q) ? Number(a.q) : 0,
       x: Number(a.x),
       y: Number(a.y),
       z: Number(a.z),
     }));
+    for (let i = 0; i < record.vol.atoms.length; i++) {
+      const atom = record.vol.atoms[i];
+      const src = atoms[i];
+      absorbObservedBuilderId(atom.id, 'atom');
+      if (src && src.builderGroupId) atom.builderGroupId = String(src.builderGroupId);
+      if (src && src.builderEntryId) atom.builderEntryId = String(src.builderEntryId);
+      if (src && src.builderEntryKind) atom.builderEntryKind = String(src.builderEntryKind);
+      if (atom.builderGroupId) absorbObservedBuilderId(atom.builderGroupId, 'group');
+    }
+    if (fragmentOps === null) {
+      record.vol.fragmentOps = [];
+    } else if (Array.isArray(fragmentOps)) {
+      record.vol.fragmentOps = cloneJsonLike(fragmentOps) || [];
+    } else if (!Array.isArray(record.vol.fragmentOps)) {
+      record.vol.fragmentOps = [];
+    }
+    rehydrateBuilderStateForVolume(record.vol);
     if (grid && hasVolumetricGrid(record.vol)) {
       record.vol.origin = [
         Number(grid.origin && grid.origin[0]) || 0,
@@ -7571,6 +7735,7 @@
       ];
     }
     record.vol.natoms = record.vol.atoms.length;
+    syncBuilderExtensionFromVolumes();
     currentIndex = idx;
     refreshFileSelect();
     if (fileSelect) fileSelect.value = String(currentIndex);
@@ -7587,10 +7752,11 @@
    * Apply one stored atom snapshot to its volume record.
    * @param {*} record
    * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} atoms
+   * @param {Array<object>|null=} fragmentOps
    * @returns {boolean}
    */
-  function applyAtomsSnapshotToRecord(record, atoms) {
-    return applyRecordSpatialState(record, atoms, null);
+  function applyAtomsSnapshotToRecord(record, atoms, fragmentOps = undefined) {
+    return applyRecordSpatialState(record, atoms, null, fragmentOps);
   }
 
   /**
@@ -7853,28 +8019,53 @@
   }
 
   /**
+   * Normalize fragment attach policy values.
+   * @param {*} value
+   * @returns {'auto'|'append'|'replace_h'|'fuse_ring'}
+   */
+  function normalizeEditFragmentAttachPolicy(value) {
+    if (value === EDIT_FRAGMENT_ATTACH_POLICY.APPEND) return EDIT_FRAGMENT_ATTACH_POLICY.APPEND;
+    if (value === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H) return EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H;
+    if (value === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) return EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING;
+    return EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
+  }
+
+  /**
+   * Human-readable label for fragment attach policy.
+   * @param {'auto'|'append'|'replace_h'|'fuse_ring'} policy
+   * @returns {string}
+   */
+  function getEditFragmentAttachPolicyLabel(policy) {
+    if (policy === EDIT_FRAGMENT_ATTACH_POLICY.APPEND) return 'Append';
+    if (policy === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H) return 'Replace H';
+    if (policy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) return 'Fuse ring';
+    return 'Auto';
+  }
+
+  /**
    * Resolve and return the currently selected fragment record.
    * @returns {*|null}
    */
   function getCurrentFragmentDefinition() {
-    let fragment = getFragmentById(editAddFragmentId);
+    let fragment = getCatalogEntryById(editAddFragmentId, CATALOG_KIND.FRAGMENT);
     if (fragment) return fragment;
-    if (!Array.isArray(FRAGMENT_LIBRARY) || FRAGMENT_LIBRARY.length === 0) return null;
-    fragment = FRAGMENT_LIBRARY[0];
+    const fragments = getCatalogEntries(CATALOG_KIND.FRAGMENT);
+    if (!Array.isArray(fragments) || fragments.length === 0) return null;
+    fragment = fragments[0];
     editAddFragmentId = fragment.id;
     return fragment;
   }
 
   /**
    * Resolve and return the currently selected Add-molecule record.
-   * Molecules are sourced from the same catalog as fragments in V1.
    * @returns {*|null}
    */
   function getCurrentMoleculeDefinition() {
-    let molecule = getFragmentById(editAddMoleculeId);
+    let molecule = getCatalogEntryById(editAddMoleculeId, CATALOG_KIND.MOLECULE);
     if (molecule) return molecule;
-    if (!Array.isArray(FRAGMENT_LIBRARY) || FRAGMENT_LIBRARY.length === 0) return null;
-    molecule = getFragmentById('benzene') || FRAGMENT_LIBRARY[0];
+    const molecules = getCatalogEntries(CATALOG_KIND.MOLECULE);
+    if (!Array.isArray(molecules) || molecules.length === 0) return null;
+    molecule = getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE) || molecules[0];
     editAddMoleculeId = molecule.id;
     return molecule;
   }
@@ -7981,6 +8172,8 @@
     const preferred = String(options.name || '').trim();
     const name = preferred || getNextUntitledFileName();
     const record = { name, vol: createEmptyEditableVolume() };
+    ensureVolumeAtomIds(record.vol);
+    if (!Array.isArray(record.vol.fragmentOps)) record.vol.fragmentOps = [];
     volumes.push(record);
     currentIndex = volumes.length - 1;
     refreshFileSelect();
@@ -8157,6 +8350,108 @@
       }
     }
     return { count, minRatio };
+  }
+
+  /**
+   * Determine the active fragment attach policy for one placement.
+   * @param {*} fragment
+   * @param {*} vol
+   * @param {number} anchorIndex
+   * @param {THREE.Vector3} attachDir
+   * @returns {{policy:'append'|'replace_h'|'fuse_ring',replaceHydrogen?:{index:number,direction:THREE.Vector3,score:number}|null,error?:string}}
+   */
+  function resolveFragmentAttachPolicy(fragment, vol, anchorIndex, attachDir) {
+    const allowed = Array.isArray(fragment && fragment.attachModes) ? fragment.attachModes : [];
+    const requested = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
+    const replaceHydrogen = findAnchorReplaceableHydrogen(vol, anchorIndex, attachDir);
+    if (requested === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
+      if (!allowed.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING)) {
+        return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, error: 'Selected fragment does not support fuse-ring placement.' };
+      }
+      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING, replaceHydrogen: null };
+    }
+    if (requested === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H) {
+      if (!replaceHydrogen) {
+        return { policy: EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H, replaceHydrogen: null, error: 'Replace H requires a bonded hydrogen on the anchor atom.' };
+      }
+      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H, replaceHydrogen };
+    }
+    if (requested === EDIT_FRAGMENT_ATTACH_POLICY.APPEND) {
+      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null };
+    }
+    if (replaceHydrogen && allowed.includes(EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H)) {
+      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H, replaceHydrogen };
+    }
+    return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null };
+  }
+
+  /**
+   * Reassert the intended anchor-connection bond length by rigidly shifting newly
+   * inserted atoms along the anchor-connection axis.
+   * @param {*} vol
+   * @param {number} anchorIndex
+   * @param {number[]} newIndices
+   * @param {number} connectionGlobalIndex
+   * @param {number} targetLengthAngstrom
+   */
+  function cleanupInsertedFragmentBondLength(vol, anchorIndex, newIndices, connectionGlobalIndex, targetLengthAngstrom) {
+    if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(newIndices)) return;
+    if (anchorIndex < 0 || anchorIndex >= vol.atoms.length) return;
+    if (connectionGlobalIndex < 0 || connectionGlobalIndex >= vol.atoms.length) return;
+    const anchorPos = atomUnitsToAng(vol, vol.atoms[anchorIndex]);
+    const connPos = atomUnitsToAng(vol, vol.atoms[connectionGlobalIndex]);
+    const axis = connPos.clone().sub(anchorPos);
+    const currentLength = axis.length();
+    if (!(currentLength > 1e-8)) return;
+    axis.normalize();
+    const delta = (Number(targetLengthAngstrom) || 0) - currentLength;
+    if (Math.abs(delta) <= 1e-8) return;
+    for (const idx of newIndices) {
+      if (!vol.atoms[idx]) continue;
+      const pos = atomUnitsToAng(vol, vol.atoms[idx]).addScaledVector(axis, delta);
+      const coords = worldToAtomUnits(vol, pos);
+      vol.atoms[idx].x = coords[0];
+      vol.atoms[idx].y = coords[1];
+      vol.atoms[idx].z = coords[2];
+    }
+  }
+
+  /**
+   * Compute non-blocking builder warnings for newly inserted atoms.
+   * @param {*} vol
+   * @param {number[]} newAtomIndices
+   * @param {Set<number>} oldAtomIndexSet
+   * @param {number[]} hostIndices
+   * @returns {{overlapCount:number,valencePressureCount:number}}
+   */
+  function evaluateBuilderPlacementWarnings(vol, newAtomIndices, oldAtomIndexSet, hostIndices = []) {
+    const overlap = detectSevereFragmentOverlaps(vol, newAtomIndices, oldAtomIndexSet);
+    if (!vol || !Array.isArray(vol.atoms)) {
+      return { overlapCount: overlap.count, valencePressureCount: 0 };
+    }
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = collectBondCandidates(records);
+    inferBondOrders(records, edges);
+    const valenceByAtom = new Map();
+    for (const edge of edges) {
+      if (!edge) continue;
+      const order = normalizeEditAddBondOrder(edge.order || 1);
+      valenceByAtom.set(edge.i, (valenceByAtom.get(edge.i) || 0) + order);
+      valenceByAtom.set(edge.j, (valenceByAtom.get(edge.j) || 0) + order);
+    }
+    const relevant = new Set([...(Array.isArray(newAtomIndices) ? newAtomIndices : []), ...(Array.isArray(hostIndices) ? hostIndices : [])]);
+    let valencePressureCount = 0;
+    for (const idx of relevant) {
+      const atom = vol.atoms[idx];
+      if (!atom) continue;
+      const currentValence = valenceByAtom.get(idx) || 0;
+      const target = chooseTargetValence(atom.Z | 0, currentValence);
+      if (currentValence > target) valencePressureCount += 1;
+    }
+    return {
+      overlapCount: overlap.count,
+      valencePressureCount,
+    };
   }
 
   /**
@@ -8424,21 +8719,41 @@
     if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(vol.fragmentOps)) return [];
     const n = vol.atoms.length | 0;
     const anchor = anchorIndex | 0;
+    const anchorAtomId = (anchor >= 0 && anchor < n && vol.atoms[anchor]) ? String(ensureAtomId(vol.atoms[anchor])) : '';
+    const atomIndexById = new Map();
+    for (let i = 0; i < n; i++) {
+      const atom = vol.atoms[i];
+      if (!atom) continue;
+      atomIndexById.set(String(ensureAtomId(atom)), i);
+    }
     for (let k = vol.fragmentOps.length - 1; k >= 0; k--) {
       const op = vol.fragmentOps[k];
-      if (!op || !Array.isArray(op.addedAtomIndices)) continue;
+      if (!op) continue;
       const filtered = [];
       const set = new Set();
-      for (const idxRaw of op.addedAtomIndices) {
-        const idx = idxRaw | 0;
+      const candidateIndices = Array.isArray(op.addedAtomIds) && op.addedAtomIds.length
+        ? op.addedAtomIds.map((id) => atomIndexById.get(String(id || ''))).filter((idx) => Number.isInteger(idx))
+        : (Array.isArray(op.addedAtomIndices) ? op.addedAtomIndices.slice() : []);
+      for (const idxRaw of candidateIndices) {
+        const idx = Number(idxRaw) | 0;
         if (idx < 0 || idx >= n || set.has(idx)) continue;
         set.add(idx);
         filtered.push(idx);
       }
       if (!filtered.length) continue;
+      const hostBondAtomIds = Array.isArray(op.hostBondAtomIds)
+        ? op.hostBondAtomIds.map((id) => String(id || '').trim()).filter(Boolean)
+        : [];
+      const addedAtomIds = Array.isArray(op.addedAtomIds)
+        ? op.addedAtomIds.map((id) => String(id || '').trim()).filter(Boolean)
+        : [];
       const anchorPost = Number(op.anchorIndexPost);
       const anchorPre = Number(op.anchorIndexPre);
       const touches = set.has(anchor)
+        || (!!anchorAtomId && (addedAtomIds.includes(anchorAtomId)
+          || String(op.anchorAtomIdPre || '') === anchorAtomId
+          || String(op.anchorAtomIdPost || '') === anchorAtomId
+          || hostBondAtomIds.includes(anchorAtomId)))
         || (Number.isFinite(anchorPost) && (anchorPost | 0) === anchor)
         || (Number.isFinite(anchorPre) && (anchorPre | 0) === anchor);
       if (!touches) continue;
@@ -8446,6 +8761,26 @@
       return filtered;
     }
     return [];
+  }
+
+  /**
+   * Resolve builder-group atom indices from stable atom metadata.
+   * @param {*} vol
+   * @param {number} anchorIndex
+   * @returns {number[]}
+   */
+  function getBuilderGroupIndices(vol, anchorIndex) {
+    if (!vol || !Array.isArray(vol.atoms)) return [];
+    const atoms = vol.atoms;
+    const anchor = anchorIndex | 0;
+    if (anchor < 0 || anchor >= atoms.length) return [];
+    const groupId = String(atoms[anchor] && atoms[anchor].builderGroupId || '').trim();
+    if (!groupId) return [];
+    const out = [];
+    for (let i = 0; i < atoms.length; i++) {
+      if (String(atoms[i] && atoms[i].builderGroupId || '').trim() === groupId) out.push(i);
+    }
+    return out;
   }
 
   /**
@@ -8466,17 +8801,18 @@
         kind: 'all',
       };
     }
-    const fragmentIndices = getFragmentOperationIndices(vol, anchor);
+    const fragmentIndices = getBuilderGroupIndices(vol, anchor);
+    const fallbackFragmentIndices = fragmentIndices.length ? fragmentIndices : getFragmentOperationIndices(vol, anchor);
     if (scope === EDIT_TRANSFORM_SCOPE.FRAGMENT) {
-      if (!fragmentIndices.length) return null;
-      return { indices: fragmentIndices, kind: 'fragment' };
+      if (!fallbackFragmentIndices.length) return null;
+      return { indices: fallbackFragmentIndices, kind: 'fragment' };
     }
     const moleculeIndices = getMoleculeComponentIndices(vol, anchor);
     if (scope === EDIT_TRANSFORM_SCOPE.MOLECULE) {
       return { indices: moleculeIndices, kind: 'molecule' };
     }
     // auto: fragment (when available) otherwise molecule/component.
-    if (fragmentIndices.length) return { indices: fragmentIndices, kind: 'fragment' };
+    if (fallbackFragmentIndices.length) return { indices: fallbackFragmentIndices, kind: 'fragment' };
     return { indices: moleculeIndices, kind: 'molecule' };
   }
 
@@ -8634,6 +8970,7 @@
     addGrowAnchorPos = null;
     addGrowNeighborDirs = [];
     addGrowPreviewPos = null;
+    addGrowPreviewBondHit = null;
     addGrowDetectedAngleDeg = 0;
     if (addPreviewAtomMesh) {
       addPreviewGroup.remove(addPreviewAtomMesh);
@@ -8846,7 +9183,7 @@
   /**
    * Build COM-centered molecule placement data from one catalog entry.
    * @param {*} molecule
-   * @returns {{name:string,formula:string,atoms:Array<{Z:number,local:THREE.Vector3}>,bonds:Array<{i:number,j:number,order:number}>,principalAxis:THREE.Vector3}|null}
+   * @returns {{id:string,name:string,formula:string,atoms:Array<{Z:number,local:THREE.Vector3}>,bonds:Array<{i:number,j:number,order:number}>,principalAxis:THREE.Vector3}|null}
    */
   function buildMoleculePlacementData(molecule) {
     if (!molecule || !Array.isArray(molecule.atoms) || molecule.atoms.length === 0) return null;
@@ -8881,6 +9218,7 @@
     if (principalAxis.lengthSq() < 1e-10) principalAxis.set(0, 0, 1);
     principalAxis.normalize();
     return {
+      id: normalizeFragmentId(molecule.id || ''),
       name: String(molecule.name || 'Molecule'),
       formula: String(molecule.formula || ''),
       atoms,
@@ -8976,7 +9314,7 @@
    * @returns {boolean}
    */
   function startMoleculePlacementAtWorld(worldPos) {
-    const molecule = buildFragmentInstance(editAddMoleculeId);
+    const molecule = buildCatalogInstance(editAddMoleculeId, CATALOG_KIND.MOLECULE);
     if (!molecule || !Array.isArray(molecule.atoms) || molecule.atoms.length === 0) {
       setHintMessage('Selected molecule is not available.');
       return false;
@@ -9056,20 +9394,343 @@
     const vol = record && record.vol;
     if (!vol || !Array.isArray(vol.atoms)) return false;
     const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+    const builderGroupId = allocateBuilderGroupId();
+    const addedAtomIds = [];
     for (const atom of moleculePlaceTemplateData.atoms) {
       const world = atom.local.clone().applyQuaternion(moleculePlaceQuaternion).add(moleculePlacePosition);
       const coords = worldToAtomUnits(vol, world);
-      vol.atoms.push({ Z: atom.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] });
+      const newAtom = { Z: atom.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] };
+      ensureAtomId(newAtom);
+      setAtomBuilderMeta(newAtom, {
+        groupId: builderGroupId,
+        entryId: moleculePlaceTemplateData.id || '',
+        entryKind: CATALOG_KIND.MOLECULE,
+      });
+      addedAtomIds.push(newAtom.id);
+      vol.atoms.push(newAtom);
     }
     vol.natoms = vol.atoms.length;
     const afterAtoms = cloneAtomsSnapshot(vol);
     const label = moleculePlaceTemplateData.name || 'molecule';
-    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add molecule: ${label}`);
+    recordFragmentOperation(record, {
+      timestamp: new Date().toISOString(),
+      entryId: moleculePlaceTemplateData.id || '',
+      entryKind: CATALOG_KIND.MOLECULE,
+      attachPolicy: 'append',
+      transform: {
+        centerWorld: [moleculePlacePosition.x, moleculePlacePosition.y, moleculePlacePosition.z],
+        quaternion: [moleculePlaceQuaternion.x, moleculePlaceQuaternion.y, moleculePlaceQuaternion.z, moleculePlaceQuaternion.w],
+      },
+      resultingBondOrder: 1,
+      builderGroupId,
+      addedAtomIds,
+    });
+    const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add molecule: ${label}`, {
+      beforeFragmentOps,
+      afterFragmentOps,
+    });
     clearMoleculePlacementPreview();
     clearHover();
     rebuildScene({ preserveView: true });
     updateSidePanel();
     setHintMessage(`Added molecule ${label}.`);
+    return true;
+  }
+
+  /**
+   * Remove all fuse-ring preview state and meshes.
+   */
+  function clearFuseRingPreview() {
+    addFusePreviewState = null;
+    clearGroup(addFusePreviewGroup);
+    addFusePreviewGroup.visible = false;
+    try { controls.enabled = true; } catch { }
+  }
+
+  /**
+   * Compute omitted local atom indices for fuse-ring placement.
+   * Local fuse atoms are omitted, along with hydrogens attached to them.
+   * @param {*} fragment
+   * @returns {Set<number>}
+   */
+  function getFuseRingOmittedLocalIndices(fragment) {
+    const omitted = new Set();
+    const pair = Array.isArray(fragment && fragment.fuseBondLocalPair) ? fragment.fuseBondLocalPair : [];
+    for (const idx of pair) omitted.add(idx | 0);
+    if (!Array.isArray(fragment && fragment.bonds) || !Array.isArray(fragment && fragment.atoms)) return omitted;
+    for (const bond of fragment.bonds) {
+      if (!bond) continue;
+      const i = Number(bond.i) | 0;
+      const j = Number(bond.j) | 0;
+      if (omitted.has(i) && fragment.atoms[j] && (fragment.atoms[j].Z | 0) === 1) omitted.add(j);
+      if (omitted.has(j) && fragment.atoms[i] && (fragment.atoms[i].Z | 0) === 1) omitted.add(i);
+    }
+    return omitted;
+  }
+
+  /**
+   * Build placed fuse-ring world geometry for preview/commit.
+   * @param {*} state
+   * @returns {{newAtoms:Array<{localIndex:number,Z:number,world:THREE.Vector3}>,bonds:Array<{aLocal:number,bLocal:number,aWorld:THREE.Vector3,bWorld:THREE.Vector3,aHostIndex?:number,bHostIndex?:number,order:number}>}|null}
+   */
+  function buildFuseRingPlacementGeometry(state) {
+    if (!state || !state.fragment || !state.hostBond) return null;
+    const fragment = state.fragment;
+    const pair = fragment.fuseBondLocalPair || [];
+    if (pair.length < 2) return null;
+    const localA = fragment.atoms[pair[0]];
+    const localB = fragment.atoms[pair[1]];
+    const hostAAtom = state.vol && state.vol.atoms && state.vol.atoms[state.hostBond.i];
+    const hostBAtom = state.vol && state.vol.atoms && state.vol.atoms[state.hostBond.j];
+    if (!localA || !localB || !hostAAtom || !hostBAtom) return null;
+    const localMid = new THREE.Vector3(
+      ((Number(localA.x) || 0) + (Number(localB.x) || 0)) * 0.5,
+      ((Number(localA.y) || 0) + (Number(localB.y) || 0)) * 0.5,
+      ((Number(localA.z) || 0) + (Number(localB.z) || 0)) * 0.5
+    );
+    const localAxis = new THREE.Vector3(
+      (Number(localB.x) || 0) - (Number(localA.x) || 0),
+      (Number(localB.y) || 0) - (Number(localA.y) || 0),
+      (Number(localB.z) || 0) - (Number(localA.z) || 0)
+    );
+    const hostAWorld = atomUnitsToAng(state.vol, hostAAtom);
+    const hostBWorld = atomUnitsToAng(state.vol, hostBAtom);
+    const hostMid = hostAWorld.clone().add(hostBWorld).multiplyScalar(0.5);
+    const hostAxis = hostBWorld.clone().sub(hostAWorld);
+    if (localAxis.lengthSq() < 1e-12 || hostAxis.lengthSq() < 1e-12) return null;
+    localAxis.normalize();
+    hostAxis.normalize();
+    const alignQuat = new THREE.Quaternion().setFromUnitVectors(localAxis, hostAxis);
+    const spinQuat = new THREE.Quaternion().setFromAxisAngle(hostAxis, Number(state.spinAngle) || 0);
+    const omitted = state.omittedLocalIndices || new Set();
+    const hostMap = new Map([
+      [pair[0] | 0, { atomIndex: state.hostBond.i, world: hostAWorld }],
+      [pair[1] | 0, { atomIndex: state.hostBond.j, world: hostBWorld }],
+    ]);
+    const newAtoms = [];
+    const worldByLocal = new Map();
+    for (let i = 0; i < fragment.atoms.length; i++) {
+      if (hostMap.has(i)) {
+        worldByLocal.set(i, hostMap.get(i).world.clone());
+        continue;
+      }
+      if (omitted.has(i)) continue;
+      const atom = fragment.atoms[i];
+      const rel = new THREE.Vector3(
+        (Number(atom.x) || 0) - localMid.x,
+        (Number(atom.y) || 0) - localMid.y,
+        (Number(atom.z) || 0) - localMid.z
+      );
+      rel.applyQuaternion(alignQuat).applyQuaternion(spinQuat);
+      const world = rel.add(hostMid.clone());
+      worldByLocal.set(i, world.clone());
+      newAtoms.push({ localIndex: i, Z: atom.Z | 0, world });
+    }
+    const bonds = [];
+    for (const bond of fragment.bonds || []) {
+      const i = Number(bond.i) | 0;
+      const j = Number(bond.j) | 0;
+      const aOmitted = omitted.has(i);
+      const bOmitted = omitted.has(j);
+      if (aOmitted && bOmitted) continue;
+      const aWorld = worldByLocal.get(i);
+      const bWorld = worldByLocal.get(j);
+      if (!aWorld || !bWorld) continue;
+      bonds.push({
+        aLocal: i,
+        bLocal: j,
+        aWorld,
+        bWorld,
+        aHostIndex: hostMap.has(i) ? hostMap.get(i).atomIndex : undefined,
+        bHostIndex: hostMap.has(j) ? hostMap.get(j).atomIndex : undefined,
+        order: normalizeEditAddBondOrder(bond.order || 1),
+      });
+    }
+    return { newAtoms, bonds };
+  }
+
+  /**
+   * Rebuild fuse-ring preview meshes from current state.
+   */
+  function rebuildFuseRingPreviewMeshes() {
+    clearGroup(addFusePreviewGroup);
+    addFusePreviewGroup.visible = false;
+    const state = addFusePreviewState;
+    const geom = buildFuseRingPlacementGeometry(state);
+    if (!state || !geom) return;
+    addFusePreviewGroup.visible = true;
+    const bondMat = new THREE.MeshStandardMaterial({ color: 0xc5d5ec, transparent: true, opacity: 0.78 });
+    const sphereGeomCache = new Map();
+    const cylGeomCache = new Map();
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const bond of geom.bonds) {
+      if (bond.aHostIndex != null && bond.bHostIndex != null) continue;
+      const dir = bond.bWorld.clone().sub(bond.aWorld);
+      const len = dir.length();
+      if (!(len > 1e-5)) continue;
+      const radius = 0.06;
+      const key = `${radius}:${len.toFixed(4)}`;
+      let cylinder = cylGeomCache.get(key);
+      if (!cylinder) {
+        cylinder = new THREE.CylinderGeometry(radius, radius, len, 16, 1, false);
+        cylGeomCache.set(key, cylinder);
+      }
+      const mesh = new THREE.Mesh(cylinder, bondMat);
+      mesh.position.copy(bond.aWorld).add(bond.bWorld).multiplyScalar(0.5);
+      mesh.quaternion.setFromUnitVectors(up, dir.normalize());
+      mesh.renderOrder = 58;
+      addFusePreviewGroup.add(mesh);
+    }
+    for (const atom of geom.newAtoms) {
+      const radius = Math.max(0.14, getCovalentRadiusAngstrom(atom.Z | 0) * getAtomRenderScaleFactor(atom.Z | 0));
+      const key = radius.toFixed(4);
+      let sphere = sphereGeomCache.get(key);
+      if (!sphere) {
+        sphere = new THREE.SphereGeometry(radius, 20, 14);
+        sphereGeomCache.set(key, sphere);
+      }
+      const mesh = new THREE.Mesh(sphere, new THREE.MeshPhysicalMaterial({
+        color: getAtomRenderColor(atom.Z | 0),
+        transparent: true,
+        opacity: 0.72,
+        roughness: 0.2,
+        metalness: 0.08,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.15,
+      }));
+      mesh.position.copy(atom.world);
+      mesh.renderOrder = 60;
+      addFusePreviewGroup.add(mesh);
+    }
+  }
+
+  /**
+   * Start one fuse-ring preview on the clicked host bond.
+   * @param {*} hit
+   * @returns {boolean}
+   */
+  function startFuseRingPlacementFromBondHit(hit) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const fragment = buildCatalogInstance(editAddFragmentId, CATALOG_KIND.FRAGMENT);
+    if (!vol || !Array.isArray(vol.atoms) || !fragment) return false;
+    if (!Array.isArray(fragment.fuseBondLocalPair) || fragment.fuseBondLocalPair.length < 2) {
+      setHintMessage('Selected fragment does not define a fuse-ring bond pair.');
+      return false;
+    }
+    const bondObject = hit && hit.object;
+    if (!bondObject || !bondObject.userData) return false;
+    const i = bondObject.userData.i | 0;
+    const j = bondObject.userData.j | 0;
+    if (i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length || i === j) {
+      setHintMessage('Fuse ring requires clicking an existing host bond.');
+      return false;
+    }
+    clearAddGrowPreview();
+    clearFuseRingPreview();
+    addFusePreviewState = {
+      record,
+      vol,
+      fragment,
+      hostBond: { i, j },
+      omittedLocalIndices: getFuseRingOmittedLocalIndices(fragment),
+      spinAngle: 0,
+      justStarted: true,
+      rotating: false,
+      moved: false,
+      lastClientX: 0,
+    };
+    rebuildFuseRingPreviewMeshes();
+    updateEditToolboxUi({ syncSearch: false });
+    setHintMessage(`Fuse ring preview: ${fragment.name} • Drag to spin around bond • Click again to place • Esc cancel`);
+    return true;
+  }
+
+  /**
+   * Rotate the active fuse-ring preview around the host bond axis.
+   * @param {PointerEvent} e
+   */
+  function updateFuseRingPlacementRotationFromEvent(e) {
+    if (!addFusePreviewState || !addFusePreviewState.rotating) return;
+    const dx = (Number(e.clientX) || 0) - (Number(addFusePreviewState.lastClientX) || 0);
+    addFusePreviewState.lastClientX = Number(e.clientX) || addFusePreviewState.lastClientX;
+    if (Math.abs(dx) < 0.001) return;
+    addFusePreviewState.spinAngle += dx * 0.01;
+    addFusePreviewState.moved = true;
+    rebuildFuseRingPreviewMeshes();
+  }
+
+  /**
+   * Commit the active fuse-ring preview into the current editable volume.
+   * @returns {boolean}
+   */
+  function commitFuseRingPlacement() {
+    const state = addFusePreviewState;
+    if (!state || !state.vol || !state.fragment) return false;
+    const geom = buildFuseRingPlacementGeometry(state);
+    if (!geom) return false;
+    const vol = state.vol;
+    const record = state.record;
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+    const oldAtomIndexSet = new Set(Array.from({ length: vol.atoms.length }, (_, i) => i));
+    const builderGroupId = allocateBuilderGroupId();
+    const localToGlobal = new Map([
+      [state.fragment.fuseBondLocalPair[0] | 0, state.hostBond.i],
+      [state.fragment.fuseBondLocalPair[1] | 0, state.hostBond.j],
+    ]);
+    const addedAtomIndices = [];
+    const addedAtomIds = [];
+    for (const item of geom.newAtoms) {
+      const coords = worldToAtomUnits(vol, item.world);
+      const atom = { Z: item.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] };
+      ensureAtomId(atom);
+      setAtomBuilderMeta(atom, {
+        groupId: builderGroupId,
+        entryId: state.fragment.id,
+        entryKind: CATALOG_KIND.FRAGMENT,
+      });
+      vol.atoms.push(atom);
+      const globalIndex = vol.atoms.length - 1;
+      localToGlobal.set(item.localIndex, globalIndex);
+      addedAtomIndices.push(globalIndex);
+      addedAtomIds.push(atom.id);
+    }
+    vol.natoms = vol.atoms.length;
+    const warnings = evaluateBuilderPlacementWarnings(vol, addedAtomIndices, oldAtomIndexSet, [state.hostBond.i, state.hostBond.j]);
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    recordFragmentOperation(record, {
+      timestamp: new Date().toISOString(),
+      entryId: state.fragment.id,
+      entryKind: CATALOG_KIND.FRAGMENT,
+      attachPolicy: EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING,
+      hostBondAtomIds: [ensureAtomId(vol.atoms[state.hostBond.i]), ensureAtomId(vol.atoms[state.hostBond.j])],
+      hostBondIndices: [state.hostBond.i, state.hostBond.j],
+      addedAtomIds,
+      addedAtomIndices,
+      omittedLocalAtomIndices: Array.from(state.omittedLocalIndices.values()).sort((a, b) => a - b),
+      transform: {
+        spinAngle: state.spinAngle,
+      },
+      resultingBondOrder: normalizeEditAddBondOrder(editAddBondOrder || state.fragment.preferredBondOrder || 1),
+      builderGroupId,
+    });
+    const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Fuse ring: ${state.fragment.name}`, {
+      beforeFragmentOps,
+      afterFragmentOps,
+    });
+    clearFuseRingPreview();
+    clearHover();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    const warningParts = [];
+    if (warnings.overlapCount > 0) warningParts.push(`${warnings.overlapCount} severe overlap${warnings.overlapCount === 1 ? '' : 's'}`);
+    if (warnings.valencePressureCount > 0) warningParts.push(`${warnings.valencePressureCount} valence warning${warnings.valencePressureCount === 1 ? '' : 's'}`);
+    const warningSuffix = warningParts.length ? ` • Warning: ${warningParts.join(' • ')}` : '';
+    setHintMessage(`Fused ${state.fragment.name} onto selected bond.${warningSuffix}`);
     return true;
   }
 
@@ -9105,6 +9766,9 @@
     if (editAddMoleculePaneEl) editAddMoleculePaneEl.classList.toggle('active', isMoleculeAddMode);
     if (editTransformScopeEl && document.activeElement !== editTransformScopeEl) editTransformScopeEl.value = normalizeEditTransformScope(editTransformScope);
     if (editTransformModeEl && document.activeElement !== editTransformModeEl) editTransformModeEl.value = normalizeEditTransformMode(editTransformMode);
+    if (editFragmentAttachPolicyEl && document.activeElement !== editFragmentAttachPolicyEl) {
+      editFragmentAttachPolicyEl.value = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
+    }
 
     const angleLabel = addGrowDetectedAngleDeg > 0 ? `${addGrowDetectedAngleDeg.toFixed(1)}°` : 'auto';
     const atomInfo = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
@@ -9112,10 +9776,25 @@
     const atomName = atomInfo && atomInfo.name ? atomInfo.name : atomSymbol;
     if (editAddCurrentEl) editAddCurrentEl.textContent = `Adding atom: ${atomName} (${atomSymbol}) • bond ${editAddBondOrder} • angle ${angleLabel}`;
     const fragment = getCurrentFragmentDefinition();
+    if (editFragmentAttachPolicyEl) {
+      const fuseOption = editFragmentAttachPolicyEl.querySelector('option[value="fuse_ring"]');
+      const supportsFuse = !!(fragment && Array.isArray(fragment.attachModes) && fragment.attachModes.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING));
+      if (fuseOption) fuseOption.disabled = !supportsFuse;
+      if (!supportsFuse && editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
+        editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
+        editFragmentAttachPolicyEl.value = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
+      }
+    }
     if (editFragmentCurrentEl) {
       if (fragment) {
         const atomCount = Array.isArray(fragment.atoms) ? fragment.atoms.length : 0;
-        editFragmentCurrentEl.textContent = `Adding fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • bond ${editAddBondOrder} • angle ${angleLabel}`;
+        const attachModes = Array.isArray(fragment.attachModes) ? fragment.attachModes : [];
+        const policy = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
+        const fuseEligible = attachModes.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING);
+        const modeSuffix = policy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING
+          ? (fuseEligible ? 'bond click • drag spin • click confirm' : 'fuse ring unavailable')
+          : `bond ${editAddBondOrder} • angle ${angleLabel}`;
+        editFragmentCurrentEl.textContent = `Adding fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(policy)} • ${modeSuffix}`;
       } else {
         editFragmentCurrentEl.textContent = 'No fragment selected';
       }
@@ -9203,6 +9882,7 @@
     if (editTool !== EDIT_TOOL.ADD && prevTool === EDIT_TOOL.ADD) {
       clearAddGrowPreview();
       clearMoleculePlacementPreview();
+      clearFuseRingPreview();
     }
     if (editTool !== EDIT_TOOL.TRANSFORM && prevTool === EDIT_TOOL.TRANSFORM) {
       clearTransformState();
@@ -9215,7 +9895,11 @@
       if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
         const fragment = getCurrentFragmentDefinition();
         const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
-        setHintMessage(`Edit tool: Add fragment (${label}) • Click an anchor atom • Hold Shift to bypass angle snap`);
+        if (editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
+          setHintMessage(`Edit tool: Add fragment (${label}) • Fuse ring mode • Click a host bond • Drag to spin • Click to confirm`);
+        } else {
+          setHintMessage(`Edit tool: Add fragment (${label}) • ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)} • Click an anchor atom • Hold Shift to bypass angle snap`);
+        }
       } else if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
         const molecule = getCurrentMoleculeDefinition();
         const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
@@ -9245,6 +9929,7 @@
     else if (nextMode === EDIT_ADD_MODE.MOLECULE) editAddMode = EDIT_ADD_MODE.MOLECULE;
     else editAddMode = EDIT_ADD_MODE.ATOM;
     if (editAddMode !== EDIT_ADD_MODE.MOLECULE) clearMoleculePlacementPreview();
+    if (editAddMode !== EDIT_ADD_MODE.FRAGMENT) clearFuseRingPreview();
     if (editAddMode !== EDIT_ADD_MODE.ATOM) clearAddGrowPreview();
     if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
       const fragment = getCurrentFragmentDefinition();
@@ -9261,7 +9946,11 @@
     if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
       const fragment = getCurrentFragmentDefinition();
       const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
-      setHintMessage(`Add fragment: ${label} • Replace-H first attachment is enabled`);
+      if (editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
+        setHintMessage(`Add fragment: ${label} • Fuse ring • Click a host bond • Drag to spin • Click again to confirm`);
+      } else {
+        setHintMessage(`Add fragment: ${label} • Policy ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}`);
+      }
     } else if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
       const molecule = getCurrentMoleculeDefinition();
       const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
@@ -9300,14 +9989,21 @@
     const announce = options.announce !== false;
     const syncSearch = options.syncSearch !== false;
     const normalizedId = normalizeFragmentId(fragmentId);
-    const fragment = getFragmentById(normalizedId) || resolveFragmentQuery(fragmentId);
+    const fragment = getCatalogEntryById(normalizedId, CATALOG_KIND.FRAGMENT) || resolveCatalogQuery(fragmentId, CATALOG_KIND.FRAGMENT);
     if (!fragment) return false;
     editAddFragmentId = fragment.id;
+    if (!Array.isArray(fragment.attachModes) || !fragment.attachModes.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING)) {
+      clearFuseRingPreview();
+    }
     editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
     refreshActiveAddGrowPreview();
     updateEditToolboxUi({ syncSearch });
     if (announce && editMode && editTool === EDIT_TOOL.ADD) {
-      setHintMessage(`Add fragment: ${fragment.name} (${fragment.formula})`);
+      if (editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
+        setHintMessage(`Add fragment: ${fragment.name} (${fragment.formula}) • Fuse ring • Click a host bond`);
+      } else {
+        setHintMessage(`Add fragment: ${fragment.name} (${fragment.formula}) • Policy ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}`);
+      }
     }
     return true;
   }
@@ -9322,7 +10018,7 @@
     const announce = options.announce !== false;
     const syncSearch = options.syncSearch !== false;
     const normalizedId = normalizeFragmentId(moleculeId);
-    const molecule = getFragmentById(normalizedId) || resolveFragmentQuery(moleculeId);
+    const molecule = getCatalogEntryById(normalizedId, CATALOG_KIND.MOLECULE) || resolveCatalogQuery(moleculeId, CATALOG_KIND.MOLECULE);
     if (!molecule) return false;
     editAddMoleculeId = molecule.id;
     clearMoleculePlacementPreview();
@@ -9337,9 +10033,10 @@
    * Rebuild fragment suggestions and quick chips from the active fragment catalog.
    */
   function refreshEditAddFragmentControls() {
+    const fragmentEntries = getCatalogEntries(CATALOG_KIND.FRAGMENT);
     if (editFragmentSuggestionsEl) {
       editFragmentSuggestionsEl.innerHTML = '';
-      for (const fragment of FRAGMENT_LIBRARY) {
+      for (const fragment of fragmentEntries) {
         const opt = document.createElement('option');
         opt.value = `${fragment.name} (${fragment.formula}) [${fragment.id}]`;
         editFragmentSuggestionsEl.appendChild(opt);
@@ -9348,7 +10045,7 @@
     if (editFragmentQuickEl) {
       editFragmentQuickEl.innerHTML = '';
       for (const id of EDIT_QUICK_FRAGMENTS) {
-        const fragment = getFragmentById(id);
+        const fragment = getCatalogEntryById(id, CATALOG_KIND.FRAGMENT);
         if (!fragment) continue;
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -9362,9 +10059,9 @@
         editFragmentQuickEl.appendChild(btn);
       }
     }
-    if (!getCurrentFragmentDefinition() && FRAGMENT_LIBRARY[0]) editAddFragmentId = FRAGMENT_LIBRARY[0].id;
-    if (!setEditAddFragment(editAddFragmentId, { announce: false, syncSearch: true }) && FRAGMENT_LIBRARY[0]) {
-      setEditAddFragment(FRAGMENT_LIBRARY[0].id, { announce: false, syncSearch: true });
+    if (!getCurrentFragmentDefinition() && fragmentEntries[0]) editAddFragmentId = fragmentEntries[0].id;
+    if (!setEditAddFragment(editAddFragmentId, { announce: false, syncSearch: true }) && fragmentEntries[0]) {
+      setEditAddFragment(fragmentEntries[0].id, { announce: false, syncSearch: true });
     }
     updateEditToolboxUi({ syncSearch: true });
   }
@@ -9373,9 +10070,10 @@
    * Rebuild molecule suggestions and quick chips from the active catalog.
    */
   function refreshEditAddMoleculeControls() {
+    const moleculeEntries = getCatalogEntries(CATALOG_KIND.MOLECULE);
     if (editMoleculeSuggestionsEl) {
       editMoleculeSuggestionsEl.innerHTML = '';
-      for (const molecule of FRAGMENT_LIBRARY) {
+      for (const molecule of moleculeEntries) {
         const opt = document.createElement('option');
         opt.value = `${molecule.name} (${molecule.formula}) [${molecule.id}]`;
         editMoleculeSuggestionsEl.appendChild(opt);
@@ -9384,7 +10082,7 @@
     if (editMoleculeQuickEl) {
       editMoleculeQuickEl.innerHTML = '';
       for (const id of EDIT_QUICK_MOLECULES) {
-        const molecule = getFragmentById(id);
+        const molecule = getCatalogEntryById(id, CATALOG_KIND.MOLECULE);
         if (!molecule) continue;
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -9398,9 +10096,9 @@
         editMoleculeQuickEl.appendChild(btn);
       }
     }
-    if (!getCurrentMoleculeDefinition() && FRAGMENT_LIBRARY[0]) editAddMoleculeId = FRAGMENT_LIBRARY[0].id;
-    if (!setEditAddMolecule(editAddMoleculeId, { announce: false, syncSearch: true }) && FRAGMENT_LIBRARY[0]) {
-      setEditAddMolecule(FRAGMENT_LIBRARY[0].id, { announce: false, syncSearch: true });
+    if (!getCurrentMoleculeDefinition() && moleculeEntries[0]) editAddMoleculeId = moleculeEntries[0].id;
+    if (!setEditAddMolecule(editAddMoleculeId, { announce: false, syncSearch: true }) && moleculeEntries[0]) {
+      setEditAddMolecule(moleculeEntries[0].id, { announce: false, syncSearch: true });
     }
     updateEditToolboxUi({ syncSearch: true });
   }
@@ -9418,7 +10116,7 @@
         console.warn('[Fragments] Loaded with warnings:', result.errors);
       }
       if (result && result.count > 0) {
-        console.info(`[Fragments] Loaded ${result.count} fragment definitions from ${result.source || 'manifest'}.`);
+        console.info(`[Fragments] Loaded ${result.count} catalog entries from ${result.source || 'manifest'}.`);
       }
     } catch (error) {
       console.warn('[Fragments] External fragment library load failed; using built-in defaults.', error);
@@ -9472,7 +10170,7 @@
     }
     if (editFragmentSearchEl) {
       const commit = () => {
-        const fragment = resolveFragmentQuery(editFragmentSearchEl.value);
+        const fragment = resolveCatalogQuery(editFragmentSearchEl.value, CATALOG_KIND.FRAGMENT);
         if (!fragment || !setEditAddFragment(fragment.id, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Fragment not recognized: "${String(editFragmentSearchEl.value || '').trim()}"`);
@@ -9486,9 +10184,20 @@
       });
       editFragmentSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
     }
+    if (editFragmentAttachPolicyEl) {
+      editFragmentAttachPolicyEl.addEventListener('change', () => {
+        editAddFragmentAttachPolicy = normalizeEditFragmentAttachPolicy(editFragmentAttachPolicyEl.value);
+        clearAddGrowPreview();
+        if (editAddFragmentAttachPolicy !== EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) clearFuseRingPreview();
+        updateEditToolboxUi({ syncSearch: false });
+        if (editMode && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+          setHintMessage(`Fragment attach policy: ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}.`);
+        }
+      });
+    }
     if (editMoleculeSearchEl) {
       const commit = () => {
-        const molecule = resolveFragmentQuery(editMoleculeSearchEl.value);
+        const molecule = resolveCatalogQuery(editMoleculeSearchEl.value, CATALOG_KIND.MOLECULE);
         if (!molecule || !setEditAddMolecule(molecule.id, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Molecule not recognized: "${String(editMoleculeSearchEl.value || '').trim()}"`);
@@ -10068,6 +10777,41 @@
   }
 
   /**
+   * Walk up one object chain until a bond userData payload is found.
+   * @param {*} object
+   * @returns {*|null}
+   */
+  function getBondCarrierObject(object) {
+    let cur = object || null;
+    while (cur) {
+      if (cur.userData && Number.isInteger(cur.userData.i) && Number.isInteger(cur.userData.j)) return cur;
+      cur = cur.parent || null;
+    }
+    return null;
+  }
+
+  /**
+   * Raycast and return the first bond hit, including wrapped groups/meshes.
+   * @param {PointerEvent} e
+   * @returns {{object:*,point:THREE.Vector3,distance:number}|null}
+   */
+  function pickBondHit(e) {
+    if (!bondGroup || !bondGroup.children || bondGroup.children.length === 0) return null;
+    setRaycasterFromEvent(e);
+    const hits = raycaster.intersectObjects(bondGroup.children, true);
+    for (const hit of hits) {
+      const carrier = getBondCarrierObject(hit && hit.object);
+      if (!carrier) continue;
+      return {
+        object: carrier,
+        point: hit.point ? hit.point.clone() : null,
+        distance: Number(hit.distance) || 0,
+      };
+    }
+    return null;
+  }
+
+  /**
    * Place a new atom into the active file at one world-space coordinate.
    * @param {THREE.Vector3} worldPos
    * @returns {boolean}
@@ -10080,7 +10824,9 @@
     const z = editAddElementZ | 0;
     if (!z || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
     const [x, y, zCoord] = worldToAtomUnits(vol, worldPos);
-    vol.atoms.push({ Z: z, q: 0, x, y, z: zCoord });
+    const atom = { Z: z, q: 0, x, y, z: zCoord };
+    ensureAtomId(atom);
+    vol.atoms.push(atom);
     vol.natoms = vol.atoms.length;
     const afterAtoms = cloneAtomsSnapshot(vol);
     pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add ${getElementSymbol(z)}`);
@@ -10098,8 +10844,12 @@
   function recordFragmentOperation(record, entry) {
     if (!record || !record.vol || !entry || typeof entry !== 'object') return;
     const vol = record.vol;
+    ensureVolumeAtomIds(vol);
     if (!Array.isArray(vol.fragmentOps)) vol.fragmentOps = [];
-    vol.fragmentOps.push(entry);
+    const normalized = normalizeBuilderOperationEntry(entry);
+    if (!normalized) return;
+    vol.fragmentOps.push(normalized);
+    rehydrateBuilderStateForVolume(vol);
     syncBuilderExtensionFromVolumes();
   }
 
@@ -10117,7 +10867,8 @@
       setHintMessage('Load or create at least one atom before adding a fragment.');
       return false;
     }
-    const fragment = buildFragmentInstance(editAddFragmentId);
+    ensureVolumeAtomIds(vol);
+    const fragment = buildCatalogInstance(editAddFragmentId, CATALOG_KIND.FRAGMENT);
     if (!fragment || !Array.isArray(fragment.atoms) || fragment.atoms.length === 0) {
       setHintMessage('Selected fragment is not available.');
       return false;
@@ -10129,6 +10880,7 @@
     }
 
     const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
     const anchorAtomBefore = vol.atoms[anchor];
     const anchorPosBefore = atomUnitsToAng(vol, anchorAtomBefore);
     let attachDir = worldPos && worldPos.isVector3
@@ -10139,18 +10891,25 @@
       if (attachDir.lengthSq() < 1e-10) attachDir.set(1, 0, 0);
     }
     attachDir.normalize();
-
-    let attachMode = 'append';
+    const resolvedPolicy = resolveFragmentAttachPolicy(fragment, vol, anchor, attachDir);
+    if (resolvedPolicy.error && resolvedPolicy.policy !== EDIT_FRAGMENT_ATTACH_POLICY.APPEND) {
+      setHintMessage(resolvedPolicy.error);
+      return false;
+    }
+    let attachMode = resolvedPolicy.policy === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H
+      ? EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H
+      : EDIT_FRAGMENT_ATTACH_POLICY.APPEND;
     const removedAtomIndices = [];
-    const replaceHydrogen = findAnchorReplaceableHydrogen(vol, anchor, attachDir);
+    const removedAtomIds = [];
+    const replaceHydrogen = resolvedPolicy.replaceHydrogen || null;
     if (replaceHydrogen && Number.isInteger(replaceHydrogen.index)) {
       const hIdx = replaceHydrogen.index | 0;
       if (hIdx >= 0 && hIdx < vol.atoms.length) {
+        if (vol.atoms[hIdx]) removedAtomIds.push(ensureAtomId(vol.atoms[hIdx]));
         vol.atoms.splice(hIdx, 1);
         removedAtomIndices.push(hIdx);
         if (hIdx < anchor) anchor -= 1;
         attachDir.copy(replaceHydrogen.direction).normalize();
-        attachMode = 'replace_h';
       }
     }
 
@@ -10169,34 +10928,49 @@
     const bondLength = getEditAddBondLength(anchorAtom.Z | 0, conn.Z | 0, bondOrder);
     const connectionWorld = anchorPos.clone().addScaledVector(attachDir, bondLength);
     const oldAtomIndexSet = new Set(Array.from({ length: vol.atoms.length }, (_, i) => i));
+    const builderGroupId = allocateBuilderGroupId();
 
     const connLocal = new THREE.Vector3(conn.x, conn.y, conn.z);
     const localOutward = getFragmentConnectionOutwardDirection(fragment);
     const rot = new THREE.Quaternion().setFromUnitVectors(localOutward, attachDir);
     const newIndices = [];
+    const addedAtomIds = [];
     for (let i = 0; i < fragment.atoms.length; i++) {
       const a = fragment.atoms[i];
       const local = new THREE.Vector3(Number(a.x) || 0, Number(a.y) || 0, Number(a.z) || 0).sub(connLocal);
       const world = local.applyQuaternion(rot).add(connectionWorld);
       const coords = worldToAtomUnits(vol, world);
-      vol.atoms.push({ Z: a.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] });
+      const newAtom = { Z: a.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] };
+      ensureAtomId(newAtom);
+      setAtomBuilderMeta(newAtom, {
+        groupId: builderGroupId,
+        entryId: fragment.id,
+        entryKind: CATALOG_KIND.FRAGMENT,
+      });
+      vol.atoms.push(newAtom);
       newIndices.push(vol.atoms.length - 1);
+      addedAtomIds.push(newAtom.id);
     }
     applyMethylAttachmentGeometry(vol, fragment, newIndices, anchorPos, connectionWorld, attachDir);
     applyHydroxylAttachmentGeometry(vol, fragment, newIndices, anchorPos, connectionWorld);
+    cleanupInsertedFragmentBondLength(vol, anchor, newIndices, newIndices[conn.index], bondLength);
     vol.natoms = vol.atoms.length;
 
-    const overlap = detectSevereFragmentOverlaps(vol, newIndices, oldAtomIndexSet);
+    const warnings = evaluateBuilderPlacementWarnings(vol, newIndices, oldAtomIndexSet, [anchor]);
     const afterAtoms = cloneAtomsSnapshot(vol);
-    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add fragment: ${fragment.name}`);
     recordFragmentOperation(record, {
+      opId: allocateBuilderOpId(),
       timestamp: new Date().toISOString(),
-      fragmentId: fragment.id,
-      fragmentName: fragment.name,
+      entryId: fragment.id,
+      entryKind: CATALOG_KIND.FRAGMENT,
+      builderGroupId,
       anchorIndexPre: anchorIndex | 0,
       anchorIndexPost: anchor | 0,
-      attachMode,
+      anchorAtomIdPre: beforeAtoms[anchorIndex | 0] ? String(beforeAtoms[anchorIndex | 0].id || '') : '',
+      anchorAtomIdPost: vol.atoms[anchor] ? ensureAtomId(vol.atoms[anchor]) : '',
+      attachPolicy: attachMode,
       removedAtomIndices,
+      removedAtomIds,
       transform: {
         connectionWorld: [connectionWorld.x, connectionWorld.y, connectionWorld.z],
         direction: [attachDir.x, attachDir.y, attachDir.z],
@@ -10205,17 +10979,24 @@
       },
       resultingBondOrder: bondOrder,
       atomCountAdded: fragment.atoms.length,
+      addedAtomIds,
       addedAtomIndices: newIndices.slice(),
+    });
+    const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add fragment: ${fragment.name}`, {
+      beforeFragmentOps,
+      afterFragmentOps,
     });
 
     clearAddGrowPreview();
     clearHover();
     rebuildScene({ preserveView: true });
     updateSidePanel();
-    const overlapMsg = overlap.count > 0
-      ? ` • Warning: ${overlap.count} severe overlap${overlap.count === 1 ? '' : 's'} detected`
-      : '';
-    setHintMessage(`Added fragment ${fragment.name} (${fragment.formula}) via ${attachMode === 'replace_h' ? 'Replace H' : 'append'}${overlapMsg}`);
+    const warningParts = [];
+    if (warnings.overlapCount > 0) warningParts.push(`${warnings.overlapCount} severe overlap${warnings.overlapCount === 1 ? '' : 's'}`);
+    if (warnings.valencePressureCount > 0) warningParts.push(`${warnings.valencePressureCount} valence warning${warnings.valencePressureCount === 1 ? '' : 's'}`);
+    const warningSuffix = warningParts.length ? ` • Warning: ${warningParts.join(' • ')}` : '';
+    setHintMessage(`Added fragment ${fragment.name} (${fragment.formula}) via ${attachMode === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H ? 'Replace H' : 'Append'}${warningSuffix}`);
     return true;
   }
 
@@ -10719,6 +11500,11 @@
       updateMoleculePlacementRotationFromEvent(e);
       return;
     }
+    if (currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.FRAGMENT && addFusePreviewState && addFusePreviewState.rotating) {
+      __editMoved = true;
+      updateFuseRingPlacementRotationFromEvent(e);
+      return;
+    }
     if (dragActive) {
       __editMoved = true;
       setNDCFromEvent(e);
@@ -10795,6 +11581,26 @@
             e.preventDefault();
           }
           if (!moleculePlaceActive) beginQuaternionViewRotate(e);
+          return;
+        }
+        if (editAddMode === EDIT_ADD_MODE.FRAGMENT && editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
+          if (addFusePreviewState) {
+            addFusePreviewState.rotating = true;
+            addFusePreviewState.moved = false;
+            addFusePreviewState.lastClientX = Number(e.clientX) || 0;
+            try { controls.enabled = false; } catch { }
+            e.preventDefault();
+            return;
+          }
+          const bondHit = pickBondHit(e);
+          if (bondHit) {
+            startFuseRingPlacementFromBondHit(bondHit);
+            e.preventDefault();
+          } else {
+            beginQuaternionViewRotate(e);
+            setHintMessage('Fuse ring mode: click a host bond first.');
+            e.preventDefault();
+          }
           return;
         }
         const hit = pickAtomHit(e);
@@ -10912,6 +11718,26 @@
             __editDownPt = null; __editClickIdx = -1; __editMoved = false;
             return;
           }
+          if (editAddMode === EDIT_ADD_MODE.FRAGMENT && editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
+            if (addFusePreviewState) {
+              if (addFusePreviewState.justStarted) {
+                addFusePreviewState.justStarted = false;
+                try { controls.enabled = true; } catch { }
+                __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+                return;
+              }
+              const wasRotating = !!addFusePreviewState.rotating;
+              const rotated = !!addFusePreviewState.moved || __editMoved;
+              addFusePreviewState.rotating = false;
+              addFusePreviewState.moved = false;
+              try { controls.enabled = true; } catch { }
+              if (!wasRotating || !rotated) commitFuseRingPlacement();
+            } else if (!__editMoved) {
+              setHintMessage('Fuse ring mode: click a host bond to start placement.');
+            }
+            __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+            return;
+          }
           if (addGrowActive) {
             const anchorIdx = addGrowAnchorIndex;
             const addPos = addGrowPreviewPos ? addGrowPreviewPos.clone() : null;
@@ -10945,6 +11771,11 @@
   });
   canvasEl.addEventListener('pointercancel', (e) => {
     if (currentMode === MODES.DISPLAY) endQuaternionViewRotate(e);
+    if (addFusePreviewState) {
+      addFusePreviewState.rotating = false;
+      addFusePreviewState.moved = false;
+      try { controls.enabled = true; } catch { }
+    }
   });
 
   // Reset view to the initial camera/target/shift
@@ -11172,6 +12003,13 @@
       clearMoleculePlacementPreview();
       updateEditToolboxUi({ syncSearch: false });
       setHintMessage('Canceled molecule placement.');
+      return;
+    }
+    if (e.key === 'Escape' && currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.FRAGMENT && addFusePreviewState) {
+      e.preventDefault();
+      clearFuseRingPreview();
+      updateEditToolboxUi({ syncSearch: false });
+      setHintMessage('Canceled fuse-ring placement.');
       return;
     }
     if (e.key === 'Escape') {
@@ -11476,6 +12314,138 @@
   let presetExtensions = {};
 
   /**
+   * Normalize one builder operation log entry. Legacy index-based records are
+   * accepted and upgraded in memory; new records retain stable ids.
+   * @param {*} raw
+   * @returns {object|null}
+   */
+  function normalizeBuilderOperationEntry(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const entryId = normalizeFragmentId(raw.entryId || raw.fragmentId || raw.moleculeId);
+    const entryKind = String(raw.entryKind || (raw.fragmentId ? CATALOG_KIND.FRAGMENT : '') || '').trim().toLowerCase()
+      || (getCatalogEntryById(entryId, CATALOG_KIND.MOLECULE) ? CATALOG_KIND.MOLECULE : CATALOG_KIND.FRAGMENT);
+    const attachPolicy = normalizeEditFragmentAttachPolicy(raw.attachPolicy || raw.attachMode);
+    const out = {
+      opId: String(raw.opId || '').trim() || allocateBuilderOpId(),
+      timestamp: String(raw.timestamp || new Date().toISOString()),
+      entryId,
+      entryKind,
+      attachPolicy,
+      transform: cloneJsonLike(raw.transform) || null,
+      resultingBondOrder: normalizeEditAddBondOrder(raw.resultingBondOrder || raw.preferredBondOrder || 1),
+      omittedLocalAtomIndices: Array.isArray(raw.omittedLocalAtomIndices)
+        ? raw.omittedLocalAtomIndices.map((v) => Number(v) | 0).filter((v) => v >= 0)
+        : [],
+      removedAtomIds: Array.isArray(raw.removedAtomIds)
+        ? raw.removedAtomIds.map((v) => String(v || '').trim()).filter(Boolean)
+        : [],
+      addedAtomIds: Array.isArray(raw.addedAtomIds)
+        ? raw.addedAtomIds.map((v) => String(v || '').trim()).filter(Boolean)
+        : [],
+    };
+    if (Array.isArray(raw.hostBondAtomIds)) {
+      const hostBondAtomIds = raw.hostBondAtomIds.map((v) => String(v || '').trim()).filter(Boolean);
+      if (hostBondAtomIds.length >= 2) out.hostBondAtomIds = hostBondAtomIds.slice(0, 2);
+    }
+    if (raw.anchorAtomIdPre) out.anchorAtomIdPre = String(raw.anchorAtomIdPre).trim();
+    if (raw.anchorAtomIdPost) out.anchorAtomIdPost = String(raw.anchorAtomIdPost).trim();
+    if (Array.isArray(raw.removedAtomIndices)) out.removedAtomIndices = raw.removedAtomIndices.map((v) => Number(v) | 0).filter((v) => v >= 0);
+    if (Array.isArray(raw.addedAtomIndices)) out.addedAtomIndices = raw.addedAtomIndices.map((v) => Number(v) | 0).filter((v) => v >= 0);
+    if (Number.isInteger(raw.anchorIndexPre)) out.anchorIndexPre = Number(raw.anchorIndexPre) | 0;
+    if (Number.isInteger(raw.anchorIndexPost)) out.anchorIndexPost = Number(raw.anchorIndexPost) | 0;
+    if (Array.isArray(raw.hostBondIndices)) out.hostBondIndices = raw.hostBondIndices.map((v) => Number(v) | 0).filter((v) => v >= 0).slice(0, 2);
+    if (raw.builderGroupId) {
+      out.builderGroupId = String(raw.builderGroupId).trim();
+      absorbObservedBuilderId(out.builderGroupId, 'group');
+    } else {
+      out.builderGroupId = allocateBuilderGroupId();
+    }
+    absorbObservedBuilderId(out.opId, 'op');
+    return out;
+  }
+
+  /**
+   * Serialize one builder operation to the ID-based preset format.
+   * Legacy index fields are intentionally omitted from export.
+   * @param {*} raw
+   * @returns {object|null}
+   */
+  function serializeBuilderOperationEntry(raw) {
+    const op = normalizeBuilderOperationEntry(raw);
+    if (!op) return null;
+    const out = {
+      opId: op.opId,
+      timestamp: op.timestamp,
+      entryId: op.entryId,
+      entryKind: op.entryKind,
+      attachPolicy: op.attachPolicy,
+      transform: cloneJsonLike(op.transform) || null,
+      resultingBondOrder: op.resultingBondOrder,
+      omittedLocalAtomIndices: Array.isArray(op.omittedLocalAtomIndices) ? op.omittedLocalAtomIndices.slice() : [],
+      removedAtomIds: Array.isArray(op.removedAtomIds) ? op.removedAtomIds.slice() : [],
+      addedAtomIds: Array.isArray(op.addedAtomIds) ? op.addedAtomIds.slice() : [],
+      builderGroupId: op.builderGroupId,
+    };
+    if (op.anchorAtomIdPre) out.anchorAtomIdPre = op.anchorAtomIdPre;
+    if (op.anchorAtomIdPost) out.anchorAtomIdPost = op.anchorAtomIdPost;
+    if (Array.isArray(op.hostBondAtomIds) && op.hostBondAtomIds.length) out.hostBondAtomIds = op.hostBondAtomIds.slice(0, 2);
+    return out;
+  }
+
+  /**
+   * Resolve builder metadata for atoms from stored operation logs.
+   * This does not replay geometry; it only reattaches ids/group tags when
+   * present or derivable from the currently loaded atom order.
+   * @param {*} vol
+   */
+  function rehydrateBuilderStateForVolume(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return;
+    ensureVolumeAtomIds(vol);
+    const atoms = vol.atoms;
+    for (const atom of atoms) {
+      if (!atom || typeof atom !== 'object') continue;
+      absorbObservedBuilderId(atom.id, 'atom');
+    }
+    if (!Array.isArray(vol.fragmentOps)) {
+      vol.fragmentOps = [];
+      return;
+    }
+    const normalizedOps = [];
+    for (const raw of vol.fragmentOps) {
+      const op = normalizeBuilderOperationEntry(raw);
+      if (!op) continue;
+      if ((!Array.isArray(op.addedAtomIds) || !op.addedAtomIds.length) && Array.isArray(op.addedAtomIndices)) {
+        op.addedAtomIds = op.addedAtomIndices
+          .map((idx) => (atoms[idx] ? ensureAtomId(atoms[idx]) : ''))
+          .filter(Boolean);
+      }
+      if (!op.anchorAtomIdPost && Number.isInteger(op.anchorIndexPost) && atoms[op.anchorIndexPost]) {
+        op.anchorAtomIdPost = ensureAtomId(atoms[op.anchorIndexPost]);
+      }
+      if (!op.anchorAtomIdPre && Number.isInteger(op.anchorIndexPre) && atoms[op.anchorIndexPre]) {
+        op.anchorAtomIdPre = ensureAtomId(atoms[op.anchorIndexPre]);
+      }
+      if ((!Array.isArray(op.hostBondAtomIds) || !op.hostBondAtomIds.length) && Array.isArray(op.hostBondIndices)) {
+        op.hostBondAtomIds = op.hostBondIndices
+          .map((idx) => (atoms[idx] ? ensureAtomId(atoms[idx]) : ''))
+          .filter(Boolean)
+          .slice(0, 2);
+      }
+      const addedIds = Array.isArray(op.addedAtomIds) ? op.addedAtomIds : [];
+      for (const atom of atoms) {
+        if (!atom || !addedIds.includes(String(atom.id || ''))) continue;
+        setAtomBuilderMeta(atom, {
+          groupId: op.builderGroupId,
+          entryId: op.entryId,
+          entryKind: op.entryKind,
+        });
+      }
+      normalizedOps.push(op);
+    }
+    vol.fragmentOps = normalizedOps;
+  }
+
+  /**
    * Read fragment operation map from preset extensions.
    * @returns {Record<string, any[]>}
    */
@@ -11499,6 +12469,7 @@
       const stored = key && Array.isArray(map[key]) ? map[key] : null;
       if (stored) record.vol.fragmentOps = cloneJsonLike(stored) || [];
       else if (!Array.isArray(record.vol.fragmentOps)) record.vol.fragmentOps = [];
+      rehydrateBuilderStateForVolume(record.vol);
     }
   }
 
@@ -11518,8 +12489,11 @@
       const key = String(record.name || '').trim();
       if (!key) continue;
       if (Array.isArray(record.vol.fragmentOps) && record.vol.fragmentOps.length > 0) {
-        existingMap[key] = cloneJsonLike(record.vol.fragmentOps) || [];
-      } else if (!Array.isArray(record.vol.fragmentOps)) {
+        existingMap[key] = record.vol.fragmentOps
+          .map((raw) => serializeBuilderOperationEntry(raw))
+          .filter(Boolean)
+          .map((op) => cloneJsonLike(op));
+      } else {
         delete existingMap[key];
       }
     }
@@ -13621,6 +14595,7 @@
     const meta = Object.assign({ name, vol }, extras || {});
     if (vol && vol.isTwoComponent) setVolume2CComponent(meta, global2CComponentMode);
     if (vol) {
+      ensureVolumeAtomIds(vol);
       const builderMap = getBuilderFragmentOpsByFileFromExtensions();
       const fileKey = String(name || '').trim();
       if (fileKey && Array.isArray(builderMap[fileKey])) {
@@ -13628,6 +14603,7 @@
       } else if (!Array.isArray(vol.fragmentOps)) {
         vol.fragmentOps = [];
       }
+      rehydrateBuilderStateForVolume(vol);
     }
     volumes.push(meta);
     // Keep the user/default iso when importing files; only fall back to isoHint

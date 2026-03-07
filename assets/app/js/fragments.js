@@ -2,7 +2,7 @@
   'use strict';
 
   /**
-   * Infer a compact formula string from fragment atom list.
+   * Infer a compact formula string from one atom list.
    * @param {Array<{Z:number}>} atoms
    * @returns {string}
    */
@@ -119,11 +119,60 @@
   }
 
   /**
-   * Build one immutable fragment record from loose input.
+   * Normalize one catalog kind.
    * @param {*} raw
-   * @returns {{id:string,name:string,formula:string,tags:string[],atoms:Array<{Z:number,x:number,y:number,z:number}>,bonds:Array<{i:number,j:number,order:number}>,connectionAtomIndex:number,preferredBondOrder:number,linkBondDirection?:[number,number,number]}|null}
+   * @returns {'fragment'|'molecule'}
    */
-  function normalizeFragmentRecord(raw) {
+  function normalizeCatalogKind(raw) {
+    return String(raw || '').trim().toLowerCase() === 'molecule' ? 'molecule' : 'fragment';
+  }
+
+  /**
+   * Normalize supported fragment attach modes.
+   * @param {*} raw
+   * @param {'fragment'|'molecule'} kind
+   * @returns {string[]}
+   */
+  function normalizeAttachModes(raw, kind) {
+    if (kind !== 'fragment') return [];
+    const out = [];
+    const seen = new Set();
+    const add = (value) => {
+      const key = String(value || '').trim().toLowerCase();
+      if (key !== 'append' && key !== 'replace_h' && key !== 'fuse_ring') return;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(key);
+    };
+    if (Array.isArray(raw)) raw.forEach(add);
+    if (!out.length) {
+      add('append');
+      add('replace_h');
+    }
+    return out;
+  }
+
+  /**
+   * Normalize a fuse bond local pair.
+   * @param {*} raw
+   * @param {number} atomCount
+   * @returns {[number,number]|null}
+   */
+  function normalizeFuseBondLocalPair(raw, atomCount) {
+    if (!Array.isArray(raw) || raw.length < 2) return null;
+    const a = Number(raw[0]);
+    const b = Number(raw[1]);
+    if (!Number.isInteger(a) || !Number.isInteger(b)) return null;
+    if (a < 0 || b < 0 || a >= atomCount || b >= atomCount || a === b) return null;
+    return [a, b];
+  }
+
+  /**
+   * Build one immutable catalog entry from loose input.
+   * @param {*} raw
+   * @returns {object|null}
+   */
+  function normalizeCatalogRecord(raw) {
     if (!raw || typeof raw !== 'object') return null;
     const id = String(raw.id || '').trim().toLowerCase();
     const name = String(raw.name || '').trim();
@@ -153,16 +202,7 @@
       bonds.push({ i, j, order: Math.max(1, Math.min(4, Number.isFinite(order) ? Math.round(order) : 1)) });
     }
 
-    const connectionAtomIndexRaw = Number(raw.connectionAtomIndex);
-    const connectionAtomIndex = Number.isInteger(connectionAtomIndexRaw)
-      ? Math.max(0, Math.min(atoms.length - 1, connectionAtomIndexRaw))
-      : 0;
-    const preferredBondOrderRaw = Number(raw.preferredBondOrder);
-    const preferredBondOrder = Number.isFinite(preferredBondOrderRaw)
-      ? Math.max(1, Math.min(4, Math.round(preferredBondOrderRaw)))
-      : 1;
-    const linkBondDirection = normalizeDirectionVector(raw.linkBondDirection || raw.linkDirection || raw.connectionDirection);
-
+    const kind = normalizeCatalogKind(raw.kind);
     const formula = String(raw.formula || '').trim() || inferFormulaFromAtoms(atoms);
     const tags = Array.isArray(raw.tags)
       ? raw.tags.map((v) => String(v || '').trim().toLowerCase()).filter(Boolean)
@@ -170,21 +210,39 @@
 
     const normalized = {
       id,
+      kind,
       name,
       formula,
       tags: Object.freeze(tags),
       atoms: Object.freeze(atoms.map((a) => Object.freeze({ ...a }))),
       bonds: Object.freeze(bonds.map((b) => Object.freeze({ ...b }))),
-      connectionAtomIndex,
-      preferredBondOrder,
     };
-    if (linkBondDirection) normalized.linkBondDirection = Object.freeze(linkBondDirection.slice(0, 3));
+
+    if (kind === 'fragment') {
+      const connectionAtomIndexRaw = Number(raw.connectionAtomIndex);
+      normalized.connectionAtomIndex = Number.isInteger(connectionAtomIndexRaw)
+        ? Math.max(0, Math.min(atoms.length - 1, connectionAtomIndexRaw))
+        : 0;
+      const preferredBondOrderRaw = Number(raw.preferredBondOrder);
+      normalized.preferredBondOrder = Number.isFinite(preferredBondOrderRaw)
+        ? Math.max(1, Math.min(4, Math.round(preferredBondOrderRaw)))
+        : 1;
+      const linkBondDirection = normalizeDirectionVector(raw.linkBondDirection || raw.linkDirection || raw.connectionDirection);
+      if (linkBondDirection) normalized.linkBondDirection = Object.freeze(linkBondDirection.slice(0, 3));
+      normalized.attachModes = Object.freeze(normalizeAttachModes(raw.attachModes, kind));
+      const fusePair = normalizeFuseBondLocalPair(raw.fuseBondLocalPair, atoms.length);
+      if (fusePair && normalized.attachModes.includes('fuse_ring')) {
+        normalized.fuseBondLocalPair = Object.freeze(fusePair.slice(0, 2));
+      }
+    }
+
     return Object.freeze(normalized);
   }
 
   const RAW_LIBRARY = [
     {
       id: 'methyl',
+      kind: 'fragment',
       name: 'Methyl',
       formula: 'CH3',
       tags: ['alkyl', 'organic', 'starter'],
@@ -201,9 +259,11 @@
       ],
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h'],
     },
     {
       id: 'methylene',
+      kind: 'fragment',
       name: 'Methylene',
       formula: 'CH2',
       tags: ['alkyl', 'organic', 'starter'],
@@ -218,9 +278,11 @@
       ],
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h'],
     },
     {
       id: 'hydroxyl',
+      kind: 'fragment',
       name: 'Hydroxyl',
       formula: 'OH',
       tags: ['oxygen', 'organic', 'starter'],
@@ -231,9 +293,11 @@
       bonds: [{ i: 0, j: 1, order: 1 }],
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h'],
     },
     {
       id: 'amino',
+      kind: 'fragment',
       name: 'Amino',
       formula: 'NH2',
       tags: ['nitrogen', 'organic', 'starter'],
@@ -248,9 +312,11 @@
       ],
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h'],
     },
     {
       id: 'carbonyl',
+      kind: 'fragment',
       name: 'Carbonyl',
       formula: 'CO',
       tags: ['oxygen', 'double-bond', 'organic', 'starter'],
@@ -261,9 +327,11 @@
       bonds: [{ i: 0, j: 1, order: 2 }],
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h'],
     },
     {
       id: 'amide',
+      kind: 'fragment',
       name: 'Amide',
       formula: 'CONH2',
       tags: ['amide', 'organic', 'starter'],
@@ -282,9 +350,11 @@
       ],
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h'],
     },
     {
       id: 'phenyl',
+      kind: 'fragment',
       name: 'Phenyl',
       formula: 'C6H5',
       tags: ['aryl', 'ring', 'organic', 'starter'],
@@ -316,44 +386,12 @@
       ],
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h'],
     },
     {
-      id: 'pyridine',
-      name: 'Pyridine',
-      formula: 'C5H5N',
-      tags: ['heteroaromatic', 'ring', 'organic', 'starter'],
-      atoms: [
-        { Z: 6, x: 1.40, y: 0.0, z: 0.0 },
-        { Z: 7, x: 0.70, y: 1.212, z: 0.0 },
-        { Z: 6, x: -0.70, y: 1.212, z: 0.0 },
-        { Z: 6, x: -1.40, y: 0.0, z: 0.0 },
-        { Z: 6, x: -0.70, y: -1.212, z: 0.0 },
-        { Z: 6, x: 0.70, y: -1.212, z: 0.0 },
-        { Z: 1, x: -1.24, y: 2.150, z: 0.0 },
-        { Z: 1, x: -2.48, y: 0.0, z: 0.0 },
-        { Z: 1, x: -1.24, y: -2.150, z: 0.0 },
-        { Z: 1, x: 1.24, y: -2.150, z: 0.0 },
-        { Z: 1, x: 2.48, y: 0.0, z: 0.0 },
-      ],
-      bonds: [
-        { i: 0, j: 1, order: 1 },
-        { i: 1, j: 2, order: 2 },
-        { i: 2, j: 3, order: 1 },
-        { i: 3, j: 4, order: 2 },
-        { i: 4, j: 5, order: 1 },
-        { i: 5, j: 0, order: 2 },
-        { i: 2, j: 6, order: 1 },
-        { i: 3, j: 7, order: 1 },
-        { i: 4, j: 8, order: 1 },
-        { i: 5, j: 9, order: 1 },
-        { i: 0, j: 10, order: 1 },
-      ],
-      connectionAtomIndex: 0,
-      preferredBondOrder: 1,
-    },
-    {
-      id: 'benzene',
-      name: 'Benzene',
+      id: 'benzene-ring',
+      kind: 'fragment',
+      name: 'Benzene ring',
       formula: 'C6H6',
       tags: ['aromatic', 'ring', 'organic', 'starter'],
       atoms: [
@@ -386,9 +424,119 @@
       ],
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h', 'fuse_ring'],
+      fuseBondLocalPair: [0, 1],
+      linkBondDirection: [0, 0, 1],
+    },
+    {
+      id: 'pyridine-ring',
+      kind: 'fragment',
+      name: 'Pyridine ring',
+      formula: 'C5H5N',
+      tags: ['heteroaromatic', 'ring', 'organic', 'starter'],
+      atoms: [
+        { Z: 6, x: 1.40, y: 0.0, z: 0.0 },
+        { Z: 7, x: 0.70, y: 1.212, z: 0.0 },
+        { Z: 6, x: -0.70, y: 1.212, z: 0.0 },
+        { Z: 6, x: -1.40, y: 0.0, z: 0.0 },
+        { Z: 6, x: -0.70, y: -1.212, z: 0.0 },
+        { Z: 6, x: 0.70, y: -1.212, z: 0.0 },
+        { Z: 1, x: -1.24, y: 2.150, z: 0.0 },
+        { Z: 1, x: -2.48, y: 0.0, z: 0.0 },
+        { Z: 1, x: -1.24, y: -2.150, z: 0.0 },
+        { Z: 1, x: 1.24, y: -2.150, z: 0.0 },
+        { Z: 1, x: 2.48, y: 0.0, z: 0.0 },
+      ],
+      bonds: [
+        { i: 0, j: 1, order: 1 },
+        { i: 1, j: 2, order: 2 },
+        { i: 2, j: 3, order: 1 },
+        { i: 3, j: 4, order: 2 },
+        { i: 4, j: 5, order: 1 },
+        { i: 5, j: 0, order: 2 },
+        { i: 2, j: 6, order: 1 },
+        { i: 3, j: 7, order: 1 },
+        { i: 4, j: 8, order: 1 },
+        { i: 5, j: 9, order: 1 },
+        { i: 0, j: 10, order: 1 },
+      ],
+      connectionAtomIndex: 0,
+      preferredBondOrder: 1,
+      attachModes: ['append', 'replace_h', 'fuse_ring'],
+      fuseBondLocalPair: [0, 1],
+      linkBondDirection: [0, 0, 1],
+    },
+    {
+      id: 'benzene',
+      kind: 'molecule',
+      name: 'Benzene',
+      formula: 'C6H6',
+      tags: ['aromatic', 'ring', 'organic', 'starter'],
+      atoms: [
+        { Z: 6, x: 1.40, y: 0.0, z: 0.0 },
+        { Z: 6, x: 0.70, y: 1.212, z: 0.0 },
+        { Z: 6, x: -0.70, y: 1.212, z: 0.0 },
+        { Z: 6, x: -1.40, y: 0.0, z: 0.0 },
+        { Z: 6, x: -0.70, y: -1.212, z: 0.0 },
+        { Z: 6, x: 0.70, y: -1.212, z: 0.0 },
+        { Z: 1, x: 2.48, y: 0.0, z: 0.0 },
+        { Z: 1, x: 1.24, y: 2.150, z: 0.0 },
+        { Z: 1, x: -1.24, y: 2.150, z: 0.0 },
+        { Z: 1, x: -2.48, y: 0.0, z: 0.0 },
+        { Z: 1, x: -1.24, y: -2.150, z: 0.0 },
+        { Z: 1, x: 1.24, y: -2.150, z: 0.0 },
+      ],
+      bonds: [
+        { i: 0, j: 1, order: 1 },
+        { i: 1, j: 2, order: 2 },
+        { i: 2, j: 3, order: 1 },
+        { i: 3, j: 4, order: 2 },
+        { i: 4, j: 5, order: 1 },
+        { i: 5, j: 0, order: 2 },
+        { i: 0, j: 6, order: 1 },
+        { i: 1, j: 7, order: 1 },
+        { i: 2, j: 8, order: 1 },
+        { i: 3, j: 9, order: 1 },
+        { i: 4, j: 10, order: 1 },
+        { i: 5, j: 11, order: 1 },
+      ],
+    },
+    {
+      id: 'pyridine',
+      kind: 'molecule',
+      name: 'Pyridine',
+      formula: 'C5H5N',
+      tags: ['heteroaromatic', 'ring', 'organic', 'starter'],
+      atoms: [
+        { Z: 6, x: 1.40, y: 0.0, z: 0.0 },
+        { Z: 7, x: 0.70, y: 1.212, z: 0.0 },
+        { Z: 6, x: -0.70, y: 1.212, z: 0.0 },
+        { Z: 6, x: -1.40, y: 0.0, z: 0.0 },
+        { Z: 6, x: -0.70, y: -1.212, z: 0.0 },
+        { Z: 6, x: 0.70, y: -1.212, z: 0.0 },
+        { Z: 1, x: -1.24, y: 2.150, z: 0.0 },
+        { Z: 1, x: -2.48, y: 0.0, z: 0.0 },
+        { Z: 1, x: -1.24, y: -2.150, z: 0.0 },
+        { Z: 1, x: 1.24, y: -2.150, z: 0.0 },
+        { Z: 1, x: 2.48, y: 0.0, z: 0.0 },
+      ],
+      bonds: [
+        { i: 0, j: 1, order: 1 },
+        { i: 1, j: 2, order: 2 },
+        { i: 2, j: 3, order: 1 },
+        { i: 3, j: 4, order: 2 },
+        { i: 4, j: 5, order: 1 },
+        { i: 5, j: 0, order: 2 },
+        { i: 2, j: 6, order: 1 },
+        { i: 3, j: 7, order: 1 },
+        { i: 4, j: 8, order: 1 },
+        { i: 5, j: 9, order: 1 },
+        { i: 0, j: 10, order: 1 },
+      ],
     },
     {
       id: 'cyclohexane',
+      kind: 'molecule',
       name: 'Cyclohexane',
       formula: 'C6H12',
       tags: ['ring', 'alkane', 'organic', 'starter'],
@@ -408,8 +556,6 @@
         { i: 4, j: 5, order: 1 },
         { i: 5, j: 0, order: 1 },
       ],
-      connectionAtomIndex: 0,
-      preferredBondOrder: 1,
     },
   ];
 
@@ -417,21 +563,21 @@
   const FRAGMENT_BY_ID = new Map();
 
   /**
-   * Replace the active fragment catalog and rebuild lookup map in-place.
+   * Replace the active catalog and rebuild lookup map in-place.
    * @param {Array<*>} records
    */
   function replaceFragmentLibrary(records) {
     const normalized = (Array.isArray(records) ? records : [])
-      .map(normalizeFragmentRecord)
+      .map(normalizeCatalogRecord)
       .filter(Boolean)
       .sort((a, b) => a.name.localeCompare(b.name));
     FRAGMENT_LIBRARY.splice(0, FRAGMENT_LIBRARY.length, ...normalized);
     FRAGMENT_BY_ID.clear();
-    for (const fragment of FRAGMENT_LIBRARY) FRAGMENT_BY_ID.set(fragment.id, fragment);
+    for (const entry of FRAGMENT_LIBRARY) FRAGMENT_BY_ID.set(entry.id, entry);
   }
 
   /**
-   * Reset fragment catalog to built-in defaults.
+   * Reset the active catalog to built-in defaults.
    * @returns {{ok:boolean,count:number,source:string}}
    */
   function resetFragmentLibraryToBuiltins() {
@@ -440,83 +586,112 @@
   }
 
   /**
-   * Resolve one free-form query to the best matching fragment.
-   * @param {*} query
-   * @returns {{id:string,name:string,formula:string,tags:string[],atoms:Array<{Z:number,x:number,y:number,z:number}>,bonds:Array<{i:number,j:number,order:number}>,connectionAtomIndex:number,preferredBondOrder:number,linkBondDirection?:[number,number,number]}|null}
+   * Return catalog entries filtered by kind when requested.
+   * @param {'fragment'|'molecule'=} kind
+   * @returns {Array<object>}
    */
-  function resolveFragmentQuery(query) {
+  function getCatalogEntries(kind) {
+    const wanted = kind == null ? '' : normalizeCatalogKind(kind);
+    if (!wanted) return FRAGMENT_LIBRARY.slice();
+    return FRAGMENT_LIBRARY.filter((entry) => entry && entry.kind === wanted);
+  }
+
+  /**
+   * Resolve one free-form query to the best matching catalog entry.
+   * @param {*} query
+   * @param {'fragment'|'molecule'=} kind
+   * @returns {object|null}
+   */
+  function resolveCatalogQuery(query, kind) {
     const raw = String(query == null ? '' : query).trim();
     if (!raw) return null;
     const q = raw.toLowerCase();
+    const list = getCatalogEntries(kind);
+    const byId = new Map(list.map((entry) => [entry.id, entry]));
 
     const bracketMatch = q.match(/\[([a-z0-9_-]+)\]\s*$/i);
-    if (bracketMatch && FRAGMENT_BY_ID.has(bracketMatch[1])) return FRAGMENT_BY_ID.get(bracketMatch[1]);
+    if (bracketMatch && byId.has(bracketMatch[1])) return byId.get(bracketMatch[1]);
+    if (byId.has(q)) return byId.get(q);
 
-    if (FRAGMENT_BY_ID.has(q)) return FRAGMENT_BY_ID.get(q);
-
-    for (const f of FRAGMENT_LIBRARY) {
-      if (f.name.toLowerCase() === q) return f;
-      if (f.formula.toLowerCase() === q) return f;
-      if (q.includes(`[${f.id}]`)) return f;
+    for (const entry of list) {
+      if (entry.name.toLowerCase() === q) return entry;
+      if (entry.formula.toLowerCase() === q) return entry;
+      if (q.includes(`[${entry.id}]`)) return entry;
     }
-
-    for (const f of FRAGMENT_LIBRARY) {
-      if (f.name.toLowerCase().startsWith(q)) return f;
-      if (f.id.startsWith(q)) return f;
-      if (f.formula.toLowerCase().startsWith(q)) return f;
+    for (const entry of list) {
+      if (entry.name.toLowerCase().startsWith(q)) return entry;
+      if (entry.id.startsWith(q)) return entry;
+      if (entry.formula.toLowerCase().startsWith(q)) return entry;
     }
-
-    for (const f of FRAGMENT_LIBRARY) {
-      if (f.tags.some((tag) => tag.includes(q))) return f;
-      if (f.name.toLowerCase().includes(q)) return f;
-      if (f.formula.toLowerCase().includes(q)) return f;
+    for (const entry of list) {
+      if (entry.tags.some((tag) => tag.includes(q))) return entry;
+      if (entry.name.toLowerCase().includes(q)) return entry;
+      if (entry.formula.toLowerCase().includes(q)) return entry;
     }
-
     return null;
   }
 
   /**
-   * Fetch one fragment by canonical id.
+   * Fetch one catalog entry by canonical id.
    * @param {*} id
-   * @returns {{id:string,name:string,formula:string,tags:string[],atoms:Array<{Z:number,x:number,y:number,z:number}>,bonds:Array<{i:number,j:number,order:number}>,connectionAtomIndex:number,preferredBondOrder:number,linkBondDirection?:[number,number,number]}|null}
+   * @param {'fragment'|'molecule'=} kind
+   * @returns {object|null}
    */
-  function getFragmentById(id) {
+  function getCatalogEntryById(id, kind) {
     const key = String(id == null ? '' : id).trim().toLowerCase();
     if (!key) return null;
-    return FRAGMENT_BY_ID.get(key) || null;
+    const entry = FRAGMENT_BY_ID.get(key) || null;
+    if (!entry) return null;
+    if (kind == null) return entry;
+    return entry.kind === normalizeCatalogKind(kind) ? entry : null;
   }
 
   /**
-   * Deep-clone a fragment payload for mutable placement operations.
-   * @param {*} fragmentId
-   * @returns {{id:string,name:string,formula:string,tags:string[],atoms:Array<{Z:number,x:number,y:number,z:number}>,bonds:Array<{i:number,j:number,order:number}>,connectionAtomIndex:number,preferredBondOrder:number,linkBondDirection?:[number,number,number]}|null}
+   * Deep-clone one catalog entry for mutable placement operations.
+   * @param {*} entryId
+   * @param {'fragment'|'molecule'=} kind
+   * @returns {object|null}
    */
-  function buildFragmentInstance(fragmentId) {
-    const src = getFragmentById(fragmentId);
+  function buildCatalogInstance(entryId, kind) {
+    const src = getCatalogEntryById(entryId, kind);
     if (!src) return null;
     const instance = {
       id: src.id,
+      kind: src.kind,
       name: src.name,
       formula: src.formula,
       tags: Array.isArray(src.tags) ? src.tags.slice() : [],
       atoms: src.atoms.map((a) => ({ Z: a.Z | 0, x: Number(a.x), y: Number(a.y), z: Number(a.z) })),
       bonds: src.bonds.map((b) => ({ i: b.i | 0, j: b.j | 0, order: Math.max(1, Math.min(4, b.order | 0)) })),
-      connectionAtomIndex: Math.max(0, Math.min(src.atoms.length - 1, src.connectionAtomIndex | 0)),
-      preferredBondOrder: Math.max(1, Math.min(4, src.preferredBondOrder | 0)),
     };
-    if (Array.isArray(src.linkBondDirection) && src.linkBondDirection.length >= 3) {
-      instance.linkBondDirection = [
-        Number(src.linkBondDirection[0]) || 0,
-        Number(src.linkBondDirection[1]) || 0,
-        Number(src.linkBondDirection[2]) || 0,
-      ];
+    if (src.kind === 'fragment') {
+      instance.connectionAtomIndex = Math.max(0, Math.min(src.atoms.length - 1, src.connectionAtomIndex | 0));
+      instance.preferredBondOrder = Math.max(1, Math.min(4, src.preferredBondOrder | 0));
+      instance.attachModes = Array.isArray(src.attachModes) ? src.attachModes.slice() : ['append', 'replace_h'];
+      if (Array.isArray(src.linkBondDirection) && src.linkBondDirection.length >= 3) {
+        instance.linkBondDirection = [
+          Number(src.linkBondDirection[0]) || 0,
+          Number(src.linkBondDirection[1]) || 0,
+          Number(src.linkBondDirection[2]) || 0,
+        ];
+      }
+      if (Array.isArray(src.fuseBondLocalPair) && src.fuseBondLocalPair.length >= 2) {
+        instance.fuseBondLocalPair = [src.fuseBondLocalPair[0] | 0, src.fuseBondLocalPair[1] | 0];
+      }
     }
     return instance;
   }
 
+  /** Backward-compatible alias. */
+  function resolveFragmentQuery(query) { return resolveCatalogQuery(query); }
+  /** Backward-compatible alias. */
+  function getFragmentById(id) { return getCatalogEntryById(id); }
+  /** Backward-compatible alias. */
+  function buildFragmentInstance(fragmentId) { return buildCatalogInstance(fragmentId); }
+
   /**
-   * Load one external fragment manifest with XYZ-backed atoms.
-   * Manifest shape: { fragments:[{ id,name,xyz,bonds,... }] }.
+   * Load one external catalog manifest with XYZ-backed atoms.
+   * Manifest shape: { entries:[...] } with legacy support for { fragments:[...] }.
    * @param {string} manifestUrl
    * @returns {Promise<{ok:boolean,count:number,source:string,errors:string[]}>}
    */
@@ -540,15 +715,17 @@
       throw new Error(`fragment manifest JSON parse failed (${url}): ${error && error.message ? error.message : String(error)}`);
     }
 
-    const fragments = Array.isArray(payload)
+    const entries = Array.isArray(payload)
       ? payload
-      : (payload && Array.isArray(payload.fragments) ? payload.fragments : []);
-    if (!fragments.length) throw new Error(`fragment manifest "${url}" does not contain any fragments`);
+      : (payload && Array.isArray(payload.entries)
+        ? payload.entries
+        : (payload && Array.isArray(payload.fragments) ? payload.fragments : []));
+    if (!entries.length) throw new Error(`fragment manifest "${url}" does not contain any entries`);
 
     const normalizedBaseUrl = response.url || resolveAgainstBaseUrl(url, (typeof location !== 'undefined' ? location.href : ''));
     const hydrated = [];
     const errors = [];
-    for (const raw of fragments) {
+    for (const raw of entries) {
       if (!raw || typeof raw !== 'object') continue;
       const item = { ...raw };
       try {
@@ -560,7 +737,7 @@
             throw new Error(`xyz fetch failed (${item.xyz}): ${status}`);
           }
           const xyzText = await xyzResp.text();
-          item.atoms = parseFragmentXyzText(xyzText, item.xyz || item.id || item.name || 'fragment.xyz');
+          item.atoms = parseFragmentXyzText(xyzText, item.xyz || item.id || item.name || 'entry.xyz');
         }
         hydrated.push(item);
       } catch (error) {
@@ -571,7 +748,7 @@
 
     replaceFragmentLibrary(hydrated);
     if (FRAGMENT_LIBRARY.length === 0) {
-      throw new Error(`no valid fragment records found in "${url}"${errors.length ? ` (${errors[0]})` : ''}`);
+      throw new Error(`no valid catalog entries found in "${url}"${errors.length ? ` (${errors[0]})` : ''}`);
     }
     return {
       ok: true,
@@ -585,6 +762,10 @@
 
   window.VibeMolFragments = Object.freeze({
     FRAGMENT_LIBRARY,
+    getCatalogEntries,
+    resolveCatalogQuery,
+    getCatalogEntryById,
+    buildCatalogInstance,
     resolveFragmentQuery,
     getFragmentById,
     buildFragmentInstance,

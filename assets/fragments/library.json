@@ -1,9 +1,9 @@
 {
   "kind": "vibemol.fragment-library",
   "version": 1,
-  "generatedAt": "2026-03-06T16:07:10.141Z",
-  "fragments": [
+  "entries": [
     {
+      "kind": "fragment",
       "id": "amide",
       "name": "Amide",
       "formula": "CONH2",
@@ -41,9 +41,14 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
       ]
     },
     {
+      "kind": "fragment",
       "id": "amino",
       "name": "Amino",
       "formula": "NH2",
@@ -71,11 +76,16 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
       ]
     },
     {
-      "id": "benzene",
-      "name": "Benzene",
+      "kind": "fragment",
+      "id": "benzene-ring",
+      "name": "Benzene ring",
       "formula": "C6H6",
       "tags": [
         "aromatic",
@@ -152,9 +162,19 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h",
+        "fuse_ring"
+      ],
+      "fuseBondLocalPair": [
+        0,
+        1
       ]
     },
     {
+      "kind": "fragment",
       "id": "carbonyl",
       "name": "Carbonyl",
       "formula": "CO",
@@ -178,60 +198,14 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
       ]
     },
     {
-      "id": "cyclohexane",
-      "name": "Cyclohexane",
-      "formula": "C6H12",
-      "tags": [
-        "ring",
-        "alkane",
-        "organic",
-        "starter"
-      ],
-      "xyz": "./cyclohexane.xyz",
-      "bonds": [
-        {
-          "i": 0,
-          "j": 1,
-          "order": 1
-        },
-        {
-          "i": 0,
-          "j": 5,
-          "order": 1
-        },
-        {
-          "i": 1,
-          "j": 2,
-          "order": 1
-        },
-        {
-          "i": 2,
-          "j": 3,
-          "order": 1
-        },
-        {
-          "i": 3,
-          "j": 4,
-          "order": 1
-        },
-        {
-          "i": 4,
-          "j": 5,
-          "order": 1
-        }
-      ],
-      "connectionAtomIndex": 0,
-      "preferredBondOrder": 1,
-      "linkBondDirection": [
-        0.0,
-        0.0,
-        1.0
-      ]
-    },
-    {
+      "kind": "fragment",
       "id": "hydroxyl",
       "name": "Hydroxyl",
       "formula": "OH",
@@ -254,9 +228,14 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
       ]
     },
     {
+      "kind": "fragment",
       "id": "methyl",
       "name": "Methyl",
       "formula": "CH3",
@@ -289,9 +268,14 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
       ]
     },
     {
+      "kind": "fragment",
       "id": "methylene",
       "name": "Methylene",
       "formula": "CH2",
@@ -319,9 +303,14 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
       ]
     },
     {
+      "kind": "fragment",
       "id": "phenyl",
       "name": "Phenyl",
       "formula": "C6H5",
@@ -395,11 +384,16 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
       ]
     },
     {
-      "id": "pyridine",
-      "name": "Pyridine",
+      "kind": "fragment",
+      "id": "pyridine-ring",
+      "name": "Pyridine ring",
       "formula": "C5H5N",
       "tags": [
         "heteroaromatic",
@@ -471,7 +465,207 @@
         0.0,
         0.0,
         1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h",
+        "fuse_ring"
+      ],
+      "fuseBondLocalPair": [
+        0,
+        1
+      ]
+    },
+    {
+      "kind": "molecule",
+      "id": "benzene",
+      "name": "Benzene",
+      "formula": "C6H6",
+      "tags": [
+        "aromatic",
+        "ring",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./benzene.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 2
+        },
+        {
+          "i": 3,
+          "j": 9,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 10,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 11,
+          "order": 1
+        }
+      ]
+    },
+    {
+      "kind": "molecule",
+      "id": "cyclohexane",
+      "name": "Cyclohexane",
+      "formula": "C6H12",
+      "tags": [
+        "ring",
+        "alkane",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./cyclohexane.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        }
+      ]
+    },
+    {
+      "kind": "molecule",
+      "id": "pyridine",
+      "name": "Pyridine",
+      "formula": "C5H5N",
+      "tags": [
+        "heteroaromatic",
+        "ring",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./pyridine.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 10,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 2
+        },
+        {
+          "i": 3,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 9,
+          "order": 1
+        }
       ]
     }
-  ]
+  ],
+  "generatedAt": "2026-03-06T16:07:10.141Z"
 }

@@ -2706,6 +2706,13 @@
         <input id="editFragmentSearch" type="text" list="editFragmentSuggestions" autocomplete="off"
           placeholder="e.g. phenyl, hydroxyl, C6H5" />
         <datalist id="editFragmentSuggestions"></datalist>
+        <label for="editFragmentAttachPolicy">Attach policy</label>
+        <select id="editFragmentAttachPolicy">
+          <option value="auto" selected>Auto</option>
+          <option value="append">Append</option>
+          <option value="replace_h">Replace H</option>
+          <option value="fuse_ring">Fuse ring</option>
+        </select>
         <div id="editFragmentQuick"></div>
         <div id="editFragmentCurrent"></div>
       </div>

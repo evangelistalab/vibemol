@@ -1,8 +1,9 @@
 (function () {
   /**
    * Build one reversible snapshot command for atom-coordinate edits.
-   * @param {{record:*,before:Array<object>,after:Array<object>,label:string,at?:number}} options
-   * @returns {{type:string,record:*,before:Array<object>,after:Array<object>,label:string,at:number,undo:(ctx:{applyAtomsSnapshotToRecord:(record:*,atoms:Array<object>)=>boolean})=>boolean,redo:(ctx:{applyAtomsSnapshotToRecord:(record:*,atoms:Array<object>)=>boolean})=>boolean}|null}
+   * Optional builder metadata snapshots are applied alongside atoms when supplied.
+   * @param {{record:*,before:Array<object>,after:Array<object>,beforeFragmentOps?:Array<object>|null,afterFragmentOps?:Array<object>|null,label:string,at?:number}} options
+   * @returns {{type:string,record:*,before:Array<object>,after:Array<object>,beforeFragmentOps:Array<object>|null,afterFragmentOps:Array<object>|null,label:string,at:number,undo:(ctx:{applyAtomsSnapshotToRecord:(record:*,atoms:Array<object>,fragmentOps?:Array<object>|null)=>boolean})=>boolean,redo:(ctx:{applyAtomsSnapshotToRecord:(record:*,atoms:Array<object>,fragmentOps?:Array<object>|null)=>boolean})=>boolean}|null}
    */
   function createAtomSnapshotCommand(options) {
     const record = options && options.record;
@@ -14,17 +15,19 @@
       record,
       before,
       after,
+      beforeFragmentOps: options && Array.isArray(options.beforeFragmentOps) ? options.beforeFragmentOps : null,
+      afterFragmentOps: options && Array.isArray(options.afterFragmentOps) ? options.afterFragmentOps : null,
       label: String((options && options.label) || 'Edit'),
       at: Number.isFinite(options && options.at) ? Number(options.at) : Date.now(),
       undo(ctx) {
         const apply = ctx && ctx.applyAtomsSnapshotToRecord;
         if (typeof apply !== 'function') return false;
-        return !!apply(record, before);
+        return !!apply(record, before, this.beforeFragmentOps);
       },
       redo(ctx) {
         const apply = ctx && ctx.applyAtomsSnapshotToRecord;
         if (typeof apply !== 'function') return false;
-        return !!apply(record, after);
+        return !!apply(record, after, this.afterFragmentOps);
       },
     };
   }
