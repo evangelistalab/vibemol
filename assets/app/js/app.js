@@ -5933,6 +5933,8 @@
   // --- UI wiring ---
   const fileInput = document.getElementById('fileInput');
   const openBtn = document.getElementById('openBtn');
+  const newFileBtn = document.getElementById('newFileBtn');
+  const renameFileBtn = document.getElementById('renameFileBtn');
   const fileSelect = document.getElementById('fileSelect');
   const isoInput = document.getElementById('iso');
   const autoIsoBtn = document.getElementById('autoIsoBtn');
@@ -5972,7 +5974,11 @@
   const clearBtn = document.getElementById('clearBtn');
   const helpBtn = document.getElementById('helpBtn');
   // Side panel controls
-  const panelBtn = document.getElementById('panelBtn');
+  const viewInspectorBtn = document.getElementById('viewInspectorBtn');
+  const viewInspectorToggleIcon = document.getElementById('viewInspectorToggleIcon');
+  const viewInspector = document.getElementById('viewInspector');
+  const viewPanelBtn = document.getElementById('viewPanelBtn');
+  const coordsPanelBtn = document.getElementById('coordsPanelBtn');
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
   const displayInspectorToggleIcon = document.getElementById('displayInspectorToggleIcon');
   const displayInspector = document.getElementById('displayInspector');
@@ -5980,6 +5986,8 @@
   const vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
   const sidePanel = document.getElementById('sidePanel');
   const sideClose = document.getElementById('sideClose');
+  const coordsPanel = document.getElementById('coordsPanel');
+  const coordsPanelClose = document.getElementById('coordsPanelClose');
   const trajectoryPanel = document.getElementById('trajectoryPanel');
   const trajectoryResetBtn = document.getElementById('trajectoryResetBtn');
   const trajectoryPanelClose = document.getElementById('trajectoryPanelClose');
@@ -6006,6 +6014,9 @@
   const centerMassBtn = document.getElementById('centerMassBtn');
   const alignInertiaBtn = document.getElementById('alignInertiaBtn');
   const projectionModeBtn = document.getElementById('projectionModeBtn');
+  const viewAxisXBtn = document.getElementById('viewAxisXBtn');
+  const viewAxisYBtn = document.getElementById('viewAxisYBtn');
+  const viewAxisZBtn = document.getElementById('viewAxisZBtn');
   const camX = document.getElementById('camX');
   const camY = document.getElementById('camY');
   const camZ = document.getElementById('camZ');
@@ -6118,6 +6129,53 @@
 
   const triggerOpenFiles = () => fileInput.click();
   openBtn.onclick = triggerOpenFiles;
+  if (newFileBtn) {
+    newFileBtn.onclick = () => {
+      const record = createNewEditableVolumeRecord();
+      rebuildScene({ preserveView: true });
+      setHintMessage(`Created ${record.name}.`);
+    };
+  }
+
+  /**
+   * Normalize one user-provided file name for display/use in the file list.
+   * @param {*} value
+   * @returns {string}
+   */
+  function sanitizeVolumeDisplayName(value) {
+    return String(value == null ? '' : value)
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .replace(/[\\/]/g, '-')
+      .trim();
+  }
+
+  /**
+   * Prompt for and apply a new name to the active file record.
+   */
+  function renameActiveVolumeRecord() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    if (!record) {
+      setHintMessage('No active file to rename.');
+      return;
+    }
+    const currentName = String(record.name || 'untitled.xyz');
+    const raw = window.prompt('Rename active file:', currentName);
+    if (raw == null) return;
+    const sanitized = sanitizeVolumeDisplayName(raw);
+    if (!sanitized) {
+      alert('File name cannot be empty.');
+      return;
+    }
+    const unique = getUniqueVolumeName(sanitized, { excludeRecord: record });
+    record.name = unique;
+    refreshFileSelect();
+    if (fileSelect && currentIndex >= 0) fileSelect.value = String(currentIndex);
+    updateSidePanel();
+    if (unique !== sanitized) setHintMessage(`Name already in use. Renamed to ${unique}.`);
+    else setHintMessage(`Renamed file to ${unique}.`);
+  }
+
+  if (renameFileBtn) renameFileBtn.onclick = () => renameActiveVolumeRecord();
   if (emptyStateOpenBtn) emptyStateOpenBtn.onclick = triggerOpenFiles;
   if (emptyStateSampleBtn) {
     emptyStateSampleBtn.onclick = async () => {
@@ -6528,10 +6586,11 @@
       new THREE.AmbientLight(0xffffff, 0.85)
     );
     const d1 = new THREE.DirectionalLight(0xffffff, 0.95);
-    d1.position.set(2.0, 2.8, 3.8);
+    // Push the key highlight higher on a top-right diagonal.
+    d1.position.set(4.5, 5.0, 0.5);
     periodicTableScene.add(d1);
-    const d2 = new THREE.DirectionalLight(0x9fc2ff, 0.5);
-    d2.position.set(-2.8, -1.6, -2.4);
+    const d2 = new THREE.DirectionalLight(0x9fc2ff, 0.45);
+    d2.position.set(-2.6, -1.4, -2.2);
     periodicTableScene.add(d2);
 
     periodicTableRoot = new THREE.Group();
@@ -6687,7 +6746,7 @@
       { k: 'R', d: 'Center mass at origin' },
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
       { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
-      { k: 'V', d: 'View/Coords panel' },
+      { k: 'V', d: 'Toggle View window' },
       { k: 'E', d: 'Edit mode' },
       { k: 'M', d: 'Measurement mode' },
       { k: '1/2/3/4', d: 'Style: Default/Toon/Kit/Glossy' },
@@ -6861,19 +6920,67 @@
     surfBtn.onclick = () => { showSurfaces = !showSurfaces; updateSurfBtn(); rebuildScene({ preserveView: true }); };
   }
   /**
-   * Toggle side.
+   * Open/close the dedicated View floating panel.
+   * @param {boolean} open
    */
-  const toggleSide = () => { sidePanel.classList.toggle('open'); sidePanel.setAttribute('aria-hidden', sidePanel.classList.contains('open') ? 'false' : 'true'); renderRibbon(sidePanel.classList.contains('open') ? 'panel' : 'default'); };
+  function setViewPanelOpen(open) {
+    if (!sidePanel) return;
+    const shouldOpen = !!open;
+    sidePanel.classList.toggle('open', shouldOpen);
+    sidePanel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+    renderRibbon((shouldOpen || (coordsPanel && coordsPanel.classList.contains('open'))) ? 'panel' : 'default');
+    if (viewPanelBtn) viewPanelBtn.classList.toggle('active', shouldOpen);
+  }
+
   /**
-   * Open the side panel.
+   * Toggle View panel open/closed.
    */
-  const openSide = () => { if (!sidePanel.classList.contains('open')) toggleSide(); };
+  const toggleSide = () => setViewPanelOpen(!(sidePanel && sidePanel.classList.contains('open')));
+
   /**
-   * Close the side panel.
+   * Open the View panel.
    */
-  const closeSide = () => { if (sidePanel.classList.contains('open')) { sidePanel.classList.remove('open'); sidePanel.setAttribute('aria-hidden', 'true'); renderRibbon('default'); } };
-  panelBtn.onclick = toggleSide;
-  sideClose.onclick = toggleSide;
+  const openSide = () => setViewPanelOpen(true);
+
+  /**
+   * Close the View panel.
+   */
+  const closeSide = () => setViewPanelOpen(false);
+
+  /**
+   * Open/close the coordinates floating panel.
+   * @param {boolean} open
+   */
+  function setCoordsPanelOpen(open) {
+    const shouldOpen = !!open;
+    setFloatingPanelOpen(coordsPanel, shouldOpen);
+    renderRibbon((shouldOpen || (sidePanel && sidePanel.classList.contains('open'))) ? 'panel' : 'default');
+    if (coordsPanelBtn) coordsPanelBtn.classList.toggle('active', shouldOpen);
+  }
+
+  /**
+   * Open/close the compact View/Coords inspector in the toolbar.
+   * @param {boolean} open
+   */
+  function setViewInspectorOpen(open) {
+    if (!viewInspector) return;
+    const shouldOpen = !!open;
+    viewInspector.classList.toggle('open', shouldOpen);
+    viewInspector.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+    if (viewInspectorBtn) viewInspectorBtn.classList.toggle('active', shouldOpen);
+    if (viewInspectorToggleIcon) viewInspectorToggleIcon.textContent = shouldOpen ? 'remove' : 'add';
+  }
+
+  if (viewInspectorBtn) {
+    viewInspectorBtn.onclick = () => {
+      const open = !!(viewInspector && viewInspector.classList.contains('open'));
+      setViewInspectorOpen(!open);
+    };
+  }
+  if (viewPanelBtn) viewPanelBtn.onclick = () => setViewPanelOpen(!(sidePanel && sidePanel.classList.contains('open')));
+  if (coordsPanelBtn) coordsPanelBtn.onclick = () => setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
+  if (sideClose) sideClose.onclick = () => setViewPanelOpen(false);
+  if (coordsPanelClose) coordsPanelClose.onclick = () => setCoordsPanelOpen(false);
 
   /**
    * Open/close the compact display inspector panel.
@@ -7154,6 +7261,85 @@
   }
 
   /**
+   * Deep-copy one volumetric grid transform snapshot (origin + axes).
+   * Returns null for coordinate-only records.
+   * @param {*} vol
+   * @returns {{origin:number[],axes:number[][]}|null}
+   */
+  function cloneGridTransformSnapshot(vol) {
+    if (!hasVolumetricGrid(vol)) return null;
+    const originSrc = Array.isArray(vol.origin) ? vol.origin : [0, 0, 0];
+    const axesSrc = Array.isArray(vol.axes) ? vol.axes : [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    const origin = [
+      Number(originSrc[0]) || 0,
+      Number(originSrc[1]) || 0,
+      Number(originSrc[2]) || 0,
+    ];
+    const axes = [
+      Array.isArray(axesSrc[0]) ? [Number(axesSrc[0][0]) || 0, Number(axesSrc[0][1]) || 0, Number(axesSrc[0][2]) || 0] : [1, 0, 0],
+      Array.isArray(axesSrc[1]) ? [Number(axesSrc[1][0]) || 0, Number(axesSrc[1][1]) || 0, Number(axesSrc[1][2]) || 0] : [0, 1, 0],
+      Array.isArray(axesSrc[2]) ? [Number(axesSrc[2][0]) || 0, Number(axesSrc[2][1]) || 0, Number(axesSrc[2][2]) || 0] : [0, 0, 1],
+    ];
+    return { origin, axes };
+  }
+
+  /**
+   * Deep-copy one full coordinate snapshot for edits that may include volumetric transforms.
+   * @param {*} vol
+   * @returns {{atoms:Array<{Z:number,q:number,x:number,y:number,z:number}>,grid:{origin:number[],axes:number[][]}|null}}
+   */
+  function cloneCoordinateSnapshot(vol) {
+    return {
+      atoms: cloneAtomsSnapshot(vol),
+      grid: cloneGridTransformSnapshot(vol),
+    };
+  }
+
+  /**
+   * Compare two 3-vectors by value with strict tolerance.
+   * @param {number[]} a
+   * @param {number[]} b
+   * @returns {boolean}
+   */
+  function vec3Equal(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length < 3 || b.length < 3) return false;
+    if (Math.abs((a[0] || 0) - (b[0] || 0)) > 1e-12) return false;
+    if (Math.abs((a[1] || 0) - (b[1] || 0)) > 1e-12) return false;
+    if (Math.abs((a[2] || 0) - (b[2] || 0)) > 1e-12) return false;
+    return true;
+  }
+
+  /**
+   * Compare two volumetric grid snapshots by value.
+   * @param {{origin:number[],axes:number[][]}|null} a
+   * @param {{origin:number[],axes:number[][]}|null} b
+   * @returns {boolean}
+   */
+  function gridSnapshotsEqual(a, b) {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    if (!vec3Equal(a.origin, b.origin)) return false;
+    if (!Array.isArray(a.axes) || !Array.isArray(b.axes) || a.axes.length < 3 || b.axes.length < 3) return false;
+    if (!vec3Equal(a.axes[0], b.axes[0])) return false;
+    if (!vec3Equal(a.axes[1], b.axes[1])) return false;
+    if (!vec3Equal(a.axes[2], b.axes[2])) return false;
+    return true;
+  }
+
+  /**
+   * Compare two full coordinate snapshots.
+   * @param {{atoms:Array<object>,grid:{origin:number[],axes:number[][]}|null}} a
+   * @param {{atoms:Array<object>,grid:{origin:number[],axes:number[][]}|null}} b
+   * @returns {boolean}
+   */
+  function coordinateSnapshotsEqual(a, b) {
+    if (!a || !b) return false;
+    if (!atomsSnapshotsEqual(a.atoms, b.atoms)) return false;
+    if (!gridSnapshotsEqual(a.grid, b.grid)) return false;
+    return true;
+  }
+
+  /**
    * Remove history entries whose volume records are no longer loaded.
    */
   function pruneEditHistory() {
@@ -7195,12 +7381,47 @@
   }
 
   /**
-   * Apply one stored atom snapshot to its volume record.
+   * Record one reversible edit mutation including volumetric grid transform snapshots.
+   * @param {*} record
+   * @param {{atoms:Array<object>,grid:{origin:number[],axes:number[][]}|null}} before
+   * @param {{atoms:Array<object>,grid:{origin:number[],axes:number[][]}|null}} after
+   * @param {string} label
+   */
+  function pushCoordinateSnapshotHistoryEntry(record, before, after, label) {
+    if (!record || !record.vol || !before || !after) return;
+    if (!Array.isArray(before.atoms) || !Array.isArray(after.atoms)) return;
+    if (coordinateSnapshotsEqual(before, after)) return;
+    const command = {
+      type: 'coordinate_snapshot',
+      record,
+      before,
+      after,
+      label: String(label || 'Edit'),
+      at: Date.now(),
+      undo(ctx) {
+        const apply = ctx && ctx.applyStructureSnapshotToRecord;
+        if (typeof apply !== 'function') return false;
+        return !!apply(record, before);
+      },
+      redo(ctx) {
+        const apply = ctx && ctx.applyStructureSnapshotToRecord;
+        if (typeof apply !== 'function') return false;
+        return !!apply(record, after);
+      },
+    };
+    editUndoStack.push(command);
+    if (editUndoStack.length > EDIT_HISTORY_LIMIT) editUndoStack.splice(0, editUndoStack.length - EDIT_HISTORY_LIMIT);
+    editRedoStack.length = 0;
+  }
+
+  /**
+   * Apply one atom+grid state to a loaded record and refresh scene/UI.
    * @param {*} record
    * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} atoms
+   * @param {{origin:number[],axes:number[][]}|null} grid
    * @returns {boolean}
    */
-  function applyAtomsSnapshotToRecord(record, atoms) {
+  function applyRecordSpatialState(record, atoms, grid = null) {
     if (!record || !record.vol || !Array.isArray(atoms)) return false;
     const idx = volumes.indexOf(record);
     if (idx < 0) return false;
@@ -7211,6 +7432,18 @@
       y: Number(a.y),
       z: Number(a.z),
     }));
+    if (grid && hasVolumetricGrid(record.vol)) {
+      record.vol.origin = [
+        Number(grid.origin && grid.origin[0]) || 0,
+        Number(grid.origin && grid.origin[1]) || 0,
+        Number(grid.origin && grid.origin[2]) || 0,
+      ];
+      record.vol.axes = [
+        [Number(grid.axes && grid.axes[0] && grid.axes[0][0]) || 0, Number(grid.axes && grid.axes[0] && grid.axes[0][1]) || 0, Number(grid.axes && grid.axes[0] && grid.axes[0][2]) || 0],
+        [Number(grid.axes && grid.axes[1] && grid.axes[1][0]) || 0, Number(grid.axes && grid.axes[1] && grid.axes[1][1]) || 0, Number(grid.axes && grid.axes[1] && grid.axes[1][2]) || 0],
+        [Number(grid.axes && grid.axes[2] && grid.axes[2][0]) || 0, Number(grid.axes && grid.axes[2] && grid.axes[2][1]) || 0, Number(grid.axes && grid.axes[2] && grid.axes[2][2]) || 0],
+      ];
+    }
     record.vol.natoms = record.vol.atoms.length;
     currentIndex = idx;
     refreshFileSelect();
@@ -7225,6 +7458,27 @@
   }
 
   /**
+   * Apply one stored atom snapshot to its volume record.
+   * @param {*} record
+   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} atoms
+   * @returns {boolean}
+   */
+  function applyAtomsSnapshotToRecord(record, atoms) {
+    return applyRecordSpatialState(record, atoms, null);
+  }
+
+  /**
+   * Apply one full coordinate snapshot (atoms + optional grid transform) to a record.
+   * @param {*} record
+   * @param {{atoms:Array<{Z:number,q:number,x:number,y:number,z:number}>,grid:{origin:number[],axes:number[][]}|null}} snapshot
+   * @returns {boolean}
+   */
+  function applyStructureSnapshotToRecord(record, snapshot) {
+    if (!snapshot || !Array.isArray(snapshot.atoms)) return false;
+    return applyRecordSpatialState(record, snapshot.atoms, snapshot.grid || null);
+  }
+
+  /**
    * Undo the most recent edit mutation.
    * @returns {boolean}
    */
@@ -7235,7 +7489,7 @@
       return false;
     }
     const command = editUndoStack.pop();
-    if (!command || typeof command.undo !== 'function' || !command.undo({ applyAtomsSnapshotToRecord })) {
+    if (!command || typeof command.undo !== 'function' || !command.undo({ applyAtomsSnapshotToRecord, applyStructureSnapshotToRecord })) {
       setHintMessage('Undo failed: target structure is no longer available.');
       return false;
     }
@@ -7256,7 +7510,7 @@
       return false;
     }
     const command = editRedoStack.pop();
-    if (!command || typeof command.redo !== 'function' || !command.redo({ applyAtomsSnapshotToRecord })) {
+    if (!command || typeof command.redo !== 'function' || !command.redo({ applyAtomsSnapshotToRecord, applyStructureSnapshotToRecord })) {
       setHintMessage('Redo failed: target structure is no longer available.');
       return false;
     }
@@ -7537,14 +7791,12 @@
   }
 
   /**
-   * Ensure there is an active editable target volume and return its record.
-   * If no file is loaded, this creates an empty angstrom XYZ-like record.
-   * @returns {{name:string,vol:*}|null}
+   * Build one empty editable XYZ-like volume object.
+   * @returns {*}
    */
-  function ensureEditableVolumeRecord() {
-    if (currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].vol) return volumes[currentIndex];
+  function createEmptyEditableVolume() {
     const idx0 = () => 0;
-    const vol = {
+    return {
       title: 'Untitled molecule',
       comment: 'Created in edit mode',
       natoms: 0,
@@ -7557,14 +7809,71 @@
       units: 'angstrom',
       isoHint: null,
     };
-    const name = `untitled-${volumes.length + 1}.xyz`;
-    const record = { name, vol };
+  }
+
+  /**
+   * Generate the next free default untitled file name.
+   * @returns {string}
+   */
+  function getNextUntitledFileName() {
+    const used = new Set(volumes.map((v) => String((v && v.name) || '').trim().toLowerCase()));
+    let n = 1;
+    while (used.has(`untitled-${n}.xyz`)) n++;
+    return `untitled-${n}.xyz`;
+  }
+
+  /**
+   * Create one editable empty file record and make it active.
+   * @param {{name?:string}=} options
+   * @returns {{name:string,vol:*}}
+   */
+  function createNewEditableVolumeRecord(options = {}) {
+    const preferred = String(options.name || '').trim();
+    const name = preferred || getNextUntitledFileName();
+    const record = { name, vol: createEmptyEditableVolume() };
     volumes.push(record);
     currentIndex = volumes.length - 1;
     refreshFileSelect();
     if (fileSelect) fileSelect.value = String(currentIndex);
     updateSidePanel();
+    updateEmptyStateVisibility();
     return record;
+  }
+
+  /**
+   * Ensure one file name is unique among loaded records.
+   * Appends ` (n)` before extension when needed.
+   * @param {string} name
+   * @param {{excludeRecord?:*}=} options
+   * @returns {string}
+   */
+  function getUniqueVolumeName(name, options = {}) {
+    const baseName = String(name || '').trim();
+    if (!baseName) return '';
+    const excludeRecord = options.excludeRecord || null;
+    const lower = (s) => String(s || '').trim().toLowerCase();
+    const exists = (candidate) => volumes.some((v) => v && v !== excludeRecord && lower(v.name) === lower(candidate));
+    if (!exists(baseName)) return baseName;
+    const m = /^(.*?)(\.[^.]*)?$/.exec(baseName) || [];
+    const stem = (m[1] && m[1].trim()) || 'untitled';
+    const ext = m[2] || '';
+    let n = 2;
+    let candidate = `${stem} (${n})${ext}`;
+    while (exists(candidate)) {
+      n += 1;
+      candidate = `${stem} (${n})${ext}`;
+    }
+    return candidate;
+  }
+
+  /**
+   * Ensure there is an active editable target volume and return its record.
+   * If no file is loaded, this creates an empty angstrom XYZ-like record.
+   * @returns {{name:string,vol:*}|null}
+   */
+  function ensureEditableVolumeRecord() {
+    if (currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].vol) return volumes[currentIndex];
+    return createNewEditableVolumeRecord();
   }
 
   /**
@@ -9258,6 +9567,101 @@
   }
 
   /**
+   * Finalize one coordinate edit action (atoms + optional volumetric transform) with undo snapshot.
+   * @param {*} record
+   * @param {*} vol
+   * @param {{atoms:Array<object>,grid:{origin:number[],axes:number[][]}|null}} beforeSnapshot
+   * @param {string} actionLabel
+   */
+  function finalizeCoordinateSnapshotEdit(record, vol, beforeSnapshot, actionLabel) {
+    vol.natoms = vol.atoms.length;
+    const afterSnapshot = cloneCoordinateSnapshot(vol);
+    pushCoordinateSnapshotHistoryEntry(record, beforeSnapshot, afterSnapshot, actionLabel);
+
+    clearAddGrowPreview();
+    clearHover();
+    if (currentMode === MODES.MEASURE) {
+      clearEditSelection();
+      updateSelectedHalos();
+      updateEditSelectionVisuals();
+    }
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+  }
+
+  /**
+   * Apply one basis transform (rows = target basis vectors) to one Cartesian vector.
+   * @param {THREE.Vector3} ex
+   * @param {THREE.Vector3} ey
+   * @param {THREE.Vector3} ez
+   * @param {number} x
+   * @param {number} y
+   * @param {number} z
+   * @returns {[number, number, number]}
+   */
+  function applyBasisRowsToVector(ex, ey, ez, x, y, z) {
+    return [
+      ex.x * x + ex.y * y + ex.z * z,
+      ey.x * x + ey.y * y + ey.z * z,
+      ez.x * x + ez.y * y + ez.z * z,
+    ];
+  }
+
+  /**
+   * Translate one volumetric grid origin by one Cartesian delta in native units.
+   * @param {*} vol
+   * @param {number} dx
+   * @param {number} dy
+   * @param {number} dz
+   */
+  function translateVolumetricGrid(vol, dx, dy, dz) {
+    if (!hasVolumetricGrid(vol)) return;
+    const origin = Array.isArray(vol.origin) ? vol.origin : [0, 0, 0];
+    vol.origin = [
+      (Number(origin[0]) || 0) + (Number(dx) || 0),
+      (Number(origin[1]) || 0) + (Number(dy) || 0),
+      (Number(origin[2]) || 0) + (Number(dz) || 0),
+    ];
+  }
+
+  /**
+   * Rotate one volumetric grid (origin + basis vectors) around a pivot using a basis-row transform.
+   * @param {*} vol
+   * @param {number} comX
+   * @param {number} comY
+   * @param {number} comZ
+   * @param {THREE.Vector3} ex
+   * @param {THREE.Vector3} ey
+   * @param {THREE.Vector3} ez
+   */
+  function rotateVolumetricGridAboutPoint(vol, comX, comY, comZ, ex, ey, ez) {
+    if (!hasVolumetricGrid(vol)) return;
+    const origin = Array.isArray(vol.origin) ? vol.origin : [0, 0, 0];
+    const axes = Array.isArray(vol.axes) ? vol.axes : [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+
+    const ox = (Number(origin[0]) || 0) - comX;
+    const oy = (Number(origin[1]) || 0) - comY;
+    const oz = (Number(origin[2]) || 0) - comZ;
+    const [nox, noy, noz] = applyBasisRowsToVector(ex, ey, ez, ox, oy, oz);
+    vol.origin = [comX + nox, comY + noy, comZ + noz];
+
+    const newAxes = [];
+    for (let i = 0; i < 3; i++) {
+      const axis = Array.isArray(axes[i]) ? axes[i] : [0, 0, 0];
+      const [ax, ay, az] = applyBasisRowsToVector(
+        ex,
+        ey,
+        ez,
+        Number(axis[0]) || 0,
+        Number(axis[1]) || 0,
+        Number(axis[2]) || 0
+      );
+      newAxes.push([ax, ay, az]);
+    }
+    vol.axes = newAxes;
+  }
+
+  /**
    * Shift active molecule coordinates so its center of mass is at (0,0,0).
    * Applies to the active file and records one undoable edit entry.
    * @returns {boolean}
@@ -9292,13 +9696,14 @@
       return false;
     }
 
-    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeSnapshot = cloneCoordinateSnapshot(vol);
     for (const atom of vol.atoms) {
       atom.x = (Number(atom.x) || 0) - comX;
       atom.y = (Number(atom.y) || 0) - comY;
       atom.z = (Number(atom.z) || 0) - comZ;
     }
-    finalizeAtomCoordinateEdit(record, vol, beforeAtoms, 'Center mass at origin');
+    translateVolumetricGrid(vol, -comX, -comY, -comZ);
+    finalizeCoordinateSnapshotEdit(record, vol, beforeSnapshot, 'Center mass at origin');
 
     const shiftAngstrom = vol.units === 'angstrom' ? shiftNormNative : shiftNormNative * BOHR_TO_ANG;
     setHintMessage(`Shifted active molecule COM to origin (delta ${shiftAngstrom.toFixed(3)} A).`);
@@ -9335,7 +9740,7 @@
 
   /**
    * Rotate active molecule about its center of mass so principal inertia axes align to XYZ.
-   * Applies to atom coordinates of the active record and records one undo entry.
+   * Applies to active coordinates and volumetric transform (when present), and records one undo entry.
    * @returns {boolean}
    */
   function alignActiveMoleculePrincipalAxes() {
@@ -9352,11 +9757,6 @@
     const vol = record.vol;
     if (!Array.isArray(vol.atoms) || vol.atoms.length < 2) {
       setHintMessage('Need at least two atoms to align principal axes.');
-      return false;
-    }
-
-    if (hasVolumetricGrid(vol)) {
-      setHintMessage('Principal-axis alignment is available for coordinate-only molecules (not volumetric grids).');
       return false;
     }
 
@@ -9378,20 +9778,21 @@
     const ey = eig.vectors[1];
     const ez = eig.vectors[2];
 
-    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeSnapshot = cloneCoordinateSnapshot(vol);
     for (const atom of vol.atoms) {
       const x = (Number(atom.x) || 0) - comX;
       const y = (Number(atom.y) || 0) - comY;
       const z = (Number(atom.z) || 0) - comZ;
-      const nx = ex.x * x + ex.y * y + ex.z * z;
-      const ny = ey.x * x + ey.y * y + ey.z * z;
-      const nz = ez.x * x + ez.y * y + ez.z * z;
+      const [nx, ny, nz] = applyBasisRowsToVector(ex, ey, ez, x, y, z);
       atom.x = comX + nx;
       atom.y = comY + ny;
       atom.z = comZ + nz;
     }
-    finalizeAtomCoordinateEdit(record, vol, beforeAtoms, 'Align principal axes');
-    setHintMessage('Aligned principal inertia axes to X/Y/Z.');
+    rotateVolumetricGridAboutPoint(vol, comX, comY, comZ, ex, ey, ez);
+    finalizeCoordinateSnapshotEdit(record, vol, beforeSnapshot, 'Align principal axes');
+    setHintMessage(hasVolumetricGrid(vol)
+      ? 'Aligned principal inertia axes to X/Y/Z (atoms + volumetric grid).'
+      : 'Aligned principal inertia axes to X/Y/Z.');
     return true;
   }
 
@@ -9625,6 +10026,32 @@
     };
   }
 
+  /**
+   * Snap camera to one principal axis direction while keeping target and distance.
+   * @param {'x'|'y'|'z'} axis
+   */
+  function setCameraAxisPreset(axis) {
+    const key = axis === 'y' ? 'y' : (axis === 'z' ? 'z' : 'x');
+    const dir = key === 'x'
+      ? new THREE.Vector3(1, 0, 0)
+      : (key === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1));
+    const target = controls.target.clone();
+    let dist = camera.position.distanceTo(target);
+    if (!(Number.isFinite(dist) && dist > 1e-6)) dist = 8;
+    camera.position.copy(target).addScaledVector(dir, dist);
+    if (key === 'y') camera.up.set(0, 0, 1);
+    else camera.up.set(0, 1, 0);
+    camera.lookAt(target);
+    const { w, h } = getViewportSize();
+    updateActiveCameraProjection(w, h);
+    controls.update();
+    refreshViewUI();
+    setHintMessage(`View preset: +${key.toUpperCase()}`);
+  }
+  if (viewAxisXBtn) viewAxisXBtn.onclick = () => setCameraAxisPreset('x');
+  if (viewAxisYBtn) viewAxisYBtn.onclick = () => setCameraAxisPreset('y');
+  if (viewAxisZBtn) viewAxisZBtn.onclick = () => setCameraAxisPreset('z');
+
   // --- Shortcut bindings ---
   // Global: help toggle
   /**
@@ -9670,7 +10097,7 @@
   // Display mode bindings
   bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
   bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
-  // Toggle View/Coords side panel in standard (display) mode
+  // Toggle View window in standard (display) mode
   bind('down', MODES.DISPLAY, 'v', () => { toggleSide(); });
 
   // Edit mode bindings
@@ -9773,6 +10200,18 @@
       let closed = false;
       if (displayInspector && displayInspector.classList.contains('open')) {
         setDisplayInspectorOpen(false);
+        closed = true;
+      }
+      if (viewInspector && viewInspector.classList.contains('open')) {
+        setViewInspectorOpen(false);
+        closed = true;
+      }
+      if (sidePanel && sidePanel.classList.contains('open')) {
+        setViewPanelOpen(false);
+        closed = true;
+      }
+      if (coordsPanel && coordsPanel.classList.contains('open')) {
+        setCoordsPanelOpen(false);
         closed = true;
       }
       if (trajectoryPanel && trajectoryPanel.classList.contains('open')) {
@@ -13003,6 +13442,10 @@
       fileSelect.appendChild(opt);
     });
     if (currentIndex >= 0) fileSelect.value = currentIndex;
+    if (renameFileBtn) {
+      const hasActive = currentIndex >= 0 && !!volumes[currentIndex];
+      renameFileBtn.disabled = !hasActive;
+    }
   }
 
   fileSelect.onchange = () => {

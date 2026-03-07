@@ -307,6 +307,12 @@
       top: 68px;
     }
 
+    #coordsPanel {
+      top: 68px;
+      max-height: calc(100vh - 80px);
+      overflow: hidden;
+    }
+
     #vibrationPanel {
       top: 12px;
       max-height: calc(100vh - 12px - var(--vibration-panel-bottom-clearance, 84px));
@@ -398,7 +404,19 @@
       flex-direction: column;
     }
 
+    #coordsPanel.open {
+      display: flex;
+      flex-direction: column;
+    }
+
     #vibrationPanel .motionPanelBody {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    #coordsPanel .motionPanelBody {
       flex: 1 1 auto;
       min-height: 0;
       overflow-y: auto;
@@ -577,6 +595,10 @@
       #trajectoryPanel {
         top: 68px;
       }
+
+      #coordsPanel {
+        top: 68px;
+      }
     }
 
     #sideHeader {
@@ -603,7 +625,7 @@
 
     #coordsContent {
       padding: 10px 12px;
-      overflow: auto;
+      overflow: visible;
       color: var(--text);
       font-size: 13px;
     }
@@ -1430,7 +1452,7 @@
       padding-right: 0;
       box-sizing: border-box;
       border-bottom: 1px solid var(--toolbar-divider);
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
 
     /* Mode tabs: text-only controls with active underline accent. */
@@ -1553,11 +1575,24 @@
       opacity: 0.8;
     }
 
+    #viewInspectorBtn {
+      justify-content: space-between !important;
+      text-align: left;
+    }
+
+    #viewInspectorToggleIcon {
+      margin-left: auto;
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1;
+      opacity: 0.8;
+    }
+
     #toolbar .tb-fileActionRow {
       width: 100%;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 2px;
       min-width: 0;
     }
 
@@ -1646,6 +1681,15 @@
       text-align: left;
     }
 
+    #toolbar .tb-main.tb-modes {
+      border-bottom: none;
+      padding-bottom: 5px;
+    }
+
+    #toolbar .tb-file {
+      padding-top: 5px;
+    }
+
     /* Keep file/main/actions sections visually identical in width and left edge. */
     #toolbar .tb-file,
     #toolbar .tb-main,
@@ -1659,24 +1703,24 @@
 
     #toolbar .tb-iconActions {
       display: grid;
-      grid-template-columns: repeat(4, 32px);
-      gap: 6px;
+      grid-template-columns: repeat(4, 28px);
+      gap: 2px;
       align-items: center;
       justify-content: flex-start;
     }
 
     #toolbar .tb-iconBtn {
-      width: 32px;
-      min-width: 32px;
-      max-width: 32px;
-      height: 32px;
+      width: 28px;
+      min-width: 28px;
+      max-width: 28px;
+      height: 28px;
       padding: 0;
       border-radius: var(--tb-radius-tight);
       background: transparent !important;
       color: var(--tb-text-color-icon) !important;
       justify-content: center !important;
       text-align: center !important;
-      font-size: 20px;
+      font-size: 19px;
       font-weight: var(--tb-text-weight-regular);
       line-height: 1;
       position: relative;
@@ -1804,15 +1848,21 @@
       min-width: 0;
     }
 
+    #toolbar .tb-inline select {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    #renameFileBtn,
     #pubchemLoadBtn {
-      width: 30px !important;
-      min-width: 30px;
-      height: 30px;
+      width: 28px !important;
+      min-width: 28px;
+      height: 28px;
       padding: 0;
       border-radius: var(--tb-radius-tight);
       background: var(--tb-surface-emphasis) !important;
       color: var(--tb-text-color-icon) !important;
-      font-size: 20px;
+      font-size: 19px;
       font-weight: var(--tb-text-weight-regular);
       line-height: 1;
       justify-content: center !important;
@@ -1838,6 +1888,62 @@
     #toolbar #displayInspector.open {
       display: grid;
       gap: 0;
+    }
+
+    #toolbar #viewInspector {
+      position: static;
+      inset: auto;
+      display: none;
+      grid-template-columns: 1fr;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
+      padding: 0 2px 8px 2px;
+      z-index: auto;
+      margin-top: 0;
+      border-bottom: none;
+    }
+
+    #toolbar #viewInspector.open {
+      display: grid;
+      gap: 0;
+    }
+
+    #toolbar #viewInspector .viewInspectorGroup {
+      border: none;
+      border-top: 1px solid var(--tb-section-divider);
+      border-radius: 0;
+      padding: 8px 0 4px 0;
+      background: transparent;
+      display: grid;
+      gap: 6px;
+    }
+
+    #toolbar #viewInspector .viewInspectorTitle {
+      color: var(--tb-text-color-emphasis);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-bold);
+      margin-bottom: 2px;
+    }
+
+    #toolbar #viewInspector button {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    #toolbar #viewInspector .viewPresetRow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    #toolbar #viewInspector .viewPresetRow button {
+      justify-content: center;
+      text-align: center;
+      padding: 0 4px;
     }
 
     #toolbar #displayInspector .inspectorGroup {
@@ -2217,6 +2323,7 @@
     <div class="tb-section tb-file">
       <div class="tb-fileActionRow">
         <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" title="Open molecule files" aria-label="Open files" data-tip="Open files (.xyz, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
+        <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Create a new empty file" aria-label="New file" data-tip="Create a new empty editable file">note_add</button>
         <div class="tb-iconActions">
           <button id="saveBtn" class="secondary tb-iconBtn ms-icon-button" title="Save the current view as a PNG image (S)"
             aria-label="Save PNG" data-tip="Save the current view as a PNG image. Shortcut: S">image</button>
@@ -2228,9 +2335,13 @@
             aria-label="Load preset" data-tip="Load visualization preset from JSON file">upload</button>
         </div>
       </div>
-      <label class="tb-field">Active file
-        <select id="fileSelect"></select>
-      </label>
+      <div class="tb-field">
+        <label for="fileSelect">Active file</label>
+        <span class="tb-inline">
+          <select id="fileSelect"></select>
+          <button id="renameFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Rename active file" aria-label="Rename active file" data-tip="Rename active file">drive_file_rename_outline</button>
+        </span>
+      </div>
       <label class="tb-field">PubChem
         <span class="tb-inline">
           <input type="text" id="pubchemQuery" class="pubchem-query" placeholder="Search (e.g. ben)"
@@ -2433,9 +2544,32 @@
     </div>
 
     <div class="tb-section tb-main tb-windows tb-framed">
-      <button id="panelBtn" class="secondary" title="View and coordinates">View/Coords</button>
-      <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file" style="display:none;">Trajectory</button>
-      <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file" style="display:none;">Frequencies</button>
+      <button id="viewInspectorBtn" class="secondary" title="Show/hide view and coordinates tools">
+        <span>View/Coords</span><span id="viewInspectorToggleIcon" class="material-symbols-outlined">add</span>
+      </button>
+      <div id="viewInspector" aria-hidden="true">
+        <div class="viewInspectorGroup">
+          <div class="viewInspectorTitle">Windows</div>
+          <button id="viewPanelBtn" class="secondary" title="Open/close View window">View window</button>
+          <button id="coordsPanelBtn" class="secondary" title="Open/close Coordinates window">Coordinates window</button>
+          <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file" style="display:none;">Trajectory</button>
+          <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file" style="display:none;">Frequencies</button>
+        </div>
+        <div class="viewInspectorGroup">
+          <div class="viewInspectorTitle">Quick actions</div>
+          <button id="centerMassBtn" class="secondary"
+            title="Shift active molecule center of mass to the origin (shortcut: R)">COM → Origin</button>
+          <button id="alignInertiaBtn" class="secondary"
+            title="Rotate active molecule so principal inertia axes align with XYZ">Align Principal Axes</button>
+          <button id="projectionModeBtn" class="secondary"
+            title="Toggle between perspective and orthographic camera projection">Projection: Perspective</button>
+          <div class="viewPresetRow">
+            <button id="viewAxisXBtn" class="secondary" title="Set camera along +X axis looking toward target">+X</button>
+            <button id="viewAxisYBtn" class="secondary" title="Set camera along +Y axis looking toward target">+Y</button>
+            <button id="viewAxisZBtn" class="secondary" title="Set camera along +Z axis looking toward target">+Z</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="tb-section tb-actions">
@@ -2560,18 +2694,6 @@
         <span class="axis">Z</span><input type="number" id="shiftZ" step="0.1"
           title="Shift the molecule in the Z-direction" />
       </div>
-      <div class="row">
-        <button id="centerMassBtn" class="secondary" style="grid-column:1 / -1;"
-          title="Shift active molecule center of mass to the origin (shortcut: R)">COM → Origin</button>
-      </div>
-      <div class="row">
-        <button id="alignInertiaBtn" class="secondary" style="grid-column:1 / -1;"
-          title="Rotate active molecule so principal inertia axes align with XYZ">Align Principal Axes</button>
-      </div>
-      <div class="row">
-        <button id="projectionModeBtn" class="secondary" style="grid-column:1 / -1;"
-          title="Toggle between perspective and orthographic camera projection">Projection: Perspective</button>
-      </div>
       <div class="row-vec">
         <label>Cam</label>
         <span class="axis">X</span><input type="number" id="camX" step="0.1"
@@ -2621,15 +2743,21 @@
         <span></span><span></span>
       </div>
     </div>
-    <div id="sideHeader">
+  </div>
+
+  <div id="coordsPanel" class="motionPanel" aria-hidden="true">
+    <div class="motionPanelHeader">
       <div class="title">Coordinates (Å)</div>
-      <div>
+      <div class="actions">
         <button id="copyXYZ" class="secondary" title="Copy XYZ">Copy</button>
         <button id="downloadXYZ" class="secondary" title="Download XYZ">Download</button>
+        <button id="coordsPanelClose" class="motionPanelClose" title="Close coordinates"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
-    <div id="coordsContent">
-      <!-- Filled dynamically -->
+    <div class="motionPanelBody" style="padding:0;">
+      <div id="coordsContent">
+        <!-- Filled dynamically -->
+      </div>
     </div>
   </div>
 
