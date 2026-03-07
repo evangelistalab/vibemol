@@ -15,7 +15,8 @@ This is a living roadmap (not tied to a single version). It tracks what is shipp
 - [x] PubChem search/import with 3D filtering and metadata display.
 - [x] Preset save/load in web UI and parity-oriented preset support in Python API.
 - [x] Notebook embedding + postMessage file auto-load bridge.
-- [x] Edit mode baseline: move/add/delete, cursor HUD, angle snapping, undo/redo.
+- [x] Edit mode baseline: move/add/delete/transform, angle snapping, undo/redo, atom numbering, new-file/rename flow.
+- [x] Quaternion view rotation across display, measure, and edit background drags.
 - [x] Bond-order inference and multi-bond rendering with aromatic ring support.
 - [x] Ongoing performance/refactor passes (resource disposal, modular helpers, autoiso worker).
 
@@ -23,10 +24,32 @@ This is a living roadmap (not tied to a single version). It tracks what is shipp
 - [~] Web/CLI parity is strong but not formally tracked in a compatibility matrix.
 - [~] Preset reproducibility is broad, but full trajectory/vibration replay reproducibility should be explicitly validated and documented.
 - [~] Dynamics quality/performance should be benchmarked with larger systems.
+- [~] Builder core is now present but not finished:
+  - external XYZ-backed fragment catalog + manifest loader
+  - fragment attach workflow for starter groups
+  - standalone molecule placement with click/drag rotate and axis alignment
+  - transform tool exists, but fragment-vs-molecule semantics are not yet first-class
+  - still missing fuse-ring operations, replay/session persistence, and cleanup/relax
 
 ## Priority backlog
 
-### 1) Dynamics and analysis
+### 1) Builder and editing (highest priority)
+- [ ] Fragment-based builder v1 hardening:
+  - split catalog semantics cleanly into `atoms`, `fragments`, and `molecules`
+  - finish anchor-based attach workflow (`append`, `replace-H`, `fuse-ring`)
+  - improve placement UX for standalone molecules (preview polish, explicit rotate/align affordances, commit/cancel clarity)
+  - add session/preset persistence for builder operations and fragment metadata
+- [ ] Valence-aware editing:
+  - chemistry guardrails by default
+  - explicit override mode for advanced users
+- [ ] Constraint and cleanup tools:
+  - local geometry relax after attach
+  - fast cleanup for bond lengths/angles after edits
+- [ ] Group transforms:
+  - move/rotate disconnected molecules and tagged fragments as first-class actions
+  - expose pivot/orientation feedback clearly in the editor
+
+### 2) Dynamics and analysis
 - [ ] Trajectory analytics overlay:
   - frame index + time readout while playing
   - optional live bond length/angle/dihedral
@@ -37,20 +60,6 @@ This is a living roadmap (not tied to a single version). It tracks what is shipp
 - [ ] Preset + movie reproducibility:
   - serialize playback state (fps, loop, selected frame, camera path, overlays)
   - deterministic replay from preset/session bundle
-
-### 2) Builder and editing (high impact)
-- [ ] Fragment-based builder v1:
-  - curated fragment catalog (alkyl, phenyl, heteroaromatics, carbonyl/amide motifs)
-  - anchor-based attach workflow (append, replace-H, fuse-ring)
-  - click-to-place with constrained orientation and preview
-- [ ] Valence-aware editing:
-  - chemistry guardrails by default
-  - explicit override mode for advanced users
-- [ ] Constraint and cleanup tools:
-  - local geometry relax after attach
-  - fast cleanup for bond lengths/angles after edits
-- [ ] Fragment/session persistence:
-  - encode builder operations and fragment metadata in presets/sessions
 
 ### 3) Workflow UX and productivity
 - [ ] Session autosave/recovery (`.vibemol-session`) and crash-safe restore.
@@ -66,6 +75,7 @@ This is a living roadmap (not tied to a single version). It tracks what is shipp
 - [ ] End-to-end regression suite for:
   - file import families
   - style/mode switches
+  - builder flows (atom/fragment/molecule placement, transform, undo/redo)
   - trajectory/vibration playback
   - preset round-trip and compatibility aliases
 - [ ] Performance budgets + telemetry hooks:
@@ -82,7 +92,7 @@ This is a living roadmap (not tied to a single version). It tracks what is shipp
   - clearly marked experimental and off by default
 
 ## Delivery approach
-- Finish hard gaps first: analytics overlay, export, reproducibility.
-- Ship fragment-builder v1 as the next major UX unlock.
+- Finish builder hardening first: catalog split, attach policies (`append` / `replace-H` / `fuse-ring`), cleanup/relax, builder persistence.
+- After builder v1 is solid, move to dynamics overlays/export/reproducibility.
 - Add quality gates (parity matrix + e2e tests) before broad feature expansion.
 - Keep experimental features behind explicit opt-in toggles.

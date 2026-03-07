@@ -14,7 +14,8 @@ Supported molecular file types:
 Primary capabilities:
 - Iso-surface rendering and cloud rendering
 - Atom/bond rendering with multiple molecule styles
-- Edit mode and measurement mode
+- Edit mode, transform mode, and measurement mode
+- Fragment attachment and standalone molecule placement in the editor
 - Multi-frame XYZ trajectory playback (play/pause, frame slider, FPS, loop)
 - PNG export and XYZ export
 - Portable preset save/load (web and CLI compatible)
@@ -22,10 +23,16 @@ Primary capabilities:
 ## Project Layout
 - `index.html`: UI shell, controls, and required script loading order.
 - `assets/app/js/app.js`: main app orchestration, scene lifecycle, style logic, preset API, file loading.
+- `assets/app/js/fragments.js`: fragment/molecule catalog loading, manifest support, and fragment builders.
 - `assets/app/js/parsers.js`: parsers (`parseCube`, `parseTwoComponentCube`, `parseXYZ`) including streaming tokenization.
 - `assets/app/js/rendering.js`: volume/stat helpers used by `app.js`.
 - `assets/app/js/interaction.js`: keyboard shortcut routing and input-focus guards.
 - `assets/app/js/ui.js`: UI formatting helpers for coordinates and XYZ export text.
+- `assets/fragments/library.json`: external fragment/molecule catalog manifest.
+- `assets/fragments/*.xyz`: fragment geometry sources using linker-at-origin / +Z bond-vector convention.
+- `assets/fragments/WORKFLOW.md`: fragment authoring workflow and conventions.
+- `tools/reorient_fragment_xyz.py`: reorient one fragment XYZ so atom 1 is the linker at `(0,0,0)` and atom 2 lies on `+Z`.
+- `tools/sync_fragment_library.py`: sync fragment XYZ assets into `assets/fragments/library.json`.
 - `assets/vendor/js/*.js`: vendored runtime dependencies loaded as globals.
 - `assets/data/sample.cube`: bundled sample file used by onboarding quick action.
 - `docs/experiments/`: visual/style experiments and notes.
@@ -46,13 +53,15 @@ Required script order in `index.html`:
 6. `assets/app/js/rendering.js`
 7. `assets/app/js/interaction.js`
 8. `assets/app/js/ui.js`
-9. `assets/app/js/app.js`
+9. `assets/app/js/fragments.js`
+10. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
 - `window.VibeMolRendering`
 - `window.VibeMolInteraction`
 - `window.VibeMolUI`
+- `window.VibeMolFragments`
 
 Preset automation contract exposed globally:
 - `window.VibeMolPreset.kind`
@@ -65,13 +74,17 @@ Preset automation contract exposed globally:
 - 2C surface mode is global across loaded 2C files.
 - Molecule styles are: `default`, `toon`, `kit` (shown as Kit), `glossy`.
 - Global/display shortcuts `1/2/3/4` map to molecule styles in that order.
-- In edit mode, `4` is reserved and does not switch to `glossy`.
+- In edit mode, `4` is used for quadruple-bond preview in Add mode and does not switch to `glossy`.
 - `fancy` is treated as a deprecated alias for `toon` in preset/CLI compatibility paths.
 - Python CLI additionally accepts deprecated alias `studio` and maps it to `kit`.
 - Toon molecule style enforces toon-shaded surfaces.
 - Glossy style exposes a configurable glossy bond center radius (`molecule.glossyBondRadius`).
+- Camera rotation uses quaternion orbiting in all interaction modes to avoid pole locking.
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
+- Edit Add mode has three submodes: `Atom`, `Fragment`, and `Molecule`.
+- Standalone molecule placement is interactive: click to place, drag to rotate around COM, click again to confirm, `Esc` to cancel, `X/Y/Z` to align preview axes.
+- Fragment/molecule catalog data loads from `assets/fragments/library.json` when available and falls back to built-in starter definitions.
 - Embedded integrations can auto-load files via:
   - `window.VibeMolEmbed.loadFiles(files, options?)`
   - `window.postMessage({ type: 'vibemol:load-files', files, options, requestId? }, targetOrigin)`
@@ -81,10 +94,13 @@ Preset automation contract exposed globally:
 - Psi4 output logs (`.dat/.out`) are parsed from the harmonic table and create a molecule from the **last** `Geometry (in Angstrom)` block before attaching modes.
 - Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency) are shown in View panel when available.
 - Trajectory playback and vibrational playback are mutually exclusive for one active file.
-- View panel includes `COM → Origin` action; shortcut `R` shifts active molecule center of mass to origin.
+- View controls include `COM → Origin`, principal-axis alignment, orthographic toggle, and `+X/+Y/+Z` camera presets; shortcut `R` shifts active molecule center of mass to origin.
+- `View` and `Coordinates` are separate floating windows; the coordinates window can toggle between angstrom and bohr display.
 - Malformed file imports (`.xyz`, `.cube`, `.2ccube`) are surfaced via popup errors.
 - Multi-frame `.xyz` files are parsed as trajectories and can be animated from View panel controls.
+- Autoiso caches per file/component/orbital and falls back to synchronous estimation when the worker path is unavailable.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
+- Preset `extensions.builder.fragmentOpsByFile` stores fragment-builder operation logs and restores them on load; replay is not implemented yet.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
 
 ## Python API Notes
@@ -106,19 +122,26 @@ Preset automation contract exposed globally:
   - `fancy` -> `toon`
   - `studio` -> `kit`
 
-## Edit UX Status (0.4.12)
+## Edit / Builder UX Status
 Implemented:
 - Edit mode defaults to `Move` on entry.
 - Add tool includes cursor-relative placement with automatic angle snapping (`180°`, `120°`, `109.5°`, `90°`, `60°`).
 - Hold `Shift` during add-grow placement to bypass angle snap.
-- Inline add HUD (element + bond-order quick picks) and cursor mode badge are active.
+- Edit tools currently include `Move`, `Add`, `Delete`, and `Transform`.
+- Add mode includes `Atom`, `Fragment`, and `Molecule` submodes.
+- Fragment insertion uses the shared fragment catalog and supports starter-group attach flows (for example methyl and hydroxyl geometry overrides).
+- Standalone molecules can be placed by click/drag/click with quaternion rotation around the preview COM.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Delete tool and hover-delete (`Backspace`/`Delete`) are active.
+- Atom labels and atom numbers can be toggled independently.
+- New untitled editable files can be created from the toolbar and renamed in-place.
 
 Discussed but not implemented yet (carry-forward backlog):
-- Fragment-based builder (preset fragments/rings/chains with click-to-place workflow).
+- Clean first-class split between `atoms`, `fragments`, and `molecules` in the builder catalog/UX.
+- Richer attach policies (`append`, `replace-H`, `fuse-ring`) and chemistry-aware guardrails.
+- Local cleanup/relax after fragment attachment.
+- Better transform semantics for moving/rotating disconnected molecules vs attached fragments.
 - Onboarding “recent files” quick action (sample action exists; recent list not implemented).
-- Next-pass builder UX around fragment insertion + constrained attachment flow (single-click attach/replace behavior).
 
 ## Bond Order Inference Algorithm
 Bond-order inference lives in `assets/app/js/app.js` and is enabled only when the `multi bonds` toggle is on.
@@ -164,6 +187,7 @@ Run web app locally:
 - Open `http://localhost:8000/`
 
 Fast JS syntax checks:
+- `node --check assets/app/js/fragments.js`
 - `node --check assets/app/js/parsers.js`
 - `node --check assets/app/js/rendering.js`
 - `node --check assets/app/js/interaction.js`
@@ -181,6 +205,10 @@ Python API smoke run:
 - `python api/vibemol_client.py assets/data/sample.cube out/sample_kit_cli.png --style studio`
 - `python api/vibemol_client.py assets/data/sample.xyz out/sample_vib_cli.png --extra-file assets/data/sample.vib.json`
 
+Fragment tooling:
+- `python tools/reorient_fragment_xyz.py input.xyz output.xyz`
+- `python tools/sync_fragment_library.py`
+
 Repo checks:
 - `git status --short`
 - `git diff --stat`
@@ -188,8 +216,10 @@ Repo checks:
 ## Editing Rules For Agents
 - Prefer editing `assets/app/js/` modules over large inline script blocks in `index.html`.
 - Preserve script load order and global contracts in `index.html`.
+- Prefer extending `assets/fragments/library.json` + `assets/fragments/*.xyz` for catalog growth instead of hard-coding new fragment geometry in `app.js`.
 - Keep preset key stability across web and CLI integrations when possible.
 - If adding a new user-facing setting, register it in preset import/export (`presetSettingRegistry`) unless intentionally excluded.
+- If changing fragment-builder data, verify both runtime catalog loading (`fragments.js`) and preset builder extensions still round-trip.
 - Do not modify vendored libraries unless explicitly requested:
   - `assets/vendor/js/three.min.js`
   - `assets/vendor/js/orbit-controls.global.js`
@@ -205,10 +235,12 @@ After non-trivial changes:
 4. Confirm 2C mode selection persists across file switches.
 5. Toggle surface/cloud modes and verify rendering updates.
 6. Check molecule styles (`default`, `toon`, `kit/Kit`, `glossy`) and keyboard shortcuts `1/2/3/4`.
-7. Enter edit mode and measurement mode; verify interactions still work.
-8. Save/load a preset in web UI and verify settings round-trip.
-9. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
-10. Save PNG and export XYZ; check browser console for errors.
+7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
+8. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, plus undo/redo and `Esc` cancel for molecule placement.
+9. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, and angstrom/bohr switching.
+10. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
+11. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
+12. Save PNG and export XYZ; check browser console for errors.
 
 ## Deployment Notes
 - Main deployment target is static hosting from repository root (`index.html`).
