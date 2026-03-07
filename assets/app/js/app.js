@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.5.2';
+  const APP_VERSION = '0.5.3';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -2082,6 +2082,62 @@
   }
 
   /**
+   * Get the rendered atom display radius for the current molecule style.
+   * This matches the real atom render path (sphere radius 0.5 scaled by
+   * covalent radius and style factor).
+   * @param {number} z
+   * @returns {number}
+   */
+  function getRenderedAtomDisplayRadius(z) {
+    return 0.5 * getCovalentRadiusAngstrom(z) * getAtomRenderScaleFactor(z);
+  }
+
+  /**
+   * Get the preview bond radius for the active molecule style.
+   * @returns {number}
+   */
+  function getPreviewBondRadius() {
+    const profile = getMoleculeStyleProfile();
+    return profile.key === 'glossy' ? getGlossyBondCenterRadius() : profile.bondRadius;
+  }
+
+  /**
+   * Compute one preview bond placement trimmed to sit just inside the rendered
+   * atom spheres instead of running center-to-center.
+   * @param {THREE.Vector3} aPos
+   * @param {THREE.Vector3} bPos
+   * @param {number} aZ
+   * @param {number} bZ
+   * @param {{bondRadius?:number,surfaceInset?:number,minGeomLen?:number}} [options]
+   * @returns {{valid:boolean,len:number,dirNorm:THREE.Vector3,geomLen:number,mid:THREE.Vector3,aEnd:THREE.Vector3,bEnd:THREE.Vector3,trimA:number,trimB:number,bondRadius:number}}
+   */
+  function getPreviewBondSegmentPlacement(aPos, bPos, aZ, bZ, options = {}) {
+    const bondRadius = Math.max(
+      1e-4,
+      Number.isFinite(options.bondRadius) ? Number(options.bondRadius) : getPreviewBondRadius()
+    );
+    const surfaceInset = Number.isFinite(options.surfaceInset) ? Number(options.surfaceInset) : 0.01;
+    const minGeomLen = Math.max(0.0, Number.isFinite(options.minGeomLen) ? Number(options.minGeomLen) : 0.03);
+    let trimA = Math.max(0, getSphereSectionAxisDistance(getRenderedAtomDisplayRadius(aZ | 0), bondRadius) - surfaceInset);
+    let trimB = Math.max(0, getSphereSectionAxisDistance(getRenderedAtomDisplayRadius(bZ | 0), bondRadius) - surfaceInset);
+    const rawLen = aPos.distanceTo(bPos);
+    const maxTrim = Math.max(0, rawLen - minGeomLen);
+    const trimSum = trimA + trimB;
+    if (trimSum > maxTrim && trimSum > 1e-8) {
+      const s = maxTrim / trimSum;
+      trimA *= s;
+      trimB *= s;
+    }
+    const placement = computeBondSegmentPlacement(aPos, bPos, trimA, trimB, minGeomLen);
+    return {
+      ...placement,
+      trimA,
+      trimB,
+      bondRadius,
+    };
+  }
+
+  /**
    * Create the unified solid glossy material used by both atoms and bonds.
    * Bond meshes pass `vertexColors: true` so gradients still render.
    * @param {{color?:THREE.Color|number|string, vertexColors?:boolean}} [options]
@@ -3529,7 +3585,7 @@
       // component offset so connector ends remain hidden inside the spheres.
       if (profile.key === 'default' && !isKitStyle && !isGlossyStyle && order >= 2) {
         // Order-4 components need deeper seating so their clipped ends stay hidden.
-        const defaultMultiSeatOverlap = order >= 4 ? 0.045 : (order >= 3 ? 0.024 : 0.02);
+        const defaultMultiSeatOverlap = order >= 4 ? 0.06 : (order >= 3 ? 0.06 : 0.02);
         const seatAFromOffset = Math.sqrt(Math.max(
           0,
           a.displayRadius * a.displayRadius
@@ -7196,6 +7252,9 @@
     moleculeStyleSel.value = target;
     applyMoleculeStyleUiState();
     if (shouldRebuild) rebuildScene({ preserveView: true });
+    refreshActiveAddGrowPreview();
+    if (moleculePlaceActive) rebuildMoleculePlacementPreviewMeshes();
+    if (addFusePreviewState) rebuildFuseRingPreviewMeshes();
   }
 
   /**
@@ -9109,7 +9168,7 @@
    */
   function ensureAddGrowPreviewMeshes(z) {
     if (!addPreviewAtomMesh) {
-      const g = new THREE.SphereGeometry(0.5, 20, 14);
+      const g = new THREE.SphereGeometry(1.0, 20, 14);
       const m = new THREE.MeshPhysicalMaterial({
         transparent: true,
         opacity: 0.72,
@@ -9123,7 +9182,7 @@
       addPreviewGroup.add(addPreviewAtomMesh);
     }
     if (!addPreviewBondMesh) {
-      const g = new THREE.CylinderGeometry(0.05, 0.05, 1.0, 16, 1, false);
+      const g = new THREE.CylinderGeometry(1.0, 1.0, 1.0, 16, 1, false);
       const m = new THREE.MeshPhysicalMaterial({
         color: 0xdbe3ef,
         transparent: true,
@@ -9145,19 +9204,23 @@
    * Refresh add-grow ghost geometry placement.
    * @param {THREE.Vector3} anchorPos
    * @param {THREE.Vector3} newPos
+   * @param {number} anchorZ
    * @param {number} z
    */
-  function updateAddGrowPreviewMeshes(anchorPos, newPos, z) {
+  function updateAddGrowPreviewMeshes(anchorPos, newPos, anchorZ, z) {
     ensureAddGrowPreviewMeshes(z);
-    const dir = newPos.clone().sub(anchorPos);
-    const len = dir.length();
-    if (len < 1e-8) return;
-    const atomScale = getCovalentRadiusAngstrom(z) * getAtomRenderScaleFactor(z);
+    const atomRadius = getRenderedAtomDisplayRadius(z);
+    const placement = getPreviewBondSegmentPlacement(anchorPos, newPos, anchorZ, z, { minGeomLen: 0.03 });
     addPreviewAtomMesh.position.copy(newPos);
-    addPreviewAtomMesh.scale.setScalar(atomScale);
-    addPreviewBondMesh.position.copy(anchorPos.clone().add(newPos).multiplyScalar(0.5));
-    addPreviewBondMesh.scale.set(1, len, 1);
-    addPreviewBondMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    addPreviewAtomMesh.scale.setScalar(atomRadius);
+    if (!placement.valid) {
+      addPreviewBondMesh.visible = false;
+      return;
+    }
+    addPreviewBondMesh.visible = true;
+    addPreviewBondMesh.position.copy(placement.mid);
+    addPreviewBondMesh.scale.set(placement.bondRadius, placement.geomLen, placement.bondRadius);
+    addPreviewBondMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), placement.dirNorm);
   }
 
   /**
@@ -9252,7 +9315,7 @@
     const dist = attach.bondLength;
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
     addGrowPreviewPos = newPos;
-    updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, attach.previewZ);
+    updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, anchorZ, attach.previewZ);
     updateAddGrowAngleGuide(addGrowAnchorPos, newPos, snapMeta);
   }
 
@@ -9289,7 +9352,7 @@
     const dist = attach.bondLength;
     const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
     addGrowPreviewPos = newPos;
-    updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, attach.previewZ);
+    updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, anchorZ, attach.previewZ);
     const guideMeta = bypassAngleSnap
       ? applyEditAddAngleSnap(rawDir, addGrowNeighborDirs, null, camDir)
       : snapMeta;
@@ -9361,6 +9424,11 @@
   function rebuildMoleculePlacementPreviewMeshes() {
     clearGroup(addMoleculePreviewGroup);
     if (!moleculePlaceTemplateData || !Array.isArray(moleculePlaceTemplateData.atoms)) return;
+    const profile = getMoleculeStyleProfile();
+    const bondRadius = getPreviewBondRadius();
+    const sphereWidthSegments = Math.max(16, profile.sphereWidthSegments | 0);
+    const sphereHeightSegments = Math.max(12, profile.sphereHeightSegments | 0);
+    const bondRadialSegments = Math.max(12, profile.bondRadialSegments | 0);
     const bondMat = new THREE.MeshPhysicalMaterial({
       color: 0xdbe3ef,
       transparent: true,
@@ -9374,21 +9442,22 @@
       const ai = moleculePlaceTemplateData.atoms[i];
       const aj = moleculePlaceTemplateData.atoms[j];
       if (!ai || !aj) continue;
-      const dir = aj.local.clone().sub(ai.local);
-      const len = dir.length();
-      if (!(len > 1e-5)) continue;
-      const radius = 0.055;
-      const geom = new THREE.CylinderGeometry(radius, radius, len, 16, 1, false);
+      const placement = getPreviewBondSegmentPlacement(ai.local, aj.local, ai.Z | 0, aj.Z | 0, {
+        bondRadius,
+        minGeomLen: 0.03,
+      });
+      if (!placement.valid) continue;
+      const geom = new THREE.CylinderGeometry(bondRadius, bondRadius, placement.geomLen, bondRadialSegments, 1, false);
       const mesh = new THREE.Mesh(geom, bondMat);
-      mesh.position.copy(ai.local).add(aj.local).multiplyScalar(0.5);
-      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+      mesh.position.copy(placement.mid);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), placement.dirNorm);
       mesh.renderOrder = 56;
       addMoleculePreviewGroup.add(mesh);
     }
     for (const atom of moleculePlaceTemplateData.atoms) {
       const z = atom.Z | 0;
-      const radius = Math.max(0.14, getCovalentRadiusAngstrom(z) * getAtomRenderScaleFactor(z));
-      const geom = new THREE.SphereGeometry(radius, 20, 14);
+      const radius = getRenderedAtomDisplayRadius(z);
+      const geom = new THREE.SphereGeometry(radius, sphereWidthSegments, sphereHeightSegments);
       const mat = new THREE.MeshPhysicalMaterial({
         color: getAtomRenderColor(z),
         transparent: true,
@@ -9677,34 +9746,44 @@
     const geom = buildFuseRingPlacementGeometry(state);
     if (!state || !geom) return;
     addFusePreviewGroup.visible = true;
+    const profile = getMoleculeStyleProfile();
+    const bondRadius = getPreviewBondRadius();
+    const sphereWidthSegments = Math.max(16, profile.sphereWidthSegments | 0);
+    const sphereHeightSegments = Math.max(12, profile.sphereHeightSegments | 0);
+    const bondRadialSegments = Math.max(12, profile.bondRadialSegments | 0);
     const bondMat = new THREE.MeshStandardMaterial({ color: 0xc5d5ec, transparent: true, opacity: 0.78 });
     const sphereGeomCache = new Map();
     const cylGeomCache = new Map();
     const up = new THREE.Vector3(0, 1, 0);
     for (const bond of geom.bonds) {
       if (bond.aHostIndex != null && bond.bHostIndex != null) continue;
-      const dir = bond.bWorld.clone().sub(bond.aWorld);
-      const len = dir.length();
-      if (!(len > 1e-5)) continue;
-      const radius = 0.06;
-      const key = `${radius}:${len.toFixed(4)}`;
+      const aAtom = bond.aHostIndex != null ? state.vol.atoms[bond.aHostIndex] : state.fragment.atoms[bond.aLocal];
+      const bAtom = bond.bHostIndex != null ? state.vol.atoms[bond.bHostIndex] : state.fragment.atoms[bond.bLocal];
+      const aZ = aAtom ? (aAtom.Z | 0) : 6;
+      const bZ = bAtom ? (bAtom.Z | 0) : 6;
+      const placement = getPreviewBondSegmentPlacement(bond.aWorld, bond.bWorld, aZ, bZ, {
+        bondRadius,
+        minGeomLen: 0.03,
+      });
+      if (!placement.valid) continue;
+      const key = `${bondRadius}:${placement.geomLen.toFixed(4)}:${bondRadialSegments}`;
       let cylinder = cylGeomCache.get(key);
       if (!cylinder) {
-        cylinder = new THREE.CylinderGeometry(radius, radius, len, 16, 1, false);
+        cylinder = new THREE.CylinderGeometry(bondRadius, bondRadius, placement.geomLen, bondRadialSegments, 1, false);
         cylGeomCache.set(key, cylinder);
       }
       const mesh = new THREE.Mesh(cylinder, bondMat);
-      mesh.position.copy(bond.aWorld).add(bond.bWorld).multiplyScalar(0.5);
-      mesh.quaternion.setFromUnitVectors(up, dir.normalize());
+      mesh.position.copy(placement.mid);
+      mesh.quaternion.setFromUnitVectors(up, placement.dirNorm);
       mesh.renderOrder = 58;
       addFusePreviewGroup.add(mesh);
     }
     for (const atom of geom.newAtoms) {
-      const radius = Math.max(0.14, getCovalentRadiusAngstrom(atom.Z | 0) * getAtomRenderScaleFactor(atom.Z | 0));
-      const key = radius.toFixed(4);
+      const radius = getRenderedAtomDisplayRadius(atom.Z | 0);
+      const key = `${radius.toFixed(4)}:${sphereWidthSegments}:${sphereHeightSegments}`;
       let sphere = sphereGeomCache.get(key);
       if (!sphere) {
-        sphere = new THREE.SphereGeometry(radius, 20, 14);
+        sphere = new THREE.SphereGeometry(radius, sphereWidthSegments, sphereHeightSegments);
         sphereGeomCache.set(key, sphere);
       }
       const mesh = new THREE.Mesh(sphere, new THREE.MeshPhysicalMaterial({
