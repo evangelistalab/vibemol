@@ -607,6 +607,8 @@
   controls.target.set(0, 0, 0);
   controls.update();
   controls.enableDamping = true;
+  // Rotation is handled below with quaternion orbiting to avoid pole locking.
+  controls.enableRotate = false;
   // Default rotate speed
   controls.rotateSpeed = 1.5;
 
@@ -733,6 +735,12 @@
   let showAtomLabels = false;
   // Append per-atom index as subscript on atom labels.
   let showAtomLabelNumbers = false;
+  // Display-mode left-drag orbit state. We keep OrbitControls for pan/zoom,
+  // but rotate the camera manually with quaternions to remove spherical stalls.
+  let viewRotateActive = false;
+  let viewRotatePointerId = null;
+  let viewRotateLastClientX = 0;
+  let viewRotateLastClientY = 0;
   // Atom label shell meshes that should rotate to keep text visible to camera.
   const atomLabelTrackTargets = [];
   let atomLabelCapGeometry = null;
@@ -6895,6 +6903,7 @@
       return;
     }
     const prevMode = currentMode;
+    endQuaternionViewRotate();
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
     if (currentMode === MODES.EDIT && trajectoryPlaying) {
@@ -6917,8 +6926,6 @@
     updateEditToolboxUi();
     const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
     renderRibbon(ctx);
-    // Camera: keep rotation enabled in all modes
-    try { controls.enableRotate = true; } catch { }
     // Entering measurement mode: hide surfaces (preserve view), save prior state (once)
     if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
       if (__savedShowSurfaces === null) __savedShowSurfaces = showSurfaces;
@@ -9681,6 +9688,74 @@
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   const canvasEl = document.getElementById('canvas');
+
+  /**
+   * End one active display-mode quaternion orbit gesture.
+   * @param {PointerEvent=} e
+   */
+  function endQuaternionViewRotate(e) {
+    if (!viewRotateActive) return;
+    viewRotateActive = false;
+    const pointerId = viewRotatePointerId;
+    viewRotatePointerId = null;
+    if (canvasEl && Number.isInteger(pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
+      try { canvasEl.releasePointerCapture(pointerId); } catch { }
+    }
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  }
+
+  /**
+   * Begin one quaternion-based orbit gesture on the main canvas.
+   * @param {PointerEvent} e
+   */
+  function beginQuaternionViewRotate(e) {
+    viewRotateActive = true;
+    viewRotatePointerId = Number.isInteger(e.pointerId) ? e.pointerId : null;
+    viewRotateLastClientX = Number(e.clientX) || 0;
+    viewRotateLastClientY = Number(e.clientY) || 0;
+    if (canvasEl && Number.isInteger(viewRotatePointerId) && typeof canvasEl.setPointerCapture === 'function') {
+      try { canvasEl.setPointerCapture(viewRotatePointerId); } catch { }
+    }
+  }
+
+  /**
+   * Orbit the active camera about the current target using quaternion rotations.
+   * This keeps the camera moving smoothly through the poles without OrbitControls'
+   * spherical singularity.
+   * @param {number} deltaX
+   * @param {number} deltaY
+   */
+  function applyQuaternionViewOrbit(deltaX, deltaY) {
+    if (!(Number.isFinite(deltaX) && Number.isFinite(deltaY))) return;
+    if (Math.abs(deltaX) < 1e-6 && Math.abs(deltaY) < 1e-6) return;
+    const target = controls.target.clone();
+    const offset = camera.position.clone().sub(target);
+    const radius = offset.length();
+    if (!(radius > 1e-6)) return;
+
+    const speed = Math.max(0.01, Number(controls.rotateSpeed) || 1.0);
+    const gain = 0.0038 * speed;
+    const forward = target.clone().sub(camera.position).normalize();
+    let upAxis = camera.up.clone().normalize();
+    if (upAxis.lengthSq() < 1e-10) upAxis.set(0, 1, 0);
+    let rightAxis = new THREE.Vector3().crossVectors(forward, upAxis);
+    if (rightAxis.lengthSq() < 1e-10) {
+      rightAxis.set(1, 0, 0).applyQuaternion(camera.quaternion).normalize();
+    } else {
+      rightAxis.normalize();
+    }
+
+    const qYaw = new THREE.Quaternion().setFromAxisAngle(upAxis, -deltaX * gain);
+    const qPitch = new THREE.Quaternion().setFromAxisAngle(rightAxis, -deltaY * gain);
+    offset.applyQuaternion(qYaw).applyQuaternion(qPitch);
+    upAxis.applyQuaternion(qYaw).applyQuaternion(qPitch).normalize();
+
+    camera.position.copy(target).add(offset);
+    camera.up.copy(upAxis);
+    camera.lookAt(target);
+    updateActiveCameraProjection(renderer.domElement.width || 1, renderer.domElement.height || 1);
+    refreshViewUI();
+  }
   // --- Edit selection (temporary list) and visuals ---
   let editSel = []; // array of atom indices (max 3) — used in measurement mode
   let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
@@ -10697,6 +10772,22 @@
   let __lastBondUpdate = 0;
   canvasEl.addEventListener('pointermove', (e) => {
     setEditAddHudPointer(e.clientX, e.clientY);
+    if (viewRotateActive && viewRotatePointerId === e.pointerId) {
+      const dx = (Number(e.clientX) || 0) - viewRotateLastClientX;
+      const dy = (Number(e.clientY) || 0) - viewRotateLastClientY;
+      viewRotateLastClientX = Number(e.clientX) || viewRotateLastClientX;
+      viewRotateLastClientY = Number(e.clientY) || viewRotateLastClientY;
+      let shouldRotate = true;
+      if (currentMode !== MODES.DISPLAY && __editDownPt) {
+        const moveDx = (Number(e.clientX) || 0) - __editDownPt.x;
+        const moveDy = (Number(e.clientY) || 0) - __editDownPt.y;
+        if (Math.hypot(moveDx, moveDy) > 4) __editMoved = true;
+        shouldRotate = __editMoved;
+      }
+      if (shouldRotate) applyQuaternionViewOrbit(dx, dy);
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      return;
+    }
     // Allow hover highlighting in Edit and Measurement modes
     const allowHover = (currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
     if (!allowHover) return;
@@ -10763,6 +10854,11 @@
   canvasEl.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     setEditAddHudPointer(e.clientX, e.clientY);
+    if (currentMode === MODES.DISPLAY) {
+      beginQuaternionViewRotate(e);
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      return;
+    }
     __editDownPt = { x: e.clientX, y: e.clientY }; __editMoved = false; __editClickIdx = -1;
     dragBeforeAtomsSnapshot = null;
     const obj = pickAtom(e);
@@ -10771,6 +10867,8 @@
         if (obj && obj.userData) {
           __editClickIdx = obj.userData.index | 0;
           e.preventDefault();
+        } else {
+          beginQuaternionViewRotate(e);
         }
         return;
       }
@@ -10784,6 +10882,7 @@
             try { controls.enabled = false; } catch { }
             e.preventDefault();
           }
+          if (!moleculePlaceActive) beginQuaternionViewRotate(e);
           return;
         }
         const hit = pickAtomHit(e);
@@ -10802,6 +10901,8 @@
             updateAddGrowPreviewFromEvent(e);
             e.preventDefault();
           }
+        } else {
+          beginQuaternionViewRotate(e);
         }
         if (!hit && editAddMode === EDIT_ADD_MODE.FRAGMENT) {
           setHintMessage('Fragment mode: click an anchor atom first.');
@@ -10813,6 +10914,7 @@
       if (editTool === EDIT_TOOL.TRANSFORM) {
         const hit = pickAtomHit(e);
         if (!hit || !hit.object || !hit.object.userData) {
+          beginQuaternionViewRotate(e);
           setHintMessage('Transform tool: click an atom, then drag.');
           return;
         }
@@ -10822,7 +10924,10 @@
         }
         return;
       }
-      if (!obj || !obj.userData) return;
+      if (!obj || !obj.userData) {
+        beginQuaternionViewRotate(e);
+        return;
+      }
       dragAtomIndex = obj.userData.index | 0;
       __editClickIdx = dragAtomIndex;
       dragActive = true;
@@ -10845,15 +10950,17 @@
       updateAxisGuideLine();
       e.preventDefault();
     } else if (currentMode === MODES.MEASURE) {
+      beginQuaternionViewRotate(e);
       if (!obj || !obj.userData) { __editClickIdx = -1; return; }
       __editClickIdx = obj.userData.index | 0;
-      // Pause rotation while making a measurement selection
-      try { controls.enableRotate = false; } catch { }
       // selection is applied on pointerup if not moved
     }
   });
 
   canvasEl.addEventListener('pointerup', (e) => {
+    if (viewRotateActive && viewRotatePointerId === e.pointerId) {
+      endQuaternionViewRotate(e);
+    }
     if (currentMode === MODES.EDIT) {
       if (transformActive) {
         finalizeTransformDrag();
@@ -10914,8 +11021,6 @@
         }
       }
     } else if (currentMode === MODES.MEASURE) {
-      // Resume rotation after selection gesture
-      try { controls.enableRotate = true; } catch { }
       // Click (no significant motion) selects/accumulates
       if (!__editMoved && __editClickIdx >= 0) {
         addEditSelection(__editClickIdx);
@@ -10925,6 +11030,9 @@
     }
     if (!dragActive) dragBeforeAtomsSnapshot = null;
     __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+  });
+  canvasEl.addEventListener('pointercancel', (e) => {
+    if (currentMode === MODES.DISPLAY) endQuaternionViewRotate(e);
   });
 
   // Reset view to the initial camera/target/shift
