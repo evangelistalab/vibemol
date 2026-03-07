@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.5.1';
+  const APP_VERSION = '0.5.2';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -6182,10 +6182,6 @@
   const editMoleculeAlignXBtn = document.getElementById('editMoleculeAlignXBtn');
   const editMoleculeAlignYBtn = document.getElementById('editMoleculeAlignYBtn');
   const editMoleculeAlignZBtn = document.getElementById('editMoleculeAlignZBtn');
-  const editCursorBadgeEl = document.getElementById('editCursorBadge');
-  const editCursorBadgeModeEl = document.getElementById('editCursorBadgeMode');
-  const editCursorBadgeElementEl = document.getElementById('editCursorBadgeElement');
-  const editCursorBadgeBondEl = document.getElementById('editCursorBadgeBond');
   const shortcutRibbon = document.getElementById('shortcutRibbon');
   const hintEl = document.getElementById('hint');
   const emptyStateEl = document.getElementById('emptyState');
@@ -7317,8 +7313,6 @@
   const EDIT_HISTORY_LIMIT = 200;
   let editUndoStack = [];
   let editRedoStack = [];
-  let editAddHudPointerX = window.innerWidth * 0.5;
-  let editAddHudPointerY = window.innerHeight * 0.5;
   let addGrowActive = false;
   let addGrowAnchorIndex = -1;
   let addGrowAnchorPos = null;
@@ -8615,85 +8609,6 @@
   }
 
   /**
-   * Position the edit cursor badge near the latest pointer location.
-   * @param {number} clientX
-   * @param {number} clientY
-   */
-  function setEditCursorBadgePointer(clientX, clientY) {
-    if (!editCursorBadgeEl || editCursorBadgeEl.getAttribute('aria-hidden') !== 'false') return;
-    const px = Number.isFinite(clientX) ? clientX : editAddHudPointerX;
-    const py = Number.isFinite(clientY) ? clientY : editAddHudPointerY;
-    const vw = window.innerWidth || 1;
-    const vh = window.innerHeight || 1;
-    const rect = editCursorBadgeEl.getBoundingClientRect();
-    let x = px + 16;
-    let y = py + 16;
-    if (x + rect.width > vw - 8) x = px - rect.width - 16;
-    if (y + rect.height > vh - 8) y = py - rect.height - 16;
-    x = Math.max(8, Math.min(vw - rect.width - 8, x));
-    y = Math.max(64, Math.min(vh - rect.height - 8, y));
-    editCursorBadgeEl.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
-  }
-
-  /**
-   * Keep the edit cursor badge text/style synchronized with edit state.
-   */
-  function updateEditCursorBadge() {
-    if (!editCursorBadgeEl) return;
-    const show = !!editMode;
-    editCursorBadgeEl.setAttribute('aria-hidden', show ? 'false' : 'true');
-    if (!show) return;
-    const modeLabel = getEditToolLabel(editTool);
-    if (editCursorBadgeModeEl) {
-      editCursorBadgeModeEl.textContent = modeLabel;
-      let border = UI_PALETTE.editBadgeDisplayBorder;
-      let bg = UI_PALETTE.editBadgeDisplayBg;
-      if (editTool === EDIT_TOOL.ADD) {
-        border = UI_PALETTE.editBadgeAddBorder;
-        bg = UI_PALETTE.editBadgeAddBg;
-      } else if (editTool === EDIT_TOOL.TRANSFORM) {
-        border = UI_PALETTE.editBadgeTransformBorder;
-        bg = UI_PALETTE.editBadgeTransformBg;
-      } else if (editTool === EDIT_TOOL.DELETE) {
-        border = UI_PALETTE.editBadgeDeleteBorder;
-        bg = UI_PALETTE.editBadgeDeleteBg;
-      }
-      editCursorBadgeModeEl.style.borderColor = border;
-      editCursorBadgeModeEl.style.background = bg;
-    }
-    if (editCursorBadgeElementEl) {
-      if (editTool === EDIT_TOOL.TRANSFORM) {
-        editCursorBadgeElementEl.textContent = getEditTransformScopeLabel(editTransformScope);
-      } else if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
-        const mol = getCurrentMoleculeDefinition();
-        editCursorBadgeElementEl.textContent = mol ? mol.name : 'Molecule';
-      } else if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
-        const frag = getCurrentFragmentDefinition();
-        editCursorBadgeElementEl.textContent = frag ? frag.name : 'Fragment';
-      } else {
-        editCursorBadgeElementEl.textContent = getElementSymbol(editAddElementZ);
-      }
-    }
-    if (editCursorBadgeBondEl) {
-      if (editTool === EDIT_TOOL.TRANSFORM) editCursorBadgeBondEl.textContent = getEditTransformModeLabel(editTransformMode);
-      else if (editAddMode === EDIT_ADD_MODE.MOLECULE) editCursorBadgeBondEl.textContent = '—';
-      else editCursorBadgeBondEl.textContent = String(editAddBondOrder);
-    }
-    setEditCursorBadgePointer(editAddHudPointerX, editAddHudPointerY);
-  }
-
-  /**
-   * Update the cached pointer location used by the edit cursor badge.
-   * @param {number} clientX
-   * @param {number} clientY
-   */
-  function setEditAddHudPointer(clientX, clientY) {
-    editAddHudPointerX = Number.isFinite(clientX) ? clientX : editAddHudPointerX;
-    editAddHudPointerY = Number.isFinite(clientY) ? clientY : editAddHudPointerY;
-    setEditCursorBadgePointer(editAddHudPointerX, editAddHudPointerY);
-  }
-
-  /**
    * Set the active add-mode preview bond order.
    * @param {number} order
    * @param {{announce?:boolean}=} options
@@ -9266,7 +9181,6 @@
         btn.classList.toggle('active', id === normalizeFragmentId(editAddMoleculeId));
       });
     }
-    updateEditCursorBadge();
   }
 
   /**
@@ -10771,7 +10685,6 @@
 
   let __lastBondUpdate = 0;
   canvasEl.addEventListener('pointermove', (e) => {
-    setEditAddHudPointer(e.clientX, e.clientY);
     if (viewRotateActive && viewRotatePointerId === e.pointerId) {
       const dx = (Number(e.clientX) || 0) - viewRotateLastClientX;
       const dy = (Number(e.clientY) || 0) - viewRotateLastClientY;
@@ -10853,7 +10766,6 @@
 
   canvasEl.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
-    setEditAddHudPointer(e.clientX, e.clientY);
     if (currentMode === MODES.DISPLAY) {
       beginQuaternionViewRotate(e);
       if (typeof e.preventDefault === 'function') e.preventDefault();

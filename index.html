@@ -1171,46 +1171,6 @@
       color: #96adca;
     }
 
-    #editCursorBadge {
-      position: fixed;
-      left: 0;
-      top: 0;
-      transform: translate(-9999px, -9999px);
-      display: none;
-      min-width: 154px;
-      background: rgba(14, 20, 30, 0.92);
-      border: 1px solid #304055;
-      border-radius: 9px;
-      padding: 6px 8px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
-      pointer-events: none;
-      z-index: 35;
-      color: #dce8f8;
-      font-size: 11px;
-      line-height: 1.25;
-    }
-
-    #editCursorBadge[aria-hidden="false"] {
-      display: block;
-    }
-
-    #editCursorBadge .mode {
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 999px;
-      border: 1px solid var(--vm-color-accent-primary);
-      background: var(--vm-color-accent-primary-soft);
-      color: #eff7ff;
-      font-weight: 800;
-      letter-spacing: 0.01em;
-      margin-bottom: 4px;
-    }
-
-    #editCursorBadge .meta {
-      color: #a9c1dd;
-      font-weight: 700;
-    }
-
     #elementColorOverlay {
       position: fixed;
       inset: 0;
@@ -2783,11 +2743,6 @@
       <div id="editSnapHint">In Add mode, cursor direction around the anchor atom drives placement. Snapping picks the
         nearest valid angle (180°, 120°, 109.5°, 90°, 60°).</div>
     </div>
-  </div>
-  <div id="editCursorBadge" aria-hidden="true">
-    <div class="mode" id="editCursorBadgeMode">Move</div>
-    <div class="meta">Elem: <span id="editCursorBadgeElement">C</span></div>
-    <div class="meta">Bond: <span id="editCursorBadgeBond">1</span></div>
   </div>
   <div id="shortcutRibbon" aria-hidden="true"
     style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid var(--vm-color-legacy-border-strong); pointer-events:none; z-index:30;">
