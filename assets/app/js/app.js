@@ -4095,6 +4095,7 @@
     }
     bondGroup = buildBonds(vol);
     contentGroup.add(bondGroup);
+    updateTransformBondSelectionHalos();
   }
 
   /**
@@ -7023,7 +7024,10 @@
     if (currentMode === MODES.DISPLAY) { clearHover(); }
     if (currentMode !== MODES.EDIT) clearAddGrowPreview();
     if (currentMode !== MODES.EDIT) clearMoleculePlacementPreview();
-    if (currentMode !== MODES.EDIT) clearTransformState();
+    if (currentMode !== MODES.EDIT) {
+      clearTransformState();
+      clearTransformSelection();
+    }
     // Leaving measurement mode to display: restore surfaces and clear selection
     if (prevMode === MODES.MEASURE && currentMode === MODES.DISPLAY) {
       if (__savedShowSurfaces != null && showSurfaces !== !!__savedShowSurfaces) {
@@ -7357,6 +7361,9 @@
   // --- Edit mode: toggle with 'E', hover highlight, drag to move ---
   let editMode = false; // mirrors currentMode === MODES.EDIT
   let hoverAtomMesh = null;
+  let hoverBondObject = null;
+  let transformSelectionIndices = [];
+  let transformSelectionKind = 'fragment';
   let dragActive = false;
   let dragAtomIndex = -1;
   let dragStartPos = null;
@@ -7384,7 +7391,8 @@
   });
   const EDIT_TRANSFORM_MODE = Object.freeze({
     MOVE: 'move',
-    ROTATE: 'rotate',
+    ROTATE_FRAGMENT: 'rotate_fragment',
+    ROTATE_BOND: 'rotate_bond',
   });
   let editTool = EDIT_TOOL.MOVE;
   let editAddMode = EDIT_ADD_MODE.ATOM;
@@ -7434,6 +7442,12 @@
   let transformPlaneStart = null;
   let transformRotateAxis = null;
   let transformRotateStartDir = null;
+  let transformRotateGesture = 'move';
+  let transformRotateLastClientX = 0;
+  let transformRotateLastClientY = 0;
+  let transformRotateAccumulatedQuaternion = new THREE.Quaternion();
+  let transformBondContext = null;
+  let transformPendingBackgroundClear = false;
   let transformStartPositionsWorld = [];
   let transformBeforeSnapshot = null;
   let transformMoved = false;
@@ -7812,6 +7826,7 @@
     clearAddGrowPreview();
     clearHover();
     clearEditSelection();
+    clearTransformSelection();
     updateSelectedHalos();
     rebuildScene({ preserveView: true });
     updateSidePanel();
@@ -8826,7 +8841,9 @@
    * @returns {'move'|'rotate'}
    */
   function normalizeEditTransformMode(value) {
-    return value === EDIT_TRANSFORM_MODE.ROTATE ? EDIT_TRANSFORM_MODE.ROTATE : EDIT_TRANSFORM_MODE.MOVE;
+    if (value === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) return EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT;
+    if (value === EDIT_TRANSFORM_MODE.ROTATE_BOND) return EDIT_TRANSFORM_MODE.ROTATE_BOND;
+    return EDIT_TRANSFORM_MODE.MOVE;
   }
 
   /**
@@ -8847,7 +8864,18 @@
    * @returns {string}
    */
   function getEditTransformModeLabel(mode) {
-    return mode === EDIT_TRANSFORM_MODE.ROTATE ? 'Rotate' : 'Move';
+    if (mode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) return 'Rotate fragment';
+    if (mode === EDIT_TRANSFORM_MODE.ROTATE_BOND) return 'Rotate bond';
+    return 'Move';
+  }
+
+  /**
+   * Check whether the current transform action is rotational.
+   * @param {'move'|'rotate_fragment'|'rotate_bond'} mode
+   * @returns {boolean}
+   */
+  function isRotateTransformMode(mode) {
+    return mode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT || mode === EDIT_TRANSFORM_MODE.ROTATE_BOND;
   }
 
   /**
@@ -8882,6 +8910,89 @@
     }
     out.sort((a, b) => a - b);
     return out.length ? out : [anchor];
+  }
+
+  /**
+   * Resolve the atom subset on one side of a clicked bond by removing that edge
+   * and walking the remaining graph from the chosen endpoint.
+   * Cycles naturally expand to the whole connected component.
+   * @param {*} vol
+   * @param {number} atomA
+   * @param {number} atomB
+   * @param {number} seedIndex
+   * @returns {number[]}
+   */
+  function getBondSideComponentIndices(vol, atomA, atomB, seedIndex) {
+    if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return [];
+    const n = vol.atoms.length | 0;
+    const i = atomA | 0;
+    const j = atomB | 0;
+    const seed = seedIndex | 0;
+    if (i < 0 || j < 0 || seed < 0 || i >= n || j >= n || seed >= n || i === j) return [];
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = collectBondCandidates(records);
+    const adjacency = buildBondAdjacency(edges, n);
+    const seen = new Uint8Array(n);
+    const stack = [seed];
+    const out = [];
+    seen[seed] = 1;
+    while (stack.length) {
+      const cur = stack.pop();
+      out.push(cur);
+      const neighbors = adjacency[cur];
+      if (!Array.isArray(neighbors)) continue;
+      for (const nextRaw of neighbors) {
+        const next = nextRaw | 0;
+        if (next < 0 || next >= n || seen[next]) continue;
+        const isCutEdge = (cur === i && next === j) || (cur === j && next === i);
+        if (isCutEdge) continue;
+        seen[next] = 1;
+        stack.push(next);
+      }
+    }
+    out.sort((a, b) => a - b);
+    return out;
+  }
+
+  /**
+   * Choose which endpoint of a clicked bond should seed fragment-side selection.
+   * The closer endpoint to the click point wins.
+   * @param {*} vol
+   * @param {{object:*,point:THREE.Vector3|null}} bondHit
+   * @returns {number}
+   */
+  function resolveBondSideSeedIndex(vol, bondHit) {
+    if (!vol || !Array.isArray(vol.atoms) || !bondHit || !bondHit.object || !bondHit.object.userData) return -1;
+    const i = bondHit.object.userData.i | 0;
+    const j = bondHit.object.userData.j | 0;
+    if (i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length) return -1;
+    if (!bondHit.point || !bondHit.point.isVector3) return i;
+    const posI = atomUnitsToAng(vol, vol.atoms[i]);
+    const posJ = atomUnitsToAng(vol, vol.atoms[j]);
+    return bondHit.point.distanceToSquared(posI) <= bondHit.point.distanceToSquared(posJ) ? i : j;
+  }
+
+  /**
+   * Resolve transform target atoms from one clicked bond side.
+   * @param {*} vol
+   * @param {{object:*,point:THREE.Vector3|null}} bondHit
+   * @returns {{indices:number[],kind:'fragment',bond:{i:number,j:number},seedIndex:number}|null}
+   */
+  function resolveTransformBondTarget(vol, bondHit) {
+    if (!vol || !Array.isArray(vol.atoms) || !bondHit || !bondHit.object || !bondHit.object.userData) return null;
+    const i = bondHit.object.userData.i | 0;
+    const j = bondHit.object.userData.j | 0;
+    if (i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length || i === j) return null;
+    const seedIndex = resolveBondSideSeedIndex(vol, bondHit);
+    if (seedIndex < 0) return null;
+    const indices = getBondSideComponentIndices(vol, i, j, seedIndex);
+    if (!indices.length) return null;
+    return {
+      indices,
+      kind: 'fragment',
+      bond: { i, j },
+      seedIndex,
+    };
   }
 
   /**
@@ -9020,12 +9131,128 @@
     transformPlaneStart = null;
     transformRotateAxis = null;
     transformRotateStartDir = null;
+    transformRotateGesture = 'move';
+    transformRotateLastClientX = 0;
+    transformRotateLastClientY = 0;
+    transformRotateAccumulatedQuaternion.identity();
+    transformBondContext = null;
+    transformPendingBackgroundClear = false;
     transformStartPositionsWorld = [];
     transformBeforeSnapshot = null;
     transformMoved = false;
     if (restoreControls) {
       try { controls.enabled = true; } catch { }
     }
+  }
+
+  /**
+   * Begin one transform drag from an already resolved atom-index target set.
+   * @param {PointerEvent} e
+   * @param {*} vol
+   * @param {{indices:number[],kind:'fragment'|'molecule'|'all'}} target
+   * @param {THREE.Vector3|null=} interactionPoint
+   * @param {{type:'bond',selectedAtomIndex:number,anchorAtomIndex:number,bondIndices:[number,number]}|null=} context
+   * @returns {boolean}
+   */
+  function beginTransformDragFromResolvedTarget(e, vol, target, interactionPoint = null, context = null) {
+    if (!vol || !Array.isArray(vol.atoms) || !target || !Array.isArray(target.indices) || !target.indices.length) return false;
+    const shouldAddToSelection = !!(e && e.shiftKey);
+    if (shouldAddToSelection) {
+      const merged = Array.from(new Set([...getActiveTransformSelectionIndices(), ...target.indices]))
+        .filter((idx) => Number.isInteger(idx) && idx >= 0)
+        .sort((a, b) => a - b);
+      if (merged.length) {
+        target = {
+          ...target,
+          indices: merged,
+          kind: merged.length === vol.atoms.length ? 'all' : 'fragment',
+        };
+      }
+    }
+    clearAddGrowPreview();
+    clearTransformState({ restoreControls: false });
+    transformTargetIndices = target.indices.slice();
+    transformTargetKind = target.kind;
+    setTransformSelection(transformTargetIndices, transformTargetKind);
+    transformBondContext = (context && context.type === 'bond')
+      ? {
+          type: 'bond',
+          selectedAtomIndex: context.selectedAtomIndex | 0,
+          anchorAtomIndex: context.anchorAtomIndex | 0,
+          bondIndices: Array.isArray(context.bondIndices) ? [context.bondIndices[0] | 0, context.bondIndices[1] | 0] : [0, 0],
+        }
+      : null;
+    transformPivotWorld = getTransformPivotWorld(vol, transformTargetIndices);
+    if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
+      transformPivotWorld = atomUnitsToAng(vol, vol.atoms[transformBondContext.selectedAtomIndex]);
+    } else if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+      transformPivotWorld = atomUnitsToAng(vol, vol.atoms[transformBondContext.anchorAtomIndex]);
+    }
+    transformStartPositionsWorld = transformTargetIndices.map((idx) => atomUnitsToAng(vol, vol.atoms[idx]));
+    transformBeforeSnapshot = cloneCoordinateSnapshot(vol);
+    transformAppliesToGrid = !!(transformBeforeSnapshot.grid && transformTargetIndices.length === vol.atoms.length);
+    transformMoved = false;
+
+    setRaycasterFromEvent(e);
+    if (isRotateTransformMode(editTransformMode)) {
+      if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+        transformRotateGesture = 'bondQuaternion';
+        transformRotateLastClientX = Number(e.clientX) || 0;
+        transformRotateLastClientY = Number(e.clientY) || 0;
+        transformRotateAccumulatedQuaternion.identity();
+        setHintMessage('Rotate bond: Drag to reorient the selected side around the opposite atom');
+      } else {
+        transformRotateGesture = transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT
+          ? 'bondAxis'
+          : 'viewAxis';
+        if (transformRotateGesture === 'bondAxis') {
+          transformRotateAxis = atomUnitsToAng(vol, vol.atoms[transformBondContext.selectedAtomIndex])
+            .sub(atomUnitsToAng(vol, vol.atoms[transformBondContext.anchorAtomIndex]));
+        } else {
+          transformRotateAxis = new THREE.Vector3();
+          camera.getWorldDirection(transformRotateAxis);
+        }
+        if (transformRotateAxis.lengthSq() < 1e-12) transformRotateAxis.set(0, 0, -1);
+        transformRotateAxis.normalize();
+        transformDragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(transformRotateAxis, transformPivotWorld);
+        const planeHit = new THREE.Vector3();
+        if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) {
+          if (interactionPoint && interactionPoint.isVector3) planeHit.copy(interactionPoint);
+          else planeHit.copy(transformPivotWorld);
+        }
+        const startDir = planeHit.clone().sub(transformPivotWorld);
+        startDir.addScaledVector(transformRotateAxis, -startDir.dot(transformRotateAxis));
+        if (startDir.lengthSq() < 1e-10) {
+          const fallback = (interactionPoint && interactionPoint.isVector3)
+            ? interactionPoint.clone().sub(transformPivotWorld)
+            : getBondPerpendicular(transformRotateAxis);
+          fallback.addScaledVector(transformRotateAxis, -fallback.dot(transformRotateAxis));
+          if (fallback.lengthSq() < 1e-10) fallback.copy(getBondPerpendicular(transformRotateAxis));
+          startDir.copy(fallback);
+        }
+        transformRotateStartDir = startDir.normalize();
+        if (transformRotateGesture === 'bondAxis') {
+          setHintMessage('Rotate fragment: Drag to spin the selected side about the bond axis');
+        } else {
+          setHintMessage(`Transform ${getEditTransformScopeLabel(target.kind)}: Rotate • Drag to rotate around view axis`);
+        }
+      }
+    } else {
+      transformRotateGesture = 'move';
+      const normal = new THREE.Vector3();
+      camera.getWorldDirection(normal);
+      if (normal.lengthSq() < 1e-12) normal.set(0, 0, -1);
+      transformDragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal.normalize(), transformPivotWorld);
+      transformPlaneStart = new THREE.Vector3();
+      if (!raycaster.ray.intersectPlane(transformDragPlane, transformPlaneStart)) {
+        if (interactionPoint && interactionPoint.isVector3) transformPlaneStart.copy(interactionPoint);
+        else transformPlaneStart.copy(transformPivotWorld);
+      }
+      setHintMessage(`Transform ${getEditTransformScopeLabel(target.kind)}: Move • Drag to reposition`);
+    }
+    transformActive = true;
+    try { controls.enabled = false; } catch { }
+    return true;
   }
 
   /**
@@ -10018,7 +10245,15 @@
     if (editTransformCurrentEl) {
       const scopeLabel = getEditTransformScopeLabel(editTransformScope);
       const modeLabel = getEditTransformModeLabel(editTransformMode);
-      editTransformCurrentEl.textContent = `Scope: ${scopeLabel} • Action: ${modeLabel} • Click an atom then drag`;
+      let usage = 'Click an atom or bond then drag';
+      if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
+        usage = 'Click a bond to spin the selected side about that bond axis • Shift-click adds another target';
+      } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+        usage = 'Click a bond to rotate the selected side around the opposite atom • Shift-click adds another target';
+      } else {
+        usage = 'Click an atom or bond then drag • Click empty space to clear • Shift-click adds another target';
+      }
+      editTransformCurrentEl.textContent = `Scope: ${scopeLabel} • Action: ${modeLabel} • ${usage}`;
     }
 
     if (syncSearch && isAtomAddMode && editAddSearchEl && document.activeElement !== editAddSearchEl) {
@@ -10089,6 +10324,7 @@
     }
     if (editTool !== EDIT_TOOL.TRANSFORM && prevTool === EDIT_TOOL.TRANSFORM) {
       clearTransformState();
+      clearTransformSelection();
     }
     clearHover();
     updateEditToolboxUi();
@@ -10112,7 +10348,14 @@
         setHintMessage(`Edit tool: Add atom (${symbol}) • Cursor angle controls placement • Hold Shift to bypass angle snap`);
       }
     } else if (editTool === EDIT_TOOL.TRANSFORM) {
-      setHintMessage(`Edit tool: Transform (${getEditTransformModeLabel(editTransformMode)}) • Scope ${getEditTransformScopeLabel(editTransformScope)} • Click and drag an atom`);
+      const modeLabel = getEditTransformModeLabel(editTransformMode);
+      if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
+        setHintMessage(`Edit tool: ${modeLabel} • Scope ${getEditTransformScopeLabel(editTransformScope)} • Click a bond and drag to spin the selected side about the bond axis • Shift-click adds another target`);
+      } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+        setHintMessage(`Edit tool: ${modeLabel} • Scope ${getEditTransformScopeLabel(editTransformScope)} • Click a bond and drag to rotate the selected side around the opposite atom • Shift-click adds another target`);
+      } else {
+        setHintMessage(`Edit tool: Transform (${modeLabel}) • Scope ${getEditTransformScopeLabel(editTransformScope)} • Click and drag an atom or bond • Click empty space to clear • Shift-click adds another target`);
+      }
     } else if (editTool === EDIT_TOOL.DELETE) {
       setHintMessage('Edit tool: Delete • Click an atom or press Backspace/Delete on hovered atom');
     } else {
@@ -10469,7 +10712,14 @@
         editTransformMode = normalizeEditTransformMode(editTransformModeEl.value);
         updateEditToolboxUi({ syncSearch: false });
         if (editMode && editTool === EDIT_TOOL.TRANSFORM) {
-          setHintMessage(`Transform action: ${getEditTransformModeLabel(editTransformMode)}.`);
+          const modeLabel = getEditTransformModeLabel(editTransformMode);
+          if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
+            setHintMessage(`Transform action: ${modeLabel} • Bond clicks spin the selected side about the bond axis; Shift-click adds another target.`);
+          } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+            setHintMessage(`Transform action: ${modeLabel} • Bond clicks rotate the selected side around the opposite atom; Shift-click adds another target.`);
+          } else {
+            setHintMessage(`Transform action: ${modeLabel} • Click empty space to clear selection • Shift-click adds another target.`);
+          }
         }
       });
     }
@@ -10657,9 +10907,16 @@
    */
   function updateSelectedHalos() {
     if (!atomGroup || !atomGroup.children) return;
+    const selectedSet = new Set();
+    if (currentMode === MODES.MEASURE) {
+      for (const idx of editSel) selectedSet.add(idx);
+    }
+    if (currentMode === MODES.EDIT && editTool === EDIT_TOOL.TRANSFORM) {
+      for (const idx of getActiveTransformSelectionIndices()) selectedSet.add(idx);
+    }
     for (let i = 0; i < atomGroup.children.length; i++) {
       const mesh = atomGroup.children[i];
-      const selected = editSel.includes(i);
+      const selected = selectedSet.has(i);
       if (selected) ensureSelectHalo(mesh); else removeSelectHalo(mesh);
     }
   }
@@ -10687,6 +10944,202 @@
     try { o.geometry && o.geometry.dispose && o.geometry.dispose(); } catch { }
     try { if (o.material && o.material.map && o.material.map.dispose) o.material.map.dispose(); } catch { }
     try { o.material && o.material.dispose && o.material.dispose(); } catch { }
+  }
+
+  /**
+   * Dispose geometry/material resources for one overlay subtree.
+   * @param {THREE.Object3D|null} root
+   */
+  function disposeOverlayTree(root) {
+    if (!root || typeof root.traverse !== 'function') return;
+    root.traverse((obj) => {
+      if (!obj || obj === root) return;
+      try { obj.geometry && obj.geometry.dispose && obj.geometry.dispose(); } catch { }
+      try {
+        if (Array.isArray(obj.material)) {
+          for (const mat of obj.material) {
+            try { mat && mat.dispose && mat.dispose(); } catch { }
+          }
+        } else {
+          obj.material && obj.material.dispose && obj.material.dispose();
+        }
+      } catch { }
+    });
+  }
+
+  /**
+   * Build one local-space overlay clone for a bond carrier object.
+   * Root overlays attach as children of the carrier, so the root transform stays identity.
+   * @param {*} carrier
+   * @param {number} color
+   * @param {number} opacity
+   * @param {number} radialScale
+   * @returns {THREE.Object3D|null}
+   */
+  function buildBondOverlayClone(carrier, color, opacity, radialScale = 1.12) {
+    const skipTypes = new Set(['bondOutline', 'bondHighlight']);
+    /**
+     * Clone one mesh for overlay use.
+     * @param {*} mesh
+     * @param {boolean} isRoot
+     * @returns {THREE.Mesh|null}
+     */
+    const cloneOverlayMesh = (mesh, isRoot = false) => {
+      if (!mesh || !mesh.isMesh || !mesh.geometry) return null;
+      if (mesh.userData && skipTypes.has(mesh.userData.type)) return null;
+      const overlayMat = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity,
+        depthWrite: false,
+        depthTest: true,
+      });
+      const overlay = new THREE.Mesh(mesh.geometry.clone(), overlayMat);
+      if (!isRoot) {
+        overlay.position.copy(mesh.position);
+        overlay.quaternion.copy(mesh.quaternion);
+        overlay.scale.copy(mesh.scale);
+        overlay.visible = mesh.visible !== false;
+      }
+      overlay.renderOrder = (mesh.renderOrder || 0) + 2;
+      overlay.scale.set(
+        overlay.scale.x * radialScale,
+        overlay.scale.y,
+        overlay.scale.z * radialScale
+      );
+      return overlay;
+    };
+
+    /**
+     * Clone one object subtree into overlay geometry.
+     * @param {*} node
+     * @param {boolean} isRoot
+     * @returns {THREE.Object3D|null}
+     */
+    const cloneNode = (node, isRoot = false) => {
+      if (!node) return null;
+      if (node.isMesh) return cloneOverlayMesh(node, isRoot);
+      const group = new THREE.Group();
+      if (!isRoot) {
+        group.position.copy(node.position);
+        group.quaternion.copy(node.quaternion);
+        group.scale.copy(node.scale);
+        group.visible = node.visible !== false;
+      }
+      for (const child of (node.children || [])) {
+        const cloned = cloneNode(child, false);
+        if (cloned) group.add(cloned);
+      }
+      return group.children.length ? group : null;
+    };
+
+    return cloneNode(carrier, true);
+  }
+
+  /**
+   * Attach one hover/select overlay to a bond carrier.
+   * @param {*} carrier
+   * @param {'hoverOverlay'|'selectOverlay'} key
+   * @param {number} color
+   * @param {number} opacity
+   * @returns {THREE.Object3D|null}
+   */
+  function ensureBondOverlay(carrier, key, color, opacity) {
+    if (!carrier || !carrier.userData) return null;
+    if (carrier.userData[key]) return carrier.userData[key];
+    const overlay = buildBondOverlayClone(carrier, color, opacity);
+    if (!overlay) return null;
+    overlay.userData = { type: key };
+    carrier.add(overlay);
+    carrier.userData[key] = overlay;
+    return overlay;
+  }
+
+  /**
+   * Remove one hover/select overlay from a bond carrier.
+   * @param {*} carrier
+   * @param {'hoverOverlay'|'selectOverlay'} key
+   */
+  function removeBondOverlay(carrier, key) {
+    if (!carrier || !carrier.userData || !carrier.userData[key]) return;
+    const overlay = carrier.userData[key];
+    carrier.userData[key] = null;
+    try {
+      carrier.remove(overlay);
+      disposeOverlayTree(overlay);
+    } catch { }
+  }
+
+  /**
+   * Return the currently persistent transform-selection indices.
+   * @returns {number[]}
+   */
+  function getActiveTransformSelectionIndices() {
+    if (transformActive && Array.isArray(transformTargetIndices) && transformTargetIndices.length) {
+      return transformTargetIndices.slice();
+    }
+    return Array.isArray(transformSelectionIndices) ? transformSelectionIndices.slice() : [];
+  }
+
+  /**
+   * Check whether every atom in one target set is already inside the active transform selection.
+   * @param {number[]} indices
+   * @returns {boolean}
+   */
+  function isTransformTargetInsideSelection(indices) {
+    const selected = new Set(getActiveTransformSelectionIndices());
+    const test = Array.isArray(indices) ? indices : [];
+    if (!selected.size || !test.length) return false;
+    for (const idx of test) {
+      if (!selected.has(idx | 0)) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Apply one persistent transform selection.
+   * @param {number[]} indices
+   * @param {'fragment'|'molecule'|'all'} kind
+   */
+  function setTransformSelection(indices, kind = 'fragment') {
+    const unique = Array.from(new Set((Array.isArray(indices) ? indices : []).filter((idx) => Number.isInteger(idx) && idx >= 0))).sort((a, b) => a - b);
+    transformSelectionIndices = unique;
+    transformSelectionKind = kind === 'all' ? 'all' : (kind === 'molecule' ? 'molecule' : 'fragment');
+    updateSelectedHalos();
+    updateTransformBondSelectionHalos();
+  }
+
+  /**
+   * Clear persistent transform selection/highlight state.
+   */
+  function clearTransformSelection() {
+    transformSelectionIndices = [];
+    transformSelectionKind = 'fragment';
+    updateSelectedHalos();
+    updateTransformBondSelectionHalos();
+  }
+
+  /**
+   * Update persistent bond highlight state for the active transform selection.
+   */
+  function updateTransformBondSelectionHalos() {
+    if (!bondGroup || !bondGroup.children) return;
+    const selected = new Set(
+      currentMode === MODES.EDIT && editTool === EDIT_TOOL.TRANSFORM
+        ? getActiveTransformSelectionIndices()
+        : []
+    );
+    for (const carrier of bondGroup.children) {
+      if (!carrier || !carrier.userData) continue;
+      const i = carrier.userData.i | 0;
+      const j = carrier.userData.j | 0;
+      if (!Number.isInteger(i) || !Number.isInteger(j)) {
+        removeBondOverlay(carrier, 'selectOverlay');
+        continue;
+      }
+      if (selected.has(i) && selected.has(j)) ensureBondOverlay(carrier, 'selectOverlay', selHaloColor, 0.72);
+      else removeBondOverlay(carrier, 'selectOverlay');
+    }
   }
   /**
    * Dispose and remove all children of a group.
@@ -10960,10 +11413,29 @@
     // If user is holding an axis key, keep the guide line in sync
     updateAxisGuideLine();
   }
+
+  /**
+   * Update hover highlighting for the currently pointed bond carrier.
+   * @param {*|null} carrier
+   */
+  function setBondHover(carrier) {
+    if (hoverBondObject === carrier) return;
+    if (hoverBondObject) removeBondOverlay(hoverBondObject, 'hoverOverlay');
+    hoverBondObject = null;
+    if (carrier && carrier.userData) {
+      const hoverColor = (editMode && editTool === EDIT_TOOL.DELETE) ? 0xff4b4b : 0x00a5ff;
+      ensureBondOverlay(carrier, 'hoverOverlay', hoverColor, 0.82);
+      hoverBondObject = carrier;
+    }
+  }
+
   /**
    * Clear hover highlight state.
    */
-  function clearHover() { setHover(null); }
+  function clearHover() {
+    setHover(null);
+    setBondHover(null);
+  }
 
   // (axis lock uses simple axis component of the view-plane delta)
 
@@ -11691,50 +12163,40 @@
       }
       return false;
     }
+    return beginTransformDragFromResolvedTarget(e, vol, target, hit.point || null, null);
+  }
 
-    clearAddGrowPreview();
-    clearTransformState({ restoreControls: false });
-    transformTargetIndices = target.indices.slice();
-    transformTargetKind = target.kind;
-    transformPivotWorld = getTransformPivotWorld(vol, transformTargetIndices);
-    transformStartPositionsWorld = transformTargetIndices.map((idx) => atomUnitsToAng(vol, vol.atoms[idx]));
-    transformBeforeSnapshot = cloneCoordinateSnapshot(vol);
-    transformAppliesToGrid = !!(transformBeforeSnapshot.grid && transformTargetIndices.length === vol.atoms.length);
-    transformMoved = false;
-
-    setRaycasterFromEvent(e);
-    if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE) {
-      transformRotateAxis = new THREE.Vector3();
-      camera.getWorldDirection(transformRotateAxis);
-      if (transformRotateAxis.lengthSq() < 1e-12) transformRotateAxis.set(0, 0, -1);
-      transformRotateAxis.normalize();
-      transformDragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(transformRotateAxis, transformPivotWorld);
-      const planeHit = new THREE.Vector3();
-      if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) planeHit.copy(hit.point || transformPivotWorld);
-      const startDir = planeHit.clone().sub(transformPivotWorld);
-      startDir.addScaledVector(transformRotateAxis, -startDir.dot(transformRotateAxis));
-      if (startDir.lengthSq() < 1e-10) {
-        const fallback = (hit.point && hit.point.isVector3)
-          ? hit.point.clone().sub(transformPivotWorld)
-          : getBondPerpendicular(transformRotateAxis);
-        fallback.addScaledVector(transformRotateAxis, -fallback.dot(transformRotateAxis));
-        if (fallback.lengthSq() < 1e-10) fallback.copy(getBondPerpendicular(transformRotateAxis));
-        startDir.copy(fallback);
-      }
-      transformRotateStartDir = startDir.normalize();
-      setHintMessage(`Transform ${getEditTransformScopeLabel(editTransformScope)}: Rotate • Drag to rotate around view axis`);
-    } else {
-      const normal = new THREE.Vector3();
-      camera.getWorldDirection(normal);
-      if (normal.lengthSq() < 1e-12) normal.set(0, 0, -1);
-      transformDragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal.normalize(), transformPivotWorld);
-      transformPlaneStart = new THREE.Vector3();
-      if (!raycaster.ray.intersectPlane(transformDragPlane, transformPlaneStart)) transformPlaneStart.copy(transformPivotWorld);
-      setHintMessage(`Transform ${getEditTransformScopeLabel(editTransformScope)}: Move • Drag to reposition`);
+  /**
+   * Begin one transform drag from a clicked bond-side target.
+   * @param {PointerEvent} e
+   * @param {{object:*,point:THREE.Vector3|null}} bondHit
+   * @returns {boolean}
+   */
+  function beginTransformDragFromBondHit(e, bondHit) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return false;
+    const target = resolveTransformBondTarget(vol, bondHit);
+    if (!target || !Array.isArray(target.indices) || !target.indices.length) {
+      setHintMessage('Transform tool: could not resolve a bond-side fragment.');
+      return false;
     }
-    transformActive = true;
-    try { controls.enabled = false; } catch { }
-    return true;
+    const i = bondHit.object.userData.i | 0;
+    const j = bondHit.object.userData.j | 0;
+    const selectedAtomIndex = target.seedIndex | 0;
+    const anchorAtomIndex = selectedAtomIndex === i ? j : i;
+    return beginTransformDragFromResolvedTarget(
+      e,
+      vol,
+      target,
+      bondHit && bondHit.point ? bondHit.point : null,
+      {
+        type: 'bond',
+        selectedAtomIndex,
+        anchorAtomIndex,
+        bondIndices: [i, j],
+      }
+    );
   }
 
   /**
@@ -11746,32 +12208,71 @@
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     if (!vol || !Array.isArray(vol.atoms)) return;
-    if (!transformPivotWorld || !transformDragPlane || !transformBeforeSnapshot) return;
-    setRaycasterFromEvent(e);
-    const planeHit = new THREE.Vector3();
-    if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) return;
+    if (!transformPivotWorld || !transformBeforeSnapshot) return;
 
     const movedWorld = [];
-    if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE) {
-      if (!transformRotateAxis || !transformRotateStartDir) return;
-      const currDir = planeHit.clone().sub(transformPivotWorld);
-      currDir.addScaledVector(transformRotateAxis, -currDir.dot(transformRotateAxis));
-      if (currDir.lengthSq() < 1e-10) return;
-      currDir.normalize();
-      const cross = new THREE.Vector3().crossVectors(transformRotateStartDir, currDir);
-      const sin = cross.dot(transformRotateAxis);
-      const cos = THREE.MathUtils.clamp(transformRotateStartDir.dot(currDir), -1, 1);
-      const angle = Math.atan2(sin, cos);
-      if (Math.abs(angle) <= 1e-7) return;
-      const q = new THREE.Quaternion().setFromAxisAngle(transformRotateAxis, angle);
-      for (const startWorld of transformStartPositionsWorld) {
-        const world = startWorld.clone().sub(transformPivotWorld).applyQuaternion(q).add(transformPivotWorld);
-        movedWorld.push(world);
+    if (isRotateTransformMode(editTransformMode)) {
+      if (transformRotateGesture === 'bondQuaternion') {
+        const nextClientX = Number(e.clientX) || transformRotateLastClientX;
+        const nextClientY = Number(e.clientY) || transformRotateLastClientY;
+        const dx = nextClientX - transformRotateLastClientX;
+        const dy = nextClientY - transformRotateLastClientY;
+        transformRotateLastClientX = nextClientX;
+        transformRotateLastClientY = nextClientY;
+        if (Math.abs(dx) <= 1e-7 && Math.abs(dy) <= 1e-7) return;
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+        if (camDir.lengthSq() < 1e-12) camDir.set(0, 0, -1);
+        camDir.normalize();
+        const camUp = camera.up.clone().normalize();
+        if (camUp.lengthSq() < 1e-12) camUp.set(0, 1, 0);
+        let camRight = new THREE.Vector3().crossVectors(camDir, camUp);
+        if (camRight.lengthSq() < 1e-12) camRight = getBondPerpendicular(camDir);
+        camRight.normalize();
+        const deltaQ = new THREE.Quaternion()
+          .setFromAxisAngle(camUp, dx * 0.01)
+          .multiply(new THREE.Quaternion().setFromAxisAngle(camRight, dy * 0.01));
+        transformRotateAccumulatedQuaternion.premultiply(deltaQ);
+        for (const startWorld of transformStartPositionsWorld) {
+          const world = startWorld.clone()
+            .sub(transformPivotWorld)
+            .applyQuaternion(transformRotateAccumulatedQuaternion)
+            .add(transformPivotWorld);
+          movedWorld.push(world);
+        }
+        applyTransformWorldPositions(vol, transformTargetIndices, movedWorld);
+        if (transformAppliesToGrid) {
+          applyTransformGridRotation(vol, transformBeforeSnapshot.grid, transformPivotWorld, transformRotateAccumulatedQuaternion);
+        }
+        transformMoved = true;
+      } else {
+        if (!transformDragPlane || !transformRotateAxis || !transformRotateStartDir) return;
+        setRaycasterFromEvent(e);
+        const planeHit = new THREE.Vector3();
+        if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) return;
+        const currDir = planeHit.clone().sub(transformPivotWorld);
+        currDir.addScaledVector(transformRotateAxis, -currDir.dot(transformRotateAxis));
+        if (currDir.lengthSq() < 1e-10) return;
+        currDir.normalize();
+        const cross = new THREE.Vector3().crossVectors(transformRotateStartDir, currDir);
+        const sin = cross.dot(transformRotateAxis);
+        const cos = THREE.MathUtils.clamp(transformRotateStartDir.dot(currDir), -1, 1);
+        const angle = Math.atan2(sin, cos);
+        if (Math.abs(angle) <= 1e-7) return;
+        const q = new THREE.Quaternion().setFromAxisAngle(transformRotateAxis, angle);
+        for (const startWorld of transformStartPositionsWorld) {
+          const world = startWorld.clone().sub(transformPivotWorld).applyQuaternion(q).add(transformPivotWorld);
+          movedWorld.push(world);
+        }
+        applyTransformWorldPositions(vol, transformTargetIndices, movedWorld);
+        if (transformAppliesToGrid) applyTransformGridRotation(vol, transformBeforeSnapshot.grid, transformPivotWorld, q);
+        transformMoved = true;
       }
-      applyTransformWorldPositions(vol, transformTargetIndices, movedWorld);
-      if (transformAppliesToGrid) applyTransformGridRotation(vol, transformBeforeSnapshot.grid, transformPivotWorld, q);
-      transformMoved = true;
     } else {
+      if (!transformDragPlane) return;
+      setRaycasterFromEvent(e);
+      const planeHit = new THREE.Vector3();
+      if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) return;
       if (!transformPlaneStart) return;
       const delta = planeHit.clone().sub(transformPlaneStart);
       if (delta.lengthSq() <= 1e-12) return;
@@ -11894,8 +12395,15 @@
       updateAddGrowPreviewFromEvent(e);
       return;
     }
-    const obj = pickAtom(e);
-    setHover(obj);
+    const atomObj = pickAtom(e);
+    if (atomObj) {
+      setHover(atomObj);
+      setBondHover(null);
+      return;
+    }
+    const bondHit = pickBondHit(e);
+    setHover(null);
+    setBondHover(bondHit ? bondHit.object : null);
   });
 
   canvasEl.addEventListener('pointerdown', (e) => {
@@ -11978,15 +12486,30 @@
         return;
       }
       if (editTool === EDIT_TOOL.TRANSFORM) {
+        transformPendingBackgroundClear = false;
         const hit = pickAtomHit(e);
-        if (!hit || !hit.object || !hit.object.userData) {
-          beginQuaternionViewRotate(e);
-          setHintMessage('Transform tool: click an atom, then drag.');
+        if (hit && hit.object && hit.object.userData) {
+          __editClickIdx = hit.object.userData.index | 0;
+          if (beginTransformDragFromHit(e, hit)) {
+            e.preventDefault();
+          }
           return;
         }
-        __editClickIdx = hit.object.userData.index | 0;
-        if (beginTransformDragFromHit(e, hit)) {
+        const bondHit = pickBondHit(e);
+        if (bondHit && beginTransformDragFromBondHit(e, bondHit)) {
           e.preventDefault();
+          return;
+        }
+        if (!e.shiftKey && getActiveTransformSelectionIndices().length) {
+          transformPendingBackgroundClear = true;
+        }
+        beginQuaternionViewRotate(e);
+        if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
+          setHintMessage('Rotate fragment: click a bond, then drag.');
+        } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+          setHintMessage('Rotate bond: click a bond, then drag.');
+        } else {
+          setHintMessage('Transform tool: click an atom or bond, then drag.');
         }
         return;
       }
@@ -12031,6 +12554,11 @@
       if (transformActive) {
         finalizeTransformDrag();
       } else {
+        if (editTool === EDIT_TOOL.TRANSFORM && transformPendingBackgroundClear && !__editMoved) {
+          clearTransformSelection();
+          setHintMessage('Transform selection cleared.');
+        }
+        transformPendingBackgroundClear = false;
         const wasDragging = dragActive;
         if (wasDragging) {
           const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
@@ -12119,6 +12647,7 @@
   });
   canvasEl.addEventListener('pointercancel', (e) => {
     if (currentMode === MODES.DISPLAY) endQuaternionViewRotate(e);
+    transformPendingBackgroundClear = false;
     if (addFusePreviewState) {
       addFusePreviewState.rotating = false;
       addFusePreviewState.moved = false;
@@ -16313,6 +16842,8 @@
     updateSidePanel();
     updatePostRebuildUI(vol, compMode);
     updateEmptyStateVisibility();
+    updateSelectedHalos();
+    updateTransformBondSelectionHalos();
   }
 
   /**
