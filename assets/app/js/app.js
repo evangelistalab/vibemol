@@ -6191,6 +6191,12 @@
   const editFragmentQuickEl = document.getElementById('editFragmentQuick');
   const editFragmentAttachPolicyEl = document.getElementById('editFragmentAttachPolicy');
   const editFragmentCurrentEl = document.getElementById('editFragmentCurrent');
+  const editCleanupAutoEl = document.getElementById('editCleanupAuto');
+  const editCleanupBondLengthEl = document.getElementById('editCleanupBondLength');
+  const editCleanupOverlapEl = document.getElementById('editCleanupOverlap');
+  const editCleanupStrengthEl = document.getElementById('editCleanupStrength');
+  const editCleanupStrengthValueEl = document.getElementById('editCleanupStrengthValue');
+  const editCleanupApplyBtn = document.getElementById('editCleanupApplyBtn');
   const editMoleculeSearchEl = document.getElementById('editMoleculeSearch');
   const editMoleculeSuggestionsEl = document.getElementById('editMoleculeSuggestions');
   const editMoleculeQuickEl = document.getElementById('editMoleculeQuick');
@@ -7325,6 +7331,10 @@
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
   let editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
+  let editAutoCleanupEnabled = true;
+  let editCleanupBondLengthEnabled = true;
+  let editCleanupOverlapEnabled = true;
+  let editCleanupStrength = 0.6;
   let editAddFragmentId = (getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT) && getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT).id) || ((getCatalogEntries(CATALOG_KIND.FRAGMENT)[0] && getCatalogEntries(CATALOG_KIND.FRAGMENT)[0].id) || 'methyl');
   let editAddMoleculeId = (getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE) && getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE).id) || ((getCatalogEntries(CATALOG_KIND.MOLECULE)[0] && getCatalogEntries(CATALOG_KIND.MOLECULE)[0].id) || 'benzene');
   let editTransformScope = EDIT_TRANSFORM_SCOPE.AUTO;
@@ -7721,7 +7731,7 @@
     } else if (!Array.isArray(record.vol.fragmentOps)) {
       record.vol.fragmentOps = [];
     }
-    rehydrateBuilderStateForVolume(record.vol);
+    pruneBuilderOperationsForVolume(record.vol);
     if (grid && hasVolumetricGrid(record.vol)) {
       record.vol.origin = [
         Number(grid.origin && grid.origin[0]) || 0,
@@ -8040,6 +8050,32 @@
     if (policy === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H) return 'Replace H';
     if (policy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) return 'Fuse ring';
     return 'Auto';
+  }
+
+  /**
+   * Clamp cleanup strength to a stable 0..1 range.
+   * @param {*} value
+   * @returns {number}
+   */
+  function normalizeEditCleanupStrength(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0.6;
+    return Math.max(0, Math.min(1, Math.round(n * 10) / 10));
+  }
+
+  /**
+   * Refresh the cleanup strength readout in the fragment add pane.
+   */
+  function updateEditCleanupUiState() {
+    if (editCleanupAutoEl) editCleanupAutoEl.checked = !!editAutoCleanupEnabled;
+    if (editCleanupBondLengthEl) editCleanupBondLengthEl.checked = !!editCleanupBondLengthEnabled;
+    if (editCleanupOverlapEl) editCleanupOverlapEl.checked = !!editCleanupOverlapEnabled;
+    if (editCleanupStrengthEl && document.activeElement !== editCleanupStrengthEl) {
+      editCleanupStrengthEl.value = normalizeEditCleanupStrength(editCleanupStrength).toFixed(1);
+    }
+    if (editCleanupStrengthValueEl) {
+      editCleanupStrengthValueEl.textContent = normalizeEditCleanupStrength(editCleanupStrength).toFixed(1);
+    }
   }
 
   /**
@@ -8414,6 +8450,85 @@
       vol.atoms[idx].y = coords[1];
       vol.atoms[idx].z = coords[2];
     }
+  }
+
+  /**
+   * Shift newly inserted atoms outward along the attach axis to reduce
+   * severe overlaps without distorting host atoms or fragment dihedral.
+   * @param {*} vol
+   * @param {number[]} newIndices
+   * @param {Set<number>} oldAtomIndexSet
+   * @param {THREE.Vector3} attachDir
+   * @param {number} strength
+   * @returns {number}
+   */
+  function cleanupInsertedFragmentOverlapRelief(vol, newIndices, oldAtomIndexSet, attachDir, strength) {
+    if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(newIndices) || !(oldAtomIndexSet instanceof Set)) return 0;
+    const axis = (attachDir && attachDir.isVector3) ? attachDir.clone() : new THREE.Vector3(0, 0, 1);
+    if (axis.lengthSq() < 1e-10) return 0;
+    axis.normalize();
+    const amount = normalizeEditCleanupStrength(strength);
+    if (amount <= 1e-6) return 0;
+    let maxDelta = 0;
+    for (const newIdxRaw of newIndices) {
+      const newIdx = Number(newIdxRaw) | 0;
+      const newAtom = vol.atoms[newIdx];
+      if (!newAtom) continue;
+      const newPos = atomUnitsToAng(vol, newAtom);
+      const newRadius = getCovalentRadiusAngstrom(newAtom.Z | 0);
+      for (const oldIdx of oldAtomIndexSet) {
+        const oldAtom = vol.atoms[oldIdx];
+        if (!oldAtom) continue;
+        const oldPos = atomUnitsToAng(vol, oldAtom);
+        const oldRadius = getCovalentRadiusAngstrom(oldAtom.Z | 0);
+        const threshold = Math.max(0.45, 0.72 * (newRadius + oldRadius));
+        const distance = newPos.distanceTo(oldPos);
+        if (!(distance < threshold)) continue;
+        maxDelta = Math.max(maxDelta, threshold - distance);
+      }
+    }
+    const delta = Math.min(0.45, maxDelta * amount);
+    if (!(delta > 1e-6)) return 0;
+    for (const idx of newIndices) {
+      if (!vol.atoms[idx]) continue;
+      const pos = atomUnitsToAng(vol, vol.atoms[idx]).addScaledVector(axis, delta);
+      const coords = worldToAtomUnits(vol, pos);
+      vol.atoms[idx].x = coords[0];
+      vol.atoms[idx].y = coords[1];
+      vol.atoms[idx].z = coords[2];
+    }
+    return delta;
+  }
+
+  /**
+   * Apply the configured lightweight fragment cleanup pass.
+   * @param {*} vol
+   * @param {number} anchorIndex
+   * @param {number[]} newIndices
+   * @param {number} connectionGlobalIndex
+   * @param {number} targetLengthAngstrom
+   * @param {Set<number>} oldAtomIndexSet
+   * @param {THREE.Vector3} attachDir
+   * @param {{force?:boolean}=} options
+   * @returns {{bondLengthApplied:boolean,overlapShift:number}}
+   */
+  function applyLocalFragmentCleanup(vol, anchorIndex, newIndices, connectionGlobalIndex, targetLengthAngstrom, oldAtomIndexSet, attachDir, options = {}) {
+    const result = { bondLengthApplied: false, overlapShift: 0 };
+    if (!options.force && !editAutoCleanupEnabled) return result;
+    if (editCleanupBondLengthEnabled) {
+      cleanupInsertedFragmentBondLength(vol, anchorIndex, newIndices, connectionGlobalIndex, targetLengthAngstrom);
+      result.bondLengthApplied = true;
+    }
+    if (editCleanupOverlapEnabled) {
+      result.overlapShift = cleanupInsertedFragmentOverlapRelief(
+        vol,
+        newIndices,
+        oldAtomIndexSet,
+        attachDir,
+        editCleanupStrength
+      );
+    }
+    return result;
   }
 
   /**
@@ -9769,6 +9884,7 @@
     if (editFragmentAttachPolicyEl && document.activeElement !== editFragmentAttachPolicyEl) {
       editFragmentAttachPolicyEl.value = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
     }
+    updateEditCleanupUiState();
 
     const angleLabel = addGrowDetectedAngleDeg > 0 ? `${addGrowDetectedAngleDeg.toFixed(1)}°` : 'auto';
     const atomInfo = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
@@ -9791,10 +9907,17 @@
         const attachModes = Array.isArray(fragment.attachModes) ? fragment.attachModes : [];
         const policy = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
         const fuseEligible = attachModes.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING);
+        let cleanupLabel = 'cleanup off';
+        if (editAutoCleanupEnabled) {
+          const cleanupParts = [];
+          if (editCleanupBondLengthEnabled) cleanupParts.push('bond');
+          if (editCleanupOverlapEnabled) cleanupParts.push('relief');
+          cleanupLabel = cleanupParts.length ? `cleanup ${cleanupParts.join('+')}` : 'cleanup manual only';
+        }
         const modeSuffix = policy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING
           ? (fuseEligible ? 'bond click • drag spin • click confirm' : 'fuse ring unavailable')
           : `bond ${editAddBondOrder} • angle ${angleLabel}`;
-        editFragmentCurrentEl.textContent = `Adding fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(policy)} • ${modeSuffix}`;
+        editFragmentCurrentEl.textContent = `Adding fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(policy)} • ${modeSuffix} • ${cleanupLabel}`;
       } else {
         editFragmentCurrentEl.textContent = 'No fragment selected';
       }
@@ -10195,6 +10318,37 @@
         }
       });
     }
+    if (editCleanupAutoEl) {
+      editCleanupAutoEl.addEventListener('change', () => {
+        editAutoCleanupEnabled = !!editCleanupAutoEl.checked;
+        updateEditToolboxUi({ syncSearch: false });
+      });
+    }
+    if (editCleanupBondLengthEl) {
+      editCleanupBondLengthEl.addEventListener('change', () => {
+        editCleanupBondLengthEnabled = !!editCleanupBondLengthEl.checked;
+        updateEditToolboxUi({ syncSearch: false });
+      });
+    }
+    if (editCleanupOverlapEl) {
+      editCleanupOverlapEl.addEventListener('change', () => {
+        editCleanupOverlapEnabled = !!editCleanupOverlapEl.checked;
+        updateEditToolboxUi({ syncSearch: false });
+      });
+    }
+    if (editCleanupStrengthEl) {
+      editCleanupStrengthEl.addEventListener('input', () => {
+        editCleanupStrength = normalizeEditCleanupStrength(editCleanupStrengthEl.value);
+        updateEditCleanupUiState();
+      });
+      editCleanupStrengthEl.addEventListener('change', () => {
+        editCleanupStrength = normalizeEditCleanupStrength(editCleanupStrengthEl.value);
+        updateEditCleanupUiState();
+      });
+    }
+    if (editCleanupApplyBtn) {
+      editCleanupApplyBtn.onclick = () => { void applyCleanupToLatestFragmentOperation(); };
+    }
     if (editMoleculeSearchEl) {
       const commit = () => {
         const molecule = resolveCatalogQuery(editMoleculeSearchEl.value, CATALOG_KIND.MOLECULE);
@@ -10239,6 +10393,7 @@
         }
       });
     }
+    updateEditCleanupUiState();
     setEditAddBondOrder(editAddBondOrder, { announce: false });
     setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
     updateEditToolboxUi();
@@ -10854,6 +11009,101 @@
   }
 
   /**
+   * Reapply local cleanup to the most recent live non-fused fragment insertion.
+   * @returns {boolean}
+   */
+  function applyCleanupToLatestFragmentOperation() {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) {
+      setHintMessage('No editable structure is available for cleanup.');
+      return false;
+    }
+    if (!Array.isArray(vol.fragmentOps) || vol.fragmentOps.length === 0) {
+      setHintMessage('No fragment insertion is available for cleanup.');
+      return false;
+    }
+    ensureVolumeAtomIds(vol);
+    const atomIndexById = new Map();
+    for (let i = 0; i < vol.atoms.length; i++) {
+      if (!vol.atoms[i]) continue;
+      atomIndexById.set(String(ensureAtomId(vol.atoms[i])), i);
+    }
+    let targetOp = null;
+    let targetFragment = null;
+    let targetIndices = null;
+    let targetAnchor = -1;
+    for (let k = vol.fragmentOps.length - 1; k >= 0; k--) {
+      const op = normalizeBuilderOperationEntry(vol.fragmentOps[k]);
+      if (!op || op.entryKind !== CATALOG_KIND.FRAGMENT || op.attachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) continue;
+      const fragment = buildCatalogInstance(op.entryId, CATALOG_KIND.FRAGMENT);
+      if (!fragment) continue;
+      const conn = getFragmentConnectionAtom(fragment);
+      if (!conn) continue;
+      const addedIndices = Array.isArray(op.addedAtomIds)
+        ? op.addedAtomIds.map((id) => atomIndexById.get(String(id || ''))).filter((idx) => Number.isInteger(idx))
+        : [];
+      if (addedIndices.length !== fragment.atoms.length) continue;
+      const anchor = atomIndexById.get(String(op.anchorAtomIdPost || ''));
+      if (!Number.isInteger(anchor)) continue;
+      targetOp = op;
+      targetFragment = fragment;
+      targetIndices = addedIndices;
+      targetAnchor = anchor;
+      break;
+    }
+    if (!targetOp || !targetFragment || !Array.isArray(targetIndices)) {
+      setHintMessage('No live append/replace-H fragment is available for cleanup.');
+      return false;
+    }
+    const conn = getFragmentConnectionAtom(targetFragment);
+    const connectionGlobalIndex = targetIndices[conn.index];
+    if (!Number.isInteger(connectionGlobalIndex) || !vol.atoms[connectionGlobalIndex]) {
+      setHintMessage('Cleanup could not resolve the fragment connection atom.');
+      return false;
+    }
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+    const oldAtomIndexSet = new Set(Array.from({ length: vol.atoms.length }, (_, i) => i).filter((i) => !targetIndices.includes(i)));
+    const axisArray = Array.isArray(targetOp.transform && targetOp.transform.direction) ? targetOp.transform.direction : null;
+    let attachDir = axisArray && axisArray.length >= 3
+      ? new THREE.Vector3(Number(axisArray[0]) || 0, Number(axisArray[1]) || 0, Number(axisArray[2]) || 0)
+      : atomUnitsToAng(vol, vol.atoms[connectionGlobalIndex]).sub(atomUnitsToAng(vol, vol.atoms[targetAnchor]));
+    if (attachDir.lengthSq() < 1e-10) attachDir.set(0, 0, 1);
+    const targetLength = Number(targetOp.transform && targetOp.transform.bondLengthAngstrom);
+    const bondLength = Number.isFinite(targetLength)
+      ? targetLength
+      : getEditAddBondLength(vol.atoms[targetAnchor].Z | 0, vol.atoms[connectionGlobalIndex].Z | 0, targetOp.resultingBondOrder || 1);
+    const cleanupResult = applyLocalFragmentCleanup(
+      vol,
+      targetAnchor,
+      targetIndices,
+      connectionGlobalIndex,
+      bondLength,
+      oldAtomIndexSet,
+      attachDir,
+      { force: true }
+    );
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+    if (atomsSnapshotsEqual(beforeAtoms, afterAtoms)) {
+      setHintMessage('Cleanup made no positional changes.');
+      return false;
+    }
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Cleanup fragment: ${targetFragment.name}`, {
+      beforeFragmentOps,
+      afterFragmentOps,
+    });
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    const parts = [];
+    if (cleanupResult.bondLengthApplied) parts.push('bond length');
+    if (cleanupResult.overlapShift > 1e-6) parts.push(`overlap relief ${cleanupResult.overlapShift.toFixed(2)} Å`);
+    setHintMessage(`Applied cleanup to ${targetFragment.name}${parts.length ? ` • ${parts.join(' • ')}` : ''}.`);
+    return true;
+  }
+
+  /**
    * Insert the selected fragment onto one anchor atom.
    * Default attachment policy is replace-H-first, else append.
    * @param {number} anchorIndex
@@ -10953,7 +11203,15 @@
     }
     applyMethylAttachmentGeometry(vol, fragment, newIndices, anchorPos, connectionWorld, attachDir);
     applyHydroxylAttachmentGeometry(vol, fragment, newIndices, anchorPos, connectionWorld);
-    cleanupInsertedFragmentBondLength(vol, anchor, newIndices, newIndices[conn.index], bondLength);
+    const cleanupResult = applyLocalFragmentCleanup(
+      vol,
+      anchor,
+      newIndices,
+      newIndices[conn.index],
+      bondLength,
+      oldAtomIndexSet,
+      attachDir
+    );
     vol.natoms = vol.atoms.length;
 
     const warnings = evaluateBuilderPlacementWarnings(vol, newIndices, oldAtomIndexSet, [anchor]);
@@ -10992,11 +11250,13 @@
     clearHover();
     rebuildScene({ preserveView: true });
     updateSidePanel();
-    const warningParts = [];
-    if (warnings.overlapCount > 0) warningParts.push(`${warnings.overlapCount} severe overlap${warnings.overlapCount === 1 ? '' : 's'}`);
-    if (warnings.valencePressureCount > 0) warningParts.push(`${warnings.valencePressureCount} valence warning${warnings.valencePressureCount === 1 ? '' : 's'}`);
-    const warningSuffix = warningParts.length ? ` • Warning: ${warningParts.join(' • ')}` : '';
-    setHintMessage(`Added fragment ${fragment.name} (${fragment.formula}) via ${attachMode === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H ? 'Replace H' : 'Append'}${warningSuffix}`);
+    const detailParts = [];
+    if (warnings.overlapCount > 0) detailParts.push(`${warnings.overlapCount} severe overlap${warnings.overlapCount === 1 ? '' : 's'}`);
+    if (warnings.valencePressureCount > 0) detailParts.push(`${warnings.valencePressureCount} valence warning${warnings.valencePressureCount === 1 ? '' : 's'}`);
+    if (cleanupResult.bondLengthApplied) detailParts.push('cleanup: bond length');
+    if (cleanupResult.overlapShift > 1e-6) detailParts.push(`cleanup: overlap +${cleanupResult.overlapShift.toFixed(2)} Å`);
+    const detailSuffix = detailParts.length ? ` • ${detailParts.join(' • ')}` : '';
+    setHintMessage(`Added fragment ${fragment.name} (${fragment.formula}) via ${attachMode === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H ? 'Replace H' : 'Append'}${detailSuffix}`);
     return true;
   }
 
@@ -11013,11 +11273,17 @@
     const idx = atomIndex | 0;
     if (idx < 0 || idx >= vol.atoms.length) return false;
     const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
     const removed = vol.atoms[idx];
     vol.atoms.splice(idx, 1);
     vol.natoms = vol.atoms.length;
+    const builderOpsChanged = pruneBuilderOperationsForVolume(vol);
     const afterAtoms = cloneAtomsSnapshot(vol);
-    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Delete ${getElementSymbol(removed.Z | 0)}`);
+    const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Delete ${getElementSymbol(removed.Z | 0)}`, {
+      beforeFragmentOps,
+      afterFragmentOps,
+    });
     editSel = editSel
       .filter((i) => i !== idx)
       .map((i) => (i > idx ? i - 1 : i));
@@ -11026,7 +11292,9 @@
     rebuildScene({ preserveView: true });
     updateSelectedHalos();
     updateEditSelectionVisuals();
-    setHintMessage(`Deleted ${getElementName(removed.Z | 0)} (${getElementSymbol(removed.Z | 0)}) • Total atoms: ${vol.atoms.length}`);
+    syncBuilderExtensionFromVolumes();
+    const suffix = builderOpsChanged ? ' • Builder metadata updated' : '';
+    setHintMessage(`Deleted ${getElementName(removed.Z | 0)} (${getElementSymbol(removed.Z | 0)}) • Total atoms: ${vol.atoms.length}${suffix}`);
     return true;
   }
 
@@ -12446,6 +12714,57 @@
   }
 
   /**
+   * Remove builder operations that no longer reference live atoms.
+   * This keeps fragment-scope transform fallback stable after deletes/reloads.
+   * @param {*} vol
+   * @returns {boolean}
+   */
+  function pruneBuilderOperationsForVolume(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return false;
+    ensureVolumeAtomIds(vol);
+    if (!Array.isArray(vol.fragmentOps)) {
+      vol.fragmentOps = [];
+      return false;
+    }
+    const liveIds = new Set(vol.atoms.map((atom) => String(ensureAtomId(atom))));
+    const nextOps = [];
+    let changed = false;
+    for (const raw of vol.fragmentOps) {
+      const op = normalizeBuilderOperationEntry(raw);
+      if (!op) {
+        changed = true;
+        continue;
+      }
+      const nextAddedAtomIds = Array.isArray(op.addedAtomIds)
+        ? op.addedAtomIds.map((id) => String(id || '').trim()).filter((id) => liveIds.has(id))
+        : [];
+      if (nextAddedAtomIds.length === 0) {
+        changed = true;
+        continue;
+      }
+      if (nextAddedAtomIds.length !== (Array.isArray(op.addedAtomIds) ? op.addedAtomIds.length : 0)) changed = true;
+      op.addedAtomIds = nextAddedAtomIds;
+      if (Array.isArray(op.hostBondAtomIds)) {
+        const nextHostBondAtomIds = op.hostBondAtomIds
+          .map((id) => String(id || '').trim())
+          .filter((id) => liveIds.has(id))
+          .slice(0, 2);
+        if (nextHostBondAtomIds.length !== op.hostBondAtomIds.length) changed = true;
+        if (nextHostBondAtomIds.length >= 2) op.hostBondAtomIds = nextHostBondAtomIds;
+        else delete op.hostBondAtomIds;
+      }
+      if (op.anchorAtomIdPost && !liveIds.has(String(op.anchorAtomIdPost))) {
+        delete op.anchorAtomIdPost;
+        changed = true;
+      }
+      nextOps.push(op);
+    }
+    if (changed || nextOps.length !== vol.fragmentOps.length) vol.fragmentOps = nextOps;
+    rehydrateBuilderStateForVolume(vol);
+    return changed || nextOps.length !== vol.fragmentOps.length;
+  }
+
+  /**
    * Read fragment operation map from preset extensions.
    * @returns {Record<string, any[]>}
    */
@@ -12469,7 +12788,7 @@
       const stored = key && Array.isArray(map[key]) ? map[key] : null;
       if (stored) record.vol.fragmentOps = cloneJsonLike(stored) || [];
       else if (!Array.isArray(record.vol.fragmentOps)) record.vol.fragmentOps = [];
-      rehydrateBuilderStateForVolume(record.vol);
+      pruneBuilderOperationsForVolume(record.vol);
     }
   }
 
@@ -12778,6 +13097,22 @@
     moleculeBondOpacity = Math.max(0.05, Math.min(1, asFiniteNumber(value, moleculeBondOpacity)));
     applyMoleculeStyleUiState();
   });
+  registerPresetSetting('builder.cleanup.auto', () => !!editAutoCleanupEnabled, (value) => {
+    editAutoCleanupEnabled = asBoolean(value);
+    updateEditCleanupUiState();
+  }, { section: 'builder', type: 'boolean', description: 'Apply local fragment cleanup automatically after append/replace-H.' });
+  registerPresetSetting('builder.cleanup.bondLength', () => !!editCleanupBondLengthEnabled, (value) => {
+    editCleanupBondLengthEnabled = asBoolean(value);
+    updateEditCleanupUiState();
+  }, { section: 'builder', type: 'boolean', description: 'Reassert the anchor bond length during local fragment cleanup.' });
+  registerPresetSetting('builder.cleanup.overlapRelief', () => !!editCleanupOverlapEnabled, (value) => {
+    editCleanupOverlapEnabled = asBoolean(value);
+    updateEditCleanupUiState();
+  }, { section: 'builder', type: 'boolean', description: 'Shift newly added fragment atoms outward to reduce severe overlaps.' });
+  registerPresetSetting('builder.cleanup.strength', () => normalizeEditCleanupStrength(editCleanupStrength), (value) => {
+    editCleanupStrength = normalizeEditCleanupStrength(value);
+    updateEditCleanupUiState();
+  }, { section: 'builder', type: 'number', description: 'Strength of the lightweight local fragment cleanup pass.' });
   registerPresetSetting('render.mode', () => renderMode, (value) => {
     const next = value === 'cloud' ? 'cloud' : 'surface';
     renderMode = next;
@@ -14603,7 +14938,7 @@
       } else if (!Array.isArray(vol.fragmentOps)) {
         vol.fragmentOps = [];
       }
-      rehydrateBuilderStateForVolume(vol);
+      pruneBuilderOperationsForVolume(vol);
     }
     volumes.push(meta);
     // Keep the user/default iso when importing files; only fall back to isoHint

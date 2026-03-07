@@ -1059,6 +1059,70 @@
       margin-bottom: 5px;
     }
 
+    #editCleanupPane {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--vm-color-legacy-border-strong);
+    }
+
+    #editCleanupPane .title {
+      display: block;
+      font-size: 12px;
+      color: #a9bdd6;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    #editCleanupControls {
+      display: grid;
+      gap: 6px;
+    }
+
+    #editCleanupControls label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      color: #c8d8ec;
+      font-size: 12px;
+    }
+
+    #editCleanupControls input[type="checkbox"] {
+      margin: 0;
+    }
+
+    #editCleanupStrengthRow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    #editCleanupStrength {
+      flex: 1 1 auto;
+      accent-color: var(--vm-color-accent-primary);
+    }
+
+    #editCleanupStrengthValue {
+      min-width: 30px;
+      text-align: right;
+      font-size: 12px;
+      color: #c8d8ec;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #editCleanupApplyBtn {
+      appearance: none;
+      border: 1px solid var(--vm-color-legacy-border-soft);
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: var(--vm-color-legacy-dark-surface);
+      color: var(--vm-color-legacy-text-on-dark);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     #editAddSearch,
     #editTransformScope,
     #editTransformMode {
@@ -2715,6 +2779,20 @@
         </select>
         <div id="editFragmentQuick"></div>
         <div id="editFragmentCurrent"></div>
+        <div id="editCleanupPane">
+          <span class="title">Cleanup</span>
+          <div id="editCleanupControls">
+            <label><input id="editCleanupAuto" type="checkbox" checked /> Auto cleanup after attach</label>
+            <label><input id="editCleanupBondLength" type="checkbox" checked /> Reassert anchor bond length</label>
+            <label><input id="editCleanupOverlap" type="checkbox" checked /> Outward overlap relief</label>
+            <div id="editCleanupStrengthRow">
+              <label for="editCleanupStrength" style="margin:0; min-width:52px;">Strength</label>
+              <input id="editCleanupStrength" type="range" min="0" max="1" step="0.1" value="0.6" />
+              <span id="editCleanupStrengthValue">0.6</span>
+            </div>
+            <button id="editCleanupApplyBtn" type="button" title="Reapply cleanup to the latest attached fragment">Apply to last fragment</button>
+          </div>
+        </div>
       </div>
       <div id="editAddMoleculePane">
         <label for="editMoleculeSearch">Molecule to add (name, id, or formula)</label>
