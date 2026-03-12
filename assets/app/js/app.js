@@ -6234,6 +6234,7 @@
   const editTransformPaneEl = document.getElementById('editTransformPane');
   const editTransformScopeEl = document.getElementById('editTransformScope');
   const editTransformModeEl = document.getElementById('editTransformMode');
+  const editTransformCleanupAutoEl = document.getElementById('editTransformCleanupAuto');
   const editTransformCurrentEl = document.getElementById('editTransformCurrent');
   const editAddModeAtomBtn = document.getElementById('editAddModeAtomBtn');
   const editAddModeFragmentBtn = document.getElementById('editAddModeFragmentBtn');
@@ -7410,6 +7411,7 @@
   let editAddMoleculeId = (getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE) && getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE).id) || ((getCatalogEntries(CATALOG_KIND.MOLECULE)[0] && getCatalogEntries(CATALOG_KIND.MOLECULE)[0].id) || 'benzene');
   let editTransformScope = EDIT_TRANSFORM_SCOPE.AUTO;
   let editTransformMode = EDIT_TRANSFORM_MODE.MOVE;
+  let editTransformAutoCleanupEnabled = true;
   const EDIT_ANGLE_SNAP_OPTIONS = Object.freeze([60, 90, 109.5, 120, 180]);
   let addGrowDetectedAngleDeg = 0;
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
@@ -8581,6 +8583,137 @@
   }
 
   /**
+   * Reassert moved-to-fixed bond lengths after one transform without moving
+   * atoms outside the transformed selection.
+   * @param {*} vol
+   * @param {number[]} movedIndices
+   * @returns {number}
+   */
+  function cleanupTransformedBondLengths(vol, movedIndices) {
+    if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(movedIndices) || !movedIndices.length) return 0;
+    const moved = Array.from(new Set(movedIndices.filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < vol.atoms.length)));
+    if (!moved.length) return 0;
+    const movedSet = new Set(moved);
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = collectBondCandidates(records);
+    const adjustments = new Map();
+    let maxShift = 0;
+    for (const edge of edges) {
+      if (!edge) continue;
+      const i = edge.i | 0;
+      const j = edge.j | 0;
+      const iMoved = movedSet.has(i);
+      const jMoved = movedSet.has(j);
+      if (iMoved === jMoved) continue;
+      const movedIdx = iMoved ? i : j;
+      const fixedIdx = iMoved ? j : i;
+      const movedAtom = vol.atoms[movedIdx];
+      const fixedAtom = vol.atoms[fixedIdx];
+      if (!movedAtom || !fixedAtom) continue;
+      const fixedPos = atomUnitsToAng(vol, fixedAtom);
+      const movedPos = atomUnitsToAng(vol, movedAtom);
+      let axis = movedPos.clone().sub(fixedPos);
+      let currentLength = axis.length();
+      if (currentLength <= 1e-10) {
+        axis.set(0, 0, 1);
+        currentLength = 1e-10;
+      } else {
+        axis.normalize();
+      }
+      const targetLength = getEditAddBondLength(fixedAtom.Z | 0, movedAtom.Z | 0, 1);
+      const delta = targetLength - currentLength;
+      if (Math.abs(delta) <= 1e-5) continue;
+      const prev = adjustments.get(movedIdx) || { vec: new THREE.Vector3(), count: 0 };
+      prev.vec.addScaledVector(axis, delta);
+      prev.count += 1;
+      adjustments.set(movedIdx, prev);
+    }
+    for (const [idx, entry] of adjustments.entries()) {
+      const atom = vol.atoms[idx];
+      if (!atom || !entry || !entry.vec) continue;
+      const shift = entry.vec.clone().multiplyScalar(1 / Math.max(1, entry.count));
+      maxShift = Math.max(maxShift, shift.length());
+      const pos = atomUnitsToAng(vol, atom).add(shift);
+      const coords = worldToAtomUnits(vol, pos);
+      atom.x = coords[0];
+      atom.y = coords[1];
+      atom.z = coords[2];
+    }
+    return maxShift;
+  }
+
+  /**
+   * Push moved atoms outward from severe overlaps with fixed atoms after a transform.
+   * @param {*} vol
+   * @param {number[]} movedIndices
+   * @param {number=} strength
+   * @returns {number}
+   */
+  function cleanupTransformedOverlapRelief(vol, movedIndices, strength = editCleanupStrength) {
+    if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(movedIndices) || !movedIndices.length) return 0;
+    const moved = Array.from(new Set(movedIndices.filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < vol.atoms.length)));
+    if (!moved.length) return 0;
+    const movedSet = new Set(moved);
+    const amount = normalizeEditCleanupStrength(strength);
+    if (amount <= 1e-6) return 0;
+    let maxShift = 0;
+    for (const idx of moved) {
+      const atom = vol.atoms[idx];
+      if (!atom) continue;
+      const pos = atomUnitsToAng(vol, atom);
+      const rI = getCovalentRadiusAngstrom(atom.Z | 0);
+      const shift = new THREE.Vector3();
+      let contributors = 0;
+      for (let j = 0; j < vol.atoms.length; j++) {
+        if (movedSet.has(j)) continue;
+        const other = vol.atoms[j];
+        if (!other) continue;
+        const otherPos = atomUnitsToAng(vol, other);
+        const rJ = getCovalentRadiusAngstrom(other.Z | 0);
+        const threshold = Math.max(0.45, 0.72 * (rI + rJ));
+        const delta = pos.clone().sub(otherPos);
+        let dist = delta.length();
+        if (dist <= 1e-10) {
+          delta.set(0, 0, 1);
+          dist = 1e-10;
+        }
+        if (dist >= threshold) continue;
+        delta.normalize();
+        shift.addScaledVector(delta, threshold - dist);
+        contributors += 1;
+      }
+      if (!contributors) continue;
+      const applied = shift.multiplyScalar(amount / contributors);
+      maxShift = Math.max(maxShift, applied.length());
+      const nextPos = pos.clone().add(applied);
+      const coords = worldToAtomUnits(vol, nextPos);
+      atom.x = coords[0];
+      atom.y = coords[1];
+      atom.z = coords[2];
+    }
+    return maxShift;
+  }
+
+  /**
+   * Apply a lightweight cleanup pass to moved atoms after a transform gesture.
+   * Only moved atoms are adjusted.
+   * @param {*} vol
+   * @param {number[]} movedIndices
+   * @returns {{bondLengthShift:number,overlapShift:number}}
+   */
+  function applyLocalTransformCleanup(vol, movedIndices) {
+    const result = { bondLengthShift: 0, overlapShift: 0 };
+    if (!editTransformAutoCleanupEnabled) return result;
+    if (editCleanupBondLengthEnabled) {
+      result.bondLengthShift = cleanupTransformedBondLengths(vol, movedIndices);
+    }
+    if (editCleanupOverlapEnabled) {
+      result.overlapShift = cleanupTransformedOverlapRelief(vol, movedIndices, editCleanupStrength);
+    }
+    return result;
+  }
+
+  /**
    * Apply the configured lightweight fragment cleanup pass.
    * @param {*} vol
    * @param {number} anchorIndex
@@ -9020,6 +9153,7 @@
     for (let k = vol.fragmentOps.length - 1; k >= 0; k--) {
       const op = vol.fragmentOps[k];
       if (!op) continue;
+      if (String(op.entryKind || '').trim().toLowerCase() !== CATALOG_KIND.FRAGMENT) continue;
       const filtered = [];
       const set = new Set();
       const candidateIndices = Array.isArray(op.addedAtomIds) && op.addedAtomIds.length
@@ -9075,6 +9209,21 @@
   }
 
   /**
+   * Read one atom's builder entry kind, if present.
+   * @param {*} vol
+   * @param {number} anchorIndex
+   * @returns {'fragment'|'molecule'|''}
+   */
+  function getBuilderEntryKindAtAtom(vol, anchorIndex) {
+    if (!vol || !Array.isArray(vol.atoms)) return '';
+    const anchor = anchorIndex | 0;
+    if (anchor < 0 || anchor >= vol.atoms.length) return '';
+    const kind = String(vol.atoms[anchor] && vol.atoms[anchor].builderEntryKind || '').trim().toLowerCase();
+    if (kind === CATALOG_KIND.FRAGMENT || kind === CATALOG_KIND.MOLECULE) return kind;
+    return '';
+  }
+
+  /**
    * Resolve transform target atoms from current scope and one clicked anchor atom.
    * @param {*} vol
    * @param {number} anchorIndex
@@ -9086,19 +9235,23 @@
     const anchor = anchorIndex | 0;
     if (anchor < 0 || anchor >= n) return null;
     const scope = normalizeEditTransformScope(editTransformScope);
+    const builderEntryKind = getBuilderEntryKindAtAtom(vol, anchor);
     if (scope === EDIT_TRANSFORM_SCOPE.ALL) {
       return {
         indices: Array.from({ length: n }, (_, i) => i),
         kind: 'all',
       };
     }
-    const fragmentIndices = getBuilderGroupIndices(vol, anchor);
+    const builderGroupIndices = getBuilderGroupIndices(vol, anchor);
+    const fragmentIndices = builderEntryKind === CATALOG_KIND.FRAGMENT ? builderGroupIndices : [];
+    const moleculeIndices = builderEntryKind === CATALOG_KIND.MOLECULE
+      ? builderGroupIndices
+      : getMoleculeComponentIndices(vol, anchor);
     const fallbackFragmentIndices = fragmentIndices.length ? fragmentIndices : getFragmentOperationIndices(vol, anchor);
     if (scope === EDIT_TRANSFORM_SCOPE.FRAGMENT) {
       if (!fallbackFragmentIndices.length) return null;
       return { indices: fallbackFragmentIndices, kind: 'fragment' };
     }
-    const moleculeIndices = getMoleculeComponentIndices(vol, anchor);
     if (scope === EDIT_TRANSFORM_SCOPE.MOLECULE) {
       return { indices: moleculeIndices, kind: 'molecule' };
     }
@@ -10206,6 +10359,7 @@
     if (editAddMoleculePaneEl) editAddMoleculePaneEl.classList.toggle('active', isMoleculeAddMode);
     if (editTransformScopeEl && document.activeElement !== editTransformScopeEl) editTransformScopeEl.value = normalizeEditTransformScope(editTransformScope);
     if (editTransformModeEl && document.activeElement !== editTransformModeEl) editTransformModeEl.value = normalizeEditTransformMode(editTransformMode);
+    if (editTransformCleanupAutoEl) editTransformCleanupAutoEl.checked = !!editTransformAutoCleanupEnabled;
     if (editFragmentAttachPolicyEl && document.activeElement !== editFragmentAttachPolicyEl) {
       editFragmentAttachPolicyEl.value = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
     }
@@ -10263,15 +10417,21 @@
     if (editTransformCurrentEl) {
       const scopeLabel = getEditTransformScopeLabel(editTransformScope);
       const modeLabel = getEditTransformModeLabel(editTransformMode);
+      const selectionSummary = describeTransformSelection(
+        (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null,
+        getActiveTransformSelectionIndices(),
+        transformSelectionKind,
+        getCurrentTransformSelectionContext()
+      ).status;
       let usage = 'Click to select • drag current selection to transform';
       if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
         usage = 'Click a bond to select one side • drag the current selection to spin about that bond axis • Shift-click adds another target';
       } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
         usage = 'Click a bond to select one side • drag the current selection to rotate around the opposite atom • Shift-click adds another target';
       } else {
-        usage = 'Click an atom or bond to select • drag current selection to move • Click empty space to clear • Shift-click adds another target';
+        usage = 'Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag current selection to move • Click empty space to clear • Shift-click adds another target';
       }
-      editTransformCurrentEl.textContent = `Scope: ${scopeLabel} • Action: ${modeLabel} • ${usage}`;
+      editTransformCurrentEl.textContent = `Scope: ${scopeLabel} • Action: ${modeLabel} • Cleanup ${editTransformAutoCleanupEnabled ? 'on' : 'off'} • ${selectionSummary} • ${usage}`;
     }
 
     if (syncSearch && isAtomAddMode && editAddSearchEl && document.activeElement !== editAddSearchEl) {
@@ -10372,7 +10532,7 @@
       } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
         setHintMessage(`Edit tool: ${modeLabel} • Scope ${getEditTransformScopeLabel(editTransformScope)} • Click a bond to select one side • Drag the selection to rotate around the opposite atom • Shift-click adds another target`);
       } else {
-        setHintMessage(`Edit tool: Transform (${modeLabel}) • Scope ${getEditTransformScopeLabel(editTransformScope)} • Click an atom or bond to select • Drag the selection to move • Click empty space to clear • Shift-click adds another target`);
+        setHintMessage(`Edit tool: Transform (${modeLabel}) • Scope ${getEditTransformScopeLabel(editTransformScope)} • Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the selection to move • Click empty space to clear • Shift-click adds another target`);
       }
     } else if (editTool === EDIT_TOOL.DELETE) {
       setHintMessage('Edit tool: Delete • Click an atom or press Backspace/Delete on hovered atom');
@@ -10738,8 +10898,17 @@
           } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
             setHintMessage(`Transform action: ${modeLabel} • Click a bond to select one side, then drag to rotate around the opposite atom • Shift-click adds another target.`);
           } else {
-            setHintMessage(`Transform action: ${modeLabel} • Click to select • Drag current selection to move • Click empty space to clear • Shift-click adds another target.`);
+            setHintMessage(`Transform action: ${modeLabel} • Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the current selection to move • Click empty space to clear • Shift-click adds another target.`);
           }
+        }
+      });
+    }
+    if (editTransformCleanupAutoEl) {
+      editTransformCleanupAutoEl.addEventListener('change', () => {
+        editTransformAutoCleanupEnabled = !!editTransformCleanupAutoEl.checked;
+        updateEditToolboxUi({ syncSearch: false });
+        if (editMode && editTool === EDIT_TOOL.TRANSFORM) {
+          setHintMessage(`Transform cleanup: ${editTransformAutoCleanupEnabled ? 'ON' : 'OFF'}.`);
         }
       });
     }
@@ -11148,6 +11317,7 @@
     updateSelectedHalos();
     updateTransformBondSelectionHalos();
     updateTransformSelectionGuides();
+    updateEditToolboxUi({ syncSearch: false });
   }
 
   /**
@@ -11161,6 +11331,7 @@
     updateSelectedHalos();
     updateTransformBondSelectionHalos();
     updateTransformSelectionGuides();
+    updateEditToolboxUi({ syncSearch: false });
   }
 
   /**
@@ -12365,16 +12536,150 @@
   }
 
   /**
-   * Describe one transform selection action for hints.
+   * Count connected components inside one selected atom subset.
+   * @param {*} vol
+   * @param {number[]} indices
+   * @returns {number}
+   */
+  function countSelectedAtomComponents(vol, indices) {
+    if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(indices) || !indices.length) return 0;
+    const selected = Array.from(new Set(indices.filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < vol.atoms.length)));
+    if (!selected.length) return 0;
+    const selectedSet = new Set(selected);
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = collectBondCandidates(records);
+    const adjacency = Array.from({ length: vol.atoms.length }, () => []);
+    for (const edge of edges) {
+      if (!edge) continue;
+      const i = edge.i | 0;
+      const j = edge.j | 0;
+      if (!selectedSet.has(i) || !selectedSet.has(j)) continue;
+      adjacency[i].push(j);
+      adjacency[j].push(i);
+    }
+    const seen = new Set();
+    let components = 0;
+    for (const start of selected) {
+      if (seen.has(start)) continue;
+      components += 1;
+      const stack = [start];
+      seen.add(start);
+      while (stack.length) {
+        const cur = stack.pop();
+        const neighbors = adjacency[cur] || [];
+        for (const next of neighbors) {
+          if (seen.has(next)) continue;
+          seen.add(next);
+          stack.push(next);
+        }
+      }
+    }
+    return components;
+  }
+
+  /**
+   * Describe the current transform selection in user-facing terms.
+   * @param {*} vol
+   * @param {number[]} indices
    * @param {'fragment'|'molecule'|'all'} kind
-   * @param {number} count
-   * @param {boolean=} additive
+   * @param {{type:'bond',selectedAtomIndex:number,anchorAtomIndex:number,bondIndices:[number,number]}|null=} context
+   * @returns {{status:string,hint:string}}
+   */
+  function describeTransformSelection(vol, indices, kind, context = null) {
+    const selected = Array.from(new Set((Array.isArray(indices) ? indices : []).filter((idx) => Number.isInteger(idx) && idx >= 0)));
+    if (!vol || !Array.isArray(vol.atoms) || !selected.length) {
+      return {
+        status: 'Selection: none',
+        hint: 'Transform selection cleared.',
+      };
+    }
+    const atoms = selected.map((idx) => vol.atoms[idx]).filter(Boolean);
+    const entryIds = new Set(atoms.map((atom) => String(atom.builderEntryId || '').trim().toLowerCase()).filter(Boolean));
+    const entryKinds = new Set(atoms.map((atom) => String(atom.builderEntryKind || '').trim().toLowerCase()).filter(Boolean));
+    const groupIds = new Set(atoms.map((atom) => String(atom.builderGroupId || '').trim()).filter(Boolean));
+    const selectedCount = selected.length;
+    const components = countSelectedAtomComponents(vol, selected);
+    const soleGroupId = groupIds.size === 1 ? groupIds.values().next().value : '';
+    const isWholeGroup = soleGroupId
+      ? selectedCount === vol.atoms.filter((atom) => String(atom && atom.builderGroupId || '').trim() === soleGroupId).length
+      : false;
+
+    const getNamedLabel = () => {
+      if (entryIds.size !== 1 || entryKinds.size !== 1) return null;
+      const entryId = entryIds.values().next().value;
+      const entryKind = entryKinds.values().next().value;
+      if (entryKind !== CATALOG_KIND.FRAGMENT && entryKind !== CATALOG_KIND.MOLECULE) return null;
+      const entry = getCatalogEntryById(entryId, entryKind);
+      const entryName = entry && entry.name ? entry.name : entryId;
+      if (entryKind === CATALOG_KIND.FRAGMENT && isWholeGroup) {
+        return {
+          status: `Selection: fragment ${entryName} • ${selectedCount} atoms`,
+          hint: `Selected fragment: ${entryName} • ${selectedCount} atoms`,
+        };
+      }
+      if (entryKind === CATALOG_KIND.MOLECULE && isWholeGroup) {
+        return {
+          status: `Selection: molecule ${entryName} • ${selectedCount} atoms`,
+          hint: `Selected molecule: ${entryName} • ${selectedCount} atoms`,
+        };
+      }
+      if (entryKind === CATALOG_KIND.MOLECULE && context && context.type === 'bond') {
+        return {
+          status: `Selection: bond side of ${entryName} • ${selectedCount} atoms`,
+          hint: `Selected bond side: ${entryName} • ${selectedCount} atoms`,
+        };
+      }
+      if (entryKind === CATALOG_KIND.FRAGMENT) {
+        return {
+          status: `Selection: fragment-derived set ${entryName} • ${selectedCount} atoms`,
+          hint: `Selected fragment-derived set: ${entryName} • ${selectedCount} atoms`,
+        };
+      }
+      return null;
+    };
+
+    const named = getNamedLabel();
+    if (named) return named;
+
+    if (kind === 'all') {
+      return {
+        status: `Selection: all atoms • ${selectedCount} atoms`,
+        hint: `Selected all atoms • ${selectedCount} atoms`,
+      };
+    }
+    if (components > 1) {
+      return {
+        status: `Selection: mixed set • ${components} targets • ${selectedCount} atoms`,
+        hint: `Selected mixed set • ${components} targets • ${selectedCount} atoms`,
+      };
+    }
+    if (kind === 'molecule') {
+      return {
+        status: `Selection: molecule component • ${selectedCount} atoms`,
+        hint: `Selected molecule component • ${selectedCount} atoms`,
+      };
+    }
+    if (context && context.type === 'bond') {
+      return {
+        status: `Selection: bond side • ${selectedCount} atoms`,
+        hint: `Selected bond side • ${selectedCount} atoms`,
+      };
+    }
+    return {
+      status: `Selection: fragment • ${selectedCount} atoms`,
+      hint: `Selected fragment • ${selectedCount} atoms`,
+    };
+  }
+
+  /**
+   * Convert one selection description into an additive-selection hint.
+   * @param {{hint:string}} description
    * @returns {string}
    */
-  function getTransformSelectionHint(kind, count, additive = false) {
-    const label = kind === 'all' ? 'all atoms' : (kind === 'molecule' ? 'molecule' : 'fragment');
-    const verb = additive ? 'Added to selection' : 'Selected';
-    return `${verb}: ${label} • ${count} atom${count === 1 ? '' : 's'}`;
+  function getAdditiveTransformSelectionHint(description) {
+    const hint = description && typeof description.hint === 'string' ? description.hint : 'Selected target';
+    if (hint.startsWith('Selected ')) return `Added to selection: ${hint.slice('Selected '.length)}`;
+    return `Added to selection: ${hint}`;
   }
 
   /**
@@ -12492,11 +12797,25 @@
       rebuildScene({ preserveView: true });
       return;
     }
+    const cleanupIndices = transformTargetIndices.filter((idx) => {
+      const atom = vol.atoms[idx];
+      const before = beforeSnapshot && Array.isArray(beforeSnapshot.atoms) ? beforeSnapshot.atoms[idx] : null;
+      if (!atom || !before) return false;
+      const dx = Number(atom.x || 0) - Number(before.x || 0);
+      const dy = Number(atom.y || 0) - Number(before.y || 0);
+      const dz = Number(atom.z || 0) - Number(before.z || 0);
+      return (dx * dx + dy * dy + dz * dz) > 1e-10;
+    });
+    const cleanupResult = applyLocalTransformCleanup(vol, cleanupIndices);
     const afterSnapshot = cloneCoordinateSnapshot(vol);
     pushCoordinateSnapshotHistoryEntry(record, beforeSnapshot, afterSnapshot, `${modeLabel} ${targetLabel}`);
     rebuildScene({ preserveView: true });
     updateSidePanel();
-    setHintMessage(`${modeLabel} ${targetLabel}.`);
+    const cleanupParts = [];
+    if (cleanupResult.bondLengthShift > 1e-4) cleanupParts.push(`bond length ${cleanupResult.bondLengthShift.toFixed(2)} Å`);
+    if (cleanupResult.overlapShift > 1e-4) cleanupParts.push(`overlap relief ${cleanupResult.overlapShift.toFixed(2)} Å`);
+    const cleanupSuffix = cleanupParts.length ? ` • Cleanup: ${cleanupParts.join(' • ')}` : '';
+    setHintMessage(`${modeLabel} ${targetLabel}.${cleanupSuffix}`);
   }
 
   let __lastBondUpdate = 0;
@@ -12810,10 +13129,22 @@
                 ? 'all'
                 : (transformSelectionKind === pending.target.kind ? pending.target.kind : 'fragment');
               setTransformSelection(merged, mergedKind, null);
-              setHintMessage(getTransformSelectionHint(mergedKind, merged.length, true));
+              const description = describeTransformSelection(
+                (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null,
+                merged,
+                mergedKind,
+                null
+              );
+              setHintMessage(getAdditiveTransformSelectionHint(description));
             } else {
               setTransformSelection(pendingIndices, pending.target.kind, pending.context || null);
-              setHintMessage(getTransformSelectionHint(pending.target.kind, pendingIndices.length, false));
+              const description = describeTransformSelection(
+                (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null,
+                pendingIndices,
+                pending.target.kind,
+                pending.context || null
+              );
+              setHintMessage(description.hint);
             }
           }
         } else if (editTool === EDIT_TOOL.TRANSFORM && transformPendingBackgroundClear && !__editMoved) {
@@ -14010,6 +14341,10 @@
     editCleanupStrength = normalizeEditCleanupStrength(value);
     updateEditCleanupUiState();
   }, { section: 'builder', type: 'number', description: 'Strength of the lightweight local fragment cleanup pass.' });
+  registerPresetSetting('builder.transformCleanup.auto', () => !!editTransformAutoCleanupEnabled, (value) => {
+    editTransformAutoCleanupEnabled = asBoolean(value);
+    updateEditToolboxUi({ syncSearch: false });
+  }, { section: 'builder', type: 'boolean', description: 'Apply lightweight cleanup automatically after transform gestures.' });
   registerPresetSetting('render.mode', () => renderMode, (value) => {
     const next = value === 'cloud' ? 'cloud' : 'surface';
     renderMode = next;
