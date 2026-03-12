@@ -737,6 +737,7 @@
   let volumes = []; // {name, vol}
   let currentIndex = -1;
   let meshes = []; // active meshes (pos/neg)
+  let hoverSurfaceMesh = null;
   let atomGroup = new THREE.Group();
   let bondGroup = new THREE.Group();
   let cloudGroup = new THREE.Group();
@@ -1055,6 +1056,8 @@
    */
   function clearSceneMeshes() {
     const state = createDisposeState();
+    hideSurfaceHoverLabel();
+    setSurfaceHover(null);
     for (const m of meshes) {
       try { contentGroup.remove(m); } catch { }
       disposeDeep(m, state);
@@ -6294,6 +6297,32 @@
   const modeMeasureBtn = document.getElementById('modeMeasureBtn');
   const modeEditBtn = document.getElementById('modeEditBtn');
   const brandEmojiEl = document.getElementById('brandEmoji');
+  const surfaceHoverLabelEl = (() => {
+    const el = document.createElement('div');
+    el.id = 'surfaceHoverLabel';
+    el.setAttribute('aria-hidden', 'true');
+    Object.assign(el.style, {
+      position: 'fixed',
+      left: '-9999px',
+      top: '-9999px',
+      maxWidth: '240px',
+      padding: '7px 10px',
+      borderRadius: '10px',
+      background: 'rgba(16, 22, 34, 0.92)',
+      color: '#edf4ff',
+      border: '1px solid rgba(134, 158, 194, 0.28)',
+      boxShadow: '0 8px 22px rgba(4, 8, 16, 0.28)',
+      font: '600 12px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+      letterSpacing: '0.01em',
+      pointerEvents: 'none',
+      zIndex: '1700',
+      whiteSpace: 'nowrap',
+      opacity: '0',
+      transition: 'opacity 80ms ease',
+    });
+    document.body.appendChild(el);
+    return el;
+  })();
   let toolbarTooltipAnchorEl = null;
   let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
 
@@ -11457,6 +11486,7 @@
    * @param {PointerEvent} e
    */
   function beginQuaternionViewRotate(e) {
+    hideSurfaceHoverLabel();
     viewRotateActive = true;
     viewRotatePointerId = Number.isInteger(e.pointerId) ? e.pointerId : null;
     viewRotateLastClientX = Number(e.clientX) || 0;
@@ -12217,11 +12247,55 @@
   }
 
   /**
+   * Update hover highlighting for the currently pointed surface mesh.
+   * @param {THREE.Mesh|null} mesh
+   */
+  function setSurfaceHover(mesh) {
+    if (hoverSurfaceMesh === mesh) return;
+    if (hoverSurfaceMesh && hoverSurfaceMesh.userData && hoverSurfaceMesh.userData.surfaceHoverMaterialState) {
+      const prevMat = hoverSurfaceMesh.material;
+      const prevState = hoverSurfaceMesh.userData.surfaceHoverMaterialState;
+      if (prevMat && prevState) {
+        if (prevMat.color && prevState.color) prevMat.color.copy(prevState.color);
+        if (prevMat.emissive && prevState.emissive) prevMat.emissive.copy(prevState.emissive);
+        if ('emissiveIntensity' in prevMat && Number.isFinite(prevState.emissiveIntensity)) prevMat.emissiveIntensity = prevState.emissiveIntensity;
+        if ('opacity' in prevMat && Number.isFinite(prevState.opacity)) prevMat.opacity = prevState.opacity;
+        prevMat.needsUpdate = true;
+      }
+      hoverSurfaceMesh.userData.surfaceHoverMaterialState = null;
+    }
+    hoverSurfaceMesh = null;
+    if (!mesh || !mesh.isMesh || !mesh.geometry) return;
+    const mat = mesh.material;
+    if (!mat) return;
+    if (!mesh.userData) mesh.userData = {};
+    mesh.userData.surfaceHoverMaterialState = {
+      color: mat.color && mat.color.clone ? mat.color.clone() : null,
+      emissive: mat.emissive && mat.emissive.clone ? mat.emissive.clone() : null,
+      emissiveIntensity: Number.isFinite(mat.emissiveIntensity) ? mat.emissiveIntensity : null,
+      opacity: Number.isFinite(mat.opacity) ? mat.opacity : null,
+    };
+    const hoverCol = new THREE.Color(0x00a5ff);
+    if (mat.color) mat.color.lerp(hoverCol, 0.28);
+    if (mat.emissive) {
+      mat.emissive.copy(hoverCol);
+      if ('emissiveIntensity' in mat) mat.emissiveIntensity = Math.max(Number(mat.emissiveIntensity) || 0, 0.95);
+    } else if (mat.color) {
+      mat.color.lerp(hoverCol, 0.18);
+    }
+    if ('opacity' in mat && Number.isFinite(mat.opacity)) mat.opacity = Math.min(1, Math.max(mat.opacity, 0.88));
+    mat.needsUpdate = true;
+    hoverSurfaceMesh = mesh;
+  }
+
+  /**
    * Clear hover highlight state.
    */
   function clearHover() {
     setHover(null);
     setBondHover(null);
+    setSurfaceHover(null);
+    hideSurfaceHoverLabel();
   }
 
   // (axis lock uses simple axis component of the view-plane delta)
@@ -13287,9 +13361,12 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return;
     }
-    // Allow hover highlighting in Edit and Measurement modes
-    const allowHover = (currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
-    if (!allowHover) return;
+    // Allow hover highlighting in Display, Edit, and Measurement modes.
+    const allowHover = (currentMode === MODES.DISPLAY || currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
+    if (!allowHover) {
+      hideSurfaceHoverLabel();
+      return;
+    }
     // Track movement to distinguish click vs drag in measurement mode
     if ((currentMode === MODES.MEASURE || (currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD)) && __editDownPt) {
       const dx = e.clientX - __editDownPt.x, dy = e.clientY - __editDownPt.y;
@@ -13351,15 +13428,48 @@
       updateAddGrowPreviewFromEvent(e);
       return;
     }
-    const atomObj = pickAtom(e);
-    if (atomObj) {
-      setHover(atomObj);
+    if (currentMode === MODES.EDIT || currentMode === MODES.MEASURE) {
+      const atomObj = pickAtom(e);
+      if (atomObj) {
+        setHover(atomObj);
+        setBondHover(null);
+        setSurfaceHover(null);
+        hideSurfaceHoverLabel();
+        return;
+      }
+      const bondHit = pickBondHit(e);
+      setHover(null);
+      setBondHover(bondHit ? bondHit.object : null);
+      if (bondHit) {
+        setSurfaceHover(null);
+        hideSurfaceHoverLabel();
+        return;
+      }
+    } else {
+      setHover(null);
       setBondHover(null);
+    }
+    const surfaceHit = pickSurfaceHit(e);
+    if (!surfaceHit || !surfaceHit.object) {
+      setSurfaceHover(null);
+      hideSurfaceHoverLabel();
       return;
     }
-    const bondHit = pickBondHit(e);
-    setHover(null);
-    setBondHover(bondHit ? bondHit.object : null);
+    setSurfaceHover(surfaceHit.object);
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const compMode = getComponentMode(vol);
+    const iso = Math.max(0, parseFloat(isoInput.value || '0.02') || 0);
+    const metric = getSurfaceMetric(record, vol, compMode, iso, surfaceHit.object);
+    if (!metric) {
+      hideSurfaceHoverLabel();
+      return;
+    }
+    showSurfaceHoverLabel(e, `Inside surface: ${metric.display}`);
+  });
+
+  canvasEl.addEventListener('pointerleave', () => {
+    clearHover();
   });
 
   canvasEl.addEventListener('pointerdown', (e) => {
@@ -17698,6 +17808,220 @@
   }
 
   /**
+   * Hide the floating surface hover metric label.
+   */
+  function hideSurfaceHoverLabel() {
+    if (!surfaceHoverLabelEl) return;
+    surfaceHoverLabelEl.style.opacity = '0';
+    surfaceHoverLabelEl.style.left = '-9999px';
+    surfaceHoverLabelEl.style.top = '-9999px';
+    surfaceHoverLabelEl.textContent = '';
+    surfaceHoverLabelEl.setAttribute('aria-hidden', 'true');
+  }
+
+  /**
+   * Position and show the floating surface hover metric label.
+   * @param {PointerEvent} e
+   * @param {string} text
+   */
+  function showSurfaceHoverLabel(e, text) {
+    if (!surfaceHoverLabelEl || !text) return;
+    surfaceHoverLabelEl.textContent = text;
+    surfaceHoverLabelEl.setAttribute('aria-hidden', 'false');
+    surfaceHoverLabelEl.style.opacity = '1';
+    surfaceHoverLabelEl.style.left = '-9999px';
+    surfaceHoverLabelEl.style.top = '-9999px';
+    const pad = 14;
+    const tipW = Math.max(120, surfaceHoverLabelEl.offsetWidth || 0);
+    const tipH = Math.max(22, surfaceHoverLabelEl.offsetHeight || 0);
+    let left = (Number(e.clientX) || 0) + 16;
+    let top = (Number(e.clientY) || 0) + 18;
+    const maxLeft = window.innerWidth - tipW - pad;
+    const maxTop = window.innerHeight - tipH - pad;
+    if (left > maxLeft) left = Math.max(pad, (Number(e.clientX) || 0) - tipW - 16);
+    if (top > maxTop) top = Math.max(pad, (Number(e.clientY) || 0) - tipH - 18);
+    surfaceHoverLabelEl.style.left = `${Math.round(left)}px`;
+    surfaceHoverLabelEl.style.top = `${Math.round(top)}px`;
+  }
+
+  /**
+   * Build one stable cache key for a hovered surface metric.
+   * @param {*} record
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} iso
+   * @param {*} mesh
+   * @returns {string}
+   */
+  function buildSurfaceMetricCacheKey(record, vol, compMode, iso, mesh) {
+    const meta = mesh && mesh.userData ? mesh.userData : {};
+    const side = meta.sign || meta.which || (meta.totalBloch ? 'totalBloch' : 'surface');
+    if (vol && vol.kind === 'molden') {
+      const grid = getMoldenGridSettings(record);
+      return [
+        compMode,
+        side,
+        iso.toFixed(6),
+        Number.isInteger(record && record.moldenMoIndex) ? record.moldenMoIndex : 0,
+        grid.stepAng.toFixed(2),
+        grid.paddingAng.toFixed(1),
+        buildMoldenAtomSignature(vol),
+      ].join('|');
+    }
+    return [compMode, side, iso.toFixed(6)].join('|');
+  }
+
+  /**
+   * Compute one voxel-cell volume in bohr^3.
+   * @param {*} vol
+   * @returns {number}
+   */
+  function getVoxelCellVolumeBohr3(vol) {
+    const ax = Array.isArray(vol && vol.axes && vol.axes[0]) ? vol.axes[0] : [1, 0, 0];
+    const ay = Array.isArray(vol && vol.axes && vol.axes[1]) ? vol.axes[1] : [0, 1, 0];
+    const az = Array.isArray(vol && vol.axes && vol.axes[2]) ? vol.axes[2] : [0, 0, 1];
+    const a = new THREE.Vector3(Number(ax[0]) || 0, Number(ax[1]) || 0, Number(ax[2]) || 0);
+    const b = new THREE.Vector3(Number(ay[0]) || 0, Number(ay[1]) || 0, Number(ay[2]) || 0);
+    const c = new THREE.Vector3(Number(az[0]) || 0, Number(az[1]) || 0, Number(az[2]) || 0);
+    return Math.abs(a.dot(new THREE.Vector3().crossVectors(b, c)));
+  }
+
+  /**
+   * Heuristic: identify scalar fields that are already density-like.
+   * @param {*} vol
+   * @returns {boolean}
+   */
+  function isLikelyDensityLikeScalarField(vol) {
+    const text = `${vol && vol.title ? vol.title : ''} ${vol && vol.comment ? vol.comment : ''}`.toLowerCase();
+    if (/(electron\s*density|spin\s*density|charge\s*density|density\b|rho\b|laplacian|elf\b|lol\b)/.test(text)) return true;
+    const data = vol && vol.data;
+    if (!(data && typeof data.length === 'number' && data.length > 0)) return false;
+    let min = Infinity;
+    for (let i = 0; i < data.length; i++) {
+      const v = Number(data[i]) || 0;
+      if (v < min) min = v;
+      if (min < -1e-6) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Compute the inside-surface electron-like metric for one hovered mesh.
+   * Cached per record/component/iso/surface-side and computed lazily.
+   * @param {*} record
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} iso
+   * @param {*} mesh
+   * @returns {{display:string,electrons:number,fraction:number,total:number,assumed:boolean}|null}
+   */
+  function getSurfaceMetric(record, vol, compMode, iso, mesh) {
+    if (!record || !vol || !mesh || !hasVolumetricGrid(vol)) return null;
+    const cacheKey = buildSurfaceMetricCacheKey(record, vol, compMode, iso, mesh);
+    if (!(record.surfaceMetricCache instanceof Map)) record.surfaceMetricCache = new Map();
+    if (record.surfaceMetricCache.has(cacheKey)) return record.surfaceMetricCache.get(cacheKey) || null;
+
+    const meta = mesh.userData || {};
+    const voxelVolume = getVoxelCellVolumeBohr3(vol);
+    if (!(Number.isFinite(voxelVolume) && voxelVolume > 0)) return null;
+
+    let insideWeight = 0;
+    let totalWeight = 0;
+    let electronCount = 0;
+    let assumedOccupation = false;
+    const len = (Array.isArray(vol.nxyz) ? ((vol.nxyz[0] | 0) * (vol.nxyz[1] | 0) * (vol.nxyz[2] | 0)) : 0) || 0;
+    if (len <= 0) return null;
+
+    if (vol.isTwoComponent) {
+      const aRe = vol.alphaRe;
+      const aIm = vol.alphaIm;
+      const bRe = vol.betaRe;
+      const bIm = vol.betaIm;
+      if (!(aRe && aIm && bRe && bIm)) return null;
+      const useTotal = !!meta.totalBloch || compMode === 'totalBloch';
+      const useAlpha = meta.which === 'alpha' || compMode === 'alphaPhase';
+      const useBeta = meta.which === 'beta' || compMode === 'betaPhase';
+      const useRaw = !useTotal && !useAlpha && !useBeta;
+      if (useRaw) {
+        const densityLike = isLikelyDensityLikeScalarField(vol);
+        for (let t = 0; t < len; t++) {
+          const q = Number(vol.data[t]) || 0;
+          const weight = densityLike ? Math.max(0, q) : (q * q);
+          totalWeight += weight;
+          const inside = meta.sign === 'neg' ? (q <= -iso) : (q >= iso);
+          if (inside) insideWeight += weight;
+        }
+        if (densityLike) electronCount = insideWeight * voxelVolume;
+        else {
+          assumedOccupation = true;
+          electronCount = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
+        }
+      } else {
+        for (let t = 0; t < len; t++) {
+          const alphaDensity = (aRe[t] * aRe[t]) + (aIm[t] * aIm[t]);
+          const betaDensity = (bRe[t] * bRe[t]) + (bIm[t] * bIm[t]);
+          const density = useTotal ? (alphaDensity + betaDensity) : (useAlpha ? alphaDensity : betaDensity);
+          totalWeight += density;
+          if (Math.sqrt(Math.max(0, density)) >= iso) insideWeight += density;
+        }
+        assumedOccupation = true;
+        electronCount = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
+      }
+    } else {
+      const densityLike = isLikelyDensityLikeScalarField(vol);
+      const occupancy = (vol.kind === 'molden'
+        && vol.molden
+        && Array.isArray(vol.molden.mos)
+        && Number.isInteger(record.moldenMoIndex)
+        && vol.molden.mos[record.moldenMoIndex]
+        && Number.isFinite(vol.molden.mos[record.moldenMoIndex].occupation))
+        ? Math.max(0, Number(vol.molden.mos[record.moldenMoIndex].occupation) || 0)
+        : null;
+      for (let t = 0; t < len; t++) {
+        const q = Number(vol.data[t]) || 0;
+        const weight = densityLike ? Math.max(0, q) : (q * q);
+        totalWeight += weight;
+        const inside = meta.sign === 'neg' ? (q <= -iso) : (q >= iso);
+        if (inside) insideWeight += weight;
+      }
+      if (densityLike) {
+        electronCount = insideWeight * voxelVolume;
+      } else {
+        const occ = Number.isFinite(occupancy) ? occupancy : 1;
+        assumedOccupation = !Number.isFinite(occupancy);
+        electronCount = totalWeight > 1e-16 ? (occ * insideWeight / totalWeight) : 0;
+      }
+    }
+
+    const totalElectrons = (vol.isTwoComponent || !isLikelyDensityLikeScalarField(vol))
+      ? (totalWeight > 1e-16 ? (electronCount / (insideWeight > 1e-16 ? (insideWeight / totalWeight) : 1)) : 0)
+      : (totalWeight * voxelVolume);
+    const fraction = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
+    const prefix = assumedOccupation ? '~' : '';
+    const display = `${prefix}${electronCount.toFixed(3)} e • ${(fraction * 100).toFixed(1)}%`;
+    const result = { display, electrons: electronCount, fraction, total: totalElectrons, assumed: assumedOccupation };
+    record.surfaceMetricCache.set(cacheKey, result);
+    return result;
+  }
+
+  /**
+   * Raycast the currently rendered surface meshes.
+   * @param {PointerEvent} e
+   * @returns {{object:THREE.Mesh,point:THREE.Vector3|null,distance:number}|null}
+   */
+  function pickSurfaceHit(e) {
+    if (!Array.isArray(meshes) || meshes.length === 0) return null;
+    setRaycasterFromEvent(e);
+    const hits = raycaster.intersectObjects(meshes, false);
+    if (!hits.length || !hits[0].object) return null;
+    return {
+      object: hits[0].object,
+      point: hits[0].point ? hits[0].point.clone() : null,
+      distance: Number(hits[0].distance) || 0,
+    };
+  }
+
+  /**
    * Render isosurfaces for two-component phase/Bloch visualization modes.
    * @param {*} vol
    * @param {string} compMode
@@ -17710,11 +18034,11 @@
       const re = which === 'alpha' ? vol.alphaRe : vol.betaRe;
       const im = which === 'alpha' ? vol.alphaIm : vol.betaIm;
       if (maxMagnitude(re, im) >= iso) {
-        const geom = make2CPhaseIsosurface(vol, which, iso);
-        const mat = createIsoMaterial2C(opacity);
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.userData = { phaseHue: true, which };
-        addSurfaceMesh(mesh);
+      const geom = make2CPhaseIsosurface(vol, which, iso);
+      const mat = createIsoMaterial2C(opacity);
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.userData = { phaseHue: true, which, surfaceMetricKind: 'phase' };
+      addSurfaceMesh(mesh);
       }
       return;
     }
@@ -17724,13 +18048,13 @@
       if (maxA >= iso) {
         const geomA = make2CPhaseIsosurface(vol, 'alpha', iso);
         const meshA = new THREE.Mesh(geomA, createIsoMaterial2C(opacity));
-        meshA.userData = { phaseHue: true, which: 'alpha' };
+        meshA.userData = { phaseHue: true, which: 'alpha', surfaceMetricKind: 'phase' };
         addSurfaceMesh(meshA);
       }
       if (maxB >= iso) {
         const geomB = make2CPhaseIsosurface(vol, 'beta', iso);
         const meshB = new THREE.Mesh(geomB, createIsoMaterial2C(opacity));
-        meshB.userData = { phaseHue: true, which: 'beta' };
+        meshB.userData = { phaseHue: true, which: 'beta', surfaceMetricKind: 'phase' };
         addSurfaceMesh(meshB);
       }
       return;
@@ -17740,7 +18064,7 @@
       const geom = make2CTotalColoredIsosurface(vol, iso);
       const mat = createIsoMaterial2C(opacity);
       const mesh = new THREE.Mesh(geom, mat);
-      mesh.userData = { phaseHue: true, totalBloch: true };
+      mesh.userData = { phaseHue: true, totalBloch: true, surfaceMetricKind: 'phase' };
       addSurfaceMesh(mesh);
     }
   }
@@ -17759,6 +18083,7 @@
       const geomP = makeIsosurface(vol, iso);
       const meshP = new THREE.Mesh(geomP, posMat);
       meshP.userData.sign = 'pos';
+      meshP.userData.surfaceMetricKind = 'scalar';
       addSurfaceMesh(meshP);
       if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count / 3) | 0);
     }
@@ -17766,6 +18091,7 @@
       const geomN = makeIsosurface(vol, -iso);
       const meshN = new THREE.Mesh(geomN, negMat);
       meshN.userData.sign = 'neg';
+      meshN.userData.surfaceMetricKind = 'scalar';
       addSurfaceMesh(meshN);
       if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
     }
