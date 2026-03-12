@@ -19,6 +19,11 @@
   const AUTO_ISO_MAX_SAMPLES = 650000;
   const AUTO_ISO_WORKER_THRESHOLD_SAMPLES = 250000;
   const AUTO_ISO_WORKER_TIMEOUT_MS = 15000;
+  const MOLDEN_GRID_PADDING_ANG = 3.0;
+  const MOLDEN_GRID_TARGET_STEP_ANG = 0.35;
+  const MOLDEN_GRID_MAX_AXIS = 84;
+  const MOLDEN_GRID_MIN_AXIS = 36;
+  const MOLDEN_GRID_MAX_TOTAL_POINTS = 360000;
   const DEFAULT_ISO_VALUE = 0.02;
   const HEADER_HAPPY_EMOJIS = Object.freeze(['🙂', '😊', '😄', '😃', '😁', '😎', '🤓', '😺', '🤠', '🫡', '😇', '😍', '🫡', '🥳']);
   /**
@@ -70,8 +75,8 @@
   const DEFAULT_POS_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.pos;
   const DEFAULT_NEG_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.neg;
 
-  const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ } = window.VibeMolParsers || {};
-  if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ].every(fn => typeof fn === 'function')) {
+  const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden } = window.VibeMolParsers || {};
+  if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolParsers is not loaded. Ensure assets/app/js/parsers.js is included before assets/app/js/app.js.');
   }
 
@@ -6218,6 +6223,13 @@
   const renderModeSel = document.getElementById('renderMode');
   const componentRow = document.getElementById('componentRow');
   const componentSelect = document.getElementById('componentSelect');
+  const moldenMoRow = document.getElementById('moldenMoRow');
+  const moldenMoSelect = document.getElementById('moldenMoSelect');
+  const moldenMoSummary = document.getElementById('moldenMoSummary');
+  const moldenGridRow = document.getElementById('moldenGridRow');
+  const moldenGridStepEl = document.getElementById('moldenGridStep');
+  const moldenGridPaddingEl = document.getElementById('moldenGridPadding');
+  const moldenGridSummary = document.getElementById('moldenGridSummary');
   const cloudTypeSel = document.getElementById('cloudType');
   const cloudStrideEl = document.getElementById('cloudStride');
   const cloudAlphaEl = document.getElementById('cloudAlpha');
@@ -6284,6 +6296,125 @@
   const brandEmojiEl = document.getElementById('brandEmoji');
   let toolbarTooltipAnchorEl = null;
   let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
+
+  /**
+   * Build one compact option label for a parsed Molden molecular orbital.
+   * @param {*} mo
+   * @param {number} index
+   * @returns {string}
+   */
+  function formatMoldenMoOptionLabel(mo, index) {
+    const parts = [`MO ${index + 1}`];
+    if (mo && typeof mo.symmetry === 'string' && mo.symmetry.trim()) parts.push(mo.symmetry.trim());
+    if (mo && Number.isFinite(mo.energy)) parts.push(`E=${mo.energy.toFixed(4)}`);
+    if (mo && Number.isFinite(mo.occupation)) parts.push(`occ=${mo.occupation.toFixed(2)}`);
+    return parts.join(' • ');
+  }
+
+  /**
+   * Build one short summary line for the selected Molden molecular orbital.
+   * @param {*} mo
+   * @param {number} moCount
+   * @param {number} basisCount
+   * @returns {string}
+   */
+  function formatMoldenMoSummary(mo, moCount, basisCount) {
+    if (!mo) return `${moCount} orbitals • ${basisCount} coefficients`;
+    const parts = [];
+    if (typeof mo.spin === 'string' && mo.spin.trim()) parts.push(`Spin ${mo.spin.trim()}`);
+    if (Number.isFinite(mo.energy)) parts.push(`E ${mo.energy.toFixed(6)}`);
+    if (Number.isFinite(mo.occupation)) parts.push(`Occ ${mo.occupation.toFixed(2)}`);
+    parts.push(`${basisCount} coefficients`);
+    return parts.join(' • ');
+  }
+
+  /**
+   * Clamp Molden grid spacing to the supported UI range.
+   * @param {*} value
+   * @returns {number}
+   */
+  function normalizeMoldenGridStepAng(value) {
+    return Math.max(0.12, Math.min(1.20, asFiniteNumber(value, MOLDEN_GRID_TARGET_STEP_ANG)));
+  }
+
+  /**
+   * Clamp Molden grid padding to the supported UI range.
+   * @param {*} value
+   * @returns {number}
+   */
+  function normalizeMoldenGridPaddingAng(value) {
+    return Math.max(0.5, Math.min(8.0, asFiniteNumber(value, MOLDEN_GRID_PADDING_ANG)));
+  }
+
+  /**
+   * Read one record's Molden grid settings with defaults.
+   * @param {*} record
+   * @returns {{stepAng:number,paddingAng:number}}
+   */
+  function getMoldenGridSettings(record) {
+    return {
+      stepAng: normalizeMoldenGridStepAng(record && record.moldenGridStepAng),
+      paddingAng: normalizeMoldenGridPaddingAng(record && record.moldenGridPaddingAng),
+    };
+  }
+
+  /**
+   * Build one compact summary of the active Molden orbital grid.
+   * @param {*} record
+   * @returns {string}
+   */
+  function formatMoldenGridSummary(record) {
+    const vol = record && record.vol;
+    if (!vol || vol.kind !== 'molden') return '';
+    let spec = null;
+    try {
+      spec = buildMoldenGridSpec(vol, getMoldenGridSettings(record));
+    } catch {
+      spec = null;
+    }
+    if (!spec || !Array.isArray(spec.nxyz)) return '';
+    const [nx, ny, nz] = spec.nxyz;
+    return `Grid ${nx}×${ny}×${nz} • step ${spec.stepAng.toFixed(2)} Å • ${(nx * ny * nz).toLocaleString()} points`;
+  }
+
+  /**
+   * Sync Molden MO controls for the active record.
+   * @param {*} record
+   */
+  function updateMoldenMoControls(record) {
+    if (!moldenMoRow || !moldenMoSelect || !moldenMoSummary || !moldenGridRow || !moldenGridStepEl || !moldenGridPaddingEl || !moldenGridSummary) return;
+    const vol = record && record.vol;
+    const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
+    if (!molden || !Array.isArray(molden.mos) || molden.mos.length === 0) {
+      moldenMoRow.style.display = 'none';
+      moldenGridRow.style.display = 'none';
+      moldenMoSelect.innerHTML = '';
+      moldenMoSummary.textContent = '';
+      moldenGridSummary.textContent = '';
+      return;
+    }
+    moldenMoRow.style.display = 'grid';
+    moldenGridRow.style.display = 'grid';
+    const moCount = molden.mos.length;
+    const basisCount = Number.isFinite(molden.basisCount) ? molden.basisCount : 0;
+    let selectedIndex = Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : 0;
+    if (selectedIndex < 0 || selectedIndex >= moCount) selectedIndex = 0;
+    record.moldenMoIndex = selectedIndex;
+    moldenMoSelect.innerHTML = '';
+    for (let i = 0; i < moCount; i++) {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = formatMoldenMoOptionLabel(molden.mos[i], i);
+      moldenMoSelect.appendChild(opt);
+    }
+    moldenMoSelect.value = String(selectedIndex);
+    moldenMoSelect.title = 'Select one molecular orbital parsed from the Molden file for surface/cloud rendering.';
+    moldenMoSummary.textContent = formatMoldenMoSummary(molden.mos[selectedIndex], moCount, basisCount);
+    const gridSettings = getMoldenGridSettings(record);
+    moldenGridStepEl.value = gridSettings.stepAng.toFixed(2);
+    moldenGridPaddingEl.value = gridSettings.paddingAng.toFixed(1);
+    moldenGridSummary.textContent = formatMoldenGridSummary(record);
+  }
 
   const triggerOpenFiles = () => fileInput.click();
   openBtn.onclick = triggerOpenFiles;
@@ -6414,6 +6545,326 @@
   }
 
   /**
+   * Reset Molden-generated grid fields so the record behaves like an atom-only structure.
+   * @param {*} vol
+   */
+  function clearMoldenGrid(vol) {
+    if (!vol || vol.kind !== 'molden') return;
+    vol.origin = [0, 0, 0];
+    vol.nxyz = [0, 0, 0];
+    vol.axes = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    vol.data = new Float32Array(0);
+    vol.idx = () => 0;
+  }
+
+  /**
+   * Build one compact atom-position signature for Molden grid caching.
+   * @param {*} vol
+   * @returns {string}
+   */
+  function buildMoldenAtomSignature(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return 'empty';
+    const scale = vol.units === 'angstrom' ? 1 : BOHR_TO_ANG;
+    return vol.atoms.map((atom) => {
+      const x = (Number(atom && atom.x) || 0) * scale;
+      const y = (Number(atom && atom.y) || 0) * scale;
+      const z = (Number(atom && atom.z) || 0) * scale;
+      return `${atom && atom.Z ? atom.Z : 0}:${x.toFixed(4)},${y.toFixed(4)},${z.toFixed(4)}`;
+    }).join('|');
+  }
+
+  /**
+   * Build one regular Cartesian grid around the active Molden geometry.
+   * Grid coordinates are stored in bohr to match existing scalar-field paths.
+   * @param {*} vol
+   * @returns {{origin:number[],axes:number[][],nxyz:number[],stepBohr:number,stepAng:number}}
+   */
+  function buildMoldenGridSpec(vol, settings = null) {
+    const atoms = Array.isArray(vol && vol.atoms) ? vol.atoms : [];
+    const gridSettings = settings || getMoldenGridSettings(null);
+    const paddingAng = normalizeMoldenGridPaddingAng(gridSettings.paddingAng);
+    const requestedStepAng = normalizeMoldenGridStepAng(gridSettings.stepAng);
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (const atom of atoms) {
+      const p = atomUnitsToAng(vol, atom);
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.z < minZ) minZ = p.z;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+      if (p.z > maxZ) maxZ = p.z;
+    }
+    if (!Number.isFinite(minX)) {
+      minX = minY = minZ = -paddingAng;
+      maxX = maxY = maxZ = paddingAng;
+    }
+    minX -= paddingAng;
+    minY -= paddingAng;
+    minZ -= paddingAng;
+    maxX += paddingAng;
+    maxY += paddingAng;
+    maxZ += paddingAng;
+
+    let stepAng = requestedStepAng;
+    let nx = Math.max(MOLDEN_GRID_MIN_AXIS, Math.min(MOLDEN_GRID_MAX_AXIS, Math.ceil((maxX - minX) / stepAng) + 1));
+    let ny = Math.max(MOLDEN_GRID_MIN_AXIS, Math.min(MOLDEN_GRID_MAX_AXIS, Math.ceil((maxY - minY) / stepAng) + 1));
+    let nz = Math.max(MOLDEN_GRID_MIN_AXIS, Math.min(MOLDEN_GRID_MAX_AXIS, Math.ceil((maxZ - minZ) / stepAng) + 1));
+    let total = nx * ny * nz;
+    if (total > MOLDEN_GRID_MAX_TOTAL_POINTS) {
+      const scale = Math.cbrt(total / MOLDEN_GRID_MAX_TOTAL_POINTS);
+      stepAng *= scale;
+      nx = Math.max(MOLDEN_GRID_MIN_AXIS, Math.min(MOLDEN_GRID_MAX_AXIS, Math.ceil((maxX - minX) / stepAng) + 1));
+      ny = Math.max(MOLDEN_GRID_MIN_AXIS, Math.min(MOLDEN_GRID_MAX_AXIS, Math.ceil((maxY - minY) / stepAng) + 1));
+      nz = Math.max(MOLDEN_GRID_MIN_AXIS, Math.min(MOLDEN_GRID_MAX_AXIS, Math.ceil((maxZ - minZ) / stepAng) + 1));
+    }
+    const stepBohr = stepAng * ANG_TO_BOHR;
+    return {
+      origin: [minX * ANG_TO_BOHR, minY * ANG_TO_BOHR, minZ * ANG_TO_BOHR],
+      axes: [[stepBohr, 0, 0], [0, stepBohr, 0], [0, 0, stepBohr]],
+      nxyz: [nx, ny, nz],
+      stepBohr,
+      stepAng,
+    };
+  }
+
+  /**
+   * Build relative coordinate tables for one grid axis.
+   * @param {number} count
+   * @param {number} originBohr
+   * @param {number} stepBohr
+   * @param {number} centerBohr
+   * @returns {{coord:Float64Array,sq:Float64Array}}
+   */
+  function buildMoldenAxisTables(count, originBohr, stepBohr, centerBohr) {
+    const coord = new Float64Array(count);
+    const sq = new Float64Array(count);
+    for (let i = 0; i < count; i++) {
+      const delta = originBohr + stepBohr * i - centerBohr;
+      coord[i] = delta;
+      sq[i] = delta * delta;
+    }
+    return { coord, sq };
+  }
+
+  /**
+   * Count Molden basis functions for one shell label given angular flags.
+   * @param {string} label
+   * @param {{d?:string,f?:string,g?:string}} angularFlags
+   * @returns {number}
+   */
+  function countMoldenShellFunctionCount(label, angularFlags) {
+    const shell = String(label || '').trim().toLowerCase();
+    if (shell === 's') return 1;
+    if (shell === 'p') return 3;
+    if (shell === 'sp') return 4;
+    if (shell === 'd') return angularFlags && angularFlags.d === 'spherical' ? 5 : 6;
+    if (shell === 'f') return angularFlags && angularFlags.f === 'spherical' ? 7 : 10;
+    if (shell === 'g') return angularFlags && angularFlags.g === 'spherical' ? 9 : 15;
+    throw new Error(`Unsupported Molden shell label "${label}".`);
+  }
+
+  /**
+   * Evaluate one Molden shell contribution into a scalar orbital grid.
+   * Supports s/p/sp/d/f shells. G shells are rejected explicitly for now.
+   * @param {Float32Array} data
+   * @param {number[]} nxyz
+   * @param {{coord:Float64Array,sq:Float64Array}} xAxis
+   * @param {{coord:Float64Array,sq:Float64Array}} yAxis
+   * @param {{coord:Float64Array,sq:Float64Array}} zAxis
+   * @param {*} shell
+   * @param {Float32Array} coeffs
+   * @param {{d?:string,f?:string,g?:string}} angularFlags
+   */
+  function accumulateMoldenShellContribution(data, nxyz, xAxis, yAxis, zAxis, shell, coeffs, angularFlags) {
+    const shellLabel = String(shell && shell.label || '').trim().toLowerCase();
+    const [nx, ny, nz] = nxyz;
+    const exByPrimitiveX = [];
+    const exByPrimitiveY = [];
+    const exByPrimitiveZ = [];
+    const primitiveMeta = [];
+    const primitives = Array.isArray(shell && shell.primitives) ? shell.primitives : [];
+    if (shellLabel === 'g') {
+      throw new Error('Molden MO rendering does not yet support g shells.');
+    }
+    for (const primitive of primitives) {
+      const exponent = Number(primitive && primitive.exponent);
+      if (!(Number.isFinite(exponent) && exponent > 0)) continue;
+      const exX = new Float64Array(nx);
+      const exY = new Float64Array(ny);
+      const exZ = new Float64Array(nz);
+      for (let i = 0; i < nx; i++) exX[i] = Math.exp(-exponent * xAxis.sq[i]);
+      for (let j = 0; j < ny; j++) exY[j] = Math.exp(-exponent * yAxis.sq[j]);
+      for (let k = 0; k < nz; k++) exZ[k] = Math.exp(-exponent * zAxis.sq[k]);
+      exByPrimitiveX.push(exX);
+      exByPrimitiveY.push(exY);
+      exByPrimitiveZ.push(exZ);
+      primitiveMeta.push({
+        coeff0: Number(primitive.coefficients && primitive.coefficients[0]) || 0,
+        coeff1: Number(primitive.coefficients && primitive.coefficients[1]) || 0,
+      });
+    }
+    if (primitiveMeta.length === 0) return;
+    const idx = (i, j, k) => (i * ny + j) * nz + k;
+
+    for (let i = 0; i < nx; i++) {
+      const x = xAxis.coord[i];
+      const xx = x * x;
+      for (let j = 0; j < ny; j++) {
+        const y = yAxis.coord[j];
+        const yy = y * y;
+        const xy = x * y;
+        for (let k = 0; k < nz; k++) {
+          const z = zAxis.coord[k];
+          const zz = z * z;
+          const xz = x * z;
+          const yz = y * z;
+          const xyz = xy * z;
+          let radial0 = 0;
+          let radial1 = 0;
+          for (let p = 0; p < primitiveMeta.length; p++) {
+            const base = exByPrimitiveX[p][i] * exByPrimitiveY[p][j] * exByPrimitiveZ[p][k];
+            radial0 += primitiveMeta[p].coeff0 * base;
+            radial1 += primitiveMeta[p].coeff1 * base;
+          }
+          let value = 0;
+          if (shellLabel === 's') {
+            value = coeffs[0] * radial0;
+          } else if (shellLabel === 'p') {
+            value = radial0 * (coeffs[0] * x + coeffs[1] * y + coeffs[2] * z);
+          } else if (shellLabel === 'sp') {
+            value = coeffs[0] * radial0 + radial1 * (coeffs[1] * x + coeffs[2] * y + coeffs[3] * z);
+          } else if (shellLabel === 'd') {
+            if (angularFlags && angularFlags.d === 'spherical') {
+              value = radial0 * (
+                coeffs[0] * (2 * zz - xx - yy) +
+                coeffs[1] * xz +
+                coeffs[2] * yz +
+                coeffs[3] * (xx - yy) +
+                coeffs[4] * xy
+              );
+            } else {
+              value = radial0 * (
+                coeffs[0] * xx +
+                coeffs[1] * yy +
+                coeffs[2] * zz +
+                coeffs[3] * xy +
+                coeffs[4] * xz +
+                coeffs[5] * yz
+              );
+            }
+          } else if (shellLabel === 'f') {
+            if (angularFlags && angularFlags.f === 'spherical') {
+              value = radial0 * (
+                coeffs[0] * (z * (2 * zz - 3 * xx - 3 * yy)) +
+                coeffs[1] * (x * (4 * zz - xx - yy)) +
+                coeffs[2] * (y * (4 * zz - xx - yy)) +
+                coeffs[3] * (z * (xx - yy)) +
+                coeffs[4] * xyz +
+                coeffs[5] * (x * (xx - 3 * yy)) +
+                coeffs[6] * (y * (3 * xx - yy))
+              );
+            } else {
+              value = radial0 * (
+                coeffs[0] * (xx * x) +
+                coeffs[1] * (yy * y) +
+                coeffs[2] * (zz * z) +
+                coeffs[3] * (x * yy) +
+                coeffs[4] * (xx * y) +
+                coeffs[5] * (xx * z) +
+                coeffs[6] * (x * zz) +
+                coeffs[7] * (y * zz) +
+                coeffs[8] * (yy * z) +
+                coeffs[9] * xyz
+              );
+            }
+          } else {
+            throw new Error(`Unsupported Molden shell label "${shellLabel}".`);
+          }
+          data[idx(i, j, k)] += value;
+        }
+      }
+    }
+  }
+
+  /**
+   * Evaluate the selected Molden orbital onto a regular scalar grid.
+   * @param {*} record
+   * @param {*} vol
+   */
+  function ensureMoldenGridForRecord(record, vol) {
+    if (!record || !vol || vol.kind !== 'molden' || !vol.molden) return;
+    const molden = vol.molden;
+    const mos = Array.isArray(molden.mos) ? molden.mos : [];
+    const atomBlocks = molden.basis && Array.isArray(molden.basis.atomBlocks) ? molden.basis.atomBlocks : [];
+    if (mos.length === 0 || atomBlocks.length === 0) {
+      clearMoldenGrid(vol);
+      return;
+    }
+    let moIndex = Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : 0;
+    if (moIndex < 0 || moIndex >= mos.length) moIndex = 0;
+    record.moldenMoIndex = moIndex;
+    const mo = mos[moIndex];
+    if (!mo || !(mo.coefficients instanceof Float32Array) || mo.coefficients.length === 0) {
+      clearMoldenGrid(vol);
+      return;
+    }
+    const gridSettings = getMoldenGridSettings(record);
+    const atomSignature = buildMoldenAtomSignature(vol);
+    const cacheKey = `${moIndex}|${gridSettings.stepAng.toFixed(2)}|${gridSettings.paddingAng.toFixed(1)}|${atomSignature}`;
+    if (!(record.moldenGridCache instanceof Map)) record.moldenGridCache = new Map();
+    if (record.moldenGridCache.has(cacheKey)) {
+      const cached = record.moldenGridCache.get(cacheKey);
+      vol.origin = cached.origin.map((v) => v);
+      vol.axes = cached.axes.map((axis) => axis.slice(0, 3));
+      vol.nxyz = cached.nxyz.slice(0, 3);
+      vol.data = cached.data.slice(0);
+      vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
+      vol.isoHint = cached.isoHint;
+      return;
+    }
+
+    const grid = buildMoldenGridSpec(vol, gridSettings);
+    const [nx, ny, nz] = grid.nxyz;
+    const data = new Float32Array(nx * ny * nz);
+    const angularFlags = molden.angularFlags || {};
+    let aoOffset = 0;
+    for (const atomBlock of atomBlocks) {
+      const atomIndex = Number(atomBlock && atomBlock.atomIndex);
+      const atom = Array.isArray(vol.atoms) ? vol.atoms[atomIndex] : null;
+      if (!atom) throw new Error(`Molden MO rendering failed: basis atom index ${atomIndex + 1} is out of range.`);
+      const center = atomUnitsToAng(vol, atom).multiplyScalar(ANG_TO_BOHR);
+      const xAxis = buildMoldenAxisTables(nx, grid.origin[0], grid.stepBohr, center.x);
+      const yAxis = buildMoldenAxisTables(ny, grid.origin[1], grid.stepBohr, center.y);
+      const zAxis = buildMoldenAxisTables(nz, grid.origin[2], grid.stepBohr, center.z);
+      const shells = Array.isArray(atomBlock && atomBlock.shells) ? atomBlock.shells : [];
+      for (const shell of shells) {
+        const count = countMoldenShellFunctionCount(shell && shell.label, angularFlags);
+        if (aoOffset + count > mo.coefficients.length) {
+          throw new Error(`Molden MO rendering failed: MO ${moIndex + 1} is missing coefficients for shell "${shell && shell.label}" on atom ${atomIndex + 1}.`);
+        }
+        const coeffs = mo.coefficients.subarray(aoOffset, aoOffset + count);
+        accumulateMoldenShellContribution(data, grid.nxyz, xAxis, yAxis, zAxis, shell, coeffs, angularFlags);
+        aoOffset += count;
+      }
+    }
+    const cacheEntry = {
+      origin: grid.origin.slice(0, 3),
+      axes: grid.axes.map((axis) => axis.slice(0, 3)),
+      nxyz: grid.nxyz.slice(0, 3),
+      data: data.slice(0),
+      isoHint: DEFAULT_ISO_VALUE,
+    };
+    record.moldenGridCache.set(cacheKey, cacheEntry);
+    vol.origin = cacheEntry.origin.slice(0, 3);
+    vol.axes = cacheEntry.axes.map((axis) => axis.slice(0, 3));
+    vol.nxyz = cacheEntry.nxyz.slice(0, 3);
+    vol.data = cacheEntry.data.slice(0);
+    vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
+    vol.isoHint = cacheEntry.isoHint;
+  }
+
+  /**
    * Enable/disable the Autoiso button depending on whether one volumetric grid is active.
    */
   function updateAutoIsoButtonState() {
@@ -6426,7 +6877,7 @@
     autoIsoBtn.setAttribute('aria-pressed', autoIsoEnabled ? 'true' : 'false');
     autoIsoBtn.title = hasGrid
       ? `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: target ${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% density (cached per orbital/component).`
-      : `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube file to apply.`;
+      : `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube/.molden file to apply.`;
   }
   updateAutoIsoButtonState();
 
@@ -13718,6 +14169,46 @@
       rebuildScene({ preserveView: true });
     };
   }
+  if (moldenMoSelect) {
+    moldenMoSelect.onchange = () => {
+      const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
+      if (!record || !molden || !Array.isArray(molden.mos) || molden.mos.length === 0) return;
+      let next = parseInt(moldenMoSelect.value, 10);
+      if (!Number.isInteger(next) || next < 0 || next >= molden.mos.length) next = 0;
+      record.moldenMoIndex = next;
+      moldenMoSummary.textContent = formatMoldenMoSummary(
+        molden.mos[next],
+        molden.mos.length,
+        Number.isFinite(molden.basisCount) ? molden.basisCount : 0
+      );
+      rebuildScene({ preserveView: true });
+      if (moldenGridSummary) moldenGridSummary.textContent = formatMoldenGridSummary(record);
+      setHintMessage(`Selected Molden MO ${next + 1} of ${molden.mos.length}.`);
+    };
+  }
+  if (moldenGridStepEl || moldenGridPaddingEl) {
+    const applyMoldenGridUi = () => {
+      const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      if (!record || !vol || vol.kind !== 'molden') return;
+      record.moldenGridStepAng = normalizeMoldenGridStepAng(moldenGridStepEl && moldenGridStepEl.value);
+      record.moldenGridPaddingAng = normalizeMoldenGridPaddingAng(moldenGridPaddingEl && moldenGridPaddingEl.value);
+      if (moldenGridStepEl) moldenGridStepEl.value = record.moldenGridStepAng.toFixed(2);
+      if (moldenGridPaddingEl) moldenGridPaddingEl.value = record.moldenGridPaddingAng.toFixed(1);
+      if (moldenGridSummary) moldenGridSummary.textContent = formatMoldenGridSummary(record);
+      rebuildScene({ preserveView: true });
+      if (moldenGridSummary) moldenGridSummary.textContent = formatMoldenGridSummary(record);
+      setHintMessage(`Updated Molden grid: step ${record.moldenGridStepAng.toFixed(2)} Å, padding ${record.moldenGridPaddingAng.toFixed(1)} Å.`);
+    };
+    if (moldenGridStepEl) {
+      moldenGridStepEl.onchange = applyMoldenGridUi;
+    }
+    if (moldenGridPaddingEl) {
+      moldenGridPaddingEl.onchange = applyMoldenGridUi;
+    }
+  }
 
   // Default color schemes for +/- surfaces
   if (schemeSelect) {
@@ -14866,6 +15357,7 @@
       normalizeCoordsDisplayUnits(coordsDisplayUnits)
     );
     updatePubChemMetadataPanel(record);
+    updateMoldenMoControls(record);
     syncTrajectoryControls();
     syncVibrationControls();
     updateAutoIsoButtonState();
@@ -16148,6 +16640,7 @@
   function parseVolumeByName(name, text) {
     const kind = detectInputFileKind(name, text);
     if (kind === 'xyz') return parseXYZ(text);
+    if (kind === 'molden') return parseMolden(text);
     if (kind === 'two_component_cube') return parseTwoComponentCube(text);
     return parseCube(text);
   }
@@ -16178,7 +16671,15 @@
     if (vol && vol.isoHint != null && isoInput.value === '') {
       isoInput.value = String(vol.isoHint);
     }
-    if (vol && vol.data && vol.data.length) {
+    if (vol && vol.kind === 'molden') {
+      console.log('[MOLDEN] Loaded', name, {
+        title: vol.title,
+        natoms: vol.natoms,
+        units: vol.units,
+        moCount: vol.molden && vol.molden.moCount,
+        basisCount: vol.molden && vol.molden.basisCount,
+      });
+    } else if (vol && vol.data && vol.data.length) {
       try {
         const stats = arrayMinMax(vol.data);
         console.log('[CUBE] Loaded', name, {
@@ -17414,6 +17915,15 @@
     clearSceneMeshes();
     const record = volumes[currentIndex];
     const vol = record && record.vol;
+    if (vol && vol.kind === 'molden') {
+      try {
+        ensureMoldenGridForRecord(record, vol);
+      } catch (err) {
+        clearMoldenGrid(vol);
+        console.error('[MOLDEN] Grid evaluation failed', err);
+        setHintMessage(`Molden MO rendering failed: ${err && err.message ? err.message : String(err)}`);
+      }
+    }
     const compMode = getComponentMode(vol);
     selectActiveRawComponent(vol, compMode);
     const hasGrid = hasVolumetricGrid(vol);

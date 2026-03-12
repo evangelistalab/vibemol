@@ -481,5 +481,376 @@ function parseXYZ(text) {
   return vol;
 }
 
-  global.VibeMolParsers = { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ };
+/**
+ * Parse one numeric token, accepting Fortran `D` exponents as well as `E`.
+ * @param {*} raw
+ * @returns {number}
+ */
+function parseLooseNumber(raw) {
+  const token = String(raw == null ? '' : raw).trim();
+  if (!token) return NaN;
+  return Number(token.replace(/[dD]/g, 'E'));
+}
+
+/**
+ * Normalize one Molden element token into an atomic number.
+ * @param {string} symbolToken
+ * @param {*} zToken
+ * @param {number} lineNo
+ * @returns {number}
+ */
+function resolveMoldenAtomicNumber(symbolToken, zToken, lineNo) {
+  const symbolRaw = String(symbolToken == null ? '' : symbolToken).trim();
+  const symbolLetters = symbolRaw.replace(/[^A-Za-z]/g, '');
+  const symbolKey = symbolLetters.toUpperCase();
+  const z = parseInt(String(zToken == null ? '' : zToken).trim(), 10);
+  if (Number.isInteger(z) && z > 0) return z;
+  if (symbolKey && window.ATOM_SYMBOL_TO_Z && Number.isInteger(window.ATOM_SYMBOL_TO_Z[symbolKey])) {
+    return window.ATOM_SYMBOL_TO_Z[symbolKey];
+  }
+  throw new Error(`Malformed Molden [Atoms] entry at line ${lineNo}: could not resolve atomic number for "${symbolRaw}".`);
+}
+
+/**
+ * Split a Molden payload into named sections.
+ * @param {string} text
+ * @returns {{lines:string[], sections:Array<{name:string, option:string, startLine:number, lines:Array<{text:string,lineNo:number}>}>}}
+ */
+function splitMoldenSections(text) {
+  const lines = String(text || '').replace(/\r/g, '').split('\n');
+  const sections = [];
+  let current = null;
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i] || '';
+    const trimmed = raw.trim();
+    const sectionMatch = trimmed.match(/^\[([^\]]+)\](?:\s*(?:\(([^)]*)\)|(.+)))?\s*$/i);
+    if (sectionMatch) {
+      current = {
+        name: sectionMatch[1].trim().toUpperCase(),
+        option: String(sectionMatch[2] || sectionMatch[3] || '').trim(),
+        startLine: i + 1,
+        lines: [],
+      };
+      sections.push(current);
+      continue;
+    }
+    if (current) current.lines.push({ text: raw, lineNo: i + 1 });
+  }
+  return { lines, sections };
+}
+
+/**
+ * Resolve Molden d/f/g spherical-vs-cartesian flags.
+ * @param {Array<{name:string}>} sections
+ * @returns {{d:'cartesian'|'spherical', f:'cartesian'|'spherical', g:'cartesian'|'spherical'}}
+ */
+function resolveMoldenAngularFlags(sections) {
+  const flags = { d: 'cartesian', f: 'cartesian', g: 'cartesian' };
+  for (const section of sections) {
+    switch (section.name) {
+      case '5D':
+      case '5D7F':
+        flags.d = 'spherical';
+        flags.f = 'spherical';
+        break;
+      case '5D10F':
+        flags.d = 'spherical';
+        flags.f = 'cartesian';
+        break;
+      case '7F':
+        flags.f = 'spherical';
+        break;
+      case '9G':
+        flags.g = 'spherical';
+        break;
+      default:
+        break;
+    }
+  }
+  return flags;
+}
+
+/**
+ * Count basis functions contributed by one Molden shell label.
+ * @param {string} label
+ * @param {{d:string,f:string,g:string}} angularFlags
+ * @returns {number}
+ */
+function countMoldenShellFunctions(label, angularFlags) {
+  const shell = String(label || '').trim().toLowerCase();
+  if (shell === 's') return 1;
+  if (shell === 'p') return 3;
+  if (shell === 'sp') return 4;
+  if (shell === 'd') return angularFlags.d === 'spherical' ? 5 : 6;
+  if (shell === 'f') return angularFlags.f === 'spherical' ? 7 : 10;
+  if (shell === 'g') return angularFlags.g === 'spherical' ? 9 : 15;
+  throw new Error(`Unsupported Molden shell label "${label}".`);
+}
+
+/**
+ * Parse the Molden [Atoms] section.
+ * @param {{option:string, lines:Array<{text:string,lineNo:number}>}} section
+ * @returns {{atoms:ParsedAtom[], units:'angstrom'|'bohr', atomUnitLabel:string}}
+ */
+function parseMoldenAtomsSection(section) {
+  if (!section) throw new Error('Molden file is missing required [Atoms] section.');
+  const option = String(section.option || '').trim().toUpperCase();
+  let units = 'angstrom';
+  if (option === 'AU') units = 'bohr';
+  else if (option && option !== 'ANGS' && option !== 'ANGSTROMS' && option !== 'ANG') {
+    throw new Error(`Unsupported Molden [Atoms] units "${section.option}" at line ${section.startLine}.`);
+  }
+  const atoms = [];
+  for (const entry of section.lines) {
+    const trimmed = entry.text.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split(/\s+/);
+    if (parts.length < 6) {
+      throw new Error(`Malformed Molden [Atoms] entry at line ${entry.lineNo}: expected "Symbol index Z x y z".`);
+    }
+    const Z = resolveMoldenAtomicNumber(parts[0], parts[2], entry.lineNo);
+    const x = parseLooseNumber(parts[3]);
+    const y = parseLooseNumber(parts[4]);
+    const z = parseLooseNumber(parts[5]);
+    if (![x, y, z].every(Number.isFinite)) {
+      throw new Error(`Malformed Molden [Atoms] entry at line ${entry.lineNo}: coordinates must be numeric.`);
+    }
+    atoms.push({ Z, q: 0, x, y, z });
+  }
+  if (atoms.length === 0) throw new Error('Molden [Atoms] section did not contain any atoms.');
+  return { atoms, units, atomUnitLabel: units === 'bohr' ? 'AU' : 'Angs' };
+}
+
+/**
+ * Parse the Molden [GTO] section and count AO functions.
+ * @param {{lines:Array<{text:string,lineNo:number}>}|null} section
+ * @param {{d:string,f:string,g:string}} angularFlags
+ * @returns {{atomBlocks:Array<{atomIndex:number,shells:Array<Object>}>, aoCount:number}}
+ */
+function parseMoldenGtoSection(section, angularFlags) {
+  if (!section) return { atomBlocks: [], aoCount: 0 };
+  const atomBlocks = [];
+  let aoCount = 0;
+  let currentBlock = null;
+  for (let i = 0; i < section.lines.length; i++) {
+    const entry = section.lines[i];
+    const trimmed = entry.text.trim();
+    if (!trimmed) continue;
+    const atomMatch = trimmed.match(/^(\d+)(?:\s+0)?$/);
+    if (atomMatch) {
+      currentBlock = { atomIndex: parseInt(atomMatch[1], 10) - 1, shells: [] };
+      atomBlocks.push(currentBlock);
+      continue;
+    }
+    if (!currentBlock) {
+      throw new Error(`Malformed Molden [GTO] section near line ${entry.lineNo}: shell found before atom index block.`);
+    }
+    const header = trimmed.split(/\s+/);
+    if (header.length < 2) {
+      throw new Error(`Malformed Molden [GTO] shell header at line ${entry.lineNo}.`);
+    }
+    const shellLabel = header[0].toLowerCase();
+    const primitiveCount = parseInt(header[1], 10);
+    if (!Number.isInteger(primitiveCount) || primitiveCount <= 0) {
+      throw new Error(`Malformed Molden [GTO] shell header at line ${entry.lineNo}: invalid primitive count.`);
+    }
+    const primitives = [];
+    for (let p = 0; p < primitiveCount; p++) {
+      i++;
+      if (i >= section.lines.length) {
+        throw new Error(`Malformed Molden [GTO] shell at line ${entry.lineNo}: file ended before ${primitiveCount} primitives were read.`);
+      }
+      const primitiveEntry = section.lines[i];
+      const primitiveTrimmed = primitiveEntry.text.trim();
+      if (!primitiveTrimmed) {
+        p--;
+        continue;
+      }
+      const fields = primitiveTrimmed.split(/\s+/);
+      const exponent = parseLooseNumber(fields[0]);
+      if (!Number.isFinite(exponent)) {
+        throw new Error(`Malformed Molden primitive at line ${primitiveEntry.lineNo}: invalid exponent.`);
+      }
+      if (shellLabel === 'sp') {
+        if (fields.length < 3) {
+          throw new Error(`Malformed Molden sp primitive at line ${primitiveEntry.lineNo}: expected exponent and two contractions.`);
+        }
+        const coeffS = parseLooseNumber(fields[1]);
+        const coeffP = parseLooseNumber(fields[2]);
+        if (![coeffS, coeffP].every(Number.isFinite)) {
+          throw new Error(`Malformed Molden sp primitive at line ${primitiveEntry.lineNo}: contractions must be numeric.`);
+        }
+        primitives.push({ exponent, coefficients: [coeffS, coeffP] });
+      } else {
+        if (fields.length < 2) {
+          throw new Error(`Malformed Molden primitive at line ${primitiveEntry.lineNo}: expected exponent and contraction.`);
+        }
+        const coeff = parseLooseNumber(fields[1]);
+        if (!Number.isFinite(coeff)) {
+          throw new Error(`Malformed Molden primitive at line ${primitiveEntry.lineNo}: contraction must be numeric.`);
+        }
+        primitives.push({ exponent, coefficients: [coeff] });
+      }
+    }
+    currentBlock.shells.push({
+      label: shellLabel,
+      primitiveCount,
+      primitives,
+    });
+    aoCount += countMoldenShellFunctions(shellLabel, angularFlags);
+  }
+  return { atomBlocks, aoCount };
+}
+
+/**
+ * Finalize one partially parsed Molden MO record.
+ * @param {Object|null} orbital
+ * @param {number} basisCount
+ * @returns {Object|null}
+ */
+function finalizeMoldenOrbital(orbital, basisCount) {
+  if (!orbital || orbital.maxCoeffIndex <= 0) return null;
+  const coeffCount = Math.max(basisCount | 0, orbital.maxCoeffIndex | 0);
+  const coeffs = new Float32Array(coeffCount);
+  for (const [index, value] of orbital.coeffMap.entries()) coeffs[index - 1] = value;
+  return {
+    symmetry: orbital.symmetry || '',
+    energy: Number.isFinite(orbital.energy) ? orbital.energy : null,
+    spin: orbital.spin || '',
+    occupation: Number.isFinite(orbital.occupation) ? orbital.occupation : null,
+    coefficients: coeffs,
+  };
+}
+
+/**
+ * Parse the Molden [MO] section into MO metadata and coefficient arrays.
+ * @param {{lines:Array<{text:string,lineNo:number}>}|null} section
+ * @param {number} basisCount
+ * @returns {{mos:Array<Object>, moCount:number, basisCount:number}}
+ */
+function parseMoldenMoSection(section, basisCount) {
+  if (!section) return { mos: [], moCount: 0, basisCount: basisCount | 0 };
+  const mos = [];
+  let current = null;
+  let derivedBasisCount = basisCount | 0;
+
+  function ensureCurrentOrbital(lineNo) {
+    if (!current) {
+      current = {
+        symmetry: '',
+        energy: null,
+        spin: '',
+        occupation: null,
+        coeffMap: new Map(),
+        maxCoeffIndex: 0,
+        startedAtLine: lineNo,
+      };
+    }
+    return current;
+  }
+
+  for (const entry of section.lines) {
+    const trimmed = entry.text.trim();
+    if (!trimmed) continue;
+    const metaMatch = trimmed.match(/^([A-Za-z][A-Za-z0-9_-]*)\s*=\s*(.*)$/);
+    if (metaMatch) {
+      const key = metaMatch[1].trim().toUpperCase();
+      const value = String(metaMatch[2] || '').trim();
+      if (key === 'SYM' && current && current.maxCoeffIndex > 0) {
+        const done = finalizeMoldenOrbital(current, derivedBasisCount);
+        if (done) mos.push(done);
+        current = null;
+      }
+      const orbital = ensureCurrentOrbital(entry.lineNo);
+      if (key === 'SYM') orbital.symmetry = value;
+      else if (key === 'ENE') orbital.energy = parseLooseNumber(value);
+      else if (key === 'SPIN') orbital.spin = value;
+      else if (key === 'OCCUP') orbital.occupation = parseLooseNumber(value);
+      continue;
+    }
+    const fields = trimmed.split(/\s+/);
+    if (fields.length < 2) {
+      throw new Error(`Malformed Molden [MO] line at ${entry.lineNo}: expected index and coefficient.`);
+    }
+    const coeffIndex = parseInt(fields[0], 10);
+    const coeffValue = parseLooseNumber(fields[1]);
+    if (!Number.isInteger(coeffIndex) || coeffIndex <= 0 || !Number.isFinite(coeffValue)) {
+      throw new Error(`Malformed Molden [MO] coefficient line at ${entry.lineNo}.`);
+    }
+    const orbital = ensureCurrentOrbital(entry.lineNo);
+    orbital.coeffMap.set(coeffIndex, coeffValue);
+    if (coeffIndex > orbital.maxCoeffIndex) orbital.maxCoeffIndex = coeffIndex;
+    if (coeffIndex > derivedBasisCount) derivedBasisCount = coeffIndex;
+  }
+  const done = finalizeMoldenOrbital(current, derivedBasisCount);
+  if (done) mos.push(done);
+  return { mos, moCount: mos.length, basisCount: derivedBasisCount };
+}
+
+/**
+ * Parse a Molden file into one atom-bearing record with preserved basis/MO metadata.
+ * Geometry is loaded into the scene; MO coefficients are preserved but not yet evaluated
+ * onto volumetric grids in this parser.
+ * @param {string} text
+ * @returns {{
+ *   title:string,
+ *   comment:string,
+ *   natoms:number,
+ *   origin:number[],
+ *   nxyz:number[],
+ *   axes:number[][],
+ *   atoms:ParsedAtom[],
+ *   data:Float32Array,
+ *   idx:(i:number,j:number,k:number)=>number,
+ *   units:'angstrom'|'bohr',
+ *   kind:'molden',
+ *   molden:Object
+ * }}
+ */
+function parseMolden(text) {
+  const { sections } = splitMoldenSections(text);
+  const header = String(text || '').trimStart();
+  if (!/^\[molden format\]/i.test(header)) {
+    throw new Error('Not a Molden file: missing [Molden Format] header.');
+  }
+  const atomsSection = sections.find(section => section.name === 'ATOMS');
+  const titleSection = sections.find(section => section.name === 'TITLE');
+  const gtoSection = sections.find(section => section.name === 'GTO') || null;
+  const moSection = sections.find(section => section.name === 'MO') || null;
+  const angularFlags = resolveMoldenAngularFlags(sections);
+  const { atoms, units, atomUnitLabel } = parseMoldenAtomsSection(atomsSection);
+  const basis = parseMoldenGtoSection(gtoSection, angularFlags);
+  const orbitals = parseMoldenMoSection(moSection, basis.aoCount);
+  /**
+   * Placeholder indexer for Molden records (no voxel grid yet).
+   * @returns {number}
+   */
+  const idx = () => 0;
+  const titleLine = titleSection
+    ? titleSection.lines.map(entry => entry.text.trim()).find(Boolean)
+    : '';
+  return {
+    title: titleLine || 'Molden',
+    comment: 'Molden Format',
+    natoms: atoms.length,
+    origin: [0, 0, 0],
+    nxyz: [0, 0, 0],
+    axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+    atoms,
+    data: new Float32Array(0),
+    idx,
+    units,
+    kind: 'molden',
+    molden: {
+      atomUnit: atomUnitLabel,
+      angularFlags,
+      basis,
+      basisCount: orbitals.basisCount,
+      moCount: orbitals.moCount,
+      mos: orbitals.mos,
+    },
+  };
+}
+
+  global.VibeMolParsers = { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden };
 })(window);

@@ -2379,7 +2379,7 @@
 <body>
   <div id="toolbar" aria-expanded="true">
     <input type="file" id="fileInput"
-      accept=".cube,.cub,.xyz,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,application/json,text/plain"
+      accept=".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,application/json,text/plain"
       multiple />
     <input type="file" id="presetInput" accept=".json,.vmpreset,application/json" />
     <datalist id="pubchemSuggestions"></datalist>
@@ -2409,7 +2409,7 @@
     <div class="tb-section tb-file">
       <div class="tb-fileActionRow">
         <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" title="Open molecule files"
-          aria-label="Open files" data-tip="Open files (.xyz, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
+          aria-label="Open files" data-tip="Open files (.xyz, .molden, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
         <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Create a new empty file"
           aria-label="New file" data-tip="Create a new empty editable file">note_add</button>
         <div class="tb-iconActions">
@@ -2710,8 +2710,8 @@
       <div id="emptyStateLead">VibeMol <span id="emptyStateVersion"></span></div>
       <div id="emptyStateDropZone">
         <span id="emptyStateDropIcon" class="material-symbols-outlined">upload_file</span>
-        Drag and drop <code>.xyz</code>, <code>.cube</code>, <code>.vib.json</code>, <code>.hess</code>, or Psi4
-        <code>.dat/.out</code> files here
+        Drag and drop <code>.xyz</code>, <code>.molden</code>, <code>.cube</code>, <code>.vib.json</code>,
+        <code>.hess</code>, or Psi4 <code>.dat/.out</code> files here
       </div>
       <div id="emptyStatePrimaryAction">
         <button id="emptyStateOpenBtn" type="button">Choose files</button>
@@ -2897,6 +2897,19 @@
         </select>
         <span></span><span></span>
       </div>
+      <div class="row" id="moldenMoRow" style="display:none;">
+        <label style="width: 80px;">Molden MO</label>
+        <select id="moldenMoSelect" title="Select one molecular orbital parsed from the Molden file"></select>
+        <div id="moldenMoSummary" style="grid-column: 2 / span 3; color: var(--muted); font-size: 12px;"></div>
+      </div>
+      <div class="row" id="moldenGridRow" style="display:none;">
+        <label style="width: 80px;">MO Grid</label>
+        <input type="number" id="moldenGridStep" min="0.12" max="1.20" step="0.01" value="0.35"
+          title="Grid spacing in angstrom" />
+        <input type="number" id="moldenGridPadding" min="0.5" max="8" step="0.1" value="3.0"
+          title="Padding added around the molecule in angstrom" />
+        <div id="moldenGridSummary" style="grid-column: 2 / span 3; color: var(--muted); font-size: 12px;"></div>
+      </div>
     </div>
   </div>
 
@@ -3024,6 +3037,8 @@
             atom/bond alpha are independent molecule feature toggles.</li>
           <li>Multi-frame XYZ trajectories expose playback controls in the dedicated Trajectory window (play, frame
             slider, FPS, loop).</li>
+          <li>Molden files (<code>.molden</code>) load geometry, basis metadata, and molecular-orbital coefficients for
+            later wavefunction-based workflows.</li>
           <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, and Psi4 output
             logs) expose mode playback controls in the dedicated Vibration window; click a frequency row to select and
             animate that mode, and view the IR spectrum with the active mode highlighted.</li>
