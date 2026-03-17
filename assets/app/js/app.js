@@ -15212,6 +15212,24 @@
   }
 
   /**
+   * Parse and apply one preset JSON payload.
+   * @param {string} text
+   * @param {string=} sourceLabel
+   * @returns {{name:string,warnings:string[]}}
+   */
+  function importPresetFromText(text, sourceLabel = 'preset') {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch (err) {
+      throw new Error(`${sourceLabel}: invalid JSON`);
+    }
+    const result = importPresetEnvelope(parsed, { mode: PRESET_MODE.RELAXED });
+    if (result.warnings.length > 0) console.warn('[Preset] import warnings', result.warnings);
+    return result;
+  }
+
+  /**
    * Parse and apply one uploaded preset JSON file.
    * @param {FileList|null} fileList
    */
@@ -15219,10 +15237,8 @@
     const file = fileList && fileList[0];
     if (!file) return;
     const text = await file.text();
-    const parsed = JSON.parse(text);
-    const result = importPresetEnvelope(parsed, { mode: PRESET_MODE.RELAXED });
+    const result = importPresetFromText(text, file.name || 'preset');
     setNavigationHint(`Loaded preset: ${result.name}`);
-    if (result.warnings.length > 0) console.warn('[Preset] import warnings', result.warnings);
   }
 
   // Public API for browser automation and future integrations.
@@ -16883,6 +16899,7 @@
     if (arr.length === 0) return;
     const failures = [];
     const pendingVibrationPayloads = [];
+    const importedPresetNames = [];
     const batchXyzStems = new Set();
     for (const f of arr) {
       const name = f && f.name ? f.name : '';
@@ -16964,6 +16981,17 @@
             });
             continue;
           }
+          const looksLikePreset = !!(
+            parsedJson
+            && typeof parsedJson === 'object'
+            && !Array.isArray(parsedJson)
+            && parsedJson.kind === PRESET_KIND
+          );
+          if (looksLikePreset) {
+            const result = importPresetFromText(text, f.name || 'preset');
+            importedPresetNames.push(result.name);
+            continue;
+          }
         }
         const vol = parseVolumeByName(f.name, text);
         if (!hasPreparedTarget) {
@@ -17008,6 +17036,11 @@
         setVibrationPanelOpen(true);
       }
       setNavigationHint(`Loaded ${attachedVibrationCount} vibrational mode file${attachedVibrationCount === 1 ? '' : 's'}`);
+    } else if (importedPresetNames.length > 0) {
+      const label = importedPresetNames.length === 1
+        ? `Loaded preset: ${importedPresetNames[0]}`
+        : `Loaded ${importedPresetNames.length} preset files`;
+      setNavigationHint(label);
     }
     if (failures.length > 0) {
       const header = failures.length === 1
