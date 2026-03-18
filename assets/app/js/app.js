@@ -11973,21 +11973,24 @@
   /**
    * Create a screen-facing text sprite used for measurements/labels.
    * @param {string} txt
+   * @param {{uiScale?:number}=} options
    * @returns {THREE.Sprite}
    */
-  function makeTextSprite(txt) {
+  function makeTextSprite(txt, options = {}) {
+    const uiScale = Math.max(0.6, Math.min(1.5, Number(options.uiScale) || 1));
     // make a rounded rectangle canvas with text, then make a sprite from it
-    const hpad = 6;
-    const wpad = 8;
-    const radius = 16; // px rounded corner radius (pre-scale)
+    const hpad = Math.max(4, Math.round(6 * uiScale));
+    const wpad = Math.max(5, Math.round(8 * uiScale));
+    const radius = Math.max(10, Math.round(16 * uiScale)); // px rounded corner radius (pre-scale)
     // make the font bold
-    const font = 'bold 20px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    const fontPx = Math.max(14, Math.round(20 * uiScale));
+    const font = `bold ${fontPx}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
     const c = document.createElement('canvas');
     const ctx = c.getContext('2d');
     ctx.font = font;
     const textW = Math.ceil(ctx.measureText(txt).width);
     const w = textW + wpad * 2;
-    const h = 18 + hpad * 2;
+    const h = Math.max(fontPx + hpad * 2, Math.round(18 * uiScale) + hpad * 2);
     // hi-DPI backing store
     c.width = w * 2; c.height = h * 2;
     ctx.scale(2, 2);
@@ -12058,7 +12061,7 @@
       // label at midpoint
       const mid = a.clone().add(b).multiplyScalar(0.5);
       const dist = a.distanceTo(b);
-      const label = makeTextSprite(fmtDist(dist));
+      const label = makeTextSprite(fmtDist(dist), { uiScale: 0.9 });
       label.position.copy(mid);
       // slight lift towards camera to avoid z-fighting
       const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir); label.position.add(camDir.multiplyScalar(0.01));
@@ -12099,7 +12102,7 @@
       editSelGroup.add(fan);
       // Angle label at arc midpoint
       const midDir = e1.clone().multiplyScalar(Math.cos(theta / 2)).add(e2.clone().multiplyScalar(Math.sin(theta / 2)));
-      const label = makeTextSprite(fmtDeg(theta));
+      const label = makeTextSprite(fmtDeg(theta), { uiScale: 0.9 });
       label.position.copy(pb.clone().add(midDir.multiplyScalar(radius + 0.06)));
       editSelGroup.add(label);
     };
@@ -12156,7 +12159,7 @@
             // Dihedral label (abs degrees, 2 digits) along arc bisector
             const half = phi / 2;
             const midDir = eX.clone().multiplyScalar(Math.cos(half)).add(eY.clone().multiplyScalar(Math.sin(half))).normalize();
-            const label = makeTextSprite(fmtDeg(Math.abs(phi)));
+            const label = makeTextSprite(fmtDeg(Math.abs(phi)), { uiScale: 0.9 });
             label.position.copy(mid.clone().add(midDir.multiplyScalar(radius + 0.08)));
             editSelGroup.add(label);
           }
