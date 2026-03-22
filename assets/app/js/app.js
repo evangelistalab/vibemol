@@ -13759,6 +13759,14 @@
       setHover(null);
       setBondHover(null);
     }
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const compMode = getComponentMode(vol);
+    if (vol && vol.isTwoComponent && compMode === 'alphaBetaPhase') {
+      setSurfaceHover(null);
+      hideSurfaceHoverLabel();
+      return;
+    }
     const surfaceHit = pickSurfaceHit(e);
     if (!surfaceHit || !surfaceHit.object) {
       setSurfaceHover(null);
@@ -13766,9 +13774,6 @@
       return;
     }
     setSurfaceHover(surfaceHit.object);
-    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const compMode = getComponentMode(vol);
     const iso = Math.max(0, parseFloat(isoInput.value || '0.02') || 0);
     const metric = getSurfaceMetric(record, vol, compMode, iso, surfaceHit.object);
     if (!metric) {
@@ -18839,6 +18844,7 @@
    */
   function getSurfaceMetric(record, vol, compMode, iso, mesh) {
     if (!record || !vol || !mesh || !hasVolumetricGrid(vol)) return null;
+    if (vol.isTwoComponent) return null;
     const cacheKey = buildSurfaceMetricCacheKey(record, vol, compMode, iso, mesh);
     if (!(record.surfaceMetricCache instanceof Map)) record.surfaceMetricCache = new Map();
     if (record.surfaceMetricCache.has(cacheKey)) return record.surfaceMetricCache.get(cacheKey) || null;
@@ -18854,42 +18860,7 @@
     const len = (Array.isArray(vol.nxyz) ? ((vol.nxyz[0] | 0) * (vol.nxyz[1] | 0) * (vol.nxyz[2] | 0)) : 0) || 0;
     if (len <= 0) return null;
 
-    if (vol.isTwoComponent) {
-      const aRe = vol.alphaRe;
-      const aIm = vol.alphaIm;
-      const bRe = vol.betaRe;
-      const bIm = vol.betaIm;
-      if (!(aRe && aIm && bRe && bIm)) return null;
-      const useTotal = !!meta.totalBloch || compMode === 'totalBloch';
-      const useAlpha = meta.which === 'alpha' || compMode === 'alphaPhase';
-      const useBeta = meta.which === 'beta' || compMode === 'betaPhase';
-      const useRaw = !useTotal && !useAlpha && !useBeta;
-      if (useRaw) {
-        if (!isApproximatelyNormalizedOrbitalField(vol)) {
-          record.surfaceMetricCache.set(cacheKey, null);
-          return null;
-        }
-        for (let t = 0; t < len; t++) {
-          const q = Number(vol.data[t]) || 0;
-          const weight = q * q;
-          totalWeight += weight;
-          const inside = meta.sign === 'neg' ? (q <= -iso) : (q >= iso);
-          if (inside) insideWeight += weight;
-        }
-        assumedOccupation = true;
-        electronCount = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
-      } else {
-        for (let t = 0; t < len; t++) {
-          const alphaDensity = (aRe[t] * aRe[t]) + (aIm[t] * aIm[t]);
-          const betaDensity = (bRe[t] * bRe[t]) + (bIm[t] * bIm[t]);
-          const density = useTotal ? (alphaDensity + betaDensity) : (useAlpha ? alphaDensity : betaDensity);
-          totalWeight += density;
-          if (Math.sqrt(Math.max(0, density)) >= iso) insideWeight += density;
-        }
-        assumedOccupation = true;
-        electronCount = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
-      }
-    } else {
+    if (!vol.isTwoComponent) {
       const isMoldenMo = vol.kind === 'molden';
       if (!isMoldenMo && !isApproximatelyNormalizedOrbitalField(vol)) {
         record.surfaceMetricCache.set(cacheKey, null);
