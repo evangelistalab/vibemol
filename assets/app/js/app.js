@@ -6295,6 +6295,8 @@
   const emptyStateDropZoneEl = document.getElementById('emptyStateDropZone');
   const emptyStateOpenBtn = document.getElementById('emptyStateOpenBtn');
   const emptyStateSampleBtn = document.getElementById('emptyStateSampleBtn');
+  const emptyStateMethaneBtn = document.getElementById('emptyStateMethaneBtn');
+  const emptyState2cBtn = document.getElementById('emptyState2cBtn');
   const pubchemQueryInput = document.getElementById('pubchemQuery');
   const pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
   const pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
@@ -6639,6 +6641,37 @@
     emptyStateSampleBtn.onclick = async () => {
       const ok = await loadSampleCube();
       if (!ok) setHintMessage('Could not load sample.cube. Check assets/data/sample.cube.');
+    };
+  }
+  if (emptyStateMethaneBtn) {
+    emptyStateMethaneBtn.onclick = async () => {
+      const ok = await loadBundledVolumeSet([
+        './assets/data/methane/canonical_1.cube',
+        './assets/data/methane/canonical_2.cube',
+        './assets/data/methane/canonical_3.cube',
+        './assets/data/methane/canonical_4.cube',
+        './assets/data/methane/localized_1.cube',
+        './assets/data/methane/localized_2.cube',
+        './assets/data/methane/localized_3.cube',
+        './assets/data/methane/localized_4.cube',
+      ], 'methane valence orbitals');
+      if (!ok) setHintMessage('Could not load methane valence orbitals. Check assets/data/methane.');
+    };
+  }
+  if (emptyState2cBtn) {
+    emptyState2cBtn.onclick = async () => {
+      const ok = await loadBundledVolumeSet([
+        './assets/data/2ccubes/orbital_0.2ccube',
+        './assets/data/2ccubes/orbital_1.2ccube',
+        './assets/data/2ccubes/orbital_2.2ccube',
+        './assets/data/2ccubes/orbital_3.2ccube',
+        './assets/data/2ccubes/orbital_4.2ccube',
+        './assets/data/2ccubes/orbital_5.2ccube',
+        './assets/data/2ccubes/orbital_6.2ccube',
+        './assets/data/2ccubes/orbital_7.2ccube',
+        './assets/data/2ccubes/orbital_8.2ccube',
+      ], '2-component cube set');
+      if (!ok) setHintMessage('Could not load 2-component cube set. Check assets/data/2ccubes.');
     };
   }
   // Toggle surface rendering button
@@ -19264,6 +19297,43 @@
       return true;
     } catch (err) {
       console.warn('[CUBE] Could not auto-load sample.cube:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Load a bundled set of cube-like files and replace the current scene contents.
+   * Used by onboarding quick actions for curated example datasets.
+   * @param {string[]} filePaths
+   * @param {string} label
+   * @returns {Promise<boolean>}
+   */
+  async function loadBundledVolumeSet(filePaths, label) {
+    const paths = Array.isArray(filePaths) ? filePaths.filter(Boolean) : [];
+    if (!paths.length) return false;
+    try {
+      const records = [];
+      for (const path of paths) {
+        const resp = await fetch(path, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`${path}: HTTP ${resp.status}`);
+        const text = await resp.text();
+        const name = String(path.split('/').pop() || path);
+        const vol = parseVolumeByName(name, text);
+        records.push({ name, vol });
+      }
+      volumes = [];
+      currentIndex = -1;
+      clearSceneMeshes();
+      clearEditHistory();
+      for (const item of records) appendParsedVolumeRecord(item.name, item.vol, { isSample: true });
+      finalizeLoadedVolumes(0, {
+        resetIsoToDefault: true,
+        skipAutoIsoOnInitialRebuild: true,
+      });
+      setNavigationHint(`Loaded ${label}`, { includeStyles: true });
+      return true;
+    } catch (err) {
+      console.warn(`[CUBE] Could not load bundled dataset ${label}:`, err);
       return false;
     }
   }

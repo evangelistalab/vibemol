@@ -932,11 +932,14 @@
     #emptyStateSecondary {
       margin-top: 10px;
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
       justify-content: center;
       pointer-events: auto;
     }
 
-    #emptyStateSampleBtn {
+    #emptyStateSecondary button {
       appearance: none;
       border: none;
       background: transparent;
@@ -2800,6 +2803,8 @@
       </div>
       <div id="emptyStateSecondary">
         <button id="emptyStateSampleBtn" type="button">Open sample file</button>
+        <button id="emptyStateMethaneBtn" type="button">Open methane valence orbitals</button>
+        <button id="emptyState2cBtn" type="button">Open 2-component cube set</button>
       </div>
     </div>
   </div>
