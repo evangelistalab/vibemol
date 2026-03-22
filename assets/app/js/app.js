@@ -24,6 +24,7 @@
   const MOLDEN_GRID_MAX_AXIS = 84;
   const MOLDEN_GRID_MIN_AXIS = 36;
   const MOLDEN_GRID_MAX_TOTAL_POINTS = 360000;
+  const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
   const DEFAULT_ISO_VALUE = 0.02;
   const HEADER_HAPPY_EMOJIS = Object.freeze(['🙂', '😊', '😄', '😃', '😁', '😎', '🤓', '😺', '🤠', '🫡', '😇', '😍', '🫡', '🥳']);
   /**
@@ -6335,7 +6336,7 @@
     return el;
   })();
   let toolbarTooltipAnchorEl = null;
-  let global2CComponentMode = (componentSelect && componentSelect.value) || 'alphaRe';
+  let global2CComponentMode = (componentSelect && componentSelect.value) || DEFAULT_2C_COMPONENT_MODE;
 
   /**
    * Build one compact option label for a parsed Molden molecular orbital.
@@ -15235,7 +15236,7 @@
     if (cloudAlphaEl) cloudAlphaEl.value = String(n);
   });
   registerPresetSetting('twoComponent.mode', () => global2CComponentMode, (value) => {
-    const next = (typeof value === 'string' && value) ? value : 'alphaRe';
+    const next = (typeof value === 'string' && value) ? value : DEFAULT_2C_COMPONENT_MODE;
     applyGlobal2CComponent(next);
     if (componentSelect) componentSelect.value = next;
   });
@@ -18611,7 +18612,7 @@
    * @param {string} compMode
    */
   function applyGlobal2CComponent(compMode) {
-    global2CComponentMode = compMode || 'alphaRe';
+    global2CComponentMode = compMode || DEFAULT_2C_COMPONENT_MODE;
     for (const record of volumes) setVolume2CComponent(record, global2CComponentMode);
   }
 
@@ -18621,7 +18622,9 @@
    * @returns {string}
    */
   function getComponentMode(vol) {
-    return (vol && vol.isTwoComponent) ? (volumes[currentIndex].component || global2CComponentMode || 'alphaRe') : 'alphaRe';
+    return (vol && vol.isTwoComponent)
+      ? (volumes[currentIndex].component || global2CComponentMode || DEFAULT_2C_COMPONENT_MODE)
+      : 'alphaRe';
   }
 
   /**
@@ -19027,7 +19030,7 @@
       const is2c = !!(vol && vol.isTwoComponent);
       componentRow.style.display = is2c ? 'grid' : 'none';
       if (is2c && componentSelect) {
-        componentSelect.value = global2CComponentMode || volumes[currentIndex].component || 'alphaRe';
+        componentSelect.value = global2CComponentMode || volumes[currentIndex].component || DEFAULT_2C_COMPONENT_MODE;
       }
     }
 
