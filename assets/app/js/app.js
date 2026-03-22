@@ -105,11 +105,9 @@
 
   const {
     copyCameraPose: copyCameraPoseUtil,
-    getViewportSize: getViewportSizeUtil,
-    computePerspectiveFitDistance,
     computeOrthographicFrustum,
   } = window.VibeMolViewUtils || {};
-  if (![copyCameraPoseUtil, getViewportSizeUtil, computePerspectiveFitDistance, computeOrthographicFrustum].every(fn => typeof fn === 'function')) {
+  if (![copyCameraPoseUtil, computeOrthographicFrustum].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolViewUtils is not loaded. Ensure assets/app/js/view-utils.js is included before assets/app/js/app.js.');
   }
 
@@ -604,7 +602,95 @@
   // --- Three.js scene setup ---
   const canvas = document.getElementById('canvas');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1);
   renderer.autoClear = false; // allow overlay rendering in same canvas
+  const rendererDrawBufferSize = new THREE.Vector2();
+  const currentViewportMetrics = {
+    cssWidth: 1,
+    cssHeight: 1,
+    bufferWidth: 1,
+    bufferHeight: 1,
+    dpr: 1,
+  };
+
+  /**
+   * Read one CSS viewport size from the active drop region.
+   * @returns {{width:number,height:number}}
+   */
+  function readViewportCssSize() {
+    const rect = dropViewportEl && typeof dropViewportEl.getBoundingClientRect === 'function'
+      ? dropViewportEl.getBoundingClientRect()
+      : null;
+    return {
+      width: Math.max(1, Math.round(rect ? rect.width : window.innerWidth)),
+      height: Math.max(1, Math.round(rect ? rect.height : window.innerHeight)),
+    };
+  }
+
+  /**
+   * Read the current viewport metrics in CSS pixels and buffer pixels.
+   * @returns {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number,dpr:number}}
+   */
+  function readRendererViewportMetrics() {
+    renderer.getDrawingBufferSize(rendererDrawBufferSize);
+    return {
+      cssWidth: Math.max(1, Math.round(currentViewportMetrics.cssWidth || 1)),
+      cssHeight: Math.max(1, Math.round(currentViewportMetrics.cssHeight || 1)),
+      bufferWidth: Math.max(1, Math.round(rendererDrawBufferSize.x || 1)),
+      bufferHeight: Math.max(1, Math.round(rendererDrawBufferSize.y || 1)),
+      dpr: Math.max(1, Number(currentViewportMetrics.dpr) || 1),
+    };
+  }
+
+  /**
+   * Apply one CSS-space viewport to the renderer backing store.
+   * @param {{cssWidth:number,cssHeight:number,dpr:number}} metrics
+   */
+  function resizeRendererToViewport(metrics) {
+    const cssWidth = Math.max(1, Math.round(metrics && metrics.cssWidth));
+    const cssHeight = Math.max(1, Math.round(metrics && metrics.cssHeight));
+    const dpr = Math.max(1, Number(metrics && metrics.dpr) || 1);
+    renderer.setPixelRatio(1);
+    renderer.setSize(
+      Math.max(1, Math.round(cssWidth * dpr)),
+      Math.max(1, Math.round(cssHeight * dpr)),
+      false
+    );
+    if (canvas) {
+      canvas.style.width = `${cssWidth}px`;
+      canvas.style.height = `${cssHeight}px`;
+    }
+    currentViewportMetrics.cssWidth = cssWidth;
+    currentViewportMetrics.cssHeight = cssHeight;
+    currentViewportMetrics.dpr = dpr;
+    const next = readRendererViewportMetrics();
+    currentViewportMetrics.bufferWidth = next.bufferWidth;
+    currentViewportMetrics.bufferHeight = next.bufferHeight;
+  }
+
+  /**
+   * Convert one CSS-space rectangle to buffer-space viewport/scissor coordinates.
+   * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
+   * @param {number} x
+   * @param {number} y
+   * @param {number} width
+   * @param {number} height
+   * @returns {{x:number,y:number,width:number,height:number}}
+   */
+  function cssRectToBufferRect(metrics, x, y, width, height) {
+    const cssWidth = Math.max(1, Number(metrics && metrics.cssWidth) || 1);
+    const cssHeight = Math.max(1, Number(metrics && metrics.cssHeight) || 1);
+    const bufferWidth = Math.max(1, Number(metrics && metrics.bufferWidth) || 1);
+    const bufferHeight = Math.max(1, Number(metrics && metrics.bufferHeight) || 1);
+    const scaleX = bufferWidth / cssWidth;
+    const scaleY = bufferHeight / cssHeight;
+    return {
+      x: Math.round((Number(x) || 0) * scaleX),
+      y: Math.round((Number(y) || 0) * scaleY),
+      width: Math.max(1, Math.round((Number(width) || 0) * scaleX)),
+      height: Math.max(1, Math.round((Number(height) || 0) * scaleY)),
+    };
+  }
   const scene = new THREE.Scene();
   // Default to white background
   scene.background = new THREE.Color(0xffffff);
@@ -635,6 +721,7 @@
 
   /**
    * Update the active camera projection parameters for one viewport size.
+   * Width/height are CSS viewport dimensions, not drawing-buffer dimensions.
    * @param {number} width
    * @param {number} height
    */
@@ -674,13 +761,13 @@
    * Uses the drop container bounds so sidebar layout changes keep correct aspect.
    */
   function resize() {
-    const rect = dropViewportEl && typeof dropViewportEl.getBoundingClientRect === 'function'
-      ? dropViewportEl.getBoundingClientRect()
-      : null;
-    const w = Math.max(1, Math.round(rect ? rect.width : window.innerWidth));
-    const h = Math.max(1, Math.round(rect ? rect.height : window.innerHeight));
-    renderer.setSize(w, h, false);
-    updateActiveCameraProjection(w, h);
+    const cssSize = readViewportCssSize();
+    resizeRendererToViewport({
+      cssWidth: cssSize.width,
+      cssHeight: cssSize.height,
+      dpr: Math.min(2, window.devicePixelRatio || 1),
+    });
+    updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight);
     const vibrationPanelEl = document.getElementById('vibrationPanel');
     if (vibrationPanelEl && vibrationPanelEl.classList.contains('open')) {
       scheduleVibrationPanelLayoutSync(1);
@@ -5197,42 +5284,127 @@
   }
 
   /**
-   * Fit camera position and clipping planes to the current visible content bounds.
+   * Collect visible scene bounds used for camera fitting.
+   * @returns {{contentBox:THREE.Box3,atomBox:THREE.Box3,hasContent:boolean,hasAtoms:boolean}}
    */
-  function fitCameraToScene() {
-    const box = new THREE.Box3();
-    let hasSomething = false;
-    for (const m of meshes) { box.expandByObject(m); hasSomething = true; }
-    if (atomGroup.children.length) { box.expandByObject(atomGroup); hasSomething = true; }
-    if (bondGroup.children.length) { box.expandByObject(bondGroup); hasSomething = true; }
-    if (boxHelper) { box.expandByObject(boxHelper); hasSomething = true; }
-    if (!hasSomething || box.isEmpty()) return;
+  function collectVisibleSceneBounds() {
+    const contentBox = new THREE.Box3();
+    const atomBox = new THREE.Box3();
+    let hasContent = false;
+    let hasAtoms = false;
+    for (const m of meshes) {
+      contentBox.expandByObject(m);
+      hasContent = true;
+    }
+    if (atomGroup.children.length) {
+      contentBox.expandByObject(atomGroup);
+      atomBox.expandByObject(atomGroup);
+      hasContent = true;
+      hasAtoms = true;
+    }
+    if (bondGroup.children.length) {
+      contentBox.expandByObject(bondGroup);
+      hasContent = true;
+    }
+    if (boxHelper) {
+      contentBox.expandByObject(boxHelper);
+      hasContent = true;
+    }
+    return { contentBox, atomBox, hasContent, hasAtoms };
+  }
 
-    const size = new THREE.Vector3(), center = new THREE.Vector3();
-    box.getSize(size); box.getCenter(center);
-    const maxDim = Math.max(size.x, size.y, size.z);
-    // Tighten fit so the model appears ~1.75x larger
-    const FIT_TIGHTNESS = 1.6 / 1.75;
-    const dist = computePerspectiveFitDistance(maxDim, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV, FIT_TIGHTNESS);
+  /**
+   * Choose one fit center for the current scene.
+   * @param {{contentBox:THREE.Box3,atomBox:THREE.Box3,hasAtoms:boolean}} bounds
+   * @returns {THREE.Vector3}
+   */
+  function computeSceneFitCenter(bounds) {
+    const center = new THREE.Vector3();
+    if (bounds && bounds.hasAtoms && bounds.atomBox && !bounds.atomBox.isEmpty()) {
+      return bounds.atomBox.getCenter(center);
+    }
+    return bounds.contentBox.getCenter(center);
+  }
+
+  /**
+   * Compute fit geometry for the current scene bounds and center.
+   * @param {{contentBox:THREE.Box3}} bounds
+   * @param {THREE.Vector3} center
+   * @param {number} cssAspect
+   * @param {number} fovDeg
+   * @returns {{fitRadius:number,fitDiameter:number,distance:number}}
+   */
+  function computeSceneFitGeometry(bounds, center, cssAspect, fovDeg) {
+    const box = bounds && bounds.contentBox;
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const corners = [
+      new THREE.Vector3(box.min.x, box.min.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.max.z),
+    ];
+    let fitRadius = 0;
+    for (const corner of corners) fitRadius = Math.max(fitRadius, center.distanceTo(corner));
+    if (!(fitRadius > 1e-6)) fitRadius = Math.max(size.x, size.y, size.z) * 0.5;
+
+    const aspect = Math.max(1e-6, Number(cssAspect) || 1);
+    const verticalHalfFov = THREE.MathUtils.degToRad(Math.max(1, Number(fovDeg) || DEFAULT_PERSPECTIVE_FOV) * 0.5);
+    const horizontalHalfFov = Math.atan(Math.tan(verticalHalfFov) * aspect);
+    const limitingHalfFov = Math.max(1e-6, Math.min(verticalHalfFov, horizontalHalfFov));
+    const FIT_MARGIN = 1.12;
+    const fitDiameter = Math.max(1e-6, fitRadius * 2);
+    const distance = Math.max(0.01, (fitRadius * FIT_MARGIN) / Math.sin(limitingHalfFov));
+    return { fitRadius, fitDiameter, distance };
+  }
+
+  /**
+   * Apply one computed camera fit to the active view/camera.
+   * @param {THREE.Vector3} center
+   * @param {number} distance
+   * @param {number} fitDiameter
+   */
+  function applySceneCameraFit(center, distance, fitDiameter) {
     const dir = new THREE.Vector3(1, 1, 1).normalize();
-    camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
+    const aspect = Math.max(1e-6, currentViewportMetrics.cssWidth / Math.max(1, currentViewportMetrics.cssHeight));
+    camera.position.copy(center.clone().add(dir.multiplyScalar(distance)));
     if (viewState.mode === 'orthographic') {
-      const aspect = Math.max(1e-6, (renderer.domElement.width || 1) / Math.max(1, (renderer.domElement.height || 1)));
-      const frustum = computeOrthographicFrustum(aspect, dist, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV);
+      const frustum = computeOrthographicFrustum(aspect, distance, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV);
       orthographicCamera.left = frustum.left;
       orthographicCamera.right = frustum.right;
       orthographicCamera.top = frustum.top;
       orthographicCamera.bottom = frustum.bottom;
-      orthographicCamera.near = Math.max(0.01, dist / 100);
-      orthographicCamera.far = Math.max(orthographicCamera.near + 10, dist * 10 + maxDim);
+      orthographicCamera.near = Math.max(0.01, distance / 100);
+      orthographicCamera.far = Math.max(orthographicCamera.near + 10, distance * 10 + fitDiameter);
       orthographicCamera.updateProjectionMatrix();
     } else {
-      perspectiveCamera.near = Math.max(0.01, dist / 100);
-      perspectiveCamera.far = dist * 10 + maxDim;
+      perspectiveCamera.near = Math.max(0.01, distance / 100);
+      perspectiveCamera.far = distance * 10 + fitDiameter;
       perspectiveCamera.updateProjectionMatrix();
     }
     controls.target.copy(center);
     controls.update();
+  }
+
+  /**
+   * Fit camera position and clipping planes to the current visible content bounds.
+   */
+  function fitCameraToScene() {
+    const metrics = readRendererViewportMetrics();
+    const bounds = collectVisibleSceneBounds();
+    if (!bounds.hasContent || bounds.contentBox.isEmpty()) return;
+    const center = computeSceneFitCenter(bounds);
+    const fit = computeSceneFitGeometry(
+      bounds,
+      center,
+      metrics.cssWidth / Math.max(1, metrics.cssHeight),
+      perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV
+    );
+    applySceneCameraFit(center, fit.distance, fit.fitDiameter);
   }
 
   let trajectoryPlaying = false;
@@ -5977,6 +6149,100 @@
   let __fpsEMA = 0;
 
   /**
+   * Find alpha/beta render objects for split 2C rendering.
+   * @returns {{alphaObject:THREE.Object3D,betaObject:THREE.Object3D}|null}
+   */
+  function findAlphaBetaRenderObjects() {
+    let alphaObject = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'alpha');
+    let betaObject = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'beta');
+    if ((!alphaObject || !betaObject) && cloudGroup && cloudGroup.children) {
+      /**
+       * Find a phase object in the cloud group.
+       * @param {'alpha'|'beta'} which
+       * @returns {THREE.Object3D|undefined}
+       */
+      const findInCloud = (which) => cloudGroup.children.find(o => o && o.userData && o.userData.phaseHue && o.userData.which === which);
+      if (!alphaObject) alphaObject = findInCloud('alpha');
+      if (!betaObject) betaObject = findInCloud('beta');
+    }
+    if (!alphaObject || !betaObject) return null;
+    return { alphaObject, betaObject };
+  }
+
+  /**
+   * Render the active 2C alpha/beta phase split view when available.
+   * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
+   * @returns {boolean}
+   */
+  function renderAlphaBetaSplitPass(metrics) {
+    const record = volumes[currentIndex];
+    const vol = record && record.vol;
+    const mode = record && record.component;
+    if (!(vol && vol.isTwoComponent && mode === 'alphaBetaPhase')) return false;
+    const renderObjects = findAlphaBetaRenderObjects();
+    if (!renderObjects) return false;
+    const leftWidth = Math.max(1, Math.floor(metrics.bufferWidth / 2));
+    const rightWidth = Math.max(1, metrics.bufferWidth - leftWidth);
+    const cssHalfWidth = Math.max(1, metrics.cssWidth / 2);
+    const { alphaObject, betaObject } = renderObjects;
+    const prevAlphaVisible = alphaObject.visible;
+    const prevBetaVisible = betaObject.visible;
+    renderer.clear();
+    renderer.setScissorTest(true);
+    try {
+      betaObject.visible = false;
+      alphaObject.visible = true;
+      renderer.setScissor(0, 0, leftWidth, metrics.bufferHeight);
+      renderer.setViewport(0, 0, leftWidth, metrics.bufferHeight);
+      updateActiveCameraProjection(cssHalfWidth, metrics.cssHeight);
+      renderer.render(scene, camera);
+
+      renderer.clearDepth();
+      alphaObject.visible = false;
+      betaObject.visible = true;
+      renderer.setScissor(leftWidth, 0, rightWidth, metrics.bufferHeight);
+      renderer.setViewport(leftWidth, 0, rightWidth, metrics.bufferHeight);
+      updateActiveCameraProjection(cssHalfWidth, metrics.cssHeight);
+      renderer.render(scene, camera);
+      return true;
+    } finally {
+      alphaObject.visible = prevAlphaVisible;
+      betaObject.visible = prevBetaVisible;
+      renderer.setScissorTest(false);
+      updateActiveCameraProjection(metrics.cssWidth, metrics.cssHeight);
+    }
+  }
+
+  /**
+   * Render the main scene into one full viewport.
+   * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   */
+  function renderMainScenePass(metrics) {
+    renderer.clear();
+    renderer.setViewport(0, 0, metrics.bufferWidth, metrics.bufferHeight);
+    renderer.setScissorTest(false);
+    renderer.render(scene, camera);
+  }
+
+  /**
+   * Render the bottom-left axis overlay.
+   * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
+   */
+  function renderAxisOverlayPass(metrics) {
+    if (!window.__showAxes__) return;
+    axisGizmo.quaternion.copy(camera.quaternion).invert();
+    const px = Math.max(64, Math.min(128, Math.floor(Math.min(metrics.cssWidth, metrics.cssHeight) / 5)));
+    const margin = 10;
+    const rect = cssRectToBufferRect(metrics, margin, margin, px, px);
+    renderer.clearDepth();
+    renderer.setScissorTest(true);
+    renderer.setScissor(rect.x, rect.y, rect.width, rect.height);
+    renderer.setViewport(rect.x, rect.y, rect.width, rect.height);
+    renderer.render(axisScene, axisCamera);
+    renderer.setScissorTest(false);
+  }
+
+  /**
    * Main animation loop: render scene, optional split-view, FPS meter, and axis overlay.
    */
   function render() {
@@ -5986,62 +6252,10 @@
     controls.update();
     updateTrackedAtomLabelOrientation();
     updateInkOutlineThickness();
-
-    // Split render for 2C alpha/beta phase side-by-side
+    const metrics = readRendererViewportMetrics();
     let didSplit = false;
-    try {
-      const vrec = volumes[currentIndex];
-      const v = vrec && vrec.vol;
-      const mode = vrec && vrec.component;
-      if (v && v.isTwoComponent && mode === 'alphaBetaPhase') {
-        const w = renderer.domElement.width | 0;
-        const h = renderer.domElement.height | 0;
-        const half = Math.max(1, (w / 2) | 0);
-        let alphaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'alpha');
-        let betaMesh = meshes.find(m => m && m.userData && m.userData.phaseHue && m.userData.which === 'beta');
-        // Fallback to cloud objects if surfaces are not present
-        if ((!alphaMesh || !betaMesh) && cloudGroup && cloudGroup.children) {
-          /**
-           * Find in cloud.
-           * @param {*} which
-           */
-          const findInCloud = (which) => cloudGroup.children.find(o => o && o.userData && o.userData.phaseHue && o.userData.which === which);
-          if (!alphaMesh) alphaMesh = findInCloud('alpha');
-          if (!betaMesh) betaMesh = findInCloud('beta');
-        }
-        if (alphaMesh && betaMesh) {
-          didSplit = true;
-          renderer.clear();
-          renderer.setScissorTest(true);
-          // Left: alpha
-          if (betaMesh) betaMesh.visible = false; alphaMesh.visible = true;
-          renderer.setScissor(0, 0, half, h);
-          renderer.setViewport(0, 0, half, h);
-          updateActiveCameraProjection(half, h);
-          renderer.render(scene, camera);
-          // Right: beta
-          renderer.clearDepth();
-          alphaMesh.visible = false; if (betaMesh) betaMesh.visible = true;
-          renderer.setScissor(half, 0, w - half, h);
-          renderer.setViewport(half, 0, w - half, h);
-          updateActiveCameraProjection(half, h);
-          renderer.render(scene, camera);
-          // Restore visibility
-          alphaMesh.visible = true; if (betaMesh) betaMesh.visible = true;
-          renderer.setScissorTest(false);
-          // Restore full-aspect projection
-          updateActiveCameraProjection(w, h);
-        }
-      }
-    } catch { }
-
-    if (!didSplit) {
-      // Main scene (single viewport)
-      renderer.clear();
-      renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
-      renderer.setScissorTest(false);
-      renderer.render(scene, camera);
-    }
+    try { didSplit = renderAlphaBetaSplitPass(metrics); } catch { }
+    if (!didSplit) renderMainScenePass(metrics);
 
     // FPS update
     const dt = now - __fpsLast; __fpsLast = now;
@@ -6054,22 +6268,7 @@
       __fpsAccMs = 0; __fpsFrames = 0;
     }
 
-    // Overlay axes (bottom-left) — only if enabled
-    if (window.__showAxes__) {
-      // Copy view rotation only by rotating the gizmo opposite the camera
-      // so it reflects world-axis orientation in the current view.
-      axisGizmo.quaternion.copy(camera.quaternion).invert();
-      const size = new THREE.Vector2();
-      renderer.getSize(size);
-      const px = Math.max(64, Math.min(128, Math.floor(Math.min(size.x, size.y) / 5)));
-      const margin = 10;
-      renderer.clearDepth();
-      renderer.setScissorTest(true);
-      renderer.setScissor(margin, margin, px, px);
-      renderer.setViewport(margin, margin, px, px);
-      // Orthographic camera has fixed framing; no aspect update needed
-      renderer.render(axisScene, axisCamera);
-    }
+    renderAxisOverlayPass(metrics);
 
     requestAnimationFrame(render);
   }
@@ -7976,7 +8175,10 @@
    * @returns {{w:number,h:number}}
    */
   function getViewportSize() {
-    return getViewportSizeUtil(renderer, window.innerWidth, window.innerHeight);
+    return {
+      w: Math.max(1, Number(currentViewportMetrics.cssWidth) || 1),
+      h: Math.max(1, Number(currentViewportMetrics.cssHeight) || 1),
+    };
   }
 
   /**
@@ -11757,7 +11959,7 @@
     camera.position.copy(target).add(offset);
     camera.up.copy(upAxis);
     camera.lookAt(target);
-    updateActiveCameraProjection(renderer.domElement.width || 1, renderer.domElement.height || 1);
+    updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight);
     refreshViewUI();
   }
   // --- Edit selection (temporary list) and visuals ---
