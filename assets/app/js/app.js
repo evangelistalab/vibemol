@@ -821,6 +821,104 @@
   addShadedArrow(new THREE.Vector3(0, 0, 1), 0x0074d9); // Z - blue
   axisScene.add(axisGizmo);
 
+  const dofPostScene = new THREE.Scene();
+  const dofPostCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  let dofRenderTarget = null;
+  const dofUniforms = {
+    tColor: { value: null },
+    tDepth: { value: null },
+    resolution: { value: new THREE.Vector2(1, 1) },
+    focusDistance: { value: 8.0 },
+    focusRange: { value: 1.5 },
+    blurAmount: { value: 4.0 },
+    cameraNear: { value: 0.1 },
+    cameraFar: { value: 1000.0 },
+    isPerspective: { value: 1.0 },
+  };
+  /**
+   * Create the fullscreen depth-of-field postprocess material.
+   * @param {Record<string, {value:any}>} uniforms
+   * @returns {THREE.ShaderMaterial}
+   */
+  function createDofPostMaterial(uniforms) {
+    return new THREE.ShaderMaterial({
+      uniforms,
+      depthTest: false,
+      depthWrite: false,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tColor;
+        uniform sampler2D tDepth;
+        uniform vec2 resolution;
+        uniform float focusDistance;
+        uniform float focusRange;
+        uniform float blurAmount;
+        uniform float cameraNear;
+        uniform float cameraFar;
+        uniform float isPerspective;
+        varying vec2 vUv;
+
+        float linearizeDepth(float depth) {
+          if (isPerspective < 0.5) {
+            return mix(cameraNear, cameraFar, depth);
+          }
+          float z = depth * 2.0 - 1.0;
+          return (2.0 * cameraNear * cameraFar) / (cameraFar + cameraNear - z * (cameraFar - cameraNear));
+        }
+
+        vec4 sampleColor(vec2 uv) {
+          return texture2D(tColor, clamp(uv, vec2(0.0), vec2(1.0)));
+        }
+
+        void main() {
+          vec4 base = sampleColor(vUv);
+          float depth = texture2D(tDepth, vUv).r;
+          float linearDepth = linearizeDepth(depth);
+          float range = max(0.001, focusRange);
+          float blurFactor = clamp(abs(linearDepth - focusDistance) / range, 0.0, 1.0);
+          float radius = blurAmount * blurFactor;
+          vec4 outColor = base;
+          if (radius >= 0.01) {
+            vec2 texel = 1.0 / max(resolution, vec2(1.0));
+            vec2 offsets[12];
+            offsets[0] = vec2( 1.0,  0.0);
+            offsets[1] = vec2(-1.0,  0.0);
+            offsets[2] = vec2( 0.0,  1.0);
+            offsets[3] = vec2( 0.0, -1.0);
+            offsets[4] = vec2( 0.7071,  0.7071);
+            offsets[5] = vec2(-0.7071,  0.7071);
+            offsets[6] = vec2( 0.7071, -0.7071);
+            offsets[7] = vec2(-0.7071, -0.7071);
+            offsets[8] = vec2( 1.6,  0.0);
+            offsets[9] = vec2(-1.6,  0.0);
+            offsets[10] = vec2( 0.0,  1.6);
+            offsets[11] = vec2( 0.0, -1.6);
+            vec4 accum = base * 0.18;
+            float weight = 0.18;
+            for (int i = 0; i < 12; ++i) {
+              float tapWeight = (i < 8) ? 0.08 : 0.045;
+              accum += sampleColor(vUv + offsets[i] * texel * radius) * tapWeight;
+              weight += tapWeight;
+            }
+            outColor = accum / weight;
+          }
+          gl_FragColor = outColor;
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+        }
+      `,
+    });
+  }
+  const dofPostMaterial = createDofPostMaterial(dofUniforms);
+  const dofPostQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), dofPostMaterial);
+  dofPostScene.add(dofPostQuad);
+
   // State
   let volumes = []; // {name, vol}
   let currentIndex = -1;
@@ -835,6 +933,8 @@
   let coordsHoveredAtomIndex = -1;
   let coordsInlineEditState = null;
   let showSurfaces = true; // toggle iso-surface visibility
+  let renderMode = 'surface';
+  let cloudType = 'cubes';
   // Autoiso mode applies one cached 85%-density isovalue per orbital/component.
   let autoIsoEnabled = false;
   let autoIsoWorker = null;
@@ -872,6 +972,196 @@
   let moleculeInkEnabled = false;
   let moleculeAtomOpacity = 1.0;
   let moleculeBondOpacity = 1.0;
+  const dofState = {
+    enabled: false,
+    focusMode: 'auto',
+    focusDistance: 8.0,
+    focusRange: 1.5,
+    blurAmount: 4.0,
+  };
+
+  /**
+   * Clamp the depth-of-field focus mode.
+   * @returns {'auto'|'manual'}
+   */
+  function getDofFocusMode() {
+    return dofState.focusMode === 'manual' ? 'manual' : 'auto';
+  }
+
+  /**
+   * Clamp the manual depth-of-field focus distance.
+   * @returns {number}
+   */
+  function getDofFocusDistance() {
+    return Math.max(0.5, Math.min(80, Number.isFinite(dofState.focusDistance) ? dofState.focusDistance : 8.0));
+  }
+
+  /**
+   * Clamp the depth-of-field in-focus range.
+   * @returns {number}
+   */
+  function getDofFocusRange() {
+    return Math.max(0.1, Math.min(20, Number.isFinite(dofState.focusRange) ? dofState.focusRange : 1.5));
+  }
+
+  /**
+   * Clamp the maximum depth-of-field blur radius.
+   * @returns {number}
+   */
+  function getDofBlurAmount() {
+    return Math.max(0, Math.min(12, Number.isFinite(dofState.blurAmount) ? dofState.blurAmount : 4.0));
+  }
+
+  /**
+   * Compute the active focus distance for the current camera.
+   * @returns {number}
+   */
+  function getActiveDofFocusDistance() {
+    if (getDofFocusMode() === 'manual') return getDofFocusDistance();
+    const target = controls && controls.target ? controls.target : new THREE.Vector3();
+    return Math.max(camera.near || 0.1, camera.position.distanceTo(target));
+  }
+
+  /**
+   * Check whether DOF should run for the current frame.
+   * @returns {boolean}
+   */
+  function isDepthOfFieldActive() {
+    return !!dofState.enabled && getDofBlurAmount() > 0.001;
+  }
+
+  /**
+   * Dispose the current DOF render target.
+   */
+  function disposeDofRenderTarget() {
+    if (!dofRenderTarget) return;
+    try { if (dofRenderTarget.depthTexture) dofRenderTarget.depthTexture.dispose(); } catch { }
+    try { dofRenderTarget.dispose(); } catch { }
+    dofRenderTarget = null;
+  }
+
+  /**
+   * Dispose all DOF postprocess resources.
+   */
+  function disposeDofPostprocessResources() {
+    disposeDofRenderTarget();
+    try {
+      if (dofPostQuad.geometry && dofPostQuad.geometry.dispose) dofPostQuad.geometry.dispose();
+    } catch { }
+    try {
+      if (dofPostMaterial && dofPostMaterial.dispose) dofPostMaterial.dispose();
+    } catch { }
+  }
+
+  /**
+   * Ensure one DOF render target exists for the current viewport size.
+   * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   * @returns {THREE.WebGLRenderTarget}
+   */
+  function ensureDofRenderTarget(metrics) {
+    const width = Math.max(1, Number(metrics && metrics.bufferWidth) || 1);
+    const height = Math.max(1, Number(metrics && metrics.bufferHeight) || 1);
+    if (!dofRenderTarget || dofRenderTarget.width !== width || dofRenderTarget.height !== height) {
+      disposeDofRenderTarget();
+      const target = new THREE.WebGLRenderTarget(width, height, {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat,
+        depthBuffer: true,
+        stencilBuffer: false,
+      });
+      target.texture.generateMipmaps = false;
+      target.depthTexture = new THREE.DepthTexture(width, height, THREE.UnsignedIntType);
+      target.depthTexture.minFilter = THREE.NearestFilter;
+      target.depthTexture.magFilter = THREE.NearestFilter;
+      dofRenderTarget = target;
+    }
+    return dofRenderTarget;
+  }
+
+  /**
+   * Update shader uniforms for the current depth-of-field pass.
+   * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   * @param {THREE.WebGLRenderTarget} target
+   */
+  function updateDofUniformState(metrics, target) {
+    dofUniforms.tColor.value = target.texture;
+    dofUniforms.tDepth.value = target.depthTexture || null;
+    dofUniforms.resolution.value.set(
+      Math.max(1, Number(metrics && metrics.bufferWidth) || 1),
+      Math.max(1, Number(metrics && metrics.bufferHeight) || 1)
+    );
+    dofUniforms.focusDistance.value = getActiveDofFocusDistance();
+    dofUniforms.focusRange.value = getDofFocusRange();
+    dofUniforms.blurAmount.value = getDofBlurAmount();
+    dofUniforms.cameraNear.value = Math.max(0.001, camera.near || 0.1);
+    dofUniforms.cameraFar.value = Math.max(dofUniforms.cameraNear.value + 1, camera.far || 1000.0);
+    dofUniforms.isPerspective.value = viewState.mode === 'orthographic' ? 0.0 : 1.0;
+  }
+
+  /**
+   * Composite the current DOF render target onto the main canvas.
+   * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   * @param {THREE.WebGLRenderTarget} target
+   */
+  function renderDepthOfFieldComposite(metrics, target) {
+    updateDofUniformState(metrics, target);
+    renderer.setRenderTarget(null);
+    renderer.setViewport(0, 0, metrics.bufferWidth, metrics.bufferHeight);
+    renderer.setScissorTest(false);
+    renderer.clear();
+    renderer.render(dofPostScene, dofPostCamera);
+  }
+
+  /**
+   * Prepare the postprocess target for this frame.
+   * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   * @returns {THREE.WebGLRenderTarget|null}
+   */
+  function beginPostprocessFrame(metrics) {
+    if (!isDepthOfFieldActive()) {
+      renderer.setRenderTarget(null);
+      return null;
+    }
+    try {
+      const target = ensureDofRenderTarget(metrics);
+      renderer.setRenderTarget(target);
+      return target;
+    } catch (err) {
+      console.warn('[DOF] Postprocess disabled:', err);
+      dofState.enabled = false;
+      syncDofControlState();
+      disposeDofRenderTarget();
+      renderer.setRenderTarget(null);
+      return null;
+    }
+  }
+
+  /**
+   * Render the main scene into the currently bound render target.
+   * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   */
+  function renderSceneFrame(metrics) {
+    let didSplit = false;
+    try {
+      didSplit = renderAlphaBetaSplitPass(metrics);
+    } catch { }
+    if (!didSplit) renderMainScenePass(metrics);
+  }
+
+  /**
+   * Finish the postprocess frame and restore the default framebuffer.
+   * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   * @param {THREE.WebGLRenderTarget|null} target
+   */
+  function endPostprocessFrame(metrics, target) {
+    if (target) {
+      renderDepthOfFieldComposite(metrics, target);
+      return;
+    }
+    renderer.setRenderTarget(null);
+    renderer.setScissorTest(false);
+  }
   const MOLECULE_STYLE_KEYS = Object.freeze([
     'default',
     'toon',
@@ -4665,6 +4955,7 @@
     });
   }
   window.addEventListener('beforeunload', shutdownAutoIsoWorker);
+  window.addEventListener('beforeunload', disposeDofPostprocessResources);
 
   /**
    * Build signed scalar cloud geometry using instanced cubes.
@@ -6253,9 +6544,9 @@
     updateTrackedAtomLabelOrientation();
     updateInkOutlineThickness();
     const metrics = readRendererViewportMetrics();
-    let didSplit = false;
-    try { didSplit = renderAlphaBetaSplitPass(metrics); } catch { }
-    if (!didSplit) renderMainScenePass(metrics);
+    const dofTarget = beginPostprocessFrame(metrics);
+    renderSceneFrame(metrics);
+    endPostprocessFrame(metrics, dofTarget);
 
     // FPS update
     const dt = now - __fpsLast; __fpsLast = now;
@@ -6431,6 +6722,15 @@
   const blackbodyHotColorEl = document.getElementById('blackbodyHotColor');
   const blackbodyHotHexEl = document.getElementById('blackbodyHotHex');
   const blackbodyHotSwatchEl = document.getElementById('blackbodyHotSwatch');
+  const dofToggleEl = document.getElementById('dofToggle');
+  const rowDofFocusMode = document.getElementById('rowDofFocusMode');
+  const dofFocusModeEl = document.getElementById('dofFocusMode');
+  const rowDofFocusDistance = document.getElementById('rowDofFocusDistance');
+  const dofFocusDistanceEl = document.getElementById('dofFocusDistance');
+  const rowDofFocusRange = document.getElementById('rowDofFocusRange');
+  const dofFocusRangeEl = document.getElementById('dofFocusRange');
+  const rowDofBlurAmount = document.getElementById('rowDofBlurAmount');
+  const dofBlurAmountEl = document.getElementById('dofBlurAmount');
   const schemeSelect = document.getElementById('schemeSelect');
   const renderModeSel = document.getElementById('renderMode');
   const twoComponentModeRow = document.getElementById('twoComponentModeRow');
@@ -14673,6 +14973,47 @@
   }
 
   /**
+   * Synchronize depth-of-field controls.
+   */
+  function syncDofControlState() {
+    const enabled = !!dofState.enabled;
+    const focusMode = getDofFocusMode();
+    if (dofToggleEl) dofToggleEl.checked = enabled;
+    syncConditionalControlState(
+      rowDofFocusMode,
+      dofFocusModeEl,
+      enabled,
+      'Choose how depth of field determines the focus plane',
+      'Enable depth of field to change focus mode'
+    );
+    syncConditionalControlState(
+      rowDofFocusDistance,
+      dofFocusDistanceEl,
+      enabled && focusMode === 'manual',
+      'Manual focus distance from the camera in angstrom',
+      'Available when Focus mode is Manual'
+    );
+    syncConditionalControlState(
+      rowDofFocusRange,
+      dofFocusRangeEl,
+      enabled,
+      'Half-width of the in-focus depth band in angstrom',
+      'Enable depth of field to change focus range'
+    );
+    syncConditionalControlState(
+      rowDofBlurAmount,
+      dofBlurAmountEl,
+      enabled,
+      'Maximum blur radius in screen pixels',
+      'Enable depth of field to change blur amount'
+    );
+    if (dofFocusModeEl) dofFocusModeEl.value = focusMode;
+    if (dofFocusDistanceEl) dofFocusDistanceEl.value = getDofFocusDistance().toFixed(1);
+    if (dofFocusRangeEl) dofFocusRangeEl.value = getDofFocusRange().toFixed(1);
+    if (dofBlurAmountEl) dofBlurAmountEl.value = getDofBlurAmount().toFixed(2);
+  }
+
+  /**
    * Bind a numeric input to a clamped state value with optional live scene rebuild.
    * @param {HTMLInputElement|null} inputEl
    * @param {() => number} getClampedValue
@@ -14701,6 +15042,21 @@
   }
 
   /**
+   * Bind one DOF numeric control.
+   * @param {HTMLInputElement|null} inputEl
+   * @param {() => number} getValue
+   * @param {(n:number) => void} setValue
+   */
+  function bindDofNumericControl(inputEl, getValue, setValue) {
+    bindClampedNumericInput(
+      inputEl,
+      getValue,
+      setValue,
+      () => false
+    );
+  }
+
+  /**
    * Apply lighting and control-state updates that depend on `moleculeStyle`.
    */
   function applyMoleculeStyleUiState() {
@@ -14708,6 +15064,7 @@
     syncSurfaceStyleControlState();
     syncGlossyStyleControlsState();
     syncMoleculeFeatureControlsState();
+    syncDofControlState();
   }
 
   // Surface style selector
@@ -14844,6 +15201,30 @@
     }
   }
 
+  if (dofToggleEl) {
+    dofToggleEl.onchange = () => {
+      dofState.enabled = !!dofToggleEl.checked;
+      if (!dofState.enabled) disposeDofRenderTarget();
+      syncDofControlState();
+    };
+  }
+  if (dofFocusModeEl) {
+    dofFocusModeEl.onchange = () => {
+      dofState.focusMode = dofFocusModeEl.value === 'manual' ? 'manual' : 'auto';
+      syncDofControlState();
+    };
+  }
+  bindDofNumericControl(dofFocusDistanceEl, getDofFocusDistance, (n) => {
+    dofState.focusDistance = Math.max(0.5, Math.min(80, Number.isFinite(n) ? n : getDofFocusDistance()));
+  });
+  bindDofNumericControl(dofFocusRangeEl, getDofFocusRange, (n) => {
+    dofState.focusRange = Math.max(0.1, Math.min(20, Number.isFinite(n) ? n : getDofFocusRange()));
+  });
+  bindDofNumericControl(dofBlurAmountEl, getDofBlurAmount, (n) => {
+    dofState.blurAmount = Math.max(0, Math.min(12, Number.isFinite(n) ? n : getDofBlurAmount()));
+  });
+  syncDofControlState();
+
   // Default color schemes for +/- surfaces
   if (schemeSelect) {
     schemeSelect.onchange = () => {
@@ -14859,8 +15240,8 @@
   }
 
   // Render mode / cloud params
-  let renderMode = (renderModeSel && renderModeSel.value) || 'surface';
-  let cloudType = (cloudTypeSel && cloudTypeSel.value) || 'cubes';
+  renderMode = (renderModeSel && renderModeSel.value) || renderMode;
+  cloudType = (cloudTypeSel && cloudTypeSel.value) || cloudType;
   /**
    * Show/hide control rows based on whether surface or cloud mode is active.
    */
@@ -15488,6 +15869,27 @@
   registerPresetSetting('render.cloudAlpha', () => asFiniteNumber(cloudAlphaEl && cloudAlphaEl.value, 0.1), (value) => {
     const n = Math.max(0.025, Math.min(1, asFiniteNumber(value, 0.1)));
     if (cloudAlphaEl) cloudAlphaEl.value = String(n);
+  });
+  registerPresetSetting('render.dof.enabled', () => !!dofState.enabled, (value) => {
+    dofState.enabled = asBoolean(value);
+    if (!dofState.enabled) disposeDofRenderTarget();
+    syncDofControlState();
+  });
+  registerPresetSetting('render.dof.focusMode', () => getDofFocusMode(), (value) => {
+    dofState.focusMode = value === 'manual' ? 'manual' : 'auto';
+    syncDofControlState();
+  });
+  registerPresetSetting('render.dof.focusDistance', () => getDofFocusDistance(), (value) => {
+    dofState.focusDistance = Math.max(0.5, Math.min(80, asFiniteNumber(value, getDofFocusDistance())));
+    syncDofControlState();
+  });
+  registerPresetSetting('render.dof.focusRange', () => getDofFocusRange(), (value) => {
+    dofState.focusRange = Math.max(0.1, Math.min(20, asFiniteNumber(value, getDofFocusRange())));
+    syncDofControlState();
+  });
+  registerPresetSetting('render.dof.blurAmount', () => getDofBlurAmount(), (value) => {
+    dofState.blurAmount = Math.max(0, Math.min(12, asFiniteNumber(value, getDofBlurAmount())));
+    syncDofControlState();
   });
   registerPresetSetting('twoComponent.mode', () => global2CComponentMode, (value) => {
     const next = (typeof value === 'string' && value) ? value : DEFAULT_2C_COMPONENT_MODE;
