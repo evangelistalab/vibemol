@@ -619,6 +619,19 @@
    */
   async function loadFragmentLibraryFromManifest(manifestUrl = './assets/fragments/library.json') {
     const url = String(manifestUrl || '').trim() || './assets/fragments/library.json';
+    const protocol = (typeof location !== 'undefined' && location && typeof location.protocol === 'string')
+      ? location.protocol.toLowerCase()
+      : '';
+    if (protocol === 'file:') {
+      resetFragmentLibraryToBuiltins();
+      return {
+        ok: true,
+        count: FRAGMENT_LIBRARY.length,
+        source: 'built-in defaults (file:// mode)',
+        errors: [],
+        skippedExternal: true,
+      };
+    }
     let response;
     try {
       response = await fetch(url, { cache: 'no-store' });

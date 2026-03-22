@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.5.4';
+  const APP_VERSION = '0.5.5';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -11368,7 +11368,7 @@
       if (result && Array.isArray(result.errors) && result.errors.length) {
         console.warn('[Fragments] Loaded with warnings:', result.errors);
       }
-      if (result && result.count > 0) {
+      if (result && result.count > 0 && !result.skippedExternal) {
         console.info(`[Fragments] Loaded ${result.count} catalog entries from ${result.source || 'manifest'}.`);
       }
     } catch (error) {
@@ -18100,22 +18100,56 @@
   }
 
   /**
-   * Heuristic: identify scalar fields that are already density-like.
+   * Compute and cache basic scalar-field integral statistics for one grid.
+   * Used to distinguish positive-definite orbital amplitudes from true density-like fields.
+   * @param {*} vol
+   * @returns {{min:number,max:number,total:number,totalSquares:number,voxelVolume:number,l2Norm:number}|null}
+   */
+  function getScalarFieldIntegralStats(vol) {
+    const data = vol && vol.data;
+    if (!(data && typeof data.length === 'number' && data.length > 0)) return null;
+    const voxelVolume = getVoxelCellVolumeBohr3(vol);
+    if (!(Number.isFinite(voxelVolume) && voxelVolume > 0)) return null;
+    const cached = vol && vol._scalarFieldIntegralStats;
+    if (cached && cached.dataRef === data && cached.length === data.length && cached.voxelVolume === voxelVolume) {
+      return cached;
+    }
+    let min = Infinity;
+    let max = -Infinity;
+    let total = 0;
+    let totalSquares = 0;
+    for (let i = 0; i < data.length; i++) {
+      const q = Number(data[i]) || 0;
+      if (q < min) min = q;
+      if (q > max) max = q;
+      total += q;
+      totalSquares += q * q;
+    }
+    const result = {
+      dataRef: data,
+      length: data.length,
+      min,
+      max,
+      total,
+      totalSquares,
+      voxelVolume,
+      l2Norm: totalSquares * voxelVolume,
+    };
+    if (vol) vol._scalarFieldIntegralStats = result;
+    return result;
+  }
+
+  /**
+   * For generic cube-like scalar fields, only show the hover metric when the squared
+   * field integrates to roughly 1.0. That is the only case where we treat the field
+   * as an orbital amplitude rather than guessing.
    * @param {*} vol
    * @returns {boolean}
    */
-  function isLikelyDensityLikeScalarField(vol) {
-    const text = `${vol && vol.title ? vol.title : ''} ${vol && vol.comment ? vol.comment : ''}`.toLowerCase();
-    if (/(electron\s*density|spin\s*density|charge\s*density|density\b|rho\b|laplacian|elf\b|lol\b)/.test(text)) return true;
-    const data = vol && vol.data;
-    if (!(data && typeof data.length === 'number' && data.length > 0)) return false;
-    let min = Infinity;
-    for (let i = 0; i < data.length; i++) {
-      const v = Number(data[i]) || 0;
-      if (v < min) min = v;
-      if (min < -1e-6) return false;
-    }
-    return true;
+  function isApproximatelyNormalizedOrbitalField(vol) {
+    const stats = getScalarFieldIntegralStats(vol);
+    if (!stats) return false;
+    return Math.abs((Number(stats.l2Norm) || 0) - 1.0) <= 0.05;
   }
 
   /**
@@ -18156,19 +18190,19 @@
       const useBeta = meta.which === 'beta' || compMode === 'betaPhase';
       const useRaw = !useTotal && !useAlpha && !useBeta;
       if (useRaw) {
-        const densityLike = isLikelyDensityLikeScalarField(vol);
+        if (!isApproximatelyNormalizedOrbitalField(vol)) {
+          record.surfaceMetricCache.set(cacheKey, null);
+          return null;
+        }
         for (let t = 0; t < len; t++) {
           const q = Number(vol.data[t]) || 0;
-          const weight = densityLike ? Math.max(0, q) : (q * q);
+          const weight = q * q;
           totalWeight += weight;
           const inside = meta.sign === 'neg' ? (q <= -iso) : (q >= iso);
           if (inside) insideWeight += weight;
         }
-        if (densityLike) electronCount = insideWeight * voxelVolume;
-        else {
-          assumedOccupation = true;
-          electronCount = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
-        }
+        assumedOccupation = true;
+        electronCount = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
       } else {
         for (let t = 0; t < len; t++) {
           const alphaDensity = (aRe[t] * aRe[t]) + (aIm[t] * aIm[t]);
@@ -18181,7 +18215,11 @@
         electronCount = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
       }
     } else {
-      const densityLike = isLikelyDensityLikeScalarField(vol);
+      const isMoldenMo = vol.kind === 'molden';
+      if (!isMoldenMo && !isApproximatelyNormalizedOrbitalField(vol)) {
+        record.surfaceMetricCache.set(cacheKey, null);
+        return null;
+      }
       const occupancy = (vol.kind === 'molden'
         && vol.molden
         && Array.isArray(vol.molden.mos)
@@ -18192,23 +18230,19 @@
         : null;
       for (let t = 0; t < len; t++) {
         const q = Number(vol.data[t]) || 0;
-        const weight = densityLike ? Math.max(0, q) : (q * q);
+        const weight = q * q;
         totalWeight += weight;
         const inside = meta.sign === 'neg' ? (q <= -iso) : (q >= iso);
         if (inside) insideWeight += weight;
       }
-      if (densityLike) {
-        electronCount = insideWeight * voxelVolume;
-      } else {
-        const occ = Number.isFinite(occupancy) ? occupancy : 1;
-        assumedOccupation = !Number.isFinite(occupancy);
-        electronCount = totalWeight > 1e-16 ? (occ * insideWeight / totalWeight) : 0;
-      }
+      const occ = Number.isFinite(occupancy) ? occupancy : 1;
+      assumedOccupation = !Number.isFinite(occupancy);
+      electronCount = totalWeight > 1e-16 ? (occ * insideWeight / totalWeight) : 0;
     }
 
-    const totalElectrons = (vol.isTwoComponent || !isLikelyDensityLikeScalarField(vol))
-      ? (totalWeight > 1e-16 ? (electronCount / (insideWeight > 1e-16 ? (insideWeight / totalWeight) : 1)) : 0)
-      : (totalWeight * voxelVolume);
+    const totalElectrons = totalWeight > 1e-16
+      ? (electronCount / (insideWeight > 1e-16 ? (insideWeight / totalWeight) : 1))
+      : 0;
     const fraction = totalWeight > 1e-16 ? (insideWeight / totalWeight) : 0;
     const prefix = assumedOccupation ? '~' : '';
     const display = `${prefix}${electronCount.toFixed(3)} e • ${(fraction * 100).toFixed(1)}%`;
