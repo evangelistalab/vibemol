@@ -634,6 +634,11 @@
       font-size: 13px;
     }
 
+    #coordsContent .coordsActiveLabel {
+      margin-bottom: 8px;
+      color: var(--muted);
+    }
+
     #toolbar #pubchemMetaContent {
       padding: 6px 8px;
       border: 1px solid #dde0e6;
@@ -753,6 +758,45 @@
       text-align: left;
       color: var(--muted);
       font-weight: 600;
+    }
+
+    #coordsContent tbody tr[data-atom-index] {
+      transition: background-color 120ms ease;
+    }
+
+    #coordsContent tbody tr[data-atom-index]:hover,
+    #coordsContent tbody tr.coordsRowHovered {
+      background: rgba(74, 163, 255, 0.12);
+    }
+
+    #coordsContent .coordsCellButton {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      text-align: inherit;
+      cursor: pointer;
+    }
+
+    #coordsContent .coordsCellButton:hover {
+      color: #d7ebff;
+    }
+
+    #coordsContent .coordsCellEditor {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 2px 4px;
+      border: 1px solid var(--vm-color-legacy-border-soft);
+      border-radius: 4px;
+      background: var(--vm-color-legacy-dark-surface);
+      color: var(--text);
+      font: inherit;
+      text-align: inherit;
+      outline: none;
     }
 
     #canvas {

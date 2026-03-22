@@ -12,12 +12,16 @@ This is a living roadmap (not tied to a single version). It tracks what is shipp
 ### Completed
 - [x] Multi-frame XYZ trajectory playback (play/pause, frame scrub, FPS, loop).
 - [x] Vibrational mode playback with imports from sidecar JSON, ORCA `.hess`, and Psi4 outputs.
+- [x] Molden import with MO selection, grid controls, and MO-to-grid rendering.
 - [x] PubChem search/import with 3D filtering and metadata display.
 - [x] Preset save/load in web UI and parity-oriented preset support in Python API.
+- [x] Drag-and-drop preset JSON import.
 - [x] Notebook embedding + postMessage file auto-load bridge.
-- [x] Edit mode baseline: move/add/delete/transform, angle snapping, undo/redo, atom numbering, new-file/rename flow.
+- [x] Edit mode baseline: move/add/delete/transform, angle snapping, undo/redo, atom numbering, and new-file flows.
 - [x] Quaternion view rotation across display, measure, and edit background drags.
 - [x] Bond-order inference and multi-bond rendering with aromatic ring support.
+- [x] Coordinates window inline editing for atom order, element type, and Cartesian coordinates.
+- [x] Surface hover metrics for normalized orbital-like grids.
 - [x] Ongoing performance/refactor passes (resource disposal, modular helpers, autoiso worker).
 
 ### Partially completed / needs hardening
@@ -28,8 +32,8 @@ This is a living roadmap (not tied to a single version). It tracks what is shipp
   - external XYZ-backed fragment catalog + manifest loader
   - fragment attach workflow for starter groups
   - standalone molecule placement with click/drag rotate and axis alignment
-  - transform tool exists, but fragment-vs-molecule semantics are not yet first-class
-  - still missing fuse-ring operations, replay/session persistence, and cleanup/relax
+  - transform tool now supports bond-side selection, additive selection, and explicit rotate modes
+  - still missing stronger first-class fragment/molecule identity, fuse-ring operations, replay/session persistence, and cleanup/relax
 
 ## Priority backlog
 
@@ -47,7 +51,13 @@ This is a living roadmap (not tied to a single version). It tracks what is shipp
   - fast cleanup for bond lengths/angles after edits
 - [ ] Group transforms:
   - move/rotate disconnected molecules and tagged fragments as first-class actions
-  - expose pivot/orientation feedback clearly in the editor
+  - continue improving rotation ergonomics and pivot/orientation feedback in the editor
+
+### Immediate next work
+- [ ] Finish builder hardening around attach policies, fragment/molecule identity, and fuse-ring authoring.
+- [ ] Replace the remaining transform ambiguity with explicit fragment-vs-molecule targeting rules and clearer rotation behavior.
+- [ ] Expand the coordinates window from inline edits to richer selection/inspection workflows.
+- [ ] Add regression coverage for editor state changes, coordinate edits, `.hess` companion warnings, and Molden MO rendering.
 
 ### 2) Dynamics and analysis
 - [ ] Trajectory analytics overlay:

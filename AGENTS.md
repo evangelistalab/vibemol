@@ -7,6 +7,7 @@ Supported molecular file types:
 - `.cube` / `.cub`
 - `.2ccube` (two-component)
 - `.xyz`
+- `.molden`
 - `.vib.json` / `.vmodes.json` / `.modes.json` (vibrational mode sidecar data)
 - `.hess` (ORCA Hessian vibrational mode source)
 - `.dat` / `.out` / `.output` (Psi4 text output with harmonic analysis)
@@ -19,6 +20,7 @@ Primary capabilities:
 - Multi-frame XYZ trajectory playback (play/pause, frame slider, FPS, loop)
 - PNG export and XYZ export
 - Portable preset save/load (web and CLI compatible)
+- Molden molecular-orbital parsing, grid generation, and rendering
 
 ## Project Layout
 - `index.html`: UI shell, controls, and required script loading order.
@@ -82,23 +84,28 @@ Preset automation contract exposed globally:
 - Camera rotation uses quaternion orbiting in all interaction modes to avoid pole locking.
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
+- Preset JSON files can be drag-dropped directly into the app and are imported through the normal preset path.
 - Edit Add mode has three submodes: `Atom`, `Fragment`, and `Molecule`.
 - Standalone molecule placement is interactive: click to place, drag to rotate around COM, click again to confirm, `Esc` to cancel, `X/Y/Z` to align preview axes.
 - Fragment/molecule catalog data loads from `assets/fragments/library.json` when available and falls back to built-in starter definitions.
+- In direct `file://` usage, fragment catalog fetch is skipped and built-in fragment defaults are used quietly.
 - Embedded integrations can auto-load files via:
   - `window.VibeMolEmbed.loadFiles(files, options?)`
   - `window.postMessage({ type: 'vibemol:load-files', files, options, requestId? }, targetOrigin)`
   - Response event: `vibemol:load-files:result` with `ok`, `loadedCount`, `loadedNames`, and optional `error`.
 - Vibrational sidecar JSON files can be attached to a loaded molecule (matched by atom count, and atom symbol sequence when provided).
 - ORCA `.hess` files are parsed for `$vibrational_frequencies` + `$normal_modes` and attached using the same matching logic.
+- Dropping an ORCA `.hess` without a same-stem `.xyz` in the same upload batch triggers an explicit warning popup before import continues.
 - Psi4 output logs (`.dat/.out`) are parsed from the harmonic table and create a molecule from the **last** `Geometry (in Angstrom)` block before attaching modes.
+- Molden files expose Molden-specific toolbar controls for MO selection and grid step/padding.
 - Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency) are shown in View panel when available.
 - Trajectory playback and vibrational playback are mutually exclusive for one active file.
 - View controls include `COM → Origin`, principal-axis alignment, orthographic toggle, and `+X/+Y/+Z` camera presets; shortcut `R` shifts active molecule center of mass to origin.
-- `View` and `Coordinates` are separate floating windows; the coordinates window can toggle between angstrom and bohr display.
+- `View` and `Coordinates` are separate floating windows; the coordinates window can toggle between angstrom and bohr display and supports inline atom editing.
 - Malformed file imports (`.xyz`, `.cube`, `.2ccube`) are surfaced via popup errors.
 - Multi-frame `.xyz` files are parsed as trajectories and can be animated from View panel controls.
 - Autoiso caches per file/component/orbital and falls back to synchronous estimation when the worker path is unavailable.
+- Surface hover metrics are shown only for normalized orbital-like grids (`∫q² dV ≈ 1`) and are cached per surface.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Preset `extensions.builder.fragmentOpsByFile` stores fragment-builder operation logs and restores them on load; replay is not implemented yet.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
@@ -124,17 +131,19 @@ Preset automation contract exposed globally:
 
 ## Edit / Builder UX Status
 Implemented:
-- Edit mode defaults to `Move` on entry.
+- Edit mode defaults to `Add` on entry.
 - Add tool includes cursor-relative placement with automatic angle snapping (`180°`, `120°`, `109.5°`, `90°`, `60°`).
 - Hold `Shift` during add-grow placement to bypass angle snap.
 - Edit tools currently include `Move`, `Add`, `Delete`, and `Transform`.
 - Add mode includes `Atom`, `Fragment`, and `Molecule` submodes.
 - Fragment insertion uses the shared fragment catalog and supports starter-group attach flows (for example methyl and hydroxyl geometry overrides).
 - Standalone molecules can be placed by click/drag/click with quaternion rotation around the preview COM.
+- Transform mode supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Delete tool and hover-delete (`Backspace`/`Delete`) are active.
 - Atom labels and atom numbers can be toggled independently.
-- New untitled editable files can be created from the toolbar and renamed in-place.
+- New untitled editable files can be created from the toolbar and duplicated/removed from the active-file control area.
+- Coordinates-window rows mirror atom hover, and the table supports inline editing of atom order, element symbol/atomic number, and Cartesian coordinates with validation.
 
 Discussed but not implemented yet (carry-forward backlog):
 - Clean first-class split between `atoms`, `fragments`, and `molecules` in the builder catalog/UX.
@@ -237,7 +246,7 @@ After non-trivial changes:
 6. Check molecule styles (`default`, `toon`, `kit/Kit`, `glossy`) and keyboard shortcuts `1/2/3/4`.
 7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
 8. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, plus undo/redo and `Esc` cancel for molecule placement.
-9. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, and angstrom/bohr switching.
+9. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, and inline coordinate edits.
 10. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
 11. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
 12. Save PNG and export XYZ; check browser console for errors.

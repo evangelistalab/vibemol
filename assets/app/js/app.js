@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.5.6';
+  const APP_VERSION = '0.6.0';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -744,6 +744,8 @@
   let boxHelper = null;
   // Coordinate table/export display units in the Coordinates window.
   let coordsDisplayUnits = 'angstrom';
+  let coordsHoveredAtomIndex = -1;
+  let coordsInlineEditState = null;
   let showSurfaces = true; // toggle iso-surface visibility
   // Autoiso mode applies one cached 85%-density isovalue per orbital/component.
   let autoIsoEnabled = false;
@@ -11809,7 +11811,11 @@
       clearTransformSelection();
     }
     if (options.measurement !== false) clearMeasurementSelectionForContextChange();
-    if (options.hover !== false) clearHover();
+    if (options.hover !== false) {
+      setCoordsHoveredAtomIndex(-1);
+      clearHover();
+    }
+    if (options.coordsEditor !== false) coordsInlineEditState = null;
     if (options.pointerState !== false) {
       __editDownPt = null;
       __editMoved = false;
@@ -15681,6 +15687,498 @@
   }
 
   /**
+   * Convert one display-space coordinate value back into the volume's native units.
+   * @param {*} vol
+   * @param {number} value
+   * @returns {number}
+   */
+  function coordsDisplayValueToNative(vol, value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return NaN;
+    const displayUnits = normalizeCoordsDisplayUnits(coordsDisplayUnits);
+    if (displayUnits === 'bohr') {
+      return vol && vol.units === 'angstrom' ? n * BOHR_TO_ANG : n;
+    }
+    return vol && vol.units === 'bohr' ? n * ANG_TO_BOHR : n;
+  }
+
+  /**
+   * Return one atom coordinate in the currently displayed coordinates units.
+   * @param {*} vol
+   * @param {*} atom
+   * @param {'x'|'y'|'zCoord'} field
+   * @returns {number}
+   */
+  function getCoordsDisplayValue(vol, atom, field) {
+    if (!atom) return 0;
+    const raw = field === 'x' ? Number(atom.x) : field === 'y' ? Number(atom.y) : Number(atom.z);
+    if (!Number.isFinite(raw)) return 0;
+    const displayUnits = normalizeCoordsDisplayUnits(coordsDisplayUnits);
+    if (displayUnits === 'bohr') {
+      return vol && vol.units === 'angstrom' ? raw * ANG_TO_BOHR : raw;
+    }
+    return vol && vol.units === 'bohr' ? raw * BOHR_TO_ANG : raw;
+  }
+
+  /**
+   * Deep-clone one trajectory state for undoable coordinate-panel edits.
+   * @param {*} traj
+   * @returns {*|null}
+   */
+  function cloneTrajectoryState(traj) {
+    if (!traj || !Array.isArray(traj.frames)) return null;
+    return {
+      frames: traj.frames.map((frame) => new Float32Array(frame)),
+      comments: Array.isArray(traj.comments) ? traj.comments.slice() : [],
+      frameIndex: Number.isFinite(Number(traj.frameIndex)) ? Number(traj.frameIndex) | 0 : 0,
+      fps: Number.isFinite(Number(traj.fps)) ? Number(traj.fps) : 12,
+      loop: traj.loop !== false,
+    };
+  }
+
+  /**
+   * Deep-clone one vibration state for undoable coordinate-panel edits.
+   * @param {*} vib
+   * @returns {*|null}
+   */
+  function cloneVibrationState(vib) {
+    if (!vib || !Array.isArray(vib.modes)) return null;
+    return {
+      kind: vib.kind,
+      sourceName: vib.sourceName || '',
+      units: vib.units || 'angstrom',
+      atomCount: Number(vib.atomCount) || 0,
+      atomSymbols: Array.isArray(vib.atomSymbols) ? vib.atomSymbols.slice() : null,
+      modes: vib.modes.map((mode, idx) => ({
+        label: mode && mode.label ? String(mode.label) : `Mode ${idx + 1}`,
+        frequencyCm1: Number.isFinite(Number(mode && mode.frequencyCm1)) ? Number(mode.frequencyCm1) : NaN,
+        irIntensityKmMol: Number.isFinite(Number(mode && mode.irIntensityKmMol)) ? Number(mode.irIntensityKmMol) : NaN,
+        displacements: new Float32Array(mode && mode.displacements ? mode.displacements : []),
+      })),
+      modeIndex: Number.isFinite(Number(vib.modeIndex)) ? Number(vib.modeIndex) | 0 : 0,
+      amplitude: Number.isFinite(Number(vib.amplitude)) ? Number(vib.amplitude) : VIBRATION_DEFAULT_AMPLITUDE,
+      speed: Number.isFinite(Number(vib.speed)) ? Number(vib.speed) : VIBRATION_DEFAULT_SPEED,
+      phase: Number.isFinite(Number(vib.phase)) ? Number(vib.phase) : 0,
+      equilibrium: vib.equilibrium ? new Float32Array(vib.equilibrium) : null,
+      frameBuffer: vib.frameBuffer ? new Float32Array(vib.frameBuffer) : null,
+    };
+  }
+
+  /**
+   * Deep-clone one Molden metadata state for undoable coordinate-panel edits.
+   * Atom reordering must preserve basis-to-atom index mapping.
+   * @param {*} molden
+   * @returns {*|null}
+   */
+  function cloneMoldenState(molden) {
+    if (!molden || typeof molden !== 'object') return null;
+    return {
+      atomUnit: molden.atomUnit || '',
+      angularFlags: cloneJsonLike(molden.angularFlags) || {},
+      basis: molden.basis ? {
+        atomBlocks: Array.isArray(molden.basis.atomBlocks)
+          ? molden.basis.atomBlocks.map((block) => ({
+            atomIndex: Number(block && block.atomIndex) || 0,
+            shells: Array.isArray(block && block.shells)
+              ? block.shells.map((shell) => cloneJsonLike(shell) || {})
+              : [],
+          }))
+          : [],
+        aoCount: Number(molden.basis.aoCount) || 0,
+      } : null,
+      basisCount: Number(molden.basisCount) || 0,
+      moCount: Number(molden.moCount) || 0,
+      mos: Array.isArray(molden.mos)
+        ? molden.mos.map((mo) => ({
+          symmetry: mo && mo.symmetry ? String(mo.symmetry) : '',
+          energy: Number.isFinite(Number(mo && mo.energy)) ? Number(mo.energy) : null,
+          spin: mo && mo.spin ? String(mo.spin) : '',
+          occupation: Number.isFinite(Number(mo && mo.occupation)) ? Number(mo.occupation) : null,
+          coefficients: new Float32Array(mo && mo.coefficients ? mo.coefficients : []),
+        }))
+        : [],
+    };
+  }
+
+  /**
+   * Snapshot one active record state relevant to coordinates-panel editing.
+   * @param {*} vol
+   * @returns {{atoms:Array<object>,trajectory:*|null,vibration:*|null,molden:*|null}}
+   */
+  function cloneCoordsPanelEditState(vol) {
+    return {
+      atoms: cloneAtomsSnapshot(vol),
+      trajectory: cloneTrajectoryState(vol && vol.trajectory),
+      vibration: cloneVibrationState(vol && vol.vibration),
+      molden: cloneMoldenState(vol && vol.molden),
+    };
+  }
+
+  /**
+   * Restore one coordinates-panel edit snapshot to a record.
+   * @param {*} record
+   * @param {{atoms:Array<object>,trajectory:*|null,vibration:*|null,molden:*|null}} snapshot
+   * @returns {boolean}
+   */
+  function applyCoordsPanelEditState(record, snapshot) {
+    if (!record || !record.vol || !snapshot || !Array.isArray(snapshot.atoms)) return false;
+    const idx = volumes.indexOf(record);
+    if (idx < 0) return false;
+    const vol = record.vol;
+    vol.atoms = snapshot.atoms.map((a) => {
+      const atom = {
+        id: String(a && a.id || '').trim() || allocateBuilderAtomId(),
+        Z: a && a.Z ? (a.Z | 0) : 0,
+        q: Number.isFinite(a && a.q) ? Number(a.q) : 0,
+        x: Number(a && a.x) || 0,
+        y: Number(a && a.y) || 0,
+        z: Number(a && a.z) || 0,
+      };
+      if (a && a.builderGroupId) atom.builderGroupId = String(a.builderGroupId);
+      if (a && a.builderEntryId) atom.builderEntryId = String(a.builderEntryId);
+      if (a && a.builderEntryKind) atom.builderEntryKind = String(a.builderEntryKind);
+      absorbObservedBuilderId(atom.id, 'atom');
+      if (atom.builderGroupId) absorbObservedBuilderId(atom.builderGroupId, 'group');
+      return atom;
+    });
+    if (snapshot.trajectory) vol.trajectory = cloneTrajectoryState(snapshot.trajectory);
+    else delete vol.trajectory;
+    if (snapshot.vibration) vol.vibration = cloneVibrationState(snapshot.vibration);
+    else delete vol.vibration;
+    if (snapshot.molden) vol.molden = cloneMoldenState(snapshot.molden);
+    else delete vol.molden;
+    vol.natoms = vol.atoms.length;
+    trajectoryPlaying = false;
+    trajectoryLastStepMs = 0;
+    vibrationPlaying = false;
+    vibrationLastStepMs = 0;
+    syncBuilderExtensionFromVolumes();
+    currentIndex = idx;
+    clearTransientInteractionState();
+    syncActiveVolumeControls();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    return true;
+  }
+
+  /**
+   * Record one reversible coordinates-panel edit, including atom-indexed auxiliary data.
+   * @param {*} record
+   * @param {{atoms:Array<object>,trajectory:*|null,vibration:*|null,molden:*|null}} before
+   * @param {{atoms:Array<object>,trajectory:*|null,vibration:*|null,molden:*|null}} after
+   * @param {string} label
+   */
+  function pushCoordsPanelEditHistoryEntry(record, before, after, label) {
+    if (!record || !before || !after || !Array.isArray(before.atoms) || !Array.isArray(after.atoms)) return;
+    if (atomsSnapshotsEqual(before.atoms, after.atoms)) return;
+    const command = {
+      type: 'coords_panel_edit',
+      record,
+      before,
+      after,
+      label: String(label || 'Edit coordinates'),
+      at: Date.now(),
+      undo() { return applyCoordsPanelEditState(record, before); },
+      redo() { return applyCoordsPanelEditState(record, after); },
+    };
+    editUndoStack.push(command);
+    if (editUndoStack.length > EDIT_HISTORY_LIMIT) editUndoStack.splice(0, editUndoStack.length - EDIT_HISTORY_LIMIT);
+    editRedoStack.length = 0;
+  }
+
+  /**
+   * Finish one coordinates-panel edit by recording history and refreshing the scene.
+   * @param {*} record
+   * @param {{atoms:Array<object>,trajectory:*|null,vibration:*|null,molden:*|null}} beforeState
+   * @param {string} actionLabel
+   */
+  function finalizeCoordsPanelEdit(record, beforeState, actionLabel) {
+    if (!record || !record.vol || !beforeState) return;
+    const vol = record.vol;
+    vol.natoms = Array.isArray(vol.atoms) ? vol.atoms.length : 0;
+    const afterState = cloneCoordsPanelEditState(vol);
+    pushCoordsPanelEditHistoryEntry(record, beforeState, afterState, actionLabel);
+    trajectoryPlaying = false;
+    trajectoryLastStepMs = 0;
+    vibrationPlaying = false;
+    vibrationLastStepMs = 0;
+    clearTransientInteractionState();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+  }
+
+  /**
+   * Reorder one flat xyzxyz... triple array according to a newIndex->oldIndex order map.
+   * @param {Float32Array|number[]|null} source
+   * @param {number[]} order
+   * @returns {Float32Array|null}
+   */
+  function reorderAtomTriplesByOrder(source, order) {
+    if (!source || !Array.isArray(order)) return null;
+    const out = new Float32Array(order.length * 3);
+    for (let newIdx = 0; newIdx < order.length; newIdx++) {
+      const oldIdx = order[newIdx] | 0;
+      out[3 * newIdx + 0] = Number(source[3 * oldIdx + 0]) || 0;
+      out[3 * newIdx + 1] = Number(source[3 * oldIdx + 1]) || 0;
+      out[3 * newIdx + 2] = Number(source[3 * oldIdx + 2]) || 0;
+    }
+    return out;
+  }
+
+  /**
+   * Build a newIndex->oldIndex atom order map for one move in the coordinates table.
+   * @param {number} count
+   * @param {number} fromIndex
+   * @param {number} toIndex
+   * @returns {number[]}
+   */
+  function buildAtomMoveOrder(count, fromIndex, toIndex) {
+    const order = Array.from({ length: Math.max(0, count | 0) }, (_, idx) => idx);
+    if (!(fromIndex >= 0 && fromIndex < order.length && toIndex >= 0 && toIndex < order.length)) return order;
+    const [moved] = order.splice(fromIndex, 1);
+    order.splice(toIndex, 0, moved);
+    return order;
+  }
+
+  /**
+   * Apply one atom-order permutation to all atom-indexed auxiliary structures.
+   * @param {*} vol
+   * @param {number[]} order newIndex -> oldIndex
+   */
+  function applyAtomOrderToVolumeAuxState(vol, order) {
+    if (!vol || !Array.isArray(order) || order.length === 0) return;
+    const oldToNew = new Int32Array(order.length);
+    for (let newIdx = 0; newIdx < order.length; newIdx++) oldToNew[order[newIdx] | 0] = newIdx;
+
+    if (vol.trajectory && Array.isArray(vol.trajectory.frames)) {
+      vol.trajectory.frames = vol.trajectory.frames.map((frame) => reorderAtomTriplesByOrder(frame, order) || new Float32Array(order.length * 3));
+      vol.trajectory.frameIndex = Math.max(0, Math.min(vol.trajectory.frames.length - 1, Number(vol.trajectory.frameIndex) | 0));
+    }
+    if (vol.vibration && Array.isArray(vol.vibration.modes)) {
+      if (Array.isArray(vol.vibration.atomSymbols)) {
+        vol.vibration.atomSymbols = order.map((oldIdx) => String(vol.vibration.atomSymbols[oldIdx] || ''));
+      }
+      if (vol.vibration.equilibrium) {
+        vol.vibration.equilibrium = reorderAtomTriplesByOrder(vol.vibration.equilibrium, order);
+      }
+      if (vol.vibration.frameBuffer) {
+        vol.vibration.frameBuffer = reorderAtomTriplesByOrder(vol.vibration.frameBuffer, order);
+      }
+      vol.vibration.modes = vol.vibration.modes.map((mode) => ({
+        ...mode,
+        displacements: reorderAtomTriplesByOrder(mode && mode.displacements, order) || new Float32Array(order.length * 3),
+      }));
+      vol.vibration.atomCount = order.length;
+      vol.vibration.modeIndex = Math.max(0, Math.min(vol.vibration.modes.length - 1, Number(vol.vibration.modeIndex) | 0));
+    }
+    if (vol.molden && vol.molden.basis && Array.isArray(vol.molden.basis.atomBlocks)) {
+      for (const block of vol.molden.basis.atomBlocks) {
+        const oldIndex = Number(block && block.atomIndex);
+        if (Number.isInteger(oldIndex) && oldIndex >= 0 && oldIndex < oldToNew.length) {
+          block.atomIndex = oldToNew[oldIndex];
+        }
+      }
+    }
+  }
+
+  /**
+   * Sync trajectory/vibration state after direct atom edits from the coordinates panel.
+   * @param {*} vol
+   */
+  function syncVolumeAuxStateAfterCoordsEdit(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return;
+    const atomCount = vol.atoms.length;
+    if (vol.trajectory && Array.isArray(vol.trajectory.frames) && vol.trajectory.frames.length) {
+      const frameIndex = Math.max(0, Math.min(vol.trajectory.frames.length - 1, Number(vol.trajectory.frameIndex) | 0));
+      vol.trajectory.frameIndex = frameIndex;
+      vol.trajectory.frames[frameIndex] = snapshotAtomCoordinates(vol, atomCount);
+    }
+    if (vol.vibration && Array.isArray(vol.vibration.modes)) {
+      vol.vibration.atomCount = atomCount;
+      vol.vibration.atomSymbols = getVolumeAtomSymbols(vol);
+      vol.vibration.phase = 0;
+      vol.vibration.equilibrium = snapshotAtomCoordinates(vol, atomCount);
+      vol.vibration.frameBuffer = new Float32Array(vol.vibration.equilibrium);
+      vol.vibration.modeIndex = Math.max(0, Math.min(vol.vibration.modes.length - 1, Number(vol.vibration.modeIndex) | 0));
+    }
+  }
+
+  /**
+   * Update row hover in the Coordinates panel and mirror it into scene atom hover.
+   * @param {number} atomIndex
+   */
+  function setCoordsHoveredAtomIndex(atomIndex) {
+    const nextIndex = Number.isInteger(atomIndex) ? atomIndex : -1;
+    if (coordsHoveredAtomIndex === nextIndex) return;
+    if (coordsContent) {
+      const prevRow = coordsContent.querySelector(`tr.coordsRowHovered[data-atom-index="${coordsHoveredAtomIndex}"]`);
+      if (prevRow) prevRow.classList.remove('coordsRowHovered');
+    }
+    coordsHoveredAtomIndex = nextIndex;
+    if (coordsContent && coordsHoveredAtomIndex >= 0) {
+      const row = coordsContent.querySelector(`tr[data-atom-index="${coordsHoveredAtomIndex}"]`);
+      if (row) row.classList.add('coordsRowHovered');
+    }
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const mesh = (record && record.vol && Array.isArray(record.vol.atoms) && atomGroup && atomGroup.children && coordsHoveredAtomIndex >= 0)
+      ? atomGroup.children[coordsHoveredAtomIndex]
+      : null;
+    setBondHover(null);
+    setSurfaceHover(null);
+    hideSurfaceHoverLabel();
+    setHover(mesh && mesh.isMesh ? mesh : null);
+  }
+
+  /**
+   * Close one in-place coordinates-table editor without mutating data.
+   */
+  function cancelCoordsInlineEdit() {
+    if (!coordsInlineEditState) return;
+    coordsInlineEditState = null;
+    updateSidePanel();
+  }
+
+  /**
+   * Start editing one coordinates-table cell inline.
+   * @param {number} atomIndex
+   * @param {'order'|'sym'|'z'|'x'|'y'|'zCoord'} field
+   * @param {HTMLElement} cell
+   */
+  function beginCoordsInlineEdit(atomIndex, field, cell) {
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!record || !vol || !Array.isArray(vol.atoms) || atomIndex < 0 || atomIndex >= vol.atoms.length || !cell) return;
+    if (coordsInlineEditState) cancelCoordsInlineEdit();
+    const atom = vol.atoms[atomIndex];
+    const input = document.createElement('input');
+    input.className = 'coordsCellEditor';
+    if (field === 'sym') input.type = 'text';
+    else input.type = 'number';
+    if (field === 'order' || field === 'z') {
+      input.step = '1';
+      input.min = '1';
+      input.inputMode = 'numeric';
+    } else if (field === 'x' || field === 'y' || field === 'zCoord') {
+      input.step = '0.001';
+    }
+    if (field === 'order') input.value = String(atomIndex + 1);
+    else if (field === 'sym') input.value = getElementSymbol(atom.Z | 0);
+    else if (field === 'z') input.value = String(atom.Z | 0);
+    else input.value = getCoordsDisplayValue(vol, atom, field).toFixed(6).replace(/0+$/u, '').replace(/\.$/u, '');
+    cell.innerHTML = '';
+    cell.appendChild(input);
+    coordsInlineEditState = { atomIndex, field, cell, input };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        void commitCoordsInlineEdit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelCoordsInlineEdit();
+      }
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    });
+    input.addEventListener('click', (e) => {
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    });
+    input.addEventListener('blur', () => { void commitCoordsInlineEdit(); });
+    input.focus();
+    input.select();
+  }
+
+  /**
+   * Commit the currently active inline coordinates-table edit.
+   */
+  function commitCoordsInlineEdit() {
+    const state = coordsInlineEditState;
+    if (!state) return;
+    coordsInlineEditState = null;
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!record || !vol || !Array.isArray(vol.atoms)) {
+      updateSidePanel();
+      return;
+    }
+    const atomIndex = state.atomIndex | 0;
+    if (atomIndex < 0 || atomIndex >= vol.atoms.length) {
+      updateSidePanel();
+      return;
+    }
+    const atom = vol.atoms[atomIndex];
+    const rawValue = String(state.input && state.input.value || '').trim();
+    if (!rawValue) {
+      updateSidePanel();
+      return;
+    }
+    const beforeState = cloneCoordsPanelEditState(vol);
+    let actionLabel = '';
+    if (state.field === 'order') {
+      const nextOrder = Math.trunc(Number(rawValue));
+      if (!Number.isInteger(nextOrder) || nextOrder <= 0 || nextOrder > vol.atoms.length) {
+        setHintMessage(`Atom number must be between 1 and ${vol.atoms.length}.`);
+        updateSidePanel();
+        return;
+      }
+      const targetIndex = nextOrder - 1;
+      if (targetIndex === atomIndex) {
+        updateSidePanel();
+        return;
+      }
+      const order = buildAtomMoveOrder(vol.atoms.length, atomIndex, targetIndex);
+      const [movedAtom] = vol.atoms.splice(atomIndex, 1);
+      vol.atoms.splice(targetIndex, 0, movedAtom);
+      applyAtomOrderToVolumeAuxState(vol, order);
+      syncVolumeAuxStateAfterCoordsEdit(vol);
+      actionLabel = `Renumber atom ${atomIndex + 1} → ${nextOrder}`;
+    } else if (state.field === 'sym') {
+      const nextZ = resolveElementQueryToZ(rawValue);
+      if (!Number.isInteger(nextZ) || nextZ <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[nextZ]) {
+        setHintMessage(`Invalid element symbol or name: "${rawValue}".`);
+        updateSidePanel();
+        return;
+      }
+      if ((atom.Z | 0) === nextZ) {
+        updateSidePanel();
+        return;
+      }
+      atom.Z = nextZ;
+      syncVolumeAuxStateAfterCoordsEdit(vol);
+      actionLabel = `Change atom ${atomIndex + 1} element to ${getElementSymbol(nextZ)}`;
+    } else if (state.field === 'z') {
+      const nextZ = Math.trunc(Number(rawValue));
+      if (!Number.isInteger(nextZ) || nextZ <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[nextZ]) {
+        setHintMessage(`Atomic number must be a valid element between 1 and ${Object.keys(ATOM_Z_TO_DATA || {}).length}.`);
+        updateSidePanel();
+        return;
+      }
+      if ((atom.Z | 0) === nextZ) {
+        updateSidePanel();
+        return;
+      }
+      atom.Z = nextZ;
+      syncVolumeAuxStateAfterCoordsEdit(vol);
+      actionLabel = `Change atom ${atomIndex + 1} atomic number to ${nextZ}`;
+    } else {
+      const nextValue = coordsDisplayValueToNative(vol, Number(rawValue));
+      if (!Number.isFinite(nextValue)) {
+        setHintMessage(`Coordinate must be numeric: "${rawValue}".`);
+        updateSidePanel();
+        return;
+      }
+      const axis = state.field === 'x' ? 'x' : state.field === 'y' ? 'y' : 'z';
+      if (Math.abs((Number(atom[axis]) || 0) - nextValue) <= 1e-12) {
+        updateSidePanel();
+        return;
+      }
+      atom[axis] = nextValue;
+      syncVolumeAuxStateAfterCoordsEdit(vol);
+      actionLabel = `Edit atom ${atomIndex + 1} ${axis}`;
+    }
+    finalizeCoordsPanelEdit(record, beforeState, actionLabel);
+    setHintMessage(`${actionLabel}.`);
+  }
+
+  /**
    * Update Coordinates-window unit labels and button text.
    */
   function syncCoordsUnitsUi() {
@@ -15705,6 +16203,8 @@
    */
   function updateSidePanel() {
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    coordsInlineEditState = null;
+    coordsHoveredAtomIndex = -1;
     syncCoordsUnitsUi();
     coordsContent.innerHTML = renderCoordsContent(
       record,
@@ -15861,6 +16361,42 @@
       coordsDisplayUnits = normalizeCoordsDisplayUnits(coordsDisplayUnits) === 'bohr' ? 'angstrom' : 'bohr';
       updateSidePanel();
     };
+  }
+
+  if (coordsContent) {
+    coordsContent.addEventListener('mouseover', (e) => {
+      const row = e.target && typeof e.target.closest === 'function'
+        ? e.target.closest('tr[data-atom-index]')
+        : null;
+      if (!row || !coordsContent.contains(row)) {
+        setCoordsHoveredAtomIndex(-1);
+        return;
+      }
+      const atomIndex = Number.parseInt(String(row.dataset.atomIndex || ''), 10);
+      setCoordsHoveredAtomIndex(Number.isInteger(atomIndex) ? atomIndex : -1);
+    });
+
+    coordsContent.addEventListener('mouseleave', () => {
+      setCoordsHoveredAtomIndex(-1);
+    });
+
+    coordsContent.addEventListener('click', (e) => {
+      if (e.target && typeof e.target.closest === 'function') {
+        const editor = e.target.closest('.coordsCellEditor');
+        if (editor) return;
+      }
+      const button = e.target && typeof e.target.closest === 'function'
+        ? e.target.closest('.coordsCellButton')
+        : null;
+      if (!button || !coordsContent.contains(button)) return;
+      const atomIndex = Number.parseInt(String(button.dataset.atomIndex || ''), 10);
+      const field = String(button.dataset.editField || '');
+      if (!Number.isInteger(atomIndex) || atomIndex < 0) return;
+      if (!['order', 'sym', 'z', 'x', 'y', 'zCoord'].includes(field)) return;
+      beginCoordsInlineEdit(atomIndex, field, button.parentElement || button);
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    });
   }
 
   /**
@@ -17133,6 +17669,24 @@
       const stem = normalizeFileStem(name);
       if (stem) batchXyzStems.add(stem);
     }
+    const missingOrcaHessCompanions = [];
+    for (const f of arr) {
+      const name = f && f.name ? String(f.name) : '';
+      if (!/\.hess$/iu.test(name)) continue;
+      const hessStem = normalizeFileStem(name);
+      if (!hessStem || !batchXyzStems.has(hessStem)) {
+        missingOrcaHessCompanions.push(name || 'ORCA Hessian');
+      }
+    }
+    if (missingOrcaHessCompanions.length > 0) {
+      const header = missingOrcaHessCompanions.length === 1
+        ? 'ORCA .hess warning:'
+        : 'ORCA .hess warnings:';
+      const body = missingOrcaHessCompanions
+        .map((name, idx) => `${idx + 1}. ${name}: for ORCA vibrational imports, upload both the .xyz and .hess files together (same base name).`)
+        .join('\n');
+      alert(`${header}\n\n${body}`);
+    }
     let hasPreparedTarget = false;
     let startIndex = -1; // index of first newly added
     let loadedCount = 0;
@@ -17163,7 +17717,7 @@
           const hessStem = normalizeFileStem(name || '');
           if (!hessStem || !batchXyzStems.has(hessStem)) {
             failures.push(
-              `${name || 'ORCA Hessian'}: ORCA .hess requires a companion .xyz file in the same upload batch (same base name).`
+              `${name || 'ORCA Hessian'}: ORCA .hess requires both the .xyz and .hess files in the same upload batch (same base name).`
             );
             continue;
           }

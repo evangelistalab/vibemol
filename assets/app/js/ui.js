@@ -1,5 +1,19 @@
 (function (global) {
   /**
+   * Escape plain text for safe HTML output.
+   * @param {*} value
+   * @returns {string}
+   */
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
    * Resolve an element symbol from atomic number.
    * Falls back to the numeric `Z` string if lookup data is unavailable.
    * @param {number} z
@@ -59,12 +73,21 @@
       const z = a.Z | 0;
       const sym = symbolForZ(z, atomData);
       const [x, y, zA] = atomCoordsDisplay(v, a, bohrToAng, displayUnits);
-      return `<tr><td>${i + 1}</td><td>${sym}</td><td>${z}</td><td>${x.toFixed(3)}</td><td>${y.toFixed(3)}</td><td>${zA.toFixed(3)}</td></tr>`;
+      const atomIndex = String(i);
+      const cell = (field, label) => `<button type="button" class="coordsCellButton" data-atom-index="${atomIndex}" data-edit-field="${field}">${escapeHtml(label)}</button>`;
+      return `<tr data-atom-index="${atomIndex}">
+        <td>${cell('order', String(i + 1))}</td>
+        <td>${cell('sym', sym)}</td>
+        <td>${cell('z', String(z))}</td>
+        <td>${cell('x', x.toFixed(3))}</td>
+        <td>${cell('y', y.toFixed(3))}</td>
+        <td>${cell('zCoord', zA.toFixed(3))}</td>
+      </tr>`;
     }).join('');
 
     return `
-      <div style="margin-bottom:8px;color:var(--muted)">Active: ${record.name}</div>
-      <table>
+      <div class="coordsActiveLabel">Active: ${escapeHtml(record.name)}</div>
+      <table class="coordsTable">
         <thead><tr><th>#</th><th>Sym</th><th>Z</th><th>x</th><th>y</th><th>z</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
