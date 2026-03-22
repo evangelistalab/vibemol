@@ -5728,8 +5728,8 @@
    */
   function syncVibrationControls() {
     const info = getActiveVibrationInfo();
+    if (vibrationToolbarSection) vibrationToolbarSection.style.display = info.enabled ? '' : 'none';
     if (vibrationPanelBtn) {
-      vibrationPanelBtn.style.display = info.enabled ? '' : 'none';
       vibrationPanelBtn.title = info.enabled
         ? 'Vibrational mode controls'
         : 'No vibrational mode data in active file';
@@ -6125,6 +6125,11 @@
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
   const displayInspectorToggleIcon = document.getElementById('displayInspectorToggleIcon');
   const displayInspector = document.getElementById('displayInspector');
+  const moldenToolbarSection = document.getElementById('moldenToolbarSection');
+  const moldenInspectorBtn = document.getElementById('moldenInspectorBtn');
+  const moldenInspectorToggleIcon = document.getElementById('moldenInspectorToggleIcon');
+  const moldenInspector = document.getElementById('moldenInspector');
+  const vibrationToolbarSection = document.getElementById('vibrationToolbarSection');
   const trajectoryPanelBtn = document.getElementById('trajectoryPanelBtn');
   const vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
   const sidePanel = document.getElementById('sidePanel');
@@ -6230,6 +6235,7 @@
   const moldenMoSelect = document.getElementById('moldenMoSelect');
   const moldenMoSummary = document.getElementById('moldenMoSummary');
   const moldenGridRow = document.getElementById('moldenGridRow');
+  const moldenGridPaddingRow = document.getElementById('moldenGridPaddingRow');
   const moldenGridStepEl = document.getElementById('moldenGridStep');
   const moldenGridPaddingEl = document.getElementById('moldenGridPadding');
   const moldenGridSummary = document.getElementById('moldenGridSummary');
@@ -6335,9 +6341,21 @@
   function formatMoldenMoOptionLabel(mo, index) {
     const parts = [`MO ${index + 1}`];
     if (mo && typeof mo.symmetry === 'string' && mo.symmetry.trim()) parts.push(mo.symmetry.trim());
-    if (mo && Number.isFinite(mo.energy)) parts.push(`E=${mo.energy.toFixed(4)}`);
+    if (mo && Number.isFinite(mo.energy)) parts.push(`E=${mo.energy.toFixed(3)}`);
     if (mo && Number.isFinite(mo.occupation)) parts.push(`occ=${mo.occupation.toFixed(2)}`);
     return parts.join(' • ');
+  }
+
+  /**
+   * Normalize Molden spin text for compact UI display.
+   * @param {*} spin
+   * @returns {string}
+   */
+  function formatMoldenSpinLabel(spin) {
+    const raw = (typeof spin === 'string') ? spin.trim().toLowerCase() : '';
+    if (raw === 'alpha' || raw === 'a') return 'α';
+    if (raw === 'beta' || raw === 'b') return 'β';
+    return (typeof spin === 'string') ? spin.trim() : '';
   }
 
   /**
@@ -6348,12 +6366,12 @@
    * @returns {string}
    */
   function formatMoldenMoSummary(mo, moCount, basisCount) {
-    if (!mo) return `${moCount} orbitals • ${basisCount} coefficients`;
+    if (!mo) return `${moCount} orbitals`;
     const parts = [];
-    if (typeof mo.spin === 'string' && mo.spin.trim()) parts.push(`Spin ${mo.spin.trim()}`);
-    if (Number.isFinite(mo.energy)) parts.push(`E ${mo.energy.toFixed(6)}`);
+    const spinLabel = formatMoldenSpinLabel(mo.spin);
+    if (spinLabel) parts.push(`Spin ${spinLabel}`);
+    if (Number.isFinite(mo.energy)) parts.push(`E ${mo.energy.toFixed(3)}`);
     if (Number.isFinite(mo.occupation)) parts.push(`Occ ${mo.occupation.toFixed(2)}`);
-    parts.push(`${basisCount} coefficients`);
     return parts.join(' • ');
   }
 
@@ -6403,7 +6421,7 @@
     }
     if (!spec || !Array.isArray(spec.nxyz)) return '';
     const [nx, ny, nz] = spec.nxyz;
-    return `Grid ${nx}×${ny}×${nz} • step ${spec.stepAng.toFixed(2)} Å • ${(nx * ny * nz).toLocaleString()} points`;
+    return `Grid ${nx}×${ny}×${nz} • ${(nx * ny * nz).toLocaleString()} points`;
   }
 
   /**
@@ -6411,19 +6429,24 @@
    * @param {*} record
    */
   function updateMoldenMoControls(record) {
-    if (!moldenMoRow || !moldenMoSelect || !moldenMoSummary || !moldenGridRow || !moldenGridStepEl || !moldenGridPaddingEl || !moldenGridSummary) return;
+    if (!moldenMoRow || !moldenMoSelect || !moldenMoSummary || !moldenGridRow || !moldenGridPaddingRow || !moldenGridStepEl || !moldenGridPaddingEl || !moldenGridSummary) return;
     const vol = record && record.vol;
     const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
     if (!molden || !Array.isArray(molden.mos) || molden.mos.length === 0) {
+      if (moldenToolbarSection) moldenToolbarSection.style.display = 'none';
+      setMoldenInspectorOpen(false);
       moldenMoRow.style.display = 'none';
       moldenGridRow.style.display = 'none';
+      moldenGridPaddingRow.style.display = 'none';
       moldenMoSelect.innerHTML = '';
       moldenMoSummary.textContent = '';
       moldenGridSummary.textContent = '';
       return;
     }
+    if (moldenToolbarSection) moldenToolbarSection.style.display = '';
     moldenMoRow.style.display = 'grid';
     moldenGridRow.style.display = 'grid';
+    moldenGridPaddingRow.style.display = 'grid';
     const moCount = molden.mos.length;
     const basisCount = Number.isFinite(molden.basisCount) ? molden.basisCount : 0;
     let selectedIndex = Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : 0;
@@ -7646,6 +7669,25 @@
     displayInspectorBtn.onclick = () => {
       const open = !!(displayInspector && displayInspector.classList.contains('open'));
       setDisplayInspectorOpen(!open);
+    };
+  }
+
+  /**
+   * Open/close the dedicated Molden toolbar inspector.
+   * @param {boolean} open
+   */
+  function setMoldenInspectorOpen(open) {
+    if (!moldenInspector) return;
+    const shouldOpen = !!open;
+    moldenInspector.classList.toggle('open', shouldOpen);
+    moldenInspector.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+    if (moldenInspectorBtn) moldenInspectorBtn.classList.toggle('active', shouldOpen);
+    if (moldenInspectorToggleIcon) moldenInspectorToggleIcon.textContent = shouldOpen ? 'remove' : 'add';
+  }
+  if (moldenInspectorBtn) {
+    moldenInspectorBtn.onclick = () => {
+      const open = !!(moldenInspector && moldenInspector.classList.contains('open'));
+      setMoldenInspectorOpen(!open);
     };
   }
 

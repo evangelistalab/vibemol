@@ -1889,6 +1889,116 @@
       gap: 0;
     }
 
+    #toolbar #moldenInspector {
+      position: static;
+      inset: auto;
+      display: none;
+      grid-template-columns: 1fr;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
+      padding: 0 2px 8px 2px;
+      z-index: auto;
+      margin-top: 0;
+      border-bottom: none;
+    }
+
+    #toolbar #moldenInspector.open {
+      display: grid;
+      gap: 0;
+    }
+
+    #moldenInspectorBtn {
+      justify-content: space-between !important;
+      text-align: left;
+    }
+
+    #moldenInspectorToggleIcon {
+      margin-left: auto;
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1;
+      opacity: 0.8;
+    }
+
+    #toolbar #moldenInspector .inspectorGroup {
+      border: none;
+      border-top: 1px solid var(--tb-section-divider);
+      border-radius: 0;
+      padding: 8px 0 4px 0;
+      background: transparent;
+    }
+
+    #toolbar #moldenInspector .inspectorTitle {
+      color: var(--tb-text-color-emphasis);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-bold);
+      margin-bottom: 6px;
+    }
+
+    #toolbar #moldenInspector label {
+      color: var(--tb-text-color-subtle);
+    }
+
+    #toolbar #moldenInspector .inspectorRow {
+      flex-wrap: nowrap;
+      gap: 4px;
+    }
+
+    #toolbar #moldenInspector .inspectorSelectRow {
+      display: grid;
+      grid-template-columns: 94px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+
+    #toolbar #moldenInspector .inspectorSelectRow:last-of-type {
+      margin-bottom: 0;
+    }
+
+    #toolbar #moldenInspector .inspectorSelectRow label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: auto;
+      min-width: 0;
+      white-space: nowrap;
+      color: var(--tb-text-color-subtle);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
+    }
+
+    #toolbar #moldenInspector .inspectorSelectRow select,
+    #toolbar #moldenInspector .inspectorSelectRow input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      border: none;
+      box-shadow: none;
+      border-radius: var(--tb-radius-tight);
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-icon);
+      padding: 0 10px;
+    }
+
+    #toolbar #moldenInspector .inspectorSelectRow select:focus,
+    #toolbar #moldenInspector .inspectorSelectRow input[type="number"]:focus {
+      outline: none;
+      box-shadow: none;
+    }
+
+    #toolbar #moldenInspector .moldenInspectorSummary {
+      color: var(--tb-text-color-muted);
+      font-size: var(--tb-text-size-meta);
+      font-weight: var(--tb-text-weight-semibold);
+      line-height: 1.35;
+      padding-left: 0;
+      margin: -1px 0 8px 0;
+      min-height: 1em;
+    }
+
     #toolbar #viewInspector {
       position: static;
       inset: auto;
@@ -2008,8 +2118,7 @@
       row-gap: 6px;
     }
 
-    #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows #trajectoryPanelBtn,
-    #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows #vibrationPanelBtn {
+    #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows #trajectoryPanelBtn {
       grid-column: 1 / -1;
     }
 
@@ -2637,6 +2746,37 @@
       </div>
     </div>
 
+    <div id="moldenToolbarSection" class="tb-section tb-main tb-molden tb-framed" style="display:none;">
+      <button id="moldenInspectorBtn" class="secondary" title="Show/hide Molden orbital controls">
+        <span>Molden</span><span id="moldenInspectorToggleIcon" class="material-symbols-outlined">add</span>
+      </button>
+      <div id="moldenInspector" aria-hidden="true">
+        <div class="inspectorGroup">
+          <div class="inspectorTitle">Orbitals</div>
+          <div class="inspectorRow inspectorSelectRow" id="moldenMoRow" style="display:none;">
+            <label for="moldenMoSelect">Molden MO</label>
+            <select id="moldenMoSelect" title="Select one molecular orbital parsed from the Molden file"></select>
+          </div>
+          <div id="moldenMoSummary" class="moldenInspectorSummary"></div>
+          <div class="inspectorRow inspectorSelectRow" id="moldenGridRow" style="display:none;">
+            <label for="moldenGridStep">Grid step</label>
+            <input type="number" id="moldenGridStep" min="0.12" max="1.20" step="0.01" value="0.35"
+              title="Grid spacing in angstrom" />
+          </div>
+          <div class="inspectorRow inspectorSelectRow" id="moldenGridPaddingRow" style="display:none;">
+            <label for="moldenGridPadding">Grid pad</label>
+            <input type="number" id="moldenGridPadding" min="0.5" max="8" step="0.1" value="3.0"
+              title="Padding added around the molecule in angstrom" />
+          </div>
+          <div id="moldenGridSummary" class="moldenInspectorSummary"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="vibrationToolbarSection" class="tb-section tb-main tb-vibration tb-framed" style="display:none;">
+      <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file">Frequencies</button>
+    </div>
+
     <div class="tb-section tb-main tb-windows tb-framed">
       <button id="viewInspectorBtn" class="secondary" title="Show/hide view and coordinates tools">
         <span>View/Coords</span><span id="viewInspectorToggleIcon" class="material-symbols-outlined">add</span>
@@ -2647,8 +2787,6 @@
           <button id="coordsPanelBtn" class="secondary tb-windowBtn" title="Open/close Coordinates window">Coordinates</button>
           <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file"
             style="display:none;">Trajectory</button>
-          <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file"
-            style="display:none;">Frequencies</button>
         </div>
         <div class="viewInspectorGroup">
           <div class="viewInspectorTitle">Quick actions</div>
@@ -2896,19 +3034,6 @@
           <option value="totalBloch">Total (Bloch color)</option>
         </select>
         <span></span><span></span>
-      </div>
-      <div class="row" id="moldenMoRow" style="display:none;">
-        <label style="width: 80px;">Molden MO</label>
-        <select id="moldenMoSelect" title="Select one molecular orbital parsed from the Molden file"></select>
-        <div id="moldenMoSummary" style="grid-column: 2 / span 3; color: var(--muted); font-size: 12px;"></div>
-      </div>
-      <div class="row" id="moldenGridRow" style="display:none;">
-        <label style="width: 80px;">MO Grid</label>
-        <input type="number" id="moldenGridStep" min="0.12" max="1.20" step="0.01" value="0.35"
-          title="Grid spacing in angstrom" />
-        <input type="number" id="moldenGridPadding" min="0.5" max="8" step="0.1" value="3.0"
-          title="Padding added around the molecule in angstrom" />
-        <div id="moldenGridSummary" style="grid-column: 2 / span 3; color: var(--muted); font-size: 12px;"></div>
       </div>
     </div>
   </div>
