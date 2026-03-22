@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.6.0';
+  const APP_VERSION = '0.6.1';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -6233,8 +6233,9 @@
   const blackbodyHotSwatchEl = document.getElementById('blackbodyHotSwatch');
   const schemeSelect = document.getElementById('schemeSelect');
   const renderModeSel = document.getElementById('renderMode');
-  const componentRow = document.getElementById('componentRow');
-  const componentSelect = document.getElementById('componentSelect');
+  const twoComponentModeRow = document.getElementById('twoComponentModeRow');
+  const twoComponentModeSelect = document.getElementById('twoComponentModeSelect');
+  const phaseWheelEl = document.getElementById('phaseWheel');
   const moldenMoRow = document.getElementById('moldenMoRow');
   const moldenMoSelect = document.getElementById('moldenMoSelect');
   const moldenMoSummary = document.getElementById('moldenMoSummary');
@@ -6336,7 +6337,8 @@
     return el;
   })();
   let toolbarTooltipAnchorEl = null;
-  let global2CComponentMode = (componentSelect && componentSelect.value) || DEFAULT_2C_COMPONENT_MODE;
+  let global2CComponentMode = DEFAULT_2C_COMPONENT_MODE;
+  if (twoComponentModeSelect) twoComponentModeSelect.value = global2CComponentMode;
 
   /**
    * Build one compact option label for a parsed Molden molecular orbital.
@@ -14542,9 +14544,9 @@
     blackbodyHotColorEl.oninput = applyHot;
     blackbodyHotColorEl.onchange = applyHot;
   }
-  if (componentSelect) {
-    componentSelect.onchange = () => {
-      const comp = componentSelect.value;
+  if (twoComponentModeSelect) {
+    twoComponentModeSelect.onchange = () => {
+      const comp = twoComponentModeSelect.value;
       applyGlobal2CComponent(comp);
       rebuildScene({ preserveView: true });
     };
@@ -15238,7 +15240,7 @@
   registerPresetSetting('twoComponent.mode', () => global2CComponentMode, (value) => {
     const next = (typeof value === 'string' && value) ? value : DEFAULT_2C_COMPONENT_MODE;
     applyGlobal2CComponent(next);
-    if (componentSelect) componentSelect.value = next;
+    if (twoComponentModeSelect) twoComponentModeSelect.value = next;
   });
   const viewShiftBindings = [
     { axis: 'x', input: shiftX },
@@ -19021,37 +19023,49 @@
   }
 
   /**
-   * Update UI controls and phase legend visibility after scene rebuild.
+   * Keep 2C-specific Appearance controls in sync with the active volume/component mode.
    * @param {*} vol
    * @param {string} compMode
    */
-  function updatePostRebuildUI(vol, compMode) {
-    if (componentRow) {
-      const is2c = !!(vol && vol.isTwoComponent);
-      componentRow.style.display = is2c ? 'grid' : 'none';
-      if (is2c && componentSelect) {
-        componentSelect.value = global2CComponentMode || volumes[currentIndex].component || DEFAULT_2C_COMPONENT_MODE;
-      }
+  function syncTwoComponentUi(vol, compMode) {
+    const is2c = !!(vol && vol.isTwoComponent);
+    const effectiveMode = is2c
+      ? (typeof compMode === 'string' && compMode
+        ? compMode
+        : (volumes[currentIndex] && volumes[currentIndex].component) || global2CComponentMode || DEFAULT_2C_COMPONENT_MODE)
+      : DEFAULT_2C_COMPONENT_MODE;
+
+    if (twoComponentModeRow) {
+      twoComponentModeRow.style.display = is2c ? 'grid' : 'none';
+    }
+    if (twoComponentModeSelect) {
+      twoComponentModeSelect.value = effectiveMode;
     }
 
     try {
       if (schemeSelect) {
-        const is2c = !!(vol && vol.isTwoComponent);
-        schemeSelect.disabled = is2c && isPhaseLikeComponent(compMode);
+        schemeSelect.disabled = is2c && isPhaseLikeComponent(effectiveMode);
         schemeSelect.title = schemeSelect.disabled
           ? 'Disabled: 2C mode uses intrinsic colors'
           : 'Choose default +/- surface colors';
       }
     } catch { }
 
-    const wheel = document.getElementById('phaseWheel');
-    if (!wheel) return;
-    const is2c = !!(vol && vol.isTwoComponent);
-    const show = is2c && isPhaseLikeComponent(compMode);
-    wheel.style.display = show ? 'block' : 'none';
-    if (show) {
-      drawPhaseWheel(compMode, compMode === 'totalBloch' ? 'bloch' : 'phase');
+    if (!phaseWheelEl) return;
+    const showPhaseWheel = is2c && isPhaseLikeComponent(effectiveMode);
+    phaseWheelEl.style.display = showPhaseWheel ? 'block' : 'none';
+    if (showPhaseWheel) {
+      drawPhaseWheel(effectiveMode, effectiveMode === 'totalBloch' ? 'bloch' : 'phase');
     }
+  }
+
+  /**
+   * Update UI controls and phase legend visibility after scene rebuild.
+   * @param {*} vol
+   * @param {string} compMode
+   */
+  function updatePostRebuildUI(vol, compMode) {
+    syncTwoComponentUi(vol, compMode);
   }
 
   /**
