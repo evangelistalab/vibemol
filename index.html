@@ -1561,25 +1561,12 @@
       width: 100%;
     }
 
-    #displayInspectorBtn {
+    #toolbar .tb-inspectorBtn {
       justify-content: space-between !important;
       text-align: left;
     }
 
-    #displayInspectorToggleIcon {
-      margin-left: auto;
-      font-size: 18px;
-      font-weight: 400;
-      line-height: 1;
-      opacity: 0.8;
-    }
-
-    #viewInspectorBtn {
-      justify-content: space-between !important;
-      text-align: left;
-    }
-
-    #viewInspectorToggleIcon {
+    #toolbar .tb-inspectorToggleIcon {
       margin-left: auto;
       font-size: 18px;
       font-weight: 400;
@@ -1852,7 +1839,16 @@
       min-width: 0;
     }
 
-    #renameFileBtn,
+    #toolbar .tb-fileRecordActions {
+      display: grid;
+      grid-template-columns: repeat(2, 28px);
+      gap: 4px;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    #duplicateFileBtn,
+    #removeFileBtn,
     #pubchemLoadBtn {
       width: 28px !important;
       min-width: 28px;
@@ -1869,7 +1865,7 @@
       align-self: center;
     }
 
-    #toolbar #displayInspector {
+    #toolbar .tb-toolbarInspector {
       position: static;
       inset: auto;
       display: none;
@@ -1884,45 +1880,12 @@
       border-bottom: none;
     }
 
-    #toolbar #displayInspector.open {
+    #toolbar .tb-toolbarInspector.open {
       display: grid;
       gap: 0;
     }
 
-    #toolbar #moldenInspector {
-      position: static;
-      inset: auto;
-      display: none;
-      grid-template-columns: 1fr;
-      border: none;
-      border-radius: 0;
-      box-shadow: none;
-      background: transparent;
-      padding: 0 2px 8px 2px;
-      z-index: auto;
-      margin-top: 0;
-      border-bottom: none;
-    }
-
-    #toolbar #moldenInspector.open {
-      display: grid;
-      gap: 0;
-    }
-
-    #moldenInspectorBtn {
-      justify-content: space-between !important;
-      text-align: left;
-    }
-
-    #moldenInspectorToggleIcon {
-      margin-left: auto;
-      font-size: 18px;
-      font-weight: 400;
-      line-height: 1;
-      opacity: 0.8;
-    }
-
-    #toolbar #moldenInspector .inspectorGroup {
+    #toolbar .tb-toolbarInspectorFields .inspectorGroup {
       border: none;
       border-top: 1px solid var(--tb-section-divider);
       border-radius: 0;
@@ -1930,23 +1893,23 @@
       background: transparent;
     }
 
-    #toolbar #moldenInspector .inspectorTitle {
+    #toolbar .tb-toolbarInspectorFields .inspectorTitle {
       color: var(--tb-text-color-emphasis);
       font-size: var(--tb-text-size-label);
       font-weight: var(--tb-text-weight-bold);
       margin-bottom: 6px;
     }
 
-    #toolbar #moldenInspector label {
+    #toolbar .tb-toolbarInspectorFields label {
       color: var(--tb-text-color-subtle);
     }
 
-    #toolbar #moldenInspector .inspectorRow {
+    #toolbar .tb-toolbarInspectorFields .inspectorRow {
       flex-wrap: nowrap;
       gap: 4px;
     }
 
-    #toolbar #moldenInspector .inspectorSelectRow {
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow {
       display: grid;
       grid-template-columns: 94px minmax(0, 1fr);
       align-items: center;
@@ -1954,11 +1917,12 @@
       margin-bottom: 7px;
     }
 
-    #toolbar #moldenInspector .inspectorSelectRow:last-of-type {
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow:last-child,
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow:last-of-type {
       margin-bottom: 0;
     }
 
-    #toolbar #moldenInspector .inspectorSelectRow label {
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow label {
       display: inline-flex;
       align-items: center;
       justify-content: flex-start;
@@ -1970,8 +1934,8 @@
       font-weight: var(--tb-text-weight-semibold);
     }
 
-    #toolbar #moldenInspector .inspectorSelectRow select,
-    #toolbar #moldenInspector .inspectorSelectRow input[type="number"] {
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow select,
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"] {
       width: 100%;
       min-width: 0;
       height: 30px;
@@ -1983,8 +1947,8 @@
       padding: 0 10px;
     }
 
-    #toolbar #moldenInspector .inspectorSelectRow select:focus,
-    #toolbar #moldenInspector .inspectorSelectRow input[type="number"]:focus {
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow select:focus,
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"]:focus {
       outline: none;
       box-shadow: none;
     }
@@ -1999,27 +1963,7 @@
       min-height: 1em;
     }
 
-    #toolbar #viewInspector {
-      position: static;
-      inset: auto;
-      display: none;
-      grid-template-columns: 1fr;
-      border: none;
-      border-radius: 0;
-      box-shadow: none;
-      background: transparent;
-      padding: 0 2px 8px 2px;
-      z-index: auto;
-      margin-top: 0;
-      border-bottom: none;
-    }
-
-    #toolbar #viewInspector.open {
-      display: grid;
-      gap: 0;
-    }
-
-    #toolbar #viewInspector .viewInspectorGroup {
+    #toolbar .tb-toolbarInspectorView .viewInspectorGroup {
       border: none;
       border-top: 1px solid var(--tb-section-divider);
       border-radius: 0;
@@ -2029,31 +1973,31 @@
       gap: 6px;
     }
 
-    #toolbar #viewInspector .viewInspectorTitle {
+    #toolbar .tb-toolbarInspectorView .viewInspectorTitle {
       color: var(--tb-text-color-emphasis);
       font-size: var(--tb-text-size-label);
       font-weight: var(--tb-text-weight-bold);
       margin-bottom: 2px;
     }
 
-    #toolbar #viewInspector button {
+    #toolbar .tb-toolbarInspectorView button {
       width: 100%;
       justify-content: flex-start;
       text-align: left;
     }
 
-    #toolbar #viewInspector .tb-quickActionBtn {
+    #toolbar .tb-toolbarInspectorView .tb-quickActionBtn {
       gap: 8px;
     }
 
-    #toolbar #viewInspector .tb-quickActionIcon {
+    #toolbar .tb-toolbarInspectorView .tb-quickActionIcon {
       font-size: 18px;
       line-height: 1;
       opacity: 0.9;
       flex: 0 0 auto;
     }
 
-    #toolbar #viewInspector .tb-quickActionLabel {
+    #toolbar .tb-toolbarInspectorView .tb-quickActionLabel {
       min-width: 0;
       white-space: nowrap;
       overflow: hidden;
@@ -2061,17 +2005,17 @@
       flex: 1 1 auto;
     }
 
-    #toolbar #viewInspector #projectionModeBtn {
+    #toolbar .tb-toolbarInspectorView #projectionModeBtn {
       align-items: center;
     }
 
-    #toolbar #viewInspector #projectionModeBtn .tb-quickActionIcon,
-    #toolbar #viewInspector #projectionModeBtn .tb-quickActionLabel,
-    #toolbar #viewInspector #projectionModeState {
+    #toolbar .tb-toolbarInspectorView #projectionModeBtn .tb-quickActionIcon,
+    #toolbar .tb-toolbarInspectorView #projectionModeBtn .tb-quickActionLabel,
+    #toolbar .tb-toolbarInspectorView #projectionModeState {
       pointer-events: none;
     }
 
-    #toolbar #viewInspector #projectionModeState {
+    #toolbar .tb-toolbarInspectorView #projectionModeState {
       flex: 0 0 auto;
       min-width: 36px;
       height: 20px;
@@ -2085,32 +2029,32 @@
       text-align: center;
     }
 
-    #toolbar #viewInspector #projectionModeBtn.active #projectionModeState {
+    #toolbar .tb-toolbarInspectorView #projectionModeBtn.active #projectionModeState {
       background: var(--tb-surface-emphasis-hover);
       color: var(--tb-text-color-strong);
     }
 
-    #toolbar #viewInspector .tb-windowBtn {
+    #toolbar .tb-toolbarInspectorView .tb-windowBtn {
       background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-primary);
       border-radius: var(--tb-radius-tight);
     }
 
-    #toolbar #viewInspector #viewPanelBtn,
-    #toolbar #viewInspector #coordsPanelBtn {
+    #toolbar .tb-toolbarInspectorView #viewPanelBtn,
+    #toolbar .tb-toolbarInspectorView #coordsPanelBtn {
       width: auto;
       justify-self: start;
       padding-left: 12px;
       padding-right: 12px;
     }
 
-    #toolbar #viewInspector .tb-windowBtn:hover,
-    #toolbar #viewInspector .tb-windowBtn.active {
+    #toolbar .tb-toolbarInspectorView .tb-windowBtn:hover,
+    #toolbar .tb-toolbarInspectorView .tb-windowBtn.active {
       background: var(--tb-surface-emphasis-hover);
       color: var(--tb-text-color-strong);
     }
 
-    #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows {
+    #toolbar .tb-toolbarInspectorView .viewInspectorGroup.viewInspectorWindows {
       grid-template-columns: max-content max-content;
       justify-content: flex-start;
       align-items: start;
@@ -2118,69 +2062,21 @@
       row-gap: 6px;
     }
 
-    #toolbar #viewInspector .viewInspectorGroup.viewInspectorWindows #trajectoryPanelBtn {
+    #toolbar .tb-toolbarInspectorView .viewInspectorGroup.viewInspectorWindows #trajectoryPanelBtn {
       grid-column: 1 / -1;
     }
 
-    #toolbar #viewInspector .viewPresetRow {
+    #toolbar .tb-toolbarInspectorView .viewPresetRow {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
       margin-top: 2px;
     }
 
-    #toolbar #viewInspector .viewPresetRow button {
+    #toolbar .tb-toolbarInspectorView .viewPresetRow button {
       justify-content: center;
       text-align: center;
       padding: 0 4px;
-    }
-
-    #toolbar #displayInspector .inspectorGroup {
-      border: none;
-      border-top: 1px solid var(--tb-section-divider);
-      border-radius: 0;
-      padding: 8px 0 4px 0;
-      background: transparent;
-    }
-
-    #toolbar #displayInspector .inspectorTitle {
-      color: var(--tb-text-color-emphasis);
-      font-size: var(--tb-text-size-label);
-      font-weight: var(--tb-text-weight-bold);
-      margin-bottom: 6px;
-    }
-
-    #toolbar #displayInspector label {
-      color: var(--tb-text-color-subtle);
-    }
-
-    #toolbar #displayInspector .inspectorRow {
-      flex-wrap: nowrap;
-      gap: 4px;
-    }
-
-    #toolbar #displayInspector .inspectorSelectRow {
-      display: grid;
-      grid-template-columns: 94px minmax(0, 1fr);
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 7px;
-    }
-
-    #toolbar #displayInspector .inspectorSelectRow:last-child {
-      margin-bottom: 0;
-    }
-
-    #toolbar #displayInspector .inspectorSelectRow label {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-start;
-      width: auto;
-      min-width: 0;
-      white-space: nowrap;
-      color: var(--tb-text-color-subtle);
-      font-size: var(--tb-text-size-label);
-      font-weight: var(--tb-text-weight-semibold);
     }
 
     #toolbar #displayInspector .inspectorBooleanRow {
@@ -2538,11 +2434,15 @@
       </div>
       <div class="tb-field">
         <label for="fileSelect">Active file</label>
-        <span class="tb-inline">
+        <div class="tb-inline">
           <select id="fileSelect"></select>
-          <button id="renameFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Rename active file"
-            aria-label="Rename active file" data-tip="Rename active file">drive_file_rename_outline</button>
-        </span>
+        </div>
+        <div class="tb-fileRecordActions" aria-label="Active file actions">
+          <button id="duplicateFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Duplicate active file"
+            aria-label="Duplicate active file" data-tip="Duplicate active file">content_copy</button>
+          <button id="removeFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Remove active file"
+            aria-label="Remove active file" data-tip="Remove active file">delete</button>
+        </div>
       </div>
       <label class="tb-field">PubChem
         <span class="tb-inline">
@@ -2561,10 +2461,10 @@
     </div>
 
     <div class="tb-section tb-main tb-appearance tb-framed">
-      <button id="displayInspectorBtn" class="secondary" title="Show/hide compact display inspector">
-        <span>Appearance</span><span id="displayInspectorToggleIcon" class="material-symbols-outlined">add</span>
+      <button id="displayInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide compact display inspector">
+        <span>Appearance</span><span id="displayInspectorToggleIcon" class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
       </button>
-      <div id="displayInspector" aria-hidden="true">
+      <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields" aria-hidden="true">
         <div class="inspectorGroup">
           <div class="inspectorTitle">Molecule</div>
           <div class="inspectorRow inspectorSelectRow">
@@ -2747,10 +2647,10 @@
     </div>
 
     <div id="moldenToolbarSection" class="tb-section tb-main tb-molden tb-framed" style="display:none;">
-      <button id="moldenInspectorBtn" class="secondary" title="Show/hide Molden orbital controls">
-        <span>Molden</span><span id="moldenInspectorToggleIcon" class="material-symbols-outlined">add</span>
+      <button id="moldenInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide Molden orbital controls">
+        <span>Molden</span><span id="moldenInspectorToggleIcon" class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
       </button>
-      <div id="moldenInspector" aria-hidden="true">
+      <div id="moldenInspector" class="tb-toolbarInspector tb-toolbarInspectorFields" aria-hidden="true">
         <div class="inspectorGroup">
           <div class="inspectorTitle">Orbitals</div>
           <div class="inspectorRow inspectorSelectRow" id="moldenMoRow" style="display:none;">
@@ -2778,10 +2678,10 @@
     </div>
 
     <div class="tb-section tb-main tb-windows tb-framed">
-      <button id="viewInspectorBtn" class="secondary" title="Show/hide view and coordinates tools">
-        <span>View/Coords</span><span id="viewInspectorToggleIcon" class="material-symbols-outlined">add</span>
+      <button id="viewInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide view and coordinates tools">
+        <span>View/Coords</span><span id="viewInspectorToggleIcon" class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
       </button>
-      <div id="viewInspector" aria-hidden="true">
+      <div id="viewInspector" class="tb-toolbarInspector tb-toolbarInspectorView" aria-hidden="true">
         <div class="viewInspectorGroup viewInspectorWindows">
           <button id="viewPanelBtn" class="secondary tb-windowBtn" title="Open/close View window">View</button>
           <button id="coordsPanelBtn" class="secondary tb-windowBtn" title="Open/close Coordinates window">Coordinates</button>

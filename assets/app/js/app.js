@@ -6076,7 +6076,8 @@
   const fileInput = document.getElementById('fileInput');
   const openBtn = document.getElementById('openBtn');
   const newFileBtn = document.getElementById('newFileBtn');
-  const renameFileBtn = document.getElementById('renameFileBtn');
+  const duplicateFileBtn = document.getElementById('duplicateFileBtn');
+  const removeFileBtn = document.getElementById('removeFileBtn');
   const fileSelect = document.getElementById('fileSelect');
   const isoInput = document.getElementById('iso');
   const autoIsoBtn = document.getElementById('autoIsoBtn');
@@ -6479,44 +6480,158 @@
   }
 
   /**
-   * Normalize one user-provided file name for display/use in the file list.
+   * Deep-clone structured volume/metadata state while preserving typed arrays.
+   * Function-valued fields are skipped and must be rehydrated explicitly.
    * @param {*} value
-   * @returns {string}
+   * @returns {*}
    */
-  function sanitizeVolumeDisplayName(value) {
-    return String(value == null ? '' : value)
-      .replace(/[\u0000-\u001f\u007f]/g, '')
-      .replace(/[\\/]/g, '-')
-      .trim();
+  function cloneStructuredData(value) {
+    if (value == null || typeof value !== 'object') return value;
+    if (ArrayBuffer.isView(value)) return new value.constructor(value);
+    if (value instanceof ArrayBuffer) return value.slice(0);
+    if (Array.isArray(value)) return value.map((item) => cloneStructuredData(item));
+    const out = {};
+    for (const [key, next] of Object.entries(value)) {
+      if (typeof next === 'function') continue;
+      out[key] = cloneStructuredData(next);
+    }
+    return out;
   }
 
   /**
-   * Prompt for and apply a new name to the active file record.
+   * Rebuild derived fields on one cloned volume.
+   * @param {*} vol
+   * @returns {*}
    */
-  function renameActiveVolumeRecord() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    if (!record) {
-      setHintMessage('No active file to rename.');
-      return;
+  function rehydrateClonedVolume(vol) {
+    if (!vol || typeof vol !== 'object') return vol;
+    if (Array.isArray(vol.nxyz) && vol.nxyz.length === 3) {
+      vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
+    } else {
+      vol.idx = () => 0;
     }
-    const currentName = String(record.name || 'untitled.xyz');
-    const raw = window.prompt('Rename active file:', currentName);
-    if (raw == null) return;
-    const sanitized = sanitizeVolumeDisplayName(raw);
-    if (!sanitized) {
-      alert('File name cannot be empty.');
-      return;
-    }
-    const unique = getUniqueVolumeName(sanitized, { excludeRecord: record });
-    record.name = unique;
-    refreshFileSelect();
-    if (fileSelect && currentIndex >= 0) fileSelect.value = String(currentIndex);
-    updateSidePanel();
-    if (unique !== sanitized) setHintMessage(`Name already in use. Renamed to ${unique}.`);
-    else setHintMessage(`Renamed file to ${unique}.`);
+    if (Array.isArray(vol.atoms)) vol.natoms = vol.atoms.length;
+    ensureVolumeAtomIds(vol);
+    if (!Array.isArray(vol.fragmentOps)) vol.fragmentOps = [];
+    return vol;
   }
 
-  if (renameFileBtn) renameFileBtn.onclick = () => renameActiveVolumeRecord();
+  /**
+   * Build a unique duplicate file name preserving the original extension.
+   * @param {string} name
+   * @returns {string}
+   */
+  function buildDuplicateVolumeName(name) {
+    const raw = String(name || '').trim() || 'untitled.xyz';
+    const m = /^(.*?)(\.[^.]*)?$/.exec(raw) || [];
+    const stem = (m[1] && m[1].trim()) || 'untitled';
+    const ext = m[2] || '';
+    return getUniqueVolumeName(`${stem} copy${ext}`);
+  }
+
+  /**
+   * Sync the active-file selector and file action enablement with `currentIndex`.
+   */
+  function syncActiveVolumeControls() {
+    refreshFileSelect();
+    if (!fileSelect) return;
+    if (currentIndex >= 0 && fileSelect.options.length > currentIndex) {
+      fileSelect.value = String(currentIndex);
+    } else if (currentIndex < 0) {
+      fileSelect.value = '';
+    }
+  }
+
+  /**
+   * Clamp one candidate active-file index against the current volume list.
+   * Returns `-1` when no loaded file exists.
+   * @param {*} index
+   * @returns {number}
+   */
+  function normalizeActiveVolumeIndex(index) {
+    if (!Array.isArray(volumes) || volumes.length === 0) return -1;
+    const numeric = Number(index);
+    if (!Number.isFinite(numeric)) {
+      const fallback = Number.isFinite(currentIndex) ? currentIndex : 0;
+      return Math.max(0, Math.min(fallback, volumes.length - 1));
+    }
+    return Math.max(0, Math.min(Math.trunc(numeric), volumes.length - 1));
+  }
+
+  /**
+   * Activate one loaded record and synchronize scene/UI state.
+   * @param {*} index
+   * @param {{preserveView?:boolean,rebuild?:boolean,skipAutoIso?:boolean,clearTransient?:boolean,clearSceneWhenEmpty?:boolean}=} options
+   * @returns {number}
+   */
+  function activateVolumeIndex(index, options = {}) {
+    const preserveView = !!options.preserveView;
+    const shouldRebuild = options.rebuild !== false;
+    const skipAutoIso = !!options.skipAutoIso;
+    const clearTransient = options.clearTransient !== false;
+    const clearSceneWhenEmpty = !!options.clearSceneWhenEmpty;
+    if (clearTransient) clearTransientInteractionState();
+    currentIndex = normalizeActiveVolumeIndex(index);
+    syncActiveVolumeControls();
+    if (currentIndex >= 0 && volumes[currentIndex]) {
+      if (shouldRebuild) {
+        rebuildScene({ preserveView, skipAutoIso });
+      } else {
+        updateSidePanel();
+        updateEmptyStateVisibility();
+      }
+      return currentIndex;
+    }
+    if (clearSceneWhenEmpty) clearSceneMeshes();
+    updateSidePanel();
+    updateEmptyStateVisibility();
+    return -1;
+  }
+
+  /**
+   * Duplicate the active file record and make the copy active.
+   */
+  function duplicateActiveVolumeRecord() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    if (!record || !record.vol) {
+      setHintMessage('No active file to duplicate.');
+      return;
+    }
+    const duplicate = Object.assign({}, cloneStructuredData(record), {
+      name: buildDuplicateVolumeName(record.name),
+      isSample: false,
+    });
+    duplicate.vol = rehydrateClonedVolume(cloneStructuredData(record.vol));
+    volumes.push(duplicate);
+    activateVolumeIndex(volumes.length - 1, { preserveView: true });
+    setHintMessage(`Duplicated ${record.name} as ${duplicate.name}.`);
+  }
+
+  /**
+   * Remove the active file record.
+   */
+  function removeActiveVolumeRecord() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    if (!record) {
+      setHintMessage('No active file to remove.');
+      return;
+    }
+    const removedName = String(record.name || 'file');
+    clearTransientInteractionState();
+    volumes.splice(currentIndex, 1);
+    pruneEditHistory();
+    if (volumes.length === 0) {
+      activateVolumeIndex(-1, { rebuild: false, clearSceneWhenEmpty: true });
+      setNavigationHint(HINT_START, { includeStyles: true });
+      setHintMessage(`Removed ${removedName}.`);
+      return;
+    }
+    activateVolumeIndex(currentIndex, { preserveView: true });
+    setHintMessage(`Removed ${removedName}.`);
+  }
+
+  if (duplicateFileBtn) duplicateFileBtn.onclick = () => duplicateActiveVolumeRecord();
+  if (removeFileBtn) removeFileBtn.onclick = () => removeActiveVolumeRecord();
   if (emptyStateOpenBtn) emptyStateOpenBtn.onclick = triggerOpenFiles;
   if (emptyStateSampleBtn) {
     emptyStateSampleBtn.onclick = async () => {
@@ -7500,8 +7615,8 @@
       }
     }
     if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
-      // Always start edit sessions in move mode.
-      setEditTool(EDIT_TOOL.MOVE, { announce: false });
+      // Always start edit sessions in add mode.
+      setEditTool(EDIT_TOOL.ADD, { announce: false });
     }
     updateAxisButtons();
     updateEditToolboxUi();
@@ -7525,13 +7640,22 @@
         rebuildScene({ preserveView: true });
       }
     }
-    // Clear hover when leaving interactive modes
-    if (currentMode === MODES.DISPLAY) { clearHover(); }
-    if (currentMode !== MODES.EDIT) clearAddGrowPreview();
-    if (currentMode !== MODES.EDIT) clearMoleculePlacementPreview();
+    // Clear transient edit interaction state when leaving edit mode.
+    if (currentMode === MODES.DISPLAY) {
+      clearTransientInteractionState({
+        measurement: false,
+        addPreview: false,
+        moleculePlacement: false,
+        fusePreview: false,
+        transform: false,
+        pointerState: false,
+      });
+    }
     if (currentMode !== MODES.EDIT) {
-      clearTransformState();
-      clearTransformSelection();
+      clearTransientInteractionState({
+        measurement: false,
+        hover: false,
+      });
     }
     // Leaving measurement mode to display: restore surfaces and clear selection
     if (prevMode === MODES.MEASURE && currentMode === MODES.DISPLAY) {
@@ -7630,24 +7754,40 @@
   }
 
   /**
+   * Open or close one toolbar inspector and synchronize its button/icon state.
+   * @param {{panel:HTMLElement|null,button:HTMLElement|null,icon:HTMLElement|null}} refs
+   * @param {boolean} open
+   */
+  function setToolbarInspectorOpen(refs, open) {
+    const panel = refs && refs.panel;
+    if (!panel) return;
+    const shouldOpen = !!open;
+    panel.classList.toggle('open', shouldOpen);
+    panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+    if (refs.button) refs.button.classList.toggle('active', shouldOpen);
+    if (refs.icon) refs.icon.textContent = shouldOpen ? 'remove' : 'add';
+  }
+
+  /**
+   * Attach click toggle behavior to one toolbar inspector shell.
+   * @param {{panel:HTMLElement|null,button:HTMLElement|null,icon:HTMLElement|null}} refs
+   */
+  function bindToolbarInspectorToggle(refs) {
+    if (!refs || !refs.button || !refs.panel) return;
+    refs.button.onclick = () => setToolbarInspectorOpen(refs, !refs.panel.classList.contains('open'));
+  }
+
+  const viewInspectorRefs = { panel: viewInspector, button: viewInspectorBtn, icon: viewInspectorToggleIcon };
+  const displayInspectorRefs = { panel: displayInspector, button: displayInspectorBtn, icon: displayInspectorToggleIcon };
+  const moldenInspectorRefs = { panel: moldenInspector, button: moldenInspectorBtn, icon: moldenInspectorToggleIcon };
+
+  /**
    * Open/close the compact View/Coords inspector in the toolbar.
    * @param {boolean} open
    */
-  function setViewInspectorOpen(open) {
-    if (!viewInspector) return;
-    const shouldOpen = !!open;
-    viewInspector.classList.toggle('open', shouldOpen);
-    viewInspector.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
-    if (viewInspectorBtn) viewInspectorBtn.classList.toggle('active', shouldOpen);
-    if (viewInspectorToggleIcon) viewInspectorToggleIcon.textContent = shouldOpen ? 'remove' : 'add';
-  }
+  function setViewInspectorOpen(open) { setToolbarInspectorOpen(viewInspectorRefs, open); }
 
-  if (viewInspectorBtn) {
-    viewInspectorBtn.onclick = () => {
-      const open = !!(viewInspector && viewInspector.classList.contains('open'));
-      setViewInspectorOpen(!open);
-    };
-  }
+  bindToolbarInspectorToggle(viewInspectorRefs);
   if (viewPanelBtn) viewPanelBtn.onclick = () => setViewPanelOpen(!(sidePanel && sidePanel.classList.contains('open')));
   if (coordsPanelBtn) coordsPanelBtn.onclick = () => setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
   if (sideClose) sideClose.onclick = () => setViewPanelOpen(false);
@@ -7657,39 +7797,15 @@
    * Open/close the compact display inspector panel.
    * @param {boolean} open
    */
-  function setDisplayInspectorOpen(open) {
-    if (!displayInspector) return;
-    const shouldOpen = !!open;
-    displayInspector.classList.toggle('open', shouldOpen);
-    displayInspector.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
-    if (displayInspectorBtn) displayInspectorBtn.classList.toggle('active', shouldOpen);
-    if (displayInspectorToggleIcon) displayInspectorToggleIcon.textContent = shouldOpen ? 'remove' : 'add';
-  }
-  if (displayInspectorBtn) {
-    displayInspectorBtn.onclick = () => {
-      const open = !!(displayInspector && displayInspector.classList.contains('open'));
-      setDisplayInspectorOpen(!open);
-    };
-  }
+  function setDisplayInspectorOpen(open) { setToolbarInspectorOpen(displayInspectorRefs, open); }
+  bindToolbarInspectorToggle(displayInspectorRefs);
 
   /**
    * Open/close the dedicated Molden toolbar inspector.
    * @param {boolean} open
    */
-  function setMoldenInspectorOpen(open) {
-    if (!moldenInspector) return;
-    const shouldOpen = !!open;
-    moldenInspector.classList.toggle('open', shouldOpen);
-    moldenInspector.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
-    if (moldenInspectorBtn) moldenInspectorBtn.classList.toggle('active', shouldOpen);
-    if (moldenInspectorToggleIcon) moldenInspectorToggleIcon.textContent = shouldOpen ? 'remove' : 'add';
-  }
-  if (moldenInspectorBtn) {
-    moldenInspectorBtn.onclick = () => {
-      const open = !!(moldenInspector && moldenInspector.classList.contains('open'));
-      setMoldenInspectorOpen(!open);
-    };
-  }
+  function setMoldenInspectorOpen(open) { setToolbarInspectorOpen(moldenInspectorRefs, open); }
+  bindToolbarInspectorToggle(moldenInspectorRefs);
 
   /**
    * Toggle a dedicated floating motion panel.
@@ -7920,7 +8036,7 @@
     ROTATE_FRAGMENT: 'rotate_fragment',
     ROTATE_BOND: 'rotate_bond',
   });
-  let editTool = EDIT_TOOL.MOVE;
+  let editTool = EDIT_TOOL.ADD;
   let editAddMode = EDIT_ADD_MODE.ATOM;
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
@@ -8350,13 +8466,8 @@
     record.vol.natoms = record.vol.atoms.length;
     syncBuilderExtensionFromVolumes();
     currentIndex = idx;
-    refreshFileSelect();
-    if (fileSelect) fileSelect.value = String(currentIndex);
-    clearAddGrowPreview();
-    clearHover();
-    clearEditSelection();
-    clearTransformSelection();
-    updateSelectedHalos();
+    clearTransientInteractionState();
+    syncActiveVolumeControls();
     rebuildScene({ preserveView: true });
     updateSidePanel();
     return true;
@@ -8815,11 +8926,7 @@
     ensureVolumeAtomIds(record.vol);
     if (!Array.isArray(record.vol.fragmentOps)) record.vol.fragmentOps = [];
     volumes.push(record);
-    currentIndex = volumes.length - 1;
-    refreshFileSelect();
-    if (fileSelect) fileSelect.value = String(currentIndex);
-    updateSidePanel();
-    updateEmptyStateVisibility();
+    activateVolumeIndex(volumes.length - 1, { rebuild: false });
     return record;
   }
 
@@ -11637,6 +11744,41 @@
    * Clear the current measurement/edit atom selection.
    */
   function clearEditSelection() { editSel = []; updateEditSelectionVisuals(); updateSelectedHalos(); }
+
+  /**
+   * Clear measurement selections when the active file/context changes.
+   */
+  function clearMeasurementSelectionForContextChange() {
+    if (!editSel.length) {
+      updateEditSelectionVisuals();
+      updateSelectedHalos();
+      return;
+    }
+    clearEditSelection();
+  }
+
+  /**
+   * Clear short-lived interaction state that should not survive a file/context change.
+   * This intentionally does not touch durable record data.
+   * @param {{hover?:boolean,measurement?:boolean,addPreview?:boolean,moleculePlacement?:boolean,fusePreview?:boolean,transform?:boolean,pointerState?:boolean}=} options
+   */
+  function clearTransientInteractionState(options = {}) {
+    if (options.addPreview !== false) clearAddGrowPreview();
+    if (options.moleculePlacement !== false) clearMoleculePlacementPreview();
+    if (options.fusePreview !== false) clearFuseRingPreview();
+    if (options.transform !== false) {
+      clearTransformState();
+      clearTransformSelection();
+    }
+    if (options.measurement !== false) clearMeasurementSelectionForContextChange();
+    if (options.hover !== false) clearHover();
+    if (options.pointerState !== false) {
+      __editDownPt = null;
+      __editMoved = false;
+      __editClickIdx = -1;
+    }
+  }
+
   /**
    * Append an atom index to the current selection (up to 4 points).
    * @param {number} i
@@ -13836,10 +13978,18 @@
       }
     } else if (currentMode === MODES.MEASURE) {
       // Click (no significant motion) selects/accumulates
-      if (!__editMoved && __editClickIdx >= 0) {
-        addEditSelection(__editClickIdx);
-        updateSelectedHalos();
-        updateEditSelectionVisuals();
+      if (!__editMoved) {
+        if (__editClickIdx >= 0) {
+          addEditSelection(__editClickIdx);
+          updateSelectedHalos();
+          updateEditSelectionVisuals();
+        } else {
+          const bondHit = pickBondHit(e);
+          if (!bondHit) {
+            clearMeasurementSelectionForContextChange();
+            setHintMessage('Measurement cleared.');
+          }
+        }
       }
     }
     if (!dragActive) dragBeforeAtomsSnapshot = null;
@@ -13942,10 +14092,7 @@
     if (isTypingInInput()) return;
     if (!Array.isArray(volumes) || volumes.length === 0) return;
     const n = volumes.length;
-    currentIndex = ((currentIndex + delta) % n + n) % n;
-    if (fileSelect) fileSelect.value = String(currentIndex);
-    rebuildScene({ preserveView: true });
-    updateSidePanel();
+    activateVolumeIndex(((currentIndex + delta) % n + n) % n, { preserveView: true });
   };
   bind('down', 'global', 'ArrowRight', () => nextPrev(1));
   bind('down', 'global', 'ArrowDown', () => nextPrev(1));
@@ -16920,17 +17067,13 @@
   function finalizeLoadedVolumes(startIndex, options = {}) {
     const resetIsoToDefault = !!options.resetIsoToDefault;
     const skipAutoIsoOnInitialRebuild = !!options.skipAutoIsoOnInitialRebuild;
-    refreshFileSelect();
     if (volumes.length > 0) {
-      currentIndex = Math.max(0, Math.min(startIndex, volumes.length - 1));
-      if (fileSelect && fileSelect.options.length > currentIndex) {
-        fileSelect.value = String(currentIndex);
-      }
       if (resetIsoToDefault && isoInput) isoInput.value = formatIsoInputValue(DEFAULT_ISO_VALUE);
-      rebuildScene({ skipAutoIso: skipAutoIsoOnInitialRebuild });
-      updateSidePanel();
+      activateVolumeIndex(startIndex, { skipAutoIso: skipAutoIsoOnInitialRebuild });
+    } else {
+      syncActiveVolumeControls();
+      updateEmptyStateVisibility();
     }
-    updateEmptyStateVisibility();
   }
 
   /**
@@ -17572,12 +17715,8 @@
   function clearAllLoadedFiles(options = {}) {
     const includeHint = options.includeHint !== false;
     volumes = [];
-    currentIndex = -1;
     clearEditHistory();
-    refreshFileSelect();
-    clearSceneMeshes();
-    updateSidePanel();
-    updateEmptyStateVisibility();
+    activateVolumeIndex(-1, { rebuild: false, clearSceneWhenEmpty: true });
     if (includeHint) setNavigationHint(HINT_START, { includeStyles: true });
   }
 
@@ -17703,17 +17842,13 @@
       fileSelect.appendChild(opt);
     });
     if (currentIndex >= 0) fileSelect.value = currentIndex;
-    if (renameFileBtn) {
-      const hasActive = currentIndex >= 0 && !!volumes[currentIndex];
-      renameFileBtn.disabled = !hasActive;
-    }
+    const hasActive = currentIndex >= 0 && !!volumes[currentIndex];
+    if (duplicateFileBtn) duplicateFileBtn.disabled = !hasActive;
+    if (removeFileBtn) removeFileBtn.disabled = !hasActive;
   }
 
   fileSelect.onchange = () => {
-    currentIndex = parseInt(fileSelect.value, 10);
-    // Preserve camera view (position, orientation, zoom) when switching files
-    rebuildScene({ preserveView: true });
-    updateSidePanel();
+    activateVolumeIndex(parseInt(fileSelect.value, 10), { preserveView: true });
   };
 
   // (subsample controls removed)
@@ -18487,11 +18622,9 @@
       const text = await resp.text();
       const vol = parseCube(text);
       volumes = [];
-      currentIndex = -1;
       clearEditHistory();
-      clearSceneMeshes();
       volumes.push({ name: 'sample.cube', vol, isSample: true });
-      if (vol.isoHint != null && (isoInput.value === '' || currentIndex === -1)) {
+      if (vol.isoHint != null && (isoInput.value === '' || volumes.length === 1)) {
         isoInput.value = String(vol.isoHint);
       }
       try {
@@ -18500,10 +18633,7 @@
       } catch (e) {
         console.warn('[CUBE] Stats failed for sample.cube', e);
       }
-      currentIndex = 0;
-      refreshFileSelect();
-      rebuildScene();
-      updateSidePanel();
+      activateVolumeIndex(0);
       setNavigationHint('Loaded sample.cube', { includeStyles: true });
       return true;
     } catch (err) {
@@ -18541,10 +18671,7 @@
     const idx = (i, j, k) => (i * ny + j) * nz + k;
     const vol = { title: 'Demo Water', comment: '', natoms: 3, origin, nxyz: [nx, ny, nz], axes, atoms, data, idx, isoHint: null };
     volumes.push({ name: 'Demo Water', vol });
-    currentIndex = 0;
-    refreshFileSelect();
-    rebuildScene();
-    updateSidePanel();
+    activateVolumeIndex(0);
   }
 
   // Startup: begin with an empty scene and onboarding text.
