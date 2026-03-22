@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.5.5';
+  const APP_VERSION = '0.5.6';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -8040,6 +8040,7 @@
   let editAddMode = EDIT_ADD_MODE.ATOM;
   let editAddElementZ = 6;
   let editAddBondOrder = 1;
+  let editAddSearchClearedOnFocus = false;
   let editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
   let editAutoCleanupEnabled = true;
   let editCleanupBondLengthEnabled = true;
@@ -11064,7 +11065,8 @@
     }
 
     if (syncSearch && isAtomAddMode && editAddSearchEl && document.activeElement !== editAddSearchEl) {
-      editAddSearchEl.value = `${atomSymbol} — ${atomName} (${editAddElementZ})`;
+      editAddSearchEl.value = formatEditAddElementSearchValue(editAddElementZ);
+      editAddSearchClearedOnFocus = false;
     }
     if (syncSearch && isFragmentAddMode && editFragmentSearchEl && document.activeElement !== editFragmentSearchEl && fragment) {
       editFragmentSearchEl.value = `${fragment.name} (${fragment.formula}) [${fragment.id}]`;
@@ -11230,6 +11232,18 @@
       setHintMessage(`Add atom: ${getElementName(z)} (${getElementSymbol(z)})`);
     }
     return true;
+  }
+
+  /**
+   * Human-readable label shown in the Add-atom selector field.
+   * @param {number} z
+   * @returns {string}
+   */
+  function formatEditAddElementSearchValue(z) {
+    const atomInfo = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];
+    const atomSymbol = atomInfo && atomInfo.symbol ? atomInfo.symbol : `Z${z}`;
+    const atomName = atomInfo && atomInfo.name ? atomInfo.name : atomSymbol;
+    return `${atomSymbol} — ${atomName} (${z})`;
   }
 
   /**
@@ -11407,19 +11421,43 @@
     refreshEditAddMoleculeControls();
     if (editAddSearchEl) {
       const commit = () => {
-        const z = resolveElementQueryToZ(editAddSearchEl.value);
+        const rawValue = String(editAddSearchEl.value || '').trim();
+        if (!rawValue) {
+          editAddSearchEl.value = formatEditAddElementSearchValue(editAddElementZ);
+          editAddSearchClearedOnFocus = false;
+          updateEditToolboxUi({ syncSearch: true });
+          return;
+        }
+        const z = resolveElementQueryToZ(rawValue);
         if (!setEditAddElement(z, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
-          setHintMessage(`Element not recognized: "${String(editAddSearchEl.value || '').trim()}"`);
+          setHintMessage(`Element not recognized: "${rawValue}"`);
         }
       };
+      editAddSearchEl.addEventListener('focus', () => {
+        editAddSearchClearedOnFocus = true;
+        editAddSearchEl.value = '';
+      });
+      editAddSearchEl.addEventListener('blur', () => {
+        if (String(editAddSearchEl.value || '').trim()) {
+          editAddSearchClearedOnFocus = false;
+          return;
+        }
+        editAddSearchEl.value = formatEditAddElementSearchValue(editAddElementZ);
+        editAddSearchClearedOnFocus = false;
+      });
       editAddSearchEl.addEventListener('change', commit);
       editAddSearchEl.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter') return;
         e.preventDefault();
         commit();
       });
-      editAddSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
+      editAddSearchEl.addEventListener('input', () => {
+        if (editAddSearchClearedOnFocus && String(editAddSearchEl.value || '').trim()) {
+          editAddSearchClearedOnFocus = false;
+        }
+        updateEditToolboxUi({ syncSearch: false });
+      });
     }
     if (editFragmentSearchEl) {
       const commit = () => {
