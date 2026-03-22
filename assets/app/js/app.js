@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.6.1';
+  const APP_VERSION = '0.6.2';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -6213,6 +6213,7 @@
   syncAtomLabelNumberToggleState();
   const viewReset = document.getElementById('viewReset');
   const styleSelect = document.getElementById('styleSelect');
+  const pointCameraComBtn = document.getElementById('pointCameraComBtn');
   const moleculeStyleSel = document.getElementById('moleculeStyle');
   const rowGlossyBond = document.getElementById('rowGlossyBond');
   const glossyBondRadiusEl = document.getElementById('glossyBondRadius');
@@ -13251,6 +13252,48 @@
   }
 
   /**
+   * Retarget the camera so the active molecule center of mass is centered in view.
+   * Keeps the current camera pose and only moves the controls target.
+   * @returns {boolean}
+   */
+  function pointCameraAtActiveMoleculeMassCenter() {
+    if (currentIndex < 0 || !volumes[currentIndex] || !volumes[currentIndex].vol) {
+      setHintMessage('No active molecule to point the camera at.');
+      return false;
+    }
+
+    const record = volumes[currentIndex];
+    const vol = record.vol;
+    if (!Array.isArray(vol.atoms) || vol.atoms.length === 0) {
+      setHintMessage('Active file has no atoms.');
+      return false;
+    }
+
+    const massProps = computeMassProperties(vol);
+    if (!massProps) {
+      setHintMessage('Could not compute a valid center of mass.');
+      return false;
+    }
+
+    const target = new THREE.Vector3(
+      Number(massProps.comX) || 0,
+      Number(massProps.comY) || 0,
+      Number(massProps.comZ) || 0
+    );
+    if (controls.target.distanceToSquared(target) <= 1e-14) {
+      setHintMessage('Camera is already centered on the active molecule COM.');
+      return false;
+    }
+
+    controls.target.copy(target);
+    camera.lookAt(target);
+    controls.update();
+    refreshViewUI();
+    setHintMessage('Pointed camera at active molecule COM.');
+    return true;
+  }
+
+  /**
    * Compute where a newly added atom should be placed for one pointer click.
    * Place atoms on a camera-facing plane (parallel to screen) through target.
    * @param {PointerEvent} e
@@ -14106,6 +14149,8 @@
   };
   // View action: translate active molecule so mass center is at world origin.
   if (centerMassBtn) centerMassBtn.onclick = () => centerActiveMoleculeMassAtOrigin();
+  // View action: center the camera target on the active molecule COM.
+  if (pointCameraComBtn) pointCameraComBtn.onclick = () => pointCameraAtActiveMoleculeMassCenter();
   // View action: rotate active molecule to principal-inertia frame.
   if (alignInertiaBtn) alignInertiaBtn.onclick = () => alignActiveMoleculePrincipalAxes();
   // View action: toggle camera projection model while preserving pose/target.
