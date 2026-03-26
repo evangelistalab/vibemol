@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.6.3';
+  const APP_VERSION = '0.6.4';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -62,6 +62,7 @@
     quickPickFallbackBg: '#1a2230',
     quickPickFallbackFg: '#eef6ff',
     measurementLabelBg: 'rgba(20,22,24,0.85)',
+    measurementLabelBgHover: 'rgba(20,112,255,0.94)',
     measurementLabelText: '#e8eef6',
     atomLabelTextDefault: '#f3f7ff',
   });
@@ -12265,6 +12266,9 @@
   // --- Edit selection (temporary list) and visuals ---
   let editSel = []; // array of atom indices (max 3) — used in measurement mode
   let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
+  let measurementLabelHoverSprite = null;
+  let measurementLabelHoverKey = '';
+  let measurementLabelDragState = null;
   // persistent selection halos (by atom index) for measurement mode
   const selHaloColor = 0xffa500;
   /**
@@ -12322,12 +12326,200 @@
   /**
    * Clear the current measurement/edit atom selection.
    */
-  function clearEditSelection() { editSel = []; updateEditSelectionVisuals(); updateSelectedHalos(); }
+  function clearEditSelection() {
+    clearMeasurementLabelHover();
+    cancelMeasurementLabelDrag();
+    editSel = [];
+    updateEditSelectionVisuals();
+    updateSelectedHalos();
+  }
+
+  /**
+   * Return the per-record measurement-label offset store.
+   * Offsets are stored in angstrom/world units and keyed by atom ids so they
+   * survive atom movement and record rebuilds.
+   * @param {*|null} record
+   * @param {boolean=} create
+   * @returns {Record<string, [number, number, number]>}
+   */
+  function getMeasurementLabelOffsetStore(record, create = false) {
+    if (!record || typeof record !== 'object') return {};
+    if (!isPlainObject(record.measurementLabelOffsets)) {
+      if (!create) return {};
+      record.measurementLabelOffsets = {};
+    }
+    return record.measurementLabelOffsets;
+  }
+
+  /**
+   * Build one stable atom-id token for measurement-label keys.
+   * @param {*} vol
+   * @param {number} atomIndex
+   * @returns {string}
+   */
+  function getMeasurementAtomKeyToken(vol, atomIndex) {
+    if (!vol || !Array.isArray(vol.atoms)) return '';
+    const atom = vol.atoms[atomIndex | 0];
+    return atom ? String(ensureAtomId(atom)) : '';
+  }
+
+  /**
+   * Build one stable key for a distance label.
+   * @param {*} vol
+   * @param {number} i
+   * @param {number} j
+   * @returns {string}
+   */
+  function buildMeasurementDistanceKey(vol, i, j) {
+    const a = getMeasurementAtomKeyToken(vol, i);
+    const b = getMeasurementAtomKeyToken(vol, j);
+    if (!a || !b) return '';
+    return a < b ? `distance:${a}:${b}` : `distance:${b}:${a}`;
+  }
+
+  /**
+   * Build one stable key for an angle label.
+   * @param {*} vol
+   * @param {number} ia
+   * @param {number} ib
+   * @param {number} ic
+   * @returns {string}
+   */
+  function buildMeasurementAngleKey(vol, ia, ib, ic) {
+    const a = getMeasurementAtomKeyToken(vol, ia);
+    const b = getMeasurementAtomKeyToken(vol, ib);
+    const c = getMeasurementAtomKeyToken(vol, ic);
+    if (!a || !b || !c) return '';
+    return a < c ? `angle:${a}:${b}:${c}` : `angle:${c}:${b}:${a}`;
+  }
+
+  /**
+   * Build one stable key for a dihedral label.
+   * @param {*} vol
+   * @param {number} i
+   * @param {number} j
+   * @param {number} k
+   * @param {number} l
+   * @returns {string}
+   */
+  function buildMeasurementDihedralKey(vol, i, j, k, l) {
+    const a = getMeasurementAtomKeyToken(vol, i);
+    const b = getMeasurementAtomKeyToken(vol, j);
+    const c = getMeasurementAtomKeyToken(vol, k);
+    const d = getMeasurementAtomKeyToken(vol, l);
+    if (!a || !b || !c || !d) return '';
+    return `dihedral:${a}:${b}:${c}:${d}`;
+  }
+
+  /**
+   * Read one measurement-label world offset.
+   * @param {*|null} record
+   * @param {string} key
+   * @returns {THREE.Vector3}
+   */
+  function getMeasurementLabelOffset(record, key) {
+    const raw = getMeasurementLabelOffsetStore(record, false)[String(key || '')];
+    if (!Array.isArray(raw) || raw.length < 3) return new THREE.Vector3();
+    return new THREE.Vector3(
+      Number(raw[0]) || 0,
+      Number(raw[1]) || 0,
+      Number(raw[2]) || 0
+    );
+  }
+
+  /**
+   * Persist one measurement-label world offset.
+   * @param {*|null} record
+   * @param {string} key
+   * @param {THREE.Vector3} offset
+   */
+  function setMeasurementLabelOffset(record, key, offset) {
+    if (!record || !key || !offset || !offset.isVector3) return;
+    const store = getMeasurementLabelOffsetStore(record, true);
+    if (offset.lengthSq() <= 1e-12) {
+      delete store[key];
+      return;
+    }
+    store[key] = [
+      Number(offset.x) || 0,
+      Number(offset.y) || 0,
+      Number(offset.z) || 0,
+    ];
+  }
+
+  /**
+   * Update the measurement-label cursor affordance.
+   */
+  function syncMeasurementLabelCursor() {
+    if (!canvasEl) return;
+    if (measurementLabelDragState) {
+      canvasEl.style.cursor = 'grabbing';
+      return;
+    }
+    if (currentMode === MODES.MEASURE && measurementLabelHoverSprite) {
+      canvasEl.style.cursor = 'grab';
+      return;
+    }
+    canvasEl.style.cursor = '';
+  }
+
+  /**
+   * Apply or clear hover styling on one measurement label sprite.
+   * @param {THREE.Sprite|null} sprite
+   * @param {boolean} hovered
+   */
+  function setMeasurementLabelVisualState(sprite, hovered) {
+    if (!sprite || !sprite.isSprite || !sprite.userData || !sprite.userData.measurementLabel) return;
+    const data = sprite.userData.measurementLabel;
+    const baseOptions = Object.assign({}, data.textOptions || {});
+    const nextOptions = hovered
+      ? Object.assign({}, baseOptions, { bgColor: UI_PALETTE.measurementLabelBgHover })
+      : baseOptions;
+    applyTextSpriteTexture(sprite, data.text, nextOptions);
+    sprite.userData.measurementLabel.hovered = !!hovered;
+  }
+
+  /**
+   * Set the currently hovered measurement label.
+   * @param {THREE.Sprite|null} sprite
+   */
+  function setMeasurementLabelHover(sprite) {
+    if (measurementLabelHoverSprite === sprite) return;
+    if (measurementLabelHoverSprite) setMeasurementLabelVisualState(measurementLabelHoverSprite, false);
+    measurementLabelHoverSprite = null;
+    measurementLabelHoverKey = '';
+    if (sprite && sprite.userData && sprite.userData.measurementLabel) {
+      measurementLabelHoverSprite = sprite;
+      measurementLabelHoverKey = String(sprite.userData.measurementLabel.key || '');
+      setMeasurementLabelVisualState(sprite, true);
+    }
+    syncMeasurementLabelCursor();
+  }
+
+  /**
+   * Clear measurement-label hover styling.
+   */
+  function clearMeasurementLabelHover() {
+    setMeasurementLabelHover(null);
+  }
+
+  /**
+   * Cancel an active measurement-label drag gesture.
+   */
+  function cancelMeasurementLabelDrag() {
+    if (measurementLabelDragState && Number.isInteger(measurementLabelDragState.pointerId)) {
+      try { canvasEl.releasePointerCapture(measurementLabelDragState.pointerId); } catch { }
+    }
+    measurementLabelDragState = null;
+    syncMeasurementLabelCursor();
+  }
 
   /**
    * Clear measurement selections when the active file/context changes.
    */
   function clearMeasurementSelectionForContextChange() {
+    cancelMeasurementLabelDrag();
+    clearMeasurementLabelHover();
     if (!editSel.length) {
       updateEditSelectionVisuals();
       updateSelectedHalos();
@@ -12738,13 +12930,15 @@
     }
   }
   /**
-   * Create a screen-facing text sprite used for measurements/labels.
+   * Render one canvas-backed texture for a text sprite.
    * @param {string} txt
-   * @param {{uiScale?:number}=} options
-   * @returns {THREE.Sprite}
+   * @param {{uiScale?:number,bgColor?:string,textColor?:string}=} options
+   * @returns {{texture:THREE.CanvasTexture,width:number,height:number,uiScale:number,bgColor:string,textColor:string}}
    */
-  function makeTextSprite(txt, options = {}) {
+  function createTextSpriteTexture(txt, options = {}) {
     const uiScale = Math.max(0.6, Math.min(1.5, Number(options.uiScale) || 1));
+    const bgColor = (typeof options.bgColor === 'string' && options.bgColor.trim()) || UI_PALETTE.measurementLabelBg;
+    const textColor = (typeof options.textColor === 'string' && options.textColor.trim()) || UI_PALETTE.measurementLabelText;
     // make a rounded rectangle canvas with text, then make a sprite from it
     const hpad = Math.max(4, Math.round(6 * uiScale));
     const wpad = Math.max(5, Math.round(8 * uiScale));
@@ -12765,7 +12959,7 @@
 
     // rounded rectangle background
     const rr = Math.min(radius, w / 2, h / 2);
-    ctx.fillStyle = UI_PALETTE.measurementLabelBg;
+    ctx.fillStyle = bgColor;
     ctx.beginPath();
     ctx.moveTo(rr, 0);
     ctx.arcTo(w, 0, w, h, rr);
@@ -12776,25 +12970,105 @@
     ctx.fill();
 
     // text
-    ctx.fillStyle = UI_PALETTE.measurementLabelText;
+    ctx.fillStyle = textColor;
     ctx.textBaseline = 'middle';
     ctx.fillText(txt, wpad, h / 2);
 
-    // sprite from canvas
-    const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
-    const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
-    const spr = new THREE.Sprite(mat);
+    const texture = new THREE.CanvasTexture(c);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    return { texture, width: w, height: h, uiScale, bgColor, textColor };
+  }
+
+  /**
+   * Apply new text/appearance data to one existing text sprite.
+   * @param {THREE.Sprite} sprite
+   * @param {string} txt
+   * @param {{uiScale?:number,bgColor?:string,textColor?:string}=} options
+   */
+  function applyTextSpriteTexture(sprite, txt, options = {}) {
+    if (!sprite || !sprite.isSprite || !sprite.material) return;
+    const data = createTextSpriteTexture(txt, options);
+    if (sprite.material.map && sprite.material.map !== data.texture) {
+      try { sprite.material.map.dispose && sprite.material.map.dispose(); } catch { }
+    }
+    sprite.material.map = data.texture;
+    sprite.material.needsUpdate = true;
     const scale = 0.008; // tune label size relative to pixels
-    spr.scale.set(w * scale, h * scale, 1);
+    sprite.scale.set(data.width * scale, data.height * scale, 1);
+    if (!sprite.userData) sprite.userData = {};
+    sprite.userData.textSpriteState = {
+      text: txt,
+      options: {
+        uiScale: data.uiScale,
+        bgColor: data.bgColor,
+        textColor: data.textColor,
+      },
+    };
+  }
+
+  /**
+   * Create a screen-facing text sprite used for measurements/labels.
+   * @param {string} txt
+   * @param {{uiScale?:number,bgColor?:string,textColor?:string}=} options
+   * @returns {THREE.Sprite}
+   */
+  function makeTextSprite(txt, options = {}) {
+    const mat = new THREE.SpriteMaterial({ depthTest: false, depthWrite: false, transparent: true });
+    const spr = new THREE.Sprite(mat);
+    applyTextSpriteTexture(spr, txt, options);
     return spr;
+  }
+
+  /**
+   * Create one draggable measurement-label sprite.
+   * @param {string} txt
+   * @param {string} key
+   * @param {THREE.Vector3} basePosition
+   * @param {{uiScale?:number}=} options
+   * @returns {THREE.Sprite}
+   */
+  function makeMeasurementLabelSprite(txt, key, basePosition, options = {}) {
+    const sprite = makeTextSprite(txt, {
+      uiScale: Number(options.uiScale) || 0.9,
+      bgColor: UI_PALETTE.measurementLabelBg,
+      textColor: UI_PALETTE.measurementLabelText,
+    });
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const offset = getMeasurementLabelOffset(record, key);
+    sprite.position.copy(basePosition).add(offset);
+    sprite.renderOrder = 125;
+    sprite.userData = Object.assign({}, sprite.userData || {}, {
+      measurementLabel: {
+        key: String(key || ''),
+        text: String(txt || ''),
+        basePosition: basePosition.clone(),
+        textOptions: {
+          uiScale: Number(options.uiScale) || 0.9,
+          bgColor: UI_PALETTE.measurementLabelBg,
+          textColor: UI_PALETTE.measurementLabelText,
+        },
+        hovered: false,
+      },
+    });
+    if (measurementLabelHoverKey && measurementLabelHoverKey === key) {
+      measurementLabelHoverSprite = sprite;
+      setMeasurementLabelVisualState(sprite, true);
+    }
+    return sprite;
   }
   /**
    * Render distance, angle, and dihedral overlays for the current selection.
    */
   function updateEditSelectionVisuals() {
+    measurementLabelHoverSprite = null;
     clearGroup(editSelGroup);
     // Only render measurement overlays in measurement mode
     if (currentMode !== MODES.MEASURE || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms)) return;
+    ensureVolumeAtomIds(vol);
     /**
      * Get atom position by atom index.
      * @param {number} idx
@@ -12828,10 +13102,14 @@
       // label at midpoint
       const mid = a.clone().add(b).multiplyScalar(0.5);
       const dist = a.distanceTo(b);
-      const label = makeTextSprite(fmtDist(dist), { uiScale: 0.9 });
+      const labelKey = buildMeasurementDistanceKey(vol, i, j);
+      const label = makeMeasurementLabelSprite(fmtDist(dist), labelKey, mid, { uiScale: 0.9 });
       label.position.copy(mid);
       // slight lift towards camera to avoid z-fighting
-      const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir); label.position.add(camDir.multiplyScalar(0.01));
+      const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+      const basePosition = mid.clone().add(camDir.multiplyScalar(0.01));
+      label.position.copy(basePosition).add(getMeasurementLabelOffset(record, labelKey));
+      if (label.userData && label.userData.measurementLabel) label.userData.measurementLabel.basePosition.copy(basePosition);
       editSelGroup.add(label);
     };
     // Draw distances for adjacent pairs
@@ -12869,8 +13147,9 @@
       editSelGroup.add(fan);
       // Angle label at arc midpoint
       const midDir = e1.clone().multiplyScalar(Math.cos(theta / 2)).add(e2.clone().multiplyScalar(Math.sin(theta / 2)));
-      const label = makeTextSprite(fmtDeg(theta), { uiScale: 0.9 });
-      label.position.copy(pb.clone().add(midDir.multiplyScalar(radius + 0.06)));
+      const basePosition = pb.clone().add(midDir.multiplyScalar(radius + 0.06));
+      const labelKey = buildMeasurementAngleKey(vol, ia, ib, ic);
+      const label = makeMeasurementLabelSprite(fmtDeg(theta), labelKey, basePosition, { uiScale: 0.9 });
       editSelGroup.add(label);
     };
 
@@ -12926,13 +13205,15 @@
             // Dihedral label (abs degrees, 2 digits) along arc bisector
             const half = phi / 2;
             const midDir = eX.clone().multiplyScalar(Math.cos(half)).add(eY.clone().multiplyScalar(Math.sin(half))).normalize();
-            const label = makeTextSprite(fmtDeg(Math.abs(phi)), { uiScale: 0.9 });
-            label.position.copy(mid.clone().add(midDir.multiplyScalar(radius + 0.08)));
+            const basePosition = mid.clone().add(midDir.multiplyScalar(radius + 0.08));
+            const labelKey = buildMeasurementDihedralKey(vol, i, j, k, l);
+            const label = makeMeasurementLabelSprite(fmtDeg(Math.abs(phi)), labelKey, basePosition, { uiScale: 0.9 });
             editSelGroup.add(label);
           }
         }
       }
     }
+    syncMeasurementLabelCursor();
   }
   /**
    * Update normalized device coordinates from a pointer event.
@@ -12951,6 +13232,97 @@
   function setRaycasterFromEvent(e) {
     setNDCFromEvent(e);
     raycaster.setFromCamera(ndc, camera);
+  }
+
+  /**
+   * Raycast and return the first draggable measurement label under the pointer.
+   * @param {PointerEvent} e
+   * @returns {THREE.Intersection|null}
+   */
+  function pickMeasurementLabelHit(e) {
+    if (currentMode !== MODES.MEASURE || !editSelGroup || !editSelGroup.children || !editSelGroup.children.length) return null;
+    setRaycasterFromEvent(e);
+    const hits = raycaster.intersectObjects(editSelGroup.children, true);
+    for (const hit of hits) {
+      const obj = hit && hit.object;
+      if (obj && obj.isSprite && obj.userData && obj.userData.measurementLabel) return hit;
+    }
+    return null;
+  }
+
+  /**
+   * Start dragging one measurement label in a camera-facing plane.
+   * @param {PointerEvent} e
+   * @param {THREE.Intersection} hit
+   * @returns {boolean}
+   */
+  function beginMeasurementLabelDrag(e, hit) {
+    const sprite = hit && hit.object;
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const labelData = sprite && sprite.userData && sprite.userData.measurementLabel;
+    if (!record || !sprite || !sprite.isSprite || !labelData || !labelData.basePosition || !labelData.basePosition.isVector3) return false;
+    const key = String(labelData.key || '');
+    if (!key) return false;
+    setMeasurementLabelHover(sprite);
+    setRaycasterFromEvent(e);
+    const cameraDir = new THREE.Vector3();
+    camera.getWorldDirection(cameraDir);
+    if (cameraDir.lengthSq() < 1e-10) cameraDir.set(0, 0, -1);
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(cameraDir.normalize(), sprite.position.clone());
+    const planePoint = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(plane, planePoint)) return false;
+    measurementLabelDragState = {
+      pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
+      sprite,
+      key,
+      record,
+      plane,
+      startPlanePoint: planePoint.clone(),
+      initialOffset: getMeasurementLabelOffset(record, key),
+    };
+    try { canvasEl.setPointerCapture(e.pointerId); } catch { }
+    __editMoved = false;
+    syncMeasurementLabelCursor();
+    return true;
+  }
+
+  /**
+   * Update one active measurement-label drag gesture.
+   * @param {PointerEvent} e
+   */
+  function updateMeasurementLabelDragFromEvent(e) {
+    if (!measurementLabelDragState) return;
+    const { plane, startPlanePoint, initialOffset, record, key, sprite } = measurementLabelDragState;
+    if (!plane || !startPlanePoint || !sprite) return;
+    setRaycasterFromEvent(e);
+    const planeHit = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(plane, planeHit)) return;
+    const labelData = sprite.userData && sprite.userData.measurementLabel;
+    if (!labelData || !labelData.basePosition || !labelData.basePosition.isVector3) return;
+    const nextOffset = initialOffset.clone().add(planeHit.sub(startPlanePoint));
+    setMeasurementLabelOffset(record, key, nextOffset);
+    sprite.position.copy(labelData.basePosition).add(nextOffset);
+    __editMoved = true;
+  }
+
+  /**
+   * Finalize one measurement-label drag gesture.
+   * @param {PointerEvent=} e
+   */
+  function finalizeMeasurementLabelDrag(e) {
+    if (!measurementLabelDragState) return false;
+    const pointerId = measurementLabelDragState.pointerId;
+    if (Number.isInteger(pointerId)) {
+      try { canvasEl.releasePointerCapture(pointerId); } catch { }
+    }
+    measurementLabelDragState = null;
+    if (e) {
+      const hit = pickMeasurementLabelHit(e);
+      setMeasurementLabelHover(hit && hit.object ? hit.object : null);
+    } else {
+      syncMeasurementLabelCursor();
+    }
+    return true;
   }
   /**
    * Update hover highlighting for the currently pointed atom mesh.
@@ -13062,6 +13434,7 @@
    * Clear hover highlight state.
    */
   function clearHover() {
+    clearMeasurementLabelHover();
     setHover(null);
     setBondHover(null);
     setSurfaceHover(null);
@@ -14176,6 +14549,7 @@
     // Allow hover highlighting in Display, Edit, and Measurement modes.
     const allowHover = (currentMode === MODES.DISPLAY || currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
     if (!allowHover) {
+      clearMeasurementLabelHover();
       hideSurfaceHoverLabel();
       return;
     }
@@ -14187,6 +14561,11 @@
     if (transformActive) {
       __editMoved = true;
       updateTransformDragFromEvent(e);
+      return;
+    }
+    if (measurementLabelDragState) {
+      __editMoved = true;
+      updateMeasurementLabelDragFromEvent(e);
       return;
     }
     if (currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.MOLECULE && moleculePlaceActive && moleculePlaceRotating) {
@@ -14240,6 +14619,20 @@
       updateAddGrowPreviewFromEvent(e);
       return;
     }
+    if (currentMode === MODES.MEASURE) {
+      const labelHit = pickMeasurementLabelHit(e);
+      if (labelHit && labelHit.object) {
+        setMeasurementLabelHover(labelHit.object);
+        setHover(null);
+        setBondHover(null);
+        setSurfaceHover(null);
+        hideSurfaceHoverLabel();
+        return;
+      }
+      clearMeasurementLabelHover();
+    } else {
+      clearMeasurementLabelHover();
+    }
     if (currentMode === MODES.EDIT || currentMode === MODES.MEASURE) {
       const atomObj = pickAtom(e);
       if (atomObj) {
@@ -14286,6 +14679,7 @@
   });
 
   canvasEl.addEventListener('pointerleave', () => {
+    if (!measurementLabelDragState) clearMeasurementLabelHover();
     clearHover();
   });
 
@@ -14479,6 +14873,11 @@
       updateAxisGuideLine();
       e.preventDefault();
     } else if (currentMode === MODES.MEASURE) {
+      const labelHit = pickMeasurementLabelHit(e);
+      if (labelHit && beginMeasurementLabelDrag(e, labelHit)) {
+        e.preventDefault();
+        return;
+      }
       beginQuaternionViewRotate(e);
       if (!obj || !obj.userData) { __editClickIdx = -1; return; }
       __editClickIdx = obj.userData.index | 0;
@@ -14607,6 +15006,10 @@
         }
       }
     } else if (currentMode === MODES.MEASURE) {
+      if (finalizeMeasurementLabelDrag(e)) {
+        __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+        return;
+      }
       // Click (no significant motion) selects/accumulates
       if (!__editMoved) {
         if (__editClickIdx >= 0) {
@@ -14629,6 +15032,7 @@
     if (currentMode === MODES.DISPLAY) endQuaternionViewRotate(e);
     transformPendingSelectionTarget = null;
     transformPendingBackgroundClear = false;
+    cancelMeasurementLabelDrag();
     if (addFusePreviewState) {
       addFusePreviewState.rotating = false;
       addFusePreviewState.moved = false;
