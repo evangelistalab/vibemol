@@ -2,7 +2,7 @@
 /**
  * Atom record used by parsed molecular files.
  * Coordinates are stored in file-native units.
- * @typedef {{Z:number,q:number,x:number,y:number,z:number}} ParsedAtom
+ * @typedef {{id?:string,Z:number,x:number,y:number,z:number,formalCharge:number}} ParsedAtom
  */
 
 /**
@@ -202,7 +202,7 @@ function parseCube(text) {
     if (p.length < 5 || !p.every(Number.isFinite)) {
       throw new Error(`Malformed CUBE atom line ${lineNo} (expected: Z q x y z).`);
     }
-    atoms.push({ Z: p[0], q: p[1], x: p[2], y: p[3], z: p[4] });
+    atoms.push({ Z: p[0], x: p[2], y: p[3], z: p[4], formalCharge: 0 });
   }
 
   // volumetric data (z fastest, then y, then x) — reshape (numx,numy,numz)
@@ -308,7 +308,7 @@ function parseTwoComponentCube(text) {
     if (p.length < 5 || !p.every(Number.isFinite)) {
       throw new Error(`Malformed 2C CUBE atom line ${lineNo} (expected: Z q x y z).`);
     }
-    atoms.push({ Z: p[0], q: p[1], x: p[2], y: p[3], z: p[4] });
+    atoms.push({ Z: p[0], x: p[2], y: p[3], z: p[4], formalCharge: 0 });
   }
   const dataStartLine = 6 + atomCount;
   const nextNumber = createCubeDataTokenizer(lines, dataStartLine, natoms, isORCA);
@@ -450,7 +450,7 @@ function parseXYZ(text) {
       frame[3 * i + 0] = x;
       frame[3 * i + 1] = y;
       frame[3 * i + 2] = z;
-      frameAtoms.push({ Z, q: 0, x, y, z });
+      frameAtoms.push({ Z, x, y, z, formalCharge: 0 });
     }
     frames.push(frame);
     frameComments.push(comment);
@@ -615,7 +615,7 @@ function parseMoldenAtomsSection(section) {
     if (![x, y, z].every(Number.isFinite)) {
       throw new Error(`Malformed Molden [Atoms] entry at line ${entry.lineNo}: coordinates must be numeric.`);
     }
-    atoms.push({ Z, q: 0, x, y, z });
+    atoms.push({ Z, x, y, z, formalCharge: 0 });
   }
   if (atoms.length === 0) throw new Error('Molden [Atoms] section did not contain any atoms.');
   return { atoms, units, atomUnitLabel: units === 'bohr' ? 'AU' : 'Angs' };

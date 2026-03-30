@@ -3918,7 +3918,7 @@
     const isInkStyle = !!moleculeInkEnabled;
     const usesTrimmedConnector = !!profile.usesTrimmedConnector;
     const atomPositions = buildBondAtomRecords(vol);
-    const bondEdges = collectBondCandidates(atomPositions);
+    const bondEdges = getVolumeBondEdges(vol, atomPositions);
     const bondMat = getBondMaterial();
     // Keep bond outlines in toon/glossy/ink.
     const stylizedBondOutlineMat = (isToonStyle || isGlossyStyle || isInkStyle) ? getStylizedBondOutlineMaterial() : null;
@@ -3936,12 +3936,22 @@
     const bondHeightSegments = profile.bondHeightSegments;
     // Glossy mode forces single connectors to avoid multi-bond overlap artifacts.
     const multiBondRenderingEnabled = !!showMultiBonds && !isGlossyStyle;
-    if (multiBondRenderingEnabled) inferBondOrders(atomPositions, bondEdges);
+    const renderEdges = bondEdges.map((edge) => ({
+      id: edge.id,
+      a: edge.a,
+      b: edge.b,
+      i: edge.i,
+      j: edge.j,
+      len: edge.len,
+      order: multiBondRenderingEnabled ? normalizeEditAddBondOrder(edge.order || 1) : 1,
+      kind: edge.kind,
+      maxOrder: edge.maxOrder,
+    }));
     const aromaticRings = multiBondRenderingEnabled
-      ? inferAromaticSixRings(atomPositions, bondEdges)
+      ? inferAromaticSixRings(atomPositions, renderEdges)
       : [];
     const bondAdjacency = multiBondRenderingEnabled
-      ? buildBondAdjacency(bondEdges, atomPositions.length)
+      ? buildBondAdjacency(renderEdges, atomPositions.length)
       : [];
     const componentSpacing = Math.max(0.13, bondRadius * 2.1);
 
@@ -4278,7 +4288,7 @@
       group.add(connector);
     }
 
-    for (const edge of bondEdges) {
+    for (const edge of renderEdges) {
       const i = edge.i;
       const j = edge.j;
       const a = atomPositions[i];
@@ -6606,8 +6616,7 @@
   const saveBtn = document.getElementById('saveBtn');
   const batchBtn = document.getElementById('batchBtn');
   const savePresetBtn = document.getElementById('savePresetBtn');
-  const loadPresetBtn = document.getElementById('loadPresetBtn');
-  const presetInput = document.getElementById('presetInput');
+  const saveStructureBtn = document.getElementById('saveStructureBtn');
   const surfBtn = document.getElementById('surfBtn');
   const clearBtn = document.getElementById('clearBtn');
   const helpBtn = document.getElementById('helpBtn');
@@ -7018,9 +7027,40 @@
     } else {
       vol.idx = () => 0;
     }
-    if (Array.isArray(vol.atoms)) vol.natoms = vol.atoms.length;
-    ensureVolumeAtomIds(vol);
-    if (!Array.isArray(vol.fragmentOps)) vol.fragmentOps = [];
+    if (Array.isArray(vol.data) && !(vol.data instanceof Float32Array)) vol.data = Float32Array.from(vol.data);
+    for (const key of ['alphaRe', 'alphaIm', 'betaRe', 'betaIm']) {
+      if (Array.isArray(vol[key]) && !(vol[key] instanceof Float32Array)) vol[key] = Float32Array.from(vol[key]);
+    }
+    if (vol.trajectory && Array.isArray(vol.trajectory.frames)) {
+      vol.trajectory.frames = vol.trajectory.frames.map((frame) => (frame instanceof Float32Array) ? frame : Float32Array.from(frame || []));
+    }
+    if (vol.vibration) {
+      if (Array.isArray(vol.vibration.equilibrium) && !(vol.vibration.equilibrium instanceof Float32Array)) {
+        vol.vibration.equilibrium = Float32Array.from(vol.vibration.equilibrium);
+      }
+      if (Array.isArray(vol.vibration.frameBuffer) && !(vol.vibration.frameBuffer instanceof Float32Array)) {
+        vol.vibration.frameBuffer = Float32Array.from(vol.vibration.frameBuffer);
+      }
+      if (Array.isArray(vol.vibration.modes)) {
+        vol.vibration.modes = vol.vibration.modes.map((mode) => {
+          const next = cloneJsonLike(mode) || {};
+          if (Array.isArray(next.displacements) && !(next.displacements instanceof Float32Array)) {
+            next.displacements = Float32Array.from(next.displacements);
+          }
+          return next;
+        });
+      }
+    }
+    if (vol.molden && Array.isArray(vol.molden.mos)) {
+      vol.molden.mos = vol.molden.mos.map((mo) => {
+        const next = cloneJsonLike(mo) || {};
+        if (Array.isArray(next.coefficients) && !(next.coefficients instanceof Float32Array)) {
+          next.coefficients = Float32Array.from(next.coefficients);
+        }
+        return next;
+      });
+    }
+    ensureVolumeSchema(vol);
     return vol;
   }
 
@@ -8724,55 +8764,308 @@
   }
 
   /**
-   * Apply builder group metadata to one atom.
-   * @param {*} atom
+   * Return the builder-annotation map for one volume.
+   * @param {*} vol
+   * @param {boolean=} create
+   * @returns {Record<string, {groupId?:string,entryId?:string,entryKind?:string}>|null}
+   */
+  function getBuilderAnnotationsMap(vol, create = true) {
+    if (!vol || typeof vol !== 'object') return null;
+    if (!isPlainObject(vol.annotations)) {
+      if (!create) return null;
+      vol.annotations = {};
+    }
+    if (!isPlainObject(vol.annotations.builder)) {
+      if (!create) return null;
+      vol.annotations.builder = {};
+    }
+    if (!isPlainObject(vol.annotations.builder.byAtomId)) {
+      if (!create) return null;
+      vol.annotations.builder.byAtomId = {};
+    }
+    return vol.annotations.builder.byAtomId;
+  }
+
+  /**
+   * Normalize one atom to the minimal incremental schema.
+   * @param {*} raw
+   * @returns {{id:string,Z:number,x:number,y:number,z:number,formalCharge:number}}
+   */
+  function normalizeVolumeAtom(raw) {
+    const atom = (raw && typeof raw === 'object') ? raw : {};
+    const out = {
+      id: String(atom.id || '').trim() || allocateBuilderAtomId(),
+      Z: Number(atom.Z) | 0,
+      x: Number(atom.x) || 0,
+      y: Number(atom.y) || 0,
+      z: Number(atom.z) || 0,
+      formalCharge: Number.isFinite(atom.formalCharge) ? Math.round(Number(atom.formalCharge)) : 0,
+    };
+    absorbObservedBuilderId(out.id, 'atom');
+    return out;
+  }
+
+  /**
+   * Resolve a stable atom id from an atom object/index/string.
+   * @param {*} vol
+   * @param {*=} atomOrIndex
+   * @returns {string}
+   */
+  function resolveVolumeAtomId(vol, atomOrIndex) {
+    if (!vol || !Array.isArray(vol.atoms)) return '';
+    if (typeof atomOrIndex === 'string') return String(atomOrIndex).trim();
+    if (Number.isInteger(atomOrIndex)) {
+      const idx = atomOrIndex | 0;
+      return (idx >= 0 && idx < vol.atoms.length && vol.atoms[idx]) ? ensureAtomId(vol.atoms[idx]) : '';
+    }
+    if (atomOrIndex && typeof atomOrIndex === 'object') return ensureAtomId(atomOrIndex);
+    return '';
+  }
+
+  /**
+   * Read builder provenance for one atom from annotations, with legacy fallback.
+   * @param {*} vol
+   * @param {*=} atomOrIndex
+   * @returns {{groupId:string,entryId:string,entryKind:string}}
+   */
+  function getAtomBuilderMeta(vol, atomOrIndex) {
+    const atomId = resolveVolumeAtomId(vol, atomOrIndex);
+    const atom = typeof atomOrIndex === 'object'
+      ? atomOrIndex
+      : (Number.isInteger(atomOrIndex) && vol && Array.isArray(vol.atoms) ? vol.atoms[atomOrIndex | 0] : null);
+    const map = getBuilderAnnotationsMap(vol, false);
+    const stored = (map && atomId && isPlainObject(map[atomId])) ? map[atomId] : null;
+    const groupId = String((stored && stored.groupId) || (atom && atom.builderGroupId) || '').trim();
+    const entryId = String((stored && stored.entryId) || (atom && atom.builderEntryId) || '').trim().toLowerCase();
+    const entryKind = String((stored && stored.entryKind) || (atom && atom.builderEntryKind) || '').trim().toLowerCase();
+    return { groupId, entryId, entryKind };
+  }
+
+  /**
+   * Apply builder provenance to one atom via annotations.
+   * @param {*} vol
+   * @param {*=} atomOrIndex
    * @param {{groupId?:string|null,entryId?:string|null,entryKind?:string|null}=} meta
    */
-  function setAtomBuilderMeta(atom, meta = {}) {
-    if (!atom || typeof atom !== 'object') return;
-    ensureAtomId(atom);
-    const groupId = meta.groupId == null ? atom.builderGroupId : String(meta.groupId || '').trim();
-    const entryId = meta.entryId == null ? atom.builderEntryId : String(meta.entryId || '').trim().toLowerCase();
-    const entryKind = meta.entryKind == null ? atom.builderEntryKind : String(meta.entryKind || '').trim().toLowerCase();
-    if (groupId) {
-      atom.builderGroupId = groupId;
-      absorbObservedBuilderId(groupId, 'group');
+  function setAtomBuilderMeta(vol, atomOrIndex, meta = {}) {
+    const atomId = resolveVolumeAtomId(vol, atomOrIndex);
+    if (!atomId) return;
+    const map = getBuilderAnnotationsMap(vol, true);
+    if (!map) return;
+    const prev = getAtomBuilderMeta(vol, atomOrIndex);
+    const groupId = meta.groupId == null ? prev.groupId : String(meta.groupId || '').trim();
+    const entryId = meta.entryId == null ? prev.entryId : String(meta.entryId || '').trim().toLowerCase();
+    const entryKind = meta.entryKind == null ? prev.entryKind : String(meta.entryKind || '').trim().toLowerCase();
+    if (!groupId && !entryId && !entryKind) {
+      delete map[atomId];
     } else {
-      delete atom.builderGroupId;
+      map[atomId] = {};
+      if (groupId) {
+        map[atomId].groupId = groupId;
+        absorbObservedBuilderId(groupId, 'group');
+      }
+      if (entryId) map[atomId].entryId = entryId;
+      if (entryKind) map[atomId].entryKind = entryKind;
     }
-    if (entryId) atom.builderEntryId = entryId;
-    else delete atom.builderEntryId;
-    if (entryKind) atom.builderEntryKind = entryKind;
-    else delete atom.builderEntryKind;
+    const atom = typeof atomOrIndex === 'object'
+      ? atomOrIndex
+      : (Number.isInteger(atomOrIndex) && vol && Array.isArray(vol.atoms) ? vol.atoms[atomOrIndex | 0] : null);
+    if (atom && typeof atom === 'object') {
+      delete atom.builderGroupId;
+      delete atom.builderEntryId;
+      delete atom.builderEntryKind;
+    }
+  }
+
+  /**
+   * Migrate any legacy atom-level builder metadata into annotations.
+   * @param {*} vol
+   */
+  function migrateLegacyBuilderAnnotations(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return;
+    for (const atom of vol.atoms) {
+      if (!atom || typeof atom !== 'object') continue;
+      const groupId = String(atom.builderGroupId || '').trim();
+      const entryId = String(atom.builderEntryId || '').trim().toLowerCase();
+      const entryKind = String(atom.builderEntryKind || '').trim().toLowerCase();
+      if (groupId || entryId || entryKind) {
+        setAtomBuilderMeta(vol, atom, { groupId, entryId, entryKind });
+      }
+      delete atom.builderGroupId;
+      delete atom.builderEntryId;
+      delete atom.builderEntryKind;
+    }
+  }
+
+  /**
+   * Build one stable bond id from two atom ids.
+   * @param {string} a
+   * @param {string} b
+   * @returns {string}
+   */
+  function buildVolumeBondId(a, b) {
+    const left = String(a || '').trim();
+    const right = String(b || '').trim();
+    if (!left || !right) return '';
+    return left < right ? `bond:${left}:${right}` : `bond:${right}:${left}`;
+  }
+
+  /**
+   * Normalize one stored bond kind.
+   * @param {*} value
+   * @returns {'normal'}
+   */
+  function normalizeVolumeBondKind(value) {
+    return String(value || '').trim().toLowerCase() === 'normal' ? 'normal' : 'normal';
+  }
+
+  /**
+   * Normalize one persistent bond record to ID endpoints.
+   * @param {*} vol
+   * @param {*} raw
+   * @returns {{id:string,a:string,b:string,order:number,kind:'normal'}|null}
+   */
+  function normalizeVolumeBondRecord(vol, raw) {
+    if (!vol || !Array.isArray(vol.atoms) || !raw || typeof raw !== 'object') return null;
+    const atoms = vol.atoms;
+    const resolveEndpoint = (value) => {
+      if (typeof value === 'string') return String(value).trim();
+      if (Number.isInteger(value)) {
+        const idx = value | 0;
+        return (idx >= 0 && idx < atoms.length && atoms[idx]) ? ensureAtomId(atoms[idx]) : '';
+      }
+      return '';
+    };
+    const a = resolveEndpoint(raw.a);
+    const b = resolveEndpoint(raw.b);
+    if (!a || !b || a === b) return null;
+    const id = String(raw.id || '').trim() || buildVolumeBondId(a, b);
+    return {
+      id,
+      a,
+      b,
+      order: normalizeEditAddBondOrder(raw.order || 1),
+      kind: normalizeVolumeBondKind(raw.kind),
+    };
+  }
+
+  /**
+   * Infer a persistent bond graph for one volume from current geometry.
+   * @param {*} vol
+   * @returns {Array<{id:string,a:string,b:string,order:number,kind:'normal'}>}
+   */
+  function inferVolumeBonds(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return [];
+    ensureVolumeAtomIds(vol);
+    const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = collectBondCandidates(atomPositions);
+    inferBondOrders(atomPositions, edges);
+    vol.bonds = edges.map((edge) => {
+      const atomA = vol.atoms[edge.i];
+      const atomB = vol.atoms[edge.j];
+      const a = atomA ? ensureAtomId(atomA) : '';
+      const b = atomB ? ensureAtomId(atomB) : '';
+      return {
+        id: buildVolumeBondId(a, b),
+        a,
+        b,
+        order: normalizeEditAddBondOrder(edge.order || 1),
+        kind: 'normal',
+      };
+    }).filter((bond) => bond.id && bond.a && bond.b && bond.a !== bond.b);
+    return vol.bonds;
+  }
+
+  /**
+   * Ensure one volume uses the minimal incremental schema.
+   * @param {*} vol
+   * @param {{inferMissingBonds?:boolean}=} options
+   * @returns {*}
+   */
+  function ensureVolumeSchema(vol, options = {}) {
+    if (!vol || typeof vol !== 'object') return vol;
+    if (Array.isArray(vol.atoms)) {
+      vol.atoms = vol.atoms.map((atom) => normalizeVolumeAtom(atom));
+      vol.natoms = vol.atoms.length;
+      migrateLegacyBuilderAnnotations(vol);
+    } else {
+      vol.atoms = [];
+      vol.natoms = 0;
+    }
+    getBuilderAnnotationsMap(vol, true);
+    if (!Array.isArray(vol.fragmentOps)) vol.fragmentOps = [];
+    rehydrateBuilderStateForVolume(vol);
+    if (Array.isArray(vol.bonds)) {
+      vol.bonds = vol.bonds
+        .map((bond) => normalizeVolumeBondRecord(vol, bond))
+        .filter(Boolean);
+    } else if (options.inferMissingBonds !== false) {
+      inferVolumeBonds(vol);
+    } else {
+      vol.bonds = [];
+    }
+    return vol;
+  }
+
+  /**
+   * Resolve persistent bonds to geometry-aware edge objects.
+   * @param {*} vol
+   * @param {Array<{pos:THREE.Vector3,Z:number,bondColor?:THREE.Color,displayRadius?:number}>} atomPositions
+   * @returns {Array<{id:string,a:string,b:string,i:number,j:number,len:number,order:number,kind:'normal',maxOrder:number}>}
+   */
+  function getVolumeBondEdges(vol, atomPositions) {
+    if (!vol || !Array.isArray(vol.atoms)) return [];
+    ensureVolumeSchema(vol);
+    const records = Array.isArray(atomPositions) ? atomPositions : buildBondAtomRecords(vol, { includeRenderColor: false });
+    const atomIndexById = new Map();
+    for (let i = 0; i < vol.atoms.length; i++) {
+      const atom = vol.atoms[i];
+      if (!atom) continue;
+      atomIndexById.set(String(ensureAtomId(atom)), i);
+    }
+    const edges = [];
+    const source = Array.isArray(vol.bonds) && vol.bonds.length ? vol.bonds : inferVolumeBonds(vol);
+    for (const raw of source) {
+      const bond = normalizeVolumeBondRecord(vol, raw);
+      if (!bond) continue;
+      const i = atomIndexById.get(bond.a);
+      const j = atomIndexById.get(bond.b);
+      if (!Number.isInteger(i) || !Number.isInteger(j) || i === j) continue;
+      const aPos = records[i] && records[i].pos;
+      const bPos = records[j] && records[j].pos;
+      if (!aPos || !bPos || typeof aPos.distanceTo !== 'function') continue;
+      edges.push({
+        id: bond.id,
+        a: bond.a,
+        b: bond.b,
+        i,
+        j,
+        len: aPos.distanceTo(bPos),
+        order: normalizeEditAddBondOrder(bond.order || 1),
+        kind: bond.kind,
+        maxOrder: Math.max(
+          normalizeEditAddBondOrder(bond.order || 1),
+          getPairMaxBondOrder((vol.atoms[i] && vol.atoms[i].Z) | 0, (vol.atoms[j] && vol.atoms[j].Z) | 0)
+        ),
+      });
+    }
+    return edges;
   }
 
   /**
    * Deep-copy one atom array for history snapshots.
-   * @param {{atoms?:Array<{id?:string,Z:number,q:number,x:number,y:number,z:number}>}} vol
-   * @returns {Array<{id:string,Z:number,q:number,x:number,y:number,z:number,builderGroupId?:string,builderEntryId?:string,builderEntryKind?:string}>}
+   * @param {{atoms?:Array<{id?:string,Z:number,x:number,y:number,z:number,formalCharge?:number}>}} vol
+   * @returns {Array<{id:string,Z:number,x:number,y:number,z:number,formalCharge:number}>}
    */
   function cloneAtomsSnapshot(vol) {
     const atoms = vol && Array.isArray(vol.atoms) ? vol.atoms : [];
-    return atoms.map((a) => {
-      const clone = {
-        id: ensureAtomId(a),
-        Z: a.Z | 0,
-        q: Number.isFinite(a.q) ? Number(a.q) : 0,
-        x: Number(a.x),
-        y: Number(a.y),
-        z: Number(a.z),
-      };
-      if (a.builderGroupId) clone.builderGroupId = String(a.builderGroupId);
-      if (a.builderEntryId) clone.builderEntryId = String(a.builderEntryId);
-      if (a.builderEntryKind) clone.builderEntryKind = String(a.builderEntryKind);
-      return clone;
-    });
+    return atoms.map((a) => normalizeVolumeAtom(a));
   }
 
   /**
    * Compare two atom snapshots by value.
-   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} a
-   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} b
+   * @param {Array<{Z:number,x:number,y:number,z:number,formalCharge:number}>} a
+   * @param {Array<{Z:number,x:number,y:number,z:number,formalCharge:number}>} b
    * @returns {boolean}
    */
   function atomsSnapshotsEqual(a, b) {
@@ -8783,13 +9076,10 @@
       if (!x || !y) return false;
       if (String(x.id || '') !== String(y.id || '')) return false;
       if ((x.Z | 0) !== (y.Z | 0)) return false;
-      if (Math.abs((x.q || 0) - (y.q || 0)) > 1e-12) return false;
+      if ((Number(x.formalCharge) | 0) !== (Number(y.formalCharge) | 0)) return false;
       if (Math.abs((x.x || 0) - (y.x || 0)) > 1e-12) return false;
       if (Math.abs((x.y || 0) - (y.y || 0)) > 1e-12) return false;
       if (Math.abs((x.z || 0) - (y.z || 0)) > 1e-12) return false;
-      if (String(x.builderGroupId || '') !== String(y.builderGroupId || '')) return false;
-      if (String(x.builderEntryId || '') !== String(y.builderEntryId || '')) return false;
-      if (String(x.builderEntryKind || '') !== String(y.builderEntryKind || '')) return false;
     }
     return true;
   }
@@ -8820,7 +9110,7 @@
   /**
    * Deep-copy one full coordinate snapshot for edits that may include volumetric transforms.
    * @param {*} vol
-   * @returns {{atoms:Array<{Z:number,q:number,x:number,y:number,z:number}>,grid:{origin:number[],axes:number[][]}|null}}
+   * @returns {{atoms:Array<{Z:number,x:number,y:number,z:number,formalCharge:number}>,grid:{origin:number[],axes:number[][]}|null}}
    */
   function cloneCoordinateSnapshot(vol) {
     return {
@@ -8893,8 +9183,8 @@
   /**
    * Record one reversible edit mutation for the active history stack.
    * @param {*} record
-   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} beforeAtoms
-   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} afterAtoms
+   * @param {Array<{Z:number,x:number,y:number,z:number,formalCharge:number}>} beforeAtoms
+   * @param {Array<{Z:number,x:number,y:number,z:number,formalCharge:number}>} afterAtoms
    * @param {string} label
    * @param {{beforeFragmentOps?:Array<object>|null,afterFragmentOps?:Array<object>|null}=} options
    */
@@ -8960,7 +9250,7 @@
   /**
    * Apply one atom+grid state to a loaded record and refresh scene/UI.
    * @param {*} record
-   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} atoms
+   * @param {Array<{Z:number,x:number,y:number,z:number,formalCharge:number}>} atoms
    * @param {{origin:number[],axes:number[][]}|null} grid
    * @param {Array<object>|null=} fragmentOps
    * @returns {boolean}
@@ -8969,23 +9259,7 @@
     if (!record || !record.vol || !Array.isArray(atoms)) return false;
     const idx = volumes.indexOf(record);
     if (idx < 0) return false;
-    record.vol.atoms = atoms.map((a) => ({
-      id: String(a.id || '').trim() || allocateBuilderAtomId(),
-      Z: a.Z | 0,
-      q: Number.isFinite(a.q) ? Number(a.q) : 0,
-      x: Number(a.x),
-      y: Number(a.y),
-      z: Number(a.z),
-    }));
-    for (let i = 0; i < record.vol.atoms.length; i++) {
-      const atom = record.vol.atoms[i];
-      const src = atoms[i];
-      absorbObservedBuilderId(atom.id, 'atom');
-      if (src && src.builderGroupId) atom.builderGroupId = String(src.builderGroupId);
-      if (src && src.builderEntryId) atom.builderEntryId = String(src.builderEntryId);
-      if (src && src.builderEntryKind) atom.builderEntryKind = String(src.builderEntryKind);
-      if (atom.builderGroupId) absorbObservedBuilderId(atom.builderGroupId, 'group');
-    }
+    record.vol.atoms = atoms.map((a) => normalizeVolumeAtom(a));
     if (fragmentOps === null) {
       record.vol.fragmentOps = [];
     } else if (Array.isArray(fragmentOps)) {
@@ -9007,6 +9281,8 @@
       ];
     }
     record.vol.natoms = record.vol.atoms.length;
+    inferVolumeBonds(record.vol);
+    ensureVolumeSchema(record.vol, { inferMissingBonds: false });
     syncBuilderExtensionFromVolumes();
     currentIndex = idx;
     clearTransientInteractionState();
@@ -9019,7 +9295,7 @@
   /**
    * Apply one stored atom snapshot to its volume record.
    * @param {*} record
-   * @param {Array<{Z:number,q:number,x:number,y:number,z:number}>} atoms
+   * @param {Array<{Z:number,x:number,y:number,z:number,formalCharge:number}>} atoms
    * @param {Array<object>|null=} fragmentOps
    * @returns {boolean}
    */
@@ -9030,7 +9306,7 @@
   /**
    * Apply one full coordinate snapshot (atoms + optional grid transform) to a record.
    * @param {*} record
-   * @param {{atoms:Array<{Z:number,q:number,x:number,y:number,z:number}>,grid:{origin:number[],axes:number[][]}|null}} snapshot
+   * @param {{atoms:Array<{Z:number,x:number,y:number,z:number,formalCharge:number}>,grid:{origin:number[],axes:number[][]}|null}} snapshot
    * @returns {boolean}
    */
   function applyStructureSnapshotToRecord(record, snapshot) {
@@ -9439,6 +9715,9 @@
       nxyz: [0, 0, 0],
       axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
       atoms: [],
+      bonds: [],
+      annotations: { builder: { byAtomId: {} } },
+      fragmentOps: [],
       data: new Float32Array(0),
       idx: idx0,
       units: 'angstrom',
@@ -9466,8 +9745,7 @@
     const preferred = String(options.name || '').trim();
     const name = preferred || getNextUntitledFileName();
     const record = { name, vol: createEmptyEditableVolume() };
-    ensureVolumeAtomIds(record.vol);
-    if (!Array.isArray(record.vol.fragmentOps)) record.vol.fragmentOps = [];
+    ensureVolumeSchema(record.vol);
     volumes.push(record);
     activateVolumeIndex(volumes.length - 1, { rebuild: false });
     return record;
@@ -9584,7 +9862,7 @@
     const anchor = anchorIndex | 0;
     if (anchor < 0 || anchor >= vol.atoms.length) return null;
     const records = buildBondAtomRecords(vol, { includeRenderColor: false });
-    const edges = collectBondCandidates(records);
+    const edges = getVolumeBondEdges(vol, records);
     let best = null;
     let bestScore = -Infinity;
     for (const edge of edges) {
@@ -9767,7 +10045,7 @@
     if (!moved.length) return 0;
     const movedSet = new Set(moved);
     const records = buildBondAtomRecords(vol, { includeRenderColor: false });
-    const edges = collectBondCandidates(records);
+    const edges = getVolumeBondEdges(vol, records);
     const adjustments = new Map();
     let maxShift = 0;
     for (const edge of edges) {
@@ -9930,8 +10208,7 @@
       return { overlapCount: overlap.count, valencePressureCount: 0 };
     }
     const records = buildBondAtomRecords(vol, { includeRenderColor: false });
-    const edges = collectBondCandidates(records);
-    inferBondOrders(records, edges);
+    const edges = getVolumeBondEdges(vol, records);
     const valenceByAtom = new Map();
     for (const edge of edges) {
       if (!edge) continue;
@@ -10119,7 +10396,7 @@
   function getEditAddNeighborDirections(vol, anchorIndex) {
     if (!vol || !Array.isArray(vol.atoms)) return [];
     const records = buildBondAtomRecords(vol, { includeRenderColor: false });
-    const edges = collectBondCandidates(records);
+    const edges = getVolumeBondEdges(vol, records);
     const dirs = [];
     for (const e of edges) {
       let j = -1;
@@ -10200,7 +10477,7 @@
     const anchor = anchorIndex | 0;
     if (anchor < 0 || anchor >= n) return [];
     const records = buildBondAtomRecords(vol, { includeRenderColor: false });
-    const edges = collectBondCandidates(records);
+    const edges = getVolumeBondEdges(vol, records);
     const adjacency = buildBondAdjacency(edges, n);
     const seen = new Uint8Array(n);
     const stack = [anchor];
@@ -10240,7 +10517,7 @@
     const seed = seedIndex | 0;
     if (i < 0 || j < 0 || seed < 0 || i >= n || j >= n || seed >= n || i === j) return [];
     const records = buildBondAtomRecords(vol, { includeRenderColor: false });
-    const edges = collectBondCandidates(records);
+    const edges = getVolumeBondEdges(vol, records);
     const adjacency = buildBondAdjacency(edges, n);
     const seen = new Uint8Array(n);
     const stack = [seed];
@@ -10371,11 +10648,11 @@
     const atoms = vol.atoms;
     const anchor = anchorIndex | 0;
     if (anchor < 0 || anchor >= atoms.length) return [];
-    const groupId = String(atoms[anchor] && atoms[anchor].builderGroupId || '').trim();
+    const groupId = getAtomBuilderMeta(vol, anchor).groupId;
     if (!groupId) return [];
     const out = [];
     for (let i = 0; i < atoms.length; i++) {
-      if (String(atoms[i] && atoms[i].builderGroupId || '').trim() === groupId) out.push(i);
+      if (getAtomBuilderMeta(vol, i).groupId === groupId) out.push(i);
     }
     return out;
   }
@@ -10390,7 +10667,7 @@
     if (!vol || !Array.isArray(vol.atoms)) return '';
     const anchor = anchorIndex | 0;
     if (anchor < 0 || anchor >= vol.atoms.length) return '';
-    const kind = String(vol.atoms[anchor] && vol.atoms[anchor].builderEntryKind || '').trim().toLowerCase();
+    const kind = getAtomBuilderMeta(vol, anchor).entryKind;
     if (kind === CATALOG_KIND.FRAGMENT || kind === CATALOG_KIND.MOLECULE) return kind;
     return '';
   }
@@ -11155,9 +11432,9 @@
     for (const atom of moleculePlaceTemplateData.atoms) {
       const world = atom.local.clone().applyQuaternion(moleculePlaceQuaternion).add(moleculePlacePosition);
       const coords = worldToAtomUnits(vol, world);
-      const newAtom = { Z: atom.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] };
+      const newAtom = { Z: atom.Z | 0, x: coords[0], y: coords[1], z: coords[2], formalCharge: 0 };
       ensureAtomId(newAtom);
-      setAtomBuilderMeta(newAtom, {
+      setAtomBuilderMeta(vol, newAtom, {
         groupId: builderGroupId,
         entryId: moleculePlaceTemplateData.id || '',
         entryKind: CATALOG_KIND.MOLECULE,
@@ -11166,6 +11443,7 @@
       vol.atoms.push(newAtom);
     }
     vol.natoms = vol.atoms.length;
+    inferVolumeBonds(vol);
     const afterAtoms = cloneAtomsSnapshot(vol);
     const label = moleculePlaceTemplateData.name || 'molecule';
     recordFragmentOperation(record, {
@@ -11450,9 +11728,9 @@
     const addedAtomIds = [];
     for (const item of geom.newAtoms) {
       const coords = worldToAtomUnits(vol, item.world);
-      const atom = { Z: item.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] };
+      const atom = { Z: item.Z | 0, x: coords[0], y: coords[1], z: coords[2], formalCharge: 0 };
       ensureAtomId(atom);
-      setAtomBuilderMeta(atom, {
+      setAtomBuilderMeta(vol, atom, {
         groupId: builderGroupId,
         entryId: state.fragment.id,
         entryKind: CATALOG_KIND.FRAGMENT,
@@ -11464,6 +11742,7 @@
       addedAtomIds.push(atom.id);
     }
     vol.natoms = vol.atoms.length;
+    inferVolumeBonds(vol);
     const warnings = evaluateBuilderPlacementWarnings(vol, addedAtomIndices, oldAtomIndexSet, [state.hostBond.i, state.hostBond.j]);
     const afterAtoms = cloneAtomsSnapshot(vol);
     recordFragmentOperation(record, {
@@ -13535,10 +13814,11 @@
     const z = editAddElementZ | 0;
     if (!z || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
     const [x, y, zCoord] = worldToAtomUnits(vol, worldPos);
-    const atom = { Z: z, q: 0, x, y, z: zCoord };
+    const atom = { Z: z, x, y, z: zCoord, formalCharge: 0 };
     ensureAtomId(atom);
     vol.atoms.push(atom);
     vol.natoms = vol.atoms.length;
+    inferVolumeBonds(vol);
     const afterAtoms = cloneAtomsSnapshot(vol);
     pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add ${getElementSymbol(z)}`);
     rebuildScene({ preserveView: true });
@@ -13746,9 +14026,9 @@
       const local = new THREE.Vector3(Number(a.x) || 0, Number(a.y) || 0, Number(a.z) || 0).sub(connLocal);
       const world = local.applyQuaternion(rot).add(connectionWorld);
       const coords = worldToAtomUnits(vol, world);
-      const newAtom = { Z: a.Z | 0, q: 0, x: coords[0], y: coords[1], z: coords[2] };
+      const newAtom = { Z: a.Z | 0, x: coords[0], y: coords[1], z: coords[2], formalCharge: 0 };
       ensureAtomId(newAtom);
-      setAtomBuilderMeta(newAtom, {
+      setAtomBuilderMeta(vol, newAtom, {
         groupId: builderGroupId,
         entryId: fragment.id,
         entryKind: CATALOG_KIND.FRAGMENT,
@@ -13769,6 +14049,7 @@
       attachDir
     );
     vol.natoms = vol.atoms.length;
+    inferVolumeBonds(vol);
 
     const warnings = evaluateBuilderPlacementWarnings(vol, newIndices, oldAtomIndexSet, [anchor]);
     const afterAtoms = cloneAtomsSnapshot(vol);
@@ -13833,6 +14114,7 @@
     const removed = vol.atoms[idx];
     vol.atoms.splice(idx, 1);
     vol.natoms = vol.atoms.length;
+    inferVolumeBonds(vol);
     const builderOpsChanged = pruneBuilderOperationsForVolume(vol);
     const afterAtoms = cloneAtomsSnapshot(vol);
     const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
@@ -14257,7 +14539,7 @@
     if (!selected.length) return 0;
     const selectedSet = new Set(selected);
     const records = buildBondAtomRecords(vol, { includeRenderColor: false });
-    const edges = collectBondCandidates(records);
+    const edges = getVolumeBondEdges(vol, records);
     const adjacency = Array.from({ length: vol.atoms.length }, () => []);
     for (const edge of edges) {
       if (!edge) continue;
@@ -14303,15 +14585,14 @@
         hint: 'Transform selection cleared.',
       };
     }
-    const atoms = selected.map((idx) => vol.atoms[idx]).filter(Boolean);
-    const entryIds = new Set(atoms.map((atom) => String(atom.builderEntryId || '').trim().toLowerCase()).filter(Boolean));
-    const entryKinds = new Set(atoms.map((atom) => String(atom.builderEntryKind || '').trim().toLowerCase()).filter(Boolean));
-    const groupIds = new Set(atoms.map((atom) => String(atom.builderGroupId || '').trim()).filter(Boolean));
+    const entryIds = new Set(selected.map((idx) => getAtomBuilderMeta(vol, idx).entryId).filter(Boolean));
+    const entryKinds = new Set(selected.map((idx) => getAtomBuilderMeta(vol, idx).entryKind).filter(Boolean));
+    const groupIds = new Set(selected.map((idx) => getAtomBuilderMeta(vol, idx).groupId).filter(Boolean));
     const selectedCount = selected.length;
     const components = countSelectedAtomComponents(vol, selected);
     const soleGroupId = groupIds.size === 1 ? groupIds.values().next().value : '';
     const isWholeGroup = soleGroupId
-      ? selectedCount === vol.atoms.filter((atom) => String(atom && atom.builderGroupId || '').trim() === soleGroupId).length
+      ? selectedCount === vol.atoms.filter((_, atomIndex) => getAtomBuilderMeta(vol, atomIndex).groupId === soleGroupId).length
       : false;
 
     const getNamedLabel = () => {
@@ -15681,6 +15962,8 @@
   // --- Preset import/export (shared with CLI via window.VibeMolPreset) ---
   const PRESET_KIND = 'vibemol.preset';
   const PRESET_VERSION = 1;
+  const STRUCTURE_KIND = 'vibemol.structure';
+  const STRUCTURE_VERSION = 1;
   const PRESET_OBJECT_VALUE_KEYS = new Set([
     'global.elementColorOverrides',
   ]);
@@ -15791,9 +16074,15 @@
     if (!vol || !Array.isArray(vol.atoms)) return;
     ensureVolumeAtomIds(vol);
     const atoms = vol.atoms;
+    const byAtomId = getBuilderAnnotationsMap(vol, true);
+    const liveIds = new Set();
     for (const atom of atoms) {
       if (!atom || typeof atom !== 'object') continue;
       absorbObservedBuilderId(atom.id, 'atom');
+      liveIds.add(String(atom.id || ''));
+    }
+    for (const atomId of Object.keys(byAtomId || {})) {
+      if (!liveIds.has(atomId)) delete byAtomId[atomId];
     }
     if (!Array.isArray(vol.fragmentOps)) {
       vol.fragmentOps = [];
@@ -15823,7 +16112,7 @@
       const addedIds = Array.isArray(op.addedAtomIds) ? op.addedAtomIds : [];
       for (const atom of atoms) {
         if (!atom || !addedIds.includes(String(atom.id || ''))) continue;
-        setAtomBuilderMeta(atom, {
+        setAtomBuilderMeta(vol, atom, {
           groupId: op.builderGroupId,
           entryId: op.entryId,
           entryKind: op.entryKind,
@@ -15952,6 +16241,23 @@
    */
   function cloneJsonLike(value) {
     try { return JSON.parse(JSON.stringify(value)); } catch { return value; }
+  }
+
+  /**
+   * Clone one value to a JSON-safe structure, converting typed arrays to lists.
+   * @param {*} value
+   * @returns {*}
+   */
+  function cloneJsonStructuredData(value) {
+    if (value == null || typeof value !== 'object') return value;
+    if (ArrayBuffer.isView(value)) return Array.from(value);
+    if (Array.isArray(value)) return value.map((item) => cloneJsonStructuredData(item));
+    const out = {};
+    for (const [key, next] of Object.entries(value)) {
+      if (typeof next === 'function') continue;
+      out[key] = cloneJsonStructuredData(next);
+    }
+    return out;
   }
 
   /**
@@ -16542,6 +16848,40 @@
   }
 
   /**
+   * Build a reproducible structure-download filename for one record.
+   * @param {{name?:string}|null} record
+   * @returns {string}
+   */
+  function buildStructureDownloadFilename(record) {
+    const rawName = String(record && record.name || 'structure').trim() || 'structure';
+    const safeName = rawName
+      .replace(/[\\/:*?"<>|]+/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const base = safeName.replace(/\.[^/.]+$/, '') || 'structure';
+    return `${base}.structure.json`;
+  }
+
+  /**
+   * Save the active structure as a reproducible JSON document.
+   */
+  function saveCurrentStructureToFile() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    if (!record || !record.vol) {
+      setHintMessage('No active structure to save.');
+      return;
+    }
+    const text = `${JSON.stringify(exportActiveStructureEnvelope(), null, 2)}\n`;
+    const blob = new Blob([text], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.download = buildStructureDownloadFilename(record);
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+    setHintMessage(`Saved structure: ${link.download}`);
+  }
+
+  /**
    * Parse and apply one preset JSON payload.
    * @param {string} text
    * @param {string=} sourceLabel
@@ -16560,15 +16900,88 @@
   }
 
   /**
-   * Parse and apply one uploaded preset JSON file.
-   * @param {FileList|null} fileList
+   * Export one volume to the reproducible structure-document payload.
+   * @param {*} vol
+   * @returns {*}
    */
-  async function handlePresetFileUpload(fileList) {
-    const file = fileList && fileList[0];
-    if (!file) return;
-    const text = await file.text();
-    const result = importPresetFromText(text, file.name || 'preset');
-    setNavigationHint(`Loaded preset: ${result.name}`);
+  function exportStructureVolume(vol) {
+    const clone = rehydrateClonedVolume(cloneStructuredData(vol));
+    ensureVolumeSchema(clone);
+    return cloneJsonStructuredData(clone);
+  }
+
+  /**
+   * Export the active record as a versioned structure document.
+   * @returns {object}
+   */
+  function exportActiveStructureEnvelope() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    if (!record || !record.vol) throw new Error('No active structure is loaded.');
+    return {
+      kind: STRUCTURE_KIND,
+      structureVersion: STRUCTURE_VERSION,
+      appVersion: APP_VERSION,
+      name: String(record.name || 'structure').trim() || 'structure',
+      meta: {
+        source: 'web',
+        exportedAt: new Date().toISOString(),
+      },
+      volume: exportStructureVolume(record.vol),
+      recordState: {
+        measurementLabelOffsets: cloneJsonStructuredData(record.measurementLabelOffsets || {}),
+        pubchemMeta: cloneJsonStructuredData(record.pubchemMeta || null),
+      },
+    };
+  }
+
+  /**
+   * Parse one structure-document JSON payload.
+   * @param {string} text
+   * @param {string=} sourceLabel
+   * @returns {{name:string,vol:*,extras:object}}
+   */
+  function parseStructureEnvelopeText(text, sourceLabel = 'structure') {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new Error(`${sourceLabel}: invalid JSON`);
+    }
+    if (!isPlainObject(parsed)) throw new Error(`${sourceLabel}: structure payload must be an object.`);
+    if (String(parsed.kind || '') !== STRUCTURE_KIND) {
+      throw new Error(`${sourceLabel}: unexpected structure kind "${String(parsed.kind || '')}".`);
+    }
+    const version = Number(parsed.structureVersion);
+    if (Number.isFinite(version) && version > STRUCTURE_VERSION) {
+      throw new Error(`${sourceLabel}: structure version ${version} is newer than supported ${STRUCTURE_VERSION}.`);
+    }
+    const name = String(parsed.name || sourceLabel || 'structure').trim() || 'structure';
+    if (!isPlainObject(parsed.volume)) throw new Error(`${sourceLabel}: missing "volume" object.`);
+    const vol = rehydrateClonedVolume(cloneStructuredData(parsed.volume));
+    ensureVolumeSchema(vol);
+    const recordState = isPlainObject(parsed.recordState) ? parsed.recordState : {};
+    const extras = {};
+    if (isPlainObject(recordState.measurementLabelOffsets)) extras.measurementLabelOffsets = cloneJsonLike(recordState.measurementLabelOffsets) || {};
+    if (isPlainObject(recordState.pubchemMeta)) extras.pubchemMeta = cloneJsonLike(recordState.pubchemMeta) || null;
+    return { name, vol, extras };
+  }
+
+  /**
+   * Load one structure-document text payload into the app.
+   * @param {string} text
+   * @param {string=} sourceLabel
+   * @returns {{name:string,vol:*}}
+   */
+  function loadStructureFromText(text, sourceLabel = 'structure') {
+    const imported = parseStructureEnvelopeText(text, sourceLabel);
+    clearPlaceholderVolumesForUserLoad();
+    const startIndex = volumes.length;
+    appendParsedVolumeRecord(getUniqueVolumeName(imported.name), imported.vol, Object.assign({}, imported.extras || {}, { skipBuilderExtensionMerge: true }));
+    finalizeLoadedVolumes(startIndex, {
+      resetIsoToDefault: hasVolumetricGrid(imported.vol),
+      skipAutoIsoOnInitialRebuild: hasVolumetricGrid(imported.vol),
+    });
+    return imported;
   }
 
   // Public API for browser automation and future integrations.
@@ -16581,15 +16994,17 @@
     import: (preset, options = {}) => importPresetEnvelope(preset, options),
   });
 
+  window.VibeMolStructure = Object.freeze({
+    kind: STRUCTURE_KIND,
+    version: STRUCTURE_VERSION,
+    exportActive: () => exportActiveStructureEnvelope(),
+    exportActiveText: () => `${JSON.stringify(exportActiveStructureEnvelope(), null, 2)}\n`,
+    parseText: (text, sourceLabel = 'structure') => parseStructureEnvelopeText(text, sourceLabel),
+    importFromText: (text, sourceLabel = 'structure') => loadStructureFromText(text, sourceLabel),
+  });
+
   if (savePresetBtn) savePresetBtn.onclick = () => saveCurrentPresetToFile();
-  if (loadPresetBtn) loadPresetBtn.onclick = () => { if (presetInput) presetInput.click(); };
-  if (presetInput) {
-    presetInput.addEventListener('change', async (e) => {
-      try { await handlePresetFileUpload(e.target && e.target.files); }
-      catch (err) { console.error('[Preset] failed to import', err); alert(`Preset import failed: ${err.message || err}`); }
-      finally { presetInput.value = ''; }
-    });
-  }
+  if (saveStructureBtn) saveStructureBtn.onclick = () => saveCurrentStructureToFile();
 
   // Axes gizmo state
   window.__showAxes__ = true;
@@ -16919,22 +17334,7 @@
     const idx = volumes.indexOf(record);
     if (idx < 0) return false;
     const vol = record.vol;
-    vol.atoms = snapshot.atoms.map((a) => {
-      const atom = {
-        id: String(a && a.id || '').trim() || allocateBuilderAtomId(),
-        Z: a && a.Z ? (a.Z | 0) : 0,
-        q: Number.isFinite(a && a.q) ? Number(a.q) : 0,
-        x: Number(a && a.x) || 0,
-        y: Number(a && a.y) || 0,
-        z: Number(a && a.z) || 0,
-      };
-      if (a && a.builderGroupId) atom.builderGroupId = String(a.builderGroupId);
-      if (a && a.builderEntryId) atom.builderEntryId = String(a.builderEntryId);
-      if (a && a.builderEntryKind) atom.builderEntryKind = String(a.builderEntryKind);
-      absorbObservedBuilderId(atom.id, 'atom');
-      if (atom.builderGroupId) absorbObservedBuilderId(atom.builderGroupId, 'group');
-      return atom;
-    });
+    vol.atoms = snapshot.atoms.map((a) => normalizeVolumeAtom(a));
     if (snapshot.trajectory) vol.trajectory = cloneTrajectoryState(snapshot.trajectory);
     else delete vol.trajectory;
     if (snapshot.vibration) vol.vibration = cloneVibrationState(snapshot.vibration);
@@ -16942,6 +17342,7 @@
     if (snapshot.molden) vol.molden = cloneMoldenState(snapshot.molden);
     else delete vol.molden;
     vol.natoms = vol.atoms.length;
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
     trajectoryPlaying = false;
     trajectoryLastStepMs = 0;
     vibrationPlaying = false;
@@ -17873,7 +18274,7 @@
       const y = Number(row && row.y);
       const z = Number(row && row.z);
       if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return null;
-      atoms.push({ Z: atomicNumber, q: 0, x, y, z });
+      atoms.push({ Z: atomicNumber, x, y, z, formalCharge: 0 });
     }
     const idx = () => 0;
     return {
@@ -18077,7 +18478,7 @@
       if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(zc)) {
         throw new Error(`Psi4 integration: invalid geometry coordinates in "${sourceName}".`);
       }
-      atoms.push({ Z: z, q: 0, x, y, z: zc });
+      atoms.push({ Z: z, x, y, z: zc, formalCharge: 0 });
     }
     const idx = () => 0;
     return {
@@ -18641,10 +19042,11 @@
     const meta = Object.assign({ name, vol }, extras || {});
     if (vol && vol.isTwoComponent) setVolume2CComponent(meta, global2CComponentMode);
     if (vol) {
-      ensureVolumeAtomIds(vol);
+      ensureVolumeSchema(vol);
       const builderMap = getBuilderFragmentOpsByFileFromExtensions();
       const fileKey = String(name || '').trim();
-      if (fileKey && Array.isArray(builderMap[fileKey])) {
+      const skipBuilderExtensionMerge = !!(extras && extras.skipBuilderExtensionMerge);
+      if (!skipBuilderExtensionMerge && fileKey && Array.isArray(builderMap[fileKey])) {
         vol.fragmentOps = cloneJsonLike(builderMap[fileKey]) || [];
       } else if (!Array.isArray(vol.fragmentOps)) {
         vol.fragmentOps = [];
@@ -18864,6 +19266,24 @@
           if (looksLikePreset) {
             const result = importPresetFromText(text, f.name || 'preset');
             importedPresetNames.push(result.name);
+            continue;
+          }
+          const looksLikeStructure = !!(
+            parsedJson
+            && typeof parsedJson === 'object'
+            && !Array.isArray(parsedJson)
+            && parsedJson.kind === STRUCTURE_KIND
+          );
+          if (looksLikeStructure) {
+            const imported = parseStructureEnvelopeText(text, f.name || 'structure');
+            if (!hasPreparedTarget) {
+              clearPlaceholderVolumesForUserLoad();
+              startIndex = volumes.length;
+              hasPreparedTarget = true;
+            }
+            appendParsedVolumeRecord(getUniqueVolumeName(imported.name), imported.vol, Object.assign({}, imported.extras || {}, { skipBuilderExtensionMerge: true }));
+            if (hasVolumetricGrid(imported.vol)) loadedVolumetricCount++;
+            loadedCount++;
             continue;
           }
         }
@@ -19531,6 +19951,7 @@
     const hasActive = currentIndex >= 0 && !!volumes[currentIndex];
     if (duplicateFileBtn) duplicateFileBtn.disabled = !hasActive;
     if (removeFileBtn) removeFileBtn.disabled = !hasActive;
+    if (saveStructureBtn) saveStructureBtn.disabled = !hasActive;
   }
 
   fileSelect.onchange = () => {
@@ -20389,9 +20810,9 @@
     const hx = r * Math.sin(theta / 2);
     const hz = r * Math.cos(theta / 2);
     const atoms = [
-      { Z: (ATOM_SYMBOL_TO_Z.O || 8), q: 0, x: 0, y: 0, z: 0 },
-      { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR },
-      { Z: (ATOM_SYMBOL_TO_Z.H || 1), q: 0, x: -hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR },
+      { Z: (ATOM_SYMBOL_TO_Z.O || 8), x: 0, y: 0, z: 0, formalCharge: 0 },
+      { Z: (ATOM_SYMBOL_TO_Z.H || 1), x: hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR, formalCharge: 0 },
+      { Z: (ATOM_SYMBOL_TO_Z.H || 1), x: -hx * ANG_TO_BOHR, y: 0, z: hz * ANG_TO_BOHR, formalCharge: 0 },
     ];
     const nx = 20, ny = 20, nz = 20;
     const step = 0.6; // Bohr per voxel along each axis
@@ -20406,7 +20827,7 @@
      * @returns {number}
      */
     const idx = (i, j, k) => (i * ny + j) * nz + k;
-    const vol = { title: 'Demo Water', comment: '', natoms: 3, origin, nxyz: [nx, ny, nz], axes, atoms, data, idx, isoHint: null };
+    const vol = ensureVolumeSchema({ title: 'Demo Water', comment: '', natoms: 3, origin, nxyz: [nx, ny, nz], axes, atoms, data, idx, isoHint: null });
     volumes.push({ name: 'Demo Water', vol });
     activateVolumeIndex(0);
   }

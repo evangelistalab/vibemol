@@ -2433,7 +2433,6 @@
     <input type="file" id="fileInput"
       accept=".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,application/json,text/plain"
       multiple />
-    <input type="file" id="presetInput" accept=".json,.vmpreset,application/json" />
     <datalist id="pubchemSuggestions"></datalist>
 
     <div id="toolbarHead">
@@ -2473,10 +2472,10 @@
             data-tip="Export all loaded files as PNG images. Shortcut: B">photo_library</button>
           <button id="savePresetBtn" class="secondary tb-iconBtn ms-icon-button"
             title="Download current visualization preset as JSON" aria-label="Save preset"
-            data-tip="Download current visualization preset as JSON">download</button>
-          <button id="loadPresetBtn" class="secondary tb-iconBtn ms-icon-button"
-            title="Load visualization preset from JSON" aria-label="Load preset"
-            data-tip="Load visualization preset from JSON file">upload</button>
+            data-tip="Download current visualization preset as JSON">tune</button>
+          <button id="saveStructureBtn" class="secondary tb-iconBtn ms-icon-button"
+            title="Download current structure as reproducible JSON" aria-label="Save structure"
+            data-tip="Download current structure as reproducible JSON">file_download</button>
         </div>
       </div>
       <div class="tb-field">
