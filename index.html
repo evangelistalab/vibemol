@@ -990,23 +990,7 @@
     }
 
     #editToolbox {
-      position: fixed;
-      right: 12px;
-      bottom: 92px;
-      display: none;
-      width: min(320px, calc(100vw - 24px));
-      background: rgba(18, 24, 34, 0.95);
-      border: 1px solid var(--vm-color-legacy-border-strong);
-      border-radius: 10px;
-      padding: 10px;
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
-      z-index: 33;
-      pointer-events: auto;
-      color: #dce7f5;
-    }
-
-    #editToolbox[aria-hidden="false"] {
-      display: block;
+      display: none !important;
     }
 
     #editToolHeader {
@@ -1021,7 +1005,7 @@
 
     #editToolButtons {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 6px;
     }
 
@@ -1049,6 +1033,7 @@
     }
 
     #editAddPane,
+    #editBondPane,
     #editTransformPane {
       display: none;
       margin-top: 8px;
@@ -1057,8 +1042,158 @@
     }
 
     #editAddPane.active,
+    #editBondPane.active,
     #editTransformPane.active {
       display: block;
+    }
+
+    #editAdaptiveMenu {
+      position: fixed;
+      top: 50%;
+      left: 12px;
+      transform: translateY(-50%);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 34;
+      pointer-events: auto;
+      max-width: min(260px, calc(100vw - 24px));
+    }
+
+    #editAdaptiveMenu[aria-hidden="false"] {
+      display: flex;
+    }
+
+    .adaptiveEditItem {
+      appearance: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 150px;
+      padding: 6px 8px;
+      border: 1px solid rgba(117, 129, 150, 0.28);
+      border-radius: 12px;
+      background: rgba(48, 53, 61, 0.92);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+      color: #f2f5fa;
+      cursor: pointer;
+      text-align: left;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .adaptiveEditItem:hover {
+      border-color: rgba(145, 156, 176, 0.42);
+      background: rgba(56, 62, 71, 0.96);
+    }
+
+    .adaptiveEditItem.active {
+      border-color: rgba(122, 172, 255, 0.72);
+      background: rgba(56, 76, 108, 0.95);
+      box-shadow: 0 14px 30px rgba(18, 30, 54, 0.34);
+    }
+
+    #editAdaptiveAddAtomPopover,
+    #editAdaptiveAddFragmentPopover,
+    #editAdaptiveAddMoleculePopover,
+    #editAdaptiveBondPopover,
+    #editAdaptiveTransformPopover {
+      position: fixed;
+      display: none;
+      width: min(280px, calc(100vw - 24px));
+      padding: 12px 14px;
+      border: 1px solid rgba(117, 129, 150, 0.28);
+      border-radius: 12px;
+      background: rgba(48, 53, 61, 0.96);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 35;
+    }
+
+    #editAdaptiveAddAtomPopover[aria-hidden="false"],
+    #editAdaptiveAddFragmentPopover[aria-hidden="false"],
+    #editAdaptiveAddMoleculePopover[aria-hidden="false"],
+    #editAdaptiveBondPopover[aria-hidden="false"],
+    #editAdaptiveTransformPopover[aria-hidden="false"] {
+      display: block;
+    }
+
+    #editAdaptiveAddAtomPopover #editAddAtomPane,
+    #editAdaptiveAddFragmentPopover #editAddFragmentPane,
+    #editAdaptiveAddMoleculePopover #editAddMoleculePane,
+    #editAdaptiveBondPopover #editBondPane,
+    #editAdaptiveTransformPopover #editTransformPane {
+      display: block;
+    }
+
+    #editAdaptiveAddAtomPopover label:first-child,
+    #editAdaptiveAddFragmentPopover label:first-child,
+    #editAdaptiveAddMoleculePopover label:first-child,
+    #editAdaptiveBondPopover label:first-child,
+    #editAdaptiveTransformPopover label:first-child {
+      margin-top: 0;
+    }
+
+    .adaptiveEditItemBody {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .adaptiveEditItemTitleRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .adaptiveEditItemLabel {
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #f5f7fb;
+      white-space: nowrap;
+    }
+
+    .adaptiveEditItemMeta {
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: rgba(214, 221, 233, 0.78);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .adaptiveShortcutGroup {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      flex: 0 0 auto;
+    }
+
+    .adaptiveShortcutKey {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 24px;
+      padding: 0;
+      border-radius: 8px;
+      background: rgba(187, 195, 208, 0.14);
+      border: 1px solid rgba(166, 176, 191, 0.2);
+      color: rgba(221, 227, 236, 0.82);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
     }
 
     #editAddModeToggle {
@@ -1099,6 +1234,7 @@
     }
 
     #editAddPane label,
+    #editBondPane label,
     #editTransformPane label {
       display: block;
       font-size: 12px;
@@ -1171,6 +1307,8 @@
     }
 
     #editAddSearch,
+    #editBondOrder,
+    #editBondAction,
     #editTransformScope,
     #editTransformMode {
       width: 100%;
@@ -1203,6 +1341,7 @@
     }
 
     #editAddQuick,
+    #editBondQuick,
     #editFragmentQuick,
     #editMoleculeQuick {
       display: flex;
@@ -1212,6 +1351,7 @@
     }
 
     #editAddQuick button,
+    #editBondQuick button,
     #editFragmentQuick button,
     #editMoleculeQuick button {
       appearance: none;
@@ -1226,6 +1366,7 @@
     }
 
     #editAddQuick button.active,
+    #editBondQuick button.active,
     #editFragmentQuick button.active,
     #editMoleculeQuick button.active {
       border-color: var(--vm-color-accent-primary);
@@ -1233,6 +1374,7 @@
     }
 
     #editAddCurrent,
+    #editBondCurrent,
     #editFragmentCurrent,
     #editMoleculeCurrent,
     #editTransformCurrent {
@@ -2867,14 +3009,110 @@
     <button id="axisY" title="Lock movement to Y">Y</button>
     <button id="axisZ" title="Lock movement to Z">Z</button>
   </div>
+  <div id="editAdaptiveMenu" aria-hidden="true">
+    <button id="editAdaptiveSelectionBtn" class="adaptiveEditItem" type="button" title="Selection tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Selection</span>
+        </span>
+        <span id="editAdaptiveSelectionMeta" class="adaptiveEditItemMeta">Click atoms to build a selection</span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">S</span>
+      </span>
+    </button>
+    <button id="editAdaptiveMoveBtn" class="adaptiveEditItem" type="button" title="Move tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Move</span>
+        </span>
+        <span class="adaptiveEditItemMeta">Drag atoms with optional X/Y/Z axis lock</span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">G</span>
+      </span>
+    </button>
+    <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem" type="button" title="Add atom tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Add atom</span>
+        </span>
+        <span id="editAdaptiveAddAtomMeta" class="adaptiveEditItemMeta">Choose element and click to place</span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">N</span>
+      </span>
+    </button>
+    <button id="editAdaptiveAddFragmentBtn" class="adaptiveEditItem" type="button" title="Add fragment tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Add fragment</span>
+        </span>
+        <span id="editAdaptiveAddFragmentMeta" class="adaptiveEditItemMeta">Choose fragment and attach policy</span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">F</span>
+      </span>
+    </button>
+    <button id="editAdaptiveAddMoleculeBtn" class="adaptiveEditItem" type="button" title="Add molecule tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Add molecule</span>
+        </span>
+        <span id="editAdaptiveAddMoleculeMeta" class="adaptiveEditItemMeta">Choose standalone molecule to place</span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">M</span>
+      </span>
+    </button>
+    <button id="editAdaptiveBondBtn" class="adaptiveEditItem" type="button" title="Bond tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Bond</span>
+        </span>
+        <span id="editAdaptiveBondMeta" class="adaptiveEditItemMeta">Set, update, or delete explicit bonds</span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">B</span>
+      </span>
+    </button>
+    <button id="editAdaptiveTransformBtn" class="adaptiveEditItem" type="button" title="Transform tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Transform</span>
+        </span>
+        <span id="editAdaptiveTransformMeta" class="adaptiveEditItemMeta">Move or rotate fragment and molecule selections</span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">T</span>
+      </span>
+    </button>
+    <button id="editAdaptiveDeleteBtn" class="adaptiveEditItem" type="button" title="Delete tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Delete</span>
+        </span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">D</span>
+      </span>
+    </button>
+  </div>
+  <div id="editAdaptiveAddAtomPopover" aria-hidden="true"></div>
+  <div id="editAdaptiveAddFragmentPopover" aria-hidden="true"></div>
+  <div id="editAdaptiveAddMoleculePopover" aria-hidden="true"></div>
+  <div id="editAdaptiveBondPopover" aria-hidden="true"></div>
+  <div id="editAdaptiveTransformPopover" aria-hidden="true"></div>
   <div id="editToolbox" aria-hidden="true">
     <div id="editToolHeader">
       <span>Edit Tool</span>
-      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">G move • N add • T transform • D delete</span>
+      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">S select • G move • N add • B bond • T transform • D delete</span>
     </div>
     <div id="editToolButtons">
+      <button id="editToolSelectBtn" type="button" title="Select atoms in edit mode">Select</button>
       <button id="editToolMoveBtn" type="button" class="active" title="Move atoms in edit mode">Move</button>
       <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add</button>
+      <button id="editToolBondBtn" type="button" title="Edit explicit bonds in edit mode">Bond</button>
       <button id="editToolTransformBtn" type="button"
         title="Transform fragment/molecule in edit mode">Transform</button>
       <button id="editToolDeleteBtn" type="button" class="delete" title="Delete atoms in edit mode">Delete</button>
@@ -2935,6 +3173,22 @@
           <button id="editMoleculeAlignZBtn" type="button" title="Align molecule principal axis to +Z during placement">Align Z</button>
         </div>
       </div>
+    </div>
+    <div id="editBondPane">
+      <label for="editBondOrder">Bond order</label>
+      <select id="editBondOrder">
+        <option value="1" selected>Single</option>
+        <option value="2">Double</option>
+        <option value="3">Triple</option>
+        <option value="4">Quadruple</option>
+      </select>
+      <div id="editBondQuick"></div>
+      <label for="editBondAction">Action</label>
+      <select id="editBondAction">
+        <option value="set" selected>Set / update</option>
+        <option value="delete">Delete</option>
+      </select>
+      <div id="editBondCurrent"></div>
     </div>
     <div id="editTransformPane">
       <label for="editTransformScope">Transform scope</label>
