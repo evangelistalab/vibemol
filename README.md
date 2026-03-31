@@ -82,6 +82,7 @@ The CLI supports:
 - `assets/app/js/volume-2c.js`: 2C phase and total/Bloch-colored isosurface builders
 - `assets/app/js/bond-inference.js`: covalent bond candidate generation, bond-order inference, and aromatic six-ring detection
 - `assets/app/js/autoiso.js`: auto-iso estimation, cache, and worker orchestration controller
+- `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders
 - `assets/app/js/edit-state.js`: edit-history and editable-record controller
 - `assets/app/js/edit-placement.js`: add/placement workflows for atoms, fragments, and molecules
 - `assets/app/js/edit-tools.js`: edit tool and selection coordination
