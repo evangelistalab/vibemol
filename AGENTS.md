@@ -40,6 +40,7 @@ Primary capabilities:
 - `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate and marching-cubes isosurface helpers.
 - `assets/app/js/volume-2c.js`: 2C phase and Bloch-colored isosurface builders.
 - `assets/app/js/bond-inference.js`: covalent bond candidate generation, bond-order inference, and aromatic six-ring detection helpers.
+- `assets/app/js/autoiso.js`: auto-iso estimation, cache, and worker orchestration controller.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
@@ -84,11 +85,12 @@ Required script order in `index.html`:
 16. `assets/app/js/volume-geometry.js`
 17. `assets/app/js/volume-2c.js`
 18. `assets/app/js/bond-inference.js`
-19. `assets/app/js/bond-editing.js`
-20. `assets/app/js/edit-ui.js`
-21. `assets/app/js/edit-placement.js`
-22. `assets/app/js/edit-tools.js`
-23. `assets/app/js/app.js`
+19. `assets/app/js/autoiso.js`
+20. `assets/app/js/bond-editing.js`
+21. `assets/app/js/edit-ui.js`
+22. `assets/app/js/edit-placement.js`
+23. `assets/app/js/edit-tools.js`
+24. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -105,6 +107,7 @@ Required script order in `index.html`:
 - `window.VibeMolVolumeGeometry`
 - `window.VibeMolVolume2C`
 - `window.VibeMolBondInference`
+- `window.VibeMolAutoIso`
 - `window.VibeMolBondEditing`
 - `window.VibeMolEditUi`
 - `window.VibeMolEditPlacement`
@@ -265,6 +268,7 @@ Fast JS syntax checks:
 - `node --check assets/app/js/volume-geometry.js`
 - `node --check assets/app/js/volume-2c.js`
 - `node --check assets/app/js/bond-inference.js`
+- `node --check assets/app/js/autoiso.js`
 - `node --check assets/app/js/bond-editing.js`
 - `node --check assets/app/js/edit-ui.js`
 - `node --check assets/app/js/edit-state.js`
