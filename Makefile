@@ -20,6 +20,7 @@ JS_CHECK_FILES = \
 	assets/app/js/edit-placement.js \
 	assets/app/js/edit-tools.js \
 	assets/app/js/preset.js \
+	assets/app/js/structure-transport.js \
 	assets/app/js/app.js
 
 .PHONY: check test-unit test-e2e test

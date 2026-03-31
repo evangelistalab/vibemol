@@ -42,6 +42,8 @@ Primary capabilities:
 - `assets/app/js/bond-inference.js`: covalent bond candidate generation, bond-order inference, and aromatic six-ring detection helpers.
 - `assets/app/js/autoiso.js`: auto-iso estimation, cache, and worker orchestration controller.
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders.
+- `assets/app/js/preset.js`: preset registry, import/export controller, and builder-extension preset state helpers.
+- `assets/app/js/structure-transport.js`: reproducible structure envelope export/import controller and `window.VibeMolStructure` API.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
@@ -93,7 +95,8 @@ Required script order in `index.html`:
 23. `assets/app/js/edit-placement.js`
 24. `assets/app/js/edit-tools.js`
 25. `assets/app/js/preset.js`
-26. `assets/app/js/app.js`
+26. `assets/app/js/structure-transport.js`
+27. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -117,6 +120,7 @@ Required script order in `index.html`:
 - `window.VibeMolEditPlacement`
 - `window.VibeMolEditTools`
 - `window.VibeMolPresetModule`
+- `window.VibeMolStructureTransport`
 
 Preset automation contract exposed globally:
 - `window.VibeMolPreset.kind`
@@ -276,6 +280,7 @@ Fast JS syntax checks:
 - `node --check assets/app/js/autoiso.js`
 - `node --check assets/app/js/cloud-rendering.js`
 - `node --check assets/app/js/preset.js`
+- `node --check assets/app/js/structure-transport.js`
 - `node --check assets/app/js/bond-editing.js`
 - `node --check assets/app/js/edit-ui.js`
 - `node --check assets/app/js/edit-state.js`

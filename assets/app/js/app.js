@@ -238,6 +238,11 @@
     throw new Error('VibeMolPresetModule is not loaded. Ensure assets/app/js/preset.js is included before assets/app/js/app.js.');
   }
 
+  const { createStructureTransportController } = window.VibeMolStructureTransport || {};
+  if (![createStructureTransportController].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolStructureTransport is not loaded. Ensure assets/app/js/structure-transport.js is included before assets/app/js/app.js.');
+  }
+
   const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
   if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/app.js.');
@@ -14918,135 +14923,38 @@
   });
 
   window.VibeMolPreset = getPresetPublicApi();
-
-  /**
-   * Build a reproducible structure-download filename for one record.
-   * @param {{name?:string}|null} record
-   * @returns {string}
-   */
-  function buildStructureDownloadFilename(record) {
-    const rawName = String(record && record.name || 'structure').trim() || 'structure';
-    const safeName = rawName
-      .replace(/[\\/:*?"<>|]+/g, '-')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const base = safeName.replace(/\.[^/.]+$/, '') || 'structure';
-    return `${base}.structure.json`;
-  }
-
-  /**
-   * Save the active structure as a reproducible JSON document.
-   */
-  function saveCurrentStructureToFile() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    if (!record || !record.vol) {
-      setHintMessage('No active structure to save.');
-      return;
-    }
-    const text = `${JSON.stringify(exportActiveStructureEnvelope(), null, 2)}\n`;
-    const blob = new Blob([text], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.download = buildStructureDownloadFilename(record);
-    link.href = URL.createObjectURL(blob);
-    link.click();
-    URL.revokeObjectURL(link.href);
-    setHintMessage(`Saved structure: ${link.download}`);
-  }
-
-  /**
-   * Export one volume to the reproducible structure-document payload.
-   * @param {*} vol
-   * @returns {*}
-   */
-  function exportStructureVolume(vol) {
-    const clone = rehydrateClonedVolume(cloneStructuredData(vol));
-    ensureVolumeSchema(clone);
-    return cloneJsonStructuredData(clone);
-  }
-
-  /**
-   * Export the active record as a versioned structure document.
-   * @returns {object}
-   */
-  function exportActiveStructureEnvelope() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    if (!record || !record.vol) throw new Error('No active structure is loaded.');
-    return {
-      kind: STRUCTURE_KIND,
-      structureVersion: STRUCTURE_VERSION,
-      appVersion: APP_VERSION,
-      name: String(record.name || 'structure').trim() || 'structure',
-      meta: {
-        source: 'web',
-        exportedAt: new Date().toISOString(),
-      },
-      volume: exportStructureVolume(record.vol),
-      recordState: {
-        measurementLabelOffsets: cloneJsonStructuredData(record.measurementLabelOffsets || {}),
-        pubchemMeta: cloneJsonStructuredData(record.pubchemMeta || null),
-      },
-    };
-  }
-
-  /**
-   * Parse one structure-document JSON payload.
-   * @param {string} text
-   * @param {string=} sourceLabel
-   * @returns {{name:string,vol:*,extras:object}}
-   */
-  function parseStructureEnvelopeText(text, sourceLabel = 'structure') {
-    let parsed = null;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      throw new Error(`${sourceLabel}: invalid JSON`);
-    }
-    if (!isPlainObject(parsed)) throw new Error(`${sourceLabel}: structure payload must be an object.`);
-    if (String(parsed.kind || '') !== STRUCTURE_KIND) {
-      throw new Error(`${sourceLabel}: unexpected structure kind "${String(parsed.kind || '')}".`);
-    }
-    const version = Number(parsed.structureVersion);
-    if (Number.isFinite(version) && version > STRUCTURE_VERSION) {
-      throw new Error(`${sourceLabel}: structure version ${version} is newer than supported ${STRUCTURE_VERSION}.`);
-    }
-    const name = String(parsed.name || sourceLabel || 'structure').trim() || 'structure';
-    if (!isPlainObject(parsed.volume)) throw new Error(`${sourceLabel}: missing "volume" object.`);
-    const vol = rehydrateClonedVolume(cloneStructuredData(parsed.volume));
-    ensureVolumeSchema(vol);
-    const recordState = isPlainObject(parsed.recordState) ? parsed.recordState : {};
-    const extras = {};
-    if (isPlainObject(recordState.measurementLabelOffsets)) extras.measurementLabelOffsets = cloneJsonLike(recordState.measurementLabelOffsets) || {};
-    if (isPlainObject(recordState.pubchemMeta)) extras.pubchemMeta = cloneJsonLike(recordState.pubchemMeta) || null;
-    return { name, vol, extras };
-  }
-
-  /**
-   * Load one structure-document text payload into the app.
-   * @param {string} text
-   * @param {string=} sourceLabel
-   * @returns {{name:string,vol:*}}
-   */
-  function loadStructureFromText(text, sourceLabel = 'structure') {
-    const imported = parseStructureEnvelopeText(text, sourceLabel);
-    clearPlaceholderVolumesForUserLoad();
-    const startIndex = volumes.length;
-    appendParsedVolumeRecord(getUniqueVolumeName(imported.name), imported.vol, Object.assign({}, imported.extras || {}, { skipBuilderExtensionMerge: true }));
-    finalizeLoadedVolumes(startIndex, {
-      resetIsoToDefault: hasVolumetricGrid(imported.vol),
-      skipAutoIsoOnInitialRebuild: hasVolumetricGrid(imported.vol),
-    });
-    return imported;
-  }
+  const structureTransportController = createStructureTransportController({
+    getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
+    getAppVersion: () => APP_VERSION,
+    cloneStructuredData,
+    cloneJsonStructuredData,
+    cloneJsonLike,
+    rehydrateClonedVolume,
+    ensureVolumeSchema,
+    isPlainObject,
+    getVolumeCount: () => volumes.length,
+    clearPlaceholderVolumesForUserLoad,
+    appendParsedVolumeRecord,
+    finalizeLoadedVolumes,
+    getUniqueVolumeName,
+    hasVolumetricGrid,
+    setHintMessage,
+    downloadJsonText: (textPayload, filename) => {
+      const blob = new Blob([textPayload], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+    },
+  });
+  const saveCurrentStructureToFile = structureTransportController.saveCurrentStructureToFile;
+  const exportActiveStructureEnvelope = structureTransportController.exportActiveStructureEnvelope;
+  const parseStructureEnvelopeText = structureTransportController.parseStructureEnvelopeText;
+  const loadStructureFromText = structureTransportController.loadStructureFromText;
 
   // Public API for browser automation and future integrations.
-  window.VibeMolStructure = Object.freeze({
-    kind: STRUCTURE_KIND,
-    version: STRUCTURE_VERSION,
-    exportActive: () => exportActiveStructureEnvelope(),
-    exportActiveText: () => `${JSON.stringify(exportActiveStructureEnvelope(), null, 2)}\n`,
-    parseText: (text, sourceLabel = 'structure') => parseStructureEnvelopeText(text, sourceLabel),
-    importFromText: (text, sourceLabel = 'structure') => loadStructureFromText(text, sourceLabel),
-  });
+  window.VibeMolStructure = structureTransportController.getPublicApi();
 
   if (savePresetBtn) savePresetBtn.onclick = () => saveCurrentPresetToFile();
   if (saveStructureBtn) saveStructureBtn.onclick = () => saveCurrentStructureToFile();
