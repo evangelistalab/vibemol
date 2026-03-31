@@ -238,6 +238,11 @@
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/app.js.');
   }
 
+  const { hsvToRgb, make2CPhaseIsosurface, make2CTotalColoredIsosurface } = window.VibeMolVolume2C || {};
+  if (![hsvToRgb, make2CPhaseIsosurface, make2CTotalColoredIsosurface].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolVolume2C is not loaded. Ensure assets/app/js/volume-2c.js is included before assets/app/js/app.js.');
+  }
+
   const {
     FRAGMENT_LIBRARY,
     getCatalogEntries,
@@ -269,118 +274,6 @@
   // Coordinate conversions between stored atom units and world Å
   const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
   // --- Two‑component phase‑hued isosurface (Alpha/Beta) ---
-  /**
-   * Convert HSV color values in [0,1] to RGB.
-   * @param {number} h
-   * @param {number} s
-   * @param {number} v
-   * @returns {[number, number, number]}
-   */
-  function hsvToRgb(h, s, v) {
-    let r = 0, g = 0, b = 0;
-    const i = Math.floor(h * 6);
-    const f = h * 6 - i;
-    const p = v * (1 - s);
-    const q = v * (1 - f * s);
-    const t = v * (1 - (1 - f) * s);
-    switch (i % 6) {
-      case 0: r = v; g = t; b = p; break;
-      case 1: r = q; g = v; b = p; break;
-      case 2: r = p; g = v; b = t; break;
-      case 3: r = p; g = q; b = v; break;
-      case 4: r = t; g = p; b = v; break;
-      case 5: r = v; g = p; b = q; break;
-    }
-    return [r, g, b];
-  }
-
-  /**
-   * Build a phase-colored isosurface for alpha or beta complex components.
-   * Vertex hue encodes the local complex phase angle.
-   * @param {{nxyz:number[],idx:(i:number,j:number,k:number)=>number,alphaRe:Float32Array,alphaIm:Float32Array,betaRe:Float32Array,betaIm:Float32Array}} vol
-   * @param {'alpha'|'beta'} which
-   * @param {number} level
-   * @returns {THREE.BufferGeometry}
-   */
-  function make2CPhaseIsosurface(vol, which, level) {
-    const [nx, ny, nz] = vol.nxyz;
-    const isAlpha = which === 'alpha';
-    const re = isAlpha ? vol.alphaRe : vol.betaRe;
-    const im = isAlpha ? vol.alphaIm : vol.betaIm;
-    const idx = vol.idx;
-    /**
-     * Clamp an index to `[0, n-1]`.
-     * @param {number} x
-     * @param {number} n
-     * @returns {number}
-     */
-    const clampi = (x, n) => Math.max(0, Math.min(n - 1, x | 0));
-    /**
-     * Sample complex magnitude in voxel space.
-     * @param {number} x
-     * @param {number} y
-     * @param {number} z
-     * @returns {number}
-     */
-    const magSampler = (x, y, z) => {
-      const i = clampi(Math.floor(x), nx);
-      const j = clampi(Math.floor(y), ny);
-      const k = clampi(Math.floor(z), nz);
-      const t = idx(i, j, k);
-      const rr = re[t], ii = im[t];
-      return Math.hypot(rr, ii);
-    };
-    const res = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => magSampler(x, y, z) - level);
-    const voxPos = res.positions;
-    /**
-     * Build a stable quantized key for vertex deduplication.
-     * @param {number[]} p
-     * @returns {string}
-     */
-    const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
-    const map = new Map();
-    const unique = [];
-    const oldToNew = new Uint32Array(voxPos.length);
-    for (let i = 0; i < voxPos.length; i++) {
-      const k = key(voxPos[i]);
-      let id = map.get(k);
-      if (id === undefined) { id = unique.length; map.set(k, id); unique.push(voxPos[i]); }
-      oldToNew[i] = id;
-    }
-    const cells = res.cells;
-    const indices = new Uint32Array(cells.length * 3);
-    for (let t = 0; t < cells.length; t++) {
-      const c = cells[t];
-      indices[3 * t + 0] = oldToNew[c[0]];
-      indices[3 * t + 1] = oldToNew[c[1]];
-      indices[3 * t + 2] = oldToNew[c[2]];
-    }
-    const positions = new Float32Array(unique.length * 3);
-    const colors = new Float32Array(unique.length * 3);
-    for (let i = 0; i < unique.length; i++) {
-      const p = voxelToWorld(vol, unique[i]);
-      positions[3 * i + 0] = p[0];
-      positions[3 * i + 1] = p[1];
-      positions[3 * i + 2] = p[2];
-      // Sample phase at nearest grid point
-      const vi = clampi(Math.floor(unique[i][0]), nx);
-      const vj = clampi(Math.floor(unique[i][1]), ny);
-      const vk = clampi(Math.floor(unique[i][2]), nz);
-      const t = idx(vi, vj, vk);
-      const rr = re[t], ii = im[t];
-      const phase = Math.atan2(ii, rr); // [-pi,pi]
-      const hue = (phase + Math.PI) / (2 * Math.PI); // [0,1)
-      const [r, g, b] = hsvToRgb(hue, 1.0, 1.0);
-      colors[3 * i + 0] = r; colors[3 * i + 1] = g; colors[3 * i + 2] = b;
-    }
-    const geom = new THREE.BufferGeometry();
-    geom.setIndex(new THREE.BufferAttribute(indices, 1));
-    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    try { geom.computeVertexNormals(); } catch { }
-    return geom;
-  }
-
   /**
    * Draw the phase/Bloch legend wheel in the top-left overlay.
    * Used for all phase-like 2C render modes.
@@ -495,101 +388,6 @@
     const ly = Math.min(pxH - Math.max(4, Math.round(4 * dpr)), cy + R + Math.max(18, Math.round(18 * dpr)));
     ctx.lineWidth = Math.max(3, Math.round(3 * dpr)); ctx.strokeStyle = UI_PALETTE.phaseWheelStrokeDark; ctx.strokeText(label, cx, ly);
     ctx.fillStyle = UI_PALETTE.phaseWheelStrokeLight; ctx.fillText(label, cx, ly);
-  }
-
-  /**
-   * Build a total-density isosurface colored with Bloch-sphere direction mapping.
-   * @param {{nxyz:number[],idx:(i:number,j:number,k:number)=>number,alphaRe:Float32Array,alphaIm:Float32Array,betaRe:Float32Array,betaIm:Float32Array}} vol
-   * @param {number} level
-   * @returns {THREE.BufferGeometry}
-   */
-  function make2CTotalColoredIsosurface(vol, level) {
-    const [nx, ny, nz] = vol.nxyz;
-    const reA = vol.alphaRe, imA = vol.alphaIm, reB = vol.betaRe, imB = vol.betaIm;
-    const idx = vol.idx;
-    /**
-     * Clamp an index to `[0, n-1]`.
-     * @param {number} x
-     * @param {number} n
-     * @returns {number}
-     */
-    const clampi = (x, n) => Math.max(0, Math.min(n - 1, x | 0));
-    /**
-     * Sample total spinor density magnitude in voxel space.
-     * @param {number} x
-     * @param {number} y
-     * @param {number} z
-     * @returns {number}
-     */
-    const densSampler = (x, y, z) => {
-      const i = clampi(Math.floor(x), nx);
-      const j = clampi(Math.floor(y), ny);
-      const k = clampi(Math.floor(z), nz);
-      const t = idx(i, j, k);
-      const a2 = reA[t] * reA[t] + imA[t] * imA[t];
-      const b2 = reB[t] * reB[t] + imB[t] * imB[t];
-      return Math.sqrt(a2 + b2); // square root of the total density ρ
-    };
-    const res = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => densSampler(x, y, z) - level);
-    const voxPos = res.positions;
-    /**
-     * Build a stable quantized key for vertex deduplication.
-     * @param {number[]} p
-     * @returns {string}
-     */
-    const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
-    const map = new Map();
-    const unique = [];
-    const oldToNew = new Uint32Array(voxPos.length);
-    for (let i = 0; i < voxPos.length; i++) {
-      const k = key(voxPos[i]);
-      let id = map.get(k);
-      if (id === undefined) { id = unique.length; map.set(k, id); unique.push(voxPos[i]); }
-      oldToNew[i] = id;
-    }
-    const cells = res.cells;
-    const indices = new Uint32Array(cells.length * 3);
-    for (let t = 0; t < cells.length; t++) {
-      const c = cells[t];
-      indices[3 * t + 0] = oldToNew[c[0]];
-      indices[3 * t + 1] = oldToNew[c[1]];
-      indices[3 * t + 2] = oldToNew[c[2]];
-    }
-    const positions = new Float32Array(unique.length * 3);
-    for (let i = 0; i < unique.length; i++) {
-      const p = voxelToWorld(vol, unique[i]);
-      positions[3 * i + 0] = p[0];
-      positions[3 * i + 1] = p[1];
-      positions[3 * i + 2] = p[2];
-    }
-    // Vertex colors from Bloch sphere direction: hue = azimuth, brightness = polar
-    const colors = new Float32Array(unique.length * 3);
-    for (let i = 0; i < unique.length; i++) {
-      const v = unique[i];
-      const vi = clampi(Math.floor(v[0]), nx);
-      const vj = clampi(Math.floor(v[1]), ny);
-      const vk = clampi(Math.floor(v[2]), nz);
-      const t = idx(vi, vj, vk);
-      const ar = reA[t], ai = imA[t], br = reB[t], bi = imB[t];
-      const a2 = ar * ar + ai * ai, b2 = br * br + bi * bi;
-      const rho = a2 + b2; if (rho <= 1e-12) { colors[3 * i] = colors[3 * i + 1] = colors[3 * i + 2] = 0; continue; }
-      const re_ab = ar * br + ai * bi;
-      const im_ab = -ar * bi + ai * br;
-      const nxv = 2 * re_ab / rho;
-      const nyv = 2 * im_ab / rho;
-      const nzv = (a2 - b2) / rho;
-      // Hue from azimuth, brightness from polar angle (|nz|)
-      const hue = (Math.atan2(nyv, nxv) + Math.PI) / (2 * Math.PI);
-      const value = 0.6 + 0.4 * (1 - Math.abs(nzv));
-      const [r, g, b] = hsvToRgb(hue, 1.0, value);
-      colors[3 * i + 0] = r; colors[3 * i + 1] = g; colors[3 * i + 2] = b;
-    }
-    const geom = new THREE.BufferGeometry();
-    geom.setIndex(new THREE.BufferAttribute(indices, 1));
-    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    try { geom.computeVertexNormals(); } catch { }
-    return geom;
   }
 
   // --- Three.js scene setup ---
