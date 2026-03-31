@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.6.4';
+  const APP_VERSION = '0.6.5';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -195,6 +195,27 @@
   const { createBondEditingController } = window.VibeMolBondEditing || {};
   if (![createBondEditingController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolBondEditing is not loaded. Ensure assets/app/js/bond-editing.js is included before assets/app/js/app.js.');
+  }
+
+  const {
+    positionAdaptiveMenu: positionAdaptiveMenuUi,
+    updateAdaptiveMenuUi: updateAdaptiveMenuUiHelper,
+    positionRightOperatorPanel: positionRightOperatorPanelUi,
+    updateAddAtomOperatorPanelUi,
+    updateAddMoleculeOperatorPanelUi,
+    createAdaptivePopoverController,
+    bindAdaptivePopoverItem,
+  } = window.VibeMolEditUi || {};
+  if (![
+    positionAdaptiveMenuUi,
+    updateAdaptiveMenuUiHelper,
+    positionRightOperatorPanelUi,
+    updateAddAtomOperatorPanelUi,
+    updateAddMoleculeOperatorPanelUi,
+    createAdaptivePopoverController,
+    bindAdaptivePopoverItem,
+  ].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolEditUi is not loaded. Ensure assets/app/js/edit-ui.js is included before assets/app/js/app.js.');
   }
 
   const {
@@ -668,6 +689,7 @@
 
   // --- Three.js scene setup ---
   const canvas = document.getElementById('canvas');
+  const canvasEl = canvas;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
   renderer.autoClear = false; // allow overlay rendering in same canvas
@@ -679,6 +701,7 @@
     bufferHeight: 1,
     dpr: 1,
   };
+  let adaptivePopoverController = null;
 
   /**
    * Read one CSS viewport size from the active drop region.
@@ -895,22 +918,7 @@
       scheduleVibrationPanelLayoutSync(1);
     }
     positionEditAdaptiveMenu();
-    const adaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
-    if (adaptiveAddAtomPopoverEl && adaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
-      positionAdaptiveAddPopover('atom');
-    }
-    const adaptiveAddFragmentPopoverEl = document.getElementById('editAdaptiveAddFragmentPopover');
-    if (adaptiveAddFragmentPopoverEl && adaptiveAddFragmentPopoverEl.getAttribute('aria-hidden') === 'false') {
-      positionAdaptiveAddPopover('fragment');
-    }
-    const adaptiveAddMoleculePopoverEl = document.getElementById('editAdaptiveAddMoleculePopover');
-    if (adaptiveAddMoleculePopoverEl && adaptiveAddMoleculePopoverEl.getAttribute('aria-hidden') === 'false') {
-      positionAdaptiveAddPopover('molecule');
-    }
-    const adaptiveTransformPopoverEl = document.getElementById('editAdaptiveTransformPopover');
-    if (adaptiveTransformPopoverEl && adaptiveTransformPopoverEl.getAttribute('aria-hidden') === 'false') {
-      positionAdaptiveAddPopover('transform');
-    }
+    if (adaptivePopoverController) adaptivePopoverController.positionVisible();
     const addAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
     if (addAtomOperatorPanelEl && addAtomOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
       positionAddAtomOperatorPanel();
@@ -8793,6 +8801,9 @@
   let editBondOrder = 1;
   let editBondAction = EDIT_BOND_ACTION.SET;
   let bondEditing = null;
+  let measurementLabelHoverSprite = null;
+  let measurementLabelHoverKey = '';
+  let measurementLabelDragState = null;
   let editAddSearchClearedOnFocus = false;
   const editAddAtomPaneHomeParent = editAddAtomPaneEl ? editAddAtomPaneEl.parentElement : null;
   const editAddAtomPaneHomeNextSibling = editAddAtomPaneEl ? editAddAtomPaneEl.nextSibling : null;
@@ -8804,7 +8815,44 @@
   const editBondPaneHomeNextSibling = editBondPaneEl ? editBondPaneEl.nextSibling : null;
   const editTransformPaneHomeParent = editTransformPaneEl ? editTransformPaneEl.parentElement : null;
   const editTransformPaneHomeNextSibling = editTransformPaneEl ? editTransformPaneEl.nextSibling : null;
-  const editAdaptivePanePopoverHideTimers = { atom: 0, fragment: 0, molecule: 0, bond: 0, transform: 0 };
+  const adaptivePopoverBindings = Object.freeze({
+    atom: {
+      mode: EDIT_ADD_MODE.ATOM,
+      triggerEl: editAdaptiveAddAtomBtn,
+      popoverEl: editAdaptiveAddAtomPopoverEl,
+      paneEl: editAddAtomPaneEl,
+      focusEl: editAddSearchEl,
+      homeParent: editAddAtomPaneHomeParent,
+      homeNextSibling: editAddAtomPaneHomeNextSibling,
+    },
+    fragment: {
+      mode: EDIT_ADD_MODE.FRAGMENT,
+      triggerEl: editAdaptiveAddFragmentBtn,
+      popoverEl: editAdaptiveAddFragmentPopoverEl,
+      paneEl: editAddFragmentPaneEl,
+      focusEl: editFragmentSearchEl,
+      homeParent: editAddFragmentPaneHomeParent,
+      homeNextSibling: editAddFragmentPaneHomeNextSibling,
+    },
+    molecule: {
+      mode: EDIT_ADD_MODE.MOLECULE,
+      triggerEl: editAdaptiveAddMoleculeBtn,
+      popoverEl: editAdaptiveAddMoleculePopoverEl,
+      paneEl: editAddMoleculePaneEl,
+      focusEl: editMoleculeSearchEl,
+      homeParent: editAddMoleculePaneHomeParent,
+      homeNextSibling: editAddMoleculePaneHomeNextSibling,
+    },
+    transform: {
+      mode: null,
+      triggerEl: editAdaptiveTransformBtn,
+      popoverEl: editAdaptiveTransformPopoverEl,
+      paneEl: editTransformPaneEl,
+      focusEl: editTransformScopeEl,
+      homeParent: editTransformPaneHomeParent,
+      homeNextSibling: editTransformPaneHomeNextSibling,
+    },
+  });
   let editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
   let editAutoCleanupEnabled = true;
   let editCleanupBondLengthEnabled = true;
@@ -10955,7 +11003,7 @@
       updateSelectedHalos();
       updateEditToolboxUi({ syncSearch: false });
     },
-    ensureEditableRecord,
+    ensureEditableRecord: ensureEditableVolumeRecord,
     ensureVolumeSchema,
     cloneBondSnapshot,
     bondSnapshotsEqual,
@@ -10974,6 +11022,17 @@
     getBondOrder: () => editBondOrder,
     setBondOrder: setEditBondOrder,
     setHintMessage,
+  });
+
+  adaptivePopoverController = createAdaptivePopoverController({
+    bindings: adaptivePopoverBindings,
+    onOpenMode: (kind, binding, options = {}) => {
+      if (!binding) return;
+      if (binding.mode) {
+        setEditAddMode(binding.mode, { announce: false, syncSearch: true });
+        setEditTool(EDIT_TOOL.ADD, { announce: options.announce !== false });
+      }
+    },
   });
 
   /**
@@ -12164,195 +12223,11 @@
   }
 
   /**
-   * Resolve one adaptive pane-popover binding.
-   * @param {'atom'|'fragment'|'molecule'|'bond'|'transform'} kind
-   * @returns {{mode:string|null,triggerEl:HTMLElement|null,popoverEl:HTMLElement|null,paneEl:HTMLElement|null,focusEl:HTMLElement|null,homeParent:HTMLElement|null,homeNextSibling:Node|null}|null}
-   */
-  function getAdaptivePanePopoverBinding(kind) {
-    if (kind === 'fragment') {
-      return {
-        mode: EDIT_ADD_MODE.FRAGMENT,
-        triggerEl: editAdaptiveAddFragmentBtn,
-        popoverEl: editAdaptiveAddFragmentPopoverEl,
-        paneEl: editAddFragmentPaneEl,
-        focusEl: editFragmentSearchEl,
-        homeParent: editAddFragmentPaneHomeParent,
-        homeNextSibling: editAddFragmentPaneHomeNextSibling,
-      };
-    }
-    if (kind === 'molecule') {
-      return {
-        mode: EDIT_ADD_MODE.MOLECULE,
-        triggerEl: editAdaptiveAddMoleculeBtn,
-        popoverEl: editAdaptiveAddMoleculePopoverEl,
-        paneEl: editAddMoleculePaneEl,
-        focusEl: editMoleculeSearchEl,
-        homeParent: editAddMoleculePaneHomeParent,
-        homeNextSibling: editAddMoleculePaneHomeNextSibling,
-      };
-    }
-    if (kind === 'transform') {
-      return {
-        mode: null,
-        triggerEl: editAdaptiveTransformBtn,
-        popoverEl: editAdaptiveTransformPopoverEl,
-        paneEl: editTransformPaneEl,
-        focusEl: editTransformScopeEl,
-        homeParent: editTransformPaneHomeParent,
-        homeNextSibling: editTransformPaneHomeNextSibling,
-      };
-    }
-    return {
-      mode: EDIT_ADD_MODE.ATOM,
-      triggerEl: editAdaptiveAddAtomBtn,
-      popoverEl: editAdaptiveAddAtomPopoverEl,
-      paneEl: editAddAtomPaneEl,
-      focusEl: editAddSearchEl,
-      homeParent: editAddAtomPaneHomeParent,
-      homeNextSibling: editAddAtomPaneHomeNextSibling,
-    };
-  }
-
-  /**
-   * Activate one adaptive Add mode from its floating menu.
-   * @param {'atom'|'fragment'|'molecule'} kind
-   * @param {{announce?:boolean,focusSearch?:boolean}=} options
-   */
-  function openAdaptiveAddPopoverMode(kind, options = {}) {
-    const binding = getAdaptivePanePopoverBinding(kind);
-    if (!binding) return;
-    const announce = options.announce !== false;
-    const focusSearch = !!options.focusSearch;
-    setEditAddMode(binding.mode, { announce: false, syncSearch: true });
-    setEditTool(EDIT_TOOL.ADD, { announce });
-    if (focusSearch && binding.focusEl) {
-      requestAnimationFrame(() => {
-        try {
-          binding.focusEl.focus();
-          if (typeof binding.focusEl.select === 'function') binding.focusEl.select();
-        } catch { }
-      });
-    }
-  }
-
-  /**
-   * Restore one adaptive add pane to its original toolbar location.
-   * @param {'atom'|'fragment'|'molecule'} kind
-   */
-  function restoreAdaptiveAddPaneHome(kind) {
-    const binding = getAdaptivePanePopoverBinding(kind);
-    if (!binding || !binding.paneEl || !binding.homeParent || binding.paneEl.parentElement === binding.homeParent) return;
-    binding.homeParent.insertBefore(binding.paneEl, binding.homeNextSibling);
-  }
-
-  /**
-   * Position one adaptive add popover next to its trigger.
-   * @param {'atom'|'fragment'|'molecule'|'transform'} kind
-   */
-  function positionAdaptiveAddPopover(kind) {
-    const ids = kind === 'fragment'
-      ? { popover: 'editAdaptiveAddFragmentPopover', trigger: 'editAdaptiveAddFragmentBtn' }
-      : kind === 'molecule'
-        ? { popover: 'editAdaptiveAddMoleculePopover', trigger: 'editAdaptiveAddMoleculeBtn' }
-        : kind === 'transform'
-          ? { popover: 'editAdaptiveTransformPopover', trigger: 'editAdaptiveTransformBtn' }
-          : { popover: 'editAdaptiveAddAtomPopover', trigger: 'editAdaptiveAddAtomBtn' };
-    const popoverEl = document.getElementById(ids.popover);
-    const triggerEl = document.getElementById(ids.trigger);
-    if (!popoverEl || !triggerEl) return;
-    const gap = 12;
-    const triggerRect = triggerEl.getBoundingClientRect();
-    const popoverRect = popoverEl.getBoundingClientRect();
-    const viewportWidth = Math.max(
-      1,
-      Math.round(window.innerWidth || 0),
-      Math.round(document.documentElement && document.documentElement.clientWidth || 0)
-    );
-    const viewportHeight = Math.max(
-      1,
-      Math.round(window.innerHeight || 0),
-      Math.round(document.documentElement && document.documentElement.clientHeight || 0)
-    );
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || popoverEl.offsetWidth || 260));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || popoverEl.offsetHeight || 160));
-    const left = Math.min(
-      Math.round(triggerRect.right + gap),
-      Math.max(gap, viewportWidth - popoverWidth - gap)
-    );
-    const centeredTop = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
-    const top = Math.min(
-      Math.max(gap, centeredTop),
-      Math.max(gap, viewportHeight - popoverHeight - gap)
-    );
-    popoverEl.style.left = `${left}px`;
-    popoverEl.style.top = `${top}px`;
-  }
-
-  /**
-   * Show one floating adaptive add popover without changing tools.
-   * @param {'atom'|'fragment'|'molecule'|'transform'} kind
-   * @param {{focusSearch?:boolean}=} options
-   */
-  function showAdaptiveAddPopover(kind, options = {}) {
-    hideAllAdaptiveToolPopovers(kind);
-    const binding = getAdaptivePanePopoverBinding(kind);
-    if (!binding) return;
-    const focusSearch = !!options.focusSearch;
-    if (!binding.popoverEl || !binding.paneEl || !binding.homeParent) return;
-    if (editAdaptivePanePopoverHideTimers[kind]) {
-      clearTimeout(editAdaptivePanePopoverHideTimers[kind]);
-      editAdaptivePanePopoverHideTimers[kind] = 0;
-    }
-    if (binding.paneEl.parentElement !== binding.popoverEl) {
-      binding.popoverEl.appendChild(binding.paneEl);
-    }
-    binding.popoverEl.setAttribute('aria-hidden', 'false');
-    positionAdaptiveAddPopover(kind);
-    if (focusSearch && binding.focusEl) {
-      requestAnimationFrame(() => {
-        try {
-          binding.focusEl.focus();
-          if (typeof binding.focusEl.select === 'function') binding.focusEl.select();
-        } catch { }
-      });
-    }
-  }
-
-  /**
-   * Hide one adaptive add popover.
-   * @param {'atom'|'fragment'|'molecule'|'transform'} kind
-   * @param {number=} delayMs
-   */
-  function hideAdaptiveAddPopover(kind, delayMs = 0) {
-    const binding = getAdaptivePanePopoverBinding(kind);
-    if (!binding) return;
-    if (editAdaptivePanePopoverHideTimers[kind]) {
-      clearTimeout(editAdaptivePanePopoverHideTimers[kind]);
-      editAdaptivePanePopoverHideTimers[kind] = 0;
-    }
-    const applyHide = () => {
-      if (binding.popoverEl) binding.popoverEl.setAttribute('aria-hidden', 'true');
-      restoreAdaptiveAddPaneHome(kind);
-    };
-    if (delayMs > 0) {
-      editAdaptivePanePopoverHideTimers[kind] = window.setTimeout(() => {
-        editAdaptivePanePopoverHideTimers[kind] = 0;
-        applyHide();
-      }, delayMs);
-    } else {
-      applyHide();
-    }
-  }
-
-  /**
    * Hide every adaptive tool popover except one optional kind.
    * @param {'atom'|'fragment'|'molecule'|'transform'|''=} exceptKind
    */
   function hideAllAdaptiveToolPopovers(exceptKind = '') {
-    if (exceptKind !== 'atom') hideAdaptiveAddPopover('atom');
-    if (exceptKind !== 'fragment') hideAdaptiveAddPopover('fragment');
-    if (exceptKind !== 'molecule') hideAdaptiveAddPopover('molecule');
-    if (exceptKind !== 'transform') hideAdaptiveAddPopover('transform');
+    if (adaptivePopoverController) adaptivePopoverController.hideAll(exceptKind);
   }
 
   /**
@@ -12674,64 +12549,60 @@
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
     if (editAdaptiveSelectionBtn) editAdaptiveSelectionBtn.onclick = () => setEditTool(EDIT_TOOL.SELECT);
     if (editAdaptiveMoveBtn) editAdaptiveMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
-    if (editAdaptiveAddAtomBtn) {
-      editAdaptiveAddAtomBtn.onclick = () => {
-        openAdaptiveAddPopoverMode('atom', { announce: true, focusSearch: true });
-        showAdaptiveAddPopover('atom', { focusSearch: true });
-      };
-      editAdaptiveAddAtomBtn.addEventListener('mouseenter', () => showAdaptiveAddPopover('atom', { focusSearch: false }));
-      editAdaptiveAddAtomBtn.addEventListener('mouseleave', () => hideAdaptiveAddPopover('atom', 120));
-    }
-    if (editAdaptiveAddFragmentBtn) {
-      editAdaptiveAddFragmentBtn.onclick = () => {
-        openAdaptiveAddPopoverMode('fragment', { announce: true, focusSearch: true });
-        showAdaptiveAddPopover('fragment', { focusSearch: true });
-      };
-      editAdaptiveAddFragmentBtn.addEventListener('mouseenter', () => showAdaptiveAddPopover('fragment', { focusSearch: false }));
-      editAdaptiveAddFragmentBtn.addEventListener('mouseleave', () => hideAdaptiveAddPopover('fragment', 120));
-    }
-    if (editAdaptiveAddMoleculeBtn) {
-      editAdaptiveAddMoleculeBtn.onclick = () => {
-        openAdaptiveAddPopoverMode('molecule', { announce: true, focusSearch: true });
-        showAdaptiveAddPopover('molecule', { focusSearch: true });
-      };
-      editAdaptiveAddMoleculeBtn.addEventListener('mouseenter', () => showAdaptiveAddPopover('molecule', { focusSearch: false }));
-      editAdaptiveAddMoleculeBtn.addEventListener('mouseleave', () => hideAdaptiveAddPopover('molecule', 120));
-    }
+    bindAdaptivePopoverItem({
+      controller: adaptivePopoverController,
+      kind: 'atom',
+      triggerEl: editAdaptiveAddAtomBtn,
+      popoverEl: editAdaptiveAddAtomPopoverEl,
+      onClick: () => adaptivePopoverController && adaptivePopoverController.openMode('atom', { announce: true, focusSearch: false }),
+      clickShowsPopover: true,
+      clickFocusesSearch: true,
+      hoverShowsPopover: true,
+      hideDelayMs: 120,
+    });
+    bindAdaptivePopoverItem({
+      controller: adaptivePopoverController,
+      kind: 'fragment',
+      triggerEl: editAdaptiveAddFragmentBtn,
+      popoverEl: editAdaptiveAddFragmentPopoverEl,
+      onClick: () => adaptivePopoverController && adaptivePopoverController.openMode('fragment', { announce: true, focusSearch: false }),
+      clickShowsPopover: true,
+      clickFocusesSearch: true,
+      hoverShowsPopover: true,
+      hideDelayMs: 120,
+    });
+    bindAdaptivePopoverItem({
+      controller: adaptivePopoverController,
+      kind: 'molecule',
+      triggerEl: editAdaptiveAddMoleculeBtn,
+      popoverEl: editAdaptiveAddMoleculePopoverEl,
+      onClick: () => adaptivePopoverController && adaptivePopoverController.openMode('molecule', { announce: true, focusSearch: false }),
+      clickShowsPopover: true,
+      clickFocusesSearch: true,
+      hoverShowsPopover: true,
+      hideDelayMs: 120,
+    });
     if (editAdaptiveBondBtn) {
       editAdaptiveBondBtn.onclick = () => {
         hideAllAdaptiveToolPopovers();
         setEditTool(EDIT_TOOL.BOND);
       };
     }
-    if (editAdaptiveTransformBtn) {
-      editAdaptiveTransformBtn.onclick = () => {
-        setEditTool(EDIT_TOOL.TRANSFORM);
-        showAdaptiveAddPopover('transform', { focusSearch: true });
-      };
-      editAdaptiveTransformBtn.addEventListener('mouseenter', () => showAdaptiveAddPopover('transform', { focusSearch: false }));
-      editAdaptiveTransformBtn.addEventListener('mouseleave', () => hideAdaptiveAddPopover('transform', 120));
-    }
+    bindAdaptivePopoverItem({
+      controller: adaptivePopoverController,
+      kind: 'transform',
+      triggerEl: editAdaptiveTransformBtn,
+      popoverEl: editAdaptiveTransformPopoverEl,
+      onClick: () => setEditTool(EDIT_TOOL.TRANSFORM),
+      clickShowsPopover: true,
+      clickFocusesSearch: true,
+      hoverShowsPopover: true,
+      hideDelayMs: 120,
+    });
     if (editAdaptiveDeleteBtn) editAdaptiveDeleteBtn.onclick = () => {
       hideAllAdaptiveToolPopovers();
       setEditTool(EDIT_TOOL.DELETE);
     };
-    if (editAdaptiveAddAtomPopoverEl) {
-      editAdaptiveAddAtomPopoverEl.addEventListener('mouseenter', () => showAdaptiveAddPopover('atom', { focusSearch: false }));
-      editAdaptiveAddAtomPopoverEl.addEventListener('mouseleave', () => hideAdaptiveAddPopover('atom', 120));
-    }
-    if (editAdaptiveAddFragmentPopoverEl) {
-      editAdaptiveAddFragmentPopoverEl.addEventListener('mouseenter', () => showAdaptiveAddPopover('fragment', { focusSearch: false }));
-      editAdaptiveAddFragmentPopoverEl.addEventListener('mouseleave', () => hideAdaptiveAddPopover('fragment', 120));
-    }
-    if (editAdaptiveAddMoleculePopoverEl) {
-      editAdaptiveAddMoleculePopoverEl.addEventListener('mouseenter', () => showAdaptiveAddPopover('molecule', { focusSearch: false }));
-      editAdaptiveAddMoleculePopoverEl.addEventListener('mouseleave', () => hideAdaptiveAddPopover('molecule', 120));
-    }
-    if (editAdaptiveTransformPopoverEl) {
-      editAdaptiveTransformPopoverEl.addEventListener('mouseenter', () => showAdaptiveAddPopover('transform', { focusSearch: false }));
-      editAdaptiveTransformPopoverEl.addEventListener('mouseleave', () => hideAdaptiveAddPopover('transform', 120));
-    }
     if (editAddAtomOperatorHeaderEl) {
       editAddAtomOperatorHeaderEl.onclick = () => {
         addAtomOperatorCollapsed = !addAtomOperatorCollapsed;
@@ -12928,8 +12799,6 @@
 
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  const canvasEl = document.getElementById('canvas');
-
   /**
    * End one active display-mode quaternion orbit gesture.
    * @param {PointerEvent=} e
@@ -13002,9 +12871,6 @@
   let editSel = []; // array of atom indices (max 3) — used in measurement mode
   let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
   let editSelectionClickAdditive = false;
-  let measurementLabelHoverSprite = null;
-  let measurementLabelHoverKey = '';
-  let measurementLabelDragState = null;
   // persistent selection halos (by atom index) for measurement mode
   const selHaloColor = 0xffa500;
   /**
@@ -13114,72 +12980,54 @@
     const isBondActive = isVisible && editTool === EDIT_TOOL.BOND;
     const isTransformActive = isVisible && editTool === EDIT_TOOL.TRANSFORM;
     const isDeleteActive = isVisible && editTool === EDIT_TOOL.DELETE;
-    if (editAdaptiveMenuEl) editAdaptiveMenuEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-    positionEditAdaptiveMenu();
-    if (!isVisible) hideAllAdaptiveToolPopovers();
-    if (editAdaptiveSelectionBtn) editAdaptiveSelectionBtn.classList.toggle('active', isVisible && editTool === EDIT_TOOL.SELECT);
-    if (editAdaptiveMoveBtn) editAdaptiveMoveBtn.classList.toggle('active', isVisible && editTool === EDIT_TOOL.MOVE);
-    if (editAdaptiveAddAtomBtn) editAdaptiveAddAtomBtn.classList.toggle('active', isAtomAddActive);
-    if (editAdaptiveAddFragmentBtn) editAdaptiveAddFragmentBtn.classList.toggle('active', isFragmentAddActive);
-    if (editAdaptiveAddMoleculeBtn) editAdaptiveAddMoleculeBtn.classList.toggle('active', isMoleculeAddActive);
-    if (editAdaptiveBondBtn) editAdaptiveBondBtn.classList.toggle('active', isBondActive);
-    if (editAdaptiveTransformBtn) editAdaptiveTransformBtn.classList.toggle('active', isTransformActive);
-    if (editAdaptiveDeleteBtn) editAdaptiveDeleteBtn.classList.toggle('active', isDeleteActive);
-    if (editAdaptiveSelectionMetaEl) {
-      const count = getEditAtomSelection().length;
-      editAdaptiveSelectionMetaEl.textContent = count
-        ? `${count} atom${count === 1 ? '' : 's'} selected`
-        : 'Click atoms to build a selection';
-    }
-    if (editAdaptiveAddAtomMetaEl) {
-      editAdaptiveAddAtomMetaEl.textContent = getElementSymbol(editAddElementZ);
-    }
-    if (editAdaptiveAddFragmentMetaEl) {
-      const fragment = getCurrentFragmentDefinition();
-      editAdaptiveAddFragmentMetaEl.textContent = fragment
-        ? `${fragment.name} (${fragment.formula})`
-        : 'Choose fragment and attach policy';
-    }
-    if (editAdaptiveAddMoleculeMetaEl) {
-      const molecule = getCurrentMoleculeDefinition();
-      editAdaptiveAddMoleculeMetaEl.textContent = molecule
-        ? `${molecule.name} (${molecule.formula})`
-        : 'Choose standalone molecule to place';
-    }
-    if (editAdaptiveBondMetaEl) {
-      editAdaptiveBondMetaEl.textContent = `Order ${editBondOrder} • Click bond to edit • Right-click to delete`;
-    }
-    if (editAdaptiveTransformMetaEl) {
-      editAdaptiveTransformMetaEl.textContent = `${getEditTransformModeLabel(editTransformMode)} • ${getEditTransformScopeLabel(editTransformScope)}`;
-    }
+    const selectionCount = getEditAtomSelection().length;
+    const fragment = getCurrentFragmentDefinition();
+    const molecule = getCurrentMoleculeDefinition();
+    updateAdaptiveMenuUiHelper({
+      menuEl: editAdaptiveMenuEl,
+      isVisible,
+      positionMenu: positionEditAdaptiveMenu,
+      onHideAllPopovers: hideAllAdaptiveToolPopovers,
+      activeItems: [
+        { el: editAdaptiveSelectionBtn, active: isVisible && editTool === EDIT_TOOL.SELECT },
+        { el: editAdaptiveMoveBtn, active: isVisible && editTool === EDIT_TOOL.MOVE },
+        { el: editAdaptiveAddAtomBtn, active: isAtomAddActive },
+        { el: editAdaptiveAddFragmentBtn, active: isFragmentAddActive },
+        { el: editAdaptiveAddMoleculeBtn, active: isMoleculeAddActive },
+        { el: editAdaptiveBondBtn, active: isBondActive },
+        { el: editAdaptiveTransformBtn, active: isTransformActive },
+        { el: editAdaptiveDeleteBtn, active: isDeleteActive },
+      ],
+      metaItems: [
+        {
+          el: editAdaptiveSelectionMetaEl,
+          text: selectionCount ? `${selectionCount} atom${selectionCount === 1 ? '' : 's'} selected` : 'Click atoms to build a selection',
+        },
+        { el: editAdaptiveAddAtomMetaEl, text: getElementSymbol(editAddElementZ) },
+        {
+          el: editAdaptiveAddFragmentMetaEl,
+          text: fragment ? `${fragment.name} (${fragment.formula})` : 'Choose fragment and attach policy',
+        },
+        {
+          el: editAdaptiveAddMoleculeMetaEl,
+          text: molecule ? `${molecule.name} (${molecule.formula})` : 'Choose standalone molecule to place',
+        },
+        { el: editAdaptiveBondMetaEl, text: `Order ${editBondOrder} • Click bond to edit • Right-click to delete` },
+        { el: editAdaptiveTransformMetaEl, text: `${getEditTransformModeLabel(editTransformMode)} • ${getEditTransformScopeLabel(editTransformScope)}` },
+      ],
+    });
   }
 
   /**
    * Anchor the adaptive edit menu against the actual sidebar edge.
    */
   function positionEditAdaptiveMenu() {
-    const adaptiveMenuEl = document.getElementById('editAdaptiveMenu');
-    if (!adaptiveMenuEl) return;
-    const gap = 16;
-    let left = gap;
-    const currentToolbarEl = document.getElementById('toolbar');
-    if (!document.body.classList.contains('sidebar-collapsed')
-      && currentToolbarEl
-      && typeof currentToolbarEl.getBoundingClientRect === 'function') {
-      const toolbarRect = currentToolbarEl.getBoundingClientRect();
-      if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) left = Math.round(toolbarRect.right + gap);
-    }
-    const viewportWidth = Math.max(
-      1,
-      Math.round(window.innerWidth || 0),
-      Math.round(document.documentElement && document.documentElement.clientWidth || 0)
-    );
-    const menuWidth = Math.max(
-      0,
-      Math.round(adaptiveMenuEl.getBoundingClientRect().width || adaptiveMenuEl.offsetWidth || 0)
-    );
-    const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
-    adaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
+    positionAdaptiveMenuUi({
+      menuEl: document.getElementById('editAdaptiveMenu'),
+      toolbarEl: document.getElementById('toolbar'),
+      sidebarCollapsed: document.body.classList.contains('sidebar-collapsed'),
+      gap: 16,
+    });
   }
 
   /**
@@ -13224,11 +13072,7 @@
    * @param {HTMLElement|null} panelEl
    */
   function positionRightOperatorPanel(panelEl) {
-    if (!panelEl) return;
-    const gap = 16;
-    panelEl.style.left = 'auto';
-    panelEl.style.right = `${gap}px`;
-    panelEl.style.bottom = '24px';
+    positionRightOperatorPanelUi(panelEl, { gap: 16, bottom: 24 });
   }
 
   /**
@@ -13251,20 +13095,22 @@
   function updateAddAtomOperatorUi() {
     const resolved = resolveAddAtomOperatorSession();
     const isVisible = !!resolved && currentMode === MODES.EDIT;
-    if (editAddAtomOperatorPanelEl) {
-      editAddAtomOperatorPanelEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-      editAddAtomOperatorPanelEl.setAttribute('data-collapsed', addAtomOperatorCollapsed ? 'true' : 'false');
-    }
-    if (!isVisible) return;
-    positionAddAtomOperatorPanel();
-    if (editAddAtomOperatorHeaderEl) editAddAtomOperatorHeaderEl.setAttribute('aria-expanded', addAtomOperatorCollapsed ? 'false' : 'true');
-    if (editAddAtomOperatorChevronEl) editAddAtomOperatorChevronEl.textContent = addAtomOperatorCollapsed ? '▸' : '▾';
-    const symbol = getElementSymbol((resolved.atom && resolved.atom.Z) | 0);
-    if (editAddAtomOperatorLabelEl) editAddAtomOperatorLabelEl.textContent = `Add Atom ${symbol}`;
-    const world = atomUnitsToAng(resolved.vol, resolved.atom);
-    if (editAddAtomOperatorXEl && document.activeElement !== editAddAtomOperatorXEl) editAddAtomOperatorXEl.value = Number(world.x).toFixed(3);
-    if (editAddAtomOperatorYEl && document.activeElement !== editAddAtomOperatorYEl) editAddAtomOperatorYEl.value = Number(world.y).toFixed(3);
-    if (editAddAtomOperatorZEl && document.activeElement !== editAddAtomOperatorZEl) editAddAtomOperatorZEl.value = Number(world.z).toFixed(3);
+    const world = resolved ? atomUnitsToAng(resolved.vol, resolved.atom) : { x: 0, y: 0, z: 0 };
+    const symbol = resolved ? getElementSymbol((resolved.atom && resolved.atom.Z) | 0) : '';
+    updateAddAtomOperatorPanelUi({
+      panelEl: editAddAtomOperatorPanelEl,
+      headerEl: editAddAtomOperatorHeaderEl,
+      chevronEl: editAddAtomOperatorChevronEl,
+      labelEl: editAddAtomOperatorLabelEl,
+      xEl: editAddAtomOperatorXEl,
+      yEl: editAddAtomOperatorYEl,
+      zEl: editAddAtomOperatorZEl,
+      isVisible,
+      collapsed: addAtomOperatorCollapsed,
+      labelText: `Add Atom ${symbol}`,
+      world,
+      positionPanel: positionAddAtomOperatorPanel,
+    });
   }
 
   /**
@@ -13309,25 +13155,25 @@
       && editAddMode === EDIT_ADD_MODE.MOLECULE
       && moleculePlaceActive
       && !!moleculePlaceTemplateData;
-    if (editAddMoleculeOperatorPanelEl) {
-      editAddMoleculeOperatorPanelEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-      editAddMoleculeOperatorPanelEl.setAttribute('data-collapsed', moleculePlaceOperatorCollapsed ? 'true' : 'false');
-    }
-    if (!isVisible) return;
-    positionAddMoleculeOperatorPanel();
-    if (editAddMoleculeOperatorHeaderEl) editAddMoleculeOperatorHeaderEl.setAttribute('aria-expanded', moleculePlaceOperatorCollapsed ? 'false' : 'true');
-    if (editAddMoleculeOperatorChevronEl) editAddMoleculeOperatorChevronEl.textContent = moleculePlaceOperatorCollapsed ? '▸' : '▾';
-    if (editAddMoleculeOperatorLabelEl) {
-      const name = String((moleculePlaceTemplateData && moleculePlaceTemplateData.name) || 'Molecule');
-      editAddMoleculeOperatorLabelEl.textContent = `Add Molecule ${name}`;
-    }
-    if (editAddMoleculeOperatorXEl && document.activeElement !== editAddMoleculeOperatorXEl) editAddMoleculeOperatorXEl.value = Number(moleculePlacePosition.x).toFixed(3);
-    if (editAddMoleculeOperatorYEl && document.activeElement !== editAddMoleculeOperatorYEl) editAddMoleculeOperatorYEl.value = Number(moleculePlacePosition.y).toFixed(3);
-    if (editAddMoleculeOperatorZEl && document.activeElement !== editAddMoleculeOperatorZEl) editAddMoleculeOperatorZEl.value = Number(moleculePlacePosition.z).toFixed(3);
     const rot = getMoleculePlacementEulerDegrees();
-    if (editAddMoleculeOperatorRotXEl && document.activeElement !== editAddMoleculeOperatorRotXEl) editAddMoleculeOperatorRotXEl.value = Number(rot.x).toFixed(1);
-    if (editAddMoleculeOperatorRotYEl && document.activeElement !== editAddMoleculeOperatorRotYEl) editAddMoleculeOperatorRotYEl.value = Number(rot.y).toFixed(1);
-    if (editAddMoleculeOperatorRotZEl && document.activeElement !== editAddMoleculeOperatorRotZEl) editAddMoleculeOperatorRotZEl.value = Number(rot.z).toFixed(1);
+    updateAddMoleculeOperatorPanelUi({
+      panelEl: editAddMoleculeOperatorPanelEl,
+      headerEl: editAddMoleculeOperatorHeaderEl,
+      chevronEl: editAddMoleculeOperatorChevronEl,
+      labelEl: editAddMoleculeOperatorLabelEl,
+      xEl: editAddMoleculeOperatorXEl,
+      yEl: editAddMoleculeOperatorYEl,
+      zEl: editAddMoleculeOperatorZEl,
+      rotXEl: editAddMoleculeOperatorRotXEl,
+      rotYEl: editAddMoleculeOperatorRotYEl,
+      rotZEl: editAddMoleculeOperatorRotZEl,
+      isVisible,
+      collapsed: moleculePlaceOperatorCollapsed,
+      labelText: `Add Molecule ${String((moleculePlaceTemplateData && moleculePlaceTemplateData.name) || 'Molecule')}`,
+      position: moleculePlacePosition,
+      rotation: rot,
+      positionPanel: positionAddMoleculeOperatorPanel,
+    });
   }
 
   /**
