@@ -78,6 +78,7 @@ The CLI supports:
 - `assets/app/js/interaction.js`: shortcut/input helpers
 - `assets/app/js/ui.js`: coords/XYZ formatting helpers
 - `assets/app/js/structure.js`: normalized structure schema helpers for atoms, bonds, and structure export/import
+- `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate conversion and marching-cubes isosurface helpers
 - `assets/app/js/edit-state.js`: edit-history and editable-record controller
 - `assets/app/js/edit-placement.js`: add/placement workflows for atoms, fragments, and molecules
 - `assets/app/js/edit-tools.js`: edit tool and selection coordination

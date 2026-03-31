@@ -233,6 +233,11 @@
     throw new Error('VibeMolEditTools is not loaded. Ensure assets/app/js/edit-tools.js is included before assets/app/js/app.js.');
   }
 
+  const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
+  if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/app.js.');
+  }
+
   const {
     FRAGMENT_LIBRARY,
     getCatalogEntries,
@@ -263,121 +268,6 @@
 
   // Coordinate conversions between stored atom units and world Å
   const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
-  /**
-   * Convert atom coordinates from file units to angstrom world coordinates.
-   * @param {{units?:string}} vol
-   * @param {{x:number,y:number,z:number}} a
-   * @returns {THREE.Vector3}
-   */
-  function atomUnitsToAng(vol, a) {
-    if (vol.units === 'angstrom') return new THREE.Vector3(a.x, a.y, a.z);
-    return new THREE.Vector3(a.x * BOHR_TO_ANG, a.y * BOHR_TO_ANG, a.z * BOHR_TO_ANG);
-  }
-  /**
-   * Convert world-space angstrom coordinates back to the volume's native units.
-   * @param {{units?:string}} vol
-   * @param {THREE.Vector3} v3
-   * @returns {[number, number, number]}
-   */
-  function worldToAtomUnits(vol, v3) {
-    if (vol.units === 'angstrom') return [v3.x, v3.y, v3.z];
-    return [v3.x * ANG_TO_BOHR, v3.y * ANG_TO_BOHR, v3.z * ANG_TO_BOHR];
-  }
-
-  /**
-   * Map voxel-space coordinates to world-space angstroms.
-   * @param {{axes:number[][],origin:number[]}} vol
-   * @param {[number, number, number]} p
-   * @returns {[number, number, number]}
-   */
-  function voxelToWorld(vol, p) {
-    const a = vol.axes[0].map(v => v * BOHR_TO_ANG);
-    const b = vol.axes[1].map(v => v * BOHR_TO_ANG);
-    const c = vol.axes[2].map(v => v * BOHR_TO_ANG);
-    const o = vol.origin ? vol.origin.map(v => v * BOHR_TO_ANG) : [0, 0, 0];
-    return [
-      o[0] + p[0] * a[0] + p[1] * b[0] + p[2] * c[0],
-      o[1] + p[0] * a[1] + p[1] * b[1] + p[2] * c[1],
-      o[2] + p[0] * a[2] + p[1] * b[2] + p[2] * c[2],
-    ];
-  }
-
-  /**
-   * Extract an isosurface mesh for a scalar field at a target level.
-   * Vertices are welded in voxel space and then transformed into angstroms.
-   * @param {{nxyz:number[],data:Float32Array,idx:(i:number,j:number,k:number)=>number,axes:number[][],origin:number[]}} vol
-   * @param {number} level
-   * @returns {THREE.BufferGeometry}
-   */
-  function makeIsosurface(vol, level) {
-    const [nx, ny, nz] = vol.nxyz;
-    // MarchingCubes extracts the 0-level set of the potential.
-    // To get an iso-surface at `level`, return field(x)-level.
-    /**
-     * Sample scalar volume values in voxel space with clamped indices.
-     * @param {number} x
-     * @param {number} y
-     * @param {number} z
-     * @returns {number}
-     */
-    const sampler = (x, y, z) => {
-      const i = Math.max(0, Math.min(nx - 1, Math.floor(x)));
-      const j = Math.max(0, Math.min(ny - 1, Math.floor(y)));
-      const k = Math.max(0, Math.min(nz - 1, Math.floor(z)));
-      return vol.data[vol.idx(i, j, k)];
-    };
-    // Marching cubes → triangles (no explicit bounds => defaults to [[0,0,0],[nx,ny,nz]])
-    const result = isosurface.marchingCubes([nx, ny, nz], (x, y, z) => sampler(x, y, z) - level);
-
-    // Weld vertices across cube boundaries by deduplicating identical voxel-space positions.
-    // Quantize voxel coords to a small grid to ensure stable keys.
-    const voxPos = result.positions; // array of [x,y,z] in voxel units
-    /**
-     * Build a stable quantized key for vertex deduplication.
-     * @param {number[]} p
-     * @returns {string}
-     */
-    const key = (p) => `${Math.round(p[0] * 1e6)},${Math.round(p[1] * 1e6)},${Math.round(p[2] * 1e6)}`;
-    const map = new Map();
-    const unique = [];
-    const oldToNew = new Uint32Array(voxPos.length);
-    for (let i = 0; i < voxPos.length; i++) {
-      const k = key(voxPos[i]);
-      let idx = map.get(k);
-      if (idx === undefined) {
-        idx = unique.length;
-        map.set(k, idx);
-        unique.push(voxPos[i]);
-      }
-      oldToNew[i] = idx;
-    }
-
-    // Remap triangle indices through the welding map
-    const cells = result.cells; // array of [a,b,c]
-    const indices = new Uint32Array(cells.length * 3);
-    for (let t = 0; t < cells.length; t++) {
-      const c = cells[t];
-      indices[3 * t + 0] = oldToNew[c[0]];
-      indices[3 * t + 1] = oldToNew[c[1]];
-      indices[3 * t + 2] = oldToNew[c[2]];
-    }
-
-    // Build world-space positions for the unique vertices
-    const positions = new Float32Array(unique.length * 3);
-    for (let i = 0; i < unique.length; i++) {
-      const p = voxelToWorld(vol, unique[i]); // map voxel coords to Å
-      positions[3 * i + 0] = p[0];
-      positions[3 * i + 1] = p[1];
-      positions[3 * i + 2] = p[2];
-    }
-
-    const geom = new THREE.BufferGeometry();
-    geom.setIndex(new THREE.BufferAttribute(indices, 1));
-    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geom.computeVertexNormals();
-    return geom;
-  }
-
   // --- Two‑component phase‑hued isosurface (Alpha/Beta) ---
   /**
    * Convert HSV color values in [0,1] to RGB.

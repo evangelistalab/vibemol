@@ -37,6 +37,7 @@ Primary capabilities:
 - `assets/app/js/edit-state.js`: editable-record bootstrap plus undo/redo history orchestration.
 - `assets/app/js/io-utils.js`: input-kind detection helpers shared by drag/drop and import flows.
 - `assets/app/js/structure.js`: minimal incremental structure schema helpers (atoms, bonds, builder annotations, structure export/import support).
+- `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate and marching-cubes isosurface helpers.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
@@ -78,11 +79,12 @@ Required script order in `index.html`:
 13. `assets/app/js/io-utils.js`
 14. `assets/app/js/fragments.js`
 15. `assets/app/js/structure.js`
-16. `assets/app/js/bond-editing.js`
-17. `assets/app/js/edit-ui.js`
-18. `assets/app/js/edit-placement.js`
-19. `assets/app/js/edit-tools.js`
-20. `assets/app/js/app.js`
+16. `assets/app/js/volume-geometry.js`
+17. `assets/app/js/bond-editing.js`
+18. `assets/app/js/edit-ui.js`
+19. `assets/app/js/edit-placement.js`
+20. `assets/app/js/edit-tools.js`
+21. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -96,6 +98,7 @@ Required script order in `index.html`:
 - `window.VibeMolIOUtils`
 - `window.VibeMolFragments`
 - `window.VibeMolStructureCore`
+- `window.VibeMolVolumeGeometry`
 - `window.VibeMolBondEditing`
 - `window.VibeMolEditUi`
 - `window.VibeMolEditPlacement`
@@ -253,6 +256,7 @@ Fast JS syntax checks:
 - `node --check assets/app/js/interaction.js`
 - `node --check assets/app/js/ui.js`
 - `node --check assets/app/js/structure.js`
+- `node --check assets/app/js/volume-geometry.js`
 - `node --check assets/app/js/bond-editing.js`
 - `node --check assets/app/js/edit-ui.js`
 - `node --check assets/app/js/edit-state.js`

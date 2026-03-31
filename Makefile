@@ -10,6 +10,7 @@ JS_CHECK_FILES = \
 	assets/app/js/io-utils.js \
 	assets/app/js/fragments.js \
 	assets/app/js/structure.js \
+	assets/app/js/volume-geometry.js \
 	assets/app/js/bond-editing.js \
 	assets/app/js/edit-ui.js \
 	assets/app/js/edit-placement.js \
