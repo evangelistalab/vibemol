@@ -862,17 +862,32 @@
 
     #emptyStateLead {
       margin: 0 0 12px 0;
-      font-size: clamp(22px, 2.4vw, 29px);
-      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
       text-align: center;
     }
 
+    #emptyStateLeadLogo {
+      display: block;
+      width: min(220px, 58vw);
+      height: auto;
+    }
+
     #emptyStateVersion {
-      font-size: 0.52em;
-      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(86, 103, 129, 0.14);
+      border: 1px solid rgba(120, 139, 168, 0.22);
+      font-size: 12px;
+      font-weight: 700;
       color: var(--vm-color-splash-version);
-      margin-left: 8px;
-      vertical-align: middle;
       letter-spacing: 0.02em;
     }
 
@@ -1097,7 +1112,6 @@
     #editAdaptiveAddAtomPopover,
     #editAdaptiveAddFragmentPopover,
     #editAdaptiveAddMoleculePopover,
-    #editAdaptiveBondPopover,
     #editAdaptiveTransformPopover {
       position: fixed;
       display: none;
@@ -1115,15 +1129,217 @@
     #editAdaptiveAddAtomPopover[aria-hidden="false"],
     #editAdaptiveAddFragmentPopover[aria-hidden="false"],
     #editAdaptiveAddMoleculePopover[aria-hidden="false"],
-    #editAdaptiveBondPopover[aria-hidden="false"],
     #editAdaptiveTransformPopover[aria-hidden="false"] {
       display: block;
+    }
+
+    #bondOrderPopup {
+      position: fixed;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid rgba(117, 129, 150, 0.28);
+      border-radius: 14px;
+      background: rgba(48, 53, 61, 0.96);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+      color: #f2f5fa;
+      z-index: 36;
+      pointer-events: auto;
+    }
+
+    #bondOrderPopup[aria-hidden="false"] {
+      display: flex;
+    }
+
+    #bondOrderPopupTitle {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f2f5fa;
+    }
+
+    #bondOrderPopupButtons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #bondOrderPopupButtons button {
+      appearance: none;
+      border: 1px solid rgba(117, 129, 150, 0.28);
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      padding: 0;
+      background: rgba(17, 24, 39, 0.9);
+      color: #f2f5fa;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    #bondOrderPopupButtons button:hover {
+      background: rgba(24, 33, 51, 0.96);
+      border-color: rgba(113, 168, 255, 0.64);
+    }
+
+    #bondOrderPopupButtons button.active {
+      background: rgba(15, 23, 42, 0.98);
+      border-color: rgba(53, 130, 246, 0.96);
+      box-shadow: inset 0 0 0 1px rgba(103, 176, 255, 0.28);
+    }
+
+    #editAddAtomOperatorPanel,
+    #editAddMoleculeOperatorPanel {
+      position: fixed;
+      right: 16px;
+      bottom: 24px;
+      display: none;
+      width: min(260px, calc(100vw - 24px));
+      border: 1px solid rgba(117, 129, 150, 0.28);
+      border-radius: 12px;
+      background: rgba(30, 34, 40, 0.96);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 35;
+      overflow: hidden;
+    }
+
+    #editAddAtomOperatorPanel[aria-hidden="false"],
+    #editAddMoleculeOperatorPanel[aria-hidden="false"] {
+      display: block;
+    }
+
+    #editAddAtomOperatorHeader,
+    #editAddMoleculeOperatorHeader {
+      appearance: none;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 0;
+      background: transparent;
+      color: #f2f5fa;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    #editAddAtomOperatorHeader:hover,
+    #editAddMoleculeOperatorHeader:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .editAddAtomOperatorTitle,
+    .editAddMoleculeOperatorTitle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .editAddAtomOperatorChevron,
+    .editAddMoleculeOperatorChevron {
+      font-size: 12px;
+      color: rgba(214, 221, 233, 0.86);
+      width: 12px;
+      flex: 0 0 auto;
+    }
+
+    .editAddAtomOperatorLabel,
+    .editAddMoleculeOperatorLabel {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: #f5f7fb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #editAddAtomOperatorBody,
+    #editAddMoleculeOperatorBody {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 10px;
+      padding: 0 12px 12px;
+      align-items: center;
+    }
+
+    #editAddAtomOperatorPanel[data-collapsed="true"] #editAddAtomOperatorBody,
+    #editAddMoleculeOperatorPanel[data-collapsed="true"] #editAddMoleculeOperatorBody {
+      display: none;
+    }
+
+    .editAddAtomOperatorRowLabel {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(214, 221, 233, 0.78);
+      text-align: left;
+      min-width: 52px;
+    }
+
+    .editAddAtomOperatorCoord {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid rgba(117, 129, 150, 0.28);
+      border-radius: 8px;
+      background: rgba(94, 100, 109, 0.9);
+      color: #f2f5fa;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .editAddAtomOperatorCoord:focus {
+      outline: none;
+      border-color: rgba(122, 172, 255, 0.72);
+      box-shadow: 0 0 0 2px rgba(122, 172, 255, 0.18);
+    }
+
+    .editAddAtomOperatorFoot {
+      grid-column: 1 / -1;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(214, 221, 233, 0.72);
+      padding-top: 2px;
+    }
+
+    .editAddMoleculeOperatorButtonRow {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 6px;
+      padding-top: 2px;
+    }
+
+    .editAddMoleculeOperatorButtonRow button {
+      appearance: none;
+      flex: 1 1 0;
+      border: 1px solid rgba(117, 129, 150, 0.28);
+      border-radius: 8px;
+      background: rgba(94, 100, 109, 0.9);
+      color: #f2f5fa;
+      padding: 6px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .editAddMoleculeOperatorButtonRow button:hover {
+      border-color: rgba(145, 156, 176, 0.42);
+      background: rgba(104, 111, 121, 0.94);
     }
 
     #editAdaptiveAddAtomPopover #editAddAtomPane,
     #editAdaptiveAddFragmentPopover #editAddFragmentPane,
     #editAdaptiveAddMoleculePopover #editAddMoleculePane,
-    #editAdaptiveBondPopover #editBondPane,
     #editAdaptiveTransformPopover #editTransformPane {
       display: block;
     }
@@ -1131,7 +1347,6 @@
     #editAdaptiveAddAtomPopover label:first-child,
     #editAdaptiveAddFragmentPopover label:first-child,
     #editAdaptiveAddMoleculePopover label:first-child,
-    #editAdaptiveBondPopover label:first-child,
     #editAdaptiveTransformPopover label:first-child {
       margin-top: 0;
     }
@@ -1609,6 +1824,13 @@
       align-items: center;
       gap: 6px;
       margin-right: auto;
+    }
+
+    #toolbar .tb-brandLogo {
+      display: block;
+      height: 24px;
+      width: auto;
+      object-fit: contain;
     }
 
     #toolbar .tb-brandEmoji {
@@ -2579,8 +2801,10 @@
 
     <div id="toolbarHead">
       <div class="tb-headTop">
-        <div class="tb-brand">VibeMol <span id="brandEmoji" class="tb-brandEmoji" aria-hidden="true">🙂</span><span
-            id="toolbarVersion" class="tb-versionBadge" aria-label="VibeMol version">v0.0.0</span></div>
+        <div class="tb-brand">
+          <img class="tb-brandLogo" src="assets/app/img/logo_600px.png" alt="VibeMol" />
+          <span id="toolbarVersion" class="tb-versionBadge" aria-label="VibeMol version">v0.0.0</span>
+        </div>
         <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button"
           title="Hide sidebar">chevron_left</button>
       </div>
@@ -2602,7 +2826,8 @@
     <div class="tb-section tb-file">
       <div class="tb-fileActionRow">
         <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" title="Open molecule files"
-          aria-label="Open files" data-tip="Open files (.xyz, .molden, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
+          aria-label="Open files"
+          data-tip="Open files (.xyz, .molden, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
         <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Create a new empty file"
           aria-label="New file" data-tip="Create a new empty editable file">note_add</button>
         <div class="tb-iconActions">
@@ -2650,7 +2875,8 @@
 
     <div class="tb-section tb-main tb-appearance tb-framed">
       <button id="displayInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide compact display inspector">
-        <span>Appearance</span><span id="displayInspectorToggleIcon" class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
+        <span>Appearance</span><span id="displayInspectorToggleIcon"
+          class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
       </button>
       <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields" aria-hidden="true">
         <div class="inspectorGroup">
@@ -2764,7 +2990,8 @@
           </div>
           <div class="inspectorRow inspectorSelectRow" id="rowDofFocusMode">
             <label for="dofFocusMode">Focus mode</label>
-            <select id="dofFocusMode" title="Choose whether depth of field focuses on the current camera target or a manual distance">
+            <select id="dofFocusMode"
+              title="Choose whether depth of field focuses on the current camera target or a manual distance">
               <option value="auto" selected>Auto (target)</option>
               <option value="manual">Manual</option>
             </select>
@@ -2878,7 +3105,8 @@
 
     <div id="moldenToolbarSection" class="tb-section tb-main tb-molden tb-framed" style="display:none;">
       <button id="moldenInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide Molden orbital controls">
-        <span>Molden</span><span id="moldenInspectorToggleIcon" class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
+        <span>Molden</span><span id="moldenInspectorToggleIcon"
+          class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
       </button>
       <div id="moldenInspector" class="tb-toolbarInspector tb-toolbarInspectorFields" aria-hidden="true">
         <div class="inspectorGroup">
@@ -2904,17 +3132,20 @@
     </div>
 
     <div id="vibrationToolbarSection" class="tb-section tb-main tb-vibration tb-framed" style="display:none;">
-      <button id="vibrationPanelBtn" class="secondary" title="No vibrational mode data in active file">Frequencies</button>
+      <button id="vibrationPanelBtn" class="secondary"
+        title="No vibrational mode data in active file">Frequencies</button>
     </div>
 
     <div class="tb-section tb-main tb-windows tb-framed">
       <button id="viewInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide view and coordinates tools">
-        <span>View/Coords</span><span id="viewInspectorToggleIcon" class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
+        <span>View/Coords</span><span id="viewInspectorToggleIcon"
+          class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
       </button>
       <div id="viewInspector" class="tb-toolbarInspector tb-toolbarInspectorView" aria-hidden="true">
         <div class="viewInspectorGroup viewInspectorWindows">
           <button id="viewPanelBtn" class="secondary tb-windowBtn" title="Open/close View window">View</button>
-          <button id="coordsPanelBtn" class="secondary tb-windowBtn" title="Open/close Coordinates window">Coordinates</button>
+          <button id="coordsPanelBtn" class="secondary tb-windowBtn"
+            title="Open/close Coordinates window">Coordinates</button>
           <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file"
             style="display:none;">Trajectory</button>
         </div>
@@ -2981,7 +3212,10 @@
   </div>
   <div id="emptyState">
     <div id="emptyStateCard">
-      <div id="emptyStateLead">VibeMol <span id="emptyStateVersion"></span></div>
+      <div id="emptyStateLead">
+        <img id="emptyStateLeadLogo" src="assets/app/img/logo_600px.png" alt="VibeMol" />
+        <span id="emptyStateVersion"></span>
+      </div>
       <div id="emptyStateDropZone">
         <span id="emptyStateDropIcon" class="material-symbols-outlined">upload_file</span>
         Drag and drop <code>.xyz</code>, <code>.molden</code>, <code>.cube</code>, <code>.vib.json</code>,
@@ -3026,7 +3260,7 @@
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Move</span>
         </span>
-        <span class="adaptiveEditItemMeta">Drag atoms with optional X/Y/Z axis lock</span>
+        <span class="adaptiveEditItemMeta">Optional X/Y/Z axis lock</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">G</span>
@@ -3081,7 +3315,8 @@
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Transform</span>
         </span>
-        <span id="editAdaptiveTransformMeta" class="adaptiveEditItemMeta">Move or rotate fragment and molecule selections</span>
+        <span id="editAdaptiveTransformMeta" class="adaptiveEditItemMeta">Move or rotate fragment and molecule
+          selections</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">T</span>
@@ -3101,12 +3336,78 @@
   <div id="editAdaptiveAddAtomPopover" aria-hidden="true"></div>
   <div id="editAdaptiveAddFragmentPopover" aria-hidden="true"></div>
   <div id="editAdaptiveAddMoleculePopover" aria-hidden="true"></div>
-  <div id="editAdaptiveBondPopover" aria-hidden="true"></div>
   <div id="editAdaptiveTransformPopover" aria-hidden="true"></div>
+  <div id="bondOrderPopup" aria-hidden="true">
+    <div id="bondOrderPopupTitle">Bond order</div>
+    <div id="bondOrderPopupButtons">
+      <button type="button" data-bond-order-popup="1">1</button>
+      <button type="button" data-bond-order-popup="2">2</button>
+      <button type="button" data-bond-order-popup="3">3</button>
+      <button type="button" data-bond-order-popup="4">4</button>
+      <button type="button" data-bond-order-popup="0">0</button>
+    </div>
+  </div>
+  <div id="editAddAtomOperatorPanel" aria-hidden="true" data-collapsed="true">
+    <button id="editAddAtomOperatorHeader" type="button" aria-expanded="false">
+      <span class="editAddAtomOperatorTitle">
+        <span id="editAddAtomOperatorChevron" class="editAddAtomOperatorChevron">▸</span>
+        <span id="editAddAtomOperatorLabel" class="editAddAtomOperatorLabel">Add Atom</span>
+      </span>
+    </button>
+    <div id="editAddAtomOperatorBody">
+      <span class="editAddAtomOperatorRowLabel">X</span>
+      <input id="editAddAtomOperatorX" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Y</span>
+      <input id="editAddAtomOperatorY" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Z</span>
+      <input id="editAddAtomOperatorZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <div class="editAddAtomOperatorFoot">Enter confirm • Esc cancel • Location is in world angstroms for the most
+        recently added atom.</div>
+    </div>
+  </div>
+  <div id="editAddMoleculeOperatorPanel" aria-hidden="true" data-collapsed="true">
+    <button id="editAddMoleculeOperatorHeader" type="button" aria-expanded="false">
+      <span class="editAddMoleculeOperatorTitle">
+        <span id="editAddMoleculeOperatorChevron" class="editAddMoleculeOperatorChevron">▸</span>
+        <span id="editAddMoleculeOperatorLabel" class="editAddMoleculeOperatorLabel">Add Molecule</span>
+      </span>
+    </button>
+    <div id="editAddMoleculeOperatorBody">
+      <span class="editAddAtomOperatorRowLabel">Location X</span>
+      <input id="editAddMoleculeOperatorX" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Y</span>
+      <input id="editAddMoleculeOperatorY" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Z</span>
+      <input id="editAddMoleculeOperatorZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Rotation X</span>
+      <input id="editAddMoleculeOperatorRotX" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Y</span>
+      <input id="editAddMoleculeOperatorRotY" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Z</span>
+      <input id="editAddMoleculeOperatorRotZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <div class="editAddMoleculeOperatorButtonRow">
+        <button id="editAddMoleculeOperatorAlignX" type="button">Align X</button>
+        <button id="editAddMoleculeOperatorAlignY" type="button">Align Y</button>
+        <button id="editAddMoleculeOperatorAlignZ" type="button">Align Z</button>
+      </div>
+      <div class="editAddAtomOperatorFoot">Enter confirm • Esc cancel • Location is in world angstroms and rotation is
+        in world-space XYZ degrees.</div>
+    </div>
+  </div>
   <div id="editToolbox" aria-hidden="true">
     <div id="editToolHeader">
       <span>Edit Tool</span>
-      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">S select • G move • N add • B bond • T transform • D delete</span>
+      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">S select • G move • N add • B bond • T transform • D
+        delete</span>
     </div>
     <div id="editToolButtons">
       <button id="editToolSelectBtn" type="button" title="Select atoms in edit mode">Select</button>
@@ -3156,7 +3457,8 @@
               <input id="editCleanupStrength" type="range" min="0" max="1" step="0.1" value="0.6" />
               <span id="editCleanupStrengthValue">0.6</span>
             </div>
-            <button id="editCleanupApplyBtn" type="button" title="Reapply cleanup to the latest attached fragment">Apply to last fragment</button>
+            <button id="editCleanupApplyBtn" type="button" title="Reapply cleanup to the latest attached fragment">Apply
+              to last fragment</button>
           </div>
         </div>
       </div>
@@ -3168,9 +3470,12 @@
         <div id="editMoleculeQuick"></div>
         <div id="editMoleculeCurrent"></div>
         <div id="editMoleculeAlign">
-          <button id="editMoleculeAlignXBtn" type="button" title="Align molecule principal axis to +X during placement">Align X</button>
-          <button id="editMoleculeAlignYBtn" type="button" title="Align molecule principal axis to +Y during placement">Align Y</button>
-          <button id="editMoleculeAlignZBtn" type="button" title="Align molecule principal axis to +Z during placement">Align Z</button>
+          <button id="editMoleculeAlignXBtn" type="button"
+            title="Align molecule principal axis to +X during placement">Align X</button>
+          <button id="editMoleculeAlignYBtn" type="button"
+            title="Align molecule principal axis to +Y during placement">Align Y</button>
+          <button id="editMoleculeAlignZBtn" type="button"
+            title="Align molecule principal axis to +Z during placement">Align Z</button>
         </div>
       </div>
     </div>
@@ -3204,7 +3509,8 @@
         <option value="rotate_fragment">Rotate fragment (about bond axis)</option>
         <option value="rotate_bond">Rotate bond (about opposite atom)</option>
       </select>
-      <label style="margin-top:7px;"><input id="editTransformCleanupAuto" type="checkbox" checked /> Auto cleanup after transform</label>
+      <label style="margin-top:7px;"><input id="editTransformCleanupAuto" type="checkbox" checked /> Auto cleanup after
+        transform</label>
       <div id="editTransformCurrent"></div>
     </div>
     <div id="editSnapPane">
