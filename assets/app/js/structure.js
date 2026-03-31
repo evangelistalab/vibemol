@@ -344,9 +344,9 @@
   function ensureVolumeSchema(vol, options = {}) {
     if (!vol || typeof vol !== 'object') return vol;
     if (Array.isArray(vol.atoms)) {
+      migrateLegacyBuilderAnnotations(vol);
       vol.atoms = vol.atoms.map((atom) => normalizeVolumeAtom(atom));
       vol.natoms = vol.atoms.length;
-      migrateLegacyBuilderAnnotations(vol);
     } else {
       vol.atoms = [];
       vol.natoms = 0;

@@ -23,6 +23,7 @@ Primary capabilities:
 - Molden molecular-orbital parsing, grid generation, and rendering
 
 ## Project Layout
+- `Makefile`: local check/test entrypoints (`check`, `test-unit`, `test-e2e`, `test`).
 - `index.html`: UI shell, controls, and required script loading order.
 - `assets/app/js/app.js`: main app orchestration, scene lifecycle, style logic, preset API, file loading.
 - `assets/app/js/fragments.js`: fragment/molecule catalog loading, manifest support, and fragment builders.
@@ -51,6 +52,11 @@ Primary capabilities:
 - `api/vibemol_client.py`: Playwright-based Python client for automated renders.
 - `api/README.md`: CLI usage, presets, and `.vibemolrc` behavior.
 - `api/requirements.txt`: Python dependencies.
+- `tests/unit/*.test.mjs`: browserless Node unit tests for structure, parser, edit-state, and edit-tool logic.
+- `tests/unit/load-global-module.mjs`: VM-based loader for global/IIFE modules under Node.
+- `tests/e2e/smoke.py`: Playwright smoke/E2E test that starts a temporary local static server.
+- `tests/e2e/helpers.py`: shared server/artifact helpers for browser smoke tests.
+- `.github/workflows/ci.yml`: CI workflow for checks, unit tests, and browser smoke tests.
 - `notebooks/vibemol_notebook_demo.ipynb`: notebook demo (PNG render + iframe auto-load via postMessage).
 
 ## Runtime Model
@@ -179,6 +185,7 @@ Implemented:
 - Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`), and supports right-click delete.
 - Structures now persist explicit `vol.bonds` with `{ id, a, b, order, kind }` and builder annotations under `vol.annotations.builder.byAtomId`.
 - `Save Structure` exports the active editable record as a reproducible `vibemol.structure` JSON document.
+- `tests/e2e/smoke.py` is the required automated regression check for edit-mode flow changes (adaptive menu, selection, add-atom/add-molecule operators, structure round-trip, bond popup editing).
 - Atom labels and atom numbers can be toggled independently.
 - New untitled editable files can be created from the toolbar and duplicated/removed from the active-file control area.
 - Coordinates-window rows mirror atom hover, and the table supports inline editing of atom order, element symbol/atomic number, and Cartesian coordinates with validation.
@@ -233,12 +240,24 @@ Run web app locally:
 - `python3 -m http.server`
 - Open `http://localhost:8000/`
 
+Local test entrypoints:
+- `make check`
+- `make test-unit`
+- `make test-e2e`
+- `make test`
+
 Fast JS syntax checks:
 - `node --check assets/app/js/fragments.js`
 - `node --check assets/app/js/parsers.js`
 - `node --check assets/app/js/rendering.js`
 - `node --check assets/app/js/interaction.js`
 - `node --check assets/app/js/ui.js`
+- `node --check assets/app/js/structure.js`
+- `node --check assets/app/js/bond-editing.js`
+- `node --check assets/app/js/edit-ui.js`
+- `node --check assets/app/js/edit-state.js`
+- `node --check assets/app/js/edit-placement.js`
+- `node --check assets/app/js/edit-tools.js`
 - `node --check assets/app/js/app.js`
 
 Python API setup:
@@ -246,6 +265,11 @@ Python API setup:
 - `source .venv/bin/activate`
 - `pip install -r api/requirements.txt`
 - `python -m playwright install chromium`
+
+CI:
+- GitHub Actions workflow: `.github/workflows/ci.yml`
+- `checks-and-unit` runs `make check` and `make test-unit`
+- `e2e` runs `make test-e2e` and uploads `out/test-artifacts/` on failure
 
 Python API smoke run:
 - `python api/vibemol_client.py assets/data/sample.cube out/sample_toon_cli.png --style toon`

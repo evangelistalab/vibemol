@@ -23,7 +23,7 @@ python3 -m http.server
 ```
 Open `http://localhost:8000/`.
 
-`assets/data/sample.cube` autoloads when served over HTTP.
+Startup now shows the empty onboarding card. Use `Choose files` or `Open sample file` to load content.
 
 ## Controls
 - `1/2/3/4`: switch molecule style (Default / Toon / Kit / Glossy)
@@ -70,21 +70,38 @@ The CLI supports:
 - `.vibemolrc` auto-discovery (`./` then `$HOME`)
 
 ## Project Layout
+- `Makefile`: local check/test entrypoints (`check`, `test-unit`, `test-e2e`, `test`)
 - `index.html`: UI shell and script order
 - `assets/app/js/app.js`: core app orchestration
 - `assets/app/js/parsers.js`: file parsers
 - `assets/app/js/rendering.js`: rendering/stat helpers
 - `assets/app/js/interaction.js`: shortcut/input helpers
 - `assets/app/js/ui.js`: coords/XYZ formatting helpers
+- `assets/app/js/structure.js`: normalized structure schema helpers for atoms, bonds, and structure export/import
+- `assets/app/js/edit-state.js`: edit-history and editable-record controller
+- `assets/app/js/edit-placement.js`: add/placement workflows for atoms, fragments, and molecules
+- `assets/app/js/edit-tools.js`: edit tool and selection coordination
+- `assets/app/js/edit-ui.js`: adaptive edit UI and operator-panel helpers
 - `api/vibemol_client.py`: Playwright automation client
+- `tests/unit/`: Node built-in unit tests for browserless logic modules
+- `tests/e2e/`: Playwright smoke/E2E tests for the web app
+- `.github/workflows/ci.yml`: CI workflow for checks, unit tests, and browser smoke tests
 
 ## Development Checks
 ```bash
-node --check assets/app/js/parsers.js
-node --check assets/app/js/rendering.js
-node --check assets/app/js/interaction.js
-node --check assets/app/js/ui.js
-node --check assets/app/js/app.js
+make check
+make test-unit
+make test-e2e
+make test
+```
+
+`make test-e2e` starts its own temporary local server; do not start a second server first.
+
+If Playwright is not installed yet in your current Python environment:
+
+```bash
+pip install -r api/requirements.txt
+python -m playwright install chromium
 ```
 
 ## Deployment
