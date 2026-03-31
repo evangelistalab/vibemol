@@ -233,6 +233,11 @@
     throw new Error('VibeMolEditTools is not loaded. Ensure assets/app/js/edit-tools.js is included before assets/app/js/app.js.');
   }
 
+  const { createPresetController } = window.VibeMolPresetModule || {};
+  if (![createPresetController].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolPresetModule is not loaded. Ensure assets/app/js/preset.js is included before assets/app/js/app.js.');
+  }
+
   const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
   if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/app.js.');
@@ -658,6 +663,10 @@
       point: planePoint,
     };
   }
+
+  // --- Mode system + shortcut routing ---
+  const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
+  let currentMode = MODES.DISPLAY;
 
   /**
    * Synchronize edit-mode construction helpers with the active tool and camera.
@@ -6698,9 +6707,6 @@
     ],
   };
 
-  // --- Mode system + shortcut routing ---
-  const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
-  let currentMode = MODES.DISPLAY;
   /**
    * Reflect the active interaction mode in toolbar mode buttons.
    */
@@ -7578,8 +7584,8 @@
     atomsSnapshotsEqual,
     coordinateSnapshotsEqual,
     createAtomSnapshotCommand,
-    pruneBuilderOperationsForVolume,
-    syncBuilderExtensionFromVolumes,
+    pruneBuilderOperationsForVolume: (...args) => presetController.pruneBuilderOperationsForVolume(...args),
+    syncBuilderExtensionFromVolumes: (...args) => presetController.syncBuilderExtensionFromVolumes(...args),
     activateVolumeIndex,
     clearTransientInteractionState,
     syncActiveVolumeControls,
@@ -8080,9 +8086,9 @@
     ensureAtomId,
     ensureVolumeAtomIds,
     setAtomBuilderMeta,
-    normalizeBuilderOperationEntry,
-    rehydrateBuilderStateForVolume,
-    syncBuilderExtensionFromVolumes,
+    normalizeBuilderOperationEntry: (...args) => presetController.normalizeBuilderOperationEntry(...args),
+    rehydrateBuilderStateForVolume: (...args) => presetController.rehydrateBuilderStateForVolume(...args),
+    syncBuilderExtensionFromVolumes: (...args) => presetController.syncBuilderExtensionFromVolumes(...args),
     worldToAtomUnits,
     atomUnitsToAng,
     normalizeEditAddBondOrder,
@@ -8104,7 +8110,7 @@
     applyMethylAttachmentGeometry,
     applyHydroxylAttachmentGeometry,
     inferVolumeBonds,
-    pruneBuilderOperationsForVolume,
+    pruneBuilderOperationsForVolume: (...args) => presetController.pruneBuilderOperationsForVolume(...args),
     getCamera: () => camera,
     buildFuseRingPlacementGeometry,
     rebuildFuseRingPreviewMeshes,
@@ -14484,318 +14490,80 @@
   updateRenderModeUI();
 
   // --- Preset import/export (shared with CLI via window.VibeMolPreset) ---
-  const PRESET_KIND = 'vibemol.preset';
-  const PRESET_VERSION = 1;
   const STRUCTURE_KIND = 'vibemol.structure';
   const STRUCTURE_VERSION = 1;
-  const PRESET_OBJECT_VALUE_KEYS = new Set([
-    'global.elementColorOverrides',
-  ]);
-  const PRESET_TOP_LEVEL_KEYS = new Set([
-    'kind',
-    'presetVersion',
-    'appVersion',
-    'name',
-    'settings',
-    'meta',
-    'extensions',
-  ]);
-  const PRESET_MODE = Object.freeze({ STRICT: 'strict', RELAXED: 'relaxed' });
-  const presetSettingRegistry = new Map();
-  const presetSettingSchema = new Map();
-  let presetUnknownTop = {};
-  let presetUnknownSettings = {};
-  let presetName = 'VibeMol Preset';
-  let presetMeta = {};
-  let presetExtensions = {};
-
-  /**
-   * Normalize one builder operation log entry. Legacy index-based records are
-   * accepted and upgraded in memory; new records retain stable ids.
-   * @param {*} raw
-   * @returns {object|null}
-   */
-  function normalizeBuilderOperationEntry(raw) {
-    if (!raw || typeof raw !== 'object') return null;
-    const entryId = normalizeFragmentId(raw.entryId || raw.fragmentId || raw.moleculeId);
-    const entryKind = String(raw.entryKind || (raw.fragmentId ? CATALOG_KIND.FRAGMENT : '') || '').trim().toLowerCase()
-      || (getCatalogEntryById(entryId, CATALOG_KIND.MOLECULE) ? CATALOG_KIND.MOLECULE : CATALOG_KIND.FRAGMENT);
-    const attachPolicy = normalizeEditFragmentAttachPolicy(raw.attachPolicy || raw.attachMode);
-    const out = {
-      opId: String(raw.opId || '').trim() || allocateBuilderOpId(),
-      timestamp: String(raw.timestamp || new Date().toISOString()),
-      entryId,
-      entryKind,
-      attachPolicy,
-      transform: cloneJsonLike(raw.transform) || null,
-      resultingBondOrder: normalizeEditAddBondOrder(raw.resultingBondOrder || raw.preferredBondOrder || 1),
-      omittedLocalAtomIndices: Array.isArray(raw.omittedLocalAtomIndices)
-        ? raw.omittedLocalAtomIndices.map((v) => Number(v) | 0).filter((v) => v >= 0)
-        : [],
-      removedAtomIds: Array.isArray(raw.removedAtomIds)
-        ? raw.removedAtomIds.map((v) => String(v || '').trim()).filter(Boolean)
-        : [],
-      addedAtomIds: Array.isArray(raw.addedAtomIds)
-        ? raw.addedAtomIds.map((v) => String(v || '').trim()).filter(Boolean)
-        : [],
-    };
-    if (Array.isArray(raw.hostBondAtomIds)) {
-      const hostBondAtomIds = raw.hostBondAtomIds.map((v) => String(v || '').trim()).filter(Boolean);
-      if (hostBondAtomIds.length >= 2) out.hostBondAtomIds = hostBondAtomIds.slice(0, 2);
-    }
-    if (raw.anchorAtomIdPre) out.anchorAtomIdPre = String(raw.anchorAtomIdPre).trim();
-    if (raw.anchorAtomIdPost) out.anchorAtomIdPost = String(raw.anchorAtomIdPost).trim();
-    if (Array.isArray(raw.removedAtomIndices)) out.removedAtomIndices = raw.removedAtomIndices.map((v) => Number(v) | 0).filter((v) => v >= 0);
-    if (Array.isArray(raw.addedAtomIndices)) out.addedAtomIndices = raw.addedAtomIndices.map((v) => Number(v) | 0).filter((v) => v >= 0);
-    if (Number.isInteger(raw.anchorIndexPre)) out.anchorIndexPre = Number(raw.anchorIndexPre) | 0;
-    if (Number.isInteger(raw.anchorIndexPost)) out.anchorIndexPost = Number(raw.anchorIndexPost) | 0;
-    if (Array.isArray(raw.hostBondIndices)) out.hostBondIndices = raw.hostBondIndices.map((v) => Number(v) | 0).filter((v) => v >= 0).slice(0, 2);
-    if (raw.builderGroupId) {
-      out.builderGroupId = String(raw.builderGroupId).trim();
-      absorbObservedBuilderId(out.builderGroupId, 'group');
-    } else {
-      out.builderGroupId = allocateBuilderGroupId();
-    }
-    absorbObservedBuilderId(out.opId, 'op');
-    return out;
-  }
-
-  /**
-   * Serialize one builder operation to the ID-based preset format.
-   * Legacy index fields are intentionally omitted from export.
-   * @param {*} raw
-   * @returns {object|null}
-   */
-  function serializeBuilderOperationEntry(raw) {
-    const op = normalizeBuilderOperationEntry(raw);
-    if (!op) return null;
-    const out = {
-      opId: op.opId,
-      timestamp: op.timestamp,
-      entryId: op.entryId,
-      entryKind: op.entryKind,
-      attachPolicy: op.attachPolicy,
-      transform: cloneJsonLike(op.transform) || null,
-      resultingBondOrder: op.resultingBondOrder,
-      omittedLocalAtomIndices: Array.isArray(op.omittedLocalAtomIndices) ? op.omittedLocalAtomIndices.slice() : [],
-      removedAtomIds: Array.isArray(op.removedAtomIds) ? op.removedAtomIds.slice() : [],
-      addedAtomIds: Array.isArray(op.addedAtomIds) ? op.addedAtomIds.slice() : [],
-      builderGroupId: op.builderGroupId,
-    };
-    if (op.anchorAtomIdPre) out.anchorAtomIdPre = op.anchorAtomIdPre;
-    if (op.anchorAtomIdPost) out.anchorAtomIdPost = op.anchorAtomIdPost;
-    if (Array.isArray(op.hostBondAtomIds) && op.hostBondAtomIds.length) out.hostBondAtomIds = op.hostBondAtomIds.slice(0, 2);
-    return out;
-  }
-
-  /**
-   * Resolve builder metadata for atoms from stored operation logs.
-   * This does not replay geometry; it only reattaches ids/group tags when
-   * present or derivable from the currently loaded atom order.
-   * @param {*} vol
-   */
-  function rehydrateBuilderStateForVolume(vol) {
-    if (!vol || !Array.isArray(vol.atoms)) return;
-    ensureVolumeAtomIds(vol);
-    const atoms = vol.atoms;
-    const byAtomId = getBuilderAnnotationsMap(vol, true);
-    const liveIds = new Set();
-    for (const atom of atoms) {
-      if (!atom || typeof atom !== 'object') continue;
-      absorbObservedBuilderId(atom.id, 'atom');
-      liveIds.add(String(atom.id || ''));
-    }
-    for (const atomId of Object.keys(byAtomId || {})) {
-      if (!liveIds.has(atomId)) delete byAtomId[atomId];
-    }
-    if (!Array.isArray(vol.fragmentOps)) {
-      vol.fragmentOps = [];
-      return;
-    }
-    const normalizedOps = [];
-    for (const raw of vol.fragmentOps) {
-      const op = normalizeBuilderOperationEntry(raw);
-      if (!op) continue;
-      if ((!Array.isArray(op.addedAtomIds) || !op.addedAtomIds.length) && Array.isArray(op.addedAtomIndices)) {
-        op.addedAtomIds = op.addedAtomIndices
-          .map((idx) => (atoms[idx] ? ensureAtomId(atoms[idx]) : ''))
-          .filter(Boolean);
+  const presetController = createPresetController({
+    appVersion: APP_VERSION,
+    CATALOG_KIND,
+    normalizeFragmentId,
+    getCatalogEntryById,
+    normalizeEditFragmentAttachPolicy,
+    allocateBuilderOpId,
+    cloneJsonLike,
+    normalizeEditAddBondOrder,
+    absorbObservedBuilderId,
+    allocateBuilderGroupId,
+    ensureVolumeAtomIds,
+    getBuilderAnnotationsMap,
+    ensureAtomId,
+    setAtomBuilderMeta,
+    getVolumes: () => volumes,
+    isPlainObject,
+    setPresetRebuildSuspended: (value) => { suspendPresetRebuild = !!value; },
+    normalizeImportedSettingValue: (key, value, warnings) => {
+      if (key === 'molecule.style') {
+        const raw = (typeof value === 'string') ? value : '';
+        const normalized = normalizeMoleculeStyleKey(raw);
+        if (normalized !== raw) {
+          warnings.push(`Mapped deprecated style value ${raw || '(empty)'} -> ${normalized}`);
+        }
+        return normalized;
       }
-      if (!op.anchorAtomIdPost && Number.isInteger(op.anchorIndexPost) && atoms[op.anchorIndexPost]) {
-        op.anchorAtomIdPost = ensureAtomId(atoms[op.anchorIndexPost]);
+      return value;
+    },
+    afterApplySettings: () => {
+      controls.update();
+      refreshViewUI();
+      applyMoleculeStyleUiState();
+      updateRenderModeUI();
+      updateSurfBtn();
+      rebuildScene({ preserveView: true });
+      updateSidePanel();
+      updateOpacityAndColors();
+    },
+    beforeSavePreset: () => {
+      if (elementColorPicker) {
+        const active = getActiveElementHexColor(selectedElementForEditor);
+        const pending = normalizeHexColor(elementColorPicker.value, active);
+        if (pending !== active) setElementColorOverride(selectedElementForEditor, pending);
       }
-      if (!op.anchorAtomIdPre && Number.isInteger(op.anchorIndexPre) && atoms[op.anchorIndexPre]) {
-        op.anchorAtomIdPre = ensureAtomId(atoms[op.anchorIndexPre]);
-      }
-      if ((!Array.isArray(op.hostBondAtomIds) || !op.hostBondAtomIds.length) && Array.isArray(op.hostBondIndices)) {
-        op.hostBondAtomIds = op.hostBondIndices
-          .map((idx) => (atoms[idx] ? ensureAtomId(atoms[idx]) : ''))
-          .filter(Boolean)
-          .slice(0, 2);
-      }
-      const addedIds = Array.isArray(op.addedAtomIds) ? op.addedAtomIds : [];
-      for (const atom of atoms) {
-        if (!atom || !addedIds.includes(String(atom.id || ''))) continue;
-        setAtomBuilderMeta(vol, atom, {
-          groupId: op.builderGroupId,
-          entryId: op.entryId,
-          entryKind: op.entryKind,
-        });
-      }
-      normalizedOps.push(op);
-    }
-    vol.fragmentOps = normalizedOps;
-  }
-
-  /**
-   * Remove builder operations that no longer reference live atoms.
-   * This keeps fragment-scope transform fallback stable after deletes/reloads.
-   * @param {*} vol
-   * @returns {boolean}
-   */
-  function pruneBuilderOperationsForVolume(vol) {
-    if (!vol || !Array.isArray(vol.atoms)) return false;
-    ensureVolumeAtomIds(vol);
-    if (!Array.isArray(vol.fragmentOps)) {
-      vol.fragmentOps = [];
-      return false;
-    }
-    const liveIds = new Set(vol.atoms.map((atom) => String(ensureAtomId(atom))));
-    const nextOps = [];
-    let changed = false;
-    for (const raw of vol.fragmentOps) {
-      const op = normalizeBuilderOperationEntry(raw);
-      if (!op) {
-        changed = true;
-        continue;
-      }
-      const nextAddedAtomIds = Array.isArray(op.addedAtomIds)
-        ? op.addedAtomIds.map((id) => String(id || '').trim()).filter((id) => liveIds.has(id))
-        : [];
-      if (nextAddedAtomIds.length === 0) {
-        changed = true;
-        continue;
-      }
-      if (nextAddedAtomIds.length !== (Array.isArray(op.addedAtomIds) ? op.addedAtomIds.length : 0)) changed = true;
-      op.addedAtomIds = nextAddedAtomIds;
-      if (Array.isArray(op.hostBondAtomIds)) {
-        const nextHostBondAtomIds = op.hostBondAtomIds
-          .map((id) => String(id || '').trim())
-          .filter((id) => liveIds.has(id))
-          .slice(0, 2);
-        if (nextHostBondAtomIds.length !== op.hostBondAtomIds.length) changed = true;
-        if (nextHostBondAtomIds.length >= 2) op.hostBondAtomIds = nextHostBondAtomIds;
-        else delete op.hostBondAtomIds;
-      }
-      if (op.anchorAtomIdPost && !liveIds.has(String(op.anchorAtomIdPost))) {
-        delete op.anchorAtomIdPost;
-        changed = true;
-      }
-      nextOps.push(op);
-    }
-    if (changed || nextOps.length !== vol.fragmentOps.length) vol.fragmentOps = nextOps;
-    rehydrateBuilderStateForVolume(vol);
-    return changed || nextOps.length !== vol.fragmentOps.length;
-  }
-
-  /**
-   * Read fragment operation map from preset extensions.
-   * @returns {Record<string, any[]>}
-   */
-  function getBuilderFragmentOpsByFileFromExtensions() {
-    const builder = (presetExtensions && typeof presetExtensions === 'object') ? presetExtensions.builder : null;
-    if (!builder || typeof builder !== 'object') return {};
-    const map = builder.fragmentOpsByFile;
-    if (!map || typeof map !== 'object' || Array.isArray(map)) return {};
-    return map;
-  }
-
-  /**
-   * Apply stored builder logs from preset extensions to currently loaded files.
-   * This restores in-memory operation history but intentionally does not replay ops.
-   */
-  function applyBuilderExtensionToLoadedVolumes() {
-    const map = getBuilderFragmentOpsByFileFromExtensions();
-    for (const record of volumes) {
-      if (!record || !record.vol) continue;
-      const key = String(record.name || '').trim();
-      const stored = key && Array.isArray(map[key]) ? map[key] : null;
-      if (stored) record.vol.fragmentOps = cloneJsonLike(stored) || [];
-      else if (!Array.isArray(record.vol.fragmentOps)) record.vol.fragmentOps = [];
-      pruneBuilderOperationsForVolume(record.vol);
-    }
-  }
-
-  /**
-   * Merge loaded-volume fragment logs into preset extensions for export.
-   * Unknown file keys from previously loaded presets are preserved.
-   */
-  function syncBuilderExtensionFromVolumes() {
-    const existingBuilder = (presetExtensions && typeof presetExtensions === 'object' && presetExtensions.builder && typeof presetExtensions.builder === 'object')
-      ? cloneJsonLike(presetExtensions.builder)
-      : {};
-    const existingMap = (existingBuilder && existingBuilder.fragmentOpsByFile && typeof existingBuilder.fragmentOpsByFile === 'object' && !Array.isArray(existingBuilder.fragmentOpsByFile))
-      ? cloneJsonLike(existingBuilder.fragmentOpsByFile)
-      : {};
-    for (const record of volumes) {
-      if (!record || !record.vol) continue;
-      const key = String(record.name || '').trim();
-      if (!key) continue;
-      if (Array.isArray(record.vol.fragmentOps) && record.vol.fragmentOps.length > 0) {
-        existingMap[key] = record.vol.fragmentOps
-          .map((raw) => serializeBuilderOperationEntry(raw))
-          .filter(Boolean)
-          .map((op) => cloneJsonLike(op));
-      } else {
-        delete existingMap[key];
-      }
-    }
-    if (!presetExtensions || typeof presetExtensions !== 'object' || Array.isArray(presetExtensions)) presetExtensions = {};
-    presetExtensions.builder = Object.assign({}, existingBuilder || {}, {
-      version: 1,
-      fragmentOpsByFile: existingMap,
-    });
-  }
-
-  /**
-   * Normalize strict/relaxed preset apply mode.
-   * @param {*} mode
-   * @returns {'strict'|'relaxed'}
-   */
-  function normalizePresetMode(mode) {
-    return mode === PRESET_MODE.STRICT ? PRESET_MODE.STRICT : PRESET_MODE.RELAXED;
-  }
-
-  /**
-   * Flatten a nested settings tree to dot-delimited keys.
-   * @param {*} node
-   * @param {string} prefix
-   * @param {Record<string, any>} out
-   * @returns {Record<string, any>}
-   */
-  function flattenSettingsTree(node, prefix = '', out = {}) {
-    if (!isPlainObject(node)) return out;
-    for (const [key, value] of Object.entries(node)) {
-      const nextKey = prefix ? `${prefix}.${key}` : key;
-      if (isPlainObject(value)) {
-        if (PRESET_OBJECT_VALUE_KEYS.has(nextKey)) out[nextKey] = cloneJsonLike(value);
-        else flattenSettingsTree(value, nextKey, out);
-      }
-      else out[nextKey] = value;
-    }
-    return out;
-  }
-
-  /**
-   * Coerce a value to a finite number.
-   * @param {*} value
-   * @param {number} fallback
-   * @returns {number}
-   */
-  function asFiniteNumber(value, fallback) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : fallback;
-  }
+    },
+    downloadJsonText: (textPayload, filename) => {
+      const blob = new Blob([textPayload], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+    },
+    warn: (...args) => console.warn(...args),
+  });
+  const PRESET_KIND = presetController.kind;
+  const PRESET_VERSION = presetController.version;
+  const PRESET_MODE = presetController.modes;
+  const registerPresetSetting = presetController.registerSetting;
+  const listPresetSettingSchema = presetController.listSchema;
+  const getBuilderFragmentOpsByFileFromExtensions = presetController.getBuilderFragmentOpsByFileFromExtensions;
+  const normalizeBuilderOperationEntry = presetController.normalizeBuilderOperationEntry;
+  const rehydrateBuilderStateForVolume = presetController.rehydrateBuilderStateForVolume;
+  const pruneBuilderOperationsForVolume = presetController.pruneBuilderOperationsForVolume;
+  const applyBuilderExtensionToLoadedVolumes = presetController.applyBuilderExtensionToLoadedVolumes;
+  const syncBuilderExtensionFromVolumes = presetController.syncBuilderExtensionFromVolumes;
+  const exportPresetEnvelope = presetController.exportEnvelope;
+  const importPresetEnvelope = presetController.importEnvelope;
+  const saveCurrentPresetToFile = presetController.saveCurrentPresetToFile;
+  const importPresetFromText = presetController.importFromText;
+  const getPresetPublicApi = presetController.getPublicApi;
 
   /**
    * Coerce a value to boolean.
@@ -14877,29 +14645,6 @@
     root.style.setProperty('--vm-accent-soft', `rgba(${r}, ${g}, ${b}, 0.18)`);
     root.style.setProperty('--vm-accent-outline', `rgba(${r}, ${g}, ${b}, 0.22)`);
     return normalized;
-  }
-
-  /**
-   * Register one setting key in the preset registry.
-   * @param {string} key
-   * @param {() => any} getter
-   * @param {(value:any) => void} setter
-   * @param {{section?:string,type?:string,description?:string}=} options
-   */
-  function registerPresetSetting(key, getter, setter, options = {}) {
-    const section = (typeof options.section === 'string' && options.section.trim()) ? options.section.trim() : String(key).split('.')[0];
-    const type = (typeof options.type === 'string' && options.type.trim()) ? options.type.trim() : 'any';
-    const description = (typeof options.description === 'string') ? options.description : '';
-    presetSettingRegistry.set(key, { get: getter, set: setter });
-    presetSettingSchema.set(key, Object.freeze({ key, section, type, description }));
-  }
-
-  /**
-   * Export a stable snapshot of the preset schema metadata.
-   * @returns {{key:string,section:string,type:string,description:string}[]}
-   */
-  function listPresetSettingSchema() {
-    return Array.from(presetSettingSchema.values()).map((entry) => Object.assign({}, entry));
   }
 
   registerPresetSetting('surface.iso', () => asFiniteNumber(isoInput && isoInput.value, 0.02), (value) => {
@@ -15172,168 +14917,7 @@
     syncVibrationControls();
   });
 
-  /**
-   * Export current app settings as a portable preset envelope.
-   * Unknown fields from an imported preset are preserved on round-trip.
-   * @param {{name?:string}=} options
-   */
-  function exportPresetEnvelope(options = {}) {
-    syncBuilderExtensionFromVolumes();
-    const settings = cloneJsonLike(presetUnknownSettings) || {};
-    for (const [key, def] of presetSettingRegistry.entries()) settings[key] = def.get();
-    const name = (typeof options.name === 'string' && options.name.trim())
-      ? options.name.trim()
-      : presetName;
-    const now = new Date().toISOString();
-    const mergedMeta = Object.assign({}, cloneJsonLike(presetMeta) || {}, {
-      source: 'web',
-      updatedAt: now,
-    });
-    if (!mergedMeta.createdAt) mergedMeta.createdAt = now;
-    return Object.assign({}, cloneJsonLike(presetUnknownTop) || {}, {
-      kind: PRESET_KIND,
-      presetVersion: PRESET_VERSION,
-      appVersion: APP_VERSION,
-      name,
-      settings,
-      meta: mergedMeta,
-      extensions: cloneJsonLike(presetExtensions) || {},
-    });
-  }
-
-  /**
-   * Apply one settings object to the current app.
-   * @param {*} settingsLike
-   * @param {{mode?:'strict'|'relaxed'}=} options
-   */
-  function applyPresetSettings(settingsLike, options = {}) {
-    const mode = normalizePresetMode(options.mode);
-    const warnings = [];
-    const flatSettings = flattenSettingsTree(settingsLike);
-    const unknownSettings = {};
-    for (const key of Object.keys(flatSettings)) {
-      if (!presetSettingRegistry.has(key)) {
-        unknownSettings[key] = flatSettings[key];
-        warnings.push(`Unknown setting key ignored: ${key}`);
-      }
-    }
-    if (mode === PRESET_MODE.STRICT && Object.keys(unknownSettings).length > 0) {
-      throw new Error(`Unknown setting keys: ${Object.keys(unknownSettings).join(', ')}`);
-    }
-
-    const applied = [];
-    suspendPresetRebuild = true;
-    try {
-      for (const [key, def] of presetSettingRegistry.entries()) {
-        if (!(key in flatSettings)) continue;
-        let value = flatSettings[key];
-        if (key === 'molecule.style') {
-          const raw = (typeof value === 'string') ? value : '';
-          const normalized = normalizeMoleculeStyleKey(raw);
-          if (normalized !== raw) {
-            warnings.push(`Mapped deprecated style value ${raw || '(empty)'} -> ${normalized}`);
-          }
-          value = normalized;
-        }
-        try {
-          def.set(value);
-          applied.push(key);
-        } catch (err) {
-          const message = `Failed setting ${key}: ${err && err.message ? err.message : String(err)}`;
-          if (mode === PRESET_MODE.STRICT) throw new Error(message);
-          warnings.push(message);
-        }
-      }
-    } finally {
-      suspendPresetRebuild = false;
-    }
-
-    controls.update();
-    refreshViewUI();
-    applyMoleculeStyleUiState();
-    updateRenderModeUI();
-    updateSurfBtn();
-    rebuildScene({ preserveView: true });
-    updateSidePanel();
-    updateOpacityAndColors();
-
-    presetUnknownSettings = cloneJsonLike(unknownSettings) || {};
-    return {
-      ok: true,
-      mode,
-      applied,
-      warnings,
-      unknownSettings: Object.keys(unknownSettings),
-    };
-  }
-
-  /**
-   * Import and apply a preset envelope.
-   * @param {*} preset
-   * @param {{mode?:'strict'|'relaxed'}=} options
-   */
-  function importPresetEnvelope(preset, options = {}) {
-    const mode = normalizePresetMode(options.mode);
-    if (!isPlainObject(preset)) throw new Error('Preset must be an object.');
-    const warnings = [];
-
-    const kind = preset.kind;
-    if (kind !== PRESET_KIND) {
-      const msg = `Unexpected preset kind: ${String(kind)} (expected ${PRESET_KIND})`;
-      if (mode === PRESET_MODE.STRICT) throw new Error(msg);
-      warnings.push(msg);
-    }
-    const parsedVersion = Number(preset.presetVersion);
-    if (Number.isFinite(parsedVersion) && parsedVersion > PRESET_VERSION) {
-      const msg = `Preset version ${parsedVersion} is newer than supported ${PRESET_VERSION}`;
-      if (mode === PRESET_MODE.STRICT) throw new Error(msg);
-      warnings.push(msg);
-    }
-
-    const unknownTop = {};
-    for (const [key, value] of Object.entries(preset)) {
-      if (!PRESET_TOP_LEVEL_KEYS.has(key)) unknownTop[key] = value;
-    }
-    presetUnknownTop = cloneJsonLike(unknownTop) || {};
-
-    if (typeof preset.name === 'string' && preset.name.trim()) presetName = preset.name.trim();
-    if (isPlainObject(preset.meta)) presetMeta = cloneJsonLike(preset.meta) || {};
-    if (isPlainObject(preset.extensions)) presetExtensions = cloneJsonLike(preset.extensions) || {};
-
-    const applyResult = applyPresetSettings(preset.settings || {}, { mode });
-    applyBuilderExtensionToLoadedVolumes();
-    return {
-      ok: true,
-      mode,
-      kind: PRESET_KIND,
-      presetVersion: PRESET_VERSION,
-      applied: applyResult.applied,
-      warnings: warnings.concat(applyResult.warnings),
-      unknownTop: Object.keys(unknownTop),
-      unknownSettings: applyResult.unknownSettings,
-      name: presetName,
-    };
-  }
-
-  /**
-   * Save current settings to a downloadable preset file.
-   */
-  function saveCurrentPresetToFile() {
-    // Flush pending color-picker edits so saved presets include the latest color.
-    if (elementColorPicker) {
-      const active = getActiveElementHexColor(selectedElementForEditor);
-      const pending = normalizeHexColor(elementColorPicker.value, active);
-      if (pending !== active) setElementColorOverride(selectedElementForEditor, pending);
-    }
-    const preset = exportPresetEnvelope();
-    const blob = new Blob([`${JSON.stringify(preset, null, 2)}\n`], { type: 'application/json' });
-    const link = document.createElement('a');
-    const date = new Date().toISOString().replace(/[:]/g, '-').replace(/\..+/, '');
-    link.download = `vibemol-preset-${date}.json`;
-    link.href = URL.createObjectURL(blob);
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }
+  window.VibeMolPreset = getPresetPublicApi();
 
   /**
    * Build a reproducible structure-download filename for one record.
@@ -15367,24 +14951,6 @@
     link.click();
     URL.revokeObjectURL(link.href);
     setHintMessage(`Saved structure: ${link.download}`);
-  }
-
-  /**
-   * Parse and apply one preset JSON payload.
-   * @param {string} text
-   * @param {string=} sourceLabel
-   * @returns {{name:string,warnings:string[]}}
-   */
-  function importPresetFromText(text, sourceLabel = 'preset') {
-    let parsed = null;
-    try {
-      parsed = JSON.parse(text);
-    } catch (err) {
-      throw new Error(`${sourceLabel}: invalid JSON`);
-    }
-    const result = importPresetEnvelope(parsed, { mode: PRESET_MODE.RELAXED });
-    if (result.warnings.length > 0) console.warn('[Preset] import warnings', result.warnings);
-    return result;
   }
 
   /**
@@ -15473,15 +15039,6 @@
   }
 
   // Public API for browser automation and future integrations.
-  window.VibeMolPreset = Object.freeze({
-    kind: PRESET_KIND,
-    version: PRESET_VERSION,
-    listKeys: () => Array.from(presetSettingRegistry.keys()),
-    listSchema: () => listPresetSettingSchema(),
-    export: (options = {}) => exportPresetEnvelope(options),
-    import: (preset, options = {}) => importPresetEnvelope(preset, options),
-  });
-
   window.VibeMolStructure = Object.freeze({
     kind: STRUCTURE_KIND,
     version: STRUCTURE_VERSION,

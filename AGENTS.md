@@ -92,7 +92,8 @@ Required script order in `index.html`:
 22. `assets/app/js/edit-ui.js`
 23. `assets/app/js/edit-placement.js`
 24. `assets/app/js/edit-tools.js`
-25. `assets/app/js/app.js`
+25. `assets/app/js/preset.js`
+26. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -115,6 +116,7 @@ Required script order in `index.html`:
 - `window.VibeMolEditUi`
 - `window.VibeMolEditPlacement`
 - `window.VibeMolEditTools`
+- `window.VibeMolPresetModule`
 
 Preset automation contract exposed globally:
 - `window.VibeMolPreset.kind`
@@ -273,6 +275,7 @@ Fast JS syntax checks:
 - `node --check assets/app/js/bond-inference.js`
 - `node --check assets/app/js/autoiso.js`
 - `node --check assets/app/js/cloud-rendering.js`
+- `node --check assets/app/js/preset.js`
 - `node --check assets/app/js/bond-editing.js`
 - `node --check assets/app/js/edit-ui.js`
 - `node --check assets/app/js/edit-state.js`
