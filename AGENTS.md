@@ -30,6 +30,16 @@ Primary capabilities:
 - `assets/app/js/rendering.js`: volume/stat helpers used by `app.js`.
 - `assets/app/js/interaction.js`: keyboard shortcut routing and input-focus guards.
 - `assets/app/js/ui.js`: UI formatting helpers for coordinates and XYZ export text.
+- `assets/app/js/view-utils.js`: viewport/camera helpers shared by `app.js`.
+- `assets/app/js/edit-utils.js`: edit-mode math helpers (mass properties, inertia, eigen solve).
+- `assets/app/js/edit-commands.js`: history command object creation for atom snapshots.
+- `assets/app/js/edit-state.js`: editable-record bootstrap plus undo/redo history orchestration.
+- `assets/app/js/io-utils.js`: input-kind detection helpers shared by drag/drop and import flows.
+- `assets/app/js/structure.js`: minimal incremental structure schema helpers (atoms, bonds, builder annotations, structure export/import support).
+- `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
+- `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
+- `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
+- `assets/app/js/edit-tools.js`: edit-tool state, selection coordination, and transient edit cleanup.
 - `assets/fragments/library.json`: external fragment/molecule catalog manifest.
 - `assets/fragments/*.xyz`: fragment geometry sources using linker-at-origin / +Z bond-vector convention.
 - `assets/fragments/WORKFLOW.md`: fragment authoring workflow and conventions.
@@ -55,15 +65,35 @@ Required script order in `index.html`:
 6. `assets/app/js/rendering.js`
 7. `assets/app/js/interaction.js`
 8. `assets/app/js/ui.js`
-9. `assets/app/js/fragments.js`
-10. `assets/app/js/app.js`
+9. `assets/app/js/view-utils.js`
+10. `assets/app/js/edit-utils.js`
+11. `assets/app/js/edit-commands.js`
+12. `assets/app/js/edit-state.js`
+13. `assets/app/js/io-utils.js`
+14. `assets/app/js/fragments.js`
+15. `assets/app/js/structure.js`
+16. `assets/app/js/bond-editing.js`
+17. `assets/app/js/edit-ui.js`
+18. `assets/app/js/edit-placement.js`
+19. `assets/app/js/edit-tools.js`
+20. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
 - `window.VibeMolRendering`
 - `window.VibeMolInteraction`
 - `window.VibeMolUI`
+- `window.VibeMolViewUtils`
+- `window.VibeMolEditUtils`
+- `window.VibeMolEditCommands`
+- `window.VibeMolEditState`
+- `window.VibeMolIOUtils`
 - `window.VibeMolFragments`
+- `window.VibeMolStructureCore`
+- `window.VibeMolBondEditing`
+- `window.VibeMolEditUi`
+- `window.VibeMolEditPlacement`
+- `window.VibeMolEditTools`
 
 Preset automation contract exposed globally:
 - `window.VibeMolPreset.kind`
@@ -85,6 +115,7 @@ Preset automation contract exposed globally:
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
 - Preset JSON files can be drag-dropped directly into the app and are imported through the normal preset path.
+- Reproducible structure JSON files (`kind: "vibemol.structure"`) can be drag-dropped directly into the app and preserve explicit bonds plus builder annotations.
 - Edit Add mode has three submodes: `Atom`, `Fragment`, and `Molecule`.
 - Standalone molecule placement is interactive: click to place, drag to rotate around COM, click again to confirm, `Esc` to cancel, `X/Y/Z` to align preview axes.
 - Fragment/molecule catalog data loads from `assets/fragments/library.json` when available and falls back to built-in starter definitions.
@@ -132,15 +163,22 @@ Preset automation contract exposed globally:
 ## Edit / Builder UX Status
 Implemented:
 - Edit mode defaults to `Add` on entry.
+- Edit mode now uses an adaptive floating menu instead of the old visible toolbox.
+- Edit tools currently include `Selection`, `Move`, `Add`, `Bond`, `Transform`, and `Delete`.
+- Selection supports click-to-replace, `Shift+click` toggle, empty-click clear, and `Cmd/Ctrl+A` select-all.
 - Add tool includes cursor-relative placement with automatic angle snapping (`180°`, `120°`, `109.5°`, `90°`, `60°`).
 - Hold `Shift` during add-grow placement to bypass angle snap.
-- Edit tools currently include `Move`, `Add`, `Delete`, and `Transform`.
 - Add mode includes `Atom`, `Fragment`, and `Molecule` submodes.
+- Add atom uses a right-side last-operation operator panel with live XYZ editing plus `Enter` confirm / `Esc` cancel.
 - Fragment insertion uses the shared fragment catalog and supports starter-group attach flows (for example methyl and hydroxyl geometry overrides).
 - Standalone molecules can be placed by click/drag/click with quaternion rotation around the preview COM.
+- Standalone molecule placement includes a right-side operator panel with live XYZ/rotation editing and axis-align actions.
 - Transform mode supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Delete tool and hover-delete (`Backspace`/`Delete`) are active.
+- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`), and supports right-click delete.
+- Structures now persist explicit `vol.bonds` with `{ id, a, b, order, kind }` and builder annotations under `vol.annotations.builder.byAtomId`.
+- `Save Structure` exports the active editable record as a reproducible `vibemol.structure` JSON document.
 - Atom labels and atom numbers can be toggled independently.
 - New untitled editable files can be created from the toolbar and duplicated/removed from the active-file control area.
 - Coordinates-window rows mirror atom hover, and the table supports inline editing of atom order, element symbol/atomic number, and Cartesian coordinates with validation.
@@ -245,11 +283,15 @@ After non-trivial changes:
 5. Toggle surface/cloud modes and verify rendering updates.
 6. Check molecule styles (`default`, `toon`, `kit/Kit`, `glossy`) and keyboard shortcuts `1/2/3/4`.
 7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
-8. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, plus undo/redo and `Esc` cancel for molecule placement.
-9. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, and inline coordinate edits.
-10. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
-11. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
-12. Save PNG and export XYZ; check browser console for errors.
+8. In edit mode, verify the adaptive edit menu appears and the onboarding splash hides.
+9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, and `Cmd/Ctrl+A`.
+10. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels plus undo/redo and `Esc` cancel for molecule placement.
+11. In edit mode, test the bond tool: atom-to-atom create, clicked-bond popup `1–4,0`, and right-click bond delete.
+12. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders survive round-trip.
+13. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, and inline coordinate edits.
+14. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
+15. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
+16. Save PNG and export XYZ; check browser console for errors.
 
 ## Deployment Notes
 - Main deployment target is static hosting from repository root (`index.html`).
