@@ -192,6 +192,11 @@
     throw new Error('VibeMolStructureCore is not loaded. Ensure assets/app/js/structure.js is included before assets/app/js/app.js.');
   }
 
+  const { createBondEditingController } = window.VibeMolBondEditing || {};
+  if (![createBondEditingController].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolBondEditing is not loaded. Ensure assets/app/js/bond-editing.js is included before assets/app/js/app.js.');
+  }
+
   const {
     FRAGMENT_LIBRARY,
     getCatalogEntries,
@@ -916,7 +921,7 @@
     }
     const currentBondOrderPopupEl = document.getElementById('bondOrderPopup');
     if (currentBondOrderPopupEl && currentBondOrderPopupEl.getAttribute('aria-hidden') === 'false') {
-      positionBondOrderPopup();
+      if (bondEditing) bondEditing.positionPopup();
     }
   }
   window.addEventListener('resize', resize);
@@ -8787,8 +8792,7 @@
   let editAddBondOrder = 1;
   let editBondOrder = 1;
   let editBondAction = EDIT_BOND_ACTION.SET;
-  let editBondPendingAtomId = '';
-  let editBondPopupCarrier = null;
+  let bondEditing = null;
   let editAddSearchClearedOnFocus = false;
   const editAddAtomPaneHomeParent = editAddAtomPaneEl ? editAddAtomPaneEl.parentElement : null;
   const editAddAtomPaneHomeNextSibling = editAddAtomPaneEl ? editAddAtomPaneEl.nextSibling : null;
@@ -10915,7 +10919,7 @@
     const announce = options.announce !== false;
     editBondOrder = normalizeEditAddBondOrder(order);
     updateEditToolboxUi({ syncSearch: false });
-    if (editBondPopupCarrier) showBondOrderPopupForCarrier(editBondPopupCarrier);
+    if (bondEditing) bondEditing.refreshPopup();
     if (announce && editMode && editTool === EDIT_TOOL.BOND) {
       setHintMessage(`Bond tool order: ${editBondOrder} (keys 1/2/3/4).`);
     }
@@ -10929,13 +10933,48 @@
   function setEditBondAction(action, options = {}) {
     const announce = options.announce !== false;
     editBondAction = normalizeEditBondAction(action);
-    clearEditBondPendingSelection();
-    hideBondOrderPopup();
+    if (bondEditing) bondEditing.clearState();
     if (editBondActionEl && document.activeElement !== editBondActionEl) editBondActionEl.value = editBondAction;
     updateEditToolboxUi({ syncSearch: false });
     if (!announce || !editMode || editTool !== EDIT_TOOL.BOND) return;
     setHintMessage('Bond tool: Click two atoms to create a bond • Click an existing bond to edit order • Right-click a bond or choose 0 to delete it.');
   }
+
+  bondEditing = createBondEditingController({
+    THREE,
+    popupEl: bondOrderPopupEl,
+    popupButtonsEl: bondOrderPopupButtonsEl,
+    canvasEl,
+    getCamera: () => camera,
+    canUsePopup: () => currentMode === MODES.EDIT && editTool === EDIT_TOOL.BOND,
+    normalizeOrder: normalizeEditAddBondOrder,
+    getDisplayedOrder: getBondCarrierDisplayedOrder,
+    focusCarrier: (carrier) => ensureBondOverlay(carrier, 'focusOverlay', 0x71a8ff, 0.96),
+    blurCarrier: (carrier) => removeBondOverlay(carrier, 'focusOverlay'),
+    onPendingSelectionChanged: () => {
+      updateSelectedHalos();
+      updateEditToolboxUi({ syncSearch: false });
+    },
+    ensureEditableRecord,
+    ensureVolumeSchema,
+    cloneBondSnapshot,
+    bondSnapshotsEqual,
+    cloneAtomsSnapshot,
+    pushEditHistoryEntry,
+    clearHover,
+    rebuildScene,
+    updateSidePanel,
+    ensureAtomId,
+    findVolumeBondRecordIndex,
+    normalizeVolumeBondRecord,
+    upsertVolumeBond,
+    removeVolumeBond,
+    getElementSymbol,
+    getBondAction: () => editBondAction,
+    getBondOrder: () => editBondOrder,
+    setBondOrder: setEditBondOrder,
+    setHintMessage,
+  });
 
   /**
    * Clear add-grow preview state/meshes.
@@ -11828,7 +11867,7 @@
     if (editToolBondBtn) editToolBondBtn.classList.toggle('active', isBond);
     if (editToolTransformBtn) editToolTransformBtn.classList.toggle('active', isTransform);
     if (editToolDeleteBtn) editToolDeleteBtn.classList.toggle('active', isDelete);
-    if (!isEdit || !isBond) hideBondOrderPopup();
+    if ((!isEdit || !isBond) && bondEditing) bondEditing.hidePopup();
     if (editAddPaneEl) editAddPaneEl.classList.toggle('active', isEdit && isAdd);
     if (editBondPaneEl) editBondPaneEl.classList.toggle('active', isEdit && isBond);
     if (editTransformPaneEl) editTransformPaneEl.classList.toggle('active', isEdit && isTransform);
@@ -12763,25 +12802,6 @@
     if (editAddMoleculeOperatorAlignXBtn) editAddMoleculeOperatorAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a molecule first, then align to X.'); };
     if (editAddMoleculeOperatorAlignYBtn) editAddMoleculeOperatorAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a molecule first, then align to Y.'); };
     if (editAddMoleculeOperatorAlignZBtn) editAddMoleculeOperatorAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
-    if (bondOrderPopupButtonsEl) {
-      const popupButtons = bondOrderPopupButtonsEl.querySelectorAll('button[data-bond-order-popup]');
-      for (const btn of popupButtons) {
-        btn.addEventListener('click', () => {
-          if (!editBondPopupCarrier) return;
-          const rawOrder = Number(btn.getAttribute('data-bond-order-popup'));
-          const carrier = editBondPopupCarrier;
-          hideBondOrderPopup();
-          if (!Number.isFinite(rawOrder) || rawOrder < 0) return;
-          if (rawOrder === 0) {
-            applyBondToolToCarrier(carrier, { deleteOverride: true });
-            return;
-          }
-          const order = normalizeEditAddBondOrder(rawOrder);
-          setEditBondOrder(order, { announce: false });
-          applyBondToolToCarrier(carrier, { orderOverride: order });
-        });
-      }
-    }
     if (editToolSelectBtn) editToolSelectBtn.onclick = () => setEditTool(EDIT_TOOL.SELECT);
     if (editToolMoveBtn) editToolMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
     if (editToolAddBtn) editToolAddBtn.onclick = () => setEditTool(EDIT_TOOL.ADD);
@@ -13048,8 +13068,6 @@
     }
   }
   let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
-  let editBondClickCarrier = null;
-  let editBondPopupClickHandled = false;
   /**
    * Clear the current measurement/edit atom selection.
    */
@@ -13501,24 +13519,14 @@
    * @returns {number}
    */
   function getEditBondPendingAtomIndex(vol) {
-    if (!vol || !Array.isArray(vol.atoms) || !editBondPendingAtomId) return -1;
-    const targetId = String(editBondPendingAtomId || '').trim();
-    if (!targetId) return -1;
-    for (let i = 0; i < vol.atoms.length; i++) {
-      const atom = vol.atoms[i];
-      if (!atom) continue;
-      if (String(ensureAtomId(atom)) === targetId) return i;
-    }
-    return -1;
+    return bondEditing ? bondEditing.getPendingAtomIndex(vol) : -1;
   }
 
   /**
    * Clear the pending first-atom selection used by the Bond tool.
    */
   function clearEditBondPendingSelection() {
-    editBondPendingAtomId = '';
-    updateSelectedHalos();
-    updateEditToolboxUi({ syncSearch: false });
+    if (bondEditing) bondEditing.clearPendingSelection();
   }
 
   /**
@@ -13740,7 +13748,7 @@
       __editDownPt = null;
       __editMoved = false;
       __editClickIdx = -1;
-      editBondClickCarrier = null;
+      if (bondEditing) bondEditing.clearState({ pendingSelection: false });
     }
   }
 
@@ -14581,14 +14589,6 @@
   }
 
   /**
-   * Return whether the clicked-bond order popup should be available.
-   * @returns {boolean}
-   */
-  function canUseBondOrderPopup() {
-    return currentMode === MODES.EDIT && editTool === EDIT_TOOL.BOND;
-  }
-
-  /**
    * Read the effective displayed order for one bond carrier.
    * Prefers explicit bond state and falls back to the rendered carrier order.
    * @param {*|null} carrier
@@ -14610,70 +14610,6 @@
       }
     }
     return normalizeEditAddBondOrder(carrier.userData.bondOrder || 1);
-  }
-
-  /**
-   * Position the clicked-bond order popup near the selected bond midpoint.
-   */
-  function positionBondOrderPopup() {
-    if (!bondOrderPopupEl || !editBondPopupCarrier || !canUseBondOrderPopup()) return;
-    const anchor = new THREE.Vector3();
-    try {
-      editBondPopupCarrier.getWorldPosition(anchor);
-    } catch {
-      return;
-    }
-    anchor.project(camera);
-    if (!Number.isFinite(anchor.x) || !Number.isFinite(anchor.y) || !Number.isFinite(anchor.z)) return;
-    const rect = canvasEl.getBoundingClientRect();
-    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
-    const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0));
-    const popupRect = bondOrderPopupEl.getBoundingClientRect();
-    const popupWidth = Math.max(132, Math.round(popupRect.width || bondOrderPopupEl.offsetWidth || 132));
-    const popupHeight = Math.max(72, Math.round(popupRect.height || bondOrderPopupEl.offsetHeight || 72));
-    const pad = 12;
-    let left = rect.left + ((anchor.x + 1) * 0.5 * rect.width) + 16;
-    let top = rect.top + ((1 - anchor.y) * 0.5 * rect.height) - (popupHeight * 0.5);
-    const maxLeft = Math.max(pad, viewportWidth - popupWidth - pad);
-    const maxTop = Math.max(pad, viewportHeight - popupHeight - pad);
-    if (left > maxLeft) left = Math.max(pad, rect.left + ((anchor.x + 1) * 0.5 * rect.width) - popupWidth - 16);
-    left = Math.max(pad, Math.min(maxLeft, left));
-    top = Math.max(pad, Math.min(maxTop, top));
-    bondOrderPopupEl.style.left = `${Math.round(left)}px`;
-    bondOrderPopupEl.style.top = `${Math.round(top)}px`;
-  }
-
-  /**
-   * Hide the clicked-bond order popup and clear its bond focus highlight.
-   */
-  function hideBondOrderPopup() {
-    if (editBondPopupCarrier) removeBondOverlay(editBondPopupCarrier, 'focusOverlay');
-    editBondPopupCarrier = null;
-    if (bondOrderPopupEl) bondOrderPopupEl.setAttribute('aria-hidden', 'true');
-  }
-
-  /**
-   * Show the clicked-bond order popup for one bond carrier.
-   * @param {*|null} carrier
-   */
-  function showBondOrderPopupForCarrier(carrier) {
-    if (!carrier || !carrier.userData || !canUseBondOrderPopup() || !bondOrderPopupEl) {
-      hideBondOrderPopup();
-      return;
-    }
-    if (editBondPopupCarrier && editBondPopupCarrier !== carrier) removeBondOverlay(editBondPopupCarrier, 'focusOverlay');
-    editBondPopupCarrier = carrier;
-    ensureBondOverlay(carrier, 'focusOverlay', 0x71a8ff, 0.96);
-    const activeOrder = getBondCarrierDisplayedOrder(carrier);
-    if (bondOrderPopupButtonsEl) {
-      const buttons = bondOrderPopupButtonsEl.querySelectorAll('button[data-bond-order-popup]');
-      for (const btn of buttons) {
-        const rawOrder = Number(btn.getAttribute('data-bond-order-popup'));
-        btn.classList.toggle('active', Number.isFinite(rawOrder) && rawOrder > 0 && normalizeEditAddBondOrder(rawOrder) === activeOrder);
-      }
-    }
-    bondOrderPopupEl.setAttribute('aria-hidden', 'false');
-    positionBondOrderPopup();
   }
 
   /**
@@ -15170,125 +15106,6 @@
     if (!hoverAtomMesh || !hoverAtomMesh.userData) return false;
     const idx = hoverAtomMesh.userData.index | 0;
     return deleteAtomAtIndex(idx);
-  }
-
-  /**
-   * Apply one bond-graph edit to the active record with history + rebuild.
-   * @param {*} record
-   * @param {*} vol
-   * @param {Array<object>} beforeBonds
-   * @param {string} actionLabel
-   * @returns {boolean}
-   */
-  function finalizeBondGraphEdit(record, vol, beforeBonds, actionLabel) {
-    if (!record || !vol || !Array.isArray(beforeBonds)) return false;
-    ensureVolumeSchema(vol, { inferMissingBonds: false });
-    const afterBonds = cloneBondSnapshot(vol);
-    if (bondSnapshotsEqual(beforeBonds, afterBonds)) return false;
-    const atomSnapshot = cloneAtomsSnapshot(vol);
-    pushEditHistoryEntry(record, atomSnapshot, atomSnapshot, actionLabel, {
-      beforeBonds,
-      afterBonds,
-    });
-    clearHover();
-    rebuildScene({ preserveView: true });
-    updateSidePanel();
-    return true;
-  }
-
-  /**
-   * Apply one bond-tool click on an existing bond carrier.
-   * @param {*} carrier
-   * @param {{orderOverride?:number,deleteOverride?:boolean}=} [options]
-   * @returns {boolean}
-   */
-  function applyBondToolToCarrier(carrier, options = {}) {
-    const record = ensureEditableVolumeRecord();
-    const vol = record && record.vol;
-    if (!record || !vol || !carrier || !carrier.userData) return false;
-    const i = carrier.userData.i | 0;
-    const j = carrier.userData.j | 0;
-    if (!Array.isArray(vol.atoms) || i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length || i === j) return false;
-    const atomA = vol.atoms[i];
-    const atomB = vol.atoms[j];
-    const atomIdA = ensureAtomId(atomA);
-    const atomIdB = ensureAtomId(atomB);
-    const beforeBonds = cloneBondSnapshot(vol);
-    if (options.deleteOverride || editBondAction === EDIT_BOND_ACTION.DELETE) {
-      if (!removeVolumeBond(vol, atomIdA, atomIdB)) {
-        setHintMessage('Bond tool: no explicit bond to delete.');
-        return false;
-      }
-      clearEditBondPendingSelection();
-      const symbolA = getElementSymbol(atomA.Z | 0);
-      const symbolB = getElementSymbol(atomB.Z | 0);
-      if (finalizeBondGraphEdit(record, vol, beforeBonds, `Delete bond ${symbolA}-${symbolB}`)) {
-        setHintMessage(`Deleted bond ${symbolA}-${symbolB}.`);
-        return true;
-      }
-      return false;
-    }
-    const nextOrder = normalizeEditAddBondOrder(Number.isFinite(options.orderOverride) ? options.orderOverride : editBondOrder);
-    const status = upsertVolumeBond(vol, atomIdA, atomIdB, nextOrder, 'normal');
-    clearEditBondPendingSelection();
-    if (!status || status === 'unchanged') {
-      setHintMessage(`Bond tool: ${getElementSymbol(atomA.Z | 0)}-${getElementSymbol(atomB.Z | 0)} is already order ${nextOrder}.`);
-      return false;
-    }
-    const symbolA = getElementSymbol(atomA.Z | 0);
-    const symbolB = getElementSymbol(atomB.Z | 0);
-    if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
-      setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Apply one bond-tool click on an atom index.
-   * @param {number} atomIndex
-   * @returns {boolean}
-   */
-  function applyBondToolToAtom(atomIndex) {
-    const record = ensureEditableVolumeRecord();
-    const vol = record && record.vol;
-    const idx = atomIndex | 0;
-    if (!record || !vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length) return false;
-    const atom = vol.atoms[idx];
-    const atomId = ensureAtomId(atom);
-    const pendingIndex = getEditBondPendingAtomIndex(vol);
-    if (pendingIndex < 0) {
-      editBondPendingAtomId = atomId;
-      updateSelectedHalos();
-      updateEditToolboxUi({ syncSearch: false });
-      setHintMessage(`Bond tool: first atom selected (${getElementSymbol(atom.Z | 0)}). Click a second atom to create/update a bond of order ${editBondOrder}.`);
-      return true;
-    }
-    if (pendingIndex === idx) {
-      clearEditBondPendingSelection();
-      setHintMessage('Bond tool: first atom selection cleared.');
-      return true;
-    }
-    const pendingAtom = vol.atoms[pendingIndex];
-    if (findVolumeBondRecordIndex(vol, ensureAtomId(pendingAtom), atomId) >= 0) {
-      clearEditBondPendingSelection();
-      setHintMessage(`Bond already exists between ${getElementSymbol(pendingAtom.Z | 0)} and ${getElementSymbol(atom.Z | 0)}. Click the bond to change its order.`);
-      return false;
-    }
-    const beforeBonds = cloneBondSnapshot(vol);
-    const status = upsertVolumeBond(vol, ensureAtomId(pendingAtom), atomId, editBondOrder, 'normal');
-    clearEditBondPendingSelection();
-    if (!status || status === 'unchanged') {
-      setHintMessage(`Bond already exists between ${getElementSymbol(pendingAtom.Z | 0)} and ${getElementSymbol(atom.Z | 0)}. Click the bond to change its order.`);
-      return false;
-    }
-    const symbolA = getElementSymbol(pendingAtom.Z | 0);
-    const symbolB = getElementSymbol(atom.Z | 0);
-    if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
-      setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${editBondOrder}.`);
-      return true;
-    }
-    return false;
   }
 
   /**
@@ -16118,11 +15935,13 @@
     if (typeof e.preventDefault === 'function') e.preventDefault();
     const bondHit = pickBondHit(e);
     if (!bondHit || !bondHit.object) {
-      hideBondOrderPopup();
+      if (bondEditing) bondEditing.hidePopup();
       return;
     }
-    hideBondOrderPopup();
-    applyBondToolToCarrier(bondHit.object, { deleteOverride: true });
+    if (bondEditing) {
+      bondEditing.hidePopup();
+      bondEditing.applyToCarrier(bondHit.object, { deleteOverride: true });
+    }
   });
 
   canvasEl.addEventListener('pointerdown', (e) => {
@@ -16158,16 +15977,13 @@
         return;
       }
       if (editTool === EDIT_TOOL.BOND) {
-        editBondClickCarrier = null;
-        editBondPopupClickHandled = false;
         const bondHit = pickBondHit(e);
         if (bondHit && bondHit.object) {
-          showBondOrderPopupForCarrier(bondHit.object);
-          editBondPopupClickHandled = true;
+          if (bondEditing) bondEditing.showPopupForCarrier(bondHit.object, { markClickHandled: true });
           e.preventDefault();
           return;
         }
-        hideBondOrderPopup();
+        if (bondEditing) bondEditing.hidePopup();
         const hit = pickAtomHit(e);
         if (hit && hit.object && hit.object.userData) {
           __editClickIdx = hit.object.userData.index | 0;
@@ -16439,23 +16255,21 @@
           if (!__editMoved && __editClickIdx >= 0) deleteAtomAtIndex(__editClickIdx);
         } else if (editTool === EDIT_TOOL.BOND) {
           if (!__editMoved) {
-            if (editBondPopupClickHandled) {
-              editBondPopupClickHandled = false;
-            } else if (editBondClickCarrier) {
-              applyBondToolToCarrier(editBondClickCarrier);
+            if (bondEditing && bondEditing.consumePopupClickHandled()) {
             } else if (__editClickIdx >= 0) {
-              hideBondOrderPopup();
-              applyBondToolToAtom(__editClickIdx);
+              if (bondEditing) {
+                bondEditing.hidePopup();
+                bondEditing.applyToAtom(__editClickIdx);
+              }
             } else if (getEditBondPendingAtomIndex((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null) >= 0) {
-              hideBondOrderPopup();
+              if (bondEditing) bondEditing.hidePopup();
               clearEditBondPendingSelection();
               setHintMessage('Bond tool selection cleared.');
             } else {
-              hideBondOrderPopup();
+              if (bondEditing) bondEditing.hidePopup();
             }
           }
-          editBondClickCarrier = null;
-          editBondPopupClickHandled = false;
+          if (bondEditing) bondEditing.clearState({ pendingSelection: false, popup: false });
         } else if (editTool === EDIT_TOOL.ADD) {
           if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
             if (moleculePlaceActive) {
@@ -16544,8 +16358,7 @@
     if (currentMode === MODES.DISPLAY) endQuaternionViewRotate(e);
     transformPendingSelectionTarget = null;
     transformPendingBackgroundClear = false;
-    editBondClickCarrier = null;
-    editBondPopupClickHandled = false;
+    if (bondEditing) bondEditing.clearState({ pendingSelection: false, popup: false });
     dragBeforeAtomsSnapshot = null;
     dragBeforeBondSnapshot = null;
     editSelectionClickAdditive = false;
