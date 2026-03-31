@@ -39,6 +39,7 @@ Primary capabilities:
 - `assets/app/js/structure.js`: minimal incremental structure schema helpers (atoms, bonds, builder annotations, structure export/import support).
 - `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate and marching-cubes isosurface helpers.
 - `assets/app/js/volume-2c.js`: 2C phase and Bloch-colored isosurface builders.
+- `assets/app/js/bond-inference.js`: covalent bond candidate generation, bond-order inference, and aromatic six-ring detection helpers.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
@@ -82,11 +83,12 @@ Required script order in `index.html`:
 15. `assets/app/js/structure.js`
 16. `assets/app/js/volume-geometry.js`
 17. `assets/app/js/volume-2c.js`
-18. `assets/app/js/bond-editing.js`
-19. `assets/app/js/edit-ui.js`
-20. `assets/app/js/edit-placement.js`
-21. `assets/app/js/edit-tools.js`
-22. `assets/app/js/app.js`
+18. `assets/app/js/bond-inference.js`
+19. `assets/app/js/bond-editing.js`
+20. `assets/app/js/edit-ui.js`
+21. `assets/app/js/edit-placement.js`
+22. `assets/app/js/edit-tools.js`
+23. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -102,6 +104,7 @@ Required script order in `index.html`:
 - `window.VibeMolStructureCore`
 - `window.VibeMolVolumeGeometry`
 - `window.VibeMolVolume2C`
+- `window.VibeMolBondInference`
 - `window.VibeMolBondEditing`
 - `window.VibeMolEditUi`
 - `window.VibeMolEditPlacement`
@@ -204,7 +207,7 @@ Discussed but not implemented yet (carry-forward backlog):
 - Onboarding “recent files” quick action (sample action exists; recent list not implemented).
 
 ## Bond Order Inference Algorithm
-Bond-order inference lives in `assets/app/js/app.js` and is enabled only when the `multi bonds` toggle is on.
+Bond-order inference lives in `assets/app/js/bond-inference.js` and is enabled only when the `multi bonds` toggle is on.
 
 1. Candidate bond generation (`collectBondCandidates`):
 - Build edges from interatomic distances using covalent radii.
@@ -261,6 +264,7 @@ Fast JS syntax checks:
 - `node --check assets/app/js/structure.js`
 - `node --check assets/app/js/volume-geometry.js`
 - `node --check assets/app/js/volume-2c.js`
+- `node --check assets/app/js/bond-inference.js`
 - `node --check assets/app/js/bond-editing.js`
 - `node --check assets/app/js/edit-ui.js`
 - `node --check assets/app/js/edit-state.js`

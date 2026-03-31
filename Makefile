@@ -12,6 +12,7 @@ JS_CHECK_FILES = \
 	assets/app/js/structure.js \
 	assets/app/js/volume-geometry.js \
 	assets/app/js/volume-2c.js \
+	assets/app/js/bond-inference.js \
 	assets/app/js/bond-editing.js \
 	assets/app/js/edit-ui.js \
 	assets/app/js/edit-placement.js \
