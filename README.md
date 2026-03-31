@@ -85,6 +85,7 @@ The CLI supports:
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders
 - `assets/app/js/preset.js`: preset registry, import/export controller, and builder-extension preset state helpers
 - `assets/app/js/structure-transport.js`: reproducible structure envelope export/import controller and `window.VibeMolStructure` public API
+- `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, and embed file-loading controller
 - `assets/app/js/edit-state.js`: edit-history and editable-record controller
 - `assets/app/js/edit-placement.js`: add/placement workflows for atoms, fragments, and molecules
 - `assets/app/js/edit-tools.js`: edit tool and selection coordination
@@ -114,6 +115,7 @@ node --check assets/app/js/autoiso.js
 node --check assets/app/js/cloud-rendering.js
 node --check assets/app/js/preset.js
 node --check assets/app/js/structure-transport.js
+node --check assets/app/js/file-loader.js
 node --check assets/app/js/app.js
 ```
 

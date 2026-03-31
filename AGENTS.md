@@ -44,6 +44,7 @@ Primary capabilities:
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders.
 - `assets/app/js/preset.js`: preset registry, import/export controller, and builder-extension preset state helpers.
 - `assets/app/js/structure-transport.js`: reproducible structure envelope export/import controller and `window.VibeMolStructure` API.
+- `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, and embed file-loading controller.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
@@ -96,7 +97,8 @@ Required script order in `index.html`:
 24. `assets/app/js/edit-tools.js`
 25. `assets/app/js/preset.js`
 26. `assets/app/js/structure-transport.js`
-27. `assets/app/js/app.js`
+27. `assets/app/js/file-loader.js`
+28. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -121,6 +123,7 @@ Required script order in `index.html`:
 - `window.VibeMolEditTools`
 - `window.VibeMolPresetModule`
 - `window.VibeMolStructureTransport`
+- `window.VibeMolFileLoader`
 
 Preset automation contract exposed globally:
 - `window.VibeMolPreset.kind`
@@ -281,6 +284,7 @@ Fast JS syntax checks:
 - `node --check assets/app/js/cloud-rendering.js`
 - `node --check assets/app/js/preset.js`
 - `node --check assets/app/js/structure-transport.js`
+- `node --check assets/app/js/file-loader.js`
 - `node --check assets/app/js/bond-editing.js`
 - `node --check assets/app/js/edit-ui.js`
 - `node --check assets/app/js/edit-state.js`
