@@ -35,6 +35,8 @@
       --text: var(--vm-color-text-main);
       --muted: var(--vm-color-text-muted);
       --accent: var(--vm-color-accent-primary);
+      --floating-panel-top-offset: 68px;
+      --floating-panel-bottom-clearance: 64px;
     }
 
     html,
@@ -416,10 +418,10 @@
     /* View window: floating panel that sizes to content. */
     #sidePanel {
       position: fixed;
-      top: 12px;
+      top: var(--floating-panel-top-offset);
       right: 12px;
       width: min(420px, calc(100vw - 24px));
-      max-height: calc(100vh - 24px);
+      max-height: calc(100vh - var(--floating-panel-top-offset) - var(--floating-panel-bottom-clearance));
       height: auto;
       background: var(--panel);
       border: 1px solid var(--vm-color-legacy-border-strong);
@@ -440,8 +442,10 @@
     /* Dedicated motion control windows */
     .motionPanel {
       position: fixed;
+      top: var(--floating-panel-top-offset);
       right: 12px;
       width: min(420px, calc(100vw - 24px));
+      max-height: calc(100vh - var(--floating-panel-top-offset) - var(--floating-panel-bottom-clearance));
       background: var(--panel);
       border: 1px solid var(--vm-color-legacy-border-strong);
       border-radius: 10px;
@@ -454,19 +458,9 @@
       display: block;
     }
 
-    #trajectoryPanel {
-      top: 68px;
-    }
-
-    #coordsPanel {
-      top: 68px;
-      max-height: calc(100vh - 80px);
-      overflow: hidden;
-    }
-
+    #coordsPanel,
+    #trajectoryPanel,
     #vibrationPanel {
-      top: 12px;
-      max-height: calc(100vh - 12px - var(--vibration-panel-bottom-clearance, 84px));
       overflow: hidden;
     }
 
@@ -743,12 +737,8 @@
     }
 
     @media (max-width: 900px) {
-      #trajectoryPanel {
-        top: 68px;
-      }
-
-      #coordsPanel {
-        top: 68px;
+      :root {
+        --floating-panel-top-offset: 68px;
       }
     }
 
@@ -2258,18 +2248,6 @@
     body:not(.sidebar-collapsed) #shortcutRibbon {
       display: none !important;
       visibility: hidden;
-    }
-
-    #sidePanel {
-      top: 12px;
-    }
-
-    #trajectoryPanel {
-      top: 12px;
-    }
-
-    #vibrationPanel {
-      top: 12px;
     }
 
     @media (max-width: 980px) {
