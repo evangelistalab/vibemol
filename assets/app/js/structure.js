@@ -543,6 +543,119 @@
     return vol;
   }
 
+  /**
+   * Build one clipboard-friendly substructure payload from selected atoms.
+   * Atom coordinates are copied as-is unless one mapper overrides them.
+   * Bonds are remapped to local clipboard atom indices.
+   * @param {*} vol
+   * @param {Array<number>} atomIndices
+   * @param {{mapAtom?:(atom:object, sourceAtom:object, sourceIndex:number, localIndex:number)=>object}=} options
+   * @returns {{atoms:Array<{atom:object,builderMeta:object}>,bonds:Array<{a:number,b:number,order:number,kind:string}>}|null}
+   */
+  function buildVolumeSelectionClipboard(vol, atomIndices, options = {}) {
+    if (!vol || !Array.isArray(vol.atoms)) return null;
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const selection = Array.from(new Set((Array.isArray(atomIndices) ? atomIndices : [])
+      .map((idx) => Number(idx) | 0)
+      .filter((idx) => idx >= 0 && idx < vol.atoms.length)))
+      .sort((a, b) => a - b);
+    if (!selection.length) return null;
+    const mapAtom = typeof options.mapAtom === 'function' ? options.mapAtom : null;
+    const atomIdToLocalIndex = new Map();
+    const atoms = selection.map((sourceIndex, localIndex) => {
+      const sourceAtom = vol.atoms[sourceIndex];
+      const sourceAtomId = ensureAtomId(sourceAtom);
+      atomIdToLocalIndex.set(sourceAtomId, localIndex);
+      let atom = normalizeVolumeAtom(sourceAtom);
+      if (mapAtom) {
+        const mapped = mapAtom(Object.assign({}, atom), sourceAtom, sourceIndex, localIndex);
+        if (mapped && typeof mapped === 'object') atom = normalizeVolumeAtom(mapped);
+      }
+      return {
+        atom,
+        builderMeta: getAtomBuilderMeta(vol, sourceAtom),
+      };
+    });
+    const bonds = cloneBondSnapshot(vol)
+      .map((bond) => {
+        const localA = atomIdToLocalIndex.get(String(bond.a || ''));
+        const localB = atomIdToLocalIndex.get(String(bond.b || ''));
+        if (!Number.isInteger(localA) || !Number.isInteger(localB) || localA === localB) return null;
+        return {
+          a: localA,
+          b: localB,
+          order: normalizeEditAddBondOrder(bond.order || 1),
+          kind: normalizeVolumeBondKind(bond.kind),
+        };
+      })
+      .filter(Boolean);
+    return { atoms, bonds };
+  }
+
+  /**
+   * Append one clipboard substructure payload into a volume using fresh atom ids.
+   * Builder group ids are remapped so pasted groups remain distinct from the source.
+   * @param {*} vol
+   * @param {{atoms?:Array<{atom:object,builderMeta?:object}>,bonds?:Array<{a:number,b:number,order:number,kind:string}>}} payload
+   * @param {{mapAtom?:(atom:object, entry:object, localIndex:number)=>object}=} options
+   * @returns {{atomIndices:Array<number>,atomIds:Array<string>,bondCount:number}}
+   */
+  function appendVolumeSelectionClipboard(vol, payload, options = {}) {
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const entries = Array.isArray(payload && payload.atoms) ? payload.atoms : [];
+    if (!entries.length) return { atomIndices: [], atomIds: [], bondCount: 0 };
+    const mapAtom = typeof options.mapAtom === 'function' ? options.mapAtom : null;
+    const groupIdRemap = new Map();
+    const atomIndices = [];
+    const atomIds = [];
+    for (let localIndex = 0; localIndex < entries.length; localIndex += 1) {
+      const entry = entries[localIndex] || {};
+      const rawAtom = Object.assign({}, entry.atom || {});
+      delete rawAtom.id;
+      let atom = normalizeVolumeAtom(rawAtom);
+      if (mapAtom) {
+        const mapped = mapAtom(Object.assign({}, atom), entry, localIndex);
+        if (mapped && typeof mapped === 'object') atom = normalizeVolumeAtom(mapped);
+      }
+      vol.atoms.push(atom);
+      vol.natoms = vol.atoms.length;
+      atomIndices.push(vol.atoms.length - 1);
+      atomIds.push(ensureAtomId(atom));
+      const meta = entry.builderMeta && typeof entry.builderMeta === 'object' ? entry.builderMeta : {};
+      const sourceGroupId = String(meta.groupId || '').trim();
+      let groupId = '';
+      if (sourceGroupId) {
+        groupId = groupIdRemap.get(sourceGroupId) || '';
+        if (!groupId) {
+          groupId = allocateBuilderGroupId();
+          groupIdRemap.set(sourceGroupId, groupId);
+        }
+      }
+      setAtomBuilderMeta(vol, atom, {
+        groupId,
+        entryId: String(meta.entryId || '').trim().toLowerCase(),
+        entryKind: String(meta.entryKind || '').trim().toLowerCase(),
+      });
+    }
+    let bondCount = 0;
+    const bonds = Array.isArray(payload && payload.bonds) ? payload.bonds : [];
+    for (const rawBond of bonds) {
+      if (!rawBond || typeof rawBond !== 'object') continue;
+      const localA = Number(rawBond.a) | 0;
+      const localB = Number(rawBond.b) | 0;
+      if (localA < 0 || localB < 0 || localA >= atomIds.length || localB >= atomIds.length || localA === localB) continue;
+      const result = upsertVolumeBond(
+        vol,
+        atomIds[localA],
+        atomIds[localB],
+        rawBond.order || 1,
+        rawBond.kind || 'normal'
+      );
+      if (result === 'created' || result === 'updated') bondCount += 1;
+    }
+    return { atomIndices, atomIds, bondCount };
+  }
+
   window.VibeMolStructureCore = Object.freeze({
     cloneJsonLike,
     cloneJsonStructuredData,
@@ -571,5 +684,7 @@
     upsertVolumeBond,
     removeVolumeBond,
     rehydrateClonedVolume,
+    buildVolumeSelectionClipboard,
+    appendVolumeSelectionClipboard,
   });
 })();

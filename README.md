@@ -89,6 +89,8 @@ The CLI supports:
 - `assets/app/js/edit-state.js`: edit-history and editable-record controller
 - `assets/app/js/edit-placement.js`: add/placement workflows for atoms, fragments, and molecules
 - `assets/app/js/edit-tools.js`: edit tool and selection coordination
+- `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover, and picking helpers
+- `assets/app/js/edit-transform.js`: shared move/rotate transform-session and pointer-routing controller
 - `assets/app/js/edit-ui.js`: adaptive edit UI and operator-panel helpers
 - `api/vibemol_client.py`: Playwright automation client
 - `tests/unit/`: Node built-in unit tests for browserless logic modules
@@ -113,6 +115,8 @@ node --check assets/app/js/volume-2c.js
 node --check assets/app/js/bond-inference.js
 node --check assets/app/js/autoiso.js
 node --check assets/app/js/cloud-rendering.js
+node --check assets/app/js/edit-gizmos.js
+node --check assets/app/js/edit-transform.js
 node --check assets/app/js/preset.js
 node --check assets/app/js/structure-transport.js
 node --check assets/app/js/file-loader.js

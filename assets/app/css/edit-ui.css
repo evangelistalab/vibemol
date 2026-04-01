@@ -127,6 +127,24 @@
   display: block;
 }
 
+#editSelectionMarquee {
+  position: fixed;
+  display: none;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border: 1px solid rgba(83, 151, 255, 0.9);
+  background: rgba(83, 151, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 35;
+}
+
+#editSelectionMarquee[aria-hidden="false"] {
+  display: block;
+}
+
 #bondOrderPopup {
   position: fixed;
   display: none;
@@ -189,7 +207,9 @@
 }
 
 #editAddAtomOperatorPanel,
-#editAddMoleculeOperatorPanel {
+#editAddMoleculeOperatorPanel,
+#editMoveOperatorPanel,
+#editRotateOperatorPanel {
   position: fixed;
   right: 16px;
   bottom: 24px;
@@ -206,12 +226,16 @@
 }
 
 #editAddAtomOperatorPanel[aria-hidden="false"],
-#editAddMoleculeOperatorPanel[aria-hidden="false"] {
+#editAddMoleculeOperatorPanel[aria-hidden="false"],
+#editMoveOperatorPanel[aria-hidden="false"],
+#editRotateOperatorPanel[aria-hidden="false"] {
   display: block;
 }
 
 #editAddAtomOperatorHeader,
-#editAddMoleculeOperatorHeader {
+#editAddMoleculeOperatorHeader,
+#editMoveOperatorHeader,
+#editRotateOperatorHeader {
   appearance: none;
   width: 100%;
   display: flex;
@@ -227,7 +251,9 @@
 }
 
 #editAddAtomOperatorHeader:hover,
-#editAddMoleculeOperatorHeader:hover {
+#editAddMoleculeOperatorHeader:hover,
+#editMoveOperatorHeader:hover,
+#editRotateOperatorHeader:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -259,16 +285,24 @@
 }
 
 #editAddAtomOperatorBody,
-#editAddMoleculeOperatorBody {
+#editAddMoleculeOperatorBody,
+#editMoveOperatorBody,
+#editRotateOperatorBody {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto max-content;
   gap: 8px 10px;
   padding: 0 12px 12px;
   align-items: center;
 }
 
+#editAddMoleculeOperatorBody {
+  column-gap: 6px;
+}
+
 #editAddAtomOperatorPanel[data-collapsed="true"] #editAddAtomOperatorBody,
-#editAddMoleculeOperatorPanel[data-collapsed="true"] #editAddMoleculeOperatorBody {
+#editAddMoleculeOperatorPanel[data-collapsed="true"] #editAddMoleculeOperatorBody,
+#editMoveOperatorPanel[data-collapsed="true"] #editMoveOperatorBody,
+#editRotateOperatorPanel[data-collapsed="true"] #editRotateOperatorBody {
   display: none;
 }
 
@@ -281,8 +315,8 @@
 }
 
 .editAddAtomOperatorCoord {
-  width: 100%;
-  min-width: 0;
+  width: 84px;
+  min-width: 84px;
   border: 1px solid rgba(117, 129, 150, 0.28);
   border-radius: 8px;
   background: rgba(94, 100, 109, 0.9);
@@ -309,18 +343,28 @@
 .editAddMoleculeOperatorButtonRow {
   grid-column: 1 / -1;
   display: flex;
+  align-items: center;
   gap: 6px;
   padding-top: 2px;
 }
 
+.editAddMoleculeOperatorButtonLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(214, 221, 233, 0.78);
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
 .editAddMoleculeOperatorButtonRow button {
   appearance: none;
-  flex: 1 1 0;
+  flex: 0 0 auto;
   border: 1px solid rgba(117, 129, 150, 0.28);
   border-radius: 8px;
   background: rgba(94, 100, 109, 0.9);
   color: #f2f5fa;
-  padding: 6px 8px;
+  min-width: 24px;
+  padding: 6px 0;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;

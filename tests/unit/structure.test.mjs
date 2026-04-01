@@ -101,3 +101,72 @@ test('ensureVolumeSchema can infer missing bonds via callback', () => {
     { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal' },
   ]);
 });
+
+test('structure clipboard helpers clone selected substructures with remapped builder groups and bonds', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = {
+      atoms: [
+        { id: 'atom-1', Z: 6, x: -1.0, y: 0.0, z: 0.0, formalCharge: 0 },
+        { id: 'atom-2', Z: 6, x: 1.0, y: 0.0, z: 0.0, formalCharge: 0 },
+        { id: 'atom-3', Z: 1, x: 2.0, y: 0.0, z: 0.0, formalCharge: 0 },
+      ],
+      bonds: [
+        { a: 'atom-1', b: 'atom-2', order: 2, kind: 'normal' },
+        { a: 'atom-2', b: 'atom-3', order: 1, kind: 'normal' },
+      ],
+      annotations: {
+        builder: {
+          byAtomId: {
+            'atom-1': { groupId: 'group-9', entryId: 'benzene', entryKind: 'molecule' },
+            'atom-2': { groupId: 'group-9', entryId: 'benzene', entryKind: 'molecule' },
+          },
+        },
+      },
+    };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const payload = window.VibeMolStructureCore.buildVolumeSelectionClipboard(vol, [0, 1], {
+      mapAtom(atom) {
+        return { ...atom, x: atom.x + 10 };
+      },
+    });
+    const appended = window.VibeMolStructureCore.appendVolumeSelectionClipboard(vol, payload, {
+      mapAtom(atom) {
+        return { ...atom, x: atom.x + 5 };
+      },
+    });
+    return {
+      payload,
+      appended,
+      totalAtoms: vol.atoms.length,
+      totalBonds: vol.bonds.length,
+      newAtoms: appended.atomIndices.map((idx) => vol.atoms[idx]),
+      newMetas: appended.atomIndices.map((idx) => window.VibeMolStructureCore.getAtomBuilderMeta(vol, idx)),
+      bondSnapshot: window.VibeMolStructureCore.cloneBondSnapshot(vol),
+    };
+  })())`));
+
+  assert.equal(result.payload.atoms.length, 2);
+  assert.equal(result.payload.bonds.length, 1);
+  assert.equal(result.payload.bonds[0].order, 2);
+  assert.equal(result.totalAtoms, 5);
+  assert.equal(result.totalBonds, 3);
+  assert.equal(result.appended.atomIndices.length, 2);
+  assert.notEqual(result.newAtoms[0].id, 'atom-1');
+  assert.notEqual(result.newAtoms[1].id, 'atom-2');
+  assert.equal(result.newAtoms[0].x, 14);
+  assert.equal(result.newAtoms[1].x, 16);
+  assert.equal(result.newMetas[0].entryId, 'benzene');
+  assert.equal(result.newMetas[1].entryKind, 'molecule');
+  assert.match(result.newMetas[0].groupId, /^group-\d+$/);
+  assert.equal(result.newMetas[0].groupId, result.newMetas[1].groupId);
+  assert.notEqual(result.newMetas[0].groupId, 'group-9');
+  const duplicateBond = result.bondSnapshot.find((bond) => bond.a === result.newAtoms[0].id && bond.b === result.newAtoms[1].id);
+  assert.deepEqual(duplicateBond, {
+    id: `bond:${[result.newAtoms[0].id, result.newAtoms[1].id].sort().join(':')}`,
+    a: result.newAtoms[0].id,
+    b: result.newAtoms[1].id,
+    order: 2,
+    kind: 'normal',
+  });
+});

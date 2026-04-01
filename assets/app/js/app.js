@@ -24,6 +24,7 @@
   const MOLDEN_GRID_MAX_AXIS = 84;
   const MOLDEN_GRID_MIN_AXIS = 36;
   const MOLDEN_GRID_MAX_TOTAL_POINTS = 360000;
+  const UI_THEME_STORAGE_KEY = 'vibemol.uiTheme';
   const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
   const DEFAULT_ISO_VALUE = 0.02;
   const HEADER_HAPPY_EMOJIS = Object.freeze(['🙂', '😊', '😄', '😃', '😁', '😎', '🤓', '😺', '🤠', '🫡', '😇', '😍', '🫡', '🥳']);
@@ -164,6 +165,8 @@
     upsertVolumeBond,
     removeVolumeBond,
     rehydrateClonedVolume: rehydrateClonedVolumeCore,
+    buildVolumeSelectionClipboard,
+    appendVolumeSelectionClipboard,
   } = window.VibeMolStructureCore || {};
   if (![
     cloneJsonLike,
@@ -193,6 +196,8 @@
     upsertVolumeBond,
     removeVolumeBond,
     rehydrateClonedVolumeCore,
+    buildVolumeSelectionClipboard,
+    appendVolumeSelectionClipboard,
   ].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolStructureCore is not loaded. Ensure assets/app/js/structure.js is included before assets/app/js/app.js.');
   }
@@ -208,6 +213,8 @@
     positionRightOperatorPanel: positionRightOperatorPanelUi,
     updateAddAtomOperatorPanelUi,
     updateAddMoleculeOperatorPanelUi,
+    updateMoveOperatorPanelUi,
+    updateRotateOperatorPanelUi,
     createAdaptivePopoverController,
     bindAdaptivePopoverItem,
   } = window.VibeMolEditUi || {};
@@ -217,6 +224,8 @@
     positionRightOperatorPanelUi,
     updateAddAtomOperatorPanelUi,
     updateAddMoleculeOperatorPanelUi,
+    updateMoveOperatorPanelUi,
+    updateRotateOperatorPanelUi,
     createAdaptivePopoverController,
     bindAdaptivePopoverItem,
   ].every(fn => typeof fn === 'function')) {
@@ -231,6 +240,16 @@
   const { createEditToolsController } = window.VibeMolEditTools || {};
   if (![createEditToolsController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolEditTools is not loaded. Ensure assets/app/js/edit-tools.js is included before assets/app/js/app.js.');
+  }
+
+  const { createEditGizmosController } = window.VibeMolEditGizmos || {};
+  if (![createEditGizmosController].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolEditGizmos is not loaded. Ensure assets/app/js/edit-gizmos.js is included before assets/app/js/app.js.');
+  }
+
+  const { createEditTransformController } = window.VibeMolEditTransform || {};
+  if (![createEditTransformController].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolEditTransform is not loaded. Ensure assets/app/js/edit-transform.js is included before assets/app/js/app.js.');
   }
 
   const { createPresetController } = window.VibeMolPresetModule || {};
@@ -713,6 +732,14 @@
     const addMoleculeOperatorPanelEl = document.getElementById('editAddMoleculeOperatorPanel');
     if (addMoleculeOperatorPanelEl && addMoleculeOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
       positionAddMoleculeOperatorPanel();
+    }
+    const moveOperatorPanelEl = document.getElementById('editMoveOperatorPanel');
+    if (moveOperatorPanelEl && moveOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
+      positionMoveOperatorPanel();
+    }
+    const rotateOperatorPanelEl = document.getElementById('editRotateOperatorPanel');
+    if (rotateOperatorPanelEl && rotateOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
+      positionRotateOperatorPanel();
     }
     const currentBondOrderPopupEl = document.getElementById('bondOrderPopup');
     if (currentBondOrderPopupEl && currentBondOrderPopupEl.getAttribute('aria-hidden') === 'false') {
@@ -5323,14 +5350,13 @@
   const cloudTypeSel = document.getElementById('cloudType');
   const cloudStrideEl = document.getElementById('cloudStride');
   const cloudAlphaEl = document.getElementById('cloudAlpha');
-  const axisLockEl = document.getElementById('axisLock');
-  const axisXBtn = document.getElementById('axisX');
-  const axisYBtn = document.getElementById('axisY');
-  const axisZBtn = document.getElementById('axisZ');
   const editAdaptiveMenuEl = document.getElementById('editAdaptiveMenu');
   const editAdaptiveSelectionBtn = document.getElementById('editAdaptiveSelectionBtn');
   const editAdaptiveSelectionMetaEl = document.getElementById('editAdaptiveSelectionMeta');
   const editAdaptiveMoveBtn = document.getElementById('editAdaptiveMoveBtn');
+  const editAdaptiveMoveMetaEl = document.getElementById('editAdaptiveMoveMeta');
+  const editAdaptiveRotateBtn = document.getElementById('editAdaptiveRotateBtn');
+  const editAdaptiveRotateMetaEl = document.getElementById('editAdaptiveRotateMeta');
   const editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
   const editAdaptiveAddAtomMetaEl = document.getElementById('editAdaptiveAddAtomMeta');
   const editAdaptiveAddFragmentBtn = document.getElementById('editAdaptiveAddFragmentBtn');
@@ -5346,6 +5372,7 @@
   const editAdaptiveAddFragmentPopoverEl = document.getElementById('editAdaptiveAddFragmentPopover');
   const editAdaptiveAddMoleculePopoverEl = document.getElementById('editAdaptiveAddMoleculePopover');
   const editAdaptiveTransformPopoverEl = document.getElementById('editAdaptiveTransformPopover');
+  const editSelectionMarqueeEl = document.getElementById('editSelectionMarquee');
   const editAddAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
   const editAddAtomOperatorHeaderEl = document.getElementById('editAddAtomOperatorHeader');
   const editAddAtomOperatorChevronEl = document.getElementById('editAddAtomOperatorChevron');
@@ -5366,6 +5393,20 @@
   const editAddMoleculeOperatorAlignXBtn = document.getElementById('editAddMoleculeOperatorAlignX');
   const editAddMoleculeOperatorAlignYBtn = document.getElementById('editAddMoleculeOperatorAlignY');
   const editAddMoleculeOperatorAlignZBtn = document.getElementById('editAddMoleculeOperatorAlignZ');
+  const editMoveOperatorPanelEl = document.getElementById('editMoveOperatorPanel');
+  const editMoveOperatorHeaderEl = document.getElementById('editMoveOperatorHeader');
+  const editMoveOperatorChevronEl = document.getElementById('editMoveOperatorChevron');
+  const editMoveOperatorLabelEl = document.getElementById('editMoveOperatorLabel');
+  const editMoveOperatorXEl = document.getElementById('editMoveOperatorX');
+  const editMoveOperatorYEl = document.getElementById('editMoveOperatorY');
+  const editMoveOperatorZEl = document.getElementById('editMoveOperatorZ');
+  const editRotateOperatorPanelEl = document.getElementById('editRotateOperatorPanel');
+  const editRotateOperatorHeaderEl = document.getElementById('editRotateOperatorHeader');
+  const editRotateOperatorChevronEl = document.getElementById('editRotateOperatorChevron');
+  const editRotateOperatorLabelEl = document.getElementById('editRotateOperatorLabel');
+  const editRotateOperatorXEl = document.getElementById('editRotateOperatorX');
+  const editRotateOperatorYEl = document.getElementById('editRotateOperatorY');
+  const editRotateOperatorZEl = document.getElementById('editRotateOperatorZ');
   const bondOrderPopupEl = document.getElementById('bondOrderPopup');
   const bondOrderPopupButtonsEl = document.getElementById('bondOrderPopupButtons');
   const editToolboxEl = document.getElementById('editToolbox');
@@ -5433,6 +5474,8 @@
   const modeDisplayBtn = document.getElementById('modeDisplayBtn');
   const modeMeasureBtn = document.getElementById('modeMeasureBtn');
   const modeEditBtn = document.getElementById('modeEditBtn');
+  const themeToggleInputEl = document.getElementById('themeToggleInput');
+  const themeToggleShellEl = document.getElementById('themeToggleShell');
   const brandEmojiEl = document.getElementById('brandEmoji');
   const surfaceHoverLabelEl = (() => {
     const el = document.createElement('div');
@@ -5463,6 +5506,62 @@
   let toolbarTooltipAnchorEl = null;
   let global2CComponentMode = DEFAULT_2C_COMPONENT_MODE;
   if (twoComponentModeSelect) twoComponentModeSelect.value = global2CComponentMode;
+
+  /**
+   * Read the currently active UI theme from the document root.
+   * @returns {'light'|'dark'}
+   */
+  function getUiTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  /**
+   * Persist one UI theme choice when possible.
+   * @param {'light'|'dark'} theme
+   */
+  function persistUiTheme(theme) {
+    try {
+      window.localStorage.setItem(UI_THEME_STORAGE_KEY, theme);
+    } catch { }
+  }
+
+  /**
+   * Apply one UI theme to the document root and toggle control.
+   * This affects app chrome only; the scene background remains controlled by BG.
+   * @param {'light'|'dark'} theme
+   */
+  function applyUiTheme(theme) {
+    const next = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    if (themeToggleInputEl) {
+      themeToggleInputEl.checked = (next === 'dark');
+      themeToggleInputEl.setAttribute('aria-checked', next === 'dark' ? 'true' : 'false');
+    }
+    if (themeToggleShellEl) {
+      themeToggleShellEl.setAttribute('aria-label', `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`);
+      themeToggleShellEl.title = `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`;
+    }
+  }
+
+  /**
+   * Initialize the persisted UI theme and bind the top-right toggle.
+   */
+  function initializeUiThemeToggle() {
+    let storedTheme = null;
+    try {
+      storedTheme = window.localStorage.getItem(UI_THEME_STORAGE_KEY);
+    } catch {
+      storedTheme = null;
+    }
+    applyUiTheme(storedTheme === 'dark' ? 'dark' : 'light');
+    if (themeToggleInputEl) {
+      themeToggleInputEl.addEventListener('change', () => {
+        const next = themeToggleInputEl.checked ? 'dark' : 'light';
+        applyUiTheme(next);
+        persistUiTheme(next);
+      });
+    }
+  }
 
   /**
    * Build one compact option label for a parsed Molden molecular orbital.
@@ -6205,6 +6304,7 @@
   if (toolbarCollapseBtn) toolbarCollapseBtn.onclick = () => setWorkspaceSidebarCollapsed(true);
   if (toolbarShowBtn) toolbarShowBtn.onclick = () => setWorkspaceSidebarCollapsed(false);
   setWorkspaceSidebarCollapsed(false);
+  initializeUiThemeToggle();
 
   /**
    * Pick one happy emoji for the toolbar brand on each page load.
@@ -6683,6 +6783,7 @@
       { k: 'E', d: 'Exit edit' },
       { k: 'S', d: 'Selection tool' },
       { k: 'G', d: 'Move tool' },
+      { k: 'O', d: 'Rotate tool' },
       { k: 'N', d: 'Add-atom tool' },
       { k: 'F', d: 'Add-fragment tool' },
       { k: 'M', d: 'Add-molecule tool' },
@@ -6690,12 +6791,15 @@
       { k: 'T', d: 'Transform tool' },
       { k: 'D', d: 'Delete tool' },
       { k: 'Cmd/Ctrl+A', d: 'Select all atoms (Selection)' },
+      { k: 'Cmd/Ctrl+C', d: 'Copy selected atoms' },
+      { k: 'Cmd/Ctrl+V', d: 'Paste copied atoms' },
       { k: '1/2/3/4', d: 'Bond order (Add/Bond tool)' },
       { k: 'C', d: 'Coordinates window (non-Add tools)' },
       { k: 'Click', d: 'Select atom (Selection)' },
       { k: 'Shift+Click', d: 'Add/remove atom (Selection)' },
       { k: 'Click empty', d: 'Clear selection (Selection)' },
-      { k: 'Click+Drag', d: 'Move atom (Move tool)' },
+      { k: 'Click+Drag', d: 'Move selection or atom (Move tool)' },
+      { k: 'Click+Drag', d: 'Rotate selection or atom (Rotate tool)' },
       { k: 'Click', d: 'Add atom (Add tool)' },
       { k: 'Click', d: 'Edit bond (Bond tool)' },
       { k: 'Click+Drag', d: 'Transform selection (Transform tool)' },
@@ -6704,7 +6808,7 @@
       { k: 'R', d: 'Center mass at origin' },
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
       { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
-      { k: 'X/Y/Z', d: 'Axis lock' },
+      { k: 'X/Y/Z', d: 'Align molecule (Add molecule)' },
       { k: 'Shift+Drag', d: 'Bypass auto angle snap (Add tool)' },
     ],
     measure: [
@@ -7163,15 +7267,29 @@
   let transformPendingSelectionTarget = null;
   let dragActive = false;
   let dragAtomIndex = -1;
+  let dragTargetIndices = [];
+  let dragStartWorldPositions = [];
+  let dragPivotWorld = null;
+  let dragPivotStartWorld = null;
   let dragStartPos = null;
   let dragOrigMeshPos = null;
   let dragOrigAtomUnits = null;
   let dragPlane = null;
   let dragPlaneStart = null;
   let dragAxis = 'none';
-  let axisLock = 'none'; // 'none'|'x'|'y'|'z'
-  let axisKeyDown = null; // current held axis key ('x'|'y'|'z') to avoid auto-repeat toggling
-  const EDIT_TOOL = Object.freeze({ SELECT: 'select', MOVE: 'move', ADD: 'add', BOND: 'bond', TRANSFORM: 'transform', DELETE: 'delete' });
+  let moveOperatorCollapsed = true;
+  let moveOperatorBaseline = null;
+  let rotateOperatorCollapsed = true;
+  let rotateOperatorBaseline = null;
+  let rotateDragActive = false;
+  let rotateDragAxis = 'none';
+  let rotateDragPlane = null;
+  let rotateDragStartDir = null;
+  let rotateDragLastClientX = 0;
+  let rotateDragLastClientY = 0;
+  let editClipboardSelection = null;
+  let editClipboardPasteSerial = 0;
+  const EDIT_TOOL = Object.freeze({ SELECT: 'select', MOVE: 'move', ROTATE: 'rotate', ADD: 'add', BOND: 'bond', TRANSFORM: 'transform', DELETE: 'delete' });
   const EDIT_BOND_ACTION = Object.freeze({ SET: 'set', DELETE: 'delete' });
   const EDIT_ADD_MODE = Object.freeze({ ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' });
   const CATALOG_KIND = Object.freeze({ FRAGMENT: 'fragment', MOLECULE: 'molecule' });
@@ -7200,6 +7318,8 @@
   let editBondOrder = 1;
   let editBondAction = EDIT_BOND_ACTION.SET;
   let bondEditing = null;
+  let editGizmos = null;
+  let editTransformController = null;
   let measurementLabelHoverSprite = null;
   let measurementLabelHoverKey = '';
   let measurementLabelDragState = null;
@@ -7260,7 +7380,7 @@
   let editAddFragmentId = (getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT) && getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT).id) || ((getCatalogEntries(CATALOG_KIND.FRAGMENT)[0] && getCatalogEntries(CATALOG_KIND.FRAGMENT)[0].id) || 'methyl');
   let editAddMoleculeId = (getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE) && getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE).id) || ((getCatalogEntries(CATALOG_KIND.MOLECULE)[0] && getCatalogEntries(CATALOG_KIND.MOLECULE)[0].id) || 'benzene');
   let editTransformScope = EDIT_TRANSFORM_SCOPE.AUTO;
-  let editTransformMode = EDIT_TRANSFORM_MODE.MOVE;
+  let editTransformMode = EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT;
   let editTransformAutoCleanupEnabled = true;
   const EDIT_ANGLE_SNAP_OPTIONS = Object.freeze([60, 90, 109.5, 120, 180]);
   let addGrowDetectedAngleDeg = 0;
@@ -7291,10 +7411,9 @@
   let transformAppliesToGrid = false;
   let transformPivotWorld = null;
   let transformDragPlane = null;
-  let transformPlaneStart = null;
   let transformRotateAxis = null;
   let transformRotateStartDir = null;
-  let transformRotateGesture = 'move';
+  let transformRotateGesture = '';
   let transformRotateLastClientX = 0;
   let transformRotateLastClientY = 0;
   let transformRotateAccumulatedQuaternion = new THREE.Quaternion();
@@ -7368,11 +7487,7 @@
     get editTransformScope() { return editTransformScope; },
     set editTransformScope(value) { editTransformScope = value; },
     get editTransformMode() { return editTransformMode; },
-    set editTransformMode(value) { editTransformMode = value; },
-    get axisLock() { return axisLock; },
-    set axisLock(value) { axisLock = value; },
-    get axisKeyDown() { return axisKeyDown; },
-    set axisKeyDown(value) { axisKeyDown = value; },
+    set editTransformMode(value) { editTransformMode = normalizeEditTransformMode(value); },
     get editDownPt() { return __editDownPt; },
     set editDownPt(value) { __editDownPt = value; },
     get editMoved() { return __editMoved; },
@@ -7383,6 +7498,52 @@
     set coordsInlineEditState(value) { coordsInlineEditState = value; },
     get addAtomOperatorSession() { return addAtomOperatorSession; },
     set addAtomOperatorSession(value) { addAtomOperatorSession = value; },
+  };
+  const editTransformState = {
+    get dragActive() { return dragActive; },
+    set dragActive(value) { dragActive = !!value; },
+    get dragAtomIndex() { return dragAtomIndex; },
+    set dragAtomIndex(value) { dragAtomIndex = Number(value) | 0; },
+    get dragTargetIndices() { return dragTargetIndices; },
+    set dragTargetIndices(value) { dragTargetIndices = Array.isArray(value) ? value : []; },
+    get dragStartWorldPositions() { return dragStartWorldPositions; },
+    set dragStartWorldPositions(value) { dragStartWorldPositions = Array.isArray(value) ? value : []; },
+    get dragPivotWorld() { return dragPivotWorld; },
+    set dragPivotWorld(value) { dragPivotWorld = value || null; },
+    get dragPivotStartWorld() { return dragPivotStartWorld; },
+    set dragPivotStartWorld(value) { dragPivotStartWorld = value || null; },
+    get dragStartPos() { return dragStartPos; },
+    set dragStartPos(value) { dragStartPos = value || null; },
+    get dragOrigMeshPos() { return dragOrigMeshPos; },
+    set dragOrigMeshPos(value) { dragOrigMeshPos = value || null; },
+    get dragOrigAtomUnits() { return dragOrigAtomUnits; },
+    set dragOrigAtomUnits(value) { dragOrigAtomUnits = value || null; },
+    get dragPlane() { return dragPlane; },
+    set dragPlane(value) { dragPlane = value || null; },
+    get dragPlaneStart() { return dragPlaneStart; },
+    set dragPlaneStart(value) { dragPlaneStart = value || null; },
+    get dragAxis() { return dragAxis; },
+    set dragAxis(value) { dragAxis = String(value || 'none'); },
+    get moveOperatorBaseline() { return moveOperatorBaseline; },
+    set moveOperatorBaseline(value) { moveOperatorBaseline = value || null; },
+    get rotateOperatorBaseline() { return rotateOperatorBaseline; },
+    set rotateOperatorBaseline(value) { rotateOperatorBaseline = value || null; },
+    get rotateDragActive() { return rotateDragActive; },
+    set rotateDragActive(value) { rotateDragActive = !!value; },
+    get rotateDragAxis() { return rotateDragAxis; },
+    set rotateDragAxis(value) { rotateDragAxis = String(value || 'none'); },
+    get rotateDragPlane() { return rotateDragPlane; },
+    set rotateDragPlane(value) { rotateDragPlane = value || null; },
+    get rotateDragStartDir() { return rotateDragStartDir; },
+    set rotateDragStartDir(value) { rotateDragStartDir = value || null; },
+    get rotateDragLastClientX() { return rotateDragLastClientX; },
+    set rotateDragLastClientX(value) { rotateDragLastClientX = Number(value) || 0; },
+    get rotateDragLastClientY() { return rotateDragLastClientY; },
+    set rotateDragLastClientY(value) { rotateDragLastClientY = Number(value) || 0; },
+    get dragBeforeAtomsSnapshot() { return dragBeforeAtomsSnapshot; },
+    set dragBeforeAtomsSnapshot(value) { dragBeforeAtomsSnapshot = value || null; },
+    get dragBeforeBondSnapshot() { return dragBeforeBondSnapshot; },
+    set dragBeforeBondSnapshot(value) { dragBeforeBondSnapshot = value || null; },
   };
 
   /**
@@ -7670,6 +7831,8 @@
    * @returns {boolean}
    */
   function undoLastEditAction() {
+    clearMoveOperatorBaseline();
+    clearRotateOperatorBaseline();
     return editState.undo();
   }
 
@@ -7678,6 +7841,8 @@
    * @returns {boolean}
    */
   function redoLastEditAction() {
+    clearMoveOperatorBaseline();
+    clearRotateOperatorBaseline();
     return editState.redo();
   }
 
@@ -8140,9 +8305,11 @@
       editSel = editSel
         .filter((i) => i !== idx)
         .map((i) => (i > idx ? i - 1 : i));
+      clearRotateOperatorBaseline();
       updateSelectedHalos();
       updateEditSelectionVisuals();
       updateEditAdaptiveMenuUi();
+      updateRotateOperatorUi();
     },
   });
 
@@ -8157,7 +8324,6 @@
     isEditMode: () => editMode,
     finalizeAddAtomOperatorSession,
     hideAllAdaptiveToolPopovers,
-    updateAxisGuideLine,
     clearAddGrowPreview,
     clearMoleculePlacementPreview,
     clearFuseRingPreview,
@@ -8166,7 +8332,6 @@
     clearTransformSelection,
     clearHover,
     updateEditToolboxUi,
-    updateAxisButtons,
     getCurrentFragmentDefinition,
     getCurrentMoleculeDefinition,
     getElementSymbol,
@@ -8182,8 +8347,12 @@
     setCoordsInlineEditState: (value) => { coordsInlineEditState = value; },
     getBondEditing: () => bondEditing,
     onSelectionChanged: () => {
+      clearMoveOperatorBaseline();
+      clearRotateOperatorBaseline();
       updateSelectedHalos();
       updateEditAdaptiveMenuUi();
+      updateMoveOperatorUi();
+      updateRotateOperatorUi();
     },
   });
 
@@ -8825,12 +8994,11 @@
   /**
    * Normalize transform-action values.
    * @param {*} value
-   * @returns {'move'|'rotate'}
+   * @returns {'rotate_fragment'|'rotate_bond'}
    */
   function normalizeEditTransformMode(value) {
-    if (value === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) return EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT;
     if (value === EDIT_TRANSFORM_MODE.ROTATE_BOND) return EDIT_TRANSFORM_MODE.ROTATE_BOND;
-    return EDIT_TRANSFORM_MODE.MOVE;
+    return EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT;
   }
 
   /**
@@ -8847,22 +9015,12 @@
 
   /**
    * Human-readable label for transform action.
-   * @param {'move'|'rotate'} mode
+   * @param {'rotate_fragment'|'rotate_bond'} mode
    * @returns {string}
    */
   function getEditTransformModeLabel(mode) {
-    if (mode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) return 'Rotate fragment';
     if (mode === EDIT_TRANSFORM_MODE.ROTATE_BOND) return 'Rotate bond';
-    return 'Move';
-  }
-
-  /**
-   * Check whether the current transform action is rotational.
-   * @param {'move'|'rotate_fragment'|'rotate_bond'} mode
-   * @returns {boolean}
-   */
-  function isRotateTransformMode(mode) {
-    return mode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT || mode === EDIT_TRANSFORM_MODE.ROTATE_BOND;
+    return 'Rotate fragment';
   }
 
   /**
@@ -9135,10 +9293,9 @@
     transformAppliesToGrid = false;
     transformPivotWorld = null;
     transformDragPlane = null;
-    transformPlaneStart = null;
     transformRotateAxis = null;
     transformRotateStartDir = null;
-    transformRotateGesture = 'move';
+    transformRotateGesture = '';
     transformRotateLastClientX = 0;
     transformRotateLastClientY = 0;
     transformRotateAccumulatedQuaternion.identity();
@@ -9191,62 +9348,48 @@
     transformMoved = false;
 
     setRaycasterFromEvent(e);
-    if (isRotateTransformMode(editTransformMode)) {
-      if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
-        transformRotateGesture = 'bondQuaternion';
-        transformRotateLastClientX = Number(e.clientX) || 0;
-        transformRotateLastClientY = Number(e.clientY) || 0;
-        transformRotateAccumulatedQuaternion.identity();
-        setHintMessage('Rotate bond: Drag to reorient the selected side around the opposite atom');
-      } else {
-        transformRotateGesture = transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT
-          ? 'bondAxis'
-          : 'viewAxis';
-        transformRotateAccumulatedQuaternion.identity();
-        if (transformRotateGesture === 'bondAxis') {
-          transformRotateAxis = atomUnitsToAng(vol, vol.atoms[transformBondContext.selectedAtomIndex])
-            .sub(atomUnitsToAng(vol, vol.atoms[transformBondContext.anchorAtomIndex]));
-        } else {
-          transformRotateAxis = new THREE.Vector3();
-          camera.getWorldDirection(transformRotateAxis);
-        }
-        if (transformRotateAxis.lengthSq() < 1e-12) transformRotateAxis.set(0, 0, -1);
-        transformRotateAxis.normalize();
-        transformDragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(transformRotateAxis, transformPivotWorld);
-        const planeHit = new THREE.Vector3();
-        if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) {
-          if (interactionPoint && interactionPoint.isVector3) planeHit.copy(interactionPoint);
-          else planeHit.copy(transformPivotWorld);
-        }
-        const startDir = planeHit.clone().sub(transformPivotWorld);
-        startDir.addScaledVector(transformRotateAxis, -startDir.dot(transformRotateAxis));
-        if (startDir.lengthSq() < 1e-10) {
-          const fallback = (interactionPoint && interactionPoint.isVector3)
-            ? interactionPoint.clone().sub(transformPivotWorld)
-            : getBondPerpendicular(transformRotateAxis);
-          fallback.addScaledVector(transformRotateAxis, -fallback.dot(transformRotateAxis));
-          if (fallback.lengthSq() < 1e-10) fallback.copy(getBondPerpendicular(transformRotateAxis));
-          startDir.copy(fallback);
-        }
-        transformRotateStartDir = startDir.normalize();
-        if (transformRotateGesture === 'bondAxis') {
-          setHintMessage('Rotate fragment: Drag to spin the selected side about the bond axis');
-        } else {
-          setHintMessage(`Transform ${getEditTransformScopeLabel(target.kind)}: Rotate • Drag to rotate around view axis`);
-        }
-      }
+    if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+      transformRotateGesture = 'bondQuaternion';
+      transformRotateLastClientX = Number(e.clientX) || 0;
+      transformRotateLastClientY = Number(e.clientY) || 0;
+      transformRotateAccumulatedQuaternion.identity();
+      setHintMessage('Rotate bond: Drag to reorient the selected side around the opposite atom');
     } else {
-      transformRotateGesture = 'move';
-      const normal = new THREE.Vector3();
-      camera.getWorldDirection(normal);
-      if (normal.lengthSq() < 1e-12) normal.set(0, 0, -1);
-      transformDragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal.normalize(), transformPivotWorld);
-      transformPlaneStart = new THREE.Vector3();
-      if (!raycaster.ray.intersectPlane(transformDragPlane, transformPlaneStart)) {
-        if (interactionPoint && interactionPoint.isVector3) transformPlaneStart.copy(interactionPoint);
-        else transformPlaneStart.copy(transformPivotWorld);
+      transformRotateGesture = transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT
+        ? 'bondAxis'
+        : 'viewAxis';
+      transformRotateAccumulatedQuaternion.identity();
+      if (transformRotateGesture === 'bondAxis') {
+        transformRotateAxis = atomUnitsToAng(vol, vol.atoms[transformBondContext.selectedAtomIndex])
+          .sub(atomUnitsToAng(vol, vol.atoms[transformBondContext.anchorAtomIndex]));
+      } else {
+        transformRotateAxis = new THREE.Vector3();
+        camera.getWorldDirection(transformRotateAxis);
       }
-      setHintMessage(`Transform ${getEditTransformScopeLabel(target.kind)}: Move • Drag to reposition`);
+      if (transformRotateAxis.lengthSq() < 1e-12) transformRotateAxis.set(0, 0, -1);
+      transformRotateAxis.normalize();
+      transformDragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(transformRotateAxis, transformPivotWorld);
+      const planeHit = new THREE.Vector3();
+      if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) {
+        if (interactionPoint && interactionPoint.isVector3) planeHit.copy(interactionPoint);
+        else planeHit.copy(transformPivotWorld);
+      }
+      const startDir = planeHit.clone().sub(transformPivotWorld);
+      startDir.addScaledVector(transformRotateAxis, -startDir.dot(transformRotateAxis));
+      if (startDir.lengthSq() < 1e-10) {
+        const fallback = (interactionPoint && interactionPoint.isVector3)
+          ? interactionPoint.clone().sub(transformPivotWorld)
+          : getBondPerpendicular(transformRotateAxis);
+        fallback.addScaledVector(transformRotateAxis, -fallback.dot(transformRotateAxis));
+        if (fallback.lengthSq() < 1e-10) fallback.copy(getBondPerpendicular(transformRotateAxis));
+        startDir.copy(fallback);
+      }
+      transformRotateStartDir = startDir.normalize();
+      if (transformRotateGesture === 'bondAxis') {
+        setHintMessage('Rotate fragment: Drag to spin the selected side about the bond axis');
+      } else {
+        setHintMessage(`Transform ${getEditTransformScopeLabel(target.kind)}: Rotate • Drag to rotate around view axis`);
+      }
     }
     transformActive = true;
     try { controls.enabled = false; } catch { }
@@ -9299,30 +9442,6 @@
   }
 
   /**
-   * Apply translational transform to volumetric grid from one snapshot.
-   * @param {*} vol
-   * @param {{origin:number[],axes:number[][]}|null} gridSnapshot
-   * @param {THREE.Vector3} deltaWorld
-   */
-  function applyTransformGridTranslation(vol, gridSnapshot, deltaWorld) {
-    if (!hasVolumetricGrid(vol) || !gridSnapshot || !deltaWorld || !deltaWorld.isVector3) return;
-    const toNative = vol.units === 'angstrom' ? 1 : ANG_TO_BOHR;
-    const dx = deltaWorld.x * toNative;
-    const dy = deltaWorld.y * toNative;
-    const dz = deltaWorld.z * toNative;
-    vol.origin = [
-      (Number(gridSnapshot.origin && gridSnapshot.origin[0]) || 0) + dx,
-      (Number(gridSnapshot.origin && gridSnapshot.origin[1]) || 0) + dy,
-      (Number(gridSnapshot.origin && gridSnapshot.origin[2]) || 0) + dz,
-    ];
-    vol.axes = [
-      Array.isArray(gridSnapshot.axes && gridSnapshot.axes[0]) ? gridSnapshot.axes[0].slice(0, 3) : [1, 0, 0],
-      Array.isArray(gridSnapshot.axes && gridSnapshot.axes[1]) ? gridSnapshot.axes[1].slice(0, 3) : [0, 1, 0],
-      Array.isArray(gridSnapshot.axes && gridSnapshot.axes[2]) ? gridSnapshot.axes[2].slice(0, 3) : [0, 0, 1],
-    ];
-  }
-
-  /**
    * Apply rotational transform to volumetric grid from one snapshot.
    * @param {*} vol
    * @param {{origin:number[],axes:number[][]}|null} gridSnapshot
@@ -9361,6 +9480,7 @@
    */
   function getEditToolLabel(tool) {
     if (tool === EDIT_TOOL.SELECT) return 'Selection';
+    if (tool === EDIT_TOOL.ROTATE) return 'Rotate';
     if (tool === EDIT_TOOL.ADD) return 'Add';
     if (tool === EDIT_TOOL.BOND) return 'Bond';
     if (tool === EDIT_TOOL.TRANSFORM) return 'Transform';
@@ -10034,6 +10154,7 @@
     const isEdit = editMode;
     const isSelect = editTool === EDIT_TOOL.SELECT;
     const isMove = editTool === EDIT_TOOL.MOVE;
+    const isRotate = editTool === EDIT_TOOL.ROTATE;
     const isAdd = editTool === EDIT_TOOL.ADD;
     const isBond = editTool === EDIT_TOOL.BOND;
     const isTransform = editTool === EDIT_TOOL.TRANSFORM;
@@ -10045,7 +10166,12 @@
     if (editToolboxEl) {
       editToolboxEl.setAttribute('aria-hidden', 'true');
     }
+    if (!isEdit || !isSelect) hideEditSelectionMarquee();
     updateEditAdaptiveMenuUi();
+    updateMoveSelectionGizmo();
+    updateRotateSelectionGizmo();
+    updateMoveOperatorUi();
+    updateRotateOperatorUi();
     updateAddAtomOperatorUi();
     updateMoleculePlacementOperatorUi();
     if (editToolSelectBtn) editToolSelectBtn.classList.toggle('active', isSelect);
@@ -10143,13 +10269,11 @@
         transformSelectionKind,
         getCurrentTransformSelectionContext()
       ).status;
-      let usage = 'Click to select • drag current selection to transform';
-      if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
-        usage = 'Click a bond to select one side • drag the current selection to spin about that bond axis • Shift-click adds another target';
-      } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+      let usage = 'Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the current selection to rotate • Bond-side selections spin about the bond axis • Click empty space to clear • Shift-click adds another target';
+      if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
         usage = 'Click a bond to select one side • drag the current selection to rotate around the opposite atom • Shift-click adds another target';
       } else {
-        usage = 'Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag current selection to move • Click empty space to clear • Shift-click adds another target';
+        usage = 'Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the current selection to rotate • Bond-side selections spin about the bond axis • Click empty space to clear • Shift-click adds another target';
       }
       editTransformCurrentEl.textContent = `Scope: ${scopeLabel} • Action: ${modeLabel} • Cleanup ${editTransformAutoCleanupEnabled ? 'on' : 'off'} • ${selectionSummary} • ${usage}`;
     }
@@ -10208,10 +10332,12 @@
 
   /**
    * Change the active edit sub-tool.
-   * @param {'select'|'move'|'add'|'bond'|'transform'|'delete'} nextTool
+   * @param {'select'|'move'|'rotate'|'add'|'bond'|'transform'|'delete'} nextTool
    * @param {{announce?:boolean}=} options
    */
   function setEditTool(nextTool, options = {}) {
+    if (nextTool !== EDIT_TOOL.MOVE) clearMoveOperatorBaseline();
+    if (nextTool !== EDIT_TOOL.ROTATE) clearRotateOperatorBaseline();
     editTools.setEditTool(nextTool, options);
   }
 
@@ -10570,6 +10696,7 @@
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
     if (editAdaptiveSelectionBtn) editAdaptiveSelectionBtn.onclick = () => setEditTool(EDIT_TOOL.SELECT);
     if (editAdaptiveMoveBtn) editAdaptiveMoveBtn.onclick = () => setEditTool(EDIT_TOOL.MOVE);
+    if (editAdaptiveRotateBtn) editAdaptiveRotateBtn.onclick = () => setEditTool(EDIT_TOOL.ROTATE);
     bindAdaptivePopoverItem({
       controller: adaptivePopoverController,
       kind: 'atom',
@@ -10630,8 +10757,39 @@
         updateAddAtomOperatorUi();
       };
     }
+    const selectOperatorInputValue = (inputEl) => {
+      if (!inputEl || typeof inputEl.select !== 'function') return;
+      requestAnimationFrame(() => {
+        try { inputEl.select(); } catch (_) {}
+      });
+    };
+    const bindOperatorInputSelection = (inputEl) => {
+      if (!inputEl) return;
+      inputEl.addEventListener('focus', () => selectOperatorInputValue(inputEl));
+      inputEl.addEventListener('click', () => selectOperatorInputValue(inputEl));
+    };
+    const bindOperatorInputTabWrap = (inputEls) => {
+      const inputs = inputEls.filter(Boolean);
+      if (!inputs.length) return;
+      const lastIndex = inputs.length - 1;
+      inputs.forEach((inputEl, index) => {
+        inputEl.addEventListener('keydown', (e) => {
+          if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+          if (!e.shiftKey && index === lastIndex) {
+            e.preventDefault();
+            inputs[0].focus();
+            return;
+          }
+          if (e.shiftKey && index === 0) {
+            e.preventDefault();
+            inputs[lastIndex].focus();
+          }
+        });
+      });
+    };
     const bindAddAtomOperatorCoordInput = (axis, inputEl) => {
       if (!inputEl) return;
+      bindOperatorInputSelection(inputEl);
       inputEl.addEventListener('input', () => applyAddAtomOperatorInput(axis, inputEl));
       inputEl.addEventListener('change', () => applyAddAtomOperatorInput(axis, inputEl, { syncOnly: true }));
       inputEl.addEventListener('blur', () => updateAddAtomOperatorUi());
@@ -10651,6 +10809,11 @@
     bindAddAtomOperatorCoordInput('x', editAddAtomOperatorXEl);
     bindAddAtomOperatorCoordInput('y', editAddAtomOperatorYEl);
     bindAddAtomOperatorCoordInput('z', editAddAtomOperatorZEl);
+    bindOperatorInputTabWrap([
+      editAddAtomOperatorXEl,
+      editAddAtomOperatorYEl,
+      editAddAtomOperatorZEl,
+    ]);
     if (editAddMoleculeOperatorHeaderEl) {
       editAddMoleculeOperatorHeaderEl.onclick = () => {
         moleculePlaceOperatorCollapsed = !moleculePlaceOperatorCollapsed;
@@ -10659,6 +10822,7 @@
     }
     const bindMoleculeOperatorInput = (axis, inputEl, mode) => {
       if (!inputEl) return;
+      bindOperatorInputSelection(inputEl);
       inputEl.addEventListener('input', () => {
         if (mode === 'rotation') applyMoleculePlacementRotationInput(axis, inputEl);
         else applyMoleculePlacementPositionInput(axis, inputEl);
@@ -10691,6 +10855,78 @@
     bindMoleculeOperatorInput('x', editAddMoleculeOperatorRotXEl, 'rotation');
     bindMoleculeOperatorInput('y', editAddMoleculeOperatorRotYEl, 'rotation');
     bindMoleculeOperatorInput('z', editAddMoleculeOperatorRotZEl, 'rotation');
+    bindOperatorInputTabWrap([
+      editAddMoleculeOperatorXEl,
+      editAddMoleculeOperatorYEl,
+      editAddMoleculeOperatorZEl,
+      editAddMoleculeOperatorRotXEl,
+      editAddMoleculeOperatorRotYEl,
+      editAddMoleculeOperatorRotZEl,
+    ]);
+    if (editMoveOperatorHeaderEl) {
+      editMoveOperatorHeaderEl.onclick = () => {
+        moveOperatorCollapsed = !moveOperatorCollapsed;
+        updateMoveOperatorUi();
+      };
+    }
+    const bindMoveOperatorInput = (axis, inputEl) => {
+      if (!inputEl) return;
+      bindOperatorInputSelection(inputEl);
+      inputEl.addEventListener('input', () => applyMoveOperatorInput(axis, inputEl));
+      inputEl.addEventListener('change', () => applyMoveOperatorInput(axis, inputEl, { commit: true }));
+      inputEl.addEventListener('blur', () => updateMoveOperatorUi());
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          applyMoveOperatorInput(axis, inputEl, { commit: true });
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          revertMoveOperatorToBaseline();
+        }
+      });
+    };
+    bindMoveOperatorInput('x', editMoveOperatorXEl);
+    bindMoveOperatorInput('y', editMoveOperatorYEl);
+    bindMoveOperatorInput('z', editMoveOperatorZEl);
+    bindOperatorInputTabWrap([
+      editMoveOperatorXEl,
+      editMoveOperatorYEl,
+      editMoveOperatorZEl,
+    ]);
+    if (editRotateOperatorHeaderEl) {
+      editRotateOperatorHeaderEl.onclick = () => {
+        rotateOperatorCollapsed = !rotateOperatorCollapsed;
+        updateRotateOperatorUi();
+      };
+    }
+    const bindRotateOperatorInput = (axis, inputEl) => {
+      if (!inputEl) return;
+      bindOperatorInputSelection(inputEl);
+      inputEl.addEventListener('input', () => applyRotateOperatorInput(axis, inputEl));
+      inputEl.addEventListener('change', () => applyRotateOperatorInput(axis, inputEl, { commit: true }));
+      inputEl.addEventListener('blur', () => updateRotateOperatorUi());
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          applyRotateOperatorInput(axis, inputEl, { commit: true });
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          revertRotateOperatorToBaseline();
+        }
+      });
+    };
+    bindRotateOperatorInput('x', editRotateOperatorXEl);
+    bindRotateOperatorInput('y', editRotateOperatorYEl);
+    bindRotateOperatorInput('z', editRotateOperatorZEl);
+    bindOperatorInputTabWrap([
+      editRotateOperatorXEl,
+      editRotateOperatorYEl,
+      editRotateOperatorZEl,
+    ]);
     if (editAddMoleculeOperatorAlignXBtn) editAddMoleculeOperatorAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a molecule first, then align to X.'); };
     if (editAddMoleculeOperatorAlignYBtn) editAddMoleculeOperatorAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a molecule first, then align to Y.'); };
     if (editAddMoleculeOperatorAlignZBtn) editAddMoleculeOperatorAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
@@ -10727,12 +10963,10 @@
         updateTransformSelectionGuides();
         if (editMode && editTool === EDIT_TOOL.TRANSFORM) {
           const modeLabel = getEditTransformModeLabel(editTransformMode);
-          if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
-            setHintMessage(`Transform action: ${modeLabel} • Click a bond to select one side, then drag to spin about the bond axis • Shift-click adds another target.`);
-          } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+          if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
             setHintMessage(`Transform action: ${modeLabel} • Click a bond to select one side, then drag to rotate around the opposite atom • Shift-click adds another target.`);
           } else {
-            setHintMessage(`Transform action: ${modeLabel} • Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the current selection to move • Click empty space to clear • Shift-click adds another target.`);
+            setHintMessage(`Transform action: ${modeLabel} • Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the current selection to rotate • Bond-side selections spin about the bond axis • Click empty space to clear • Shift-click adds another target.`);
           }
         }
       });
@@ -10755,71 +10989,84 @@
   }
 
   // Faint axis guide line shown while holding X/Y/Z in edit mode
-  let axisGuideLine = null; // THREE.Line
-  /**
-   * Ensure the edit-mode axis guide helper exists in the scene.
-   */
-  function ensureAxisGuideLine() {
-    if (axisGuideLine && axisGuideLine.isLine) return axisGuideLine;
-    const geom = new THREE.BufferGeometry();
-    // two points (start, end)
-    geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
-    const mat = new THREE.LineBasicMaterial({ color: 0xff4136, transparent: true, opacity: 0.5, depthTest: false });
-    axisGuideLine = new THREE.Line(geom, mat);
-    axisGuideLine.visible = false;
-    axisGuideLine.renderOrder = 9999; // draw last
-    contentGroup.add(axisGuideLine);
-    return axisGuideLine;
-  }
-  /**
-   * Return the world position of the currently selected draggable atom, if any.
-   */
-  function getSelectedAtomPosition() {
-    if (dragActive && dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
-      return atomGroup.children[dragAtomIndex].position.clone();
-    }
-    if (hoverAtomMesh && hoverAtomMesh.position) return hoverAtomMesh.position.clone();
-    return null;
-  }
-  /**
-   * Update axis guide visibility, orientation, and placement during edit operations.
-   */
-  function updateAxisGuideLine() {
-    try {
-      const axis = axisKeyDown; // only show while key is held
-      if (!editMode || !axis || !('xyz'.includes(axis))) { if (axisGuideLine) axisGuideLine.visible = false; return; }
-      const pos = getSelectedAtomPosition();
-      if (!pos) { if (axisGuideLine) axisGuideLine.visible = false; return; }
-      ensureAxisGuideLine();
-      // Determine extents along the chosen axis from current atom positions
-      let minVal = Infinity, maxVal = -Infinity;
-      if (atomGroup && atomGroup.children && atomGroup.children.length) {
-        for (const ch of atomGroup.children) {
-          if (!ch || !ch.position) continue;
-          const v = axis === 'x' ? ch.position.x : axis === 'y' ? ch.position.y : ch.position.z;
-          if (v < minVal) minVal = v;
-          if (v > maxVal) maxVal = v;
-        }
-      }
-      const centerVal = axis === 'x' ? pos.x : axis === 'y' ? pos.y : pos.z;
-      if (!isFinite(minVal) || !isFinite(maxVal)) { minVal = centerVal - 10; maxVal = centerVal + 10; }
-      const margin = 100; // set large margin // Math.max(0.5, (maxVal - minVal) * 0.1);
-      minVal -= margin; maxVal += margin;
-      const p0 = pos.clone();
-      const p1 = pos.clone();
-      if (axis === 'x') { p0.x = minVal; p1.x = maxVal; axisGuideLine.material.color.setHex(0xff4136); }
-      else if (axis === 'y') { p0.y = minVal; p1.y = maxVal; axisGuideLine.material.color.setHex(0x2ecc40); }
-      else { p0.z = minVal; p1.z = maxVal; axisGuideLine.material.color.setHex(0x0074d9); }
-      const arr = axisGuideLine.geometry.getAttribute('position').array;
-      arr[0] = p0.x; arr[1] = p0.y; arr[2] = p0.z;
-      arr[3] = p1.x; arr[4] = p1.y; arr[5] = p1.z;
-      axisGuideLine.geometry.attributes.position.needsUpdate = true;
-      axisGuideLine.visible = true;
-    } catch (e) { /* ignore */ }
-  }
+  function updateAxisGuideLine() {}
 
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
+
+  editGizmos = createEditGizmosController({
+    THREE,
+    contentGroup,
+    raycaster,
+    setRaycasterFromEvent,
+    getMode: () => currentMode,
+    getEditTool: () => editTool,
+    getSelection: () => getEditAtomSelection(),
+    getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
+    getSelectionCenterWorld: getEditSelectionCenterWorld,
+    getSelectionGizmoLength: getMoveSelectionGizmoLength,
+    getMoveDragPivotWorld: () => (dragPivotWorld && dragPivotWorld.isVector3 ? dragPivotWorld.clone() : null),
+    getRotateDragCenterWorld: () => {
+      const baseline = editTransformController ? editTransformController.ensureRotateBaseline() : null;
+      return baseline && baseline.startCenterWorld && baseline.startCenterWorld.isVector3
+        ? baseline.startCenterWorld.clone()
+        : null;
+    },
+    MODES,
+    EDIT_TOOL,
+  });
+
+  editTransformController = createEditTransformController({
+    THREE,
+    state: editTransformState,
+    MODES,
+    EDIT_TOOL,
+    getMode: () => currentMode,
+    getEditTool: () => editTool,
+    getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
+    getSelection: () => getEditAtomSelection(),
+    setSelection: setEditAtomSelection,
+    getAtomGroup: () => atomGroup,
+    getBondGroup: () => bondGroup,
+    getCamera: () => camera,
+    getControls: () => controls,
+    atomUnitsToAng,
+    worldToAtomUnits,
+    ensureVolumeAtomIds,
+    ensureAtomId,
+    cloneAtomsSnapshot,
+    cloneBondSnapshot,
+    atomsSnapshotsEqual,
+    pushEditHistoryEntry,
+    rebuildBondsFromAtoms,
+    updateBondsInPlace,
+    rebuildScene,
+    updateSelectionVisuals: () => {
+      updateSelectedHalos();
+      updateEditSelectionVisuals();
+    },
+    updateMoveGizmo: () => { if (editGizmos) editGizmos.updateMove(); },
+    updateRotateGizmo: () => { if (editGizmos) editGizmos.updateRotate(); },
+    updateMoveOperatorUi: () => updateMoveOperatorUi(),
+    updateRotateOperatorUi: () => updateRotateOperatorUi(),
+    getSelectionCenterWorld: getEditSelectionCenterWorld,
+    setRaycasterFromEvent,
+    getRaycaster: () => raycaster,
+    pickMoveHit: (e) => (editGizmos ? editGizmos.pickMoveHit(e) : null),
+    pickRotateHit: (e) => (editGizmos ? editGizmos.pickRotateHit(e) : null),
+    setMoveHover: (axis) => { if (editGizmos) editGizmos.setMoveHover(axis); },
+    setRotateHover: (axis) => { if (editGizmos) editGizmos.setRotateHover(axis); },
+    clearGizmoHover: () => { if (editGizmos) editGizmos.clearHover(); },
+    beginViewRotate: beginQuaternionViewRotate,
+    setEditClickIndex: (value) => { __editClickIdx = Number(value) | 0; },
+    setEditMoved: (value) => { __editMoved = !!value; },
+    getEditMoved: () => !!__editMoved,
+    clearEmptyClickSelection: (options) => clearEditSelectionsOnEmptyClick(options),
+    setHintMessage,
+    renderRibbon,
+    isEditMode: () => editMode,
+  });
+
   /**
    * End one active display-mode quaternion orbit gesture.
    * @param {PointerEvent=} e
@@ -10892,6 +11139,8 @@
   let editSel = []; // array of atom indices (max 3) — used in measurement mode
   let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
   let editSelectionClickAdditive = false;
+  let editSelectionMarqueeActive = false;
+  let editSelectionMarqueeRect = null;
   // persistent selection halos (by atom index) for measurement mode
   const selHaloColor = 0xffa500;
   /**
@@ -10953,6 +11202,8 @@
       const selected = selectedSet.has(i);
       if (selected) ensureSelectHalo(mesh); else removeSelectHalo(mesh);
     }
+    updateMoveSelectionGizmo();
+    updateRotateSelectionGizmo();
   }
   let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
   /**
@@ -10992,6 +11243,7 @@
     const isAtomAddActive = isVisible && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.ATOM;
     const isFragmentAddActive = isVisible && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.FRAGMENT;
     const isMoleculeAddActive = isVisible && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.MOLECULE;
+    const isRotateActive = isVisible && editTool === EDIT_TOOL.ROTATE;
     const isBondActive = isVisible && editTool === EDIT_TOOL.BOND;
     const isTransformActive = isVisible && editTool === EDIT_TOOL.TRANSFORM;
     const isDeleteActive = isVisible && editTool === EDIT_TOOL.DELETE;
@@ -11006,6 +11258,7 @@
       activeItems: [
         { el: editAdaptiveSelectionBtn, active: isVisible && editTool === EDIT_TOOL.SELECT },
         { el: editAdaptiveMoveBtn, active: isVisible && editTool === EDIT_TOOL.MOVE },
+        { el: editAdaptiveRotateBtn, active: isRotateActive },
         { el: editAdaptiveAddAtomBtn, active: isAtomAddActive },
         { el: editAdaptiveAddFragmentBtn, active: isFragmentAddActive },
         { el: editAdaptiveAddMoleculeBtn, active: isMoleculeAddActive },
@@ -11017,6 +11270,14 @@
         {
           el: editAdaptiveSelectionMetaEl,
           text: selectionCount ? `${selectionCount} atom${selectionCount === 1 ? '' : 's'} selected` : 'Click atoms to build a selection',
+        },
+        {
+          el: editAdaptiveMoveMetaEl,
+          text: selectionCount ? 'Drag selection or grab axis arrows' : 'Select atoms, then drag to move',
+        },
+        {
+          el: editAdaptiveRotateMetaEl,
+          text: selectionCount ? 'Grab axis rings or drag selection' : 'Select atoms, then drag to rotate',
         },
         { el: editAdaptiveAddAtomMetaEl, text: getElementSymbol(editAddElementZ) },
         {
@@ -11090,6 +11351,20 @@
    */
   function positionAddMoleculeOperatorPanel() {
     positionRightOperatorPanel(document.getElementById('editAddMoleculeOperatorPanel'));
+  }
+
+  /**
+   * Position the floating move operator panel.
+   */
+  function positionMoveOperatorPanel() {
+    positionRightOperatorPanel(document.getElementById('editMoveOperatorPanel'));
+  }
+
+  /**
+   * Position the floating rotate operator panel.
+   */
+  function positionRotateOperatorPanel() {
+    positionRightOperatorPanel(document.getElementById('editRotateOperatorPanel'));
   }
 
   /**
@@ -11169,6 +11444,116 @@
       rotation: rot,
       positionPanel: positionAddMoleculeOperatorPanel,
     });
+  }
+
+  function clearMoveOperatorBaseline() {
+    if (editTransformController) editTransformController.clearMoveBaseline();
+    else moveOperatorBaseline = null;
+  }
+
+  function clearRotateOperatorBaseline() {
+    if (editTransformController) editTransformController.clearRotateBaseline();
+    else rotateOperatorBaseline = null;
+  }
+
+  function ensureMoveOperatorBaseline() {
+    return editTransformController ? editTransformController.ensureMoveBaseline() : null;
+  }
+
+  function resetMoveOperatorBaselineFromCurrentSelection() {
+    return editTransformController ? editTransformController.resetMoveBaseline() : null;
+  }
+
+  function getMoveOperatorDisplacement() {
+    return editTransformController ? editTransformController.getMoveDisplacement() : new THREE.Vector3();
+  }
+
+  function applyMoveSelectionDisplacement(delta) {
+    return editTransformController ? editTransformController.applyMoveDisplacement(delta) : false;
+  }
+
+  function commitMoveOperatorDisplacement(label = 'Move selection') {
+    return editTransformController ? editTransformController.commitMove(label) : false;
+  }
+
+  function revertMoveOperatorToBaseline() {
+    return editTransformController ? editTransformController.revertMove() : false;
+  }
+
+  function updateMoveOperatorUi() {
+    const baseline = ensureMoveOperatorBaseline();
+    const isVisible = !!baseline;
+    const displacement = isVisible ? getMoveOperatorDisplacement() : { x: 0, y: 0, z: 0 };
+    const count = isVisible ? baseline.indices.length : 0;
+    updateMoveOperatorPanelUi({
+      panelEl: editMoveOperatorPanelEl,
+      headerEl: editMoveOperatorHeaderEl,
+      chevronEl: editMoveOperatorChevronEl,
+      labelEl: editMoveOperatorLabelEl,
+      xEl: editMoveOperatorXEl,
+      yEl: editMoveOperatorYEl,
+      zEl: editMoveOperatorZEl,
+      isVisible,
+      collapsed: moveOperatorCollapsed,
+      labelText: count === 1 ? 'Move Atom' : `Move ${count} Atoms`,
+      displacement,
+      positionPanel: positionMoveOperatorPanel,
+    });
+  }
+
+  function applyMoveOperatorInput(axis, inputEl, options = {}) {
+    if (editTransformController) editTransformController.applyMoveOperatorInput(axis, inputEl, options);
+  }
+
+  function ensureRotateOperatorBaseline() {
+    return editTransformController ? editTransformController.ensureRotateBaseline() : null;
+  }
+
+  function resetRotateOperatorBaselineFromCurrentSelection() {
+    return editTransformController ? editTransformController.resetRotateBaseline() : null;
+  }
+
+  function getRotateOperatorEulerDegrees() {
+    return editTransformController
+      ? editTransformController.getRotateEulerDegrees()
+      : { x: 0, y: 0, z: 0 };
+  }
+
+  function applyRotateSelectionQuaternion(rotation) {
+    return editTransformController ? editTransformController.applyRotateQuaternion(rotation) : false;
+  }
+
+  function commitRotateOperatorRotation(label = 'Rotate selection') {
+    return editTransformController ? editTransformController.commitRotate(label) : false;
+  }
+
+  function revertRotateOperatorToBaseline() {
+    return editTransformController ? editTransformController.revertRotate() : false;
+  }
+
+  function updateRotateOperatorUi() {
+    const baseline = ensureRotateOperatorBaseline();
+    const isVisible = !!baseline;
+    const rotation = isVisible ? getRotateOperatorEulerDegrees() : { x: 0, y: 0, z: 0 };
+    const count = isVisible ? baseline.indices.length : 0;
+    updateRotateOperatorPanelUi({
+      panelEl: editRotateOperatorPanelEl,
+      headerEl: editRotateOperatorHeaderEl,
+      chevronEl: editRotateOperatorChevronEl,
+      labelEl: editRotateOperatorLabelEl,
+      xEl: editRotateOperatorXEl,
+      yEl: editRotateOperatorYEl,
+      zEl: editRotateOperatorZEl,
+      isVisible,
+      collapsed: rotateOperatorCollapsed,
+      labelText: count === 1 ? 'Rotate Atom' : `Rotate ${count} Atoms`,
+      rotation,
+      positionPanel: positionRotateOperatorPanel,
+    });
+  }
+
+  function applyRotateOperatorInput(axis, inputEl, options = {}) {
+    if (editTransformController) editTransformController.applyRotateOperatorInput(axis, inputEl, options);
   }
 
   /**
@@ -11255,6 +11640,15 @@
   }
 
   /**
+   * Clear edit-mode atom/bond selection state after one empty click.
+   * @param {{selection?:boolean,transform?:boolean,bondEdit?:boolean}=} options
+   * @returns {boolean}
+   */
+  function clearEditSelectionsOnEmptyClick(options = {}) {
+    return editTools.clearEditSelectionsOnEmptyClick(options);
+  }
+
+  /**
    * Select every atom in the active editable file.
    * @returns {boolean}
    */
@@ -11273,6 +11667,135 @@
   }
 
   /**
+   * Apply one marquee/box selection in edit mode.
+   * @param {number[]} atomIndices
+   * @param {boolean} additive
+   * @returns {boolean}
+   */
+  function applyEditAtomSelectionBox(atomIndices, additive) {
+    return editTools.applyEditAtomSelectionBox(atomIndices, additive);
+  }
+
+  function copyEditSelectionToClipboard() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const selection = getEditAtomSelection();
+    if (!vol || !selection.length) {
+      setHintMessage('Select one or more atoms to copy.');
+      return false;
+    }
+    let center = new THREE.Vector3();
+    for (const idx of selection) center.add(atomUnitsToAng(vol, vol.atoms[idx]));
+    center.multiplyScalar(1 / Math.max(1, selection.length));
+    let extentRadius = 0;
+    for (const idx of selection) {
+      const world = atomUnitsToAng(vol, vol.atoms[idx]);
+      extentRadius = Math.max(extentRadius, world.distanceTo(center));
+    }
+    const payload = buildVolumeSelectionClipboard(vol, selection, {
+      mapAtom(_atom, sourceAtom) {
+        const world = atomUnitsToAng(vol, sourceAtom).sub(center);
+        return {
+          id: '',
+          Z: Number(sourceAtom && sourceAtom.Z) | 0,
+          x: world.x,
+          y: world.y,
+          z: world.z,
+          formalCharge: Number.isFinite(sourceAtom && sourceAtom.formalCharge)
+            ? Math.round(Number(sourceAtom.formalCharge))
+            : 0,
+        };
+      },
+    });
+    if (!payload) {
+      setHintMessage('Copy failed.');
+      return false;
+    }
+    editClipboardSelection = {
+      payload,
+      extentRadius,
+      center: center.clone(),
+    };
+    editClipboardPasteSerial = 0;
+    setHintMessage(`Copied ${selection.length} atom${selection.length === 1 ? '' : 's'}.`);
+    return true;
+  }
+
+  function getEditClipboardPasteOffset(payload) {
+    const serial = Math.max(1, editClipboardPasteSerial);
+    const magnitude = Math.max(0.8, Number(payload && payload.extentRadius) || 0);
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    if (dir.lengthSq() < 1e-10) dir.set(0, 0, -1);
+    dir.normalize();
+    const up = (camera && camera.up && camera.up.isVector3 ? camera.up.clone() : new THREE.Vector3(0, 1, 0)).normalize();
+    const right = new THREE.Vector3().crossVectors(dir, up);
+    if (right.lengthSq() < 1e-10) right.set(1, 0, 0);
+    right.normalize();
+    const screenUp = new THREE.Vector3().copy(up);
+    if (screenUp.lengthSq() < 1e-10) screenUp.set(0, 1, 0);
+    screenUp.normalize();
+    return right.multiplyScalar(magnitude * serial).addScaledVector(screenUp, -magnitude * serial);
+  }
+
+  function pasteEditClipboardSelection() {
+    if (!editClipboardSelection || !editClipboardSelection.payload) {
+      setHintMessage('Clipboard is empty.');
+      return false;
+    }
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    if (!record || !vol) {
+      setHintMessage('No editable structure is available for paste.');
+      return false;
+    }
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeBonds = cloneBondSnapshot(vol);
+    editClipboardPasteSerial += 1;
+    const offset = getEditClipboardPasteOffset(editClipboardSelection);
+    const result = appendVolumeSelectionClipboard(vol, editClipboardSelection.payload, {
+      mapAtom(atom) {
+        const world = new THREE.Vector3(
+          Number(atom.x) || 0,
+          Number(atom.y) || 0,
+          Number(atom.z) || 0
+        )
+          .add((editClipboardSelection && editClipboardSelection.center && editClipboardSelection.center.isVector3)
+            ? editClipboardSelection.center
+            : new THREE.Vector3())
+          .add(offset);
+        const atomUnits = worldToAtomUnits(vol, world);
+        return {
+          id: '',
+          Z: Number(atom.Z) | 0,
+          x: atomUnits[0],
+          y: atomUnits[1],
+          z: atomUnits[2],
+          formalCharge: Number.isFinite(atom.formalCharge) ? Math.round(Number(atom.formalCharge)) : 0,
+        };
+      },
+    });
+    if (!result.atomIndices.length) {
+      setHintMessage('Paste failed.');
+      return false;
+    }
+    vol.natoms = vol.atoms.length;
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    const afterBonds = cloneBondSnapshot(vol);
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Paste ${result.atomIndices.length} atoms`, {
+      beforeBonds,
+      afterBonds,
+    });
+    rebuildScene({ preserveView: true });
+    setEditAtomSelection(result.atomIndices);
+    updateSelectedHalos();
+    updateEditSelectionVisuals();
+    updateSidePanel();
+    setHintMessage(`Pasted ${result.atomIndices.length} atom${result.atomIndices.length === 1 ? '' : 's'}.`);
+    return true;
+  }
+
+  /**
    * Resolve the currently pending first atom for the Bond tool to one atom index.
    * @param {*} vol
    * @returns {number}
@@ -11285,7 +11808,7 @@
    * Clear the pending first-atom selection used by the Bond tool.
    */
   function clearEditBondPendingSelection() {
-    if (bondEditing) bondEditing.clearPendingSelection();
+    return bondEditing ? bondEditing.clearPendingSelection() : false;
   }
 
   /**
@@ -11701,6 +12224,11 @@
    * Clear persistent transform selection/highlight state.
    */
   function clearTransformSelection() {
+    const changed = !!(
+      (Array.isArray(transformSelectionIndices) && transformSelectionIndices.length)
+      || transformSelectionContext
+      || transformPendingSelectionTarget
+    );
     transformSelectionIndices = [];
     transformSelectionKind = 'fragment';
     transformSelectionContext = null;
@@ -11709,6 +12237,7 @@
     updateTransformBondSelectionHalos();
     updateTransformSelectionGuides();
     updateEditToolboxUi({ syncSearch: false });
+    return changed;
   }
 
   /**
@@ -11865,6 +12394,66 @@
       g.remove(c);
       disposeObj(c);
     }
+  }
+
+  function getEditSelectionCenterWorld(indices, vol) {
+    const selected = Array.from(new Set((Array.isArray(indices) ? indices : [])
+      .map((idx) => Number(idx) | 0)
+      .filter((idx) => idx >= 0 && vol && Array.isArray(vol.atoms) && idx < vol.atoms.length)));
+    if (!selected.length) return null;
+    const center = new THREE.Vector3();
+    let count = 0;
+    for (const idx of selected) {
+      let pos = null;
+      const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
+      if (mesh && mesh.position) pos = mesh.position;
+      else if (vol && Array.isArray(vol.atoms) && vol.atoms[idx]) pos = atomUnitsToAng(vol, vol.atoms[idx]);
+      if (!pos) continue;
+      center.add(pos);
+      count += 1;
+    }
+    if (!count) return null;
+    return center.multiplyScalar(1 / count);
+  }
+
+  function getMoveSelectionGizmoLength(indices, vol) {
+    const center = getEditSelectionCenterWorld(indices, vol);
+    if (!center) return 0.9;
+    let maxDist = 0;
+    const selected = Array.from(new Set((Array.isArray(indices) ? indices : [])
+      .map((idx) => Number(idx) | 0)
+      .filter((idx) => idx >= 0 && vol && Array.isArray(vol.atoms) && idx < vol.atoms.length)));
+    for (const idx of selected) {
+      const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
+      const pos = mesh && mesh.position ? mesh.position : (vol && vol.atoms[idx] ? atomUnitsToAng(vol, vol.atoms[idx]) : null);
+      if (!pos) continue;
+      maxDist = Math.max(maxDist, pos.distanceTo(center));
+    }
+    return Math.max(0.7, Math.min(2.5, maxDist > 1e-6 ? (maxDist * 1.2 + 0.35) : 0.9));
+  }
+
+  function setMoveSelectionGizmoHover(axis = '') {
+    if (editGizmos) editGizmos.setMoveHover(axis);
+  }
+
+  function updateMoveSelectionGizmo() {
+    if (editGizmos) editGizmos.updateMove();
+  }
+
+  function pickMoveSelectionGizmoHit(e) {
+    return editGizmos ? editGizmos.pickMoveHit(e) : null;
+  }
+
+  function setRotateSelectionGizmoHover(axis = '') {
+    if (editGizmos) editGizmos.setRotateHover(axis);
+  }
+
+  function updateRotateSelectionGizmo() {
+    if (editGizmos) editGizmos.updateRotate();
+  }
+
+  function pickRotateSelectionGizmoHit(e) {
+    return editGizmos ? editGizmos.pickRotateHit(e) : null;
   }
   /**
    * Render one canvas-backed texture for a text sprite.
@@ -12171,6 +12760,58 @@
     raycaster.setFromCamera(ndc, camera);
   }
 
+  function hideEditSelectionMarquee() {
+    editSelectionMarqueeActive = false;
+    editSelectionMarqueeRect = null;
+    if (!editSelectionMarqueeEl) return;
+    editSelectionMarqueeEl.setAttribute('aria-hidden', 'true');
+    editSelectionMarqueeEl.style.left = '0px';
+    editSelectionMarqueeEl.style.top = '0px';
+    editSelectionMarqueeEl.style.width = '0px';
+    editSelectionMarqueeEl.style.height = '0px';
+  }
+
+  function updateEditSelectionMarquee(clientX, clientY) {
+    if (!__editDownPt) return;
+    const left = Math.min(__editDownPt.x, Number(clientX) || 0);
+    const top = Math.min(__editDownPt.y, Number(clientY) || 0);
+    const right = Math.max(__editDownPt.x, Number(clientX) || 0);
+    const bottom = Math.max(__editDownPt.y, Number(clientY) || 0);
+    editSelectionMarqueeRect = {
+      left, top, right, bottom,
+      width: Math.max(0, right - left),
+      height: Math.max(0, bottom - top),
+    };
+    if (!editSelectionMarqueeEl) return;
+    editSelectionMarqueeActive = true;
+    editSelectionMarqueeEl.setAttribute('aria-hidden', 'false');
+    editSelectionMarqueeEl.style.left = `${left}px`;
+    editSelectionMarqueeEl.style.top = `${top}px`;
+    editSelectionMarqueeEl.style.width = `${Math.max(0, right - left)}px`;
+    editSelectionMarqueeEl.style.height = `${Math.max(0, bottom - top)}px`;
+  }
+
+  function collectEditSelectionBoxIndices(rect) {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!rect || !vol || !Array.isArray(vol.atoms) || !atomGroup || !Array.isArray(atomGroup.children)) return [];
+    const canvasRect = canvasEl.getBoundingClientRect();
+    const indices = [];
+    for (let i = 0; i < vol.atoms.length && i < atomGroup.children.length; i += 1) {
+      const mesh = atomGroup.children[i];
+      if (!mesh || mesh.visible === false || !mesh.position || typeof mesh.position.clone !== 'function') continue;
+      const projected = mesh.position.clone().project(camera);
+      if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y) || !Number.isFinite(projected.z)) continue;
+      if (projected.z < -1 || projected.z > 1) continue;
+      const clientX = canvasRect.left + ((projected.x + 1) * 0.5 * canvasRect.width);
+      const clientY = canvasRect.top + ((1 - projected.y) * 0.5 * canvasRect.height);
+      if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+        indices.push(i);
+      }
+    }
+    return indices;
+  }
+
   /**
    * Raycast and return the first draggable measurement label under the pointer.
    * @param {PointerEvent} e
@@ -12398,31 +13039,15 @@
    */
   function clearHover() {
     clearMeasurementLabelHover();
+    setMoveSelectionGizmoHover('');
+    setRotateSelectionGizmoHover('');
     setHover(null);
     setBondHover(null);
     setSurfaceHover(null);
     hideSurfaceHoverLabel();
   }
 
-  // (axis lock uses simple axis component of the view-plane delta)
-
-  /**
-   * Refresh the axis-lock button visibility and active state.
-   */
-  function updateAxisButtons() {
-    if (!axisLockEl) return;
-    axisLockEl.style.display = (editMode && editTool === EDIT_TOOL.MOVE) ? 'flex' : 'none';
-    /**
-     * Toggle the active class for one axis-lock button.
-     * @param {HTMLElement} btn
-     * @param {boolean} on
-     */
-    const set = (btn, on) => { if (!btn) return; btn.classList.toggle('active', !!on); };
-    set(axisXBtn, axisLock === 'x'); set(axisYBtn, axisLock === 'y'); set(axisZBtn, axisLock === 'z');
-  }
-  if (axisXBtn) axisXBtn.onclick = () => { axisLock = (axisLock === 'x' ? 'none' : 'x'); updateAxisButtons(); };
-  if (axisYBtn) axisYBtn.onclick = () => { axisLock = (axisLock === 'y' ? 'none' : 'y'); updateAxisButtons(); };
-  if (axisZBtn) axisZBtn.onclick = () => { axisLock = (axisLock === 'z' ? 'none' : 'z'); updateAxisButtons(); };
+  function updateAxisButtons() {}
   buildEditAddControls();
   loadExternalFragmentLibrary();
 
@@ -13085,81 +13710,67 @@
     if (!transformPivotWorld || !transformBeforeSnapshot) return;
 
     const movedWorld = [];
-    if (isRotateTransformMode(editTransformMode)) {
-      if (transformRotateGesture === 'bondQuaternion') {
-        const nextClientX = Number(e.clientX) || transformRotateLastClientX;
-        const nextClientY = Number(e.clientY) || transformRotateLastClientY;
-        const dx = nextClientX - transformRotateLastClientX;
-        const dy = nextClientY - transformRotateLastClientY;
-        transformRotateLastClientX = nextClientX;
-        transformRotateLastClientY = nextClientY;
-        if (Math.abs(dx) <= 1e-7 && Math.abs(dy) <= 1e-7) return;
-        const camDir = new THREE.Vector3();
-        camera.getWorldDirection(camDir);
-        if (camDir.lengthSq() < 1e-12) camDir.set(0, 0, -1);
-        camDir.normalize();
-        const camUp = camera.up.clone().normalize();
-        if (camUp.lengthSq() < 1e-12) camUp.set(0, 1, 0);
-        let camRight = new THREE.Vector3().crossVectors(camDir, camUp);
-        if (camRight.lengthSq() < 1e-12) camRight = getBondPerpendicular(camDir);
-        camRight.normalize();
-        const deltaQ = new THREE.Quaternion()
-          .setFromAxisAngle(camUp, dx * 0.01)
-          .multiply(new THREE.Quaternion().setFromAxisAngle(camRight, dy * 0.01));
-        transformRotateAccumulatedQuaternion.premultiply(deltaQ);
-        for (const startWorld of transformStartPositionsWorld) {
-          const world = startWorld.clone()
-            .sub(transformPivotWorld)
-            .applyQuaternion(transformRotateAccumulatedQuaternion)
-            .add(transformPivotWorld);
-          movedWorld.push(world);
-        }
-        applyTransformWorldPositions(vol, transformTargetIndices, movedWorld);
-        if (transformAppliesToGrid) {
-          applyTransformGridRotation(vol, transformBeforeSnapshot.grid, transformPivotWorld, transformRotateAccumulatedQuaternion);
-        }
-        transformMoved = true;
-      } else {
-        if (!transformDragPlane || !transformRotateAxis || !transformRotateStartDir) return;
-        setRaycasterFromEvent(e);
-        const planeHit = new THREE.Vector3();
-        if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) return;
-        const currDir = planeHit.clone().sub(transformPivotWorld);
-        currDir.addScaledVector(transformRotateAxis, -currDir.dot(transformRotateAxis));
-        if (currDir.lengthSq() < 1e-10) return;
-        currDir.normalize();
-        const cross = new THREE.Vector3().crossVectors(transformRotateStartDir, currDir);
-        const sin = cross.dot(transformRotateAxis);
-        const cos = THREE.MathUtils.clamp(transformRotateStartDir.dot(currDir), -1, 1);
-        const angle = Math.atan2(sin, cos);
-        if (Math.abs(angle) <= 1e-7) return;
-        const deltaQ = new THREE.Quaternion().setFromAxisAngle(transformRotateAxis, angle);
-        transformRotateAccumulatedQuaternion.premultiply(deltaQ);
-        transformRotateStartDir.copy(currDir);
-        for (const startWorld of transformStartPositionsWorld) {
-          const world = startWorld.clone()
-            .sub(transformPivotWorld)
-            .applyQuaternion(transformRotateAccumulatedQuaternion)
-            .add(transformPivotWorld);
-          movedWorld.push(world);
-        }
-        applyTransformWorldPositions(vol, transformTargetIndices, movedWorld);
-        if (transformAppliesToGrid) {
-          applyTransformGridRotation(vol, transformBeforeSnapshot.grid, transformPivotWorld, transformRotateAccumulatedQuaternion);
-        }
-        transformMoved = true;
+    if (transformRotateGesture === 'bondQuaternion') {
+      const nextClientX = Number(e.clientX) || transformRotateLastClientX;
+      const nextClientY = Number(e.clientY) || transformRotateLastClientY;
+      const dx = nextClientX - transformRotateLastClientX;
+      const dy = nextClientY - transformRotateLastClientY;
+      transformRotateLastClientX = nextClientX;
+      transformRotateLastClientY = nextClientY;
+      if (Math.abs(dx) <= 1e-7 && Math.abs(dy) <= 1e-7) return;
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      if (camDir.lengthSq() < 1e-12) camDir.set(0, 0, -1);
+      camDir.normalize();
+      const camUp = camera.up.clone().normalize();
+      if (camUp.lengthSq() < 1e-12) camUp.set(0, 1, 0);
+      let camRight = new THREE.Vector3().crossVectors(camDir, camUp);
+      if (camRight.lengthSq() < 1e-12) camRight = getBondPerpendicular(camDir);
+      camRight.normalize();
+      const deltaQ = new THREE.Quaternion()
+        .setFromAxisAngle(camUp, dx * 0.01)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(camRight, dy * 0.01));
+      transformRotateAccumulatedQuaternion.premultiply(deltaQ);
+      for (const startWorld of transformStartPositionsWorld) {
+        const world = startWorld.clone()
+          .sub(transformPivotWorld)
+          .applyQuaternion(transformRotateAccumulatedQuaternion)
+          .add(transformPivotWorld);
+        movedWorld.push(world);
       }
+      applyTransformWorldPositions(vol, transformTargetIndices, movedWorld);
+      if (transformAppliesToGrid) {
+        applyTransformGridRotation(vol, transformBeforeSnapshot.grid, transformPivotWorld, transformRotateAccumulatedQuaternion);
+      }
+      transformMoved = true;
     } else {
-      if (!transformDragPlane) return;
+      if (!transformDragPlane || !transformRotateAxis || !transformRotateStartDir) return;
       setRaycasterFromEvent(e);
       const planeHit = new THREE.Vector3();
       if (!raycaster.ray.intersectPlane(transformDragPlane, planeHit)) return;
-      if (!transformPlaneStart) return;
-      const delta = planeHit.clone().sub(transformPlaneStart);
-      if (delta.lengthSq() <= 1e-12) return;
-      for (const startWorld of transformStartPositionsWorld) movedWorld.push(startWorld.clone().add(delta));
+      const currDir = planeHit.clone().sub(transformPivotWorld);
+      currDir.addScaledVector(transformRotateAxis, -currDir.dot(transformRotateAxis));
+      if (currDir.lengthSq() < 1e-10) return;
+      currDir.normalize();
+      const cross = new THREE.Vector3().crossVectors(transformRotateStartDir, currDir);
+      const sin = cross.dot(transformRotateAxis);
+      const cos = THREE.MathUtils.clamp(transformRotateStartDir.dot(currDir), -1, 1);
+      const angle = Math.atan2(sin, cos);
+      if (Math.abs(angle) <= 1e-7) return;
+      const deltaQ = new THREE.Quaternion().setFromAxisAngle(transformRotateAxis, angle);
+      transformRotateAccumulatedQuaternion.premultiply(deltaQ);
+      transformRotateStartDir.copy(currDir);
+      for (const startWorld of transformStartPositionsWorld) {
+        const world = startWorld.clone()
+          .sub(transformPivotWorld)
+          .applyQuaternion(transformRotateAccumulatedQuaternion)
+          .add(transformPivotWorld);
+        movedWorld.push(world);
+      }
       applyTransformWorldPositions(vol, transformTargetIndices, movedWorld);
-      if (transformAppliesToGrid) applyTransformGridTranslation(vol, transformBeforeSnapshot.grid, delta);
+      if (transformAppliesToGrid) {
+        applyTransformGridRotation(vol, transformBeforeSnapshot.grid, transformPivotWorld, transformRotateAccumulatedQuaternion);
+      }
       transformMoved = true;
     }
 
@@ -13235,7 +13846,7 @@
       return;
     }
     // Track movement to distinguish click vs drag in measurement mode
-    if ((currentMode === MODES.MEASURE || (currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD)) && __editDownPt) {
+    if ((currentMode === MODES.MEASURE || (currentMode === MODES.EDIT && (editTool === EDIT_TOOL.ADD || editTool === EDIT_TOOL.SELECT))) && __editDownPt) {
       const dx = e.clientX - __editDownPt.x, dy = e.clientY - __editDownPt.y;
       if (Math.hypot(dx, dy) > 4) __editMoved = true;
     }
@@ -13259,46 +13870,24 @@
       updateFuseRingPlacementRotationFromEvent(e);
       return;
     }
-    if (dragActive) {
-      __editMoved = true;
-      setNDCFromEvent(e);
-      raycaster.setFromCamera(ndc, camera);
-      const hit = new THREE.Vector3();
-      let newPos = null;
-      if (dragPlane && raycaster.ray.intersectPlane(dragPlane, hit)) {
-          const move = hit.clone().sub(dragPlaneStart);
-          if (dragAxis !== 'none') {
-            const ax = dragAxis === 'x' ? new THREE.Vector3(1, 0, 0) : dragAxis === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-            const t = move.dot(ax);
-            newPos = dragStartPos.clone().add(ax.multiplyScalar(t));
-          } else {
-            newPos = dragStartPos.clone().add(move);
-          }
-      }
-      if (newPos) {
-        // Apply to mesh and data (defer full rebuild until pointerup to avoid flicker)
-        if (dragAtomIndex >= 0 && atomGroup.children[dragAtomIndex]) {
-          const m = atomGroup.children[dragAtomIndex];
-          m.position.copy(newPos);
-          const vol = volumes[currentIndex]?.vol; if (vol) {
-            const arr = worldToAtomUnits(vol, newPos);
-            const a = vol.atoms[dragAtomIndex];
-            a.x = arr[0]; a.y = arr[1]; a.z = arr[2];
-          }
-          // Update bonds by rescanning (bonds only) at ~30 FPS
-          const now = performance.now();
-          if (now - __lastBondUpdate > 33) { rebuildBondsFromAtoms(); __lastBondUpdate = now; }
-        }
-        // Move the guide line with the dragged atom
-        updateAxisGuideLine();
-        // Update selection overlays if any
-        updateEditSelectionVisuals();
-      }
+    if (editTransformController && editTransformController.handlePointerMove(e)) {
+      if (dragActive) updateAxisGuideLine();
+      setHover(null);
+      setBondHover(null);
+      setSurfaceHover(null);
+      hideSurfaceHoverLabel();
       return;
     }
     if (currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD && addGrowActive) {
       updateAddGrowPreviewFromEvent(e);
       return;
+    }
+    if (currentMode === MODES.EDIT && editTool === EDIT_TOOL.SELECT && __editDownPt) {
+      if (__editMoved || editSelectionMarqueeActive) {
+        updateEditSelectionMarquee(e.clientX, e.clientY);
+        clearHover();
+        return;
+      }
     }
     if (currentMode === MODES.MEASURE) {
       const labelHit = pickMeasurementLabelHit(e);
@@ -13393,12 +13982,12 @@
     if (currentMode === MODES.EDIT) {
       if (editTool === EDIT_TOOL.SELECT) {
         editSelectionClickAdditive = !!e.shiftKey;
+        hideEditSelectionMarquee();
         if (obj && obj.userData) {
           __editClickIdx = obj.userData.index | 0;
-          e.preventDefault();
-        } else {
-          beginQuaternionViewRotate(e);
         }
+        try { canvasEl.setPointerCapture(e.pointerId); } catch { }
+        e.preventDefault();
         return;
       }
       if (editTool === EDIT_TOOL.DELETE) {
@@ -13561,45 +14150,24 @@
           return;
         }
         transformPendingSelectionTarget = null;
-        if (!e.shiftKey && getActiveTransformSelectionIndices().length) {
+        if (!e.shiftKey) {
           transformPendingBackgroundClear = true;
         }
         beginQuaternionViewRotate(e);
-        if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
-          setHintMessage('Rotate fragment: click a bond to select one side. Drag the selected fragment to spin about the bond axis.');
-        } else if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+        if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
           setHintMessage('Rotate bond: click a bond to select one side. Drag the selected fragment to rotate around the opposite atom.');
         } else {
-          setHintMessage('Transform tool: click an atom or bond to select. Drag the current selection to move it.');
+          setHintMessage('Rotate fragment: click an atom or bond to select a target. Drag the current selection to rotate it. Bond-side selections spin about the bond axis.');
         }
         return;
       }
-      if (!obj || !obj.userData) {
-        beginQuaternionViewRotate(e);
+      if (editTransformController && editTransformController.handlePointerDown(e, obj)) {
+        e.preventDefault();
         return;
       }
-      dragAtomIndex = obj.userData.index | 0;
-      __editClickIdx = dragAtomIndex;
-      dragActive = true;
-      controls.enabled = false;
-      dragStartPos = obj.position.clone();
-      dragOrigMeshPos = obj.position.clone();
-      const vol = volumes[currentIndex]?.vol; if (vol) {
-        const a = vol.atoms[dragAtomIndex];
-        dragOrigAtomUnits = [a.x, a.y, a.z];
-        dragBeforeAtomsSnapshot = cloneAtomsSnapshot(vol);
-        dragBeforeBondSnapshot = cloneBondSnapshot(vol);
-      }
-      const normal = new THREE.Vector3();
-      // plane orthogonal to camera-to-target axis
-      camera.getWorldDirection(normal);
-      dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, dragStartPos);
-      const hit = new THREE.Vector3(); raycaster.ray.intersectPlane(dragPlane, hit);
-      dragPlaneStart = hit.clone();
-      dragAxis = axisLock;
-      // Update guide line at drag start if an axis key is held
-      updateAxisGuideLine();
+      beginQuaternionViewRotate(e);
       e.preventDefault();
+      return;
     } else if (currentMode === MODES.MEASURE) {
       const labelHit = pickMeasurementLabelHit(e);
       if (labelHit && beginMeasurementLabelDrag(e, labelHit)) {
@@ -13653,40 +14221,34 @@
             }
           }
         } else if (editTool === EDIT_TOOL.TRANSFORM && transformPendingBackgroundClear && !__editMoved) {
-          clearTransformSelection();
-          setHintMessage('Transform selection cleared.');
+          if (clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true })) {
+            setHintMessage('Transform selection cleared.');
+          }
         }
         transformPendingSelectionTarget = null;
         transformPendingBackgroundClear = false;
-        const wasDragging = dragActive;
-        if (wasDragging) {
-          const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-          const vol = record && record.vol;
-          const afterAtoms = vol ? cloneAtomsSnapshot(vol) : null;
-          if (record && dragBeforeAtomsSnapshot && afterAtoms) {
-            pushEditHistoryEntry(record, dragBeforeAtomsSnapshot, afterAtoms, 'Move atom', {
-              beforeBonds: Array.isArray(dragBeforeBondSnapshot) ? dragBeforeBondSnapshot : [],
-              afterBonds: vol ? cloneBondSnapshot(vol) : [],
-            });
-          }
-          // Final rebuild to update bonds/geometry once after drag
-          rebuildScene({ preserveView: true });
-          dragActive = false; dragAtomIndex = -1; dragPlane = null; dragPlaneStart = null; dragStartPos = null; dragOrigMeshPos = null; dragOrigAtomUnits = null; dragBeforeAtomsSnapshot = null; dragBeforeBondSnapshot = null; dragAxis = 'none';
-          controls.enabled = true;
-          if (editMode) renderRibbon('edit');
-          // Refresh/hide guide line after drag ends
+        const transformToolHandledPointerUp = !!(editTransformController && editTransformController.handlePointerUp(e));
+        if (transformToolHandledPointerUp) {
           updateAxisGuideLine();
-          updateEditSelectionVisuals();
         } else if (editTool === EDIT_TOOL.SELECT) {
-          if (!__editMoved) {
+          try { canvasEl.releasePointerCapture(e.pointerId); } catch { }
+          if (__editMoved && editSelectionMarqueeRect) {
+            const boxIndices = collectEditSelectionBoxIndices(editSelectionMarqueeRect);
+            applyEditAtomSelectionBox(boxIndices, editSelectionClickAdditive);
+            hideEditSelectionMarquee();
+          } else if (!__editMoved) {
             if (__editClickIdx >= 0) {
               applyEditAtomSelectionClick(__editClickIdx, editSelectionClickAdditive);
-            } else if (clearEditAtomSelection()) {
+            } else if (clearEditSelectionsOnEmptyClick({ selection: true, transform: false, bondEdit: true })) {
               setHintMessage('Selection cleared.');
             }
           }
+          hideEditSelectionMarquee();
         } else if (editTool === EDIT_TOOL.DELETE) {
           if (!__editMoved && __editClickIdx >= 0) deleteAtomAtIndex(__editClickIdx);
+          else if (!__editMoved && clearEditSelectionsOnEmptyClick({ selection: true, transform: false, bondEdit: true })) {
+            setHintMessage('Selection cleared.');
+          }
         } else if (editTool === EDIT_TOOL.BOND) {
           if (!__editMoved) {
             if (bondEditing && bondEditing.consumePopupClickHandled()) {
@@ -13695,12 +14257,8 @@
                 bondEditing.hidePopup();
                 bondEditing.applyToAtom(__editClickIdx);
               }
-            } else if (getEditBondPendingAtomIndex((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null) >= 0) {
-              if (bondEditing) bondEditing.hidePopup();
-              clearEditBondPendingSelection();
+            } else if (clearEditSelectionsOnEmptyClick({ selection: true, transform: false, bondEdit: true })) {
               setHintMessage('Bond tool selection cleared.');
-            } else {
-              if (bondEditing) bondEditing.hidePopup();
             }
           }
           if (bondEditing) bondEditing.clearState({ pendingSelection: false, popup: false });
@@ -13793,15 +14351,18 @@
     transformPendingSelectionTarget = null;
     transformPendingBackgroundClear = false;
     if (bondEditing) bondEditing.clearState({ pendingSelection: false, popup: false });
-    dragBeforeAtomsSnapshot = null;
-    dragBeforeBondSnapshot = null;
+    if (editTransformController) editTransformController.handlePointerCancel();
     editSelectionClickAdditive = false;
+    hideEditSelectionMarquee();
+    try { canvasEl.releasePointerCapture(e.pointerId); } catch { }
     cancelMeasurementLabelDrag();
     if (addFusePreviewState) {
       addFusePreviewState.rotating = false;
       addFusePreviewState.moved = false;
       try { controls.enabled = true; } catch { }
     }
+    try { controls.enabled = true; } catch { }
+    updateAxisGuideLine();
   });
 
   // Reset view to the initial camera/target/shift
@@ -13921,6 +14482,7 @@
   });
   bind('down', MODES.EDIT, 's', () => { setEditTool(EDIT_TOOL.SELECT); });
   bind('down', MODES.EDIT, 'g', () => { setEditTool(EDIT_TOOL.MOVE); });
+  bind('down', MODES.EDIT, 'o', () => { setEditTool(EDIT_TOOL.ROTATE); });
   bind('down', MODES.EDIT, 'f', () => {
     setEditTool(EDIT_TOOL.ADD);
     setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: true, syncSearch: true });
@@ -13981,32 +14543,10 @@
       alignMoleculePlacementToAxis(axis);
       return;
     }
-    if (editTool !== EDIT_TOOL.MOVE) return;
-    axisKeyDown = axis;
-    axisLock = axis;
-    updateAxisButtons();
-    if (dragActive) dragAxis = axisLock;
-    updateAxisGuideLine && updateAxisGuideLine();
-  };
-  /**
-   * Disable temporary axis lock when an axis key is released.
-   * @param {'x'|'y'|'z'} axis
-   */
-  const axisUp = (axis) => {
-    if (axisKeyDown === axis) {
-      axisKeyDown = null;
-      axisLock = 'none';
-      updateAxisButtons();
-      if (dragActive) dragAxis = axisLock;
-      updateAxisGuideLine && updateAxisGuideLine();
-    }
   };
   bind('down', MODES.EDIT, 'x', () => axisDown('x'));
   bind('down', MODES.EDIT, 'y', () => axisDown('y'));
   bind('down', MODES.EDIT, 'z', () => axisDown('z'));
-  bind('up', MODES.EDIT, 'x', () => axisUp('x'));
-  bind('up', MODES.EDIT, 'y', () => axisUp('y'));
-  bind('up', MODES.EDIT, 'z', () => axisUp('z'));
   bind('down', MODES.EDIT, 'Escape', () => {
     if (editTool !== EDIT_TOOL.TRANSFORM) return;
     if (!getActiveTransformSelectionIndices().length && !transformActive) return;
@@ -14042,6 +14582,22 @@
     if (isUndo) undoLastEditAction();
     else redoLastEditAction();
     return true;
+  }
+
+  function handleEditCopyPasteHotkey(e) {
+    if (currentMode !== MODES.EDIT) return false;
+    if (isTypingInInput()) return false;
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return false;
+    const key = String(e.key || '').toLowerCase();
+    if (!e.shiftKey && key === 'c') {
+      e.preventDefault();
+      return copyEditSelectionToClipboard();
+    }
+    if (!e.shiftKey && key === 'v') {
+      e.preventDefault();
+      return pasteEditClipboardSelection();
+    }
+    return false;
   }
 
   // Global key listeners delegate to router
@@ -14130,6 +14686,7 @@
         return;
       }
     }
+    if (handleEditCopyPasteHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
     routeShortcut(e, 'down', currentMode);
   });
@@ -14582,6 +15139,18 @@
    */
   function asBoolean(value) {
     return !!value;
+  }
+
+  /**
+   * Coerce a value to a finite number with fallback.
+   * @param {*} value
+   * @param {number} fallback
+   * @returns {number}
+   */
+  function asFiniteNumber(value, fallback) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+    return Number.isFinite(fallback) ? Number(fallback) : 0;
   }
 
   /**

@@ -17,7 +17,6 @@
     const isEditMode = typeof options.isEditMode === 'function' ? options.isEditMode : (() => false);
     const finalizeAddAtomOperatorSession = typeof options.finalizeAddAtomOperatorSession === 'function' ? options.finalizeAddAtomOperatorSession : (() => false);
     const hideAllAdaptiveToolPopovers = typeof options.hideAllAdaptiveToolPopovers === 'function' ? options.hideAllAdaptiveToolPopovers : (() => {});
-    const updateAxisGuideLine = typeof options.updateAxisGuideLine === 'function' ? options.updateAxisGuideLine : (() => {});
     const clearAddGrowPreview = typeof options.clearAddGrowPreview === 'function' ? options.clearAddGrowPreview : (() => {});
     const clearMoleculePlacementPreview = typeof options.clearMoleculePlacementPreview === 'function' ? options.clearMoleculePlacementPreview : (() => {});
     const clearFuseRingPreview = typeof options.clearFuseRingPreview === 'function' ? options.clearFuseRingPreview : (() => {});
@@ -26,7 +25,6 @@
     const clearTransformSelection = typeof options.clearTransformSelection === 'function' ? options.clearTransformSelection : (() => {});
     const clearHover = typeof options.clearHover === 'function' ? options.clearHover : (() => {});
     const updateEditToolboxUi = typeof options.updateEditToolboxUi === 'function' ? options.updateEditToolboxUi : (() => {});
-    const updateAxisButtons = typeof options.updateAxisButtons === 'function' ? options.updateAxisButtons : (() => {});
     const getCurrentFragmentDefinition = typeof options.getCurrentFragmentDefinition === 'function' ? options.getCurrentFragmentDefinition : (() => null);
     const getCurrentMoleculeDefinition = typeof options.getCurrentMoleculeDefinition === 'function' ? options.getCurrentMoleculeDefinition : (() => null);
     const getElementSymbol = typeof options.getElementSymbol === 'function' ? options.getElementSymbol : ((z) => String(z || '?'));
@@ -72,6 +70,37 @@
       return setEditAtomSelection([]);
     }
 
+    function clearEditSelectionsOnEmptyClick(clearOptions = {}) {
+      const record = getActiveRecord();
+      const vol = record && record.vol;
+      const bondEditing = getBondEditing();
+      let changed = false;
+      if (clearOptions.selection !== false) {
+        changed = clearEditAtomSelection() || changed;
+      }
+      if (clearOptions.transform !== false) {
+        changed = !!clearTransformSelection() || changed;
+      }
+      if (clearOptions.bondEdit !== false) {
+        const hadPendingBondSelection = !!(
+          bondEditing
+          && typeof bondEditing.getPendingAtomIndex === 'function'
+          && bondEditing.getPendingAtomIndex(vol) >= 0
+        );
+        const hadBondPopup = !!(
+          bondEditing
+          && typeof bondEditing.getPopupCarrier === 'function'
+          && bondEditing.getPopupCarrier()
+        );
+        const clearedPendingBondSelection = !!clearEditBondPendingSelection();
+        if (bondEditing && typeof bondEditing.hidePopup === 'function') {
+          bondEditing.hidePopup();
+        }
+        changed = changed || hadPendingBondSelection || hadBondPopup || clearedPendingBondSelection;
+      }
+      return changed;
+    }
+
     function selectAllEditAtoms() {
       const record = getActiveRecord();
       const vol = record && record.vol;
@@ -103,6 +132,25 @@
       return changed;
     }
 
+    function applyEditAtomSelectionBox(atomIndices, additive) {
+      const nextIndices = normalizeEditAtomSelection(atomIndices, (getActiveRecord() && getActiveRecord().vol) || null);
+      if (additive) {
+        const merged = Array.from(new Set([...getEditAtomSelection(), ...nextIndices])).sort((a, b) => a - b);
+        const changed = setEditAtomSelection(merged);
+        if (changed) {
+          const count = merged.length;
+          setHintMessage(count ? `Selection updated • ${count} atom${count === 1 ? '' : 's'} selected.` : 'Selection cleared.');
+        }
+        return changed;
+      }
+      const changed = setEditAtomSelection(nextIndices);
+      if (changed) {
+        const count = nextIndices.length;
+        setHintMessage(count ? `Selected ${count} atom${count === 1 ? '' : 's'}.` : 'Selection cleared.');
+      }
+      return changed;
+    }
+
     function buildAddToolHint() {
       if (state.editAddMode === EDIT_ADD_MODE.FRAGMENT) {
         const fragment = getCurrentFragmentDefinition();
@@ -123,13 +171,10 @@
     function buildTransformHint() {
       const modeLabel = getEditTransformModeLabel(state.editTransformMode);
       const scopeLabel = getEditTransformScopeLabel(state.editTransformScope);
-      if (state.editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
-        return `Edit tool: ${modeLabel} • Scope ${scopeLabel} • Click a bond to select one side • Drag the selection to spin about the bond axis • Shift-click adds another target`;
-      }
       if (state.editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
         return `Edit tool: ${modeLabel} • Scope ${scopeLabel} • Click a bond to select one side • Drag the selection to rotate around the opposite atom • Shift-click adds another target`;
       }
-      return `Edit tool: Transform (${modeLabel}) • Scope ${scopeLabel} • Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the selection to move • Click empty space to clear • Shift-click adds another target`;
+      return `Edit tool: ${modeLabel} • Scope ${scopeLabel} • Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the selection to rotate • Bond-side selections spin about the bond axis • Click empty space to clear • Shift-click adds another target`;
     }
 
     function setEditTool(nextTool, options = {}) {
@@ -139,6 +184,8 @@
         && (nextTool !== EDIT_TOOL.ADD || state.editAddMode !== EDIT_ADD_MODE.ATOM);
       if (leavingAddAtomOperator) finalizeAddAtomOperatorSession({ announce: false });
       if (nextTool === EDIT_TOOL.SELECT) state.editTool = EDIT_TOOL.SELECT;
+      else if (nextTool === EDIT_TOOL.MOVE) state.editTool = EDIT_TOOL.MOVE;
+      else if (nextTool === EDIT_TOOL.ROTATE) state.editTool = EDIT_TOOL.ROTATE;
       else if (nextTool === EDIT_TOOL.ADD) state.editTool = EDIT_TOOL.ADD;
       else if (nextTool === EDIT_TOOL.BOND) state.editTool = EDIT_TOOL.BOND;
       else if (nextTool === EDIT_TOOL.TRANSFORM) state.editTool = EDIT_TOOL.TRANSFORM;
@@ -148,11 +195,6 @@
         hideAllAdaptiveToolPopovers();
       }
       if (state.editTool === EDIT_TOOL.BOND) state.editBondAction = EDIT_BOND_ACTION.SET;
-      if (state.editTool === EDIT_TOOL.ADD || state.editTool === EDIT_TOOL.TRANSFORM) {
-        state.axisLock = 'none';
-        state.axisKeyDown = null;
-        updateAxisGuideLine();
-      }
       if (state.editTool !== EDIT_TOOL.ADD && prevTool === EDIT_TOOL.ADD) {
         clearAddGrowPreview();
         clearMoleculePlacementPreview();
@@ -167,13 +209,12 @@
       }
       clearHover();
       updateEditToolboxUi();
-      updateAxisButtons();
       if (!announce || !isEditMode()) return;
       if (state.editTool === EDIT_TOOL.SELECT) {
         const count = getEditAtomSelection().length;
         setHintMessage(count
-          ? `Edit tool: Selection • Click to replace • Shift-click to add/remove • Cmd/Ctrl+A selects all • ${count} atom${count === 1 ? '' : 's'} currently selected`
-          : 'Edit tool: Selection • Click to select • Shift-click to add/remove • Click empty space to clear • Cmd/Ctrl+A selects all');
+          ? `Edit tool: Selection • Click to replace • Drag to box-select • Shift-click to add/remove • Shift-drag adds box hits • Cmd/Ctrl+A selects all • ${count} atom${count === 1 ? '' : 's'} currently selected`
+          : 'Edit tool: Selection • Click to select • Drag to box-select • Shift-click to add/remove • Click empty space to clear • Cmd/Ctrl+A selects all');
         return;
       }
       if (state.editTool === EDIT_TOOL.ADD) {
@@ -192,7 +233,11 @@
         setHintMessage('Edit tool: Delete • Click an atom or press Backspace/Delete on hovered atom');
         return;
       }
-      setHintMessage('Edit tool: Move • Click+drag atom (X/Y/Z for axis lock)');
+      if (state.editTool === EDIT_TOOL.ROTATE) {
+        setHintMessage('Edit tool: Rotate • Drag a selected atom to rotate the selection • Drag an axis ring to constrain rotation • Drag an unselected atom to retarget and rotate it • Background drag rotates view');
+        return;
+      }
+      setHintMessage('Edit tool: Move • Drag a selected atom to move the selection • Drag an axis arrow to constrain motion • Drag an unselected atom to retarget and move it • Background drag rotates view');
     }
 
     function setEditAddMode(nextMode, options = {}) {
@@ -265,8 +310,10 @@
       getEditAtomSelection,
       setEditAtomSelection,
       clearEditAtomSelection,
+      clearEditSelectionsOnEmptyClick,
       selectAllEditAtoms,
       applyEditAtomSelectionClick,
+      applyEditAtomSelectionBox,
       setEditTool,
       setEditAddMode,
       clearTransientInteractionState,

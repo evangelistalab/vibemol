@@ -19,6 +19,8 @@ JS_CHECK_FILES = \
 	assets/app/js/edit-ui.js \
 	assets/app/js/edit-placement.js \
 	assets/app/js/edit-tools.js \
+	assets/app/js/edit-gizmos.js \
+	assets/app/js/edit-transform.js \
 	assets/app/js/preset.js \
 	assets/app/js/structure-transport.js \
 	assets/app/js/file-loader.js \

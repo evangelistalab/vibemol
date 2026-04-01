@@ -49,6 +49,24 @@ def build_fixture_structure() -> str:
     return json.dumps(payload)
 
 
+def build_fixture_molden() -> str:
+    return '\n'.join([
+        '[Molden Format]',
+        '[Atoms] Angs',
+        'H 1 1 0.0 0.0 0.0',
+        '[GTO]',
+        '1 0',
+        's 1 1.0',
+        '  1.0 1.0',
+        '[MO]',
+        'Sym= A1',
+        'Ene= -0.5',
+        'Spin= Alpha',
+        'Occup= 2.0',
+        '1 1.0',
+    ])
+
+
 def active_structure_summary(page) -> dict[str, Any]:
     return page.evaluate(
         """() => {
@@ -69,6 +87,15 @@ def canvas_point(page, fx: float = 0.62, fy: float = 0.56) -> tuple[float, float
     if not box:
         raise RuntimeError('Canvas bounding box is unavailable.')
     return (box['x'] + box['width'] * fx, box['y'] + box['height'] * fy)
+
+
+def drag_canvas_box(page, start_fx: float, start_fy: float, end_fx: float, end_fy: float) -> None:
+    start_x, start_y = canvas_point(page, start_fx, start_fy)
+    end_x, end_y = canvas_point(page, end_fx, end_fy)
+    page.mouse.move(start_x, start_y)
+    page.mouse.down()
+    page.mouse.move(end_x, end_y, steps=12)
+    page.mouse.up()
 
 
 def wait_for_ready(page) -> None:
@@ -95,6 +122,83 @@ def main() -> int:
             page.goto(base_url, wait_until='networkidle')
             wait_for_ready(page)
 
+            page.wait_for_function(
+                """() => {
+                    const reveal = document.getElementById('topRightUtilitiesReveal');
+                    const link = document.getElementById('githubRepoLink');
+                    const themeInput = document.getElementById('themeToggleInput');
+                    const toolbarLight = document.querySelector('#toolbar .themeLogoLight');
+                    const toolbarDark = document.querySelector('#toolbar .themeLogoDark');
+                    const splashLight = document.getElementById('emptyStateLeadLogo');
+                    const splashDark = document.getElementById('emptyStateLeadLogoDark');
+                    if (!reveal || !link || !themeInput) return false;
+                    const style = getComputedStyle(reveal);
+                    return /github\\.com\\/evangelistalab\\/vibemol/i.test(link.href || '')
+                      && Number(style.opacity || '0') < 0.05
+                      && themeInput.checked === false
+                      && document.documentElement.getAttribute('data-theme') !== 'dark'
+                      && !!toolbarLight && !!toolbarDark && !!splashLight && !!splashDark
+                      && getComputedStyle(toolbarLight).display !== 'none'
+                      && getComputedStyle(toolbarDark).display === 'none'
+                      && getComputedStyle(splashLight).display !== 'none'
+                      && getComputedStyle(splashDark).display === 'none';
+                }"""
+            )
+            page.hover('#topRightUtilities')
+            page.wait_for_function(
+                """() => {
+                    const reveal = document.getElementById('topRightUtilitiesReveal');
+                    const light = document.querySelector('.themeToggleTextLight');
+                    const dark = document.querySelector('.themeToggleTextDark');
+                    if (!reveal || !light || !dark) return false;
+                    return Number(getComputedStyle(reveal).opacity || '0') > 0.95
+                      && /Theme:\\s*Light/i.test(light.textContent || '')
+                      && /Theme:\\s*Dark/i.test(dark.textContent || '');
+                }"""
+            )
+            page.locator('#themeToggleShell').click()
+            page.wait_for_function(
+                """() => {
+                    const themeInput = document.getElementById('themeToggleInput');
+                    const light = document.querySelector('.themeToggleTextLight');
+                    const dark = document.querySelector('.themeToggleTextDark');
+                    const toolbarLight = document.querySelector('#toolbar .themeLogoLight');
+                    const toolbarDark = document.querySelector('#toolbar .themeLogoDark');
+                    const splashLight = document.getElementById('emptyStateLeadLogo');
+                    const splashDark = document.getElementById('emptyStateLeadLogoDark');
+                    if (!themeInput || !light || !dark) return false;
+                    return themeInput.checked === true
+                      && document.documentElement.getAttribute('data-theme') === 'dark'
+                      && window.localStorage.getItem('vibemol.uiTheme') === 'dark'
+                      && !!toolbarLight && !!toolbarDark && !!splashLight && !!splashDark
+                      && getComputedStyle(toolbarLight).display === 'none'
+                      && getComputedStyle(toolbarDark).display !== 'none'
+                      && getComputedStyle(splashLight).display === 'none'
+                      && getComputedStyle(splashDark).display !== 'none'
+                      && Number(getComputedStyle(dark).opacity || '0') > 0.95
+                      && Number(getComputedStyle(light).opacity || '1') < 0.1;
+                }"""
+            )
+            page.locator('#themeToggleShell').click()
+            page.wait_for_function(
+                """() => {
+                    const themeInput = document.getElementById('themeToggleInput');
+                    const toolbarLight = document.querySelector('#toolbar .themeLogoLight');
+                    const toolbarDark = document.querySelector('#toolbar .themeLogoDark');
+                    const splashLight = document.getElementById('emptyStateLeadLogo');
+                    const splashDark = document.getElementById('emptyStateLeadLogoDark');
+                    return !!themeInput
+                      && themeInput.checked === false
+                      && document.documentElement.getAttribute('data-theme') === 'light'
+                      && window.localStorage.getItem('vibemol.uiTheme') === 'light'
+                      && !!toolbarLight && !!toolbarDark && !!splashLight && !!splashDark
+                      && getComputedStyle(toolbarLight).display !== 'none'
+                      && getComputedStyle(toolbarDark).display === 'none'
+                      && getComputedStyle(splashLight).display !== 'none'
+                      && getComputedStyle(splashDark).display === 'none';
+                }"""
+            )
+
             # Onboarding + sample load smoke.
             page.locator('#emptyStateSampleBtn').click()
             page.wait_for_function(
@@ -109,6 +213,49 @@ def main() -> int:
             if sample_summary['atomCount'] <= 0:
                 raise AssertionError('Sample load did not produce atoms.')
 
+            # Molden load/render smoke.
+            molden_text = build_fixture_molden()
+            page.evaluate(
+                """async (text) => {
+                    await window.VibeMolEmbed.loadFiles([{ name: 'mini.molden', text }]);
+                }""",
+                molden_text,
+            )
+            page.wait_for_function(
+                """() => {
+                    const row = document.getElementById('moldenMoRow');
+                    const summary = document.getElementById('moldenGridSummary');
+                    return !!row
+                      && getComputedStyle(row).display !== 'none'
+                      && !!summary
+                      && (summary.textContent || '').trim().length > 0;
+                }"""
+            )
+            molden_summary = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return {
+                        kind: exported.kind,
+                        volumeKind: exported.volume && exported.volume.kind,
+                        atomCount: exported.volume && Array.isArray(exported.volume.atoms) ? exported.volume.atoms.length : 0,
+                        nxyz: exported.volume && Array.isArray(exported.volume.nxyz) ? exported.volume.nxyz.slice() : [],
+                        dataLength: exported.volume && Array.isArray(exported.volume.data) ? exported.volume.data.length : 0,
+                        moSummary: (document.getElementById('moldenMoSummary')?.textContent || '').trim(),
+                        gridSummary: (document.getElementById('moldenGridSummary')?.textContent || '').trim(),
+                    };
+                }"""
+            )
+            if molden_summary['kind'] != 'vibemol.structure' or molden_summary['volumeKind'] != 'molden':
+                raise AssertionError(f'Unexpected Molden structure summary: {molden_summary}')
+            if molden_summary['atomCount'] != 1:
+                raise AssertionError(f'Molden load produced unexpected atom count: {molden_summary}')
+            if len(molden_summary['nxyz']) != 3 or any(int(n) <= 0 for n in molden_summary['nxyz']):
+                raise AssertionError(f'Molden load did not generate a valid grid: {molden_summary}')
+            if molden_summary['dataLength'] <= 0:
+                raise AssertionError(f'Molden render path did not populate grid data: {molden_summary}')
+            if not molden_summary['moSummary'] or not molden_summary['gridSummary']:
+                raise AssertionError(f'Molden inspector summaries are missing: {molden_summary}')
+
             # Replace active content with a deterministic explicit-bond fixture.
             fixture_text = build_fixture_structure()
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "smoke-fixture")', fixture_text)
@@ -120,12 +267,157 @@ def main() -> int:
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
             page.wait_for_function("() => !document.getElementById('emptyState') || getComputedStyle(document.getElementById('emptyState')).display === 'none'")
+            page.locator('#editAdaptiveTransformBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const select = document.getElementById('editTransformMode');
+                    if (!select) return false;
+                    const values = Array.from(select.options || []).map((option) => option.value);
+                    return !values.includes('move') && select.value === 'rotate_fragment';
+                }"""
+            )
+            page.locator('#editAdaptiveSelectionBtn').click()
 
-            # Selection smoke.
+            # Selection marquee smoke.
+            page.locator('#editAdaptiveSelectionBtn').click()
+            drag_canvas_box(page, 0.35, 0.35, 0.65, 0.65)
+            page.wait_for_function(
+                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+
+            # Select-all smoke.
+            page.keyboard.press('Meta+A' if sys.platform == 'darwin' else 'Control+A')
+            page.wait_for_function(
+                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+
+            # Empty-click deselection should also work in non-selection tools.
+            page.locator('#editAdaptiveMoveBtn').click()
+            empty_x, empty_y = canvas_point(page, 0.12, 0.16)
+            page.mouse.click(empty_x, empty_y)
+            page.wait_for_function(
+                """() => /Click atoms to build a selection/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
             page.locator('#editAdaptiveSelectionBtn').click()
             page.keyboard.press('Meta+A' if sys.platform == 'darwin' else 'Control+A')
             page.wait_for_function(
                 """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+
+            # Move smoke via operator panel + undo.
+            before_move = page.evaluate(
+                """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
+            )
+            page.locator('#editAdaptiveMoveBtn').click()
+            page.wait_for_function("() => document.getElementById('editMoveOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
+            page.locator('#editMoveOperatorHeader').click()
+            move_input = page.locator('#editMoveOperatorX')
+            move_input.click()
+            move_input.fill('0.500')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """(beforeAtoms) => {
+                    const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
+                    if (atoms.length !== beforeAtoms.length) return false;
+                    for (let i = 0; i < atoms.length; i += 1) {
+                      if (Math.abs((atoms[i].x || 0) - beforeAtoms[i][0]) > 1e-6) return true;
+                    }
+                    return false;
+                }""",
+                arg=before_move,
+            )
+            page.evaluate(
+                """() => {
+                    const active = document.activeElement;
+                    if (active && typeof active.blur === 'function') active.blur();
+                }"""
+            )
+            page.evaluate(
+                """(isMac) => {
+                    window.dispatchEvent(new KeyboardEvent('keydown', {
+                        key: 'z',
+                        metaKey: !!isMac,
+                        ctrlKey: !isMac,
+                        bubbles: true,
+                        cancelable: true,
+                    }));
+                }""",
+                arg=(sys.platform == 'darwin'),
+            )
+            page.wait_for_function(
+                """() => /Undo: Move 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
+            )
+
+            # Rotate smoke via operator panel + undo.
+            page.locator('#editAdaptiveSelectionBtn').click()
+            page.keyboard.press('Meta+A' if sys.platform == 'darwin' else 'Control+A')
+            page.wait_for_function(
+                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+            before_rotate = page.evaluate(
+                """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
+            )
+            page.locator('#editAdaptiveRotateBtn').click()
+            page.wait_for_function("() => document.getElementById('editRotateOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
+            page.locator('#editRotateOperatorHeader').click()
+            rotate_input = page.locator('#editRotateOperatorZ')
+            rotate_input.click()
+            rotate_input.fill('30')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """(beforeAtoms) => {
+                    const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
+                    if (atoms.length !== beforeAtoms.length) return false;
+                    for (let i = 0; i < atoms.length; i += 1) {
+                      const atom = atoms[i];
+                      const before = beforeAtoms[i];
+                      if (Math.abs((atom.x || 0) - before[0]) > 1e-6) return true;
+                      if (Math.abs((atom.y || 0) - before[1]) > 1e-6) return true;
+                      if (Math.abs((atom.z || 0) - before[2]) > 1e-6) return true;
+                    }
+                    return false;
+                }""",
+                arg=before_rotate,
+            )
+            page.evaluate(
+                """() => {
+                    const active = document.activeElement;
+                    if (active && typeof active.blur === 'function') active.blur();
+                }"""
+            )
+            page.evaluate(
+                """(isMac) => {
+                    window.dispatchEvent(new KeyboardEvent('keydown', {
+                        key: 'z',
+                        metaKey: !!isMac,
+                        ctrlKey: !isMac,
+                        bubbles: true,
+                        cancelable: true,
+                    }));
+                }""",
+                arg=(sys.platform == 'darwin'),
+            )
+            page.wait_for_function(
+                """() => /Undo: Rotate 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
+            )
+            page.locator('#editAdaptiveSelectionBtn').click()
+            page.keyboard.press('Meta+A' if sys.platform == 'darwin' else 'Control+A')
+            page.wait_for_function(
+                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+
+            # Copy/paste selected atoms keeps internal bonds and selects the pasted atoms.
+            copy_paste_shortcut = 'Meta+' if sys.platform == 'darwin' else 'Control+'
+            page.keyboard.press(copy_paste_shortcut + 'C')
+            page.keyboard.press(copy_paste_shortcut + 'V')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return exported.volume.atoms.length === 4
+                      && Array.isArray(exported.volume.bonds)
+                      && exported.volume.bonds.length === 2
+                      && /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '');
+                }"""
             )
 
             # Add atom smoke.

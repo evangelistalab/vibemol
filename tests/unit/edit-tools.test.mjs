@@ -10,6 +10,7 @@ function createEditToolsHarness() {
   const EDIT_TOOL = {
     SELECT: 'select',
     MOVE: 'move',
+    ROTATE: 'rotate',
     ADD: 'add',
     BOND: 'bond',
     TRANSFORM: 'transform',
@@ -34,7 +35,7 @@ function createEditToolsHarness() {
     editAddMode: EDIT_ADD_MODE.ATOM,
     editAddElementZ: 6,
     editAddFragmentAttachPolicy: EDIT_FRAGMENT_ATTACH_POLICY.AUTO,
-    editTransformMode: EDIT_TRANSFORM_MODE.MOVE,
+    editTransformMode: EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT,
     editTransformScope: 'fragment',
     editBondAction: null,
     addAtomOperatorSession: null,
@@ -61,6 +62,9 @@ function createEditToolsHarness() {
     hintMessages: [],
     selectionChanges: [],
     bondClearState: [],
+    bondPopupHidden: 0,
+    pendingBondIndex: -1,
+    transformSelectionActive: false,
   };
   const controller = editToolsApi.createEditToolsController({
     state,
@@ -77,9 +81,19 @@ function createEditToolsHarness() {
     clearAddGrowPreview: () => { calls.clearAddGrowPreview += 1; },
     clearMoleculePlacementPreview: () => { calls.clearMoleculePlacementPreview += 1; },
     clearFuseRingPreview: () => { calls.clearFuseRingPreview += 1; },
-    clearEditBondPendingSelection: () => { calls.clearEditBondPendingSelection += 1; },
+    clearEditBondPendingSelection: () => {
+      const hadPending = calls.pendingBondIndex >= 0;
+      calls.clearEditBondPendingSelection += 1;
+      calls.pendingBondIndex = -1;
+      return hadPending;
+    },
     clearTransformState: () => { calls.clearTransformState += 1; },
-    clearTransformSelection: () => { calls.clearTransformSelection += 1; },
+    clearTransformSelection: () => {
+      const hadTransformSelection = !!calls.transformSelectionActive;
+      calls.clearTransformSelection += 1;
+      calls.transformSelectionActive = false;
+      return hadTransformSelection;
+    },
     clearHover: () => { calls.clearHover += 1; },
     updateEditToolboxUi: () => { calls.updateEditToolboxUi += 1; },
     updateAxisButtons: () => { calls.updateAxisButtons += 1; },
@@ -88,8 +102,16 @@ function createEditToolsHarness() {
     getElementSymbol: (z) => ({ 1: 'H', 6: 'C', 8: 'O' }[z] || '?'),
     getElementName: (z) => ({ 1: 'Hydrogen', 6: 'Carbon', 8: 'Oxygen' }[z] || 'Unknown'),
     getEditFragmentAttachPolicyLabel: (value) => String(value),
-    getEditTransformModeLabel: (value) => String(value),
-    getEditTransformScopeLabel: (value) => String(value),
+    getEditTransformModeLabel: (value) => ({
+      [EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT]: 'Rotate fragment',
+      [EDIT_TRANSFORM_MODE.ROTATE_BOND]: 'Rotate bond',
+    }[value] || 'Rotate fragment'),
+    getEditTransformScopeLabel: (value) => ({
+      auto: 'Auto',
+      fragment: 'Fragment',
+      molecule: 'Molecule',
+      all: 'All atoms',
+    }[value] || 'Auto'),
     refreshActiveAddGrowPreview: () => { calls.refreshActiveAddGrowPreview += 1; },
     normalizeEditAddBondOrder: (value) => Math.max(1, Math.min(4, Number(value) || 1)),
     setHintMessage: (message) => { calls.hintMessages.push(String(message || '')); },
@@ -97,7 +119,12 @@ function createEditToolsHarness() {
     clearMeasurementSelectionForContextChange: () => { calls.clearMeasurementSelectionForContextChange += 1; },
     setCoordsHoveredAtomIndex: (value) => { calls.setCoordsHoveredAtomIndex.push(value); },
     setCoordsInlineEditState: (value) => { calls.setCoordsInlineEditState.push(value); },
-    getBondEditing: () => ({ clearState: (payload) => { calls.bondClearState.push(payload); } }),
+    getBondEditing: () => ({
+      clearState: (payload) => { calls.bondClearState.push(payload); },
+      getPendingAtomIndex: () => calls.pendingBondIndex,
+      getPopupCarrier: () => (calls.bondPopupHidden ? null : (calls.pendingBondIndex >= 0 ? { id: 'carrier' } : null)),
+      hidePopup: () => { calls.bondPopupHidden += 1; },
+    }),
   });
   return { controller, state, calls, EDIT_TOOL, EDIT_ADD_MODE, EDIT_BOND_ACTION };
 }
@@ -115,6 +142,22 @@ test('edit-tools selection logic supports replace, toggle, and select-all', () =
   assert.equal(controller.selectAllEditAtoms(), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 1, 2]);
   assert.match(calls.hintMessages.at(-1), /Selected all 3 atoms/);
+});
+
+test('edit-tools box selection supports replace and additive merge', () => {
+  const { controller, calls } = createEditToolsHarness();
+
+  assert.equal(controller.applyEditAtomSelectionBox([0, 2], false), true);
+  assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 2]);
+  assert.match(calls.hintMessages.at(-1), /Selected 2 atoms/);
+
+  assert.equal(controller.applyEditAtomSelectionBox([1, 2], true), true);
+  assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 1, 2]);
+  assert.match(calls.hintMessages.at(-1), /Selection updated/);
+
+  assert.equal(controller.applyEditAtomSelectionBox([], false), true);
+  assert.deepEqual(plain(controller.getEditAtomSelection()), []);
+  assert.equal(calls.hintMessages.at(-1), 'Selection cleared.');
 });
 
 test('edit-tools tool transitions finalize add-atom sessions and reset transient state', () => {
@@ -140,6 +183,37 @@ test('edit-tools tool transitions finalize add-atom sessions and reset transient
   assert.equal(calls.refreshActiveAddGrowPreview >= 1, true);
 });
 
+test('edit-tools supports rotate as a first-class tool with its own hint', () => {
+  const { controller, state, calls, EDIT_TOOL } = createEditToolsHarness();
+
+  controller.setEditTool(EDIT_TOOL.ROTATE);
+
+  assert.equal(state.editTool, EDIT_TOOL.ROTATE);
+  assert.equal(calls.updateEditToolboxUi, 1);
+  assert.match(calls.hintMessages.at(-1), /Rotate/);
+});
+
+test('edit-tools transform hint defaults to rotate-fragment semantics', () => {
+  const { controller, state, calls, EDIT_TOOL } = createEditToolsHarness();
+
+  controller.setEditTool(EDIT_TOOL.TRANSFORM);
+
+  assert.equal(state.editTool, EDIT_TOOL.TRANSFORM);
+  assert.match(calls.hintMessages.at(-1), /Rotate fragment/);
+  assert.doesNotMatch(calls.hintMessages.at(-1), /Drag the selection to move/);
+});
+
+test('edit-tools leaving transform clears transform transient state', () => {
+  const { controller, state, calls, EDIT_TOOL } = createEditToolsHarness();
+
+  state.editTool = EDIT_TOOL.TRANSFORM;
+  controller.setEditTool(EDIT_TOOL.SELECT);
+
+  assert.equal(state.editTool, EDIT_TOOL.SELECT);
+  assert.equal(calls.clearTransformState, 1);
+  assert.equal(calls.clearTransformSelection, 1);
+});
+
 test('edit-tools clearTransientInteractionState clears selection, pointer state, and bond tool transient state', () => {
   const { controller, state, calls } = createEditToolsHarness();
 
@@ -154,4 +228,20 @@ test('edit-tools clearTransientInteractionState clears selection, pointer state,
   assert.deepEqual(calls.setCoordsHoveredAtomIndex.at(-1), -1);
   assert.deepEqual(calls.setCoordsInlineEditState.at(-1), null);
   assert.deepEqual(plain(calls.bondClearState.at(-1)), { pendingSelection: false });
+});
+
+test('edit-tools clearEditSelectionsOnEmptyClick clears atom, transform, and bond selection state together', () => {
+  const { controller, calls } = createEditToolsHarness();
+
+  controller.setEditAtomSelection([0, 2]);
+  calls.transformSelectionActive = true;
+  calls.pendingBondIndex = 1;
+
+  const changed = controller.clearEditSelectionsOnEmptyClick();
+
+  assert.equal(changed, true);
+  assert.deepEqual(plain(controller.getEditAtomSelection()), []);
+  assert.equal(calls.clearTransformSelection, 1);
+  assert.equal(calls.clearEditBondPendingSelection, 1);
+  assert.equal(calls.bondPopupHidden, 1);
 });

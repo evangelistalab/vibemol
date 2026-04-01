@@ -14,6 +14,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>VibeMol — CUBE Isosurface Viewer</title>
+  <script>
+    (function () {
+      try {
+        var storedTheme = window.localStorage.getItem('vibemol.uiTheme');
+        if (storedTheme === 'light' || storedTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', storedTheme);
+        }
+      } catch (_) { }
+    })();
+  </script>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="stylesheet" href="assets/app/css/palette.css" />
@@ -139,6 +149,142 @@
     #toolbar button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    #topRightUtilities {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      width: min(260px, calc(100vw - 24px));
+      height: 52px;
+      z-index: 36;
+    }
+
+    #topRightUtilitiesReveal {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    #topRightUtilities:hover #topRightUtilitiesReveal,
+    #topRightUtilities:focus-within #topRightUtilitiesReveal {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .topRightUtilityLink {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      color: var(--vm-color-utility-overlay-fg);
+      text-decoration: none;
+      filter: drop-shadow(0 1px 1px var(--vm-color-utility-overlay-shadow)) drop-shadow(0 0 8px var(--vm-color-utility-overlay-glow));
+      transition: color 160ms ease, transform 160ms ease, filter 160ms ease;
+    }
+
+    .topRightUtilityLink:hover,
+    .topRightUtilityLink:focus-visible {
+      color: var(--vm-color-utility-overlay-fg-hover);
+      transform: translateY(-1px);
+      filter: drop-shadow(0 1px 1px var(--vm-color-utility-overlay-shadow)) drop-shadow(0 0 10px var(--vm-color-utility-overlay-glow));
+      outline: none;
+    }
+
+    .topRightUtilityGithubMark {
+      width: 24px;
+      height: 24px;
+      display: block;
+      fill: currentColor;
+    }
+
+    .themeToggleShell {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--vm-color-utility-overlay-fg);
+      cursor: pointer;
+      user-select: none;
+      filter: drop-shadow(0 1px 1px var(--vm-color-utility-overlay-shadow));
+    }
+
+    .themeToggleShell input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .themeToggleTrack {
+      position: relative;
+      width: 58px;
+      height: 30px;
+      border: 2px solid currentColor;
+      border-radius: 999px;
+      box-sizing: border-box;
+      background: transparent;
+      transition: border-color 180ms ease;
+    }
+
+    .themeToggleKnob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: currentColor;
+      transition: transform 180ms ease, background-color 180ms ease;
+    }
+
+    .themeToggleText {
+      position: relative;
+      min-width: 96px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .themeToggleTextLight,
+    .themeToggleTextDark {
+      transition: opacity 140ms ease, transform 140ms ease;
+      display: inline-block;
+    }
+
+    .themeToggleTextDark {
+      position: absolute;
+      inset: 0 auto auto 0;
+      opacity: 0;
+      transform: translateY(2px);
+    }
+
+    .themeToggleShell input:checked + .themeToggleTrack .themeToggleKnob {
+      transform: translateX(28px);
+    }
+
+    .themeToggleShell input:checked~.themeToggleText .themeToggleTextLight {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+
+    .themeToggleShell input:checked~.themeToggleText .themeToggleTextDark {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .themeToggleShell:hover,
+    .themeToggleShell:focus-within {
+      color: var(--vm-color-utility-overlay-fg-hover);
     }
 
     #displayInspector {
@@ -871,7 +1017,8 @@
       text-align: center;
     }
 
-    #emptyStateLeadLogo {
+    #emptyStateLeadLogo,
+    #emptyStateLeadLogoDark {
       display: block;
       width: min(220px, 58vw);
       height: auto;
@@ -974,35 +1121,6 @@
       font-size: 12px;
       font-weight: 500;
       color: var(--vm-color-splash-meta);
-    }
-
-    /* Edit axis lock widget */
-    #axisLock {
-      position: fixed;
-      right: 12px;
-      bottom: 40px;
-      display: none;
-      gap: 6px;
-      background: var(--vm-color-text-muted);
-      padding: 6px 8px;
-      border: 1px solid var(--vm-color-legacy-border-strong);
-      border-radius: 8px;
-      z-index: 32;
-    }
-
-    #axisLock button {
-      pointer-events: auto;
-      background: var(--vm-color-legacy-dark-surface);
-      color: var(--vm-color-legacy-text-on-dark);
-      border: 1px solid var(--vm-color-legacy-border-soft);
-      border-radius: 6px;
-      padding: 2px 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    #axisLock button.active {
-      background: var(--vm-color-text-muted);
     }
 
     #elementColorOverlay {
@@ -1197,6 +1315,18 @@
       height: 24px;
       width: auto;
       object-fit: contain;
+    }
+
+    .themeLogoDark {
+      display: none !important;
+    }
+
+    :root[data-theme='dark'] .themeLogoLight {
+      display: none !important;
+    }
+
+    :root[data-theme='dark'] .themeLogoDark {
+      display: block !important;
     }
 
     #toolbar .tb-brandEmoji {
@@ -2159,6 +2289,27 @@
 </head>
 
 <body>
+  <div id="topRightUtilities" aria-label="Global utilities">
+    <div id="topRightUtilitiesReveal">
+      <a id="githubRepoLink" class="topRightUtilityLink" href="https://github.com/evangelistalab/vibemol" target="_blank"
+        rel="noopener noreferrer" aria-label="Open VibeMol GitHub repository" title="Open VibeMol on GitHub">
+        <svg class="topRightUtilityGithubMark" viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82a7.66 7.66 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.09.16 1.9.08 2.1.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+        </svg>
+      </a>
+      <label id="themeToggleShell" class="themeToggleShell" title="Theme toggle placeholder">
+        <input id="themeToggleInput" type="checkbox" />
+        <span class="themeToggleTrack" aria-hidden="true">
+          <span class="themeToggleKnob"></span>
+        </span>
+        <span class="themeToggleText">
+          <span class="themeToggleTextLight">Theme: Light</span>
+          <span class="themeToggleTextDark">Theme: Dark</span>
+        </span>
+      </label>
+    </div>
+  </div>
   <div id="toolbar" aria-expanded="true">
     <input type="file" id="fileInput"
       accept=".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,application/json,text/plain"
@@ -2168,7 +2319,8 @@
     <div id="toolbarHead">
       <div class="tb-headTop">
         <div class="tb-brand">
-          <img class="tb-brandLogo" src="assets/app/img/logo_600px.png" alt="VibeMol" />
+          <img class="tb-brandLogo themeLogoLight" src="assets/app/img/logo_600px.png" alt="VibeMol" />
+          <img class="tb-brandLogo themeLogoDark" src="assets/app/img/logo_dark_600px.png" alt="VibeMol" />
           <span id="toolbarVersion" class="tb-versionBadge" aria-label="VibeMol version">v0.0.0</span>
         </div>
         <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button"
@@ -2579,7 +2731,8 @@
   <div id="emptyState">
     <div id="emptyStateCard">
       <div id="emptyStateLead">
-        <img id="emptyStateLeadLogo" src="assets/app/img/logo_600px.png" alt="VibeMol" />
+        <img id="emptyStateLeadLogo" class="themeLogoLight" src="assets/app/img/logo_600px.png" alt="VibeMol" />
+        <img id="emptyStateLeadLogoDark" class="themeLogoDark" src="assets/app/img/logo_dark_600px.png" alt="VibeMol" />
         <span id="emptyStateVersion"></span>
       </div>
       <div id="emptyStateDropZone">
@@ -2603,12 +2756,6 @@
     style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
     <canvas id="phaseWheelCanvas" width="96" height="120" style="width:100%; height:100%;"></canvas>
   </div>
-  <!-- Edit mode axis lock toolbar -->
-  <div id="axisLock" aria-hidden="true">
-    <button id="axisX" title="Lock movement to X">X</button>
-    <button id="axisY" title="Lock movement to Y">Y</button>
-    <button id="axisZ" title="Lock movement to Z">Z</button>
-  </div>
   <div id="editAdaptiveMenu" aria-hidden="true">
     <button id="editAdaptiveSelectionBtn" class="adaptiveEditItem" type="button" title="Selection tool">
       <span class="adaptiveEditItemBody">
@@ -2626,10 +2773,21 @@
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Move</span>
         </span>
-        <span class="adaptiveEditItemMeta">Optional X/Y/Z axis lock</span>
+        <span class="adaptiveEditItemMeta">Drag selection or grab axis arrows</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">G</span>
+      </span>
+    </button>
+    <button id="editAdaptiveRotateBtn" class="adaptiveEditItem" type="button" title="Rotate tool">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Rotate</span>
+        </span>
+        <span id="editAdaptiveRotateMeta" class="adaptiveEditItemMeta">Grab axis rings or drag selection</span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">O</span>
       </span>
     </button>
     <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem" type="button" title="Add atom tool">
@@ -2703,6 +2861,7 @@
   <div id="editAdaptiveAddFragmentPopover" aria-hidden="true"></div>
   <div id="editAdaptiveAddMoleculePopover" aria-hidden="true"></div>
   <div id="editAdaptiveTransformPopover" aria-hidden="true"></div>
+  <div id="editSelectionMarquee" aria-hidden="true"></div>
   <div id="bondOrderPopup" aria-hidden="true">
     <div id="bondOrderPopupTitle">Bond order</div>
     <div id="bondOrderPopupButtons">
@@ -2730,8 +2889,6 @@
       <span class="editAddAtomOperatorRowLabel">Z</span>
       <input id="editAddAtomOperatorZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
         autocomplete="off" />
-      <div class="editAddAtomOperatorFoot">Enter confirm • Esc cancel • Location is in world angstroms for the most
-        recently added atom.</div>
     </div>
   </div>
   <div id="editAddMoleculeOperatorPanel" aria-hidden="true" data-collapsed="true">
@@ -2761,12 +2918,49 @@
       <input id="editAddMoleculeOperatorRotZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
         autocomplete="off" />
       <div class="editAddMoleculeOperatorButtonRow">
-        <button id="editAddMoleculeOperatorAlignX" type="button">Align X</button>
-        <button id="editAddMoleculeOperatorAlignY" type="button">Align Y</button>
-        <button id="editAddMoleculeOperatorAlignZ" type="button">Align Z</button>
+        <span class="editAddMoleculeOperatorButtonLabel">Align to</span>
+        <button id="editAddMoleculeOperatorAlignX" type="button">X</button>
+        <button id="editAddMoleculeOperatorAlignY" type="button">Y</button>
+        <button id="editAddMoleculeOperatorAlignZ" type="button">Z</button>
       </div>
-      <div class="editAddAtomOperatorFoot">Enter confirm • Esc cancel • Location is in world angstroms and rotation is
-        in world-space XYZ degrees.</div>
+    </div>
+  </div>
+  <div id="editMoveOperatorPanel" aria-hidden="true" data-collapsed="true">
+    <button id="editMoveOperatorHeader" type="button" aria-expanded="false">
+      <span class="editAddAtomOperatorTitle">
+        <span id="editMoveOperatorChevron" class="editAddAtomOperatorChevron">▸</span>
+        <span id="editMoveOperatorLabel" class="editAddAtomOperatorLabel">Move Selection</span>
+      </span>
+    </button>
+    <div id="editMoveOperatorBody">
+      <span class="editAddAtomOperatorRowLabel">X</span>
+      <input id="editMoveOperatorX" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Y</span>
+      <input id="editMoveOperatorY" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Z</span>
+      <input id="editMoveOperatorZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+    </div>
+  </div>
+  <div id="editRotateOperatorPanel" aria-hidden="true" data-collapsed="true">
+    <button id="editRotateOperatorHeader" type="button" aria-expanded="false">
+      <span class="editAddAtomOperatorTitle">
+        <span id="editRotateOperatorChevron" class="editAddAtomOperatorChevron">▸</span>
+        <span id="editRotateOperatorLabel" class="editAddAtomOperatorLabel">Rotate Selection</span>
+      </span>
+    </button>
+    <div id="editRotateOperatorBody">
+      <span class="editAddAtomOperatorRowLabel">X</span>
+      <input id="editRotateOperatorX" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Y</span>
+      <input id="editRotateOperatorY" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
+      <span class="editAddAtomOperatorRowLabel">Z</span>
+      <input id="editRotateOperatorZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal"
+        autocomplete="off" />
     </div>
   </div>
   <div id="editToolbox" aria-hidden="true">
@@ -2871,8 +3065,7 @@
       </select>
       <label for="editTransformMode" style="margin-top:7px;">Transform action</label>
       <select id="editTransformMode">
-        <option value="move" selected>Move (drag)</option>
-        <option value="rotate_fragment">Rotate fragment (about bond axis)</option>
+        <option value="rotate_fragment" selected>Rotate fragment (about bond axis)</option>
         <option value="rotate_bond">Rotate bond (about opposite atom)</option>
       </select>
       <label style="margin-top:7px;"><input id="editTransformCleanupAuto" type="checkbox" checked /> Auto cleanup after
@@ -3169,6 +3362,10 @@
   <script src="./assets/app/js/edit-placement.js"></script>
   <!-- edit tool/selection helpers -->
   <script src="./assets/app/js/edit-tools.js"></script>
+  <!-- edit gizmo helpers -->
+  <script src="./assets/app/js/edit-gizmos.js"></script>
+  <!-- edit transform helpers -->
+  <script src="./assets/app/js/edit-transform.js"></script>
   <!-- preset helpers -->
   <script src="./assets/app/js/preset.js"></script>
   <!-- structure transport helpers -->

@@ -85,9 +85,10 @@
     }
 
     function clearPendingSelection() {
-      if (!pendingAtomId) return;
+      if (!pendingAtomId) return false;
       pendingAtomId = '';
       onPendingSelectionChanged();
+      return true;
     }
 
     function getPopupCarrier() {
