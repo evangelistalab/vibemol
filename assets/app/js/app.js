@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.6.5';
+  const APP_VERSION = '0.7.0';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_START = '';
@@ -25,9 +25,9 @@
   const MOLDEN_GRID_MIN_AXIS = 36;
   const MOLDEN_GRID_MAX_TOTAL_POINTS = 360000;
   const UI_THEME_STORAGE_KEY = 'vibemol.uiTheme';
+  const DARK_THEME_SCENE_BG_BLEND = 0.975;
   const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
   const DEFAULT_ISO_VALUE = 0.02;
-  const HEADER_HAPPY_EMOJIS = Object.freeze(['🙂', '😊', '😄', '😃', '😁', '😎', '🤓', '😺', '🤠', '🫡', '😇', '😍', '🫡', '🥳']);
   /**
    * Centralized app color palette used by canvas drawing and inline style snippets.
    * Keep color edits here so visual tuning stays coherent.
@@ -1457,6 +1457,7 @@
       hemi.groundColor.setHex(0xf5f5f5);
       rim.intensity = Math.min(rim.intensity, 0.35);
     }
+    if (bg) bg = getThemeAdjustedSceneBackground(bg);
     if (bg) scene.background = bg;
 
     if (moleculeFogEnabled) {
@@ -5476,7 +5477,6 @@
   const modeEditBtn = document.getElementById('modeEditBtn');
   const themeToggleInputEl = document.getElementById('themeToggleInput');
   const themeToggleShellEl = document.getElementById('themeToggleShell');
-  const brandEmojiEl = document.getElementById('brandEmoji');
   const surfaceHoverLabelEl = (() => {
     const el = document.createElement('div');
     el.id = 'surfaceHoverLabel';
@@ -5516,6 +5516,18 @@
   }
 
   /**
+   * Dark theme scales the chosen scene background toward black while preserving hue.
+   * The picker still stores the canonical user color; this only affects the rendered scene.
+   * @param {THREE.Color} color
+   * @returns {THREE.Color}
+   */
+  function getThemeAdjustedSceneBackground(color) {
+    if (!(color instanceof THREE.Color)) return new THREE.Color(0xffffff);
+    if (getUiTheme() !== 'dark') return color.clone();
+    return color.clone().lerp(new THREE.Color(0x000000), DARK_THEME_SCENE_BG_BLEND);
+  }
+
+  /**
    * Persist one UI theme choice when possible.
    * @param {'light'|'dark'} theme
    */
@@ -5527,7 +5539,7 @@
 
   /**
    * Apply one UI theme to the document root and toggle control.
-   * This affects app chrome only; the scene background remains controlled by BG.
+   * The chosen BG color is preserved, but the rendered scene background is darkened in dark mode.
    * @param {'light'|'dark'} theme
    */
   function applyUiTheme(theme) {
@@ -5541,6 +5553,7 @@
       themeToggleShellEl.setAttribute('aria-label', `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`);
       themeToggleShellEl.title = `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`;
     }
+    applyMoleculeStyleLighting();
   }
 
   /**
@@ -6307,16 +6320,6 @@
   initializeUiThemeToggle();
 
   /**
-   * Pick one happy emoji for the toolbar brand on each page load.
-   */
-  function setRandomBrandEmoji() {
-    if (!brandEmojiEl || HEADER_HAPPY_EMOJIS.length === 0) return;
-    const idx = Math.floor(Math.random() * HEADER_HAPPY_EMOJIS.length);
-    brandEmojiEl.textContent = HEADER_HAPPY_EMOJIS[idx];
-  }
-  setRandomBrandEmoji();
-
-  /**
    * Hide the floating toolbar tooltip.
    */
   function hideToolbarTooltip() {
@@ -6868,8 +6871,8 @@
       }
     }
     if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
-      // Always start edit sessions in add mode.
-      setEditTool(EDIT_TOOL.ADD, { announce: false });
+      // Always start edit sessions in selection mode.
+      setEditTool(EDIT_TOOL.SELECT, { announce: false });
     }
     updateAxisButtons();
     updateEditPlaneHelpers();
@@ -7310,7 +7313,7 @@
     ROTATE_FRAGMENT: 'rotate_fragment',
     ROTATE_BOND: 'rotate_bond',
   });
-  let editTool = EDIT_TOOL.ADD;
+  let editTool = EDIT_TOOL.SELECT;
   let editAtomSelectionIndices = [];
   let editAddMode = EDIT_ADD_MODE.ATOM;
   let editAddElementZ = 6;
@@ -15267,7 +15270,7 @@
     if (!bgColor) return;
     bgColor.value = asHexColor(value, bgColor.value || UI_PALETTE.white);
     syncColorPickerFields();
-    try { scene.background = new THREE.Color(bgColor.value); } catch { }
+    applyMoleculeStyleLighting();
   });
   registerPresetSetting(
     'global.accentColor',
@@ -18138,8 +18141,7 @@
   };
   bgColor.oninput = () => {
     syncColorPickerFields();
-    // Update scene background to selected color
-    try { scene.background = new THREE.Color(bgColor.value); } catch { }
+    applyMoleculeStyleLighting();
   };
   toggleAtoms.onchange = () => rebuildScene({ preserveView: true });
   toggleBonds.onchange = () => rebuildScene({ preserveView: true });

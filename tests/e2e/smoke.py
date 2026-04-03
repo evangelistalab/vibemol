@@ -82,6 +82,28 @@ def active_structure_summary(page) -> dict[str, Any]:
     )
 
 
+def sample_scene_canvas_rgb(page) -> dict[str, float]:
+    sample = page.evaluate(
+        """() => {
+            const canvas = document.getElementById('canvas');
+            if (!(canvas instanceof HTMLCanvasElement)) return null;
+            const probe = document.createElement('canvas');
+            probe.width = 1;
+            probe.height = 1;
+            const ctx = probe.getContext('2d');
+            if (!ctx) return null;
+            const sx = Math.max(0, Math.floor(canvas.width * 0.05));
+            const sy = Math.max(0, Math.floor(canvas.height * 0.05));
+            ctx.drawImage(canvas, sx, sy, 1, 1, 0, 0, 1, 1);
+            const data = ctx.getImageData(0, 0, 1, 1).data;
+            return { r: data[0] / 255, g: data[1] / 255, b: data[2] / 255 };
+        }"""
+    )
+    if not isinstance(sample, dict):
+        raise AssertionError(f"Could not sample scene canvas background: {sample!r}")
+    return sample
+
+
 def canvas_point(page, fx: float = 0.62, fy: float = 0.56) -> tuple[float, float]:
     box = page.locator('#canvas').bounding_box()
     if not box:
@@ -213,6 +235,36 @@ def main() -> int:
             if sample_summary['atomCount'] <= 0:
                 raise AssertionError('Sample load did not produce atoms.')
 
+            light_bg = sample_scene_canvas_rgb(page)
+            assert light_bg['r'] > 0.9 and light_bg['g'] > 0.9 and light_bg['b'] > 0.9, light_bg
+            page.hover('#topRightUtilities')
+            page.locator('#themeToggleShell').click()
+            page.wait_for_function(
+                """() => {
+                    const themeInput = document.getElementById('themeToggleInput');
+                    return !!themeInput
+                      && themeInput.checked === true
+                      && document.documentElement.getAttribute('data-theme') === 'dark'
+                      && window.localStorage.getItem('vibemol.uiTheme') === 'dark';
+                }"""
+            )
+            dark_bg = sample_scene_canvas_rgb(page)
+            assert dark_bg['r'] < light_bg['r'] and dark_bg['g'] < light_bg['g'] and dark_bg['b'] < light_bg['b'], (light_bg, dark_bg)
+            assert 0.1 < min(dark_bg['r'], dark_bg['g'], dark_bg['b']) < 0.3, dark_bg
+            assert 0.1 < max(dark_bg['r'], dark_bg['g'], dark_bg['b']) < 0.3, dark_bg
+            page.locator('#themeToggleShell').click()
+            page.wait_for_function(
+                """() => {
+                    const themeInput = document.getElementById('themeToggleInput');
+                    return !!themeInput
+                      && themeInput.checked === false
+                      && document.documentElement.getAttribute('data-theme') === 'light'
+                      && window.localStorage.getItem('vibemol.uiTheme') === 'light';
+                }"""
+            )
+            light_bg_2 = sample_scene_canvas_rgb(page)
+            assert light_bg_2['r'] > 0.9 and light_bg_2['g'] > 0.9 and light_bg_2['b'] > 0.9, light_bg_2
+
             # Molden load/render smoke.
             molden_text = build_fixture_molden()
             page.evaluate(
@@ -267,6 +319,16 @@ def main() -> int:
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
             page.wait_for_function("() => !document.getElementById('emptyState') || getComputedStyle(document.getElementById('emptyState')).display === 'none'")
+            page.wait_for_function(
+                """() => {
+                    const selectionBtn = document.getElementById('editAdaptiveSelectionBtn');
+                    const addAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
+                    return !!selectionBtn
+                      && selectionBtn.classList.contains('active')
+                      && !!addAtomBtn
+                      && !addAtomBtn.classList.contains('active');
+                }"""
+            )
             page.locator('#editAdaptiveTransformBtn').click()
             page.wait_for_function(
                 """() => {

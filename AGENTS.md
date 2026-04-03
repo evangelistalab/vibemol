@@ -198,7 +198,7 @@ Preset automation contract exposed globally:
 
 ## Edit / Builder UX Status
 Implemented:
-- Edit mode defaults to `Add` on entry.
+- Edit mode defaults to `Selection` on entry.
 - Edit mode now uses an adaptive floating menu instead of the old visible toolbox.
 - Edit tools currently include `Selection`, `Move`, `Rotate`, `Add`, `Bond`, `Transform`, and `Delete`.
 - Selection supports click-to-replace, `Shift+click` toggle, empty-click clear, and `Cmd/Ctrl+A` select-all.
