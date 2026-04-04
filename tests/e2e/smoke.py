@@ -690,7 +690,10 @@ def main() -> int:
 
             # Selection marquee smoke.
             page.locator('#editAdaptiveSelectionBtn').click()
-            drag_canvas_box(page, 0.35, 0.35, 0.65, 0.65)
+            # Marquee selection uses projected atom centers, not full sphere extents.
+            # Use a generously centered rectangle so minor fit/render differences
+            # in headless Chromium do not make this test flaky.
+            drag_canvas_box(page, 0.22, 0.22, 0.78, 0.78)
             page.wait_for_function(
                 """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
             )
