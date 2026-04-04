@@ -355,7 +355,6 @@ def main() -> int:
                         addMolecule: isShown('editAdaptiveAddMoleculeBtn'),
                         bond: isShown('editAdaptiveBondBtn'),
                         transform: isShown('editAdaptiveTransformBtn'),
-                        delete: isShown('editAdaptiveDeleteBtn'),
                     };
                 }"""
             )
@@ -368,7 +367,6 @@ def main() -> int:
                 'addMolecule': True,
                 'bond': False,
                 'transform': False,
-                'delete': False,
             }:
                 raise AssertionError(f'Unexpected empty edit menu visibility: {empty_edit_visibility}')
             ensure_advanced_drawer_closed(page)
@@ -387,85 +385,112 @@ def main() -> int:
                 }"""
             )
 
-            # Selected terminal atom drag should still grow chemistry, with keyboard bond-order override.
-            grow_x, grow_y = canvas_point(page, 0.70, 0.52)
+            # Idle hover should surface the atom halo, and selecting the atom should keep it visible.
             page.mouse.move(x, y)
-            page.mouse.down()
-            page.mouse.move(grow_x, grow_y, steps=14)
-            page.keyboard.press('2')
+            page.wait_for_timeout(360)
             page.wait_for_function(
-                """() => document.getElementById('editGestureBondOrderPill')?.textContent?.trim() === 'Bond 2'"""
+                """() => (document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0) === 4"""
             )
-            page.mouse.up()
+            page.mouse.click(x, y)
+            page.wait_for_function(
+                """() => {
+                    const scope = document.getElementById('editGestureScope')?.textContent || '';
+                    const ghosts = document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0;
+                    return /grow halo/i.test(scope) && ghosts === 4;
+                }"""
+            )
+            page.wait_for_function(
+                """() => (document.querySelectorAll('#editHaloLayer [data-halo-element]').length || 0) === 11"""
+            )
+
+            # The outer element ring should change the loaded element without mutating the selected atom.
+            nitrogen_ring_box = page.evaluate(
+                """() => {
+                    const el = document.querySelector('#editHaloLayer [data-halo-element="N"]');
+                    if (!el) return null;
+                    const rect = el.getBoundingClientRect();
+                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+                }"""
+            )
+            if not isinstance(nitrogen_ring_box, dict):
+                raise AssertionError('Nitrogen halo ring sector was not rendered.')
+            page.mouse.click(
+                nitrogen_ring_box['x'] + nitrogen_ring_box['width'] * 0.5,
+                nitrogen_ring_box['y'] + nitrogen_ring_box['height'] * 0.5,
+            )
+            page.wait_for_function(
+                """() => document.getElementById('editGestureElementChipSymbol')?.textContent?.trim() === 'N'"""
+            )
+
+            # Clicking a halo ghost should grow chemistry from the selected atom in 3D.
+            first_ghost_box = page.evaluate(
+                """() => {
+                    const el = document.querySelector('#editHaloLayer [data-halo-ghost]');
+                    if (!el) return null;
+                    const rect = el.getBoundingClientRect();
+                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+                }"""
+            )
+            if not isinstance(first_ghost_box, dict):
+                raise AssertionError('Context halo ghost site was not rendered.')
+            grow_x = first_ghost_box['x'] + first_ghost_box['width'] * 0.5
+            grow_y = first_ghost_box['y'] + first_ghost_box['height'] * 0.5
+            page.mouse.click(grow_x, grow_y)
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
                     const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
-                    return exported.volume.atoms.length === 2 && bonds.length === 1 && bonds[0].order === 2;
+                    return exported.volume.atoms.length === 2
+                      && exported.volume.atoms[1]?.Z === 7
+                      && bonds.length === 1
+                      && bonds[0].order === 1;
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const scope = document.getElementById('editGestureScope')?.textContent || '';
+                    const ghosts = document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0;
+                    return /grow halo/i.test(scope) && ghosts === 3;
                 }"""
             )
 
-            # Dragging between existing atoms should keep cycling the explicit bond order.
+            def halo_core_center() -> dict[str, float] | None:
+                center = page.evaluate(
+                    """() => {
+                        const el = document.querySelector('#editHaloLayer .editHaloCore');
+                        if (!el) return null;
+                        const rect = el.getBoundingClientRect();
+                        return { x: rect.x + rect.width * 0.5, y: rect.y + rect.height * 0.5 };
+                    }"""
+                )
+                return center if isinstance(center, dict) else None
+
             page.mouse.move(x, y)
-            page.mouse.down()
-            page.mouse.move(grow_x, grow_y, steps=14)
-            page.mouse.up()
+            page.wait_for_timeout(360)
+            atom1_center = halo_core_center()
+            if not atom1_center:
+                raise AssertionError('Could not reacquire the first atom halo center.')
+            atom1_x = atom1_center['x']
+            atom1_y = atom1_center['y']
+
+            page.mouse.move(grow_x, grow_y)
+            page.wait_for_timeout(360)
+            atom2_center = halo_core_center()
+            if not atom2_center:
+                raise AssertionError('Could not reacquire the second atom halo center.')
+            atom2_x = atom2_center['x']
+            atom2_y = atom2_center['y']
+
+            page.mouse.click(atom1_x, atom1_y)
             page.wait_for_function(
-                """() => {
-                    const bonds = window.VibeMolStructure.exportActive().volume.bonds || [];
-                    return bonds.length === 1 && bonds[0].order === 3 && bonds[0].origin === 'explicit';
-                }"""
-            )
-            page.mouse.move(x, y)
-            page.mouse.down()
-            page.mouse.move(grow_x, grow_y, steps=14)
-            page.mouse.up()
-            page.wait_for_function(
-                """() => {
-                    const bonds = window.VibeMolStructure.exportActive().volume.bonds || [];
-                    return bonds.length === 1
-                      && bonds[0].kind === 'blocked'
-                      && bonds[0].origin === 'explicit';
-                }"""
-            )
-            page.mouse.move(x, y)
-            page.mouse.down()
-            page.mouse.move(grow_x, grow_y, steps=14)
-            page.keyboard.press('1')
-            page.mouse.up()
-            page.wait_for_function(
-                """() => {
-                    const bonds = window.VibeMolStructure.exportActive().volume.bonds || [];
-                    return bonds.length === 1 && bonds[0].order === 1 && bonds[0].origin === 'explicit';
-                }"""
-            )
-            page.mouse.move(min(x, grow_x) - 120, min(y, grow_y) - 120)
-            page.mouse.down()
-            page.mouse.move(max(x, grow_x) + 120, max(y, grow_y) + 120, steps=12)
-            page.mouse.up()
-            page.wait_for_function(
-                """() => {
-                    const meta = document.getElementById('editAdaptiveSelectionMeta');
-                    const marquee = document.getElementById('editSelectionMarquee');
-                    return /2 atoms selected/i.test(meta?.textContent || '')
-                      && marquee?.getAttribute('aria-hidden') === 'true';
-                }"""
-            )
-            empty_x, empty_y = canvas_point(page, 0.04, 0.08)
-            page.mouse.click(empty_x, empty_y)
-            page.wait_for_function(
-                """() => /Click atoms to build a selection/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
-            page.mouse.click(x, y)
-            page.wait_for_function(
-                """() => /1 atom selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+                """() => /grow halo/i.test(document.getElementById('editGestureScope')?.textContent || '')"""
             )
             before_single_move = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
-            page.mouse.move(x, y)
+            page.mouse.move(atom1_x, atom1_y)
             page.mouse.down()
-            page.mouse.move(x - 28, y - 18, steps=12)
+            page.mouse.move(atom1_x - 28, atom1_y - 18, steps=12)
             page.mouse.up()
             page.wait_for_function(
                 """(beforeAtoms) => {
@@ -503,7 +528,6 @@ def main() -> int:
                       'editAdaptiveRotateBtn',
                       'editAdaptiveBondBtn',
                       'editAdaptiveTransformBtn',
-                      'editAdaptiveDeleteBtn',
                     ];
                     return ids.every((id) => {
                       const el = document.getElementById(id);
@@ -512,6 +536,36 @@ def main() -> int:
                 }"""
             )
             ensure_advanced_drawer_closed(page)
+
+            # Delete should remove the current selection first, then the hovered atom when no selection exists.
+            page.keyboard.press('Control+A')
+            off_x, off_y = canvas_point(page, 0.15, 0.15)
+            page.mouse.move(off_x, off_y)
+            page.keyboard.press('Delete')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = exported?.volume?.atoms || [];
+                    const scope = document.getElementById('editGestureScope')?.textContent || '';
+                    return atoms.length === 0 && /no selection/i.test(scope);
+                }"""
+            )
+            page.mouse.click(x, y)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return (exported?.volume?.atoms || []).length === 1;
+                }"""
+            )
+            page.mouse.move(x, y)
+            page.wait_for_timeout(360)
+            page.keyboard.press('Delete')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return (exported?.volume?.atoms || []).length === 0;
+                }"""
+            )
             page.locator('#removeFileBtn').click()
             page.locator('#modeDisplayBtn').click()
             page.wait_for_function(

@@ -363,3 +363,18 @@ test('edit-gestures shift-drag from a bond resolves downstream move scope only',
   assert.deepEqual(calls.startMoveDrag.at(-1).indices, [4, 5]);
   assert.deepEqual(getSelection(), [4, 5]);
 });
+
+test('edit-gestures can start a grow drag directly from a halo action', () => {
+  const { controller, calls } = createHarness({ selection: [0] });
+
+  const started = controller.startGrowDragFromHalo(
+    pointerEvent({ pointerId: 9, clientX: 12, clientY: 18 }),
+    0,
+    { initialWorldPos: [1.1, 0, 0] }
+  );
+
+  assert.equal(started, true);
+  assert.deepEqual(calls.beginGrowDrag, [0]);
+  assert.deepEqual(calls.capturePointer, [9]);
+  assert.equal(controller.getUiState().gestureState, 'grow-drag');
+});

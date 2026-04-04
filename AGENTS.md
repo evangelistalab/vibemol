@@ -53,6 +53,7 @@ Primary capabilities:
 - `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover state, visibility, and picking helpers.
 - `assets/app/js/edit-transform.js`: shared move/rotate transform-session state, operator-panel application, and pointer-routing controller.
 - `assets/app/js/edit-gestures.js`: gesture-first edit interaction controller and gesture-HUD state coordinator.
+- `assets/app/js/edit-halo.js`: chemistry-aware context halo controller for gesture mode (hover/selection activation, ghost directions, and element ring state).
 - `assets/fragments/library.json`: external fragment/molecule catalog manifest.
 - `assets/fragments/*.xyz`: fragment geometry sources using linker-at-origin / +Z bond-vector convention.
 - `assets/fragments/WORKFLOW.md`: fragment authoring workflow and conventions.
@@ -103,10 +104,11 @@ Required script order in `index.html`:
 26. `assets/app/js/edit-gizmos.js`
 27. `assets/app/js/edit-transform.js`
 28. `assets/app/js/edit-gestures.js`
-29. `assets/app/js/preset.js`
-30. `assets/app/js/structure-transport.js`
-31. `assets/app/js/file-loader.js`
-32. `assets/app/js/app.js`
+29. `assets/app/js/edit-halo.js`
+30. `assets/app/js/preset.js`
+31. `assets/app/js/structure-transport.js`
+32. `assets/app/js/file-loader.js`
+33. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -133,6 +135,7 @@ Required script order in `index.html`:
 - `window.VibeMolEditGizmos`
 - `window.VibeMolEditTransform`
 - `window.VibeMolEditGestures`
+- `window.VibeMolEditHalo`
 - `window.VibeMolPresetModule`
 - `window.VibeMolStructureTransport`
 - `window.VibeMolFileLoader`
@@ -208,6 +211,12 @@ Implemented:
 - Edit mode opens in gesture-first editing by default; the adaptive floating menu now serves as an `Advanced` drawer for legacy tools and popovers.
 - Edit tools currently include `Selection`, `Move`, `Rotate`, `Add`, `Bond`, `Transform`, and `Delete`.
 - The primary edit HUD shows the loaded element, current gesture hint, move-scope summary, a pending bond-order pill during grow/bond drags, and an `Advanced` toggle.
+- Layer 2 context halo is active in gesture mode:
+  - selecting one atom shows a chemistry-aware halo immediately
+  - hovering one atom while idle for ~300 ms shows the same halo
+  - open main-group atoms show grow ghosts based on local geometry/valence
+  - transition metals show first-pass coordination ghosts
+  - the outer halo ring changes the loaded element only
 - Gesture-first editing currently supports:
   - click void to place the loaded element when nothing is selected, or clear selection when atoms are selected
   - click atom to select it
@@ -231,7 +240,7 @@ Implemented:
 - Standalone molecule placement includes a right-side operator panel with live XYZ/rotation editing and axis-align actions.
 - Transform mode is the advanced bond-aware rotation tool: it supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
-- Delete tool and hover-delete (`Backspace`/`Delete`) are active.
+- Direct delete via current selection or hovered atom (`Backspace`/`Delete`) is active.
 - Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`), supports right-click delete, and includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds.
 - Structures now persist explicit/perceived/suppressed `vol.bonds` with `{ id, a, b, order, kind, origin }`, where `kind: 'blocked'` records user-suppressed pairs that must not be auto-perceived back into existence.
 - `Save Structure` exports the active editable record as a reproducible `vibemol.structure` JSON document.

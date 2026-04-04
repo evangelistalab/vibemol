@@ -18,6 +18,7 @@
     const updateGrowDrag = typeof options.updateGrowDrag === 'function' ? options.updateGrowDrag : (() => ({ targetAtomIndex: -1 }));
     const commitGrowDrag = typeof options.commitGrowDrag === 'function' ? options.commitGrowDrag : (() => null);
     const cancelGrowDrag = typeof options.cancelGrowDrag === 'function' ? options.cancelGrowDrag : (() => {});
+    const getSelectedAtomDragAction = typeof options.getSelectedAtomDragAction === 'function' ? options.getSelectedAtomDragAction : (() => null);
     const startMoveDrag = typeof options.startMoveDrag === 'function' ? options.startMoveDrag : (() => false);
     const updateMoveDrag = typeof options.updateMoveDrag === 'function' ? options.updateMoveDrag : (() => false);
     const finishMoveDrag = typeof options.finishMoveDrag === 'function' ? options.finishMoveDrag : (() => false);
@@ -217,6 +218,10 @@
     function maybeBeginDrag(e) {
       if (!state.press || !movementExceeded(e)) return false;
       if (state.press.kind === 'selected-atom') {
+        const haloAction = getSelectedAtomDragAction(state.press.atomIndex, e);
+        if (haloAction && haloAction.type === 'grow') {
+          return startGrowDragFromHalo(e, state.press.atomIndex, haloAction);
+        }
         const resolved = resolveMoveScope(state.press.atomIndex, {
           atomOnly: !!state.press.altKey,
           preview: false,
@@ -248,6 +253,32 @@
         return true;
       }
       return false;
+    }
+
+    function startGrowDragFromHalo(e, atomIndex, growOptions = {}) {
+      state.press = {
+        kind: 'halo-grow',
+        clientX: Number(e && e.clientX) || 0,
+        clientY: Number(e && e.clientY) || 0,
+        pointerId: e && Number.isInteger(e.pointerId) ? e.pointerId : null,
+        atomIndex: atomIndex | 0,
+      };
+      state.activePointerId = state.press.pointerId;
+      state.hoverAtomIndex = atomIndex | 0;
+      state.voidPreviewVisible = false;
+      hideVoidPlacementPreview();
+      if (state.activePointerId != null) capturePointer(state.activePointerId);
+      if (!beginGrowDrag(e, atomIndex, growOptions || {})) {
+        if (state.activePointerId != null) releasePointer(state.activePointerId);
+        state.press = null;
+        state.activePointerId = null;
+        notifyUi();
+        return false;
+      }
+      state.gestureState = 'grow-drag';
+      state.bondTargetIndex = -1;
+      notifyUi();
+      return true;
     }
 
     function handlePointerDown(e) {
@@ -450,6 +481,7 @@
       handlePointerCancel,
       handleWheel,
       handleBondOrderKey,
+      startGrowDragFromHalo,
       getHighlightIndices,
       getUiState,
       refreshUi,
