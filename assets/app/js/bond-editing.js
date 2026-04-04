@@ -194,10 +194,8 @@
       hidePopup();
       clearPendingSelection();
       if (applyOptions.deleteOverride || getBondAction() === 'delete') {
-        if (!removeVolumeBond(vol, atomIdA, atomIdB)) {
-          setHintMessage('Bond tool: no explicit bond to delete.');
-          return false;
-        }
+        const status = upsertVolumeBond(vol, atomIdA, atomIdB, 1, 'blocked', 'explicit');
+        if (!status || status === 'unchanged') return false;
         const symbolA = getElementSymbol(atomA.Z | 0);
         const symbolB = getElementSymbol(atomB.Z | 0);
         if (finalizeBondGraphEdit(record, vol, beforeBonds, `Delete bond ${symbolA}-${symbolB}`)) {
@@ -207,7 +205,7 @@
         return false;
       }
       const nextOrder = normalizeOrder(Number.isFinite(applyOptions.orderOverride) ? applyOptions.orderOverride : getBondOrder());
-      const status = upsertVolumeBond(vol, atomIdA, atomIdB, nextOrder, 'normal');
+      const status = upsertVolumeBond(vol, atomIdA, atomIdB, nextOrder, 'normal', 'explicit');
       if (!status || status === 'unchanged') {
         setHintMessage(`Bond tool: ${getElementSymbol(atomA.Z | 0)}-${getElementSymbol(atomB.Z | 0)} is already order ${nextOrder}.`);
         return false;
@@ -249,7 +247,7 @@
       }
       const beforeBonds = cloneBondSnapshot(vol);
       const nextOrder = normalizeOrder(getBondOrder());
-      const status = upsertVolumeBond(vol, ensureAtomId(pendingAtom), atomId, nextOrder, 'normal');
+      const status = upsertVolumeBond(vol, ensureAtomId(pendingAtom), atomId, nextOrder, 'normal', 'explicit');
       clearPendingSelection();
       if (!status || status === 'unchanged') {
         setHintMessage(`Bond already exists between ${getElementSymbol(pendingAtom.Z | 0)} and ${getElementSymbol(atom.Z | 0)}. Click the bond to change its order.`);
@@ -257,6 +255,77 @@
       }
       const symbolA = getElementSymbol(pendingAtom.Z | 0);
       const symbolB = getElementSymbol(atom.Z | 0);
+      if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
+        setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
+        return true;
+      }
+      return false;
+    }
+
+    function applyToAtomPair(atomIndexA, atomIndexB, applyOptions = {}) {
+      const record = ensureEditableRecord();
+      const vol = record && record.vol;
+      const aIndex = atomIndexA | 0;
+      const bIndex = atomIndexB | 0;
+      if (!record || !vol || !Array.isArray(vol.atoms) || aIndex < 0 || bIndex < 0 || aIndex >= vol.atoms.length || bIndex >= vol.atoms.length || aIndex === bIndex) {
+        return false;
+      }
+      const atomA = vol.atoms[aIndex];
+      const atomB = vol.atoms[bIndex];
+      const atomIdA = ensureAtomId(atomA);
+      const atomIdB = ensureAtomId(atomB);
+      const currentIndex = findVolumeBondRecordIndex(vol, atomIdA, atomIdB);
+      const currentBond = currentIndex >= 0 ? normalizeVolumeBondRecord(vol, vol.bonds[currentIndex]) : null;
+      const beforeBonds = cloneBondSnapshot(vol);
+      hidePopup();
+      clearPendingSelection();
+
+      if (applyOptions.cycle) {
+        const currentOrder = currentBond && currentBond.kind !== 'blocked'
+          ? normalizeOrder(currentBond.order || 1)
+          : 0;
+        if (currentOrder >= 3) {
+          const status = upsertVolumeBond(vol, atomIdA, atomIdB, 1, 'blocked', 'explicit');
+          if (!status || status === 'unchanged') return false;
+          const symbolA = getElementSymbol(atomA.Z | 0);
+          const symbolB = getElementSymbol(atomB.Z | 0);
+          if (finalizeBondGraphEdit(record, vol, beforeBonds, `Delete bond ${symbolA}-${symbolB}`)) {
+            setHintMessage(`Deleted ${symbolA}-${symbolB} bond.`);
+            return true;
+          }
+          return false;
+        }
+        const nextOrder = currentOrder > 0
+          ? currentOrder + 1
+          : normalizeOrder(Number.isFinite(applyOptions.createOrder) ? applyOptions.createOrder : 1);
+        const status = upsertVolumeBond(vol, atomIdA, atomIdB, nextOrder, 'normal', 'explicit');
+        if (!status || status === 'unchanged') return false;
+        const symbolA = getElementSymbol(atomA.Z | 0);
+        const symbolB = getElementSymbol(atomB.Z | 0);
+        if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
+          setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
+          return true;
+        }
+        return false;
+      }
+
+      if (applyOptions.deleteOverride) {
+        const status = upsertVolumeBond(vol, atomIdA, atomIdB, 1, 'blocked', 'explicit');
+        if (!status || status === 'unchanged') return false;
+        const symbolA = getElementSymbol(atomA.Z | 0);
+        const symbolB = getElementSymbol(atomB.Z | 0);
+        if (finalizeBondGraphEdit(record, vol, beforeBonds, `Delete bond ${symbolA}-${symbolB}`)) {
+          setHintMessage(`Deleted ${symbolA}-${symbolB} bond.`);
+          return true;
+        }
+        return false;
+      }
+
+      const nextOrder = normalizeOrder(Number.isFinite(applyOptions.orderOverride) ? applyOptions.orderOverride : getBondOrder());
+      const status = upsertVolumeBond(vol, atomIdA, atomIdB, nextOrder, 'normal', 'explicit');
+      if (!status || status === 'unchanged') return false;
+      const symbolA = getElementSymbol(atomA.Z | 0);
+      const symbolB = getElementSymbol(atomB.Z | 0);
       if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
         setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
         return true;
@@ -295,6 +364,7 @@
       refreshPopup,
       applyToCarrier,
       applyToAtom,
+      applyToAtomPair,
       clearState(clearOptions = {}) {
         if (clearOptions.pendingSelection !== false) clearPendingSelection();
         if (clearOptions.popup !== false) hidePopup();

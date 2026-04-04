@@ -1,6 +1,9 @@
 (function (global) {
   'use strict';
 
+  const AUTO_BOND_TOLERANCE = 1.15;
+  const AUTO_BOND_MIN_DISTANCE = 0.4;
+
   /**
    * Look up the covalent radius for an atomic number in angstroms.
    * Falls back to a generic radius when element metadata is unavailable.
@@ -86,6 +89,56 @@
   }
 
   /**
+   * Return true when automatic geometry-based bonding is supported for one element.
+   * This intentionally targets organic/main-group chemistry and skips metals by default.
+   * @param {number} z
+   * @returns {boolean}
+   */
+  function isAutoBondSupportedAtomicNumber(z) {
+    switch (z | 0) {
+      case 1:
+      case 5:
+      case 6:
+      case 7:
+      case 8:
+      case 9:
+      case 14:
+      case 15:
+      case 16:
+      case 17:
+      case 35:
+      case 53:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Return the maximum coordination count used by auto-bond perception.
+   * Unsupported elements return 0 and are skipped.
+   * @param {number} z
+   * @returns {number}
+   */
+  function getElementMaxCoordination(z) {
+    switch (z | 0) {
+      case 1: return 1;
+      case 5: return 4;
+      case 6: return 4;
+      case 7: return 4;
+      case 8: return 2;
+      case 9: return 1;
+      case 14: return 4;
+      case 15: return 5;
+      case 16: return 6;
+      case 17: return 1;
+      case 35: return 1;
+      case 53: return 1;
+      default: return 0;
+    }
+  }
+
+  /**
    * Resolve the maximum supported bond order for an element pair.
    * Conservative by design: only common organic/main-group pairs are promoted.
    * Quadruple-order support is enabled for C-C to allow C2-like cases.
@@ -127,31 +180,40 @@
   }
 
   /**
-   * Build candidate bonds from atom positions using covalent-radius heuristics.
+   * Build raw candidate pairs from atom positions using covalent-radius heuristics.
+   * Acceptance here only means "consider for ranking"; final connectivity is capped later.
    * @param {Array<{pos:THREE.Vector3,Z:number}>} atomPositions
-   * @returns {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,order:number,maxOrder:number}>}
+   * @param {{tolerance?:number,minDistance?:number,skipUnsupported?:boolean}=} options
+   * @returns {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,ratio:number,order:number,maxOrder:number}>}
    */
-  function collectBondCandidates(atomPositions) {
+  function collectRawBondCandidates(atomPositions, options = {}) {
     const edges = [];
-    const n = atomPositions.length;
+    const n = Array.isArray(atomPositions) ? atomPositions.length : 0;
+    const tolerance = Number.isFinite(options.tolerance) ? Number(options.tolerance) : AUTO_BOND_TOLERANCE;
+    const minDistance = Number.isFinite(options.minDistance) ? Number(options.minDistance) : AUTO_BOND_MIN_DISTANCE;
+    const skipUnsupported = options.skipUnsupported !== false;
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         const ai = atomPositions[i];
         const aj = atomPositions[j];
+        if (!ai || !aj || !ai.pos || !aj.pos || typeof ai.pos.distanceTo !== 'function') continue;
+        if (skipUnsupported && (!isAutoBondSupportedAtomicNumber(ai.Z) || !isAutoBondSupportedAtomicNumber(aj.Z))) continue;
         const ri = getCovalentRadiusAngstrom(ai.Z);
         const rj = getCovalentRadiusAngstrom(aj.Z);
         const singleRef = ri + rj;
-        const cutoff = 1.15 * singleRef;
+        if (!(singleRef > 0)) continue;
+        const cutoff = tolerance * singleRef;
         const len = ai.pos.distanceTo(aj.pos);
-        if (len < 0.4 || len > cutoff) continue;
+        if (!Number.isFinite(len) || len < minDistance || len > cutoff) continue;
         edges.push({
           i,
           j,
           len,
           singleRef,
           cutoff,
+          ratio: len / Math.max(1e-6, singleRef),
           order: 1,
-          maxOrder: getPairMaxBondOrder(ai.Z, aj.Z),
+          maxOrder: 1,
         });
       }
     }
@@ -159,51 +221,91 @@
   }
 
   /**
-   * Infer bond orders by promoting single bonds while satisfying valence deficits.
-   * This intentionally targets organic/main-group chemistry and avoids metals/f-block.
-   * @param {Array<{Z:number}>} atomPositions
-   * @param {Array<{i:number,j:number,len:number,singleRef:number,order:number,maxOrder:number}>} edges
+   * Accept raw bond candidates greedily by distance rank while enforcing per-element
+   * coordination caps.
+   * @param {Array<{pos:THREE.Vector3,Z:number}>} atomPositions
+   * @param {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,ratio:number,order:number,maxOrder:number}>} candidates
+   * @param {{maxCoordinationOverride?:Record<string, number>}=} options
+   * @returns {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,ratio:number,order:number,maxOrder:number}>}
+   */
+  function acceptBondCandidatesByDistanceRank(atomPositions, candidates, options = {}) {
+    if (!Array.isArray(atomPositions) || !Array.isArray(candidates) || !candidates.length) return [];
+    const sorted = candidates.slice().sort((left, right) => {
+      const ratioDelta = (Number(left && left.ratio) || 0) - (Number(right && right.ratio) || 0);
+      if (Math.abs(ratioDelta) > 1e-8) return ratioDelta;
+      const lenDelta = (Number(left && left.len) || 0) - (Number(right && right.len) || 0);
+      if (Math.abs(lenDelta) > 1e-8) return lenDelta;
+      const iDelta = (left && left.i || 0) - (right && right.i || 0);
+      if (iDelta !== 0) return iDelta;
+      return (left && left.j || 0) - (right && right.j || 0);
+    });
+    const coordination = new Array(atomPositions.length).fill(0);
+    const maxCoordinationOverride = options.maxCoordinationOverride && typeof options.maxCoordinationOverride === 'object'
+      ? options.maxCoordinationOverride
+      : null;
+    const accepted = [];
+    for (const candidate of sorted) {
+      if (!candidate) continue;
+      const i = candidate.i | 0;
+      const j = candidate.j | 0;
+      const atomI = atomPositions[i];
+      const atomJ = atomPositions[j];
+      if (!atomI || !atomJ || i < 0 || j < 0 || i >= atomPositions.length || j >= atomPositions.length || i === j) continue;
+      const hasOverrideI = !!(maxCoordinationOverride && Object.prototype.hasOwnProperty.call(maxCoordinationOverride, i));
+      const hasOverrideJ = !!(maxCoordinationOverride && Object.prototype.hasOwnProperty.call(maxCoordinationOverride, j));
+      const maxI = hasOverrideI && Number.isFinite(Number(maxCoordinationOverride[i]))
+        ? Math.max(0, Number(maxCoordinationOverride[i]) | 0)
+        : getElementMaxCoordination(atomI.Z);
+      const maxJ = hasOverrideJ && Number.isFinite(Number(maxCoordinationOverride[j]))
+        ? Math.max(0, Number(maxCoordinationOverride[j]) | 0)
+        : getElementMaxCoordination(atomJ.Z);
+      if (maxI <= 0 || maxJ <= 0) continue;
+      if (coordination[i] >= maxI || coordination[j] >= maxJ) continue;
+      coordination[i] += 1;
+      coordination[j] += 1;
+      accepted.push({
+        i,
+        j,
+        len: Number(candidate.len) || 0,
+        singleRef: Number(candidate.singleRef) || 0,
+        cutoff: Number(candidate.cutoff) || 0,
+        ratio: Number(candidate.ratio) || 0,
+        order: 1,
+        maxOrder: 1,
+      });
+    }
+    return accepted;
+  }
+
+  /**
+   * Perceive one conservative bond connectivity graph from atom coordinates.
+   * Returned edges are single bonds only; explicit/user-edited higher orders are kept elsewhere.
+   * @param {Array<{pos:THREE.Vector3,Z:number}>} atomPositions
+   * @param {{tolerance?:number,minDistance?:number,skipUnsupported?:boolean,maxCoordinationOverride?:Record<string, number>}=} options
+   * @returns {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,ratio:number,order:number,maxOrder:number}>}
+   */
+  function perceiveBondConnectivity(atomPositions, options = {}) {
+    const candidates = collectRawBondCandidates(atomPositions, options);
+    return acceptBondCandidatesByDistanceRank(atomPositions, candidates, options);
+  }
+
+  /**
+   * Deprecated compatibility alias.
+   * @deprecated Use collectRawBondCandidates(...) or perceiveBondConnectivity(...).
+   */
+  function collectBondCandidates(atomPositions, options = {}) {
+    return collectRawBondCandidates(atomPositions, options);
+  }
+
+  /**
+   * Deprecated compatibility alias that mutates the input edge array in place.
+   * @deprecated App code should call perceiveBondConnectivity(...) directly.
    */
   function inferBondOrders(atomPositions, edges) {
-    if (!edges.length) return;
-    const n = atomPositions.length;
-    const currentValence = new Array(n).fill(0);
-    for (const e of edges) {
-      currentValence[e.i] += e.order;
-      currentValence[e.j] += e.order;
-    }
-    const targetValence = currentValence.map((v, idx) => {
-      const z = atomPositions[idx].Z | 0;
-      if (isTransitionMetalAtomicNumber(z) || isLanthanideOrActinideAtomicNumber(z)) return v;
-      return chooseTargetValence(z, v);
-    });
-    const deficit = targetValence.map((v, idx) => Math.max(0, v - currentValence[idx]));
-
-    const maxPromotions = edges.reduce((sum, e) => sum + Math.max(0, (e.maxOrder | 0) - 1), 0);
-    let promotions = 0;
-    while (promotions < maxPromotions) {
-      let bestIdx = -1;
-      let bestScore = 0;
-      for (let k = 0; k < edges.length; k++) {
-        const e = edges[k];
-        if (e.order >= e.maxOrder) continue;
-        if (deficit[e.i] <= 0 || deficit[e.j] <= 0) continue;
-        const ratio = e.len / Math.max(1e-6, e.singleRef);
-        const distanceBonus = Math.max(0, 1.15 - ratio) * 2.5;
-        const valenceBonus = deficit[e.i] + deficit[e.j];
-        const score = valenceBonus + distanceBonus;
-        if (score > bestScore + 1e-8) {
-          bestScore = score;
-          bestIdx = k;
-        }
-      }
-      if (bestIdx < 0) break;
-      const e = edges[bestIdx];
-      e.order += 1;
-      deficit[e.i] = Math.max(0, deficit[e.i] - 1);
-      deficit[e.j] = Math.max(0, deficit[e.j] - 1);
-      promotions += 1;
-    }
+    if (!Array.isArray(edges)) return;
+    const accepted = acceptBondCandidatesByDistanceRank(atomPositions, edges);
+    edges.length = 0;
+    for (const edge of accepted) edges.push(edge);
   }
 
   /**
@@ -238,6 +340,101 @@
     return a < b ? `${a}:${b}` : `${b}:${a}`;
   }
 
+  function buildBondIdFromAtomIds(a, b) {
+    const left = String(a || '').trim();
+    const right = String(b || '').trim();
+    if (!left || !right) return '';
+    return left < right ? `bond:${left}:${right}` : `bond:${right}:${left}`;
+  }
+
+  function normalizeBondOriginValue(value) {
+    return String(value || '').trim().toLowerCase() === 'perceived' ? 'perceived' : 'explicit';
+  }
+
+  /**
+   * Classify the difference between the current stored graph and a newly perceived graph.
+   * The input volume is expected to already use normalized atom ids and bond records.
+   * @param {{atoms?:Array<object>,bonds?:Array<object>}|null} vol
+   * @param {Array<{pos:THREE.Vector3,Z:number}>} atomPositions
+   * @param {{tolerance?:number,minDistance?:number,skipUnsupported?:boolean,maxCoordinationOverride?:Record<string, number>}=} options
+   * @returns {{perceived:Array<object>,additions:Array<object>,removable:Array<object>,warnings:Array<object>}}
+   */
+  function classifyBondCleanupDiff(vol, atomPositions, options = {}) {
+    const empty = { perceived: [], additions: [], removable: [], warnings: [] };
+    if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(atomPositions) || atomPositions.length !== vol.atoms.length) return empty;
+    const atomIndexById = new Map();
+    for (let i = 0; i < vol.atoms.length; i++) {
+      const atom = vol.atoms[i];
+      const atomId = String(atom && atom.id || '').trim();
+      if (atomId) atomIndexById.set(atomId, i);
+    }
+    const perceivedEdges = perceiveBondConnectivity(atomPositions, options).map((edge) => {
+      const atomA = vol.atoms[edge.i];
+      const atomB = vol.atoms[edge.j];
+      const a = String(atomA && atomA.id || '').trim();
+      const b = String(atomB && atomB.id || '').trim();
+      const key = buildBondIdFromAtomIds(a, b);
+      return {
+        id: key,
+        key,
+        a,
+        b,
+        i: edge.i,
+        j: edge.j,
+        len: edge.len,
+        order: 1,
+        kind: 'normal',
+        origin: 'perceived',
+      };
+    }).filter((edge) => edge.id && edge.a && edge.b && edge.a !== edge.b);
+    const perceivedByKey = new Map(perceivedEdges.map((edge) => [edge.key, edge]));
+    const currentByKey = new Map();
+    const blockedKeys = new Set();
+    for (const raw of vol.bonds || []) {
+      if (!raw || typeof raw !== 'object') continue;
+      const a = String(raw.a || '').trim();
+      const b = String(raw.b || '').trim();
+      if (!a || !b || a === b) continue;
+      const i = atomIndexById.get(a);
+      const j = atomIndexById.get(b);
+      if (!Number.isInteger(i) || !Number.isInteger(j) || i === j) continue;
+      const posA = atomPositions[i] && atomPositions[i].pos;
+      const posB = atomPositions[j] && atomPositions[j].pos;
+      const len = posA && posB && typeof posA.distanceTo === 'function' ? posA.distanceTo(posB) : 0;
+      const key = buildBondIdFromAtomIds(a, b);
+      const kind = String(raw.kind || 'normal') || 'normal';
+      if (kind === 'blocked') {
+        blockedKeys.add(key);
+        continue;
+      }
+      currentByKey.set(key, {
+        id: String(raw.id || '').trim() || key,
+        key,
+        a,
+        b,
+        i,
+        j,
+        len,
+        order: Number(raw.order) || 1,
+        kind: String(raw.kind || 'normal') || 'normal',
+        origin: normalizeBondOriginValue(raw.origin),
+      });
+    }
+    const additions = [];
+    for (const edge of perceivedEdges) {
+      if (blockedKeys.has(edge.key)) continue;
+      if (!currentByKey.has(edge.key)) additions.push(edge);
+    }
+    const removable = [];
+    const warnings = [];
+    for (const bond of currentByKey.values()) {
+      if (perceivedByKey.has(bond.key)) continue;
+      if (bond.origin === 'perceived') removable.push(bond);
+      else warnings.push(bond);
+    }
+    return { perceived: perceivedEdges, additions, removable, warnings };
+  }
+
   /**
    * Canonicalize a simple cycle so duplicates (rotation/reversal) map to one key.
    * @param {number[]} cycle
@@ -260,7 +457,7 @@
       }
     };
     tryVariant(cycle);
-    tryVariant([...cycle].reverse());
+    tryVariant(cycle.slice().reverse());
     return { key: bestKey, nodes: best || cycle.slice() };
   }
 
@@ -409,11 +606,11 @@
       }
       if (!valid || edgeIndices.length !== 6) continue;
 
-      const meanLen = cycleEdgeLengths.reduce((s, v) => s + v, 0) / cycleEdgeLengths.length;
+      const meanLen = cycleEdgeLengths.reduce((sum, value) => sum + value, 0) / cycleEdgeLengths.length;
       let varLen = 0;
-      for (const v of cycleEdgeLengths) {
-        const d = v - meanLen;
-        varLen += d * d;
+      for (const value of cycleEdgeLengths) {
+        const delta = value - meanLen;
+        varLen += delta * delta;
       }
       const stdLen = Math.sqrt(varLen / cycleEdgeLengths.length);
       if (meanLen < 1.32 || meanLen > 1.47 || stdLen > 0.09) continue;
@@ -455,12 +652,19 @@
   }
 
   global.VibeMolBondInference = Object.freeze({
+    AUTO_BOND_TOLERANCE,
+    AUTO_BOND_MIN_DISTANCE,
     getCovalentRadiusAngstrom,
     isLanthanideOrActinideAtomicNumber,
     isMonovalentMainGroupAtomicNumber,
     getAllowedMainGroupValences,
     chooseTargetValence,
     getPairMaxBondOrder,
+    isAutoBondSupportedAtomicNumber,
+    getElementMaxCoordination,
+    collectRawBondCandidates,
+    acceptBondCandidatesByDistanceRank,
+    perceiveBondConnectivity,
     collectBondCandidates,
     inferBondOrders,
     buildBondAdjacency,
@@ -468,6 +672,7 @@
     findSimpleCyclesOfSize,
     enforceAlternatingSixRingBondOrders,
     inferAromaticSixRings,
+    classifyBondCleanupDiff,
     isTransitionMetalAtomicNumber,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

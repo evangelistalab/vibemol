@@ -1,0 +1,462 @@
+(function (global) {
+  'use strict';
+
+  function createEditGestureController(options = {}) {
+    const dragThresholdPx = Number.isFinite(options.dragThresholdPx) ? Math.max(2, Number(options.dragThresholdPx)) : 6;
+    const doubleClickThresholdMs = Number.isFinite(options.doubleClickThresholdMs) ? Math.max(100, Number(options.doubleClickThresholdMs)) : 400;
+    const isEnabled = typeof options.isEnabled === 'function' ? options.isEnabled : (() => false);
+    const getSelection = typeof options.getSelection === 'function' ? options.getSelection : (() => []);
+    const setSelection = typeof options.setSelection === 'function' ? options.setSelection : (() => false);
+    const applySelectionClick = typeof options.applySelectionClick === 'function' ? options.applySelectionClick : (() => false);
+    const clearSelection = typeof options.clearSelection === 'function' ? options.clearSelection : (() => false);
+    const pickAtomObject = typeof options.pickAtomObject === 'function' ? options.pickAtomObject : (() => null);
+    const pickBondHit = typeof options.pickBondHit === 'function' ? options.pickBondHit : (() => null);
+    const showVoidPlacementPreview = typeof options.showVoidPlacementPreview === 'function' ? options.showVoidPlacementPreview : (() => false);
+    const hideVoidPlacementPreview = typeof options.hideVoidPlacementPreview === 'function' ? options.hideVoidPlacementPreview : (() => {});
+    const placeVoidAtom = typeof options.placeVoidAtom === 'function' ? options.placeVoidAtom : (() => null);
+    const beginGrowDrag = typeof options.beginGrowDrag === 'function' ? options.beginGrowDrag : (() => false);
+    const updateGrowDrag = typeof options.updateGrowDrag === 'function' ? options.updateGrowDrag : (() => ({ targetAtomIndex: -1 }));
+    const commitGrowDrag = typeof options.commitGrowDrag === 'function' ? options.commitGrowDrag : (() => null);
+    const cancelGrowDrag = typeof options.cancelGrowDrag === 'function' ? options.cancelGrowDrag : (() => {});
+    const startMoveDrag = typeof options.startMoveDrag === 'function' ? options.startMoveDrag : (() => false);
+    const updateMoveDrag = typeof options.updateMoveDrag === 'function' ? options.updateMoveDrag : (() => false);
+    const finishMoveDrag = typeof options.finishMoveDrag === 'function' ? options.finishMoveDrag : (() => false);
+    const cancelMoveDrag = typeof options.cancelMoveDrag === 'function' ? options.cancelMoveDrag : (() => {});
+    const resolveMoveScope = typeof options.resolveMoveScope === 'function' ? options.resolveMoveScope : (() => ({ indices: [], label: 'No move scope', anchorWorld: null }));
+    const resolveDownstreamMoveScope = typeof options.resolveDownstreamMoveScope === 'function' ? options.resolveDownstreamMoveScope : (() => ({ indices: [], label: 'No downstream scope', anchorWorld: null }));
+    const resolveMoleculeSelection = typeof options.resolveMoleculeSelection === 'function' ? options.resolveMoleculeSelection : ((atomIndex) => [atomIndex | 0]);
+    const getPendingBondOrder = typeof options.getPendingBondOrder === 'function' ? options.getPendingBondOrder : (() => 1);
+    const cyclePendingBondOrder = typeof options.cyclePendingBondOrder === 'function' ? options.cyclePendingBondOrder : (() => 1);
+    const setPendingBondOrder = typeof options.setPendingBondOrder === 'function' ? options.setPendingBondOrder : (() => 1);
+    const getLoadedElementSymbol = typeof options.getLoadedElementSymbol === 'function' ? options.getLoadedElementSymbol : (() => 'C');
+    const getLoadedElementName = typeof options.getLoadedElementName === 'function' ? options.getLoadedElementName : (() => 'Carbon');
+    const onUiStateChanged = typeof options.onUiStateChanged === 'function' ? options.onUiStateChanged : (() => {});
+    const setHintMessage = typeof options.setHintMessage === 'function' ? options.setHintMessage : (() => {});
+    const startBoxSelection = typeof options.startBoxSelection === 'function' ? options.startBoxSelection : (() => false);
+    const updateBoxSelection = typeof options.updateBoxSelection === 'function' ? options.updateBoxSelection : (() => false);
+    const finishBoxSelection = typeof options.finishBoxSelection === 'function' ? options.finishBoxSelection : (() => false);
+    const cancelBoxSelection = typeof options.cancelBoxSelection === 'function' ? options.cancelBoxSelection : (() => {});
+    const capturePointer = typeof options.capturePointer === 'function' ? options.capturePointer : (() => {});
+    const releasePointer = typeof options.releasePointer === 'function' ? options.releasePointer : (() => {});
+
+    const state = {
+      gestureState: 'idle',
+      press: null,
+      hoverAtomIndex: -1,
+      hoverBondHit: null,
+      voidPreviewVisible: false,
+      currentMoveScopeLabel: 'No selection',
+      currentMoveScopeIndices: [],
+      bondTargetIndex: -1,
+      activePointerId: null,
+      lastAtomClick: null,
+    };
+
+    function syncSelectionScope() {
+      const selection = Array.isArray(getSelection()) ? getSelection() : [];
+      if (selection.length > 1) {
+        state.currentMoveScopeIndices = selection.slice();
+        state.currentMoveScopeLabel = `Move scope: current selection (${selection.length} atoms)`;
+        return;
+      }
+      if (selection.length === 1) {
+        const resolved = resolveMoveScope(selection[0], { atomOnly: false, preview: true }) || {};
+        state.currentMoveScopeIndices = Array.isArray(resolved.indices) ? resolved.indices.slice() : selection.slice();
+        state.currentMoveScopeLabel = String(resolved.label || `Move scope: ${state.currentMoveScopeIndices.length || 1} atoms`);
+        return;
+      }
+      state.currentMoveScopeIndices = [];
+      state.currentMoveScopeLabel = 'No selection';
+    }
+
+    function movementExceeded(e) {
+      if (!state.press) return false;
+      const dx = (Number(e && e.clientX) || 0) - state.press.clientX;
+      const dy = (Number(e && e.clientY) || 0) - state.press.clientY;
+      return (dx * dx + dy * dy) >= (dragThresholdPx * dragThresholdPx);
+    }
+
+    function isDoubleClickEvent(e) {
+      return (Number(e && e.detail) || 0) >= 2;
+    }
+
+    function getEventTimestamp(e) {
+      const stamp = Number(e && e.timeStamp);
+      return Number.isFinite(stamp) ? stamp : Date.now();
+    }
+
+    function wasRecentRepeatedAtomClick(atomIndex, e) {
+      const last = state.lastAtomClick;
+      if (!last || (last.atomIndex | 0) !== (atomIndex | 0)) return false;
+      return (getEventTimestamp(e) - last.at) <= doubleClickThresholdMs;
+    }
+
+    function recordAtomClick(atomIndex, e) {
+      state.lastAtomClick = { atomIndex: atomIndex | 0, at: getEventTimestamp(e) };
+    }
+
+    function clearLastAtomClick() {
+      state.lastAtomClick = null;
+    }
+
+    function buildUiState() {
+      const selection = Array.isArray(getSelection()) ? getSelection() : [];
+      let hint = `Click void to place ${getLoadedElementSymbol()} • Click atom to select`;
+      let scope = selection.length
+        ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected`
+        : 'No selection';
+      let bondOrderVisible = false;
+      if (!isEnabled()) {
+        hint = '';
+        scope = '';
+      } else if (state.gestureState === 'grow-drag') {
+        const targetText = state.bondTargetIndex >= 0
+          ? 'Release on atom to cycle bond'
+          : 'Release on void to add atom';
+        hint = `${targetText} • Wheel or 1/2/3 sets bond order`;
+        bondOrderVisible = true;
+      } else if (state.gestureState === 'move-drag') {
+        hint = 'Dragging move scope';
+        if (state.currentMoveScopeLabel) scope = state.currentMoveScopeLabel;
+      } else if (state.gestureState === 'box-select-drag') {
+        hint = 'Dragging selection box';
+        scope = 'Selecting atoms in box';
+      } else if (selection.length === 1) {
+        if (state.currentMoveScopeLabel) scope = state.currentMoveScopeLabel;
+        if (state.hoverAtomIndex >= 0 && state.hoverAtomIndex === selection[0]) {
+          hint = 'Drag selected atom to move • Alt drags only that atom';
+        } else if (state.hoverBondHit) {
+          hint = 'Shift-drag bond to move the downstream side';
+        } else if (state.hoverAtomIndex >= 0) {
+          hint = 'Click atom to select • Drag unselected atom to grow bond';
+        } else {
+          hint = 'Drag selected atom to move • Drag unselected atom to edit chemistry';
+        }
+      } else if (selection.length > 1) {
+        hint = 'Drag any selected atom to move the current selection';
+      } else if (state.hoverAtomIndex >= 0) {
+        hint = 'Click atom to select • Drag atom into void to grow bond';
+      } else if (state.hoverBondHit) {
+        hint = 'Shift-drag bond to move the downstream side';
+      } else if (state.voidPreviewVisible) {
+        hint = `Click void to place ${getLoadedElementSymbol()}`;
+      }
+      return {
+        gestureState: state.gestureState,
+        hint,
+        scope,
+        loadedElementSymbol: getLoadedElementSymbol(),
+        loadedElementName: getLoadedElementName(),
+        bondOrderVisible,
+        bondOrder: Math.max(1, Math.min(3, Number(getPendingBondOrder()) || 1)),
+        highlightIndices: Array.isArray(state.currentMoveScopeIndices) ? state.currentMoveScopeIndices.slice() : [],
+      };
+    }
+
+    function notifyUi() {
+      onUiStateChanged(buildUiState());
+    }
+
+    function updateIdleHover(e) {
+      if (!isEnabled()) {
+        state.hoverAtomIndex = -1;
+        state.hoverBondHit = null;
+        state.voidPreviewVisible = false;
+        state.currentMoveScopeIndices = [];
+        state.currentMoveScopeLabel = 'No selection';
+        hideVoidPlacementPreview();
+        notifyUi();
+        return;
+      }
+      const selection = Array.isArray(getSelection()) ? getSelection() : [];
+      const atomObj = pickAtomObject(e);
+      const atomIndex = atomObj && atomObj.userData ? (atomObj.userData.index | 0) : -1;
+      const bondHit = atomIndex < 0 ? pickBondHit(e) : null;
+      state.hoverAtomIndex = atomIndex;
+      state.hoverBondHit = bondHit || null;
+      if (!selection.length && atomIndex < 0 && !bondHit) {
+        state.voidPreviewVisible = !!showVoidPlacementPreview(e);
+      } else {
+        state.voidPreviewVisible = false;
+        hideVoidPlacementPreview();
+      }
+      syncSelectionScope();
+      notifyUi();
+    }
+
+    function clearState() {
+      const pointerId = state.activePointerId;
+      state.gestureState = 'idle';
+      state.press = null;
+      state.activePointerId = null;
+      state.bondTargetIndex = -1;
+      state.voidPreviewVisible = false;
+      state.currentMoveScopeIndices = [];
+      state.currentMoveScopeLabel = 'No selection';
+      clearLastAtomClick();
+      hideVoidPlacementPreview();
+      cancelGrowDrag();
+      cancelMoveDrag();
+      cancelBoxSelection();
+      if (pointerId != null) releasePointer(pointerId);
+      notifyUi();
+    }
+
+    function startMoveFromResolvedScope(e, resolved) {
+      if (!resolved || !Array.isArray(resolved.indices) || !resolved.indices.length) return false;
+      const nextSelection = resolved.indices.slice();
+      setSelection(nextSelection);
+      state.currentMoveScopeIndices = nextSelection.slice();
+      state.currentMoveScopeLabel = String(resolved.label || `Move scope: ${nextSelection.length} atoms`);
+      if (!startMoveDrag(e, nextSelection, resolved.anchorWorld || null, { axis: 'none' })) return false;
+      state.gestureState = 'move-drag';
+      notifyUi();
+      return true;
+    }
+
+    function maybeBeginDrag(e) {
+      if (!state.press || !movementExceeded(e)) return false;
+      if (state.press.kind === 'selected-atom') {
+        const resolved = resolveMoveScope(state.press.atomIndex, {
+          atomOnly: !!state.press.altKey,
+          preview: false,
+        });
+        return startMoveFromResolvedScope(e, resolved);
+      }
+      if (state.press.kind === 'void-clear' || state.press.kind === 'void-place') {
+        hideVoidPlacementPreview();
+        state.voidPreviewVisible = false;
+        if (!startBoxSelection(state.press.clientX, state.press.clientY, Number(e && e.clientX) || 0, Number(e && e.clientY) || 0)) {
+          return false;
+        }
+        state.gestureState = 'box-select-drag';
+        notifyUi();
+        return true;
+      }
+      if (state.press.kind === 'bond-downstream') {
+        const resolved = resolveDownstreamMoveScope(state.press.bondHit, {
+          preview: false,
+        });
+        return startMoveFromResolvedScope(e, resolved);
+      }
+      if (state.press.kind === 'atom-press-pending') {
+        if (!beginGrowDrag(e, state.press.atomIndex)) return false;
+        state.gestureState = 'grow-drag';
+        const growState = updateGrowDrag(e) || {};
+        state.bondTargetIndex = Number.isInteger(growState.targetAtomIndex) ? (growState.targetAtomIndex | 0) : -1;
+        notifyUi();
+        return true;
+      }
+      return false;
+    }
+
+    function handlePointerDown(e) {
+      if (!isEnabled() || !e || e.button !== 0) return false;
+      state.press = null;
+      state.activePointerId = e.pointerId;
+      const selection = Array.isArray(getSelection()) ? getSelection() : [];
+      const bondHit = !!e.shiftKey ? pickBondHit(e) : null;
+      if (bondHit && bondHit.object) {
+        state.press = {
+          kind: 'bond-downstream',
+          clientX: Number(e.clientX) || 0,
+          clientY: Number(e.clientY) || 0,
+          pointerId: e.pointerId,
+          bondHit,
+        };
+        capturePointer(e.pointerId);
+        notifyUi();
+        return true;
+      }
+      const atomObj = pickAtomObject(e);
+      const atomIndex = atomObj && atomObj.userData ? (atomObj.userData.index | 0) : -1;
+      if (atomIndex >= 0) {
+        state.press = {
+          kind: selection.includes(atomIndex) ? 'selected-atom' : 'atom-press-pending',
+          clientX: Number(e.clientX) || 0,
+          clientY: Number(e.clientY) || 0,
+          pointerId: e.pointerId,
+          atomIndex,
+          additive: !!e.shiftKey,
+          altKey: !!e.altKey,
+        };
+        state.hoverAtomIndex = atomIndex;
+        state.voidPreviewVisible = false;
+        hideVoidPlacementPreview();
+        capturePointer(e.pointerId);
+        notifyUi();
+        return true;
+      }
+      state.press = {
+        kind: selection.length ? 'void-clear' : 'void-place',
+        clientX: Number(e.clientX) || 0,
+        clientY: Number(e.clientY) || 0,
+        pointerId: e.pointerId,
+        additive: !!e.shiftKey,
+      };
+      capturePointer(e.pointerId);
+      notifyUi();
+      return true;
+    }
+
+    function handlePointerMove(e) {
+      if (!isEnabled()) return false;
+      if (state.gestureState === 'move-drag') {
+        updateMoveDrag(e);
+        return true;
+      }
+      if (state.gestureState === 'box-select-drag') {
+        updateBoxSelection(
+          state.press ? state.press.clientX : 0,
+          state.press ? state.press.clientY : 0,
+          Number(e && e.clientX) || 0,
+          Number(e && e.clientY) || 0,
+        );
+        return true;
+      }
+      if (state.gestureState === 'grow-drag') {
+        const growState = updateGrowDrag(e) || {};
+        state.bondTargetIndex = Number.isInteger(growState.targetAtomIndex) ? (growState.targetAtomIndex | 0) : -1;
+        notifyUi();
+        return true;
+      }
+      if (state.press && maybeBeginDrag(e)) return true;
+      updateIdleHover(e);
+      return false;
+    }
+
+    function handlePointerUp(e) {
+      if (!isEnabled()) return false;
+      const activePointerId = state.activePointerId;
+      const press = state.press;
+      if (state.gestureState === 'move-drag') {
+        finishMoveDrag();
+        state.gestureState = 'idle';
+        state.press = null;
+        clearLastAtomClick();
+        if (activePointerId != null) releasePointer(activePointerId);
+        state.activePointerId = null;
+        updateIdleHover(e);
+        return true;
+      }
+      if (state.gestureState === 'box-select-drag') {
+        finishBoxSelection(!!(press && press.additive));
+        state.gestureState = 'idle';
+        state.press = null;
+        clearLastAtomClick();
+        if (activePointerId != null) releasePointer(activePointerId);
+        state.activePointerId = null;
+        updateIdleHover(e);
+        return true;
+      }
+      if (state.gestureState === 'grow-drag') {
+        const growState = updateGrowDrag(e) || {};
+        state.bondTargetIndex = Number.isInteger(growState.targetAtomIndex) ? (growState.targetAtomIndex | 0) : -1;
+        const result = commitGrowDrag({ targetAtomIndex: state.bondTargetIndex }) || null;
+        cancelGrowDrag();
+        state.gestureState = 'idle';
+        state.press = null;
+        state.bondTargetIndex = -1;
+        clearLastAtomClick();
+        if (result && Array.isArray(result.selection) && result.selection.length) setSelection(result.selection);
+        if (activePointerId != null) releasePointer(activePointerId);
+        state.activePointerId = null;
+        updateIdleHover(e);
+        return true;
+      }
+      if (!press) {
+        if (activePointerId != null) releasePointer(activePointerId);
+        state.activePointerId = null;
+        updateIdleHover(e);
+        return false;
+      }
+      state.press = null;
+      if (press.kind === 'atom-press-pending') {
+        if (isDoubleClickEvent(e) || wasRecentRepeatedAtomClick(press.atomIndex, e)) {
+          const nextSelection = resolveMoleculeSelection(press.atomIndex);
+          if (Array.isArray(nextSelection) && nextSelection.length) setSelection(nextSelection);
+          else setSelection([press.atomIndex]);
+          clearLastAtomClick();
+        } else {
+          applySelectionClick(press.atomIndex, !!press.additive);
+          if (!press.additive) recordAtomClick(press.atomIndex, e);
+          else clearLastAtomClick();
+        }
+      } else if (press.kind === 'selected-atom') {
+        if (isDoubleClickEvent(e) || wasRecentRepeatedAtomClick(press.atomIndex, e)) {
+          const nextSelection = resolveMoleculeSelection(press.atomIndex);
+          if (Array.isArray(nextSelection) && nextSelection.length) setSelection(nextSelection);
+          else setSelection([press.atomIndex]);
+          clearLastAtomClick();
+        } else if (press.altKey) setSelection([press.atomIndex]);
+        else recordAtomClick(press.atomIndex, e);
+      } else if (press.kind === 'void-clear') {
+        clearLastAtomClick();
+        if (clearSelection()) setHintMessage('Selection cleared.');
+      } else if (press.kind === 'void-place') {
+        clearLastAtomClick();
+        const result = placeVoidAtom(e) || null;
+        if (result && Array.isArray(result.selection) && result.selection.length) setSelection(result.selection);
+      }
+      if (activePointerId != null) releasePointer(activePointerId);
+      state.activePointerId = null;
+      updateIdleHover(e);
+      return true;
+    }
+
+    function handlePointerCancel() {
+      const hadState = !!(state.press || state.gestureState === 'move-drag' || state.gestureState === 'grow-drag' || state.gestureState === 'box-select-drag');
+      clearState();
+      return hadState;
+    }
+
+    function handleWheel(e) {
+      if (!isEnabled() || state.gestureState !== 'grow-drag') return false;
+      const delta = Number(e && e.deltaY) || 0;
+      cyclePendingBondOrder(delta > 0 ? 1 : -1);
+      notifyUi();
+      return true;
+    }
+
+    function handleBondOrderKey(order) {
+      if (!isEnabled() || state.gestureState !== 'grow-drag') return false;
+      const next = Math.max(1, Math.min(3, Number(order) || 1));
+      setPendingBondOrder(next);
+      notifyUi();
+      return true;
+    }
+
+    function getHighlightIndices() {
+      if (state.gestureState !== 'move-drag') return [];
+      return Array.isArray(state.currentMoveScopeIndices) ? state.currentMoveScopeIndices.slice() : [];
+    }
+
+    function getUiState() {
+      return buildUiState();
+    }
+
+    function refreshUi() {
+      syncSelectionScope();
+      notifyUi();
+    }
+
+    notifyUi();
+
+    return Object.freeze({
+      clearState,
+      handlePointerDown,
+      handlePointerMove,
+      handlePointerUp,
+      handlePointerCancel,
+      handleWheel,
+      handleBondOrderKey,
+      getHighlightIndices,
+      getUiState,
+      refreshUi,
+    });
+  }
+
+  global.VibeMolEditGestures = Object.freeze({
+    createEditGestureController,
+  });
+})(window);

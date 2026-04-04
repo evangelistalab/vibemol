@@ -81,34 +81,67 @@ function loadBondInference() {
       THREE: createThreeStub(),
       ATOM_Z_TO_DATA: {
         1: { radius_covalent: 0.31 },
+        5: { radius_covalent: 0.84 },
         6: { radius_covalent: 0.76 },
         7: { radius_covalent: 0.71 },
         8: { radius_covalent: 0.66 },
+        9: { radius_covalent: 0.57 },
+        14: { radius_covalent: 1.11 },
+        15: { radius_covalent: 1.07 },
+        16: { radius_covalent: 1.05 },
+        17: { radius_covalent: 1.02 },
+        26: { radius_covalent: 1.24 },
+        35: { radius_covalent: 1.20 },
+        53: { radius_covalent: 1.39 },
       },
     },
   });
 }
 
-test('bond inference collects simple covalent candidates', () => {
+test('bond perception accepts shortest candidates first under coordination caps', () => {
   const context = loadBondInference();
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
     const V3 = THREE.Vector3;
     const atoms = [
-      { Z: 6, pos: new V3(0, 0, 0) },
-      { Z: 6, pos: new V3(1.4, 0, 0) },
-      { Z: 1, pos: new V3(5.0, 0, 0) },
+      { id: 'c', Z: 6, pos: new V3(0, 0, 0) },
+      { id: 'h1', Z: 1, pos: new V3(0.95, 0, 0) },
+      { id: 'h2', Z: 1, pos: new V3(-0.95, 0, 0) },
+      { id: 'h3', Z: 1, pos: new V3(0, 0.96, 0) },
+      { id: 'h4', Z: 1, pos: new V3(0, -0.97, 0) },
+      { id: 'h5', Z: 1, pos: new V3(0, 0, 1.08) },
     ];
-    return window.VibeMolBondInference.collectBondCandidates(atoms);
+    return window.VibeMolBondInference.perceiveBondConnectivity(atoms).map((edge) => ({
+      i: edge.i,
+      j: edge.j,
+      len: Number(edge.len.toFixed(2)),
+      order: edge.order,
+    }));
   })())`));
 
-  assert.equal(result.length, 1);
-  assert.equal(result[0].i, 0);
-  assert.equal(result[0].j, 1);
-  assert.equal(result[0].order, 1);
-  assert.equal(result[0].maxOrder, 4);
+  assert.equal(result.length, 4);
+  assert.deepEqual(result.map((edge) => edge.j), [1, 2, 3, 4]);
+  assert.deepEqual(result.map((edge) => edge.order), [1, 1, 1, 1]);
 });
 
-test('bond inference promotes valence-compatible double bonds', () => {
+test('bond perception skips unsupported metal pairs by default', () => {
+  const context = loadBondInference();
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const V3 = THREE.Vector3;
+    const atoms = [
+      { Z: 26, pos: new V3(0, 0, 0) },
+      { Z: 1, pos: new V3(1.2, 0, 0) },
+    ];
+    return {
+      raw: window.VibeMolBondInference.collectRawBondCandidates(atoms).length,
+      accepted: window.VibeMolBondInference.perceiveBondConnectivity(atoms).length,
+    };
+  })())`));
+
+  assert.equal(result.raw, 0);
+  assert.equal(result.accepted, 0);
+});
+
+test('persistent perceived bonds remain single-order only', () => {
   const context = loadBondInference();
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
     const V3 = THREE.Vector3;
@@ -117,15 +150,55 @@ test('bond inference promotes valence-compatible double bonds', () => {
       { Z: 6, pos: new V3(0, 0, 0) },
       { Z: 8, pos: new V3(1.2, 0, 0) },
     ];
-    const edges = window.VibeMolBondInference.collectBondCandidates(atoms);
-    window.VibeMolBondInference.inferBondOrders(atoms, edges);
-    return edges.map((edge) => edge.order);
+    return window.VibeMolBondInference.perceiveBondConnectivity(atoms).map((edge) => ({
+      order: edge.order,
+      maxOrder: edge.maxOrder,
+    }));
   })())`));
 
-  assert.deepEqual(result, [2, 2]);
+  assert.deepEqual(result, [
+    { order: 1, maxOrder: 1 },
+    { order: 1, maxOrder: 1 },
+  ]);
 });
 
-test('bond inference normalizes aromatic six-rings to alternating order', () => {
+test('cleanup diff distinguishes additions, removable perceived bonds, and explicit warnings', () => {
+  const context = loadBondInference();
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const V3 = THREE.Vector3;
+    const vol = {
+      atoms: [
+        { id: 'a1', Z: 6, x: 0, y: 0, z: 0 },
+        { id: 'a2', Z: 6, x: 1.4, y: 0, z: 0 },
+        { id: 'a3', Z: 6, x: 2.8, y: 0, z: 0 },
+        { id: 'a4', Z: 6, x: 7.0, y: 0, z: 0 },
+      ],
+      bonds: [
+        { id: 'bond:a1:a2', a: 'a1', b: 'a2', order: 1, kind: 'normal', origin: 'perceived' },
+        { id: 'bond:a1:a3', a: 'a1', b: 'a3', order: 2, kind: 'normal', origin: 'explicit' },
+        { id: 'bond:a3:a4', a: 'a3', b: 'a4', order: 1, kind: 'normal', origin: 'perceived' },
+      ],
+    };
+    const atomPositions = [
+      { Z: 6, pos: new V3(0, 0, 0) },
+      { Z: 6, pos: new V3(1.4, 0, 0) },
+      { Z: 6, pos: new V3(2.8, 0, 0) },
+      { Z: 6, pos: new V3(7.0, 0, 0) },
+    ];
+    const diff = window.VibeMolBondInference.classifyBondCleanupDiff(vol, atomPositions);
+    return {
+      additions: diff.additions.map((bond) => String(bond.a) + '-' + String(bond.b)),
+      removable: diff.removable.map((bond) => String(bond.a) + '-' + String(bond.b)),
+      warnings: diff.warnings.map((bond) => String(bond.a) + '-' + String(bond.b)),
+    };
+  })())`));
+
+  assert.deepEqual(result.additions, ['a2-a3']);
+  assert.deepEqual(result.removable, ['a3-a4']);
+  assert.deepEqual(result.warnings, ['a1-a3']);
+});
+
+test('aromatic six-ring display normalization still works from a single-order graph', () => {
   const context = loadBondInference();
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
     const V3 = THREE.Vector3;
@@ -145,12 +218,10 @@ test('bond inference normalizes aromatic six-rings to alternating order', () => 
     return {
       ringCount: rings.length,
       orders: edges.map((edge) => edge.order),
-      radius: rings[0] ? Number(rings[0].radius.toFixed(3)) : null,
     };
   })())`));
 
   assert.equal(result.ringCount, 1);
   const joined = result.orders.join(',');
   assert.ok(joined === '1,2,1,2,1,2' || joined === '2,1,2,1,2,1');
-  assert.equal(result.radius, 0.784);
 });

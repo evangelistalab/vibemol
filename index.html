@@ -2729,7 +2729,25 @@
     style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
     <canvas id="phaseWheelCanvas" width="96" height="120" style="width:100%; height:100%;"></canvas>
   </div>
+  <div id="editGestureHud" aria-hidden="true">
+    <button id="editGestureElementChip" type="button" title="Loaded element">
+      <span id="editGestureElementChipSymbol">C</span>
+      <span id="editGestureElementChipLabel">Loaded</span>
+    </button>
+    <div id="editGestureHudBody">
+      <div id="editGestureHint">Click void to place C • Click atom to select</div>
+      <div id="editGestureScope">No selection</div>
+    </div>
+    <div id="editGestureHudActions">
+      <div id="editGestureBondOrderPill" aria-hidden="true">Bond 1</div>
+      <button id="editGestureAdvancedBtn" type="button" title="Show advanced edit tools">Advanced</button>
+    </div>
+  </div>
   <div id="editAdaptiveMenu" aria-hidden="true">
+    <div id="editAdaptiveMenuHeader">
+      <span id="editAdaptiveMenuTitle">Advanced</span>
+      <span id="editAdaptiveMenuSubtitle">Legacy tools and popovers</span>
+    </div>
     <button id="editAdaptiveSelectionBtn" class="adaptiveEditItem" type="button" title="Selection tool">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
@@ -2833,6 +2851,7 @@
   <div id="editAdaptiveAddAtomPopover" aria-hidden="true"></div>
   <div id="editAdaptiveAddFragmentPopover" aria-hidden="true"></div>
   <div id="editAdaptiveAddMoleculePopover" aria-hidden="true"></div>
+  <div id="editAdaptiveBondPopover" aria-hidden="true"></div>
   <div id="editAdaptiveTransformPopover" aria-hidden="true"></div>
   <div id="editSelectionMarquee" aria-hidden="true"></div>
   <div id="bondOrderPopup" aria-hidden="true">
@@ -3028,6 +3047,15 @@
       </select>
       <div id="editBondCurrent"></div>
     </div>
+    <div id="editBondCleanupPane">
+      <div id="editBondCleanupIntro">Review geometry-based bond cleanup for perceived bonds only.</div>
+      <button id="editBondCleanupStartBtn" type="button">Clean Up Bonds</button>
+      <div id="editBondCleanupSummary" aria-live="polite"></div>
+      <div id="editBondCleanupActions">
+        <button id="editBondCleanupApplyBtn" type="button">Apply</button>
+        <button id="editBondCleanupCancelBtn" type="button">Cancel</button>
+      </div>
+    </div>
     <div id="editTransformPane">
       <label for="editTransformScope">Transform scope</label>
       <select id="editTransformScope">
@@ -3144,6 +3172,7 @@
     </div>
     <div class="motionPanelBody">
       <div id="trajectoryNowPlaying">No trajectory selected</div>
+      <div id="trajectoryBondModeNote" style="display:none;">Trajectory bonds are dynamic</div>
       <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:1fr auto;">
         <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" title="Trajectory frame index" />
         <div id="trajectoryFrameLabel"
@@ -3323,6 +3352,8 @@
   <script src="./assets/app/js/volume-2c.js"></script>
   <!-- bond inference helpers -->
   <script src="./assets/app/js/bond-inference.js"></script>
+  <!-- auto-hydrogen helpers -->
+  <script src="./assets/app/js/auto-hydrogen.js"></script>
   <!-- auto-iso helpers -->
   <script src="./assets/app/js/autoiso.js"></script>
   <!-- cloud rendering helpers -->
@@ -3339,6 +3370,8 @@
   <script src="./assets/app/js/edit-gizmos.js"></script>
   <!-- edit transform helpers -->
   <script src="./assets/app/js/edit-transform.js"></script>
+  <!-- gesture editing controller -->
+  <script src="./assets/app/js/edit-gestures.js"></script>
   <!-- preset helpers -->
   <script src="./assets/app/js/preset.js"></script>
   <!-- structure transport helpers -->

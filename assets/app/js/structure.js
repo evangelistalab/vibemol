@@ -299,17 +299,27 @@
   /**
    * Normalize one stored bond kind.
    * @param {*} value
-   * @returns {'normal'}
+   * @returns {'normal'|'blocked'}
    */
   function normalizeVolumeBondKind(value) {
-    return String(value || '').trim().toLowerCase() === 'normal' ? 'normal' : 'normal';
+    return String(value || '').trim().toLowerCase() === 'blocked' ? 'blocked' : 'normal';
+  }
+
+  /**
+   * Normalize one stored bond origin.
+   * Missing origin defaults to explicit for backward compatibility.
+   * @param {*} value
+   * @returns {'perceived'|'explicit'}
+   */
+  function normalizeVolumeBondOrigin(value) {
+    return String(value || '').trim().toLowerCase() === 'perceived' ? 'perceived' : 'explicit';
   }
 
   /**
    * Normalize one persistent bond record to ID endpoints.
    * @param {*} vol
    * @param {*} raw
-   * @returns {{id:string,a:string,b:string,order:number,kind:'normal'}|null}
+   * @returns {{id:string,a:string,b:string,order:number,kind:'normal'|'blocked',origin:'perceived'|'explicit'}|null}
    */
   function normalizeVolumeBondRecord(vol, raw) {
     if (!vol || !Array.isArray(vol.atoms) || !raw || typeof raw !== 'object') return null;
@@ -332,6 +342,7 @@
       b,
       order: normalizeEditAddBondOrder(raw.order || 1),
       kind: normalizeVolumeBondKind(raw.kind),
+      origin: normalizeVolumeBondOrigin(raw.origin),
     };
   }
 
@@ -371,7 +382,7 @@
   /**
    * Deep-copy one normalized bond array for history snapshots.
    * @param {{atoms?:Array<object>,bonds?:Array<object>}|null} vol
-   * @returns {Array<{id:string,a:string,b:string,order:number,kind:string}>}
+   * @returns {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string}>}
    */
   function cloneBondSnapshot(vol) {
     const working = {
@@ -392,13 +403,14 @@
         b: String(bond.b || ''),
         order: normalizeEditAddBondOrder(bond.order || 1),
         kind: normalizeVolumeBondKind(bond.kind),
+        origin: normalizeVolumeBondOrigin(bond.origin),
       }));
   }
 
   /**
    * Compare two bond snapshots by value.
-   * @param {Array<{id:string,a:string,b:string,order:number,kind:string}>} a
-   * @param {Array<{id:string,a:string,b:string,order:number,kind:string}>} b
+   * @param {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string}>} a
+   * @param {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string}>} b
    * @returns {boolean}
    */
   function bondSnapshotsEqual(a, b) {
@@ -413,6 +425,7 @@
       if (String(left.b || '') !== String(right.b || '')) return false;
       if (normalizeEditAddBondOrder(left.order || 1) !== normalizeEditAddBondOrder(right.order || 1)) return false;
       if (normalizeVolumeBondKind(left.kind) !== normalizeVolumeBondKind(right.kind)) return false;
+      if (normalizeVolumeBondOrigin(left.origin) !== normalizeVolumeBondOrigin(right.origin)) return false;
     }
     return true;
   }
@@ -444,9 +457,10 @@
    * @param {*} atomIdB
    * @param {*} order
    * @param {*} [kind='normal']
+   * @param {*} [origin]
    * @returns {'created'|'updated'|'unchanged'|null}
    */
-  function upsertVolumeBond(vol, atomIdA, atomIdB, order, kind = 'normal') {
+  function upsertVolumeBond(vol, atomIdA, atomIdB, order, kind = 'normal', origin) {
     if (!vol || !Array.isArray(vol.atoms)) return null;
     ensureVolumeSchema(vol, { inferMissingBonds: false });
     const a = String(atomIdA || '').trim();
@@ -458,13 +472,15 @@
     if (index >= 0) {
       const existing = normalizeVolumeBondRecord(vol, vol.bonds[index]);
       if (!existing) return null;
-      if (existing.order === nextOrder && existing.kind === nextKind) return 'unchanged';
+      const nextOrigin = origin == null ? existing.origin : normalizeVolumeBondOrigin(origin);
+      if (existing.order === nextOrder && existing.kind === nextKind && existing.origin === nextOrigin) return 'unchanged';
       vol.bonds[index] = {
         id: existing.id,
         a: existing.a,
         b: existing.b,
         order: nextOrder,
         kind: nextKind,
+        origin: nextOrigin,
       };
       return 'updated';
     }
@@ -474,6 +490,7 @@
       b,
       order: nextOrder,
       kind: nextKind,
+      origin: normalizeVolumeBondOrigin(origin),
     });
     return 'created';
   }
@@ -550,7 +567,7 @@
    * @param {*} vol
    * @param {Array<number>} atomIndices
    * @param {{mapAtom?:(atom:object, sourceAtom:object, sourceIndex:number, localIndex:number)=>object}=} options
-   * @returns {{atoms:Array<{atom:object,builderMeta:object}>,bonds:Array<{a:number,b:number,order:number,kind:string}>}|null}
+   * @returns {{atoms:Array<{atom:object,builderMeta:object}>,bonds:Array<{a:number,b:number,order:number,kind:string,origin:string}>}|null}
    */
   function buildVolumeSelectionClipboard(vol, atomIndices, options = {}) {
     if (!vol || !Array.isArray(vol.atoms)) return null;
@@ -586,6 +603,7 @@
           b: localB,
           order: normalizeEditAddBondOrder(bond.order || 1),
           kind: normalizeVolumeBondKind(bond.kind),
+          origin: normalizeVolumeBondOrigin(bond.origin),
         };
       })
       .filter(Boolean);
@@ -596,7 +614,7 @@
    * Append one clipboard substructure payload into a volume using fresh atom ids.
    * Builder group ids are remapped so pasted groups remain distinct from the source.
    * @param {*} vol
-   * @param {{atoms?:Array<{atom:object,builderMeta?:object}>,bonds?:Array<{a:number,b:number,order:number,kind:string}>}} payload
+   * @param {{atoms?:Array<{atom:object,builderMeta?:object}>,bonds?:Array<{a:number,b:number,order:number,kind:string,origin?:string}>}} payload
    * @param {{mapAtom?:(atom:object, entry:object, localIndex:number)=>object}=} options
    * @returns {{atomIndices:Array<number>,atomIds:Array<string>,bondCount:number}}
    */
@@ -649,7 +667,8 @@
         atomIds[localA],
         atomIds[localB],
         rawBond.order || 1,
-        rawBond.kind || 'normal'
+        rawBond.kind || 'normal',
+        rawBond.origin
       );
       if (result === 'created' || result === 'updated') bondCount += 1;
     }
@@ -676,6 +695,7 @@
     migrateLegacyBuilderAnnotations,
     buildVolumeBondId,
     normalizeVolumeBondKind,
+    normalizeVolumeBondOrigin,
     normalizeVolumeBondRecord,
     ensureVolumeSchema,
     cloneBondSnapshot,

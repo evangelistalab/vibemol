@@ -13,6 +13,7 @@ JS_CHECK_FILES = \
 	assets/app/js/volume-geometry.js \
 	assets/app/js/volume-2c.js \
 	assets/app/js/bond-inference.js \
+	assets/app/js/auto-hydrogen.js \
 	assets/app/js/autoiso.js \
 	assets/app/js/cloud-rendering.js \
 	assets/app/js/bond-editing.js \
@@ -21,6 +22,7 @@ JS_CHECK_FILES = \
 	assets/app/js/edit-tools.js \
 	assets/app/js/edit-gizmos.js \
 	assets/app/js/edit-transform.js \
+	assets/app/js/edit-gestures.js \
 	assets/app/js/preset.js \
 	assets/app/js/structure-transport.js \
 	assets/app/js/file-loader.js \

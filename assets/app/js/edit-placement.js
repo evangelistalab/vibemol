@@ -39,8 +39,7 @@
     const worldToAtomUnits = typeof options.worldToAtomUnits === 'function' ? options.worldToAtomUnits : (() => [0, 0, 0]);
     const atomUnitsToAng = typeof options.atomUnitsToAng === 'function' ? options.atomUnitsToAng : (() => new THREE.Vector3());
     const normalizeEditAddBondOrder = typeof options.normalizeEditAddBondOrder === 'function' ? options.normalizeEditAddBondOrder : ((order) => Number(order) || 1);
-    const collectBondCandidates = typeof options.collectBondCandidates === 'function' ? options.collectBondCandidates : (() => []);
-    const inferBondOrders = typeof options.inferBondOrders === 'function' ? options.inferBondOrders : (() => {});
+    const perceiveBondConnectivity = typeof options.perceiveBondConnectivity === 'function' ? options.perceiveBondConnectivity : (() => []);
     const upsertVolumeBond = typeof options.upsertVolumeBond === 'function' ? options.upsertVolumeBond : (() => null);
     const pushEditHistoryEntry = typeof options.pushEditHistoryEntry === 'function' ? options.pushEditHistoryEntry : (() => {});
     const clearHover = typeof options.clearHover === 'function' ? options.clearHover : (() => {});
@@ -199,13 +198,12 @@
         atomPositions.push({ pos: pos.clone(), Z: atom.Z | 0 });
       }
       if (atomPositions.length !== templateData.atoms.length) return;
-      const edges = collectBondCandidates(atomPositions);
-      inferBondOrders(atomPositions, edges);
+      const edges = perceiveBondConnectivity(atomPositions);
       for (const edge of edges) {
         const a = String(atomIds[edge.i] || '').trim();
         const b = String(atomIds[edge.j] || '').trim();
         if (!a || !b || a === b) continue;
-        upsertVolumeBond(vol, a, b, normalizeEditAddBondOrder(edge.order || 1), 'normal');
+        upsertVolumeBond(vol, a, b, 1, 'normal', 'perceived');
       }
     }
 

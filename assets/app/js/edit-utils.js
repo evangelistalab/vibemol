@@ -1,4 +1,40 @@
 (function () {
+  function getPointComponent(point, key) {
+    return Number(point && point[key]) || 0;
+  }
+
+  /**
+   * Classify one bond hit into endpoint-third or center-third along A->B.
+   * Accepts Vector3-like or plain {x,y,z} points.
+   * @param {{x:number,y:number,z:number}} pointA
+   * @param {{x:number,y:number,z:number}} pointB
+   * @param {{x:number,y:number,z:number}} hitPoint
+   * @returns {{section:'nearA'|'center'|'nearB', t:number}}
+   */
+  function classifyBondHitSectionFromPoints(pointA, pointB, hitPoint) {
+    const ax = getPointComponent(pointA, 'x');
+    const ay = getPointComponent(pointA, 'y');
+    const az = getPointComponent(pointA, 'z');
+    const bx = getPointComponent(pointB, 'x');
+    const by = getPointComponent(pointB, 'y');
+    const bz = getPointComponent(pointB, 'z');
+    const hx = getPointComponent(hitPoint, 'x');
+    const hy = getPointComponent(hitPoint, 'y');
+    const hz = getPointComponent(hitPoint, 'z');
+    const dx = bx - ax;
+    const dy = by - ay;
+    const dz = bz - az;
+    const lenSq = dx * dx + dy * dy + dz * dz;
+    if (!(Number.isFinite(lenSq) && lenSq > 1e-12)) {
+      return { section: 'center', t: 0.5 };
+    }
+    const rawT = ((hx - ax) * dx + (hy - ay) * dy + (hz - az) * dz) / lenSq;
+    const t = Math.max(0, Math.min(1, rawT));
+    if (t <= (1 / 3)) return { section: 'nearA', t };
+    if (t >= (2 / 3)) return { section: 'nearB', t };
+    return { section: 'center', t };
+  }
+
   /**
    * Compute mass-weighted center for one atom list (native units).
    * @param {Array<{Z:number,x:number,y:number,z:number}>} atoms
@@ -159,6 +195,7 @@
   }
 
   window.VibeMolEditUtils = Object.freeze({
+    classifyBondHitSectionFromPoints,
     computeMassPropertiesFromAtoms,
     computeInertiaTensorFromAtoms,
     eigenSymmetric3x3,

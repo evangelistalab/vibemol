@@ -68,6 +68,7 @@ test('structure schema normalizes, updates, and deletes explicit bonds', () => {
   assert.match(result.normalizedBond.b, /^atom-\d+$/);
   assert.equal(result.normalizedBond.order, 2);
   assert.equal(result.normalizedBond.kind, 'normal');
+  assert.equal(result.normalizedBond.origin, 'explicit');
   assert.equal(result.unchanged, 'unchanged');
   assert.equal(result.updated, 'updated');
   assert.equal(result.removed, true);
@@ -87,7 +88,7 @@ test('ensureVolumeSchema can infer missing bonds via callback', () => {
     window.VibeMolStructureCore.ensureVolumeSchema(vol, {
       inferBonds(nextVol) {
         inferCalls += 1;
-        nextVol.bonds = [{ a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal' }];
+        nextVol.bonds = [{ a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal', origin: 'perceived' }];
       },
     });
     return {
@@ -98,8 +99,75 @@ test('ensureVolumeSchema can infer missing bonds via callback', () => {
 
   assert.equal(result.inferCalls, 1);
   assert.deepEqual(result.bonds, [
-    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal' },
+    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal', origin: 'perceived' },
   ]);
+});
+
+test('missing bond origin defaults to explicit for backward compatibility', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = {
+      atoms: [
+        { id: 'atom-1', Z: 6, x: 0, y: 0, z: 0 },
+        { id: 'atom-2', Z: 6, x: 1.4, y: 0, z: 0 },
+      ],
+      bonds: [{ a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal' }],
+    };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, { inferMissingBonds: false });
+    return window.VibeMolStructureCore.cloneBondSnapshot(vol);
+  })())`));
+
+  assert.deepEqual(result, [
+    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal', origin: 'explicit' },
+  ]);
+});
+
+test('structure schema preserves blocked bond records for user-suppressed pairs', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = {
+      atoms: [
+        { id: 'atom-1', Z: 6, x: 0, y: 0, z: 0 },
+        { id: 'atom-2', Z: 6, x: 1.4, y: 0, z: 0 },
+      ],
+      bonds: [{ a: 'atom-1', b: 'atom-2', order: 1, kind: 'blocked', origin: 'explicit' }],
+    };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, { inferMissingBonds: false });
+    return window.VibeMolStructureCore.cloneBondSnapshot(vol);
+  })())`));
+
+  assert.deepEqual(result, [
+    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'blocked', origin: 'explicit' },
+  ]);
+});
+
+test('updating a perceived bond can promote it to explicit provenance', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = {
+      atoms: [
+        { id: 'atom-1', Z: 6, x: 0, y: 0, z: 0 },
+        { id: 'atom-2', Z: 6, x: 1.4, y: 0, z: 0 },
+      ],
+      bonds: [{ a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal', origin: 'perceived' }],
+    };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const status = window.VibeMolStructureCore.upsertVolumeBond(vol, 'atom-1', 'atom-2', 2, 'normal', 'explicit');
+    return {
+      status,
+      bond: window.VibeMolStructureCore.cloneBondSnapshot(vol)[0],
+    };
+  })())`));
+
+  assert.equal(result.status, 'updated');
+  assert.deepEqual(result.bond, {
+    id: 'bond:atom-1:atom-2',
+    a: 'atom-1',
+    b: 'atom-2',
+    order: 2,
+    kind: 'normal',
+    origin: 'explicit',
+  });
 });
 
 test('structure clipboard helpers clone selected substructures with remapped builder groups and bonds', () => {
@@ -149,6 +217,7 @@ test('structure clipboard helpers clone selected substructures with remapped bui
   assert.equal(result.payload.atoms.length, 2);
   assert.equal(result.payload.bonds.length, 1);
   assert.equal(result.payload.bonds[0].order, 2);
+  assert.equal(result.payload.bonds[0].origin, 'explicit');
   assert.equal(result.totalAtoms, 5);
   assert.equal(result.totalBonds, 3);
   assert.equal(result.appended.atomIndices.length, 2);
@@ -168,5 +237,6 @@ test('structure clipboard helpers clone selected substructures with remapped bui
     b: result.newAtoms[1].id,
     order: 2,
     kind: 'normal',
+    origin: 'explicit',
   });
 });

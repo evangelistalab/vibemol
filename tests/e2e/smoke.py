@@ -37,7 +37,7 @@ def build_fixture_structure() -> str:
                 {'id': 'atom-2', 'Z': 6, 'x': 0.7, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
             ],
             'bonds': [
-                {'id': 'bond:atom-1:atom-2', 'a': 'atom-1', 'b': 'atom-2', 'order': 1, 'kind': 'normal'},
+                {'id': 'bond:atom-1:atom-2', 'a': 'atom-1', 'b': 'atom-2', 'order': 1, 'kind': 'normal', 'origin': 'perceived'},
             ],
             'annotations': {'builder': {'byAtomId': {}}},
             'fragmentOps': [],
@@ -47,6 +47,65 @@ def build_fixture_structure() -> str:
         'recordState': {'measurementLabelOffsets': {}},
     }
     return json.dumps(payload)
+
+
+def build_fixture_cleanup_structure() -> str:
+    payload = {
+        'kind': 'vibemol.structure',
+        'structureVersion': 1,
+        'appVersion': 'smoke-test',
+        'name': 'cleanup-fixture.structure.json',
+        'meta': {'source': 'test'},
+        'volume': {
+            'title': 'Cleanup fixture',
+            'comment': 'Perceived vs explicit cleanup fixture',
+            'natoms': 4,
+            'origin': [0, 0, 0],
+            'nxyz': [0, 0, 0],
+            'axes': [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            'atoms': [
+                {'id': 'atom-1', 'Z': 6, 'x': 0.0, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-2', 'Z': 6, 'x': 1.4, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-3', 'Z': 6, 'x': 2.8, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-4', 'Z': 6, 'x': 7.0, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+            ],
+            'bonds': [
+                {'id': 'bond:atom-1:atom-2', 'a': 'atom-1', 'b': 'atom-2', 'order': 1, 'kind': 'normal', 'origin': 'perceived'},
+                {'id': 'bond:atom-1:atom-3', 'a': 'atom-1', 'b': 'atom-3', 'order': 2, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:atom-3:atom-4', 'a': 'atom-3', 'b': 'atom-4', 'order': 1, 'kind': 'normal', 'origin': 'perceived'},
+            ],
+            'annotations': {'builder': {'byAtomId': {}}},
+            'fragmentOps': [],
+            'data': [],
+            'units': 'angstrom',
+        },
+        'recordState': {'measurementLabelOffsets': {}},
+    }
+    return json.dumps(payload)
+
+
+def build_fixture_inferred_xyz() -> str:
+    return '\n'.join([
+        '2',
+        'two carbons',
+        'C 0.000000 0.000000 0.000000',
+        'C 1.400000 0.000000 0.000000',
+        '',
+    ])
+
+
+def build_fixture_trajectory_xyz() -> str:
+    return '\n'.join([
+        '2',
+        'frame 1',
+        'C 0.000000 0.000000 0.000000',
+        'C 1.400000 0.000000 0.000000',
+        '2',
+        'frame 2',
+        'C 0.000000 0.000000 0.000000',
+        'C 5.000000 0.000000 0.000000',
+        '',
+    ])
 
 
 def build_fixture_molden() -> str:
@@ -75,8 +134,10 @@ def active_structure_summary(page) -> dict[str, Any]:
               kind: exported.kind,
               name: exported.name,
               atomCount: exported.volume.atoms.length,
+              atomicNumbers: Array.isArray(exported.volume.atoms) ? exported.volume.atoms.map((atom) => atom.Z | 0) : [],
               bondCount: Array.isArray(exported.volume.bonds) ? exported.volume.bonds.length : 0,
               bondOrders: Array.isArray(exported.volume.bonds) ? exported.volume.bonds.map((bond) => bond.order) : [],
+              bondOrigins: Array.isArray(exported.volume.bonds) ? exported.volume.bonds.map((bond) => bond.origin || null) : [],
             };
         }"""
     )
@@ -104,6 +165,38 @@ def sample_scene_canvas_rgb(page) -> dict[str, float]:
     return sample
 
 
+def sample_canvas_region_rgb(page, fx: float = 0.5, fy: float = 0.5, size: int = 9) -> dict[str, float]:
+    sample = page.evaluate(
+        """({ fx, fy, size }) => {
+            const canvas = document.getElementById('canvas');
+            if (!(canvas instanceof HTMLCanvasElement)) return null;
+            const probe = document.createElement('canvas');
+            probe.width = Math.max(1, size | 0);
+            probe.height = Math.max(1, size | 0);
+            const ctx = probe.getContext('2d');
+            if (!ctx) return null;
+            const sx = Math.max(0, Math.floor(canvas.width * fx - probe.width * 0.5));
+            const sy = Math.max(0, Math.floor(canvas.height * fy - probe.height * 0.5));
+            ctx.drawImage(canvas, sx, sy, probe.width, probe.height, 0, 0, probe.width, probe.height);
+            const data = ctx.getImageData(0, 0, probe.width, probe.height).data;
+            let r = 0;
+            let g = 0;
+            let b = 0;
+            const count = Math.max(1, probe.width * probe.height);
+            for (let i = 0; i < data.length; i += 4) {
+              r += data[i];
+              g += data[i + 1];
+              b += data[i + 2];
+            }
+            return { r: r / (255 * count), g: g / (255 * count), b: b / (255 * count) };
+        }""",
+        {"fx": fx, "fy": fy, "size": size},
+    )
+    if not isinstance(sample, dict):
+        raise AssertionError(f"Could not sample canvas region: {sample!r}")
+    return sample
+
+
 def canvas_point(page, fx: float = 0.62, fy: float = 0.56) -> tuple[float, float]:
     box = page.locator('#canvas').bounding_box()
     if not box:
@@ -118,6 +211,24 @@ def drag_canvas_box(page, start_fx: float, start_fy: float, end_fx: float, end_f
     page.mouse.down()
     page.mouse.move(end_x, end_y, steps=12)
     page.mouse.up()
+
+
+def ensure_advanced_drawer_open(page) -> None:
+    is_hidden = page.evaluate(
+        """() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') !== 'false'"""
+    )
+    if is_hidden:
+        page.locator('#editGestureAdvancedBtn').click()
+    page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+
+
+def ensure_advanced_drawer_closed(page) -> None:
+    is_open = page.evaluate(
+        """() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'"""
+    )
+    if is_open:
+        page.locator('#editGestureAdvancedBtn').click()
+    page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'true'")
 
 
 def wait_for_ready(page) -> None:
@@ -221,6 +332,195 @@ def main() -> int:
                 }"""
             )
 
+            # Gesture-mode edit HUD should be primary, with the advanced drawer opt-in.
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function("() => document.getElementById('editGestureHud')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'true'")
+            page.wait_for_function(
+                """() => /Click void to place/i.test(document.getElementById('editGestureHint')?.textContent || '')"""
+            )
+            ensure_advanced_drawer_open(page)
+            empty_edit_visibility = page.evaluate(
+                """() => {
+                    const isShown = (id) => {
+                        const el = document.getElementById(id);
+                        return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
+                    };
+                    return {
+                        selection: isShown('editAdaptiveSelectionBtn'),
+                        move: isShown('editAdaptiveMoveBtn'),
+                        rotate: isShown('editAdaptiveRotateBtn'),
+                        addAtom: isShown('editAdaptiveAddAtomBtn'),
+                        addFragment: isShown('editAdaptiveAddFragmentBtn'),
+                        addMolecule: isShown('editAdaptiveAddMoleculeBtn'),
+                        bond: isShown('editAdaptiveBondBtn'),
+                        transform: isShown('editAdaptiveTransformBtn'),
+                        delete: isShown('editAdaptiveDeleteBtn'),
+                    };
+                }"""
+            )
+            if empty_edit_visibility != {
+                'selection': False,
+                'move': False,
+                'rotate': False,
+                'addAtom': True,
+                'addFragment': True,
+                'addMolecule': True,
+                'bond': False,
+                'transform': False,
+                'delete': False,
+            }:
+                raise AssertionError(f'Unexpected empty edit menu visibility: {empty_edit_visibility}')
+            ensure_advanced_drawer_closed(page)
+
+            # Gesture void-click places one carbon, but the first placed atom should not stay selected.
+            x, y = canvas_point(page)
+            page.mouse.click(x, y)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const scopeText = (document.getElementById('editGestureScope')?.textContent || '').trim();
+                    return !!exported
+                      && Array.isArray(exported.volume?.atoms)
+                      && exported.volume.atoms.length === 1
+                      && /no selection/i.test(scopeText);
+                }"""
+            )
+
+            # Selected terminal atom drag should still grow chemistry, with keyboard bond-order override.
+            grow_x, grow_y = canvas_point(page, 0.70, 0.52)
+            page.mouse.move(x, y)
+            page.mouse.down()
+            page.mouse.move(grow_x, grow_y, steps=14)
+            page.keyboard.press('2')
+            page.wait_for_function(
+                """() => document.getElementById('editGestureBondOrderPill')?.textContent?.trim() === 'Bond 2'"""
+            )
+            page.mouse.up()
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    return exported.volume.atoms.length === 2 && bonds.length === 1 && bonds[0].order === 2;
+                }"""
+            )
+
+            # Dragging between existing atoms should keep cycling the explicit bond order.
+            page.mouse.move(x, y)
+            page.mouse.down()
+            page.mouse.move(grow_x, grow_y, steps=14)
+            page.mouse.up()
+            page.wait_for_function(
+                """() => {
+                    const bonds = window.VibeMolStructure.exportActive().volume.bonds || [];
+                    return bonds.length === 1 && bonds[0].order === 3 && bonds[0].origin === 'explicit';
+                }"""
+            )
+            page.mouse.move(x, y)
+            page.mouse.down()
+            page.mouse.move(grow_x, grow_y, steps=14)
+            page.mouse.up()
+            page.wait_for_function(
+                """() => {
+                    const bonds = window.VibeMolStructure.exportActive().volume.bonds || [];
+                    return bonds.length === 1
+                      && bonds[0].kind === 'blocked'
+                      && bonds[0].origin === 'explicit';
+                }"""
+            )
+            page.mouse.move(x, y)
+            page.mouse.down()
+            page.mouse.move(grow_x, grow_y, steps=14)
+            page.keyboard.press('1')
+            page.mouse.up()
+            page.wait_for_function(
+                """() => {
+                    const bonds = window.VibeMolStructure.exportActive().volume.bonds || [];
+                    return bonds.length === 1 && bonds[0].order === 1 && bonds[0].origin === 'explicit';
+                }"""
+            )
+            page.mouse.move(min(x, grow_x) - 120, min(y, grow_y) - 120)
+            page.mouse.down()
+            page.mouse.move(max(x, grow_x) + 120, max(y, grow_y) + 120, steps=12)
+            page.mouse.up()
+            page.wait_for_function(
+                """() => {
+                    const meta = document.getElementById('editAdaptiveSelectionMeta');
+                    const marquee = document.getElementById('editSelectionMarquee');
+                    return /2 atoms selected/i.test(meta?.textContent || '')
+                      && marquee?.getAttribute('aria-hidden') === 'true';
+                }"""
+            )
+            empty_x, empty_y = canvas_point(page, 0.04, 0.08)
+            page.mouse.click(empty_x, empty_y)
+            page.wait_for_function(
+                """() => /Click atoms to build a selection/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+            page.mouse.click(x, y)
+            page.wait_for_function(
+                """() => /1 atom selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+            before_single_move = page.evaluate(
+                """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
+            )
+            page.mouse.move(x, y)
+            page.mouse.down()
+            page.mouse.move(x - 28, y - 18, steps=12)
+            page.mouse.up()
+            page.wait_for_function(
+                """(beforeAtoms) => {
+                    const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
+                    if (atoms.length !== beforeAtoms.length) return false;
+                    let moved = 0;
+                    for (let i = 0; i < atoms.length; i += 1) {
+                      const atom = atoms[i];
+                      const before = beforeAtoms[i];
+                      const dx = Math.abs((atom.x || 0) - before[0]);
+                      const dy = Math.abs((atom.y || 0) - before[1]);
+                      const dz = Math.abs((atom.z || 0) - before[2]);
+                      if (dx > 1e-6 || dy > 1e-6 || dz > 1e-6) moved += 1;
+                    }
+                    return moved === 1;
+                }""",
+                arg=before_single_move,
+            )
+            page.mouse.click(x, y)
+            page.wait_for_function(
+                """() => /1 atom selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+            page.mouse.dblclick(x, y)
+            page.wait_for_function(
+                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
+            )
+
+            # After the first atom exists, the advanced drawer should expose atom-dependent tools.
+            ensure_advanced_drawer_open(page)
+            page.wait_for_function(
+                """() => {
+                    const ids = [
+                      'editAdaptiveSelectionBtn',
+                      'editAdaptiveMoveBtn',
+                      'editAdaptiveRotateBtn',
+                      'editAdaptiveBondBtn',
+                      'editAdaptiveTransformBtn',
+                      'editAdaptiveDeleteBtn',
+                    ];
+                    return ids.every((id) => {
+                      const el = document.getElementById(id);
+                      return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
+                    });
+                }"""
+            )
+            ensure_advanced_drawer_closed(page)
+            page.locator('#removeFileBtn').click()
+            page.locator('#modeDisplayBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const splash = document.getElementById('emptyState');
+                    return !!splash && !splash.classList.contains('hidden');
+                }"""
+            )
+
             # Onboarding + sample load smoke.
             page.locator('#emptyStateSampleBtn').click()
             page.wait_for_function(
@@ -308,6 +608,54 @@ def main() -> int:
             if not molden_summary['moSummary'] or not molden_summary['gridSummary']:
                 raise AssertionError(f'Molden inspector summaries are missing: {molden_summary}')
 
+            # Geometry-only imports should infer single perceived bonds.
+            inferred_xyz_text = build_fixture_inferred_xyz()
+            page.evaluate(
+                """async (text) => {
+                    await window.VibeMolEmbed.loadFiles([{ name: 'two-carbons.xyz', text }]);
+                }""",
+                inferred_xyz_text,
+            )
+            inferred_summary = active_structure_summary(page)
+            if inferred_summary['atomCount'] != 2 or inferred_summary['bondCount'] != 1:
+                raise AssertionError(f'XYZ inference failed: {inferred_summary}')
+            if inferred_summary['bondOrders'] != [1]:
+                raise AssertionError(f'XYZ inference created non-single orders: {inferred_summary}')
+            if inferred_summary['bondOrigins'] != ['perceived']:
+                raise AssertionError(f'XYZ inference did not mark bonds as perceived: {inferred_summary}')
+
+            # Edit-mode Space should preview hydrogens first, then apply them on the second press.
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function("() => document.getElementById('editGestureHud')?.getAttribute('aria-hidden') === 'false'")
+            page.keyboard.press(' ')
+            page.wait_for_function(
+                """() => {
+                    const hint = document.getElementById('hint');
+                    return !!hint && /Press Space again to apply/i.test(hint.textContent || '');
+                }"""
+            )
+            hydrogen_preview_summary = active_structure_summary(page)
+            if hydrogen_preview_summary['atomCount'] != 2 or hydrogen_preview_summary['bondCount'] != 1:
+                raise AssertionError(f'Auto-hydrogen preview mutated the structure too early: {hydrogen_preview_summary}')
+            page.keyboard.press(' ')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const hydrogenCount = atoms.filter((atom) => (atom.Z | 0) === 1).length;
+                    const explicitCount = bonds.filter((bond) => String(bond.origin || '') === 'explicit').length;
+                    return hydrogenCount === 6 && explicitCount === 6 && bonds.length === 7;
+                }"""
+            )
+            hydrogenated_summary = active_structure_summary(page)
+            if hydrogenated_summary['atomCount'] != 8 or hydrogenated_summary['bondCount'] != 7:
+                raise AssertionError(f'Auto-hydrogenation produced an unexpected structure: {hydrogenated_summary}')
+            if hydrogenated_summary['atomicNumbers'].count(1) != 6:
+                raise AssertionError(f'Auto-hydrogenation did not add six hydrogens: {hydrogenated_summary}')
+            if hydrogenated_summary['bondOrigins'].count('explicit') != 6 or hydrogenated_summary['bondOrigins'].count('perceived') != 1:
+                raise AssertionError(f'Auto-hydrogenation bond provenance is wrong: {hydrogenated_summary}')
+
             # Replace active content with a deterministic explicit-bond fixture.
             fixture_text = build_fixture_structure()
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "smoke-fixture")', fixture_text)
@@ -317,16 +665,16 @@ def main() -> int:
 
             # Edit mode + adaptive menu.
             page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            ensure_advanced_drawer_open(page)
             page.wait_for_function("() => !document.getElementById('emptyState') || getComputedStyle(document.getElementById('emptyState')).display === 'none'")
             page.wait_for_function(
                 """() => {
                     const selectionBtn = document.getElementById('editAdaptiveSelectionBtn');
                     const addAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
                     return !!selectionBtn
-                      && selectionBtn.classList.contains('active')
+                      && !selectionBtn.hidden
                       && !!addAtomBtn
-                      && !addAtomBtn.classList.contains('active');
+                      && !addAtomBtn.hidden;
                 }"""
             )
             page.locator('#editAdaptiveTransformBtn').click()
@@ -355,7 +703,7 @@ def main() -> int:
 
             # Empty-click deselection should also work in non-selection tools.
             page.locator('#editAdaptiveMoveBtn').click()
-            empty_x, empty_y = canvas_point(page, 0.12, 0.16)
+            empty_x, empty_y = canvas_point(page, 0.04, 0.08)
             page.mouse.click(empty_x, empty_y)
             page.wait_for_function(
                 """() => /Click atoms to build a selection/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
@@ -531,14 +879,20 @@ def main() -> int:
             # Bond editing smoke on a deterministic fixture.
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-popup-fixture")', fixture_text)
             page.locator('#modeEditBtn').click()
+            ensure_advanced_drawer_open(page)
             page.locator('#editAdaptiveBondBtn').click()
             x, y = canvas_point(page, 0.5, 0.5)
             page.mouse.click(x, y)
             page.wait_for_function("() => document.getElementById('bondOrderPopup')?.getAttribute('aria-hidden') === 'false'")
             page.locator('#bondOrderPopup button[data-bond-order-popup="2"]').click()
-            page.wait_for_function("() => (window.VibeMolStructure.exportActive().volume.bonds[0] || {}).order === 2")
+            page.wait_for_function(
+                """() => {
+                    const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
+                    return !!bond && bond.order === 2 && bond.origin === 'explicit';
+                }"""
+            )
             order_updated = active_structure_summary(page)
-            if order_updated['bondOrders'] != [2]:
+            if order_updated['bondOrders'] != [2] or order_updated['bondOrigins'] != ['explicit']:
                 raise AssertionError(f'Bond order update failed: {order_updated}')
             page.mouse.click(x, y)
             page.wait_for_function("() => document.getElementById('bondOrderPopup')?.getAttribute('aria-hidden') === 'false'")
@@ -549,6 +903,93 @@ def main() -> int:
             page.wait_for_function(
                 """() => /Deleted bond C-C\\./i.test(document.getElementById('hint')?.textContent || '')"""
             )
+
+            # Clean Up Bonds preview/apply should only remove perceived bonds and warn on explicit ones.
+            cleanup_fixture_text = build_fixture_cleanup_structure()
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "cleanup-fixture")', cleanup_fixture_text)
+            page.locator('#modeEditBtn').click()
+            ensure_advanced_drawer_open(page)
+            page.locator('#editAdaptiveBondBtn').click()
+            page.locator('#editBondCleanupStartBtn').click()
+            page.wait_for_function(
+                """() => /Add 1 .* Remove 1 perceived .* Warn 1 explicit/i.test(document.getElementById('editBondCleanupSummary')?.textContent || '')"""
+            )
+            page.locator('#editBondCleanupApplyBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const bonds = window.VibeMolStructure.exportActive().volume.bonds || [];
+                    const pairs = bonds.map((bond) => [bond.a, bond.b].sort().join(':')).sort();
+                    const origins = Object.fromEntries(bonds.map((bond) => [[bond.a, bond.b].sort().join(':'), bond.origin]));
+                    return pairs.join('|') === 'atom-1:atom-2|atom-1:atom-3|atom-2:atom-3'
+                      && origins['atom-1:atom-2'] === 'perceived'
+                      && origins['atom-1:atom-3'] === 'explicit'
+                      && origins['atom-2:atom-3'] === 'perceived';
+                }"""
+            )
+            page.wait_for_function(
+                """() => /Applied bond cleanup:/i.test(document.getElementById('hint')?.textContent || '')"""
+            )
+
+            # Trajectory-mode bonds should be dynamic for rendering only.
+            trajectory_xyz_text = build_fixture_trajectory_xyz()
+            page.locator('#modeDisplayBtn').click()
+            page.evaluate(
+                """async (text) => {
+                    await window.VibeMolEmbed.loadFiles([{ name: 'dynamic-traj.xyz', text }]);
+                }""",
+                trajectory_xyz_text,
+            )
+            page.locator('#viewInspectorBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const inspector = document.getElementById('viewInspector');
+                    const btn = document.getElementById('trajectoryPanelBtn');
+                    return !!inspector
+                      && inspector.getAttribute('aria-hidden') === 'false'
+                      && !!btn
+                      && getComputedStyle(btn).display !== 'none';
+                }"""
+            )
+            page.locator('#trajectoryPanelBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const note = document.getElementById('trajectoryBondModeNote');
+                    return !!note && getComputedStyle(note).display !== 'none' && /dynamic/i.test(note.textContent || '');
+                }"""
+            )
+            stored_before_traj = active_structure_summary(page)
+            if stored_before_traj['bondCount'] != 1 or stored_before_traj['bondOrigins'] != ['perceived']:
+                raise AssertionError(f'Trajectory import stored graph is unexpected: {stored_before_traj}')
+            frame1_sample = sample_canvas_region_rgb(page, 0.5, 0.5, 11)
+            page.locator('#trajectoryFrame').evaluate(
+                """(el) => {
+                    el.value = '1';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => /2\\/2/.test(document.getElementById('trajectoryFrameLabel')?.textContent || '')"""
+            )
+            frame2_sample = sample_canvas_region_rgb(page, 0.5, 0.5, 11)
+            if (frame2_sample['r'] + frame2_sample['g'] + frame2_sample['b']) <= (frame1_sample['r'] + frame1_sample['g'] + frame1_sample['b']) + 0.05:
+                raise AssertionError(f'Trajectory frame switch did not visibly remove the bond: {frame1_sample} -> {frame2_sample}')
+            stored_after_traj = active_structure_summary(page)
+            if stored_after_traj['bondCount'] != 1 or stored_after_traj['bondOrigins'] != ['perceived']:
+                raise AssertionError(f'Trajectory rendering mutated stored topology: {stored_after_traj}')
+            xyz_export = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return window.VibeMolUI.volumeToXYZ(
+                      { name: exported.name, vol: exported.volume },
+                      0.52917721092,
+                      window.ATOM_Z_TO_DATA,
+                      'angstrom'
+                    );
+                }"""
+            )
+            if not isinstance(xyz_export, str) or '"kind"' in xyz_export or 'origin' in xyz_export or 'bond' in xyz_export.lower():
+                raise AssertionError(f'XYZ export was not plain XYZ text: {xyz_export!r}')
 
             assert_no_runtime_errors(page_errors, console_errors)
             browser.close()

@@ -156,16 +156,16 @@
         const fragment = getCurrentFragmentDefinition();
         const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
         if (state.editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-          return `Edit tool: Add fragment (${label}) • Fuse ring mode • Click a host bond • Drag to spin • Click to confirm`;
+          return `Edit tool: Add fragment (${label}) • Fuse ring mode • Click a host bond • Drag to spin • Click to confirm • Space previews/applies missing H`;
         }
-        return `Edit tool: Add fragment (${label}) • ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)} • Click an anchor atom • Hold Shift to bypass angle snap`;
+        return `Edit tool: Add fragment (${label}) • ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)} • Click an anchor atom • Hold Shift to bypass angle snap • Space previews/applies missing H`;
       }
       if (state.editAddMode === EDIT_ADD_MODE.MOLECULE) {
         const molecule = getCurrentMoleculeDefinition();
         const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
-        return `Edit tool: Add molecule (${label}) • Click to place • Drag to rotate • Click again to confirm`;
+        return `Edit tool: Add molecule (${label}) • Click to place • Drag to rotate • Click again to confirm • Space previews/applies missing H`;
       }
-      return `Edit tool: Add atom (${getElementSymbol(state.editAddElementZ)}) • Cursor angle controls placement • Hold Shift to bypass angle snap`;
+      return `Edit tool: Add atom (${getElementSymbol(state.editAddElementZ)}) • Cursor angle controls placement • Hold Shift to bypass angle snap • Space previews/applies missing H`;
     }
 
     function buildTransformHint() {
@@ -213,8 +213,8 @@
       if (state.editTool === EDIT_TOOL.SELECT) {
         const count = getEditAtomSelection().length;
         setHintMessage(count
-          ? `Edit tool: Selection • Click to replace • Drag to box-select • Shift-click to add/remove • Shift-drag adds box hits • Cmd/Ctrl+A selects all • ${count} atom${count === 1 ? '' : 's'} currently selected`
-          : 'Edit tool: Selection • Click to select • Drag to box-select • Shift-click to add/remove • Click empty space to clear • Cmd/Ctrl+A selects all');
+          ? `Edit tool: Selection • Click to replace • Drag to box-select • Shift-click to add/remove • Shift-drag adds box hits • Cmd/Ctrl+A selects all • Space previews/applies missing H • ${count} atom${count === 1 ? '' : 's'} currently selected`
+          : 'Edit tool: Selection • Click to select • Drag to box-select • Shift-click to add/remove • Click empty space to clear • Cmd/Ctrl+A selects all • Space previews/applies missing H');
         return;
       }
       if (state.editTool === EDIT_TOOL.ADD) {
@@ -234,10 +234,10 @@
         return;
       }
       if (state.editTool === EDIT_TOOL.ROTATE) {
-        setHintMessage('Edit tool: Rotate • Drag a selected atom to rotate the selection • Drag an axis ring to constrain rotation • Drag an unselected atom to retarget and rotate it • Background drag rotates view');
+        setHintMessage('Edit tool: Rotate • Drag a selected atom to rotate the selection • Drag an axis ring to constrain rotation • Drag an unselected atom to retarget and rotate it • Background drag rotates view • Space previews/applies missing H');
         return;
       }
-      setHintMessage('Edit tool: Move • Drag a selected atom to move the selection • Drag an axis arrow to constrain motion • Drag an unselected atom to retarget and move it • Background drag rotates view');
+      setHintMessage('Edit tool: Move • Drag a selected atom to move the selection • Drag an axis arrow to constrain motion • Drag an unselected atom to retarget and move it • Background drag rotates view • Space previews/applies missing H');
     }
 
     function setEditAddMode(nextMode, options = {}) {
@@ -277,7 +277,7 @@
         setHintMessage(`Add molecule: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`);
         return;
       }
-      setHintMessage(`Add atom: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)})`);
+      setHintMessage(`Add atom: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Space previews/applies missing H`);
     }
 
     function clearTransientInteractionState(clearOptions = {}) {

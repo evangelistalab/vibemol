@@ -81,6 +81,7 @@ The CLI supports:
 - `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate conversion and marching-cubes isosurface helpers
 - `assets/app/js/volume-2c.js`: 2C phase and total/Bloch-colored isosurface builders
 - `assets/app/js/bond-inference.js`: covalent bond candidate generation, bond-order inference, and aromatic six-ring detection
+- `assets/app/js/auto-hydrogen.js`: auto-hydrogen planning heuristics and edit-mode hydrogenation controller
 - `assets/app/js/autoiso.js`: auto-iso estimation, cache, and worker orchestration controller
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders
 - `assets/app/js/preset.js`: preset registry, import/export controller, and builder-extension preset state helpers
@@ -91,6 +92,7 @@ The CLI supports:
 - `assets/app/js/edit-tools.js`: edit tool and selection coordination
 - `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover, and picking helpers
 - `assets/app/js/edit-transform.js`: shared move/rotate transform-session and pointer-routing controller
+- `assets/app/js/edit-gestures.js`: gesture-first edit interaction controller and gesture HUD coordinator
 - `assets/app/js/edit-ui.js`: adaptive edit UI and operator-panel helpers
 - `api/vibemol_client.py`: Playwright automation client
 - `tests/unit/`: Node built-in unit tests for browserless logic modules
@@ -113,6 +115,7 @@ Relevant browserless syntax checks include:
 node --check assets/app/js/volume-geometry.js
 node --check assets/app/js/volume-2c.js
 node --check assets/app/js/bond-inference.js
+node --check assets/app/js/auto-hydrogen.js
 node --check assets/app/js/autoiso.js
 node --check assets/app/js/cloud-rendering.js
 node --check assets/app/js/edit-gizmos.js

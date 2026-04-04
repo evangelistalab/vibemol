@@ -98,6 +98,7 @@
    *   isVisible: boolean,
    *   positionMenu: ()=>void,
    *   onHideAllPopovers?: ()=>void,
+   *   visibleItems?: Array<{el:HTMLElement|null,visible:boolean}>,
    *   activeItems?: Array<{el:HTMLElement|null,active:boolean}>,
    *   metaItems?: Array<{el:HTMLElement|null,text:string}>,
    * }} options
@@ -108,6 +109,13 @@
     if (menuEl) menuEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
     if (typeof options.positionMenu === 'function') options.positionMenu();
     if (!isVisible && typeof options.onHideAllPopovers === 'function') options.onHideAllPopovers();
+    const visibleItems = Array.isArray(options.visibleItems) ? options.visibleItems : [];
+    for (const item of visibleItems) {
+      if (!item || !item.el) continue;
+      const visible = !!item.visible;
+      item.el.hidden = !visible;
+      item.el.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    }
     const activeItems = Array.isArray(options.activeItems) ? options.activeItems : [];
     for (const item of activeItems) {
       if (!item || !item.el) continue;

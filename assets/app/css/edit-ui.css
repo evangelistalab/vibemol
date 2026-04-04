@@ -56,11 +56,142 @@
   display: block;
 }
 
+#editGestureHud {
+  position: fixed;
+  top: 86px;
+  left: 12px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border: 1px solid rgba(117, 129, 150, 0.24);
+  border-radius: 14px;
+  background: rgba(48, 53, 61, 0.9);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+  color: #f2f5fa;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 34;
+}
+
+#editGestureHud[aria-hidden="false"] {
+  display: flex;
+}
+
+#editGestureElementChip {
+  appearance: none;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 58px;
+  height: 58px;
+  padding: 8px 10px;
+  border: 1px solid rgba(145, 156, 176, 0.34);
+  border-radius: 14px;
+  background: rgba(67, 74, 84, 0.95);
+  color: #f5f7fb;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+#editGestureElementChip:hover {
+  border-color: rgba(122, 172, 255, 0.58);
+  background: rgba(74, 84, 98, 0.98);
+}
+
+#editGestureElementChipSymbol {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+#editGestureElementChipLabel {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(214, 221, 233, 0.78);
+}
+
+#editGestureHudBody {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#editGestureHint {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f5f7fb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#editGestureScope {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: rgba(214, 221, 233, 0.82);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#editGestureHudActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+#editGestureBondOrderPill {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 62px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(54, 97, 166, 0.96);
+  color: #f8fbff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+#editGestureBondOrderPill[aria-hidden="false"] {
+  display: inline-flex;
+}
+
+#editGestureAdvancedBtn {
+  appearance: none;
+  border: 1px solid rgba(145, 156, 176, 0.34);
+  border-radius: 12px;
+  background: rgba(67, 74, 84, 0.95);
+  color: #f5f7fb;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#editGestureAdvancedBtn:hover {
+  border-color: rgba(122, 172, 255, 0.58);
+  background: rgba(74, 84, 98, 0.98);
+}
+
 #editAdaptiveMenu {
   position: fixed;
-  top: 50%;
+  top: 166px;
   left: 12px;
-  transform: translateY(-50%);
+  transform: none;
   display: none;
   flex-direction: column;
   gap: 10px;
@@ -92,6 +223,11 @@
   -webkit-backdrop-filter: blur(10px);
 }
 
+.adaptiveEditItem[hidden],
+.adaptiveEditItem[aria-hidden="true"] {
+  display: none !important;
+}
+
 .adaptiveEditItem:hover {
   border-color: rgba(145, 156, 176, 0.42);
   background: rgba(56, 62, 71, 0.96);
@@ -103,9 +239,29 @@
   box-shadow: 0 14px 30px rgba(18, 30, 54, 0.34);
 }
 
+#editAdaptiveMenuHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 2px 2px;
+}
+
+#editAdaptiveMenuTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: #f5f7fb;
+}
+
+#editAdaptiveMenuSubtitle {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(214, 221, 233, 0.72);
+}
+
 #editAdaptiveAddAtomPopover,
 #editAdaptiveAddFragmentPopover,
 #editAdaptiveAddMoleculePopover,
+#editAdaptiveBondPopover,
 #editAdaptiveTransformPopover {
   position: fixed;
   display: none;
@@ -123,6 +279,7 @@
 #editAdaptiveAddAtomPopover[aria-hidden="false"],
 #editAdaptiveAddFragmentPopover[aria-hidden="false"],
 #editAdaptiveAddMoleculePopover[aria-hidden="false"],
+#editAdaptiveBondPopover[aria-hidden="false"],
 #editAdaptiveTransformPopover[aria-hidden="false"] {
   display: block;
 }
@@ -378,6 +535,7 @@
 #editAdaptiveAddAtomPopover #editAddAtomPane,
 #editAdaptiveAddFragmentPopover #editAddFragmentPane,
 #editAdaptiveAddMoleculePopover #editAddMoleculePane,
+#editAdaptiveBondPopover #editBondCleanupPane,
 #editAdaptiveTransformPopover #editTransformPane {
   display: block;
 }
@@ -385,8 +543,66 @@
 #editAdaptiveAddAtomPopover label:first-child,
 #editAdaptiveAddFragmentPopover label:first-child,
 #editAdaptiveAddMoleculePopover label:first-child,
+#editAdaptiveBondPopover label:first-child,
 #editAdaptiveTransformPopover label:first-child {
   margin-top: 0;
+}
+
+#editBondCleanupPane {
+  display: none;
+}
+
+#editBondCleanupIntro {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #dce4ef;
+  margin-bottom: 10px;
+}
+
+#editBondCleanupStartBtn,
+#editBondCleanupApplyBtn,
+#editBondCleanupCancelBtn {
+  appearance: none;
+  border: 1px solid rgba(117, 129, 150, 0.28);
+  border-radius: 10px;
+  background: rgba(68, 75, 85, 0.96);
+  color: #f2f5fa;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+#editBondCleanupStartBtn:hover,
+#editBondCleanupApplyBtn:hover,
+#editBondCleanupCancelBtn:hover {
+  border-color: rgba(145, 156, 176, 0.42);
+  background: rgba(104, 111, 121, 0.94);
+}
+
+#editBondCleanupApplyBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#editBondCleanupSummary {
+  display: none;
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #dce4ef;
+  white-space: pre-line;
+}
+
+#editBondCleanupActions {
+  display: none;
+  margin-top: 10px;
+  gap: 8px;
+}
+
+#editBondCleanupActions[data-visible="true"] {
+  display: flex;
 }
 
 .adaptiveEditItemBody {
