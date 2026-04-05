@@ -459,7 +459,10 @@
       ? options.resolveRule(atom, env, getAutoHydrogenRule(z))
       : getAutoHydrogenRule(z);
     if (!rule || !(Number(rule.targetValence) > 0)) return null;
-    const geometry = resolveGeometryForEnvironment(z, env, rule);
+    const defaultGeometry = resolveGeometryForEnvironment(z, env, rule);
+    const geometry = typeof options.resolveGeometry === 'function'
+      ? (options.resolveGeometry(atom, env, rule, defaultGeometry) || defaultGeometry)
+      : defaultGeometry;
     if (!geometry || !(geometry.siteCount > 0) || !(geometry.targetBondCount > 0)) return null;
     const bondOrderDeficit = Math.max(0, (Number(rule.targetValence) || 0) - (Number(env && env.bondOrderSum) || 0));
     const bondSiteDeficit = Math.max(0, (Number(geometry.targetBondCount) || 0) - (Number(env && env.neighborCount) || 0));
@@ -536,6 +539,7 @@
       const plan = planAtomHydrogens(atom, envs[atomIndex], {
         atomIndex,
         resolveRule: options.resolveRule,
+        resolveGeometry: options.resolveGeometry,
         bondLengthScale: options.bondLengthScale,
       });
       if (!plan) {
@@ -607,6 +611,9 @@
     const worldToAtomUnits = typeof options.worldToAtomUnits === 'function' ? options.worldToAtomUnits : ((_vol, world) => [world.x || 0, world.y || 0, world.z || 0]);
     const cloneAtomsSnapshot = typeof options.cloneAtomsSnapshot === 'function' ? options.cloneAtomsSnapshot : (() => []);
     const cloneBondSnapshot = typeof options.cloneBondSnapshot === 'function' ? options.cloneBondSnapshot : (() => []);
+    const cloneVolumeAnnotationsSnapshot = typeof options.cloneVolumeAnnotationsSnapshot === 'function'
+      ? options.cloneVolumeAnnotationsSnapshot
+      : (() => ({ builder: { byAtomId: {} }, coordination: { byAtomId: {} } }));
     const pushEditHistoryEntry = typeof options.pushEditHistoryEntry === 'function' ? options.pushEditHistoryEntry : (() => {});
     const upsertVolumeBond = typeof options.upsertVolumeBond === 'function' ? options.upsertVolumeBond : (() => null);
     const rebuildScene = typeof options.rebuildScene === 'function' ? options.rebuildScene : (() => {});
@@ -749,6 +756,7 @@
       clearPreview({ quiet: true });
       const beforeAtoms = cloneAtomsSnapshot(vol);
       const beforeBonds = cloneBondSnapshot(vol);
+      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
       for (const hydrogen of plan.hydrogens) {
         const atom = {
           Z: AUTO_HYDROGEN_Z,
@@ -774,10 +782,13 @@
       vol.natoms = vol.atoms.length;
       const afterAtoms = cloneAtomsSnapshot(vol);
       const afterBonds = cloneBondSnapshot(vol);
+      const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
       const hydrogenCount = plan.stats.hydrogenCount;
       pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add ${hydrogenCount} hydrogen${hydrogenCount === 1 ? '' : 's'}`, {
         beforeBonds,
         afterBonds,
+        beforeAnnotations,
+        afterAnnotations,
       });
       rebuildScene({ preserveView: true });
       updateSelectionVisuals();

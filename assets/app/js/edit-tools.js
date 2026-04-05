@@ -158,14 +158,14 @@
         if (state.editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
           return `Edit tool: Add fragment (${label}) • Fuse ring mode • Click a host bond • Drag to spin • Click to confirm • Space previews/applies missing H`;
         }
-        return `Edit tool: Add fragment (${label}) • ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)} • Click an anchor atom • Hold Shift to bypass angle snap • Space previews/applies missing H`;
+        return `Edit tool: Add fragment (${label}) • ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)} • Click an anchor atom • Grow-drag follows the view plane • Hold Shift to bypass angle snap for free placement • Space previews/applies missing H`;
       }
       if (state.editAddMode === EDIT_ADD_MODE.MOLECULE) {
         const molecule = getCurrentMoleculeDefinition();
         const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
         return `Edit tool: Add molecule (${label}) • Click to place • Drag to rotate • Click again to confirm • Space previews/applies missing H`;
       }
-      return `Edit tool: Add atom (${getElementSymbol(state.editAddElementZ)}) • Cursor angle controls placement • Hold Shift to bypass angle snap • Space previews/applies missing H`;
+      return `Edit tool: Add atom (${getElementSymbol(state.editAddElementZ)}) • Cursor angle controls free placement • Grow-drag follows the view plane • Hold Shift to bypass angle snap for free placement • Space previews/applies missing H`;
     }
 
     function buildTransformHint() {

@@ -9,6 +9,7 @@ function createController(options = {}) {
     vol: {
       atoms: [{ id: 'a1', Z: 6, x: 0, y: 0, z: 0 }, { id: 'a2', Z: 6, x: 1.4, y: 0, z: 0 }],
       bonds: [{ id: 'bond:a1:a2', a: 'a1', b: 'a2', order: 1, kind: 'normal', origin: 'perceived' }],
+      annotations: { coordination: { byAtomId: { a1: { geometryId: 'tetrahedral' } } } },
     },
     measurementLabelOffsets: { dist: { dx: 1 } },
     pubchemMeta: { cid: 123 },
@@ -25,6 +26,9 @@ function createController(options = {}) {
     cloneJsonLike: (value) => (value == null ? value : JSON.parse(JSON.stringify(value))),
     rehydrateClonedVolume: (vol) => vol,
     ensureVolumeSchema: (vol) => {
+      if (!vol.annotations) vol.annotations = {};
+      if (!vol.annotations.coordination) vol.annotations.coordination = {};
+      if (!vol.annotations.coordination.byAtomId) vol.annotations.coordination.byAtomId = {};
       if (vol && Array.isArray(vol.bonds)) {
         vol.bonds = vol.bonds.map((bond) => ({ ...bond, origin: bond && bond.origin ? bond.origin : 'explicit' }));
       }
@@ -52,6 +56,7 @@ test('structure transport exports active structure envelope', () => {
   assert.deepEqual(exported.volume.bonds, [
     { id: 'bond:a1:a2', a: 'a1', b: 'a2', order: 1, kind: 'normal', origin: 'perceived' },
   ]);
+  assert.deepEqual(exported.volume.annotations.coordination.byAtomId, { a1: { geometryId: 'tetrahedral' } });
   assert.deepEqual(exported.recordState.measurementLabelOffsets, { dist: { dx: 1 } });
   assert.deepEqual(exported.recordState.pubchemMeta, { cid: 123 });
 });
@@ -78,6 +83,7 @@ test('structure transport round-trips record-state extras through parse and impo
     volume: {
       atoms: [{ id: 'a1', Z: 6, x: 0, y: 0, z: 0 }, { id: 'a2', Z: 6, x: 1.4, y: 0, z: 0 }],
       bonds: [{ id: 'b1', a: 'a1', b: 'a2', order: 2, kind: 'normal' }],
+      annotations: { coordination: { byAtomId: { a2: { geometryId: 'linear' } } } },
     },
     recordState: {
       measurementLabelOffsets: { angle: { dx: 2 } },
@@ -92,6 +98,7 @@ test('structure transport round-trips record-state extras through parse and impo
   assert.deepEqual(appended[0].vol.bonds, [
     { id: 'b1', a: 'a1', b: 'a2', order: 2, kind: 'normal', origin: 'explicit' },
   ]);
+  assert.deepEqual(appended[0].vol.annotations.coordination.byAtomId, { a2: { geometryId: 'linear' } });
   assert.equal(appended[0].extras.skipBuilderExtensionMerge, true);
   assert.equal(finalized.length, 1);
   assert.equal(finalized[0].startIndex, 2);

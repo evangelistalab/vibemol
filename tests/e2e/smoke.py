@@ -84,6 +84,37 @@ def build_fixture_cleanup_structure() -> str:
     return json.dumps(payload)
 
 
+def build_fixture_optimize_structure() -> str:
+    payload = {
+        'kind': 'vibemol.structure',
+        'structureVersion': 1,
+        'appVersion': 'smoke-test',
+        'name': 'optimize-fixture.structure.json',
+        'meta': {'source': 'test'},
+        'volume': {
+            'title': 'Optimize fixture',
+            'comment': 'Stretched explicit-bond fixture for UFF optimization',
+            'natoms': 2,
+            'origin': [0, 0, 0],
+            'nxyz': [0, 0, 0],
+            'axes': [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            'atoms': [
+                {'id': 'atom-1', 'Z': 6, 'x': 0.0, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-2', 'Z': 1, 'x': 2.4, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+            ],
+            'bonds': [
+                {'id': 'bond:atom-1:atom-2', 'a': 'atom-1', 'b': 'atom-2', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+            ],
+            'annotations': {'builder': {'byAtomId': {}}},
+            'fragmentOps': [],
+            'data': [],
+            'units': 'angstrom',
+        },
+        'recordState': {'measurementLabelOffsets': {}},
+    }
+    return json.dumps(payload)
+
+
 def build_fixture_inferred_xyz() -> str:
     return '\n'.join([
         '2',
@@ -204,31 +235,117 @@ def canvas_point(page, fx: float = 0.62, fy: float = 0.56) -> tuple[float, float
     return (box['x'] + box['width'] * fx, box['y'] + box['height'] * fy)
 
 
-def drag_canvas_box(page, start_fx: float, start_fy: float, end_fx: float, end_fy: float) -> None:
-    start_x, start_y = canvas_point(page, start_fx, start_fy)
-    end_x, end_y = canvas_point(page, end_fx, end_fy)
-    page.mouse.move(start_x, start_y)
-    page.mouse.down()
-    page.mouse.move(end_x, end_y, steps=12)
-    page.mouse.up()
+def find_bond_midpoint_canvas_point(page) -> tuple[float, float]:
+    candidates = [
+        (0.50, 0.50),
+        (0.48, 0.50), (0.52, 0.50),
+        (0.46, 0.50), (0.54, 0.50),
+        (0.50, 0.48), (0.50, 0.52),
+        (0.48, 0.48), (0.52, 0.52),
+        (0.48, 0.52), (0.52, 0.48),
+    ]
+    for fx, fy in candidates:
+        x, y = canvas_point(page, fx, fy)
+        page.mouse.move(x, y)
+        page.wait_for_timeout(60)
+        is_midpoint = page.evaluate(
+            """() => {
+                const scope = document.getElementById('editGestureScope');
+                return !!scope && /Bond midpoint/i.test(scope.textContent || '');
+            }"""
+        )
+        if is_midpoint:
+            return x, y
+    raise AssertionError('Could not locate a bond midpoint hover target on the canvas')
 
 
 def ensure_advanced_drawer_open(page) -> None:
-    is_hidden = page.evaluate(
-        """() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') !== 'false'"""
-    )
-    if is_hidden:
-        page.locator('#editGestureAdvancedBtn').click()
     page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
 
 
 def ensure_advanced_drawer_closed(page) -> None:
-    is_open = page.evaluate(
-        """() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'"""
+    page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+
+
+def wait_for_selected_atoms(page, count: int) -> None:
+    page.wait_for_function(
+        r"""(expectedCount) => {
+            const scope = document.getElementById('editGestureScope')?.textContent || '';
+            const hint = document.getElementById('hint')?.textContent || '';
+            const exactPattern = new RegExp(`\\b${expectedCount}\\s+atom(?:s)?\\s+selected\\b`, 'i');
+            const currentSelectionPattern = new RegExp(`\\bcurrent selection\\s*\\(${expectedCount}\\s+atom(?:s)?\\)`, 'i');
+            const hintPattern = new RegExp(`\\b(selected all|selection updated)\\b[^]*\\b${expectedCount}\\s+atom(?:s)?\\b`, 'i');
+            return exactPattern.test(scope)
+              || currentSelectionPattern.test(scope)
+              || hintPattern.test(hint);
+        }""",
+        arg=count,
     )
-    if is_open:
-        page.locator('#editGestureAdvancedBtn').click()
-    page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'true'")
+
+
+def trigger_selection_tool(page) -> None:
+    page.evaluate(
+        """() => {
+            window.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 's',
+                code: 'KeyS',
+                bubbles: true,
+                cancelable: true,
+            }));
+        }"""
+    )
+    page.wait_for_function(
+        """() => {
+            const legacyBtn = document.getElementById('editToolSelectBtn');
+            if (legacyBtn && legacyBtn.classList.contains('active')) return true;
+            return /Selection/i.test(document.getElementById('hint')?.textContent || '');
+        }"""
+    )
+
+
+def select_two_fixture_atoms(page) -> None:
+    trigger_selection_tool(page)
+    empty_x, empty_y = canvas_point(page, 0.04, 0.08)
+    page.mouse.click(empty_x, empty_y)
+    left_candidates = [(0.42, 0.50), (0.40, 0.50), (0.44, 0.50), (0.42, 0.47), (0.42, 0.53)]
+    right_candidates = [(0.58, 0.50), (0.60, 0.50), (0.56, 0.50), (0.58, 0.47), (0.58, 0.53)]
+
+    def _select_one(candidates: list[tuple[float, float]]) -> bool:
+        for fx, fy in candidates:
+            x, y = canvas_point(page, fx, fy)
+            page.mouse.click(x, y)
+            try:
+                page.wait_for_function(
+                    r"""() => {
+                        const scope = document.getElementById('editGestureScope')?.textContent || '';
+                        const hint = document.getElementById('hint')?.textContent || '';
+                        return /\b1\s+atom\s+selected\b/i.test(scope)
+                          || /\bselected\s+1\s+atom\b/i.test(hint);
+                    }""",
+                    timeout=750,
+                )
+                return True
+            except Exception:
+                continue
+        return False
+
+    if not _select_one(left_candidates):
+        raise AssertionError('Could not select the left atom in the deterministic two-atom fixture.')
+
+    for fx, fy in right_candidates:
+        x, y = canvas_point(page, fx, fy)
+        page.keyboard.down('Shift')
+        try:
+            page.mouse.click(x, y)
+        finally:
+            page.keyboard.up('Shift')
+        try:
+            wait_for_selected_atoms(page, 2)
+            return
+        except Exception:
+            continue
+
+    raise AssertionError('Could not extend the deterministic two-atom fixture selection to two atoms.')
 
 
 def wait_for_ready(page) -> None:
@@ -335,11 +452,36 @@ def main() -> int:
             # Gesture-mode edit HUD should be primary, with the advanced drawer opt-in.
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editGestureHud')?.getAttribute('aria-hidden') === 'false'")
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'true'")
+            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
             page.wait_for_function(
                 """() => /Click void to place/i.test(document.getElementById('editGestureHint')?.textContent || '')"""
             )
-            ensure_advanced_drawer_open(page)
+            page.hover('#editAdaptiveAddAtomBtn')
+            page.wait_for_function("() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function(
+                """() => /Atom manipulation: Carbon \\(C\\)/i.test(document.getElementById('editAddCurrent')?.textContent || '')"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const toggle = document.getElementById('editAddAdjustHydrogens');
+                    const coordination = document.getElementById('editAddCoordination');
+                    const labels = coordination ? Array.from(coordination.options).map((opt) => (opt.textContent || '').trim()) : [];
+                    return !!toggle
+                      && toggle.checked === true
+                      && !!coordination
+                      && labels.includes('Linear (2)')
+                      && labels.includes('Trigonal planar (3)')
+                      && labels.includes('Tetrahedral (4)');
+                }"""
+            )
+            page.hover('#editAdaptiveAddAtomBtn')
+            page.locator('#editAddAdjustHydrogens').uncheck()
+            page.wait_for_function(
+                """() => {
+                    const toggle = document.getElementById('editAddAdjustHydrogens');
+                    return !!toggle && toggle.checked === false;
+                }"""
+            )
             empty_edit_visibility = page.evaluate(
                 """() => {
                     const isShown = (id) => {
@@ -347,29 +489,28 @@ def main() -> int:
                         return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
                     };
                     return {
-                        selection: isShown('editAdaptiveSelectionBtn'),
                         move: isShown('editAdaptiveMoveBtn'),
                         rotate: isShown('editAdaptiveRotateBtn'),
                         addAtom: isShown('editAdaptiveAddAtomBtn'),
                         addFragment: isShown('editAdaptiveAddFragmentBtn'),
                         addMolecule: isShown('editAdaptiveAddMoleculeBtn'),
-                        bond: isShown('editAdaptiveBondBtn'),
-                        transform: isShown('editAdaptiveTransformBtn'),
+                        cleanStructure: isShown('editAdaptiveCleanStructureBtn'),
+                        shiftCom: isShown('editAdaptiveShiftComBtn'),
+                        alignPrincipal: isShown('editAdaptiveAlignPrincipalBtn'),
                     };
                 }"""
             )
             if empty_edit_visibility != {
-                'selection': False,
                 'move': False,
                 'rotate': False,
                 'addAtom': True,
                 'addFragment': True,
                 'addMolecule': True,
-                'bond': False,
-                'transform': False,
+                'cleanStructure': False,
+                'shiftCom': False,
+                'alignPrincipal': False,
             }:
                 raise AssertionError(f'Unexpected empty edit menu visibility: {empty_edit_visibility}')
-            ensure_advanced_drawer_closed(page)
 
             # Gesture void-click places one carbon, but the first placed atom should not stay selected.
             x, y = canvas_point(page)
@@ -396,30 +537,69 @@ def main() -> int:
                 """() => {
                     const scope = document.getElementById('editGestureScope')?.textContent || '';
                     const ghosts = document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0;
-                    return /grow halo/i.test(scope) && ghosts === 4;
+                    return /tetrahedral \\(4\\)/i.test(scope) && ghosts === 4;
                 }"""
             )
             page.wait_for_function(
-                """() => (document.querySelectorAll('#editHaloLayer [data-halo-element]').length || 0) === 11"""
+                """() => {
+                    const labels = Array.from(document.querySelectorAll('#editHaloLayer [data-halo-coordination]'));
+                    const texts = labels.map((el) => (el.textContent || '').trim());
+                    return labels.length === 3
+                      && texts.includes('Linear (2)')
+                      && texts.includes('Trigonal planar (3)')
+                      && texts.includes('Tetrahedral (4)');
+                }"""
             )
 
-            # The outer element ring should change the loaded element without mutating the selected atom.
-            nitrogen_ring_box = page.evaluate(
+            # The Atoms menu stays responsible for element choice.
+            page.hover('#editAdaptiveAddAtomBtn')
+            page.wait_for_function("() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_timeout(120)
+            nitrogen_quick_box = page.evaluate(
                 """() => {
-                    const el = document.querySelector('#editHaloLayer [data-halo-element="N"]');
+                    const el = document.querySelector('#editAddQuick button[data-z="7"]');
                     if (!el) return null;
                     const rect = el.getBoundingClientRect();
                     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
                 }"""
             )
-            if not isinstance(nitrogen_ring_box, dict):
-                raise AssertionError('Nitrogen halo ring sector was not rendered.')
+            if not isinstance(nitrogen_quick_box, dict):
+                raise AssertionError('Nitrogen Atoms quick-pick button was not rendered.')
             page.mouse.click(
-                nitrogen_ring_box['x'] + nitrogen_ring_box['width'] * 0.5,
-                nitrogen_ring_box['y'] + nitrogen_ring_box['height'] * 0.5,
+                nitrogen_quick_box['x'] + nitrogen_quick_box['width'] * 0.5,
+                nitrogen_quick_box['y'] + nitrogen_quick_box['height'] * 0.5,
             )
             page.wait_for_function(
-                """() => document.getElementById('editGestureElementChipSymbol')?.textContent?.trim() === 'N'"""
+                """() => /Atom manipulation: Nitrogen \\(N\\)/i.test(document.getElementById('editAddCurrent')?.textContent || '')"""
+            )
+
+            # The halo now exposes coordination choices rather than element choices.
+            linear_choice_box = page.evaluate(
+                """() => {
+                    const el = document.querySelector('#editHaloLayer [data-halo-coordination="linear"]');
+                    if (!el) return null;
+                    const rect = el.getBoundingClientRect();
+                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+                }"""
+            )
+            if not isinstance(linear_choice_box, dict):
+                raise AssertionError('Linear coordination choice was not rendered.')
+            page.mouse.click(
+                linear_choice_box['x'] + linear_choice_box['width'] * 0.5,
+                linear_choice_box['y'] + linear_choice_box['height'] * 0.5,
+            )
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const byAtomId = exported.volume?.annotations?.coordination?.byAtomId || {};
+                    const atom0 = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms[0] : null;
+                    const atom0Id = atom0 && atom0.id != null ? String(atom0.id) : '';
+                    const ghosts = document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0;
+                    return atom0Id
+                      && byAtomId[atom0Id]
+                      && byAtomId[atom0Id].geometryId === 'linear'
+                      && ghosts === 2;
+                }"""
             )
 
             # Clicking a halo ghost should grow chemistry from the selected atom in 3D.
@@ -440,20 +620,16 @@ def main() -> int:
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
                     const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const atom0 = exported.volume?.atoms?.[0] || null;
+                    const atom0Id = atom0 && atom0.id != null ? String(atom0.id) : '';
+                    const geometryId = atom0Id ? exported.volume?.annotations?.coordination?.byAtomId?.[atom0Id]?.geometryId : '';
                     return exported.volume.atoms.length === 2
                       && exported.volume.atoms[1]?.Z === 7
                       && bonds.length === 1
-                      && bonds[0].order === 1;
+                      && bonds[0].order === 1
+                      && geometryId === 'linear';
                 }"""
             )
-            page.wait_for_function(
-                """() => {
-                    const scope = document.getElementById('editGestureScope')?.textContent || '';
-                    const ghosts = document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0;
-                    return /grow halo/i.test(scope) && ghosts === 3;
-                }"""
-            )
-
             def halo_core_center() -> dict[str, float] | None:
                 center = page.evaluate(
                     """() => {
@@ -483,7 +659,7 @@ def main() -> int:
 
             page.mouse.click(atom1_x, atom1_y)
             page.wait_for_function(
-                """() => /grow halo/i.test(document.getElementById('editGestureScope')?.textContent || '')"""
+                """() => /linear \\(2\\)/i.test(document.getElementById('editGestureScope')?.textContent || '')"""
             )
             before_single_move = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
@@ -510,24 +686,18 @@ def main() -> int:
                 arg=before_single_move,
             )
             page.mouse.click(x, y)
-            page.wait_for_function(
-                """() => /1 atom selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
             page.mouse.dblclick(x, y)
-            page.wait_for_function(
-                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
 
             # After the first atom exists, the advanced drawer should expose atom-dependent tools.
             ensure_advanced_drawer_open(page)
             page.wait_for_function(
                 """() => {
                     const ids = [
-                      'editAdaptiveSelectionBtn',
                       'editAdaptiveMoveBtn',
                       'editAdaptiveRotateBtn',
-                      'editAdaptiveBondBtn',
-                      'editAdaptiveTransformBtn',
+                      'editAdaptiveCleanStructureBtn',
+                      'editAdaptiveShiftComBtn',
+                      'editAdaptiveAlignPrincipalBtn',
                     ];
                     return ids.every((id) => {
                       const el = document.getElementById(id);
@@ -723,53 +893,28 @@ def main() -> int:
             page.wait_for_function("() => !document.getElementById('emptyState') || getComputedStyle(document.getElementById('emptyState')).display === 'none'")
             page.wait_for_function(
                 """() => {
-                    const selectionBtn = document.getElementById('editAdaptiveSelectionBtn');
                     const addAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
-                    return !!selectionBtn
-                      && !selectionBtn.hidden
-                      && !!addAtomBtn
+                    return !!addAtomBtn
                       && !addAtomBtn.hidden;
                 }"""
             )
-            page.locator('#editAdaptiveTransformBtn').click()
+            page.locator('#editAdaptiveAddAtomBtn').click()
             page.wait_for_function(
                 """() => {
-                    const select = document.getElementById('editTransformMode');
-                    if (!select) return false;
-                    const values = Array.from(select.options || []).map((option) => option.value);
-                    return !values.includes('move') && select.value === 'rotate_fragment';
+                    const atomBtn = document.getElementById('editAdaptiveAddAtomBtn');
+                    return !!atomBtn
+                      && atomBtn.classList.contains('active');
                 }"""
             )
-            page.locator('#editAdaptiveSelectionBtn').click()
 
-            # Selection marquee smoke.
-            page.locator('#editAdaptiveSelectionBtn').click()
-            # Marquee selection uses projected atom centers, not full sphere extents.
-            # Use a generously centered rectangle so minor fit/render differences
-            # in headless Chromium do not make this test flaky.
-            drag_canvas_box(page, 0.22, 0.22, 0.78, 0.78)
-            page.wait_for_function(
-                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
-
-            # Select-all smoke.
-            page.keyboard.press('Meta+A' if sys.platform == 'darwin' else 'Control+A')
-            page.wait_for_function(
-                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
+            # Direct atom-selection smoke on the deterministic two-atom fixture.
+            select_two_fixture_atoms(page)
 
             # Empty-click deselection should also work in non-selection tools.
             page.locator('#editAdaptiveMoveBtn').click()
             empty_x, empty_y = canvas_point(page, 0.04, 0.08)
             page.mouse.click(empty_x, empty_y)
-            page.wait_for_function(
-                """() => /Click atoms to build a selection/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
-            page.locator('#editAdaptiveSelectionBtn').click()
-            page.keyboard.press('Meta+A' if sys.platform == 'darwin' else 'Control+A')
-            page.wait_for_function(
-                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
+            select_two_fixture_atoms(page)
 
             # Move smoke via operator panel + undo.
             before_move = page.evaluate(
@@ -816,11 +961,7 @@ def main() -> int:
             )
 
             # Rotate smoke via operator panel + undo.
-            page.locator('#editAdaptiveSelectionBtn').click()
-            page.keyboard.press('Meta+A' if sys.platform == 'darwin' else 'Control+A')
-            page.wait_for_function(
-                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
+            select_two_fixture_atoms(page)
             before_rotate = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
@@ -867,36 +1008,49 @@ def main() -> int:
             page.wait_for_function(
                 """() => /Undo: Rotate 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
             )
-            page.locator('#editAdaptiveSelectionBtn').click()
-            page.keyboard.press('Meta+A' if sys.platform == 'darwin' else 'Control+A')
-            page.wait_for_function(
-                """() => /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '')"""
-            )
+            select_two_fixture_atoms(page)
 
             # Copy/paste selected atoms keeps internal bonds and selects the pasted atoms.
             copy_paste_shortcut = 'Meta+' if sys.platform == 'darwin' else 'Control+'
             page.keyboard.press(copy_paste_shortcut + 'C')
             page.keyboard.press(copy_paste_shortcut + 'V')
             page.wait_for_function(
-                """() => {
+                r"""() => {
                     const exported = window.VibeMolStructure.exportActive();
                     return exported.volume.atoms.length === 4
                       && Array.isArray(exported.volume.bonds)
                       && exported.volume.bonds.length === 2
-                      && /2 atoms selected/i.test(document.getElementById('editAdaptiveSelectionMeta')?.textContent || '');
+                      && (() => {
+                        const scope = document.getElementById('editGestureScope')?.textContent || '';
+                        return /\b2\s+atoms?\s+selected\b/i.test(scope)
+                          || /\bcurrent selection\s*\(2\s+atoms?\)/i.test(scope);
+                      })();
                 }"""
             )
 
             # Add atom smoke.
             page.locator('#editAdaptiveAddAtomBtn').click()
             before_add_atom = active_structure_summary(page)
-            x, y = canvas_point(page)
+            x, y = canvas_point(page, 0.76, 0.62)
             page.mouse.click(x, y)
-            page.wait_for_function("() => document.getElementById('editAddAtomOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function(
+                """() => {
+                    const scope = document.getElementById('editGestureScope')?.textContent || '';
+                    return /No selection/i.test(scope);
+                }"""
+            )
+            page.mouse.click(x, y)
+            page.wait_for_function(
+                """(beforeCount) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return Array.isArray(exported.volume?.atoms)
+                      && exported.volume.atoms.length === Number(beforeCount) + 1;
+                }""",
+                arg=before_add_atom['atomCount'],
+            )
             after_add_atom = active_structure_summary(page)
             if after_add_atom['atomCount'] != before_add_atom['atomCount'] + 1:
                 raise AssertionError(f'Add atom did not add exactly one atom: {before_add_atom} -> {after_add_atom}')
-            page.keyboard.press('Enter')
 
             # Add molecule smoke.
             page.locator('#editAdaptiveAddMoleculeBtn').click()
@@ -913,6 +1067,20 @@ def main() -> int:
                 raise AssertionError(f'Add molecule did not preserve/add explicit bonds: {before_add_molecule} -> {after_add_molecule}')
 
             # Structure export/import round-trip.
+            page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    if (!exported.volume?.atoms) return;
+                    const seededAtom = { id: 'roundtrip-pref-atom', Z: 6, x: 8.5, y: 0, z: 0, formalCharge: 0 };
+                    exported.volume.atoms.push(seededAtom);
+                    exported.volume.natoms = exported.volume.atoms.length;
+                    if (!exported.volume.annotations) exported.volume.annotations = {};
+                    if (!exported.volume.annotations.coordination) exported.volume.annotations.coordination = {};
+                    if (!exported.volume.annotations.coordination.byAtomId) exported.volume.annotations.coordination.byAtomId = {};
+                    exported.volume.annotations.coordination.byAtomId[seededAtom.id] = { geometryId: 'linear' };
+                    window.VibeMolStructure.importFromText(JSON.stringify(exported), 'roundtrip-setup');
+                }"""
+            )
             roundtrip_summary = page.evaluate(
                 """() => {
                     const text = window.VibeMolStructure.exportActiveText();
@@ -920,11 +1088,14 @@ def main() -> int:
                     if (parsed.kind !== 'vibemol.structure') throw new Error(`Unexpected export kind: ${parsed.kind}`);
                     window.VibeMolStructure.importFromText(text, 'roundtrip');
                     const imported = window.VibeMolStructure.exportActive();
+                    const seededAtomId = 'roundtrip-pref-atom';
                     return {
                         exportedKind: parsed.kind,
                         importedKind: imported.kind,
                         atomCount: imported.volume.atoms.length,
                         bondCount: Array.isArray(imported.volume.bonds) ? imported.volume.bonds.length : 0,
+                        exportedCoordination: parsed.volume?.annotations?.coordination?.byAtomId?.[seededAtomId]?.geometryId || '',
+                        importedCoordination: imported.volume?.annotations?.coordination?.byAtomId?.[seededAtomId]?.geometryId || '',
                     };
                 }"""
             )
@@ -932,12 +1103,55 @@ def main() -> int:
                 raise AssertionError(f'Unexpected round-trip kinds: {roundtrip_summary}')
             if roundtrip_summary['atomCount'] <= 0 or roundtrip_summary['bondCount'] <= 0:
                 raise AssertionError(f'Round-trip lost structure content: {roundtrip_summary}')
+            if roundtrip_summary['exportedCoordination'] != 'linear' or roundtrip_summary['importedCoordination'] != 'linear':
+                raise AssertionError(f'Round-trip lost coordination override: {roundtrip_summary}')
 
-            # Bond editing smoke on a deterministic fixture.
+            # Gesture bond-center clicking should raise with left click and lower with right click.
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture")', fixture_text)
+            page.locator('#modeDisplayBtn').click()
+            page.locator('#modeEditBtn').click()
+            x, y = find_bond_midpoint_canvas_point(page)
+            for expected_order in (2, 3, 4):
+                page.mouse.click(x, y)
+                page.wait_for_function(
+                    """(expectedOrder) => {
+                        const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
+                        return !!bond && bond.order === expectedOrder && bond.kind === 'normal' && bond.origin === 'explicit';
+                    }""",
+                    arg=expected_order,
+                )
+            page.mouse.click(x, y)
+            page.wait_for_timeout(100)
+            maxed_bond = page.evaluate(
+                """() => {
+                    const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
+                    return bond ? { order: bond.order, kind: bond.kind, origin: bond.origin || null } : null;
+                }"""
+            )
+            if maxed_bond != {'order': 4, 'kind': 'normal', 'origin': 'explicit'}:
+                raise AssertionError(f'Bond-center increment exceeded quadruple bound: {maxed_bond}')
+            for expected_order in (3, 2, 1):
+                page.mouse.click(x, y, button='right')
+                page.wait_for_function(
+                    """(expectedOrder) => {
+                        const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
+                        return !!bond && bond.order === expectedOrder && bond.kind === 'normal' && bond.origin === 'explicit';
+                    }""",
+                    arg=expected_order,
+                )
+            page.mouse.click(x, y, button='right')
+            page.wait_for_function(
+                """() => {
+                    const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
+                    return !!bond && bond.kind === 'blocked' && bond.origin === 'explicit';
+                }"""
+            )
+
+            # Bond editing popup smoke on a deterministic fixture.
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-popup-fixture")', fixture_text)
             page.locator('#modeEditBtn').click()
             ensure_advanced_drawer_open(page)
-            page.locator('#editAdaptiveBondBtn').click()
+            page.keyboard.press('b')
             x, y = canvas_point(page, 0.5, 0.5)
             page.mouse.click(x, y)
             page.wait_for_function("() => document.getElementById('bondOrderPopup')?.getAttribute('aria-hidden') === 'false'")
@@ -961,31 +1175,37 @@ def main() -> int:
                 """() => /Deleted bond C-C\\./i.test(document.getElementById('hint')?.textContent || '')"""
             )
 
-            # Clean Up Bonds preview/apply should only remove perceived bonds and warn on explicit ones.
-            cleanup_fixture_text = build_fixture_cleanup_structure()
-            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "cleanup-fixture")', cleanup_fixture_text)
+            # Clean structure should run the one-shot UFF cleanup action.
+            optimize_fixture_text = build_fixture_optimize_structure()
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "optimize-fixture")', optimize_fixture_text)
             page.locator('#modeEditBtn').click()
             ensure_advanced_drawer_open(page)
-            page.locator('#editAdaptiveBondBtn').click()
-            page.locator('#editBondCleanupStartBtn').click()
-            page.wait_for_function(
-                """() => /Add 1 .* Remove 1 perceived .* Warn 1 explicit/i.test(document.getElementById('editBondCleanupSummary')?.textContent || '')"""
-            )
-            page.locator('#editBondCleanupApplyBtn').click()
-            page.wait_for_function(
+            optimize_before = page.evaluate(
                 """() => {
-                    const bonds = window.VibeMolStructure.exportActive().volume.bonds || [];
-                    const pairs = bonds.map((bond) => [bond.a, bond.b].sort().join(':')).sort();
-                    const origins = Object.fromEntries(bonds.map((bond) => [[bond.a, bond.b].sort().join(':'), bond.origin]));
-                    return pairs.join('|') === 'atom-1:atom-2|atom-1:atom-3|atom-2:atom-3'
-                      && origins['atom-1:atom-2'] === 'perceived'
-                      && origins['atom-1:atom-3'] === 'explicit'
-                      && origins['atom-2:atom-3'] === 'perceived';
+                    const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
+                    if (atoms.length < 2) return null;
+                    const dx = (atoms[1].x || 0) - (atoms[0].x || 0);
+                    const dy = (atoms[1].y || 0) - (atoms[0].y || 0);
+                    const dz = (atoms[1].z || 0) - (atoms[0].z || 0);
+                    return Math.sqrt(dx * dx + dy * dy + dz * dz);
                 }"""
             )
+            page.locator('#editAdaptiveCleanStructureBtn').click()
             page.wait_for_function(
-                """() => /Applied bond cleanup:/i.test(document.getElementById('hint')?.textContent || '')"""
+                """() => /Optimized structure with UFF:/i.test(document.getElementById('hint')?.textContent || '')"""
             )
+            optimize_after = page.evaluate(
+                """() => {
+                    const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
+                    if (atoms.length < 2) return null;
+                    const dx = (atoms[1].x || 0) - (atoms[0].x || 0);
+                    const dy = (atoms[1].y || 0) - (atoms[0].y || 0);
+                    const dz = (atoms[1].z || 0) - (atoms[0].z || 0);
+                    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+                }"""
+            )
+            if not (optimize_after < optimize_before):
+                raise AssertionError(f'UFF optimize did not shorten the stretched bond: before={optimize_before}, after={optimize_after}')
 
             # Trajectory-mode bonds should be dynamic for rendering only.
             trajectory_xyz_text = build_fixture_trajectory_xyz()
@@ -1047,6 +1267,60 @@ def main() -> int:
             )
             if not isinstance(xyz_export, str) or '"kind"' in xyz_export or 'origin' in xyz_export or 'bond' in xyz_export.lower():
                 raise AssertionError(f'XYZ export was not plain XYZ text: {xyz_export!r}')
+
+            # The Atoms menu drives automatic local hydrogen adjustment for isolated single-atom adds.
+            page.locator('#newFileBtn').click()
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.locator('#editAdaptiveAddAtomBtn').click()
+            page.locator('#editAddAdjustHydrogens').check()
+            page.locator('#editAddQuick button[data-z="6"]').click()
+            page.locator('#editAddCoordination').select_option('linear')
+            before_adjust_ids = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return Array.isArray(exported.volume?.atoms)
+                      ? exported.volume.atoms.map((atom) => String(atom.id || ''))
+                      : [];
+                }"""
+            )
+            x, y = canvas_point(page, 0.76, 0.62)
+            page.mouse.click(x, y)
+            page.wait_for_function(
+                """(beforeIds) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const atomIdSet = new Set(Array.isArray(beforeIds) ? beforeIds.map((value) => String(value || '')) : []);
+                    return atoms.some((atom) => !atomIdSet.has(String(atom.id || '')) && Number(atom.Z) !== 1);
+                }""",
+                arg=before_adjust_ids,
+            )
+            page.wait_for_timeout(500)
+            auto_adjust_summary = page.evaluate(
+                """(beforeIds) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const atomIdSet = new Set(Array.isArray(beforeIds) ? beforeIds.map((value) => String(value || '')) : []);
+                    const newHeavy = atoms.filter((atom) => !atomIdSet.has(String(atom.id || '')) && Number(atom.Z) !== 1);
+                    const newHydrogenCount = atoms.filter((atom) => !atomIdSet.has(String(atom.id || '')) && Number(atom.Z) === 1).length;
+                    const byAtomId = exported.volume?.annotations?.coordination?.byAtomId || {};
+                    const heavyId = newHeavy[0] && newHeavy[0].id != null ? String(newHeavy[0].id) : '';
+                    return {
+                        atomCount: atoms.length,
+                        newHeavyCount: newHeavy.length,
+                        newHydrogenCount,
+                        heavyCoordination: heavyId ? (byAtomId[heavyId]?.geometryId || '') : '',
+                    };
+                }""",
+                before_adjust_ids,
+            )
+            if auto_adjust_summary != {
+                'atomCount': 3,
+                'newHeavyCount': 1,
+                'newHydrogenCount': 2,
+                'heavyCoordination': 'linear',
+            }:
+                raise AssertionError(f'Auto hydrogen adjustment did not follow the Atoms menu settings: {auto_adjust_summary}')
 
             assert_no_runtime_errors(page_errors, console_errors)
             browser.close()

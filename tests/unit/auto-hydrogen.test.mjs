@@ -100,6 +100,31 @@ test('auto-hydrogen treats alcohol oxygen as tetrahedral electron geometry and a
   assert.ok(result.hydrogen.direction[0] < 0.2, 'expected alcohol hydrogen not to be collinear with the existing bond');
 });
 
+test('auto-hydrogen honors an explicit coordination geometry override when planning hydrogens', () => {
+  const context = loadAutoHydrogen();
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const plan = window.VibeMolAutoHydrogen.buildAutoHydrogenPlan({
+      atoms: [
+        { id: 'c', Z: 6, x: 0, y: 0, z: 0 },
+      ],
+      bonds: [],
+    }, {
+      focusAtomIndices: [0],
+      resolveGeometry: (_atom, _env, _rule, fallbackGeometry) => {
+        return { geometryKey: 'linear', siteCount: 2, targetBondCount: 2, fallback: fallbackGeometry && fallbackGeometry.geometryKey };
+      },
+    });
+    return {
+      hydrogenCount: plan.stats.hydrogenCount,
+      parent: plan.parents[0],
+    };
+  })())`));
+
+  assert.equal(result.hydrogenCount, 2);
+  assert.equal(result.parent.geometryKey, 'linear');
+  assert.equal(result.parent.targetBondCount, 2);
+});
+
 test('auto-hydrogen skips unsupported atoms and reports scope-sensitive summaries', () => {
   const context = loadAutoHydrogen();
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {

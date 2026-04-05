@@ -173,6 +173,29 @@
   }
 
   /**
+   * Return the coordination-annotation map for one volume.
+   * @param {*} vol
+   * @param {boolean=} create
+   * @returns {Record<string, {geometryId?:string}>|null}
+   */
+  function getCoordinationAnnotationsMap(vol, create = true) {
+    if (!vol || typeof vol !== 'object') return null;
+    if (!isPlainObject(vol.annotations)) {
+      if (!create) return null;
+      vol.annotations = {};
+    }
+    if (!isPlainObject(vol.annotations.coordination)) {
+      if (!create) return null;
+      vol.annotations.coordination = {};
+    }
+    if (!isPlainObject(vol.annotations.coordination.byAtomId)) {
+      if (!create) return null;
+      vol.annotations.coordination.byAtomId = {};
+    }
+    return vol.annotations.coordination.byAtomId;
+  }
+
+  /**
    * Normalize one atom to the minimal incremental schema.
    * @param {*} raw
    * @returns {{id:string,Z:number,x:number,y:number,z:number,formalCharge:number}}
@@ -264,6 +287,40 @@
   }
 
   /**
+   * Read one atom coordination override from annotations.
+   * @param {*} vol
+   * @param {*=} atomOrIndex
+   * @returns {{geometryId:string}}
+   */
+  function getAtomCoordinationMeta(vol, atomOrIndex) {
+    const atomId = resolveVolumeAtomId(vol, atomOrIndex);
+    const map = getCoordinationAnnotationsMap(vol, false);
+    const stored = (map && atomId && isPlainObject(map[atomId])) ? map[atomId] : null;
+    const geometryId = String((stored && stored.geometryId) || '').trim();
+    return { geometryId };
+  }
+
+  /**
+   * Apply one atom coordination override via annotations.
+   * @param {*} vol
+   * @param {*=} atomOrIndex
+   * @param {{geometryId?:string|null}=} meta
+   */
+  function setAtomCoordinationMeta(vol, atomOrIndex, meta = {}) {
+    const atomId = resolveVolumeAtomId(vol, atomOrIndex);
+    if (!atomId) return;
+    const map = getCoordinationAnnotationsMap(vol, true);
+    if (!map) return;
+    const prev = getAtomCoordinationMeta(vol, atomOrIndex);
+    const geometryId = meta.geometryId == null ? prev.geometryId : String(meta.geometryId || '').trim();
+    if (!geometryId) {
+      delete map[atomId];
+      return;
+    }
+    map[atomId] = { geometryId };
+  }
+
+  /**
    * Migrate any legacy atom-level builder metadata into annotations.
    * @param {*} vol
    */
@@ -281,6 +338,56 @@
       delete atom.builderEntryId;
       delete atom.builderEntryKind;
     }
+  }
+
+  /**
+   * Prune atom-indexed annotation namespaces against live atom ids.
+   * @param {*} vol
+   */
+  function pruneVolumeAtomAnnotations(vol, options = {}) {
+    if (!vol || !Array.isArray(vol.atoms)) return;
+    ensureVolumeAtomIds(vol);
+    const liveIds = new Set(vol.atoms.map((atom) => String(ensureAtomId(atom))));
+    const builderMap = getBuilderAnnotationsMap(vol, true);
+    const coordinationMap = getCoordinationAnnotationsMap(vol, true);
+    const isCoordinationMetaCompatible = typeof options.isCoordinationMetaCompatible === 'function'
+      ? options.isCoordinationMetaCompatible
+      : null;
+    for (const atomId of Object.keys(builderMap || {})) {
+      if (!liveIds.has(atomId)) delete builderMap[atomId];
+    }
+    for (const atomId of Object.keys(coordinationMap || {})) {
+      if (!liveIds.has(atomId)) {
+        delete coordinationMap[atomId];
+        continue;
+      }
+      if (isCoordinationMetaCompatible && !isCoordinationMetaCompatible(atomId, coordinationMap[atomId])) {
+        delete coordinationMap[atomId];
+      }
+    }
+  }
+
+  /**
+   * Deep-copy one volume annotations object for history/transport snapshots.
+   * @param {*} vol
+   * @returns {{builder:{byAtomId:object},coordination:{byAtomId:object}}}
+   */
+  function cloneVolumeAnnotationsSnapshot(vol) {
+    if (!vol || typeof vol !== 'object') {
+      return {
+        builder: { byAtomId: {} },
+        coordination: { byAtomId: {} },
+      };
+    }
+    getBuilderAnnotationsMap(vol, true);
+    getCoordinationAnnotationsMap(vol, true);
+    pruneVolumeAtomAnnotations(vol);
+    const snapshot = cloneJsonLike(vol.annotations) || {};
+    if (!isPlainObject(snapshot.builder)) snapshot.builder = {};
+    if (!isPlainObject(snapshot.builder.byAtomId)) snapshot.builder.byAtomId = {};
+    if (!isPlainObject(snapshot.coordination)) snapshot.coordination = {};
+    if (!isPlainObject(snapshot.coordination.byAtomId)) snapshot.coordination.byAtomId = {};
+    return snapshot;
   }
 
   /**
@@ -363,6 +470,8 @@
       vol.natoms = 0;
     }
     getBuilderAnnotationsMap(vol, true);
+    getCoordinationAnnotationsMap(vol, true);
+    pruneVolumeAtomAnnotations(vol, options.pruneAtomAnnotations || {});
     if (!Array.isArray(vol.fragmentOps)) vol.fragmentOps = [];
     if (typeof options.rehydrateBuilderState === 'function') {
       options.rehydrateBuilderState(vol);
@@ -591,6 +700,7 @@
       return {
         atom,
         builderMeta: getAtomBuilderMeta(vol, sourceAtom),
+        coordinationMeta: getAtomCoordinationMeta(vol, sourceAtom),
       };
     });
     const bonds = cloneBondSnapshot(vol)
@@ -640,6 +750,7 @@
       atomIndices.push(vol.atoms.length - 1);
       atomIds.push(ensureAtomId(atom));
       const meta = entry.builderMeta && typeof entry.builderMeta === 'object' ? entry.builderMeta : {};
+      const coordinationMeta = entry.coordinationMeta && typeof entry.coordinationMeta === 'object' ? entry.coordinationMeta : {};
       const sourceGroupId = String(meta.groupId || '').trim();
       let groupId = '';
       if (sourceGroupId) {
@@ -653,6 +764,9 @@
         groupId,
         entryId: String(meta.entryId || '').trim().toLowerCase(),
         entryKind: String(meta.entryKind || '').trim().toLowerCase(),
+      });
+      setAtomCoordinationMeta(vol, atom, {
+        geometryId: String(coordinationMeta.geometryId || '').trim(),
       });
     }
     let bondCount = 0;
@@ -688,11 +802,16 @@
     ensureAtomId,
     ensureVolumeAtomIds,
     getBuilderAnnotationsMap,
+    getCoordinationAnnotationsMap,
     normalizeVolumeAtom,
     resolveVolumeAtomId,
     getAtomBuilderMeta,
     setAtomBuilderMeta,
+    getAtomCoordinationMeta,
+    setAtomCoordinationMeta,
     migrateLegacyBuilderAnnotations,
+    pruneVolumeAtomAnnotations,
+    cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,

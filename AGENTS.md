@@ -40,6 +40,10 @@ Primary capabilities:
 - `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate and marching-cubes isosurface helpers.
 - `assets/app/js/volume-2c.js`: 2C phase and Bloch-colored isosurface builders.
 - `assets/app/js/bond-inference.js`: covalent bond candidate generation, bond-order inference, and aromatic six-ring detection helpers.
+- `assets/app/js/coordination.js`: coordination-geometry catalog and element-aware coordination choice menus.
+- `assets/app/js/geometry-inference.js`: bond-order-driven main-group geometry inference plus transition-metal coordination defaults.
+- `assets/app/js/uff.js`: standalone UFF force-field implementation plus local energy/gradient helpers.
+- `assets/app/js/uff-adapter.js`: thin adapter from VibeMol editable volumes into full/local UFF system contexts.
 - `assets/app/js/auto-hydrogen.js`: auto-hydrogen planning heuristics and edit-mode hydrogenation controller.
 - `assets/app/js/autoiso.js`: auto-iso estimation, cache, and worker orchestration controller.
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders.
@@ -53,7 +57,7 @@ Primary capabilities:
 - `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover state, visibility, and picking helpers.
 - `assets/app/js/edit-transform.js`: shared move/rotate transform-session state, operator-panel application, and pointer-routing controller.
 - `assets/app/js/edit-gestures.js`: gesture-first edit interaction controller and gesture-HUD state coordinator.
-- `assets/app/js/edit-halo.js`: chemistry-aware context halo controller for gesture mode (hover/selection activation, ghost directions, and element ring state).
+- `assets/app/js/edit-halo.js`: chemistry-aware context halo controller for gesture mode (hover/selection activation, coordination labels, and ghost directions).
 - `assets/fragments/library.json`: external fragment/molecule catalog manifest.
 - `assets/fragments/*.xyz`: fragment geometry sources using linker-at-origin / +Z bond-vector convention.
 - `assets/fragments/WORKFLOW.md`: fragment authoring workflow and conventions.
@@ -104,11 +108,15 @@ Required script order in `index.html`:
 26. `assets/app/js/edit-gizmos.js`
 27. `assets/app/js/edit-transform.js`
 28. `assets/app/js/edit-gestures.js`
-29. `assets/app/js/edit-halo.js`
-30. `assets/app/js/preset.js`
-31. `assets/app/js/structure-transport.js`
-32. `assets/app/js/file-loader.js`
-33. `assets/app/js/app.js`
+29. `assets/app/js/coordination.js`
+30. `assets/app/js/geometry-inference.js`
+31. `assets/app/js/uff.js`
+32. `assets/app/js/uff-adapter.js`
+33. `assets/app/js/edit-halo.js`
+34. `assets/app/js/preset.js`
+35. `assets/app/js/structure-transport.js`
+36. `assets/app/js/file-loader.js`
+37. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -125,6 +133,9 @@ Required script order in `index.html`:
 - `window.VibeMolVolumeGeometry`
 - `window.VibeMolVolume2C`
 - `window.VibeMolBondInference`
+- `window.VibeMolCoordination`
+- `window.VibeMolGeometryInference`
+- `window.VibeMolUFFAdapter`
 - `window.VibeMolAutoHydrogen`
 - `window.VibeMolAutoIso`
 - `window.VibeMolCloudRendering`
@@ -208,15 +219,19 @@ Preset automation contract exposed globally:
 
 ## Edit / Builder UX Status
 Implemented:
-- Edit mode opens in gesture-first editing by default; the adaptive floating menu now serves as an `Advanced` drawer for legacy tools and popovers.
-- Edit tools currently include `Selection`, `Move`, `Rotate`, `Add`, `Bond`, `Transform`, and `Delete`.
-- The primary edit HUD shows the loaded element, current gesture hint, move-scope summary, a pending bond-order pill during grow/bond drags, and an `Advanced` toggle.
+- Edit mode opens in gesture-first editing by default; the legacy adaptive tool window remains visible as the advanced/fallback surface.
+- Edit tools currently include `Selection`, `Move`, `Rotate`, `Add`, `Bond`, and `Transform`; atom deletion is handled directly by `Delete` / `Backspace`.
+- The primary gesture HUD shows the current hint, move-scope summary, and a pending bond-order pill during grow/bond drags.
+- A compact `Atoms` menu is shown by default in gesture mode and remains the source of truth for the currently loaded element.
+- The `Atoms` menu also exposes an element-specific coordination selector plus an `Adjust hydrogens` toggle for new single-atom adds.
 - Layer 2 context halo is active in gesture mode:
   - selecting one atom shows a chemistry-aware halo immediately
   - hovering one atom while idle for ~300 ms shows the same halo
-  - open main-group atoms show grow ghosts based on local geometry/valence
+  - main-group halo geometry is derived from explicit bond orders via `bond order -> lone pairs -> steric number -> VSEPR parent geometry`
+  - open main-group atoms show grow ghosts on the remaining bondable parent-geometry sites
   - transition metals show first-pass coordination ghosts
-  - the outer halo ring changes the loaded element only
+  - floating coordination labels set a forward-looking preferred parent geometry for incomplete atoms
+  - clicking a ghost places the currently loaded element from the `Atoms` menu at that exact site
 - Gesture-first editing currently supports:
   - click void to place the loaded element when nothing is selected, or clear selection when atoms are selected
   - click atom to select it
@@ -235,16 +250,18 @@ Implemented:
 - Hold `Shift` during add-grow placement to bypass angle snap.
 - Add mode includes `Atom`, `Fragment`, and `Molecule` submodes.
 - Add atom uses a right-side last-operation operator panel with live XYZ editing plus `Enter` confirm / `Esc` cancel.
+- When `Adjust hydrogens` is enabled, committed single-atom adds perform local hydrogen adjustment automatically and respect the active coordination choice for the newly added atom.
 - Fragment insertion uses the shared fragment catalog and supports starter-group attach flows (for example methyl and hydroxyl geometry overrides).
 - Standalone molecules can be placed by click/drag/click with quaternion rotation around the preview COM.
 - Standalone molecule placement includes a right-side operator panel with live XYZ/rotation editing and axis-align actions.
 - Transform mode is the advanced bond-aware rotation tool: it supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Direct delete via current selection or hovered atom (`Backspace`/`Delete`) is active.
-- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`), supports right-click delete, and includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds.
+- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`), supports right-click delete, includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds, and offers `Optimize Structure` for one whole-structure UFF coordinate cleanup pass.
 - Structures now persist explicit/perceived/suppressed `vol.bonds` with `{ id, a, b, order, kind, origin }`, where `kind: 'blocked'` records user-suppressed pairs that must not be auto-perceived back into existence.
+- `vol.annotations.coordination.byAtomId[atomId].geometryId` is a preferred coordination target for incomplete atoms, not authoritative stored hybridization.
 - `Save Structure` exports the active editable record as a reproducible `vibemol.structure` JSON document.
-- `tests/e2e/smoke.py` is the required automated regression check for edit-mode flow changes (adaptive menu, selection, move/rotate gizmos, add-atom/add-molecule operators, structure round-trip, bond popup editing, cleanup preview/apply, and trajectory dynamic-bond behavior).
+- `tests/e2e/smoke.py` is the required automated regression check for edit-mode flow changes (adaptive menu, selection, move/rotate gizmos, add-atom/add-molecule operators, structure round-trip, bond popup editing, cleanup preview/apply, UFF structure optimization, and trajectory dynamic-bond behavior).
 - Atom labels and atom numbers can be toggled independently.
 - New untitled editable files can be created from the toolbar and duplicated/removed from the active-file control area.
 - Coordinates-window rows mirror atom hover, and the table supports inline editing of atom order, element symbol/atomic number, and Cartesian coordinates with validation.
@@ -393,7 +410,7 @@ After non-trivial changes:
 10. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels plus undo/redo and `Esc` cancel for molecule placement.
 11. In edit mode, press `Space` once on a simple unsaturated structure and verify ghost hydrogens appear without mutating the structure; press `Space` again and verify the hydrogens are added with one undoable history entry.
 12. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, and undo behavior on a selected atom set.
-13. In edit mode, test the bond tool: atom-to-atom create, clicked-bond popup `1–4,0`, and right-click bond delete.
+13. In edit mode, test the bond tool: atom-to-atom create, clicked-bond popup `1–4,0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.
 14. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders survive round-trip.
 15. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, and inline coordinate edits.
 16. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.

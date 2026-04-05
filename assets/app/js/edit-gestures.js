@@ -11,6 +11,7 @@
     const clearSelection = typeof options.clearSelection === 'function' ? options.clearSelection : (() => false);
     const pickAtomObject = typeof options.pickAtomObject === 'function' ? options.pickAtomObject : (() => null);
     const pickBondHit = typeof options.pickBondHit === 'function' ? options.pickBondHit : (() => null);
+    const applyBondCenterClick = typeof options.applyBondCenterClick === 'function' ? options.applyBondCenterClick : (() => false);
     const showVoidPlacementPreview = typeof options.showVoidPlacementPreview === 'function' ? options.showVoidPlacementPreview : (() => false);
     const hideVoidPlacementPreview = typeof options.hideVoidPlacementPreview === 'function' ? options.hideVoidPlacementPreview : (() => {});
     const placeVoidAtom = typeof options.placeVoidAtom === 'function' ? options.placeVoidAtom : (() => null);
@@ -45,6 +46,7 @@
       press: null,
       hoverAtomIndex: -1,
       hoverBondHit: null,
+      lastCenterBondHover: null,
       voidPreviewVisible: false,
       currentMoveScopeLabel: 'No selection',
       currentMoveScopeIndices: [],
@@ -122,12 +124,16 @@
       } else if (state.gestureState === 'box-select-drag') {
         hint = 'Dragging selection box';
         scope = 'Selecting atoms in box';
+      } else if (state.hoverBondHit && state.hoverBondHit.section === 'center') {
+        hint = 'Left click raises bond order • Right click lowers bond order';
+        scope = 'Bond midpoint';
+      } else if (state.hoverBondHit && (state.hoverBondHit.section === 'nearA' || state.hoverBondHit.section === 'nearB')) {
+        hint = 'Click bond side to select fragment • Drag left/right to rotate around bond axis • Shift-drag for free 3D bond rotation';
+        scope = 'Bond side';
       } else if (selection.length === 1) {
         if (state.currentMoveScopeLabel) scope = state.currentMoveScopeLabel;
         if (state.hoverAtomIndex >= 0 && state.hoverAtomIndex === selection[0]) {
           hint = 'Drag selected atom to move • Alt drags only that atom';
-        } else if (state.hoverBondHit) {
-          hint = 'Shift-drag bond to move the downstream side';
         } else if (state.hoverAtomIndex >= 0) {
           hint = 'Click atom to select • Drag unselected atom to grow bond';
         } else {
@@ -137,8 +143,6 @@
         hint = 'Drag any selected atom to move the current selection';
       } else if (state.hoverAtomIndex >= 0) {
         hint = 'Click atom to select • Drag atom into void to grow bond';
-      } else if (state.hoverBondHit) {
-        hint = 'Shift-drag bond to move the downstream side';
       } else if (state.voidPreviewVisible) {
         hint = `Click void to place ${getLoadedElementSymbol()}`;
       }
@@ -158,10 +162,54 @@
       onUiStateChanged(buildUiState());
     }
 
+    function updateLastCenterBondHover(e, bondHit) {
+      const clientX = Number(e && e.clientX);
+      const clientY = Number(e && e.clientY);
+      if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return;
+      if (bondHit && bondHit.object && bondHit.section === 'center') {
+        state.lastCenterBondHover = {
+          bondHit,
+          clientX,
+          clientY,
+        };
+        return;
+      }
+      if (!state.lastCenterBondHover) return;
+      const dx = clientX - state.lastCenterBondHover.clientX;
+      const dy = clientY - state.lastCenterBondHover.clientY;
+      if ((dx * dx + dy * dy) > (18 * 18)) state.lastCenterBondHover = null;
+    }
+
+    function getStickyCenterBondHit(e) {
+      if (!state.lastCenterBondHover) return null;
+      const clientX = Number(e && e.clientX);
+      const clientY = Number(e && e.clientY);
+      if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+      const dx = clientX - state.lastCenterBondHover.clientX;
+      const dy = clientY - state.lastCenterBondHover.clientY;
+      if ((dx * dx + dy * dy) > (18 * 18)) return null;
+      const hit = state.lastCenterBondHover.bondHit;
+      return hit && hit.object && hit.section === 'center' ? hit : null;
+    }
+
+    function resolveBondCenterClickHit(e) {
+      const hoveredCenterBondHit = state.hoverBondHit && state.hoverBondHit.object && state.hoverBondHit.section === 'center'
+        ? state.hoverBondHit
+        : null;
+      if (hoveredCenterBondHit) return hoveredCenterBondHit;
+      const stickyCenterBondHit = getStickyCenterBondHit(e);
+      if (stickyCenterBondHit) return stickyCenterBondHit;
+      const pickedBondHit = pickBondHit(e);
+      return pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center'
+        ? pickedBondHit
+        : null;
+    }
+
     function updateIdleHover(e) {
       if (!isEnabled()) {
         state.hoverAtomIndex = -1;
         state.hoverBondHit = null;
+        state.lastCenterBondHover = null;
         state.voidPreviewVisible = false;
         state.currentMoveScopeIndices = [];
         state.currentMoveScopeLabel = 'No selection';
@@ -175,6 +223,7 @@
       const bondHit = atomIndex < 0 ? pickBondHit(e) : null;
       state.hoverAtomIndex = atomIndex;
       state.hoverBondHit = bondHit || null;
+      updateLastCenterBondHover(e, bondHit || null);
       if (!selection.length && atomIndex < 0 && !bondHit) {
         state.voidPreviewVisible = !!showVoidPlacementPreview(e);
       } else {
@@ -192,6 +241,7 @@
       state.activePointerId = null;
       state.bondTargetIndex = -1;
       state.voidPreviewVisible = false;
+      state.lastCenterBondHover = null;
       state.currentMoveScopeIndices = [];
       state.currentMoveScopeLabel = 'No selection';
       clearLastAtomClick();
@@ -217,6 +267,13 @@
 
     function maybeBeginDrag(e) {
       if (!state.press || !movementExceeded(e)) return false;
+      if (state.press.kind === 'bond-center-click') {
+        state.press = null;
+        if (state.activePointerId != null) releasePointer(state.activePointerId);
+        state.activePointerId = null;
+        updateIdleHover(e);
+        return false;
+      }
       if (state.press.kind === 'selected-atom') {
         const haloAction = getSelectedAtomDragAction(state.press.atomIndex, e);
         if (haloAction && haloAction.type === 'grow') {
@@ -285,8 +342,25 @@
       if (!isEnabled() || !e || e.button !== 0) return false;
       state.press = null;
       state.activePointerId = e.pointerId;
+      const centerBondHit = resolveBondCenterClickHit(e);
+      if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
+        state.press = {
+          kind: 'bond-center-click',
+          clientX: Number(e.clientX) || 0,
+          clientY: Number(e.clientY) || 0,
+          pointerId: e.pointerId,
+          bondHit: centerBondHit,
+        };
+        state.hoverAtomIndex = -1;
+        state.hoverBondHit = centerBondHit;
+        state.voidPreviewVisible = false;
+        hideVoidPlacementPreview();
+        capturePointer(e.pointerId);
+        notifyUi();
+        return true;
+      }
       const selection = Array.isArray(getSelection()) ? getSelection() : [];
-      const bondHit = !!e.shiftKey ? pickBondHit(e) : null;
+      const bondHit = !!e.shiftKey ? (centerBondHit || pickBondHit(e)) : null;
       if (bondHit && bondHit.object) {
         state.press = {
           kind: 'bond-downstream',
@@ -421,6 +495,9 @@
           clearLastAtomClick();
         } else if (press.altKey) setSelection([press.atomIndex]);
         else recordAtomClick(press.atomIndex, e);
+      } else if (press.kind === 'bond-center-click') {
+        clearLastAtomClick();
+        applyBondCenterClick(press.bondHit, e);
       } else if (press.kind === 'void-clear') {
         clearLastAtomClick();
         if (clearSelection()) setHintMessage('Selection cleared.');
@@ -466,6 +543,12 @@
       return buildUiState();
     }
 
+    function getHoverBondHit() {
+      return state.hoverBondHit && state.hoverBondHit.object
+        ? { ...state.hoverBondHit }
+        : null;
+    }
+
     function refreshUi() {
       syncSelectionScope();
       notifyUi();
@@ -483,6 +566,8 @@
       handleBondOrderKey,
       startGrowDragFromHalo,
       getHighlightIndices,
+      getHoverBondHit,
+      resolveBondCenterClickHit,
       getUiState,
       refreshUi,
     });

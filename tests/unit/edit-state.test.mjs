@@ -31,7 +31,7 @@ function createEditStateHarness() {
     bondSnapshotsEqual: structure.bondSnapshotsEqual,
     atomsSnapshotsEqual: (a, b) => JSON.stringify(a) === JSON.stringify(b),
     coordinateSnapshotsEqual: (a, b) => JSON.stringify(a) === JSON.stringify(b),
-    createAtomSnapshotCommand: ({ record, before, after, beforeFragmentOps, afterFragmentOps, beforeBonds, afterBonds, label, at }) => ({
+    createAtomSnapshotCommand: ({ record, before, after, beforeFragmentOps, afterFragmentOps, beforeBonds, afterBonds, beforeAnnotations, afterAnnotations, label, at }) => ({
       type: 'atom_snapshot',
       record,
       before,
@@ -40,13 +40,15 @@ function createEditStateHarness() {
       afterFragmentOps,
       beforeBonds,
       afterBonds,
+      beforeAnnotations,
+      afterAnnotations,
       label,
       at,
       undo({ applyAtomsSnapshotToRecord }) {
-        return applyAtomsSnapshotToRecord(record, before, beforeFragmentOps, beforeBonds);
+        return applyAtomsSnapshotToRecord(record, before, beforeFragmentOps, beforeBonds, beforeAnnotations);
       },
       redo({ applyAtomsSnapshotToRecord }) {
-        return applyAtomsSnapshotToRecord(record, after, afterFragmentOps, afterBonds);
+        return applyAtomsSnapshotToRecord(record, after, afterFragmentOps, afterBonds, afterAnnotations);
       },
     }),
     pruneBuilderOperationsForVolume: () => {},
@@ -73,7 +75,7 @@ test('edit-state bootstraps an empty editable record', () => {
   assert.equal(record.vol.natoms, 0);
   assert.deepEqual(plain(record.vol.atoms), []);
   assert.deepEqual(plain(record.vol.bonds), []);
-  assert.deepEqual(plain(record.vol.annotations), { builder: { byAtomId: {} } });
+  assert.deepEqual(plain(record.vol.annotations), { builder: { byAtomId: {} }, coordination: { byAtomId: {} } });
 });
 
 test('edit-state undo and redo preserve atom and bond snapshots', () => {

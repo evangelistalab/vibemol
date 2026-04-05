@@ -9,6 +9,7 @@ function createHarness(options = {}) {
   let pendingBondOrder = Number.isFinite(options.pendingBondOrder) ? Number(options.pendingBondOrder) : 1;
   const calls = {
     selectionClicks: [],
+    bondCenterClicks: [],
     setSelection: [],
     clearSelection: 0,
     startBoxSelection: [],
@@ -73,6 +74,10 @@ function createHarness(options = {}) {
     },
     pickAtomObject: (e) => Number.isInteger(e && e.atomIndex) ? { userData: { index: e.atomIndex | 0 } } : null,
     pickBondHit: (e) => (e && e.bondHit) || null,
+    applyBondCenterClick: (bondHit) => {
+      calls.bondCenterClicks.push(bondHit);
+      return true;
+    },
     showVoidPlacementPreview: () => {
       calls.showVoidPreview += 1;
       return true;
@@ -247,6 +252,19 @@ test('edit-gestures single-click on atom selects only that atom', () => {
   assert.deepEqual(calls.selectionClicks, [{ atomIndex: 2, additive: false }]);
   assert.deepEqual(calls.resolveMoleculeSelection, []);
   assert.deepEqual(getSelection(), [2]);
+});
+
+test('edit-gestures left click on bond center-third dispatches one bond-order raise action', () => {
+  const { controller, calls, getSelection } = createHarness({ selection: [4] });
+
+  controller.handlePointerDown(pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'center' } }));
+  controller.handlePointerUp(pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'center' } }));
+
+  assert.equal(calls.bondCenterClicks.length, 1);
+  assert.equal(calls.bondCenterClicks[0]?.section, 'center');
+  assert.deepEqual(getSelection(), [4]);
+  assert.equal(calls.selectionClicks.length, 0);
+  assert.equal(calls.placeVoidAtom, 0);
 });
 
 test('edit-gestures double-click on atom selects the whole molecular component', () => {

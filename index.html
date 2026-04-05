@@ -2730,35 +2730,19 @@
     <canvas id="phaseWheelCanvas" width="96" height="120" style="width:100%; height:100%;"></canvas>
   </div>
   <div id="editGestureHud" aria-hidden="true">
-    <button id="editGestureElementChip" type="button" title="Loaded element">
-      <span id="editGestureElementChipSymbol">C</span>
-      <span id="editGestureElementChipLabel">Loaded</span>
-    </button>
     <div id="editGestureHudBody">
       <div id="editGestureHint">Click void to place C • Click atom to select</div>
       <div id="editGestureScope">No selection</div>
     </div>
     <div id="editGestureHudActions">
       <div id="editGestureBondOrderPill" aria-hidden="true">Bond 1</div>
-      <button id="editGestureAdvancedBtn" type="button" title="Show advanced edit tools">Advanced</button>
     </div>
   </div>
   <div id="editAdaptiveMenu" aria-hidden="true">
     <div id="editAdaptiveMenuHeader">
-      <span id="editAdaptiveMenuTitle">Advanced</span>
-      <span id="editAdaptiveMenuSubtitle">Legacy tools and popovers</span>
+      <span id="editAdaptiveMenuTitle">Tools</span>
+      <span id="editAdaptiveMenuSubtitle">Atom manipulation active</span>
     </div>
-    <button id="editAdaptiveSelectionBtn" class="adaptiveEditItem" type="button" title="Selection tool">
-      <span class="adaptiveEditItemBody">
-        <span class="adaptiveEditItemTitleRow">
-          <span class="adaptiveEditItemLabel">Selection</span>
-        </span>
-        <span id="editAdaptiveSelectionMeta" class="adaptiveEditItemMeta">Click atoms to build a selection</span>
-      </span>
-      <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">S</span>
-      </span>
-    </button>
     <button id="editAdaptiveMoveBtn" class="adaptiveEditItem" type="button" title="Move tool">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
@@ -2767,7 +2751,7 @@
         <span class="adaptiveEditItemMeta">Drag selection or grab axis arrows</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">G</span>
+        <span class="adaptiveShortcutKey">T</span>
       </span>
     </button>
     <button id="editAdaptiveRotateBtn" class="adaptiveEditItem" type="button" title="Rotate tool">
@@ -2778,15 +2762,15 @@
         <span id="editAdaptiveRotateMeta" class="adaptiveEditItemMeta">Grab axis rings or drag selection</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">O</span>
+        <span class="adaptiveShortcutKey">E</span>
       </span>
     </button>
-    <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem" type="button" title="Add atom tool">
+    <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem" type="button" title="Atom manipulation">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
-          <span class="adaptiveEditItemLabel">Add atom</span>
+          <span class="adaptiveEditItemLabel">Atom manipulation</span>
         </span>
-        <span id="editAdaptiveAddAtomMeta" class="adaptiveEditItemMeta">Choose element and click to place</span>
+        <span id="editAdaptiveAddAtomMeta" class="adaptiveEditItemMeta">C • click void to add • click atom to select</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">N</span>
@@ -2797,7 +2781,7 @@
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Add fragment</span>
         </span>
-        <span id="editAdaptiveAddFragmentMeta" class="adaptiveEditItemMeta">Choose fragment and attach policy</span>
+        <span id="editAdaptiveAddFragmentMeta" class="adaptiveEditItemMeta">Choose fragment • choose attach policy</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">F</span>
@@ -2808,41 +2792,46 @@
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Add molecule</span>
         </span>
-        <span id="editAdaptiveAddMoleculeMeta" class="adaptiveEditItemMeta">Choose standalone molecule to place</span>
+        <span id="editAdaptiveAddMoleculeMeta" class="adaptiveEditItemMeta">Choose molecule • click to place</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">M</span>
       </span>
     </button>
-    <button id="editAdaptiveBondBtn" class="adaptiveEditItem" type="button" title="Bond tool">
+    <button id="editAdaptiveCleanStructureBtn" class="adaptiveEditItem" type="button" title="Clean structure">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
-          <span class="adaptiveEditItemLabel">Bond</span>
+          <span class="adaptiveEditItemLabel">Clean structure</span>
         </span>
-        <span id="editAdaptiveBondMeta" class="adaptiveEditItemMeta">Set, update, or delete explicit bonds</span>
+        <span id="editAdaptiveCleanStructureMeta" class="adaptiveEditItemMeta">One-time UFF optimization</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">B</span>
+        <span class="adaptiveShortcutKey">O</span>
       </span>
     </button>
-    <button id="editAdaptiveTransformBtn" class="adaptiveEditItem" type="button" title="Transform tool">
+    <button id="editAdaptiveShiftComBtn" class="adaptiveEditItem" type="button" title="Shift to center of mass">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
-          <span class="adaptiveEditItemLabel">Transform</span>
+          <span class="adaptiveEditItemLabel">Shift to center of mass</span>
         </span>
-        <span id="editAdaptiveTransformMeta" class="adaptiveEditItemMeta">Move or rotate fragment and molecule
-          selections</span>
+        <span id="editAdaptiveShiftComMeta" class="adaptiveEditItemMeta">Move active molecule center of mass to the origin</span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">T</span>
+        <span class="adaptiveShortcutKey">R</span>
+      </span>
+    </button>
+    <button id="editAdaptiveAlignPrincipalBtn" class="adaptiveEditItem" type="button" title="Align principal">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Align principal</span>
+        </span>
+        <span id="editAdaptiveAlignPrincipalMeta" class="adaptiveEditItemMeta">Align principal inertia axes to X, Y, and Z</span>
       </span>
     </button>
   </div>
   <div id="editAdaptiveAddAtomPopover" aria-hidden="true"></div>
   <div id="editAdaptiveAddFragmentPopover" aria-hidden="true"></div>
   <div id="editAdaptiveAddMoleculePopover" aria-hidden="true"></div>
-  <div id="editAdaptiveBondPopover" aria-hidden="true"></div>
-  <div id="editAdaptiveTransformPopover" aria-hidden="true"></div>
   <div id="editHaloLayer" aria-hidden="true"></div>
   <div id="editSelectionMarquee" aria-hidden="true"></div>
   <div id="bondOrderPopup" aria-hidden="true">
@@ -2859,7 +2848,7 @@
     <button id="editAddAtomOperatorHeader" type="button" aria-expanded="false">
       <span class="editAddAtomOperatorTitle">
         <span id="editAddAtomOperatorChevron" class="editAddAtomOperatorChevron">▸</span>
-        <span id="editAddAtomOperatorLabel" class="editAddAtomOperatorLabel">Add Atom</span>
+        <span id="editAddAtomOperatorLabel" class="editAddAtomOperatorLabel">Atom manipulation</span>
       </span>
     </button>
     <div id="editAddAtomOperatorBody">
@@ -2949,7 +2938,7 @@
   <div id="editToolbox" aria-hidden="true">
     <div id="editToolHeader">
       <span>Edit Tool</span>
-      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">S select • G move • N add • B bond • T transform • D
+      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">S select • T move • E rotate • N add • B bond • D
         delete</span>
     </div>
     <div id="editToolButtons">
@@ -2957,8 +2946,6 @@
       <button id="editToolMoveBtn" type="button" class="active" title="Move atoms in edit mode">Move</button>
       <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add</button>
       <button id="editToolBondBtn" type="button" title="Edit explicit bonds in edit mode">Bond</button>
-      <button id="editToolTransformBtn" type="button"
-        title="Transform fragment/molecule in edit mode">Transform</button>
       <button id="editToolDeleteBtn" type="button" class="delete" title="Delete atoms in edit mode">Delete</button>
     </div>
     <div id="editAddPane">
@@ -2973,6 +2960,12 @@
           placeholder="e.g. C, Carbon, 6" />
         <datalist id="editAddSuggestions"></datalist>
         <div id="editAddQuick"></div>
+        <label for="editAddCoordination">Coordination</label>
+        <select id="editAddCoordination"></select>
+        <label class="editAddToggleRow" for="editAddAdjustHydrogens">
+          <input id="editAddAdjustHydrogens" type="checkbox" checked />
+          <span>Adjust hydrogens</span>
+        </label>
         <div id="editAddCurrent"></div>
       </div>
       <div id="editAddFragmentPane">
@@ -3037,32 +3030,6 @@
         <option value="delete">Delete</option>
       </select>
       <div id="editBondCurrent"></div>
-    </div>
-    <div id="editBondCleanupPane">
-      <div id="editBondCleanupIntro">Review geometry-based bond cleanup for perceived bonds only.</div>
-      <button id="editBondCleanupStartBtn" type="button">Clean Up Bonds</button>
-      <div id="editBondCleanupSummary" aria-live="polite"></div>
-      <div id="editBondCleanupActions">
-        <button id="editBondCleanupApplyBtn" type="button">Apply</button>
-        <button id="editBondCleanupCancelBtn" type="button">Cancel</button>
-      </div>
-    </div>
-    <div id="editTransformPane">
-      <label for="editTransformScope">Transform scope</label>
-      <select id="editTransformScope">
-        <option value="auto" selected>Auto (fragment if tagged, else molecule)</option>
-        <option value="fragment">Fragment</option>
-        <option value="molecule">Molecule</option>
-        <option value="all">All atoms</option>
-      </select>
-      <label for="editTransformMode" style="margin-top:7px;">Transform action</label>
-      <select id="editTransformMode">
-        <option value="rotate_fragment" selected>Rotate fragment (about bond axis)</option>
-        <option value="rotate_bond">Rotate bond (about opposite atom)</option>
-      </select>
-      <label style="margin-top:7px;"><input id="editTransformCleanupAuto" type="checkbox" checked /> Auto cleanup after
-        transform</label>
-      <div id="editTransformCurrent"></div>
     </div>
     <div id="editSnapPane">
       <span class="title">Angle snapping</span>
@@ -3261,8 +3228,8 @@
           <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, and Psi4 output
             logs) expose mode playback controls in the dedicated Vibration window; click a frequency row to select and
             animate that mode, and view the IR spectrum with the active mode highlighted.</li>
-          <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) with in-scene guide
-            overlays.</li>
+          <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) for free placement,
+            while grow-drag from an atom stays in the plane orthogonal to the camera view.</li>
           <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show
             element symbols over atoms.</li>
           <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
@@ -3278,10 +3245,10 @@
           <li><strong>R</strong> — Shift active molecule center of mass to origin</li>
           <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
           <li><strong>Cmd/Ctrl+Z</strong> / <strong>Cmd/Ctrl+Shift+Z</strong> — Undo / Redo edit action</li>
-          <li><strong>Edit tools:</strong> <strong>G</strong>=Move, <strong>N</strong>=Add,
-            <strong>T</strong>=Transform, <strong>D</strong>=Delete
+          <li><strong>Edit tools:</strong> <strong>T</strong>=Move, <strong>E</strong>=Rotate, <strong>N</strong>=Add,
+            <strong>B</strong>=Bond, <strong>O</strong>=Clean structure, <strong>D</strong>=Delete
           </li>
-          <li><strong>Edit mode:</strong> hold <strong>Shift</strong> while placing to bypass auto angle snapping</li>
+          <li><strong>Edit mode:</strong> hold <strong>Shift</strong> during free placement to bypass auto angle snapping</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
         </ul>
       </div>
@@ -3363,6 +3330,14 @@
   <script src="./assets/app/js/edit-transform.js"></script>
   <!-- gesture editing controller -->
   <script src="./assets/app/js/edit-gestures.js"></script>
+  <!-- coordination geometry helpers -->
+  <script src="./assets/app/js/coordination.js"></script>
+  <!-- bond-order-driven geometry inference helpers -->
+  <script src="./assets/app/js/geometry-inference.js"></script>
+  <!-- UFF force-field helpers -->
+  <script src="./assets/app/js/uff.js"></script>
+  <!-- UFF adapter helpers -->
+  <script src="./assets/app/js/uff-adapter.js"></script>
   <!-- context halo controller -->
   <script src="./assets/app/js/edit-halo.js"></script>
   <!-- preset helpers -->

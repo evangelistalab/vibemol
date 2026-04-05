@@ -42,8 +42,7 @@
 }
 
 #editAddPane,
-#editBondPane,
-#editTransformPane {
+#editBondPane {
   display: none;
   margin-top: 8px;
   border-top: 1px solid var(--vm-color-legacy-border-strong);
@@ -51,8 +50,7 @@
 }
 
 #editAddPane.active,
-#editBondPane.active,
-#editTransformPane.active {
+#editBondPane.active {
   display: block;
 }
 
@@ -62,8 +60,8 @@
   left: 12px;
   display: none;
   align-items: center;
-  gap: 12px;
-  width: min(420px, calc(100vw - 24px));
+  gap: 10px;
+  width: min(320px, calc(100vw - 24px));
   padding: 10px 12px;
   border: 1px solid rgba(117, 129, 150, 0.24);
   border-radius: 14px;
@@ -77,42 +75,6 @@
 
 #editGestureHud[aria-hidden="false"] {
   display: flex;
-}
-
-#editGestureElementChip {
-  appearance: none;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-width: 58px;
-  height: 58px;
-  padding: 8px 10px;
-  border: 1px solid rgba(145, 156, 176, 0.34);
-  border-radius: 14px;
-  background: rgba(67, 74, 84, 0.95);
-  color: #f5f7fb;
-  cursor: pointer;
-  flex: 0 0 auto;
-}
-
-#editGestureElementChip:hover {
-  border-color: rgba(122, 172, 255, 0.58);
-  background: rgba(74, 84, 98, 0.98);
-}
-
-#editGestureElementChipSymbol {
-  font-size: 21px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-#editGestureElementChipLabel {
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  color: rgba(214, 221, 233, 0.78);
 }
 
 #editGestureHudBody {
@@ -146,7 +108,7 @@
 #editGestureHudActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
   flex: 0 0 auto;
 }
 
@@ -169,24 +131,6 @@
   display: inline-flex;
 }
 
-#editGestureAdvancedBtn {
-  appearance: none;
-  border: 1px solid rgba(145, 156, 176, 0.34);
-  border-radius: 12px;
-  background: rgba(67, 74, 84, 0.95);
-  color: #f5f7fb;
-  height: 34px;
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-#editGestureAdvancedBtn:hover {
-  border-color: rgba(122, 172, 255, 0.58);
-  background: rgba(74, 84, 98, 0.98);
-}
-
 #editHaloLayer {
   position: fixed;
   inset: 0;
@@ -202,7 +146,7 @@
 .editHaloCore,
 .editHaloCapture,
 .editHaloGhost,
-.editHaloElement,
+.editHaloChoice,
 .editHaloSpoke {
   position: fixed;
   transform-origin: 0 50%;
@@ -254,29 +198,30 @@
   opacity: 0;
 }
 
-.editHaloElement {
-  min-width: 22px;
-  height: 22px;
-  margin-left: -11px;
-  margin-top: -11px;
-  padding: 0 6px;
+.editHaloChoice {
+  min-width: 82px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(150, 166, 188, 0.5);
   background: rgba(41, 47, 57, 0.78);
   color: rgba(243, 247, 255, 0.94);
   font-size: 10px;
   font-weight: 800;
-  line-height: 22px;
+  line-height: 26px;
   text-align: center;
   letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
-.editHaloElement.is-current {
+.editHaloChoice.is-current {
   border-color: rgba(122, 255, 211, 0.94);
   color: rgba(228, 255, 246, 0.98);
 }
 
-.editHaloElement.is-active {
+.editHaloChoice.is-active {
   border-color: rgba(255, 255, 255, 0.98);
   background: rgba(58, 68, 82, 0.92);
 }
@@ -354,9 +299,7 @@
 
 #editAdaptiveAddAtomPopover,
 #editAdaptiveAddFragmentPopover,
-#editAdaptiveAddMoleculePopover,
-#editAdaptiveBondPopover,
-#editAdaptiveTransformPopover {
+#editAdaptiveAddMoleculePopover {
   position: fixed;
   display: none;
   width: min(280px, calc(100vw - 24px));
@@ -372,9 +315,7 @@
 
 #editAdaptiveAddAtomPopover[aria-hidden="false"],
 #editAdaptiveAddFragmentPopover[aria-hidden="false"],
-#editAdaptiveAddMoleculePopover[aria-hidden="false"],
-#editAdaptiveBondPopover[aria-hidden="false"],
-#editAdaptiveTransformPopover[aria-hidden="false"] {
+#editAdaptiveAddMoleculePopover[aria-hidden="false"] {
   display: block;
 }
 
@@ -628,75 +569,14 @@
 
 #editAdaptiveAddAtomPopover #editAddAtomPane,
 #editAdaptiveAddFragmentPopover #editAddFragmentPane,
-#editAdaptiveAddMoleculePopover #editAddMoleculePane,
-#editAdaptiveBondPopover #editBondCleanupPane,
-#editAdaptiveTransformPopover #editTransformPane {
+#editAdaptiveAddMoleculePopover #editAddMoleculePane {
   display: block;
 }
 
 #editAdaptiveAddAtomPopover label:first-child,
 #editAdaptiveAddFragmentPopover label:first-child,
-#editAdaptiveAddMoleculePopover label:first-child,
-#editAdaptiveBondPopover label:first-child,
-#editAdaptiveTransformPopover label:first-child {
+#editAdaptiveAddMoleculePopover label:first-child {
   margin-top: 0;
-}
-
-#editBondCleanupPane {
-  display: none;
-}
-
-#editBondCleanupIntro {
-  font-size: 12px;
-  line-height: 1.4;
-  color: #dce4ef;
-  margin-bottom: 10px;
-}
-
-#editBondCleanupStartBtn,
-#editBondCleanupApplyBtn,
-#editBondCleanupCancelBtn {
-  appearance: none;
-  border: 1px solid rgba(117, 129, 150, 0.28);
-  border-radius: 10px;
-  background: rgba(68, 75, 85, 0.96);
-  color: #f2f5fa;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 8px 10px;
-  cursor: pointer;
-}
-
-#editBondCleanupStartBtn:hover,
-#editBondCleanupApplyBtn:hover,
-#editBondCleanupCancelBtn:hover {
-  border-color: rgba(145, 156, 176, 0.42);
-  background: rgba(104, 111, 121, 0.94);
-}
-
-#editBondCleanupApplyBtn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-#editBondCleanupSummary {
-  display: none;
-  margin-top: 10px;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #dce4ef;
-  white-space: pre-line;
-}
-
-#editBondCleanupActions {
-  display: none;
-  margin-top: 10px;
-  gap: 8px;
-}
-
-#editBondCleanupActions[data-visible="true"] {
-  display: flex;
 }
 
 .adaptiveEditItemBody {
@@ -797,8 +677,7 @@
 }
 
 #editAddPane label,
-#editBondPane label,
-#editTransformPane label {
+#editBondPane label {
   display: block;
   font-size: 12px;
   color: #a9bdd6;
@@ -870,10 +749,9 @@
 }
 
 #editAddSearch,
+#editAddCoordination,
 #editBondOrder,
-#editBondAction,
-#editTransformScope,
-#editTransformMode {
+#editBondAction {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--vm-color-legacy-border-soft);
@@ -881,6 +759,20 @@
   padding: 6px 8px;
   background: var(--vm-color-legacy-muted-chip-3);
   color: var(--vm-color-legacy-text-on-dark);
+}
+
+.editAddToggleRow {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  margin-bottom: 0 !important;
+  color: #c8d8ec !important;
+  font-size: 12px;
+}
+
+.editAddToggleRow input[type="checkbox"] {
+  margin: 0;
 }
 
 #editFragmentSearch {

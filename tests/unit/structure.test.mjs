@@ -40,6 +40,20 @@ test('structure schema normalizes atoms and migrates legacy builder annotations'
   });
 });
 
+test('structure schema exposes empty coordination annotations by default', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = { atoms: [{ id: 'atom-1', Z: 6, x: 0, y: 0, z: 0 }] };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, { inferMissingBonds: false });
+    return vol.annotations;
+  })())`));
+
+  assert.deepEqual(result, {
+    builder: { byAtomId: {} },
+    coordination: { byAtomId: {} },
+  });
+});
+
 test('structure schema normalizes, updates, and deletes explicit bonds', () => {
   const context = loadGlobalModule('assets/app/js/structure.js');
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
@@ -170,6 +184,67 @@ test('updating a perceived bond can promote it to explicit provenance', () => {
   });
 });
 
+test('structure coordination annotations normalize, update, and delete per atom', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = {
+      atoms: [
+        { id: 'atom-1', Z: 6, x: 0, y: 0, z: 0 },
+        { id: 'atom-2', Z: 8, x: 1.2, y: 0, z: 0 },
+      ],
+    };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const before = window.VibeMolStructureCore.getAtomCoordinationMeta(vol, 0);
+    window.VibeMolStructureCore.setAtomCoordinationMeta(vol, 0, { geometryId: 'tetrahedral' });
+    const afterSet = window.VibeMolStructureCore.getAtomCoordinationMeta(vol, 0);
+    const snapshot = window.VibeMolStructureCore.cloneVolumeAnnotationsSnapshot(vol);
+    window.VibeMolStructureCore.setAtomCoordinationMeta(vol, 0, { geometryId: '' });
+    const afterClear = window.VibeMolStructureCore.getAtomCoordinationMeta(vol, 0);
+    return { before, afterSet, afterClear, snapshot };
+  })())`));
+
+  assert.deepEqual(result.before, { geometryId: '' });
+  assert.deepEqual(result.afterSet, { geometryId: 'tetrahedral' });
+  assert.deepEqual(result.afterClear, { geometryId: '' });
+  assert.deepEqual(result.snapshot, {
+    builder: { byAtomId: {} },
+    coordination: { byAtomId: { 'atom-1': { geometryId: 'tetrahedral' } } },
+  });
+});
+
+test('structure schema can prune coordination annotations via compatibility callback', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = {
+      atoms: [
+        { id: 'atom-1', Z: 6, x: 0, y: 0, z: 0 },
+        { id: 'atom-2', Z: 8, x: 1.2, y: 0, z: 0 },
+      ],
+      annotations: {
+        coordination: {
+          byAtomId: {
+            'atom-1': { geometryId: 'tetrahedral' },
+            'atom-2': { geometryId: 'trigonalPlanar' },
+          },
+        },
+      },
+    };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, {
+      inferMissingBonds: false,
+      pruneAtomAnnotations: {
+        isCoordinationMetaCompatible(atomId, meta) {
+          return atomId === 'atom-1' && String(meta && meta.geometryId || '') === 'tetrahedral';
+        },
+      },
+    });
+    return vol.annotations.coordination.byAtomId;
+  })())`));
+
+  assert.deepEqual(result, {
+    'atom-1': { geometryId: 'tetrahedral' },
+  });
+});
+
 test('structure clipboard helpers clone selected substructures with remapped builder groups and bonds', () => {
   const context = loadGlobalModule('assets/app/js/structure.js');
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
@@ -188,6 +263,12 @@ test('structure clipboard helpers clone selected substructures with remapped bui
           byAtomId: {
             'atom-1': { groupId: 'group-9', entryId: 'benzene', entryKind: 'molecule' },
             'atom-2': { groupId: 'group-9', entryId: 'benzene', entryKind: 'molecule' },
+          },
+        },
+        coordination: {
+          byAtomId: {
+            'atom-1': { geometryId: 'tetrahedral' },
+            'atom-2': { geometryId: 'trigonalPlanar' },
           },
         },
       },
@@ -210,6 +291,7 @@ test('structure clipboard helpers clone selected substructures with remapped bui
       totalBonds: vol.bonds.length,
       newAtoms: appended.atomIndices.map((idx) => vol.atoms[idx]),
       newMetas: appended.atomIndices.map((idx) => window.VibeMolStructureCore.getAtomBuilderMeta(vol, idx)),
+      newCoordination: appended.atomIndices.map((idx) => window.VibeMolStructureCore.getAtomCoordinationMeta(vol, idx)),
       bondSnapshot: window.VibeMolStructureCore.cloneBondSnapshot(vol),
     };
   })())`));
@@ -230,6 +312,12 @@ test('structure clipboard helpers clone selected substructures with remapped bui
   assert.match(result.newMetas[0].groupId, /^group-\d+$/);
   assert.equal(result.newMetas[0].groupId, result.newMetas[1].groupId);
   assert.notEqual(result.newMetas[0].groupId, 'group-9');
+  assert.deepEqual(result.payload.atoms[0].coordinationMeta, { geometryId: 'tetrahedral' });
+  assert.deepEqual(result.payload.atoms[1].coordinationMeta, { geometryId: 'trigonalPlanar' });
+  assert.deepEqual(result.newCoordination, [
+    { geometryId: 'tetrahedral' },
+    { geometryId: 'trigonalPlanar' },
+  ]);
   const duplicateBond = result.bondSnapshot.find((bond) => bond.a === result.newAtoms[0].id && bond.b === result.newAtoms[1].id);
   assert.deepEqual(duplicateBond, {
     id: `bond:${[result.newAtoms[0].id, result.newAtoms[1].id].sort().join(':')}`,

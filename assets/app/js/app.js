@@ -151,11 +151,16 @@
     ensureAtomId,
     ensureVolumeAtomIds,
     getBuilderAnnotationsMap,
+    getCoordinationAnnotationsMap,
     normalizeVolumeAtom,
     resolveVolumeAtomId,
     getAtomBuilderMeta,
     setAtomBuilderMeta,
+    getAtomCoordinationMeta,
+    setAtomCoordinationMeta,
     migrateLegacyBuilderAnnotations,
+    pruneVolumeAtomAnnotations,
+    cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,
@@ -183,11 +188,16 @@
     ensureAtomId,
     ensureVolumeAtomIds,
     getBuilderAnnotationsMap,
+    getCoordinationAnnotationsMap,
     normalizeVolumeAtom,
     resolveVolumeAtomId,
     getAtomBuilderMeta,
     setAtomBuilderMeta,
+    getAtomCoordinationMeta,
+    setAtomCoordinationMeta,
     migrateLegacyBuilderAnnotations,
+    pruneVolumeAtomAnnotations,
+    cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,
@@ -205,6 +215,27 @@
     throw new Error('VibeMolStructureCore is not loaded. Ensure assets/app/js/structure.js is included before assets/app/js/app.js.');
   }
 
+  const {
+    getGeometry: getCoordinationGeometry,
+    getCoordinationProfile,
+  } = window.VibeMolCoordination || {};
+  if (![
+    getCoordinationGeometry,
+    getCoordinationProfile,
+  ].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolCoordination is not loaded. Ensure assets/app/js/coordination.js is included before assets/app/js/app.js.');
+  }
+
+  const { inferAtomGeometry } = window.VibeMolGeometryInference || {};
+  if (![inferAtomGeometry].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolGeometryInference is not loaded. Ensure assets/app/js/geometry-inference.js is included before assets/app/js/app.js.');
+  }
+
+  const { createLocalUffContextFromVolume, relaxHydrogenOnlyLocalContext, optimizeVolumeWithUFF } = window.VibeMolUFFAdapter || {};
+  if (![createLocalUffContextFromVolume, relaxHydrogenOnlyLocalContext, optimizeVolumeWithUFF].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolUFFAdapter is not loaded. Ensure assets/app/js/uff.js and assets/app/js/uff-adapter.js are included before assets/app/js/app.js.');
+  }
+
   const { createBondEditingController } = window.VibeMolBondEditing || {};
   if (![createBondEditingController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolBondEditing is not loaded. Ensure assets/app/js/bond-editing.js is included before assets/app/js/app.js.');
@@ -212,6 +243,7 @@
 
   const {
     positionAdaptiveMenu: positionAdaptiveMenuUi,
+    restorePaneHome: restorePaneHomeHelper,
     updateAdaptiveMenuUi: updateAdaptiveMenuUiHelper,
     positionRightOperatorPanel: positionRightOperatorPanelUi,
     updateAddAtomOperatorPanelUi,
@@ -223,6 +255,7 @@
   } = window.VibeMolEditUi || {};
   if (![
     positionAdaptiveMenuUi,
+    restorePaneHomeHelper,
     updateAdaptiveMenuUiHelper,
     positionRightOperatorPanelUi,
     updateAddAtomOperatorPanelUi,
@@ -265,8 +298,8 @@
     throw new Error('VibeMolEditHalo is not loaded. Ensure assets/app/js/edit-halo.js is included before assets/app/js/app.js.');
   }
 
-  const { createAutoHydrogenController, getAutoHydrogenRule, resolveGeometryForEnvironment } = window.VibeMolAutoHydrogen || {};
-  if (![createAutoHydrogenController, getAutoHydrogenRule, resolveGeometryForEnvironment].every(fn => typeof fn === 'function')) {
+  const { createAutoHydrogenController, getAutoHydrogenRule, resolveGeometryForEnvironment, buildAutoHydrogenPlan } = window.VibeMolAutoHydrogen || {};
+  if (![createAutoHydrogenController, getAutoHydrogenRule, resolveGeometryForEnvironment, buildAutoHydrogenPlan].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolAutoHydrogen is not loaded. Ensure assets/app/js/auto-hydrogen.js is included before assets/app/js/app.js.');
   }
 
@@ -309,7 +342,6 @@
     findSimpleCyclesOfSize,
     enforceAlternatingSixRingBondOrders,
     inferAromaticSixRings,
-    classifyBondCleanupDiff,
     isTransitionMetalAtomicNumber,
   } = window.VibeMolBondInference || {};
   if (![
@@ -331,7 +363,6 @@
     findSimpleCyclesOfSize,
     enforceAlternatingSixRingBondOrders,
     inferAromaticSixRings,
-    classifyBondCleanupDiff,
     isTransitionMetalAtomicNumber,
   ].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolBondInference is not loaded. Ensure assets/app/js/bond-inference.js is included before assets/app/js/app.js.');
@@ -727,19 +758,16 @@
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
   let currentMode = MODES.DISPLAY;
   let editGestureHudEl = null;
-  let editGestureElementChipEl = null;
-  let editGestureElementChipSymbolEl = null;
-  let editGestureElementChipLabelEl = null;
   let editGestureHintEl = null;
   let editGestureScopeEl = null;
   let editGestureBondOrderPillEl = null;
-  let editGestureAdvancedBtn = null;
+  let editAtomsMenuEl = null;
+  let editAtomsMenuBodyEl = null;
+  let editAtomsMenuCurrentEl = null;
   let editHaloLayerEl = null;
   let editAdaptiveMenuEl = null;
   let editAdaptiveMenuTitleEl = null;
   let editAdaptiveMenuSubtitleEl = null;
-  let editAdaptiveSelectionBtn = null;
-  let editAdaptiveSelectionMetaEl = null;
   let editAdaptiveMoveBtn = null;
   let editAdaptiveMoveMetaEl = null;
   let editAdaptiveRotateBtn = null;
@@ -750,15 +778,15 @@
   let editAdaptiveAddFragmentMetaEl = null;
   let editAdaptiveAddMoleculeBtn = null;
   let editAdaptiveAddMoleculeMetaEl = null;
-  let editAdaptiveBondBtn = null;
-  let editAdaptiveBondMetaEl = null;
-  let editAdaptiveTransformBtn = null;
-  let editAdaptiveTransformMetaEl = null;
+  let editAdaptiveCleanStructureBtn = null;
+  let editAdaptiveCleanStructureMetaEl = null;
+  let editAdaptiveShiftComBtn = null;
+  let editAdaptiveShiftComMetaEl = null;
+  let editAdaptiveAlignPrincipalBtn = null;
+  let editAdaptiveAlignPrincipalMetaEl = null;
   let editAdaptiveAddAtomPopoverEl = null;
   let editAdaptiveAddFragmentPopoverEl = null;
   let editAdaptiveAddMoleculePopoverEl = null;
-  let editAdaptiveBondPopoverEl = null;
-  let editAdaptiveTransformPopoverEl = null;
 
   /**
    * Synchronize edit-mode construction helpers with the active tool and camera.
@@ -1471,9 +1499,7 @@
     const state = createDisposeState();
     hideSurfaceHoverLabel();
     setSurfaceHover(null);
-    clearGroup(bondCleanupPreviewGroup);
     clearGroup(autoHydrogenPreviewGroup);
-    bondCleanupPreviewState = null;
     for (const m of meshes) {
       try { contentGroup.remove(m); } catch { }
       disposeDeep(m, state);
@@ -5455,19 +5481,16 @@
   const cloudStrideEl = document.getElementById('cloudStride');
   const cloudAlphaEl = document.getElementById('cloudAlpha');
   editGestureHudEl = document.getElementById('editGestureHud');
-  editGestureElementChipEl = document.getElementById('editGestureElementChip');
-  editGestureElementChipSymbolEl = document.getElementById('editGestureElementChipSymbol');
-  editGestureElementChipLabelEl = document.getElementById('editGestureElementChipLabel');
   editGestureHintEl = document.getElementById('editGestureHint');
   editGestureScopeEl = document.getElementById('editGestureScope');
   editGestureBondOrderPillEl = document.getElementById('editGestureBondOrderPill');
-  editGestureAdvancedBtn = document.getElementById('editGestureAdvancedBtn');
+  editAtomsMenuEl = document.getElementById('editAtomsMenu');
+  editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
+  editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
   editHaloLayerEl = document.getElementById('editHaloLayer');
   editAdaptiveMenuEl = document.getElementById('editAdaptiveMenu');
   editAdaptiveMenuTitleEl = document.getElementById('editAdaptiveMenuTitle');
   editAdaptiveMenuSubtitleEl = document.getElementById('editAdaptiveMenuSubtitle');
-  editAdaptiveSelectionBtn = document.getElementById('editAdaptiveSelectionBtn');
-  editAdaptiveSelectionMetaEl = document.getElementById('editAdaptiveSelectionMeta');
   editAdaptiveMoveBtn = document.getElementById('editAdaptiveMoveBtn');
   editAdaptiveMoveMetaEl = document.getElementById('editAdaptiveMoveMeta');
   editAdaptiveRotateBtn = document.getElementById('editAdaptiveRotateBtn');
@@ -5478,15 +5501,15 @@
   editAdaptiveAddFragmentMetaEl = document.getElementById('editAdaptiveAddFragmentMeta');
   editAdaptiveAddMoleculeBtn = document.getElementById('editAdaptiveAddMoleculeBtn');
   editAdaptiveAddMoleculeMetaEl = document.getElementById('editAdaptiveAddMoleculeMeta');
-  editAdaptiveBondBtn = document.getElementById('editAdaptiveBondBtn');
-  editAdaptiveBondMetaEl = document.getElementById('editAdaptiveBondMeta');
-  editAdaptiveTransformBtn = document.getElementById('editAdaptiveTransformBtn');
-  editAdaptiveTransformMetaEl = document.getElementById('editAdaptiveTransformMeta');
+  editAdaptiveCleanStructureBtn = document.getElementById('editAdaptiveCleanStructureBtn');
+  editAdaptiveCleanStructureMetaEl = document.getElementById('editAdaptiveCleanStructureMeta');
+  editAdaptiveShiftComBtn = document.getElementById('editAdaptiveShiftComBtn');
+  editAdaptiveShiftComMetaEl = document.getElementById('editAdaptiveShiftComMeta');
+  editAdaptiveAlignPrincipalBtn = document.getElementById('editAdaptiveAlignPrincipalBtn');
+  editAdaptiveAlignPrincipalMetaEl = document.getElementById('editAdaptiveAlignPrincipalMeta');
   editAdaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
   editAdaptiveAddFragmentPopoverEl = document.getElementById('editAdaptiveAddFragmentPopover');
   editAdaptiveAddMoleculePopoverEl = document.getElementById('editAdaptiveAddMoleculePopover');
-  editAdaptiveBondPopoverEl = document.getElementById('editAdaptiveBondPopover');
-  editAdaptiveTransformPopoverEl = document.getElementById('editAdaptiveTransformPopover');
   const editSelectionMarqueeEl = document.getElementById('editSelectionMarquee');
   const editAddAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
   const editAddAtomOperatorHeaderEl = document.getElementById('editAddAtomOperatorHeader');
@@ -5529,26 +5552,13 @@
   const editToolMoveBtn = document.getElementById('editToolMoveBtn');
   const editToolAddBtn = document.getElementById('editToolAddBtn');
   const editToolBondBtn = document.getElementById('editToolBondBtn');
-  const editToolTransformBtn = document.getElementById('editToolTransformBtn');
   const editToolDeleteBtn = document.getElementById('editToolDeleteBtn');
   const editAddPaneEl = document.getElementById('editAddPane');
   const editBondPaneEl = document.getElementById('editBondPane');
-  const editBondCleanupPaneEl = document.getElementById('editBondCleanupPane');
-  const editBondCleanupIntroEl = document.getElementById('editBondCleanupIntro');
-  const editBondCleanupStartBtn = document.getElementById('editBondCleanupStartBtn');
-  const editBondCleanupSummaryEl = document.getElementById('editBondCleanupSummary');
-  const editBondCleanupActionsEl = document.getElementById('editBondCleanupActions');
-  const editBondCleanupApplyBtn = document.getElementById('editBondCleanupApplyBtn');
-  const editBondCleanupCancelBtn = document.getElementById('editBondCleanupCancelBtn');
-  const editTransformPaneEl = document.getElementById('editTransformPane');
   const editBondOrderEl = document.getElementById('editBondOrder');
   const editBondQuickEl = document.getElementById('editBondQuick');
   const editBondActionEl = document.getElementById('editBondAction');
   const editBondCurrentEl = document.getElementById('editBondCurrent');
-  const editTransformScopeEl = document.getElementById('editTransformScope');
-  const editTransformModeEl = document.getElementById('editTransformMode');
-  const editTransformCleanupAutoEl = document.getElementById('editTransformCleanupAuto');
-  const editTransformCurrentEl = document.getElementById('editTransformCurrent');
   const editAddModeAtomBtn = document.getElementById('editAddModeAtomBtn');
   const editAddModeFragmentBtn = document.getElementById('editAddModeFragmentBtn');
   const editAddModeMoleculeBtn = document.getElementById('editAddModeMoleculeBtn');
@@ -5558,6 +5568,8 @@
   const editAddSearchEl = document.getElementById('editAddSearch');
   const editAddSuggestionsEl = document.getElementById('editAddSuggestions');
   const editAddQuickEl = document.getElementById('editAddQuick');
+  const editAddCoordinationEl = document.getElementById('editAddCoordination');
+  const editAddAdjustHydrogensEl = document.getElementById('editAddAdjustHydrogens');
   const editAddCurrentEl = document.getElementById('editAddCurrent');
   const editFragmentSearchEl = document.getElementById('editFragmentSearch');
   const editFragmentSuggestionsEl = document.getElementById('editFragmentSuggestions');
@@ -6904,15 +6916,14 @@
       { k: '←/→', d: 'Prev/Next file' },
     ],
     edit: [
-      { k: 'E', d: 'Exit edit' },
       { k: 'S', d: 'Selection tool' },
-      { k: 'G', d: 'Move tool' },
-      { k: 'O', d: 'Rotate tool' },
-      { k: 'N', d: 'Add-atom tool' },
+      { k: 'T', d: 'Move tool' },
+      { k: 'E', d: 'Rotate tool' },
+      { k: 'O', d: 'Clean structure' },
+      { k: 'N', d: 'Atom manipulation' },
       { k: 'F', d: 'Add-fragment tool' },
       { k: 'M', d: 'Add-molecule tool' },
       { k: 'B', d: 'Bond tool' },
-      { k: 'T', d: 'Transform tool' },
       { k: 'Cmd/Ctrl+A', d: 'Select all atoms (Selection)' },
       { k: 'Cmd/Ctrl+C', d: 'Copy selected atoms' },
       { k: 'Cmd/Ctrl+V', d: 'Paste copied atoms' },
@@ -6926,13 +6937,12 @@
       { k: 'Click+Drag', d: 'Rotate selection or atom (Rotate tool)' },
       { k: 'Click', d: 'Add atom (Add tool)' },
       { k: 'Click', d: 'Edit bond (Bond tool)' },
-      { k: 'Click+Drag', d: 'Transform selection (Transform tool)' },
       { k: 'Backspace/Delete', d: 'Delete selection or hovered atom' },
       { k: 'R', d: 'Center mass at origin' },
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
       { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
       { k: 'X/Y/Z', d: 'Align molecule (Add molecule)' },
-      { k: 'Shift+Drag', d: 'Bypass auto angle snap (Add tool)' },
+      { k: 'Shift+Place', d: 'Bypass auto angle snap for free placement (Add tool)' },
     ],
     measure: [
       { k: 'M', d: 'Display mode' },
@@ -7391,6 +7401,8 @@
   let editMode = false; // mirrors currentMode === MODES.EDIT
   let hoverAtomMesh = null;
   let hoverBondObject = null;
+  let hoverBondObjects = [];
+  let hoverBondKey = '';
   let hoverBondSection = '';
   let transformSelectionIndices = [];
   let transformSelectionKind = 'fragment';
@@ -7448,7 +7460,9 @@
   let editAtomSelectionIndices = [];
   let editAddMode = EDIT_ADD_MODE.ATOM;
   let editAddElementZ = 6;
+  let editAddAdjustHydrogensEnabled = true;
   let editAddBondOrder = 1;
+  const editAddCoordinationByZ = new Map();
   let editBondOrder = 1;
   let editBondAction = EDIT_BOND_ACTION.SET;
   let bondEditing = null;
@@ -7475,7 +7489,7 @@
     anchorClient: null,
     ghosts: [],
     occupied: [],
-    elements: [],
+    choices: [],
     activeZone: null,
     bondCenterReserved: false,
   };
@@ -7489,12 +7503,6 @@
   const editAddFragmentPaneHomeNextSibling = editAddFragmentPaneEl ? editAddFragmentPaneEl.nextSibling : null;
   const editAddMoleculePaneHomeParent = editAddMoleculePaneEl ? editAddMoleculePaneEl.parentElement : null;
   const editAddMoleculePaneHomeNextSibling = editAddMoleculePaneEl ? editAddMoleculePaneEl.nextSibling : null;
-  const editBondPaneHomeParent = editBondPaneEl ? editBondPaneEl.parentElement : null;
-  const editBondPaneHomeNextSibling = editBondPaneEl ? editBondPaneEl.nextSibling : null;
-  const editBondCleanupPaneHomeParent = editBondCleanupPaneEl ? editBondCleanupPaneEl.parentElement : null;
-  const editBondCleanupPaneHomeNextSibling = editBondCleanupPaneEl ? editBondCleanupPaneEl.nextSibling : null;
-  const editTransformPaneHomeParent = editTransformPaneEl ? editTransformPaneEl.parentElement : null;
-  const editTransformPaneHomeNextSibling = editTransformPaneEl ? editTransformPaneEl.nextSibling : null;
   const adaptivePopoverBindings = Object.freeze({
     atom: {
       mode: EDIT_ADD_MODE.ATOM,
@@ -7523,24 +7531,6 @@
       homeParent: editAddMoleculePaneHomeParent,
       homeNextSibling: editAddMoleculePaneHomeNextSibling,
     },
-    bond: {
-      mode: null,
-      triggerEl: editAdaptiveBondBtn,
-      popoverEl: editAdaptiveBondPopoverEl,
-      paneEl: editBondCleanupPaneEl,
-      focusEl: editBondCleanupStartBtn,
-      homeParent: editBondCleanupPaneHomeParent,
-      homeNextSibling: editBondCleanupPaneHomeNextSibling,
-    },
-    transform: {
-      mode: null,
-      triggerEl: editAdaptiveTransformBtn,
-      popoverEl: editAdaptiveTransformPopoverEl,
-      paneEl: editTransformPaneEl,
-      focusEl: editTransformScopeEl,
-      homeParent: editTransformPaneHomeParent,
-      homeNextSibling: editTransformPaneHomeNextSibling,
-    },
   });
   let editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
   let editAutoCleanupEnabled = true;
@@ -7557,6 +7547,7 @@
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
   const EDIT_QUICK_FRAGMENTS = ['methyl', 'methylene', 'hydroxyl', 'amino', 'carbonyl', 'amide', 'phenyl'];
   const EDIT_QUICK_MOLECULES = ['benzene', 'pyridine', 'cyclohexane'];
+  const GESTURE_BOND_ANGLE_DRAG_SENSITIVITY = 0.01;
   let addGrowActive = false;
   let addGrowAnchorIndex = -1;
   let addGrowAnchorPos = null;
@@ -7587,6 +7578,7 @@
   let transformRotateLastClientX = 0;
   let transformRotateLastClientY = 0;
   let transformRotateAccumulatedQuaternion = new THREE.Quaternion();
+  let transformRotateSphericalState = null;
   let transformBondContext = null;
   let transformPendingBackgroundClear = false;
   let transformStartPositionsWorld = [];
@@ -7602,8 +7594,6 @@
   contentGroup.add(addAngleGuideGroup);
   const transformGuideGroup = new THREE.Group();
   contentGroup.add(transformGuideGroup);
-  const bondCleanupPreviewGroup = new THREE.Group();
-  contentGroup.add(bondCleanupPreviewGroup);
   const autoHydrogenPreviewGroup = new THREE.Group();
   contentGroup.add(autoHydrogenPreviewGroup);
   const gestureVoidPreviewGroup = new THREE.Group();
@@ -7617,7 +7607,6 @@
   let editHaloGhostHoverIndex = -1;
   let editHaloGhostRenderKey = '';
   let addFusePreviewState = null;
-  let bondCleanupPreviewState = null;
   let dragBeforeAtomsSnapshot = null;
   let dragBeforeBondSnapshot = null;
   const editPlacementState = {
@@ -7768,7 +7757,31 @@
     const perceivedBonds = buildPerceivedBondRecords(vol, atomPositions)
       .filter((bond) => !explicitKeys.has(buildVolumeBondId(bond.a, bond.b)));
     vol.bonds = explicitBonds.concat(perceivedBonds);
+    pruneInvalidCoordinationPreferences(vol);
     return vol.bonds;
+  }
+
+  function isCoordinationPreferenceCompatibleForAtom(vol, atomIndex, geometryId) {
+    const nextGeometryId = String(geometryId || '').trim();
+    if (!vol || !Array.isArray(vol.atoms) || !nextGeometryId) return false;
+    const idx = atomIndex | 0;
+    if (idx < 0 || idx >= vol.atoms.length || !vol.atoms[idx]) return false;
+    const inference = inferAtomGeometry(vol, idx, { preferredGeometryId: nextGeometryId });
+    return !!(inference && inference.hasOpenSites && inference.preferredGeometryCompatible);
+  }
+
+  function pruneInvalidCoordinationPreferences(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return vol;
+    pruneVolumeAtomAnnotations(vol, {
+      isCoordinationMetaCompatible(atomId, meta) {
+        const nextGeometryId = String(meta && meta.geometryId || '').trim();
+        if (!nextGeometryId) return false;
+        const atomIndex = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === String(atomId || ''));
+        if (atomIndex < 0) return false;
+        return isCoordinationPreferenceCompatibleForAtom(vol, atomIndex, nextGeometryId);
+      },
+    });
+    return vol;
   }
 
   /**
@@ -7778,11 +7791,22 @@
    * @returns {*}
    */
   function ensureVolumeSchema(vol, options = {}) {
-    return ensureVolumeSchemaCore(vol, {
+    const normalized = ensureVolumeSchemaCore(vol, {
       inferMissingBonds: options.inferMissingBonds,
       inferBonds: options.inferMissingBonds !== false ? inferVolumeBonds : null,
       rehydrateBuilderState: rehydrateBuilderStateForVolume,
+      pruneAtomAnnotations: {
+        isCoordinationMetaCompatible(atomId, meta) {
+          const nextGeometryId = String(meta && meta.geometryId || '').trim();
+          if (!nextGeometryId || !vol || !Array.isArray(vol.atoms)) return false;
+          const atomIndex = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === String(atomId || ''));
+          if (atomIndex < 0) return false;
+          return isCoordinationPreferenceCompatibleForAtom(vol, atomIndex, nextGeometryId);
+        },
+      },
     });
+    pruneInvalidCoordinationPreferences(normalized);
+    return normalized;
   }
 
   /**
@@ -8438,6 +8462,89 @@
     return editState.ensureEditableVolumeRecord();
   }
 
+  /**
+   * Convert the active editable structure into one local UFF system/context.
+   * This is a thin adapter only; it does not mutate coordinates or run minimization.
+   * @param {number[]} seedAtomIndices
+   * @param {object} [options]
+   * @returns {object|null}
+   */
+  function createActiveLocalUffContext(seedAtomIndices, options = {}) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    if (!vol) return null;
+    return createLocalUffContextFromVolume(vol, seedAtomIndices, {
+      atomUnitsToAng,
+      cloneBondSnapshot,
+      ensureVolumeSchema,
+      ensureAtomId,
+      getElementSymbol,
+      ...options,
+    });
+  }
+
+  /**
+   * Optimize the active editable structure with one whole-volume UFF pass.
+   * This mutates atom coordinates only and records one undoable edit when needed.
+   * @param {object} [options]
+   * @returns {object|null}
+   */
+  function optimizeActiveStructureWithUff(options = {}) {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!record || !vol || !Array.isArray(vol.atoms) || !vol.atoms.length) {
+      setHintMessage('No editable structure is available for UFF optimization.');
+      return null;
+    }
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const result = optimizeVolumeWithUFF(vol, {
+      atomUnitsToAng,
+      worldToAtomUnits,
+      cloneBondSnapshot,
+      ensureVolumeSchema,
+      ensureAtomId,
+      getElementSymbol,
+      ...options,
+    });
+    if (!result) {
+      setHintMessage('UFF optimization could not be started for the active structure.');
+      return null;
+    }
+    const afterAtoms = cloneAtomsSnapshot(vol);
+    if (!result.supportedAtomCount) {
+      setHintMessage('UFF optimization skipped: no supported atoms in the active structure.');
+      return result;
+    }
+    if (!result.moved || atomsSnapshotsEqual(beforeAtoms, afterAtoms)) {
+      const unsupported = Array.isArray(result.unsupportedGlobalAtomIndices) ? result.unsupportedGlobalAtomIndices.length : 0;
+      setHintMessage(`UFF optimization made no coordinate changes.${unsupported ? ` Unsupported atoms: ${unsupported}.` : ''}`);
+      return result;
+    }
+    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, 'Optimize structure');
+    clearHover();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    updateEditSelectionVisuals();
+    updateSelectedHalos();
+    updateEditAdaptiveMenuUi();
+    const parts = [`moved ${result.moved} atom${result.moved === 1 ? '' : 's'}`];
+    if (Number.isFinite(result.energyBefore) && Number.isFinite(result.energyAfter)) {
+      parts.push(`ΔE ${(result.energyBefore - result.energyAfter).toFixed(2)} kcal/mol`);
+    }
+    if (Number.isFinite(result.maxDisplacementAng) && result.maxDisplacementAng > 1e-5) {
+      parts.push(`max shift ${result.maxDisplacementAng.toFixed(2)} Å`);
+    }
+    if (Array.isArray(result.unsupportedGlobalAtomIndices) && result.unsupportedGlobalAtomIndices.length) {
+      parts.push(`unsupported ${result.unsupportedGlobalAtomIndices.length}`);
+    }
+    if (Number.isInteger(result.omittedBondCount) && result.omittedBondCount > 0) {
+      parts.push(`omitted bonds ${result.omittedBondCount}`);
+    }
+    setHintMessage(`Optimized structure with UFF: ${parts.join(' • ')}`);
+    return result;
+  }
+
   const editPlacement = createEditPlacementController({
     THREE,
     state: editPlacementState,
@@ -8458,6 +8565,7 @@
     ensureVolumeSchema,
     cloneAtomsSnapshot,
     cloneBondSnapshot,
+    cloneVolumeAnnotationsSnapshot,
     cloneJsonLike,
     allocateBuilderGroupId,
     allocateBuilderOpId,
@@ -8494,7 +8602,10 @@
     getEditAddMoleculeId: () => editAddMoleculeId,
     getEditAddFragmentId: () => editAddFragmentId,
     getEditAddBondOrder: () => editAddBondOrder,
+    getEditAddCoordinationGeometryId: () => getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
     getEditAddFragmentAttachPolicy: () => editAddFragmentAttachPolicy,
+    applyEditAddCoordinationToAtom,
+    applyAutomaticHydrogenAdjustment: (record, vol, atomIndices, options = {}) => applyAutomaticHydrogenAdjustmentToVolume(vol, atomIndices, options),
     CATALOG_KIND,
     EDIT_FRAGMENT_ATTACH_POLICY,
     getVolumes: () => volumes,
@@ -8554,6 +8665,7 @@
       clearGestureVoidPreview();
       clearMoveOperatorBaseline();
       clearRotateOperatorBaseline();
+      syncSelectedAtomManipulationOperatorSession();
       if (editGestureController) editGestureController.refreshUi();
       updateSelectedHalos();
       updateEditAdaptiveMenuUi();
@@ -8574,6 +8686,7 @@
     worldToAtomUnits,
     cloneAtomsSnapshot,
     cloneBondSnapshot,
+    cloneVolumeAnnotationsSnapshot,
     pushEditHistoryEntry,
     upsertVolumeBond,
     rebuildScene,
@@ -9385,6 +9498,43 @@
   }
 
   /**
+   * Whether one bond hit came from an explicit endpoint third.
+   * Endpoint hits should select one bond side directly instead of waiting for
+   * the generic pending-selection click path.
+   * @param {{section?:string}|null|undefined} bondHit
+   * @returns {boolean}
+   */
+  function isExplicitTransformBondSideHit(bondHit) {
+    const section = bondHit && typeof bondHit.section === 'string' ? bondHit.section : '';
+    return section === 'nearA' || section === 'nearB';
+  }
+
+  /**
+   * Resolve one bond-side transform target plus the matching bond context.
+   * @param {*} vol
+   * @param {{object:*,point:THREE.Vector3|null,section?:string}} bondHit
+   * @returns {{target:{indices:number[],kind:'fragment',bond:{i:number,j:number},seedIndex:number},context:{type:'bond',selectedAtomIndex:number,anchorAtomIndex:number,bondIndices:[number,number]}}|null}
+   */
+  function resolveTransformBondSelectionPayload(vol, bondHit) {
+    if (!vol || !Array.isArray(vol.atoms) || !bondHit || !bondHit.object || !bondHit.object.userData) return null;
+    const target = resolveTransformBondTarget(vol, bondHit);
+    if (!target || !Array.isArray(target.indices) || !target.indices.length) return null;
+    const i = bondHit.object.userData.i | 0;
+    const j = bondHit.object.userData.j | 0;
+    const selectedAtomIndex = target.seedIndex | 0;
+    const anchorAtomIndex = selectedAtomIndex === i ? j : i;
+    return {
+      target,
+      context: {
+        type: 'bond',
+        selectedAtomIndex,
+        anchorAtomIndex,
+        bondIndices: [i, j],
+      },
+    };
+  }
+
+  /**
    * Resolve atom indices from the latest fragment-builder operation touching one atom.
    * @param {*} vol
    * @param {number} anchorIndex
@@ -9577,6 +9727,29 @@
     };
   }
 
+  /**
+   * Apply one gesture-mode bond-side selection from an endpoint-third hit.
+   * This keeps nearA / nearB clicks out of the generic void-placement path.
+   * @param {{object:*,point:THREE.Vector3|null,section?:string}} bondHit
+   * @param {{announce?:boolean}=} options
+   * @returns {{target:{indices:number[],kind:'fragment',bond:{i:number,j:number},seedIndex:number},context:{type:'bond',selectedAtomIndex:number,anchorAtomIndex:number,bondIndices:[number,number]}}|null}
+   */
+  function applyGestureBondSideSelection(bondHit, options = {}) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const payload = resolveTransformBondSelectionPayload(vol, bondHit);
+    if (!vol || !payload) return null;
+    const nextSelection = normalizeEditAtomSelection(payload.target.indices, vol);
+    if (!nextSelection.length) return null;
+    setEditAtomSelection(nextSelection);
+    setTransformSelection(nextSelection, payload.target.kind, payload.context);
+    if (options.announce !== false) {
+      const description = describeTransformSelection(vol, nextSelection, payload.target.kind, payload.context);
+      setHintMessage(description.hint);
+    }
+    return payload;
+  }
+
   function shouldGestureSelectedAtomGrow(anchorIndex) {
     return false;
   }
@@ -9613,6 +9786,7 @@
     transformRotateLastClientX = 0;
     transformRotateLastClientY = 0;
     transformRotateAccumulatedQuaternion.identity();
+    transformRotateSphericalState = null;
     transformBondContext = null;
     transformPendingSelectionTarget = null;
     transformPendingBackgroundClear = false;
@@ -9633,12 +9807,16 @@
    * @param {{indices:number[],kind:'fragment'|'molecule'|'all'}} target
    * @param {THREE.Vector3|null=} interactionPoint
    * @param {{type:'bond',selectedAtomIndex:number,anchorAtomIndex:number,bondIndices:[number,number]}|null=} context
+   * @param {{dragMode?:'bondAngleHorizontal'|'bondQuaternion'}=} options
    * @returns {boolean}
    */
-  function beginTransformDragFromResolvedTarget(e, vol, target, interactionPoint = null, context = null) {
+  function beginTransformDragFromResolvedTarget(e, vol, target, interactionPoint = null, context = null, options = {}) {
     if (!vol || !Array.isArray(vol.atoms) || !target || !Array.isArray(target.indices) || !target.indices.length) return false;
     clearAddGrowPreview();
     clearTransformState({ restoreControls: false });
+    const dragMode = options && (options.dragMode === 'bondAngleHorizontal' || options.dragMode === 'bondQuaternion')
+      ? options.dragMode
+      : '';
     transformTargetIndices = target.indices.slice();
     transformTargetKind = target.kind;
     setTransformSelection(transformTargetIndices, transformTargetKind, context);
@@ -9651,7 +9829,9 @@
         }
       : null;
     transformPivotWorld = getTransformPivotWorld(vol, transformTargetIndices);
-    if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
+    if (transformBondContext && (dragMode === 'bondAngleHorizontal' || dragMode === 'bondQuaternion')) {
+      transformPivotWorld = atomUnitsToAng(vol, vol.atoms[transformBondContext.anchorAtomIndex]);
+    } else if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT) {
       transformPivotWorld = atomUnitsToAng(vol, vol.atoms[transformBondContext.selectedAtomIndex]);
     } else if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
       transformPivotWorld = atomUnitsToAng(vol, vol.atoms[transformBondContext.anchorAtomIndex]);
@@ -9662,11 +9842,29 @@
     transformMoved = false;
 
     setRaycasterFromEvent(e);
-    if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+    if (transformBondContext && dragMode === 'bondAngleHorizontal') {
+      transformRotateGesture = 'bondAngleHorizontal';
+      transformRotateLastClientX = Number(e.clientX) || 0;
+      transformRotateLastClientY = Number(e.clientY) || 0;
+      transformRotateAccumulatedQuaternion.identity();
+      transformRotateAxis = atomUnitsToAng(vol, vol.atoms[transformBondContext.selectedAtomIndex])
+        .sub(atomUnitsToAng(vol, vol.atoms[transformBondContext.anchorAtomIndex]));
+      if (transformRotateAxis.lengthSq() < 1e-12) transformRotateAxis.set(0, 0, -1);
+      transformRotateAxis.normalize();
+      setHintMessage('Bond side: Drag left/right to rotate around the bond axis');
+    } else if (transformBondContext && dragMode === 'bondQuaternion') {
       transformRotateGesture = 'bondQuaternion';
       transformRotateLastClientX = Number(e.clientX) || 0;
       transformRotateLastClientY = Number(e.clientY) || 0;
       transformRotateAccumulatedQuaternion.identity();
+      transformRotateSphericalState = buildTransformBondSphericalState(vol, transformBondContext);
+      setHintMessage('Bond side: Shift-drag to rotate freely in 3D around the opposite atom');
+    } else if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
+      transformRotateGesture = 'bondQuaternion';
+      transformRotateLastClientX = Number(e.clientX) || 0;
+      transformRotateLastClientY = Number(e.clientY) || 0;
+      transformRotateAccumulatedQuaternion.identity();
+      transformRotateSphericalState = buildTransformBondSphericalState(vol, transformBondContext);
       setHintMessage('Rotate bond: Drag to reorient the selected side around the opposite atom');
     } else {
       transformRotateGesture = transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT
@@ -9730,6 +9928,52 @@
       interactionPoint,
       contextOverride || transformSelectionContext || null
     );
+  }
+
+  /**
+   * Build a camera-aligned spherical controller for free bond-side rotation.
+   * The selected bond vector is expressed in one stable basis at drag start,
+   * then pointer dx/dy update azimuth/elevation directly.
+   * @param {*} vol
+   * @param {{selectedAtomIndex:number,anchorAtomIndex:number}|null} bondContext
+   * @returns {{theta:number,phi:number,startDir:THREE.Vector3,viewDir:THREE.Vector3,right:THREE.Vector3,up:THREE.Vector3}|null}
+   */
+  function buildTransformBondSphericalState(vol, bondContext) {
+    if (!vol || !Array.isArray(vol.atoms) || !bondContext) return null;
+    const selectedAtom = vol.atoms[bondContext.selectedAtomIndex | 0];
+    const anchorAtom = vol.atoms[bondContext.anchorAtomIndex | 0];
+    if (!selectedAtom || !anchorAtom) return null;
+    const startDir = atomUnitsToAng(vol, selectedAtom).sub(atomUnitsToAng(vol, anchorAtom));
+    if (startDir.lengthSq() < 1e-12) return null;
+    startDir.normalize();
+
+    const viewDir = new THREE.Vector3();
+    camera.getWorldDirection(viewDir);
+    if (viewDir.lengthSq() < 1e-12) viewDir.set(0, 0, -1);
+    viewDir.normalize();
+
+    let up = camera.up.clone();
+    if (up.lengthSq() < 1e-12) up.set(0, 1, 0);
+    up.addScaledVector(viewDir, -up.dot(viewDir));
+    if (up.lengthSq() < 1e-12) up.copy(getBondPerpendicular(viewDir));
+    up.normalize();
+
+    let right = new THREE.Vector3().crossVectors(viewDir, up);
+    if (right.lengthSq() < 1e-12) right.copy(getBondPerpendicular(viewDir));
+    right.normalize();
+    up = new THREE.Vector3().crossVectors(right, viewDir).normalize();
+
+    const x = startDir.dot(right);
+    const y = startDir.dot(up);
+    const z = startDir.dot(viewDir);
+    return {
+      theta: Math.atan2(z, x),
+      phi: Math.asin(THREE.MathUtils.clamp(y, -1, 1)),
+      startDir,
+      viewDir,
+      right,
+      up,
+    };
   }
 
   /**
@@ -9802,6 +10046,110 @@
     return 'Move';
   }
 
+  function getAtomManipulationPresentation() {
+    const atomInfo = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
+    const symbol = atomInfo && atomInfo.symbol ? atomInfo.symbol : `Z${editAddElementZ}`;
+    const name = atomInfo && atomInfo.name ? atomInfo.name : symbol;
+    const geometryId = getEffectiveEditAddCoordinationGeometryId(editAddElementZ);
+    const geometry = getCoordinationGeometry(geometryId);
+    const coordinationLabel = geometry ? `${geometry.label} (${geometry.cn})` : 'Auto';
+    const hydrogenLabel = editAddAdjustHydrogensEnabled ? 'H adjust on' : 'H adjust off';
+    const angleLabel = addGrowDetectedAngleDeg > 0 ? `${addGrowDetectedAngleDeg.toFixed(1)}°` : 'auto';
+    return {
+      symbol,
+      name,
+      coordinationLabel,
+      hydrogenLabel,
+      angleLabel,
+      hudHint: `Click void to place ${symbol} • Click atom to select`,
+      rowMeta: `${symbol} • click void to add • click atom to select`,
+      scopeSummary: `${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • ${hydrogenLabel}`,
+      currentSummary: `Atom manipulation: ${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • angle ${angleLabel} • ${hydrogenLabel}`,
+      operatorLabel: `Atom manipulation ${symbol}`,
+    };
+  }
+
+  function getFragmentAddPresentation() {
+    const fragment = getCurrentFragmentDefinition();
+    if (!fragment) {
+      return {
+        rowMeta: 'Choose fragment • choose attach policy',
+        subtitle: 'Add fragment active',
+        currentSummary: 'Add fragment: choose a fragment and attach policy.',
+      };
+    }
+    const atomCount = Array.isArray(fragment.atoms) ? fragment.atoms.length : 0;
+    return {
+      rowMeta: `${fragment.name} (${fragment.formula}) • ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}`,
+      subtitle: 'Add fragment active',
+      currentSummaryBase: `Add fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms`,
+    };
+  }
+
+  function getMoleculeAddPresentation() {
+    const molecule = getCurrentMoleculeDefinition();
+    if (!molecule) {
+      return {
+        rowMeta: 'Choose molecule • click to place',
+        subtitle: 'Add molecule active',
+        currentSummary: 'Add molecule: choose a standalone molecule to place.',
+      };
+    }
+    const atomCount = Array.isArray(molecule.atoms) ? molecule.atoms.length : 0;
+    return {
+      rowMeta: `${molecule.name} (${molecule.formula}) • ${atomCount} atoms`,
+      subtitle: 'Add molecule active',
+      currentSummary: `Add molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`,
+    };
+  }
+
+  function getBondPresentation() {
+    return {
+      rowMeta: `Order ${editBondOrder} • click bond to edit • click two atoms to create`,
+      subtitle: 'Bond active',
+      hint: 'Bond active',
+    };
+  }
+
+  function getCleanStructurePresentation() {
+    return {
+      rowMeta: 'One-time UFF optimization',
+    };
+  }
+
+  function getShiftComPresentation() {
+    return {
+      rowMeta: 'Move active molecule center of mass to the origin',
+    };
+  }
+
+  function getAlignPrincipalPresentation() {
+    return {
+      rowMeta: 'Align principal inertia axes to X, Y, and Z',
+    };
+  }
+
+  function getTransformPresentation() {
+    return {
+      rowMeta: `${getEditTransformModeLabel(editTransformMode)} • ${getEditTransformScopeLabel(editTransformScope)}`,
+      subtitle: 'Transform active',
+      hint: 'Transform active',
+    };
+  }
+
+  function getEditSurfaceSubtitle() {
+    if (editInteractionMode === EDIT_INTERACTION_MODE.GESTURE) return getAtomManipulationPresentation().subtitle || 'Atom manipulation active';
+    if (editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.FRAGMENT) return getFragmentAddPresentation().subtitle;
+    if (editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.MOLECULE) return getMoleculeAddPresentation().subtitle;
+    if (editTool === EDIT_TOOL.BOND) return getBondPresentation().subtitle;
+    if (editTool === EDIT_TOOL.TRANSFORM) return getTransformPresentation().subtitle;
+    if (editTool === EDIT_TOOL.SELECT) return 'Selection active';
+    if (editTool === EDIT_TOOL.MOVE) return 'Move active';
+    if (editTool === EDIT_TOOL.ROTATE) return 'Rotate active';
+    if (editTool === EDIT_TOOL.DELETE) return 'Delete active';
+    return `${getEditToolLabel(editTool)} active`;
+  }
+
   /**
    * Set the active add-mode preview bond order.
    * @param {number} order
@@ -9812,10 +10160,10 @@
     editAddBondOrder = normalizeEditAddBondOrder(order);
     refreshActiveAddGrowPreview();
     updateEditToolboxUi({ syncSearch: false });
-    if (announce && editMode && editTool === EDIT_TOOL.ADD) {
+    if (announce && editMode && (editTool === EDIT_TOOL.ADD || isGestureEditMode())) {
       if (editAddMode === EDIT_ADD_MODE.FRAGMENT) setHintMessage(`Fragment attach bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
       else if (editAddMode === EDIT_ADD_MODE.MOLECULE) setHintMessage('Molecule placement mode: bond order hotkeys are ignored.');
-      else setHintMessage(`Add atom bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
+      else setHintMessage(`Atom manipulation bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
     }
   }
 
@@ -9847,232 +10195,6 @@
     updateEditToolboxUi({ syncSearch: false });
     if (!announce || !editMode || editTool !== EDIT_TOOL.BOND) return;
     setHintMessage('Bond tool: Click two atoms to create a bond • Click an existing bond to edit order • Right-click a bond or choose 0 to delete it.');
-  }
-
-  /**
-   * Return one stable cleanup context for the active editable record.
-   * @returns {{record:*,vol:*,atomPositions:Array<{pos:THREE.Vector3,Z:number}>}|null}
-   */
-  function getBondCleanupContext() {
-    const record = ensureEditableVolumeRecord();
-    const vol = record && record.vol;
-    if (!record || !vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return null;
-    ensureVolumeSchema(vol, { inferMissingBonds: false });
-    return {
-      record,
-      vol,
-      atomPositions: buildBondAtomRecords(vol, { includeRenderColor: false }),
-    };
-  }
-
-  /**
-   * Build one human-readable summary for the current cleanup diff.
-   * @param {{additions?:Array<object>,removable?:Array<object>,warnings?:Array<object>}|null} diff
-   * @returns {string}
-   */
-  function formatBondCleanupSummary(diff) {
-    const additions = Array.isArray(diff && diff.additions) ? diff.additions.length : 0;
-    const removable = Array.isArray(diff && diff.removable) ? diff.removable.length : 0;
-    const warnings = Array.isArray(diff && diff.warnings) ? diff.warnings.length : 0;
-    if (additions === 0 && removable === 0 && warnings === 0) {
-      return 'No cleanup changes suggested for the current geometry.';
-    }
-    return `Add ${additions} • Remove ${removable} perceived • Warn ${warnings} explicit`;
-  }
-
-  /**
-   * Add one cleanup preview line.
-   * @param {THREE.Vector3|null} start
-   * @param {THREE.Vector3|null} end
-   * @param {{color:number,opacity?:number,dashed?:boolean}=} options
-   */
-  function addBondCleanupPreviewLine(start, end, options = {}) {
-    if (!start || !end || typeof start.distanceToSquared !== 'function' || start.distanceToSquared(end) <= 1e-12) return;
-    const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const dashed = !!options.dashed;
-    const material = dashed
-      ? new THREE.LineDashedMaterial({
-          color: Number.isFinite(options.color) ? options.color : 0x40d97a,
-          dashSize: 0.16,
-          gapSize: 0.10,
-          transparent: true,
-          opacity: Number.isFinite(options.opacity) ? options.opacity : 0.94,
-          depthTest: false,
-          depthWrite: false,
-        })
-      : new THREE.LineBasicMaterial({
-          color: Number.isFinite(options.color) ? options.color : 0xff8c42,
-          transparent: true,
-          opacity: Number.isFinite(options.opacity) ? options.opacity : 0.92,
-          depthTest: false,
-          depthWrite: false,
-        });
-    const line = new THREE.Line(geometry, material);
-    if (dashed && typeof line.computeLineDistances === 'function') line.computeLineDistances();
-    line.renderOrder = 9700;
-    bondCleanupPreviewGroup.add(line);
-  }
-
-  /**
-   * Rebuild the transient bond-cleanup preview geometry.
-   * @param {*} vol
-   * @param {{additions?:Array<object>,removable?:Array<object>,warnings?:Array<object>}|null} diff
-   */
-  function renderBondCleanupPreview(vol, diff) {
-    clearGroup(bondCleanupPreviewGroup);
-    if (!vol || !Array.isArray(vol.atoms) || !diff) return;
-    const getBondEndpoints = (bond) => {
-      if (!bond || !Number.isInteger(bond.i) || !Number.isInteger(bond.j)) return null;
-      const atomA = vol.atoms[bond.i];
-      const atomB = vol.atoms[bond.j];
-      if (!atomA || !atomB) return null;
-      return [atomUnitsToAng(vol, atomA), atomUnitsToAng(vol, atomB)];
-    };
-    for (const bond of (diff.additions || [])) {
-      const endpoints = getBondEndpoints(bond);
-      if (!endpoints) continue;
-      addBondCleanupPreviewLine(endpoints[0], endpoints[1], { color: 0x40d97a, dashed: true, opacity: 0.95 });
-    }
-    for (const bond of (diff.removable || [])) {
-      const endpoints = getBondEndpoints(bond);
-      if (!endpoints) continue;
-      addBondCleanupPreviewLine(endpoints[0], endpoints[1], { color: 0xff5c5c, dashed: false, opacity: 0.92 });
-    }
-    for (const bond of (diff.warnings || [])) {
-      const endpoints = getBondEndpoints(bond);
-      if (!endpoints) continue;
-      addBondCleanupPreviewLine(endpoints[0], endpoints[1], { color: 0xffc75f, dashed: true, opacity: 0.92 });
-    }
-  }
-
-  /**
-   * Clear the cleanup preview state and restore the Bond popover to idle state.
-   * @param {{quiet?:boolean}=} options
-   */
-  function clearBondCleanupPreview(options = {}) {
-    bondCleanupPreviewState = null;
-    clearGroup(bondCleanupPreviewGroup);
-    if (!options.quiet) updateBondCleanupUi();
-  }
-
-  /**
-   * Refresh the cleanup popover text/buttons for the Bond tool.
-   */
-  function updateBondCleanupUi() {
-    const isBondActive = currentMode === MODES.EDIT && editTool === EDIT_TOOL.BOND;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    if (bondCleanupPreviewState && bondCleanupPreviewState.record !== record) {
-      bondCleanupPreviewState = null;
-      clearGroup(bondCleanupPreviewGroup);
-    }
-    const previewState = isBondActive ? bondCleanupPreviewState : null;
-    if (editBondCleanupIntroEl) {
-      editBondCleanupIntroEl.textContent = 'Review geometry-based bond cleanup for perceived bonds only. Explicit bonds are never auto-removed.';
-    }
-    if (editBondCleanupStartBtn) {
-      editBondCleanupStartBtn.disabled = !record || !record.vol || !Array.isArray(record.vol.atoms) || record.vol.atoms.length === 0;
-      editBondCleanupStartBtn.textContent = previewState ? 'Recompute Cleanup' : 'Clean Up Bonds';
-    }
-    if (editBondCleanupSummaryEl) {
-      editBondCleanupSummaryEl.textContent = previewState
-        ? formatBondCleanupSummary(previewState.diff)
-        : 'Preview perceived-bond additions/removals for the current geometry.';
-    }
-    if (editBondCleanupActionsEl) {
-      editBondCleanupActionsEl.setAttribute('data-visible', previewState ? 'true' : 'false');
-    }
-    const hasApplyableChanges = !!(
-      previewState
-      && ((previewState.diff.additions && previewState.diff.additions.length) || (previewState.diff.removable && previewState.diff.removable.length))
-    );
-    if (editBondCleanupApplyBtn) editBondCleanupApplyBtn.disabled = !hasApplyableChanges;
-  }
-
-  /**
-   * Compute and preview the current cleanup diff for the active editable record.
-   * @returns {boolean}
-   */
-  function startBondCleanupPreview() {
-    const ctx = getBondCleanupContext();
-    if (!ctx) {
-      setHintMessage('No editable structure is available for bond cleanup.');
-      clearBondCleanupPreview();
-      return false;
-    }
-    const diff = classifyBondCleanupDiff(ctx.vol, ctx.atomPositions);
-    bondCleanupPreviewState = {
-      record: ctx.record,
-      diff,
-    };
-    renderBondCleanupPreview(ctx.vol, diff);
-    updateBondCleanupUi();
-    setHintMessage(`Bond cleanup preview: ${formatBondCleanupSummary(diff)}`);
-    return true;
-  }
-
-  /**
-   * Apply the currently previewed cleanup diff as one undoable graph mutation.
-   * @returns {boolean}
-   */
-  function applyBondCleanupPreview() {
-    const ctx = getBondCleanupContext();
-    if (!ctx) {
-      setHintMessage('No editable structure is available for bond cleanup.');
-      clearBondCleanupPreview();
-      return false;
-    }
-    const diff = classifyBondCleanupDiff(ctx.vol, ctx.atomPositions);
-    const additions = Array.isArray(diff.additions) ? diff.additions : [];
-    const removable = Array.isArray(diff.removable) ? diff.removable : [];
-    if (!additions.length && !removable.length) {
-      bondCleanupPreviewState = { record: ctx.record, diff };
-      renderBondCleanupPreview(ctx.vol, diff);
-      updateBondCleanupUi();
-      setHintMessage(diff.warnings && diff.warnings.length
-        ? `Bond cleanup: ${diff.warnings.length} explicit bond warning${diff.warnings.length === 1 ? '' : 's'} only.`
-        : 'Bond cleanup: no perceived-bond changes to apply.');
-      return false;
-    }
-    const beforeBonds = cloneBondSnapshot(ctx.vol);
-    let changed = false;
-    for (const bond of additions) {
-      const status = upsertVolumeBond(ctx.vol, bond.a, bond.b, 1, 'normal', 'perceived');
-      if (status && status !== 'unchanged') changed = true;
-    }
-    for (const bond of removable) {
-      if (removeVolumeBond(ctx.vol, bond.a, bond.b)) changed = true;
-    }
-    ensureVolumeSchema(ctx.vol, { inferMissingBonds: false });
-    const afterBonds = cloneBondSnapshot(ctx.vol);
-    if (!changed || bondSnapshotsEqual(beforeBonds, afterBonds)) {
-      bondCleanupPreviewState = { record: ctx.record, diff };
-      renderBondCleanupPreview(ctx.vol, diff);
-      updateBondCleanupUi();
-      setHintMessage('Bond cleanup: no perceived-bond changes were applied.');
-      return false;
-    }
-    const atomSnapshot = cloneAtomsSnapshot(ctx.vol);
-    pushEditHistoryEntry(ctx.record, atomSnapshot, atomSnapshot, 'Clean up bonds', {
-      beforeBonds,
-      afterBonds,
-    });
-    clearBondCleanupPreview({ quiet: true });
-    clearHover();
-    rebuildScene({ preserveView: true });
-    updateSidePanel();
-    setHintMessage(`Applied bond cleanup: ${formatBondCleanupSummary(diff)}`);
-    return true;
-  }
-
-  /**
-   * Dismiss the current cleanup preview without mutating the stored graph.
-   * @returns {boolean}
-   */
-  function cancelBondCleanupPreview() {
-    if (!bondCleanupPreviewState) return false;
-    clearBondCleanupPreview();
-    setHintMessage('Bond cleanup preview cleared.');
-    return true;
   }
 
   /**
@@ -10214,6 +10336,9 @@
     cloneBondSnapshot,
     bondSnapshotsEqual,
     cloneAtomsSnapshot,
+    cloneVolumeAnnotationsSnapshot,
+    atomUnitsToAng,
+    adjustHydrogensAfterBondEdit: (vol, atomIndices, options = {}) => applyAutomaticHydrogenAdjustmentToVolume(vol, atomIndices, options),
     pushEditHistoryEntry,
     clearHover,
     rebuildScene,
@@ -10234,6 +10359,10 @@
     bindings: adaptivePopoverBindings,
     onOpenMode: (kind, binding, options = {}) => {
       if (!binding) return;
+      if (kind === 'atom') {
+        setEditInteractionMode(EDIT_INTERACTION_MODE.GESTURE, { keepDrawerOpen: true });
+        return;
+      }
       if (binding.mode) {
         setEditInteractionMode(EDIT_INTERACTION_MODE.LEGACY, { openDrawer: true });
         setEditAddMode(binding.mode, { announce: false, syncSearch: true });
@@ -10317,6 +10446,7 @@
     ensureAddGrowPreviewMeshes(z);
     const atomRadius = getRenderedAtomDisplayRadius(z);
     const placement = getPreviewBondSegmentPlacement(anchorPos, newPos, anchorZ, z, { minGeomLen: 0.03 });
+    addPreviewAtomMesh.visible = true;
     addPreviewAtomMesh.position.copy(newPos);
     addPreviewAtomMesh.scale.setScalar(atomRadius);
     if (!placement.valid) {
@@ -10327,6 +10457,36 @@
     addPreviewBondMesh.position.copy(placement.mid);
     addPreviewBondMesh.scale.set(placement.bondRadius, placement.geomLen, placement.bondRadius);
     addPreviewBondMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), placement.dirNorm);
+  }
+
+  /**
+   * Show a bond-only grow preview against one existing atom target.
+   * The ghost atom disappears, but the transient bond cylinder remains so the
+   * user sees the pending connection explicitly.
+   * @param {THREE.Vector3} anchorPos
+   * @param {THREE.Vector3} targetPos
+   * @param {number} anchorZ
+   * @param {number} targetZ
+   */
+  function updateAddGrowTargetBondPreview(anchorPos, targetPos, anchorZ, targetZ) {
+    ensureAddGrowPreviewMeshes(targetZ);
+    if (addPreviewAtomMesh) addPreviewAtomMesh.visible = false;
+    if (!anchorPos || !targetPos) {
+      if (addPreviewBondMesh) addPreviewBondMesh.visible = false;
+      clearGroup(addAngleGuideGroup);
+      return;
+    }
+    const placement = getPreviewBondSegmentPlacement(anchorPos, targetPos, anchorZ, targetZ, { minGeomLen: 0.03 });
+    if (!placement.valid) {
+      if (addPreviewBondMesh) addPreviewBondMesh.visible = false;
+      clearGroup(addAngleGuideGroup);
+      return;
+    }
+    addPreviewBondMesh.visible = true;
+    addPreviewBondMesh.position.copy(placement.mid);
+    addPreviewBondMesh.scale.set(placement.bondRadius, placement.geomLen, placement.bondRadius);
+    addPreviewBondMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), placement.dirNorm);
+    clearGroup(addAngleGuideGroup);
   }
 
   /**
@@ -10403,6 +10563,36 @@
   }
 
   /**
+   * Resolve one gesture-grow direction constrained to the camera-facing plane.
+   * This keeps atom-to-void grow placement on the screen plane and avoids
+   * front/back snapping as the pointer moves.
+   * @param {THREE.Vector3} rawDir
+   * @param {THREE.Vector3|null=} planeNormal
+   * @returns {THREE.Vector3}
+   */
+  function resolveAddGrowViewPlaneDirection(rawDir, planeNormal = null) {
+    const normal = planeNormal && planeNormal.isVector3 ? planeNormal.clone() : new THREE.Vector3();
+    if (normal.lengthSq() < 1e-10) {
+      camera.getWorldDirection(normal);
+    }
+    if (normal.lengthSq() < 1e-10) normal.set(0, 0, -1);
+    normal.normalize();
+
+    const projected = getProjectedUnitDirection(rawDir, normal);
+    if (projected) return projected;
+
+    const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const projectedRight = getProjectedUnitDirection(cameraRight, normal);
+    if (projectedRight) return projectedRight;
+
+    const cameraUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    const projectedUp = getProjectedUnitDirection(cameraUp, normal);
+    if (projectedUp) return projectedUp;
+
+    return new THREE.Vector3(1, 0, 0);
+  }
+
+  /**
    * Recompute the active grow preview using current element/order settings.
    */
   function refreshActiveAddGrowPreview() {
@@ -10411,18 +10601,17 @@
     if (!vol || !Array.isArray(vol.atoms) || addGrowAnchorIndex < 0 || addGrowAnchorIndex >= vol.atoms.length) return;
     const rawDir = addGrowPreviewPos.clone().sub(addGrowAnchorPos);
     if (rawDir.lengthSq() < 1e-8) return;
-    const camDir = new THREE.Vector3();
-    camera.getWorldDirection(camDir);
-    const snapMeta = applyEditAddAngleSnap(rawDir, addGrowNeighborDirs, null, camDir);
-    const snapped = snapMeta.dir.clone().normalize();
-    addGrowDetectedAngleDeg = snapMeta.targetDeg || 0;
+    const placementState = getCurrentAddAtomPlacementPlaneState();
+    const planeNormal = placementState ? placementState.normal : null;
+    const inPlaneDir = resolveAddGrowViewPlaneDirection(rawDir, planeNormal);
+    addGrowDetectedAngleDeg = 0;
     const anchorZ = vol.atoms[addGrowAnchorIndex].Z | 0;
     const attach = getActiveAddAttachSettings(anchorZ);
     const dist = attach.bondLength;
-    const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
+    const newPos = addGrowAnchorPos.clone().addScaledVector(inPlaneDir, dist);
     addGrowPreviewPos = newPos;
     updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, anchorZ, attach.previewZ);
-    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, snapMeta);
+    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, null);
   }
 
   /**
@@ -10435,67 +10624,46 @@
     if (!vol || !Array.isArray(vol.atoms) || addGrowAnchorIndex < 0 || addGrowAnchorIndex >= vol.atoms.length) return;
     setRaycasterFromEvent(e);
     const placementState = getCurrentAddAtomPlacementPlaneState();
-    const camDir = placementState ? placementState.normal.clone() : new THREE.Vector3();
-    if (!placementState) camera.getWorldDirection(camDir);
+    const planeNormal = placementState ? placementState.normal.clone() : new THREE.Vector3();
+    if (!placementState) camera.getWorldDirection(planeNormal);
     const plane = placementState
       ? placementState.plane
-      : new THREE.Plane().setFromNormalAndCoplanarPoint(camDir, addGrowAnchorPos);
+      : new THREE.Plane().setFromNormalAndCoplanarPoint(planeNormal, addGrowAnchorPos);
     const hit = new THREE.Vector3();
     if (!raycaster.ray.intersectPlane(plane, hit)) return;
     let rawDir = hit.clone().sub(addGrowAnchorPos);
     if (rawDir.lengthSq() < 1e-10) {
       rawDir = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     }
-    rawDir.normalize();
-    const bypassAngleSnap = !!(e && e.shiftKey);
-    const snapMeta = applyEditAddAngleSnap(
-      rawDir,
-      addGrowNeighborDirs,
-      bypassAngleSnap ? -1 : null,
-      camDir
-    );
-    const snapped = snapMeta.dir.clone().normalize();
-    addGrowDetectedAngleDeg = bypassAngleSnap ? 0 : (snapMeta.targetDeg || 0);
+    const inPlaneDir = resolveAddGrowViewPlaneDirection(rawDir, planeNormal);
+    addGrowDetectedAngleDeg = 0;
     const anchorZ = vol.atoms[addGrowAnchorIndex].Z | 0;
     const attach = getActiveAddAttachSettings(anchorZ);
     const dist = attach.bondLength;
-    const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
+    const newPos = addGrowAnchorPos.clone().addScaledVector(inPlaneDir, dist);
     addGrowPreviewPos = newPos;
     updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, anchorZ, attach.previewZ);
-    const guideMeta = bypassAngleSnap
-      ? applyEditAddAngleSnap(rawDir, addGrowNeighborDirs, null, camDir)
-      : snapMeta;
-    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, guideMeta);
+    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, null);
   }
 
   function updateAddGrowPreviewFromWorldPos(worldPos, options = {}) {
     if (!addGrowActive || !addGrowAnchorPos || !worldPos || !worldPos.isVector3) return;
     const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
     if (!vol || !Array.isArray(vol.atoms) || addGrowAnchorIndex < 0 || addGrowAnchorIndex >= vol.atoms.length) return;
+    const placementState = getCurrentAddAtomPlacementPlaneState();
+    const planeNormal = placementState ? placementState.normal.clone() : new THREE.Vector3();
+    if (!placementState) camera.getWorldDirection(planeNormal);
     let rawDir = worldPos.clone().sub(addGrowAnchorPos);
     if (rawDir.lengthSq() < 1e-10) return;
-    rawDir.normalize();
-    const camDir = new THREE.Vector3();
-    camera.getWorldDirection(camDir);
-    const bypassAngleSnap = !!options.bypassAngleSnap;
-    const snapMeta = applyEditAddAngleSnap(
-      rawDir,
-      addGrowNeighborDirs,
-      bypassAngleSnap ? -1 : null,
-      camDir
-    );
-    const snapped = snapMeta.dir.clone().normalize();
-    addGrowDetectedAngleDeg = bypassAngleSnap ? 0 : (snapMeta.targetDeg || 0);
+    const inPlaneDir = resolveAddGrowViewPlaneDirection(rawDir, planeNormal);
+    addGrowDetectedAngleDeg = 0;
     const anchorZ = vol.atoms[addGrowAnchorIndex].Z | 0;
     const attach = getActiveAddAttachSettings(anchorZ);
     const dist = attach.bondLength;
-    const newPos = addGrowAnchorPos.clone().addScaledVector(snapped, dist);
+    const newPos = addGrowAnchorPos.clone().addScaledVector(inPlaneDir, dist);
     addGrowPreviewPos = newPos;
     updateAddGrowPreviewMeshes(addGrowAnchorPos, newPos, anchorZ, attach.previewZ);
-    const guideMeta = bypassAngleSnap
-      ? applyEditAddAngleSnap(rawDir, addGrowNeighborDirs, null, camDir)
-      : snapMeta;
-    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, guideMeta);
+    updateAddGrowAngleGuide(addGrowAnchorPos, newPos, null);
   }
 
   /**
@@ -10847,11 +11015,11 @@
     const isRotate = editTool === EDIT_TOOL.ROTATE;
     const isAdd = editTool === EDIT_TOOL.ADD;
     const isBond = editTool === EDIT_TOOL.BOND;
-    const isTransform = editTool === EDIT_TOOL.TRANSFORM;
     const isDelete = editTool === EDIT_TOOL.DELETE;
     const isAtomAddMode = editAddMode === EDIT_ADD_MODE.ATOM;
     const isFragmentAddMode = editAddMode === EDIT_ADD_MODE.FRAGMENT;
     const isMoleculeAddMode = editAddMode === EDIT_ADD_MODE.MOLECULE;
+    const showGestureAtomsMenu = isEdit && editInteractionMode === EDIT_INTERACTION_MODE.GESTURE;
 
     if (editToolboxEl) {
       editToolboxEl.setAttribute('aria-hidden', 'true');
@@ -10868,35 +11036,30 @@
     if (editToolMoveBtn) editToolMoveBtn.classList.toggle('active', isMove);
     if (editToolAddBtn) editToolAddBtn.classList.toggle('active', isAdd);
     if (editToolBondBtn) editToolBondBtn.classList.toggle('active', isBond);
-    if (editToolTransformBtn) editToolTransformBtn.classList.toggle('active', isTransform);
     if (editToolDeleteBtn) editToolDeleteBtn.classList.toggle('active', isDelete);
     if ((!isEdit || !isBond) && bondEditing) bondEditing.hidePopup();
-    if (!isEdit || !isBond) clearBondCleanupPreview({ quiet: true });
     if (editAddPaneEl) editAddPaneEl.classList.toggle('active', isEdit && isAdd);
     if (editBondPaneEl) editBondPaneEl.classList.toggle('active', isEdit && isBond);
-    if (editTransformPaneEl) editTransformPaneEl.classList.toggle('active', isEdit && isTransform);
     if (editAddModeAtomBtn) editAddModeAtomBtn.classList.toggle('active', isAtomAddMode);
     if (editAddModeFragmentBtn) editAddModeFragmentBtn.classList.toggle('active', isFragmentAddMode);
     if (editAddModeMoleculeBtn) editAddModeMoleculeBtn.classList.toggle('active', isMoleculeAddMode);
-    if (editAddAtomPaneEl) editAddAtomPaneEl.classList.toggle('active', isAtomAddMode);
+    if (editAddAtomPaneEl) editAddAtomPaneEl.classList.toggle('active', isAtomAddMode || showGestureAtomsMenu);
     if (editAddFragmentPaneEl) editAddFragmentPaneEl.classList.toggle('active', isFragmentAddMode);
     if (editAddMoleculePaneEl) editAddMoleculePaneEl.classList.toggle('active', isMoleculeAddMode);
-    if (editTransformScopeEl && document.activeElement !== editTransformScopeEl) editTransformScopeEl.value = normalizeEditTransformScope(editTransformScope);
-    if (editTransformModeEl && document.activeElement !== editTransformModeEl) editTransformModeEl.value = normalizeEditTransformMode(editTransformMode);
-    if (editTransformCleanupAutoEl) editTransformCleanupAutoEl.checked = !!editTransformAutoCleanupEnabled;
     if (editFragmentAttachPolicyEl && document.activeElement !== editFragmentAttachPolicyEl) {
       editFragmentAttachPolicyEl.value = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
     }
     updateEditCleanupUiState();
 
-    const angleLabel = addGrowDetectedAngleDeg > 0 ? `${addGrowDetectedAngleDeg.toFixed(1)}°` : 'auto';
-    const atomInfo = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
-    const atomSymbol = atomInfo && atomInfo.symbol ? atomInfo.symbol : `Z${editAddElementZ}`;
-    const atomName = atomInfo && atomInfo.name ? atomInfo.name : atomSymbol;
-    if (editAddCurrentEl) editAddCurrentEl.textContent = `Adding atom: ${atomName} (${atomSymbol}) • bond ${editAddBondOrder} • angle ${angleLabel}`;
+    const atomPresentation = getAtomManipulationPresentation();
+    const angleLabel = atomPresentation.angleLabel;
+    syncEditAddCoordinationControl();
+    if (editAddAdjustHydrogensEl) editAddAdjustHydrogensEl.checked = !!editAddAdjustHydrogensEnabled;
+    if (editAddCurrentEl) {
+      editAddCurrentEl.textContent = atomPresentation.currentSummary;
+    }
     if (editBondOrderEl && document.activeElement !== editBondOrderEl) editBondOrderEl.value = String(editBondOrder);
     if (editBondActionEl && document.activeElement !== editBondActionEl) editBondActionEl.value = normalizeEditBondAction(editBondAction);
-    updateBondCleanupUi();
     if (editBondCurrentEl) {
       const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
       const vol = record && record.vol;
@@ -10934,9 +11097,9 @@
         const modeSuffix = policy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING
           ? (fuseEligible ? 'bond click • drag spin • click confirm' : 'fuse ring unavailable')
           : `bond ${editAddBondOrder} • angle ${angleLabel}`;
-        editFragmentCurrentEl.textContent = `Adding fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(policy)} • ${modeSuffix} • ${cleanupLabel}`;
+        editFragmentCurrentEl.textContent = `Add fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(policy)} • ${modeSuffix} • ${cleanupLabel}`;
       } else {
-        editFragmentCurrentEl.textContent = 'No fragment selected';
+        editFragmentCurrentEl.textContent = 'Add fragment: choose a fragment and attach policy.';
       }
     }
     const molecule = getCurrentMoleculeDefinition();
@@ -10944,32 +11107,14 @@
       if (molecule) {
         const atomCount = Array.isArray(molecule.atoms) ? molecule.atoms.length : 0;
         if (moleculePlaceActive) {
-          editMoleculeCurrentEl.textContent = `Placing molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms • drag rotate • click to place`;
+          editMoleculeCurrentEl.textContent = `Add molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms • drag rotate • click to place`;
         } else {
-          editMoleculeCurrentEl.textContent = `Molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`;
+          editMoleculeCurrentEl.textContent = `Add molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`;
         }
       } else {
-        editMoleculeCurrentEl.textContent = 'No molecule selected';
+        editMoleculeCurrentEl.textContent = 'Add molecule: choose a standalone molecule to place.';
       }
     }
-    if (editTransformCurrentEl) {
-      const scopeLabel = getEditTransformScopeLabel(editTransformScope);
-      const modeLabel = getEditTransformModeLabel(editTransformMode);
-      const selectionSummary = describeTransformSelection(
-        (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null,
-        getActiveTransformSelectionIndices(),
-        transformSelectionKind,
-        getCurrentTransformSelectionContext()
-      ).status;
-      let usage = 'Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the current selection to rotate • Bond-side selections spin about the bond axis • Click empty space to clear • Shift-click adds another target';
-      if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
-        usage = 'Click a bond to select one side • drag the current selection to rotate around the opposite atom • Shift-click adds another target';
-      } else {
-        usage = 'Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the current selection to rotate • Bond-side selections spin about the bond axis • Click empty space to clear • Shift-click adds another target';
-      }
-      editTransformCurrentEl.textContent = `Scope: ${scopeLabel} • Action: ${modeLabel} • Cleanup ${editTransformAutoCleanupEnabled ? 'on' : 'off'} • ${selectionSummary} • ${usage}`;
-    }
-
     if (syncSearch && isAtomAddMode && editAddSearchEl && document.activeElement !== editAddSearchEl) {
       editAddSearchEl.value = formatEditAddElementSearchValue(editAddElementZ);
       editAddSearchClearedOnFocus = false;
@@ -11031,10 +11176,6 @@
     if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
     if (nextTool !== EDIT_TOOL.MOVE) clearMoveOperatorBaseline();
     if (nextTool !== EDIT_TOOL.ROTATE) clearRotateOperatorBaseline();
-    if (nextTool !== EDIT_TOOL.BOND) {
-      clearBondCleanupPreview({ quiet: true });
-      if (adaptivePopoverController) adaptivePopoverController.hide('bond');
-    }
     editTools.setEditTool(nextTool, options);
   }
 
@@ -11046,6 +11187,63 @@
   function setEditAddMode(nextMode, options = {}) {
     if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
     editTools.setEditAddMode(nextMode, options);
+  }
+
+  function getEditAddCoordinationProfile(z = editAddElementZ) {
+    return getCoordinationProfile(Number(z) | 0);
+  }
+
+  function getEffectiveEditAddCoordinationGeometryId(z = editAddElementZ) {
+    const atomicNumber = Number(z) | 0;
+    const profile = getEditAddCoordinationProfile(atomicNumber);
+    if (!profile || !Array.isArray(profile.choices) || !profile.choices.length) return '';
+    const stored = String(editAddCoordinationByZ.get(atomicNumber) || '').trim();
+    if (stored && profile.choices.some((choice) => String(choice && choice.geometryId || '') === stored)) return stored;
+    return String(profile.defaultGeometryId || profile.choices[0].geometryId || '').trim();
+  }
+
+  function syncEditAddCoordinationControl() {
+    if (!editAddCoordinationEl) return;
+    const profile = getEditAddCoordinationProfile(editAddElementZ);
+    const choices = Array.isArray(profile && profile.choices) ? profile.choices : [];
+    const nextValue = getEffectiveEditAddCoordinationGeometryId(editAddElementZ);
+    const currentSignature = choices.map((choice) => `${choice.geometryId}:${choice.text}`).join('|');
+    if (editAddCoordinationEl.getAttribute('data-choices-signature') !== currentSignature) {
+      editAddCoordinationEl.innerHTML = '';
+      for (const choice of choices) {
+        const option = document.createElement('option');
+        option.value = String(choice.geometryId || '');
+        option.textContent = String(choice.text || choice.label || choice.geometryId || '');
+        editAddCoordinationEl.appendChild(option);
+      }
+      editAddCoordinationEl.setAttribute('data-choices-signature', currentSignature);
+    }
+    editAddCoordinationEl.disabled = !choices.length;
+    if (choices.length) {
+      if (editAddCoordinationEl.value !== nextValue) editAddCoordinationEl.value = nextValue;
+    } else {
+      editAddCoordinationEl.value = '';
+    }
+  }
+
+  function setEditAddCoordination(geometryId, options = {}) {
+    const announce = !!options.announce;
+    const atomicNumber = editAddElementZ | 0;
+    const profile = getEditAddCoordinationProfile(atomicNumber);
+    const nextGeometryId = String(geometryId || '').trim();
+    if (!profile || !Array.isArray(profile.choices) || !profile.choices.some((choice) => String(choice && choice.geometryId || '') === nextGeometryId)) {
+      syncEditAddCoordinationControl();
+      return false;
+    }
+    editAddCoordinationByZ.set(atomicNumber, nextGeometryId);
+    syncEditAddCoordinationControl();
+    updateEditToolboxUi({ syncSearch: false });
+    if (announce && editMode) {
+      const geometry = getCoordinationGeometry(nextGeometryId);
+      const labelText = geometry ? `${geometry.label} (${geometry.cn})` : nextGeometryId;
+      setHintMessage(`Default coordination for ${getElementSymbol(atomicNumber)} set to ${labelText}.`);
+    }
+    return true;
   }
 
   /**
@@ -11060,9 +11258,10 @@
     if (!Number.isInteger(z) || z <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
     editAddElementZ = z;
     refreshActiveAddGrowPreview();
+    syncEditAddCoordinationControl();
     updateEditToolboxUi({ syncSearch });
-    if (announce && editMode && editTool === EDIT_TOOL.ADD) {
-      setHintMessage(`Add atom: ${getElementName(z)} (${getElementSymbol(z)})`);
+    if (announce && editMode && (editTool === EDIT_TOOL.ADD || isGestureEditMode())) {
+      setHintMessage(`Atom manipulation element: ${getElementName(z)} (${getElementSymbol(z)})`);
     }
     return true;
   }
@@ -11312,6 +11511,21 @@
         updateEditToolboxUi({ syncSearch: false });
       });
     }
+    if (editAddCoordinationEl) {
+      editAddCoordinationEl.addEventListener('change', () => {
+        const nextGeometryId = String(editAddCoordinationEl.value || '').trim();
+        setEditAddCoordination(nextGeometryId, { announce: true });
+      });
+      syncEditAddCoordinationControl();
+    }
+    if (editAddAdjustHydrogensEl) {
+      editAddAdjustHydrogensEl.checked = !!editAddAdjustHydrogensEnabled;
+      editAddAdjustHydrogensEl.addEventListener('change', () => {
+        editAddAdjustHydrogensEnabled = !!editAddAdjustHydrogensEl.checked;
+        updateEditToolboxUi({ syncSearch: false });
+        if (editMode) setHintMessage(`Adjust hydrogens ${editAddAdjustHydrogensEnabled ? 'enabled' : 'disabled'} for new atoms.`);
+      });
+    }
     if (editFragmentSearchEl) {
       const commit = () => {
         const fragment = resolveCatalogQuery(editFragmentSearchEl.value, CATALOG_KIND.FRAGMENT);
@@ -11392,16 +11606,6 @@
     if (editMoleculeAlignXBtn) editMoleculeAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a molecule first, then align to X.'); };
     if (editMoleculeAlignYBtn) editMoleculeAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a molecule first, then align to Y.'); };
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
-    if (editGestureElementChipEl) {
-      editGestureElementChipEl.onclick = () => {
-        setEditInteractionMode(EDIT_INTERACTION_MODE.LEGACY, { openDrawer: true });
-        if (adaptivePopoverController) adaptivePopoverController.openMode('atom', { announce: false, focusSearch: true });
-      };
-    }
-    if (editGestureAdvancedBtn) {
-      editGestureAdvancedBtn.onclick = () => toggleEditAdvancedDrawer();
-    }
-    if (editAdaptiveSelectionBtn) editAdaptiveSelectionBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.SELECT);
     if (editAdaptiveMoveBtn) editAdaptiveMoveBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.MOVE);
     if (editAdaptiveRotateBtn) editAdaptiveRotateBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.ROTATE);
     bindAdaptivePopoverItem({
@@ -11410,8 +11614,7 @@
       triggerEl: editAdaptiveAddAtomBtn,
       popoverEl: editAdaptiveAddAtomPopoverEl,
       onClick: () => {
-        setEditInteractionMode(EDIT_INTERACTION_MODE.LEGACY, { openDrawer: true });
-        adaptivePopoverController && adaptivePopoverController.openMode('atom', { announce: true, focusSearch: false });
+        setEditInteractionMode(EDIT_INTERACTION_MODE.GESTURE, { keepDrawerOpen: true });
       },
       clickShowsPopover: true,
       clickFocusesSearch: true,
@@ -11446,31 +11649,9 @@
       hoverShowsPopover: true,
       hideDelayMs: 120,
     });
-    bindAdaptivePopoverItem({
-      controller: adaptivePopoverController,
-      kind: 'bond',
-      triggerEl: editAdaptiveBondBtn,
-      popoverEl: editAdaptiveBondPopoverEl,
-      onClick: () => activateLegacyEditTool(EDIT_TOOL.BOND),
-      clickShowsPopover: true,
-      clickFocusesSearch: false,
-      hoverShowsPopover: true,
-      hideDelayMs: 120,
-    });
-    bindAdaptivePopoverItem({
-      controller: adaptivePopoverController,
-      kind: 'transform',
-      triggerEl: editAdaptiveTransformBtn,
-      popoverEl: editAdaptiveTransformPopoverEl,
-      onClick: () => activateLegacyEditTool(EDIT_TOOL.TRANSFORM),
-      clickShowsPopover: true,
-      clickFocusesSearch: true,
-      hoverShowsPopover: true,
-      hideDelayMs: 120,
-    });
-    if (editBondCleanupStartBtn) editBondCleanupStartBtn.onclick = () => { startBondCleanupPreview(); };
-    if (editBondCleanupApplyBtn) editBondCleanupApplyBtn.onclick = () => { applyBondCleanupPreview(); };
-    if (editBondCleanupCancelBtn) editBondCleanupCancelBtn.onclick = () => { cancelBondCleanupPreview(); };
+    if (editAdaptiveCleanStructureBtn) editAdaptiveCleanStructureBtn.onclick = () => { optimizeActiveStructureWithUff(); };
+    if (editAdaptiveShiftComBtn) editAdaptiveShiftComBtn.onclick = () => { centerActiveMoleculeMassAtOrigin(); };
+    if (editAdaptiveAlignPrincipalBtn) editAdaptiveAlignPrincipalBtn.onclick = () => { alignActiveMoleculePrincipalAxes(); };
     if (editAddAtomOperatorHeaderEl) {
       editAddAtomOperatorHeaderEl.onclick = () => {
         addAtomOperatorCollapsed = !addAtomOperatorCollapsed;
@@ -11654,7 +11835,6 @@
     if (editToolMoveBtn) editToolMoveBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.MOVE);
     if (editToolAddBtn) editToolAddBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.ADD);
     if (editToolBondBtn) editToolBondBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.BOND);
-    if (editToolTransformBtn) editToolTransformBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.TRANSFORM);
     if (editToolDeleteBtn) editToolDeleteBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.DELETE);
     if (editBondOrderEl) {
       editBondOrderEl.addEventListener('change', () => {
@@ -11664,40 +11844,6 @@
     if (editBondActionEl) {
       editBondActionEl.addEventListener('change', () => {
         setEditBondAction(editBondActionEl.value, { announce: true });
-      });
-    }
-    if (editTransformScopeEl) {
-      editTransformScopeEl.addEventListener('change', () => {
-        editTransformScope = normalizeEditTransformScope(editTransformScopeEl.value);
-        updateEditToolboxUi({ syncSearch: false });
-        updateTransformSelectionGuides();
-        if (editMode && editTool === EDIT_TOOL.TRANSFORM) {
-          setHintMessage(`Transform scope: ${getEditTransformScopeLabel(editTransformScope)}.`);
-        }
-      });
-    }
-    if (editTransformModeEl) {
-      editTransformModeEl.addEventListener('change', () => {
-        editTransformMode = normalizeEditTransformMode(editTransformModeEl.value);
-        updateEditToolboxUi({ syncSearch: false });
-        updateTransformSelectionGuides();
-        if (editMode && editTool === EDIT_TOOL.TRANSFORM) {
-          const modeLabel = getEditTransformModeLabel(editTransformMode);
-          if (editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
-            setHintMessage(`Transform action: ${modeLabel} • Click a bond to select one side, then drag to rotate around the opposite atom • Shift-click adds another target.`);
-          } else {
-            setHintMessage(`Transform action: ${modeLabel} • Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the current selection to rotate • Bond-side selections spin about the bond axis • Click empty space to clear • Shift-click adds another target.`);
-          }
-        }
-      });
-    }
-    if (editTransformCleanupAutoEl) {
-      editTransformCleanupAutoEl.addEventListener('change', () => {
-        editTransformAutoCleanupEnabled = !!editTransformCleanupAutoEl.checked;
-        updateEditToolboxUi({ syncSearch: false });
-        if (editMode && editTool === EDIT_TOOL.TRANSFORM) {
-          setHintMessage(`Transform cleanup: ${editTransformAutoCleanupEnabled ? 'ON' : 'OFF'}.`);
-        }
       });
     }
     updateEditCleanupUiState();
@@ -11847,6 +11993,7 @@
       return getMoleculeComponentIndices(record && record.vol, atomIndex);
     },
     getSelectedAtomDragAction: (atomIndex, e) => (editHaloController ? editHaloController.resolveSelectedAtomDragAction(atomIndex, e) : null),
+    applyBondCenterClick: (bondHit, e) => stepGestureBondCenterOrder(bondHit, 1, e),
     getPendingBondOrder: () => normalizeEditAddBondOrder(editAddBondOrder || 1),
     cyclePendingBondOrder: (direction) => {
       const current = normalizeEditAddBondOrder(editAddBondOrder || 1);
@@ -11905,12 +12052,11 @@
       if (!Array.isArray(world) || world.length < 3) return null;
       return projectWorldToClient({ x: world[0], y: world[1], z: world[2] });
     },
-    getAutoHydrogenRule,
-    resolveGeometryForEnvironment,
-    isTransitionMetalAtomicNumber,
-    isAutoBondSupportedAtomicNumber,
     getElementSymbol,
-    getLoadedElementZ: () => editAddElementZ | 0,
+    getAtomCoordinationGeometryId: (vol, atomIndex) => {
+      const meta = getAtomCoordinationMeta(vol, atomIndex);
+      return String(meta && meta.geometryId || '').trim();
+    },
     getGrowBondLength: (anchorZ) => {
       const attach = getActiveAddAttachSettings(anchorZ | 0);
       return Number(attach && attach.bondLength) || 1.1;
@@ -12067,6 +12213,13 @@
     updateRotateSelectionGizmo();
   }
   let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
+  let gestureBondSidePress = null;
+  let __contextDownPt = null; let __contextMoved = false;
+
+  function resetContextClickState() {
+    __contextDownPt = null;
+    __contextMoved = false;
+  }
   /**
    * Clear the current measurement/edit atom selection.
    */
@@ -12118,6 +12271,7 @@
       if (changed) editGestureController.clearState();
       else editGestureController.refreshUi();
     }
+    syncSelectedAtomManipulationOperatorSession();
     updateEditToolboxUi({ syncSearch: false });
     return changed;
   }
@@ -12148,6 +12302,22 @@
     const hudWidth = Math.max(0, Math.round(editGestureHudEl.getBoundingClientRect().width || editGestureHudEl.offsetWidth || 420));
     const maxLeft = Math.max(gap, viewportWidth - hudWidth - gap);
     editGestureHudEl.style.left = `${Math.min(left, maxLeft)}px`;
+  }
+
+  function positionEditAtomsMenu() {
+    if (editAtomsMenuEl) editAtomsMenuEl.setAttribute('aria-hidden', 'true');
+  }
+
+  function updateEditAtomsMenuUi() {
+    if (editAtomsMenuEl) editAtomsMenuEl.setAttribute('aria-hidden', 'true');
+    if (!editAddAtomPaneEl) return;
+    if (editAtomsMenuBodyEl && editAddAtomPaneEl.parentElement === editAtomsMenuBodyEl) {
+      restorePaneHomeHelper({
+        paneEl: editAddAtomPaneEl,
+        homeParent: editAddAtomPaneHomeParent,
+        homeNextSibling: editAddAtomPaneHomeNextSibling,
+      });
+    }
   }
 
   function projectWorldToClient(world) {
@@ -12182,18 +12352,20 @@
     const captureHtml = captureRadius > 0
       ? `<div class="editHaloCapture" style="left:${Number(anchor.x) || 0}px; top:${Number(anchor.y) || 0}px; width:${captureRadius * 2}px; height:${captureRadius * 2}px;"></div>`
       : '';
-    const elementsHtml = (Array.isArray(uiState.elements) ? uiState.elements : []).map((item) => {
+    const choicesHtml = (Array.isArray(uiState.choices) ? uiState.choices : []).map((item) => {
       const classes = [
-        'editHaloElement',
+        'editHaloChoice',
         item.active ? 'is-current' : '',
-        activeZone && activeZone.kind === 'element' && (activeZone.elementZ | 0) === (item.z | 0) ? 'is-active' : '',
+        activeZone && activeZone.kind === 'choice' && String(activeZone.geometryId || '') === String(item.geometryId || '') ? 'is-active' : '',
       ].filter(Boolean).join(' ');
-      return `<div class="${classes}" data-halo-element="${item.symbol}" style="left:${Number(item.x) || 0}px; top:${Number(item.y) || 0}px;">${item.symbol}</div>`;
+      const width = Math.max(82, Number(item.width) || 0);
+      const height = Math.max(26, Number(item.height) || 0);
+      return `<div class="${classes}" data-halo-coordination="${String(item.geometryId || '')}" style="left:${Number(item.x) || 0}px; top:${Number(item.y) || 0}px; width:${width}px; height:${height}px; line-height:${height}px;">${String(item.text || '')}</div>`;
     }).join('');
     const ghostsHtml = (Array.isArray(uiState.ghosts) ? uiState.ghosts : []).map((ghost) => {
       return `<div class="editHaloGhost" data-halo-ghost="${ghost.index}" style="left:${Number(ghost.x) || 0}px; top:${Number(ghost.y) || 0}px;"></div>`;
     }).join('');
-    editHaloLayerEl.innerHTML = `${captureHtml}<div class="editHaloCore" style="left:${Number(anchor.x) || 0}px; top:${Number(anchor.y) || 0}px;"></div>${ghostsHtml}${elementsHtml}`;
+    editHaloLayerEl.innerHTML = `${captureHtml}<div class="editHaloCore" style="left:${Number(anchor.x) || 0}px; top:${Number(anchor.y) || 0}px;"></div>${ghostsHtml}${choicesHtml}`;
   }
 
   function clearEditHaloGhostPreview() {
@@ -12314,6 +12486,7 @@
     const isVisible = currentMode === MODES.EDIT;
     if (editGestureHudEl) editGestureHudEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
     if (!isVisible) {
+      updateEditAtomsMenuUi();
       if (editHaloLayerEl) {
         editHaloLayerEl.setAttribute('aria-hidden', 'true');
         editHaloLayerEl.innerHTML = '';
@@ -12329,23 +12502,19 @@
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const selectionCount = getEditAtomSelection().length;
-    const loadedSymbol = getElementSymbol(editAddElementZ);
-    const loadedName = getElementName(editAddElementZ);
-    if (editGestureElementChipSymbolEl) editGestureElementChipSymbolEl.textContent = loadedSymbol;
-    if (editGestureElementChipLabelEl) editGestureElementChipLabelEl.textContent = gestureActive ? loadedName : 'Advanced';
-    if (editGestureElementChipEl) editGestureElementChipEl.setAttribute('title', gestureActive ? `Loaded element: ${loadedName}` : 'Open advanced atom controls');
+    const atomPresentation = getAtomManipulationPresentation();
     if (editGestureHintEl) {
       if (gestureActive) {
-        editGestureHintEl.textContent = String((haloState && haloState.hint) || editGestureUiState.hint || `Click void to place ${loadedSymbol} • Click atom to select`);
+        editGestureHintEl.textContent = String((haloState && haloState.hint) || editGestureUiState.hint || atomPresentation.hudHint);
       } else {
-        editGestureHintEl.textContent = `Advanced tool: ${getEditToolLabel(editTool)}${selectionCount ? ` • ${selectionCount} selected` : ''}`;
+        editGestureHintEl.textContent = `${getEditToolLabel(editTool)} active${selectionCount ? ` • ${selectionCount} selected` : ''}`;
       }
     }
     if (editGestureScopeEl) {
       if (gestureActive) {
-        editGestureScopeEl.textContent = String((haloState && haloState.scope) || editGestureUiState.scope || 'No selection');
+        editGestureScopeEl.textContent = String((haloState && haloState.scope) || editGestureUiState.scope || atomPresentation.scopeSummary);
       } else if (editTool === EDIT_TOOL.ADD) {
-        editGestureScopeEl.textContent = `Loaded element ${loadedSymbol} • Drawer ${editAdvancedDrawerOpen ? 'open' : 'closed'}`;
+        editGestureScopeEl.textContent = atomPresentation.scopeSummary;
       } else if (selectionCount) {
         editGestureScopeEl.textContent = `${selectionCount} atom${selectionCount === 1 ? '' : 's'} selected`;
       } else if (vol && Array.isArray(vol.atoms)) {
@@ -12359,10 +12528,7 @@
       editGestureBondOrderPillEl.setAttribute('aria-hidden', visible ? 'false' : 'true');
       editGestureBondOrderPillEl.textContent = `Bond ${Math.max(1, Math.min(3, Number(editGestureUiState.bondOrder) || 1))}`;
     }
-    if (editGestureAdvancedBtn) {
-      editGestureAdvancedBtn.textContent = editAdvancedDrawerOpen ? 'Hide advanced' : 'Advanced';
-      editGestureAdvancedBtn.setAttribute('aria-pressed', editAdvancedDrawerOpen ? 'true' : 'false');
-    }
+    updateEditAtomsMenuUi();
     renderEditHaloOverlay();
   }
 
@@ -12379,26 +12545,16 @@
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
-    const showLegacyDrawer = isVisible && editAdvancedDrawerOpen;
-    const isAtomAddActive = isVisible && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.ATOM;
+    const showLegacyDrawer = isVisible;
     const isFragmentAddActive = isVisible && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.FRAGMENT;
     const isMoleculeAddActive = isVisible && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.MOLECULE;
     const isRotateActive = hasEditableAtoms && editTool === EDIT_TOOL.ROTATE;
-    const isBondActive = hasEditableAtoms && editTool === EDIT_TOOL.BOND;
-    const isTransformActive = hasEditableAtoms && editTool === EDIT_TOOL.TRANSFORM;
     const selectionCount = getEditAtomSelection().length;
-    const fragment = getCurrentFragmentDefinition();
-    const molecule = getCurrentMoleculeDefinition();
-    if (!hasEditableAtoms && adaptivePopoverController) {
-      adaptivePopoverController.hide('bond');
-      adaptivePopoverController.hide('transform');
-    }
+    const atomPresentation = getAtomManipulationPresentation();
     updateEditGestureHudUi();
-    if (editAdaptiveMenuTitleEl) editAdaptiveMenuTitleEl.textContent = 'Advanced';
+    if (editAdaptiveMenuTitleEl) editAdaptiveMenuTitleEl.textContent = 'Tools';
     if (editAdaptiveMenuSubtitleEl) {
-      editAdaptiveMenuSubtitleEl.textContent = editInteractionMode === EDIT_INTERACTION_MODE.LEGACY
-        ? 'Legacy tools currently active'
-        : 'Legacy tools and popovers';
+      editAdaptiveMenuSubtitleEl.textContent = getEditSurfaceSubtitle();
     }
     updateAdaptiveMenuUiHelper({
       menuEl: editAdaptiveMenuEl,
@@ -12406,30 +12562,26 @@
       positionMenu: positionEditAdaptiveMenu,
       onHideAllPopovers: hideAllAdaptiveToolPopovers,
       visibleItems: [
-        { el: editAdaptiveSelectionBtn, visible: hasEditableAtoms },
         { el: editAdaptiveMoveBtn, visible: hasEditableAtoms },
         { el: editAdaptiveRotateBtn, visible: hasEditableAtoms },
         { el: editAdaptiveAddAtomBtn, visible: isVisible },
         { el: editAdaptiveAddFragmentBtn, visible: isVisible },
         { el: editAdaptiveAddMoleculeBtn, visible: isVisible },
-        { el: editAdaptiveBondBtn, visible: hasEditableAtoms },
-        { el: editAdaptiveTransformBtn, visible: hasEditableAtoms },
+        { el: editAdaptiveCleanStructureBtn, visible: hasEditableAtoms },
+        { el: editAdaptiveShiftComBtn, visible: hasEditableAtoms },
+        { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms },
       ],
       activeItems: [
-        { el: editAdaptiveSelectionBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.LEGACY && hasEditableAtoms && editTool === EDIT_TOOL.SELECT },
         { el: editAdaptiveMoveBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.LEGACY && hasEditableAtoms && editTool === EDIT_TOOL.MOVE },
         { el: editAdaptiveRotateBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.LEGACY && isRotateActive },
-        { el: editAdaptiveAddAtomBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.LEGACY && isAtomAddActive },
+        { el: editAdaptiveAddAtomBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.GESTURE },
         { el: editAdaptiveAddFragmentBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.LEGACY && isFragmentAddActive },
         { el: editAdaptiveAddMoleculeBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.LEGACY && isMoleculeAddActive },
-        { el: editAdaptiveBondBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.LEGACY && isBondActive },
-        { el: editAdaptiveTransformBtn, active: editInteractionMode === EDIT_INTERACTION_MODE.LEGACY && isTransformActive },
+        { el: editAdaptiveCleanStructureBtn, active: false },
+        { el: editAdaptiveShiftComBtn, active: false },
+        { el: editAdaptiveAlignPrincipalBtn, active: false },
       ],
       metaItems: [
-        {
-          el: editAdaptiveSelectionMetaEl,
-          text: selectionCount ? `${selectionCount} atom${selectionCount === 1 ? '' : 's'} selected` : 'Click atoms to build a selection',
-        },
         {
           el: editAdaptiveMoveMetaEl,
           text: selectionCount ? 'Drag selection or grab axis arrows' : 'Select atoms, then drag to move',
@@ -12438,22 +12590,30 @@
           el: editAdaptiveRotateMetaEl,
           text: selectionCount ? 'Grab axis rings or drag selection' : 'Select atoms, then drag to rotate',
         },
-        { el: editAdaptiveAddAtomMetaEl, text: getElementSymbol(editAddElementZ) },
+        {
+          el: editAdaptiveAddAtomMetaEl,
+          text: atomPresentation.rowMeta,
+        },
         {
           el: editAdaptiveAddFragmentMetaEl,
-          text: fragment ? `${fragment.name} (${fragment.formula})` : 'Choose fragment and attach policy',
+          text: getFragmentAddPresentation().rowMeta,
         },
         {
           el: editAdaptiveAddMoleculeMetaEl,
-          text: molecule ? `${molecule.name} (${molecule.formula})` : 'Choose standalone molecule to place',
+          text: getMoleculeAddPresentation().rowMeta,
         },
         {
-          el: editAdaptiveBondMetaEl,
-          text: bondCleanupPreviewState
-            ? formatBondCleanupSummary(bondCleanupPreviewState.diff)
-            : `Order ${editBondOrder} • Edit explicit bonds • Clean Up Bonds`,
+          el: editAdaptiveCleanStructureMetaEl,
+          text: getCleanStructurePresentation().rowMeta,
         },
-        { el: editAdaptiveTransformMetaEl, text: `${getEditTransformModeLabel(editTransformMode)} • ${getEditTransformScopeLabel(editTransformScope)}` },
+        {
+          el: editAdaptiveShiftComMetaEl,
+          text: getShiftComPresentation().rowMeta,
+        },
+        {
+          el: editAdaptiveAlignPrincipalMetaEl,
+          text: getAlignPrincipalPresentation().rowMeta,
+        },
       ],
     });
   }
@@ -12553,7 +12713,7 @@
     const resolved = resolveAddAtomOperatorSession();
     const isVisible = !!resolved && currentMode === MODES.EDIT;
     const world = resolved ? atomUnitsToAng(resolved.vol, resolved.atom) : { x: 0, y: 0, z: 0 };
-    const symbol = resolved ? getElementSymbol((resolved.atom && resolved.atom.Z) | 0) : '';
+    const symbol = resolved ? getElementSymbol((resolved.atom && resolved.atom.Z) | 0) : getAtomManipulationPresentation().symbol;
     updateAddAtomOperatorPanelUi({
       panelEl: editAddAtomOperatorPanelEl,
       headerEl: editAddAtomOperatorHeaderEl,
@@ -12564,10 +12724,67 @@
       zEl: editAddAtomOperatorZEl,
       isVisible,
       collapsed: addAtomOperatorCollapsed,
-      labelText: `Add Atom ${symbol}`,
+      labelText: `Atom manipulation ${symbol}`,
       world,
       positionPanel: positionAddAtomOperatorPanel,
     });
+  }
+
+  function beginSelectedAtomManipulationOperatorSession(record, atomIndex) {
+    const vol = record && record.vol;
+    const idx = atomIndex | 0;
+    if (!record || !vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length) return false;
+    const atom = vol.atoms[idx];
+    if (!atom) return false;
+    editPlacement.beginAddAtomOperatorSession(
+      record,
+      ensureAtomId(atom),
+      cloneAtomsSnapshot(vol),
+      cloneBondSnapshot(vol),
+      cloneVolumeAnnotationsSnapshot(vol),
+      `Atom manipulation ${getElementSymbol((atom && atom.Z) | 0)}`,
+      '',
+      { source: 'selection', autoAdjustHydrogensOnCommit: false, translateAttachedHydrogens: true }
+    );
+    return true;
+  }
+
+  function syncSelectedAtomManipulationOperatorSession() {
+    const session = addAtomOperatorSession;
+    const sessionSource = String(session && session.source || '');
+    if (!isGestureEditMode()) {
+      if (session && sessionSource === 'selection') finalizeAddAtomOperatorSession({ announce: false });
+      else updateAddAtomOperatorUi();
+      return;
+    }
+    if (session && sessionSource && sessionSource !== 'selection') {
+      updateAddAtomOperatorUi();
+      return;
+    }
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const selection = getEditAtomSelection();
+    if (!record || !vol || !Array.isArray(vol.atoms) || selection.length !== 1) {
+      if (session && sessionSource === 'selection') finalizeAddAtomOperatorSession({ announce: false });
+      else updateAddAtomOperatorUi();
+      return;
+    }
+    const atomIndex = selection[0] | 0;
+    if (atomIndex < 0 || atomIndex >= vol.atoms.length || !vol.atoms[atomIndex]) {
+      if (session && sessionSource === 'selection') finalizeAddAtomOperatorSession({ announce: false });
+      else updateAddAtomOperatorUi();
+      return;
+    }
+    const atomId = String(ensureAtomId(vol.atoms[atomIndex]));
+    if (session
+      && sessionSource === 'selection'
+      && session.record === record
+      && String(session.atomId || '') === atomId) {
+      updateAddAtomOperatorUi();
+      return;
+    }
+    if (session && sessionSource === 'selection') finalizeAddAtomOperatorSession({ announce: false });
+    beginSelectedAtomManipulationOperatorSession(record, atomIndex);
   }
 
   /**
@@ -12579,7 +12796,7 @@
    * @param {string} label
    */
   function beginAddAtomOperatorSession(record, atomId, beforeAtoms, beforeBonds, label) {
-    editPlacement.beginAddAtomOperatorSession(record, atomId, beforeAtoms, beforeBonds, label);
+    editPlacement.beginAddAtomOperatorSession(record, atomId, beforeAtoms, beforeBonds, null, label, '', { source: 'new-atom' });
   }
 
   /**
@@ -12674,7 +12891,7 @@
       zEl: editMoveOperatorZEl,
       isVisible,
       collapsed: moveOperatorCollapsed,
-      labelText: count === 1 ? 'Move Atom' : `Move ${count} Atoms`,
+      labelText: count === 1 ? 'Move Atom (T)' : `Move ${count} Atoms (T)`,
       displacement,
       positionPanel: positionMoveOperatorPanel,
     });
@@ -12725,7 +12942,7 @@
       zEl: editRotateOperatorZEl,
       isVisible,
       collapsed: rotateOperatorCollapsed,
-      labelText: count === 1 ? 'Rotate Atom' : `Rotate ${count} Atoms`,
+      labelText: count === 1 ? 'Rotate Atom (E)' : `Rotate ${count} Atoms (E)`,
       rotation,
       positionPanel: positionRotateOperatorPanel,
     });
@@ -12930,6 +13147,7 @@
     }
     const beforeAtoms = cloneAtomsSnapshot(vol);
     const beforeBonds = cloneBondSnapshot(vol);
+    const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
     editClipboardPasteSerial += 1;
     const offset = getEditClipboardPasteOffset(editClipboardSelection);
     const result = appendVolumeSelectionClipboard(vol, editClipboardSelection.payload, {
@@ -12961,9 +13179,12 @@
     vol.natoms = vol.atoms.length;
     const afterAtoms = cloneAtomsSnapshot(vol);
     const afterBonds = cloneBondSnapshot(vol);
+    const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
     pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Paste ${result.atomIndices.length} atoms`, {
       beforeBonds,
       afterBonds,
+      beforeAnnotations,
+      afterAnnotations,
     });
     rebuildScene({ preserveView: true });
     setEditAtomSelection(result.atomIndices);
@@ -13529,6 +13750,47 @@
       else carrier.remove(overlay);
       disposeOverlayTree(overlay);
     } catch { }
+  }
+
+  /**
+   * Resolve one stable logical key for all rendered carriers that belong to the same bond.
+   * Multi-bonds render as multiple cylinders, but hover/edit operations should still work
+   * at the logical bond level.
+   * @param {*} carrier
+   * @returns {string}
+   */
+  function getBondCarrierLogicalKey(carrier) {
+    if (!carrier || !carrier.userData) return '';
+    const bondId = typeof carrier.userData.bondId === 'string' ? carrier.userData.bondId.trim() : '';
+    if (bondId) return `id:${bondId}`;
+    const i = carrier.userData.i | 0;
+    const j = carrier.userData.j | 0;
+    if (!Number.isInteger(i) || !Number.isInteger(j) || i < 0 || j < 0 || i === j) return '';
+    const edgeA = i < j ? i : j;
+    const edgeB = i < j ? j : i;
+    const kind = String(carrier.userData.bondKind || 'normal');
+    return `edge:${edgeA}:${edgeB}:${kind}`;
+  }
+
+  /**
+   * Collect every currently rendered carrier that belongs to the same logical bond.
+   * @param {*} carrier
+   * @returns {Array<*>}
+   */
+  function getRelatedBondCarriers(carrier) {
+    if (!carrier || !carrier.userData) return [];
+    const logicalKey = getBondCarrierLogicalKey(carrier);
+    if (!logicalKey || !bondGroup || !Array.isArray(bondGroup.children)) return [carrier];
+    const related = [];
+    const seen = new Set();
+    for (const child of bondGroup.children) {
+      const candidate = getBondCarrierObject(child);
+      if (!candidate || !candidate.userData || seen.has(candidate)) continue;
+      if (getBondCarrierLogicalKey(candidate) !== logicalKey) continue;
+      seen.add(candidate);
+      related.push(candidate);
+    }
+    return related.length ? related : [carrier];
   }
 
   /**
@@ -14339,16 +14601,26 @@
     const section = hitOrCarrier && hitOrCarrier.object && hitOrCarrier.object.userData
       ? String(hitOrCarrier.section || 'center')
       : '';
-    if (hoverBondObject === carrier && hoverBondSection === section) return;
-    if (hoverBondObject) removeBondOverlay(hoverBondObject, 'hoverOverlay');
+    const logicalKey = getBondCarrierLogicalKey(carrier);
+    if (hoverBondKey === logicalKey && hoverBondSection === section) return;
+    for (const prevCarrier of hoverBondObjects.length ? hoverBondObjects : (hoverBondObject ? [hoverBondObject] : [])) {
+      removeBondOverlay(prevCarrier, 'hoverOverlay');
+    }
     hoverBondObject = null;
+    hoverBondObjects = [];
+    hoverBondKey = '';
     hoverBondSection = '';
     if (carrier && carrier.userData) {
       const hoverColor = (editMode && (editTool === EDIT_TOOL.DELETE || (editTool === EDIT_TOOL.BOND && editBondAction === EDIT_BOND_ACTION.DELETE)))
         ? 0xff4b4b
         : 0x00a5ff;
-      ensureBondOverlay(carrier, 'hoverOverlay', hoverColor, 0.82, { section });
+      const relatedCarriers = getRelatedBondCarriers(carrier);
+      for (const relatedCarrier of relatedCarriers) {
+        ensureBondOverlay(relatedCarrier, 'hoverOverlay', hoverColor, 0.82, { section });
+      }
       hoverBondObject = carrier;
+      hoverBondObjects = relatedCarriers;
+      hoverBondKey = logicalKey;
       hoverBondSection = section;
     }
   }
@@ -14375,6 +14647,28 @@
       }
     }
     return normalizeEditAddBondOrder(carrier.userData.bondOrder || 1);
+  }
+
+  function stepGestureBondCenterOrder(bondHit, delta, pointerLike = null) {
+    if (!isGestureEditMode() || !bondEditing || !bondHit || !bondHit.object || bondHit.section !== 'center') return false;
+    const changed = !!bondEditing.stepCarrierOrder(bondHit.object, delta);
+    if (changed) queuePointerHoverRefresh(pointerLike);
+    return changed;
+  }
+
+  function getGestureCenterBondHoverHit() {
+    if (!isGestureEditMode() || !editGestureController || typeof editGestureController.getHoverBondHit !== 'function') return null;
+    const hit = editGestureController.getHoverBondHit();
+    return hit && hit.object && hit.section === 'center' ? hit : null;
+  }
+
+  function resolveGestureBondCenterClickHit(pointerLike) {
+    if (!isGestureEditMode() || !editGestureController) return null;
+    if (typeof editGestureController.resolveBondCenterClickHit === 'function') {
+      const hit = editGestureController.resolveBondCenterClickHit(pointerLike);
+      if (hit && hit.object && hit.section === 'center') return hit;
+    }
+    return getGestureCenterBondHoverHit();
   }
 
   /**
@@ -14430,6 +14724,57 @@
     setBondHover(null);
     setSurfaceHover(null);
     hideSurfaceHoverLabel();
+  }
+
+  function refreshInteractionHoverFromPointer(pointerLike) {
+    if (!pointerLike || !Number.isFinite(Number(pointerLike.clientX)) || !Number.isFinite(Number(pointerLike.clientY))) return;
+    if (!(currentMode === MODES.DISPLAY || currentMode === MODES.EDIT || currentMode === MODES.MEASURE)) return;
+    if (currentMode === MODES.EDIT && isGestureEditMode() && editHaloController) editHaloController.handlePointerMove(pointerLike);
+    if (currentMode === MODES.EDIT && isGestureEditMode() && editGestureController && editGestureController.handlePointerMove(pointerLike)) {
+      setHover(null);
+      setBondHover(null);
+      setSurfaceHover(null);
+      hideSurfaceHoverLabel();
+      return;
+    }
+    const atomObj = pickAtom(pointerLike);
+    if (atomObj) {
+      setHover(atomObj);
+      setBondHover(null);
+      setSurfaceHover(null);
+      hideSurfaceHoverLabel();
+      return;
+    }
+    const bondHit = pickBondHit(pointerLike);
+    setHover(null);
+    setBondHover(bondHit || null);
+    if (bondHit) {
+      setSurfaceHover(null);
+      hideSurfaceHoverLabel();
+      return;
+    }
+    setHover(null);
+    setBondHover(null);
+    setSurfaceHover(null);
+    hideSurfaceHoverLabel();
+  }
+
+  function queuePointerHoverRefresh(pointerLike) {
+    if (!pointerLike) return;
+    const snapshot = {
+      clientX: Number(pointerLike.clientX),
+      clientY: Number(pointerLike.clientY),
+      button: Number(pointerLike.button),
+      buttons: Number(pointerLike.buttons),
+      shiftKey: !!pointerLike.shiftKey,
+      altKey: !!pointerLike.altKey,
+      ctrlKey: !!pointerLike.ctrlKey,
+      metaKey: !!pointerLike.metaKey,
+      pointerId: Number.isInteger(pointerLike.pointerId) ? pointerLike.pointerId : undefined,
+      preventDefault() {},
+    };
+    if (!Number.isFinite(snapshot.clientX) || !Number.isFinite(snapshot.clientY)) return;
+    window.setTimeout(() => refreshInteractionHoverFromPointer(snapshot), 0);
   }
 
   function updateAxisButtons() {}
@@ -14490,6 +14835,82 @@
     return classifyBondHitSectionFromPoints(atomUnitsToAng(vol, vol.atoms[i]), atomUnitsToAng(vol, vol.atoms[j]), hitPoint);
   }
 
+  function getBondCarrierInteractionSegment(carrier, vol) {
+    if (!carrier || !carrier.userData || !vol || !Array.isArray(vol.atoms)) return null;
+    const i = carrier.userData.i | 0;
+    const j = carrier.userData.j | 0;
+    if (i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length || i === j) return null;
+    const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false }).map((a) => ({ pos: a.pos }));
+    const aPos = atomPositions[i] && atomPositions[i].pos ? atomPositions[i].pos.clone() : null;
+    const bPos = atomPositions[j] && atomPositions[j].pos ? atomPositions[j].pos.clone() : null;
+    if (!aPos || !bPos) return null;
+    const trimA = Math.max(0, Number(carrier.userData.trimA) || 0);
+    const trimB = Math.max(0, Number(carrier.userData.trimB) || 0);
+    const placement = computeBondSegmentPlacement(aPos, bPos, trimA, trimB, 1e-4);
+    if (!placement.valid || !(placement.geomLen > 1e-4)) return null;
+    return {
+      start: placement.aEnd.clone(),
+      end: placement.bEnd.clone(),
+      dirNorm: placement.dirNorm.clone(),
+      geomLen: placement.geomLen,
+    };
+  }
+
+  function pickBondHitFromDisplayedSpan(e) {
+    if (!bondGroup || !Array.isArray(bondGroup.children) || !bondGroup.children.length) return null;
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms)) return null;
+    const pointerX = Number(e && e.clientX);
+    const pointerY = Number(e && e.clientY);
+    if (!Number.isFinite(pointerX) || !Number.isFinite(pointerY)) return null;
+    const seen = new Set();
+    let best = null;
+    const capturePx = 16;
+    for (const child of bondGroup.children) {
+      const carrier = getBondCarrierObject(child);
+      if (!carrier || !carrier.userData) continue;
+      const i = carrier.userData.i | 0;
+      const j = carrier.userData.j | 0;
+      if (i < 0 || j < 0 || i === j) continue;
+      const edgeA = i < j ? i : j;
+      const edgeB = i < j ? j : i;
+      const key = `${edgeA}:${edgeB}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const segment = getBondCarrierInteractionSegment(carrier, vol);
+      if (!segment || !segment.start || !segment.end) continue;
+      const startClient = projectWorldToClient(segment.start);
+      const endClient = projectWorldToClient(segment.end);
+      if (!startClient || !endClient || startClient.visible === false || endClient.visible === false) continue;
+      const segDx = endClient.x - startClient.x;
+      const segDy = endClient.y - startClient.y;
+      const segLenSq = segDx * segDx + segDy * segDy;
+      if (!(segLenSq > 1e-8)) continue;
+      const rawT = ((pointerX - startClient.x) * segDx + (pointerY - startClient.y) * segDy) / segLenSq;
+      const t = Math.max(0, Math.min(1, rawT));
+      const closestX = startClient.x + segDx * t;
+      const closestY = startClient.y + segDy * t;
+      const distancePx = Math.hypot(pointerX - closestX, pointerY - closestY);
+      if (!(distancePx <= capturePx)) continue;
+      const worldPoint = segment.start.clone().lerp(segment.end, t);
+      const sectionInfo = classifyBondHitSectionFromPoints(segment.start, segment.end, worldPoint);
+      const candidate = {
+        object: carrier,
+        point: worldPoint,
+        distance: distancePx,
+        section: sectionInfo.section,
+        t: sectionInfo.t,
+        endpointAIndex: i,
+        endpointBIndex: j,
+        nearAtomIndex: sectionInfo.section === 'nearB' ? j : i,
+        farAtomIndex: sectionInfo.section === 'nearB' ? i : j,
+      };
+      if (!best || candidate.distance < best.distance) best = candidate;
+    }
+    return best;
+  }
+
   /**
    * Raycast and return the first bond hit, including wrapped groups/meshes.
    * @param {PointerEvent} e
@@ -14520,7 +14941,7 @@
         farAtomIndex: sectionInfo.section === 'nearB' ? i : j,
       };
     }
-    return null;
+    return pickBondHitFromDisplayedSpan(e);
   }
 
   /**
@@ -14563,6 +14984,336 @@
     return editPlacement.appendFragmentAtWorld(anchorIndex, worldPos);
   }
 
+  function mapCoordinationGeometryToHydrogenGeometry(geometryId, targetBondCount = 0, fallbackGeometry = null) {
+    const id = String(geometryId || '').trim();
+    if (!id) return fallbackGeometry || null;
+    const geometry = getCoordinationGeometry(id);
+    const siteCount = Math.max(0, Number(geometry && geometry.cn) || 0);
+    const nextTargetBondCount = Math.max(0, Number(targetBondCount) || 0);
+    if (id === 'linear') return { geometryKey: 'linear', siteCount: siteCount || 2, targetBondCount: nextTargetBondCount || 2 };
+    if (id === 'trigonalPlanar') return { geometryKey: 'trigonal', siteCount: siteCount || 3, targetBondCount: nextTargetBondCount || 3 };
+    if (id === 'tetrahedral') return { geometryKey: 'tetrahedral', siteCount: siteCount || 4, targetBondCount: nextTargetBondCount || 4 };
+    if (id === 'trigonalBipyramidal') return { geometryKey: 'trigonalBipyramidal', siteCount: siteCount || 5, targetBondCount: nextTargetBondCount || 5 };
+    if (id === 'octahedral') return { geometryKey: 'octahedral', siteCount: siteCount || 6, targetBondCount: nextTargetBondCount || 6 };
+    return fallbackGeometry || null;
+  }
+
+  function createAutoHydrogenGeometryResolver(vol) {
+    return (atom, env, rule, defaultGeometry) => {
+      if (!vol || !Array.isArray(vol.atoms) || !atom) return defaultGeometry || null;
+      const targetAtomId = String((atom && atom.id) || '').trim();
+      const atomIndex = targetAtomId
+        ? vol.atoms.findIndex((candidate) => candidate && String(ensureAtomId(candidate)) === targetAtomId)
+        : vol.atoms.indexOf(atom);
+      if (atomIndex < 0) return defaultGeometry || null;
+      const inference = inferAtomGeometry(vol, atomIndex);
+      if (!inference || !inference.geometryId) return defaultGeometry || null;
+      return mapCoordinationGeometryToHydrogenGeometry(
+        inference.geometryId,
+        inference.activeCandidate && inference.activeCandidate.fullBondCount,
+        defaultGeometry
+      );
+    };
+  }
+
+  function collectHydrogenAdjustmentEnvironment(vol, atomIndex) {
+    if (!vol || !Array.isArray(vol.atoms)) return null;
+    const idx = atomIndex | 0;
+    if (idx < 0 || idx >= vol.atoms.length || !vol.atoms[idx]) return null;
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = getVolumeBondEdges(vol, records, { allowDynamic: false });
+    const hydrogenNeighbors = [];
+    const heavyOccupiedDirs = [];
+    let heavyBondOrderSum = 0;
+    let heavyNeighborCount = 0;
+    let maxHeavyBondOrder = 0;
+    for (const edge of edges) {
+      if (!edge) continue;
+      let otherIndex = -1;
+      if (edge.i === idx) otherIndex = edge.j;
+      else if (edge.j === idx) otherIndex = edge.i;
+      if (otherIndex < 0 || otherIndex >= vol.atoms.length) continue;
+      const otherAtom = vol.atoms[otherIndex];
+      const sourcePos = records[idx] && records[idx].pos;
+      const otherPos = records[otherIndex] && records[otherIndex].pos;
+      if (!otherAtom || !sourcePos || !otherPos) continue;
+      const dir = otherPos.clone().sub(sourcePos);
+      const dist = dir.length();
+      if (!(dist > 1e-8)) continue;
+      dir.normalize();
+      if ((otherAtom.Z | 0) === 1) {
+        hydrogenNeighbors.push({
+          atomIndex: otherIndex,
+          atomId: String(ensureAtomId(otherAtom)),
+          direction: dir.clone(),
+          distance: dist,
+          order: normalizeEditAddBondOrder(edge.order || 1),
+        });
+      } else {
+        heavyNeighborCount += 1;
+        const order = normalizeEditAddBondOrder(edge.order || 1);
+        heavyBondOrderSum += order;
+        maxHeavyBondOrder = Math.max(maxHeavyBondOrder, order);
+        heavyOccupiedDirs.push([dir.x, dir.y, dir.z]);
+      }
+    }
+    return {
+      heavyBondOrderSum,
+      heavyNeighborCount,
+      maxHeavyBondOrder,
+      occupiedDirs: heavyOccupiedDirs,
+      hydrogenNeighbors,
+    };
+  }
+
+  function computeDesiredHydrogenCountForAtom(atom, env, geometryResolver = null) {
+    const z = Number(atom && atom.Z) | 0;
+    const rule = getAutoHydrogenRule(z);
+    if (!rule || !(Number(rule.targetValence) > 0)) return null;
+    const fallbackGeometry = resolveGeometryForEnvironment(z, env, rule);
+    const geometry = typeof geometryResolver === 'function'
+      ? (geometryResolver(atom, env, rule, fallbackGeometry) || fallbackGeometry)
+      : fallbackGeometry;
+    if (!geometry || !(geometry.siteCount > 0) || !(geometry.targetBondCount > 0)) return null;
+    const bondOrderDeficit = Math.max(0, (Number(rule.targetValence) || 0) - (Number(env && env.heavyBondOrderSum) || 0));
+    const bondSiteDeficit = Math.max(0, (Number(geometry.targetBondCount) || 0) - (Number(env && env.heavyNeighborCount) || 0));
+    const siteCapacity = Math.max(0, (Number(geometry.siteCount) || 0) - (Number(env && env.heavyNeighborCount) || 0));
+    return Math.min(bondOrderDeficit, bondSiteDeficit, siteCapacity);
+  }
+
+  function collectHydrogenRemovalIdsForAtom(vol, atomIndex, removeCount, preferredDir = null) {
+    const env = collectHydrogenAdjustmentEnvironment(vol, atomIndex);
+    if (!env || !(removeCount > 0) || !Array.isArray(env.hydrogenNeighbors) || !env.hydrogenNeighbors.length) return [];
+    const refDir = preferredDir && preferredDir.isVector3 && preferredDir.lengthSq() > 1e-10
+      ? preferredDir.clone().normalize()
+      : null;
+    const ranked = env.hydrogenNeighbors
+      .map((entry) => {
+        const dot = refDir ? entry.direction.dot(refDir) : 0;
+        return {
+          atomId: entry.atomId,
+          atomIndex: entry.atomIndex,
+          score: dot * 2.0 - entry.distance * 0.05,
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+    return ranked.slice(0, Math.max(0, removeCount | 0)).map((entry) => entry.atomId);
+  }
+
+  function removeAtomsById(vol, atomIds) {
+    if (!vol || !Array.isArray(vol.atoms)) return 0;
+    const ids = new Set((Array.isArray(atomIds) ? atomIds : []).map((value) => String(value || '').trim()).filter(Boolean));
+    if (!ids.size) return 0;
+    let removed = 0;
+    for (let i = vol.atoms.length - 1; i >= 0; i -= 1) {
+      const atom = vol.atoms[i];
+      if (!atom) continue;
+      if (!ids.has(String(ensureAtomId(atom)))) continue;
+      vol.atoms.splice(i, 1);
+      removed += 1;
+    }
+    if (removed > 0) {
+      vol.natoms = vol.atoms.length;
+      inferVolumeBonds(vol);
+      pruneVolumeAtomAnnotations(vol);
+    }
+    return removed;
+  }
+
+  function applyHydrogenPlanToVolume(vol, plan) {
+    if (!vol || !Array.isArray(vol.atoms) || !plan || !Array.isArray(plan.hydrogens) || !plan.hydrogens.length) return 0;
+    let added = 0;
+    for (const hydrogen of plan.hydrogens) {
+      const atom = { Z: 1, x: 0, y: 0, z: 0, formalCharge: 0 };
+      const world = new THREE.Vector3(Number(hydrogen.x) || 0, Number(hydrogen.y) || 0, Number(hydrogen.z) || 0);
+      const atomUnits = worldToAtomUnits(vol, world);
+      atom.x = Number(atomUnits[0]) || 0;
+      atom.y = Number(atomUnits[1]) || 0;
+      atom.z = Number(atomUnits[2]) || 0;
+      ensureAtomId(atom);
+      vol.atoms.push(atom);
+      added += 1;
+      const meta = getAtomBuilderMeta(vol, hydrogen.parentIndex);
+      if (meta && (meta.groupId || meta.entryId || meta.entryKind)) setAtomBuilderMeta(vol, atom, meta);
+      upsertVolumeBond(vol, hydrogen.parentId, atom.id, hydrogen.order || 1, hydrogen.kind || 'normal', hydrogen.origin || 'explicit');
+    }
+    if (added > 0) {
+      vol.natoms = vol.atoms.length;
+      ensureVolumeSchema(vol, { inferMissingBonds: false });
+    }
+    return added;
+  }
+
+  function normalizeHydrogenAdjustmentFocusIndices(vol, atomIndices) {
+    if (!vol || !Array.isArray(vol.atoms)) return [];
+    const seen = new Set();
+    const result = [];
+    for (const raw of Array.isArray(atomIndices) ? atomIndices : []) {
+      const index = raw | 0;
+      if (index < 0 || index >= vol.atoms.length || seen.has(index)) continue;
+      seen.add(index);
+      result.push(index);
+    }
+    result.sort((a, b) => a - b);
+    return result;
+  }
+
+  function collectHydrogenNeighborIndicesForAtoms(vol, atomIndices) {
+    const focusIndices = normalizeHydrogenAdjustmentFocusIndices(vol, atomIndices);
+    if (!focusIndices.length) return [];
+    const seen = new Set();
+    const result = [];
+    for (const atomIndex of focusIndices) {
+      const env = collectHydrogenAdjustmentEnvironment(vol, atomIndex);
+      const neighbors = Array.isArray(env && env.hydrogenNeighbors) ? env.hydrogenNeighbors : [];
+      for (const neighbor of neighbors) {
+        const neighborIndex = neighbor && (neighbor.atomIndex | 0);
+        if (neighborIndex < 0 || neighborIndex >= vol.atoms.length || seen.has(neighborIndex)) continue;
+        seen.add(neighborIndex);
+        result.push(neighborIndex);
+      }
+    }
+    result.sort((a, b) => a - b);
+    return result;
+  }
+
+  function relaxHydrogensLocallyInVolume(vol, focusAtomIndices, options = {}) {
+    if (!vol || !Array.isArray(vol.atoms) || !vol.atoms.length) {
+      return { moved: 0, maxDisplacementAng: 0, iterations: 0, acceptedIterations: 0, converged: true };
+    }
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const focusIndices = normalizeHydrogenAdjustmentFocusIndices(vol, focusAtomIndices);
+    if (!focusIndices.length) {
+      return { moved: 0, maxDisplacementAng: 0, iterations: 0, acceptedIterations: 0, converged: true };
+    }
+    const hydrogenIndices = collectHydrogenNeighborIndicesForAtoms(vol, focusIndices);
+    if (!hydrogenIndices.length) {
+      return { moved: 0, maxDisplacementAng: 0, iterations: 0, acceptedIterations: 0, converged: true };
+    }
+    const adapted = createLocalUffContextFromVolume(vol, hydrogenIndices, {
+      atomUnitsToAng,
+      cloneBondSnapshot,
+      ensureVolumeSchema,
+      ensureAtomId,
+      getElementSymbol,
+      includeHydrogens: true,
+      bondedNeighborhoodHops: 0,
+      shellAtomIndices: focusIndices,
+    });
+    if (!adapted || !adapted.system || !adapted.context) {
+      return { moved: 0, maxDisplacementAng: 0, iterations: 0, acceptedIterations: 0, converged: false };
+    }
+    const relaxation = relaxHydrogenOnlyLocalContext(adapted, options && options.uffOptions ? options.uffOptions : options);
+    if (!relaxation || !Array.isArray(relaxation.movedSystemAtomIndices) || !relaxation.movedSystemAtomIndices.length) {
+      return {
+        moved: 0,
+        maxDisplacementAng: Number(relaxation && relaxation.maxDisplacementAng) || 0,
+        iterations: Number(relaxation && relaxation.iterations) || 0,
+        acceptedIterations: Number(relaxation && relaxation.acceptedIterations) || 0,
+        converged: !!(relaxation && relaxation.converged),
+      };
+    }
+    let moved = 0;
+    for (const systemIndex of relaxation.movedSystemAtomIndices) {
+      const globalIndex = Array.isArray(adapted.systemToGlobalAtomIndex) ? adapted.systemToGlobalAtomIndex[systemIndex] : undefined;
+      if (!Number.isInteger(globalIndex) || globalIndex < 0 || globalIndex >= vol.atoms.length) continue;
+      const atom = vol.atoms[globalIndex];
+      if (!atom || ((Number(atom.Z) | 0) !== 1)) continue;
+      const base = 3 * systemIndex;
+      const world = new THREE.Vector3(
+        Number(adapted.system.xyz[base]) || 0,
+        Number(adapted.system.xyz[base + 1]) || 0,
+        Number(adapted.system.xyz[base + 2]) || 0
+      );
+      const atomUnits = worldToAtomUnits(vol, world);
+      atom.x = Number(atomUnits[0]) || 0;
+      atom.y = Number(atomUnits[1]) || 0;
+      atom.z = Number(atomUnits[2]) || 0;
+      moved += 1;
+    }
+    return {
+      moved,
+      maxDisplacementAng: Number(relaxation.maxDisplacementAng) || 0,
+      iterations: Number(relaxation.iterations) || 0,
+      acceptedIterations: Number(relaxation.acceptedIterations) || 0,
+      converged: !!relaxation.converged,
+    };
+  }
+
+  function applyAutomaticHydrogenAdjustmentToVolume(vol, focusAtomIndices, options = {}) {
+    if (!editAddAdjustHydrogensEnabled || !vol || !Array.isArray(vol.atoms) || !vol.atoms.length) return { added: 0, removed: 0 };
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const focusIds = Array.from(new Set((Array.isArray(focusAtomIndices) ? focusAtomIndices : [])
+      .map((value) => Number(value) | 0)
+      .filter((value) => value >= 0 && value < vol.atoms.length)
+      .map((index) => String(ensureAtomId(vol.atoms[index])))))
+      .filter(Boolean);
+    if (!focusIds.length) return { added: 0, removed: 0 };
+    const preferredDirByAtomId = options.preferredDirByAtomId instanceof Map ? options.preferredDirByAtomId : new Map();
+    const geometryResolver = createAutoHydrogenGeometryResolver(vol);
+    const removalIds = new Set();
+    for (const atomId of focusIds) {
+      const atomIndex = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === atomId);
+      if (atomIndex < 0) continue;
+      const atom = vol.atoms[atomIndex];
+      const env = collectHydrogenAdjustmentEnvironment(vol, atomIndex);
+      if (!env) continue;
+      const desiredHydrogenCount = computeDesiredHydrogenCountForAtom(atom, env, geometryResolver);
+      if (desiredHydrogenCount == null) continue;
+      const currentHydrogenCount = Array.isArray(env.hydrogenNeighbors) ? env.hydrogenNeighbors.length : 0;
+      const excess = Math.max(0, currentHydrogenCount - desiredHydrogenCount);
+      if (!(excess > 0)) continue;
+      const preferredDir = preferredDirByAtomId.get(atomId) || null;
+      for (const removeId of collectHydrogenRemovalIdsForAtom(vol, atomIndex, excess, preferredDir)) {
+        removalIds.add(removeId);
+      }
+    }
+    const removed = removeAtomsById(vol, Array.from(removalIds.values()));
+    const structureAtoms = vol.atoms.map((atom) => {
+      const world = atomUnitsToAng(vol, atom);
+      return {
+        id: ensureAtomId(atom),
+        Z: Number(atom && atom.Z) | 0,
+        x: Number(world && world.x) || 0,
+        y: Number(world && world.y) || 0,
+        z: Number(world && world.z) || 0,
+        formalCharge: Number.isFinite(atom && atom.formalCharge) ? Math.round(Number(atom.formalCharge)) : 0,
+      };
+    });
+    const focusIndices = focusIds
+      .map((atomId) => structureAtoms.findIndex((atom) => atom && String(atom.id) === atomId))
+      .filter((index) => index >= 0);
+    const plan = buildAutoHydrogenPlan({
+      atoms: structureAtoms,
+      bonds: cloneBondSnapshot(vol),
+    }, {
+      focusAtomIndices: focusIndices,
+      resolveGeometry: geometryResolver,
+    });
+    const added = applyHydrogenPlanToVolume(vol, plan);
+    const relaxedFocusIndices = focusIds
+      .map((atomId) => vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === atomId))
+      .filter((index) => index >= 0);
+    const relaxed = relaxHydrogensLocallyInVolume(vol, relaxedFocusIndices);
+    return {
+      added,
+      removed,
+      relaxedHydrogens: Number(relaxed && relaxed.moved) || 0,
+      maxDisplacementAng: Number(relaxed && relaxed.maxDisplacementAng) || 0,
+    };
+  }
+
+  function applyEditAddCoordinationToAtom(vol, atom, geometryId = getEffectiveEditAddCoordinationGeometryId()) {
+    const nextGeometryId = String(geometryId || '').trim();
+    if (!vol || !atom || !nextGeometryId) return false;
+    const profile = getCoordinationProfile((atom.Z | 0));
+    if (!profile || !Array.isArray(profile.choices) || !profile.choices.some((choice) => String(choice && choice.geometryId || '') === nextGeometryId)) {
+      return false;
+    }
+    setAtomCoordinationMeta(vol, atom, { geometryId: nextGeometryId });
+    return true;
+  }
+
   function placeGestureAtomAtWorld(worldPos, elementZ = editAddElementZ) {
     const z = Number(elementZ) | 0;
     if (!worldPos || !worldPos.isVector3 || !z || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return null;
@@ -14572,6 +15323,7 @@
     if (!record || !vol || !Array.isArray(vol.atoms)) return null;
     const beforeAtoms = cloneAtomsSnapshot(vol);
     const beforeBonds = cloneBondSnapshot(vol);
+    const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
     const coords = worldToAtomUnits(vol, worldPos);
     const atom = {
       Z: z,
@@ -14583,16 +15335,20 @@
     ensureAtomId(atom);
     vol.atoms.push(atom);
     vol.natoms = vol.atoms.length;
+    applyEditAddCoordinationToAtom(vol, atom);
     inferVolumeBonds(vol);
+    const newAtomId = String(ensureAtomId(atom));
     const newIndex = vol.atoms.length - 1;
-    finalizeAtomCoordinateEdit(record, vol, beforeAtoms, `Add ${getElementSymbol(z)}`, beforeBonds);
+    applyAutomaticHydrogenAdjustmentToVolume(vol, [newIndex]);
+    const finalIndex = vol.atoms.findIndex((candidate) => candidate && String(ensureAtomId(candidate)) === newAtomId);
+    finalizeAtomCoordinateEdit(record, vol, beforeAtoms, `Add ${getElementSymbol(z)}`, beforeBonds, beforeAnnotations);
     const nextSelection = [];
     setEditAtomSelection(nextSelection);
     updateSelectedHalos();
     updateEditSelectionVisuals();
     updateEditAdaptiveMenuUi();
     setHintMessage(`Placed ${getElementName(z)} (${getElementSymbol(z)}).`);
-    return { atomIndex: newIndex, selection: nextSelection };
+    return { atomIndex: finalIndex >= 0 ? finalIndex : newIndex, selection: nextSelection };
   }
 
   function appendGestureAtomFromAnchor(anchorIndex, worldPos, options = {}) {
@@ -14607,6 +15363,7 @@
     }
     const beforeAtoms = cloneAtomsSnapshot(vol);
     const beforeBonds = cloneBondSnapshot(vol);
+    const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
     const coords = worldToAtomUnits(vol, worldPos);
     const atom = {
       Z: z,
@@ -14619,16 +15376,29 @@
     const anchorAtom = vol.atoms[anchor];
     vol.atoms.push(atom);
     vol.natoms = vol.atoms.length;
+    applyEditAddCoordinationToAtom(vol, atom);
+    const newAtomId = String(ensureAtomId(atom));
     upsertVolumeBond(vol, ensureAtomId(anchorAtom), ensureAtomId(atom), bondOrder, 'normal', 'explicit');
     ensureVolumeSchema(vol, { inferMissingBonds: false });
     const newIndex = vol.atoms.length - 1;
-    finalizeAtomCoordinateEdit(record, vol, beforeAtoms, `Grow ${getElementSymbol(z)}`, beforeBonds);
+    const preferredDirByAtomId = new Map();
+    const anchorId = String(ensureAtomId(anchorAtom));
+    const newId = String(ensureAtomId(atom));
+    const anchorPos = atomUnitsToAng(vol, anchorAtom);
+    const newPos = atomUnitsToAng(vol, atom);
+    if (anchorPos && newPos) {
+      preferredDirByAtomId.set(anchorId, newPos.clone().sub(anchorPos));
+      preferredDirByAtomId.set(newId, anchorPos.clone().sub(newPos));
+    }
+    applyAutomaticHydrogenAdjustmentToVolume(vol, [anchor, newIndex], { preferredDirByAtomId });
+    const finalIndex = vol.atoms.findIndex((candidate) => candidate && String(ensureAtomId(candidate)) === newAtomId);
+    finalizeAtomCoordinateEdit(record, vol, beforeAtoms, `Grow ${getElementSymbol(z)}`, beforeBonds, beforeAnnotations);
     setEditAtomSelection(nextSelection);
     updateSelectedHalos();
     updateEditSelectionVisuals();
     updateEditAdaptiveMenuUi();
     setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) with bond order ${bondOrder}.`);
-    return { atomIndex: newIndex, selection: nextSelection };
+    return { atomIndex: finalIndex >= 0 ? finalIndex : newIndex, selection: nextSelection };
   }
 
   function beginGestureGrowDrag(e, anchorIndex, options = {}) {
@@ -14662,6 +15432,20 @@
       : -1;
     const target = targetAtomIndex >= 0 && targetAtomIndex !== addGrowAnchorIndex ? targetAtomIndex : -1;
     addGrowPreviewBondHit = target >= 0 ? hit : null;
+    if (target >= 0) {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const targetAtom = vol && Array.isArray(vol.atoms) ? vol.atoms[target] : null;
+      const anchorAtom = vol && Array.isArray(vol.atoms) && addGrowAnchorIndex >= 0 ? vol.atoms[addGrowAnchorIndex] : null;
+      if (targetAtom && anchorAtom && hit && hit.object && hit.object.position && addGrowAnchorPos) {
+        updateAddGrowTargetBondPreview(
+          addGrowAnchorPos,
+          hit.object.position,
+          Number(anchorAtom.Z) | 0,
+          Number(targetAtom.Z) | 0
+        );
+      }
+    }
     return { targetAtomIndex: target };
   }
 
@@ -14734,13 +15518,16 @@
       .filter(Boolean);
     const beforeAtoms = cloneAtomsSnapshot(vol);
     const beforeBonds = cloneBondSnapshot(vol);
+    const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
     const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
     for (const idx of uniqueDesc) vol.atoms.splice(idx, 1);
     vol.natoms = vol.atoms.length;
     inferVolumeBonds(vol);
+    pruneVolumeAtomAnnotations(vol);
     const builderOpsChanged = pruneBuilderOperationsForVolume(vol);
     const afterAtoms = cloneAtomsSnapshot(vol);
     const afterBonds = cloneBondSnapshot(vol);
+    const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
     const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
     const label = removedAtoms.length === 1
       ? `Delete ${getElementSymbol((removedAtoms[0] && removedAtoms[0].Z) | 0)}`
@@ -14750,6 +15537,8 @@
       afterFragmentOps,
       beforeBonds,
       afterBonds,
+      beforeAnnotations,
+      afterAnnotations,
     });
     clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
     clearRotateOperatorBaseline();
@@ -14775,6 +15564,41 @@
   }
 
   /**
+   * Persist one per-atom coordination geometry override as an undoable edit.
+   * @param {number} atomIndex
+   * @param {string} geometryId
+   * @returns {boolean}
+   */
+  function applyAtomCoordinationChoice(atomIndex, geometryId) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const idx = atomIndex | 0;
+    const nextGeometryId = String(geometryId || '').trim();
+    if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length || !nextGeometryId) return false;
+    const atom = vol.atoms[idx];
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+    const prev = getAtomCoordinationMeta(vol, atom);
+    if (String(prev.geometryId || '') === nextGeometryId) return false;
+    if (!isCoordinationPreferenceCompatibleForAtom(vol, idx, nextGeometryId)) return false;
+    setAtomCoordinationMeta(vol, atom, { geometryId: nextGeometryId });
+    const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+    const geometry = getCoordinationGeometry(nextGeometryId);
+    const labelText = geometry ? `${geometry.label} (${geometry.cn})` : nextGeometryId;
+    pushEditHistoryEntry(record, beforeAtoms, beforeAtoms, `Set preferred coordination ${labelText}`, {
+      beforeAnnotations,
+      afterAnnotations,
+    });
+    if (editHaloController) editHaloController.refresh();
+    updateSelectedHalos();
+    updateEditAdaptiveMenuUi();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    setHintMessage(`Preferred coordination set to ${labelText} for ${getElementSymbol((atom && atom.Z) | 0)}.`);
+    return true;
+  }
+
+  /**
    * Compute mass-weighted center (native units) for one molecule.
    * @param {*} vol
    * @returns {{totalMass:number,comX:number,comY:number,comZ:number}|null}
@@ -14790,12 +15614,16 @@
    * @param {Array<object>} beforeAtoms
    * @param {string} actionLabel
    */
-  function finalizeAtomCoordinateEdit(record, vol, beforeAtoms, actionLabel, beforeBonds = null) {
+  function finalizeAtomCoordinateEdit(record, vol, beforeAtoms, actionLabel, beforeBonds = null, beforeAnnotations = null) {
     vol.natoms = vol.atoms.length;
     const afterAtoms = cloneAtomsSnapshot(vol);
     const historyOptions = Array.isArray(beforeBonds)
       ? { beforeBonds, afterBonds: cloneBondSnapshot(vol) }
       : undefined;
+    if (historyOptions && beforeAnnotations && typeof beforeAnnotations === 'object') {
+      historyOptions.beforeAnnotations = beforeAnnotations;
+      historyOptions.afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+    }
     pushEditHistoryEntry(record, beforeAtoms, afterAtoms, actionLabel, historyOptions);
 
     clearAddGrowPreview();
@@ -15130,32 +15958,25 @@
    * Begin one transform drag from a clicked bond-side target.
    * @param {PointerEvent} e
    * @param {{object:*,point:THREE.Vector3|null}} bondHit
+   * @param {{dragMode?:'bondAngleHorizontal'|'bondQuaternion'}=} options
    * @returns {boolean}
    */
-  function beginTransformDragFromBondHit(e, bondHit) {
+  function beginTransformDragFromBondHit(e, bondHit, options = {}) {
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
     if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return false;
-    const target = resolveTransformBondTarget(vol, bondHit);
-    if (!target || !Array.isArray(target.indices) || !target.indices.length) {
+    const payload = resolveTransformBondSelectionPayload(vol, bondHit);
+    if (!payload) {
       setHintMessage('Transform tool: could not resolve a bond-side fragment.');
       return false;
     }
-    const i = bondHit.object.userData.i | 0;
-    const j = bondHit.object.userData.j | 0;
-    const selectedAtomIndex = target.seedIndex | 0;
-    const anchorAtomIndex = selectedAtomIndex === i ? j : i;
     return beginTransformDragFromResolvedTarget(
       e,
       vol,
-      target,
+      payload.target,
       bondHit && bondHit.point ? bondHit.point : null,
-      {
-        type: 'bond',
-        selectedAtomIndex,
-        anchorAtomIndex,
-        bondIndices: [i, j],
-      }
+      payload.context,
+      options || {}
     );
   }
 
@@ -15317,7 +16138,31 @@
     if (!transformPivotWorld || !transformBeforeSnapshot) return;
 
     const movedWorld = [];
-    if (transformRotateGesture === 'bondQuaternion') {
+    if (transformRotateGesture === 'bondAngleHorizontal') {
+      if (!transformRotateAxis || !transformRotateAxis.isVector3 || transformRotateAxis.lengthSq() < 1e-12) return;
+      const nextClientX = Number(e.clientX) || transformRotateLastClientX;
+      const dx = nextClientX - transformRotateLastClientX;
+      transformRotateLastClientX = nextClientX;
+      transformRotateLastClientY = Number(e.clientY) || transformRotateLastClientY;
+      if (Math.abs(dx) <= 1e-7) return;
+      const deltaQ = new THREE.Quaternion().setFromAxisAngle(
+        transformRotateAxis,
+        dx * GESTURE_BOND_ANGLE_DRAG_SENSITIVITY
+      );
+      transformRotateAccumulatedQuaternion.premultiply(deltaQ);
+      for (const startWorld of transformStartPositionsWorld) {
+        const world = startWorld.clone()
+          .sub(transformPivotWorld)
+          .applyQuaternion(transformRotateAccumulatedQuaternion)
+          .add(transformPivotWorld);
+        movedWorld.push(world);
+      }
+      applyTransformWorldPositions(vol, transformTargetIndices, movedWorld);
+      if (transformAppliesToGrid) {
+        applyTransformGridRotation(vol, transformBeforeSnapshot.grid, transformPivotWorld, transformRotateAccumulatedQuaternion);
+      }
+      transformMoved = true;
+    } else if (transformRotateGesture === 'bondQuaternion') {
       const nextClientX = Number(e.clientX) || transformRotateLastClientX;
       const nextClientY = Number(e.clientY) || transformRotateLastClientY;
       const dx = nextClientX - transformRotateLastClientX;
@@ -15325,19 +16170,20 @@
       transformRotateLastClientX = nextClientX;
       transformRotateLastClientY = nextClientY;
       if (Math.abs(dx) <= 1e-7 && Math.abs(dy) <= 1e-7) return;
-      const camDir = new THREE.Vector3();
-      camera.getWorldDirection(camDir);
-      if (camDir.lengthSq() < 1e-12) camDir.set(0, 0, -1);
-      camDir.normalize();
-      const camUp = camera.up.clone().normalize();
-      if (camUp.lengthSq() < 1e-12) camUp.set(0, 1, 0);
-      let camRight = new THREE.Vector3().crossVectors(camDir, camUp);
-      if (camRight.lengthSq() < 1e-12) camRight = getBondPerpendicular(camDir);
-      camRight.normalize();
-      const deltaQ = new THREE.Quaternion()
-        .setFromAxisAngle(camUp, dx * 0.01)
-        .multiply(new THREE.Quaternion().setFromAxisAngle(camRight, dy * 0.01));
-      transformRotateAccumulatedQuaternion.premultiply(deltaQ);
+      const spherical = transformRotateSphericalState;
+      if (!spherical || !spherical.startDir || !spherical.viewDir || !spherical.right || !spherical.up) return;
+      spherical.theta += dx * 0.01;
+      spherical.phi = THREE.MathUtils.clamp(spherical.phi - dy * 0.01, -Math.PI * 0.495, Math.PI * 0.495);
+      const cosPhi = Math.cos(spherical.phi);
+      const targetDir = new THREE.Vector3()
+        .addScaledVector(spherical.right, cosPhi * Math.cos(spherical.theta))
+        .addScaledVector(spherical.up, Math.sin(spherical.phi))
+        .addScaledVector(spherical.viewDir, cosPhi * Math.sin(spherical.theta));
+      if (targetDir.lengthSq() < 1e-12) return;
+      targetDir.normalize();
+      transformRotateAccumulatedQuaternion.copy(
+        new THREE.Quaternion().setFromUnitVectors(spherical.startDir, targetDir)
+      );
       for (const startWorld of transformStartPositionsWorld) {
         const world = startWorld.clone()
           .sub(transformPivotWorld)
@@ -15429,6 +16275,11 @@
 
   let __lastBondUpdate = 0;
   canvasEl.addEventListener('pointermove', (e) => {
+    if (__contextDownPt && (!Number.isInteger(__contextDownPt.pointerId) || __contextDownPt.pointerId === e.pointerId)) {
+      const contextDx = (Number(e.clientX) || 0) - __contextDownPt.x;
+      const contextDy = (Number(e.clientY) || 0) - __contextDownPt.y;
+      if (Math.hypot(contextDx, contextDy) > 4) __contextMoved = true;
+    }
     if (viewRotateActive && viewRotatePointerId === e.pointerId) {
       const dx = (Number(e.clientX) || 0) - viewRotateLastClientX;
       const dy = (Number(e.clientY) || 0) - viewRotateLastClientY;
@@ -15467,6 +16318,21 @@
       updateMeasurementLabelDragFromEvent(e);
       return;
     }
+    if (gestureBondSidePress && (!Number.isInteger(gestureBondSidePress.pointerId) || gestureBondSidePress.pointerId === e.pointerId)) {
+      const dx = (Number(e.clientX) || 0) - gestureBondSidePress.clientX;
+      const dy = (Number(e.clientY) || 0) - gestureBondSidePress.clientY;
+      if (Math.hypot(dx, dy) > 4) {
+        __editMoved = true;
+        const bondHit = gestureBondSidePress.bondHit || null;
+        const dragMode = gestureBondSidePress.dragMode === 'bondQuaternion'
+          ? 'bondQuaternion'
+          : 'bondAngleHorizontal';
+        gestureBondSidePress = null;
+        if (bondHit && beginTransformDragFromBondHit(e, bondHit, { dragMode })) return;
+      } else {
+        return;
+      }
+    }
     if (currentMode === MODES.EDIT && editTool === EDIT_TOOL.ADD && editAddMode === EDIT_ADD_MODE.MOLECULE && moleculePlaceActive && moleculePlaceRotating) {
       __editMoved = true;
       updateMoleculePlacementRotationFromEvent(e);
@@ -15499,7 +16365,10 @@
     if (isGestureEditMode() && editHaloController) editHaloController.handlePointerMove(e);
     if (isGestureEditMode() && editGestureController && editGestureController.handlePointerMove(e)) {
       __editMoved = true;
-      setHover(null);
+      const gestureTargetMesh = addGrowActive && addGrowPreviewBondHit && addGrowPreviewBondHit.object
+        ? addGrowPreviewBondHit.object
+        : null;
+      setHover(gestureTargetMesh);
       setBondHover(null);
       setSurfaceHover(null);
       hideSurfaceHoverLabel();
@@ -15587,6 +16456,10 @@
   canvasEl.addEventListener('pointerleave', () => {
     if (isGestureEditMode()) clearGestureVoidPreview();
     if (editHaloController) editHaloController.handlePointerCancel();
+    if (gestureBondSidePress && canvasEl && Number.isInteger(gestureBondSidePress.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
+      try { canvasEl.releasePointerCapture(gestureBondSidePress.pointerId); } catch { }
+    }
+    gestureBondSidePress = null;
     if (editHaloGhostHoverIndex >= 0) {
       editHaloGhostHoverIndex = -1;
       editHaloGhostRenderKey = '';
@@ -15596,6 +16469,18 @@
   });
 
   canvasEl.addEventListener('contextmenu', (e) => {
+    if (isGestureEditMode() && !__contextMoved) {
+      const bondHit = resolveGestureBondCenterClickHit(e) || pickBondHit(e) || (hoverBondObject && hoverBondSection === 'center'
+        ? { object: hoverBondObject, section: 'center' }
+        : null);
+      if (bondHit && bondHit.object && bondHit.section === 'center') {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        stepGestureBondCenterOrder(bondHit, -1, e);
+        resetContextClickState();
+        return;
+      }
+    }
+    resetContextClickState();
     if (!(currentMode === MODES.EDIT && editTool === EDIT_TOOL.BOND)) return;
     if (typeof e.preventDefault === 'function') e.preventDefault();
     const bondHit = pickBondHit(e);
@@ -15617,6 +16502,15 @@
   }, { passive: false });
 
   canvasEl.addEventListener('pointerdown', (e) => {
+    if (e.button === 2) {
+      __contextDownPt = {
+        x: Number(e.clientX) || 0,
+        y: Number(e.clientY) || 0,
+        pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
+      };
+      __contextMoved = false;
+      return;
+    }
     if (e.button !== 0) return;
     if (currentMode === MODES.DISPLAY) {
       beginQuaternionViewRotate(e);
@@ -15627,15 +16521,37 @@
     editSelectionClickAdditive = false;
     dragBeforeAtomsSnapshot = null;
     dragBeforeBondSnapshot = null;
+    const gesturePickedBondHit = isGestureEditMode() ? pickBondHit(e) : null;
+    if (isGestureEditMode() && gesturePickedBondHit && gesturePickedBondHit.object && isExplicitTransformBondSideHit(gesturePickedBondHit)) {
+      const payload = applyGestureBondSideSelection(gesturePickedBondHit);
+      if (payload) {
+        clearGestureVoidPreview();
+        gestureBondSidePress = {
+          pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
+          clientX: Number(e.clientX) || 0,
+          clientY: Number(e.clientY) || 0,
+          bondHit: gesturePickedBondHit,
+          dragMode: e.shiftKey ? 'bondQuaternion' : 'bondAngleHorizontal',
+        };
+        if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.setPointerCapture === 'function') {
+          try { canvasEl.setPointerCapture(e.pointerId); } catch { }
+        }
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        return;
+      }
+    }
+    const gestureCenterBondHit = (gesturePickedBondHit && gesturePickedBondHit.object && gesturePickedBondHit.section === 'center')
+      ? gesturePickedBondHit
+      : resolveGestureBondCenterClickHit(e);
+    if (isGestureEditMode() && gestureCenterBondHit && gestureCenterBondHit.object && gestureCenterBondHit.section === 'center') {
+      if (stepGestureBondCenterOrder(gestureCenterBondHit, 1, e)) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        return;
+      }
+    }
     const obj = pickAtom(e);
     if (currentMode === MODES.EDIT) {
       if (isGestureEditMode() && editHaloController) {
-        const haloAction = editHaloController.handlePointerDown(e);
-        if (haloAction && haloAction.type === 'set-loaded-element') {
-          setEditAddElement(haloAction.z | 0, { announce: true, syncSearch: true });
-          e.preventDefault();
-          return;
-        }
         const haloGhostHit = pickEditHaloGhostHit(e);
         if (haloGhostHit) {
           const uiState = editHaloController.getUiState();
@@ -15655,6 +16571,13 @@
             }
           }
         }
+        const haloAction = editHaloController.handlePointerDown(e);
+        if (haloAction && haloAction.type === 'set-coordination-choice') {
+          if (applyAtomCoordinationChoice(haloAction.atomIndex | 0, haloAction.geometryId)) {
+            e.preventDefault();
+            return;
+          }
+        }
         if (haloAction && haloAction.type === 'start-grow-drag' && editGestureController) {
           if (editGestureController.startGrowDragFromHalo(e, haloAction.atomIndex | 0, {
             initialWorldPos: haloAction.worldPosition,
@@ -15665,9 +16588,9 @@
         }
       }
       if (isGestureEditMode() && editGestureController && editGestureController.handlePointerDown(e)) {
-        e.preventDefault();
-        return;
-      }
+          e.preventDefault();
+          return;
+        }
       if (editTool === EDIT_TOOL.SELECT) {
         editSelectionClickAdditive = !!e.shiftKey;
         hideEditSelectionMarquee();
@@ -15808,22 +16731,18 @@
           const bondJ = bondHit.object.userData.j | 0;
           const activeSelection = new Set(getActiveTransformSelectionIndices());
           const bondAlreadySelected = !e.shiftKey && activeSelection.has(bondI) && activeSelection.has(bondJ);
-          const target = resolveTransformBondTarget(vol, bondHit);
-          if (!target || !Array.isArray(target.indices) || !target.indices.length) {
+          const payload = resolveTransformBondSelectionPayload(vol, bondHit);
+          if (!payload) {
             setHintMessage('Transform tool: could not resolve a bond-side fragment.');
             e.preventDefault();
             return;
           }
-          const i = bondI;
-          const j = bondJ;
-          const selectedAtomIndex = target.seedIndex | 0;
-          const anchorAtomIndex = selectedAtomIndex === i ? j : i;
-          const context = {
-            type: 'bond',
-            selectedAtomIndex,
-            anchorAtomIndex,
-            bondIndices: [i, j],
-          };
+          const target = payload.target;
+          const context = payload.context;
+          if (!e.shiftKey && isExplicitTransformBondSideHit(bondHit)) {
+            if (beginTransformDragFromResolvedTarget(e, vol, target, bondHit.point || null, context)) e.preventDefault();
+            return;
+          }
           if (bondAlreadySelected || (!e.shiftKey && isTransformTargetInsideSelection(target.indices))) {
             if (beginTransformDragFromCurrentSelection(e, bondHit.point || null, context)) e.preventDefault();
           } else {
@@ -15874,6 +16793,15 @@
       endQuaternionViewRotate(e);
     }
     if (currentMode === MODES.EDIT) {
+      if (gestureBondSidePress && (!Number.isInteger(gestureBondSidePress.pointerId) || gestureBondSidePress.pointerId === e.pointerId)) {
+        if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
+          try { canvasEl.releasePointerCapture(e.pointerId); } catch { }
+        }
+        gestureBondSidePress = null;
+        updateAxisGuideLine();
+        __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+        return;
+      }
       if (isGestureEditMode() && editHaloController) editHaloController.handlePointerUp(e);
       if (isGestureEditMode() && editGestureController && editGestureController.handlePointerUp(e)) {
         updateAxisGuideLine();
@@ -16039,6 +16967,10 @@
   });
   canvasEl.addEventListener('pointercancel', (e) => {
     if (currentMode === MODES.DISPLAY) endQuaternionViewRotate(e);
+    if (gestureBondSidePress && canvasEl && Number.isInteger(gestureBondSidePress.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
+      try { canvasEl.releasePointerCapture(gestureBondSidePress.pointerId); } catch { }
+    }
+    gestureBondSidePress = null;
     transformPendingSelectionTarget = null;
     transformPendingBackgroundClear = false;
     if (bondEditing) bondEditing.clearState({ pendingSelection: false, popup: false });
@@ -16059,6 +16991,7 @@
       try { controls.enabled = true; } catch { }
     }
     try { controls.enabled = true; } catch { }
+    resetContextClickState();
     updateAxisGuideLine();
   });
 
@@ -16168,7 +17101,7 @@
   bind('down', MODES.DISPLAY, 'c', () => { setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open'))); });
 
   // Edit mode bindings
-  bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
+  bind('down', MODES.EDIT, 'e', () => { activateLegacyEditTool(EDIT_TOOL.ROTATE); });
   bind('down', MODES.EDIT, 'm', (e) => {
     if (e && e.shiftKey) {
       setMode(MODES.MEASURE);
@@ -16178,17 +17111,16 @@
     setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: true, syncSearch: true });
   });
   bind('down', MODES.EDIT, 's', () => { activateLegacyEditTool(EDIT_TOOL.SELECT); });
-  bind('down', MODES.EDIT, 'g', () => { activateLegacyEditTool(EDIT_TOOL.MOVE); });
-  bind('down', MODES.EDIT, 'o', () => { activateLegacyEditTool(EDIT_TOOL.ROTATE); });
+  bind('down', MODES.EDIT, 't', () => { activateLegacyEditTool(EDIT_TOOL.MOVE); });
+  bind('down', MODES.EDIT, 'o', () => { optimizeActiveStructureWithUff(); });
   bind('down', MODES.EDIT, 'f', () => {
     activateLegacyEditTool(EDIT_TOOL.ADD);
     setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: true, syncSearch: true });
   });
   bind('down', MODES.EDIT, 'b', () => { activateLegacyEditTool(EDIT_TOOL.BOND); });
-  bind('down', MODES.EDIT, 't', () => { activateLegacyEditTool(EDIT_TOOL.TRANSFORM); });
   bind('down', MODES.EDIT, 'n', () => {
-    activateLegacyEditTool(EDIT_TOOL.ADD);
-    setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: true, syncSearch: true });
+    setEditInteractionMode(EDIT_INTERACTION_MODE.GESTURE, { keepDrawerOpen: true });
+    setHintMessage(`Atom manipulation active • Loaded element ${getElementSymbol(editAddElementZ)}.`);
   });
   bind('down', MODES.EDIT, 'c', () => {
     setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
@@ -17234,6 +18166,10 @@
 
   // Public API for browser automation and future integrations.
   window.VibeMolStructure = structureTransportController.getPublicApi();
+  window.VibeMolUFFLocal = Object.freeze({
+    createActiveLocalUffContext,
+    optimizeActiveStructureWithUff,
+  });
 
   if (savePresetBtn) savePresetBtn.onclick = () => saveCurrentPresetToFile();
   if (saveStructureBtn) saveStructureBtn.onclick = () => saveCurrentStructureToFile();

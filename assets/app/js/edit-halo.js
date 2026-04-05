@@ -2,39 +2,18 @@
   'use strict';
 
   const EPSILON = 1e-8;
-  const MAIN_GROUP_RING = Object.freeze([1, 5, 6, 7, 8, 9, 15, 16, 17, 35, 53]);
-  const DEG120 = 0.8660254037844386;
-  const GEOMETRY_TEMPLATES = Object.freeze({
-    linear: Object.freeze([
-      Object.freeze([1, 0, 0]),
-      Object.freeze([-1, 0, 0]),
-    ]),
-    trigonal: Object.freeze([
-      Object.freeze([1, 0, 0]),
-      Object.freeze([-0.5, DEG120, 0]),
-      Object.freeze([-0.5, -DEG120, 0]),
-    ]),
-    tetrahedral: Object.freeze([
-      Object.freeze([0.5773502691896258, 0.5773502691896258, 0.5773502691896258]),
-      Object.freeze([0.5773502691896258, -0.5773502691896258, -0.5773502691896258]),
-      Object.freeze([-0.5773502691896258, 0.5773502691896258, -0.5773502691896258]),
-      Object.freeze([-0.5773502691896258, -0.5773502691896258, 0.5773502691896258]),
-    ]),
-    squarePlanar: Object.freeze([
-      Object.freeze([1, 0, 0]),
-      Object.freeze([0, 1, 0]),
-      Object.freeze([-1, 0, 0]),
-      Object.freeze([0, -1, 0]),
-    ]),
-    octahedral: Object.freeze([
-      Object.freeze([1, 0, 0]),
-      Object.freeze([-1, 0, 0]),
-      Object.freeze([0, 1, 0]),
-      Object.freeze([0, -1, 0]),
-      Object.freeze([0, 0, 1]),
-      Object.freeze([0, 0, -1]),
-    ]),
-  });
+  const {
+    getGeometry: getCoordinationGeometry,
+    getCoordinationProfile,
+  } = global.VibeMolCoordination || {};
+  const { inferAtomGeometry } = global.VibeMolGeometryInference || {};
+  if (![
+    getCoordinationGeometry,
+    getCoordinationProfile,
+    inferAtomGeometry,
+  ].every((fn) => typeof fn === 'function')) {
+    throw new Error('VibeMolEditHalo requires VibeMolCoordination and VibeMolGeometryInference to be loaded first.');
+  }
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, Number(value) || 0));
@@ -183,6 +162,69 @@
     return [bestI, bestJ];
   }
 
+  function sortIndicesByEquatorialPreference(template, indices) {
+    return indices.slice().sort((left, right) => {
+      const leftZ = Math.abs(Number(template[left] && template[left][2]) || 0);
+      const rightZ = Math.abs(Number(template[right] && template[right][2]) || 0);
+      if (leftZ !== rightZ) return leftZ - rightZ;
+      return left - right;
+    });
+  }
+
+  function chooseTransPair(template, indices) {
+    if (!Array.isArray(indices) || indices.length < 2) return [];
+    let bestPair = [];
+    let bestDot = Infinity;
+    for (let i = 0; i < indices.length; i += 1) {
+      for (let j = i + 1; j < indices.length; j += 1) {
+        const dot = clamp(vecDot(template[indices[i]], template[indices[j]]), -1, 1);
+        if (dot < bestDot) {
+          bestDot = dot;
+          bestPair = [indices[i], indices[j]];
+        }
+      }
+    }
+    return bestPair;
+  }
+
+  function chooseLonePairIndices(template, remainingIndices, geometryId, lonePairs) {
+    const requested = Math.max(0, lonePairs | 0);
+    if (!requested || !Array.isArray(remainingIndices) || !remainingIndices.length) return [];
+    if (geometryId === 'octahedral' && requested >= 2) {
+      const transPair = chooseTransPair(template, remainingIndices);
+      if (transPair.length === 2) {
+        const leftovers = remainingIndices.filter((index) => !transPair.includes(index));
+        return transPair.concat(sortIndicesByEquatorialPreference(template, leftovers)).slice(0, requested);
+      }
+    }
+    return sortIndicesByEquatorialPreference(template, remainingIndices).slice(0, requested);
+  }
+
+  function partitionAlignedVertices(template, assignment, currentBonds, fullBondCount, lonePairs, geometryId) {
+    const used = new Set((Array.isArray(assignment) ? assignment : []).filter((index) => Number.isInteger(index) && index >= 0));
+    const occupiedIndices = Array.from(used.values());
+    const extraOccupiedCount = Math.max(0, (currentBonds | 0) - occupiedIndices.length);
+    if (extraOccupiedCount > 0) {
+      const fill = sortIndicesByEquatorialPreference(template, template.map((_, index) => index).filter((index) => !used.has(index)));
+      for (let i = 0; i < fill.length && occupiedIndices.length < (currentBonds | 0); i += 1) {
+        const nextIndex = fill[i];
+        used.add(nextIndex);
+        occupiedIndices.push(nextIndex);
+      }
+    }
+    const remainingIndices = template.map((_, index) => index).filter((index) => !used.has(index));
+    const clampedLonePairs = Math.min(Math.max(0, lonePairs | 0), Math.max(0, remainingIndices.length));
+    const lonePairIndices = chooseLonePairIndices(template, remainingIndices, geometryId, clampedLonePairs);
+    const lonePairSet = new Set(lonePairIndices);
+    const bondCapacity = Math.max(0, (fullBondCount | 0) - (currentBonds | 0));
+    const ghostIndices = remainingIndices.filter((index) => !lonePairSet.has(index)).slice(0, bondCapacity);
+    return {
+      occupiedIndices,
+      lonePairIndices,
+      ghostIndices,
+    };
+  }
+
   function alignTemplateToTwoVectors(templateA, templateB, targetA, targetB) {
     const q1 = quatFromUnitVectors(templateA, targetA);
     const rotatedB = applyQuatToVec(templateB, q1);
@@ -272,23 +314,6 @@
     return out;
   }
 
-  function classifyMetalGeometry(z, neighborCount, occupiedDirs) {
-    const count = Math.max(0, neighborCount | 0);
-    const squarePlanarPreferred = new Set([28, 46, 78, 79]);
-    if (count >= 5) return { geometryKey: 'octahedral', siteCount: 6, label: 'octahedral coordination' };
-    if (count === 4) {
-      if (squarePlanarPreferred.has(z | 0)) return { geometryKey: 'squarePlanar', siteCount: 4, label: 'square-planar coordination' };
-      const planar = occupiedDirs.length >= 3
-        ? occupiedDirs.every((dir) => Math.abs(vecNormalize(dir)[2] || 0) < 0.45)
-        : false;
-      return planar
-        ? { geometryKey: 'squarePlanar', siteCount: 4, label: 'square-planar coordination' }
-        : { geometryKey: 'tetrahedral', siteCount: 4, label: 'tetrahedral coordination' };
-    }
-    if (count <= 2) return { geometryKey: 'tetrahedral', siteCount: 4, label: 'tetrahedral coordination' };
-    return { geometryKey: 'tetrahedral', siteCount: 4, label: 'tetrahedral coordination' };
-  }
-
   function defaultNow() {
     if (global.performance && typeof global.performance.now === 'function') return global.performance.now();
     return Date.now();
@@ -304,12 +329,8 @@
     const pickBondHit = typeof options.pickBondHit === 'function' ? options.pickBondHit : (() => null);
     const getAtomWorld = typeof options.getAtomWorld === 'function' ? options.getAtomWorld : (() => null);
     const projectWorldToClient = typeof options.projectWorldToClient === 'function' ? options.projectWorldToClient : (() => null);
-    const getAutoHydrogenRule = typeof options.getAutoHydrogenRule === 'function' ? options.getAutoHydrogenRule : (() => null);
-    const resolveGeometryForEnvironment = typeof options.resolveGeometryForEnvironment === 'function' ? options.resolveGeometryForEnvironment : (() => null);
-    const isTransitionMetalAtomicNumber = typeof options.isTransitionMetalAtomicNumber === 'function' ? options.isTransitionMetalAtomicNumber : (() => false);
-    const isAutoBondSupportedAtomicNumber = typeof options.isAutoBondSupportedAtomicNumber === 'function' ? options.isAutoBondSupportedAtomicNumber : (() => false);
     const getElementSymbol = typeof options.getElementSymbol === 'function' ? options.getElementSymbol : ((z) => `Z${z | 0}`);
-    const getLoadedElementZ = typeof options.getLoadedElementZ === 'function' ? options.getLoadedElementZ : (() => 6);
+    const getAtomCoordinationGeometryId = typeof options.getAtomCoordinationGeometryId === 'function' ? options.getAtomCoordinationGeometryId : (() => '');
     const getGrowBondLength = typeof options.getGrowBondLength === 'function' ? options.getGrowBondLength : (() => 1.1);
     const nowProvider = typeof options.nowProvider === 'function' ? options.nowProvider : defaultNow;
     const onUiStateChanged = typeof options.onUiStateChanged === 'function' ? options.onUiStateChanged : (() => {});
@@ -333,7 +354,7 @@
         anchorClient: null,
         ghosts: [],
         occupied: [],
-        elements: [],
+        choices: [],
         activeZone: null,
         bondCenterReserved: false,
       },
@@ -382,9 +403,10 @@
       };
     }
 
-    function getTemplate(key) {
-      const template = GEOMETRY_TEMPLATES[String(key || '')] || GEOMETRY_TEMPLATES.tetrahedral;
-      return template.map((dir) => dir.slice());
+    function getTemplate(geometryId) {
+      const geometry = getCoordinationGeometry(geometryId) || getCoordinationGeometry('tetrahedral');
+      const vertices = geometry && Array.isArray(geometry.vertices) ? geometry.vertices : [];
+      return vertices.map((dir) => dir.slice());
     }
 
     function getAtomFrameKey(atom, atomIndex) {
@@ -430,91 +452,105 @@
       return aligned;
     }
 
-    function buildMainGroupDescriptor(record, vol, atomIndex, atom, env, anchorWorld) {
-      const rule = getAutoHydrogenRule(atom.Z | 0);
-      if (!rule || !isAutoBondSupportedAtomicNumber(atom.Z | 0)) return null;
-      const resolved = resolveGeometryForEnvironment(atom.Z | 0, env, rule) || null;
-      if (!resolved || !resolved.geometryKey) return null;
-      const aligned = resolveAlignedTemplateForAtom(record, atom, atomIndex, resolved.geometryKey, env.occupiedDirs) || { rotatedTemplate: [], assignment: [] };
-      const used = new Set((aligned.assignment || []).filter((index) => Number.isInteger(index) && index >= 0));
-      const siteCount = Math.max(0, Number(resolved.siteCount) || aligned.rotatedTemplate.length);
-      const targetBondCount = Math.max(0, Number(resolved.targetBondCount) || 0);
-      const openCount = Math.max(0, Math.min(siteCount - env.neighborCount, targetBondCount - env.neighborCount));
-      const ghostDirs = [];
-      const growDistance = Math.max(0.7, Number(getGrowBondLength(atom.Z | 0)) || 1.1);
-      for (let i = 0; i < aligned.rotatedTemplate.length && ghostDirs.length < openCount; i += 1) {
-        if (used.has(i)) continue;
-        const dir = vecNormalize(aligned.rotatedTemplate[i]);
-        const world = vecAdd(anchorWorld, vecScale(dir, growDistance));
-        const client = projectWorldToClient(world);
-        if (!client || client.visible === false) continue;
-        ghostDirs.push({ index: i, dir, world, client, recommended: ghostDirs.length === 0 });
-      }
-      const occupied = env.occupiedDirs.map((dir, index) => {
-        const world = vecAdd(anchorWorld, vecScale(vecNormalize(dir), growDistance * 0.85));
-        const client = projectWorldToClient(world);
-        return client && client.visible !== false ? { index, client } : null;
-      }).filter(Boolean);
-      const mode = ghostDirs.length ? 'main-group-open' : 'main-group-saturated';
-      return {
-        atomIndex,
-        mode,
-        label: ghostDirs.length ? `${resolved.geometryKey} grow halo` : `${resolved.geometryKey} saturated halo`,
-        ghosts: ghostDirs,
-        occupied,
-        growDistance,
-      };
-    }
-
-    function buildMetalDescriptor(record, vol, atomIndex, atom, env, anchorWorld) {
-      const geometry = classifyMetalGeometry(atom.Z | 0, env.neighborCount, env.occupiedDirs);
-      const aligned = resolveAlignedTemplateForAtom(record, atom, atomIndex, geometry.geometryKey, env.occupiedDirs) || { rotatedTemplate: [], assignment: [] };
-      const used = new Set((aligned.assignment || []).filter((index) => Number.isInteger(index) && index >= 0));
-      const openCount = Math.max(0, geometry.siteCount - env.neighborCount);
-      const growDistance = Math.max(1.2, Number(getGrowBondLength(atom.Z | 0)) || 1.6);
-      const ghosts = [];
-      for (let i = 0; i < aligned.rotatedTemplate.length && ghosts.length < openCount; i += 1) {
-        if (used.has(i)) continue;
-        const dir = vecNormalize(aligned.rotatedTemplate[i]);
-        const world = vecAdd(anchorWorld, vecScale(dir, growDistance));
-        const client = projectWorldToClient(world);
-        if (!client || client.visible === false) continue;
-        ghosts.push({ index: i, dir, world, client, recommended: ghosts.length === 0 });
-      }
-      const occupied = env.occupiedDirs.map((dir, index) => {
-        const world = vecAdd(anchorWorld, vecScale(vecNormalize(dir), growDistance * 0.85));
-        const client = projectWorldToClient(world);
-        return client && client.visible !== false ? { index, client } : null;
-      }).filter(Boolean);
-      return {
-        atomIndex,
-        mode: 'metal-coordination',
-        label: geometry.label,
-        ghosts,
-        occupied,
-        growDistance,
-      };
-    }
-
-    function buildElementRing(anchorClient) {
-      const radius = 82;
-      const sectorAngle = (Math.PI * 2) / MAIN_GROUP_RING.length;
+    function buildCoordinationChoices(anchorClient, choices, activeGeometryId) {
+      const items = Array.isArray(choices) ? choices : [];
+      if (!anchorClient || !items.length) return [];
+      const radius = items.length === 1 ? 86 : 92;
+      const sectorAngle = (Math.PI * 2) / Math.max(1, items.length);
       const startAngle = -Math.PI / 2;
-      return MAIN_GROUP_RING.map((z, index) => {
+      return items.map((choice, index) => {
+        const text = String((choice && choice.text) || '').trim();
         const angle = startAngle + sectorAngle * index + sectorAngle * 0.5;
+        const width = clamp(text.length * 6.8 + 20, 82, 176);
+        const height = 26;
         return {
-          z,
-          symbol: getElementSymbol(z),
-          angle,
-          innerRadius: 56,
-          outerRadius: 102,
+          geometryId: String(choice && choice.geometryId || '').trim(),
+          label: String(choice && choice.label || text || '').trim(),
+          text,
+          cn: Math.max(0, Number(choice && choice.cn) || 0),
+          width,
+          height,
           client: {
             x: (anchorClient.x || 0) + Math.cos(angle) * radius,
             y: (anchorClient.y || 0) + Math.sin(angle) * radius,
             visible: true,
           },
+          active: String(choice && choice.geometryId || '') === String(activeGeometryId || ''),
         };
       });
+    }
+
+    function buildCoordinationDescriptor(record, vol, atomIndex, atom, env, anchorWorld) {
+      const profile = getCoordinationProfile(atom.Z | 0);
+      if (!profile) return null;
+      const preferredGeometryId = String(getAtomCoordinationGeometryId(vol, atomIndex) || '').trim();
+      const inference = inferAtomGeometry(vol, atomIndex, {
+        getAtomWorld,
+        preferredGeometryId,
+      });
+      if (!inference || !inference.geometryId) return null;
+      const geometry = getCoordinationGeometry(inference.geometryId);
+      if (!geometry || !Array.isArray(geometry.vertices) || !geometry.vertices.length) return null;
+      const aligned = resolveAlignedTemplateForAtom(record, atom, atomIndex, geometry.id, env.occupiedDirs) || { rotatedTemplate: [], assignment: [] };
+      const partition = partitionAlignedVertices(
+        aligned.rotatedTemplate,
+        aligned.assignment,
+        inference.currentBonds,
+        inference.fullBondCount,
+        inference.lonePairs,
+        geometry.id
+      );
+      const compatibleIds = new Set(Array.isArray(inference.compatibleGeometryIds) ? inference.compatibleGeometryIds : []);
+      let choices = Array.isArray(profile.choices)
+        ? profile.choices.filter((choice) => compatibleIds.has(String(choice && choice.geometryId || '')))
+        : [];
+      if (!choices.length) {
+        choices = [{
+          geometryId: geometry.id,
+          label: geometry.label,
+          text: `${geometry.label} (${geometry.cn})`,
+          cn: geometry.cn,
+        }];
+      }
+      const activeChoice = choices.find((choice) => String(choice.geometryId || '') === String(inference.geometryId || ''))
+        || {
+          geometryId: geometry.id,
+          label: geometry.label,
+          text: `${geometry.label} (${geometry.cn})`,
+          cn: geometry.cn,
+        };
+      const growDistance = profile.isTransitionMetal
+        ? Math.max(1.2, Number(getGrowBondLength(atom.Z | 0)) || 1.6)
+        : Math.max(0.7, Number(getGrowBondLength(atom.Z | 0)) || 1.1);
+      const ghosts = [];
+      for (const index of partition.ghostIndices) {
+        const dir = vecNormalize(aligned.rotatedTemplate[index]);
+        const world = vecAdd(anchorWorld, vecScale(dir, growDistance));
+        const client = projectWorldToClient(world);
+        if (!client || client.visible === false) continue;
+        ghosts.push({ index, dir, world, client, recommended: ghosts.length === 0 });
+      }
+      const occupied = env.occupiedDirs.map((dir, index) => {
+        const world = vecAdd(anchorWorld, vecScale(vecNormalize(dir), growDistance * 0.85));
+        const client = projectWorldToClient(world);
+        return client && client.visible !== false ? { index, client } : null;
+      }).filter(Boolean);
+      return {
+        atomIndex,
+        mode: profile.isTransitionMetal
+          ? 'metal-coordination'
+          : (ghosts.length ? 'coordination-open' : 'coordination-saturated'),
+        label: activeChoice.text,
+        activeChoice,
+        activeGeometryId: geometry.id,
+        activeGeometryLabel: geometry.label,
+        activeGeometryText: activeChoice.text,
+        inference,
+        ghosts,
+        occupied,
+        growDistance,
+        choices: buildCoordinationChoices(anchorWorld ? projectWorldToClient(anchorWorld) : null, choices, geometry.id),
+      };
     }
 
     function buildDescriptor(atomIndex) {
@@ -528,14 +564,12 @@
       if (!anchorWorld || !anchorClient || anchorClient.visible === false) return null;
       const env = computeLocalEnvironment(vol, atomIndex);
       if (!env) return null;
-      let descriptor = null;
-      if (isTransitionMetalAtomicNumber(atom.Z | 0)) descriptor = buildMetalDescriptor(record, vol, atomIndex, atom, env, anchorWorld);
-      else descriptor = buildMainGroupDescriptor(record, vol, atomIndex, atom, env, anchorWorld);
+      let descriptor = buildCoordinationDescriptor(record, vol, atomIndex, atom, env, anchorWorld);
       if (!descriptor) descriptor = { atomIndex, mode: 'atom-only', label: 'atom halo', ghosts: [], occupied: [], growDistance: 1.0 };
       descriptor.anchorWorld = anchorWorld;
       descriptor.anchorClient = anchorClient;
       descriptor.atomZ = atom.Z | 0;
-      descriptor.elementRing = buildElementRing(anchorClient);
+      descriptor.choices = Array.isArray(descriptor.choices) ? descriptor.choices : buildCoordinationChoices(anchorClient, [], '');
       descriptor.env = env;
       return descriptor;
     }
@@ -544,7 +578,11 @@
       if (!descriptor || !descriptor.anchorClient) return 0;
       return Math.max(
         40,
-        ...((descriptor.elementRing || []).map((item) => Number(item.outerRadius) || 0)),
+        ...((descriptor.choices || []).map((item) => {
+          const dx = (item.client.x || 0) - (descriptor.anchorClient.x || 0);
+          const dy = (item.client.y || 0) - (descriptor.anchorClient.y || 0);
+          return Math.hypot(dx, dy) + Math.max(Number(item.width) || 0, Number(item.height) || 0) * 0.6;
+        })),
         ...((descriptor.ghosts || []).map((ghost) => {
           const dx = (ghost.client.x || 0) - (descriptor.anchorClient.x || 0);
           const dy = (ghost.client.y || 0) - (descriptor.anchorClient.y || 0);
@@ -557,18 +595,6 @@
       const dx = (pointer.x || 0) - (anchorClient.x || 0);
       const dy = (pointer.y || 0) - (anchorClient.y || 0);
       return { radius: Math.hypot(dx, dy), angle: Math.atan2(dy, dx), dx, dy };
-    }
-
-    function hitTestElementRing(descriptor, pointer) {
-      if (!descriptor || !descriptor.anchorClient || !pointer) return null;
-      const polar = polarFromPointer(descriptor.anchorClient, pointer);
-      for (const element of descriptor.elementRing || []) {
-        const delta = Math.atan2(Math.sin(polar.angle - element.angle), Math.cos(polar.angle - element.angle));
-        if (polar.radius >= element.innerRadius && polar.radius <= element.outerRadius && Math.abs(delta) <= (Math.PI * 2 / MAIN_GROUP_RING.length) * 0.45) {
-          return element;
-        }
-      }
-      return null;
     }
 
     function hitTestGhost(descriptor, pointer) {
@@ -584,12 +610,27 @@
       return best ? best.ghost : null;
     }
 
+    function hitTestChoice(descriptor, pointer) {
+      if (!descriptor || !pointer) return null;
+      let best = null;
+      for (const choice of descriptor.choices || []) {
+        const halfWidth = Math.max(22, (Number(choice.width) || 0) * 0.5) + 6;
+        const halfHeight = Math.max(12, (Number(choice.height) || 0) * 0.5) + 4;
+        const dx = (pointer.x || 0) - (choice.client.x || 0);
+        const dy = (pointer.y || 0) - (choice.client.y || 0);
+        if (Math.abs(dx) > halfWidth || Math.abs(dy) > halfHeight) continue;
+        const score = Math.abs(dx) + Math.abs(dy);
+        if (!best || score < best.score) best = { choice, score };
+      }
+      return best ? best.choice : null;
+    }
+
     function computeActiveZone(descriptor, pointer) {
       if (!descriptor || !pointer) return null;
       const ghost = hitTestGhost(descriptor, pointer);
       if (ghost) return { kind: 'ghost', ghostIndex: ghost.index, ghost };
-      const element = hitTestElementRing(descriptor, pointer);
-      if (element) return { kind: 'element', elementZ: element.z, element };
+      const choice = hitTestChoice(descriptor, pointer);
+      if (choice) return { kind: 'choice', geometryId: choice.geometryId, choice };
       return null;
     }
 
@@ -613,21 +654,21 @@
       let hint = '';
       let scope = '';
       if (visible && descriptor) {
-        if (activeZone && activeZone.kind === 'element') {
-          hint = `Set loaded element to ${getElementSymbol(activeZone.elementZ)}`;
+        if (activeZone && activeZone.kind === 'choice') {
+          hint = `Prefer ${activeZone.choice.text} for ${getElementSymbol(descriptor.atomZ)}`;
         } else if (activeZone && activeZone.kind === 'ghost') {
-          hint = `Place ${getElementSymbol(getLoadedElementZ())} from ${getElementSymbol(descriptor.atomZ)} in the suggested direction`;
+          hint = `Click to place the loaded element in ${descriptor.activeGeometryText}`;
         } else if (descriptor.mode === 'metal-coordination') {
-          hint = 'Coordination halo: click a ghost to place the next ligand direction';
+          hint = `Coordination halo: ${descriptor.activeGeometryText}`;
         } else if ((descriptor.ghosts || []).length) {
-          hint = 'Click a ghost to grow chemistry • outer ring changes the loaded element';
+          hint = `Click a ghost to place the loaded element in ${descriptor.activeGeometryText}`;
         } else {
-          hint = 'No open grow sites • drag the atom body to move it';
+          hint = `No open sites in ${descriptor.activeGeometryText} • drag the atom body to move it`;
         }
         scope = descriptor.label;
       } else if (state.hoverBondCenterReserved) {
-        hint = 'Bond-center halo reserved for Layer 3';
-        scope = 'Bond midpoint reserved';
+        hint = 'Bond midpoint: left click raises order • Right click lowers order';
+        scope = 'Bond midpoint';
       }
       return {
         visible,
@@ -651,12 +692,16 @@
           recommended: !!ghost.recommended,
         })) : [],
         occupied: visible && descriptor ? (descriptor.occupied || []).map((item) => ({ x: item.client.x, y: item.client.y })) : [],
-        elements: visible && descriptor ? (descriptor.elementRing || []).map((item) => ({
-          z: item.z,
-          symbol: item.symbol,
+        choices: visible && descriptor ? (descriptor.choices || []).map((item) => ({
+          geometryId: item.geometryId,
+          label: item.label,
+          text: item.text,
+          cn: item.cn | 0,
           x: item.client.x,
           y: item.client.y,
-          active: (getLoadedElementZ() | 0) === (item.z | 0),
+          width: Number(item.width) || 0,
+          height: Number(item.height) || 0,
+          active: !!item.active,
         })) : [],
         activeZone,
         bondCenterReserved: !!state.hoverBondCenterReserved,
@@ -766,8 +811,12 @@
       if (!(state.visible && state.descriptor)) return null;
       const zone = computeActiveZone(state.descriptor, state.lastPointer);
       if (!zone) return null;
-      if (zone.kind === 'element') {
-        return { type: 'set-loaded-element', z: zone.elementZ | 0 };
+      if (zone.kind === 'choice') {
+        return {
+          type: 'set-coordination-choice',
+          atomIndex: state.descriptor.atomIndex | 0,
+          geometryId: String(zone.geometryId || '').trim(),
+        };
       }
       if (zone.kind === 'ghost') {
         return {

@@ -21,6 +21,9 @@
    *   cloneBondSnapshot:(vol:any)=>Array<object>,
    *   bondSnapshotsEqual:(a:Array<object>, b:Array<object>)=>boolean,
    *   cloneAtomsSnapshot:(vol:any)=>Array<object>,
+   *   cloneVolumeAnnotationsSnapshot:(vol:any)=>object,
+   *   atomUnitsToAng:(vol:any, atom:any)=>any,
+   *   adjustHydrogensAfterBondEdit:(vol:any, atomIndices:Array<number>, options?:object)=>({added:number,removed:number}|null),
    *   pushEditHistoryEntry:(record:any, beforeAtoms:Array<object>, afterAtoms:Array<object>, label:string, options?:object)=>void,
    *   clearHover:()=>void,
    *   rebuildScene:(options?:object)=>void,
@@ -53,6 +56,13 @@
     const cloneBondSnapshot = typeof options.cloneBondSnapshot === 'function' ? options.cloneBondSnapshot : (() => []);
     const bondSnapshotsEqual = typeof options.bondSnapshotsEqual === 'function' ? options.bondSnapshotsEqual : (() => false);
     const cloneAtomsSnapshot = typeof options.cloneAtomsSnapshot === 'function' ? options.cloneAtomsSnapshot : (() => []);
+    const cloneVolumeAnnotationsSnapshot = typeof options.cloneVolumeAnnotationsSnapshot === 'function'
+      ? options.cloneVolumeAnnotationsSnapshot
+      : (() => ({ builder: { byAtomId: {} }, coordination: { byAtomId: {} } }));
+    const atomUnitsToAng = typeof options.atomUnitsToAng === 'function' ? options.atomUnitsToAng : null;
+    const adjustHydrogensAfterBondEdit = typeof options.adjustHydrogensAfterBondEdit === 'function'
+      ? options.adjustHydrogensAfterBondEdit
+      : null;
     const pushEditHistoryEntry = typeof options.pushEditHistoryEntry === 'function' ? options.pushEditHistoryEntry : (() => {});
     const clearHover = typeof options.clearHover === 'function' ? options.clearHover : (() => {});
     const rebuildScene = typeof options.rebuildScene === 'function' ? options.rebuildScene : (() => {});
@@ -163,16 +173,56 @@
       if (popupCarrier) showPopupForCarrier(popupCarrier);
     }
 
-    function finalizeBondGraphEdit(record, vol, beforeBonds, actionLabel) {
+    function buildPreferredDirByAtomId(vol, atomA, atomB) {
+      if (!atomA || !atomB) return null;
+      const left = atomUnitsToAng ? atomUnitsToAng(vol, atomA) : atomA;
+      const right = atomUnitsToAng ? atomUnitsToAng(vol, atomB) : atomB;
+      const ax = Number(left && left.x);
+      const ay = Number(left && left.y);
+      const az = Number(left && left.z);
+      const bx = Number(right && right.x);
+      const by = Number(right && right.y);
+      const bz = Number(right && right.z);
+      if (![ax, ay, az, bx, by, bz].every(Number.isFinite)) return null;
+      const dx = bx - ax;
+      const dy = by - ay;
+      const dz = bz - az;
+      const lenSq = dx * dx + dy * dy + dz * dz;
+      if (!(lenSq > 1e-12)) return null;
+      if (THREE && typeof THREE.Vector3 === 'function') {
+        const map = new Map();
+        map.set(String(ensureAtomId(atomA)), new THREE.Vector3(dx, dy, dz));
+        map.set(String(ensureAtomId(atomB)), new THREE.Vector3(-dx, -dy, -dz));
+        return map;
+      }
+      return null;
+    }
+
+    function applyHydrogenAdjustmentForBondEdit(vol, atomIndexA, atomIndexB, atomA, atomB) {
+      if (!adjustHydrogensAfterBondEdit || !vol || !atomA || !atomB) return null;
+      const preferredDirByAtomId = buildPreferredDirByAtomId(vol, atomA, atomB);
+      return adjustHydrogensAfterBondEdit(vol, [atomIndexA | 0, atomIndexB | 0], {
+        preferredDirByAtomId: preferredDirByAtomId || undefined,
+      });
+    }
+
+    function finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, actionLabel) {
       if (!record || !vol || !Array.isArray(beforeBonds)) return false;
       ensureVolumeSchema(vol, { inferMissingBonds: false });
       const afterBonds = cloneBondSnapshot(vol);
       if (bondSnapshotsEqual(beforeBonds, afterBonds)) return false;
-      const atomSnapshot = cloneAtomsSnapshot(vol);
-      pushEditHistoryEntry(record, atomSnapshot, atomSnapshot, actionLabel, {
+      const afterAtoms = cloneAtomsSnapshot(vol);
+      const historyOptions = {
         beforeBonds,
         afterBonds,
-      });
+      };
+      if (Array.isArray(beforeAtoms)) {
+        historyOptions.beforeAnnotations = beforeAnnotations && typeof beforeAnnotations === 'object' ? beforeAnnotations : null;
+        historyOptions.afterAnnotations = beforeAnnotations && typeof beforeAnnotations === 'object'
+          ? cloneVolumeAnnotationsSnapshot(vol)
+          : null;
+      }
+      pushEditHistoryEntry(record, Array.isArray(beforeAtoms) ? beforeAtoms : afterAtoms, afterAtoms, actionLabel, historyOptions);
       clearHover();
       rebuildScene({ preserveView: true });
       updateSidePanel();
@@ -190,7 +240,9 @@
       const atomB = vol.atoms[j];
       const atomIdA = ensureAtomId(atomA);
       const atomIdB = ensureAtomId(atomB);
+      const beforeAtoms = cloneAtomsSnapshot(vol);
       const beforeBonds = cloneBondSnapshot(vol);
+      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
       hidePopup();
       clearPendingSelection();
       if (applyOptions.deleteOverride || getBondAction() === 'delete') {
@@ -198,7 +250,8 @@
         if (!status || status === 'unchanged') return false;
         const symbolA = getElementSymbol(atomA.Z | 0);
         const symbolB = getElementSymbol(atomB.Z | 0);
-        if (finalizeBondGraphEdit(record, vol, beforeBonds, `Delete bond ${symbolA}-${symbolB}`)) {
+        applyHydrogenAdjustmentForBondEdit(vol, i, j, atomA, atomB);
+        if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `Delete bond ${symbolA}-${symbolB}`)) {
           setHintMessage(`Deleted bond ${symbolA}-${symbolB}.`);
           return true;
         }
@@ -212,7 +265,8 @@
       }
       const symbolA = getElementSymbol(atomA.Z | 0);
       const symbolB = getElementSymbol(atomB.Z | 0);
-      if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
+      applyHydrogenAdjustmentForBondEdit(vol, i, j, atomA, atomB);
+      if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
         setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
         return true;
       }
@@ -246,6 +300,8 @@
         return false;
       }
       const beforeBonds = cloneBondSnapshot(vol);
+      const beforeAtoms = cloneAtomsSnapshot(vol);
+      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
       const nextOrder = normalizeOrder(getBondOrder());
       const status = upsertVolumeBond(vol, ensureAtomId(pendingAtom), atomId, nextOrder, 'normal', 'explicit');
       clearPendingSelection();
@@ -255,7 +311,8 @@
       }
       const symbolA = getElementSymbol(pendingAtom.Z | 0);
       const symbolB = getElementSymbol(atom.Z | 0);
-      if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
+      applyHydrogenAdjustmentForBondEdit(vol, pendingIndex, idx, pendingAtom, atom);
+      if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
         setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
         return true;
       }
@@ -276,7 +333,9 @@
       const atomIdB = ensureAtomId(atomB);
       const currentIndex = findVolumeBondRecordIndex(vol, atomIdA, atomIdB);
       const currentBond = currentIndex >= 0 ? normalizeVolumeBondRecord(vol, vol.bonds[currentIndex]) : null;
+      const beforeAtoms = cloneAtomsSnapshot(vol);
       const beforeBonds = cloneBondSnapshot(vol);
+      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
       hidePopup();
       clearPendingSelection();
 
@@ -289,7 +348,8 @@
           if (!status || status === 'unchanged') return false;
           const symbolA = getElementSymbol(atomA.Z | 0);
           const symbolB = getElementSymbol(atomB.Z | 0);
-          if (finalizeBondGraphEdit(record, vol, beforeBonds, `Delete bond ${symbolA}-${symbolB}`)) {
+          applyHydrogenAdjustmentForBondEdit(vol, aIndex, bIndex, atomA, atomB);
+          if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `Delete bond ${symbolA}-${symbolB}`)) {
             setHintMessage(`Deleted ${symbolA}-${symbolB} bond.`);
             return true;
           }
@@ -302,7 +362,8 @@
         if (!status || status === 'unchanged') return false;
         const symbolA = getElementSymbol(atomA.Z | 0);
         const symbolB = getElementSymbol(atomB.Z | 0);
-        if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
+        applyHydrogenAdjustmentForBondEdit(vol, aIndex, bIndex, atomA, atomB);
+        if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
           setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
           return true;
         }
@@ -314,7 +375,8 @@
         if (!status || status === 'unchanged') return false;
         const symbolA = getElementSymbol(atomA.Z | 0);
         const symbolB = getElementSymbol(atomB.Z | 0);
-        if (finalizeBondGraphEdit(record, vol, beforeBonds, `Delete bond ${symbolA}-${symbolB}`)) {
+        applyHydrogenAdjustmentForBondEdit(vol, aIndex, bIndex, atomA, atomB);
+        if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `Delete bond ${symbolA}-${symbolB}`)) {
           setHintMessage(`Deleted ${symbolA}-${symbolB} bond.`);
           return true;
         }
@@ -326,7 +388,60 @@
       if (!status || status === 'unchanged') return false;
       const symbolA = getElementSymbol(atomA.Z | 0);
       const symbolB = getElementSymbol(atomB.Z | 0);
-      if (finalizeBondGraphEdit(record, vol, beforeBonds, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
+      applyHydrogenAdjustmentForBondEdit(vol, aIndex, bIndex, atomA, atomB);
+      if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
+        setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
+        return true;
+      }
+      return false;
+    }
+
+    function clampInteractiveBondOrder(order) {
+      const n = Number(order);
+      if (!Number.isFinite(n)) return 0;
+      return Math.max(0, Math.min(4, Math.round(n)));
+    }
+
+    function stepCarrierOrder(carrier, delta) {
+      const record = ensureEditableRecord();
+      const vol = record && record.vol;
+      if (!record || !vol || !carrier || !carrier.userData) return false;
+      const i = carrier.userData.i | 0;
+      const j = carrier.userData.j | 0;
+      if (!Array.isArray(vol.atoms) || i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length || i === j) return false;
+      const atomA = vol.atoms[i];
+      const atomB = vol.atoms[j];
+      const atomIdA = ensureAtomId(atomA);
+      const atomIdB = ensureAtomId(atomB);
+      const step = Number(delta) < 0 ? -1 : 1;
+      const currentOrder = clampInteractiveBondOrder(getDisplayedOrder(carrier));
+      const nextOrder = clampInteractiveBondOrder(currentOrder + step);
+      const symbolA = getElementSymbol(atomA.Z | 0);
+      const symbolB = getElementSymbol(atomB.Z | 0);
+      hidePopup();
+      clearPendingSelection();
+      if (nextOrder === currentOrder) {
+        if (nextOrder <= 0) setHintMessage(`${symbolA}-${symbolB} bond is already removed.`);
+        else setHintMessage(`${symbolA}-${symbolB} bond is already order ${nextOrder}.`);
+        return false;
+      }
+      const beforeAtoms = cloneAtomsSnapshot(vol);
+      const beforeBonds = cloneBondSnapshot(vol);
+      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+      if (nextOrder <= 0) {
+        const status = upsertVolumeBond(vol, atomIdA, atomIdB, 1, 'blocked', 'explicit');
+        if (!status || status === 'unchanged') return false;
+        applyHydrogenAdjustmentForBondEdit(vol, i, j, atomA, atomB);
+        if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `Delete bond ${symbolA}-${symbolB}`)) {
+          setHintMessage(`Deleted ${symbolA}-${symbolB} bond.`);
+          return true;
+        }
+        return false;
+      }
+      const status = upsertVolumeBond(vol, atomIdA, atomIdB, nextOrder, 'normal', 'explicit');
+      if (!status || status === 'unchanged') return false;
+      applyHydrogenAdjustmentForBondEdit(vol, i, j, atomA, atomB);
+      if (finalizeBondGraphEdit(record, vol, beforeAtoms, beforeBonds, beforeAnnotations, `${status === 'created' ? 'Create' : 'Update'} bond ${symbolA}-${symbolB}`)) {
         setHintMessage(`${status === 'created' ? 'Created' : 'Updated'} ${symbolA}-${symbolB} bond to order ${nextOrder}.`);
         return true;
       }
@@ -365,6 +480,7 @@
       applyToCarrier,
       applyToAtom,
       applyToAtomPair,
+      stepCarrierOrder,
       clearState(clearOptions = {}) {
         if (clearOptions.pendingSelection !== false) clearPendingSelection();
         if (clearOptions.popup !== false) hidePopup();
