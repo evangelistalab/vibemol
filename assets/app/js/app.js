@@ -765,6 +765,9 @@
   let editAtomsMenuBodyEl = null;
   let editAtomsMenuCurrentEl = null;
   let editHaloLayerEl = null;
+  let editSelectionTranslateCueEl = null;
+  let editSelectionTranslateCueButtonEl = null;
+  let editSelectionRotateCueButtonEl = null;
   let editAdaptiveMenuEl = null;
   let editAdaptiveMenuTitleEl = null;
   let editAdaptiveMenuSubtitleEl = null;
@@ -5276,6 +5279,7 @@
       renderEditHaloOverlay();
       renderEditHaloGhostPreview();
     }
+    renderEditSelectionTranslateCue();
     const metrics = readRendererViewportMetrics();
     const dofTarget = beginPostprocessFrame(metrics);
     renderSceneFrame(metrics);
@@ -5488,9 +5492,27 @@
   editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
   editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
   editHaloLayerEl = document.getElementById('editHaloLayer');
+  editSelectionTranslateCueEl = document.getElementById('editSelectionTranslateCue');
+  editSelectionTranslateCueButtonEl = document.getElementById('editSelectionTranslateCueButton');
+  editSelectionRotateCueButtonEl = document.getElementById('editSelectionRotateCueButton');
   editAdaptiveMenuEl = document.getElementById('editAdaptiveMenu');
   editAdaptiveMenuTitleEl = document.getElementById('editAdaptiveMenuTitle');
   editAdaptiveMenuSubtitleEl = document.getElementById('editAdaptiveMenuSubtitle');
+
+  const bindSelectionCueButton = (buttonEl, mode) => {
+    if (!buttonEl) return;
+    buttonEl.addEventListener('pointerdown', (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    });
+    buttonEl.addEventListener('click', (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      setEditSelectionDragMode(mode);
+    });
+  };
+  bindSelectionCueButton(editSelectionTranslateCueButtonEl, 'translate');
+  bindSelectionCueButton(editSelectionRotateCueButtonEl, 'rotate');
   editAdaptiveMoveBtn = document.getElementById('editAdaptiveMoveBtn');
   editAdaptiveMoveMetaEl = document.getElementById('editAdaptiveMoveMeta');
   editAdaptiveRotateBtn = document.getElementById('editAdaptiveRotateBtn');
@@ -11927,6 +11949,7 @@
       return atomUnitsToAng(vol, vol.atoms[atomIndex]);
     },
     getSelectedAtomDragAction: (atomIndex, e) => (editHaloController ? editHaloController.resolveSelectedAtomDragAction(atomIndex, e) : null),
+    getSelectionDragMode: getEffectiveEditSelectionDragMode,
     applyBondCenterClick: (bondHit, e) => stepGestureBondCenterOrder(bondHit, 1, e),
     getPendingBondOrder: () => normalizeEditAddBondOrder(editAddBondOrder || 1),
     cyclePendingBondOrder: (direction) => {
@@ -12082,6 +12105,7 @@
   let editSelectionClickAdditive = false;
   let editSelectionMarqueeActive = false;
   let editSelectionMarqueeRect = null;
+  let editSelectionDragMode = 'translate';
   // persistent selection halos (by atom index) for measurement mode
   const selHaloColor = 0xffa500;
   /**
@@ -12224,6 +12248,27 @@
     }
   }
 
+  function normalizeEditSelectionDragMode(mode) {
+    return String(mode || '').toLowerCase() === 'rotate' ? 'rotate' : 'translate';
+  }
+
+  function getEffectiveEditSelectionDragMode() {
+    const transformContext = getCurrentTransformSelectionContext();
+    if (transformContext && transformContext.type === 'bond') return 'rotate';
+    const selection = getEditAtomSelection();
+    if (!Array.isArray(selection) || selection.length <= 1) return 'translate';
+    return normalizeEditSelectionDragMode(editSelectionDragMode);
+  }
+
+  function setEditSelectionDragMode(mode) {
+    const nextMode = normalizeEditSelectionDragMode(mode);
+    if (nextMode === editSelectionDragMode) return false;
+    editSelectionDragMode = nextMode;
+    if (editGestureController) editGestureController.refreshUi();
+    renderEditSelectionTranslateCue();
+    return true;
+  }
+
   function projectWorldToClient(world) {
     if (!world || !canvasEl || !camera) return null;
     const canvasRect = canvasEl.getBoundingClientRect();
@@ -12238,6 +12283,87 @@
       y: canvasRect.top + ((1 - projected.y) * 0.5 * canvasRect.height),
       visible: projected.z >= -1 && projected.z <= 1,
     };
+  }
+
+  function hideEditSelectionTranslateCue() {
+    if (!editSelectionTranslateCueEl) return;
+    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'true');
+    editSelectionTranslateCueEl.style.left = '0px';
+    editSelectionTranslateCueEl.style.top = '0px';
+  }
+
+  function getEditSelectionClientBounds(indices, vol) {
+    const selected = Array.from(new Set((Array.isArray(indices) ? indices : [])
+      .map((idx) => Number(idx) | 0)
+      .filter((idx) => idx >= 0 && vol && Array.isArray(vol.atoms) && idx < vol.atoms.length)));
+    if (!selected.length) return null;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    let visibleCount = 0;
+    for (const idx of selected) {
+      const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
+      const pos = mesh && mesh.position ? mesh.position : (vol.atoms[idx] ? atomUnitsToAng(vol, vol.atoms[idx]) : null);
+      const projected = projectWorldToClient(pos);
+      if (!projected || !projected.visible) continue;
+      minX = Math.min(minX, projected.x);
+      minY = Math.min(minY, projected.y);
+      maxX = Math.max(maxX, projected.x);
+      maxY = Math.max(maxY, projected.y);
+      visibleCount += 1;
+    }
+    if (!visibleCount) return null;
+    return { minX, minY, maxX, maxY, visibleCount };
+  }
+
+  function renderEditSelectionTranslateCue() {
+    if (!editSelectionTranslateCueEl) return;
+    if (currentMode !== MODES.EDIT) {
+      hideEditSelectionTranslateCue();
+      return;
+    }
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const selection = getEditAtomSelection();
+    if (!vol || !Array.isArray(vol.atoms) || !selection.length) {
+      hideEditSelectionTranslateCue();
+      return;
+    }
+    const bounds = getEditSelectionClientBounds(selection, vol);
+    if (!bounds) {
+      hideEditSelectionTranslateCue();
+      return;
+    }
+    const transformContext = getCurrentTransformSelectionContext();
+    const isBondSideSelection = !!(transformContext && transformContext.type === 'bond');
+    const selectionCount = Array.isArray(selection) ? selection.length : 0;
+    const effectiveMode = getEffectiveEditSelectionDragMode();
+    if (editSelectionTranslateCueButtonEl) {
+      editSelectionTranslateCueButtonEl.hidden = !!isBondSideSelection;
+      editSelectionTranslateCueButtonEl.classList.toggle('is-active', !isBondSideSelection && effectiveMode === 'translate');
+      editSelectionTranslateCueButtonEl.setAttribute('aria-pressed', (!isBondSideSelection && effectiveMode === 'translate') ? 'true' : 'false');
+    }
+    if (editSelectionRotateCueButtonEl) {
+      editSelectionRotateCueButtonEl.hidden = !isBondSideSelection && selectionCount <= 1;
+      editSelectionRotateCueButtonEl.classList.toggle('is-active', effectiveMode === 'rotate');
+      editSelectionRotateCueButtonEl.setAttribute('aria-pressed', effectiveMode === 'rotate' ? 'true' : 'false');
+    }
+    editSelectionTranslateCueEl.title = effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection';
+    const badgeWidth = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().width || editSelectionTranslateCueEl.offsetWidth || 42));
+    const badgeHeight = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().height || editSelectionTranslateCueEl.offsetHeight || 42));
+    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
+    const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
+    const margin = 12;
+    let left = Math.round(bounds.maxX + 14);
+    let top = Math.round(bounds.minY - Math.round(badgeHeight * 0.55));
+    if (left + badgeWidth > viewportWidth - margin) left = Math.round(bounds.minX - badgeWidth - 14);
+    if (left < margin) left = Math.max(margin, Math.min(viewportWidth - badgeWidth - margin, Math.round(bounds.maxX + 8)));
+    if (top < margin) top = Math.round(bounds.maxY + 14);
+    if (top + badgeHeight > viewportHeight - margin) top = Math.max(margin, viewportHeight - badgeHeight - margin);
+    editSelectionTranslateCueEl.style.left = `${left}px`;
+    editSelectionTranslateCueEl.style.top = `${top}px`;
+    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
   }
 
   function renderEditHaloOverlay() {
@@ -12395,6 +12521,7 @@
         editHaloLayerEl.setAttribute('aria-hidden', 'true');
         editHaloLayerEl.innerHTML = '';
       }
+      hideEditSelectionTranslateCue();
       return;
     }
     positionEditGestureHud();
@@ -13180,7 +13307,9 @@
   }
 
   function updateRotateOperatorUi() {
-    const baseline = ensureRotateOperatorBaseline();
+    const baseline = (currentMode === MODES.EDIT && getEditIntent() === EDIT_INTENT.ROTATE)
+      ? ensureRotateOperatorBaseline()
+      : null;
     const isVisible = !!baseline;
     const rotation = isVisible ? getRotateOperatorEulerDegrees() : { x: 0, y: 0, z: 0 };
     const count = isVisible ? baseline.indices.length : 0;

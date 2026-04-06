@@ -24,9 +24,13 @@ function createHarness(options = {}) {
     commitGrowDrag: [],
     cancelGrowDrag: 0,
     startMoveDrag: [],
+    startRotateDrag: [],
     updateMoveDrag: 0,
+    updateRotateDrag: 0,
     finishMoveDrag: 0,
+    finishRotateDrag: 0,
     cancelMoveDrag: 0,
+    cancelRotateDrag: 0,
     resolveMoveScope: [],
     resolveDownstreamMoveScope: [],
     resolveMoleculeSelection: [],
@@ -110,16 +114,34 @@ function createHarness(options = {}) {
       calls.startMoveDrag.push({ indices: Array.isArray(indices) ? indices.slice() : [], anchorWorld });
       return true;
     },
+    startRotateDrag: (_e, indices, dragOptions) => {
+      calls.startRotateDrag.push({
+        indices: Array.isArray(indices) ? indices.slice() : [],
+        dragOptions: dragOptions || {},
+      });
+      return true;
+    },
     updateMoveDrag: () => {
       calls.updateMoveDrag += 1;
+      return true;
+    },
+    updateRotateDrag: () => {
+      calls.updateRotateDrag += 1;
       return true;
     },
     finishMoveDrag: () => {
       calls.finishMoveDrag += 1;
       return true;
     },
+    finishRotateDrag: () => {
+      calls.finishRotateDrag += 1;
+      return true;
+    },
     cancelMoveDrag: () => {
       calls.cancelMoveDrag += 1;
+    },
+    cancelRotateDrag: () => {
+      calls.cancelRotateDrag += 1;
     },
     resolveMoveScope: (atomIndex, resolveOptions = {}) => {
       calls.resolveMoveScope.push({ atomIndex: atomIndex | 0, atomOnly: !!resolveOptions.atomOnly, preview: !!resolveOptions.preview });
@@ -146,6 +168,7 @@ function createHarness(options = {}) {
       return [0, 1, 2];
     },
     shouldPreferGrowDrag: (atomIndex) => !!(typeof options.shouldPreferGrowDrag === 'function' && options.shouldPreferGrowDrag(atomIndex)),
+    getSelectionDragMode: typeof options.getSelectionDragMode === 'function' ? options.getSelectionDragMode : (() => 'translate'),
     getPendingBondOrder: () => pendingBondOrder,
     cyclePendingBondOrder: (step) => {
       calls.cyclePendingBondOrder.push(step);
@@ -368,6 +391,28 @@ test('edit-gestures alt-drag forces atom-only move scope', () => {
 
   assert.equal(calls.resolveMoveScope.at(-1).atomOnly, true);
   assert.deepEqual(calls.startMoveDrag.at(-1).indices, [1]);
+});
+
+test('edit-gestures rotate cue in atom manipulation starts rotate drag without rotate intent', () => {
+  const { controller, calls } = createHarness({
+    selection: [1, 2],
+    getSelectionDragMode: () => 'rotate',
+    resolveMoveScope: (atomIndex, resolveOptions = {}) => ({
+      indices: resolveOptions.atomOnly ? [atomIndex] : [1, 2],
+      label: 'Rotate scope: fragment',
+      anchorWorld: { x: atomIndex | 0, y: 0, z: 0 },
+    }),
+  });
+
+  controller.handlePointerDown(pointerEvent({ atomIndex: 1, clientX: 0, clientY: 0 }));
+  controller.handlePointerMove(pointerEvent({ atomIndex: 1, clientX: 20, clientY: 0 }));
+
+  assert.equal(calls.beginGrowDrag.length, 0);
+  assert.equal(calls.startMoveDrag.length, 0);
+  assert.equal(calls.startRotateDrag.length, 1);
+  assert.deepEqual(calls.startRotateDrag[0].indices, [1, 2]);
+  assert.equal(calls.startRotateDrag[0].dragOptions.allowIntentOverride, true);
+  assert.equal(controller.getUiState().gestureState, 'rotate-drag');
 });
 
 test('edit-gestures shift-drag from a bond resolves downstream move scope only', () => {

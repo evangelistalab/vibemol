@@ -102,6 +102,57 @@
   display: block;
 }
 
+#editSelectionTranslateCue {
+  position: fixed;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 34;
+}
+
+#editSelectionTranslateCue[aria-hidden="false"] {
+  display: flex;
+}
+
+#editSelectionTranslateCue .material-symbols-rounded {
+  font-size: 22px;
+  font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24;
+}
+
+.editSelectionCueButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(128, 145, 172, 0.56);
+  background: rgba(55, 63, 76, 0.88);
+  color: rgba(236, 242, 250, 0.9);
+  box-shadow: 0 10px 24px rgba(16, 36, 76, 0.22);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.editSelectionCueButton:hover {
+  border-color: rgba(168, 211, 255, 0.7);
+  background: rgba(66, 77, 94, 0.94);
+}
+
+.editSelectionCueButton.is-active {
+  border-color: rgba(168, 211, 255, 0.82);
+  background: linear-gradient(180deg, rgba(74, 129, 214, 0.98), rgba(48, 93, 171, 0.96));
+  color: #f8fbff;
+  box-shadow: 0 10px 24px rgba(16, 36, 76, 0.34), 0 0 0 4px rgba(103, 168, 255, 0.18);
+}
+
+.editSelectionCueButton[hidden] {
+  display: none !important;
+}
+
 .editHaloCore,
 .editHaloCapture,
 .editHaloGhost,

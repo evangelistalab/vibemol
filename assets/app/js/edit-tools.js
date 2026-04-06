@@ -90,6 +90,7 @@
       const record = getActiveRecord();
       const vol = record && record.vol;
       if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return false;
+      clearTransformSelection();
       const changed = setEditAtomSelection(vol.atoms.map((_, idx) => idx));
       if (changed) setHintMessage(`Selected all ${vol.atoms.length} atoms.`);
       else setHintMessage(`All ${vol.atoms.length} atoms are already selected.`);
@@ -100,6 +101,7 @@
       const idx = atomIndex | 0;
       const current = getEditAtomSelection();
       if (idx < 0) return false;
+      clearTransformSelection();
       if (additive) {
         const set = new Set(current);
         if (set.has(idx)) set.delete(idx);
@@ -119,6 +121,7 @@
 
     function applyEditAtomSelectionBox(atomIndices, additive) {
       const nextIndices = normalizeEditAtomSelection(atomIndices, (getActiveRecord() && getActiveRecord().vol) || null);
+      clearTransformSelection();
       if (additive) {
         const merged = Array.from(new Set([...getEditAtomSelection(), ...nextIndices])).sort((a, b) => a - b);
         const changed = setEditAtomSelection(merged);

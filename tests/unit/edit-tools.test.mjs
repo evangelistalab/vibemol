@@ -111,30 +111,44 @@ test('edit-tools selection logic supports replace, toggle, and select-all', () =
   const { controller, calls } = createEditToolsHarness();
 
   assert.deepEqual(plain(controller.normalizeEditAtomSelection([2, 2, 1, -1, 9], { atoms: [{}, {}, {}] })), [1, 2]);
+  calls.transformSelectionActive = true;
   assert.equal(controller.applyEditAtomSelectionClick(1, false), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), [1]);
+  assert.equal(calls.clearTransformSelection, 1);
+  calls.transformSelectionActive = true;
   assert.equal(controller.applyEditAtomSelectionClick(2, true), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), [1, 2]);
+  assert.equal(calls.clearTransformSelection, 2);
+  calls.transformSelectionActive = true;
   assert.equal(controller.applyEditAtomSelectionClick(1, true), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), [2]);
+  assert.equal(calls.clearTransformSelection, 3);
+  calls.transformSelectionActive = true;
   assert.equal(controller.selectAllEditAtoms(), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 1, 2]);
+  assert.equal(calls.clearTransformSelection, 4);
   assert.match(calls.hintMessages.at(-1), /Selected all 3 atoms/);
 });
 
 test('edit-tools box selection supports replace and additive merge', () => {
   const { controller, calls } = createEditToolsHarness();
 
+  calls.transformSelectionActive = true;
   assert.equal(controller.applyEditAtomSelectionBox([0, 2], false), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 2]);
+  assert.equal(calls.clearTransformSelection, 1);
   assert.match(calls.hintMessages.at(-1), /Selected 2 atoms/);
 
+  calls.transformSelectionActive = true;
   assert.equal(controller.applyEditAtomSelectionBox([1, 2], true), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 1, 2]);
+  assert.equal(calls.clearTransformSelection, 2);
   assert.match(calls.hintMessages.at(-1), /Selection updated/);
 
+  calls.transformSelectionActive = true;
   assert.equal(controller.applyEditAtomSelectionBox([], false), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), []);
+  assert.equal(calls.clearTransformSelection, 3);
   assert.equal(calls.hintMessages.at(-1), 'Selection cleared.');
 });
 

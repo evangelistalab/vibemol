@@ -28,6 +28,7 @@
     const commitGrowDrag = typeof options.commitGrowDrag === 'function' ? options.commitGrowDrag : (() => null);
     const cancelGrowDrag = typeof options.cancelGrowDrag === 'function' ? options.cancelGrowDrag : (() => {});
     const getSelectedAtomDragAction = typeof options.getSelectedAtomDragAction === 'function' ? options.getSelectedAtomDragAction : (() => null);
+    const getSelectionDragMode = typeof options.getSelectionDragMode === 'function' ? options.getSelectionDragMode : (() => 'translate');
     const startMoveDrag = typeof options.startMoveDrag === 'function' ? options.startMoveDrag : (() => false);
     const updateMoveDrag = typeof options.updateMoveDrag === 'function' ? options.updateMoveDrag : (() => false);
     const finishMoveDrag = typeof options.finishMoveDrag === 'function' ? options.finishMoveDrag : (() => false);
@@ -183,16 +184,23 @@
         hint = 'Click bond side to select fragment • Drag left/right to rotate around bond axis • Shift-drag for free 3D bond rotation';
         scope = 'Bond side';
       } else if (selection.length === 1) {
+        const selectionDragMode = getSelectionDragMode() === 'rotate' ? 'rotate' : 'translate';
         if (state.currentMoveScopeLabel) scope = state.currentMoveScopeLabel;
         if (state.hoverAtomIndex >= 0 && state.hoverAtomIndex === selection[0]) {
-          hint = 'Drag selected atom to move • Alt drags only that atom';
+          hint = selectionDragMode === 'rotate'
+            ? 'Drag selected atom to rotate • Click move cue to switch back'
+            : 'Drag selected atom to move • Alt drags only that atom';
         } else if (state.hoverAtomIndex >= 0) {
           hint = 'Click atom to select • Drag unselected atom to grow bond';
         } else {
-          hint = 'Drag selected atom to move • Drag unselected atom to edit chemistry';
+          hint = selectionDragMode === 'rotate'
+            ? 'Drag selected atom to rotate • Drag unselected atom to edit chemistry'
+            : 'Drag selected atom to move • Drag unselected atom to edit chemistry';
         }
       } else if (selection.length > 1) {
-        hint = 'Drag any selected atom to move the current selection';
+        hint = getSelectionDragMode() === 'rotate'
+          ? 'Drag any selected atom to rotate the current selection'
+          : 'Drag any selected atom to move the current selection';
       } else if (state.hoverAtomIndex >= 0) {
         hint = 'Click atom to select • Drag atom into void to grow bond';
       } else if (state.voidPreviewVisible) {
@@ -319,6 +327,21 @@
       return true;
     }
 
+    function startRotateFromResolvedScope(e, resolved) {
+      if (!resolved || !Array.isArray(resolved.indices) || !resolved.indices.length) return false;
+      const nextSelection = resolved.indices.slice();
+      setSelection(nextSelection);
+      state.currentMoveScopeIndices = nextSelection.slice();
+      state.currentMoveScopeLabel = String(resolved.label || `Rotate scope: ${nextSelection.length} atoms`);
+      if (!startRotateDrag(e, nextSelection, {
+        axis: 'none',
+        allowIntentOverride: getEditIntent() !== EDIT_INTENT.ROTATE,
+      })) return false;
+      state.gestureState = 'rotate-drag';
+      notifyUi();
+      return true;
+    }
+
     function startMoveIntentDrag(e, atomIndex) {
       const selection = Array.isArray(getSelection()) ? getSelection() : [];
       const nextSelection = selection.includes(atomIndex) ? selection.slice() : [atomIndex | 0];
@@ -354,15 +377,20 @@
         return false;
       }
       if (state.press.kind === 'selected-atom') {
-        const haloAction = getSelectedAtomDragAction(state.press.atomIndex, e);
-        if (haloAction && haloAction.type === 'grow') {
-          return startGrowDragFromHalo(e, state.press.atomIndex, haloAction);
+        const selectionDragMode = getSelectionDragMode() === 'rotate' ? 'rotate' : 'translate';
+        if (selectionDragMode !== 'rotate') {
+          const haloAction = getSelectedAtomDragAction(state.press.atomIndex, e);
+          if (haloAction && haloAction.type === 'grow') {
+            return startGrowDragFromHalo(e, state.press.atomIndex, haloAction);
+          }
         }
         const resolved = resolveMoveScope(state.press.atomIndex, {
-          atomOnly: !!state.press.altKey,
+          atomOnly: selectionDragMode === 'rotate' ? false : !!state.press.altKey,
           preview: false,
         });
-        return startMoveFromResolvedScope(e, resolved);
+        return selectionDragMode === 'rotate'
+          ? startRotateFromResolvedScope(e, resolved)
+          : startMoveFromResolvedScope(e, resolved);
       }
       if (state.press.kind === 'void-clear' || state.press.kind === 'void-place') {
         hideVoidPlacementPreview();

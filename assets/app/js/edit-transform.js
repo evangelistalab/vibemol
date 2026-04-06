@@ -52,6 +52,7 @@
 
     function clearRotateBaseline() {
       state.rotateOperatorBaseline = null;
+      state.rotateBaselineAllowAnyIntent = false;
     }
 
     function buildSelectionKey(record, vol, indices) {
@@ -68,7 +69,10 @@
       const vol = record && record.vol;
       const selection = getSelection();
       const isMove = tool === EDIT_INTENT.MOVE;
-      if (!(getMode() === MODES.EDIT && getEditIntent() === tool && record && vol && selection.length)) {
+      const intentMatches = isMove
+        ? getEditIntent() === tool
+        : (getEditIntent() === tool || state.rotateBaselineAllowAnyIntent === true);
+      if (!(getMode() === MODES.EDIT && intentMatches && record && vol && selection.length)) {
         if (isMove) clearMoveBaseline();
         else clearRotateBaseline();
         return null;
@@ -106,7 +110,8 @@
       return buildBaseline(EDIT_INTENT.MOVE);
     }
 
-    function ensureRotateBaseline() {
+    function ensureRotateBaseline(options = {}) {
+      if (options.allowIntentOverride) state.rotateBaselineAllowAnyIntent = true;
       return buildBaseline(EDIT_INTENT.ROTATE);
     }
 
@@ -465,9 +470,12 @@
     }
 
     function startRotateDrag(e, indices, dragOptions = {}) {
-      const baseline = ensureRotateBaseline();
+      const baseline = ensureRotateBaseline({ allowIntentOverride: !!dragOptions.allowIntentOverride });
       const targetIndices = Array.from(new Set((Array.isArray(indices) ? indices : []).map((idx) => Number(idx) | 0).filter((idx) => idx >= 0)));
-      if (!baseline || !targetIndices.length) return false;
+      if (!baseline || !targetIndices.length) {
+        state.rotateBaselineAllowAnyIntent = false;
+        return false;
+      }
       state.rotateDragActive = true;
       state.rotateDragAxis = dragOptions.axis === 'x' || dragOptions.axis === 'y' || dragOptions.axis === 'z' ? dragOptions.axis : 'none';
       state.rotateDragPlane = null;
@@ -594,6 +602,7 @@
       state.rotateDragStartDir = null;
       state.rotateDragLastClientX = 0;
       state.rotateDragLastClientY = 0;
+      if (getEditIntent() !== EDIT_INTENT.ROTATE) clearRotateBaseline();
       const controls = getControls();
       try { if (controls) controls.enabled = true; } catch { }
       setRotateHover('');
