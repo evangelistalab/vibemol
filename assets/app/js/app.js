@@ -11704,6 +11704,7 @@
     getMode: () => currentMode,
     getEditIntent,
     getSelection: () => getEditAtomSelection(),
+    getSelectionDragMode: getEffectiveEditSelectionDragMode,
     getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
     getSelectionCenterWorld: getEditSelectionCenterWorld,
     getSelectionGizmoLength: getMoveSelectionGizmoLength,
@@ -12448,6 +12449,35 @@
   }
 
   function handleAtomManipulationControllerPointerDown(e) {
+    const selection = getEditAtomSelection();
+    if (selection.length >= 2 && editGizmos && editTransformController) {
+      const moveGizmoHit = editGizmos.pickMoveHit(e);
+      if (moveGizmoHit) {
+        const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+        const vol = record && record.vol;
+        const center = vol ? getEditSelectionCenterWorld(selection, vol) : null;
+        if (center && editTransformController.startMoveDrag(e, selection, center, { axis: moveGizmoHit.axis })) {
+          if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.setPointerCapture === 'function') {
+            try { canvasEl.setPointerCapture(e.pointerId); } catch { }
+          }
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          return true;
+        }
+      }
+      const rotateGizmoHit = editGizmos.pickRotateHit(e);
+      if (rotateGizmoHit) {
+        if (editTransformController.startRotateDrag(e, selection, {
+          axis: rotateGizmoHit.axis,
+          allowIntentOverride: true,
+        })) {
+          if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.setPointerCapture === 'function') {
+            try { canvasEl.setPointerCapture(e.pointerId); } catch { }
+          }
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          return true;
+        }
+      }
+    }
     if (editHaloController) {
       const haloGhostHit = pickEditHaloGhostHit(e);
       if (haloGhostHit) {
@@ -12612,6 +12642,39 @@
   }
 
   function handleAtomManipulationControllerPointerMove(e) {
+    const selection = getEditAtomSelection();
+    if (selection.length >= 2 && !(editTransformState.dragActive || editTransformState.rotateDragActive) && editGizmos) {
+      const moveGizmoHit = editGizmos.pickMoveHit(e);
+      if (moveGizmoHit) {
+        editGizmos.setMoveHover(moveGizmoHit.axis);
+        editGizmos.setRotateHover('');
+        if (editHaloGhostHoverIndex >= 0) {
+          editHaloGhostHoverIndex = -1;
+          editHaloGhostRenderKey = '';
+        }
+        setHover(null);
+        setBondHover(null);
+        setSurfaceHover(null);
+        hideSurfaceHoverLabel();
+        return true;
+      }
+      const rotateGizmoHit = editGizmos.pickRotateHit(e);
+      if (rotateGizmoHit) {
+        editGizmos.setRotateHover(rotateGizmoHit.axis);
+        editGizmos.setMoveHover('');
+        if (editHaloGhostHoverIndex >= 0) {
+          editHaloGhostHoverIndex = -1;
+          editHaloGhostRenderKey = '';
+        }
+        setHover(null);
+        setBondHover(null);
+        setSurfaceHover(null);
+        hideSurfaceHoverLabel();
+        return true;
+      }
+      editGizmos.setMoveHover('');
+      editGizmos.setRotateHover('');
+    }
     let haloGhostHovering = false;
     if (editHaloController) {
       const haloGhostHit = pickEditHaloGhostHit(e);

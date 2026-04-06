@@ -115,6 +115,7 @@ function createHarness() {
   const state = {
     mode: 'edit',
     tool: 'move',
+    dragMode: 'translate',
     selection: [0, 1],
     record: { vol: { atoms: [{ Z: 6 }, { Z: 6 }] } },
   };
@@ -136,13 +137,14 @@ function createHarness() {
     getMode: () => state.mode,
     getEditIntent: () => state.tool,
     getSelection: () => state.selection.slice(),
+    getSelectionDragMode: () => state.dragMode,
     getActiveRecord: () => state.record,
     getSelectionCenterWorld: () => new THREE.Vector3(1, 2, 3),
     getSelectionGizmoLength: () => 1.4,
     getMoveDragPivotWorld: () => null,
     getRotateDragCenterWorld: () => null,
     MODES: { EDIT: 'edit' },
-    EDIT_INTENT: { MOVE: 'move', ROTATE: 'rotate' },
+    EDIT_INTENT: { ATOM_MANIPULATION: 'atom_manipulation', MOVE: 'move', ROTATE: 'rotate' },
   });
   return { THREE, state, raycaster, controller };
 }
@@ -188,4 +190,43 @@ test('edit-gizmos rotate gizmo updates, picks, and stays hidden outside rotate m
   controller.updateRotate();
   assert.equal(rotateGroup.visible, false);
   assert.equal(controller.pickRotateHit({ clientX: 0, clientY: 0 }), null);
+});
+
+test('edit-gizmos exposes move and rotate gizmos in atom manipulation for multi-atom selection only', () => {
+  const { THREE, state, controller, raycaster } = createHarness();
+
+  state.tool = 'atom_manipulation';
+  state.selection = [0, 1];
+  state.dragMode = 'translate';
+
+  controller.updateMove();
+  controller.updateRotate();
+  assert.equal(controller.getMoveGroup().visible, true);
+  assert.equal(controller.getRotateGroup().visible, false);
+
+  const moveXAxisGroup = controller.getMoveGroup().children.find((child) => child.userData.moveSelectionAxis === 'x');
+  assert.ok(moveXAxisGroup);
+
+  raycaster.hits = [{ object: moveXAxisGroup.children[0], point: new THREE.Vector3(2, 0, 0) }];
+  assert.equal(controller.pickMoveHit({ clientX: 1, clientY: 2 }).axis, 'x');
+  assert.equal(controller.pickRotateHit({ clientX: 3, clientY: 4 }), null);
+
+  state.dragMode = 'rotate';
+  controller.updateMove();
+  controller.updateRotate();
+  assert.equal(controller.getMoveGroup().visible, false);
+  assert.equal(controller.getRotateGroup().visible, true);
+  const rotateZAxisGroup = controller.getRotateGroup().children.find((child) => child.userData.rotateSelectionAxis === 'z');
+  assert.ok(rotateZAxisGroup);
+  raycaster.hits = [{ object: rotateZAxisGroup.children[0], point: new THREE.Vector3(0, 0, 2) }];
+  assert.equal(controller.pickRotateHit({ clientX: 3, clientY: 4 }).axis, 'z');
+  assert.equal(controller.pickMoveHit({ clientX: 1, clientY: 2 }), null);
+
+  state.selection = [0];
+  controller.updateMove();
+  controller.updateRotate();
+  assert.equal(controller.getMoveGroup().visible, false);
+  assert.equal(controller.getRotateGroup().visible, false);
+  assert.equal(controller.pickMoveHit({ clientX: 5, clientY: 6 }), null);
+  assert.equal(controller.pickRotateHit({ clientX: 5, clientY: 6 }), null);
 });

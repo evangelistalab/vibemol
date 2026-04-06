@@ -9,6 +9,7 @@
     const getMode = typeof options.getMode === 'function' ? options.getMode : (() => '');
     const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
     const getSelection = typeof options.getSelection === 'function' ? options.getSelection : (() => []);
+    const getSelectionDragMode = typeof options.getSelectionDragMode === 'function' ? options.getSelectionDragMode : (() => 'translate');
     const getActiveRecord = typeof options.getActiveRecord === 'function' ? options.getActiveRecord : (() => null);
     const getSelectionCenterWorld = typeof options.getSelectionCenterWorld === 'function' ? options.getSelectionCenterWorld : (() => null);
     const getSelectionGizmoLength = typeof options.getSelectionGizmoLength === 'function' ? options.getSelectionGizmoLength : (() => 0.9);
@@ -94,11 +95,29 @@
       }
     }
 
+    function shouldExposeMoveGizmo(vol, selection) {
+      if (!(getMode() === MODES.EDIT && vol && Array.isArray(selection) && selection.length)) return false;
+      const intent = getEditIntent();
+      if (intent === EDIT_INTENT.MOVE) return true;
+      return intent === EDIT_INTENT.ATOM_MANIPULATION
+        && selection.length >= 2
+        && String(getSelectionDragMode() || '').toLowerCase() !== 'rotate';
+    }
+
+    function shouldExposeRotateGizmo(vol, selection) {
+      if (!(getMode() === MODES.EDIT && vol && Array.isArray(selection) && selection.length)) return false;
+      const intent = getEditIntent();
+      if (intent === EDIT_INTENT.ROTATE) return true;
+      return intent === EDIT_INTENT.ATOM_MANIPULATION
+        && selection.length >= 2
+        && String(getSelectionDragMode() || '').toLowerCase() === 'rotate';
+    }
+
     function updateMove() {
       const record = getActiveRecord();
       const vol = record && record.vol;
       const selection = getSelection();
-      const visible = !!(getMode() === MODES.EDIT && getEditIntent() === EDIT_INTENT.MOVE && vol && selection.length);
+      const visible = shouldExposeMoveGizmo(vol, selection);
       moveGroup.visible = visible;
       if (!visible) {
         setMoveHover('');
@@ -117,7 +136,10 @@
     }
 
     function pickMoveHit(e) {
-      if (!(getMode() === MODES.EDIT && getEditIntent() === EDIT_INTENT.MOVE) || !moveGroup.visible || !raycaster) return null;
+      const record = getActiveRecord();
+      const vol = record && record.vol;
+      const selection = getSelection();
+      if (!shouldExposeMoveGizmo(vol, selection) || !moveGroup.visible || !raycaster) return null;
       setRaycasterFromEvent(e);
       const hits = raycaster.intersectObjects(moveGroup.children, true);
       for (const hit of hits) {
@@ -207,7 +229,7 @@
       const record = getActiveRecord();
       const vol = record && record.vol;
       const selection = getSelection();
-      const visible = !!(getMode() === MODES.EDIT && getEditIntent() === EDIT_INTENT.ROTATE && vol && selection.length);
+      const visible = shouldExposeRotateGizmo(vol, selection);
       rotateGroup.visible = visible;
       if (!visible) {
         setRotateHover('');
@@ -226,7 +248,10 @@
     }
 
     function pickRotateHit(e) {
-      if (!(getMode() === MODES.EDIT && getEditIntent() === EDIT_INTENT.ROTATE) || !rotateGroup.visible || !raycaster) return null;
+      const record = getActiveRecord();
+      const vol = record && record.vol;
+      const selection = getSelection();
+      if (!shouldExposeRotateGizmo(vol, selection) || !rotateGroup.visible || !raycaster) return null;
       setRaycasterFromEvent(e);
       const hits = raycaster.intersectObjects(rotateGroup.children, true);
       for (const hit of hits) {
