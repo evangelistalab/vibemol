@@ -17,7 +17,7 @@
     const getMoveDragPivotWorld = typeof options.getMoveDragPivotWorld === 'function' ? options.getMoveDragPivotWorld : (() => null);
     const getRotateDragCenterWorld = typeof options.getRotateDragCenterWorld === 'function' ? options.getRotateDragCenterWorld : (() => null);
     const MODES = options.MODES || { EDIT: 'edit' };
-    const EDIT_INTENT = options.EDIT_INTENT || { MOVE: 'move', ROTATE: 'rotate' };
+    const EDIT_INTENT = options.EDIT_INTENT || { ATOM_MANIPULATION: 'atom_manipulation' };
 
     const rootGroup = new THREE.Group();
     const moveGroup = new THREE.Group();
@@ -100,9 +100,7 @@
       if (!(getMode() === MODES.EDIT && vol && Array.isArray(selection) && selection.length)) return false;
       const transformContext = getTransformSelectionContext();
       if (transformContext && transformContext.type === 'bond') return false;
-      const intent = getEditIntent();
-      if (intent === EDIT_INTENT.MOVE) return true;
-      return intent === EDIT_INTENT.ATOM_MANIPULATION
+      return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION
         && selection.length >= 2
         && String(getSelectionDragMode() || '').toLowerCase() !== 'rotate';
     }
@@ -111,9 +109,7 @@
       if (!(getMode() === MODES.EDIT && vol && Array.isArray(selection) && selection.length)) return false;
       const transformContext = getTransformSelectionContext();
       if (transformContext && transformContext.type === 'bond') return false;
-      const intent = getEditIntent();
-      if (intent === EDIT_INTENT.ROTATE) return true;
-      return intent === EDIT_INTENT.ATOM_MANIPULATION
+      return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION
         && selection.length >= 2
         && String(getSelectionDragMode() || '').toLowerCase() === 'rotate';
     }

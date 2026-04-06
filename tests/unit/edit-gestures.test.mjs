@@ -423,7 +423,7 @@ test('edit-gestures rotate cue in atom manipulation starts rotate drag without r
   assert.equal(calls.startMoveDrag.length, 0);
   assert.equal(calls.startRotateDrag.length, 1);
   assert.deepEqual(calls.startRotateDrag[0].indices, [1, 2]);
-  assert.equal(calls.startRotateDrag[0].dragOptions.allowIntentOverride, true);
+  assert.equal(calls.startRotateDrag[0].dragOptions.axis, 'none');
   assert.equal(controller.getUiState().gestureState, 'rotate-drag');
 });
 

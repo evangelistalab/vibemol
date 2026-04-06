@@ -8,8 +8,6 @@
     const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
     const EDIT_INTENT = options.EDIT_INTENT || Object.freeze({
       ATOM_MANIPULATION: 'atom_manipulation',
-      MOVE: 'move',
-      ROTATE: 'rotate',
       ADD_FRAGMENT: 'add_fragment',
       ADD_MOLECULE: 'add_molecule',
     });
@@ -138,30 +136,6 @@
       } else if (intent === EDIT_INTENT.ADD_MOLECULE) {
         hint = 'Add molecule: click to place • drag to rotate • click again to confirm';
         scope = selection.length ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected` : 'Molecule placement';
-      } else if (intent === EDIT_INTENT.MOVE) {
-        if (state.gestureState === 'move-drag') {
-          hint = 'Dragging selection';
-          scope = state.currentMoveScopeLabel || scope;
-        } else if (state.gestureState === 'box-select-drag') {
-          hint = 'Dragging selection box';
-          scope = 'Selecting atoms in box';
-        } else {
-          hint = selection.length
-            ? 'Drag selection to move • Shift-drag empty background to box-select'
-            : 'Click atom to select • Drag atom to retarget and move • Shift-drag empty background to box-select';
-        }
-      } else if (intent === EDIT_INTENT.ROTATE) {
-        if (state.gestureState === 'rotate-drag') {
-          hint = 'Rotating selection';
-          scope = state.currentMoveScopeLabel || scope;
-        } else if (state.gestureState === 'box-select-drag') {
-          hint = 'Dragging selection box';
-          scope = 'Selecting atoms in box';
-        } else {
-          hint = selection.length
-            ? 'Drag selection to rotate • Shift-drag empty background to box-select'
-            : 'Click atom to select • Drag atom to retarget and rotate • Shift-drag empty background to box-select';
-        }
       } else if (state.gestureState === 'grow-drag') {
         const targetText = state.bondTargetIndex >= 0
           ? 'Release on atom to cycle bond'
@@ -333,35 +307,7 @@
       setSelection(nextSelection);
       state.currentMoveScopeIndices = nextSelection.slice();
       state.currentMoveScopeLabel = String(resolved.label || `Rotate scope: ${nextSelection.length} atoms`);
-      if (!startRotateDrag(e, nextSelection, {
-        axis: 'none',
-        allowIntentOverride: true,
-      })) return false;
-      state.gestureState = 'rotate-drag';
-      notifyUi();
-      return true;
-    }
-
-    function startMoveIntentDrag(e, atomIndex) {
-      const selection = Array.isArray(getSelection()) ? getSelection() : [];
-      const nextSelection = selection.includes(atomIndex) ? selection.slice() : [atomIndex | 0];
-      if (!(selection.includes(atomIndex))) setSelection(nextSelection);
-      const anchorWorld = getAtomWorldPosition(atomIndex);
-      if (!anchorWorld || !startMoveDrag(e, nextSelection, anchorWorld, { axis: 'none' })) return false;
-      state.currentMoveScopeIndices = nextSelection.slice();
-      state.currentMoveScopeLabel = `Move scope: ${nextSelection.length} atom${nextSelection.length === 1 ? '' : 's'}`;
-      state.gestureState = 'move-drag';
-      notifyUi();
-      return true;
-    }
-
-    function startRotateIntentDrag(e, atomIndex) {
-      const selection = Array.isArray(getSelection()) ? getSelection() : [];
-      const nextSelection = selection.includes(atomIndex) ? selection.slice() : [atomIndex | 0];
-      if (!(selection.includes(atomIndex))) setSelection(nextSelection);
       if (!startRotateDrag(e, nextSelection, { axis: 'none' })) return false;
-      state.currentMoveScopeIndices = nextSelection.slice();
-      state.currentMoveScopeLabel = `Rotate scope: ${nextSelection.length} atom${nextSelection.length === 1 ? '' : 's'}`;
       state.gestureState = 'rotate-drag';
       notifyUi();
       return true;
@@ -416,29 +362,6 @@
         notifyUi();
         return true;
       }
-      if (state.press.kind === 'move-intent-background' || state.press.kind === 'rotate-intent-background') {
-        if (state.press.additive) {
-          hideVoidPlacementPreview();
-          state.voidPreviewVisible = false;
-          if (!startBoxSelection(state.press.clientX, state.press.clientY, Number(e && e.clientX) || 0, Number(e && e.clientY) || 0)) {
-            return false;
-          }
-          state.gestureState = 'box-select-drag';
-          notifyUi();
-          return true;
-        }
-        if (state.activePointerId != null) releasePointer(state.activePointerId);
-        state.activePointerId = null;
-        state.press = null;
-        beginViewRotate(e);
-        return true;
-      }
-      if (state.press.kind === 'move-intent-atom') {
-        return startMoveIntentDrag(e, state.press.atomIndex);
-      }
-      if (state.press.kind === 'rotate-intent-atom') {
-        return startRotateIntentDrag(e, state.press.atomIndex);
-      }
       return false;
     }
 
@@ -475,36 +398,6 @@
       state.activePointerId = e.pointerId;
       if (handleExternalPointerDown(intent, e, state)) return true;
       if (intent === EDIT_INTENT.ADD_FRAGMENT || intent === EDIT_INTENT.ADD_MOLECULE) return false;
-      if (intent === EDIT_INTENT.MOVE || intent === EDIT_INTENT.ROTATE) {
-        const atomObj = pickAtomObject(e);
-        const atomIndex = atomObj && atomObj.userData ? (atomObj.userData.index | 0) : -1;
-        if (atomIndex >= 0) {
-          state.press = {
-            kind: intent === EDIT_INTENT.MOVE ? 'move-intent-atom' : 'rotate-intent-atom',
-            clientX: Number(e.clientX) || 0,
-            clientY: Number(e.clientY) || 0,
-            pointerId: e.pointerId,
-            atomIndex,
-            additive: !!e.shiftKey,
-          };
-          state.hoverAtomIndex = atomIndex;
-          state.voidPreviewVisible = false;
-          hideVoidPlacementPreview();
-          capturePointer(e.pointerId);
-          notifyUi();
-          return true;
-        }
-        state.press = {
-          kind: intent === EDIT_INTENT.MOVE ? 'move-intent-background' : 'rotate-intent-background',
-          clientX: Number(e.clientX) || 0,
-          clientY: Number(e.clientY) || 0,
-          pointerId: e.pointerId,
-          additive: !!e.shiftKey,
-        };
-        capturePointer(e.pointerId);
-        notifyUi();
-        return true;
-      }
       const centerBondHit = resolveBondCenterClickHit(e);
       if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
         state.press = {
@@ -686,20 +579,6 @@
         clearLastAtomClick();
         const result = placeVoidAtom(e) || null;
         if (result && Array.isArray(result.selection) && result.selection.length) setSelection(result.selection);
-      } else if (press.kind === 'move-intent-atom' || press.kind === 'rotate-intent-atom') {
-        if (isDoubleClickEvent(e) || wasRecentRepeatedAtomClick(press.atomIndex, e)) {
-          const nextSelection = resolveMoleculeSelection(press.atomIndex);
-          if (Array.isArray(nextSelection) && nextSelection.length) setSelection(nextSelection);
-          else setSelection([press.atomIndex]);
-          clearLastAtomClick();
-        } else {
-          applySelectionClick(press.atomIndex, !!press.additive);
-          if (!press.additive) recordAtomClick(press.atomIndex, e);
-          else clearLastAtomClick();
-        }
-      } else if (press.kind === 'move-intent-background' || press.kind === 'rotate-intent-background') {
-        clearLastAtomClick();
-        if (!press.additive && clearSelection()) setHintMessage('Selection cleared.');
       }
       if (activePointerId != null) releasePointer(activePointerId);
       state.activePointerId = null;

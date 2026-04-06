@@ -114,7 +114,7 @@ function createHarness() {
   const THREE = createThreeStub();
   const state = {
     mode: 'edit',
-    tool: 'move',
+    tool: 'atom_manipulation',
     dragMode: 'translate',
     selection: [0, 1],
     transformContext: null,
@@ -146,7 +146,7 @@ function createHarness() {
     getMoveDragPivotWorld: () => null,
     getRotateDragCenterWorld: () => null,
     MODES: { EDIT: 'edit' },
-    EDIT_INTENT: { ATOM_MANIPULATION: 'atom_manipulation', MOVE: 'move', ROTATE: 'rotate' },
+    EDIT_INTENT: { ATOM_MANIPULATION: 'atom_manipulation' },
   });
   return { THREE, state, raycaster, controller };
 }
@@ -171,10 +171,10 @@ test('edit-gizmos move gizmo updates, picks, and highlights hovered axis', () =>
   assert.equal(xAxisGroup.userData.moveSelectionMaterial.opacity, 0.96);
 });
 
-test('edit-gizmos rotate gizmo updates, picks, and stays hidden outside rotate mode', () => {
+test('edit-gizmos rotate gizmo updates, picks, and stays hidden outside edit mode', () => {
   const { THREE, state, controller, raycaster } = createHarness();
 
-  state.tool = 'rotate';
+  state.dragMode = 'rotate';
   controller.updateRotate();
   const rotateGroup = controller.getRotateGroup();
   assert.equal(rotateGroup.visible, true);

@@ -767,10 +767,6 @@
   let editAdaptiveMenuEl = null;
   let editAdaptiveMenuTitleEl = null;
   let editAdaptiveMenuSubtitleEl = null;
-  let editAdaptiveMoveBtn = null;
-  let editAdaptiveMoveMetaEl = null;
-  let editAdaptiveRotateBtn = null;
-  let editAdaptiveRotateMetaEl = null;
   let editAdaptiveAddAtomBtn = null;
   let editAdaptiveAddAtomMetaEl = null;
   let editAdaptiveAddFragmentBtn = null;
@@ -5501,10 +5497,6 @@
   };
   bindSelectionCueButton(editSelectionTranslateCueButtonEl, 'translate');
   bindSelectionCueButton(editSelectionRotateCueButtonEl, 'rotate');
-  editAdaptiveMoveBtn = document.getElementById('editAdaptiveMoveBtn');
-  editAdaptiveMoveMetaEl = document.getElementById('editAdaptiveMoveMeta');
-  editAdaptiveRotateBtn = document.getElementById('editAdaptiveRotateBtn');
-  editAdaptiveRotateMetaEl = document.getElementById('editAdaptiveRotateMeta');
   editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
   editAdaptiveAddAtomMetaEl = document.getElementById('editAdaptiveAddAtomMeta');
   editAdaptiveAddFragmentBtn = document.getElementById('editAdaptiveAddFragmentBtn');
@@ -6917,8 +6909,8 @@
       { k: 'Click', d: 'Select atom' },
       { k: 'Shift+Click', d: 'Add/remove atom from selection' },
       { k: 'Click empty', d: 'Clear selection' },
-      { k: 'Click+Drag', d: 'Move selection or atom (Move)' },
-      { k: 'Click+Drag', d: 'Rotate selection or atom (Rotate)' },
+      { k: 'Click+Drag', d: 'Move selection or atom (translate cue)' },
+      { k: 'Click+Drag', d: 'Rotate selection (rotate cue)' },
       { k: 'Click empty', d: 'Place atom (Atom manipulation)' },
       { k: 'Click bond center', d: 'Step bond order' },
       { k: 'Click bond side', d: 'Select bond-side fragment' },
@@ -7414,8 +7406,6 @@
   let editClipboardPasteSerial = 0;
   const EDIT_INTENT = Object.freeze({
     ATOM_MANIPULATION: 'atom_manipulation',
-    MOVE: 'move',
-    ROTATE: 'rotate',
     ADD_FRAGMENT: 'add_fragment',
     ADD_MOLECULE: 'add_molecule',
   });
@@ -10013,8 +10003,6 @@
   }
 
   function normalizeEditIntent(nextIntent) {
-    if (nextIntent === EDIT_INTENT.MOVE) return EDIT_INTENT.MOVE;
-    if (nextIntent === EDIT_INTENT.ROTATE) return EDIT_INTENT.ROTATE;
     if (nextIntent === EDIT_INTENT.ADD_FRAGMENT) return EDIT_INTENT.ADD_FRAGMENT;
     if (nextIntent === EDIT_INTENT.ADD_MOLECULE) return EDIT_INTENT.ADD_MOLECULE;
     return EDIT_INTENT.ATOM_MANIPULATION;
@@ -10113,8 +10101,6 @@
 
   function getEditSurfaceSubtitle() {
     const intent = getEditIntent();
-    if (intent === EDIT_INTENT.MOVE) return 'Move active';
-    if (intent === EDIT_INTENT.ROTATE) return 'Rotate active';
     if (intent === EDIT_INTENT.ADD_FRAGMENT) return getFragmentAddPresentation().subtitle;
     if (intent === EDIT_INTENT.ADD_MOLECULE) return getMoleculeAddPresentation().subtitle;
     return getAtomManipulationPresentation().subtitle || 'Atom manipulation active';
@@ -11682,8 +11668,6 @@
     if (editAddMoleculeOperatorAlignXBtn) editAddMoleculeOperatorAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a molecule first, then align to X.'); };
     if (editAddMoleculeOperatorAlignYBtn) editAddMoleculeOperatorAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a molecule first, then align to Y.'); };
     if (editAddMoleculeOperatorAlignZBtn) editAddMoleculeOperatorAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
-    if (editAdaptiveMoveBtn) editAdaptiveMoveBtn.onclick = () => setEditIntent(EDIT_INTENT.MOVE, { announce: true });
-    if (editAdaptiveRotateBtn) editAdaptiveRotateBtn.onclick = () => setEditIntent(EDIT_INTENT.ROTATE, { announce: true });
     updateEditCleanupUiState();
     setEditAddBondOrder(editAddBondOrder, { announce: false });
     setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
@@ -12469,7 +12453,6 @@
       if (rotateGizmoHit) {
         if (editTransformController.startRotateDrag(e, selection, {
           axis: rotateGizmoHit.axis,
-          allowIntentOverride: true,
         })) {
           if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.setPointerCapture === 'function') {
             try { canvasEl.setPointerCapture(e.pointerId); } catch { }
@@ -12600,43 +12583,8 @@
     return true;
   }
 
-  function handleMoveIntentControllerPointerDown(e) {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const selection = getEditAtomSelection();
-    const gizmoHit = selection.length && editGizmos ? editGizmos.pickMoveHit(e) : null;
-    if (gizmoHit && vol && editTransformController) {
-      const center = getEditSelectionCenterWorld(selection, vol);
-      if (center && editTransformController.startMoveDrag(e, selection, center, { axis: gizmoHit.axis })) {
-        if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.setPointerCapture === 'function') {
-          try { canvasEl.setPointerCapture(e.pointerId); } catch { }
-        }
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function handleRotateIntentControllerPointerDown(e) {
-    const selection = getEditAtomSelection();
-    const gizmoHit = selection.length && editGizmos ? editGizmos.pickRotateHit(e) : null;
-    if (gizmoHit && editTransformController) {
-      if (editTransformController.startRotateDrag(e, selection, { axis: gizmoHit.axis })) {
-        if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.setPointerCapture === 'function') {
-          try { canvasEl.setPointerCapture(e.pointerId); } catch { }
-        }
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        return true;
-      }
-    }
-    return false;
-  }
-
   function handleUnifiedEditControllerPointerDown(intent, e) {
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerDown(e);
-    if (intent === EDIT_INTENT.MOVE) return handleMoveIntentControllerPointerDown(e);
-    if (intent === EDIT_INTENT.ROTATE) return handleRotateIntentControllerPointerDown(e);
     if (intent === EDIT_INTENT.ADD_FRAGMENT) return handleFragmentIntentControllerPointerDown(e);
     if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerDown(e);
     return false;
@@ -12714,28 +12662,6 @@
     return haloGhostHovering;
   }
 
-  function handleMoveIntentControllerPointerMove(e) {
-    if (editTransformController && editTransformState.dragActive) return false;
-    if (editGizmos) {
-      const gizmoHit = editGizmos.pickMoveHit(e);
-      editGizmos.setMoveHover(gizmoHit ? gizmoHit.axis : '');
-      editGizmos.setRotateHover('');
-      return !!gizmoHit;
-    }
-    return false;
-  }
-
-  function handleRotateIntentControllerPointerMove(e) {
-    if (editTransformController && editTransformState.rotateDragActive) return false;
-    if (editGizmos) {
-      const gizmoHit = editGizmos.pickRotateHit(e);
-      editGizmos.setRotateHover(gizmoHit ? gizmoHit.axis : '');
-      editGizmos.setMoveHover('');
-      return !!gizmoHit;
-    }
-    return false;
-  }
-
   function handleFragmentIntentControllerPointerMove(e) {
     if (addFusePreviewState && addFusePreviewState.rotating) {
       __editMoved = true;
@@ -12775,8 +12701,6 @@
       return true;
     }
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerMove(e);
-    if (intent === EDIT_INTENT.MOVE) return handleMoveIntentControllerPointerMove(e);
-    if (intent === EDIT_INTENT.ROTATE) return handleRotateIntentControllerPointerMove(e);
     if (intent === EDIT_INTENT.ADD_FRAGMENT) return handleFragmentIntentControllerPointerMove(e);
     if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerMove(e);
     return false;
@@ -12932,8 +12856,6 @@
     const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
     const showLegacyDrawer = isVisible;
     const intent = getEditIntent();
-    const isMoveActive = hasEditableAtoms && intent === EDIT_INTENT.MOVE;
-    const isRotateActive = hasEditableAtoms && intent === EDIT_INTENT.ROTATE;
     const isFragmentAddActive = isVisible && intent === EDIT_INTENT.ADD_FRAGMENT;
     const isMoleculeAddActive = isVisible && intent === EDIT_INTENT.ADD_MOLECULE;
     const selectionCount = getEditAtomSelection().length;
@@ -12949,8 +12871,6 @@
       positionMenu: positionEditAdaptiveMenu,
       onHideAllPopovers: hideAllAdaptiveToolPopovers,
       visibleItems: [
-        { el: editAdaptiveMoveBtn, visible: hasEditableAtoms },
-        { el: editAdaptiveRotateBtn, visible: hasEditableAtoms },
         { el: editAdaptiveAddAtomBtn, visible: isVisible },
         { el: editAdaptiveAddFragmentBtn, visible: isVisible },
         { el: editAdaptiveAddMoleculeBtn, visible: isVisible },
@@ -12959,8 +12879,6 @@
         { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms },
       ],
       activeItems: [
-        { el: editAdaptiveMoveBtn, active: isMoveActive },
-        { el: editAdaptiveRotateBtn, active: isRotateActive },
         { el: editAdaptiveAddAtomBtn, active: intent === EDIT_INTENT.ATOM_MANIPULATION },
         { el: editAdaptiveAddFragmentBtn, active: isFragmentAddActive },
         { el: editAdaptiveAddMoleculeBtn, active: isMoleculeAddActive },
@@ -12969,14 +12887,6 @@
         { el: editAdaptiveAlignPrincipalBtn, active: false },
       ],
       metaItems: [
-        {
-          el: editAdaptiveMoveMetaEl,
-          text: selectionCount ? 'Drag selection or grab axis arrows' : 'Select atoms, then drag to move',
-        },
-        {
-          el: editAdaptiveRotateMetaEl,
-          text: selectionCount ? 'Grab axis rings or drag selection' : 'Select atoms, then drag to rotate',
-        },
         {
           el: editAdaptiveAddAtomMetaEl,
           text: atomPresentation.rowMeta,

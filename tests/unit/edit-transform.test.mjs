@@ -231,7 +231,6 @@ function createHarness(initialSelection = [0, 1]) {
   };
   let selection = initialSelection.slice();
   let mode = 'edit';
-  let intent = 'move';
   const state = {
     dragActive: false,
     dragAtomIndex: -1,
@@ -286,9 +285,7 @@ function createHarness(initialSelection = [0, 1]) {
     THREE,
     state,
     MODES: { EDIT: 'edit' },
-    EDIT_INTENT: { MOVE: 'move', ROTATE: 'rotate' },
     getMode: () => mode,
-    getEditIntent: () => intent,
     getActiveRecord: () => record,
     getSelection: () => selection.slice(),
     setSelection: (next) => {
@@ -341,7 +338,6 @@ function createHarness(initialSelection = [0, 1]) {
     record,
     atomGroup,
     setMode: (value) => { mode = value; },
-    setIntent: (value) => { intent = value; },
     setEditMoved: (value) => { editMovedFlag = !!value; },
     getSelection: () => selection.slice(),
     atomIds,
@@ -350,7 +346,6 @@ function createHarness(initialSelection = [0, 1]) {
 
 test('edit-transform rotate baseline tracks the current selection', () => {
   const harness = createHarness([0, 1]);
-  harness.setIntent('rotate');
   const baseline = harness.controller.ensureRotateBaseline();
   assert.ok(baseline);
   assert.equal(baseline.indices.length, 2);
@@ -376,7 +371,6 @@ test('edit-transform move drag stores selection targets and creates move history
 
 test('edit-transform rotate drag creates rotate history on finish', () => {
   const harness = createHarness([0, 1]);
-  harness.setIntent('rotate');
   assert.equal(
     harness.controller.startRotateDrag(
       { clientX: 0, clientY: 0, hitPoint: new harness.THREE.Vector3(0, 1, 0) },
@@ -405,7 +399,6 @@ test('edit-transform clearAllTransformState cancels move and rotate drags', () =
   assert.equal(moveHarness.state.dragActive, false);
 
   const rotateHarness = createHarness([0, 1]);
-  rotateHarness.setIntent('rotate');
   assert.equal(
     rotateHarness.controller.startRotateDrag({ clientX: 0, clientY: 0, hitPoint: new rotateHarness.THREE.Vector3(0, 1, 0) }, [0, 1], { axis: 'none' }),
     true

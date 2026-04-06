@@ -510,8 +510,6 @@ def main() -> int:
                         return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
                     };
                     return {
-                        move: isShown('editAdaptiveMoveBtn'),
-                        rotate: isShown('editAdaptiveRotateBtn'),
                         addAtom: isShown('editAdaptiveAddAtomBtn'),
                         addFragment: isShown('editAdaptiveAddFragmentBtn'),
                         addMolecule: isShown('editAdaptiveAddMoleculeBtn'),
@@ -522,8 +520,6 @@ def main() -> int:
                 }"""
             )
             if empty_edit_visibility != {
-                'move': False,
-                'rotate': False,
                 'addAtom': True,
                 'addFragment': True,
                 'addMolecule': True,
@@ -714,8 +710,6 @@ def main() -> int:
             page.wait_for_function(
                 """() => {
                     const ids = [
-                      'editAdaptiveMoveBtn',
-                      'editAdaptiveRotateBtn',
                       'editAdaptiveCleanStructureBtn',
                       'editAdaptiveShiftComBtn',
                       'editAdaptiveAlignPrincipalBtn',
@@ -931,17 +925,15 @@ def main() -> int:
             # Direct atom-selection smoke on the deterministic two-atom fixture.
             select_two_fixture_atoms(page)
 
-            # Empty-click deselection should also work in non-selection tools.
-            page.locator('#editAdaptiveMoveBtn').click()
+            # Empty-click deselection should also work outside the current selection.
             empty_x, empty_y = canvas_point(page, 0.04, 0.08)
             page.mouse.click(empty_x, empty_y)
             select_two_fixture_atoms(page)
 
-            # Move smoke via drag + undo.
+            # Move smoke via translate cue + drag + undo.
             before_move = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
-            page.locator('#editAdaptiveMoveBtn').click()
             move_x, move_y = canvas_point(page, 0.42, 0.50)
             page.mouse.move(move_x, move_y)
             page.mouse.down()
@@ -978,12 +970,23 @@ def main() -> int:
                 """() => /Undo: Move 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
             )
 
-            # Rotate smoke via drag + undo.
+            # Rotate smoke via rotate cue + drag + undo.
             select_two_fixture_atoms(page)
+            page.locator('#editSelectionRotateCueButton').click()
+            page.wait_for_function(
+                """() => {
+                    const rotateBtn = document.getElementById('editSelectionRotateCueButton');
+                    const translateBtn = document.getElementById('editSelectionTranslateCueButton');
+                    return !!rotateBtn
+                      && !rotateBtn.hidden
+                      && rotateBtn.classList.contains('is-active')
+                      && !!translateBtn
+                      && !translateBtn.classList.contains('is-active');
+                }"""
+            )
             before_rotate = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
-            page.locator('#editAdaptiveRotateBtn').click()
             rotate_x, rotate_y = canvas_point(page, 0.42, 0.50)
             page.mouse.move(rotate_x, rotate_y)
             page.mouse.down()

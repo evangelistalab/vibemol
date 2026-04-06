@@ -5,9 +5,7 @@
     const THREE = options.THREE;
     const state = options.state || {};
     const MODES = options.MODES || { EDIT: 'edit' };
-    const EDIT_INTENT = options.EDIT_INTENT || { MOVE: 'move', ROTATE: 'rotate' };
     const getMode = typeof options.getMode === 'function' ? options.getMode : (() => '');
-    const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
     const getActiveRecord = typeof options.getActiveRecord === 'function' ? options.getActiveRecord : (() => null);
     const getSelection = typeof options.getSelection === 'function' ? options.getSelection : (() => []);
     const setSelection = typeof options.setSelection === 'function' ? options.setSelection : (() => {});
@@ -46,7 +44,6 @@
 
     function clearRotateBaseline() {
       state.rotateOperatorBaseline = null;
-      state.rotateBaselineAllowAnyIntent = false;
     }
 
     function buildSelectionKey(record, vol, indices) {
@@ -62,8 +59,11 @@
       const record = getActiveRecord();
       const vol = record && record.vol;
       const selection = getSelection();
-      const intentMatches = getEditIntent() === EDIT_INTENT.ROTATE || state.rotateBaselineAllowAnyIntent === true;
-      if (!(getMode() === MODES.EDIT && intentMatches && record && vol && selection.length)) {
+      const canBuild = getMode() === MODES.EDIT
+        && record
+        && vol
+        && selection.length;
+      if (!canBuild) {
         clearRotateBaseline();
         return null;
       }
@@ -95,8 +95,7 @@
       return baseline;
     }
 
-    function ensureRotateBaseline(options = {}) {
-      if (options.allowIntentOverride) state.rotateBaselineAllowAnyIntent = true;
+    function ensureRotateBaseline() {
       return buildRotateBaseline();
     }
 
@@ -281,10 +280,9 @@
     }
 
     function startRotateDrag(e, indices, dragOptions = {}) {
-      const baseline = ensureRotateBaseline({ allowIntentOverride: !!dragOptions.allowIntentOverride });
+      const baseline = ensureRotateBaseline();
       const targetIndices = Array.from(new Set((Array.isArray(indices) ? indices : []).map((idx) => Number(idx) | 0).filter((idx) => idx >= 0)));
       if (!baseline || !targetIndices.length) {
-        state.rotateBaselineAllowAnyIntent = false;
         return false;
       }
       state.rotateDragActive = true;
@@ -412,7 +410,7 @@
       state.rotateDragStartDir = null;
       state.rotateDragLastClientX = 0;
       state.rotateDragLastClientY = 0;
-      if (getEditIntent() !== EDIT_INTENT.ROTATE) clearRotateBaseline();
+      clearRotateBaseline();
       const controls = getControls();
       try { if (controls) controls.enabled = true; } catch { }
       setRotateHover('');

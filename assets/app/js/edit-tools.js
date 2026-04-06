@@ -140,8 +140,6 @@
     }
 
     function normalizeEditIntent(nextIntent) {
-      if (nextIntent === EDIT_INTENT.MOVE) return EDIT_INTENT.MOVE;
-      if (nextIntent === EDIT_INTENT.ROTATE) return EDIT_INTENT.ROTATE;
       if (nextIntent === EDIT_INTENT.ADD_FRAGMENT) return EDIT_INTENT.ADD_FRAGMENT;
       if (nextIntent === EDIT_INTENT.ADD_MOLECULE) return EDIT_INTENT.ADD_MOLECULE;
       return EDIT_INTENT.ATOM_MANIPULATION;
@@ -167,12 +165,6 @@
         const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
         return `Add molecule: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`;
       }
-      if (state.editIntent === EDIT_INTENT.ROTATE) {
-        return 'Rotate: Select atoms, then drag to rotate • Drag an axis ring to constrain • Drag empty background to orbit • Space previews/applies missing H';
-      }
-      if (state.editIntent === EDIT_INTENT.MOVE) {
-        return 'Move: Select atoms, then drag to translate • Drag an axis arrow to constrain • Drag empty background to orbit • Space previews/applies missing H';
-      }
       return `Atom manipulation: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Click atom to select • Click void to add • Space previews/applies missing H`;
     }
 
@@ -196,7 +188,7 @@
       if (normalized !== EDIT_INTENT.ATOM_MANIPULATION && prevIntent === EDIT_INTENT.ATOM_MANIPULATION) {
         clearEditBondPendingSelection();
       }
-      if (normalized !== EDIT_INTENT.MOVE && normalized !== EDIT_INTENT.ROTATE) {
+      if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) {
         clearTransformState();
       }
       clearHover();

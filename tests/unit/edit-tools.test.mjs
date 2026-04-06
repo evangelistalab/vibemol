@@ -9,8 +9,6 @@ function createEditToolsHarness() {
   const editToolsApi = context.window.VibeMolEditTools;
   const EDIT_INTENT = {
     ATOM_MANIPULATION: 'atom_manipulation',
-    MOVE: 'move',
-    ROTATE: 'rotate',
     ADD_FRAGMENT: 'add_fragment',
     ADD_MOLECULE: 'add_molecule',
   };
@@ -26,7 +24,7 @@ function createEditToolsHarness() {
     },
   };
   const state = {
-    editIntent: EDIT_INTENT.MOVE,
+    editIntent: EDIT_INTENT.ATOM_MANIPULATION,
     editAtomSelectionIndices: [],
     editAddMode: EDIT_ADD_MODE.ATOM,
     editAddElementZ: 6,
@@ -158,45 +156,41 @@ test('edit-tools intent transitions finalize atom sessions and derive add mode',
   state.editIntent = EDIT_INTENT.ATOM_MANIPULATION;
   state.editAddMode = EDIT_ADD_MODE.ATOM;
   state.addAtomOperatorSession = { id: 'session-1' };
-  controller.setEditIntent(EDIT_INTENT.MOVE);
+  controller.setEditIntent('unused_legacy_move');
 
-  assert.equal(state.editIntent, EDIT_INTENT.MOVE);
+  assert.equal(state.editIntent, EDIT_INTENT.ATOM_MANIPULATION);
   assert.equal(state.editAddMode, EDIT_ADD_MODE.ATOM);
-  assert.equal(calls.finalizeAddAtomOperatorSession, 1);
-  assert.equal(calls.clearAddGrowPreview, 1);
+  assert.equal(calls.finalizeAddAtomOperatorSession, 0);
+  assert.equal(calls.clearAddGrowPreview, 0);
   assert.equal(calls.updateEditToolboxUi, 1);
-  assert.match(calls.hintMessages.at(-1), /Move/);
+  assert.match(calls.hintMessages.at(-1), /Atom manipulation/);
 
   state.addAtomOperatorSession = { id: 'session-2' };
   controller.setEditAddMode(EDIT_ADD_MODE.MOLECULE);
   assert.equal(state.editIntent, EDIT_INTENT.ADD_MOLECULE);
   assert.equal(state.editAddMode, EDIT_ADD_MODE.MOLECULE);
-  assert.equal(calls.finalizeAddAtomOperatorSession, 2);
-  assert.equal(calls.clearAddGrowPreview >= 2, true);
+  assert.equal(calls.finalizeAddAtomOperatorSession, 1);
+  assert.equal(calls.clearAddGrowPreview >= 1, true);
   assert.equal(calls.refreshActiveAddGrowPreview >= 1, true);
 });
 
-test('edit-tools add-fragment and rotate intents emit dedicated hints', () => {
+test('edit-tools add-fragment and atom-manipulation intents emit dedicated hints', () => {
   const { controller, state, calls, EDIT_INTENT } = createEditToolsHarness();
 
-  controller.setEditIntent(EDIT_INTENT.ROTATE);
-  assert.equal(state.editIntent, EDIT_INTENT.ROTATE);
-  assert.match(calls.hintMessages.at(-1), /Rotate/);
+  controller.setEditIntent(EDIT_INTENT.ATOM_MANIPULATION);
+  assert.equal(state.editIntent, EDIT_INTENT.ATOM_MANIPULATION);
+  assert.match(calls.hintMessages.at(-1), /Atom manipulation/);
 
   controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
   assert.equal(state.editIntent, EDIT_INTENT.ADD_FRAGMENT);
   assert.match(calls.hintMessages.at(-1), /Add fragment/);
 });
 
-test('edit-tools leaving move or rotate clears transform transient state', () => {
+test('edit-tools leaving atom manipulation clears transform transient state', () => {
   const { controller, calls, EDIT_INTENT } = createEditToolsHarness();
 
-  controller.setEditIntent(EDIT_INTENT.ATOM_MANIPULATION);
-  assert.equal(calls.clearTransformState, 1);
-
-  controller.setEditIntent(EDIT_INTENT.MOVE);
   controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
-  assert.equal(calls.clearTransformState, 2);
+  assert.equal(calls.clearTransformState, 1);
 });
 
 test('edit-tools clearTransientInteractionState clears selection, pointer state, and bond transient state', () => {
