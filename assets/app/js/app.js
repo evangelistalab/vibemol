@@ -12513,6 +12513,14 @@
         }
       }
     }
+    const currentTransformContext = getCurrentTransformSelectionContext();
+    const pickedBondHit = pickBondHit(e);
+    if (currentTransformContext && currentTransformContext.type === 'bond' && pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center') {
+      const changed = stepGestureBondCenterOrder(pickedBondHit, 1, e);
+      const cleared = clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: false });
+      if ((changed || cleared) && typeof e.preventDefault === 'function') e.preventDefault();
+      if (changed || cleared) return true;
+    }
     if (editHaloController) {
       const haloGhostHit = pickEditHaloGhostHit(e);
       if (haloGhostHit) {
@@ -12551,7 +12559,6 @@
     }
     const pickedAtom = pickAtom(e);
     const pickedAtomIndex = pickedAtom && pickedAtom.userData ? (pickedAtom.userData.index | 0) : -1;
-    const pickedBondHit = pickBondHit(e);
     if (pickedAtomIndex < 0 && pickedBondHit && pickedBondHit.object && isExplicitTransformBondSideHit(pickedBondHit)) {
       const payload = applyGestureBondSideSelection(pickedBondHit);
       if (payload) {

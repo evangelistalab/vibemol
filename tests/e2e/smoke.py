@@ -277,6 +277,40 @@ def find_bond_midpoint_canvas_point(page) -> tuple[float, float]:
     raise AssertionError('Could not locate a bond midpoint hover target on the canvas')
 
 
+def find_bond_side_canvas_point(page, side: str | None = None) -> tuple[float, float]:
+    desired = str(side or '').strip().lower()
+    candidates = [
+        (0.44, 0.50), (0.56, 0.50),
+        (0.46, 0.50), (0.54, 0.50),
+        (0.43, 0.48), (0.57, 0.48),
+        (0.43, 0.52), (0.57, 0.52),
+        (0.47, 0.49), (0.53, 0.49),
+        (0.47, 0.51), (0.53, 0.51),
+    ]
+    for fx, fy in candidates:
+        x, y = canvas_point(page, fx, fy)
+        page.mouse.move(x, y)
+        page.wait_for_timeout(60)
+        hit = page.evaluate(
+            """(payload) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+                return window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+            }""",
+            {'x': x, 'y': y},
+        )
+        if not isinstance(hit, dict):
+            continue
+        bond_section = str(hit.get('bondSection', '')).strip().lower()
+        if bond_section not in ('neara', 'nearb'):
+            continue
+        if desired and bond_section != desired:
+            continue
+        return x, y
+    if desired:
+        raise AssertionError(f'Could not locate a bond-side hover target for {desired} on the canvas')
+    raise AssertionError('Could not locate a bond-side hover target on the canvas')
+
+
 def ensure_advanced_drawer_open(page) -> None:
     page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
 
@@ -1211,7 +1245,22 @@ def main() -> int:
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
             )
-            for expected_order in (2, 3, 4):
+            side_x, side_y = find_bond_side_canvas_point(page)
+            page.mouse.click(side_x, side_y)
+            page.wait_for_function(
+                """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) > 0"""
+            )
+            midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
+            page.mouse.click(midpoint_x, midpoint_y)
+            page.wait_for_function(
+                """() => {
+                    const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
+                    return !!bond
+                      && bond.order === 2
+                      && Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0;
+                }"""
+            )
+            for expected_order in (3, 4):
                 x, y = find_bond_midpoint_canvas_point(page)
                 page.mouse.click(x, y)
                 page.wait_for_function(
