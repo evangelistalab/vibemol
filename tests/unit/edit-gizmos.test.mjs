@@ -134,7 +134,7 @@ function createHarness() {
     raycaster,
     setRaycasterFromEvent: () => {},
     getMode: () => state.mode,
-    getEditTool: () => state.tool,
+    getEditIntent: () => state.tool,
     getSelection: () => state.selection.slice(),
     getActiveRecord: () => state.record,
     getSelectionCenterWorld: () => new THREE.Vector3(1, 2, 3),
@@ -142,7 +142,7 @@ function createHarness() {
     getMoveDragPivotWorld: () => null,
     getRotateDragCenterWorld: () => null,
     MODES: { EDIT: 'edit' },
-    EDIT_TOOL: { MOVE: 'move', ROTATE: 'rotate' },
+    EDIT_INTENT: { MOVE: 'move', ROTATE: 'rotate' },
   });
   return { THREE, state, raycaster, controller };
 }

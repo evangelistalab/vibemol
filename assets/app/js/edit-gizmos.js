@@ -7,7 +7,7 @@
     const raycaster = options.raycaster || null;
     const setRaycasterFromEvent = typeof options.setRaycasterFromEvent === 'function' ? options.setRaycasterFromEvent : (() => {});
     const getMode = typeof options.getMode === 'function' ? options.getMode : (() => '');
-    const getEditTool = typeof options.getEditTool === 'function' ? options.getEditTool : (() => '');
+    const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
     const getSelection = typeof options.getSelection === 'function' ? options.getSelection : (() => []);
     const getActiveRecord = typeof options.getActiveRecord === 'function' ? options.getActiveRecord : (() => null);
     const getSelectionCenterWorld = typeof options.getSelectionCenterWorld === 'function' ? options.getSelectionCenterWorld : (() => null);
@@ -15,7 +15,7 @@
     const getMoveDragPivotWorld = typeof options.getMoveDragPivotWorld === 'function' ? options.getMoveDragPivotWorld : (() => null);
     const getRotateDragCenterWorld = typeof options.getRotateDragCenterWorld === 'function' ? options.getRotateDragCenterWorld : (() => null);
     const MODES = options.MODES || { EDIT: 'edit' };
-    const EDIT_TOOL = options.EDIT_TOOL || { MOVE: 'move', ROTATE: 'rotate' };
+    const EDIT_INTENT = options.EDIT_INTENT || { MOVE: 'move', ROTATE: 'rotate' };
 
     const rootGroup = new THREE.Group();
     const moveGroup = new THREE.Group();
@@ -98,7 +98,7 @@
       const record = getActiveRecord();
       const vol = record && record.vol;
       const selection = getSelection();
-      const visible = !!(getMode() === MODES.EDIT && getEditTool() === EDIT_TOOL.MOVE && vol && selection.length);
+      const visible = !!(getMode() === MODES.EDIT && getEditIntent() === EDIT_INTENT.MOVE && vol && selection.length);
       moveGroup.visible = visible;
       if (!visible) {
         setMoveHover('');
@@ -117,7 +117,7 @@
     }
 
     function pickMoveHit(e) {
-      if (!(getMode() === MODES.EDIT && getEditTool() === EDIT_TOOL.MOVE) || !moveGroup.visible || !raycaster) return null;
+      if (!(getMode() === MODES.EDIT && getEditIntent() === EDIT_INTENT.MOVE) || !moveGroup.visible || !raycaster) return null;
       setRaycasterFromEvent(e);
       const hits = raycaster.intersectObjects(moveGroup.children, true);
       for (const hit of hits) {
@@ -207,7 +207,7 @@
       const record = getActiveRecord();
       const vol = record && record.vol;
       const selection = getSelection();
-      const visible = !!(getMode() === MODES.EDIT && getEditTool() === EDIT_TOOL.ROTATE && vol && selection.length);
+      const visible = !!(getMode() === MODES.EDIT && getEditIntent() === EDIT_INTENT.ROTATE && vol && selection.length);
       rotateGroup.visible = visible;
       if (!visible) {
         setRotateHover('');
@@ -226,7 +226,7 @@
     }
 
     function pickRotateHit(e) {
-      if (!(getMode() === MODES.EDIT && getEditTool() === EDIT_TOOL.ROTATE) || !rotateGroup.visible || !raycaster) return null;
+      if (!(getMode() === MODES.EDIT && getEditIntent() === EDIT_INTENT.ROTATE) || !rotateGroup.visible || !raycaster) return null;
       setRaycasterFromEvent(e);
       const hits = raycaster.intersectObjects(rotateGroup.children, true);
       for (const hit of hits) {

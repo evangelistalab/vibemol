@@ -7,19 +7,15 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 function createEditToolsHarness() {
   const context = loadGlobalModule('assets/app/js/edit-tools.js');
   const editToolsApi = context.window.VibeMolEditTools;
-  const EDIT_TOOL = {
-    SELECT: 'select',
+  const EDIT_INTENT = {
+    ATOM_MANIPULATION: 'atom_manipulation',
     MOVE: 'move',
     ROTATE: 'rotate',
-    ADD: 'add',
-    BOND: 'bond',
-    TRANSFORM: 'transform',
-    DELETE: 'delete',
+    ADD_FRAGMENT: 'add_fragment',
+    ADD_MOLECULE: 'add_molecule',
   };
-  const EDIT_BOND_ACTION = { SET: 'set' };
   const EDIT_ADD_MODE = { ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' };
   const EDIT_FRAGMENT_ATTACH_POLICY = { AUTO: 'auto', FUSE_RING: 'fuse_ring' };
-  const EDIT_TRANSFORM_MODE = { MOVE: 'move', ROTATE_FRAGMENT: 'rotate_fragment', ROTATE_BOND: 'rotate_bond' };
   const record = {
     vol: {
       atoms: [
@@ -30,14 +26,11 @@ function createEditToolsHarness() {
     },
   };
   const state = {
+    editIntent: EDIT_INTENT.MOVE,
     editAtomSelectionIndices: [],
-    editTool: EDIT_TOOL.MOVE,
     editAddMode: EDIT_ADD_MODE.ATOM,
     editAddElementZ: 6,
     editAddFragmentAttachPolicy: EDIT_FRAGMENT_ATTACH_POLICY.AUTO,
-    editTransformMode: EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT,
-    editTransformScope: 'fragment',
-    editBondAction: null,
     addAtomOperatorSession: null,
     editDownPt: { x: 1, y: 2 },
     editMoved: true,
@@ -54,7 +47,6 @@ function createEditToolsHarness() {
     clearTransformSelection: 0,
     clearHover: 0,
     updateEditToolboxUi: 0,
-    updateAxisButtons: 0,
     refreshActiveAddGrowPreview: 0,
     clearMeasurementSelectionForContextChange: 0,
     setCoordsHoveredAtomIndex: [],
@@ -68,16 +60,13 @@ function createEditToolsHarness() {
   };
   const controller = editToolsApi.createEditToolsController({
     state,
-    EDIT_TOOL,
-    EDIT_BOND_ACTION,
+    EDIT_INTENT,
     EDIT_ADD_MODE,
     EDIT_FRAGMENT_ATTACH_POLICY,
-    EDIT_TRANSFORM_MODE,
     getActiveRecord: () => record,
     isEditMode: () => true,
     finalizeAddAtomOperatorSession: () => { calls.finalizeAddAtomOperatorSession += 1; return true; },
     hideAllAdaptiveToolPopovers: () => { calls.hideAllAdaptiveToolPopovers += 1; },
-    updateAxisGuideLine: () => {},
     clearAddGrowPreview: () => { calls.clearAddGrowPreview += 1; },
     clearMoleculePlacementPreview: () => { calls.clearMoleculePlacementPreview += 1; },
     clearFuseRingPreview: () => { calls.clearFuseRingPreview += 1; },
@@ -96,22 +85,11 @@ function createEditToolsHarness() {
     },
     clearHover: () => { calls.clearHover += 1; },
     updateEditToolboxUi: () => { calls.updateEditToolboxUi += 1; },
-    updateAxisButtons: () => { calls.updateAxisButtons += 1; },
     getCurrentFragmentDefinition: () => ({ name: 'Hydroxyl', formula: 'OH', preferredBondOrder: 1 }),
     getCurrentMoleculeDefinition: () => ({ name: 'Benzene', formula: 'C6H6', id: 'benzene' }),
     getElementSymbol: (z) => ({ 1: 'H', 6: 'C', 8: 'O' }[z] || '?'),
     getElementName: (z) => ({ 1: 'Hydrogen', 6: 'Carbon', 8: 'Oxygen' }[z] || 'Unknown'),
     getEditFragmentAttachPolicyLabel: (value) => String(value),
-    getEditTransformModeLabel: (value) => ({
-      [EDIT_TRANSFORM_MODE.ROTATE_FRAGMENT]: 'Rotate fragment',
-      [EDIT_TRANSFORM_MODE.ROTATE_BOND]: 'Rotate bond',
-    }[value] || 'Rotate fragment'),
-    getEditTransformScopeLabel: (value) => ({
-      auto: 'Auto',
-      fragment: 'Fragment',
-      molecule: 'Molecule',
-      all: 'All atoms',
-    }[value] || 'Auto'),
     refreshActiveAddGrowPreview: () => { calls.refreshActiveAddGrowPreview += 1; },
     normalizeEditAddBondOrder: (value) => Math.max(1, Math.min(4, Number(value) || 1)),
     setHintMessage: (message) => { calls.hintMessages.push(String(message || '')); },
@@ -126,7 +104,7 @@ function createEditToolsHarness() {
       hidePopup: () => { calls.bondPopupHidden += 1; },
     }),
   });
-  return { controller, state, calls, EDIT_TOOL, EDIT_ADD_MODE, EDIT_BOND_ACTION };
+  return { controller, state, calls, EDIT_INTENT, EDIT_ADD_MODE };
 }
 
 test('edit-tools selection logic supports replace, toggle, and select-all', () => {
@@ -160,61 +138,54 @@ test('edit-tools box selection supports replace and additive merge', () => {
   assert.equal(calls.hintMessages.at(-1), 'Selection cleared.');
 });
 
-test('edit-tools tool transitions finalize add-atom sessions and reset transient state', () => {
-  const { controller, state, calls, EDIT_TOOL, EDIT_ADD_MODE, EDIT_BOND_ACTION } = createEditToolsHarness();
+test('edit-tools intent transitions finalize atom sessions and derive add mode', () => {
+  const { controller, state, calls, EDIT_INTENT, EDIT_ADD_MODE } = createEditToolsHarness();
 
-  state.editTool = EDIT_TOOL.ADD;
+  state.editIntent = EDIT_INTENT.ATOM_MANIPULATION;
   state.editAddMode = EDIT_ADD_MODE.ATOM;
   state.addAtomOperatorSession = { id: 'session-1' };
-  controller.setEditTool(EDIT_TOOL.BOND);
+  controller.setEditIntent(EDIT_INTENT.MOVE);
 
-  assert.equal(state.editTool, EDIT_TOOL.BOND);
-  assert.equal(state.editBondAction, EDIT_BOND_ACTION.SET);
+  assert.equal(state.editIntent, EDIT_INTENT.MOVE);
+  assert.equal(state.editAddMode, EDIT_ADD_MODE.ATOM);
   assert.equal(calls.finalizeAddAtomOperatorSession, 1);
   assert.equal(calls.clearAddGrowPreview, 1);
   assert.equal(calls.updateEditToolboxUi, 1);
-  assert.match(calls.hintMessages.at(-1), /Bond/);
+  assert.match(calls.hintMessages.at(-1), /Move/);
 
   state.addAtomOperatorSession = { id: 'session-2' };
   controller.setEditAddMode(EDIT_ADD_MODE.MOLECULE);
+  assert.equal(state.editIntent, EDIT_INTENT.ADD_MOLECULE);
   assert.equal(state.editAddMode, EDIT_ADD_MODE.MOLECULE);
   assert.equal(calls.finalizeAddAtomOperatorSession, 2);
   assert.equal(calls.clearAddGrowPreview >= 2, true);
   assert.equal(calls.refreshActiveAddGrowPreview >= 1, true);
 });
 
-test('edit-tools supports rotate as a first-class tool with its own hint', () => {
-  const { controller, state, calls, EDIT_TOOL } = createEditToolsHarness();
+test('edit-tools add-fragment and rotate intents emit dedicated hints', () => {
+  const { controller, state, calls, EDIT_INTENT } = createEditToolsHarness();
 
-  controller.setEditTool(EDIT_TOOL.ROTATE);
-
-  assert.equal(state.editTool, EDIT_TOOL.ROTATE);
-  assert.equal(calls.updateEditToolboxUi, 1);
+  controller.setEditIntent(EDIT_INTENT.ROTATE);
+  assert.equal(state.editIntent, EDIT_INTENT.ROTATE);
   assert.match(calls.hintMessages.at(-1), /Rotate/);
+
+  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
+  assert.equal(state.editIntent, EDIT_INTENT.ADD_FRAGMENT);
+  assert.match(calls.hintMessages.at(-1), /Add fragment/);
 });
 
-test('edit-tools transform hint defaults to rotate-fragment semantics', () => {
-  const { controller, state, calls, EDIT_TOOL } = createEditToolsHarness();
+test('edit-tools leaving move or rotate clears transform transient state', () => {
+  const { controller, calls, EDIT_INTENT } = createEditToolsHarness();
 
-  controller.setEditTool(EDIT_TOOL.TRANSFORM);
-
-  assert.equal(state.editTool, EDIT_TOOL.TRANSFORM);
-  assert.match(calls.hintMessages.at(-1), /Rotate fragment/);
-  assert.doesNotMatch(calls.hintMessages.at(-1), /Drag the selection to move/);
-});
-
-test('edit-tools leaving transform clears transform transient state', () => {
-  const { controller, state, calls, EDIT_TOOL } = createEditToolsHarness();
-
-  state.editTool = EDIT_TOOL.TRANSFORM;
-  controller.setEditTool(EDIT_TOOL.SELECT);
-
-  assert.equal(state.editTool, EDIT_TOOL.SELECT);
+  controller.setEditIntent(EDIT_INTENT.ATOM_MANIPULATION);
   assert.equal(calls.clearTransformState, 1);
-  assert.equal(calls.clearTransformSelection, 1);
+
+  controller.setEditIntent(EDIT_INTENT.MOVE);
+  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
+  assert.equal(calls.clearTransformState, 2);
 });
 
-test('edit-tools clearTransientInteractionState clears selection, pointer state, and bond tool transient state', () => {
+test('edit-tools clearTransientInteractionState clears selection, pointer state, and bond transient state', () => {
   const { controller, state, calls } = createEditToolsHarness();
 
   controller.setEditAtomSelection([0, 2]);

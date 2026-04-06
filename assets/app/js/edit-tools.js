@@ -1,18 +1,11 @@
 (function (global) {
   'use strict';
 
-  /**
-   * Create one controller for edit-tool coordination and edit-mode atom selection.
-   * App-specific UI, render, and scene hooks are injected through callbacks.
-   * @param {object} options
-   */
   function createEditToolsController(options = {}) {
     const state = options.state || {};
-    const EDIT_TOOL = options.EDIT_TOOL || {};
-    const EDIT_BOND_ACTION = options.EDIT_BOND_ACTION || {};
+    const EDIT_INTENT = options.EDIT_INTENT || {};
     const EDIT_ADD_MODE = options.EDIT_ADD_MODE || {};
     const EDIT_FRAGMENT_ATTACH_POLICY = options.EDIT_FRAGMENT_ATTACH_POLICY || {};
-    const EDIT_TRANSFORM_MODE = options.EDIT_TRANSFORM_MODE || {};
     const getActiveRecord = typeof options.getActiveRecord === 'function' ? options.getActiveRecord : (() => null);
     const isEditMode = typeof options.isEditMode === 'function' ? options.isEditMode : (() => false);
     const finalizeAddAtomOperatorSession = typeof options.finalizeAddAtomOperatorSession === 'function' ? options.finalizeAddAtomOperatorSession : (() => false);
@@ -30,8 +23,6 @@
     const getElementSymbol = typeof options.getElementSymbol === 'function' ? options.getElementSymbol : ((z) => String(z || '?'));
     const getElementName = typeof options.getElementName === 'function' ? options.getElementName : ((z) => String(z || '?'));
     const getEditFragmentAttachPolicyLabel = typeof options.getEditFragmentAttachPolicyLabel === 'function' ? options.getEditFragmentAttachPolicyLabel : ((value) => String(value || ''));
-    const getEditTransformModeLabel = typeof options.getEditTransformModeLabel === 'function' ? options.getEditTransformModeLabel : ((value) => String(value || ''));
-    const getEditTransformScopeLabel = typeof options.getEditTransformScopeLabel === 'function' ? options.getEditTransformScopeLabel : ((value) => String(value || ''));
     const refreshActiveAddGrowPreview = typeof options.refreshActiveAddGrowPreview === 'function' ? options.refreshActiveAddGrowPreview : (() => {});
     const normalizeEditAddBondOrder = typeof options.normalizeEditAddBondOrder === 'function' ? options.normalizeEditAddBondOrder : ((value) => Number(value) || 1);
     const setHintMessage = typeof options.setHintMessage === 'function' ? options.setHintMessage : (() => {});
@@ -75,12 +66,8 @@
       const vol = record && record.vol;
       const bondEditing = getBondEditing();
       let changed = false;
-      if (clearOptions.selection !== false) {
-        changed = clearEditAtomSelection() || changed;
-      }
-      if (clearOptions.transform !== false) {
-        changed = !!clearTransformSelection() || changed;
-      }
+      if (clearOptions.selection !== false) changed = clearEditAtomSelection() || changed;
+      if (clearOptions.transform !== false) changed = !!clearTransformSelection() || changed;
       if (clearOptions.bondEdit !== false) {
         const hadPendingBondSelection = !!(
           bondEditing
@@ -93,9 +80,7 @@
           && bondEditing.getPopupCarrier()
         );
         const clearedPendingBondSelection = !!clearEditBondPendingSelection();
-        if (bondEditing && typeof bondEditing.hidePopup === 'function') {
-          bondEditing.hidePopup();
-        }
+        if (bondEditing && typeof bondEditing.hidePopup === 'function') bondEditing.hidePopup();
         changed = changed || hadPendingBondSelection || hadBondPopup || clearedPendingBondSelection;
       }
       return changed;
@@ -151,133 +136,86 @@
       return changed;
     }
 
-    function buildAddToolHint() {
-      if (state.editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+    function normalizeEditIntent(nextIntent) {
+      if (nextIntent === EDIT_INTENT.MOVE) return EDIT_INTENT.MOVE;
+      if (nextIntent === EDIT_INTENT.ROTATE) return EDIT_INTENT.ROTATE;
+      if (nextIntent === EDIT_INTENT.ADD_FRAGMENT) return EDIT_INTENT.ADD_FRAGMENT;
+      if (nextIntent === EDIT_INTENT.ADD_MOLECULE) return EDIT_INTENT.ADD_MOLECULE;
+      return EDIT_INTENT.ATOM_MANIPULATION;
+    }
+
+    function syncDerivedAddMode() {
+      if (state.editIntent === EDIT_INTENT.ADD_FRAGMENT) state.editAddMode = EDIT_ADD_MODE.FRAGMENT;
+      else if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) state.editAddMode = EDIT_ADD_MODE.MOLECULE;
+      else state.editAddMode = EDIT_ADD_MODE.ATOM;
+    }
+
+    function buildIntentHint() {
+      if (state.editIntent === EDIT_INTENT.ADD_FRAGMENT) {
         const fragment = getCurrentFragmentDefinition();
         const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
         if (state.editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-          return `Edit tool: Add fragment (${label}) • Fuse ring mode • Click a host bond • Drag to spin • Click to confirm • Space previews/applies missing H`;
+          return `Add fragment: ${label} • Fuse ring • Click a host bond • Drag to spin • Click again to confirm`;
         }
-        return `Edit tool: Add fragment (${label}) • ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)} • Click an anchor atom • Grow-drag follows the view plane • Hold Shift to bypass angle snap for free placement • Space previews/applies missing H`;
+        return `Add fragment: ${label} • Policy ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)}`;
       }
-      if (state.editAddMode === EDIT_ADD_MODE.MOLECULE) {
+      if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) {
         const molecule = getCurrentMoleculeDefinition();
         const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
-        return `Edit tool: Add molecule (${label}) • Click to place • Drag to rotate • Click again to confirm • Space previews/applies missing H`;
+        return `Add molecule: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`;
       }
-      return `Edit tool: Add atom (${getElementSymbol(state.editAddElementZ)}) • Cursor angle controls free placement • Grow-drag follows the view plane • Hold Shift to bypass angle snap for free placement • Space previews/applies missing H`;
+      if (state.editIntent === EDIT_INTENT.ROTATE) {
+        return 'Rotate: Select atoms, then drag to rotate • Drag an axis ring to constrain • Drag empty background to orbit • Space previews/applies missing H';
+      }
+      if (state.editIntent === EDIT_INTENT.MOVE) {
+        return 'Move: Select atoms, then drag to translate • Drag an axis arrow to constrain • Drag empty background to orbit • Space previews/applies missing H';
+      }
+      return `Atom manipulation: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Click atom to select • Click void to add • Space previews/applies missing H`;
     }
 
-    function buildTransformHint() {
-      const modeLabel = getEditTransformModeLabel(state.editTransformMode);
-      const scopeLabel = getEditTransformScopeLabel(state.editTransformScope);
-      if (state.editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
-        return `Edit tool: ${modeLabel} • Scope ${scopeLabel} • Click a bond to select one side • Drag the selection to rotate around the opposite atom • Shift-click adds another target`;
-      }
-      return `Edit tool: ${modeLabel} • Scope ${scopeLabel} • Click an atom to select its fragment or whole molecule • Click a bond to select one side • Drag the selection to rotate • Bond-side selections spin about the bond axis • Click empty space to clear • Shift-click adds another target`;
+    function getEditIntent() {
+      return normalizeEditIntent(state.editIntent);
     }
 
-    function setEditTool(nextTool, options = {}) {
+    function setEditIntent(nextIntent, options = {}) {
       const announce = options.announce !== false;
-      const prevTool = state.editTool;
-      const leavingAddAtomOperator = !!state.addAtomOperatorSession
-        && (nextTool !== EDIT_TOOL.ADD || state.editAddMode !== EDIT_ADD_MODE.ATOM);
-      if (leavingAddAtomOperator) finalizeAddAtomOperatorSession({ announce: false });
-      if (nextTool === EDIT_TOOL.SELECT) state.editTool = EDIT_TOOL.SELECT;
-      else if (nextTool === EDIT_TOOL.MOVE) state.editTool = EDIT_TOOL.MOVE;
-      else if (nextTool === EDIT_TOOL.ROTATE) state.editTool = EDIT_TOOL.ROTATE;
-      else if (nextTool === EDIT_TOOL.ADD) state.editTool = EDIT_TOOL.ADD;
-      else if (nextTool === EDIT_TOOL.BOND) state.editTool = EDIT_TOOL.BOND;
-      else if (nextTool === EDIT_TOOL.TRANSFORM) state.editTool = EDIT_TOOL.TRANSFORM;
-      else if (nextTool === EDIT_TOOL.DELETE) state.editTool = EDIT_TOOL.DELETE;
-      else state.editTool = EDIT_TOOL.MOVE;
-      if (state.editTool !== EDIT_TOOL.ADD && state.editTool !== EDIT_TOOL.BOND && state.editTool !== EDIT_TOOL.TRANSFORM) {
-        hideAllAdaptiveToolPopovers();
-      }
-      if (state.editTool === EDIT_TOOL.BOND) state.editBondAction = EDIT_BOND_ACTION.SET;
-      if (state.editTool !== EDIT_TOOL.ADD && prevTool === EDIT_TOOL.ADD) {
-        clearAddGrowPreview();
-        clearMoleculePlacementPreview();
-        clearFuseRingPreview();
-      }
-      if (state.editTool !== EDIT_TOOL.BOND && prevTool === EDIT_TOOL.BOND) {
+      const syncSearch = options.syncSearch !== false;
+      const prevIntent = getEditIntent();
+      const normalized = normalizeEditIntent(nextIntent);
+      const leavingAtomManipulation = !!state.addAtomOperatorSession && normalized !== EDIT_INTENT.ATOM_MANIPULATION;
+      if (leavingAtomManipulation) finalizeAddAtomOperatorSession({ announce: false });
+      state.editIntent = normalized;
+      syncDerivedAddMode();
+
+      if (normalized !== EDIT_INTENT.ADD_MOLECULE) clearMoleculePlacementPreview();
+      if (normalized !== EDIT_INTENT.ADD_FRAGMENT) clearFuseRingPreview();
+      if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) clearAddGrowPreview();
+      if (normalized !== EDIT_INTENT.ATOM_MANIPULATION && prevIntent === EDIT_INTENT.ATOM_MANIPULATION) {
         clearEditBondPendingSelection();
       }
-      if (state.editTool !== EDIT_TOOL.TRANSFORM && prevTool === EDIT_TOOL.TRANSFORM) {
+      if (normalized !== EDIT_INTENT.MOVE && normalized !== EDIT_INTENT.ROTATE) {
         clearTransformState();
-        clearTransformSelection();
       }
       clearHover();
-      updateEditToolboxUi();
+      hideAllAdaptiveToolPopovers();
+      updateEditToolboxUi({ syncSearch });
       if (!announce || !isEditMode()) return;
-      if (state.editTool === EDIT_TOOL.SELECT) {
-        const count = getEditAtomSelection().length;
-        setHintMessage(count
-          ? `Edit tool: Selection • Click to replace • Drag to box-select • Shift-click to add/remove • Shift-drag adds box hits • Cmd/Ctrl+A selects all • Space previews/applies missing H • ${count} atom${count === 1 ? '' : 's'} currently selected`
-          : 'Edit tool: Selection • Click to select • Drag to box-select • Shift-click to add/remove • Click empty space to clear • Cmd/Ctrl+A selects all • Space previews/applies missing H');
-        return;
-      }
-      if (state.editTool === EDIT_TOOL.ADD) {
-        setHintMessage(buildAddToolHint());
-        return;
-      }
-      if (state.editTool === EDIT_TOOL.BOND) {
-        setHintMessage('Edit tool: Bond • Click two atoms to create a bond • Click an existing bond to edit order • Right-click a bond or choose 0 to delete it.');
-        return;
-      }
-      if (state.editTool === EDIT_TOOL.TRANSFORM) {
-        setHintMessage(buildTransformHint());
-        return;
-      }
-      if (state.editTool === EDIT_TOOL.DELETE) {
-        setHintMessage('Edit tool: Delete • Click an atom or press Backspace/Delete on hovered atom');
-        return;
-      }
-      if (state.editTool === EDIT_TOOL.ROTATE) {
-        setHintMessage('Edit tool: Rotate • Drag a selected atom to rotate the selection • Drag an axis ring to constrain rotation • Drag an unselected atom to retarget and rotate it • Background drag rotates view • Space previews/applies missing H');
-        return;
-      }
-      setHintMessage('Edit tool: Move • Drag a selected atom to move the selection • Drag an axis arrow to constrain motion • Drag an unselected atom to retarget and move it • Background drag rotates view • Space previews/applies missing H');
+      setHintMessage(buildIntentHint());
     }
 
     function setEditAddMode(nextMode, options = {}) {
-      const announce = options.announce !== false;
-      const syncSearch = options.syncSearch !== false;
-      const leavingAtomAddMode = !!state.addAtomOperatorSession && nextMode !== EDIT_ADD_MODE.ATOM;
-      if (leavingAtomAddMode) finalizeAddAtomOperatorSession({ announce: false });
-      if (nextMode === EDIT_ADD_MODE.FRAGMENT) state.editAddMode = EDIT_ADD_MODE.FRAGMENT;
-      else if (nextMode === EDIT_ADD_MODE.MOLECULE) state.editAddMode = EDIT_ADD_MODE.MOLECULE;
-      else state.editAddMode = EDIT_ADD_MODE.ATOM;
-      if (state.editAddMode !== EDIT_ADD_MODE.MOLECULE) clearMoleculePlacementPreview();
-      if (state.editAddMode !== EDIT_ADD_MODE.FRAGMENT) clearFuseRingPreview();
-      if (state.editAddMode !== EDIT_ADD_MODE.ATOM) clearAddGrowPreview();
-      if (state.editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+      if (nextMode === EDIT_ADD_MODE.FRAGMENT) setEditIntent(EDIT_INTENT.ADD_FRAGMENT, options);
+      else if (nextMode === EDIT_ADD_MODE.MOLECULE) setEditIntent(EDIT_INTENT.ADD_MOLECULE, options);
+      else setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, options);
+      if (state.editIntent === EDIT_INTENT.ADD_FRAGMENT) {
         const fragment = getCurrentFragmentDefinition();
         if (fragment) state.editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || state.editAddBondOrder);
-      } else if (state.editAddMode === EDIT_ADD_MODE.MOLECULE) {
+      } else if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) {
         const molecule = getCurrentMoleculeDefinition();
         if (molecule) state.editAddMoleculeId = molecule.id;
       }
       refreshActiveAddGrowPreview();
-      updateEditToolboxUi({ syncSearch });
-      if (!announce || !isEditMode() || state.editTool !== EDIT_TOOL.ADD) return;
-      if (state.editAddMode === EDIT_ADD_MODE.FRAGMENT) {
-        const fragment = getCurrentFragmentDefinition();
-        const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
-        if (state.editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-          setHintMessage(`Add fragment: ${label} • Fuse ring • Click a host bond • Drag to spin • Click again to confirm`);
-        } else {
-          setHintMessage(`Add fragment: ${label} • Policy ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)}`);
-        }
-        return;
-      }
-      if (state.editAddMode === EDIT_ADD_MODE.MOLECULE) {
-        const molecule = getCurrentMoleculeDefinition();
-        const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
-        setHintMessage(`Add molecule: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`);
-        return;
-      }
-      setHintMessage(`Add atom: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Space previews/applies missing H`);
+      updateEditToolboxUi({ syncSearch: options.syncSearch !== false });
     }
 
     function clearTransientInteractionState(clearOptions = {}) {
@@ -305,6 +243,8 @@
       }
     }
 
+    syncDerivedAddMode();
+
     return {
       normalizeEditAtomSelection,
       getEditAtomSelection,
@@ -314,7 +254,8 @@
       selectAllEditAtoms,
       applyEditAtomSelectionClick,
       applyEditAtomSelectionBox,
-      setEditTool,
+      getEditIntent,
+      setEditIntent,
       setEditAddMode,
       clearTransientInteractionState,
     };

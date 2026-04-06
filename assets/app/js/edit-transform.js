@@ -5,9 +5,9 @@
     const THREE = options.THREE;
     const state = options.state || {};
     const MODES = options.MODES || { EDIT: 'edit' };
-    const EDIT_TOOL = options.EDIT_TOOL || { MOVE: 'move', ROTATE: 'rotate' };
+    const EDIT_INTENT = options.EDIT_INTENT || { MOVE: 'move', ROTATE: 'rotate' };
     const getMode = typeof options.getMode === 'function' ? options.getMode : (() => '');
-    const getEditTool = typeof options.getEditTool === 'function' ? options.getEditTool : (() => '');
+    const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
     const getActiveRecord = typeof options.getActiveRecord === 'function' ? options.getActiveRecord : (() => null);
     const getSelection = typeof options.getSelection === 'function' ? options.getSelection : (() => []);
     const setSelection = typeof options.setSelection === 'function' ? options.setSelection : (() => {});
@@ -32,21 +32,13 @@
     const updateMoveOperatorUi = typeof options.updateMoveOperatorUi === 'function' ? options.updateMoveOperatorUi : (() => {});
     const updateRotateOperatorUi = typeof options.updateRotateOperatorUi === 'function' ? options.updateRotateOperatorUi : (() => {});
     const getSelectionCenterWorld = typeof options.getSelectionCenterWorld === 'function' ? options.getSelectionCenterWorld : (() => null);
-    const setRaycasterFromEvent = typeof options.setRaycasterFromEvent === 'function' ? options.setRaycasterFromEvent : (() => {});
-    const getRaycaster = typeof options.getRaycaster === 'function' ? options.getRaycaster : (() => null);
-    const pickMoveHit = typeof options.pickMoveHit === 'function' ? options.pickMoveHit : (() => null);
-    const pickRotateHit = typeof options.pickRotateHit === 'function' ? options.pickRotateHit : (() => null);
     const setMoveHover = typeof options.setMoveHover === 'function' ? options.setMoveHover : (() => {});
     const setRotateHover = typeof options.setRotateHover === 'function' ? options.setRotateHover : (() => {});
     const clearGizmoHover = typeof options.clearGizmoHover === 'function' ? options.clearGizmoHover : (() => {});
-    const beginViewRotate = typeof options.beginViewRotate === 'function' ? options.beginViewRotate : (() => {});
-    const setEditClickIndex = typeof options.setEditClickIndex === 'function' ? options.setEditClickIndex : (() => {});
-    const setEditMoved = typeof options.setEditMoved === 'function' ? options.setEditMoved : (() => {});
-    const getEditMoved = typeof options.getEditMoved === 'function' ? options.getEditMoved : (() => false);
-    const clearEmptyClickSelection = typeof options.clearEmptyClickSelection === 'function' ? options.clearEmptyClickSelection : (() => false);
-    const setHintMessage = typeof options.setHintMessage === 'function' ? options.setHintMessage : (() => {});
     const renderRibbon = typeof options.renderRibbon === 'function' ? options.renderRibbon : (() => {});
     const isEditMode = typeof options.isEditMode === 'function' ? options.isEditMode : (() => false);
+    const setRaycasterFromEvent = typeof options.setRaycasterFromEvent === 'function' ? options.setRaycasterFromEvent : (() => {});
+    const getRaycaster = typeof options.getRaycaster === 'function' ? options.getRaycaster : (() => null);
 
     function buildHistoryLabel(kind, count) {
       const safeCount = Math.max(0, Number(count) || 0);
@@ -75,8 +67,8 @@
       const record = getActiveRecord();
       const vol = record && record.vol;
       const selection = getSelection();
-      const isMove = tool === EDIT_TOOL.MOVE;
-      if (!(getMode() === MODES.EDIT && getEditTool() === tool && record && vol && selection.length)) {
+      const isMove = tool === EDIT_INTENT.MOVE;
+      if (!(getMode() === MODES.EDIT && getEditIntent() === tool && record && vol && selection.length)) {
         if (isMove) clearMoveBaseline();
         else clearRotateBaseline();
         return null;
@@ -111,11 +103,11 @@
     }
 
     function ensureMoveBaseline() {
-      return buildBaseline(EDIT_TOOL.MOVE);
+      return buildBaseline(EDIT_INTENT.MOVE);
     }
 
     function ensureRotateBaseline() {
-      return buildBaseline(EDIT_TOOL.ROTATE);
+      return buildBaseline(EDIT_INTENT.ROTATE);
     }
 
     function resetMoveBaseline() {
@@ -622,128 +614,6 @@
       updateRotateGizmo();
     }
 
-    function handlePointerMove(e) {
-      if (state.rotateDragActive) {
-        setEditMoved(true);
-        updateRotateDrag(e);
-        return true;
-      }
-      if (state.dragActive) {
-        setEditMoved(true);
-        updateMoveDrag(e);
-        return true;
-      }
-      if (getMode() !== MODES.EDIT) return false;
-      if (getEditTool() === EDIT_TOOL.MOVE) {
-        const gizmoHit = pickMoveHit(e);
-        setMoveHover(gizmoHit ? gizmoHit.axis : '');
-        setRotateHover('');
-        return !!gizmoHit;
-      }
-      if (getEditTool() === EDIT_TOOL.ROTATE) {
-        const gizmoHit = pickRotateHit(e);
-        setRotateHover(gizmoHit ? gizmoHit.axis : '');
-        setMoveHover('');
-        return !!gizmoHit;
-      }
-      clearGizmoHover();
-      return false;
-    }
-
-    function handlePointerDown(e, obj) {
-      if (getMode() !== MODES.EDIT) return false;
-      state.backgroundClickPending = false;
-      if (getEditTool() === EDIT_TOOL.ROTATE) {
-        const record = getActiveRecord();
-        const vol = record && record.vol;
-        const selection = getSelection();
-        const gizmoHit = selection.length ? pickRotateHit(e) : null;
-        if (gizmoHit && vol) {
-          if (startRotateDrag(e, selection, { axis: gizmoHit.axis })) {
-            setEditClickIndex(selection[0] | 0);
-            return true;
-          }
-        }
-        if (!obj || !obj.userData) {
-          state.backgroundClickPending = true;
-          beginViewRotate(e);
-          return true;
-        }
-        const idx = obj.userData.index | 0;
-        const rotateIndices = (selection.length && selection.includes(idx)) ? selection.slice() : [idx];
-        if (!(selection.length && selection.includes(idx))) setSelection([idx]);
-        if (startRotateDrag(e, rotateIndices)) {
-          setEditClickIndex(idx);
-          return true;
-        }
-        beginViewRotate(e);
-        return true;
-      }
-      if (getEditTool() === EDIT_TOOL.MOVE) {
-        const record = getActiveRecord();
-        const vol = record && record.vol;
-        const selection = getSelection();
-        const gizmoHit = selection.length ? pickMoveHit(e) : null;
-        if (gizmoHit && vol) {
-          const center = getSelectionCenterWorld(selection, vol);
-          if (center && startMoveDrag(e, selection, center, { axis: gizmoHit.axis })) {
-            setEditClickIndex(selection[0] | 0);
-            return true;
-          }
-        }
-        if (!obj || !obj.userData) {
-          state.backgroundClickPending = true;
-          beginViewRotate(e);
-          return true;
-        }
-        const idx = obj.userData.index | 0;
-        const moveIndices = (selection.length && selection.includes(idx)) ? selection.slice() : [idx];
-        if (!(selection.length && selection.includes(idx))) setSelection([idx]);
-        if (startMoveDrag(e, moveIndices, obj.position.clone())) {
-          setEditClickIndex(idx);
-          return true;
-        }
-        beginViewRotate(e);
-        return true;
-      }
-      return false;
-    }
-
-    function handlePointerUp() {
-      if (getMode() !== MODES.EDIT) return false;
-      if (state.rotateDragActive) {
-        finishRotateDrag();
-        return true;
-      }
-      if (state.dragActive) {
-        finishMoveDrag();
-        return true;
-      }
-      if (state.backgroundClickPending) {
-        state.backgroundClickPending = false;
-        if (!getEditMoved() && clearEmptyClickSelection({ selection: true, bondEdit: true, transform: false })) {
-          setHintMessage('Selection cleared.');
-        }
-        return true;
-      }
-      return false;
-    }
-
-    function handlePointerCancel() {
-      const hadState = !!(state.dragActive || state.rotateDragActive);
-      state.backgroundClickPending = false;
-      cancelRotateDrag();
-      cancelMoveDrag();
-      clearGizmoHover();
-      resetMoveBaseline();
-      resetRotateBaseline();
-      updateMoveOperatorUi();
-      updateRotateOperatorUi();
-      updateMoveGizmo();
-      updateRotateGizmo();
-      return hadState;
-    }
-
     return Object.freeze({
       ensureMoveBaseline,
       clearMoveBaseline,
@@ -770,10 +640,6 @@
       finishRotateDrag,
       cancelRotateDrag,
       clearAllTransformState,
-      handlePointerDown,
-      handlePointerMove,
-      handlePointerUp,
-      handlePointerCancel,
     });
   }
 

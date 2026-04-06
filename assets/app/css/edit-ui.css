@@ -2,45 +2,6 @@
   display: none !important;
 }
 
-#editToolHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-weight: 700;
-  color: #c9d7ea;
-}
-
-#editToolButtons {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
-}
-
-#editToolButtons button {
-  appearance: none;
-  border: 1px solid var(--vm-color-legacy-border-soft);
-  background: var(--vm-color-legacy-dark-surface);
-  color: var(--vm-color-legacy-text-on-dark);
-  border-radius: 8px;
-  padding: 6px 8px;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-#editToolButtons button.active {
-  border-color: var(--vm-color-accent-primary);
-  background: var(--vm-color-accent-primary-soft);
-  color: #eef7ff;
-}
-
-#editToolButtons button.delete.active {
-  border-color: #ff6b6b;
-  background: rgba(255, 107, 107, 0.18);
-  color: #ffeaea;
-}
-
 #editAddPane {
   display: none;
   margin-top: 8px;

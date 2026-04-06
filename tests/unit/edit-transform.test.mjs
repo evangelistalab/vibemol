@@ -231,7 +231,7 @@ function createHarness(initialSelection = [0, 1]) {
   };
   let selection = initialSelection.slice();
   let mode = 'edit';
-  let tool = 'move';
+  let intent = 'move';
   const state = {
     dragActive: false,
     dragAtomIndex: -1,
@@ -288,9 +288,9 @@ function createHarness(initialSelection = [0, 1]) {
     THREE,
     state,
     MODES: { EDIT: 'edit' },
-    EDIT_TOOL: { MOVE: 'move', ROTATE: 'rotate' },
+    EDIT_INTENT: { MOVE: 'move', ROTATE: 'rotate' },
     getMode: () => mode,
-    getEditTool: () => tool,
+    getEditIntent: () => intent,
     getActiveRecord: () => record,
     getSelection: () => selection.slice(),
     setSelection: (next) => {
@@ -330,20 +330,9 @@ function createHarness(initialSelection = [0, 1]) {
       else raycaster.currentPoint.set(Number(event.clientX) || 0, Number(event.clientY) || 0, 0);
     },
     getRaycaster: () => raycaster,
-    pickMoveHit: () => null,
-    pickRotateHit: () => null,
     setMoveHover: () => {},
     setRotateHover: () => {},
     clearGizmoHover: () => {},
-    beginViewRotate: () => { calls.beginViewRotate += 1; },
-    setEditClickIndex: (value) => { calls.editClickIndex.push(value); },
-    setEditMoved: (value) => { editMovedFlag = !!value; calls.editMoved.push(!!value); },
-    getEditMoved: () => editMovedFlag,
-    clearEmptyClickSelection: (options) => {
-      calls.clearEmptyClickSelection.push(options);
-      return true;
-    },
-    setHintMessage: (message) => { calls.hintMessages.push(String(message || '')); },
     renderRibbon: (value) => { calls.renderRibbon.push(value); },
     isEditMode: () => true,
   });
@@ -356,7 +345,7 @@ function createHarness(initialSelection = [0, 1]) {
     record,
     atomGroup,
     setMode: (value) => { mode = value; },
-    setTool: (value) => { tool = value; },
+    setIntent: (value) => { intent = value; },
     setEditMoved: (value) => { editMovedFlag = !!value; },
     getSelection: () => selection.slice(),
     atomIds,
@@ -380,7 +369,7 @@ test('edit-transform no-op move and rotate commits do not push history', () => {
   harness.controller.ensureMoveBaseline();
   assert.equal(harness.controller.commitMove(), false);
 
-  harness.setTool('rotate');
+  harness.setIntent('rotate');
   harness.controller.ensureRotateBaseline();
   assert.equal(harness.controller.commitRotate(), false);
   assert.equal(harness.calls.history.length, 0);
@@ -392,7 +381,7 @@ test('edit-transform move and rotate history labels reflect one atom vs many ato
   assert.equal(harness.controller.commitMove('Move 2 atoms'), true);
   assert.equal(harness.calls.history.at(-1).label, 'Move 2 atoms');
 
-  harness.setTool('rotate');
+  harness.setIntent('rotate');
   harness.calls.history.length = 0;
   harness.controller.applyRotateQuaternion(
     new harness.THREE.Quaternion().setFromAxisAngle(new harness.THREE.Vector3(0, 0, 1), Math.PI / 2)
@@ -406,7 +395,7 @@ test('edit-transform move and rotate history labels reflect one atom vs many ato
   assert.equal(single.calls.history.at(-1).label, 'Move atom');
 
   const singleRotate = createHarness([2]);
-  singleRotate.setTool('rotate');
+  singleRotate.setIntent('rotate');
   const singleRotateBaseline = singleRotate.controller.ensureRotateBaseline();
   singleRotateBaseline.startCenterWorld = new singleRotate.THREE.Vector3(0, 0, 0);
   singleRotateBaseline.startWorldPositions[0] = new singleRotate.THREE.Vector3(2, 0, 0);
@@ -422,48 +411,42 @@ test('edit-transform move and rotate history labels reflect one atom vs many ato
   assert.equal(singleRotate.calls.history.at(-1).label, 'Rotate atom');
 });
 
-test('edit-transform retargets move drag to an unselected atom', () => {
-  const harness = createHarness([0, 1]);
-  harness.setTool('move');
-  const consumed = harness.controller.handlePointerDown(
-    { clientX: 0, clientY: 0, hitPoint: new harness.THREE.Vector3(2, 0, 0) },
-    { userData: { index: 2 }, position: new harness.THREE.Vector3(2, 0, 0) }
+test('edit-transform move drag stores selection targets and creates move history on finish', () => {
+  const harness = createHarness([2]);
+  const startWorld = new harness.THREE.Vector3(2, 0, 0);
+  assert.equal(
+    harness.controller.startMoveDrag({ clientX: 0, clientY: 0, hitPoint: startWorld.clone() }, [2], startWorld.clone(), { axis: 'none' }),
+    true
   );
-
-  assert.equal(consumed, true);
-  assert.deepEqual(plain(harness.getSelection()), [2]);
-  assert.deepEqual(plain(harness.calls.selection.at(-1)), [2]);
   assert.deepEqual(plain(harness.atomIds(harness.state.dragTargetIndices)), ['atom-3']);
   assert.equal(harness.state.dragActive, true);
+
+  harness.controller.updateMoveDrag({ clientX: 1, clientY: 0, hitPoint: new harness.THREE.Vector3(2.5, 0, 0) });
+  assert.equal(harness.record.vol.atoms[2].x, 2.5);
+  assert.equal(harness.controller.finishMoveDrag(), true);
+  assert.equal(harness.calls.history.at(-1).label, 'Move atom');
 });
 
-test('edit-transform clears selection on empty background click in move and rotate tools', () => {
+test('edit-transform clearAllTransformState cancels move and rotate drags', () => {
   const moveHarness = createHarness([0, 1]);
-  moveHarness.setTool('move');
   assert.equal(
-    moveHarness.controller.handlePointerDown({ clientX: 0, clientY: 0, hitPoint: new moveHarness.THREE.Vector3() }, null),
+    moveHarness.controller.startMoveDrag(
+      { clientX: 0, clientY: 0, hitPoint: new moveHarness.THREE.Vector3(0, 0, 0) },
+      [0, 1],
+      new moveHarness.THREE.Vector3(0, 0, 0),
+      { axis: 'none' }
+    ),
     true
   );
-  assert.equal(moveHarness.calls.beginViewRotate, 1);
-  assert.equal(moveHarness.controller.handlePointerUp(), true);
-  assert.deepEqual(plain(moveHarness.calls.clearEmptyClickSelection.at(-1)), {
-    selection: true,
-    bondEdit: true,
-    transform: false,
-  });
-  assert.equal(moveHarness.calls.hintMessages.at(-1), 'Selection cleared.');
+  moveHarness.controller.clearAllTransformState();
+  assert.equal(moveHarness.state.dragActive, false);
 
   const rotateHarness = createHarness([0, 1]);
-  rotateHarness.setTool('rotate');
+  rotateHarness.setIntent('rotate');
   assert.equal(
-    rotateHarness.controller.handlePointerDown({ clientX: 0, clientY: 0, hitPoint: new rotateHarness.THREE.Vector3() }, null),
+    rotateHarness.controller.startRotateDrag({ clientX: 0, clientY: 0, hitPoint: new rotateHarness.THREE.Vector3(0, 1, 0) }, [0, 1], { axis: 'none' }),
     true
   );
-  rotateHarness.setEditMoved(false);
-  assert.equal(rotateHarness.controller.handlePointerUp(), true);
-  assert.deepEqual(plain(rotateHarness.calls.clearEmptyClickSelection.at(-1)), {
-    selection: true,
-    bondEdit: true,
-    transform: false,
-  });
+  rotateHarness.controller.clearAllTransformState();
+  assert.equal(rotateHarness.state.rotateDragActive, false);
 });

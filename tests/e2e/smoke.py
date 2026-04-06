@@ -287,8 +287,8 @@ def trigger_selection_tool(page) -> None:
     page.evaluate(
         """() => {
             window.dispatchEvent(new KeyboardEvent('keydown', {
-                key: 's',
-                code: 'KeyS',
+                key: 'n',
+                code: 'KeyN',
                 bubbles: true,
                 cancelable: true,
             }));
@@ -296,9 +296,9 @@ def trigger_selection_tool(page) -> None:
     )
     page.wait_for_function(
         """() => {
-            const legacyBtn = document.getElementById('editToolSelectBtn');
-            if (legacyBtn && legacyBtn.classList.contains('active')) return true;
-            return /Selection/i.test(document.getElementById('hint')?.textContent || '');
+            const subtitle = document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '';
+            const hint = document.getElementById('hint')?.textContent || '';
+            return /Atom manipulation active/i.test(subtitle) || /Atom manipulation/i.test(hint);
         }"""
     )
 
@@ -307,8 +307,29 @@ def select_two_fixture_atoms(page) -> None:
     trigger_selection_tool(page)
     empty_x, empty_y = canvas_point(page, 0.04, 0.08)
     page.mouse.click(empty_x, empty_y)
-    left_candidates = [(0.42, 0.50), (0.40, 0.50), (0.44, 0.50), (0.42, 0.47), (0.42, 0.53)]
-    right_candidates = [(0.58, 0.50), (0.60, 0.50), (0.56, 0.50), (0.58, 0.47), (0.58, 0.53)]
+
+    def _fixture_atom_candidates(center_x: float, center_y: float) -> list[tuple[float, float]]:
+        offsets = [
+            (0.00, 0.00),
+            (-0.02, 0.00), (0.02, 0.00),
+            (-0.04, 0.00), (0.04, 0.00),
+            (0.00, -0.03), (0.00, 0.03),
+            (0.00, -0.06), (0.00, 0.06),
+            (-0.02, -0.03), (0.02, -0.03),
+            (-0.02, 0.03), (0.02, 0.03),
+            (-0.04, -0.03), (0.04, -0.03),
+            (-0.04, 0.03), (0.04, 0.03),
+            (-0.06, 0.00), (0.06, 0.00),
+        ]
+        return [(center_x + dx, center_y + dy) for dx, dy in offsets]
+
+    def _fixture_atom_scan(center_x: float, x_span: float, center_y: float = 0.50, y_span: float = 0.14) -> list[tuple[float, float]]:
+        xs = [center_x + step for step in (-x_span, -0.75 * x_span, -0.5 * x_span, -0.25 * x_span, 0.0, 0.25 * x_span, 0.5 * x_span, 0.75 * x_span, x_span)]
+        ys = [center_y + step for step in (-y_span, -0.5 * y_span, 0.0, 0.5 * y_span, y_span)]
+        return [(fx, fy) for fy in ys for fx in xs]
+
+    left_candidates = _fixture_atom_candidates(0.42, 0.50) + _fixture_atom_scan(0.42, 0.12)
+    right_candidates = _fixture_atom_candidates(0.58, 0.50) + _fixture_atom_scan(0.58, 0.12)
 
     def _select_one(candidates: list[tuple[float, float]]) -> bool:
         for fx, fy in candidates:

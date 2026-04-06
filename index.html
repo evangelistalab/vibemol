@@ -2743,7 +2743,7 @@
       <span id="editAdaptiveMenuTitle">Tools</span>
       <span id="editAdaptiveMenuSubtitle">Atom manipulation active</span>
     </div>
-    <button id="editAdaptiveMoveBtn" class="adaptiveEditItem" type="button" title="Move tool">
+    <button id="editAdaptiveMoveBtn" class="adaptiveEditItem" type="button" title="Move">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Move</span>
@@ -2754,7 +2754,7 @@
         <span class="adaptiveShortcutKey">T</span>
       </span>
     </button>
-    <button id="editAdaptiveRotateBtn" class="adaptiveEditItem" type="button" title="Rotate tool">
+    <button id="editAdaptiveRotateBtn" class="adaptiveEditItem" type="button" title="Rotate">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Rotate</span>
@@ -2939,17 +2939,6 @@
     </div>
   </div>
   <div id="editToolbox" aria-hidden="true">
-    <div id="editToolHeader">
-      <span>Edit Tool</span>
-      <span style="font-size:11px; font-weight:600; color:#9fb6d2;">S select • T move • U rotate • N add • D
-        delete</span>
-    </div>
-    <div id="editToolButtons">
-      <button id="editToolSelectBtn" type="button" title="Select atoms in edit mode">Select</button>
-      <button id="editToolMoveBtn" type="button" class="active" title="Move atoms in edit mode">Move</button>
-      <button id="editToolAddBtn" type="button" title="Add atoms in edit mode">Add</button>
-      <button id="editToolDeleteBtn" type="button" class="delete" title="Delete atoms in edit mode">Delete</button>
-    </div>
     <div id="editAddPane">
       <div id="editAddModeToggle">
         <button id="editAddModeAtomBtn" type="button" class="active" title="Add single atoms">Atom</button>
@@ -3231,8 +3220,9 @@
           <li><strong>R</strong> — Shift active molecule COM to origin</li>
           <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
           <li><strong>Cmd/Ctrl+Z</strong> / <strong>Cmd/Ctrl+Shift+Z</strong> — Undo / Redo edit action</li>
-          <li><strong>Edit tools:</strong> <strong>T</strong>=Move, <strong>U</strong>=Rotate, <strong>N</strong>=Add,
-            <strong>O</strong>=Clean structure, <strong>P</strong>=Align principal axes, <strong>D</strong>=Delete
+          <li><strong>Edit intents:</strong> <strong>T</strong>=Move, <strong>U</strong>=Rotate, <strong>N</strong>=Atom manipulation,
+            <strong>F</strong>=Add fragment, <strong>M</strong>=Add molecule, <strong>O</strong>=Clean structure,
+            <strong>P</strong>=Align principal axes, <strong>D</strong>=Delete
           </li>
           <li><strong>Edit mode:</strong> hold <strong>Shift</strong> during free placement to bypass auto angle snapping</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
