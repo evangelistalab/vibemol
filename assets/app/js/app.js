@@ -11705,6 +11705,7 @@
     getEditIntent,
     getSelection: () => getEditAtomSelection(),
     getSelectionDragMode: getEffectiveEditSelectionDragMode,
+    getTransformSelectionContext: getCurrentTransformSelectionContext,
     getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
     getSelectionCenterWorld: getEditSelectionCenterWorld,
     getSelectionGizmoLength: getMoveSelectionGizmoLength,

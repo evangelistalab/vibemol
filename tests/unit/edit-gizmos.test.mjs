@@ -117,6 +117,7 @@ function createHarness() {
     tool: 'move',
     dragMode: 'translate',
     selection: [0, 1],
+    transformContext: null,
     record: { vol: { atoms: [{ Z: 6 }, { Z: 6 }] } },
   };
   const raycaster = {
@@ -138,6 +139,7 @@ function createHarness() {
     getEditIntent: () => state.tool,
     getSelection: () => state.selection.slice(),
     getSelectionDragMode: () => state.dragMode,
+    getTransformSelectionContext: () => state.transformContext,
     getActiveRecord: () => state.record,
     getSelectionCenterWorld: () => new THREE.Vector3(1, 2, 3),
     getSelectionGizmoLength: () => 1.4,
@@ -229,4 +231,26 @@ test('edit-gizmos exposes move and rotate gizmos in atom manipulation for multi-
   assert.equal(controller.getRotateGroup().visible, false);
   assert.equal(controller.pickMoveHit({ clientX: 5, clientY: 6 }), null);
   assert.equal(controller.pickRotateHit({ clientX: 5, clientY: 6 }), null);
+});
+
+test('edit-gizmos stay hidden for bond-side transform selection context', () => {
+  const { state, controller } = createHarness();
+
+  state.tool = 'atom_manipulation';
+  state.dragMode = 'rotate';
+  state.selection = [0, 1];
+  state.transformContext = {
+    type: 'bond',
+    selectedAtomIndex: 1,
+    anchorAtomIndex: 0,
+    bondIndices: [0, 1],
+  };
+
+  controller.updateMove();
+  controller.updateRotate();
+
+  assert.equal(controller.getMoveGroup().visible, false);
+  assert.equal(controller.getRotateGroup().visible, false);
+  assert.equal(controller.pickMoveHit({ clientX: 0, clientY: 0 }), null);
+  assert.equal(controller.pickRotateHit({ clientX: 0, clientY: 0 }), null);
 });

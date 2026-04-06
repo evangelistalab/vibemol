@@ -10,6 +10,7 @@
     const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
     const getSelection = typeof options.getSelection === 'function' ? options.getSelection : (() => []);
     const getSelectionDragMode = typeof options.getSelectionDragMode === 'function' ? options.getSelectionDragMode : (() => 'translate');
+    const getTransformSelectionContext = typeof options.getTransformSelectionContext === 'function' ? options.getTransformSelectionContext : (() => null);
     const getActiveRecord = typeof options.getActiveRecord === 'function' ? options.getActiveRecord : (() => null);
     const getSelectionCenterWorld = typeof options.getSelectionCenterWorld === 'function' ? options.getSelectionCenterWorld : (() => null);
     const getSelectionGizmoLength = typeof options.getSelectionGizmoLength === 'function' ? options.getSelectionGizmoLength : (() => 0.9);
@@ -97,6 +98,8 @@
 
     function shouldExposeMoveGizmo(vol, selection) {
       if (!(getMode() === MODES.EDIT && vol && Array.isArray(selection) && selection.length)) return false;
+      const transformContext = getTransformSelectionContext();
+      if (transformContext && transformContext.type === 'bond') return false;
       const intent = getEditIntent();
       if (intent === EDIT_INTENT.MOVE) return true;
       return intent === EDIT_INTENT.ATOM_MANIPULATION
@@ -106,6 +109,8 @@
 
     function shouldExposeRotateGizmo(vol, selection) {
       if (!(getMode() === MODES.EDIT && vol && Array.isArray(selection) && selection.length)) return false;
+      const transformContext = getTransformSelectionContext();
+      if (transformContext && transformContext.type === 'bond') return false;
       const intent = getEditIntent();
       if (intent === EDIT_INTENT.ROTATE) return true;
       return intent === EDIT_INTENT.ATOM_MANIPULATION
