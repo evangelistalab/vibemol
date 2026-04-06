@@ -207,6 +207,18 @@ function createHarness(options = {}) {
     cancelBoxSelection: () => {
       calls.cancelBoxSelection += 1;
     },
+    handleExternalPointerDown: typeof options.handleExternalPointerDown === 'function'
+      ? options.handleExternalPointerDown
+      : (() => false),
+    handleExternalPointerMove: typeof options.handleExternalPointerMove === 'function'
+      ? options.handleExternalPointerMove
+      : (() => false),
+    handleExternalPointerUp: typeof options.handleExternalPointerUp === 'function'
+      ? options.handleExternalPointerUp
+      : (() => false),
+    handleExternalPointerCancel: typeof options.handleExternalPointerCancel === 'function'
+      ? options.handleExternalPointerCancel
+      : (() => false),
     capturePointer: (pointerId) => calls.capturePointer.push(pointerId),
     releasePointer: (pointerId) => calls.releasePointer.push(pointerId),
   });
@@ -413,6 +425,34 @@ test('edit-gestures rotate cue in atom manipulation starts rotate drag without r
   assert.deepEqual(calls.startRotateDrag[0].indices, [1, 2]);
   assert.equal(calls.startRotateDrag[0].dragOptions.allowIntentOverride, true);
   assert.equal(controller.getUiState().gestureState, 'rotate-drag');
+});
+
+test('edit-gestures allows external drag handlers to own move and release without internal gesture state', () => {
+  const external = { active: false, down: 0, move: 0, up: 0 };
+  const { controller } = createHarness({
+    handleExternalPointerDown: (_intent, _e, state) => {
+      external.down += 1;
+      external.active = true;
+      state.press = null;
+      return true;
+    },
+    handleExternalPointerMove: () => {
+      if (!external.active) return false;
+      external.move += 1;
+      return true;
+    },
+    handleExternalPointerUp: () => {
+      if (!external.active) return false;
+      external.up += 1;
+      external.active = false;
+      return true;
+    },
+  });
+
+  assert.equal(controller.handlePointerDown(pointerEvent({ pointerId: 7 })), true);
+  assert.equal(controller.handlePointerMove(pointerEvent({ pointerId: 7, clientX: 16, clientY: 18 })), true);
+  assert.equal(controller.handlePointerUp(pointerEvent({ pointerId: 7, clientX: 16, clientY: 18 })), true);
+  assert.deepEqual(external, { active: false, down: 1, move: 1, up: 1 });
 });
 
 test('edit-gestures shift-drag from a bond resolves downstream move scope only', () => {

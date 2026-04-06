@@ -12764,6 +12764,16 @@
       updateTransformDragFromEvent(e);
       return true;
     }
+    if (editTransformController && editTransformState.dragActive) {
+      __editMoved = true;
+      editTransformController.updateMoveDrag(e);
+      return true;
+    }
+    if (editTransformController && editTransformState.rotateDragActive) {
+      __editMoved = true;
+      editTransformController.updateRotateDrag(e);
+      return true;
+    }
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerMove(e);
     if (intent === EDIT_INTENT.MOVE) return handleMoveIntentControllerPointerMove(e);
     if (intent === EDIT_INTENT.ROTATE) return handleRotateIntentControllerPointerMove(e);
@@ -12836,9 +12846,33 @@
     return true;
   }
 
-  function handleUnifiedEditControllerPointerUp(intent, e) {
+  function handleUnifiedEditControllerPointerUp(intent, e, controllerState = null) {
     if (transformActive) {
       finalizeTransformDrag();
+      __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+      return true;
+    }
+    if (editTransformController && editTransformState.dragActive) {
+      editTransformController.finishMoveDrag();
+      if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
+        try { canvasEl.releasePointerCapture(e.pointerId); } catch { }
+      }
+      if (controllerState) {
+        controllerState.activePointerId = null;
+        controllerState.press = null;
+      }
+      __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+      return true;
+    }
+    if (editTransformController && editTransformState.rotateDragActive) {
+      editTransformController.finishRotateDrag();
+      if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
+        try { canvasEl.releasePointerCapture(e.pointerId); } catch { }
+      }
+      if (controllerState) {
+        controllerState.activePointerId = null;
+        controllerState.press = null;
+      }
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
@@ -12848,9 +12882,33 @@
     return false;
   }
 
-  function handleUnifiedEditControllerPointerCancel(intent) {
+  function handleUnifiedEditControllerPointerCancel(intent, controllerState = null) {
     if (transformActive) {
       clearTransformState();
+      return true;
+    }
+    if (editTransformController && editTransformState.dragActive) {
+      editTransformController.cancelMoveDrag();
+      if (controllerState && Number.isInteger(controllerState.activePointerId) && canvasEl && typeof canvasEl.releasePointerCapture === 'function') {
+        try { canvasEl.releasePointerCapture(controllerState.activePointerId); } catch { }
+      }
+      if (controllerState) {
+        controllerState.activePointerId = null;
+        controllerState.press = null;
+      }
+      __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+      return true;
+    }
+    if (editTransformController && editTransformState.rotateDragActive) {
+      editTransformController.cancelRotateDrag();
+      if (controllerState && Number.isInteger(controllerState.activePointerId) && canvasEl && typeof canvasEl.releasePointerCapture === 'function') {
+        try { canvasEl.releasePointerCapture(controllerState.activePointerId); } catch { }
+      }
+      if (controllerState) {
+        controllerState.activePointerId = null;
+        controllerState.press = null;
+      }
+      __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) {
