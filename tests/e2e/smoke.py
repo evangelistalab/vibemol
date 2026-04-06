@@ -1147,15 +1147,12 @@ def main() -> int:
                 }"""
             )
 
-            # Bond editing popup smoke on a deterministic fixture.
+            # Bond center click should step explicit bond order in gesture edit mode.
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-popup-fixture")', fixture_text)
             page.locator('#modeEditBtn').click()
             ensure_advanced_drawer_open(page)
-            page.keyboard.press('b')
             x, y = canvas_point(page, 0.5, 0.5)
             page.mouse.click(x, y)
-            page.wait_for_function("() => document.getElementById('bondOrderPopup')?.getAttribute('aria-hidden') === 'false'")
-            page.locator('#bondOrderPopup button[data-bond-order-popup="2"]').click()
             page.wait_for_function(
                 """() => {
                     const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
@@ -1165,15 +1162,6 @@ def main() -> int:
             order_updated = active_structure_summary(page)
             if order_updated['bondOrders'] != [2] or order_updated['bondOrigins'] != ['explicit']:
                 raise AssertionError(f'Bond order update failed: {order_updated}')
-            page.mouse.click(x, y)
-            page.wait_for_function("() => document.getElementById('bondOrderPopup')?.getAttribute('aria-hidden') === 'false'")
-            page.locator('#bondOrderPopup button[data-bond-order-popup="0"]').click()
-            page.wait_for_function(
-                """() => document.getElementById('bondOrderPopup')?.getAttribute('aria-hidden') === 'true'"""
-            )
-            page.wait_for_function(
-                """() => /Deleted bond C-C\\./i.test(document.getElementById('hint')?.textContent || '')"""
-            )
 
             # Clean structure should run the one-shot UFF cleanup action.
             optimize_fixture_text = build_fixture_optimize_structure()

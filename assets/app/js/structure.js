@@ -431,8 +431,18 @@
   function normalizeVolumeBondRecord(vol, raw) {
     if (!vol || !Array.isArray(vol.atoms) || !raw || typeof raw !== 'object') return null;
     const atoms = vol.atoms;
+    const atomIds = new Set();
+    for (let i = 0; i < atoms.length; i += 1) {
+      const atom = atoms[i];
+      if (!atom) continue;
+      const atomId = String(ensureAtomId(atom) || '').trim();
+      if (atomId) atomIds.add(atomId);
+    }
     const resolveEndpoint = (value) => {
-      if (typeof value === 'string') return String(value).trim();
+      if (typeof value === 'string') {
+        const atomId = String(value).trim();
+        return atomIds.has(atomId) ? atomId : '';
+      }
       if (Number.isInteger(value)) {
         const idx = value | 0;
         return (idx >= 0 && idx < atoms.length && atoms[idx]) ? ensureAtomId(atoms[idx]) : '';

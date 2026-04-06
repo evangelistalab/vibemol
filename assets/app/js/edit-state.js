@@ -176,11 +176,7 @@
         record.vol.annotations = cloneJsonLike(annotations) || {};
       }
       record.vol.natoms = record.vol.atoms.length;
-      ensureVolumeSchema(record.vol, {
-        inferMissingBonds: bonds === undefined
-          ? !(Array.isArray(record.vol.bonds) && record.vol.bonds.length)
-          : false,
-      });
+      ensureVolumeSchema(record.vol, { inferMissingBonds: false });
       syncBuilderExtensionFromVolumes();
       setCurrentIndex(idx);
       clearTransientInteractionState();
@@ -271,7 +267,7 @@
       const preferred = String(createOptions.name || '').trim();
       const name = preferred || getNextUntitledFileName();
       const record = { name, vol: createEmptyEditableVolume() };
-      ensureVolumeSchema(record.vol);
+      ensureVolumeSchema(record.vol, { inferMissingBonds: false });
       volumes.push(record);
       activateVolumeIndex(volumes.length - 1, { rebuild: false });
       return record;

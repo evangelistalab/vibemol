@@ -5551,14 +5551,8 @@
   const editToolSelectBtn = document.getElementById('editToolSelectBtn');
   const editToolMoveBtn = document.getElementById('editToolMoveBtn');
   const editToolAddBtn = document.getElementById('editToolAddBtn');
-  const editToolBondBtn = document.getElementById('editToolBondBtn');
   const editToolDeleteBtn = document.getElementById('editToolDeleteBtn');
   const editAddPaneEl = document.getElementById('editAddPane');
-  const editBondPaneEl = document.getElementById('editBondPane');
-  const editBondOrderEl = document.getElementById('editBondOrder');
-  const editBondQuickEl = document.getElementById('editBondQuick');
-  const editBondActionEl = document.getElementById('editBondAction');
-  const editBondCurrentEl = document.getElementById('editBondCurrent');
   const editAddModeAtomBtn = document.getElementById('editAddModeAtomBtn');
   const editAddModeFragmentBtn = document.getElementById('editAddModeFragmentBtn');
   const editAddModeMoleculeBtn = document.getElementById('editAddModeMoleculeBtn');
@@ -6916,19 +6910,20 @@
       { k: '←/→', d: 'Prev/Next file' },
     ],
     edit: [
+      { k: 'E', d: 'View mode' },
       { k: 'S', d: 'Selection tool' },
       { k: 'T', d: 'Move tool' },
-      { k: 'E', d: 'Rotate tool' },
+      { k: 'U', d: 'Rotate tool' },
       { k: 'O', d: 'Clean structure' },
+      { k: 'P', d: 'Align principal axes' },
       { k: 'N', d: 'Atom manipulation' },
       { k: 'F', d: 'Add-fragment tool' },
       { k: 'M', d: 'Add-molecule tool' },
-      { k: 'B', d: 'Bond tool' },
       { k: 'Cmd/Ctrl+A', d: 'Select all atoms (Selection)' },
       { k: 'Cmd/Ctrl+C', d: 'Copy selected atoms' },
       { k: 'Cmd/Ctrl+V', d: 'Paste copied atoms' },
       { k: 'Space', d: 'Preview/apply missing hydrogens' },
-      { k: '1/2/3/4', d: 'Bond order (Add/Bond tool)' },
+      { k: '1/2/3/4', d: 'Bond order (Add tool)' },
       { k: 'C', d: 'Coordinates window (non-Add tools)' },
       { k: 'Click', d: 'Select atom (Selection)' },
       { k: 'Shift+Click', d: 'Add/remove atom (Selection)' },
@@ -6936,7 +6931,7 @@
       { k: 'Click+Drag', d: 'Move selection or atom (Move tool)' },
       { k: 'Click+Drag', d: 'Rotate selection or atom (Rotate tool)' },
       { k: 'Click', d: 'Add atom (Add tool)' },
-      { k: 'Click', d: 'Edit bond (Bond tool)' },
+      { k: 'Click bond center', d: 'Step bond order' },
       { k: 'Backspace/Delete', d: 'Delete selection or hovered atom' },
       { k: 'R', d: 'Center mass at origin' },
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
@@ -7810,15 +7805,31 @@
   }
 
   /**
+   * During edit-mode building, use only the persistent bond graph already stored
+   * on the active structure. This prevents geometry-based bond perception from
+   * inventing connectivity while the user is still assembling the graph.
+   * @param {*} vol
+   * @param {{storedOnly?:boolean}=} options
+   * @returns {boolean}
+   */
+  function shouldUseStoredBondsOnly(vol, options = {}) {
+    if (options && options.storedOnly === true) return true;
+    if (!editMode) return false;
+    if (currentIndex < 0 || !Array.isArray(volumes) || !volumes[currentIndex]) return false;
+    return !!(vol && volumes[currentIndex].vol === vol);
+  }
+
+  /**
    * Resolve persistent bonds to geometry-aware edge objects.
    * @param {*} vol
    * @param {Array<{pos:THREE.Vector3,Z:number,bondColor?:THREE.Color,displayRadius?:number}>} atomPositions
-   * @param {{allowDynamic?:boolean}=} options
+   * @param {{allowDynamic?:boolean,storedOnly?:boolean}=} options
    * @returns {Array<{id:string,a:string,b:string,i:number,j:number,len:number,order:number,kind:'normal',origin:string,maxOrder:number}>}
    */
   function getVolumeBondEdges(vol, atomPositions, options = {}) {
     if (!vol || !Array.isArray(vol.atoms)) return [];
-    ensureVolumeSchema(vol);
+    const storedOnly = shouldUseStoredBondsOnly(vol, options);
+    ensureVolumeSchema(vol, { inferMissingBonds: storedOnly ? false : undefined });
     const records = Array.isArray(atomPositions) ? atomPositions : buildBondAtomRecords(vol, { includeRenderColor: false });
     const atomIndexById = new Map();
     for (let i = 0; i < vol.atoms.length; i++) {
@@ -7829,7 +7840,7 @@
     const edges = [];
     const source = (options.allowDynamic !== false && shouldUseDynamicTrajectoryBondsForVolume(vol))
       ? buildPerceivedBondRecords(vol, records)
-      : ((Array.isArray(vol.bonds) && vol.bonds.length) ? vol.bonds : inferVolumeBonds(vol));
+      : ((Array.isArray(vol.bonds) && vol.bonds.length) ? vol.bonds : (storedOnly ? [] : inferVolumeBonds(vol)));
     for (const raw of source) {
       const bond = normalizeVolumeBondRecord(vol, raw);
       if (!bond) continue;
@@ -10113,19 +10124,19 @@
 
   function getCleanStructurePresentation() {
     return {
-      rowMeta: 'One-time UFF optimization',
+      rowMeta: '',
     };
   }
 
   function getShiftComPresentation() {
     return {
-      rowMeta: 'Move active molecule center of mass to the origin',
+      rowMeta: '',
     };
   }
 
   function getAlignPrincipalPresentation() {
     return {
-      rowMeta: 'Align principal inertia axes to X, Y, and Z',
+      rowMeta: '',
     };
   }
 
@@ -10191,7 +10202,6 @@
     const announce = options.announce !== false;
     editBondAction = normalizeEditBondAction(action);
     if (bondEditing) bondEditing.clearState();
-    if (editBondActionEl && document.activeElement !== editBondActionEl) editBondActionEl.value = editBondAction;
     updateEditToolboxUi({ syncSearch: false });
     if (!announce || !editMode || editTool !== EDIT_TOOL.BOND) return;
     setHintMessage('Bond tool: Click two atoms to create a bond • Click an existing bond to edit order • Right-click a bond or choose 0 to delete it.');
@@ -11035,11 +11045,9 @@
     if (editToolSelectBtn) editToolSelectBtn.classList.toggle('active', isSelect);
     if (editToolMoveBtn) editToolMoveBtn.classList.toggle('active', isMove);
     if (editToolAddBtn) editToolAddBtn.classList.toggle('active', isAdd);
-    if (editToolBondBtn) editToolBondBtn.classList.toggle('active', isBond);
     if (editToolDeleteBtn) editToolDeleteBtn.classList.toggle('active', isDelete);
     if ((!isEdit || !isBond) && bondEditing) bondEditing.hidePopup();
     if (editAddPaneEl) editAddPaneEl.classList.toggle('active', isEdit && isAdd);
-    if (editBondPaneEl) editBondPaneEl.classList.toggle('active', isEdit && isBond);
     if (editAddModeAtomBtn) editAddModeAtomBtn.classList.toggle('active', isAtomAddMode);
     if (editAddModeFragmentBtn) editAddModeFragmentBtn.classList.toggle('active', isFragmentAddMode);
     if (editAddModeMoleculeBtn) editAddModeMoleculeBtn.classList.toggle('active', isMoleculeAddMode);
@@ -11057,19 +11065,6 @@
     if (editAddAdjustHydrogensEl) editAddAdjustHydrogensEl.checked = !!editAddAdjustHydrogensEnabled;
     if (editAddCurrentEl) {
       editAddCurrentEl.textContent = atomPresentation.currentSummary;
-    }
-    if (editBondOrderEl && document.activeElement !== editBondOrderEl) editBondOrderEl.value = String(editBondOrder);
-    if (editBondActionEl && document.activeElement !== editBondActionEl) editBondActionEl.value = normalizeEditBondAction(editBondAction);
-    if (editBondCurrentEl) {
-      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      const pendingIndex = getEditBondPendingAtomIndex(vol);
-      if (pendingIndex >= 0 && vol && vol.atoms[pendingIndex]) {
-        const pendingAtom = vol.atoms[pendingIndex];
-        editBondCurrentEl.textContent = `Set mode • First atom: ${getElementName(pendingAtom.Z | 0)} (${getElementSymbol(pendingAtom.Z | 0)}) • Click a second atom to create a bond`;
-      } else {
-        editBondCurrentEl.textContent = 'Set mode • Click two atoms to create a bond • Click an existing bond to choose order or 0 to delete';
-      }
     }
     const fragment = getCurrentFragmentDefinition();
     if (editFragmentAttachPolicyEl) {
@@ -11156,13 +11151,6 @@
       quickButtons.forEach((btn) => {
         const id = normalizeFragmentId(btn.getAttribute('data-molecule-id'));
         btn.classList.toggle('active', id === normalizeFragmentId(editAddMoleculeId));
-      });
-    }
-    if (editBondQuickEl) {
-      const quickButtons = editBondQuickEl.querySelectorAll('button[data-bond-order]');
-      quickButtons.forEach((btn) => {
-        const order = Number(btn.getAttribute('data-bond-order'));
-        btn.classList.toggle('active', order === editBondOrder);
       });
     }
   }
@@ -11455,18 +11443,6 @@
         btn.textContent = info.symbol;
         btn.onclick = () => { setEditAddElement(z, { announce: true }); };
         editAddQuickEl.appendChild(btn);
-      }
-    }
-    if (editBondQuickEl) {
-      editBondQuickEl.innerHTML = '';
-      for (const order of [1, 2, 3, 4]) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.setAttribute('data-bond-order', String(order));
-        btn.title = `Set bond order ${order}`;
-        btn.textContent = String(order);
-        btn.onclick = () => { setEditBondOrder(order, { announce: true }); };
-        editBondQuickEl.appendChild(btn);
       }
     }
     refreshEditAddFragmentControls();
@@ -11834,22 +11810,9 @@
     if (editToolSelectBtn) editToolSelectBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.SELECT);
     if (editToolMoveBtn) editToolMoveBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.MOVE);
     if (editToolAddBtn) editToolAddBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.ADD);
-    if (editToolBondBtn) editToolBondBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.BOND);
     if (editToolDeleteBtn) editToolDeleteBtn.onclick = () => activateLegacyEditTool(EDIT_TOOL.DELETE);
-    if (editBondOrderEl) {
-      editBondOrderEl.addEventListener('change', () => {
-        setEditBondOrder(editBondOrderEl.value, { announce: editMode && editTool === EDIT_TOOL.BOND });
-      });
-    }
-    if (editBondActionEl) {
-      editBondActionEl.addEventListener('change', () => {
-        setEditBondAction(editBondActionEl.value, { announce: true });
-      });
-    }
     updateEditCleanupUiState();
     setEditAddBondOrder(editAddBondOrder, { announce: false });
-    setEditBondOrder(editBondOrder, { announce: false });
-    setEditBondAction(editBondAction, { announce: false });
     setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
     updateEditToolboxUi();
   }
@@ -12942,7 +12905,7 @@
       zEl: editRotateOperatorZEl,
       isVisible,
       collapsed: rotateOperatorCollapsed,
-      labelText: count === 1 ? 'Rotate Atom (E)' : `Rotate ${count} Atoms (E)`,
+      labelText: count === 1 ? 'Rotate Atom (U)' : `Rotate ${count} Atoms (U)`,
       rotation,
       positionPanel: positionRotateOperatorPanel,
     });
@@ -15114,7 +15077,7 @@
     }
     if (removed > 0) {
       vol.natoms = vol.atoms.length;
-      inferVolumeBonds(vol);
+      ensureVolumeSchema(vol, { inferMissingBonds: false });
       pruneVolumeAtomAnnotations(vol);
     }
     return removed;
@@ -15336,7 +15299,7 @@
     vol.atoms.push(atom);
     vol.natoms = vol.atoms.length;
     applyEditAddCoordinationToAtom(vol, atom);
-    inferVolumeBonds(vol);
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
     const newAtomId = String(ensureAtomId(atom));
     const newIndex = vol.atoms.length - 1;
     applyAutomaticHydrogenAdjustmentToVolume(vol, [newIndex]);
@@ -15522,7 +15485,7 @@
     const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
     for (const idx of uniqueDesc) vol.atoms.splice(idx, 1);
     vol.natoms = vol.atoms.length;
-    inferVolumeBonds(vol);
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
     pruneVolumeAtomAnnotations(vol);
     const builderOpsChanged = pruneBuilderOperationsForVolume(vol);
     const afterAtoms = cloneAtomsSnapshot(vol);
@@ -17101,7 +17064,8 @@
   bind('down', MODES.DISPLAY, 'c', () => { setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open'))); });
 
   // Edit mode bindings
-  bind('down', MODES.EDIT, 'e', () => { activateLegacyEditTool(EDIT_TOOL.ROTATE); });
+  bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
+  bind('down', MODES.EDIT, 'u', () => { activateLegacyEditTool(EDIT_TOOL.ROTATE); });
   bind('down', MODES.EDIT, 'm', (e) => {
     if (e && e.shiftKey) {
       setMode(MODES.MEASURE);
@@ -17113,11 +17077,11 @@
   bind('down', MODES.EDIT, 's', () => { activateLegacyEditTool(EDIT_TOOL.SELECT); });
   bind('down', MODES.EDIT, 't', () => { activateLegacyEditTool(EDIT_TOOL.MOVE); });
   bind('down', MODES.EDIT, 'o', () => { optimizeActiveStructureWithUff(); });
+  bind('down', MODES.EDIT, 'p', () => { alignActiveMoleculePrincipalAxes(); });
   bind('down', MODES.EDIT, 'f', () => {
     activateLegacyEditTool(EDIT_TOOL.ADD);
     setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: true, syncSearch: true });
   });
-  bind('down', MODES.EDIT, 'b', () => { activateLegacyEditTool(EDIT_TOOL.BOND); });
   bind('down', MODES.EDIT, 'n', () => {
     setEditInteractionMode(EDIT_INTERACTION_MODE.GESTURE, { keepDrawerOpen: true });
     setHintMessage(`Atom manipulation active • Loaded element ${getElementSymbol(editAddElementZ)}.`);

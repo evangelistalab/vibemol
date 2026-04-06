@@ -209,8 +209,57 @@
         const a = String(atomIds[edge.i] || '').trim();
         const b = String(atomIds[edge.j] || '').trim();
         if (!a || !b || a === b) continue;
-        upsertVolumeBond(vol, a, b, 1, 'normal', 'perceived');
+        upsertVolumeBond(vol, a, b, 1, 'normal', 'explicit');
       }
+    }
+
+    function buildTemplateLocalEdges(templateAtoms, explicitBonds) {
+      if (!Array.isArray(templateAtoms) || !templateAtoms.length) return [];
+      if (Array.isArray(explicitBonds) && explicitBonds.length > 0) {
+        return explicitBonds
+          .map((rawBond) => ({
+            i: Number(rawBond && rawBond.i) | 0,
+            j: Number(rawBond && rawBond.j) | 0,
+            order: normalizeEditAddBondOrder(rawBond && rawBond.order || 1),
+          }))
+          .filter((edge) => edge.i >= 0 && edge.j >= 0 && edge.i < templateAtoms.length && edge.j < templateAtoms.length && edge.i !== edge.j);
+      }
+      const atomPositions = templateAtoms.map((atom) => ({
+        pos: new THREE.Vector3(Number(atom && atom.x) || 0, Number(atom && atom.y) || 0, Number(atom && atom.z) || 0),
+        Z: Number(atom && atom.Z) | 0,
+      }));
+      return perceiveBondConnectivity(atomPositions)
+        .map((edge) => ({
+          i: Number(edge && edge.i) | 0,
+          j: Number(edge && edge.j) | 0,
+          order: normalizeEditAddBondOrder(edge && edge.order || 1),
+        }))
+        .filter((edge) => edge.i >= 0 && edge.j >= 0 && edge.i < templateAtoms.length && edge.j < templateAtoms.length && edge.i !== edge.j);
+    }
+
+    function appendTemplateTopologyBonds(vol, templateAtoms, explicitBonds, localToGlobal) {
+      if (!vol || !Array.isArray(vol.atoms) || !(localToGlobal instanceof Map)) return 0;
+      ensureVolumeSchema(vol, { inferMissingBonds: false });
+      const edges = buildTemplateLocalEdges(templateAtoms, explicitBonds);
+      let added = 0;
+      for (const edge of edges) {
+        const globalI = localToGlobal.get(edge.i);
+        const globalJ = localToGlobal.get(edge.j);
+        if (!Number.isInteger(globalI) || !Number.isInteger(globalJ) || globalI === globalJ) continue;
+        const atomI = vol.atoms[globalI];
+        const atomJ = vol.atoms[globalJ];
+        if (!atomI || !atomJ) continue;
+        const status = upsertVolumeBond(
+          vol,
+          ensureAtomId(atomI),
+          ensureAtomId(atomJ),
+          normalizeEditAddBondOrder(edge.order || 1),
+          'normal',
+          'explicit'
+        );
+        if (status === 'created' || status === 'updated') added += 1;
+      }
+      return added;
     }
 
     function commitMoleculePlacement() {
@@ -222,7 +271,7 @@
       const record = ensureEditableVolumeRecord();
       const vol = record && record.vol;
       if (!vol || !Array.isArray(vol.atoms)) return false;
-      ensureVolumeSchema(vol);
+      ensureVolumeSchema(vol, { inferMissingBonds: false });
       const beforeAtoms = cloneAtomsSnapshot(vol);
       const beforeBonds = cloneBondSnapshot(vol);
       const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
@@ -384,7 +433,7 @@
         addedAtomIds.push(atom.id);
       }
       vol.natoms = vol.atoms.length;
-      inferVolumeBonds(vol);
+      appendTemplateTopologyBonds(vol, nextState.fragment.atoms, nextState.fragment.bonds, localToGlobal);
       const warnings = evaluateBuilderPlacementWarnings(vol, addedAtomIndices, oldAtomIndexSet, [nextState.hostBond.i, nextState.hostBond.j]);
       const afterAtoms = cloneAtomsSnapshot(vol);
       recordFragmentOperation(record, {
@@ -514,7 +563,7 @@
         const hydrogenIndices = collectDirectlyBondedHydrogenIndices(resolved.vol, ensureAtomId(resolved.atom));
         if (hydrogenIndices.length) translateAtomsByWorldDelta(resolved.vol, hydrogenIndices, deltaWorld);
       }
-      inferVolumeBonds(resolved.vol);
+      ensureVolumeSchema(resolved.vol, { inferMissingBonds: false });
       rebuildScene({ preserveView: true });
       updateAddAtomOperatorUi();
       return true;
@@ -603,7 +652,7 @@
       ensureAtomId(atom);
       vol.atoms.push(atom);
       vol.natoms = vol.atoms.length;
-      inferVolumeBonds(vol);
+      ensureVolumeSchema(vol, { inferMissingBonds: false });
       rebuildScene({ preserveView: true });
       beginAddAtomOperatorSession(
         record,
@@ -820,7 +869,10 @@
         attachDir
       );
       vol.natoms = vol.atoms.length;
-      inferVolumeBonds(vol);
+      const localToGlobal = new Map();
+      for (let i = 0; i < newIndices.length; i += 1) localToGlobal.set(i, newIndices[i]);
+      appendTemplateTopologyBonds(vol, fragment.atoms, fragment.bonds, localToGlobal);
+      upsertVolumeBond(vol, ensureAtomId(anchorAtom), ensureAtomId(vol.atoms[newIndices[conn.index]]), bondOrder, 'normal', 'explicit');
 
       const warnings = evaluateBuilderPlacementWarnings(vol, newIndices, oldAtomIndexSet, [anchor]);
       const afterAtoms = cloneAtomsSnapshot(vol);
@@ -887,7 +939,7 @@
       const removed = vol.atoms[idx];
       vol.atoms.splice(idx, 1);
       vol.natoms = vol.atoms.length;
-      inferVolumeBonds(vol);
+      ensureVolumeSchema(vol, { inferMissingBonds: false });
       const builderOpsChanged = pruneBuilderOperationsForVolume(vol);
       const afterAtoms = cloneAtomsSnapshot(vol);
       const afterBonds = cloneBondSnapshot(vol);

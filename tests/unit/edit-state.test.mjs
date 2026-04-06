@@ -18,13 +18,17 @@ function createEditStateHarness() {
     syncActiveVolumeControls: 0,
     rebuildScene: 0,
     updateSidePanel: 0,
+    ensureVolumeSchema: [],
   };
   let hintMessage = '';
   const controller = editStateApi.createEditStateController({
     getVolumes: () => volumes,
     getCurrentIndex: () => currentIndex,
     setCurrentIndex: (value) => { currentIndex = value; },
-    ensureVolumeSchema: (vol, options = {}) => structure.ensureVolumeSchema(vol, Object.assign({ inferMissingBonds: false }, options)),
+    ensureVolumeSchema: (vol, options = {}) => {
+      calls.ensureVolumeSchema.push(plain(options));
+      return structure.ensureVolumeSchema(vol, Object.assign({ inferMissingBonds: false }, options));
+    },
     normalizeVolumeAtom: structure.normalizeVolumeAtom,
     cloneJsonLike: structure.cloneJsonLike,
     cloneBondSnapshot: structure.cloneBondSnapshot,
@@ -142,4 +146,24 @@ test('edit-state applies coordinate snapshots through undo and redo', () => {
   assert.equal(controller.redo(), true);
   assert.equal(volumes[0].vol.atoms[0].x, 2);
   assert.deepEqual(plain(volumes[0].vol.axes), [[0, 1, 0], [1, 0, 0], [0, 0, 1]]);
+});
+
+test('edit-state snapshot application does not re-infer missing bonds', () => {
+  const { controller, structure, calls } = createEditStateHarness();
+  const record = controller.ensureEditableVolumeRecord();
+  const snapshot = {
+    atoms: [
+      structure.normalizeVolumeAtom({ id: 'atom-1', Z: 6, x: 0, y: 0, z: 0, formalCharge: 0 }),
+      structure.normalizeVolumeAtom({ id: 'atom-2', Z: 6, x: 1.4, y: 0, z: 0, formalCharge: 0 }),
+    ],
+    grid: {
+      origin: [0, 0, 0],
+      axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+    },
+  };
+
+  controller.applyStructureSnapshotToRecord(record, snapshot);
+
+  assert.deepEqual(plain(record.vol.bonds), []);
+  assert.deepEqual(calls.ensureVolumeSchema.at(-1), { inferMissingBonds: false });
 });

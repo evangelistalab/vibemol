@@ -41,16 +41,14 @@
   color: #ffeaea;
 }
 
-#editAddPane,
-#editBondPane {
+#editAddPane {
   display: none;
   margin-top: 8px;
   border-top: 1px solid var(--vm-color-legacy-border-strong);
   padding-top: 8px;
 }
 
-#editAddPane.active,
-#editBondPane.active {
+#editAddPane.active {
   display: block;
 }
 
@@ -249,7 +247,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  width: 150px;
+  width: 180px;
   padding: 6px 8px;
   border: 1px solid rgba(117, 129, 150, 0.28);
   border-radius: 12px;
@@ -406,7 +404,7 @@
   right: 16px;
   bottom: 24px;
   display: none;
-  width: min(260px, calc(100vw - 24px));
+  width: min(340px, calc(100vw - 24px));
   border: 1px solid rgba(117, 129, 150, 0.28);
   border-radius: 12px;
   background: rgba(30, 34, 40, 0.96);
@@ -612,6 +610,10 @@
   text-overflow: ellipsis;
 }
 
+.adaptiveEditItemMeta:empty {
+  display: none;
+}
+
 .adaptiveShortcutGroup {
   display: flex;
   align-items: center;
@@ -676,8 +678,7 @@
   display: block;
 }
 
-#editAddPane label,
-#editBondPane label {
+#editAddPane label {
   display: block;
   font-size: 12px;
   color: #a9bdd6;
@@ -749,9 +750,7 @@
 }
 
 #editAddSearch,
-#editAddCoordination,
-#editBondOrder,
-#editBondAction {
+#editAddCoordination {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--vm-color-legacy-border-soft);
@@ -796,7 +795,6 @@
 }
 
 #editAddQuick,
-#editBondQuick,
 #editFragmentQuick,
 #editMoleculeQuick {
   display: flex;
@@ -806,7 +804,6 @@
 }
 
 #editAddQuick button,
-#editBondQuick button,
 #editFragmentQuick button,
 #editMoleculeQuick button {
   appearance: none;
@@ -821,7 +818,6 @@
 }
 
 #editAddQuick button.active,
-#editBondQuick button.active,
 #editFragmentQuick button.active,
 #editMoleculeQuick button.active {
   border-color: var(--vm-color-accent-primary);
@@ -829,7 +825,6 @@
 }
 
 #editAddCurrent,
-#editBondCurrent,
 #editFragmentCurrent,
 #editMoleculeCurrent,
 #editTransformCurrent {
