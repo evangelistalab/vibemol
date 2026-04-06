@@ -263,8 +263,6 @@ function createHarness(initialSelection = [0, 1]) {
     updateMoveGizmo: 0,
     updateRotateGizmo: 0,
     updateSelectionVisuals: 0,
-    updateMoveOperatorUi: 0,
-    updateRotateOperatorUi: 0,
     rebuildScene: 0,
     rebuildBondsFromAtoms: 0,
     updateBondsInPlace: 0,
@@ -317,8 +315,6 @@ function createHarness(initialSelection = [0, 1]) {
     updateSelectionVisuals: () => { calls.updateSelectionVisuals += 1; },
     updateMoveGizmo: () => { calls.updateMoveGizmo += 1; },
     updateRotateGizmo: () => { calls.updateRotateGizmo += 1; },
-    updateMoveOperatorUi: () => { calls.updateMoveOperatorUi += 1; },
-    updateRotateOperatorUi: () => { calls.updateRotateOperatorUi += 1; },
     getSelectionCenterWorld: (indices, vol) => {
       const selected = Array.isArray(indices) ? indices : [];
       const center = new THREE.Vector3();
@@ -352,63 +348,14 @@ function createHarness(initialSelection = [0, 1]) {
   };
 }
 
-test('edit-transform move baseline reset tracks current selection positions', () => {
+test('edit-transform rotate baseline tracks the current selection', () => {
   const harness = createHarness([0, 1]);
-  const baseline = harness.controller.ensureMoveBaseline();
+  harness.setIntent('rotate');
+  const baseline = harness.controller.ensureRotateBaseline();
   assert.ok(baseline);
   assert.equal(baseline.indices.length, 2);
-
-  harness.atomGroup.children[0].position.x = 1.25;
-  harness.record.vol.atoms[0].x = 1.25;
-  const resetBaseline = harness.controller.resetMoveBaseline();
-  assert.equal(resetBaseline.startWorldPositions[0].x, 1.25);
-});
-
-test('edit-transform no-op move and rotate commits do not push history', () => {
-  const harness = createHarness([0, 1]);
-  harness.controller.ensureMoveBaseline();
-  assert.equal(harness.controller.commitMove(), false);
-
-  harness.setIntent('rotate');
-  harness.controller.ensureRotateBaseline();
-  assert.equal(harness.controller.commitRotate(), false);
-  assert.equal(harness.calls.history.length, 0);
-});
-
-test('edit-transform move and rotate history labels reflect one atom vs many atoms', () => {
-  const harness = createHarness([0, 1]);
-  harness.controller.applyMoveDisplacement(new harness.THREE.Vector3(0.5, 0, 0));
-  assert.equal(harness.controller.commitMove('Move 2 atoms'), true);
-  assert.equal(harness.calls.history.at(-1).label, 'Move 2 atoms');
-
-  harness.setIntent('rotate');
-  harness.calls.history.length = 0;
-  harness.controller.applyRotateQuaternion(
-    new harness.THREE.Quaternion().setFromAxisAngle(new harness.THREE.Vector3(0, 0, 1), Math.PI / 2)
-  );
-  assert.equal(harness.controller.commitRotate('Rotate 2 atoms'), true);
-  assert.equal(harness.calls.history.at(-1).label, 'Rotate 2 atoms');
-
-  const single = createHarness([0]);
-  single.controller.applyMoveDisplacement(new single.THREE.Vector3(0.25, 0, 0));
-  assert.equal(single.controller.commitMove('Move atom'), true);
-  assert.equal(single.calls.history.at(-1).label, 'Move atom');
-
-  const singleRotate = createHarness([2]);
-  singleRotate.setIntent('rotate');
-  const singleRotateBaseline = singleRotate.controller.ensureRotateBaseline();
-  singleRotateBaseline.startCenterWorld = new singleRotate.THREE.Vector3(0, 0, 0);
-  singleRotateBaseline.startWorldPositions[0] = new singleRotate.THREE.Vector3(2, 0, 0);
-  singleRotate.atomGroup.children[2].position.set(2, 0, 0);
-  singleRotate.record.vol.atoms[2].x = 2;
-  singleRotate.record.vol.atoms[2].y = 0;
-  singleRotate.record.vol.atoms[2].z = 0;
-  singleRotate.calls.history.length = 0;
-  singleRotate.controller.applyRotateQuaternion(
-    new singleRotate.THREE.Quaternion().setFromAxisAngle(new singleRotate.THREE.Vector3(0, 0, 1), Math.PI / 4)
-  );
-  assert.equal(singleRotate.controller.commitRotate('Rotate atom'), true);
-  assert.equal(singleRotate.calls.history.at(-1).label, 'Rotate atom');
+  assert.deepEqual(plain(baseline.indices), [0, 1]);
+  assert.equal(baseline.startCenterWorld.x, 0.5);
 });
 
 test('edit-transform move drag stores selection targets and creates move history on finish', () => {
@@ -425,6 +372,22 @@ test('edit-transform move drag stores selection targets and creates move history
   assert.equal(harness.record.vol.atoms[2].x, 2.5);
   assert.equal(harness.controller.finishMoveDrag(), true);
   assert.equal(harness.calls.history.at(-1).label, 'Move atom');
+});
+
+test('edit-transform rotate drag creates rotate history on finish', () => {
+  const harness = createHarness([0, 1]);
+  harness.setIntent('rotate');
+  assert.equal(
+    harness.controller.startRotateDrag(
+      { clientX: 0, clientY: 0, hitPoint: new harness.THREE.Vector3(0, 1, 0) },
+      [0, 1],
+      { axis: 'none' }
+    ),
+    true
+  );
+  harness.controller.updateRotateDrag({ clientX: 24, clientY: 12 });
+  assert.equal(harness.controller.finishRotateDrag(), true);
+  assert.equal(harness.calls.history.at(-1).label, 'Rotate 2 atoms');
 });
 
 test('edit-transform clearAllTransformState cancels move and rotate drags', () => {

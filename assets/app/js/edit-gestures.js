@@ -335,7 +335,7 @@
       state.currentMoveScopeLabel = String(resolved.label || `Rotate scope: ${nextSelection.length} atoms`);
       if (!startRotateDrag(e, nextSelection, {
         axis: 'none',
-        allowIntentOverride: getEditIntent() !== EDIT_INTENT.ROTATE,
+        allowIntentOverride: true,
       })) return false;
       state.gestureState = 'rotate-drag';
       notifyUi();

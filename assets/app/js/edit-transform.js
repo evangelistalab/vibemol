@@ -29,8 +29,6 @@
     const updateSelectionVisuals = typeof options.updateSelectionVisuals === 'function' ? options.updateSelectionVisuals : (() => {});
     const updateMoveGizmo = typeof options.updateMoveGizmo === 'function' ? options.updateMoveGizmo : (() => {});
     const updateRotateGizmo = typeof options.updateRotateGizmo === 'function' ? options.updateRotateGizmo : (() => {});
-    const updateMoveOperatorUi = typeof options.updateMoveOperatorUi === 'function' ? options.updateMoveOperatorUi : (() => {});
-    const updateRotateOperatorUi = typeof options.updateRotateOperatorUi === 'function' ? options.updateRotateOperatorUi : (() => {});
     const getSelectionCenterWorld = typeof options.getSelectionCenterWorld === 'function' ? options.getSelectionCenterWorld : (() => null);
     const setMoveHover = typeof options.setMoveHover === 'function' ? options.setMoveHover : (() => {});
     const setRotateHover = typeof options.setRotateHover === 'function' ? options.setRotateHover : (() => {});
@@ -44,10 +42,6 @@
       const safeCount = Math.max(0, Number(count) || 0);
       if (kind === 'rotate') return safeCount > 1 ? `Rotate ${safeCount} atoms` : 'Rotate atom';
       return safeCount > 1 ? `Move ${safeCount} atoms` : 'Move atom';
-    }
-
-    function clearMoveBaseline() {
-      state.moveOperatorBaseline = null;
     }
 
     function clearRotateBaseline() {
@@ -64,20 +58,16 @@
       return `${String(record.title || '')}::${ids.join(',')}`;
     }
 
-    function buildBaseline(tool) {
+    function buildRotateBaseline() {
       const record = getActiveRecord();
       const vol = record && record.vol;
       const selection = getSelection();
-      const isMove = tool === EDIT_INTENT.MOVE;
-      const intentMatches = isMove
-        ? getEditIntent() === tool
-        : (getEditIntent() === tool || state.rotateBaselineAllowAnyIntent === true);
+      const intentMatches = getEditIntent() === EDIT_INTENT.ROTATE || state.rotateBaselineAllowAnyIntent === true;
       if (!(getMode() === MODES.EDIT && intentMatches && record && vol && selection.length)) {
-        if (isMove) clearMoveBaseline();
-        else clearRotateBaseline();
+        clearRotateBaseline();
         return null;
       }
-      const existing = isMove ? state.moveOperatorBaseline : state.rotateOperatorBaseline;
+      const existing = state.rotateOperatorBaseline;
       const key = buildSelectionKey(record, vol, selection);
       if (existing
         && existing.record === record
@@ -100,130 +90,19 @@
         beforeAtoms: cloneAtomsSnapshot(vol),
         beforeBonds: cloneBondSnapshot(vol),
       };
-      if (!isMove) baseline.currentQuaternion = new THREE.Quaternion();
-      if (isMove) state.moveOperatorBaseline = baseline;
-      else state.rotateOperatorBaseline = baseline;
+      baseline.currentQuaternion = new THREE.Quaternion();
+      state.rotateOperatorBaseline = baseline;
       return baseline;
-    }
-
-    function ensureMoveBaseline() {
-      return buildBaseline(EDIT_INTENT.MOVE);
     }
 
     function ensureRotateBaseline(options = {}) {
       if (options.allowIntentOverride) state.rotateBaselineAllowAnyIntent = true;
-      return buildBaseline(EDIT_INTENT.ROTATE);
-    }
-
-    function resetMoveBaseline() {
-      clearMoveBaseline();
-      return ensureMoveBaseline();
+      return buildRotateBaseline();
     }
 
     function resetRotateBaseline() {
       clearRotateBaseline();
       return ensureRotateBaseline();
-    }
-
-    function getMoveDisplacement() {
-      const baseline = ensureMoveBaseline();
-      if (!baseline) return new THREE.Vector3();
-      const center = getSelectionCenterWorld(baseline.indices, baseline.vol);
-      if (!center) return new THREE.Vector3();
-      return center.sub(baseline.startCenterWorld);
-    }
-
-    function applyMoveDisplacement(delta) {
-      const baseline = ensureMoveBaseline();
-      if (!baseline || !delta) return false;
-      const vol = baseline.vol;
-      const atomGroup = getAtomGroup();
-      for (let i = 0; i < baseline.indices.length; i += 1) {
-        const idx = baseline.indices[i];
-        const worldPos = baseline.startWorldPositions[i].clone().add(delta);
-        const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
-        if (mesh && mesh.position) mesh.position.copy(worldPos);
-        const atom = vol && Array.isArray(vol.atoms) ? vol.atoms[idx] : null;
-        if (atom) {
-          const coords = worldToAtomUnits(vol, worldPos);
-          atom.x = coords[0];
-          atom.y = coords[1];
-          atom.z = coords[2];
-        }
-      }
-      const bondGroup = getBondGroup();
-      if (bondGroup && bondGroup.children && bondGroup.children.length) rebuildBondsFromAtoms();
-      updateSelectionVisuals();
-      updateMoveGizmo();
-      return true;
-    }
-
-    function commitMove(label = 'Move selection') {
-      const baseline = state.moveOperatorBaseline;
-      if (!baseline || !baseline.record || !baseline.vol || !Array.isArray(baseline.beforeAtoms)) return false;
-      const afterAtoms = cloneAtomsSnapshot(baseline.vol);
-      if (atomsSnapshotsEqual(baseline.beforeAtoms, afterAtoms)) {
-        resetMoveBaseline();
-        updateMoveOperatorUi();
-        return false;
-      }
-      pushEditHistoryEntry(baseline.record, baseline.beforeAtoms, afterAtoms, label, {
-        beforeBonds: Array.isArray(baseline.beforeBonds) ? baseline.beforeBonds : [],
-        afterBonds: cloneBondSnapshot(baseline.vol),
-      });
-      resetMoveBaseline();
-      updateMoveOperatorUi();
-      return true;
-    }
-
-    function revertMove() {
-      const baseline = state.moveOperatorBaseline;
-      if (!baseline || !baseline.vol) return false;
-      const atomGroup = getAtomGroup();
-      for (let i = 0; i < baseline.indices.length; i += 1) {
-        const idx = baseline.indices[i];
-        const worldPos = baseline.startWorldPositions[i];
-        const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
-        if (mesh && mesh.position) mesh.position.copy(worldPos);
-        const atom = baseline.vol.atoms[idx];
-        if (atom) {
-          const coords = worldToAtomUnits(baseline.vol, worldPos);
-          atom.x = coords[0];
-          atom.y = coords[1];
-          atom.z = coords[2];
-        }
-      }
-      const bondGroup = getBondGroup();
-      if (bondGroup && bondGroup.children && bondGroup.children.length) rebuildBondsFromAtoms();
-      updateSelectionVisuals();
-      updateMoveGizmo();
-      updateMoveOperatorUi();
-      return true;
-    }
-
-    function applyMoveOperatorInput(axis, inputEl, options = {}) {
-      const baseline = ensureMoveBaseline();
-      if (!baseline || !inputEl) return;
-      const current = getMoveDisplacement();
-      const next = current.clone();
-      const raw = Number(String(inputEl.value || '').trim());
-      if (!Number.isFinite(raw)) return;
-      if (axis === 'x') next.x = raw;
-      else if (axis === 'y') next.y = raw;
-      else next.z = raw;
-      applyMoveDisplacement(next);
-      if (options.commit) commitMove(buildHistoryLabel('move', baseline.indices.length));
-    }
-
-    function getRotateEulerDegrees() {
-      const baseline = ensureRotateBaseline();
-      if (!baseline || !baseline.currentQuaternion) return { x: 0, y: 0, z: 0 };
-      const euler = new THREE.Euler().setFromQuaternion(baseline.currentQuaternion, 'XYZ');
-      return {
-        x: THREE.MathUtils.radToDeg(euler.x),
-        y: THREE.MathUtils.radToDeg(euler.y),
-        z: THREE.MathUtils.radToDeg(euler.z),
-      };
     }
 
     function applyRotateQuaternion(rotation) {
@@ -254,72 +133,7 @@
       updateSelectionVisuals();
       updateMoveGizmo();
       updateRotateGizmo();
-      updateRotateOperatorUi();
       return true;
-    }
-
-    function commitRotate(label = 'Rotate selection') {
-      const baseline = state.rotateOperatorBaseline;
-      if (!baseline || !baseline.record || !baseline.vol || !Array.isArray(baseline.beforeAtoms)) return false;
-      const afterAtoms = cloneAtomsSnapshot(baseline.vol);
-      if (atomsSnapshotsEqual(baseline.beforeAtoms, afterAtoms)) {
-        resetRotateBaseline();
-        updateRotateOperatorUi();
-        return false;
-      }
-      pushEditHistoryEntry(baseline.record, baseline.beforeAtoms, afterAtoms, label, {
-        beforeBonds: Array.isArray(baseline.beforeBonds) ? baseline.beforeBonds : [],
-        afterBonds: cloneBondSnapshot(baseline.vol),
-      });
-      resetRotateBaseline();
-      updateRotateOperatorUi();
-      return true;
-    }
-
-    function revertRotate() {
-      const baseline = state.rotateOperatorBaseline;
-      if (!baseline || !baseline.vol) return false;
-      const atomGroup = getAtomGroup();
-      for (let i = 0; i < baseline.indices.length; i += 1) {
-        const idx = baseline.indices[i];
-        const worldPos = baseline.startWorldPositions[i];
-        const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
-        if (mesh && mesh.position) mesh.position.copy(worldPos);
-        const atom = baseline.vol.atoms[idx];
-        if (atom) {
-          const coords = worldToAtomUnits(baseline.vol, worldPos);
-          atom.x = coords[0];
-          atom.y = coords[1];
-          atom.z = coords[2];
-        }
-      }
-      baseline.currentQuaternion.identity();
-      const bondGroup = getBondGroup();
-      if (bondGroup && bondGroup.children && bondGroup.children.length) updateBondsInPlace();
-      updateSelectionVisuals();
-      updateMoveGizmo();
-      updateRotateGizmo();
-      updateRotateOperatorUi();
-      return true;
-    }
-
-    function applyRotateOperatorInput(axis, inputEl, options = {}) {
-      const baseline = ensureRotateBaseline();
-      if (!baseline || !inputEl) return;
-      const raw = Number(String(inputEl.value || '').trim());
-      if (!Number.isFinite(raw)) return;
-      const next = getRotateEulerDegrees();
-      if (axis === 'x') next.x = raw;
-      else if (axis === 'y') next.y = raw;
-      else next.z = raw;
-      const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-        THREE.MathUtils.degToRad(next.x),
-        THREE.MathUtils.degToRad(next.y),
-        THREE.MathUtils.degToRad(next.z),
-        'XYZ'
-      ));
-      applyRotateQuaternion(rotation);
-      if (options.commit) commitRotate(buildHistoryLabel('rotate', baseline.indices.length));
     }
 
     function startMoveDrag(e, indices, anchorWorld, dragOptions = {}) {
@@ -437,11 +251,9 @@
       state.dragAxis = 'none';
       const controls = getControls();
       try { if (controls) controls.enabled = true; } catch { }
-      resetMoveBaseline();
       if (isEditMode()) renderRibbon('edit');
       setMoveHover('');
       updateMoveGizmo();
-      updateMoveOperatorUi();
       updateSelectionVisuals();
       return true;
     }
@@ -465,7 +277,6 @@
       try { if (controls) controls.enabled = true; } catch { }
       setMoveHover('');
       updateMoveGizmo();
-      updateMoveOperatorUi();
       return true;
     }
 
@@ -590,7 +401,6 @@
       if (isEditMode()) renderRibbon('edit');
       setRotateHover('');
       updateRotateGizmo();
-      updateRotateOperatorUi();
       updateSelectionVisuals();
       return true;
     }
@@ -607,39 +417,20 @@
       try { if (controls) controls.enabled = true; } catch { }
       setRotateHover('');
       updateRotateGizmo();
-      updateRotateOperatorUi();
       return true;
     }
 
     function clearAllTransformState() {
-      clearMoveBaseline();
       clearRotateBaseline();
       cancelMoveDrag();
       cancelRotateDrag();
       clearGizmoHover();
-      updateMoveOperatorUi();
-      updateRotateOperatorUi();
       updateMoveGizmo();
       updateRotateGizmo();
     }
 
     return Object.freeze({
-      ensureMoveBaseline,
-      clearMoveBaseline,
-      resetMoveBaseline,
-      getMoveDisplacement,
-      applyMoveDisplacement,
-      commitMove,
-      revertMove,
-      applyMoveOperatorInput,
       ensureRotateBaseline,
-      clearRotateBaseline,
-      resetRotateBaseline,
-      getRotateEulerDegrees,
-      applyRotateQuaternion,
-      commitRotate,
-      revertRotate,
-      applyRotateOperatorInput,
       startMoveDrag,
       updateMoveDrag,
       finishMoveDrag,

@@ -409,9 +409,7 @@
 }
 
 #editAddAtomOperatorPanel,
-#editAddMoleculeOperatorPanel,
-#editMoveOperatorPanel,
-#editRotateOperatorPanel {
+#editAddMoleculeOperatorPanel {
   position: fixed;
   right: 16px;
   bottom: 24px;
@@ -428,16 +426,12 @@
 }
 
 #editAddAtomOperatorPanel[aria-hidden="false"],
-#editAddMoleculeOperatorPanel[aria-hidden="false"],
-#editMoveOperatorPanel[aria-hidden="false"],
-#editRotateOperatorPanel[aria-hidden="false"] {
+#editAddMoleculeOperatorPanel[aria-hidden="false"] {
   display: block;
 }
 
 #editAddAtomOperatorHeader,
-#editAddMoleculeOperatorHeader,
-#editMoveOperatorHeader,
-#editRotateOperatorHeader {
+#editAddMoleculeOperatorHeader {
   appearance: none;
   width: 100%;
   display: flex;
@@ -453,9 +447,7 @@
 }
 
 #editAddAtomOperatorHeader:hover,
-#editAddMoleculeOperatorHeader:hover,
-#editMoveOperatorHeader:hover,
-#editRotateOperatorHeader:hover {
+#editAddMoleculeOperatorHeader:hover {
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -487,9 +479,7 @@
 }
 
 #editAddAtomOperatorBody,
-#editAddMoleculeOperatorBody,
-#editMoveOperatorBody,
-#editRotateOperatorBody {
+#editAddMoleculeOperatorBody {
   display: grid;
   grid-template-columns: auto max-content;
   gap: 8px 10px;
@@ -502,9 +492,7 @@
 }
 
 #editAddAtomOperatorPanel[data-collapsed="true"] #editAddAtomOperatorBody,
-#editAddMoleculeOperatorPanel[data-collapsed="true"] #editAddMoleculeOperatorBody,
-#editMoveOperatorPanel[data-collapsed="true"] #editMoveOperatorBody,
-#editRotateOperatorPanel[data-collapsed="true"] #editRotateOperatorBody {
+#editAddMoleculeOperatorPanel[data-collapsed="true"] #editAddMoleculeOperatorBody {
   display: none;
 }
 

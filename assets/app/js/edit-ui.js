@@ -220,71 +220,6 @@
     if (options.rotZEl && document.activeElement !== options.rotZEl) options.rotZEl.value = Number(rotation.z).toFixed(1);
   }
 
-  function applyThreeAxisOperatorPanelUi(options = {}) {
-    const panelEl = options.panelEl || null;
-    const isVisible = !!options.isVisible;
-    if (panelEl) {
-      panelEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-      panelEl.setAttribute('data-collapsed', options.collapsed ? 'true' : 'false');
-    }
-    if (!isVisible) return false;
-    if (typeof options.positionPanel === 'function') options.positionPanel();
-    if (options.headerEl) options.headerEl.setAttribute('aria-expanded', options.collapsed ? 'false' : 'true');
-    if (options.chevronEl) options.chevronEl.textContent = options.collapsed ? '▸' : '▾';
-    if (options.labelEl) options.labelEl.textContent = String(options.labelText || '');
-    return true;
-  }
-
-  /**
-   * Refresh one floating move operator panel.
-   * @param {{
-   *   panelEl: HTMLElement|null,
-   *   headerEl: HTMLElement|null,
-   *   chevronEl: HTMLElement|null,
-   *   labelEl: HTMLElement|null,
-   *   xEl: HTMLInputElement|null,
-   *   yEl: HTMLInputElement|null,
-   *   zEl: HTMLInputElement|null,
-   *   isVisible: boolean,
-   *   collapsed: boolean,
-   *   labelText: string,
-   *   displacement: {x:number,y:number,z:number},
-   *   positionPanel: ()=>void,
-   * }} options
-   */
-  function updateMoveOperatorPanelUi(options = {}) {
-    if (!applyThreeAxisOperatorPanelUi(options)) return;
-    const displacement = options.displacement || { x: 0, y: 0, z: 0 };
-    if (options.xEl && document.activeElement !== options.xEl) options.xEl.value = Number(displacement.x).toFixed(3);
-    if (options.yEl && document.activeElement !== options.yEl) options.yEl.value = Number(displacement.y).toFixed(3);
-    if (options.zEl && document.activeElement !== options.zEl) options.zEl.value = Number(displacement.z).toFixed(3);
-  }
-
-  /**
-   * Refresh one floating rotate operator panel.
-   * @param {{
-   *   panelEl: HTMLElement|null,
-   *   headerEl: HTMLElement|null,
-   *   chevronEl: HTMLElement|null,
-   *   labelEl: HTMLElement|null,
-   *   xEl: HTMLInputElement|null,
-   *   yEl: HTMLInputElement|null,
-   *   zEl: HTMLInputElement|null,
-   *   isVisible: boolean,
-   *   collapsed: boolean,
-   *   labelText: string,
-   *   rotation: {x:number,y:number,z:number},
-   *   positionPanel: ()=>void,
-   * }} options
-   */
-  function updateRotateOperatorPanelUi(options = {}) {
-    if (!applyThreeAxisOperatorPanelUi(options)) return;
-    const rotation = options.rotation || { x: 0, y: 0, z: 0 };
-    if (options.xEl && document.activeElement !== options.xEl) options.xEl.value = Number(rotation.x).toFixed(1);
-    if (options.yEl && document.activeElement !== options.yEl) options.yEl.value = Number(rotation.y).toFixed(1);
-    if (options.zEl && document.activeElement !== options.zEl) options.zEl.value = Number(rotation.z).toFixed(1);
-  }
-
   /**
    * Focus one input after layout settles.
    * @param {HTMLElement|null|undefined} el
@@ -459,8 +394,6 @@
     positionRightOperatorPanel,
     updateAddAtomOperatorPanelUi,
     updateAddMoleculeOperatorPanelUi,
-    updateMoveOperatorPanelUi,
-    updateRotateOperatorPanelUi,
     createAdaptivePopoverController,
     bindAdaptivePopoverItem,
   });

@@ -937,33 +937,30 @@ def main() -> int:
             page.mouse.click(empty_x, empty_y)
             select_two_fixture_atoms(page)
 
-            # Move smoke via operator panel + undo.
+            # Move smoke via drag + undo.
             before_move = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
             page.locator('#editAdaptiveMoveBtn').click()
-            page.wait_for_function("() => document.getElementById('editMoveOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
-            page.locator('#editMoveOperatorHeader').click()
-            move_input = page.locator('#editMoveOperatorX')
-            move_input.click()
-            move_input.fill('0.500')
-            page.keyboard.press('Enter')
+            move_x, move_y = canvas_point(page, 0.42, 0.50)
+            page.mouse.move(move_x, move_y)
+            page.mouse.down()
+            page.mouse.move(move_x + 48, move_y + 12)
+            page.mouse.up()
             page.wait_for_function(
                 """(beforeAtoms) => {
                     const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
                     if (atoms.length !== beforeAtoms.length) return false;
                     for (let i = 0; i < atoms.length; i += 1) {
-                      if (Math.abs((atoms[i].x || 0) - beforeAtoms[i][0]) > 1e-6) return true;
+                      const atom = atoms[i];
+                      const before = beforeAtoms[i];
+                      if (Math.abs((atom.x || 0) - before[0]) > 1e-6) return true;
+                      if (Math.abs((atom.y || 0) - before[1]) > 1e-6) return true;
+                      if (Math.abs((atom.z || 0) - before[2]) > 1e-6) return true;
                     }
                     return false;
                 }""",
                 arg=before_move,
-            )
-            page.evaluate(
-                """() => {
-                    const active = document.activeElement;
-                    if (active && typeof active.blur === 'function') active.blur();
-                }"""
             )
             page.evaluate(
                 """(isMac) => {
@@ -981,18 +978,17 @@ def main() -> int:
                 """() => /Undo: Move 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
             )
 
-            # Rotate smoke via operator panel + undo.
+            # Rotate smoke via drag + undo.
             select_two_fixture_atoms(page)
             before_rotate = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
             page.locator('#editAdaptiveRotateBtn').click()
-            page.wait_for_function("() => document.getElementById('editRotateOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
-            page.locator('#editRotateOperatorHeader').click()
-            rotate_input = page.locator('#editRotateOperatorZ')
-            rotate_input.click()
-            rotate_input.fill('30')
-            page.keyboard.press('Enter')
+            rotate_x, rotate_y = canvas_point(page, 0.42, 0.50)
+            page.mouse.move(rotate_x, rotate_y)
+            page.mouse.down()
+            page.mouse.move(rotate_x + 54, rotate_y + 36)
+            page.mouse.up()
             page.wait_for_function(
                 """(beforeAtoms) => {
                     const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
@@ -1007,12 +1003,6 @@ def main() -> int:
                     return false;
                 }""",
                 arg=before_rotate,
-            )
-            page.evaluate(
-                """() => {
-                    const active = document.activeElement;
-                    if (active && typeof active.blur === 'function') active.blur();
-                }"""
             )
             page.evaluate(
                 """(isMac) => {
