@@ -208,6 +208,21 @@ test('edit-tools leaving atom manipulation clears current atom, transform, and b
   assert.equal(calls.bondPopupHidden, 1);
 });
 
+test('edit-tools can preserve atom selection when leaving atom manipulation intentionally', () => {
+  const { controller, calls, EDIT_INTENT } = createEditToolsHarness();
+
+  controller.setEditAtomSelection([0, 2]);
+  calls.transformSelectionActive = true;
+  calls.pendingBondIndex = 1;
+
+  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT, { preserveSelection: true });
+
+  assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 2]);
+  assert.equal(calls.clearTransformSelection, 1);
+  assert.equal(calls.clearEditBondPendingSelection, 1);
+  assert.equal(calls.bondPopupHidden, 1);
+});
+
 test('edit-tools clearTransientInteractionState clears selection, pointer state, and bond transient state', () => {
   const { controller, state, calls } = createEditToolsHarness();
 

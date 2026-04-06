@@ -175,6 +175,7 @@
     function setEditIntent(nextIntent, options = {}) {
       const announce = options.announce !== false;
       const syncSearch = options.syncSearch !== false;
+      const preserveSelection = !!options.preserveSelection;
       const prevIntent = getEditIntent();
       const normalized = normalizeEditIntent(nextIntent);
       const leavingAtomManipulation = !!state.addAtomOperatorSession && normalized !== EDIT_INTENT.ATOM_MANIPULATION;
@@ -186,7 +187,7 @@
       if (normalized !== EDIT_INTENT.ADD_FRAGMENT) clearFuseRingPreview();
       if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) clearAddGrowPreview();
       if (normalized !== EDIT_INTENT.ATOM_MANIPULATION && prevIntent === EDIT_INTENT.ATOM_MANIPULATION) {
-        clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
+        clearEditSelectionsOnEmptyClick({ selection: !preserveSelection, transform: true, bondEdit: true });
       }
       if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) {
         clearTransformState();

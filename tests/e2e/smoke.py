@@ -91,6 +91,41 @@ def build_fixture_cleanup_structure() -> str:
     return json.dumps(payload)
 
 
+def build_fixture_dihedral_structure() -> str:
+    payload = {
+        'kind': 'vibemol.structure',
+        'structureVersion': 1,
+        'appVersion': 'smoke-test',
+        'name': 'dihedral-fixture.structure.json',
+        'meta': {'source': 'test'},
+        'volume': {
+            'title': 'Dihedral fixture',
+            'comment': 'Explicit central bond with one substituent on each side',
+            'natoms': 4,
+            'origin': [0, 0, 0],
+            'nxyz': [0, 0, 0],
+            'axes': [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            'atoms': [
+                {'id': 'atom-1', 'Z': 6, 'x': -0.7, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-2', 'Z': 6, 'x': 0.7, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-3', 'Z': 1, 'x': -1.25, 'y': 0.82, 'z': 0.42, 'formalCharge': 0},
+                {'id': 'atom-4', 'Z': 1, 'x': 1.18, 'y': 0.76, 'z': -0.58, 'formalCharge': 0},
+            ],
+            'bonds': [
+                {'id': 'bond:atom-1:atom-2', 'a': 'atom-1', 'b': 'atom-2', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:atom-1:atom-3', 'a': 'atom-1', 'b': 'atom-3', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:atom-2:atom-4', 'a': 'atom-2', 'b': 'atom-4', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+            ],
+            'annotations': {'builder': {'byAtomId': {}}},
+            'fragmentOps': [],
+            'data': [],
+            'units': 'angstrom',
+        },
+        'recordState': {'measurementLabelOffsets': {}},
+    }
+    return json.dumps(payload)
+
+
 def build_fixture_optimize_structure() -> str:
     payload = {
         'kind': 'vibemol.structure',
@@ -346,6 +381,20 @@ def project_active_atom(page, atom_index: int) -> tuple[float, float]:
     if not isinstance(result, dict) or not result.get('visible'):
         raise AssertionError(f'Could not project active atom {atom_index}: {result!r}')
     return float(result['x']), float(result['y'])
+
+
+def get_transform_angle_guide(page) -> dict[str, float | str | bool] | None:
+    result = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.getTransformAngleGuideClient !== 'function') return null;
+            return window.VibeMolTesting.getTransformAngleGuideClient();
+        }"""
+    )
+    if result is None:
+        return None
+    if not isinstance(result, dict):
+        raise AssertionError(f'Unexpected transform angle guide result: {result!r}')
+    return result
 
 
 def projected_atom_hit_candidates(page, atom_index: int, other_index: int) -> list[tuple[float, float]]:
@@ -1040,11 +1089,15 @@ def main() -> int:
             select_two_fixture_atoms(page)
 
             log_step('selection move smoke')
-            # Move smoke via translate cue + drag + undo.
+            # Move smoke via translate cue drag + undo.
             before_move = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
-            move_x, move_y = projected_atom_hit_candidates(page, 0, 1)[0]
+            translate_cue_box = page.locator('#editSelectionTranslateCueButton').bounding_box()
+            if not translate_cue_box:
+                raise AssertionError('Translate selection cue is not visible for move smoke')
+            move_x = translate_cue_box['x'] + translate_cue_box['width'] * 0.5
+            move_y = translate_cue_box['y'] + translate_cue_box['height'] * 0.5
             page.mouse.move(move_x, move_y)
             page.mouse.down()
             page.mouse.move(move_x + 48, move_y + 12)
@@ -1081,24 +1134,26 @@ def main() -> int:
             )
 
             log_step('selection rotate smoke')
-            # Rotate smoke via rotate cue + drag + undo.
+            # Rotate smoke via rotate cue drag + undo.
             select_two_fixture_atoms(page)
-            page.locator('#editSelectionRotateCueButton').click()
             page.wait_for_function(
                 """() => {
                     const rotateBtn = document.getElementById('editSelectionRotateCueButton');
                     const translateBtn = document.getElementById('editSelectionTranslateCueButton');
                     return !!rotateBtn
                       && !rotateBtn.hidden
-                      && rotateBtn.classList.contains('is-active')
                       && !!translateBtn
-                      && !translateBtn.classList.contains('is-active');
+                      && translateBtn.classList.contains('is-active');
                 }"""
             )
             before_rotate = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
-            rotate_x, rotate_y = projected_atom_hit_candidates(page, 0, 1)[0]
+            rotate_cue_box = page.locator('#editSelectionRotateCueButton').bounding_box()
+            if not rotate_cue_box:
+                raise AssertionError('Rotate selection cue is not visible for rotate smoke')
+            rotate_x = rotate_cue_box['x'] + rotate_cue_box['width'] * 0.5
+            rotate_y = rotate_cue_box['y'] + rotate_cue_box['height'] * 0.5
             page.mouse.move(rotate_x, rotate_y)
             page.mouse.down()
             page.mouse.move(rotate_x + 54, rotate_y + 36)
@@ -1132,6 +1187,21 @@ def main() -> int:
             )
             page.wait_for_function(
                 """() => /Undo: Rotate 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
+            )
+
+            log_step('fragment cue cancel returns to atom manipulation')
+            select_two_fixture_atoms(page)
+            page.locator('#editSelectionAddFragmentCueButton').click()
+            page.wait_for_function(
+                """() => /Add fragment active/i.test(document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '')"""
+            )
+            cancel_x, cancel_y = find_empty_edit_canvas_point(page)
+            page.mouse.click(cancel_x, cancel_y)
+            page.wait_for_function(
+                """() => /Atom manipulation active/i.test(document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '')"""
+            )
+            page.wait_for_function(
+                """() => document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'true'"""
             )
             select_two_fixture_atoms(page)
 
@@ -1238,6 +1308,57 @@ def main() -> int:
 
             # Gesture bond-center clicking should raise with left click and lower with right click.
             log_step('bond gesture smoke')
+            dihedral_fixture_text = build_fixture_dihedral_structure()
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture")', dihedral_fixture_text)
+            page.locator('#modeDisplayBtn').click()
+            page.locator('#modeEditBtn').click()
+            page.locator('#editAdaptiveAddAtomBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
+            )
+            side_x, side_y = find_bond_side_canvas_point(page)
+            page.mouse.click(side_x, side_y)
+            page.wait_for_function(
+                """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) > 0"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const guide = window.VibeMolTesting?.getTransformAngleGuideClient?.();
+                    return !!guide && guide.visible === true && Number.isFinite(guide.angleDeg);
+                }"""
+            )
+            angle_guide = get_transform_angle_guide(page)
+            if not angle_guide or not angle_guide.get('visible'):
+                raise AssertionError(f'Bond-side dihedral guide did not appear: {angle_guide!r}')
+            before_positions = page.evaluate(
+                """() => (window.VibeMolStructure.exportActive().volume.atoms || []).map((atom) => [
+                    Number(atom.x) || 0,
+                    Number(atom.y) || 0,
+                    Number(atom.z) || 0,
+                ])"""
+            )
+            page.mouse.move(float(angle_guide['x']), float(angle_guide['y']))
+            page.mouse.down()
+            page.mouse.move(float(angle_guide['x']) + 36, float(angle_guide['y']) - 28, steps=8)
+            page.mouse.up()
+            page.wait_for_function(
+                """(beforePositions) => {
+                    const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
+                    if (!Array.isArray(beforePositions) || beforePositions.length !== atoms.length) return false;
+                    for (let i = 0; i < atoms.length; i += 1) {
+                        const before = beforePositions[i];
+                        const atom = atoms[i];
+                        if (!Array.isArray(before) || before.length < 3 || !atom) continue;
+                        const dx = (Number(atom.x) || 0) - (Number(before[0]) || 0);
+                        const dy = (Number(atom.y) || 0) - (Number(before[1]) || 0);
+                        const dz = (Number(atom.z) || 0) - (Number(before[2]) || 0);
+                        if ((dx * dx + dy * dy + dz * dz) > 1e-6) return true;
+                    }
+                    return false;
+                }""",
+                arg=before_positions,
+            )
+
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture")', fixture_text)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()

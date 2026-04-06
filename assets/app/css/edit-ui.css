@@ -153,6 +153,11 @@
   display: none !important;
 }
 
+.editSelectionCueButton.is-muted {
+  color: rgba(224, 231, 241, 0.78);
+  opacity: 0.82;
+}
+
 .editHaloCore,
 .editHaloCapture,
 .editHaloGhost,
@@ -309,7 +314,8 @@
 
 #editAdaptiveAddAtomPopover,
 #editAdaptiveAddFragmentPopover,
-#editAdaptiveAddMoleculePopover {
+#editAdaptiveAddMoleculePopover,
+#editSelectionFragmentCuePopover {
   position: fixed;
   display: none;
   width: min(280px, calc(100vw - 24px));
@@ -325,7 +331,8 @@
 
 #editAdaptiveAddAtomPopover[aria-hidden="false"],
 #editAdaptiveAddFragmentPopover[aria-hidden="false"],
-#editAdaptiveAddMoleculePopover[aria-hidden="false"] {
+#editAdaptiveAddMoleculePopover[aria-hidden="false"],
+#editSelectionFragmentCuePopover[aria-hidden="false"] {
   display: block;
 }
 
@@ -567,13 +574,15 @@
 
 #editAdaptiveAddAtomPopover #editAddAtomPane,
 #editAdaptiveAddFragmentPopover #editAddFragmentPane,
-#editAdaptiveAddMoleculePopover #editAddMoleculePane {
+#editAdaptiveAddMoleculePopover #editAddMoleculePane,
+#editSelectionFragmentCuePopover #editAddFragmentPane {
   display: block;
 }
 
 #editAdaptiveAddAtomPopover label:first-child,
 #editAdaptiveAddFragmentPopover label:first-child,
-#editAdaptiveAddMoleculePopover label:first-child {
+#editAdaptiveAddMoleculePopover label:first-child,
+#editSelectionFragmentCuePopover label:first-child {
   margin-top: 0;
 }
 
