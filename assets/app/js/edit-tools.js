@@ -186,7 +186,7 @@
       if (normalized !== EDIT_INTENT.ADD_FRAGMENT) clearFuseRingPreview();
       if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) clearAddGrowPreview();
       if (normalized !== EDIT_INTENT.ATOM_MANIPULATION && prevIntent === EDIT_INTENT.ATOM_MANIPULATION) {
-        clearEditBondPendingSelection();
+        clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
       }
       if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) {
         clearTransformState();

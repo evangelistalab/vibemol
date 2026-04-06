@@ -826,6 +826,7 @@
 
       const beforeAtoms = cloneAtomsSnapshot(vol);
       const beforeBonds = cloneBondSnapshot(vol);
+      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
       const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
       const anchorAtomBefore = vol.atoms[anchor];
       const anchorPosBefore = atomUnitsToAng(vol, anchorAtomBefore);

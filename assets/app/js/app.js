@@ -3997,6 +3997,12 @@
       rebuildBondsFromAtoms();
       return;
     }
+    for (const obj of bondGroup.children) {
+      if (obj && obj.userData && obj.userData.type === 'aromaticRingDash') {
+        rebuildBondsFromAtoms();
+        return;
+      }
+    }
     const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false }).map((a) => ({ pos: a.pos }));
     const uniqueEdges = [];
     const seenEdgeKeys = new Set();
@@ -8785,6 +8791,50 @@
   }
 
   /**
+   * Resolve one fragment-placement anchor from an atom hit.
+   * Hydrogen hits are remapped to the bonded heavy atom so fragment attach on a
+   * saturated center still follows the user's visible target.
+   * @param {*} vol
+   * @param {*} hit
+   * @returns {{anchorIndex:number,initialWorldPos:THREE.Vector3|null}|null}
+   */
+  function resolveFragmentAnchorPlacementHit(vol, hit) {
+    if (!vol || !Array.isArray(vol.atoms) || !hit || !hit.object || !hit.object.userData) return null;
+    const hitIndex = hit.object.userData.index | 0;
+    if (hitIndex < 0 || hitIndex >= vol.atoms.length) return null;
+    const hitAtom = vol.atoms[hitIndex];
+    if (!hitAtom) return null;
+    const hitWorldPos = hit.object.position && hit.object.position.isVector3
+      ? hit.object.position.clone()
+      : atomUnitsToAng(vol, hitAtom);
+    if ((hitAtom.Z | 0) !== 1) {
+      return {
+        anchorIndex: hitIndex,
+        initialWorldPos: hitWorldPos && hitWorldPos.isVector3 ? hitWorldPos : null,
+      };
+    }
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = getVolumeBondEdges(vol, records, { allowDynamic: false, storedOnly: true });
+    for (const edge of edges) {
+      if (!edge) continue;
+      let otherIndex = -1;
+      if (edge.i === hitIndex) otherIndex = edge.j;
+      else if (edge.j === hitIndex) otherIndex = edge.i;
+      if (otherIndex < 0 || otherIndex >= vol.atoms.length) continue;
+      const otherAtom = vol.atoms[otherIndex];
+      if (!otherAtom || (otherAtom.Z | 0) === 1) continue;
+      return {
+        anchorIndex: otherIndex,
+        initialWorldPos: hitWorldPos && hitWorldPos.isVector3 ? hitWorldPos : null,
+      };
+    }
+    return {
+      anchorIndex: hitIndex,
+      initialWorldPos: hitWorldPos && hitWorldPos.isVector3 ? hitWorldPos : null,
+    };
+  }
+
+  /**
    * Count severe post-placement overlaps for user warnings.
    * @param {*} vol
    * @param {number[]} newAtomIndices
@@ -11763,6 +11813,7 @@
     clearSelection: () => clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true }),
     pickAtomObject: pickAtom,
     pickBondHit,
+    resolveGrowDragAnchorIndex: resolveGestureGrowDragAnchorIndex,
     showVoidPlacementPreview: showGestureVoidPlacementPreview,
     hideVoidPlacementPreview: clearGestureVoidPreview,
     startBoxSelection: (startX, startY, clientX, clientY) => {
@@ -12546,18 +12597,23 @@
     }
     const hit = pickAtomHit(e);
     if (hit && hit.object && hit.object.userData) {
-      const idx = hit.object.userData.index | 0;
       const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
+      const resolvedAnchorHit = resolveFragmentAnchorPlacementHit(vol, hit);
+      const idx = resolvedAnchorHit ? (resolvedAnchorHit.anchorIndex | 0) : -1;
       if (vol && Array.isArray(vol.atoms) && idx >= 0 && idx < vol.atoms.length) {
         addGrowActive = true;
         addGrowAnchorIndex = idx;
-        addGrowAnchorPos = hit.object.position.clone();
+        addGrowAnchorPos = atomUnitsToAng(vol, vol.atoms[idx]);
         addGrowNeighborDirs = getEditAddNeighborDirections(vol, idx);
         addGrowDetectedAngleDeg = 0;
         addGrowPreviewPos = null;
         controls.enabled = false;
         updateEditToolboxUi({ syncSearch: false });
-        updateAddGrowPreviewFromEvent(e);
+        if (resolvedAnchorHit && resolvedAnchorHit.initialWorldPos && resolvedAnchorHit.initialWorldPos.isVector3) {
+          updateAddGrowPreviewFromWorldPos(resolvedAnchorHit.initialWorldPos);
+        } else {
+          updateAddGrowPreviewFromEvent(e);
+        }
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return true;
       }
@@ -14067,9 +14123,6 @@
    */
   function updateTransformBondSelectionHalos() {
     if (!bondGroup || !bondGroup.children) return;
-    const focusContext = currentMode === MODES.EDIT ? getCurrentTransformSelectionContext() : null;
-    const focusI = focusContext && Array.isArray(focusContext.bondIndices) ? (focusContext.bondIndices[0] | 0) : -1;
-    const focusJ = focusContext && Array.isArray(focusContext.bondIndices) ? (focusContext.bondIndices[1] | 0) : -1;
     const selected = new Set(currentMode === MODES.EDIT ? getActiveTransformSelectionIndices() : []);
     for (const carrier of bondGroup.children) {
       if (!carrier || !carrier.userData) continue;
@@ -14082,8 +14135,7 @@
       }
       if (selected.has(i) && selected.has(j)) ensureBondOverlay(carrier, 'selectOverlay', selHaloColor, 0.72);
       else removeBondOverlay(carrier, 'selectOverlay');
-      if ((i === focusI && j === focusJ) || (i === focusJ && j === focusI)) ensureBondOverlay(carrier, 'focusOverlay', 0xff4d4f, 0.96);
-      else removeBondOverlay(carrier, 'focusOverlay');
+      removeBondOverlay(carrier, 'focusOverlay');
     }
   }
 
@@ -14975,6 +15027,45 @@
     return hits.length > 0 ? hits[0] : null;
   }
 
+  function resolveGestureGrowDragAnchorIndex(atomIndex, e) {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const idx = atomIndex | 0;
+    if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length) return idx;
+    const atom = vol.atoms[idx];
+    if (!atom || (atom.Z | 0) !== 1 || (editAddElementZ | 0) === 1) return idx;
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = getVolumeBondEdges(vol, records, { allowDynamic: false, storedOnly: true });
+    let neighborIndex = -1;
+    let neighborCount = 0;
+    for (const edge of edges) {
+      if (!edge) continue;
+      if ((edge.i | 0) === idx) {
+        neighborCount += 1;
+        neighborIndex = edge.j | 0;
+      } else if ((edge.j | 0) === idx) {
+        neighborCount += 1;
+        neighborIndex = edge.i | 0;
+      }
+      if (neighborCount > 1) return idx;
+    }
+    if (neighborCount !== 1 || neighborIndex < 0 || neighborIndex >= vol.atoms.length) return idx;
+    const neighborAtom = vol.atoms[neighborIndex];
+    if (!neighborAtom || (neighborAtom.Z | 0) === 1) return idx;
+    const pointerX = Number(e && e.clientX);
+    const pointerY = Number(e && e.clientY);
+    if (!Number.isFinite(pointerX) || !Number.isFinite(pointerY)) return idx;
+    const hydrogenPos = records[idx] && records[idx].pos ? records[idx].pos : atomUnitsToAng(vol, atom);
+    const heavyPos = records[neighborIndex] && records[neighborIndex].pos ? records[neighborIndex].pos : atomUnitsToAng(vol, neighborAtom);
+    const hydrogenClient = hydrogenPos ? projectWorldToClient(hydrogenPos) : null;
+    const heavyClient = heavyPos ? projectWorldToClient(heavyPos) : null;
+    if (!hydrogenClient || !heavyClient || heavyClient.visible === false) return idx;
+    const hydrogenDistance = Math.hypot(pointerX - (Number(hydrogenClient.x) || 0), pointerY - (Number(hydrogenClient.y) || 0));
+    const heavyDistance = Math.hypot(pointerX - (Number(heavyClient.x) || 0), pointerY - (Number(heavyClient.y) || 0));
+    if (heavyDistance <= 24 && heavyDistance + 0.5 < hydrogenDistance) return neighborIndex;
+    return idx;
+  }
+
   /**
    * Walk up one object chain until a bond userData payload is found.
    * @param {*} object
@@ -15575,6 +15666,107 @@
     return { atomIndex: finalIndex >= 0 ? finalIndex : newIndex, selection: [] };
   }
 
+  function resolveGestureTerminalHydrogenReplacement(vol, anchorIndex, targetAtomIndex) {
+    if (!vol || !Array.isArray(vol.atoms)) return null;
+    const anchor = anchorIndex | 0;
+    const target = targetAtomIndex | 0;
+    if (anchor < 0 || target < 0 || anchor >= vol.atoms.length || target >= vol.atoms.length || anchor === target) return null;
+    const anchorAtom = vol.atoms[anchor];
+    const targetAtom = vol.atoms[target];
+    if (!anchorAtom || !targetAtom) return null;
+    if ((anchorAtom.Z | 0) === 1 || (targetAtom.Z | 0) !== 1) return null;
+    const records = buildBondAtomRecords(vol, { includeRenderColor: false });
+    const edges = getVolumeBondEdges(vol, records, { allowDynamic: false, storedOnly: true });
+    let neighborCount = 0;
+    let bondedToAnchor = false;
+    for (const edge of edges) {
+      if (!edge) continue;
+      let otherIndex = -1;
+      if ((edge.i | 0) === target) otherIndex = edge.j | 0;
+      else if ((edge.j | 0) === target) otherIndex = edge.i | 0;
+      else continue;
+      neighborCount += 1;
+      if (otherIndex === anchor) bondedToAnchor = true;
+      else return null;
+    }
+    if (!bondedToAnchor || neighborCount !== 1) return null;
+    const anchorPos = records[anchor] && records[anchor].pos ? records[anchor].pos.clone() : null;
+    const targetPos = records[target] && records[target].pos ? records[target].pos.clone() : null;
+    if (!anchorPos || !targetPos) return null;
+    const direction = targetPos.clone().sub(anchorPos);
+    if (direction.lengthSq() < 1e-10) return null;
+    direction.normalize();
+    return {
+      anchorIndex: anchor,
+      targetAtomIndex: target,
+      anchorAtom,
+      targetAtom,
+      anchorPos,
+      targetPos,
+      direction,
+    };
+  }
+
+  function replaceGestureTerminalHydrogenFromAnchor(anchorIndex, hydrogenIndex, options = {}) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const bondOrder = normalizeEditAddBondOrder(options.bondOrder || editAddBondOrder || 1);
+    const z = Number.isInteger(options.elementZ) ? (options.elementZ | 0) : (editAddElementZ | 0);
+    if (!record || !vol || !Array.isArray(vol.atoms) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return null;
+    const replacement = resolveGestureTerminalHydrogenReplacement(vol, anchorIndex, hydrogenIndex);
+    if (!replacement) return null;
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeBonds = cloneBondSnapshot(vol);
+    const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+    const removedIndex = replacement.targetAtomIndex | 0;
+    const removedAtomId = String(ensureAtomId(replacement.targetAtom));
+    vol.atoms.splice(removedIndex, 1);
+    vol.natoms = vol.atoms.length;
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const anchor = removedIndex < replacement.anchorIndex ? (replacement.anchorIndex - 1) : replacement.anchorIndex;
+    const anchorAtom = vol.atoms[anchor];
+    if (!anchorAtom) return null;
+    const bondLength = getEditAddBondLength((anchorAtom.Z | 0), z, bondOrder);
+    const newWorldPos = replacement.anchorPos.clone().addScaledVector(replacement.direction, bondLength);
+    const coords = worldToAtomUnits(vol, newWorldPos);
+    const atom = {
+      Z: z,
+      x: Number(coords[0]) || 0,
+      y: Number(coords[1]) || 0,
+      z: Number(coords[2]) || 0,
+      formalCharge: 0,
+    };
+    ensureAtomId(atom);
+    vol.atoms.push(atom);
+    vol.natoms = vol.atoms.length;
+    applyEditAddCoordinationToAtom(vol, atom);
+    const newAtomId = String(ensureAtomId(atom));
+    const anchorId = String(ensureAtomId(anchorAtom));
+    upsertVolumeBond(vol, anchorId, newAtomId, bondOrder, 'normal', 'explicit');
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const newIndex = vol.atoms.length - 1;
+    const preferredDirByAtomId = new Map();
+    preferredDirByAtomId.set(anchorId, newWorldPos.clone().sub(replacement.anchorPos));
+    preferredDirByAtomId.set(newAtomId, replacement.anchorPos.clone().sub(newWorldPos));
+    applyAutomaticHydrogenAdjustmentToVolume(vol, [anchor, newIndex], { preferredDirByAtomId });
+    const finalIndex = vol.atoms.findIndex((candidate) => candidate && String(ensureAtomId(candidate)) === newAtomId);
+    beginGestureAddedAtomOperatorSession(record, vol, atom, beforeAtoms, beforeBonds, beforeAnnotations, {
+      label: `Replace H with ${getElementSymbol(z)}`,
+      coordinationGeometryId: getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
+      focusAtomIds: [anchorId, newAtomId],
+      anchorAtomId: anchorId,
+      autoAdjustHydrogensOnCommit: false,
+      translateAttachedHydrogens: true,
+      startCollapsed: true,
+      hint: `Replaced terminal H with ${getElementName(z)} (${getElementSymbol(z)}) • Adjust location • Enter confirm • Esc cancel`,
+    });
+    return {
+      atomIndex: finalIndex >= 0 ? finalIndex : newIndex,
+      removedAtomId,
+      selection: [],
+    };
+  }
+
   function beginGestureGrowDrag(e, anchorIndex, options = {}) {
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
@@ -15636,6 +15828,17 @@
     clearAddGrowPreview();
     try { controls.enabled = true; } catch { }
     if (targetAtomIndex >= 0 && targetAtomIndex !== anchorIndex) {
+      const replacedHydrogen = replaceGestureTerminalHydrogenFromAnchor(anchorIndex, targetAtomIndex, {
+        elementZ: editAddElementZ,
+        bondOrder: createOrder,
+      });
+      if (replacedHydrogen) {
+        setEditAtomSelection([]);
+        updateSelectedHalos();
+        updateEditSelectionVisuals();
+        updateEditAdaptiveMenuUi();
+        return { selection: [] };
+      }
       const changed = !!(bondEditing && bondEditing.applyToAtomPair(anchorIndex, targetAtomIndex, {
         cycle: true,
         createOrder,

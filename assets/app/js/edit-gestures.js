@@ -17,6 +17,9 @@
     const clearSelection = typeof options.clearSelection === 'function' ? options.clearSelection : (() => false);
     const pickAtomObject = typeof options.pickAtomObject === 'function' ? options.pickAtomObject : (() => null);
     const pickBondHit = typeof options.pickBondHit === 'function' ? options.pickBondHit : (() => null);
+    const resolveGrowDragAnchorIndex = typeof options.resolveGrowDragAnchorIndex === 'function'
+      ? options.resolveGrowDragAnchorIndex
+      : ((atomIndex) => (atomIndex | 0));
     const applyBondCenterClick = typeof options.applyBondCenterClick === 'function' ? options.applyBondCenterClick : (() => false);
     const showVoidPlacementPreview = typeof options.showVoidPlacementPreview === 'function' ? options.showVoidPlacementPreview : (() => false);
     const hideVoidPlacementPreview = typeof options.hideVoidPlacementPreview === 'function' ? options.hideVoidPlacementPreview : (() => {});
@@ -387,7 +390,10 @@
         return startAndApplyMove(resolved);
       }
       if (state.press.kind === 'atom-press-pending') {
-        if (!beginGrowDrag(e, state.press.atomIndex)) return false;
+        const growAnchorIndex = Number.isInteger(state.press.growAtomIndex)
+          ? (state.press.growAtomIndex | 0)
+          : (state.press.atomIndex | 0);
+        if (!beginGrowDrag(e, growAnchorIndex)) return false;
         state.gestureState = 'grow-drag';
         const growState = updateGrowDrag(e) || {};
         state.bondTargetIndex = Number.isInteger(growState.targetAtomIndex) ? (growState.targetAtomIndex | 0) : -1;
@@ -470,6 +476,7 @@
           clientY: Number(e.clientY) || 0,
           pointerId: e.pointerId,
           atomIndex,
+          growAtomIndex: resolveGrowDragAnchorIndex(atomIndex, e),
           additive: !!e.shiftKey,
           altKey: !!e.altKey,
         };

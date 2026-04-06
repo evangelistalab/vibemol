@@ -1424,6 +1424,155 @@ def main() -> int:
             }:
                 raise AssertionError(f'Auto hydrogen adjustment did not follow the Atoms menu settings: {auto_adjust_summary}')
 
+            log_step('fragment attach prefers heavy anchor over front hydrogen')
+            page.locator('#newFileBtn').click()
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.locator('#editAdaptiveAddAtomBtn').click()
+            page.locator('#editAddAdjustHydrogens').check()
+            page.locator('#editAddQuick button[data-z="6"]').click()
+            page.locator('#editAddCoordination').select_option('tetrahedral')
+            tetra_x, tetra_y = canvas_point(page, 0.52, 0.48)
+            page.mouse.click(tetra_x, tetra_y)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    return atoms.length === 5 && bonds.length === 4;
+                }"""
+            )
+            heavy_anchor = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const index = atoms.findIndex((atom) => Number(atom.Z) !== 1);
+                    if (index < 0) return null;
+                    return {
+                        index,
+                        atomId: String(atoms[index].id || ''),
+                    };
+                }"""
+            )
+            if not isinstance(heavy_anchor, dict) or not heavy_anchor.get('atomId'):
+                raise AssertionError(f'Could not resolve saturated carbon anchor: {heavy_anchor!r}')
+            heavy_anchor_point = page.evaluate(
+                """(index) => {
+                    if (!window.VibeMolTesting || typeof window.VibeMolTesting.projectActiveAtomToClient !== 'function') return null;
+                    return window.VibeMolTesting.projectActiveAtomToClient(index);
+                }""",
+                heavy_anchor['index'],
+            )
+            if not isinstance(heavy_anchor_point, dict) or not heavy_anchor_point.get('visible'):
+                raise AssertionError(f'Could not project saturated carbon anchor to client coordinates: {heavy_anchor_point!r}')
+            page.locator('#editAdaptiveAddFragmentBtn').click()
+            page.wait_for_function(
+                """() => /Add fragment active/i.test(document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '')"""
+            )
+            page.mouse.click(heavy_anchor_point['x'], heavy_anchor_point['y'])
+            page.wait_for_function(
+                """(anchorAtomId) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    if (atoms.length !== 8 || bonds.length !== 7) return false;
+                    const atomById = new Map(atoms.map((atom) => [String(atom.id || ''), atom]));
+                    const neighbors = bonds.flatMap((bond) => {
+                        const aId = String(bond.a || '');
+                        const bId = String(bond.b || '');
+                        if (aId == String(anchorAtomId || '')) return [bId];
+                        if (bId == String(anchorAtomId || '')) return [aId];
+                        return [];
+                    });
+                    const nonHydrogenNeighbors = neighbors.filter((atomId) => Number(atomById.get(String(atomId || ''))?.Z) !== 1);
+                    return neighbors.length === 4 && nonHydrogenNeighbors.length === 1;
+                }""",
+                arg=heavy_anchor['atomId'],
+            )
+
+            log_step('grow drag onto terminal hydrogen replaces it with loaded atom')
+            page.locator('#newFileBtn').click()
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.locator('#editAdaptiveAddAtomBtn').click()
+            page.locator('#editAddAdjustHydrogens').check()
+            page.locator('#editAddQuick button[data-z="6"]').click()
+            page.locator('#editAddCoordination').select_option('tetrahedral')
+            replace_x, replace_y = canvas_point(page, 0.46, 0.54)
+            page.mouse.click(replace_x, replace_y)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    return atoms.length === 5 && bonds.length === 4;
+                }"""
+            )
+            replace_target = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const heavyIndex = atoms.findIndex((atom) => Number(atom.Z) !== 1);
+                    if (heavyIndex < 0) return null;
+                    const heavy = atoms[heavyIndex];
+                    const neighborIds = bonds.flatMap((bond) => {
+                        const aId = String(bond.a || '');
+                        const bId = String(bond.b || '');
+                        const heavyId = String(heavy.id || '');
+                        if (aId === heavyId) return [bId];
+                        if (bId === heavyId) return [aId];
+                        return [];
+                    });
+                    const hydrogenId = neighborIds.find((atomId) => Number(atoms.find((atom) => String(atom.id || '') === String(atomId || ''))?.Z) === 1) || '';
+                    const hydrogenIndex = atoms.findIndex((atom) => String(atom.id || '') === String(hydrogenId));
+                    return hydrogenIndex >= 0 ? { heavyIndex, hydrogenIndex } : null;
+                }"""
+            )
+            if not isinstance(replace_target, dict):
+                raise AssertionError(f'Could not resolve heavy atom and terminal hydrogen for replace gesture: {replace_target!r}')
+            heavy_point = page.evaluate(
+                """(index) => window.VibeMolTesting.projectActiveAtomToClient(index)""",
+                replace_target['heavyIndex'],
+            )
+            hydrogen_point = page.evaluate(
+                """(index) => window.VibeMolTesting.projectActiveAtomToClient(index)""",
+                replace_target['hydrogenIndex'],
+            )
+            if not isinstance(heavy_point, dict) or not heavy_point.get('visible'):
+                raise AssertionError(f'Could not project heavy atom for replace gesture: {heavy_point!r}')
+            if not isinstance(hydrogen_point, dict) or not hydrogen_point.get('visible'):
+                raise AssertionError(f'Could not project terminal hydrogen for replace gesture: {hydrogen_point!r}')
+            page.mouse.move(heavy_point['x'], heavy_point['y'])
+            page.mouse.down()
+            page.mouse.move(hydrogen_point['x'], hydrogen_point['y'], steps=18)
+            page.mouse.up()
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const carbons = atoms.filter((atom) => Number(atom.Z) === 6);
+                    if (atoms.length !== 8 || bonds.length !== 7 || carbons.length !== 2) return false;
+                    const atomById = new Map(atoms.map((atom) => [String(atom.id || ''), atom]));
+                    const neighborIdsById = new Map();
+                    for (const atom of atoms) neighborIdsById.set(String(atom.id || ''), []);
+                    for (const bond of bonds) {
+                        const aId = String(bond.a || '');
+                        const bId = String(bond.b || '');
+                        if (neighborIdsById.has(aId)) neighborIdsById.get(aId).push(bId);
+                        if (neighborIdsById.has(bId)) neighborIdsById.get(bId).push(aId);
+                    }
+                    const carbonHeavyNeighborCounts = carbons.map((atom) => {
+                        const neighborIds = neighborIdsById.get(String(atom.id || '')) || [];
+                        return neighborIds.filter((atomId) => Number(atomById.get(String(atomId || ''))?.Z) !== 1).length;
+                    }).sort((a, b) => a - b);
+                    return carbonHeavyNeighborCounts.length === 2
+                      && carbonHeavyNeighborCounts[0] === 1
+                      && carbonHeavyNeighborCounts[1] === 1;
+                }"""
+            )
+
             log_step('final runtime error check')
             assert_no_runtime_errors(page_errors, console_errors)
             browser.close()
