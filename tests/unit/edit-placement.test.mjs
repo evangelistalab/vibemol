@@ -29,9 +29,10 @@ function createPlacementHarness() {
     rebuildScene: 0,
     history: [],
   };
+  const state = {};
   const controller = placementApi.createEditPlacementController({
     THREE: { Vector3: class Vector3 { constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; } } },
-    state: {},
+    state,
     ensureEditableVolumeRecord: () => record,
     ensureVolumeSchema: (vol, options = {}) => {
       calls.ensureVolumeSchema.push(plain(options));
@@ -62,11 +63,11 @@ function createPlacementHarness() {
     updateAddAtomOperatorUi: () => {},
     setHintMessage: () => {},
   });
-  return { structure, controller, record, calls };
+  return { structure, controller, record, calls, state };
 }
 
 test('edit-placement appendAtomAtWorld does not trigger global bond inference', () => {
-  const { controller, record, calls } = createPlacementHarness();
+  const { controller, record, calls, state } = createPlacementHarness();
 
   const ok = controller.appendAtomAtWorld({ x: 1.5, y: 0, z: 0 }, 6);
 
@@ -75,6 +76,9 @@ test('edit-placement appendAtomAtWorld does not trigger global bond inference', 
   assert.deepEqual(plain(record.vol.bonds), []);
   assert.equal(calls.inferVolumeBonds, 0);
   assert.deepEqual(calls.ensureVolumeSchema.at(-1), { inferMissingBonds: false });
+  assert.equal(typeof state.addAtomOperatorSession?.atomId, 'string');
+  assert.equal(state.addAtomOperatorCollapsed, true);
+  assert.equal(state.addAtomOperatorSession?.translateAttachedHydrogens, true);
 });
 
 test('edit-placement deleteAtomAtIndex prunes stale bonds without re-perceiving new ones', () => {

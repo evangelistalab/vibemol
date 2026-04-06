@@ -347,6 +347,7 @@ test('edit-gestures resolves selected-atom drag to move by default', () => {
 
   assert.equal(calls.beginGrowDrag.length, 0);
   assert.equal(calls.startMoveDrag.length, 1);
+  assert.equal(calls.updateMoveDrag, 1);
   assert.deepEqual(calls.startMoveDrag[0].indices, [1]);
 });
 
@@ -422,6 +423,7 @@ test('edit-gestures rotate cue in atom manipulation starts rotate drag without r
   assert.equal(calls.beginGrowDrag.length, 0);
   assert.equal(calls.startMoveDrag.length, 0);
   assert.equal(calls.startRotateDrag.length, 1);
+  assert.equal(calls.updateRotateDrag, 1);
   assert.deepEqual(calls.startRotateDrag[0].indices, [1, 2]);
   assert.equal(calls.startRotateDrag[0].dragOptions.axis, 'none');
   assert.equal(controller.getUiState().gestureState, 'rotate-drag');

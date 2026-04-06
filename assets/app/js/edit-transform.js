@@ -160,10 +160,17 @@
       const camera = getCamera();
       const raycaster = getRaycaster();
       if (!camera || !raycaster) return false;
+      const startClientX = Number.isFinite(Number(dragOptions.startClientX)) ? Number(dragOptions.startClientX) : (Number(e && e.clientX) || 0);
+      const startClientY = Number.isFinite(Number(dragOptions.startClientY)) ? Number(dragOptions.startClientY) : (Number(e && e.clientY) || 0);
+      const startRayEvent = {
+        clientX: startClientX,
+        clientY: startClientY,
+      };
+      if (e && e.hitPoint && e.hitPoint.isVector3) startRayEvent.hitPoint = e.hitPoint;
       const normal = new THREE.Vector3();
       camera.getWorldDirection(normal);
       state.dragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, anchorWorld);
-      setRaycasterFromEvent(e);
+      setRaycasterFromEvent(startRayEvent);
       const hit = new THREE.Vector3();
       if (raycaster.ray.intersectPlane(state.dragPlane, hit)) state.dragPlaneStart = hit.clone();
       else state.dragPlaneStart = anchorWorld.clone();
@@ -285,19 +292,26 @@
       if (!baseline || !targetIndices.length) {
         return false;
       }
+      const startClientX = Number.isFinite(Number(dragOptions.startClientX)) ? Number(dragOptions.startClientX) : (Number(e && e.clientX) || 0);
+      const startClientY = Number.isFinite(Number(dragOptions.startClientY)) ? Number(dragOptions.startClientY) : (Number(e && e.clientY) || 0);
+      const startRayEvent = {
+        clientX: startClientX,
+        clientY: startClientY,
+      };
+      if (e && e.hitPoint && e.hitPoint.isVector3) startRayEvent.hitPoint = e.hitPoint;
       state.rotateDragActive = true;
       state.rotateDragAxis = dragOptions.axis === 'x' || dragOptions.axis === 'y' || dragOptions.axis === 'z' ? dragOptions.axis : 'none';
       state.rotateDragPlane = null;
       state.rotateDragStartDir = null;
-      state.rotateDragLastClientX = Number(e.clientX) || 0;
-      state.rotateDragLastClientY = Number(e.clientY) || 0;
+      state.rotateDragLastClientX = startClientX;
+      state.rotateDragLastClientY = startClientY;
       if (state.rotateDragAxis !== 'none') {
         const axisWorld = state.rotateDragAxis === 'x'
           ? new THREE.Vector3(1, 0, 0)
           : (state.rotateDragAxis === 'y' ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1));
         state.rotateDragPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(axisWorld, baseline.startCenterWorld);
         const raycaster = getRaycaster();
-        setRaycasterFromEvent(e);
+        setRaycasterFromEvent(startRayEvent);
         const planeHit = new THREE.Vector3();
         if (!raycaster || !raycaster.ray.intersectPlane(state.rotateDragPlane, planeHit)) {
           state.rotateDragActive = false;

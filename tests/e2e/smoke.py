@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import sys
 from typing import Any
@@ -16,6 +17,12 @@ else:
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACT_DIR = ensure_artifact_dir(REPO_ROOT / 'out' / 'test-artifacts')
+SMOKE_VERBOSE = os.environ.get('VIBEMOL_SMOKE_VERBOSE') == '1'
+
+
+def log_step(label: str) -> None:
+    if SMOKE_VERBOSE:
+        print(f'[smoke] {label}', flush=True)
 
 
 def build_fixture_structure() -> str:
@@ -248,6 +255,17 @@ def find_bond_midpoint_canvas_point(page) -> tuple[float, float]:
         x, y = canvas_point(page, fx, fy)
         page.mouse.move(x, y)
         page.wait_for_timeout(60)
+        hit = page.evaluate(
+            """(payload) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+                return window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+            }""",
+            {'x': x, 'y': y},
+        )
+        if isinstance(hit, dict):
+            if str(hit.get('bondSection', '')).strip().lower() == 'center':
+                return x, y
+            continue
         is_midpoint = page.evaluate(
             """() => {
                 const scope = document.getElementById('editGestureScope');
@@ -283,6 +301,67 @@ def wait_for_selected_atoms(page, count: int) -> None:
     )
 
 
+def project_active_atom(page, atom_index: int) -> tuple[float, float]:
+    result = page.evaluate(
+        """(index) => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.projectActiveAtomToClient !== 'function') return null;
+            return window.VibeMolTesting.projectActiveAtomToClient(index);
+        }""",
+        atom_index,
+    )
+    if not isinstance(result, dict) or not result.get('visible'):
+        raise AssertionError(f'Could not project active atom {atom_index}: {result!r}')
+    return float(result['x']), float(result['y'])
+
+
+def projected_atom_hit_candidates(page, atom_index: int, other_index: int) -> list[tuple[float, float]]:
+    center_x, center_y = project_active_atom(page, atom_index)
+    other_x, other_y = project_active_atom(page, other_index)
+    dx = center_x - other_x
+    dy = center_y - other_y
+    norm = (dx * dx + dy * dy) ** 0.5
+    if norm <= 1e-6:
+        ux, uy = 1.0, 0.0
+    else:
+        ux, uy = dx / norm, dy / norm
+    px, py = -uy, ux
+    offsets = [
+        (12.0 * ux, 12.0 * uy),
+        (8.0 * ux, 8.0 * uy),
+        (0.0, 0.0),
+        (6.0 * px, 6.0 * py),
+        (-6.0 * px, -6.0 * py),
+        (10.0 * ux + 5.0 * px, 10.0 * uy + 5.0 * py),
+        (10.0 * ux - 5.0 * px, 10.0 * uy - 5.0 * py),
+    ]
+    return [(center_x + off_x, center_y + off_y) for off_x, off_y in offsets]
+
+
+def find_empty_edit_canvas_point(page) -> tuple[float, float]:
+    candidates = [
+        (0.04, 0.08),
+        (0.08, 0.12),
+        (0.76, 0.62),
+        (0.80, 0.22),
+        (0.86, 0.78),
+        (0.24, 0.80),
+    ]
+    for fx, fy in candidates:
+        x, y = canvas_point(page, fx, fy)
+        hit = page.evaluate(
+            """(payload) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+                return window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+            }""",
+            {'x': x, 'y': y},
+        )
+        if not isinstance(hit, dict):
+            continue
+        if int(hit.get('atomIndex', -1)) < 0 and not str(hit.get('bondSection', '')).strip():
+            return x, y
+    raise AssertionError('Could not find an empty canvas point for edit-mode smoke input.')
+
+
 def trigger_selection_tool(page) -> None:
     page.evaluate(
         """() => {
@@ -305,35 +384,24 @@ def trigger_selection_tool(page) -> None:
 
 def select_two_fixture_atoms(page) -> None:
     trigger_selection_tool(page)
-    empty_x, empty_y = canvas_point(page, 0.04, 0.08)
-    page.mouse.click(empty_x, empty_y)
-
-    def _fixture_atom_candidates(center_x: float, center_y: float) -> list[tuple[float, float]]:
-        offsets = [
-            (0.00, 0.00),
-            (-0.02, 0.00), (0.02, 0.00),
-            (-0.04, 0.00), (0.04, 0.00),
-            (0.00, -0.03), (0.00, 0.03),
-            (0.00, -0.06), (0.00, 0.06),
-            (-0.02, -0.03), (0.02, -0.03),
-            (-0.02, 0.03), (0.02, 0.03),
-            (-0.04, -0.03), (0.04, -0.03),
-            (-0.04, 0.03), (0.04, 0.03),
-            (-0.06, 0.00), (0.06, 0.00),
-        ]
-        return [(center_x + dx, center_y + dy) for dx, dy in offsets]
-
-    def _fixture_atom_scan(center_x: float, x_span: float, center_y: float = 0.50, y_span: float = 0.14) -> list[tuple[float, float]]:
-        xs = [center_x + step for step in (-x_span, -0.75 * x_span, -0.5 * x_span, -0.25 * x_span, 0.0, 0.25 * x_span, 0.5 * x_span, 0.75 * x_span, x_span)]
-        ys = [center_y + step for step in (-y_span, -0.5 * y_span, 0.0, 0.5 * y_span, y_span)]
-        return [(fx, fy) for fy in ys for fx in xs]
-
-    left_candidates = _fixture_atom_candidates(0.42, 0.50) + _fixture_atom_scan(0.42, 0.12)
-    right_candidates = _fixture_atom_candidates(0.58, 0.50) + _fixture_atom_scan(0.58, 0.12)
+    selection_count = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.getEditSelectionCount !== 'function') return -1;
+            return window.VibeMolTesting.getEditSelectionCount();
+        }"""
+    )
+    if isinstance(selection_count, (int, float)) and int(selection_count) > 0:
+        empty_x, empty_y = find_empty_edit_canvas_point(page)
+        page.mouse.click(empty_x, empty_y)
+        page.wait_for_function(
+            """() => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.getEditSelectionCount !== 'function') return false;
+                return window.VibeMolTesting.getEditSelectionCount() === 0;
+            }"""
+        )
 
     def _select_one(candidates: list[tuple[float, float]]) -> bool:
-        for fx, fy in candidates:
-            x, y = canvas_point(page, fx, fy)
+        for x, y in candidates:
             page.mouse.click(x, y)
             try:
                 page.wait_for_function(
@@ -350,11 +418,13 @@ def select_two_fixture_atoms(page) -> None:
                 continue
         return False
 
+    left_candidates = projected_atom_hit_candidates(page, 0, 1)
+    right_candidates = projected_atom_hit_candidates(page, 1, 0)
+
     if not _select_one(left_candidates):
         raise AssertionError('Could not select the left atom in the deterministic two-atom fixture.')
 
-    for fx, fy in right_candidates:
-        x, y = canvas_point(page, fx, fy)
+    for x, y in right_candidates:
         page.keyboard.down('Shift')
         try:
             page.mouse.click(x, y)
@@ -390,9 +460,11 @@ def main() -> int:
         page.on('pageerror', lambda err: page_errors.append(str(err)))
         page.on('console', lambda msg: console_errors.append(msg.text) if msg.type == 'error' else None)
         try:
+            log_step('load app')
             page.goto(base_url, wait_until='networkidle')
             wait_for_ready(page)
 
+            log_step('startup theme controls')
             page.wait_for_function(
                 """() => {
                     const reveal = document.getElementById('topRightUtilitiesReveal');
@@ -471,6 +543,7 @@ def main() -> int:
             )
 
             # Gesture-mode edit HUD should be primary, with the advanced drawer opt-in.
+            log_step('initial edit mode and adaptive menu')
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editGestureHud')?.getAttribute('aria-hidden') === 'false'")
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
@@ -895,6 +968,7 @@ def main() -> int:
             if hydrogenated_summary['bondOrigins'].count('explicit') != 6 or hydrogenated_summary['bondOrigins'].count('perceived') != 1:
                 raise AssertionError(f'Auto-hydrogenation bond provenance is wrong: {hydrogenated_summary}')
 
+            log_step('deterministic fixture import')
             # Replace active content with a deterministic explicit-bond fixture.
             fixture_text = build_fixture_structure()
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "smoke-fixture")', fixture_text)
@@ -922,6 +996,7 @@ def main() -> int:
                 }"""
             )
 
+            log_step('deterministic fixture selection')
             # Direct atom-selection smoke on the deterministic two-atom fixture.
             select_two_fixture_atoms(page)
 
@@ -930,11 +1005,12 @@ def main() -> int:
             page.mouse.click(empty_x, empty_y)
             select_two_fixture_atoms(page)
 
+            log_step('selection move smoke')
             # Move smoke via translate cue + drag + undo.
             before_move = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
-            move_x, move_y = canvas_point(page, 0.42, 0.50)
+            move_x, move_y = projected_atom_hit_candidates(page, 0, 1)[0]
             page.mouse.move(move_x, move_y)
             page.mouse.down()
             page.mouse.move(move_x + 48, move_y + 12)
@@ -970,6 +1046,7 @@ def main() -> int:
                 """() => /Undo: Move 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
             )
 
+            log_step('selection rotate smoke')
             # Rotate smoke via rotate cue + drag + undo.
             select_two_fixture_atoms(page)
             page.locator('#editSelectionRotateCueButton').click()
@@ -987,7 +1064,7 @@ def main() -> int:
             before_rotate = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
-            rotate_x, rotate_y = canvas_point(page, 0.42, 0.50)
+            rotate_x, rotate_y = projected_atom_hit_candidates(page, 0, 1)[0]
             page.mouse.move(rotate_x, rotate_y)
             page.mouse.down()
             page.mouse.move(rotate_x + 54, rotate_y + 36)
@@ -1024,6 +1101,7 @@ def main() -> int:
             )
             select_two_fixture_atoms(page)
 
+            log_step('copy paste smoke')
             # Copy/paste selected atoms keeps internal bonds and selects the pasted atoms.
             copy_paste_shortcut = 'Meta+' if sys.platform == 'darwin' else 'Control+'
             page.keyboard.press(copy_paste_shortcut + 'C')
@@ -1042,11 +1120,13 @@ def main() -> int:
                 }"""
             )
 
+            log_step('add atom smoke')
             # Add atom smoke.
             page.locator('#editAdaptiveAddAtomBtn').click()
             before_add_atom = active_structure_summary(page)
-            x, y = canvas_point(page, 0.76, 0.62)
-            page.mouse.click(x, y)
+            x, y = find_empty_edit_canvas_point(page)
+            empty_x, empty_y = find_empty_edit_canvas_point(page)
+            page.mouse.click(empty_x, empty_y)
             page.wait_for_function(
                 """() => {
                     const scope = document.getElementById('editGestureScope')?.textContent || '';
@@ -1062,18 +1142,20 @@ def main() -> int:
                 }""",
                 arg=before_add_atom['atomCount'],
             )
+            page.wait_for_function("() => document.getElementById('editAddAtomOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
             after_add_atom = active_structure_summary(page)
             if after_add_atom['atomCount'] != before_add_atom['atomCount'] + 1:
                 raise AssertionError(f'Add atom did not add exactly one atom: {before_add_atom} -> {after_add_atom}')
 
+            log_step('add molecule smoke')
             # Add molecule smoke.
             page.locator('#editAdaptiveAddMoleculeBtn').click()
             before_add_molecule = active_structure_summary(page)
-            x, y = canvas_point(page, 0.58, 0.52)
+            x, y = find_empty_edit_canvas_point(page)
             page.mouse.click(x, y)
             page.wait_for_function("() => document.getElementById('editAddMoleculeOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
-            page.keyboard.press('Enter')
-            page.wait_for_timeout(150)
+            page.mouse.click(x, y)
+            page.wait_for_timeout(250)
             after_add_molecule = active_structure_summary(page)
             if after_add_molecule['atomCount'] <= before_add_molecule['atomCount']:
                 raise AssertionError(f'Add molecule did not increase atom count: {before_add_molecule} -> {after_add_molecule}')
@@ -1121,11 +1203,16 @@ def main() -> int:
                 raise AssertionError(f'Round-trip lost coordination override: {roundtrip_summary}')
 
             # Gesture bond-center clicking should raise with left click and lower with right click.
+            log_step('bond gesture smoke')
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture")', fixture_text)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
-            x, y = find_bond_midpoint_canvas_point(page)
+            page.locator('#editAdaptiveAddAtomBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
+            )
             for expected_order in (2, 3, 4):
+                x, y = find_bond_midpoint_canvas_point(page)
                 page.mouse.click(x, y)
                 page.wait_for_function(
                     """(expectedOrder) => {
@@ -1134,6 +1221,7 @@ def main() -> int:
                     }""",
                     arg=expected_order,
                 )
+            x, y = find_bond_midpoint_canvas_point(page)
             page.mouse.click(x, y)
             page.wait_for_timeout(100)
             maxed_bond = page.evaluate(
@@ -1145,6 +1233,7 @@ def main() -> int:
             if maxed_bond != {'order': 4, 'kind': 'normal', 'origin': 'explicit'}:
                 raise AssertionError(f'Bond-center increment exceeded quadruple bound: {maxed_bond}')
             for expected_order in (3, 2, 1):
+                x, y = find_bond_midpoint_canvas_point(page)
                 page.mouse.click(x, y, button='right')
                 page.wait_for_function(
                     """(expectedOrder) => {
@@ -1153,6 +1242,7 @@ def main() -> int:
                     }""",
                     arg=expected_order,
                 )
+            x, y = find_bond_midpoint_canvas_point(page)
             page.mouse.click(x, y, button='right')
             page.wait_for_function(
                 """() => {
@@ -1178,6 +1268,7 @@ def main() -> int:
                 raise AssertionError(f'Bond order update failed: {order_updated}')
 
             # Clean structure should run the one-shot UFF cleanup action.
+            log_step('clean structure smoke')
             optimize_fixture_text = build_fixture_optimize_structure()
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "optimize-fixture")', optimize_fixture_text)
             page.locator('#modeEditBtn').click()
@@ -1210,6 +1301,7 @@ def main() -> int:
                 raise AssertionError(f'UFF optimize did not shorten the stretched bond: before={optimize_before}, after={optimize_after}')
 
             # Trajectory-mode bonds should be dynamic for rendering only.
+            log_step('trajectory smoke')
             trajectory_xyz_text = build_fixture_trajectory_xyz()
             page.locator('#modeDisplayBtn').click()
             page.evaluate(
@@ -1271,6 +1363,7 @@ def main() -> int:
                 raise AssertionError(f'XYZ export was not plain XYZ text: {xyz_export!r}')
 
             # The Atoms menu drives automatic local hydrogen adjustment for isolated single-atom adds.
+            log_step('new file edit smoke')
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
@@ -1297,7 +1390,14 @@ def main() -> int:
                 }""",
                 arg=before_adjust_ids,
             )
-            page.wait_for_timeout(500)
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('editAddAtomOperatorPanel');
+                    return !!panel
+                      && panel.getAttribute('aria-hidden') === 'false'
+                      && panel.getAttribute('data-collapsed') === 'true';
+                }"""
+            )
             auto_adjust_summary = page.evaluate(
                 """(beforeIds) => {
                     const exported = window.VibeMolStructure.exportActive();
@@ -1324,6 +1424,7 @@ def main() -> int:
             }:
                 raise AssertionError(f'Auto hydrogen adjustment did not follow the Atoms menu settings: {auto_adjust_summary}')
 
+            log_step('final runtime error check')
             assert_no_runtime_errors(page_errors, console_errors)
             browser.close()
             return 0

@@ -315,6 +315,38 @@
 
     function maybeBeginDrag(e) {
       if (!state.press || !movementExceeded(e)) return false;
+      function startAndApplyMove(resolved) {
+        const started = startMoveDrag(e, Array.isArray(resolved && resolved.indices) ? resolved.indices.slice() : [], resolved && resolved.anchorWorld ? resolved.anchorWorld : null, {
+          axis: 'none',
+          startClientX: state.press ? state.press.clientX : Number(e && e.clientX) || 0,
+          startClientY: state.press ? state.press.clientY : Number(e && e.clientY) || 0,
+        });
+        if (!started) return false;
+        const nextSelection = Array.isArray(resolved && resolved.indices) ? resolved.indices.slice() : [];
+        setSelection(nextSelection);
+        state.currentMoveScopeIndices = nextSelection.slice();
+        state.currentMoveScopeLabel = String((resolved && resolved.label) || `Move scope: ${nextSelection.length} atoms`);
+        state.gestureState = 'move-drag';
+        notifyUi();
+        updateMoveDrag(e);
+        return true;
+      }
+      function startAndApplyRotate(resolved) {
+        const started = startRotateDrag(e, Array.isArray(resolved && resolved.indices) ? resolved.indices.slice() : [], {
+          axis: 'none',
+          startClientX: state.press ? state.press.clientX : Number(e && e.clientX) || 0,
+          startClientY: state.press ? state.press.clientY : Number(e && e.clientY) || 0,
+        });
+        if (!started) return false;
+        const nextSelection = Array.isArray(resolved && resolved.indices) ? resolved.indices.slice() : [];
+        setSelection(nextSelection);
+        state.currentMoveScopeIndices = nextSelection.slice();
+        state.currentMoveScopeLabel = String((resolved && resolved.label) || `Rotate scope: ${nextSelection.length} atoms`);
+        state.gestureState = 'rotate-drag';
+        notifyUi();
+        updateRotateDrag(e);
+        return true;
+      }
       if (state.press.kind === 'bond-center-click') {
         state.press = null;
         if (state.activePointerId != null) releasePointer(state.activePointerId);
@@ -335,8 +367,8 @@
           preview: false,
         });
         return selectionDragMode === 'rotate'
-          ? startRotateFromResolvedScope(e, resolved)
-          : startMoveFromResolvedScope(e, resolved);
+          ? startAndApplyRotate(resolved)
+          : startAndApplyMove(resolved);
       }
       if (state.press.kind === 'void-clear' || state.press.kind === 'void-place') {
         hideVoidPlacementPreview();
@@ -352,7 +384,7 @@
         const resolved = resolveDownstreamMoveScope(state.press.bondHit, {
           preview: false,
         });
-        return startMoveFromResolvedScope(e, resolved);
+        return startAndApplyMove(resolved);
       }
       if (state.press.kind === 'atom-press-pending') {
         if (!beginGrowDrag(e, state.press.atomIndex)) return false;

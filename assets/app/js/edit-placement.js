@@ -531,6 +531,11 @@
     }
 
     function beginAddAtomOperatorSession(record, atomId, beforeAtoms, beforeBonds, beforeAnnotations, label, coordinationGeometryId, sessionOptions = {}) {
+      const hydrogenFocusAtomIds = Array.isArray(sessionOptions && sessionOptions.autoAdjustHydrogenFocusAtomIds)
+        ? sessionOptions.autoAdjustHydrogenFocusAtomIds
+          .map((value) => String(value || '').trim())
+          .filter(Boolean)
+        : [];
       state.addAtomOperatorSession = {
         record,
         atomId: String(atomId || ''),
@@ -542,8 +547,10 @@
         source: String(sessionOptions && sessionOptions.source || 'new-atom'),
         autoAdjustHydrogensOnCommit: sessionOptions && sessionOptions.autoAdjustHydrogensOnCommit !== false,
         translateAttachedHydrogens: !!(sessionOptions && sessionOptions.translateAttachedHydrogens),
+        autoAdjustHydrogenFocusAtomIds: hydrogenFocusAtomIds,
+        autoAdjustHydrogenAnchorAtomId: String(sessionOptions && sessionOptions.autoAdjustHydrogenAnchorAtomId || '').trim(),
       };
-      state.addAtomOperatorCollapsed = true;
+      state.addAtomOperatorCollapsed = !!(sessionOptions && sessionOptions.startCollapsed);
       updateAddAtomOperatorUi();
     }
 
@@ -587,9 +594,41 @@
         applyEditAddCoordinationToAtom(resolved.vol, resolved.atom, session.coordinationGeometryId);
       }
       if (session.autoAdjustHydrogensOnCommit) {
-        applyAutomaticHydrogenAdjustment(resolved.record, resolved.vol, [resolved.atomIndex], {
-          source: 'operator',
-        });
+        const focusIds = Array.isArray(session.autoAdjustHydrogenFocusAtomIds) && session.autoAdjustHydrogenFocusAtomIds.length
+          ? session.autoAdjustHydrogenFocusAtomIds
+          : [String(session.atomId || '').trim()].filter(Boolean);
+        const focusIndices = focusIds
+          .map((atomId) => findAtomIndexById(resolved.vol, atomId))
+          .filter((atomIndex) => atomIndex >= 0);
+        const adjustmentOptions = { source: 'operator' };
+        const anchorId = String(session.autoAdjustHydrogenAnchorAtomId || '').trim();
+        if (anchorId && focusIndices.length && THREE && typeof THREE.Vector3 === 'function') {
+          const anchorIndex = findAtomIndexById(resolved.vol, anchorId);
+          if (anchorIndex >= 0 && anchorIndex < resolved.vol.atoms.length) {
+            const anchorAtom = resolved.vol.atoms[anchorIndex];
+            const anchorWorld = atomUnitsToAng(resolved.vol, anchorAtom);
+            const atomWorld = atomUnitsToAng(resolved.vol, resolved.atom);
+            if (anchorWorld && atomWorld) {
+              const anchorToAtom = new THREE.Vector3(
+                (Number(atomWorld.x) || 0) - (Number(anchorWorld.x) || 0),
+                (Number(atomWorld.y) || 0) - (Number(anchorWorld.y) || 0),
+                (Number(atomWorld.z) || 0) - (Number(anchorWorld.z) || 0)
+              );
+              const atomToAnchor = new THREE.Vector3(
+                -anchorToAtom.x,
+                -anchorToAtom.y,
+                -anchorToAtom.z
+              );
+              const preferredDirByAtomId = new Map();
+              if (anchorToAtom.lengthSq() > 1e-12) {
+                preferredDirByAtomId.set(anchorId, anchorToAtom);
+                preferredDirByAtomId.set(String(session.atomId || '').trim(), atomToAnchor);
+                adjustmentOptions.preferredDirByAtomId = preferredDirByAtomId;
+              }
+            }
+          }
+        }
+        if (focusIndices.length) applyAutomaticHydrogenAdjustment(resolved.record, resolved.vol, focusIndices, adjustmentOptions);
       }
       const finalAtoms = cloneAtomsSnapshot(resolved.vol);
       const finalBonds = cloneBondSnapshot(resolved.vol);
@@ -662,8 +701,10 @@
         beforeAnnotations,
         `Add ${getElementSymbol(z)}`,
         getEditAddCoordinationGeometryId(),
-        { source: 'new-atom', autoAdjustHydrogensOnCommit: true, translateAttachedHydrogens: false }
+        { source: 'new-atom', autoAdjustHydrogensOnCommit: false, translateAttachedHydrogens: true, startCollapsed: true }
       );
+      applyAutomaticHydrogenAdjustment(record, vol, [vol.atoms.length - 1], { source: 'operator' });
+      updateAddAtomOperatorUi();
       setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc cancel`);
       return true;
     }
