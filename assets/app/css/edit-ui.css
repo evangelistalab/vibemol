@@ -313,7 +313,6 @@
 }
 
 #editAdaptiveAddAtomPopover,
-#editAdaptiveAddFragmentPopover,
 #editAdaptiveAddMoleculePopover,
 #editSelectionFragmentCuePopover {
   position: fixed;
@@ -330,7 +329,6 @@
 }
 
 #editAdaptiveAddAtomPopover[aria-hidden="false"],
-#editAdaptiveAddFragmentPopover[aria-hidden="false"],
 #editAdaptiveAddMoleculePopover[aria-hidden="false"],
 #editSelectionFragmentCuePopover[aria-hidden="false"] {
   display: block;
@@ -573,14 +571,12 @@
 }
 
 #editAdaptiveAddAtomPopover #editAddAtomPane,
-#editAdaptiveAddFragmentPopover #editAddFragmentPane,
 #editAdaptiveAddMoleculePopover #editAddMoleculePane,
 #editSelectionFragmentCuePopover #editAddFragmentPane {
   display: block;
 }
 
 #editAdaptiveAddAtomPopover label:first-child,
-#editAdaptiveAddFragmentPopover label:first-child,
 #editAdaptiveAddMoleculePopover label:first-child,
 #editSelectionFragmentCuePopover label:first-child {
   margin-top: 0;

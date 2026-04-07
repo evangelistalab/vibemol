@@ -2754,17 +2754,6 @@
         <span class="adaptiveShortcutKey">N</span>
       </span>
     </button>
-    <button id="editAdaptiveAddFragmentBtn" class="adaptiveEditItem" type="button" title="Add fragment tool">
-      <span class="adaptiveEditItemBody">
-        <span class="adaptiveEditItemTitleRow">
-          <span class="adaptiveEditItemLabel">Add fragment</span>
-        </span>
-        <span id="editAdaptiveAddFragmentMeta" class="adaptiveEditItemMeta">Choose fragment • choose attach policy</span>
-      </span>
-      <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">F</span>
-      </span>
-    </button>
     <button id="editAdaptiveAddMoleculeBtn" class="adaptiveEditItem" type="button" title="Add molecule tool">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
@@ -2811,7 +2800,6 @@
     </button>
   </div>
   <div id="editAdaptiveAddAtomPopover" aria-hidden="true"></div>
-  <div id="editAdaptiveAddFragmentPopover" aria-hidden="true"></div>
   <div id="editAdaptiveAddMoleculePopover" aria-hidden="true"></div>
   <div id="editHaloLayer" aria-hidden="true"></div>
   <div id="editSelectionTranslateCue" aria-hidden="true" title="Selected atoms">
@@ -2820,6 +2808,12 @@
     </button>
     <button id="editSelectionRotateCueButton" class="editSelectionCueButton" type="button" aria-label="Rotate selection" title="Rotate selection">
       <span class="material-symbols-rounded" aria-hidden="true">rotate_right</span>
+    </button>
+    <button id="editSelectionBondOrbitCueButton" class="editSelectionCueButton" type="button" aria-label="Rotate fragment in 3D" title="Rotate fragment in 3D" hidden>
+      <span class="material-symbols-rounded" aria-hidden="true">3d_rotation</span>
+    </button>
+    <button id="editSelectionBondDistanceCueButton" class="editSelectionCueButton" type="button" aria-label="Adjust bond distance" title="Adjust bond distance" hidden>
+      <span class="material-symbols-rounded" aria-hidden="true">swap_horiz</span>
     </button>
     <button id="editSelectionAddFragmentCueButton" class="editSelectionCueButton" type="button" aria-label="Add fragment" title="Add fragment">
       <span class="material-symbols-rounded" aria-hidden="true">add</span>
@@ -2894,7 +2888,6 @@
     <div id="editAddPane">
       <div id="editAddModeToggle">
         <button id="editAddModeAtomBtn" type="button" class="active" title="Add single atoms">Atom</button>
-        <button id="editAddModeFragmentBtn" type="button" title="Attach predefined fragments">Fragment</button>
         <button id="editAddModeMoleculeBtn" type="button" title="Place standalone molecules">Molecule</button>
       </div>
       <div id="editAddAtomPane" class="active">
@@ -3173,7 +3166,7 @@
           <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
           <li><strong>Cmd/Ctrl+Z</strong> / <strong>Cmd/Ctrl+Shift+Z</strong> — Undo / Redo edit action</li>
           <li><strong>Edit tools:</strong> <strong>N</strong>=Atom manipulation,
-            <strong>F</strong>=Add fragment, <strong>M</strong>=Add molecule, <strong>O</strong>=Clean structure,
+            <strong>M</strong>=Add molecule, <strong>O</strong>=Clean structure,
             <strong>P</strong>=Align principal axes, <strong>D</strong>=Delete</li>
           <li><strong>Edit mode:</strong> hold <strong>Shift</strong> during free placement to bypass auto angle snapping</li>
           <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>

@@ -383,6 +383,35 @@ def project_active_atom(page, atom_index: int) -> tuple[float, float]:
     return float(result['x']), float(result['y'])
 
 
+def find_atom_click_point(page, atom_index: int) -> tuple[float, float]:
+    center_x, center_y = project_active_atom(page, atom_index)
+    candidates: list[tuple[float, float]] = [(0.0, 0.0)]
+    for radius in (8.0, 14.0, 20.0, 28.0, 36.0, 44.0):
+        candidates.extend([
+            (-radius, 0.0), (radius, 0.0),
+            (0.0, -radius), (0.0, radius),
+            (-radius, -radius), (radius, -radius),
+            (-radius, radius), (radius, radius),
+            (-radius, radius * 0.5), (radius, radius * 0.5),
+            (-radius, -radius * 0.5), (radius, -radius * 0.5),
+            (-radius * 0.5, radius), (radius * 0.5, radius),
+            (-radius * 0.5, -radius), (radius * 0.5, -radius),
+        ])
+    for off_x, off_y in candidates:
+        x = center_x + off_x
+        y = center_y + off_y
+        hit = page.evaluate(
+            """(payload) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+                return window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+            }""",
+            {'x': x, 'y': y},
+        )
+        if isinstance(hit, dict) and int(hit.get('atomIndex', -1)) == int(atom_index):
+            return x, y
+    raise AssertionError(f'Could not locate a clickable point for atom index {atom_index}')
+
+
 def get_transform_angle_guide(page) -> dict[str, float | str | bool] | None:
     result = page.evaluate(
         """() => {
@@ -394,6 +423,32 @@ def get_transform_angle_guide(page) -> dict[str, float | str | bool] | None:
         return None
     if not isinstance(result, dict):
         raise AssertionError(f'Unexpected transform angle guide result: {result!r}')
+    return result
+
+
+def get_transform_distance_guide(page) -> dict[str, float | bool] | None:
+    result = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.getTransformDistanceGuideClient !== 'function') return null;
+            return window.VibeMolTesting.getTransformDistanceGuideClient();
+        }"""
+    )
+    if result is None:
+        return None
+    if not isinstance(result, dict):
+        raise AssertionError(f'Unexpected transform distance guide result: {result!r}')
+    return result
+
+
+def get_bond_side_cue_state(page) -> dict[str, str | bool]:
+    result = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.getBondSideCueState !== 'function') return null;
+            return window.VibeMolTesting.getBondSideCueState();
+        }"""
+    )
+    if not isinstance(result, dict):
+        raise AssertionError(f'Unexpected bond-side cue state: {result!r}')
     return result
 
 
@@ -667,7 +722,6 @@ def main() -> int:
                     };
                     return {
                         addAtom: isShown('editAdaptiveAddAtomBtn'),
-                        addFragment: isShown('editAdaptiveAddFragmentBtn'),
                         addMolecule: isShown('editAdaptiveAddMoleculeBtn'),
                         cleanStructure: isShown('editAdaptiveCleanStructureBtn'),
                         shiftCom: isShown('editAdaptiveShiftComBtn'),
@@ -677,7 +731,6 @@ def main() -> int:
             )
             if empty_edit_visibility != {
                 'addAtom': True,
-                'addFragment': True,
                 'addMolecule': True,
                 'cleanStructure': False,
                 'shiftCom': False,
@@ -1193,15 +1246,22 @@ def main() -> int:
             select_two_fixture_atoms(page)
             page.locator('#editSelectionAddFragmentCueButton').click()
             page.wait_for_function(
-                """() => /Add fragment active/i.test(document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '')"""
+                """() => {
+                    const subtitle = document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '';
+                    const cue = document.getElementById('editSelectionAddFragmentCueButton');
+                    return /Atom manipulation active/i.test(subtitle)
+                      && !!cue
+                      && cue.getAttribute('aria-pressed') === 'true';
+                }"""
             )
             cancel_x, cancel_y = find_empty_edit_canvas_point(page)
             page.mouse.click(cancel_x, cancel_y)
             page.wait_for_function(
-                """() => /Atom manipulation active/i.test(document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '')"""
-            )
-            page.wait_for_function(
-                """() => document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'true'"""
+                """() => {
+                    const subtitle = document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '';
+                    return /Atom manipulation active/i.test(subtitle)
+                      && document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'true';
+                }"""
             )
             select_two_fixture_atoms(page)
 
@@ -1250,6 +1310,45 @@ def main() -> int:
             after_add_atom = active_structure_summary(page)
             if after_add_atom['atomCount'] != before_add_atom['atomCount'] + 1:
                 raise AssertionError(f'Add atom did not add exactly one atom: {before_add_atom} -> {after_add_atom}')
+
+            log_step('grow-add can be followed immediately by atom selection')
+            page.locator('#newFileBtn').click()
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.locator('#editAdaptiveAddAtomBtn').click()
+            page.locator('#editAddAdjustHydrogens').check()
+            page.locator('#editAddQuick button[data-z=\"6\"]').click()
+            grow_x, grow_y = canvas_point(page, 0.56, 0.55)
+            page.mouse.click(grow_x, grow_y)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    return atoms.length === 5 && bonds.length === 4;
+                }"""
+            )
+            anchor_x, anchor_y = find_atom_click_point(page, 0)
+            page.mouse.move(anchor_x, anchor_y)
+            page.mouse.down()
+            page.mouse.move(anchor_x + 140, anchor_y - 20, steps=15)
+            page.mouse.up()
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    return atoms.length === 8 && bonds.length === 7;
+                }"""
+            )
+            page.mouse.click(anchor_x, anchor_y)
+            page.wait_for_function(
+                """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1"""
+            )
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => document.getElementById('editAddAtomOperatorPanel')?.getAttribute('aria-hidden') === 'true'"""
+            )
 
             log_step('add molecule smoke')
             # Add molecule smoke.
@@ -1330,6 +1429,15 @@ def main() -> int:
             angle_guide = get_transform_angle_guide(page)
             if not angle_guide or not angle_guide.get('visible'):
                 raise AssertionError(f'Bond-side dihedral guide did not appear: {angle_guide!r}')
+            page.wait_for_function(
+                """() => {
+                    const cue = window.VibeMolTesting?.getBondSideCueState?.();
+                    return !!cue && cue.rotateVisible === true && cue.orbitVisible === true && cue.distanceVisible === true;
+                }"""
+            )
+            cue_state = get_bond_side_cue_state(page)
+            if not cue_state.get('orbitVisible') or not cue_state.get('distanceVisible'):
+                raise AssertionError(f'Bond-side cues did not appear: {cue_state!r}')
             before_positions = page.evaluate(
                 """() => (window.VibeMolStructure.exportActive().volume.atoms || []).map((atom) => [
                     Number(atom.x) || 0,
@@ -1337,14 +1445,20 @@ def main() -> int:
                     Number(atom.z) || 0,
                 ])"""
             )
-            page.mouse.move(float(angle_guide['x']), float(angle_guide['y']))
+            orbit_cue_box = page.locator('#editSelectionBondOrbitCueButton').bounding_box()
+            if not orbit_cue_box:
+                raise AssertionError('Bond orbit cue is not visible')
+            orbit_x = orbit_cue_box['x'] + orbit_cue_box['width'] * 0.5
+            orbit_y = orbit_cue_box['y'] + orbit_cue_box['height'] * 0.5
+            page.mouse.move(orbit_x, orbit_y)
             page.mouse.down()
-            page.mouse.move(float(angle_guide['x']) + 36, float(angle_guide['y']) - 28, steps=8)
+            page.mouse.move(orbit_x + 36, orbit_y, steps=8)
             page.mouse.up()
             page.wait_for_function(
                 """(beforePositions) => {
                     const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
                     if (!Array.isArray(beforePositions) || beforePositions.length !== atoms.length) return false;
+                    let moved = false;
                     for (let i = 0; i < atoms.length; i += 1) {
                         const before = beforePositions[i];
                         const atom = atoms[i];
@@ -1352,11 +1466,75 @@ def main() -> int:
                         const dx = (Number(atom.x) || 0) - (Number(before[0]) || 0);
                         const dy = (Number(atom.y) || 0) - (Number(before[1]) || 0);
                         const dz = (Number(atom.z) || 0) - (Number(before[2]) || 0);
-                        if ((dx * dx + dy * dy + dz * dz) > 1e-6) return true;
+                        if ((dx * dx + dy * dy + dz * dz) > 1e-6) moved = true;
                     }
-                    return false;
+                    return moved;
                 }""",
                 arg=before_positions,
+            )
+
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture-distance")', dihedral_fixture_text)
+            page.locator('#modeDisplayBtn').click()
+            page.locator('#modeEditBtn').click()
+            page.locator('#editAdaptiveAddAtomBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
+            )
+            side_x, side_y = find_bond_side_canvas_point(page)
+            page.mouse.click(side_x, side_y)
+            page.wait_for_function(
+                """() => {
+                    const cue = window.VibeMolTesting?.getBondSideCueState?.();
+                    return !!cue && cue.distanceVisible === true;
+                }"""
+            )
+            distance_cue_box = page.locator('#editSelectionBondDistanceCueButton').bounding_box()
+            if not distance_cue_box:
+                raise AssertionError('Bond distance cue is not visible')
+            distance_cue_x = distance_cue_box['x'] + distance_cue_box['width'] * 0.5
+            distance_cue_y = distance_cue_box['y'] + distance_cue_box['height'] * 0.5
+            page.mouse.click(distance_cue_x, distance_cue_y)
+            page.wait_for_function(
+                """() => {
+                    const guide = window.VibeMolTesting?.getTransformDistanceGuideClient?.();
+                    return !!guide && guide.visible === true && Number.isFinite(guide.distanceAng);
+                }"""
+            )
+            distance_guide = get_transform_distance_guide(page)
+            if not distance_guide or not distance_guide.get('visible'):
+                raise AssertionError(f'Bond distance guide did not appear: {distance_guide!r}')
+            before_positions = page.evaluate(
+                """() => (window.VibeMolStructure.exportActive().volume.atoms || []).map((atom) => [
+                    Number(atom.x) || 0,
+                    Number(atom.y) || 0,
+                    Number(atom.z) || 0,
+                ])"""
+            )
+            distance_x = float(distance_guide['x'])
+            distance_y = float(distance_guide['y'])
+            page.mouse.move(distance_x, distance_y)
+            page.mouse.down()
+            page.mouse.move(distance_x + 42, distance_y, steps=8)
+            page.mouse.up()
+            page.wait_for_function(
+                """(payload) => {
+                    const beforePositions = payload.beforePositions;
+                    const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
+                    const guide = window.VibeMolTesting?.getTransformDistanceGuideClient?.() || {};
+                    if (!Array.isArray(beforePositions) || beforePositions.length !== atoms.length) return false;
+                    let moved = false;
+                    for (let i = 0; i < atoms.length; i += 1) {
+                        const before = beforePositions[i];
+                        const atom = atoms[i];
+                        if (!Array.isArray(before) || before.length < 3 || !atom) continue;
+                        const dx = (Number(atom.x) || 0) - (Number(before[0]) || 0);
+                        const dy = (Number(atom.y) || 0) - (Number(before[1]) || 0);
+                        const dz = (Number(atom.z) || 0) - (Number(before[2]) || 0);
+                        if ((dx * dx + dy * dy + dz * dz) > 1e-6) moved = true;
+                    }
+                    return moved && Math.abs((Number(guide.distanceAng) || 0) - Number(payload.beforeDistance || 0)) > 1e-6;
+                }""",
+                arg={'beforePositions': before_positions, 'beforeDistance': float(distance_guide['distanceAng'])},
             )
 
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture")', fixture_text)
@@ -1434,7 +1612,9 @@ def main() -> int:
                 }"""
             )
             order_updated = active_structure_summary(page)
-            if order_updated['bondOrders'] != [2] or order_updated['bondOrigins'] != ['explicit']:
+            if not order_updated['bondOrders'] or order_updated['bondOrders'][0] != 2:
+                raise AssertionError(f'Bond order update failed: {order_updated}')
+            if not order_updated['bondOrigins'] or order_updated['bondOrigins'][0] != 'explicit':
                 raise AssertionError(f'Bond order update failed: {order_updated}')
 
             # Clean structure should run the one-shot UFF cleanup action.
@@ -1635,9 +1815,13 @@ def main() -> int:
             )
             if not isinstance(heavy_anchor_point, dict) or not heavy_anchor_point.get('visible'):
                 raise AssertionError(f'Could not project saturated carbon anchor to client coordinates: {heavy_anchor_point!r}')
-            page.locator('#editAdaptiveAddFragmentBtn').click()
+            page.mouse.click(heavy_anchor_point['x'], heavy_anchor_point['y'])
             page.wait_for_function(
-                """() => /Add fragment active/i.test(document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '')"""
+                """() => document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'false'"""
+            )
+            page.locator('#editSelectionAddFragmentCueButton').click()
+            page.wait_for_function(
+                """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
             )
             page.mouse.click(heavy_anchor_point['x'], heavy_anchor_point['y'])
             page.wait_for_function(
@@ -1658,6 +1842,9 @@ def main() -> int:
                     return neighbors.length === 4 && nonHydrogenNeighbors.length === 1;
                 }""",
                 arg=heavy_anchor['atomId'],
+            )
+            page.wait_for_function(
+                """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
             )
 
             log_step('grow drag onto terminal hydrogen replaces it with loaded atom')

@@ -9,7 +9,6 @@ function createEditToolsHarness() {
   const editToolsApi = context.window.VibeMolEditTools;
   const EDIT_INTENT = {
     ATOM_MANIPULATION: 'atom_manipulation',
-    ADD_FRAGMENT: 'add_fragment',
     ADD_MOLECULE: 'add_molecule',
   };
   const EDIT_ADD_MODE = { ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' };
@@ -63,7 +62,11 @@ function createEditToolsHarness() {
     EDIT_FRAGMENT_ATTACH_POLICY,
     getActiveRecord: () => record,
     isEditMode: () => true,
-    finalizeAddAtomOperatorSession: () => { calls.finalizeAddAtomOperatorSession += 1; return true; },
+    finalizeAddAtomOperatorSession: () => {
+      calls.finalizeAddAtomOperatorSession += 1;
+      state.addAtomOperatorSession = null;
+      return true;
+    },
     hideAllAdaptiveToolPopovers: () => { calls.hideAllAdaptiveToolPopovers += 1; },
     clearAddGrowPreview: () => { calls.clearAddGrowPreview += 1; },
     clearMoleculePlacementPreview: () => { calls.clearMoleculePlacementPreview += 1; },
@@ -106,12 +109,14 @@ function createEditToolsHarness() {
 }
 
 test('edit-tools selection logic supports replace, toggle, and select-all', () => {
-  const { controller, calls } = createEditToolsHarness();
+  const { controller, calls, state } = createEditToolsHarness();
 
   assert.deepEqual(plain(controller.normalizeEditAtomSelection([2, 2, 1, -1, 9], { atoms: [{}, {}, {}] })), [1, 2]);
+  state.addAtomOperatorSession = { source: 'new-atom' };
   calls.transformSelectionActive = true;
   assert.equal(controller.applyEditAtomSelectionClick(1, false), true);
   assert.deepEqual(plain(controller.getEditAtomSelection()), [1]);
+  assert.equal(calls.finalizeAddAtomOperatorSession, 1);
   assert.equal(calls.clearTransformSelection, 1);
   calls.transformSelectionActive = true;
   assert.equal(controller.applyEditAtomSelectionClick(2, true), true);
@@ -174,22 +179,23 @@ test('edit-tools intent transitions finalize atom sessions and derive add mode',
   assert.equal(calls.refreshActiveAddGrowPreview >= 1, true);
 });
 
-test('edit-tools add-fragment and atom-manipulation intents emit dedicated hints', () => {
-  const { controller, state, calls, EDIT_INTENT } = createEditToolsHarness();
+test('edit-tools fragment attach stays in atom manipulation and emits a dedicated hint', () => {
+  const { controller, state, calls, EDIT_INTENT, EDIT_ADD_MODE } = createEditToolsHarness();
 
   controller.setEditIntent(EDIT_INTENT.ATOM_MANIPULATION);
   assert.equal(state.editIntent, EDIT_INTENT.ATOM_MANIPULATION);
   assert.match(calls.hintMessages.at(-1), /Atom manipulation/);
 
-  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
-  assert.equal(state.editIntent, EDIT_INTENT.ADD_FRAGMENT);
-  assert.match(calls.hintMessages.at(-1), /Add fragment/);
+  controller.setEditAddMode(EDIT_ADD_MODE.FRAGMENT);
+  assert.equal(state.editIntent, EDIT_INTENT.ATOM_MANIPULATION);
+  assert.equal(state.editAddMode, EDIT_ADD_MODE.FRAGMENT);
+  assert.match(calls.hintMessages.at(-1), /Fragment attach/);
 });
 
 test('edit-tools leaving atom manipulation clears transform transient state', () => {
   const { controller, calls, EDIT_INTENT } = createEditToolsHarness();
 
-  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
+  controller.setEditIntent(EDIT_INTENT.ADD_MOLECULE);
   assert.equal(calls.clearTransformState, 1);
 });
 
@@ -200,7 +206,7 @@ test('edit-tools leaving atom manipulation clears current atom, transform, and b
   calls.transformSelectionActive = true;
   calls.pendingBondIndex = 1;
 
-  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
+  controller.setEditIntent(EDIT_INTENT.ADD_MOLECULE);
 
   assert.deepEqual(plain(controller.getEditAtomSelection()), []);
   assert.equal(calls.clearTransformSelection, 1);
@@ -215,7 +221,7 @@ test('edit-tools can preserve atom selection when leaving atom manipulation inte
   calls.transformSelectionActive = true;
   calls.pendingBondIndex = 1;
 
-  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT, { preserveSelection: true });
+  controller.setEditIntent(EDIT_INTENT.ADD_MOLECULE, { preserveSelection: true });
 
   assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 2]);
   assert.equal(calls.clearTransformSelection, 1);

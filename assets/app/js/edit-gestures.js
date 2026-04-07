@@ -8,7 +8,6 @@
     const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
     const EDIT_INTENT = options.EDIT_INTENT || Object.freeze({
       ATOM_MANIPULATION: 'atom_manipulation',
-      ADD_FRAGMENT: 'add_fragment',
       ADD_MOLECULE: 'add_molecule',
     });
     const getSelection = typeof options.getSelection === 'function' ? options.getSelection : (() => []);
@@ -133,9 +132,6 @@
       if (!isEnabled()) {
         hint = '';
         scope = '';
-      } else if (intent === EDIT_INTENT.ADD_FRAGMENT) {
-        hint = 'Add fragment: click an anchor atom or host bond';
-        scope = selection.length ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected` : 'Fragment placement';
       } else if (intent === EDIT_INTENT.ADD_MOLECULE) {
         hint = 'Add molecule: click to place • drag to rotate • click again to confirm';
         scope = selection.length ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected` : 'Molecule placement';
@@ -158,7 +154,7 @@
         hint = 'Left click raises bond order • Right click lowers bond order';
         scope = 'Bond midpoint';
       } else if (state.hoverBondHit && (state.hoverBondHit.section === 'nearA' || state.hoverBondHit.section === 'nearB')) {
-        hint = 'Click bond side to select fragment • Drag left/right to rotate around bond axis • Shift-drag for free 3D bond rotation';
+        hint = 'Click bond side to select fragment • Rotate cue turns torsion • Sphere cue turns 3D rotation • Distance cue changes bond length';
         scope = 'Bond side';
       } else if (selection.length === 1) {
         const selectionDragMode = getSelectionDragMode() === 'rotate' ? 'rotate' : 'translate';
@@ -435,7 +431,7 @@
       state.press = null;
       state.activePointerId = e.pointerId;
       if (handleExternalPointerDown(intent, e, state)) return true;
-      if (intent === EDIT_INTENT.ADD_FRAGMENT || intent === EDIT_INTENT.ADD_MOLECULE) return false;
+      if (intent === EDIT_INTENT.ADD_MOLECULE) return false;
       const centerBondHit = resolveBondCenterClickHit(e);
       if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
         state.press = {
