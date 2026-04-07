@@ -330,6 +330,8 @@
     const getAtomWorld = typeof options.getAtomWorld === 'function' ? options.getAtomWorld : (() => null);
     const projectWorldToClient = typeof options.projectWorldToClient === 'function' ? options.projectWorldToClient : (() => null);
     const getElementSymbol = typeof options.getElementSymbol === 'function' ? options.getElementSymbol : ((z) => `Z${z | 0}`);
+    const getLoadedPayloadKind = typeof options.getLoadedPayloadKind === 'function' ? options.getLoadedPayloadKind : (() => 'atom');
+    const getLoadedPayloadLabel = typeof options.getLoadedPayloadLabel === 'function' ? options.getLoadedPayloadLabel : (() => 'loaded item');
     const getAtomCoordinationGeometryId = typeof options.getAtomCoordinationGeometryId === 'function' ? options.getAtomCoordinationGeometryId : (() => '');
     const getGrowBondLength = typeof options.getGrowBondLength === 'function' ? options.getGrowBondLength : (() => 1.1);
     const nowProvider = typeof options.nowProvider === 'function' ? options.nowProvider : defaultNow;
@@ -651,17 +653,24 @@
       const descriptor = state.descriptor;
       const activeZone = descriptor && state.lastPointer ? computeActiveZone(descriptor, state.lastPointer) : null;
       const visible = !!(state.visible && descriptor);
+      const payloadKind = String(getLoadedPayloadKind() || '').trim().toLowerCase();
+      const payloadLabel = String(getLoadedPayloadLabel() || '').trim();
+      const payloadText = payloadKind === 'fragment'
+        ? `fragment ${payloadLabel || 'fragment'}`
+        : (payloadKind === 'molecule'
+          ? `molecule ${payloadLabel || 'molecule'}`
+          : (payloadLabel || 'the loaded element'));
       let hint = '';
       let scope = '';
       if (visible && descriptor) {
         if (activeZone && activeZone.kind === 'choice') {
           hint = `Prefer ${activeZone.choice.text} for ${getElementSymbol(descriptor.atomZ)}`;
         } else if (activeZone && activeZone.kind === 'ghost') {
-          hint = `Click to place the loaded element in ${descriptor.activeGeometryText}`;
+          hint = `Click to place ${payloadText} in ${descriptor.activeGeometryText}`;
         } else if (descriptor.mode === 'metal-coordination') {
           hint = `Coordination halo: ${descriptor.activeGeometryText}`;
         } else if ((descriptor.ghosts || []).length) {
-          hint = `Click a ghost to place the loaded element in ${descriptor.activeGeometryText}`;
+          hint = `Click a ghost to place ${payloadText} in ${descriptor.activeGeometryText}`;
         } else {
           hint = `No open sites in ${descriptor.activeGeometryText} • drag the atom body to move it`;
         }

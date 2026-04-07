@@ -213,6 +213,19 @@
   opacity: 0;
 }
 
+.editHaloGhost.is-fragment {
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  border-radius: 3px;
+  opacity: 0.92;
+  border: 1px solid rgba(180, 242, 255, 0.86);
+  background: linear-gradient(135deg, rgba(64, 196, 255, 0.96), rgba(108, 255, 209, 0.78));
+  box-shadow: 0 0 0 4px rgba(103, 217, 255, 0.16);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
 .editHaloChoice {
   min-width: 82px;
   height: 26px;

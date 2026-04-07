@@ -10342,6 +10342,24 @@
     return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT;
   }
 
+  function getEditHaloGhostPayloadDescriptor(anchorZ = 0) {
+    const attach = getActiveAddAttachSettings(anchorZ | 0);
+    if (attach && attach.mode === EDIT_ADD_MODE.FRAGMENT && attach.fragment) {
+      return {
+        kind: 'fragment',
+        previewZ: Math.max(1, attach.previewZ | 0),
+        fragmentId: String(attach.fragment.id || ''),
+        label: String(attach.fragment.name || attach.fragment.formula || 'fragment'),
+      };
+    }
+    return {
+      kind: 'atom',
+      previewZ: Math.max(1, editAddElementZ | 0),
+      fragmentId: '',
+      label: `${getElementName(editAddElementZ | 0)} (${getElementSymbol(editAddElementZ | 0)})`,
+    };
+  }
+
   function getCurrentBuildPayload() {
     if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
       const molecule = getCurrentMoleculeDefinition();
@@ -12294,6 +12312,12 @@
       return projectWorldToClient({ x: world[0], y: world[1], z: world[2] });
     },
     getElementSymbol,
+    getLoadedPayloadKind: () => getCurrentBuildPayload().kind,
+    getLoadedPayloadLabel: () => {
+      const payload = getCurrentBuildPayload();
+      if (payload.kind === 'atom') return `${payload.name} (${payload.symbol})`;
+      return payload.name || payload.label || payload.id || payload.kind;
+    },
     getAtomCoordinationGeometryId: (vol, atomIndex) => {
       const meta = getAtomCoordinationMeta(vol, atomIndex);
       return String(meta && meta.geometryId || '').trim();
@@ -12593,6 +12617,24 @@
     hideSelectionFragmentCuePopover();
     setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch, preserveSelection });
     return true;
+  }
+
+  /**
+   * Decide whether one atom click should retarget the selection-fragment cue to a
+   * newly clicked anchor instead of starting fragment placement immediately.
+   * Clicking a bonded terminal hydrogen on the currently selected anchor should
+   * not retarget; that path is reserved for Replace-H attachment on the same
+   * anchor atom.
+   * @param {*} resolvedAnchorHit
+   * @returns {boolean}
+   */
+  function shouldRetargetSelectionFragmentCueAnchor(resolvedAnchorHit) {
+    if (!isSelectionFragmentCueActive()) return false;
+    const selection = getEditAtomSelection();
+    if (!Array.isArray(selection) || selection.length !== 1) return false;
+    const selectedAnchorIndex = selection[0] | 0;
+    const resolvedAnchorIndex = resolvedAnchorHit ? (resolvedAnchorHit.anchorIndex | 0) : -1;
+    return resolvedAnchorIndex >= 0 && resolvedAnchorIndex !== selectedAnchorIndex;
   }
 
   function beginSelectionCueDrag(action, buttonEl, e) {
@@ -13051,8 +13093,10 @@
       const height = Math.max(26, Number(item.height) || 0);
       return `<div class="${classes}" data-halo-coordination="${String(item.geometryId || '')}" style="left:${Number(item.x) || 0}px; top:${Number(item.y) || 0}px; width:${width}px; height:${height}px; line-height:${height}px;">${String(item.text || '')}</div>`;
     }).join('');
+    const ghostPayload = getEditHaloGhostPayloadDescriptor(uiState.atomZ | 0);
+    const ghostClassName = ghostPayload.kind === 'fragment' ? 'editHaloGhost is-fragment' : 'editHaloGhost';
     const ghostsHtml = (Array.isArray(uiState.ghosts) ? uiState.ghosts : []).map((ghost) => {
-      return `<div class="editHaloGhost" data-halo-ghost="${ghost.index}" style="left:${Number(ghost.x) || 0}px; top:${Number(ghost.y) || 0}px;"></div>`;
+      return `<div class="${ghostClassName}" data-halo-ghost="${ghost.index}" style="left:${Number(ghost.x) || 0}px; top:${Number(ghost.y) || 0}px;"></div>`;
     }).join('');
     editHaloLayerEl.innerHTML = `${captureHtml}<div class="editHaloCore" style="left:${Number(anchor.x) || 0}px; top:${Number(anchor.y) || 0}px;"></div>${ghostsHtml}${choicesHtml}`;
   }
@@ -13101,11 +13145,15 @@
       if (editHaloGhostRenderKey || editHaloGhostPreviewGroup.children.length) clearEditHaloGhostPreview();
       return;
     }
-    const loadedZ = editAddElementZ | 0;
     const anchorZ = uiState.atomZ | 0;
+    const ghostPayload = getEditHaloGhostPayloadDescriptor(anchorZ);
+    const previewZ = ghostPayload.previewZ | 0;
     const renderState = {
       atomZ: anchorZ,
-      loadedZ,
+      previewZ,
+      ghostKind: ghostPayload.kind,
+      ghostLabel: ghostPayload.label,
+      fragmentId: ghostPayload.fragmentId,
       hover: editHaloGhostHoverIndex,
       ghosts: uiState.ghosts.map((ghost) => ({
         index: ghost.index | 0,
@@ -13123,31 +13171,67 @@
     const sphereHeightSegments = Math.max(12, getMoleculeStyleProfile().sphereHeightSegments | 0);
     const bondRadialSegments = Math.max(12, getMoleculeStyleProfile().bondRadialSegments | 0);
     const up = new THREE.Vector3(0, 1, 0);
+    const fragmentGhostsActive = renderState.ghostKind === 'fragment';
     for (const ghost of renderState.ghosts) {
       const ghostWorld = new THREE.Vector3(ghost.world[0], ghost.world[1], ghost.world[2]);
       const hovered = (ghost.index | 0) === (editHaloGhostHoverIndex | 0);
-      const atomColor = hovered ? new THREE.Color(0xffde59) : getAtomRenderColor(loadedZ).clone();
-      const bondColor = hovered ? new THREE.Color(0xffde59) : new THREE.Color(0xdbe3ef);
+      const ghostColor = hovered
+        ? new THREE.Color(0xffde59)
+        : (fragmentGhostsActive ? new THREE.Color(0x66d8ff) : getAtomRenderColor(previewZ).clone());
+      const edgeColor = hovered ? new THREE.Color(0xfff3b0) : new THREE.Color(0xe9fbff);
+      const bondColor = hovered ? new THREE.Color(0xffde59) : (fragmentGhostsActive ? new THREE.Color(0xa3ebff) : new THREE.Color(0xdbe3ef));
       const ghostGroup = new THREE.Group();
       ghostGroup.userData.haloGhostIndex = ghost.index | 0;
-      const atomRadius = getRenderedAtomDisplayRadius(loadedZ);
-      const atomGeom = new THREE.SphereGeometry(atomRadius, sphereWidthSegments, sphereHeightSegments);
-      const atomMat = new THREE.MeshPhysicalMaterial({
-        color: atomColor,
-        transparent: true,
-        opacity: hovered ? 0.86 : 0.46,
-        roughness: 0.2,
-        metalness: 0.08,
-        clearcoat: 0.42,
-        clearcoatRoughness: 0.16,
-        depthWrite: false,
-      });
-      const atomMesh = new THREE.Mesh(atomGeom, atomMat);
-      atomMesh.position.copy(ghostWorld);
-      atomMesh.renderOrder = 68;
-      atomMesh.userData.haloGhostIndex = ghost.index | 0;
-      ghostGroup.add(atomMesh);
-      const placement = getPreviewBondSegmentPlacement(anchorWorld, ghostWorld, anchorZ, loadedZ, {
+      const atomRadius = getRenderedAtomDisplayRadius(previewZ);
+      if (fragmentGhostsActive) {
+        const ghostRadius = Math.max(0.18, atomRadius * 0.95);
+        const polyGeom = new THREE.IcosahedronGeometry(ghostRadius, 0);
+        const polyMat = new THREE.MeshPhysicalMaterial({
+          color: ghostColor,
+          transparent: true,
+          opacity: hovered ? 0.9 : 0.62,
+          roughness: 0.18,
+          metalness: 0.12,
+          clearcoat: 0.56,
+          clearcoatRoughness: 0.12,
+          depthWrite: false,
+        });
+        const polyMesh = new THREE.Mesh(polyGeom, polyMat);
+        polyMesh.position.copy(ghostWorld);
+        polyMesh.renderOrder = 68;
+        polyMesh.userData.haloGhostIndex = ghost.index | 0;
+        ghostGroup.add(polyMesh);
+        const edgeGeom = new THREE.EdgesGeometry(polyGeom);
+        const edgeMat = new THREE.LineBasicMaterial({
+          color: edgeColor,
+          transparent: true,
+          opacity: hovered ? 0.96 : 0.82,
+          depthWrite: false,
+        });
+        const edgeLines = new THREE.LineSegments(edgeGeom, edgeMat);
+        edgeLines.position.copy(ghostWorld);
+        edgeLines.renderOrder = 69;
+        edgeLines.userData.haloGhostIndex = ghost.index | 0;
+        ghostGroup.add(edgeLines);
+      } else {
+        const atomGeom = new THREE.SphereGeometry(atomRadius, sphereWidthSegments, sphereHeightSegments);
+        const atomMat = new THREE.MeshPhysicalMaterial({
+          color: ghostColor,
+          transparent: true,
+          opacity: hovered ? 0.86 : 0.46,
+          roughness: 0.2,
+          metalness: 0.08,
+          clearcoat: 0.42,
+          clearcoatRoughness: 0.16,
+          depthWrite: false,
+        });
+        const atomMesh = new THREE.Mesh(atomGeom, atomMat);
+        atomMesh.position.copy(ghostWorld);
+        atomMesh.renderOrder = 68;
+        atomMesh.userData.haloGhostIndex = ghost.index | 0;
+        ghostGroup.add(atomMesh);
+      }
+      const placement = getPreviewBondSegmentPlacement(anchorWorld, ghostWorld, anchorZ, previewZ, {
         minGeomLen: 0.03,
       });
       if (placement.valid) {
@@ -13284,7 +13368,7 @@
       return false;
     }
     if (editHaloController) {
-      const haloGhostHit = pickEditHaloGhostHit(e);
+      const haloGhostHit = editHaloGhostHoverIndex >= 0 ? pickEditHaloGhostHit(e) : null;
       if (haloGhostHit) {
         const uiState = editHaloController.getUiState();
         const ghost = uiState && Array.isArray(uiState.ghosts)
@@ -13387,12 +13471,64 @@
       return true;
     }
     const buildFragmentLoaded = isBuildFragmentLoaded();
+    if (editHaloController) {
+      const haloAction = editHaloController.handlePointerDown(e);
+      if (haloAction && haloAction.type === 'set-coordination-choice') {
+        if (applyAtomCoordinationChoice(haloAction.atomIndex | 0, haloAction.geometryId)) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          return true;
+        }
+      }
+      if (haloAction && haloAction.type === 'start-grow-drag') {
+        const worldPosition = Array.isArray(haloAction.worldPosition) && haloAction.worldPosition.length >= 3
+          ? new THREE.Vector3(
+            Number(haloAction.worldPosition[0]) || 0,
+            Number(haloAction.worldPosition[1]) || 0,
+            Number(haloAction.worldPosition[2]) || 0
+          )
+          : null;
+        if (worldPosition && appendFragmentAtWorld(haloAction.atomIndex | 0, worldPosition, {
+          preserveAnchorSelection: isSelectionFragmentCueActive(),
+          attachPolicyOverride: EDIT_FRAGMENT_ATTACH_POLICY.APPEND,
+        })) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          return true;
+        }
+      }
+    }
     const hit = pickAtomHit(e);
+    if (!(hit && hit.object && hit.object.userData) && editHaloController) {
+      const haloGhostHit = pickEditHaloGhostHit(e);
+      if (haloGhostHit) {
+        const uiState = editHaloController.getUiState();
+        const ghost = uiState && Array.isArray(uiState.ghosts)
+          ? uiState.ghosts.find((item) => (item.index | 0) === (haloGhostHit.ghostIndex | 0))
+          : null;
+        const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
+        if (ghost && ghost.world && anchorIndex >= 0) {
+          const world = new THREE.Vector3(Number(ghost.world.x) || 0, Number(ghost.world.y) || 0, Number(ghost.world.z) || 0);
+          if (appendFragmentAtWorld(anchorIndex, world, {
+            preserveAnchorSelection: isSelectionFragmentCueActive(),
+            attachPolicyOverride: EDIT_FRAGMENT_ATTACH_POLICY.APPEND,
+          })) {
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            return true;
+          }
+        }
+      }
+    }
     if (hit && hit.object && hit.object.userData) {
       const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
       const resolvedAnchorHit = resolveFragmentAnchorPlacementHit(vol, hit);
       const idx = resolvedAnchorHit ? (resolvedAnchorHit.anchorIndex | 0) : -1;
       if (vol && Array.isArray(vol.atoms) && idx >= 0 && idx < vol.atoms.length) {
+        if (shouldRetargetSelectionFragmentCueAnchor(resolvedAnchorHit)) {
+          hideSelectionFragmentCuePopover();
+          applyEditAtomSelectionClick(idx, false);
+          setSelectionFragmentCueActive(true, { announce: true, syncSearch: false, preserveSelection: true });
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          return true;
+        }
         addGrowActive = true;
         addGrowKind = 'fragment';
         addGrowAnchorIndex = idx;
@@ -13553,6 +13689,26 @@
   }
 
   function handleFragmentIntentControllerPointerMove(e) {
+    let haloGhostHovering = false;
+    if (editHaloController) {
+      const haloGhostHit = pickEditHaloGhostHit(e);
+      const nextGhostHover = haloGhostHit ? (haloGhostHit.ghostIndex | 0) : -1;
+      if (nextGhostHover !== editHaloGhostHoverIndex) {
+        editHaloGhostHoverIndex = nextGhostHover;
+        editHaloGhostRenderKey = '';
+      }
+      if (nextGhostHover >= 0) {
+        haloGhostHovering = true;
+        setHover(null);
+        setBondHover(null);
+        setSurfaceHover(null);
+        hideSurfaceHoverLabel();
+      }
+      editHaloController.handlePointerMove(e);
+    } else if (editHaloGhostHoverIndex >= 0) {
+      editHaloGhostHoverIndex = -1;
+      editHaloGhostRenderKey = '';
+    }
     if (addFusePreviewState && addFusePreviewState.rotating) {
       __editMoved = true;
       updateFuseRingPlacementRotationFromEvent(e);
@@ -13562,7 +13718,7 @@
       updateAddGrowPreviewFromEvent(e);
       return true;
     }
-    return false;
+    return haloGhostHovering;
   }
 
   function handleMoleculeIntentControllerPointerMove(e) {
@@ -13637,7 +13793,11 @@
       const addPos = addGrowPreviewPos ? addGrowPreviewPos.clone() : null;
       clearAddGrowPreview();
       controls.enabled = true;
-      if (addPos) appendFragmentAtWorld(anchorIdx, addPos);
+      if (addPos) appendFragmentAtWorld(anchorIdx, addPos, {
+        preserveAnchorSelection: isSelectionFragmentCueActive(),
+      });
+    } else if (!__editMoved && isSelectionFragmentCueActive()) {
+      setHintMessage('Fragment attach: click an anchor atom to place the fragment.');
     } else if (!__editMoved && isBuildFragmentLoaded()) {
       const hit = pickAtomHit(e);
       const addPos = computeAddAtomPosition(e, hit);
@@ -13646,8 +13806,6 @@
       } else {
         setHintMessage('Build fragment: click an anchor atom to attach or click void to place.');
       }
-    } else if (!__editMoved && isSelectionFragmentCueActive()) {
-      setHintMessage('Fragment attach: click an anchor atom to place the fragment.');
     }
     return true;
   }
@@ -16184,11 +16342,31 @@
    * @param {THREE.Vector3} worldPos
    * @returns {boolean}
    */
-  function appendFragmentAtWorld(anchorIndex, worldPos) {
+  function appendFragmentAtWorld(anchorIndex, worldPos, options = {}) {
     finalizePendingNewAtomOperatorSession();
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
-    const appended = editPlacement.appendFragmentAtWorld(anchorIndex, worldPos);
+    const preserveAnchorSelection = !!options.preserveAnchorSelection;
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const anchorIdBefore = preserveAnchorSelection
+      && vol
+      && Array.isArray(vol.atoms)
+      && (anchorIndex | 0) >= 0
+      && (anchorIndex | 0) < vol.atoms.length
+      && vol.atoms[anchorIndex | 0]
+      ? String(ensureAtomId(vol.atoms[anchorIndex | 0]))
+      : '';
+    const appended = editPlacement.appendFragmentAtWorld(anchorIndex, worldPos, options);
     if (appended) {
+      if (anchorIdBefore && vol && Array.isArray(vol.atoms)) {
+        const nextAnchorIndex = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === anchorIdBefore);
+        if (nextAnchorIndex >= 0) setEditAtomSelection([nextAnchorIndex]);
+        else setEditAtomSelection([]);
+      }
+      if (editHaloController) editHaloController.refresh();
+      if (editGestureController) editGestureController.refreshUi();
+      updateEditSelectionVisuals();
+      updateSelectedHalos();
       hideSelectionFragmentCuePopover();
       updateEditAdaptiveMenuUi();
     }
@@ -18992,6 +19170,21 @@
     getEditSelectionCount: () => {
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.length : 0;
+    },
+    getHaloGhostPreviewKind: () => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return '';
+      return getEditHaloGhostPayloadDescriptor(uiState.atomZ | 0).kind;
+    },
+    getHaloGhostWorlds: () => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return [];
+      return uiState.ghosts.map((ghost) => ({
+        index: ghost.index | 0,
+        x: Number(ghost.world && ghost.world.x) || 0,
+        y: Number(ghost.world && ghost.world.y) || 0,
+        z: Number(ghost.world && ghost.world.z) || 0,
+      }));
     },
     probeSelectionMoveDragStart: (atomIndex, clientX, clientY) => {
       const resolved = resolveGestureMoveScope(atomIndex | 0, { atomOnly: false, preview: false });

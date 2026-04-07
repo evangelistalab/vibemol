@@ -715,7 +715,7 @@
       return true;
     }
 
-    function appendFragmentAtWorld(anchorIndex, worldPos) {
+    function appendFragmentAtWorld(anchorIndex, worldPos, options = {}) {
       const record = ensureEditableVolumeRecord();
       const vol = record && record.vol;
       if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) {
@@ -749,7 +749,10 @@
         if (attachDir.lengthSq() < 1e-10) attachDir.set(1, 0, 0);
       }
       attachDir.normalize();
-      const resolvedPolicy = resolveFragmentAttachPolicy(fragment, vol, anchor, attachDir);
+      const attachPolicyOverride = String(options && options.attachPolicyOverride || '').trim();
+      const resolvedPolicy = attachPolicyOverride === EDIT_FRAGMENT_ATTACH_POLICY.APPEND
+        ? { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null }
+        : resolveFragmentAttachPolicy(fragment, vol, anchor, attachDir);
       if (resolvedPolicy.error && resolvedPolicy.policy !== EDIT_FRAGMENT_ATTACH_POLICY.APPEND) {
         setHintMessage(resolvedPolicy.error);
         return false;

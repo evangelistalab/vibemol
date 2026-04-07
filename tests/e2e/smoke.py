@@ -1287,6 +1287,47 @@ def main() -> int:
                       && document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
+
+            log_step('fragment cue retargets to a newly clicked atom before attach')
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "fragment-retarget-fixture")', fixture_text)
+            left_x, left_y = find_atom_click_point(page, 0)
+            right_x, right_y = find_atom_click_point(page, 1)
+            page.mouse.click(left_x, left_y)
+            wait_for_selected_atoms(page, 1)
+            page.locator('#editSelectionAddFragmentCueButton').click()
+            page.wait_for_function(
+                """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
+            )
+            page.mouse.click(right_x, right_y)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1
+                      && document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'
+                      && Array.isArray(exported.volume?.atoms)
+                      && exported.volume.atoms.length === 2
+                      && Array.isArray(exported.volume?.bonds)
+                      && exported.volume.bonds.length === 1;
+                }"""
+            )
+            page.mouse.click(right_x, right_y)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    if (atoms.length <= 2 || bonds.length <= 1) return false;
+                    const degreeById = new Map(atoms.map((atom) => [String(atom.id || ''), 0]));
+                    for (const bond of bonds) {
+                      const aId = String(bond.a || '');
+                      const bId = String(bond.b || '');
+                      if (degreeById.has(aId)) degreeById.set(aId, Number(degreeById.get(aId) || 0) + 1);
+                      if (degreeById.has(bId)) degreeById.set(bId, Number(degreeById.get(bId) || 0) + 1);
+                    }
+                    return Number(degreeById.get('atom-2') || 0) > Number(degreeById.get('atom-1') || 0);
+                }"""
+            )
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "smoke-fixture-copy-paste")', fixture_text)
             select_two_fixture_atoms(page)
 
             log_step('copy paste smoke')
@@ -1799,47 +1840,22 @@ def main() -> int:
             }:
                 raise AssertionError(f'Auto hydrogen adjustment did not follow the Atoms menu settings: {auto_adjust_summary}')
 
-            log_step('fragment attach prefers heavy anchor over front hydrogen')
+            log_step('fragment cue shows fragment ghost on undercoordinated atom')
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            load_build_query(page, 'C')
-            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
-            set_select_value(page, '#editAddCoordination', 'tetrahedral')
-            tetra_x, tetra_y = canvas_point(page, 0.52, 0.48)
-            page.mouse.click(tetra_x, tetra_y)
+            load_build_query(page, 'Fe')
+            metal_x, metal_y = canvas_point(page, 0.52, 0.48)
+            page.mouse.click(metal_x, metal_y)
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
                     const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
-                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
-                    return atoms.length === 5 && bonds.length === 4;
+                    return atoms.length === 1 && Number(atoms[0]?.Z) === 26;
                 }"""
             )
-            heavy_anchor = page.evaluate(
-                """() => {
-                    const exported = window.VibeMolStructure.exportActive();
-                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
-                    const index = atoms.findIndex((atom) => Number(atom.Z) !== 1);
-                    if (index < 0) return null;
-                    return {
-                        index,
-                        atomId: String(atoms[index].id || ''),
-                    };
-                }"""
-            )
-            if not isinstance(heavy_anchor, dict) or not heavy_anchor.get('atomId'):
-                raise AssertionError(f'Could not resolve saturated carbon anchor: {heavy_anchor!r}')
-            heavy_anchor_point = page.evaluate(
-                """(index) => {
-                    if (!window.VibeMolTesting || typeof window.VibeMolTesting.projectActiveAtomToClient !== 'function') return null;
-                    return window.VibeMolTesting.projectActiveAtomToClient(index);
-                }""",
-                heavy_anchor['index'],
-            )
-            if not isinstance(heavy_anchor_point, dict) or not heavy_anchor_point.get('visible'):
-                raise AssertionError(f'Could not project saturated carbon anchor to client coordinates: {heavy_anchor_point!r}')
-            page.mouse.click(heavy_anchor_point['x'], heavy_anchor_point['y'])
+            metal_anchor_x, metal_anchor_y = find_atom_click_point(page, 0)
+            page.mouse.click(metal_anchor_x, metal_anchor_y)
             page.wait_for_function(
                 """() => document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'false'"""
             )
@@ -1847,28 +1863,149 @@ def main() -> int:
             page.wait_for_function(
                 """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
             )
-            page.mouse.click(heavy_anchor_point['x'], heavy_anchor_point['y'])
             page.wait_for_function(
-                """(anchorAtomId) => {
+                """() => window.VibeMolTesting?.getHaloGhostPreviewKind?.() === 'fragment'"""
+            )
+            first_fragment_ghost_box = page.evaluate(
+                """() => {
+                    const el = document.querySelector('#editHaloLayer [data-halo-ghost]');
+                    if (!el) return null;
+                    const rect = el.getBoundingClientRect();
+                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+                }"""
+            )
+            if not isinstance(first_fragment_ghost_box, dict):
+                raise AssertionError('Fragment halo ghost site was not rendered.')
+            first_fragment_atom_count = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return Array.isArray(exported.volume?.atoms) ? exported.volume.atoms.length : 0;
+                }"""
+            )
+            first_fragment_x = first_fragment_ghost_box['x'] + first_fragment_ghost_box['width'] * 0.5
+            first_fragment_y = first_fragment_ghost_box['y'] + first_fragment_ghost_box['height'] * 0.5
+            page.mouse.click(first_fragment_x, first_fragment_y)
+            page.wait_for_function(
+                """(beforeCount) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atomCount = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms.length : 0;
+                    const cuePressed = document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true';
+                    const selectionCount = Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0);
+                    return atomCount > Number(beforeCount || 0)
+                      && cuePressed
+                      && selectionCount === 1
+                      && window.VibeMolTesting?.getHaloGhostPreviewKind?.() === 'fragment';
+                }""",
+                arg=first_fragment_atom_count,
+            )
+            second_fragment_ghost_box = page.evaluate(
+                """() => {
+                    const el = document.querySelector('#editHaloLayer [data-halo-ghost]');
+                    if (!el) return null;
+                    const rect = el.getBoundingClientRect();
+                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+                }"""
+            )
+            if not isinstance(second_fragment_ghost_box, dict):
+                raise AssertionError('Fragment halo ghost site did not persist after the first attachment.')
+            second_fragment_atom_count = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return Array.isArray(exported.volume?.atoms) ? exported.volume.atoms.length : 0;
+                }"""
+            )
+            second_fragment_x = second_fragment_ghost_box['x'] + second_fragment_ghost_box['width'] * 0.5
+            second_fragment_y = second_fragment_ghost_box['y'] + second_fragment_ghost_box['height'] * 0.5
+            page.mouse.click(second_fragment_x, second_fragment_y)
+            page.wait_for_function(
+                """(beforeCount) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atomCount = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms.length : 0;
+                    const cuePressed = document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true';
+                    const selectionCount = Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0);
+                    return atomCount > Number(beforeCount || 0)
+                      && cuePressed
+                      && selectionCount === 1;
+                }""",
+                arg=second_fragment_atom_count,
+            )
+
+            log_step('fragment ghost click keeps the chosen open coordination site on partially hydrogenated carbon')
+            page.locator('#newFileBtn').click()
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            load_build_query(page, 'C')
+            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
+            set_select_value(page, '#editAddCoordination', 'tetrahedral')
+            carbon_x, carbon_y = canvas_point(page, 0.52, 0.50)
+            page.mouse.click(carbon_x, carbon_y)
+            page.wait_for_function(
+                """() => {
                     const exported = window.VibeMolStructure.exportActive();
                     const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
-                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
-                    if (atoms.length !== 8 || bonds.length !== 7) return false;
-                    const atomById = new Map(atoms.map((atom) => [String(atom.id || ''), atom]));
-                    const neighbors = bonds.flatMap((bond) => {
-                        const aId = String(bond.a || '');
-                        const bId = String(bond.b || '');
-                        if (aId == String(anchorAtomId || '')) return [bId];
-                        if (bId == String(anchorAtomId || '')) return [aId];
-                        return [];
-                    });
-                    const nonHydrogenNeighbors = neighbors.filter((atomId) => Number(atomById.get(String(atomId || ''))?.Z) !== 1);
-                    return neighbors.length === 4 && nonHydrogenNeighbors.length === 1;
-                }""",
-                arg=heavy_anchor['atomId'],
+                    const hydrogens = atoms.filter((atom) => Number(atom?.Z) === 1).length;
+                    return atoms.length === 5 && hydrogens === 4;
+                }"""
             )
+            hydrogen_x, hydrogen_y = find_atom_click_point(page, 1)
+            page.mouse.click(hydrogen_x, hydrogen_y)
+            wait_for_selected_atoms(page, 1)
+            page.keyboard.press('Delete')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const hydrogens = atoms.filter((atom) => Number(atom?.Z) === 1).length;
+                    return atoms.length === 4 && hydrogens === 3;
+                }"""
+            )
+            carbon_anchor_x, carbon_anchor_y = find_atom_click_point(page, 0)
+            page.mouse.click(carbon_anchor_x, carbon_anchor_y)
+            wait_for_selected_atoms(page, 1)
+            load_build_query(page, 'hydroxyl')
+            page.locator('#editSelectionAddFragmentCueButton').click()
             page.wait_for_function(
                 """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
+            )
+            page.wait_for_function(
+                """() => window.VibeMolTesting?.getHaloGhostPreviewKind?.() === 'fragment'"""
+            )
+            ghost_world = page.evaluate(
+                """() => {
+                    const worlds = window.VibeMolTesting?.getHaloGhostWorlds?.() || [];
+                    return worlds[0] || null;
+                }"""
+            )
+            first_open_site_box = page.evaluate(
+                """() => {
+                    const el = document.querySelector('#editHaloLayer [data-halo-ghost]');
+                    if (!el) return null;
+                    const rect = el.getBoundingClientRect();
+                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+                }"""
+            )
+            if not isinstance(ghost_world, dict):
+                raise AssertionError('Could not read halo ghost world coordinates for open-site fragment attach.')
+            if not isinstance(first_open_site_box, dict):
+                raise AssertionError('Open-site fragment halo ghost was not rendered.')
+            page.mouse.click(
+                first_open_site_box['x'] + first_open_site_box['width'] * 0.5,
+                first_open_site_box['y'] + first_open_site_box['height'] * 0.5,
+            )
+            page.wait_for_function(
+                """(expected) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const fragmentOps = Array.isArray(exported.volume?.fragmentOps) ? exported.volume.fragmentOps : [];
+                    if (!fragmentOps.length) return false;
+                    const last = fragmentOps[fragmentOps.length - 1];
+                    const conn = last?.transform?.connectionWorld;
+                    if (!Array.isArray(conn) || conn.length < 3) return false;
+                    const dx = Math.abs((Number(conn[0]) || 0) - (Number(expected.x) || 0));
+                    const dy = Math.abs((Number(conn[1]) || 0) - (Number(expected.y) || 0));
+                    const dz = Math.abs((Number(conn[2]) || 0) - (Number(expected.z) || 0));
+                    return dx < 0.05 && dy < 0.05 && dz < 0.05;
+                }""",
+                arg=ghost_world,
             )
 
             log_step('grow drag onto terminal hydrogen replaces it with loaded atom')
