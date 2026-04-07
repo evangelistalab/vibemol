@@ -313,11 +313,10 @@
 }
 
 #editAdaptiveAddAtomPopover,
-#editAdaptiveAddMoleculePopover,
 #editSelectionFragmentCuePopover {
   position: fixed;
   display: none;
-  width: min(280px, calc(100vw - 24px));
+  width: min(360px, calc(100vw - 24px));
   padding: 12px 14px;
   border: 1px solid rgba(117, 129, 150, 0.28);
   border-radius: 12px;
@@ -329,7 +328,6 @@
 }
 
 #editAdaptiveAddAtomPopover[aria-hidden="false"],
-#editAdaptiveAddMoleculePopover[aria-hidden="false"],
 #editSelectionFragmentCuePopover[aria-hidden="false"] {
   display: block;
 }
@@ -571,15 +569,95 @@
 }
 
 #editAdaptiveAddAtomPopover #editAddAtomPane,
-#editAdaptiveAddMoleculePopover #editAddMoleculePane,
+#editAdaptiveAddAtomPopover #editAddFragmentPane,
+#editAdaptiveAddAtomPopover #editAddMoleculePane,
 #editSelectionFragmentCuePopover #editAddFragmentPane {
   display: block;
 }
 
 #editAdaptiveAddAtomPopover label:first-child,
-#editAdaptiveAddMoleculePopover label:first-child,
 #editSelectionFragmentCuePopover label:first-child {
   margin-top: 0;
+}
+
+#editBuildPalette {
+  display: grid;
+  gap: 14px;
+}
+
+#editBuildSearchLabel {
+  display: block;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #d8dfeb;
+}
+
+#editBuildSearchRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+#editBuildSearch {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--vm-color-legacy-border-soft);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--vm-color-legacy-muted-chip-3);
+  color: var(--vm-color-legacy-text-on-dark);
+}
+
+#editBuildSearchShortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 9px;
+  border: 1px solid rgba(166, 176, 191, 0.2);
+  background: rgba(187, 195, 208, 0.14);
+  color: rgba(221, 227, 236, 0.82);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.editBuildPaletteSection {
+  display: grid;
+  gap: 8px;
+}
+
+.editBuildPaletteSectionTitle {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #d8dfeb;
+}
+
+#editBuildAtomsHost,
+#editBuildFragmentsHost,
+#editBuildMoleculesHost {
+  display: grid;
+  gap: 8px;
+}
+
+#editBuildAtomsHost #editAddSearch,
+#editBuildAtomsHost label[for="editAddSearch"],
+#editBuildFragmentsHost #editFragmentSearch,
+#editBuildFragmentsHost label[for="editFragmentSearch"],
+#editBuildMoleculesHost #editMoleculeSearch,
+#editBuildMoleculesHost label[for="editMoleculeSearch"] {
+  display: none;
+}
+
+#editBuildAtomsHost #editAddAtomPane,
+#editBuildFragmentsHost #editAddFragmentPane,
+#editBuildMoleculesHost #editAddMoleculePane {
+  display: block;
 }
 
 .adaptiveEditItemBody {
@@ -690,70 +768,6 @@
   margin-bottom: 5px;
 }
 
-#editCleanupPane {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--vm-color-legacy-border-strong);
-}
-
-#editCleanupPane .title {
-  display: block;
-  font-size: 12px;
-  color: #a9bdd6;
-  margin-bottom: 6px;
-  font-weight: 700;
-}
-
-#editCleanupControls {
-  display: grid;
-  gap: 6px;
-}
-
-#editCleanupControls label {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0;
-  color: #c8d8ec;
-  font-size: 12px;
-}
-
-#editCleanupControls input[type="checkbox"] {
-  margin: 0;
-}
-
-#editCleanupStrengthRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-#editCleanupStrength {
-  flex: 1 1 auto;
-  accent-color: var(--vm-color-accent-primary);
-}
-
-#editCleanupStrengthValue {
-  min-width: 30px;
-  text-align: right;
-  font-size: 12px;
-  color: #c8d8ec;
-  font-variant-numeric: tabular-nums;
-}
-
-#editCleanupApplyBtn {
-  appearance: none;
-  border: 1px solid var(--vm-color-legacy-border-soft);
-  border-radius: 8px;
-  padding: 6px 8px;
-  background: var(--vm-color-legacy-dark-surface);
-  color: var(--vm-color-legacy-text-on-dark);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
 #editAddSearch,
 #editAddCoordination {
   width: 100%;
@@ -825,8 +839,11 @@
 #editAddQuick button.active,
 #editFragmentQuick button.active,
 #editMoleculeQuick button.active {
+  border-width: 2px;
   border-color: var(--vm-color-accent-primary);
-  box-shadow: 0 0 0 1px rgba(74, 163, 255, 0.35) inset;
+  box-shadow:
+    0 0 0 2px rgba(74, 163, 255, 0.28),
+    0 0 0 1px rgba(74, 163, 255, 0.4) inset;
 }
 
 #editAddCurrent,

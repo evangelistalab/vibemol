@@ -46,6 +46,8 @@
     const setPendingBondOrder = typeof options.setPendingBondOrder === 'function' ? options.setPendingBondOrder : (() => 1);
     const getLoadedElementSymbol = typeof options.getLoadedElementSymbol === 'function' ? options.getLoadedElementSymbol : (() => 'C');
     const getLoadedElementName = typeof options.getLoadedElementName === 'function' ? options.getLoadedElementName : (() => 'Carbon');
+    const getLoadedPayloadKind = typeof options.getLoadedPayloadKind === 'function' ? options.getLoadedPayloadKind : (() => 'atom');
+    const getLoadedPayloadLabel = typeof options.getLoadedPayloadLabel === 'function' ? options.getLoadedPayloadLabel : (() => getLoadedElementSymbol());
     const onUiStateChanged = typeof options.onUiStateChanged === 'function' ? options.onUiStateChanged : (() => {});
     const setHintMessage = typeof options.setHintMessage === 'function' ? options.setHintMessage : (() => {});
     const startBoxSelection = typeof options.startBoxSelection === 'function' ? options.startBoxSelection : (() => false);
@@ -124,7 +126,11 @@
     function buildUiState() {
       const intent = getEditIntent();
       const selection = Array.isArray(getSelection()) ? getSelection() : [];
-      let hint = `Click void to place ${getLoadedElementSymbol()} • Click atom to select`;
+      const payloadKind = String(getLoadedPayloadKind() || 'atom');
+      const payloadLabel = String(getLoadedPayloadLabel() || getLoadedElementSymbol());
+      let hint = payloadKind === 'fragment'
+        ? `Click atom to attach ${payloadLabel} • Click void to place it standalone`
+        : `Click void to place ${getLoadedElementSymbol()} • Click atom to select`;
       let scope = selection.length
         ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected`
         : 'No selection';
@@ -133,8 +139,8 @@
         hint = '';
         scope = '';
       } else if (intent === EDIT_INTENT.ADD_MOLECULE) {
-        hint = 'Add molecule: click to place • drag to rotate • click again to confirm';
-        scope = selection.length ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected` : 'Molecule placement';
+        hint = 'Build standalone: click to place • drag to rotate • click again to confirm';
+        scope = selection.length ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected` : 'Standalone placement';
       } else if (state.gestureState === 'grow-drag') {
         const targetText = state.bondTargetIndex >= 0
           ? 'Release on atom to cycle bond'
@@ -175,9 +181,13 @@
           ? 'Drag any selected atom to rotate the current selection'
           : 'Drag any selected atom to move the current selection';
       } else if (state.hoverAtomIndex >= 0) {
-        hint = 'Click atom to select • Drag atom into void to grow bond';
+        hint = payloadKind === 'fragment'
+          ? `Click atom to attach ${payloadLabel} • Click void to place it standalone`
+          : 'Click atom to select • Drag atom into void to grow bond';
       } else if (state.voidPreviewVisible) {
-        hint = `Click void to place ${getLoadedElementSymbol()}`;
+        hint = payloadKind === 'fragment'
+          ? `Click void to place ${payloadLabel} standalone`
+          : `Click void to place ${getLoadedElementSymbol()}`;
       }
       return {
         intent,

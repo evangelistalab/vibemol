@@ -775,8 +775,6 @@
   let editAdaptiveMenuSubtitleEl = null;
   let editAdaptiveAddAtomBtn = null;
   let editAdaptiveAddAtomMetaEl = null;
-  let editAdaptiveAddMoleculeBtn = null;
-  let editAdaptiveAddMoleculeMetaEl = null;
   let editAdaptiveCleanStructureBtn = null;
   let editAdaptiveCleanStructureMetaEl = null;
   let editAdaptiveShiftComBtn = null;
@@ -784,9 +782,14 @@
   let editAdaptiveAlignPrincipalBtn = null;
   let editAdaptiveAlignPrincipalMetaEl = null;
   let editAdaptiveAddAtomPopoverEl = null;
-  let editAdaptiveAddMoleculePopoverEl = null;
+  let editBuildSearchEl = null;
+  let editBuildSuggestionsEl = null;
+  let editBuildAtomsHostEl = null;
+  let editBuildFragmentsHostEl = null;
+  let editBuildMoleculesHostEl = null;
   let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
+  let buildPopoverHideTimer = 0;
 
   /**
    * Synchronize edit-mode construction helpers with the active tool and camera.
@@ -815,7 +818,9 @@
       scheduleVibrationPanelLayoutSync(1);
     }
     positionEditAdaptiveMenu();
-    if (adaptivePopoverController) adaptivePopoverController.positionVisible();
+    if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
+      positionBuildPopover();
+    }
     const addAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
     if (addAtomOperatorPanelEl && addAtomOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
       positionAddAtomOperatorPanel();
@@ -5571,8 +5576,6 @@
   }
   editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
   editAdaptiveAddAtomMetaEl = document.getElementById('editAdaptiveAddAtomMeta');
-  editAdaptiveAddMoleculeBtn = document.getElementById('editAdaptiveAddMoleculeBtn');
-  editAdaptiveAddMoleculeMetaEl = document.getElementById('editAdaptiveAddMoleculeMeta');
   editAdaptiveCleanStructureBtn = document.getElementById('editAdaptiveCleanStructureBtn');
   editAdaptiveCleanStructureMetaEl = document.getElementById('editAdaptiveCleanStructureMeta');
   editAdaptiveShiftComBtn = document.getElementById('editAdaptiveShiftComBtn');
@@ -5580,7 +5583,11 @@
   editAdaptiveAlignPrincipalBtn = document.getElementById('editAdaptiveAlignPrincipalBtn');
   editAdaptiveAlignPrincipalMetaEl = document.getElementById('editAdaptiveAlignPrincipalMeta');
   editAdaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
-  editAdaptiveAddMoleculePopoverEl = document.getElementById('editAdaptiveAddMoleculePopover');
+  editBuildSearchEl = document.getElementById('editBuildSearch');
+  editBuildSuggestionsEl = document.getElementById('editBuildSuggestions');
+  editBuildAtomsHostEl = document.getElementById('editBuildAtomsHost');
+  editBuildFragmentsHostEl = document.getElementById('editBuildFragmentsHost');
+  editBuildMoleculesHostEl = document.getElementById('editBuildMoleculesHost');
   const editSelectionMarqueeEl = document.getElementById('editSelectionMarquee');
   const editAddAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
   const editAddAtomOperatorHeaderEl = document.getElementById('editAddAtomOperatorHeader');
@@ -5622,12 +5629,6 @@
   const editFragmentQuickEl = document.getElementById('editFragmentQuick');
   const editFragmentAttachPolicyEl = document.getElementById('editFragmentAttachPolicy');
   const editFragmentCurrentEl = document.getElementById('editFragmentCurrent');
-  const editCleanupAutoEl = document.getElementById('editCleanupAuto');
-  const editCleanupBondLengthEl = document.getElementById('editCleanupBondLength');
-  const editCleanupOverlapEl = document.getElementById('editCleanupOverlap');
-  const editCleanupStrengthEl = document.getElementById('editCleanupStrength');
-  const editCleanupStrengthValueEl = document.getElementById('editCleanupStrengthValue');
-  const editCleanupApplyBtn = document.getElementById('editCleanupApplyBtn');
   const editMoleculeSearchEl = document.getElementById('editMoleculeSearch');
   const editMoleculeSuggestionsEl = document.getElementById('editMoleculeSuggestions');
   const editMoleculeQuickEl = document.getElementById('editMoleculeQuick');
@@ -6965,8 +6966,8 @@
       { k: 'E', d: 'View mode' },
       { k: 'O', d: 'Clean structure' },
       { k: 'P', d: 'Align principal axes' },
-      { k: 'N', d: 'Atom manipulation' },
-      { k: 'M', d: 'Add molecule' },
+      { k: 'N', d: 'Build palette' },
+      { k: '/', d: 'Focus build search' },
       { k: 'Cmd/Ctrl+A', d: 'Select all atoms' },
       { k: 'Cmd/Ctrl+C', d: 'Copy selected atoms' },
       { k: 'Cmd/Ctrl+V', d: 'Paste copied atoms' },
@@ -6978,7 +6979,7 @@
       { k: 'Click empty', d: 'Clear selection' },
       { k: 'Click+Drag', d: 'Move selection or atom (translate cue)' },
       { k: 'Click+Drag', d: 'Rotate selection (rotate cue)' },
-      { k: 'Click empty', d: 'Place atom (Atom manipulation)' },
+      { k: 'Click empty', d: 'Place loaded build item' },
       { k: 'Click bond center', d: 'Step bond order' },
       { k: 'Click bond side', d: 'Select bond-side fragment' },
       { k: 'Drag bond side', d: 'Rotate around bond axis' },
@@ -6988,7 +6989,7 @@
       { k: 'R', d: 'Center mass at origin' },
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
       { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
-      { k: 'X/Y/Z', d: 'Align molecule preview (Add molecule)' },
+      { k: 'X/Y/Z', d: 'Align standalone preview' },
       { k: 'Shift+Place', d: 'Bypass auto angle snap for free placement' },
     ],
     measure: [
@@ -7544,31 +7545,8 @@
   const editAddFragmentPaneHomeNextSibling = editAddFragmentPaneEl ? editAddFragmentPaneEl.nextSibling : null;
   const editAddMoleculePaneHomeParent = editAddMoleculePaneEl ? editAddMoleculePaneEl.parentElement : null;
   const editAddMoleculePaneHomeNextSibling = editAddMoleculePaneEl ? editAddMoleculePaneEl.nextSibling : null;
-  const adaptivePopoverBindings = Object.freeze({
-    atom: {
-      mode: EDIT_ADD_MODE.ATOM,
-      triggerEl: editAdaptiveAddAtomBtn,
-      popoverEl: editAdaptiveAddAtomPopoverEl,
-      paneEl: editAddAtomPaneEl,
-      focusEl: editAddSearchEl,
-      homeParent: editAddAtomPaneHomeParent,
-      homeNextSibling: editAddAtomPaneHomeNextSibling,
-    },
-    molecule: {
-      mode: EDIT_ADD_MODE.MOLECULE,
-      triggerEl: editAdaptiveAddMoleculeBtn,
-      popoverEl: editAdaptiveAddMoleculePopoverEl,
-      paneEl: editAddMoleculePaneEl,
-      focusEl: editMoleculeSearchEl,
-      homeParent: editAddMoleculePaneHomeParent,
-      homeNextSibling: editAddMoleculePaneHomeNextSibling,
-    },
-  });
+  const DEFAULT_LOCAL_CLEANUP_STRENGTH = 0.6;
   let editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
-  let editAutoCleanupEnabled = true;
-  let editCleanupBondLengthEnabled = true;
-  let editCleanupOverlapEnabled = true;
-  let editCleanupStrength = 0.6;
   let editAddFragmentId = (getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT) && getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT).id) || ((getCatalogEntries(CATALOG_KIND.FRAGMENT)[0] && getCatalogEntries(CATALOG_KIND.FRAGMENT)[0].id) || 'methyl');
   let editAddMoleculeId = (getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE) && getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE).id) || ((getCatalogEntries(CATALOG_KIND.MOLECULE)[0] && getCatalogEntries(CATALOG_KIND.MOLECULE)[0].id) || 'benzene');
   let editTransformScope = EDIT_TRANSFORM_SCOPE.AUTO;
@@ -8349,29 +8327,15 @@
   }
 
   /**
-   * Clamp cleanup strength to a stable 0..1 range.
+   * Clamp internal cleanup strength to a stable 0..1 range.
+   * Cleanup is now fixed-behavior; this helper exists only to keep math stable.
    * @param {*} value
    * @returns {number}
    */
-  function normalizeEditCleanupStrength(value) {
+  function normalizeLocalCleanupStrength(value) {
     const n = Number(value);
-    if (!Number.isFinite(n)) return 0.6;
+    if (!Number.isFinite(n)) return DEFAULT_LOCAL_CLEANUP_STRENGTH;
     return Math.max(0, Math.min(1, Math.round(n * 10) / 10));
-  }
-
-  /**
-   * Refresh the cleanup strength readout in the fragment add pane.
-   */
-  function updateEditCleanupUiState() {
-    if (editCleanupAutoEl) editCleanupAutoEl.checked = !!editAutoCleanupEnabled;
-    if (editCleanupBondLengthEl) editCleanupBondLengthEl.checked = !!editCleanupBondLengthEnabled;
-    if (editCleanupOverlapEl) editCleanupOverlapEl.checked = !!editCleanupOverlapEnabled;
-    if (editCleanupStrengthEl && document.activeElement !== editCleanupStrengthEl) {
-      editCleanupStrengthEl.value = normalizeEditCleanupStrength(editCleanupStrength).toFixed(1);
-    }
-    if (editCleanupStrengthValueEl) {
-      editCleanupStrengthValueEl.textContent = normalizeEditCleanupStrength(editCleanupStrength).toFixed(1);
-    }
   }
 
   /**
@@ -9049,7 +9013,7 @@
     const axis = (attachDir && attachDir.isVector3) ? attachDir.clone() : new THREE.Vector3(0, 0, 1);
     if (axis.lengthSq() < 1e-10) return 0;
     axis.normalize();
-    const amount = normalizeEditCleanupStrength(strength);
+    const amount = normalizeLocalCleanupStrength(strength);
     if (amount <= 1e-6) return 0;
     let maxDelta = 0;
     for (const newIdxRaw of newIndices) {
@@ -9149,12 +9113,12 @@
    * @param {number=} strength
    * @returns {number}
    */
-  function cleanupTransformedOverlapRelief(vol, movedIndices, strength = editCleanupStrength) {
+  function cleanupTransformedOverlapRelief(vol, movedIndices, strength = DEFAULT_LOCAL_CLEANUP_STRENGTH) {
     if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(movedIndices) || !movedIndices.length) return 0;
     const moved = Array.from(new Set(movedIndices.filter((idx) => Number.isInteger(idx) && idx >= 0 && idx < vol.atoms.length)));
     if (!moved.length) return 0;
     const movedSet = new Set(moved);
-    const amount = normalizeEditCleanupStrength(strength);
+    const amount = normalizeLocalCleanupStrength(strength);
     if (amount <= 1e-6) return 0;
     let maxShift = 0;
     for (const idx of moved) {
@@ -9205,12 +9169,10 @@
   function applyLocalTransformCleanup(vol, movedIndices, options = {}) {
     const result = { bondLengthShift: 0, overlapShift: 0 };
     if (!editTransformAutoCleanupEnabled) return result;
-    if (editCleanupBondLengthEnabled && !options.skipBondLength) {
+    if (!options.skipBondLength) {
       result.bondLengthShift = cleanupTransformedBondLengths(vol, movedIndices);
     }
-    if (editCleanupOverlapEnabled) {
-      result.overlapShift = cleanupTransformedOverlapRelief(vol, movedIndices, editCleanupStrength);
-    }
+    result.overlapShift = cleanupTransformedOverlapRelief(vol, movedIndices, DEFAULT_LOCAL_CLEANUP_STRENGTH);
     return result;
   }
 
@@ -9226,22 +9188,17 @@
    * @param {{force?:boolean}=} options
    * @returns {{bondLengthApplied:boolean,overlapShift:number}}
    */
-  function applyLocalFragmentCleanup(vol, anchorIndex, newIndices, connectionGlobalIndex, targetLengthAngstrom, oldAtomIndexSet, attachDir, options = {}) {
+  function applyLocalFragmentCleanup(vol, anchorIndex, newIndices, connectionGlobalIndex, targetLengthAngstrom, oldAtomIndexSet, attachDir) {
     const result = { bondLengthApplied: false, overlapShift: 0 };
-    if (!options.force && !editAutoCleanupEnabled) return result;
-    if (editCleanupBondLengthEnabled) {
-      cleanupInsertedFragmentBondLength(vol, anchorIndex, newIndices, connectionGlobalIndex, targetLengthAngstrom);
-      result.bondLengthApplied = true;
-    }
-    if (editCleanupOverlapEnabled) {
-      result.overlapShift = cleanupInsertedFragmentOverlapRelief(
-        vol,
-        newIndices,
-        oldAtomIndexSet,
-        attachDir,
-        editCleanupStrength
-      );
-    }
+    cleanupInsertedFragmentBondLength(vol, anchorIndex, newIndices, connectionGlobalIndex, targetLengthAngstrom);
+    result.bondLengthApplied = true;
+    result.overlapShift = cleanupInsertedFragmentOverlapRelief(
+      vol,
+      newIndices,
+      oldAtomIndexSet,
+      attachDir,
+      DEFAULT_LOCAL_CLEANUP_STRENGTH
+    );
     return result;
   }
 
@@ -10384,6 +10341,43 @@
     return isSelectionFragmentCueArmed() && getEditAtomSelection().length > 0;
   }
 
+  function isBuildFragmentLoaded() {
+    return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT;
+  }
+
+  function getCurrentBuildPayload() {
+    if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+      const molecule = getCurrentMoleculeDefinition();
+      return {
+        kind: 'molecule',
+        id: molecule ? String(molecule.id || '') : '',
+        symbol: '',
+        name: molecule ? String(molecule.name || 'Molecule') : 'Molecule',
+        formula: molecule ? String(molecule.formula || '') : '',
+      };
+    }
+    if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+      const fragment = getCurrentFragmentDefinition();
+      return {
+        kind: 'fragment',
+        id: fragment ? String(fragment.id || '') : '',
+        symbol: '',
+        name: fragment ? String(fragment.name || 'Fragment') : 'Fragment',
+        formula: fragment ? String(fragment.formula || '') : '',
+      };
+    }
+    const atomInfo = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
+    const symbol = atomInfo && atomInfo.symbol ? atomInfo.symbol : `Z${editAddElementZ}`;
+    const name = atomInfo && atomInfo.name ? atomInfo.name : symbol;
+    return {
+      kind: 'atom',
+      id: String(editAddElementZ),
+      symbol,
+      name,
+      formula: '',
+    };
+  }
+
   function getAtomManipulationPresentation() {
     const atomInfo = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[editAddElementZ];
     const symbol = atomInfo && atomInfo.symbol ? atomInfo.symbol : `Z${editAddElementZ}`;
@@ -10400,10 +10394,10 @@
       hydrogenLabel,
       angleLabel,
       hudHint: `Click void to place ${symbol} • Click atom to select`,
-      rowMeta: `${symbol} • click void to add • click atom to select`,
+      rowMeta: `Loaded ${symbol} • click void to add • click atom to select`,
       scopeSummary: `${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • ${hydrogenLabel}`,
-      currentSummary: `Atom manipulation: ${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • angle ${angleLabel} • ${hydrogenLabel}`,
-      operatorLabel: `Atom manipulation ${symbol}`,
+      currentSummary: `Build: ${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • angle ${angleLabel} • ${hydrogenLabel}`,
+      operatorLabel: `Build ${symbol}`,
     };
   }
 
@@ -10411,16 +10405,31 @@
     const molecule = getCurrentMoleculeDefinition();
     if (!molecule) {
       return {
-        rowMeta: 'Choose molecule • click to place',
-        subtitle: 'Add molecule active',
-        currentSummary: 'Add molecule: choose a standalone molecule to place.',
+        rowMeta: 'Loaded molecule • click void to place',
+        subtitle: 'Build palette',
+        currentSummary: 'Build: choose a standalone molecule to place.',
       };
     }
     const atomCount = Array.isArray(molecule.atoms) ? molecule.atoms.length : 0;
     return {
-      rowMeta: `${molecule.name} (${molecule.formula}) • ${atomCount} atoms`,
-      subtitle: 'Add molecule active',
-      currentSummary: `Add molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`,
+      rowMeta: `Loaded ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`,
+      subtitle: 'Build palette',
+      currentSummary: `Build: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`,
+    };
+  }
+
+  function getFragmentBuildPresentation() {
+    const fragment = getCurrentFragmentDefinition();
+    if (!fragment) {
+      return {
+        rowMeta: 'Loaded fragment • click atom to attach',
+        currentSummary: 'Build: choose a fragment to attach or place.',
+      };
+    }
+    const atomCount = Array.isArray(fragment.atoms) ? fragment.atoms.length : 0;
+    return {
+      rowMeta: `Loaded ${fragment.name} (${fragment.formula}) • ${atomCount} atoms`,
+      currentSummary: `Build: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}`,
     };
   }
 
@@ -10443,9 +10452,10 @@
   }
 
   function getEditSurfaceSubtitle() {
-    const intent = getEditIntent();
-    if (intent === EDIT_INTENT.ADD_MOLECULE) return getMoleculeAddPresentation().subtitle;
-    return getAtomManipulationPresentation().subtitle || 'Atom manipulation active';
+    const payload = getCurrentBuildPayload();
+    if (payload.kind === 'molecule') return `Build loaded • ${payload.name}`;
+    if (payload.kind === 'fragment') return `Build loaded • ${payload.name}`;
+    return `Build loaded • ${payload.name} (${payload.symbol})`;
   }
 
   /**
@@ -10460,8 +10470,8 @@
     updateEditToolboxUi({ syncSearch: false });
     if (announce && editMode) {
       if (isSelectionFragmentCueArmed()) setHintMessage(`Fragment attach bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
-      else if (getEditIntent() === EDIT_INTENT.ADD_MOLECULE) setHintMessage('Molecule placement mode: bond order hotkeys are ignored.');
-      else setHintMessage(`Atom manipulation bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
+      else if (getEditIntent() === EDIT_INTENT.ADD_MOLECULE) setHintMessage('Standalone placement ignores bond-order hotkeys.');
+      else setHintMessage(`Build bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
     }
   }
 
@@ -10647,20 +10657,7 @@
     setHintMessage,
   });
 
-  adaptivePopoverController = createAdaptivePopoverController({
-    bindings: adaptivePopoverBindings,
-    onOpenMode: (kind, binding, options = {}) => {
-      if (!binding) return;
-      if (kind === 'atom') {
-        setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false });
-        return;
-      }
-      if (binding.mode) {
-        setEditAddMode(binding.mode, { announce: false, syncSearch: true });
-        if (options.announce !== false) updateEditToolboxUi({ syncSearch: true });
-      }
-    },
-  });
+  adaptivePopoverController = null;
 
   /**
    * Clear add-grow preview state/meshes.
@@ -10963,7 +10960,7 @@
    * @param {*} molecule
    * @returns {{id:string,name:string,formula:string,atoms:Array<{Z:number,local:THREE.Vector3}>,bonds:Array<{i:number,j:number,order:number}>,principalAxis:THREE.Vector3}|null}
    */
-  function buildMoleculePlacementData(molecule) {
+  function buildMoleculePlacementData(molecule, entryKind = CATALOG_KIND.MOLECULE) {
     if (!molecule || !Array.isArray(molecule.atoms) || molecule.atoms.length === 0) return null;
     const massProps = computeMassPropertiesFromAtoms(molecule.atoms, getAtomicMass);
     const com = massProps
@@ -10997,6 +10994,7 @@
     principalAxis.normalize();
     return {
       id: normalizeFragmentId(molecule.id || ''),
+      entryKind: entryKind === CATALOG_KIND.FRAGMENT ? CATALOG_KIND.FRAGMENT : CATALOG_KIND.MOLECULE,
       name: String(molecule.name || 'Molecule'),
       formula: String(molecule.formula || ''),
       atoms,
@@ -11087,8 +11085,8 @@
    * @param {THREE.Vector3} worldPos
    * @returns {boolean}
    */
-  function startMoleculePlacementAtWorld(worldPos) {
-    return editPlacement.startMoleculePlacementAtWorld(worldPos);
+  function startMoleculePlacementAtWorld(worldPos, options = {}) {
+    return editPlacement.startMoleculePlacementAtWorld(worldPos, options);
   }
 
   /**
@@ -11303,6 +11301,7 @@
     const syncSearch = options.syncSearch !== false;
     const isEdit = editMode;
     const intent = getEditIntent();
+    const buildPayload = getCurrentBuildPayload();
     const isFragmentAddMode = intent === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT;
     const isAtomAddMode = intent === EDIT_INTENT.ATOM_MANIPULATION && !isFragmentAddMode;
     const isMoleculeAddMode = intent === EDIT_INTENT.ADD_MOLECULE;
@@ -11327,8 +11326,6 @@
     if (editFragmentAttachPolicyEl && document.activeElement !== editFragmentAttachPolicyEl) {
       editFragmentAttachPolicyEl.value = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
     }
-    updateEditCleanupUiState();
-
     const atomPresentation = getAtomManipulationPresentation();
     const angleLabel = atomPresentation.angleLabel;
     syncEditAddCoordinationControl();
@@ -11352,17 +11349,10 @@
         const attachModes = Array.isArray(fragment.attachModes) ? fragment.attachModes : [];
         const policy = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
         const fuseEligible = attachModes.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING);
-        let cleanupLabel = 'cleanup off';
-        if (editAutoCleanupEnabled) {
-          const cleanupParts = [];
-          if (editCleanupBondLengthEnabled) cleanupParts.push('bond');
-          if (editCleanupOverlapEnabled) cleanupParts.push('relief');
-          cleanupLabel = cleanupParts.length ? `cleanup ${cleanupParts.join('+')}` : 'cleanup manual only';
-        }
         const modeSuffix = policy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING
           ? (fuseEligible ? 'bond click • drag spin • click confirm' : 'fuse ring unavailable')
           : `bond ${editAddBondOrder} • angle ${angleLabel}`;
-        editFragmentCurrentEl.textContent = `Add fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(policy)} • ${modeSuffix} • ${cleanupLabel}`;
+        editFragmentCurrentEl.textContent = `Add fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(policy)} • ${modeSuffix}`;
       } else {
         editFragmentCurrentEl.textContent = 'Add fragment: choose a fragment and attach policy.';
       }
@@ -11372,12 +11362,12 @@
       if (molecule) {
         const atomCount = Array.isArray(molecule.atoms) ? molecule.atoms.length : 0;
         if (moleculePlaceActive) {
-          editMoleculeCurrentEl.textContent = `Add molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms • drag rotate • click to place`;
+          editMoleculeCurrentEl.textContent = `Build: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms • drag rotate • click to place`;
         } else {
-          editMoleculeCurrentEl.textContent = `Add molecule: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`;
+          editMoleculeCurrentEl.textContent = `Build: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`;
         }
       } else {
-        editMoleculeCurrentEl.textContent = 'Add molecule: choose a standalone molecule to place.';
+        editMoleculeCurrentEl.textContent = 'Build: choose a standalone molecule to place.';
       }
     }
     if (syncSearch && isAtomAddMode && editAddSearchEl && document.activeElement !== editAddSearchEl) {
@@ -11395,7 +11385,7 @@
       const quickButtons = editAddQuickEl.querySelectorAll('button[data-z]');
       quickButtons.forEach((btn) => {
         const z = Number(btn.getAttribute('data-z'));
-        const isSelected = z === editAddElementZ;
+        const isSelected = buildPayload.kind === 'atom' && z === editAddElementZ;
         btn.classList.toggle('active', isSelected);
         const bgHex = getActiveElementHexColor(z);
         try {
@@ -11413,15 +11403,28 @@
       const quickButtons = editFragmentQuickEl.querySelectorAll('button[data-fragment-id]');
       quickButtons.forEach((btn) => {
         const id = normalizeFragmentId(btn.getAttribute('data-fragment-id'));
-        btn.classList.toggle('active', id === normalizeFragmentId(editAddFragmentId));
+        btn.classList.toggle(
+          'active',
+          buildPayload.kind === 'fragment' && id === normalizeFragmentId(editAddFragmentId)
+        );
       });
     }
     if (editMoleculeQuickEl) {
       const quickButtons = editMoleculeQuickEl.querySelectorAll('button[data-molecule-id]');
       quickButtons.forEach((btn) => {
         const id = normalizeFragmentId(btn.getAttribute('data-molecule-id'));
-        btn.classList.toggle('active', id === normalizeFragmentId(editAddMoleculeId));
+        btn.classList.toggle(
+          'active',
+          buildPayload.kind === 'molecule' && id === normalizeFragmentId(editAddMoleculeId)
+        );
       });
+    }
+    syncBuildSearchField();
+    if (editBuildSearchEl) {
+      const activeQuery = document.activeElement === editBuildSearchEl
+        ? String(editBuildSearchEl.value || '')
+        : '';
+      updateBuildPaletteFilter(activeQuery);
     }
   }
 
@@ -11518,7 +11521,7 @@
     syncEditAddCoordinationControl();
     updateEditToolboxUi({ syncSearch });
     if (announce && editMode) {
-      setHintMessage(`Atom manipulation element: ${getElementName(z)} (${getElementSymbol(z)})`);
+      setHintMessage(`Build element: ${getElementName(z)} (${getElementSymbol(z)})`);
     }
     return true;
   }
@@ -11528,7 +11531,7 @@
    * @param {'atom'|'molecule'|''=} exceptKind
    */
   function hideAllAdaptiveToolPopovers(exceptKind = '') {
-    if (adaptivePopoverController) adaptivePopoverController.hideAll(exceptKind);
+    if (exceptKind !== 'build') hideBuildPopover();
   }
 
   /**
@@ -11541,6 +11544,108 @@
     const atomSymbol = atomInfo && atomInfo.symbol ? atomInfo.symbol : `Z${z}`;
     const atomName = atomInfo && atomInfo.name ? atomInfo.name : atomSymbol;
     return `${atomSymbol} — ${atomName} (${z})`;
+  }
+
+  function formatBuildSearchValue() {
+    const payload = getCurrentBuildPayload();
+    if (payload.kind === 'atom') return `${payload.symbol} — ${payload.name}`;
+    if (payload.formula) return `${payload.name} (${payload.formula})`;
+    return payload.name;
+  }
+
+  function resolveBuildPaletteQuery(rawQuery) {
+    const query = String(rawQuery || '').trim();
+    if (!query) return null;
+    const atomZ = resolveElementQueryToZ(query);
+    if (Number.isInteger(atomZ) && atomZ > 0 && ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[atomZ]) {
+      const atomInfo = ATOM_Z_TO_DATA[atomZ];
+      return {
+        kind: 'atom',
+        id: String(atomZ),
+        z: atomZ,
+        label: `${atomInfo.name} (${atomInfo.symbol})`,
+      };
+    }
+    const fragment = resolveCatalogQuery(query, CATALOG_KIND.FRAGMENT);
+    if (fragment) {
+      return {
+        kind: 'fragment',
+        id: String(fragment.id || ''),
+        label: `${fragment.name} (${fragment.formula})`,
+      };
+    }
+    const molecule = resolveCatalogQuery(query, CATALOG_KIND.MOLECULE);
+    if (molecule) {
+      return {
+        kind: 'molecule',
+        id: String(molecule.id || ''),
+        label: `${molecule.name} (${molecule.formula})`,
+      };
+    }
+    return null;
+  }
+
+  function syncBuildSearchField() {
+    if (!editBuildSearchEl || document.activeElement === editBuildSearchEl) return;
+    editBuildSearchEl.value = formatBuildSearchValue();
+  }
+
+  function updateBuildPaletteFilter(query = '') {
+    const q = String(query || '').trim().toLowerCase();
+    const applyFilter = (containerEl) => {
+      if (!containerEl) return;
+      const buttons = containerEl.querySelectorAll('button');
+      buttons.forEach((buttonEl) => {
+        const terms = String(buttonEl.getAttribute('data-search-terms') || buttonEl.textContent || '').toLowerCase();
+        buttonEl.hidden = !!q && !terms.includes(q);
+      });
+    };
+    applyFilter(editAddQuickEl);
+    applyFilter(editFragmentQuickEl);
+    applyFilter(editMoleculeQuickEl);
+  }
+
+  function applyBuildPaletteSelection(selection, options = {}) {
+    const announce = options.announce !== false;
+    const syncSearch = options.syncSearch !== false;
+    if (!selection || typeof selection !== 'object') return false;
+    if (selection.kind === 'atom') {
+      const changed = setEditAddElement(selection.z | 0, { announce, syncSearch });
+      if (changed) setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch });
+      return changed;
+    }
+    if (selection.kind === 'fragment') {
+      const changed = setEditAddFragment(selection.id, { announce, syncSearch });
+      if (changed) setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch });
+      return changed;
+    }
+    if (selection.kind === 'molecule') {
+      const changed = setEditAddMolecule(selection.id, { announce, syncSearch });
+      if (changed) setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: false, syncSearch });
+      return changed;
+    }
+    return false;
+  }
+
+  function refreshBuildSearchSuggestions() {
+    if (!editBuildSuggestionsEl) return;
+    editBuildSuggestionsEl.innerHTML = '';
+    for (const z of getKnownElementNumbers()) {
+      const info = ATOM_Z_TO_DATA[z];
+      const opt = document.createElement('option');
+      opt.value = `${info.symbol} — ${info.name}`;
+      editBuildSuggestionsEl.appendChild(opt);
+    }
+    for (const fragment of getCatalogEntries(CATALOG_KIND.FRAGMENT)) {
+      const opt = document.createElement('option');
+      opt.value = `${fragment.name} (${fragment.formula})`;
+      editBuildSuggestionsEl.appendChild(opt);
+    }
+    for (const molecule of getCatalogEntries(CATALOG_KIND.MOLECULE)) {
+      const opt = document.createElement('option');
+      opt.value = `${molecule.name} (${molecule.formula})`;
+      editBuildSuggestionsEl.appendChild(opt);
+    }
   }
 
   /**
@@ -11588,7 +11693,7 @@
     clearMoleculePlacementPreview();
     updateEditToolboxUi({ syncSearch });
     if (announce && editMode && getEditIntent() === EDIT_INTENT.ADD_MOLECULE) {
-      setHintMessage(`Add molecule: ${molecule.name} (${molecule.formula})`);
+      setHintMessage(`Build molecule: ${molecule.name} (${molecule.formula})`);
     }
     return true;
   }
@@ -11614,11 +11719,14 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('data-fragment-id', fragment.id);
+        btn.setAttribute('data-search-terms', `${fragment.name} ${fragment.formula} ${fragment.id} ${(Array.isArray(fragment.tags) ? fragment.tags.join(' ') : '')}`.toLowerCase());
         btn.title = `${fragment.name} (${fragment.formula})`;
         btn.textContent = fragment.name;
         btn.onclick = () => {
           setEditAddFragment(fragment.id, { announce: true, syncSearch: true });
           setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch: true });
+          syncBuildSearchField();
+          hideBuildPopover();
         };
         editFragmentQuickEl.appendChild(btn);
       }
@@ -11627,6 +11735,7 @@
     if (!setEditAddFragment(editAddFragmentId, { announce: false, syncSearch: true }) && fragmentEntries[0]) {
       setEditAddFragment(fragmentEntries[0].id, { announce: false, syncSearch: true });
     }
+    refreshBuildSearchSuggestions();
     updateEditToolboxUi({ syncSearch: true });
   }
 
@@ -11651,11 +11760,14 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('data-molecule-id', molecule.id);
+        btn.setAttribute('data-search-terms', `${molecule.name} ${molecule.formula} ${molecule.id} ${(Array.isArray(molecule.tags) ? molecule.tags.join(' ') : '')}`.toLowerCase());
         btn.title = `${molecule.name} (${molecule.formula})`;
         btn.textContent = molecule.name;
         btn.onclick = () => {
           setEditAddMolecule(molecule.id, { announce: true, syncSearch: true });
           setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: false, syncSearch: true });
+          syncBuildSearchField();
+          hideBuildPopover();
         };
         editMoleculeQuickEl.appendChild(btn);
       }
@@ -11664,6 +11776,7 @@
     if (!setEditAddMolecule(editAddMoleculeId, { announce: false, syncSearch: true }) && moleculeEntries[0]) {
       setEditAddMolecule(moleculeEntries[0].id, { announce: false, syncSearch: true });
     }
+    refreshBuildSearchSuggestions();
     updateEditToolboxUi({ syncSearch: true });
   }
 
@@ -11708,14 +11821,21 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('data-z', String(z));
+        btn.setAttribute('data-search-terms', `${info.symbol} ${info.name} ${z}`.toLowerCase());
         btn.title = `${info.name} (${info.symbol})`;
         btn.textContent = info.symbol;
-        btn.onclick = () => { setEditAddElement(z, { announce: true }); };
+        btn.onclick = () => {
+          setEditAddElement(z, { announce: true });
+          setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
+          syncBuildSearchField();
+          hideBuildPopover();
+        };
         editAddQuickEl.appendChild(btn);
       }
     }
     refreshEditAddFragmentControls();
     refreshEditAddMoleculeControls();
+    refreshBuildSearchSuggestions();
     if (editAddSearchEl) {
       const commit = () => {
         const rawValue = String(editAddSearchEl.value || '').trim();
@@ -11754,6 +11874,42 @@
           editAddSearchClearedOnFocus = false;
         }
         updateEditToolboxUi({ syncSearch: false });
+      });
+    }
+    if (editBuildSearchEl) {
+      const commit = () => {
+        const rawValue = String(editBuildSearchEl.value || '').trim();
+        if (!rawValue) {
+          syncBuildSearchField();
+          updateBuildPaletteFilter('');
+          updateEditToolboxUi({ syncSearch: false });
+          return;
+        }
+        const selection = resolveBuildPaletteQuery(rawValue);
+        if (!applyBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
+          updateEditToolboxUi({ syncSearch: true });
+          setHintMessage(`Build item not recognized: "${rawValue}"`);
+          return;
+        }
+        syncBuildSearchField();
+        updateBuildPaletteFilter('');
+        hideBuildPopover();
+      };
+      editBuildSearchEl.addEventListener('focus', () => {
+        updateBuildPaletteFilter(String(editBuildSearchEl.value || ''));
+      });
+      editBuildSearchEl.addEventListener('blur', () => {
+        if (!String(editBuildSearchEl.value || '').trim()) syncBuildSearchField();
+        updateBuildPaletteFilter('');
+      });
+      editBuildSearchEl.addEventListener('input', () => {
+        updateBuildPaletteFilter(String(editBuildSearchEl.value || ''));
+      });
+      editBuildSearchEl.addEventListener('change', commit);
+      editBuildSearchEl.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        commit();
       });
     }
     if (editAddCoordinationEl) {
@@ -11798,37 +11954,6 @@
         }
       });
     }
-    if (editCleanupAutoEl) {
-      editCleanupAutoEl.addEventListener('change', () => {
-        editAutoCleanupEnabled = !!editCleanupAutoEl.checked;
-        updateEditToolboxUi({ syncSearch: false });
-      });
-    }
-    if (editCleanupBondLengthEl) {
-      editCleanupBondLengthEl.addEventListener('change', () => {
-        editCleanupBondLengthEnabled = !!editCleanupBondLengthEl.checked;
-        updateEditToolboxUi({ syncSearch: false });
-      });
-    }
-    if (editCleanupOverlapEl) {
-      editCleanupOverlapEl.addEventListener('change', () => {
-        editCleanupOverlapEnabled = !!editCleanupOverlapEl.checked;
-        updateEditToolboxUi({ syncSearch: false });
-      });
-    }
-    if (editCleanupStrengthEl) {
-      editCleanupStrengthEl.addEventListener('input', () => {
-        editCleanupStrength = normalizeEditCleanupStrength(editCleanupStrengthEl.value);
-        updateEditCleanupUiState();
-      });
-      editCleanupStrengthEl.addEventListener('change', () => {
-        editCleanupStrength = normalizeEditCleanupStrength(editCleanupStrengthEl.value);
-        updateEditCleanupUiState();
-      });
-    }
-    if (editCleanupApplyBtn) {
-      editCleanupApplyBtn.onclick = () => { void applyCleanupToLatestFragmentOperation(); };
-    }
     if (editMoleculeSearchEl) {
       const commit = () => {
         const molecule = resolveCatalogQuery(editMoleculeSearchEl.value, CATALOG_KIND.MOLECULE);
@@ -11847,36 +11972,20 @@
     }
     if (editAddModeAtomBtn) editAddModeAtomBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: true, syncSearch: true });
     if (editAddModeMoleculeBtn) editAddModeMoleculeBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: true, syncSearch: true });
-    if (editMoleculeAlignXBtn) editMoleculeAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a molecule first, then align to X.'); };
-    if (editMoleculeAlignYBtn) editMoleculeAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a molecule first, then align to Y.'); };
-    if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
-    bindAdaptivePopoverItem({
-      controller: adaptivePopoverController,
-      kind: 'atom',
-      triggerEl: editAdaptiveAddAtomBtn,
-      popoverEl: editAdaptiveAddAtomPopoverEl,
-      onClick: () => {
-        setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false });
-      },
-      clickShowsPopover: true,
-      clickFocusesSearch: true,
-      hoverShowsPopover: true,
-      hideDelayMs: 120,
-    });
-    bindAdaptivePopoverItem({
-      controller: adaptivePopoverController,
-      kind: 'molecule',
-      triggerEl: editAdaptiveAddMoleculeBtn,
-      popoverEl: editAdaptiveAddMoleculePopoverEl,
-      onClick: () => {
-        setEditIntent(EDIT_INTENT.ADD_MOLECULE, { announce: false });
-        adaptivePopoverController && adaptivePopoverController.openMode('molecule', { announce: true, focusSearch: false });
-      },
-      clickShowsPopover: true,
-      clickFocusesSearch: true,
-      hoverShowsPopover: true,
-      hideDelayMs: 120,
-    });
+    if (editMoleculeAlignXBtn) editMoleculeAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a template first, then align to X.'); };
+    if (editMoleculeAlignYBtn) editMoleculeAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a template first, then align to Y.'); };
+    if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a template first, then align to Z.'); };
+    if (editAdaptiveAddAtomBtn) {
+      editAdaptiveAddAtomBtn.onclick = () => {
+        showBuildPopover({ focusSearch: true });
+      };
+      editAdaptiveAddAtomBtn.addEventListener('mouseenter', () => showBuildPopover({ focusSearch: false }));
+      editAdaptiveAddAtomBtn.addEventListener('mouseleave', () => hideBuildPopover(120));
+    }
+    if (editAdaptiveAddAtomPopoverEl) {
+      editAdaptiveAddAtomPopoverEl.addEventListener('mouseenter', () => showBuildPopover({ focusSearch: false }));
+      editAdaptiveAddAtomPopoverEl.addEventListener('mouseleave', () => hideBuildPopover(120));
+    }
     if (editAdaptiveCleanStructureBtn) editAdaptiveCleanStructureBtn.onclick = () => { optimizeActiveStructureWithUff(); };
     if (editAdaptiveShiftComBtn) editAdaptiveShiftComBtn.onclick = () => { centerActiveMoleculeMassAtOrigin(); };
     if (editAdaptiveAlignPrincipalBtn) editAdaptiveAlignPrincipalBtn.onclick = () => { alignActiveMoleculePrincipalAxes(); };
@@ -11992,10 +12101,9 @@
       editAddMoleculeOperatorRotYEl,
       editAddMoleculeOperatorRotZEl,
     ]);
-    if (editAddMoleculeOperatorAlignXBtn) editAddMoleculeOperatorAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a molecule first, then align to X.'); };
-    if (editAddMoleculeOperatorAlignYBtn) editAddMoleculeOperatorAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a molecule first, then align to Y.'); };
-    if (editAddMoleculeOperatorAlignZBtn) editAddMoleculeOperatorAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a molecule first, then align to Z.'); };
-    updateEditCleanupUiState();
+    if (editAddMoleculeOperatorAlignXBtn) editAddMoleculeOperatorAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a standalone template first, then align to X.'); };
+    if (editAddMoleculeOperatorAlignYBtn) editAddMoleculeOperatorAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a standalone template first, then align to Y.'); };
+    if (editAddMoleculeOperatorAlignZBtn) editAddMoleculeOperatorAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a standalone template first, then align to Z.'); };
     setEditAddBondOrder(editAddBondOrder, { announce: false });
     setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
     updateEditToolboxUi();
@@ -12166,6 +12274,12 @@
     },
     getLoadedElementSymbol: () => getElementSymbol(editAddElementZ),
     getLoadedElementName: () => getElementName(editAddElementZ),
+    getLoadedPayloadKind: () => getCurrentBuildPayload().kind,
+    getLoadedPayloadLabel: () => {
+      const payload = getCurrentBuildPayload();
+      if (payload.kind === 'atom') return payload.symbol;
+      return payload.name;
+    },
     onUiStateChanged: (uiState) => {
       editGestureUiState = uiState || editGestureUiState;
       updateEditAdaptiveMenuUi();
@@ -12623,6 +12737,87 @@
     });
   }
 
+  function restoreBuildPopoverPanes() {
+    if (editAddAtomPaneEl && editAddAtomPaneHomeParent && editAddAtomPaneEl.parentElement === editBuildAtomsHostEl) {
+      restorePaneHomeHelper({
+        paneEl: editAddAtomPaneEl,
+        homeParent: editAddAtomPaneHomeParent,
+        homeNextSibling: editAddAtomPaneHomeNextSibling,
+      });
+    }
+    if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === editBuildFragmentsHostEl) {
+      restorePaneHomeHelper({
+        paneEl: editAddFragmentPaneEl,
+        homeParent: editAddFragmentPaneHomeParent,
+        homeNextSibling: editAddFragmentPaneHomeNextSibling,
+      });
+    }
+    if (editAddMoleculePaneEl && editAddMoleculePaneHomeParent && editAddMoleculePaneEl.parentElement === editBuildMoleculesHostEl) {
+      restorePaneHomeHelper({
+        paneEl: editAddMoleculePaneEl,
+        homeParent: editAddMoleculePaneHomeParent,
+        homeNextSibling: editAddMoleculePaneHomeNextSibling,
+      });
+    }
+  }
+
+  function syncBuildPopoverPanes() {
+    if (editAddAtomPaneEl && editBuildAtomsHostEl && editAddAtomPaneEl.parentElement !== editBuildAtomsHostEl) {
+      editBuildAtomsHostEl.appendChild(editAddAtomPaneEl);
+    }
+    if (editAddFragmentPaneEl && editBuildFragmentsHostEl && editAddFragmentPaneEl.parentElement !== editBuildFragmentsHostEl) {
+      editBuildFragmentsHostEl.appendChild(editAddFragmentPaneEl);
+    }
+    if (editAddMoleculePaneEl && editBuildMoleculesHostEl && editAddMoleculePaneEl.parentElement !== editBuildMoleculesHostEl) {
+      editBuildMoleculesHostEl.appendChild(editAddMoleculePaneEl);
+    }
+  }
+
+  function positionBuildPopover() {
+    if (!editAdaptiveAddAtomPopoverEl || !editAdaptiveAddAtomBtn) return;
+    positionFloatingPopoverUi({
+      popoverEl: editAdaptiveAddAtomPopoverEl,
+      triggerEl: editAdaptiveAddAtomBtn,
+      gap: 12,
+      defaultWidth: 360,
+      defaultHeight: 420,
+    });
+  }
+
+  function hideBuildPopover(delayMs = 0) {
+    if (buildPopoverHideTimer) {
+      clearTimeout(buildPopoverHideTimer);
+      buildPopoverHideTimer = 0;
+    }
+    const applyHide = () => {
+      if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
+      restoreBuildPopoverPanes();
+    };
+    if (delayMs > 0) {
+      buildPopoverHideTimer = window.setTimeout(() => {
+        buildPopoverHideTimer = 0;
+        applyHide();
+      }, delayMs);
+      return;
+    }
+    applyHide();
+  }
+
+  function showBuildPopover(options = {}) {
+    if (!editAdaptiveAddAtomPopoverEl) return;
+    if (buildPopoverHideTimer) {
+      clearTimeout(buildPopoverHideTimer);
+      buildPopoverHideTimer = 0;
+    }
+    hideSelectionFragmentCuePopover();
+    syncBuildPopoverPanes();
+    syncBuildSearchField();
+    updateBuildPaletteFilter(document.activeElement === editBuildSearchEl ? String(editBuildSearchEl.value || '') : '');
+    editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'false');
+    positionBuildPopover();
+    if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
+  }
+
   function hideSelectionFragmentCuePopover(delayMs = 0) {
     if (selectionFragmentCuePopoverHideTimer) {
       clearTimeout(selectionFragmentCuePopoverHideTimer);
@@ -12656,19 +12851,49 @@
       clearTimeout(selectionFragmentCuePopoverHideTimer);
       selectionFragmentCuePopoverHideTimer = 0;
     }
-    if (adaptivePopoverController) adaptivePopoverController.hideAll();
+    hideBuildPopover();
     if (editAddFragmentPaneEl.parentElement !== editSelectionFragmentCuePopoverEl) {
       editSelectionFragmentCuePopoverEl.appendChild(editAddFragmentPaneEl);
     }
     editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'false');
-    positionFloatingPopoverUi({
-      popoverEl: editSelectionFragmentCuePopoverEl,
-      triggerEl: editSelectionAddFragmentCueButtonEl,
-      gap: 12,
-      defaultWidth: 280,
-      defaultHeight: 160,
-    });
+    positionSelectionFragmentCuePopover();
     if (options.focusSearch) focusElementDeferred(editFragmentSearchEl || null);
+  }
+
+  function positionSelectionFragmentCuePopover() {
+    if (!editSelectionAddFragmentCueButtonEl || !editSelectionFragmentCuePopoverEl) return;
+    const gap = 12;
+    const triggerRect = editSelectionAddFragmentCueButtonEl.getBoundingClientRect();
+    const popoverRect = editSelectionFragmentCuePopoverEl.getBoundingClientRect();
+    const viewportWidth = Math.max(
+      1,
+      Math.round(window.innerWidth || 0),
+      Math.round((document.documentElement && document.documentElement.clientWidth) || 0)
+    );
+    const viewportHeight = Math.max(
+      1,
+      Math.round(window.innerHeight || 0),
+      Math.round((document.documentElement && document.documentElement.clientHeight) || 0)
+    );
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionFragmentCuePopoverEl.offsetWidth || 280));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionFragmentCuePopoverEl.offsetHeight || 160));
+    const roomRight = viewportWidth - triggerRect.right - gap;
+    let left = 0;
+    let top = 0;
+    if (roomRight >= popoverWidth) {
+      left = Math.round(triggerRect.right + gap);
+      top = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
+    } else {
+      left = Math.round(Math.min(
+        Math.max(gap, triggerRect.left),
+        Math.max(gap, viewportWidth - popoverWidth - gap)
+      ));
+      top = Math.round(triggerRect.bottom + gap);
+    }
+    left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
+    top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
+    editSelectionFragmentCuePopoverEl.style.left = `${left}px`;
+    editSelectionFragmentCuePopoverEl.style.top = `${top}px`;
   }
 
   function getEditSelectionClientBounds(indices, vol) {
@@ -12830,13 +13055,7 @@
     editSelectionTranslateCueEl.style.top = `${top}px`;
     editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
     if (editSelectionFragmentCuePopoverEl && editSelectionFragmentCuePopoverEl.getAttribute('aria-hidden') === 'false') {
-      positionFloatingPopoverUi({
-        popoverEl: editSelectionFragmentCuePopoverEl,
-        triggerEl: editSelectionAddFragmentCueButtonEl,
-        gap: 12,
-        defaultWidth: 280,
-        defaultHeight: 160,
-      });
+      positionSelectionFragmentCuePopover();
     }
   }
 
@@ -13003,7 +13222,8 @@
     editGestureUiState = uiState || editGestureUiState;
     const haloState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
     editHaloUiState = haloState || editHaloUiState;
-    const gestureActive = getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION;
+    const standalonePlacementActive = !!moleculePlaceActive;
+    const gestureActive = getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && !standalonePlacementActive;
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const selectionCount = getEditAtomSelection().length;
@@ -13011,6 +13231,10 @@
     if (editGestureHintEl) {
       if (gestureActive) {
         editGestureHintEl.textContent = String((haloState && haloState.hint) || editGestureUiState.hint || atomPresentation.hudHint);
+      } else if (standalonePlacementActive) {
+        const templateData = moleculePlaceTemplateData;
+        const kindLabel = templateData && templateData.entryKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule';
+        editGestureHintEl.textContent = `Build standalone ${kindLabel}: drag rotate • click again to place`;
       } else {
         editGestureHintEl.textContent = `${getEditSurfaceSubtitle()}${selectionCount ? ` • ${selectionCount} selected` : ''}`;
       }
@@ -13018,8 +13242,14 @@
     if (editGestureScopeEl) {
       if (gestureActive) {
         editGestureScopeEl.textContent = String((haloState && haloState.scope) || editGestureUiState.scope || atomPresentation.scopeSummary);
+      } else if (standalonePlacementActive) {
+        const templateData = moleculePlaceTemplateData;
+        const label = templateData
+          ? `${templateData.name}${templateData.formula ? ` (${templateData.formula})` : ''}`
+          : 'Standalone placement';
+        editGestureScopeEl.textContent = label;
       } else if (getEditIntent() === EDIT_INTENT.ADD_MOLECULE) {
-        editGestureScopeEl.textContent = atomPresentation.scopeSummary;
+        editGestureScopeEl.textContent = getMoleculeAddPresentation().currentSummary;
       } else if (selectionCount) {
         editGestureScopeEl.textContent = `${selectionCount} atom${selectionCount === 1 ? '' : 's'} selected`;
       } else if (vol && Array.isArray(vol.atoms)) {
@@ -13190,6 +13420,7 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
+    const buildFragmentLoaded = isBuildFragmentLoaded();
     const hit = pickAtomHit(e);
     if (hit && hit.object && hit.object.userData) {
       const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
@@ -13222,6 +13453,11 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
+    if (buildFragmentLoaded) {
+      beginQuaternionViewRotate(e);
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      return true;
+    }
     setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
     return false;
   }
@@ -13242,7 +13478,8 @@
   }
 
   function handleUnifiedEditControllerPointerDown(intent, e) {
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && isSelectionFragmentCueActive()) return handleFragmentIntentControllerPointerDown(e);
+    if (moleculePlaceActive) return handleMoleculeIntentControllerPointerDown(e);
+    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isBuildFragmentLoaded() || isSelectionFragmentCueActive())) return handleFragmentIntentControllerPointerDown(e);
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerDown(e);
     if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerDown(e);
     return false;
@@ -13387,7 +13624,8 @@
       editTransformController.updateRotateDrag(e);
       return true;
     }
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isSelectionFragmentCueActive() || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerMove(e);
+    if (moleculePlaceActive) return handleMoleculeIntentControllerPointerMove(e);
+    if (intent === EDIT_INTENT.ATOM_MANIPULATION && ((isBuildFragmentLoaded() || isSelectionFragmentCueActive()) || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerMove(e);
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerMove(e);
     if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerMove(e);
     return false;
@@ -13434,6 +13672,14 @@
       clearAddGrowPreview();
       controls.enabled = true;
       if (addPos) appendFragmentAtWorld(anchorIdx, addPos);
+    } else if (!__editMoved && isBuildFragmentLoaded()) {
+      const hit = pickAtomHit(e);
+      const addPos = computeAddAtomPosition(e, hit);
+      if (addPos) {
+        startMoleculePlacementAtWorld(addPos, { kind: CATALOG_KIND.FRAGMENT, id: editAddFragmentId, returnToBuildFragment: true });
+      } else {
+        setHintMessage('Build fragment: click an anchor atom to attach or click void to place.');
+      }
     } else if (!__editMoved && isSelectionFragmentCueActive()) {
       setHintMessage('Fragment attach: click an anchor atom to place the fragment.');
     }
@@ -13487,7 +13733,8 @@
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isSelectionFragmentCueActive() || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerUp(e);
+    if (moleculePlaceActive) return handleMoleculeIntentControllerPointerUp(e);
+    if (intent === EDIT_INTENT.ATOM_MANIPULATION && ((isBuildFragmentLoaded() || isSelectionFragmentCueActive()) || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerUp(e);
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerUp(e);
     if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerUp(e);
     return false;
@@ -13522,6 +13769,12 @@
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
+    if (moleculePlaceActive) {
+      moleculePlaceRotating = false;
+      moleculePlaceMoved = false;
+      try { controls.enabled = true; } catch { }
+      return true;
+    }
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) {
       if (addGrowActive) {
         clearAddGrowPreview();
@@ -13551,8 +13804,6 @@
     const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
     const showLegacyDrawer = isVisible;
     const intent = getEditIntent();
-    const isMoleculeAddActive = isVisible && intent === EDIT_INTENT.ADD_MOLECULE;
-    const selectionCount = getEditAtomSelection().length;
     const atomPresentation = getAtomManipulationPresentation();
     updateEditGestureHudUi();
     if (editAdaptiveMenuTitleEl) editAdaptiveMenuTitleEl.textContent = 'Tools';
@@ -13566,14 +13817,12 @@
       onHideAllPopovers: hideAllAdaptiveToolPopovers,
       visibleItems: [
         { el: editAdaptiveAddAtomBtn, visible: isVisible },
-        { el: editAdaptiveAddMoleculeBtn, visible: isVisible },
         { el: editAdaptiveCleanStructureBtn, visible: hasEditableAtoms },
         { el: editAdaptiveShiftComBtn, visible: hasEditableAtoms },
         { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms },
       ],
       activeItems: [
-        { el: editAdaptiveAddAtomBtn, active: intent === EDIT_INTENT.ATOM_MANIPULATION },
-        { el: editAdaptiveAddMoleculeBtn, active: isMoleculeAddActive },
+        { el: editAdaptiveAddAtomBtn, active: isVisible },
         { el: editAdaptiveCleanStructureBtn, active: false },
         { el: editAdaptiveShiftComBtn, active: false },
         { el: editAdaptiveAlignPrincipalBtn, active: false },
@@ -13581,11 +13830,12 @@
       metaItems: [
         {
           el: editAdaptiveAddAtomMetaEl,
-          text: atomPresentation.rowMeta,
-        },
-        {
-          el: editAdaptiveAddMoleculeMetaEl,
-          text: getMoleculeAddPresentation().rowMeta,
+          text: (() => {
+            const payload = getCurrentBuildPayload();
+            if (payload.kind === 'molecule') return getMoleculeAddPresentation().rowMeta;
+            if (payload.kind === 'fragment') return getFragmentBuildPresentation().rowMeta;
+            return atomPresentation.rowMeta;
+          })(),
         },
         {
           el: editAdaptiveCleanStructureMetaEl,
@@ -13695,7 +13945,7 @@
       zEl: editAddAtomOperatorZEl,
       isVisible,
       collapsed: addAtomOperatorCollapsed,
-      labelText: `Atom manipulation ${symbol}`,
+      labelText: `Build ${symbol}`,
       world,
       positionPanel: positionAddAtomOperatorPanel,
     });
@@ -13713,7 +13963,7 @@
       cloneAtomsSnapshot(vol),
       cloneBondSnapshot(vol),
       cloneVolumeAnnotationsSnapshot(vol),
-      `Atom manipulation ${getElementSymbol((atom && atom.Z) | 0)}`,
+      `Build ${getElementSymbol((atom && atom.Z) | 0)}`,
       '',
       { source: 'selection', autoAdjustHydrogensOnCommit: false, translateAttachedHydrogens: true, startCollapsed: true }
     );
@@ -13827,7 +14077,7 @@
       rotZEl: editAddMoleculeOperatorRotZEl,
       isVisible,
       collapsed: moleculePlaceOperatorCollapsed,
-      labelText: `Add Molecule ${String((moleculePlaceTemplateData && moleculePlaceTemplateData.name) || 'Molecule')}`,
+      labelText: `Build ${String((moleculePlaceTemplateData && moleculePlaceTemplateData.name) || 'Molecule')}`,
       position: moleculePlacePosition,
       rotation: rot,
       positionPanel: positionAddMoleculeOperatorPanel,
@@ -15962,14 +16212,6 @@
   }
 
   /**
-   * Reapply local cleanup to the most recent live non-fused fragment insertion.
-   * @returns {boolean}
-   */
-  function applyCleanupToLatestFragmentOperation() {
-    return editPlacement.applyCleanupToLatestFragmentOperation();
-  }
-
-  /**
    * Insert the selected fragment onto one anchor atom.
    * Default attachment policy is replace-H-first, else append.
    * @param {number} anchorIndex
@@ -17753,14 +17995,16 @@
       setMode(MODES.MEASURE);
       return;
     }
-    setEditIntent(EDIT_INTENT.ADD_MOLECULE, { announce: true });
-    setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: false, syncSearch: true });
   });
   bind('down', MODES.EDIT, 'o', () => { optimizeActiveStructureWithUff(); });
   bind('down', MODES.EDIT, 'p', () => { alignActiveMoleculePrincipalAxes(); });
   bind('down', MODES.EDIT, 'n', () => {
-    setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false });
-    setHintMessage(`Atom manipulation active • Loaded element ${getElementSymbol(editAddElementZ)}.`);
+    showBuildPopover({ focusSearch: true });
+    setHintMessage(`Build palette • Loaded ${formatBuildSearchValue()}.`);
+  });
+  bind('down', MODES.EDIT, '/', (e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    showBuildPopover({ focusSearch: true });
   });
   bind('down', MODES.EDIT, 'c', () => {
     setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
@@ -17809,7 +18053,7 @@
    * @param {'x'|'y'|'z'} axis
    */
   const axisDown = (axis) => {
-    if (getEditIntent() === EDIT_INTENT.ADD_MOLECULE && moleculePlaceActive) {
+    if (moleculePlaceActive) {
       alignMoleculePlacementToAxis(axis);
       return;
     }
@@ -17884,7 +18128,6 @@
       }
     }
     if (currentMode === MODES.EDIT
-      && getEditIntent() === EDIT_INTENT.ADD_MOLECULE
       && moleculePlaceActive) {
       if (e.key === 'Enter' && !isTypingInInput()) {
         e.preventDefault();
@@ -18615,22 +18858,6 @@
     moleculeBondOpacity = Math.max(0.05, Math.min(1, asFiniteNumber(value, moleculeBondOpacity)));
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('builder.cleanup.auto', () => !!editAutoCleanupEnabled, (value) => {
-    editAutoCleanupEnabled = asBoolean(value);
-    updateEditCleanupUiState();
-  }, { section: 'builder', type: 'boolean', description: 'Apply local fragment cleanup automatically after append/replace-H.' });
-  registerPresetSetting('builder.cleanup.bondLength', () => !!editCleanupBondLengthEnabled, (value) => {
-    editCleanupBondLengthEnabled = asBoolean(value);
-    updateEditCleanupUiState();
-  }, { section: 'builder', type: 'boolean', description: 'Reassert the anchor bond length during local fragment cleanup.' });
-  registerPresetSetting('builder.cleanup.overlapRelief', () => !!editCleanupOverlapEnabled, (value) => {
-    editCleanupOverlapEnabled = asBoolean(value);
-    updateEditCleanupUiState();
-  }, { section: 'builder', type: 'boolean', description: 'Shift newly added fragment atoms outward to reduce severe overlaps.' });
-  registerPresetSetting('builder.cleanup.strength', () => normalizeEditCleanupStrength(editCleanupStrength), (value) => {
-    editCleanupStrength = normalizeEditCleanupStrength(value);
-    updateEditCleanupUiState();
-  }, { section: 'builder', type: 'number', description: 'Strength of the lightweight local fragment cleanup pass.' });
   registerPresetSetting('builder.transformCleanup.auto', () => !!editTransformAutoCleanupEnabled, (value) => {
     editTransformAutoCleanupEnabled = asBoolean(value);
     updateEditToolboxUi({ syncSearch: false });

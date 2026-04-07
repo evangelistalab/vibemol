@@ -500,6 +500,48 @@ def find_empty_edit_canvas_point(page) -> tuple[float, float]:
     raise AssertionError('Could not find an empty canvas point for edit-mode smoke input.')
 
 
+def set_checkbox_state(page, selector: str, checked: bool) -> None:
+    ok = page.evaluate(
+        """(payload) => {
+            const el = document.querySelector(payload.selector);
+            if (!el) return false;
+            const nextChecked = !!payload.checked;
+            if (el.checked !== nextChecked) {
+                el.checked = nextChecked;
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return el.checked === nextChecked;
+        }""",
+        {'selector': selector, 'checked': checked},
+    )
+    if not ok:
+        raise AssertionError(f'Could not set checkbox state for {selector} -> {checked}')
+
+
+def set_select_value(page, selector: str, value: str) -> None:
+    ok = page.evaluate(
+        """(payload) => {
+            const el = document.querySelector(payload.selector);
+            if (!el) return false;
+            el.value = String(payload.value || '');
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            return el.value === String(payload.value || '');
+        }""",
+        {'selector': selector, 'value': value},
+    )
+    if not ok:
+        raise AssertionError(f'Could not set select value for {selector} -> {value}')
+
+
+def load_build_query(page, query: str) -> None:
+    page.locator('#editAdaptiveAddAtomBtn').click()
+    page.wait_for_function(
+        """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
+    )
+    page.locator('#editBuildSearch').fill(query)
+    page.keyboard.press('Enter')
+
+
 def trigger_selection_tool(page) -> None:
     page.evaluate(
         """() => {
@@ -513,9 +555,14 @@ def trigger_selection_tool(page) -> None:
     )
     page.wait_for_function(
         """() => {
-            const subtitle = document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '';
-            const hint = document.getElementById('hint')?.textContent || '';
-            return /Atom manipulation active/i.test(subtitle) || /Atom manipulation/i.test(hint);
+            return document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false';
+        }"""
+    )
+    load_build_query(page, 'C')
+    page.wait_for_function(
+        """() => {
+            const current = document.getElementById('editAddCurrent')?.textContent || '';
+            return /Build: Carbon \\(C\\)/i.test(current);
         }"""
     )
 
@@ -691,7 +738,7 @@ def main() -> int:
             page.hover('#editAdaptiveAddAtomBtn')
             page.wait_for_function("() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'")
             page.wait_for_function(
-                """() => /Atom manipulation: Carbon \\(C\\)/i.test(document.getElementById('editAddCurrent')?.textContent || '')"""
+                """() => /Build: Carbon \\(C\\)/i.test(document.getElementById('editAddCurrent')?.textContent || '')"""
             )
             page.wait_for_function(
                 """() => {
@@ -707,7 +754,7 @@ def main() -> int:
                 }"""
             )
             page.hover('#editAdaptiveAddAtomBtn')
-            page.locator('#editAddAdjustHydrogens').uncheck()
+            set_checkbox_state(page, '#editAddAdjustHydrogens', False)
             page.wait_for_function(
                 """() => {
                     const toggle = document.getElementById('editAddAdjustHydrogens');
@@ -721,8 +768,7 @@ def main() -> int:
                         return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
                     };
                     return {
-                        addAtom: isShown('editAdaptiveAddAtomBtn'),
-                        addMolecule: isShown('editAdaptiveAddMoleculeBtn'),
+                        build: isShown('editAdaptiveAddAtomBtn'),
                         cleanStructure: isShown('editAdaptiveCleanStructureBtn'),
                         shiftCom: isShown('editAdaptiveShiftComBtn'),
                         alignPrincipal: isShown('editAdaptiveAlignPrincipalBtn'),
@@ -730,8 +776,7 @@ def main() -> int:
                 }"""
             )
             if empty_edit_visibility != {
-                'addAtom': True,
-                'addMolecule': True,
+                'build': True,
                 'cleanStructure': False,
                 'shiftCom': False,
                 'alignPrincipal': False,
@@ -796,7 +841,7 @@ def main() -> int:
                 nitrogen_quick_box['y'] + nitrogen_quick_box['height'] * 0.5,
             )
             page.wait_for_function(
-                """() => /Atom manipulation: Nitrogen \\(N\\)/i.test(document.getElementById('editAddCurrent')?.textContent || '')"""
+                """() => /Build: Nitrogen \\(N\\)/i.test(document.getElementById('editAddCurrent')?.textContent || '')"""
             )
 
             # The halo now exposes coordination choices rather than element choices.
@@ -1247,10 +1292,8 @@ def main() -> int:
             page.locator('#editSelectionAddFragmentCueButton').click()
             page.wait_for_function(
                 """() => {
-                    const subtitle = document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '';
                     const cue = document.getElementById('editSelectionAddFragmentCueButton');
-                    return /Atom manipulation active/i.test(subtitle)
-                      && !!cue
+                    return !!cue
                       && cue.getAttribute('aria-pressed') === 'true';
                 }"""
             )
@@ -1258,8 +1301,10 @@ def main() -> int:
             page.mouse.click(cancel_x, cancel_y)
             page.wait_for_function(
                 """() => {
-                    const subtitle = document.getElementById('editAdaptiveMenuSubtitle')?.textContent || '';
-                    return /Atom manipulation active/i.test(subtitle)
+                    const hint = document.getElementById('editGestureHint')?.textContent || '';
+                    const selectionCount = Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0);
+                    return /Click void to place C/i.test(hint)
+                      && selectionCount === 0
                       && document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
@@ -1315,9 +1360,8 @@ def main() -> int:
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            page.locator('#editAdaptiveAddAtomBtn').click()
-            page.locator('#editAddAdjustHydrogens').check()
-            page.locator('#editAddQuick button[data-z=\"6\"]').click()
+            load_build_query(page, 'C')
+            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             grow_x, grow_y = canvas_point(page, 0.56, 0.55)
             page.mouse.click(grow_x, grow_y)
             page.wait_for_function(
@@ -1351,8 +1395,16 @@ def main() -> int:
             )
 
             log_step('add molecule smoke')
-            # Add molecule smoke.
-            page.locator('#editAdaptiveAddMoleculeBtn').click()
+            # Build search / standalone molecule placement smoke.
+            page.keyboard.press('/')
+            page.wait_for_function(
+                """() => document.activeElement === document.getElementById('editBuildSearch')"""
+            )
+            page.locator('#editBuildSearch').fill('benzene')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => /Build: Benzene \\(C6H6\\)/i.test(document.getElementById('editGestureScope')?.textContent || '')"""
+            )
             before_add_molecule = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)
             page.mouse.click(x, y)
@@ -1717,10 +1769,9 @@ def main() -> int:
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            page.locator('#editAdaptiveAddAtomBtn').click()
-            page.locator('#editAddAdjustHydrogens').check()
-            page.locator('#editAddQuick button[data-z="6"]').click()
-            page.locator('#editAddCoordination').select_option('linear')
+            load_build_query(page, 'C')
+            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
+            set_select_value(page, '#editAddCoordination', 'linear')
             before_adjust_ids = page.evaluate(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
@@ -1778,10 +1829,9 @@ def main() -> int:
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            page.locator('#editAdaptiveAddAtomBtn').click()
-            page.locator('#editAddAdjustHydrogens').check()
-            page.locator('#editAddQuick button[data-z="6"]').click()
-            page.locator('#editAddCoordination').select_option('tetrahedral')
+            load_build_query(page, 'C')
+            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
+            set_select_value(page, '#editAddCoordination', 'tetrahedral')
             tetra_x, tetra_y = canvas_point(page, 0.52, 0.48)
             page.mouse.click(tetra_x, tetra_y)
             page.wait_for_function(
@@ -1851,10 +1901,9 @@ def main() -> int:
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            page.locator('#editAdaptiveAddAtomBtn').click()
-            page.locator('#editAddAdjustHydrogens').check()
-            page.locator('#editAddQuick button[data-z="6"]').click()
-            page.locator('#editAddCoordination').select_option('tetrahedral')
+            load_build_query(page, 'C')
+            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
+            set_select_value(page, '#editAddCoordination', 'tetrahedral')
             replace_x, replace_y = canvas_point(page, 0.46, 0.54)
             page.mouse.click(replace_x, replace_y)
             page.wait_for_function(

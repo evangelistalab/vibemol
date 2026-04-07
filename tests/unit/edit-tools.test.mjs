@@ -168,7 +168,7 @@ test('edit-tools intent transitions finalize atom sessions and derive add mode',
   assert.equal(calls.finalizeAddAtomOperatorSession, 0);
   assert.equal(calls.clearAddGrowPreview, 0);
   assert.equal(calls.updateEditToolboxUi, 1);
-  assert.match(calls.hintMessages.at(-1), /Atom manipulation/);
+  assert.match(calls.hintMessages.at(-1), /Build/);
 
   state.addAtomOperatorSession = { id: 'session-2' };
   controller.setEditAddMode(EDIT_ADD_MODE.MOLECULE);
@@ -184,7 +184,7 @@ test('edit-tools fragment attach stays in atom manipulation and emits a dedicate
 
   controller.setEditIntent(EDIT_INTENT.ATOM_MANIPULATION);
   assert.equal(state.editIntent, EDIT_INTENT.ATOM_MANIPULATION);
-  assert.match(calls.hintMessages.at(-1), /Atom manipulation/);
+  assert.match(calls.hintMessages.at(-1), /Build/);
 
   controller.setEditAddMode(EDIT_ADD_MODE.FRAGMENT);
   assert.equal(state.editIntent, EDIT_INTENT.ATOM_MANIPULATION);

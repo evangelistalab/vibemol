@@ -115,20 +115,25 @@
       updateMoleculePlacementOperatorUi();
     }
 
-    function startMoleculePlacementAtWorld(worldPos) {
-      const molecule = buildCatalogInstance(getEditAddMoleculeId(), CATALOG_KIND.MOLECULE);
-      if (!molecule || !Array.isArray(molecule.atoms) || molecule.atoms.length === 0) {
-        setHintMessage('Selected molecule is not available.');
+    function startMoleculePlacementAtWorld(worldPos, options = {}) {
+      const requestedKind = String(options && options.kind || '').trim().toLowerCase() === CATALOG_KIND.FRAGMENT
+        ? CATALOG_KIND.FRAGMENT
+        : CATALOG_KIND.MOLECULE;
+      const entryId = String(options && options.id || '').trim()
+        || (requestedKind === CATALOG_KIND.FRAGMENT ? getEditAddFragmentId() : getEditAddMoleculeId());
+      const template = buildCatalogInstance(entryId, requestedKind);
+      if (!template || !Array.isArray(template.atoms) || template.atoms.length === 0) {
+        setHintMessage(`Selected ${requestedKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule'} is not available.`);
         return false;
       }
-      const data = buildMoleculePlacementData(molecule);
+      const data = buildMoleculePlacementData(template, requestedKind);
       if (!data) {
-        setHintMessage('Could not prepare molecule placement preview.');
+        setHintMessage(`Could not prepare ${requestedKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule'} placement preview.`);
         return false;
       }
       clearAddGrowPreview();
       clearMoleculePlacementPreview();
-      state.moleculePlaceTemplate = molecule;
+      state.moleculePlaceTemplate = template;
       state.moleculePlaceTemplateData = data;
       state.moleculePlaceActive = true;
       state.moleculePlaceOperatorCollapsed = true;
@@ -136,7 +141,7 @@
       state.moleculePlaceQuaternion.identity();
       rebuildMoleculePlacementPreviewMeshes();
       updateEditToolboxUi({ syncSearch: false });
-      setHintMessage(`Placing molecule ${data.name} • Drag to rotate • Click again to place • X/Y/Z align • Esc cancel`);
+      setHintMessage(`Placing ${requestedKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule'} ${data.name} • Drag to rotate • Click again to place • X/Y/Z align • Esc cancel`);
       return true;
     }
 
@@ -267,7 +272,8 @@
       const templateData = state.moleculePlaceTemplateData;
       const placePosition = state.moleculePlacePosition.clone();
       const placeQuaternion = state.moleculePlaceQuaternion.clone();
-      const label = templateData.name || 'molecule';
+      const entryKind = templateData.entryKind === CATALOG_KIND.FRAGMENT ? CATALOG_KIND.FRAGMENT : CATALOG_KIND.MOLECULE;
+      const label = templateData.name || (entryKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule');
       const record = ensureEditableVolumeRecord();
       const vol = record && record.vol;
       if (!vol || !Array.isArray(vol.atoms)) return false;
@@ -288,7 +294,7 @@
         setAtomBuilderMeta(vol, newAtom, {
           groupId: builderGroupId,
           entryId: templateData.id || '',
-          entryKind: CATALOG_KIND.MOLECULE,
+          entryKind,
         });
         addedAtomIds.push(newAtom.id);
         vol.atoms.push(newAtom);
@@ -299,7 +305,7 @@
       recordFragmentOperation(record, {
         timestamp: new Date().toISOString(),
         entryId: templateData.id || '',
-        entryKind: CATALOG_KIND.MOLECULE,
+        entryKind,
         attachPolicy: 'append',
         transform: {
           centerWorld: [placePosition.x, placePosition.y, placePosition.z],
@@ -312,7 +318,7 @@
       const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
       const afterBonds = cloneBondSnapshot(vol);
       const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
-      pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Add molecule: ${label}`, {
+      pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `${entryKind === CATALOG_KIND.FRAGMENT ? 'Add fragment' : 'Add molecule'}: ${label}`, {
         beforeFragmentOps,
         afterFragmentOps,
         beforeBonds,
@@ -324,7 +330,7 @@
       clearHover();
       rebuildScene({ preserveView: true });
       updateSidePanel();
-      setHintMessage(`Added molecule ${label}.`);
+      setHintMessage(`Added ${entryKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule'} ${label}.`);
       return true;
     }
 
@@ -651,7 +657,7 @@
       updateSidePanel();
       if (announce) {
         const symbol = getElementSymbol((resolved.atom && resolved.atom.Z) | 0);
-        if (session.source === 'selection') setHintMessage(`Committed Atom manipulation ${symbol}.`);
+        if (session.source === 'selection') setHintMessage(`Committed Build ${symbol}.`);
         else setHintMessage(`Committed Add Atom ${symbol}.`);
       }
       return true;
@@ -706,102 +712,6 @@
       applyAutomaticHydrogenAdjustment(record, vol, [vol.atoms.length - 1], { source: 'operator' });
       updateAddAtomOperatorUi();
       setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc cancel`);
-      return true;
-    }
-
-    function applyCleanupToLatestFragmentOperation() {
-      const record = ensureEditableVolumeRecord();
-      const vol = record && record.vol;
-      if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) {
-        setHintMessage('No editable structure is available for cleanup.');
-        return false;
-      }
-      if (!Array.isArray(vol.fragmentOps) || vol.fragmentOps.length === 0) {
-        setHintMessage('No fragment insertion is available for cleanup.');
-        return false;
-      }
-      ensureVolumeAtomIds(vol);
-      const atomIndexById = new Map();
-      for (let i = 0; i < vol.atoms.length; i++) {
-        if (!vol.atoms[i]) continue;
-        atomIndexById.set(String(ensureAtomId(vol.atoms[i])), i);
-      }
-      let targetOp = null;
-      let targetFragment = null;
-      let targetIndices = null;
-      let targetAnchor = -1;
-      for (let k = vol.fragmentOps.length - 1; k >= 0; k--) {
-        const op = normalizeBuilderOperationEntry(vol.fragmentOps[k]);
-        if (!op || op.entryKind !== CATALOG_KIND.FRAGMENT || op.attachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) continue;
-        const fragment = buildCatalogInstance(op.entryId, CATALOG_KIND.FRAGMENT);
-        if (!fragment) continue;
-        const conn = getFragmentConnectionAtom(fragment);
-        if (!conn) continue;
-        const addedIndices = Array.isArray(op.addedAtomIds)
-          ? op.addedAtomIds.map((id) => atomIndexById.get(String(id || ''))).filter((idx) => Number.isInteger(idx))
-          : [];
-        if (addedIndices.length !== fragment.atoms.length) continue;
-        const anchor = atomIndexById.get(String(op.anchorAtomIdPost || ''));
-        if (!Number.isInteger(anchor)) continue;
-        targetOp = op;
-        targetFragment = fragment;
-        targetIndices = addedIndices;
-        targetAnchor = anchor;
-        break;
-      }
-      if (!targetOp || !targetFragment || !Array.isArray(targetIndices)) {
-        setHintMessage('No live append/replace-H fragment is available for cleanup.');
-        return false;
-      }
-      const conn = getFragmentConnectionAtom(targetFragment);
-      const connectionGlobalIndex = targetIndices[conn.index];
-      if (!Number.isInteger(connectionGlobalIndex) || !vol.atoms[connectionGlobalIndex]) {
-        setHintMessage('Cleanup could not resolve the fragment connection atom.');
-        return false;
-      }
-      const beforeAtoms = cloneAtomsSnapshot(vol);
-      const beforeBonds = cloneBondSnapshot(vol);
-      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
-      const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
-      const oldAtomIndexSet = new Set(Array.from({ length: vol.atoms.length }, (_, i) => i).filter((i) => !targetIndices.includes(i)));
-      const axisArray = Array.isArray(targetOp.transform && targetOp.transform.direction) ? targetOp.transform.direction : null;
-      let attachDir = axisArray && axisArray.length >= 3
-        ? new THREE.Vector3(Number(axisArray[0]) || 0, Number(axisArray[1]) || 0, Number(axisArray[2]) || 0)
-        : atomUnitsToAng(vol, vol.atoms[connectionGlobalIndex]).sub(atomUnitsToAng(vol, vol.atoms[targetAnchor]));
-      if (attachDir.lengthSq() < 1e-10) attachDir.set(0, 0, 1);
-      const targetLength = Number(targetOp.transform && targetOp.transform.bondLengthAngstrom);
-      const bondLength = Number.isFinite(targetLength)
-        ? targetLength
-        : getEditAddBondLength(vol.atoms[targetAnchor].Z | 0, vol.atoms[connectionGlobalIndex].Z | 0, targetOp.resultingBondOrder || 1);
-      const cleanupResult = applyLocalFragmentCleanup(
-        vol,
-        targetAnchor,
-        targetIndices,
-        connectionGlobalIndex,
-        bondLength,
-        oldAtomIndexSet,
-        attachDir,
-        { force: true }
-      );
-      const afterAtoms = cloneAtomsSnapshot(vol);
-      const afterBonds = cloneBondSnapshot(vol);
-      const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
-      if (options.atomsSnapshotsEqual && options.atomsSnapshotsEqual(beforeAtoms, afterAtoms)) {
-        setHintMessage('Cleanup made no positional changes.');
-        return false;
-      }
-      pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Cleanup fragment: ${targetFragment.name}`, {
-        beforeFragmentOps,
-        afterFragmentOps,
-        beforeBonds,
-        afterBonds,
-      });
-      rebuildScene({ preserveView: true });
-      updateSidePanel();
-      const parts = [];
-      if (cleanupResult.bondLengthApplied) parts.push('bond length');
-      if (cleanupResult.overlapShift > 1e-6) parts.push(`overlap relief ${cleanupResult.overlapShift.toFixed(2)} Å`);
-      setHintMessage(`Applied cleanup to ${targetFragment.name}${parts.length ? ` • ${parts.join(' • ')}` : ''}.`);
       return true;
     }
 
@@ -1030,7 +940,6 @@
       finalizeAddAtomOperatorSession,
       applyAddAtomOperatorInput,
       appendAtomAtWorld,
-      applyCleanupToLatestFragmentOperation,
       appendFragmentAtWorld,
       deleteAtomAtIndex,
       deleteHoveredAtom,
