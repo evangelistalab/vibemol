@@ -762,14 +762,18 @@
   let editAtomsMenuEl = null;
   let editAtomsMenuBodyEl = null;
   let editAtomsMenuCurrentEl = null;
-  let editHaloLayerEl = null;
   let editSelectionTranslateCueEl = null;
   let editSelectionTranslateCueButtonEl = null;
   let editSelectionRotateCueButtonEl = null;
+  let editSelectionCoordinationCueButtonEl = null;
   let editSelectionBondOrbitCueButtonEl = null;
   let editSelectionBondDistanceCueButtonEl = null;
   let editSelectionAddFragmentCueButtonEl = null;
   let editSelectionFragmentCuePopoverEl = null;
+  let editSelectionCoordinationCuePopoverEl = null;
+  let selectionCoordinationCuePointerHandled = false;
+  let selectionCoordinationCuePopoverRenderKey = '';
+  let selectionCoordinationCuePreviewRenderers = [];
   let editAdaptiveMenuEl = null;
   let editAdaptiveMenuTitleEl = null;
   let editAdaptiveMenuSubtitleEl = null;
@@ -828,6 +832,9 @@
     const addMoleculeOperatorPanelEl = document.getElementById('editAddMoleculeOperatorPanel');
     if (addMoleculeOperatorPanelEl && addMoleculeOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
       positionAddMoleculeOperatorPanel();
+    }
+    if (editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+      positionSelectionCoordinationCuePopover();
     }
     const currentBondOrderPopupEl = document.getElementById('bondOrderPopup');
     if (currentBondOrderPopupEl && currentBondOrderPopupEl.getAttribute('aria-hidden') === 'false') {
@@ -5491,14 +5498,15 @@
   editAtomsMenuEl = document.getElementById('editAtomsMenu');
   editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
   editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
-  editHaloLayerEl = document.getElementById('editHaloLayer');
   editSelectionTranslateCueEl = document.getElementById('editSelectionTranslateCue');
   editSelectionTranslateCueButtonEl = document.getElementById('editSelectionTranslateCueButton');
   editSelectionRotateCueButtonEl = document.getElementById('editSelectionRotateCueButton');
+  editSelectionCoordinationCueButtonEl = document.getElementById('editSelectionCoordinationCueButton');
   editSelectionBondOrbitCueButtonEl = document.getElementById('editSelectionBondOrbitCueButton');
   editSelectionBondDistanceCueButtonEl = document.getElementById('editSelectionBondDistanceCueButton');
   editSelectionAddFragmentCueButtonEl = document.getElementById('editSelectionAddFragmentCueButton');
   editSelectionFragmentCuePopoverEl = document.getElementById('editSelectionFragmentCuePopover');
+  editSelectionCoordinationCuePopoverEl = document.getElementById('editSelectionCoordinationCuePopover');
   editAdaptiveMenuEl = document.getElementById('editAdaptiveMenu');
   editAdaptiveMenuTitleEl = document.getElementById('editAdaptiveMenuTitle');
   editAdaptiveMenuSubtitleEl = document.getElementById('editAdaptiveMenuSubtitle');
@@ -5548,6 +5556,23 @@
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditBondSideCueMode('distance');
   });
+  if (editSelectionCoordinationCueButtonEl) {
+    editSelectionCoordinationCueButtonEl.addEventListener('pointerdown', (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      selectionCoordinationCuePointerHandled = true;
+      toggleSelectionCoordinationCuePopover();
+    });
+    editSelectionCoordinationCueButtonEl.addEventListener('click', (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      if (selectionCoordinationCuePointerHandled) {
+        selectionCoordinationCuePointerHandled = false;
+        return;
+      }
+      toggleSelectionCoordinationCuePopover();
+    });
+  }
   if (editSelectionAddFragmentCueButtonEl) {
     editSelectionAddFragmentCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -5574,6 +5599,33 @@
       hideSelectionFragmentCuePopover(120);
     });
   }
+  if (editSelectionCoordinationCuePopoverEl) {
+    editSelectionCoordinationCuePopoverEl.addEventListener('pointerdown', (e) => {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    });
+    editSelectionCoordinationCuePopoverEl.addEventListener('click', (e) => {
+      const target = e && e.target ? e.target.closest('[data-coordination-choice]') : null;
+      if (!target) return;
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      const atomIndex = Number(target.getAttribute('data-atom-index')) | 0;
+      const geometryId = String(target.getAttribute('data-coordination-choice') || '').trim();
+      if (!geometryId) return;
+      if (applyAtomCoordinationChoice(atomIndex, geometryId)) {
+        hideSelectionCoordinationCuePopover();
+      }
+    });
+  }
+  document.addEventListener('pointerdown', (evt) => {
+    const target = evt && evt.target;
+    if (
+      editSelectionCoordinationCuePopoverEl
+      && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false'
+      && !(editSelectionCoordinationCuePopoverEl.contains(target) || (editSelectionCoordinationCueButtonEl && editSelectionCoordinationCueButtonEl.contains(target)))
+    ) {
+      hideSelectionCoordinationCuePopover();
+    }
+  });
   editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
   editAdaptiveAddAtomMetaEl = document.getElementById('editAdaptiveAddAtomMeta');
   editAdaptiveCleanStructureBtn = document.getElementById('editAdaptiveCleanStructureBtn');
@@ -10353,10 +10405,10 @@
       };
     }
     return {
-      kind: 'atom',
-      previewZ: Math.max(1, editAddElementZ | 0),
+      kind: 'site',
+      previewZ: 6,
       fragmentId: '',
-      label: `${getElementName(editAddElementZ | 0)} (${getElementSymbol(editAddElementZ | 0)})`,
+      label: 'open valence site',
     };
   }
 
@@ -12728,6 +12780,7 @@
   }
 
   function hideEditSelectionTranslateCue() {
+    hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     if (!editSelectionTranslateCueEl) return;
     editSelectionTranslateCueEl.setAttribute('aria-hidden', 'true');
@@ -12817,6 +12870,7 @@
       clearTimeout(buildPopoverHideTimer);
       buildPopoverHideTimer = 0;
     }
+    hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     syncBuildPopoverPanes();
     syncBuildSearchField();
@@ -12859,6 +12913,7 @@
       clearTimeout(selectionFragmentCuePopoverHideTimer);
       selectionFragmentCuePopoverHideTimer = 0;
     }
+    hideSelectionCoordinationCuePopover();
     hideBuildPopover();
     if (editAddFragmentPaneEl.parentElement !== editSelectionFragmentCuePopoverEl) {
       editSelectionFragmentCuePopoverEl.appendChild(editAddFragmentPaneEl);
@@ -12902,6 +12957,310 @@
     top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
     editSelectionFragmentCuePopoverEl.style.left = `${left}px`;
     editSelectionFragmentCuePopoverEl.style.top = `${top}px`;
+  }
+
+  function getOpenCoordinationGhostTheme(options = {}) {
+    const hovered = !!options.hovered;
+    const kind = String(options.kind || 'site') === 'fragment' ? 'fragment' : 'site';
+    if (kind === 'fragment') {
+      return {
+        fillPrimary: hovered ? '#ffd85f' : '#66d8ff',
+        fillSecondary: hovered ? '#fff1ad' : '#9cf3dd',
+        stroke: hovered ? '#fff7cf' : '#e9fbff',
+        glow: hovered ? 'rgba(255, 216, 95, 0.24)' : 'rgba(103, 217, 255, 0.16)',
+        bond: hovered ? '#ffd85f' : '#a3ebff',
+      };
+    }
+    return {
+      fillPrimary: hovered ? '#ffd85f' : '#5fd0ff',
+      fillSecondary: hovered ? '#fff1ad' : '#8fe9ff',
+      stroke: hovered ? '#fff7cf' : '#e6fbff',
+      glow: hovered ? 'rgba(255, 216, 95, 0.2)' : 'rgba(103, 217, 255, 0.12)',
+      bond: hovered ? '#ffd85f' : '#98e4ff',
+    };
+  }
+
+  function disposeThreeSceneTree(root) {
+    if (!root || typeof root.traverse !== 'function') return;
+    root.traverse((node) => {
+      if (node && node.geometry && typeof node.geometry.dispose === 'function') {
+        node.geometry.dispose();
+      }
+      const material = node && node.material;
+      if (Array.isArray(material)) {
+        material.forEach((item) => {
+          if (item && typeof item.dispose === 'function') item.dispose();
+        });
+      } else if (material && typeof material.dispose === 'function') {
+        material.dispose();
+      }
+    });
+  }
+
+  function createOpenCoordinationMarkerGroup(position, radius, options = {}) {
+    const theme = getOpenCoordinationGhostTheme(options);
+    const group = new THREE.Group();
+    if (position && position.isVector3) group.position.copy(position);
+    const polyGeom = new THREE.IcosahedronGeometry(Math.max(0.12, Number(radius) || 0.2), 0);
+    const polyMat = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(theme.fillPrimary),
+      transparent: true,
+      opacity: options.hovered ? 0.92 : 0.68,
+      roughness: 0.18,
+      metalness: 0.12,
+      clearcoat: 0.56,
+      clearcoatRoughness: 0.12,
+      depthWrite: false,
+    });
+    const polyMesh = new THREE.Mesh(polyGeom, polyMat);
+    group.add(polyMesh);
+    const edgeGeom = new THREE.EdgesGeometry(polyGeom);
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: new THREE.Color(theme.stroke),
+      transparent: true,
+      opacity: options.hovered ? 0.96 : 0.82,
+      depthWrite: false,
+    });
+    const edgeLines = new THREE.LineSegments(edgeGeom, edgeMat);
+    group.add(edgeLines);
+    return group;
+  }
+
+  function createCoordinationCuePreviewAtomGroup(atomZ, radius) {
+    const group = new THREE.Group();
+    const atomGeom = new THREE.SphereGeometry(Math.max(0.18, Number(radius) || 0.42), 24, 18);
+    const atomColor = getAtomRenderColor(atomZ | 0);
+    const atomMat = createAtomMaterial(atomColor.clone(), atomZ | 0);
+    const atomMesh = new THREE.Mesh(atomGeom, atomMat);
+    group.add(atomMesh);
+    const highlightGeom = new THREE.SphereGeometry(Math.max(0.19, Number(radius) || 0.42) * 1.045, 24, 18);
+    const highlightMat = createAtomHighlightMaterial(atomZ | 0);
+    const highlightMesh = new THREE.Mesh(highlightGeom, highlightMat);
+    group.add(highlightMesh);
+    return group;
+  }
+
+  function createCoordinationCuePreviewBond(target, color, radius, opacity = 0.8) {
+    const end = target && target.isVector3 ? target.clone() : new THREE.Vector3();
+    const len = end.length();
+    if (len <= 1e-6) return null;
+    const dir = end.clone().normalize();
+    const geom = new THREE.CylinderGeometry(radius, radius, len, 12, 1, false);
+    const mat = new THREE.MeshPhysicalMaterial({
+      color,
+      transparent: opacity < 0.999,
+      opacity,
+      roughness: 0.28,
+      metalness: 0.04,
+      depthWrite: opacity >= 0.999,
+    });
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.copy(end).multiplyScalar(0.5);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    return mesh;
+  }
+
+  function disposeSelectionCoordinationCuePreviews() {
+    for (const entry of selectionCoordinationCuePreviewRenderers) {
+      if (entry && entry.scene) disposeThreeSceneTree(entry.scene);
+      if (entry && entry.renderer) {
+        if (entry.renderer.domElement && entry.renderer.domElement.parentNode) {
+          entry.renderer.domElement.parentNode.removeChild(entry.renderer.domElement);
+        }
+        entry.renderer.dispose();
+      }
+    }
+    selectionCoordinationCuePreviewRenderers = [];
+  }
+
+  function renderSelectionCoordinationCuePreviewCanvases(state) {
+    if (!editSelectionCoordinationCuePopoverEl || !state) return;
+    disposeSelectionCoordinationCuePreviews();
+    const hosts = Array.from(editSelectionCoordinationCuePopoverEl.querySelectorAll('.editCoordinationCuePreview'));
+    for (const host of hosts) {
+      const geometryId = String(host.getAttribute('data-preview-geometry') || '').trim();
+      if (!geometryId) continue;
+      const active = host.getAttribute('data-preview-active') === 'true';
+      const geometry = getCoordinationGeometry(geometryId);
+      const vertices = geometry && Array.isArray(geometry.vertices) ? geometry.vertices : [];
+      const width = Math.max(96, Math.round(host.clientWidth || 96));
+      const height = Math.max(78, Math.round(host.clientHeight || 78));
+      let renderer = null;
+      try {
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
+      } catch (_err) {
+        continue;
+      }
+      renderer.setPixelRatio(Math.min(1.5, Math.max(1, Number(window.devicePixelRatio) || 1)));
+      renderer.setSize(width, height, false);
+      renderer.setClearColor(0x000000, 0);
+      renderer.domElement.setAttribute('aria-hidden', 'true');
+      host.textContent = '';
+      host.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(28, width / Math.max(1, height), 0.1, 24);
+      camera.position.set(0, 0, 5.8);
+      camera.lookAt(0, 0, 0);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+      const keyLight = new THREE.DirectionalLight(0xf8fbff, 1.2);
+      keyLight.position.set(2.8, 3.4, 4.2);
+      scene.add(keyLight);
+      const fillLight = new THREE.DirectionalLight(0x7fc7ff, 0.6);
+      fillLight.position.set(-3.4, -1.8, 2.6);
+      scene.add(fillLight);
+
+      const previewGroup = new THREE.Group();
+      previewGroup.rotation.set(-0.58, 0.72, 0.18);
+      const centerRadius = Math.min(0.58, Math.max(0.34, getRenderedAtomDisplayRadius(state.atomZ | 0) * 0.46));
+      previewGroup.add(createCoordinationCuePreviewAtomGroup(state.atomZ | 0, centerRadius));
+
+      const siteDistance = 1.62;
+      const siteRadius = active ? 0.24 : 0.22;
+      const bondRadius = active ? 0.072 : 0.064;
+      const theme = getOpenCoordinationGhostTheme({ kind: 'site', hovered: active });
+      const bondColor = new THREE.Color(theme.bond);
+      for (const dirLike of vertices) {
+        const position = new THREE.Vector3(
+          Number(dirLike && dirLike[0]) || 0,
+          Number(dirLike && dirLike[1]) || 0,
+          Number(dirLike && dirLike[2]) || 0
+        );
+        if (position.lengthSq() < 1e-8) continue;
+        position.normalize().multiplyScalar(siteDistance);
+        const bondMesh = createCoordinationCuePreviewBond(position, bondColor, bondRadius, active ? 0.84 : 0.72);
+        if (bondMesh) previewGroup.add(bondMesh);
+        previewGroup.add(createOpenCoordinationMarkerGroup(position, siteRadius, { kind: 'site', hovered: active }));
+      }
+
+      scene.add(previewGroup);
+      renderer.render(scene, camera);
+      selectionCoordinationCuePreviewRenderers.push({ renderer, scene });
+    }
+  }
+
+  function getSelectionCoordinationCueState() {
+    if (currentMode !== MODES.EDIT) return null;
+    const selection = getEditAtomSelection();
+    if (!Array.isArray(selection) || selection.length !== 1) return null;
+    const transformContext = getCurrentTransformSelectionContext();
+    if (transformContext && transformContext.type === 'bond') return null;
+    const atomIndex = selection[0] | 0;
+    if (editHaloController && typeof editHaloController.getCoordinationCueState === 'function') {
+      return editHaloController.getCoordinationCueState(atomIndex);
+    }
+    const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+    if (!(uiState && uiState.visible && Array.isArray(uiState.choices) && uiState.choices.length)) return null;
+    if ((uiState.atomIndex | 0) !== atomIndex) return null;
+    return {
+      atomIndex,
+      atomZ: uiState.atomZ | 0,
+      activeGeometryId: String(uiState.activeZone && uiState.activeZone.kind === 'choice'
+        ? (uiState.activeZone.geometryId || '')
+        : (uiState.choices.find((choice) => choice && choice.active) || {}).geometryId || ''),
+      choices: uiState.choices.map((choice) => ({
+        geometryId: String(choice && choice.geometryId || ''),
+        label: String(choice && choice.text || choice && choice.label || ''),
+        cn: Number(choice && choice.cn) || 0,
+        active: !!(choice && choice.active),
+      })),
+    };
+  }
+
+  function hideSelectionCoordinationCuePopover() {
+    if (!editSelectionCoordinationCuePopoverEl) return;
+    editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'true');
+    selectionCoordinationCuePopoverRenderKey = '';
+    disposeSelectionCoordinationCuePreviews();
+  }
+
+  function positionSelectionCoordinationCuePopover() {
+    if (!editSelectionCoordinationCueButtonEl || !editSelectionCoordinationCuePopoverEl) return;
+    const gap = 12;
+    const triggerRect = editSelectionCoordinationCueButtonEl.getBoundingClientRect();
+    const popoverRect = editSelectionCoordinationCuePopoverEl.getBoundingClientRect();
+    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
+    const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionCoordinationCuePopoverEl.offsetWidth || 320));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionCoordinationCuePopoverEl.offsetHeight || 240));
+    const roomRight = viewportWidth - triggerRect.right - gap;
+    let left = 0;
+    let top = 0;
+    if (roomRight >= popoverWidth) {
+      left = Math.round(triggerRect.right + gap);
+      top = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
+    } else {
+      left = Math.round(Math.max(gap, triggerRect.left - popoverWidth - gap));
+      top = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
+    }
+    left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
+    top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
+    editSelectionCoordinationCuePopoverEl.style.left = `${left}px`;
+    editSelectionCoordinationCuePopoverEl.style.top = `${top}px`;
+  }
+
+  function renderSelectionCoordinationCuePopover() {
+    if (!editSelectionCoordinationCuePopoverEl) return;
+    if (editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
+    const state = getSelectionCoordinationCueState();
+    if (!state || !state.choices.length) {
+      hideSelectionCoordinationCuePopover();
+      return;
+    }
+    const renderKey = JSON.stringify({
+      atomIndex: state.atomIndex | 0,
+      atomZ: state.atomZ | 0,
+      activeGeometryId: String(state.activeGeometryId || ''),
+      choices: state.choices.map((choice) => ({
+        geometryId: String(choice && choice.geometryId || ''),
+        label: String(choice && choice.label || ''),
+        cn: Number(choice && choice.cn) || 0,
+        active: !!(choice && choice.active),
+      })),
+    });
+    const optionsHtml = state.choices.map((choice) => {
+      const geometryId = String(choice.geometryId || '');
+      const label = choice.label || geometryId;
+      const active = choice.active || geometryId === state.activeGeometryId;
+      return [
+        `<button class="editCoordinationCueOption${active ? ' is-active' : ''}" type="button" data-coordination-choice="${escapeHtml(geometryId)}" data-atom-index="${state.atomIndex | 0}">`,
+        `<span class="editCoordinationCuePreview" data-preview-geometry="${escapeHtml(geometryId)}" data-preview-active="${active ? 'true' : 'false'}" aria-hidden="true"></span>`,
+        '<span class="editCoordinationCueMeta">',
+        `<span class="editCoordinationCueLabel">${escapeHtml(label)}</span>`,
+        `<span class="editCoordinationCueSubtext">Coordination ${Math.max(0, choice.cn | 0)}</span>`,
+        '</span>',
+        '</button>',
+      ].join('');
+    }).join('');
+    if (renderKey !== selectionCoordinationCuePopoverRenderKey) {
+      editSelectionCoordinationCuePopoverEl.innerHTML = [
+        '<div class="editCoordinationCueHeader">Coordination</div>',
+        `<div class="editCoordinationCueGrid">${optionsHtml}</div>`,
+      ].join('');
+      selectionCoordinationCuePopoverRenderKey = renderKey;
+      renderSelectionCoordinationCuePreviewCanvases(state);
+    }
+    positionSelectionCoordinationCuePopover();
+  }
+
+  function showSelectionCoordinationCuePopover() {
+    if (!editSelectionCoordinationCueButtonEl || !editSelectionCoordinationCuePopoverEl) return;
+    const state = getSelectionCoordinationCueState();
+    if (!state || !state.choices.length) return;
+    hideBuildPopover();
+    hideSelectionFragmentCuePopover();
+    editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'false');
+    renderSelectionCoordinationCuePopover();
+  }
+
+  function toggleSelectionCoordinationCuePopover() {
+    if (!editSelectionCoordinationCuePopoverEl) return;
+    if (editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+      hideSelectionCoordinationCuePopover();
+      return;
+    }
+    showSelectionCoordinationCuePopover();
   }
 
   function getEditSelectionClientBounds(indices, vol) {
@@ -13034,12 +13393,24 @@
       editSelectionBondDistanceCueButtonEl.classList.toggle('is-active', active);
       editSelectionBondDistanceCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
+    const coordinationCueState = getSelectionCoordinationCueState();
+    if (editSelectionCoordinationCueButtonEl) {
+      const visible = !isBondSideSelection && !!(coordinationCueState && coordinationCueState.choices.length);
+      const active = visible && editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
+      editSelectionCoordinationCueButtonEl.hidden = !visible;
+      editSelectionCoordinationCueButtonEl.classList.toggle('is-active', !!active);
+      editSelectionCoordinationCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      if (!visible) hideSelectionCoordinationCuePopover();
+    }
     if (editSelectionAddFragmentCueButtonEl) {
       editSelectionAddFragmentCueButtonEl.hidden = !!isBondSideSelection;
       editSelectionAddFragmentCueButtonEl.classList.toggle('is-active', !isBondSideSelection && fragmentCueActive);
       editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', !isBondSideSelection && !fragmentCueActive);
       editSelectionAddFragmentCueButtonEl.setAttribute('aria-pressed', (!isBondSideSelection && fragmentCueActive) ? 'true' : 'false');
-      if (isBondSideSelection) hideSelectionFragmentCuePopover();
+      if (isBondSideSelection) {
+        hideSelectionFragmentCuePopover();
+        hideSelectionCoordinationCuePopover();
+      }
     }
     if (isBondSideSelection) {
       editSelectionTranslateCueEl.title = bondSideCueMode === 'distance'
@@ -13062,43 +13433,17 @@
     editSelectionTranslateCueEl.style.left = `${left}px`;
     editSelectionTranslateCueEl.style.top = `${top}px`;
     editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
+    if (editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+      renderSelectionCoordinationCuePopover();
+    }
     if (editSelectionFragmentCuePopoverEl && editSelectionFragmentCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSelectionFragmentCuePopover();
     }
   }
 
   function renderEditHaloOverlay() {
-    if (!editHaloLayerEl) return;
     const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
     editHaloUiState = uiState || editHaloUiState;
-    if (!uiState || !uiState.visible || !uiState.anchorClient) {
-      editHaloLayerEl.setAttribute('aria-hidden', 'true');
-      editHaloLayerEl.innerHTML = '';
-      return;
-    }
-    editHaloLayerEl.setAttribute('aria-hidden', 'false');
-    const anchor = uiState.anchorClient;
-    const activeZone = uiState.activeZone || null;
-    const captureRadius = Math.max(0, Number(uiState.captureRadius) || 0);
-    const captureHtml = captureRadius > 0
-      ? `<div class="editHaloCapture" style="left:${Number(anchor.x) || 0}px; top:${Number(anchor.y) || 0}px; width:${captureRadius * 2}px; height:${captureRadius * 2}px;"></div>`
-      : '';
-    const choicesHtml = (Array.isArray(uiState.choices) ? uiState.choices : []).map((item) => {
-      const classes = [
-        'editHaloChoice',
-        item.active ? 'is-current' : '',
-        activeZone && activeZone.kind === 'choice' && String(activeZone.geometryId || '') === String(item.geometryId || '') ? 'is-active' : '',
-      ].filter(Boolean).join(' ');
-      const width = Math.max(82, Number(item.width) || 0);
-      const height = Math.max(26, Number(item.height) || 0);
-      return `<div class="${classes}" data-halo-coordination="${String(item.geometryId || '')}" style="left:${Number(item.x) || 0}px; top:${Number(item.y) || 0}px; width:${width}px; height:${height}px; line-height:${height}px;">${String(item.text || '')}</div>`;
-    }).join('');
-    const ghostPayload = getEditHaloGhostPayloadDescriptor(uiState.atomZ | 0);
-    const ghostClassName = ghostPayload.kind === 'fragment' ? 'editHaloGhost is-fragment' : 'editHaloGhost';
-    const ghostsHtml = (Array.isArray(uiState.ghosts) ? uiState.ghosts : []).map((ghost) => {
-      return `<div class="${ghostClassName}" data-halo-ghost="${ghost.index}" style="left:${Number(ghost.x) || 0}px; top:${Number(ghost.y) || 0}px;"></div>`;
-    }).join('');
-    editHaloLayerEl.innerHTML = `${captureHtml}<div class="editHaloCore" style="left:${Number(anchor.x) || 0}px; top:${Number(anchor.y) || 0}px;"></div>${ghostsHtml}${choicesHtml}`;
   }
 
   function clearEditHaloGhostPreview() {
@@ -13171,48 +13516,36 @@
     const sphereHeightSegments = Math.max(12, getMoleculeStyleProfile().sphereHeightSegments | 0);
     const bondRadialSegments = Math.max(12, getMoleculeStyleProfile().bondRadialSegments | 0);
     const up = new THREE.Vector3(0, 1, 0);
-    const fragmentGhostsActive = renderState.ghostKind === 'fragment';
+    const polyGhostsActive = renderState.ghostKind === 'fragment' || renderState.ghostKind === 'site';
     for (const ghost of renderState.ghosts) {
       const ghostWorld = new THREE.Vector3(ghost.world[0], ghost.world[1], ghost.world[2]);
       const hovered = (ghost.index | 0) === (editHaloGhostHoverIndex | 0);
-      const ghostColor = hovered
-        ? new THREE.Color(0xffde59)
-        : (fragmentGhostsActive ? new THREE.Color(0x66d8ff) : getAtomRenderColor(previewZ).clone());
-      const edgeColor = hovered ? new THREE.Color(0xfff3b0) : new THREE.Color(0xe9fbff);
-      const bondColor = hovered ? new THREE.Color(0xffde59) : (fragmentGhostsActive ? new THREE.Color(0xa3ebff) : new THREE.Color(0xdbe3ef));
+      const ghostTheme = polyGhostsActive
+        ? getOpenCoordinationGhostTheme({ kind: renderState.ghostKind, hovered })
+        : null;
+      const ghostColor = polyGhostsActive
+        ? new THREE.Color(ghostTheme.fillPrimary)
+        : getAtomRenderColor(previewZ).clone();
+      const edgeColor = polyGhostsActive
+        ? new THREE.Color(ghostTheme.stroke)
+        : new THREE.Color(hovered ? 0xfff3b0 : 0xe9fbff);
+      const bondColor = polyGhostsActive
+        ? new THREE.Color(ghostTheme.bond)
+        : new THREE.Color(hovered ? 0xffde59 : 0xdbe3ef);
       const ghostGroup = new THREE.Group();
       ghostGroup.userData.haloGhostIndex = ghost.index | 0;
       const atomRadius = getRenderedAtomDisplayRadius(previewZ);
-      if (fragmentGhostsActive) {
+      if (polyGhostsActive) {
         const ghostRadius = Math.max(0.18, atomRadius * 0.95);
-        const polyGeom = new THREE.IcosahedronGeometry(ghostRadius, 0);
-        const polyMat = new THREE.MeshPhysicalMaterial({
-          color: ghostColor,
-          transparent: true,
-          opacity: hovered ? 0.9 : 0.62,
-          roughness: 0.18,
-          metalness: 0.12,
-          clearcoat: 0.56,
-          clearcoatRoughness: 0.12,
-          depthWrite: false,
+        const markerGroup = createOpenCoordinationMarkerGroup(ghostWorld, ghostRadius, {
+          kind: renderState.ghostKind,
+          hovered,
         });
-        const polyMesh = new THREE.Mesh(polyGeom, polyMat);
-        polyMesh.position.copy(ghostWorld);
-        polyMesh.renderOrder = 68;
-        polyMesh.userData.haloGhostIndex = ghost.index | 0;
-        ghostGroup.add(polyMesh);
-        const edgeGeom = new THREE.EdgesGeometry(polyGeom);
-        const edgeMat = new THREE.LineBasicMaterial({
-          color: edgeColor,
-          transparent: true,
-          opacity: hovered ? 0.96 : 0.82,
-          depthWrite: false,
+        markerGroup.traverse((node) => {
+          node.renderOrder = node.type === 'LineSegments' ? 69 : 68;
+          node.userData.haloGhostIndex = ghost.index | 0;
         });
-        const edgeLines = new THREE.LineSegments(edgeGeom, edgeMat);
-        edgeLines.position.copy(ghostWorld);
-        edgeLines.renderOrder = 69;
-        edgeLines.userData.haloGhostIndex = ghost.index | 0;
-        ghostGroup.add(edgeLines);
+        ghostGroup.add(markerGroup);
       } else {
         const atomGeom = new THREE.SphereGeometry(atomRadius, sphereWidthSegments, sphereHeightSegments);
         const atomMat = new THREE.MeshPhysicalMaterial({
@@ -13260,10 +13593,6 @@
     if (editGestureHudEl) editGestureHudEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
     if (!isVisible) {
       updateEditAtomsMenuUi();
-      if (editHaloLayerEl) {
-        editHaloLayerEl.setAttribute('aria-hidden', 'true');
-        editHaloLayerEl.innerHTML = '';
-      }
       hideEditSelectionTranslateCue();
       return;
     }
@@ -13387,21 +13716,6 @@
           }
         }
       }
-      const haloAction = editHaloController.handlePointerDown(e);
-      if (haloAction && haloAction.type === 'set-coordination-choice') {
-        if (applyAtomCoordinationChoice(haloAction.atomIndex | 0, haloAction.geometryId)) {
-          if (typeof e.preventDefault === 'function') e.preventDefault();
-          return true;
-        }
-      }
-      if (haloAction && haloAction.type === 'start-grow-drag' && editGestureController) {
-        if (editGestureController.startGrowDragFromHalo(e, haloAction.atomIndex | 0, {
-          initialWorldPos: haloAction.worldPosition,
-        })) {
-          if (typeof e.preventDefault === 'function') e.preventDefault();
-          return true;
-        }
-      }
     }
     const pickedAtom = pickAtom(e);
     const pickedAtomIndex = pickedAtom && pickedAtom.userData ? (pickedAtom.userData.index | 0) : -1;
@@ -13471,31 +13785,6 @@
       return true;
     }
     const buildFragmentLoaded = isBuildFragmentLoaded();
-    if (editHaloController) {
-      const haloAction = editHaloController.handlePointerDown(e);
-      if (haloAction && haloAction.type === 'set-coordination-choice') {
-        if (applyAtomCoordinationChoice(haloAction.atomIndex | 0, haloAction.geometryId)) {
-          if (typeof e.preventDefault === 'function') e.preventDefault();
-          return true;
-        }
-      }
-      if (haloAction && haloAction.type === 'start-grow-drag') {
-        const worldPosition = Array.isArray(haloAction.worldPosition) && haloAction.worldPosition.length >= 3
-          ? new THREE.Vector3(
-            Number(haloAction.worldPosition[0]) || 0,
-            Number(haloAction.worldPosition[1]) || 0,
-            Number(haloAction.worldPosition[2]) || 0
-          )
-          : null;
-        if (worldPosition && appendFragmentAtWorld(haloAction.atomIndex | 0, worldPosition, {
-          preserveAnchorSelection: isSelectionFragmentCueActive(),
-          attachPolicyOverride: EDIT_FRAGMENT_ATTACH_POLICY.APPEND,
-        })) {
-          if (typeof e.preventDefault === 'function') e.preventDefault();
-          return true;
-        }
-      }
-    }
     const hit = pickAtomHit(e);
     if (!(hit && hit.object && hit.object.userData) && editHaloController) {
       const haloGhostHit = pickEditHaloGhostHit(e);
@@ -19171,6 +19460,21 @@
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.length : 0;
     },
+    setEditSelectionIndices: (indices) => {
+      const next = Array.isArray(indices)
+        ? indices.map((idx) => Number(idx) | 0).filter((idx) => idx >= 0)
+        : [];
+      const changed = setEditAtomSelection(next);
+      updateSelectedHalos();
+      updateEditSelectionVisuals();
+      updateEditAdaptiveMenuUi();
+      return {
+        changed: !!changed,
+        count: Array.isArray(getEditAtomSelection()) ? getEditAtomSelection().length : 0,
+      };
+    },
+    copyEditSelectionToClipboard: () => copyEditSelectionToClipboard(),
+    pasteEditClipboardSelection: () => pasteEditClipboardSelection(),
     getHaloGhostPreviewKind: () => {
       const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
       if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return '';
@@ -19184,6 +19488,36 @@
         x: Number(ghost.world && ghost.world.x) || 0,
         y: Number(ghost.world && ghost.world.y) || 0,
         z: Number(ghost.world && ghost.world.z) || 0,
+      }));
+    },
+    projectHaloGhostToClient: (ghostIndex = 0) => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
+      const target = uiState.ghosts.find((ghost) => (ghost.index | 0) === (Number(ghostIndex) | 0))
+        || uiState.ghosts[0]
+        || null;
+      if (!(target && target.world)) return null;
+      const projected = projectWorldToClient(new THREE.Vector3(
+        Number(target.world.x) || 0,
+        Number(target.world.y) || 0,
+        Number(target.world.z) || 0
+      ));
+      if (!projected) return null;
+      return {
+        index: target.index | 0,
+        x: Number(projected.x) || 0,
+        y: Number(projected.y) || 0,
+        visible: !!projected.visible,
+      };
+    },
+    getSelectionCoordinationChoices: () => {
+      const state = getSelectionCoordinationCueState();
+      if (!state) return [];
+      return state.choices.map((choice) => ({
+        geometryId: String(choice.geometryId || ''),
+        label: String(choice.label || ''),
+        cn: Number(choice.cn) || 0,
+        active: !!choice.active,
       }));
     },
     probeSelectionMoveDragStart: (atomIndex, clientX, clientY) => {

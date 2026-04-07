@@ -854,6 +854,22 @@
       return state.uiState;
     }
 
+    function getCoordinationCueState(atomIndex) {
+      const descriptor = buildDescriptor(atomIndex | 0);
+      if (!descriptor || !Array.isArray(descriptor.choices) || !descriptor.choices.length) return null;
+      return {
+        atomIndex: descriptor.atomIndex | 0,
+        atomZ: descriptor.atomZ | 0,
+        activeGeometryId: String(descriptor.activeGeometryId || ''),
+        choices: descriptor.choices.map((choice) => ({
+          geometryId: String(choice && choice.geometryId || ''),
+          label: String(choice && (choice.text || choice.label) || ''),
+          cn: Number(choice && choice.cn) || 0,
+          active: !!(choice && choice.active),
+        })),
+      };
+    }
+
     function getHighlightIndices() {
       return state.visible && state.atomIndex >= 0 ? [state.atomIndex] : [];
     }
@@ -885,6 +901,7 @@
       handlePointerUp,
       handlePointerCancel,
       getUiState,
+      getCoordinationCueState,
       getHighlightIndices,
       isActive,
       resolveSelectedAtomDragAction,

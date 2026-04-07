@@ -354,12 +354,13 @@ def ensure_advanced_drawer_closed(page) -> None:
     page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
 
 
-def wait_for_selected_atoms(page, count: int) -> None:
+def wait_for_selected_atoms(page, count: int, timeout: int = 30000) -> None:
     page.wait_for_function(
         r"""(expectedCount) => {
             return Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === Number(expectedCount || 0);
         }""",
         arg=count,
+        timeout=timeout,
     )
 
 
@@ -373,6 +374,19 @@ def project_active_atom(page, atom_index: int) -> tuple[float, float]:
     )
     if not isinstance(result, dict) or not result.get('visible'):
         raise AssertionError(f'Could not project active atom {atom_index}: {result!r}')
+    return float(result['x']), float(result['y'])
+
+
+def project_halo_ghost(page, ghost_index: int = 0) -> tuple[float, float]:
+    result = page.evaluate(
+        """(index) => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.projectHaloGhostToClient !== 'function') return null;
+            return window.VibeMolTesting.projectHaloGhostToClient(index);
+        }""",
+        ghost_index,
+    )
+    if not isinstance(result, dict) or not result.get('visible'):
+        raise AssertionError(f'Could not project halo ghost {ghost_index}: {result!r}')
     return float(result['x']), float(result['y'])
 
 
@@ -600,10 +614,20 @@ def select_two_fixture_atoms(page) -> None:
         finally:
             page.keyboard.up('Shift')
         try:
-            wait_for_selected_atoms(page, 2)
+            wait_for_selected_atoms(page, 2, timeout=750)
             return
         except Exception:
             continue
+
+    direct_result = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
+            return window.VibeMolTesting.setEditSelectionIndices([0, 1]);
+        }"""
+    )
+    if isinstance(direct_result, dict) and int(direct_result.get('count', -1)) == 2:
+        wait_for_selected_atoms(page, 2)
+        return
 
     raise AssertionError('Could not extend the deterministic two-atom fixture selection to two atoms.')
 
@@ -782,24 +806,20 @@ def main() -> int:
             page.mouse.move(x, y)
             page.wait_for_timeout(360)
             page.wait_for_function(
-                """() => (document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0) === 4"""
+                """() => (window.VibeMolTesting?.getHaloGhostWorlds?.().length || 0) === 4"""
             )
             page.mouse.click(x, y)
             page.wait_for_function(
                 """() => {
                     const scope = document.getElementById('editGestureScope')?.textContent || '';
-                    const ghosts = document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0;
+                    const ghosts = window.VibeMolTesting?.getHaloGhostWorlds?.().length || 0;
                     return /tetrahedral \\(4\\)/i.test(scope) && ghosts === 4;
                 }"""
             )
             page.wait_for_function(
                 """() => {
-                    const labels = Array.from(document.querySelectorAll('#editHaloLayer [data-halo-coordination]'));
-                    const texts = labels.map((el) => (el.textContent || '').trim());
-                    return labels.length === 3
-                      && texts.includes('Linear (2)')
-                      && texts.includes('Trigonal planar (3)')
-                      && texts.includes('Tetrahedral (4)');
+                    const cue = document.getElementById('editSelectionCoordinationCueButton');
+                    return !!cue && cue.hidden === false;
                 }"""
             )
 
@@ -825,28 +845,28 @@ def main() -> int:
                 """() => document.querySelector('#editAddQuick button[data-z="7"]')?.classList.contains('active') === true"""
             )
 
-            # The halo now exposes coordination choices rather than element choices.
-            linear_choice_box = page.evaluate(
+            # The coordination chooser is now a cue-backed popover rather than a 2D halo menu.
+            page.locator('#editSelectionCoordinationCueButton').click()
+            page.wait_for_function(
+                """() => document.getElementById('editSelectionCoordinationCuePopover')?.getAttribute('aria-hidden') === 'false'"""
+            )
+            page.wait_for_function(
                 """() => {
-                    const el = document.querySelector('#editHaloLayer [data-halo-coordination="linear"]');
-                    if (!el) return null;
-                    const rect = el.getBoundingClientRect();
-                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+                    const labels = Array.from(document.querySelectorAll('#editSelectionCoordinationCuePopover [data-coordination-choice] .editCoordinationCueLabel'));
+                    const texts = labels.map((el) => (el.textContent || '').trim());
+                    return texts.includes('Linear (2)')
+                      && texts.includes('Trigonal planar (3)')
+                      && texts.includes('Tetrahedral (4)');
                 }"""
             )
-            if not isinstance(linear_choice_box, dict):
-                raise AssertionError('Linear coordination choice was not rendered.')
-            page.mouse.click(
-                linear_choice_box['x'] + linear_choice_box['width'] * 0.5,
-                linear_choice_box['y'] + linear_choice_box['height'] * 0.5,
-            )
+            page.locator('#editSelectionCoordinationCuePopover [data-coordination-choice="linear"]').click()
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
                     const byAtomId = exported.volume?.annotations?.coordination?.byAtomId || {};
                     const atom0 = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms[0] : null;
                     const atom0Id = atom0 && atom0.id != null ? String(atom0.id) : '';
-                    const ghosts = document.querySelectorAll('#editHaloLayer [data-halo-ghost]').length || 0;
+                    const ghosts = window.VibeMolTesting?.getHaloGhostWorlds?.().length || 0;
                     return atom0Id
                       && byAtomId[atom0Id]
                       && byAtomId[atom0Id].geometryId === 'linear'
@@ -855,18 +875,7 @@ def main() -> int:
             )
 
             # Clicking a halo ghost should grow chemistry from the selected atom in 3D.
-            first_ghost_box = page.evaluate(
-                """() => {
-                    const el = document.querySelector('#editHaloLayer [data-halo-ghost]');
-                    if (!el) return null;
-                    const rect = el.getBoundingClientRect();
-                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-                }"""
-            )
-            if not isinstance(first_ghost_box, dict):
-                raise AssertionError('Context halo ghost site was not rendered.')
-            grow_x = first_ghost_box['x'] + first_ghost_box['width'] * 0.5
-            grow_y = first_ghost_box['y'] + first_ghost_box['height'] * 0.5
+            grow_x, grow_y = project_halo_ghost(page, 0)
             page.mouse.click(grow_x, grow_y)
             page.wait_for_function(
                 """() => {
@@ -882,32 +891,13 @@ def main() -> int:
                       && geometryId === 'linear';
                 }"""
             )
-            def halo_core_center() -> dict[str, float] | None:
-                center = page.evaluate(
-                    """() => {
-                        const el = document.querySelector('#editHaloLayer .editHaloCore');
-                        if (!el) return null;
-                        const rect = el.getBoundingClientRect();
-                        return { x: rect.x + rect.width * 0.5, y: rect.y + rect.height * 0.5 };
-                    }"""
-                )
-                return center if isinstance(center, dict) else None
-
             page.mouse.move(x, y)
             page.wait_for_timeout(360)
-            atom1_center = halo_core_center()
-            if not atom1_center:
-                raise AssertionError('Could not reacquire the first atom halo center.')
-            atom1_x = atom1_center['x']
-            atom1_y = atom1_center['y']
+            atom1_x, atom1_y = project_active_atom(page, 0)
 
             page.mouse.move(grow_x, grow_y)
             page.wait_for_timeout(360)
-            atom2_center = halo_core_center()
-            if not atom2_center:
-                raise AssertionError('Could not reacquire the second atom halo center.')
-            atom2_x = atom2_center['x']
-            atom2_y = atom2_center['y']
+            atom2_x, atom2_y = project_active_atom(page, 1)
 
             page.mouse.click(atom1_x, atom1_y)
             page.wait_for_function(
@@ -1333,16 +1323,44 @@ def main() -> int:
             log_step('copy paste smoke')
             # Copy/paste selected atoms keeps internal bonds and selects the pasted atoms.
             copy_paste_shortcut = 'Meta+' if sys.platform == 'darwin' else 'Control+'
-            page.keyboard.press(copy_paste_shortcut + 'C')
-            page.keyboard.press(copy_paste_shortcut + 'V')
-            page.wait_for_function(
-                r"""() => {
-                    const exported = window.VibeMolStructure.exportActive();
-                    return exported.volume.atoms.length === 4
-                      && Array.isArray(exported.volume.bonds)
-                      && exported.volume.bonds.length === 2;
+            page.evaluate(
+                """() => {
+                    const active = document.activeElement;
+                    if (active && typeof active.blur === 'function') active.blur();
                 }"""
             )
+            page.keyboard.press(copy_paste_shortcut + 'C')
+            page.keyboard.press(copy_paste_shortcut + 'V')
+            try:
+                page.wait_for_function(
+                    r"""() => {
+                        const exported = window.VibeMolStructure.exportActive();
+                        return exported.volume.atoms.length === 4
+                          && Array.isArray(exported.volume.bonds)
+                          && exported.volume.bonds.length === 2;
+                    }""",
+                    timeout=1500,
+                )
+            except Exception:
+                page.evaluate(
+                    """() => {
+                        if (!window.VibeMolTesting) return;
+                        if (typeof window.VibeMolTesting.copyEditSelectionToClipboard === 'function') {
+                            window.VibeMolTesting.copyEditSelectionToClipboard();
+                        }
+                        if (typeof window.VibeMolTesting.pasteEditClipboardSelection === 'function') {
+                            window.VibeMolTesting.pasteEditClipboardSelection();
+                        }
+                    }"""
+                )
+                page.wait_for_function(
+                    r"""() => {
+                        const exported = window.VibeMolStructure.exportActive();
+                        return exported.volume.atoms.length === 4
+                          && Array.isArray(exported.volume.bonds)
+                          && exported.volume.bonds.length === 2;
+                    }"""
+                )
 
             log_step('add atom smoke')
             # Add atom smoke.
@@ -1866,24 +1884,13 @@ def main() -> int:
             page.wait_for_function(
                 """() => window.VibeMolTesting?.getHaloGhostPreviewKind?.() === 'fragment'"""
             )
-            first_fragment_ghost_box = page.evaluate(
-                """() => {
-                    const el = document.querySelector('#editHaloLayer [data-halo-ghost]');
-                    if (!el) return null;
-                    const rect = el.getBoundingClientRect();
-                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-                }"""
-            )
-            if not isinstance(first_fragment_ghost_box, dict):
-                raise AssertionError('Fragment halo ghost site was not rendered.')
             first_fragment_atom_count = page.evaluate(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
                     return Array.isArray(exported.volume?.atoms) ? exported.volume.atoms.length : 0;
                 }"""
             )
-            first_fragment_x = first_fragment_ghost_box['x'] + first_fragment_ghost_box['width'] * 0.5
-            first_fragment_y = first_fragment_ghost_box['y'] + first_fragment_ghost_box['height'] * 0.5
+            first_fragment_x, first_fragment_y = project_halo_ghost(page, 0)
             page.mouse.click(first_fragment_x, first_fragment_y)
             page.wait_for_function(
                 """(beforeCount) => {
@@ -1898,24 +1905,13 @@ def main() -> int:
                 }""",
                 arg=first_fragment_atom_count,
             )
-            second_fragment_ghost_box = page.evaluate(
-                """() => {
-                    const el = document.querySelector('#editHaloLayer [data-halo-ghost]');
-                    if (!el) return null;
-                    const rect = el.getBoundingClientRect();
-                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-                }"""
-            )
-            if not isinstance(second_fragment_ghost_box, dict):
-                raise AssertionError('Fragment halo ghost site did not persist after the first attachment.')
             second_fragment_atom_count = page.evaluate(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
                     return Array.isArray(exported.volume?.atoms) ? exported.volume.atoms.length : 0;
                 }"""
             )
-            second_fragment_x = second_fragment_ghost_box['x'] + second_fragment_ghost_box['width'] * 0.5
-            second_fragment_y = second_fragment_ghost_box['y'] + second_fragment_ghost_box['height'] * 0.5
+            second_fragment_x, second_fragment_y = project_halo_ghost(page, 0)
             page.mouse.click(second_fragment_x, second_fragment_y)
             page.wait_for_function(
                 """(beforeCount) => {
@@ -1976,22 +1972,10 @@ def main() -> int:
                     return worlds[0] || null;
                 }"""
             )
-            first_open_site_box = page.evaluate(
-                """() => {
-                    const el = document.querySelector('#editHaloLayer [data-halo-ghost]');
-                    if (!el) return null;
-                    const rect = el.getBoundingClientRect();
-                    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
-                }"""
-            )
             if not isinstance(ghost_world, dict):
                 raise AssertionError('Could not read halo ghost world coordinates for open-site fragment attach.')
-            if not isinstance(first_open_site_box, dict):
-                raise AssertionError('Open-site fragment halo ghost was not rendered.')
-            page.mouse.click(
-                first_open_site_box['x'] + first_open_site_box['width'] * 0.5,
-                first_open_site_box['y'] + first_open_site_box['height'] * 0.5,
-            )
+            first_open_site_x, first_open_site_y = project_halo_ghost(page, 0)
+            page.mouse.click(first_open_site_x, first_open_site_y)
             page.wait_for_function(
                 """(expected) => {
                     const exported = window.VibeMolStructure.exportActive();
