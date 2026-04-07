@@ -846,9 +846,6 @@
     0 0 0 1px rgba(74, 163, 255, 0.4) inset;
 }
 
-#editAddCurrent,
-#editFragmentCurrent,
-#editMoleculeCurrent,
 #editTransformCurrent {
   margin-top: 7px;
   font-size: 12px;

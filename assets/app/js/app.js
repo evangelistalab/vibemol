@@ -5623,16 +5623,13 @@
   const editAddQuickEl = document.getElementById('editAddQuick');
   const editAddCoordinationEl = document.getElementById('editAddCoordination');
   const editAddAdjustHydrogensEl = document.getElementById('editAddAdjustHydrogens');
-  const editAddCurrentEl = document.getElementById('editAddCurrent');
   const editFragmentSearchEl = document.getElementById('editFragmentSearch');
   const editFragmentSuggestionsEl = document.getElementById('editFragmentSuggestions');
   const editFragmentQuickEl = document.getElementById('editFragmentQuick');
   const editFragmentAttachPolicyEl = document.getElementById('editFragmentAttachPolicy');
-  const editFragmentCurrentEl = document.getElementById('editFragmentCurrent');
   const editMoleculeSearchEl = document.getElementById('editMoleculeSearch');
   const editMoleculeSuggestionsEl = document.getElementById('editMoleculeSuggestions');
   const editMoleculeQuickEl = document.getElementById('editMoleculeQuick');
-  const editMoleculeCurrentEl = document.getElementById('editMoleculeCurrent');
   const editMoleculeAlignXBtn = document.getElementById('editMoleculeAlignXBtn');
   const editMoleculeAlignYBtn = document.getElementById('editMoleculeAlignYBtn');
   const editMoleculeAlignZBtn = document.getElementById('editMoleculeAlignZBtn');
@@ -11326,13 +11323,8 @@
     if (editFragmentAttachPolicyEl && document.activeElement !== editFragmentAttachPolicyEl) {
       editFragmentAttachPolicyEl.value = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
     }
-    const atomPresentation = getAtomManipulationPresentation();
-    const angleLabel = atomPresentation.angleLabel;
     syncEditAddCoordinationControl();
     if (editAddAdjustHydrogensEl) editAddAdjustHydrogensEl.checked = !!editAddAdjustHydrogensEnabled;
-    if (editAddCurrentEl) {
-      editAddCurrentEl.textContent = atomPresentation.currentSummary;
-    }
     const fragment = getCurrentFragmentDefinition();
     if (editFragmentAttachPolicyEl) {
       const fuseOption = editFragmentAttachPolicyEl.querySelector('option[value="fuse_ring"]');
@@ -11343,33 +11335,7 @@
         editFragmentAttachPolicyEl.value = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
       }
     }
-    if (editFragmentCurrentEl) {
-      if (fragment) {
-        const atomCount = Array.isArray(fragment.atoms) ? fragment.atoms.length : 0;
-        const attachModes = Array.isArray(fragment.attachModes) ? fragment.attachModes : [];
-        const policy = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
-        const fuseEligible = attachModes.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING);
-        const modeSuffix = policy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING
-          ? (fuseEligible ? 'bond click • drag spin • click confirm' : 'fuse ring unavailable')
-          : `bond ${editAddBondOrder} • angle ${angleLabel}`;
-        editFragmentCurrentEl.textContent = `Add fragment: ${fragment.name} (${fragment.formula}) • ${atomCount} atoms • ${getEditFragmentAttachPolicyLabel(policy)} • ${modeSuffix}`;
-      } else {
-        editFragmentCurrentEl.textContent = 'Add fragment: choose a fragment and attach policy.';
-      }
-    }
     const molecule = getCurrentMoleculeDefinition();
-    if (editMoleculeCurrentEl) {
-      if (molecule) {
-        const atomCount = Array.isArray(molecule.atoms) ? molecule.atoms.length : 0;
-        if (moleculePlaceActive) {
-          editMoleculeCurrentEl.textContent = `Build: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms • drag rotate • click to place`;
-        } else {
-          editMoleculeCurrentEl.textContent = `Build: ${molecule.name} (${molecule.formula}) • ${atomCount} atoms`;
-        }
-      } else {
-        editMoleculeCurrentEl.textContent = 'Build: choose a standalone molecule to place.';
-      }
-    }
     if (syncSearch && isAtomAddMode && editAddSearchEl && document.activeElement !== editAddSearchEl) {
       editAddSearchEl.value = formatEditAddElementSearchValue(editAddElementZ);
       editAddSearchClearedOnFocus = false;

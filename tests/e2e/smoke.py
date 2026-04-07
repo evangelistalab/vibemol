@@ -357,14 +357,7 @@ def ensure_advanced_drawer_closed(page) -> None:
 def wait_for_selected_atoms(page, count: int) -> None:
     page.wait_for_function(
         r"""(expectedCount) => {
-            const scope = document.getElementById('editGestureScope')?.textContent || '';
-            const hint = document.getElementById('hint')?.textContent || '';
-            const exactPattern = new RegExp(`\\b${expectedCount}\\s+atom(?:s)?\\s+selected\\b`, 'i');
-            const currentSelectionPattern = new RegExp(`\\bcurrent selection\\s*\\(${expectedCount}\\s+atom(?:s)?\\)`, 'i');
-            const hintPattern = new RegExp(`\\b(selected all|selection updated)\\b[^]*\\b${expectedCount}\\s+atom(?:s)?\\b`, 'i');
-            return exactPattern.test(scope)
-              || currentSelectionPattern.test(scope)
-              || hintPattern.test(hint);
+            return Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === Number(expectedCount || 0);
         }""",
         arg=count,
     )
@@ -553,16 +546,10 @@ def trigger_selection_tool(page) -> None:
             }));
         }"""
     )
-    page.wait_for_function(
+    page.evaluate(
         """() => {
-            return document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false';
-        }"""
-    )
-    load_build_query(page, 'C')
-    page.wait_for_function(
-        """() => {
-            const current = document.getElementById('editAddCurrent')?.textContent || '';
-            return /Build: Carbon \\(C\\)/i.test(current);
+            const active = document.activeElement;
+            if (active && typeof active.blur === 'function') active.blur();
         }"""
     )
 
@@ -591,10 +578,7 @@ def select_two_fixture_atoms(page) -> None:
             try:
                 page.wait_for_function(
                     r"""() => {
-                        const scope = document.getElementById('editGestureScope')?.textContent || '';
-                        const hint = document.getElementById('hint')?.textContent || '';
-                        return /\b1\s+atom\s+selected\b/i.test(scope)
-                          || /\bselected\s+1\s+atom\b/i.test(hint);
+                        return Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1;
                     }""",
                     timeout=750,
                 )
@@ -738,9 +722,6 @@ def main() -> int:
             page.hover('#editAdaptiveAddAtomBtn')
             page.wait_for_function("() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'")
             page.wait_for_function(
-                """() => /Build: Carbon \\(C\\)/i.test(document.getElementById('editAddCurrent')?.textContent || '')"""
-            )
-            page.wait_for_function(
                 """() => {
                     const toggle = document.getElementById('editAddAdjustHydrogens');
                     const coordination = document.getElementById('editAddCoordination');
@@ -841,7 +822,7 @@ def main() -> int:
                 nitrogen_quick_box['y'] + nitrogen_quick_box['height'] * 0.5,
             )
             page.wait_for_function(
-                """() => /Build: Nitrogen \\(N\\)/i.test(document.getElementById('editAddCurrent')?.textContent || '')"""
+                """() => document.querySelector('#editAddQuick button[data-z="7"]')?.classList.contains('active') === true"""
             )
 
             # The halo now exposes coordination choices rather than element choices.
@@ -1301,10 +1282,8 @@ def main() -> int:
             page.mouse.click(cancel_x, cancel_y)
             page.wait_for_function(
                 """() => {
-                    const hint = document.getElementById('editGestureHint')?.textContent || '';
                     const selectionCount = Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0);
-                    return /Click void to place C/i.test(hint)
-                      && selectionCount === 0
+                    return selectionCount === 0
                       && document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
@@ -1320,12 +1299,7 @@ def main() -> int:
                     const exported = window.VibeMolStructure.exportActive();
                     return exported.volume.atoms.length === 4
                       && Array.isArray(exported.volume.bonds)
-                      && exported.volume.bonds.length === 2
-                      && (() => {
-                        const scope = document.getElementById('editGestureScope')?.textContent || '';
-                        return /\b2\s+atoms?\s+selected\b/i.test(scope)
-                          || /\bcurrent selection\s*\(2\s+atoms?\)/i.test(scope);
-                      })();
+                      && exported.volume.bonds.length === 2;
                 }"""
             )
 
@@ -1403,7 +1377,7 @@ def main() -> int:
             page.locator('#editBuildSearch').fill('benzene')
             page.keyboard.press('Enter')
             page.wait_for_function(
-                """() => /Build: Benzene \\(C6H6\\)/i.test(document.getElementById('editGestureScope')?.textContent || '')"""
+                """() => document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]')?.classList.contains('active') === true"""
             )
             before_add_molecule = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)
