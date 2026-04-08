@@ -16,6 +16,7 @@
     const clearEditBondPendingSelection = typeof options.clearEditBondPendingSelection === 'function' ? options.clearEditBondPendingSelection : (() => {});
     const clearTransformState = typeof options.clearTransformState === 'function' ? options.clearTransformState : (() => {});
     const clearTransformSelection = typeof options.clearTransformSelection === 'function' ? options.clearTransformSelection : (() => {});
+    const clearBondCenterSelection = typeof options.clearBondCenterSelection === 'function' ? options.clearBondCenterSelection : (() => false);
     const clearHover = typeof options.clearHover === 'function' ? options.clearHover : (() => {});
     const updateEditToolboxUi = typeof options.updateEditToolboxUi === 'function' ? options.updateEditToolboxUi : (() => {});
     const getCurrentFragmentDefinition = typeof options.getCurrentFragmentDefinition === 'function' ? options.getCurrentFragmentDefinition : (() => null);
@@ -76,6 +77,7 @@
       if (clearOptions.selection !== false) changed = finalizeNonSelectionAddAtomOperatorSession() || changed;
       if (clearOptions.selection !== false) changed = clearEditAtomSelection() || changed;
       if (clearOptions.transform !== false) changed = !!clearTransformSelection() || changed;
+      if (clearOptions.bondCenter !== false) changed = !!clearBondCenterSelection() || changed;
       if (clearOptions.bondEdit !== false) {
         const hadPendingBondSelection = !!(
           bondEditing

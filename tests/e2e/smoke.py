@@ -459,6 +459,44 @@ def get_bond_side_cue_state(page) -> dict[str, str | bool]:
     return result
 
 
+def get_bond_center_cue_state(page) -> dict[str, int | bool]:
+    result = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.getBondCenterCueState !== 'function') return null;
+            return window.VibeMolTesting.getBondCenterCueState();
+        }"""
+    )
+    if not isinstance(result, dict):
+        raise AssertionError(f'Unexpected bond-center cue state: {result!r}')
+    return result
+
+
+def drag_bond_order_cue_to(page, target_order: int) -> None:
+    state = get_bond_center_cue_state(page)
+    if not state.get('visible'):
+        raise AssertionError(f'Bond-center cue is not visible: {state!r}')
+    current_order = int(state.get('order', -1))
+    if current_order == target_order:
+        return
+    cue_box = page.locator('#editSelectionBondOrderCueButton').bounding_box()
+    if not cue_box:
+        raise AssertionError('Bond-order cue is not visible')
+    cue_x = cue_box['x'] + cue_box['width'] * 0.5
+    cue_y = cue_box['y'] + cue_box['height'] * 0.5
+    delta_x = (int(target_order) - current_order) * 26
+    page.mouse.move(cue_x, cue_y)
+    page.mouse.down()
+    page.mouse.move(cue_x + delta_x, cue_y, steps=8)
+    page.mouse.up()
+    page.wait_for_function(
+        """(expectedOrder) => {
+            const state = window.VibeMolTesting?.getBondCenterCueState?.();
+            return !!state && state.visible === true && Number(state.order) === Number(expectedOrder);
+        }""",
+        arg=int(target_order),
+    )
+
+
 def projected_atom_hit_candidates(page, atom_index: int, other_index: int) -> list[tuple[float, float]]:
     center_x, center_y = project_active_atom(page, atom_index)
     other_x, other_y = project_active_atom(page, other_index)
@@ -1709,18 +1747,18 @@ def main() -> int:
                 """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) > 0"""
             )
             midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
-            page.mouse.click(midpoint_x, midpoint_y)
+            page.mouse.click(midpoint_x, midpoint_y, button='right')
             page.wait_for_function(
                 """() => {
-                    const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
-                    return !!bond
-                      && bond.order === 2
+                    const cue = window.VibeMolTesting?.getBondCenterCueState?.();
+                    return !!cue
+                      && cue.visible === true
+                      && Number(cue.order) === 1
                       && Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0;
                 }"""
             )
-            for expected_order in (3, 4):
-                x, y = find_bond_midpoint_canvas_point(page)
-                page.mouse.click(x, y)
+            for expected_order in (2, 4, 3, 1):
+                drag_bond_order_cue_to(page, expected_order)
                 page.wait_for_function(
                     """(expectedOrder) => {
                         const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
@@ -1728,53 +1766,20 @@ def main() -> int:
                     }""",
                     arg=expected_order,
                 )
-            x, y = find_bond_midpoint_canvas_point(page)
-            page.mouse.click(x, y)
-            page.wait_for_timeout(100)
-            maxed_bond = page.evaluate(
-                """() => {
-                    const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
-                    return bond ? { order: bond.order, kind: bond.kind, origin: bond.origin || null } : null;
-                }"""
-            )
-            if maxed_bond != {'order': 4, 'kind': 'normal', 'origin': 'explicit'}:
-                raise AssertionError(f'Bond-center increment exceeded quadruple bound: {maxed_bond}')
-            for expected_order in (3, 2, 1):
-                x, y = find_bond_midpoint_canvas_point(page)
-                page.mouse.click(x, y, button='right')
-                page.wait_for_function(
-                    """(expectedOrder) => {
-                        const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
-                        return !!bond && bond.order === expectedOrder && bond.kind === 'normal' && bond.origin === 'explicit';
-                    }""",
-                    arg=expected_order,
-                )
-            x, y = find_bond_midpoint_canvas_point(page)
-            page.mouse.click(x, y, button='right')
+            drag_bond_order_cue_to(page, 0)
             page.wait_for_function(
                 """() => {
                     const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
                     return !!bond && bond.kind === 'blocked' && bond.origin === 'explicit';
                 }"""
             )
-
-            # Bond center click should step explicit bond order in gesture edit mode.
-            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-popup-fixture")', fixture_text)
-            page.locator('#modeEditBtn').click()
-            ensure_advanced_drawer_open(page)
-            x, y = canvas_point(page, 0.5, 0.5)
-            page.mouse.click(x, y)
+            drag_bond_order_cue_to(page, 2)
             page.wait_for_function(
                 """() => {
                     const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
-                    return !!bond && bond.order === 2 && bond.origin === 'explicit';
+                    return !!bond && bond.order === 2 && bond.kind === 'normal' && bond.origin === 'explicit';
                 }"""
             )
-            order_updated = active_structure_summary(page)
-            if not order_updated['bondOrders'] or order_updated['bondOrders'][0] != 2:
-                raise AssertionError(f'Bond order update failed: {order_updated}')
-            if not order_updated['bondOrigins'] or order_updated['bondOrigins'][0] != 'explicit':
-                raise AssertionError(f'Bond order update failed: {order_updated}')
 
             # Clean structure should run the one-shot UFF cleanup action.
             log_step('clean structure smoke')

@@ -237,6 +237,42 @@ test('edit-halo saturated carbon yields no free-valence grow ghosts and retains 
   ]);
 });
 
+test('edit-halo saturated carbon exposes replaceable terminal hydrogens for atom and fragment payloads', () => {
+  const harness = createHarness({
+    selection: [0],
+    vol: {
+      atoms: [{ id: 'a0', Z: 6 }, { id: 'h1', Z: 1 }, { id: 'h2', Z: 1 }, { id: 'h3', Z: 1 }, { id: 'h4', Z: 1 }],
+      bonds: [
+        { a: 'a0', b: 'h1', order: 1, kind: 'normal' },
+        { a: 'a0', b: 'h2', order: 1, kind: 'normal' },
+        { a: 'a0', b: 'h3', order: 1, kind: 'normal' },
+        { a: 'a0', b: 'h4', order: 1, kind: 'normal' },
+      ],
+      annotations: { coordination: { byAtomId: {} } },
+    },
+    positions: {
+      0: [0, 0, 0],
+      1: [1, 0, 0],
+      2: [-1, 0, 0],
+      3: [0, 1, 0],
+      4: [0, -1, 0],
+    },
+  });
+  harness.controller.refresh();
+  const ui = harness.getUiState();
+  assert.equal(ui.mode, 'coordination-saturated');
+  assert.equal(ui.ghosts.length, 0);
+  assert.equal(ui.replaceTargets.length, 4);
+  const target = ui.replaceTargets[0];
+  const action = harness.controller.handlePointerDown(pointerEvent({ clientX: target.x, clientY: target.y }));
+  assert.deepEqual(JSON.parse(JSON.stringify(action)), {
+    type: 'replace-target',
+    atomIndex: 0,
+    targetAtomIndex: target.atomIndex,
+    worldPosition: [target.world.x, target.world.y, target.world.z],
+  });
+});
+
 test('edit-halo choice click returns set-coordination-choice and ghost layout follows override', () => {
   const harness = createHarness({ selection: [0] });
   harness.controller.refresh();

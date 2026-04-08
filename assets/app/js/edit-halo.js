@@ -402,6 +402,7 @@
         neighborCount: neighborIndices.length,
         bondOrderSum,
         maxBondOrder,
+        visibleBonds: bonds,
       };
     }
 
@@ -537,6 +538,31 @@
         const client = projectWorldToClient(world);
         return client && client.visible !== false ? { index, client } : null;
       }).filter(Boolean);
+      const payloadKind = String(getLoadedPayloadKind() || '').trim().toLowerCase();
+      const replaceTargets = [];
+      if ((payloadKind === 'atom' || payloadKind === 'fragment') && (atom.Z | 0) !== 1) {
+        const degreeByAtomIndex = new Map();
+        for (const bond of Array.isArray(env.visibleBonds) ? env.visibleBonds : []) {
+          if (!bond) continue;
+          const a = bond.a | 0;
+          const b = bond.b | 0;
+          degreeByAtomIndex.set(a, (degreeByAtomIndex.get(a) || 0) + 1);
+          degreeByAtomIndex.set(b, (degreeByAtomIndex.get(b) || 0) + 1);
+        }
+        for (const neighborIndex of Array.isArray(env.neighborIndices) ? env.neighborIndices : []) {
+          const neighborAtom = Array.isArray(vol && vol.atoms) ? vol.atoms[neighborIndex | 0] : null;
+          if (!neighborAtom || (neighborAtom.Z | 0) !== 1) continue;
+          if ((degreeByAtomIndex.get(neighborIndex | 0) || 0) !== 1) continue;
+          const world = getAtomWorld(vol, neighborIndex | 0);
+          const client = projectWorldToClient(world);
+          if (!world || !client || client.visible === false) continue;
+          replaceTargets.push({
+            atomIndex: neighborIndex | 0,
+            world,
+            client,
+          });
+        }
+      }
       return {
         atomIndex,
         mode: profile.isTransitionMetal
@@ -549,6 +575,7 @@
         activeGeometryText: activeChoice.text,
         inference,
         ghosts,
+        replaceTargets,
         occupied,
         growDistance,
         choices: buildCoordinationChoices(anchorWorld ? projectWorldToClient(anchorWorld) : null, choices, geometry.id),
@@ -589,6 +616,11 @@
           const dx = (ghost.client.x || 0) - (descriptor.anchorClient.x || 0);
           const dy = (ghost.client.y || 0) - (descriptor.anchorClient.y || 0);
           return Math.hypot(dx, dy) + 18;
+        })),
+        ...((descriptor.replaceTargets || []).map((target) => {
+          const dx = (target.client.x || 0) - (descriptor.anchorClient.x || 0);
+          const dy = (target.client.y || 0) - (descriptor.anchorClient.y || 0);
+          return Math.hypot(dx, dy) + 18;
         }))
       );
     }
@@ -612,6 +644,19 @@
       return best ? best.ghost : null;
     }
 
+    function hitTestReplaceTarget(descriptor, pointer) {
+      if (!descriptor || !pointer) return null;
+      let best = null;
+      for (const target of descriptor.replaceTargets || []) {
+        const dx = (pointer.x || 0) - (target.client.x || 0);
+        const dy = (pointer.y || 0) - (target.client.y || 0);
+        const dist = Math.hypot(dx, dy);
+        if (dist > 18) continue;
+        if (!best || dist < best.dist) best = { target, dist };
+      }
+      return best ? best.target : null;
+    }
+
     function hitTestChoice(descriptor, pointer) {
       if (!descriptor || !pointer) return null;
       let best = null;
@@ -629,6 +674,8 @@
 
     function computeActiveZone(descriptor, pointer) {
       if (!descriptor || !pointer) return null;
+      const replaceTarget = hitTestReplaceTarget(descriptor, pointer);
+      if (replaceTarget) return { kind: 'replace', targetAtomIndex: replaceTarget.atomIndex, replaceTarget };
       const ghost = hitTestGhost(descriptor, pointer);
       if (ghost) return { kind: 'ghost', ghostIndex: ghost.index, ghost };
       const choice = hitTestChoice(descriptor, pointer);
@@ -665,10 +712,16 @@
       if (visible && descriptor) {
         if (activeZone && activeZone.kind === 'choice') {
           hint = `Prefer ${activeZone.choice.text} for ${getElementSymbol(descriptor.atomZ)}`;
+        } else if (activeZone && activeZone.kind === 'replace') {
+          hint = `Click to replace H with ${payloadText}`;
         } else if (activeZone && activeZone.kind === 'ghost') {
           hint = `Click to place ${payloadText} in ${descriptor.activeGeometryText}`;
         } else if (descriptor.mode === 'metal-coordination') {
           hint = `Coordination halo: ${descriptor.activeGeometryText}`;
+        } else if ((descriptor.ghosts || []).length && (descriptor.replaceTargets || []).length) {
+          hint = `Click a ghost to place ${payloadText} • Click a highlighted H to replace it`;
+        } else if ((descriptor.replaceTargets || []).length) {
+          hint = `Click a highlighted H to replace it with ${payloadText}`;
         } else if ((descriptor.ghosts || []).length) {
           hint = `Click a ghost to place ${payloadText} in ${descriptor.activeGeometryText}`;
         } else {
@@ -699,6 +752,12 @@
           y: ghost.client.y,
           world: { x: ghost.world[0], y: ghost.world[1], z: ghost.world[2] },
           recommended: !!ghost.recommended,
+        })) : [],
+        replaceTargets: visible && descriptor ? (descriptor.replaceTargets || []).map((target) => ({
+          atomIndex: target.atomIndex | 0,
+          x: target.client.x,
+          y: target.client.y,
+          world: { x: target.world[0], y: target.world[1], z: target.world[2] },
         })) : [],
         occupied: visible && descriptor ? (descriptor.occupied || []).map((item) => ({ x: item.client.x, y: item.client.y })) : [],
         choices: visible && descriptor ? (descriptor.choices || []).map((item) => ({
@@ -833,6 +892,14 @@
           atomIndex: state.descriptor.atomIndex,
           worldPosition: zone.ghost.world.slice(),
           ghostIndex: zone.ghost.index,
+        };
+      }
+      if (zone.kind === 'replace') {
+        return {
+          type: 'replace-target',
+          atomIndex: state.descriptor.atomIndex,
+          targetAtomIndex: zone.targetAtomIndex | 0,
+          worldPosition: zone.replaceTarget && Array.isArray(zone.replaceTarget.world) ? zone.replaceTarget.world.slice() : null,
         };
       }
       return null;

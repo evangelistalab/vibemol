@@ -289,14 +289,13 @@ test('edit-gestures left-click on atom does not change selection', () => {
   assert.deepEqual(getSelection(), []);
 });
 
-test('edit-gestures left click on bond center-third dispatches one bond-order raise action', () => {
+test('edit-gestures left click on bond center-third is inert', () => {
   const { controller, calls, getSelection } = createHarness({ selection: [4] });
 
   controller.handlePointerDown(pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'center' } }));
   controller.handlePointerUp(pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'center' } }));
 
-  assert.equal(calls.bondCenterClicks.length, 1);
-  assert.equal(calls.bondCenterClicks[0]?.section, 'center');
+  assert.equal(calls.bondCenterClicks.length, 0);
   assert.deepEqual(getSelection(), [4]);
   assert.equal(calls.selectionClicks.length, 0);
   assert.equal(calls.placeVoidAtom, 0);

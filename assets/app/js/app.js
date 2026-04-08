@@ -779,6 +779,7 @@
   let editSelectionCoordinationCueButtonEl = null;
   let editSelectionBondOrbitCueButtonEl = null;
   let editSelectionBondDistanceCueButtonEl = null;
+  let editSelectionBondOrderCueButtonEl = null;
   let editSelectionAddFragmentCueButtonEl = null;
   let editSelectionDeleteCueButtonEl = null;
   let editSelectionFragmentCuePopoverEl = null;
@@ -805,6 +806,7 @@
   let editBuildMoleculesHostEl = null;
   let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
+  let bondCenterSelectionState = null;
   let buildPopoverHideTimer = 0;
   let buildSearchListRestoreTimer = 0;
   let suppressBuildSearchBlurSync = false;
@@ -5563,6 +5565,7 @@
   editSelectionCoordinationCueButtonEl = document.getElementById('editSelectionCoordinationCueButton');
   editSelectionBondOrbitCueButtonEl = document.getElementById('editSelectionBondOrbitCueButton');
   editSelectionBondDistanceCueButtonEl = document.getElementById('editSelectionBondDistanceCueButton');
+  editSelectionBondOrderCueButtonEl = document.getElementById('editSelectionBondOrderCueButton');
   editSelectionAddFragmentCueButtonEl = document.getElementById('editSelectionAddFragmentCueButton');
   editSelectionDeleteCueButtonEl = document.getElementById('editSelectionDeleteCueButton');
   editSelectionFragmentCuePopoverEl = document.getElementById('editSelectionFragmentCuePopover');
@@ -5616,6 +5619,7 @@
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditBondSideCueMode('distance');
   });
+  bindSelectionCueButton(editSelectionBondOrderCueButtonEl, 'bondOrder');
   if (editSelectionCoordinationCueButtonEl) {
     editSelectionCoordinationCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -5655,7 +5659,14 @@
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       hideSelectionCoordinationCuePopover();
       hideSelectionFragmentCuePopover();
-      deleteSelectedAtoms();
+      const record = ensureEditableVolumeRecord();
+      const vol = record && record.vol;
+      if (getBondCenterSelectionResolved(vol)) {
+        applyBondCenterSelectionOrder(0);
+        clearBondCenterSelection({ updateVisuals: true });
+      } else {
+        deleteSelectedAtoms();
+      }
     });
   }
   if (editSelectionFragmentCuePopoverEl) {
@@ -7093,7 +7104,7 @@
       { k: 'Click+Drag', d: 'Move selection or atom (translate cue)' },
       { k: 'Click+Drag', d: 'Rotate selection (rotate cue)' },
       { k: 'Click empty', d: 'Place loaded build item' },
-      { k: 'Click bond center', d: 'Step bond order' },
+      { k: 'Right-click bond center', d: 'Select bond order scope' },
       { k: 'Click bond side', d: 'Select bond-side fragment' },
       { k: 'Drag bond side', d: 'Rotate around bond axis' },
       { k: 'Shift+Drag bond side', d: 'Free 3D bond-side rotation' },
@@ -7205,6 +7216,7 @@
       });
     }
     if (currentMode !== MODES.EDIT) {
+      clearBondCenterSelection({ updateVisuals: false });
       if (editGestureController) editGestureController.clearState();
       clearTransientInteractionState({
         measurement: false,
@@ -7737,6 +7749,7 @@
   let gestureVoidPreviewMesh = null;
   let gestureVoidPreviewWorld = null;
   let editHaloGhostHoverIndex = -1;
+  let editHaloReplaceHoverAtomIndex = -1;
   let editHaloGhostRenderKey = '';
   let addFusePreviewState = null;
   let dragBeforeAtomsSnapshot = null;
@@ -8772,6 +8785,7 @@
     clearEditBondPendingSelection,
     clearTransformState,
     clearTransformSelection,
+    clearBondCenterSelection: () => clearBondCenterSelection({ updateVisuals: true }),
     clearHover,
     updateEditToolboxUi,
     getCurrentFragmentDefinition,
@@ -8789,6 +8803,7 @@
     setCoordsInlineEditState: (value) => { coordsInlineEditState = value; },
     getBondEditing: () => bondEditing,
     onSelectionChanged: () => {
+      clearBondCenterSelection({ updateVisuals: false });
       if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
       clearGestureVoidPreview();
       const selection = getEditAtomSelection();
@@ -12662,6 +12677,7 @@
       const selected = selectedSet.has(i);
       if (selected) ensureSelectHalo(mesh); else removeSelectHalo(mesh);
     }
+    updateBondCenterSelectionOverlay();
     updateMoveSelectionGizmo();
     updateRotateSelectionGizmo();
   }
@@ -12827,10 +12843,31 @@
   function beginSelectionCueDrag(action, buttonEl, e) {
     if (!buttonEl || !e || currentMode !== MODES.EDIT || e.button !== 0) return false;
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
-    setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
-    setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
+    if (action !== 'bondOrder') {
+      setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
+      setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
+    }
     const selection = getEditAtomSelection();
-    if (!Array.isArray(selection) || !selection.length) return false;
+    if (action !== 'bondOrder' && (!Array.isArray(selection) || !selection.length)) return false;
+
+    if (action === 'bondOrder') {
+      const record = ensureEditableVolumeRecord();
+      const vol = record && record.vol;
+      const resolved = getBondCenterSelectionResolved(vol);
+      if (!resolved) return false;
+      selectionCueDragState = {
+        pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
+        buttonEl,
+        action: 'bondOrder',
+        startClientX: Number(e.clientX) || 0,
+        startOrder: resolved.order | 0,
+        currentOrder: resolved.order | 0,
+      };
+      if (buttonEl && Number.isInteger(e.pointerId) && typeof buttonEl.setPointerCapture === 'function') {
+        try { buttonEl.setPointerCapture(e.pointerId); } catch { }
+      }
+      return true;
+    }
 
     const transformContext = getCurrentTransformSelectionContext();
     if (transformContext && transformContext.type === 'bond') {
@@ -12872,6 +12909,7 @@
     selectionCueDragState = {
       pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
       buttonEl,
+      action,
     };
     if (buttonEl && Number.isInteger(e.pointerId) && typeof buttonEl.setPointerCapture === 'function') {
       try { buttonEl.setPointerCapture(e.pointerId); } catch { }
@@ -12882,12 +12920,29 @@
   function handleSelectionCuePointerMove(buttonEl, e) {
     if (!selectionCueDragState || selectionCueDragState.buttonEl !== buttonEl) return false;
     if (Number.isInteger(selectionCueDragState.pointerId) && selectionCueDragState.pointerId !== e.pointerId) return false;
+    if (selectionCueDragState.action === 'bondOrder') {
+      const nextOrder = clampBondCenterInteractiveOrder(
+        (selectionCueDragState.startOrder | 0)
+        + Math.round(((Number(e.clientX) || 0) - (selectionCueDragState.startClientX || 0)) / 24)
+      );
+      if (nextOrder !== (selectionCueDragState.currentOrder | 0) && applyBondCenterSelectionOrder(nextOrder)) {
+        selectionCueDragState.currentOrder = nextOrder;
+      }
+      return true;
+    }
     return handleUnifiedEditControllerPointerMove(getEditIntent(), e);
   }
 
   function finishSelectionCuePointer(buttonEl, e, cancel = false) {
     if (!selectionCueDragState || selectionCueDragState.buttonEl !== buttonEl) return false;
     if (Number.isInteger(selectionCueDragState.pointerId) && selectionCueDragState.pointerId !== e.pointerId) return false;
+    if (selectionCueDragState.action === 'bondOrder') {
+      selectionCueDragState = null;
+      if (buttonEl && Number.isInteger(e.pointerId) && typeof buttonEl.releasePointerCapture === 'function') {
+        try { buttonEl.releasePointerCapture(e.pointerId); } catch { }
+      }
+      return true;
+    }
     selectionCueDragState = null;
     let handled = false;
     if (cancel) handled = handleUnifiedEditControllerPointerCancel(getEditIntent());
@@ -13535,8 +13590,50 @@
     return { minX, minY, maxX, maxY, visibleCount };
   }
 
+  function getBondCenterSelectionClientBounds(selectionState, vol) {
+    if (!(selectionState && vol && Array.isArray(vol.atoms))) return null;
+    const indices = [selectionState.atomIndexA | 0, selectionState.atomIndexB | 0]
+      .filter((idx, index, values) => idx >= 0 && idx < vol.atoms.length && values.indexOf(idx) === index);
+    if (!indices.length) return null;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    let visibleCount = 0;
+    for (const idx of indices) {
+      const atom = vol.atoms[idx] || null;
+      const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
+      const pos = mesh && mesh.position ? mesh.position : (atom ? atomUnitsToAng(vol, atom) : null);
+      const projected = projectWorldToClient(pos);
+      if (!projected || !projected.visible) continue;
+      const atomRadiusWorld = Math.max(
+        0.1,
+        (atom ? getRenderedAtomDisplayRadius(atom.Z | 0) : 0.5) + 0.08
+      );
+      const projectedRadius = Math.max(10, projectWorldRadiusToClientPixels(pos, atomRadiusWorld));
+      minX = Math.min(minX, projected.x - projectedRadius);
+      minY = Math.min(minY, projected.y - projectedRadius);
+      maxX = Math.max(maxX, projected.x + projectedRadius);
+      maxY = Math.max(maxY, projected.y + projectedRadius);
+      visibleCount += 1;
+    }
+    if (!visibleCount) {
+      const projectedMidpoint = projectWorldToClient(selectionState.midpoint);
+      if (!projectedMidpoint || !projectedMidpoint.visible) return null;
+      const fallbackRadius = 18;
+      return {
+        minX: projectedMidpoint.x - fallbackRadius,
+        minY: projectedMidpoint.y - fallbackRadius,
+        maxX: projectedMidpoint.x + fallbackRadius,
+        maxY: projectedMidpoint.y + fallbackRadius,
+        visibleCount: 1,
+      };
+    }
+    return { minX, minY, maxX, maxY, visibleCount };
+  }
+
   function getEditHaloGhostClientBounds(uiState) {
-    if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
+    if (!(uiState && uiState.visible)) return null;
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
@@ -13553,6 +13650,23 @@
       const projected = projectWorldToClient(world);
       if (!projected || projected.visible === false) continue;
       const projectedRadius = Math.max(12, projectWorldRadiusToClientPixels(world, ghostRadiusWorld) + 4);
+      minX = Math.min(minX, projected.x - projectedRadius);
+      minY = Math.min(minY, projected.y - projectedRadius);
+      maxX = Math.max(maxX, projected.x + projectedRadius);
+      maxY = Math.max(maxY, projected.y + projectedRadius);
+      visibleCount += 1;
+    }
+    const replaceRadiusWorld = getRenderedAtomDisplayRadius(1) * 1.38;
+    for (const target of Array.isArray(uiState.replaceTargets) ? uiState.replaceTargets : []) {
+      if (!(target && target.world)) continue;
+      const world = new THREE.Vector3(
+        Number(target.world.x) || 0,
+        Number(target.world.y) || 0,
+        Number(target.world.z) || 0
+      );
+      const projected = projectWorldToClient(world);
+      if (!projected || projected.visible === false) continue;
+      const projectedRadius = Math.max(14, projectWorldRadiusToClientPixels(world, replaceRadiusWorld) + 4);
       minX = Math.min(minX, projected.x - projectedRadius);
       minY = Math.min(minY, projected.y - projectedRadius);
       maxX = Math.max(maxX, projected.x + projectedRadius);
@@ -13638,17 +13752,26 @@
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const selection = getEditAtomSelection();
-    if (!vol || !Array.isArray(vol.atoms) || !selection.length) {
+    const bondCenterSelection = vol ? getBondCenterSelectionResolved(vol) : null;
+    if (bondCenterSelectionState && !bondCenterSelection) {
+      clearBondCenterSelection({ updateVisuals: false });
+    }
+    if (!vol || !Array.isArray(vol.atoms) || (!selection.length && !bondCenterSelection)) {
       hideEditSelectionTranslateCue();
       return;
     }
-    const selectionBounds = getEditSelectionClientBounds(selection, vol);
-    const haloGhostBounds = getEditHaloGhostClientBounds(editHaloController ? editHaloController.getUiState() : editHaloUiState);
+    const selectionBounds = bondCenterSelection
+      ? getBondCenterSelectionClientBounds(bondCenterSelection, vol)
+      : getEditSelectionClientBounds(selection, vol);
+    const haloGhostBounds = bondCenterSelection
+      ? null
+      : getEditHaloGhostClientBounds(editHaloController ? editHaloController.getUiState() : editHaloUiState);
     const bounds = mergeClientBounds(selectionBounds, haloGhostBounds);
     if (!bounds) {
       hideEditSelectionTranslateCue();
       return;
     }
+    const isBondCenterSelection = !!bondCenterSelection;
     const transformContext = getCurrentTransformSelectionContext();
     const isBondSideSelection = !!(transformContext && transformContext.type === 'bond');
     const selectionCount = Array.isArray(selection) ? selection.length : 0;
@@ -13656,12 +13779,13 @@
     const bondSideCueMode = getEffectiveEditBondSideCueMode();
     const fragmentCueActive = isSelectionFragmentCueActive();
     if (editSelectionTranslateCueButtonEl) {
-      editSelectionTranslateCueButtonEl.hidden = !!isBondSideSelection;
-      editSelectionTranslateCueButtonEl.classList.toggle('is-active', !isBondSideSelection && !fragmentCueActive && effectiveMode === 'translate');
-      editSelectionTranslateCueButtonEl.setAttribute('aria-pressed', (!isBondSideSelection && !fragmentCueActive && effectiveMode === 'translate') ? 'true' : 'false');
+      const visible = !isBondSideSelection && !isBondCenterSelection;
+      editSelectionTranslateCueButtonEl.hidden = !visible;
+      editSelectionTranslateCueButtonEl.classList.toggle('is-active', visible && !fragmentCueActive && effectiveMode === 'translate');
+      editSelectionTranslateCueButtonEl.setAttribute('aria-pressed', (visible && !fragmentCueActive && effectiveMode === 'translate') ? 'true' : 'false');
     }
     if (editSelectionRotateCueButtonEl) {
-      editSelectionRotateCueButtonEl.hidden = !isBondSideSelection && selectionCount <= 1;
+      editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
       const rotateActive = isBondSideSelection
         ? (!fragmentCueActive && bondSideCueMode === 'axis')
         : (!fragmentCueActive && effectiveMode === 'rotate');
@@ -13672,19 +13796,29 @@
     }
     if (editSelectionBondOrbitCueButtonEl) {
       const active = !!isBondSideSelection && !fragmentCueActive && bondSideCueMode === 'orbit';
-      editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection;
+      editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
       editSelectionBondOrbitCueButtonEl.classList.toggle('is-active', active);
       editSelectionBondOrbitCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
     if (editSelectionBondDistanceCueButtonEl) {
       const active = !!isBondSideSelection && !fragmentCueActive && bondSideCueMode === 'distance';
-      editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection;
+      editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
       editSelectionBondDistanceCueButtonEl.classList.toggle('is-active', active);
       editSelectionBondDistanceCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
+    if (editSelectionBondOrderCueButtonEl) {
+      const visible = !!isBondCenterSelection;
+      const order = visible ? (bondCenterSelection.order | 0) : '';
+      editSelectionBondOrderCueButtonEl.hidden = !visible;
+      editSelectionBondOrderCueButtonEl.classList.toggle('is-active', visible);
+      editSelectionBondOrderCueButtonEl.setAttribute('aria-pressed', visible ? 'true' : 'false');
+      editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
+      editSelectionBondOrderCueButtonEl.title = visible ? `Adjust bond order (${order})` : 'Adjust bond order';
+      editSelectionBondOrderCueButtonEl.setAttribute('aria-label', visible ? `Adjust bond order (${order})` : 'Adjust bond order');
+    }
     const coordinationCueState = getSelectionCoordinationCueState();
     if (editSelectionCoordinationCueButtonEl) {
-      const visible = !isBondSideSelection && !!(coordinationCueState && coordinationCueState.choices.length);
+      const visible = !isBondSideSelection && !isBondCenterSelection && !!(coordinationCueState && coordinationCueState.choices.length);
       const active = visible && editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
       editSelectionCoordinationCueButtonEl.hidden = !visible;
       editSelectionCoordinationCueButtonEl.classList.toggle('is-active', !!active);
@@ -13692,11 +13826,12 @@
       if (!visible) hideSelectionCoordinationCuePopover();
     }
     if (editSelectionAddFragmentCueButtonEl) {
-      editSelectionAddFragmentCueButtonEl.hidden = !!isBondSideSelection;
-      editSelectionAddFragmentCueButtonEl.classList.toggle('is-active', !isBondSideSelection && fragmentCueActive);
-      editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', !isBondSideSelection && !fragmentCueActive);
-      editSelectionAddFragmentCueButtonEl.setAttribute('aria-pressed', (!isBondSideSelection && fragmentCueActive) ? 'true' : 'false');
-      if (isBondSideSelection) {
+      const visible = !isBondSideSelection && !isBondCenterSelection;
+      editSelectionAddFragmentCueButtonEl.hidden = !visible;
+      editSelectionAddFragmentCueButtonEl.classList.toggle('is-active', visible && fragmentCueActive);
+      editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !fragmentCueActive);
+      editSelectionAddFragmentCueButtonEl.setAttribute('aria-pressed', (visible && fragmentCueActive) ? 'true' : 'false');
+      if (!visible) {
         hideSelectionFragmentCuePopover();
         hideSelectionCoordinationCuePopover();
       }
@@ -13705,7 +13840,9 @@
       editSelectionDeleteCueButtonEl.hidden = false;
       editSelectionDeleteCueButtonEl.setAttribute('aria-pressed', 'false');
     }
-    if (isBondSideSelection) {
+    if (isBondCenterSelection) {
+      editSelectionTranslateCueEl.title = `Bond order ${bondCenterSelection.order | 0}`;
+    } else if (isBondSideSelection) {
       editSelectionTranslateCueEl.title = bondSideCueMode === 'distance'
         ? 'Adjust bond distance'
         : (bondSideCueMode === 'orbit' ? 'Rotate fragment in 3D' : 'Rotate around bond axis');
@@ -13746,13 +13883,15 @@
 
   function clearEditHaloGhostPreview() {
     editHaloGhostHoverIndex = -1;
+    editHaloReplaceHoverAtomIndex = -1;
     editHaloGhostRenderKey = '';
     clearGroup(editHaloGhostPreviewGroup);
   }
 
   function clearEditHaloGhostHoverState() {
-    if (editHaloGhostHoverIndex >= 0 || editHaloGhostRenderKey) {
+    if (editHaloGhostHoverIndex >= 0 || editHaloReplaceHoverAtomIndex >= 0 || editHaloGhostRenderKey) {
       editHaloGhostHoverIndex = -1;
+      editHaloReplaceHoverAtomIndex = -1;
       editHaloGhostRenderKey = '';
     }
   }
@@ -13811,9 +13950,87 @@
     };
   }
 
+  function getEditHaloReplaceTargetCarrier(object) {
+    let cur = object || null;
+    while (cur) {
+      if (cur.userData && Number.isInteger(cur.userData.haloReplaceAtomIndex)) return cur;
+      cur = cur.parent || null;
+    }
+    return null;
+  }
+
+  function pickEditHaloReplaceTargetHit(e) {
+    if (!editHaloGhostPreviewGroup || !Array.isArray(editHaloGhostPreviewGroup.children) || !editHaloGhostPreviewGroup.children.length) return null;
+    const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+    setRaycasterFromEvent(e);
+    const hits = raycaster.intersectObjects(editHaloGhostPreviewGroup.children, true);
+    for (const hit of hits) {
+      const carrier = getEditHaloReplaceTargetCarrier(hit && hit.object);
+      if (!carrier) continue;
+      return {
+        object: carrier,
+        atomIndex: carrier.userData.haloReplaceAtomIndex | 0,
+      };
+    }
+    if (!(uiState && Array.isArray(uiState.replaceTargets) && uiState.replaceTargets.length)) return null;
+    const pointerX = Number(e && e.clientX);
+    const pointerY = Number(e && e.clientY);
+    if (!Number.isFinite(pointerX) || !Number.isFinite(pointerY)) return null;
+    let best = null;
+    for (const target of uiState.replaceTargets) {
+      if (!(target && target.world)) continue;
+      const world = new THREE.Vector3(
+        Number(target.world.x) || 0,
+        Number(target.world.y) || 0,
+        Number(target.world.z) || 0
+      );
+      const projected = projectWorldToClient(world);
+      if (!projected || projected.visible === false) continue;
+      const projectedRadius = Math.max(14, projectWorldRadiusToClientPixels(world, getRenderedAtomDisplayRadius(1) * 1.35) + 4);
+      const dx = pointerX - (Number(projected.x) || 0);
+      const dy = pointerY - (Number(projected.y) || 0);
+      const distancePx = Math.hypot(dx, dy);
+      if (distancePx > projectedRadius) continue;
+      if (!best || distancePx < best.distancePx) {
+        best = {
+          atomIndex: target.atomIndex | 0,
+          distancePx,
+        };
+      }
+    }
+    if (!best) return null;
+    return {
+      object: null,
+      atomIndex: best.atomIndex,
+    };
+  }
+
+  function updateEditHaloPreviewHoverState(e) {
+    const replaceHit = pickEditHaloReplaceTargetHit(e);
+    const ghostHit = replaceHit ? null : pickEditHaloGhostHit(e);
+    const nextReplaceHover = replaceHit ? (replaceHit.atomIndex | 0) : -1;
+    const nextGhostHover = ghostHit ? (ghostHit.ghostIndex | 0) : -1;
+    if (nextGhostHover !== editHaloGhostHoverIndex || nextReplaceHover !== editHaloReplaceHoverAtomIndex) {
+      editHaloGhostHoverIndex = nextGhostHover;
+      editHaloReplaceHoverAtomIndex = nextReplaceHover;
+      editHaloGhostRenderKey = '';
+    }
+    return {
+      ghostHit,
+      replaceHit,
+      hovering: nextGhostHover >= 0 || nextReplaceHover >= 0,
+    };
+  }
+
   function renderEditHaloGhostPreview() {
     const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-    const visible = !!(uiState && uiState.visible && uiState.anchorWorld && Array.isArray(uiState.ghosts) && uiState.ghosts.length);
+    const visible = !!(uiState
+      && uiState.visible
+      && uiState.anchorWorld
+      && (
+        (Array.isArray(uiState.ghosts) && uiState.ghosts.length)
+        || (Array.isArray(uiState.replaceTargets) && uiState.replaceTargets.length)
+      ));
     if (!visible) {
       if (editHaloGhostRenderKey || editHaloGhostPreviewGroup.children.length) clearEditHaloGhostPreview();
       return;
@@ -13827,12 +14044,17 @@
       ghostKind: ghostPayload.kind,
       ghostLabel: ghostPayload.label,
       fragmentId: ghostPayload.fragmentId,
-      hover: editHaloGhostHoverIndex,
+      hoverGhostIndex: editHaloGhostHoverIndex,
+      hoverReplaceAtomIndex: editHaloReplaceHoverAtomIndex,
       ghosts: uiState.ghosts.map((ghost) => ({
         index: ghost.index | 0,
         recommended: !!ghost.recommended,
         world: [Number(ghost.world && ghost.world.x) || 0, Number(ghost.world && ghost.world.y) || 0, Number(ghost.world && ghost.world.z) || 0],
       })),
+      replaceTargets: Array.isArray(uiState.replaceTargets) ? uiState.replaceTargets.map((target) => ({
+        atomIndex: target.atomIndex | 0,
+        world: [Number(target.world && target.world.x) || 0, Number(target.world && target.world.y) || 0, Number(target.world && target.world.z) || 0],
+      })) : [],
       anchorWorld: [Number(uiState.anchorWorld.x) || 0, Number(uiState.anchorWorld.y) || 0, Number(uiState.anchorWorld.z) || 0],
     };
     const nextKey = JSON.stringify(renderState);
@@ -13846,6 +14068,7 @@
     const up = new THREE.Vector3(0, 1, 0);
     const polyGhostsActive = renderState.ghostKind === 'fragment' || renderState.ghostKind === 'site';
     const sharedOpenSiteRadius = 0.24;
+    const replaceThemeKind = renderState.ghostKind === 'fragment' ? 'fragment' : 'site';
     for (const ghost of renderState.ghosts) {
       const ghostWorld = new THREE.Vector3(ghost.world[0], ghost.world[1], ghost.world[2]);
       const hovered = (ghost.index | 0) === (editHaloGhostHoverIndex | 0);
@@ -13925,6 +14148,38 @@
       }
       editHaloGhostPreviewGroup.add(ghostGroup);
     }
+    for (const target of renderState.replaceTargets) {
+      const targetWorld = new THREE.Vector3(target.world[0], target.world[1], target.world[2]);
+      const hovered = (target.atomIndex | 0) === (editHaloReplaceHoverAtomIndex | 0);
+      const theme = getOpenCoordinationGhostTheme({ kind: replaceThemeKind, hovered });
+      const shellRadius = getRenderedAtomDisplayRadius(1) * (hovered ? 1.38 : 1.28);
+      const shellGeom = new THREE.SphereGeometry(shellRadius, sphereWidthSegments, sphereHeightSegments);
+      const shellMat = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(theme.stroke),
+        transparent: true,
+        opacity: hovered ? 0.38 : 0.24,
+        depthWrite: false,
+      });
+      const shellMesh = new THREE.Mesh(shellGeom, shellMat);
+      shellMesh.position.copy(targetWorld);
+      shellMesh.renderOrder = 70;
+      shellMesh.userData.haloReplaceAtomIndex = target.atomIndex | 0;
+      const fillGeom = new THREE.SphereGeometry(shellRadius * 0.88, sphereWidthSegments, sphereHeightSegments);
+      const fillMat = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(theme.fillPrimary),
+        transparent: true,
+        opacity: hovered ? 0.22 : 0.1,
+        depthWrite: false,
+      });
+      const fillMesh = new THREE.Mesh(fillGeom, fillMat);
+      fillMesh.position.copy(targetWorld);
+      fillMesh.renderOrder = 69;
+      fillMesh.userData.haloReplaceAtomIndex = target.atomIndex | 0;
+      const replaceGroup = new THREE.Group();
+      replaceGroup.userData.haloReplaceAtomIndex = target.atomIndex | 0;
+      replaceGroup.add(shellMesh, fillMesh);
+      editHaloGhostPreviewGroup.add(replaceGroup);
+    }
   }
 
   function updateEditGestureHudUi() {
@@ -13945,10 +14200,15 @@
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const selectionCount = getEditAtomSelection().length;
+    const bondCenterSelection = getBondCenterSelectionResolved(vol);
     const atomPresentation = getAtomManipulationPresentation();
     if (editGestureHintEl) {
       if (gestureActive) {
-        editGestureHintEl.textContent = String((haloState && haloState.hint) || editGestureUiState.hint || atomPresentation.hudHint);
+        if (bondCenterSelection) {
+          editGestureHintEl.textContent = `Bond selected • Drag cue to set order 0-4`;
+        } else {
+          editGestureHintEl.textContent = String((haloState && haloState.hint) || editGestureUiState.hint || atomPresentation.hudHint);
+        }
       } else if (standalonePlacementActive) {
         const templateData = moleculePlaceTemplateData;
         const kindLabel = templateData && templateData.entryKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule';
@@ -13959,7 +14219,13 @@
     }
     if (editGestureScopeEl) {
       if (gestureActive) {
-        editGestureScopeEl.textContent = String((haloState && haloState.scope) || editGestureUiState.scope || atomPresentation.scopeSummary);
+        if (bondCenterSelection) {
+          const symbolA = getElementSymbol(bondCenterSelection.atomA.Z | 0);
+          const symbolB = getElementSymbol(bondCenterSelection.atomB.Z | 0);
+          editGestureScopeEl.textContent = `${symbolA}-${symbolB} bond • order ${bondCenterSelection.order | 0}`;
+        } else {
+          editGestureScopeEl.textContent = String((haloState && haloState.scope) || editGestureUiState.scope || atomPresentation.scopeSummary);
+        }
       } else if (standalonePlacementActive) {
         const templateData = moleculePlaceTemplateData;
         const label = templateData
@@ -13994,6 +14260,9 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const activeBondCenterSelection = getBondCenterSelectionResolved(vol);
     const selection = getEditAtomSelection();
     if (selection.length >= 2 && editGizmos && editTransformController) {
       const moveGizmoHit = editGizmos.pickMoveHit(e);
@@ -14035,7 +14304,44 @@
       if (cleared && typeof e.preventDefault === 'function') e.preventDefault();
       return false;
     }
+    if (activeBondCenterSelection) {
+      const pickedAtomForBondScope = pickAtom(e);
+      const atomIndexForBondScope = pickedAtomForBondScope && pickedAtomForBondScope.userData ? (pickedAtomForBondScope.userData.index | 0) : -1;
+      if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        return true;
+      }
+      if (atomIndexForBondScope < 0 && !(pickedBondHit && pickedBondHit.object)) {
+        clearBondCenterSelection({ updateVisuals: true, announce: false });
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        return true;
+      }
+      clearBondCenterSelection({ updateVisuals: true, announce: false });
+    }
     if (editHaloController) {
+      const haloReplaceHit = editHaloReplaceHoverAtomIndex >= 0 ? pickEditHaloReplaceTargetHit(e) : null;
+      if (haloReplaceHit) {
+        const uiState = editHaloController.getUiState();
+        const target = uiState && Array.isArray(uiState.replaceTargets)
+          ? uiState.replaceTargets.find((item) => (item.atomIndex | 0) === (haloReplaceHit.atomIndex | 0))
+          : null;
+        const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
+        if (target && target.world && anchorIndex >= 0) {
+          const replacedHydrogen = replaceGestureTerminalHydrogenFromAnchor(anchorIndex, haloReplaceHit.atomIndex | 0, {
+            elementZ: editAddElementZ,
+            bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
+          });
+          if (replacedHydrogen) {
+            clearEditHaloGhostHoverState();
+            setEditAtomSelection([]);
+            updateSelectedHalos();
+            updateEditSelectionVisuals();
+            updateEditAdaptiveMenuUi();
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            return true;
+          }
+        }
+      }
       const haloGhostHit = editHaloGhostHoverIndex >= 0 ? pickEditHaloGhostHit(e) : null;
       if (haloGhostHit) {
         const uiState = editHaloController.getUiState();
@@ -14125,6 +14431,43 @@
     }
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
+    const activeBondCenterSelection = getBondCenterSelectionResolved(vol);
+    const pickedBondHit = pickBondHit(e);
+    const centerBondHit = (
+      pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center'
+        ? pickedBondHit
+        : null
+    ) || resolveGestureBondCenterClickHit(e);
+    if (activeBondCenterSelection) {
+      const pickedAtomForBondScope = pickAtom(e);
+      const atomIndexForBondScope = pickedAtomForBondScope && pickedAtomForBondScope.userData ? (pickedAtomForBondScope.userData.index | 0) : -1;
+      if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        return true;
+      }
+      if (atomIndexForBondScope < 0 && !(pickedBondHit && pickedBondHit.object)) {
+        clearBondCenterSelection({ updateVisuals: true, announce: false });
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        return true;
+      }
+      clearBondCenterSelection({ updateVisuals: true, announce: false });
+    }
+    const haloReplaceHit = editHaloController ? pickEditHaloReplaceTargetHit(e) : null;
+    if (haloReplaceHit) {
+      const uiState = editHaloController.getUiState();
+      const target = uiState && Array.isArray(uiState.replaceTargets)
+        ? uiState.replaceTargets.find((item) => (item.atomIndex | 0) === (haloReplaceHit.atomIndex | 0))
+        : null;
+      const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
+      const attachContext = getActiveFragmentAttachContext(vol, anchorIndex);
+      if (attachContext && target && target.world && attachContext.anchorIndex >= 0) {
+        const world = new THREE.Vector3(Number(target.world.x) || 0, Number(target.world.y) || 0, Number(target.world.z) || 0);
+        if (commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext)) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          return true;
+        }
+      }
+    }
     const haloGhostHit = editHaloController ? pickEditHaloGhostHit(e) : null;
     if (haloGhostHit) {
       const uiState = editHaloController.getUiState();
@@ -14179,6 +14522,9 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
+    if (isBuildFragmentLoaded() && getEditAtomSelection().length > 0) {
+      return false;
+    }
     if (isBuildFragmentLoaded()) {
       beginQuaternionViewRotate(e);
       if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -14215,10 +14561,7 @@
     const valueLabelHit = pickTransformValueLabelHit(e);
     if (valueLabelHit) {
       if (editGizmos) editGizmos.clearHover();
-      if (editHaloGhostHoverIndex >= 0) {
-        editHaloGhostHoverIndex = -1;
-        editHaloGhostRenderKey = '';
-      }
+      clearEditHaloGhostHoverState();
       setHover(null);
       setBondHover(null);
       setSurfaceHover(null);
@@ -14231,10 +14574,7 @@
       if (moveGizmoHit) {
         editGizmos.setMoveHover(moveGizmoHit.axis);
         editGizmos.setRotateHover('');
-        if (editHaloGhostHoverIndex >= 0) {
-          editHaloGhostHoverIndex = -1;
-          editHaloGhostRenderKey = '';
-        }
+        clearEditHaloGhostHoverState();
         setHover(null);
         setBondHover(null);
         setSurfaceHover(null);
@@ -14245,10 +14585,7 @@
       if (rotateGizmoHit) {
         editGizmos.setRotateHover(rotateGizmoHit.axis);
         editGizmos.setMoveHover('');
-        if (editHaloGhostHoverIndex >= 0) {
-          editHaloGhostHoverIndex = -1;
-          editHaloGhostRenderKey = '';
-        }
+        clearEditHaloGhostHoverState();
         setHover(null);
         setBondHover(null);
         setSurfaceHover(null);
@@ -14260,13 +14597,8 @@
     }
     let haloGhostHovering = false;
     if (editHaloController) {
-      const haloGhostHit = pickEditHaloGhostHit(e);
-      const nextGhostHover = haloGhostHit ? (haloGhostHit.ghostIndex | 0) : -1;
-      if (nextGhostHover !== editHaloGhostHoverIndex) {
-        editHaloGhostHoverIndex = nextGhostHover;
-        editHaloGhostRenderKey = '';
-      }
-      if (nextGhostHover >= 0) {
+      const haloHover = updateEditHaloPreviewHoverState(e);
+      if (haloHover.hovering) {
         haloGhostHovering = true;
         setHover(null);
         setBondHover(null);
@@ -14274,9 +14606,8 @@
         hideSurfaceHoverLabel();
       }
       editHaloController.handlePointerMove(e);
-    } else if (editHaloGhostHoverIndex >= 0) {
-      editHaloGhostHoverIndex = -1;
-      editHaloGhostRenderKey = '';
+    } else if (editHaloGhostHoverIndex >= 0 || editHaloReplaceHoverAtomIndex >= 0) {
+      clearEditHaloGhostHoverState();
     }
     if (gestureBondSidePress && (!Number.isInteger(gestureBondSidePress.pointerId) || gestureBondSidePress.pointerId === e.pointerId)) {
       const dx = (Number(e.clientX) || 0) - gestureBondSidePress.clientX;
@@ -14315,13 +14646,8 @@
   function handleFragmentIntentControllerPointerMove(e) {
     let haloGhostHovering = false;
     if (editHaloController) {
-      const haloGhostHit = pickEditHaloGhostHit(e);
-      const nextGhostHover = haloGhostHit ? (haloGhostHit.ghostIndex | 0) : -1;
-      if (nextGhostHover !== editHaloGhostHoverIndex) {
-        editHaloGhostHoverIndex = nextGhostHover;
-        editHaloGhostRenderKey = '';
-      }
-      if (nextGhostHover >= 0) {
+      const haloHover = updateEditHaloPreviewHoverState(e);
+      if (haloHover.hovering) {
         haloGhostHovering = true;
         setHover(null);
         setBondHover(null);
@@ -14329,9 +14655,8 @@
         hideSurfaceHoverLabel();
       }
       editHaloController.handlePointerMove(e);
-    } else if (editHaloGhostHoverIndex >= 0) {
-      editHaloGhostHoverIndex = -1;
-      editHaloGhostRenderKey = '';
+    } else if (editHaloGhostHoverIndex >= 0 || editHaloReplaceHoverAtomIndex >= 0) {
+      clearEditHaloGhostHoverState();
     }
     if (addFusePreviewState && addFusePreviewState.rotating) {
       __editMoved = true;
@@ -15605,7 +15930,7 @@
   function ensureBondOverlay(carrier, key, color, opacity, options = {}) {
     if (!carrier || !carrier.userData) return null;
     if (carrier.userData[key]) return carrier.userData[key];
-    const overlaySection = key === 'hoverOverlay' ? String(options.section || '') : '';
+    const overlaySection = (key === 'hoverOverlay' || key === 'scopeOverlay') ? String(options.section || '') : '';
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     let overlay = null;
@@ -15768,6 +16093,27 @@
       if (selected.has(i) && selected.has(j)) ensureBondOverlay(carrier, 'selectOverlay', selHaloColor, 0.72);
       else removeBondOverlay(carrier, 'selectOverlay');
       removeBondOverlay(carrier, 'focusOverlay');
+    }
+  }
+
+  function updateBondCenterSelectionOverlay() {
+    if (!bondGroup || !Array.isArray(bondGroup.children)) return;
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const resolved = currentMode === MODES.EDIT ? getBondCenterSelectionResolved(vol) : null;
+    const selectedCarriers = new Set();
+    if (resolved && resolved.carrier) {
+      const relatedCarriers = getRelatedBondCarriers(resolved.carrier);
+      for (const carrier of relatedCarriers) {
+        ensureBondOverlay(carrier, 'scopeOverlay', 0x71a8ff, 0.92, { section: 'center' });
+        selectedCarriers.add(carrier);
+      }
+    }
+    for (const child of bondGroup.children) {
+      const carrier = getBondCarrierObject(child);
+      if (!carrier || !carrier.userData) continue;
+      if (selectedCarriers.has(carrier)) continue;
+      removeBondOverlay(carrier, 'scopeOverlay');
     }
   }
 
@@ -16612,6 +16958,134 @@
     return changed;
   }
 
+  function clampBondCenterInteractiveOrder(order) {
+    const value = Number(order);
+    if (!Number.isFinite(value)) return 0;
+    return Math.max(0, Math.min(4, Math.round(value)));
+  }
+
+  function normalizeBondCenterSelectionIds(atomIdA, atomIdB) {
+    const left = String(atomIdA || '').trim();
+    const right = String(atomIdB || '').trim();
+    if (!left || !right || left === right) return null;
+    return left < right
+      ? { atomIdA: left, atomIdB: right }
+      : { atomIdA: right, atomIdB: left };
+  }
+
+  function getBondCenterSelectionResolved(vol) {
+    if (!bondCenterSelectionState || !vol || !Array.isArray(vol.atoms)) return null;
+    const atomIdA = String(bondCenterSelectionState.atomIdA || '').trim();
+    const atomIdB = String(bondCenterSelectionState.atomIdB || '').trim();
+    if (!atomIdA || !atomIdB) return null;
+    const atomIndexA = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === atomIdA);
+    const atomIndexB = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === atomIdB);
+    if (atomIndexA < 0 || atomIndexB < 0 || atomIndexA === atomIndexB) return null;
+    let carrier = null;
+    if (bondGroup && Array.isArray(bondGroup.children)) {
+      for (const child of bondGroup.children) {
+        const candidate = getBondCarrierObject(child);
+        if (!candidate || !candidate.userData) continue;
+        const i = candidate.userData.i | 0;
+        const j = candidate.userData.j | 0;
+        if (
+          (i === atomIndexA && j === atomIndexB)
+          || (i === atomIndexB && j === atomIndexA)
+        ) {
+          carrier = candidate;
+          break;
+        }
+      }
+    }
+    const atomA = vol.atoms[atomIndexA];
+    const atomB = vol.atoms[atomIndexB];
+    if (!atomA || !atomB) return null;
+    const worldA = atomUnitsToAng(vol, atomA);
+    const worldB = atomUnitsToAng(vol, atomB);
+    const midpoint = worldA.clone().add(worldB).multiplyScalar(0.5);
+    const bondIndex = findVolumeBondRecordIndex(vol, atomIdA, atomIdB);
+    const bondRecord = bondIndex >= 0 ? normalizeVolumeBondRecord(vol, vol.bonds[bondIndex]) : null;
+    const order = bondRecord
+      ? (bondRecord.kind === 'blocked' ? 0 : clampBondCenterInteractiveOrder(bondRecord.order || 1))
+      : (carrier ? clampBondCenterInteractiveOrder(getBondCarrierDisplayedOrder(carrier)) : 0);
+    return {
+      atomIdA,
+      atomIdB,
+      atomIndexA,
+      atomIndexB,
+      atomA,
+      atomB,
+      worldA,
+      worldB,
+      midpoint,
+      carrier,
+      order,
+    };
+  }
+
+  function clearBondCenterSelection(options = {}) {
+    const hadSelection = !!bondCenterSelectionState;
+    bondCenterSelectionState = null;
+    if (!hadSelection) return false;
+    if (options.updateVisuals !== false) {
+      updateSelectedHalos();
+      updateEditAdaptiveMenuUi();
+    }
+    if (options.announce) setHintMessage('Bond selection cleared.');
+    return true;
+  }
+
+  function setBondCenterSelectionFromHit(bondHit, options = {}) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms) || !bondHit || !bondHit.object || bondHit.section !== 'center') return false;
+    const i = bondHit.object.userData ? (bondHit.object.userData.i | 0) : -1;
+    const j = bondHit.object.userData ? (bondHit.object.userData.j | 0) : -1;
+    if (i < 0 || j < 0 || i === j || i >= vol.atoms.length || j >= vol.atoms.length) return false;
+    const normalizedIds = normalizeBondCenterSelectionIds(ensureAtomId(vol.atoms[i]), ensureAtomId(vol.atoms[j]));
+    if (!normalizedIds) return false;
+    clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
+    setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
+    hideSelectionCoordinationCuePopover();
+    hideSelectionFragmentCuePopover();
+    bondCenterSelectionState = normalizedIds;
+    updateSelectedHalos();
+    updateEditAdaptiveMenuUi();
+    if (options.announce !== false) {
+      const symbolA = getElementSymbol(vol.atoms[i].Z | 0);
+      const symbolB = getElementSymbol(vol.atoms[j].Z | 0);
+      const resolved = getBondCenterSelectionResolved(vol);
+      const order = resolved ? resolved.order : 0;
+      setHintMessage(`Selected ${symbolA}-${symbolB} bond • Order ${order} • Drag the bond cue to change 0-4.`);
+    }
+    return true;
+  }
+
+  function applyBondCenterSelectionOrder(order) {
+    if (!bondEditing) return false;
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const resolved = getBondCenterSelectionResolved(vol);
+    if (!resolved) return false;
+    const nextOrder = clampBondCenterInteractiveOrder(order);
+    const changed = nextOrder <= 0
+      ? !!bondEditing.applyToAtomPair(resolved.atomIndexA, resolved.atomIndexB, { deleteOverride: true })
+      : !!bondEditing.applyToAtomPair(resolved.atomIndexA, resolved.atomIndexB, { orderOverride: nextOrder });
+    if (changed) {
+      updateSelectedHalos();
+      updateEditAdaptiveMenuUi();
+      if (editGestureController) editGestureController.refreshUi();
+    }
+    return changed;
+  }
+
+  function handleBondCenterScopeSelection(e) {
+    const bondHit = resolveGestureBondCenterClickHit(e) || pickBondHit(e);
+    if (!(bondHit && bondHit.object && bondHit.section === 'center')) return false;
+    hideBuildPopover();
+    return setBondCenterSelectionFromHit(bondHit, { announce: true });
+  }
+
   function getGestureCenterBondHoverHit() {
     if (getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || !editGestureController || typeof editGestureController.getHoverBondHit !== 'function') return null;
     const hit = editGestureController.getHoverBondHit();
@@ -16827,6 +17301,25 @@
       }
     }
     return !!applyEditAtomSelectionClick(hitIndex, !!(e && e.shiftKey));
+  }
+
+  function handleEditScopeContextSelection(e) {
+    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION) return false;
+    const atomHandled = handleEditAtomContextSelection(e);
+    if (atomHandled) {
+      clearBondCenterSelection({ updateVisuals: true });
+      return true;
+    }
+    const bondHit = resolveGestureBondCenterClickHit(e) || pickBondHit(e);
+    if (!(bondHit && bondHit.object)) return false;
+    clearBondCenterSelection({ updateVisuals: false });
+    if (bondHit.section === 'center') return handleBondCenterScopeSelection(e);
+    if (isExplicitTransformBondSideHit(bondHit)) {
+      const payload = applyGestureBondSideSelection(bondHit);
+      if (payload) hideBuildPopover();
+      return !!payload;
+    }
+    return false;
   }
 
   function resolveGestureGrowDragAnchorIndex(atomIndex, e) {
@@ -17762,6 +18255,13 @@
    * @returns {boolean}
    */
   function deleteSelectedOrHoveredAtom() {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    if (getBondCenterSelectionResolved(vol)) {
+      const deleted = applyBondCenterSelectionOrder(0);
+      if (deleted) clearBondCenterSelection({ updateVisuals: true });
+      return deleted;
+    }
     return deleteSelectedAtoms() || deleteHoveredAtom();
   }
 
@@ -18584,10 +19084,7 @@
       try { canvasEl.releasePointerCapture(gestureBondSidePress.pointerId); } catch { }
     }
     gestureBondSidePress = null;
-    if (editHaloGhostHoverIndex >= 0) {
-      editHaloGhostHoverIndex = -1;
-      editHaloGhostRenderKey = '';
-    }
+    clearEditHaloGhostHoverState();
     if (!measurementLabelDragState) clearMeasurementLabelHover();
     clearHover();
   });
@@ -18599,16 +19096,7 @@
         resetContextClickState();
         return;
       }
-      const bondHit = resolveGestureBondCenterClickHit(e) || pickBondHit(e) || (hoverBondObject && hoverBondSection === 'center'
-        ? { object: hoverBondObject, section: 'center' }
-        : null);
-      if (bondHit && bondHit.object && bondHit.section === 'center') {
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        stepGestureBondCenterOrder(bondHit, -1, e);
-        resetContextClickState();
-        return;
-      }
-      if (handleEditAtomContextSelection(e)) {
+      if (handleEditScopeContextSelection(e)) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         resetContextClickState();
         return;
@@ -18627,7 +19115,7 @@
   canvasEl.addEventListener('pointerdown', (e) => {
     if (e.button === 2) {
       __contextHandled = false;
-      if (currentMode === MODES.EDIT && getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && handleEditAtomContextSelection(e)) {
+      if (currentMode === MODES.EDIT && getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && handleEditScopeContextSelection(e)) {
         __contextHandled = true;
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return;
@@ -18717,10 +19205,7 @@
     gestureBondSidePress = null;
     if (bondEditing) bondEditing.clearState({ pendingSelection: false, popup: false });
     if (editHaloController) editHaloController.handlePointerCancel();
-    if (editHaloGhostHoverIndex >= 0) {
-      editHaloGhostHoverIndex = -1;
-      editHaloGhostRenderKey = '';
-    }
+    clearEditHaloGhostHoverState();
     if (currentMode === MODES.EDIT && editGestureController) editGestureController.handlePointerCancel();
     editSelectionClickAdditive = false;
     hideEditSelectionMarquee();
@@ -20140,6 +20625,15 @@
       orbitVisible: !!(editSelectionBondOrbitCueButtonEl && !editSelectionBondOrbitCueButtonEl.hidden),
       distanceVisible: !!(editSelectionBondDistanceCueButtonEl && !editSelectionBondDistanceCueButtonEl.hidden),
     }),
+    getBondCenterCueState: () => {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const resolved = getBondCenterSelectionResolved(vol);
+      return {
+        visible: !!(editSelectionBondOrderCueButtonEl && !editSelectionBondOrderCueButtonEl.hidden),
+        order: resolved ? (resolved.order | 0) : -1,
+      };
+    },
     pickTransformValueLabelAtClient: (clientX, clientY) => {
       const hit = pickTransformValueLabelHit({
         clientX: Number(clientX) || 0,

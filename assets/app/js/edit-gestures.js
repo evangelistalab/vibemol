@@ -156,7 +156,7 @@
         hint = 'Dragging selection box';
         scope = 'Selecting atoms in box';
       } else if (state.hoverBondHit && state.hoverBondHit.section === 'center') {
-        hint = 'Left click raises bond order • Right click lowers bond order';
+        hint = 'Right-click bond center to select bond order';
         scope = 'Bond midpoint';
       } else if (state.hoverBondHit && (state.hoverBondHit.section === 'nearA' || state.hoverBondHit.section === 'nearB')) {
         hint = 'Click bond side to select fragment • Rotate cue turns torsion • Sphere cue turns 3D rotation • Distance cue changes bond length';
@@ -355,7 +355,7 @@
         updateRotateDrag(e);
         return true;
       }
-      if (state.press.kind === 'bond-center-click') {
+      if (state.press.kind === 'bond-center-inert') {
         state.press = null;
         if (state.activePointerId != null) releasePointer(state.activePointerId);
         state.activePointerId = null;
@@ -438,7 +438,7 @@
       const centerBondHit = resolveBondCenterClickHit(e);
       if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
         state.press = {
-          kind: 'bond-center-click',
+          kind: 'bond-center-inert',
           clientX: Number(e.clientX) || 0,
           clientY: Number(e.clientY) || 0,
           pointerId: e.pointerId,
@@ -590,9 +590,8 @@
       state.press = null;
       if (press.kind === 'atom-press-pending' || press.kind === 'selected-atom') {
         clearLastAtomClick();
-      } else if (press.kind === 'bond-center-click') {
+      } else if (press.kind === 'bond-center-inert') {
         clearLastAtomClick();
-        applyBondCenterClick(press.bondHit, e);
       } else if (press.kind === 'void-clear') {
         clearLastAtomClick();
         if (clearSelection()) setHintMessage('Selection cleared.');
