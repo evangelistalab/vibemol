@@ -12903,6 +12903,12 @@
     __contextMoved = false;
     __contextHandled = false;
   }
+
+  function isEditContextPointerEvent(e) {
+    return currentMode === MODES.EDIT
+      && !!e
+      && (e.button === 2 || (e.button === 0 && !!e.ctrlKey && !e.altKey && !e.metaKey));
+  }
   /**
    * Clear the current measurement/edit atom selection.
    */
@@ -19329,17 +19335,22 @@
   });
 
   canvasEl.addEventListener('contextmenu', (e) => {
-    if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && !__contextMoved) {
-      if (__contextHandled) {
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        resetContextClickState();
-        return;
+    if (currentMode === MODES.EDIT) {
+      if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && !__contextMoved) {
+        if (__contextHandled) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          resetContextClickState();
+          return;
+        }
+        if (handleEditScopeContextSelection(e)) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          resetContextClickState();
+          return;
+        }
       }
-      if (handleEditScopeContextSelection(e)) {
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        resetContextClickState();
-        return;
-      }
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      resetContextClickState();
+      return;
     }
     resetContextClickState();
   });
@@ -19352,9 +19363,9 @@
   }, { passive: false });
 
   canvasEl.addEventListener('pointerdown', (e) => {
-    if (e.button === 2) {
+    if (isEditContextPointerEvent(e)) {
       __contextHandled = false;
-      if (currentMode === MODES.EDIT && getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && handleEditScopeContextSelection(e)) {
+      if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && handleEditScopeContextSelection(e)) {
         __contextHandled = true;
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return;
