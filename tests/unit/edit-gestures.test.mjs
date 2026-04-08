@@ -278,15 +278,15 @@ test('edit-gestures void drag starts and applies box selection, then cleans it u
   assert.deepEqual(getSelection(), [7, 8]);
 });
 
-test('edit-gestures single-click on atom selects only that atom', () => {
+test('edit-gestures left-click on atom does not change selection', () => {
   const { controller, calls, getSelection } = createHarness({ selection: [] });
 
   controller.handlePointerDown(pointerEvent({ atomIndex: 2, detail: 1 }));
   controller.handlePointerUp(pointerEvent({ atomIndex: 2, detail: 1 }));
 
-  assert.deepEqual(calls.selectionClicks, [{ atomIndex: 2, additive: false }]);
+  assert.deepEqual(calls.selectionClicks, []);
   assert.deepEqual(calls.resolveMoleculeSelection, []);
-  assert.deepEqual(getSelection(), [2]);
+  assert.deepEqual(getSelection(), []);
 });
 
 test('edit-gestures left click on bond center-third dispatches one bond-order raise action', () => {
@@ -302,7 +302,7 @@ test('edit-gestures left click on bond center-third dispatches one bond-order ra
   assert.equal(calls.placeVoidAtom, 0);
 });
 
-test('edit-gestures double-click on atom selects the whole molecular component', () => {
+test('edit-gestures left double-click on atom does not change selection', () => {
   const { controller, calls, getSelection } = createHarness({
     selection: [],
     resolveMoleculeSelection: (atomIndex) => [atomIndex, atomIndex + 1],
@@ -312,11 +312,11 @@ test('edit-gestures double-click on atom selects the whole molecular component',
   controller.handlePointerUp(pointerEvent({ atomIndex: 1, detail: 2 }));
 
   assert.deepEqual(calls.selectionClicks, []);
-  assert.deepEqual(calls.resolveMoleculeSelection, [1]);
-  assert.deepEqual(getSelection(), [1, 2]);
+  assert.deepEqual(calls.resolveMoleculeSelection, []);
+  assert.deepEqual(getSelection(), []);
 });
 
-test('edit-gestures repeated clicks on the same atom promote to molecule selection even without event detail', () => {
+test('edit-gestures repeated left-clicks on the same atom do not change selection', () => {
   const { controller, calls, getSelection } = createHarness({
     selection: [],
     resolveMoleculeSelection: (atomIndex) => [atomIndex, atomIndex + 1, atomIndex + 2],
@@ -327,9 +327,9 @@ test('edit-gestures repeated clicks on the same atom promote to molecule selecti
   controller.handlePointerDown(pointerEvent({ atomIndex: 0, timeStamp: 250 }));
   controller.handlePointerUp(pointerEvent({ atomIndex: 0, timeStamp: 250 }));
 
-  assert.deepEqual(calls.selectionClicks, [{ atomIndex: 0, additive: false }]);
-  assert.deepEqual(calls.resolveMoleculeSelection, [0]);
-  assert.deepEqual(getSelection(), [0, 1, 2]);
+  assert.deepEqual(calls.selectionClicks, []);
+  assert.deepEqual(calls.resolveMoleculeSelection, []);
+  assert.deepEqual(getSelection(), []);
 });
 
 test('edit-gestures resolves selected-atom drag to move by default', () => {

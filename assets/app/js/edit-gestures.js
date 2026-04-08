@@ -27,7 +27,6 @@
     const updateGrowDrag = typeof options.updateGrowDrag === 'function' ? options.updateGrowDrag : (() => ({ targetAtomIndex: -1 }));
     const commitGrowDrag = typeof options.commitGrowDrag === 'function' ? options.commitGrowDrag : (() => null);
     const cancelGrowDrag = typeof options.cancelGrowDrag === 'function' ? options.cancelGrowDrag : (() => {});
-    const getSelectedAtomDragAction = typeof options.getSelectedAtomDragAction === 'function' ? options.getSelectedAtomDragAction : (() => null);
     const getSelectionDragMode = typeof options.getSelectionDragMode === 'function' ? options.getSelectionDragMode : (() => 'translate');
     const startMoveDrag = typeof options.startMoveDrag === 'function' ? options.startMoveDrag : (() => false);
     const updateMoveDrag = typeof options.updateMoveDrag === 'function' ? options.updateMoveDrag : (() => false);
@@ -129,8 +128,8 @@
       const payloadKind = String(getLoadedPayloadKind() || 'atom');
       const payloadLabel = String(getLoadedPayloadLabel() || getLoadedElementSymbol());
       let hint = payloadKind === 'fragment'
-        ? `Click atom to attach ${payloadLabel} • Click void to place it standalone`
-        : `Click void to place ${getLoadedElementSymbol()} • Click atom to select`;
+        ? `Drag from atom or click ghost to attach ${payloadLabel} • Click void to place it standalone`
+        : `Click void to place ${getLoadedElementSymbol()} • Right-click atom to select`;
       let scope = selection.length
         ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected`
         : 'No selection';
@@ -167,10 +166,10 @@
         if (state.currentMoveScopeLabel) scope = state.currentMoveScopeLabel;
         if (state.hoverAtomIndex >= 0 && state.hoverAtomIndex === selection[0]) {
           hint = selectionDragMode === 'rotate'
-            ? 'Drag selected atom to rotate • Click move cue to switch back'
+            ? 'Drag selected atom to rotate • Right-click atom to change selection'
             : 'Drag selected atom to move • Alt drags only that atom';
         } else if (state.hoverAtomIndex >= 0) {
-          hint = 'Click atom to select • Drag unselected atom to grow bond';
+          hint = 'Right-click atom to select • Drag unselected atom to grow bond';
         } else {
           hint = selectionDragMode === 'rotate'
             ? 'Drag selected atom to rotate • Drag unselected atom to edit chemistry'
@@ -182,8 +181,8 @@
           : 'Drag any selected atom to move the current selection';
       } else if (state.hoverAtomIndex >= 0) {
         hint = payloadKind === 'fragment'
-          ? `Click atom to attach ${payloadLabel} • Click void to place it standalone`
-          : 'Click atom to select • Drag atom into void to grow bond';
+          ? `Drag from atom or click ghost to attach ${payloadLabel} • Click void to place it standalone`
+          : 'Right-click atom to select • Drag atom into void to grow bond';
       } else if (state.voidPreviewVisible) {
         hint = payloadKind === 'fragment'
           ? `Click void to place ${payloadLabel} standalone`
@@ -365,12 +364,6 @@
       }
       if (state.press.kind === 'selected-atom') {
         const selectionDragMode = getSelectionDragMode() === 'rotate' ? 'rotate' : 'translate';
-        if (selectionDragMode !== 'rotate') {
-          const haloAction = getSelectedAtomDragAction(state.press.atomIndex, e);
-          if (haloAction && haloAction.type === 'grow') {
-            return startGrowDragFromHalo(e, state.press.atomIndex, haloAction);
-          }
-        }
         const resolved = resolveMoveScope(state.press.atomIndex, {
           atomOnly: selectionDragMode === 'rotate' ? false : !!state.press.altKey,
           preview: false,
@@ -595,25 +588,8 @@
         return false;
       }
       state.press = null;
-      if (press.kind === 'atom-press-pending') {
-        if (isDoubleClickEvent(e) || wasRecentRepeatedAtomClick(press.atomIndex, e)) {
-          const nextSelection = resolveMoleculeSelection(press.atomIndex);
-          if (Array.isArray(nextSelection) && nextSelection.length) setSelection(nextSelection);
-          else setSelection([press.atomIndex]);
-          clearLastAtomClick();
-        } else {
-          applySelectionClick(press.atomIndex, !!press.additive);
-          if (!press.additive) recordAtomClick(press.atomIndex, e);
-          else clearLastAtomClick();
-        }
-      } else if (press.kind === 'selected-atom') {
-        if (isDoubleClickEvent(e) || wasRecentRepeatedAtomClick(press.atomIndex, e)) {
-          const nextSelection = resolveMoleculeSelection(press.atomIndex);
-          if (Array.isArray(nextSelection) && nextSelection.length) setSelection(nextSelection);
-          else setSelection([press.atomIndex]);
-          clearLastAtomClick();
-        } else if (press.altKey) setSelection([press.atomIndex]);
-        else recordAtomClick(press.atomIndex, e);
+      if (press.kind === 'atom-press-pending' || press.kind === 'selected-atom') {
+        clearLastAtomClick();
       } else if (press.kind === 'bond-center-click') {
         clearLastAtomClick();
         applyBondCenterClick(press.bondHit, e);

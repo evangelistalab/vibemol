@@ -174,7 +174,7 @@
         const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
         return `Build standalone: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`;
       }
-      return `Build: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Click atom to select • Click void to add • Space previews/applies missing H`;
+      return `Build: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Right-click atom to select • Click void to add • Space previews/applies missing H`;
     }
 
     function getEditIntent() {

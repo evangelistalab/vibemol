@@ -769,6 +769,7 @@
   let editSelectionBondOrbitCueButtonEl = null;
   let editSelectionBondDistanceCueButtonEl = null;
   let editSelectionAddFragmentCueButtonEl = null;
+  let editSelectionDeleteCueButtonEl = null;
   let editSelectionFragmentCuePopoverEl = null;
   let editSelectionCoordinationCuePopoverEl = null;
   let selectionCoordinationCuePointerHandled = false;
@@ -794,6 +795,8 @@
   let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
   let buildPopoverHideTimer = 0;
+  let buildSearchListRestoreTimer = 0;
+  let suppressBuildSearchBlurSync = false;
 
   /**
    * Synchronize edit-mode construction helpers with the active tool and camera.
@@ -5505,6 +5508,7 @@
   editSelectionBondOrbitCueButtonEl = document.getElementById('editSelectionBondOrbitCueButton');
   editSelectionBondDistanceCueButtonEl = document.getElementById('editSelectionBondDistanceCueButton');
   editSelectionAddFragmentCueButtonEl = document.getElementById('editSelectionAddFragmentCueButton');
+  editSelectionDeleteCueButtonEl = document.getElementById('editSelectionDeleteCueButton');
   editSelectionFragmentCuePopoverEl = document.getElementById('editSelectionFragmentCuePopover');
   editSelectionCoordinationCuePopoverEl = document.getElementById('editSelectionCoordinationCuePopover');
   editAdaptiveMenuEl = document.getElementById('editAdaptiveMenu');
@@ -5584,17 +5588,21 @@
       setSelectionFragmentCueActive(true, { announce: true, syncSearch: false, preserveSelection: true });
       showSelectionFragmentCuePopover({ focusSearch: false });
     });
-    editSelectionAddFragmentCueButtonEl.addEventListener('mouseenter', () => {
-      showSelectionFragmentCuePopover({ focusSearch: false });
+  }
+  if (editSelectionDeleteCueButtonEl) {
+    editSelectionDeleteCueButtonEl.addEventListener('pointerdown', (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionAddFragmentCueButtonEl.addEventListener('mouseleave', () => {
-      hideSelectionFragmentCuePopover(120);
+    editSelectionDeleteCueButtonEl.addEventListener('click', (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      hideSelectionCoordinationCuePopover();
+      hideSelectionFragmentCuePopover();
+      deleteSelectedAtoms();
     });
   }
   if (editSelectionFragmentCuePopoverEl) {
-    editSelectionFragmentCuePopoverEl.addEventListener('mouseenter', () => {
-      showSelectionFragmentCuePopover({ focusSearch: false });
-    });
     editSelectionFragmentCuePopoverEl.addEventListener('mouseleave', () => {
       hideSelectionFragmentCuePopover(120);
     });
@@ -7550,6 +7558,12 @@
   let editAdvancedDrawerOpen = false;
   let editAtomSelectionIndices = [];
   let editAddMode = EDIT_ADD_MODE.ATOM;
+  let fragmentAttachSession = {
+    armed: false,
+    source: '',
+    anchorAtomId: '',
+    preserveAnchor: false,
+  };
   let editAddElementZ = 6;
   let editAddAdjustHydrogensEnabled = true;
   let editAddBondOrder = 1;
@@ -7563,7 +7577,7 @@
   let editHaloController = null;
   let editGestureUiState = {
     gestureState: 'idle',
-    hint: 'Click void to place C • Click atom to select',
+    hint: 'Click void to place C • Right-click atom to select',
     scope: 'No selection',
     loadedElementSymbol: 'C',
     loadedElementName: 'Carbon',
@@ -8342,6 +8356,10 @@
     return Math.max(0.5, base * scale);
   }
 
+  function getOpenCoordinationSiteDistance(anchorZ) {
+    return getEditAddBondLength(anchorZ | 0, 6, 1);
+  }
+
   /**
    * Normalize a fragment id-like value.
    * @param {*} value
@@ -8717,9 +8735,13 @@
     onSelectionChanged: () => {
       if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
       clearGestureVoidPreview();
-      if (getEditAtomSelection().length === 0 && isSelectionFragmentCueArmed()) {
+      const selection = getEditAtomSelection();
+      if (selection.length === 0 && isSelectionFragmentCueArmed()) {
+        clearFragmentAttachSessionState();
         editAddMode = EDIT_ADD_MODE.ATOM;
         hideSelectionFragmentCuePopover();
+      } else if (selection.length === 1 && isSelectionFragmentCueArmed()) {
+        setFragmentAttachCueAnchorByIndex(selection[0]);
       }
       syncSelectedAtomManipulationOperatorSession();
       if (editGestureController) editGestureController.refreshUi();
@@ -10382,16 +10404,80 @@
     return currentMode === MODES.EDIT && getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION;
   }
 
-  function isSelectionFragmentCueArmed() {
+  function clearFragmentAttachSessionState() {
+    fragmentAttachSession = {
+      armed: false,
+      source: '',
+      anchorAtomId: '',
+      preserveAnchor: false,
+    };
+    hideSelectionFragmentCuePopover();
+  }
+
+  function isFragmentPayloadLoaded() {
     return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT;
+  }
+
+  function isSelectionFragmentCueArmed() {
+    return isFragmentPayloadLoaded() && !!fragmentAttachSession.armed && fragmentAttachSession.source === 'cue';
   }
 
   function isSelectionFragmentCueActive() {
-    return isSelectionFragmentCueArmed() && getEditAtomSelection().length > 0;
+    return isSelectionFragmentCueArmed();
   }
 
   function isBuildFragmentLoaded() {
-    return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT;
+    return isFragmentPayloadLoaded() && !isSelectionFragmentCueArmed();
+  }
+
+  function setFragmentAttachCueAnchorByIndex(atomIndex) {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const idx = atomIndex | 0;
+    if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length || !vol.atoms[idx]) {
+      fragmentAttachSession.anchorAtomId = '';
+      return false;
+    }
+    fragmentAttachSession.anchorAtomId = String(ensureAtomId(vol.atoms[idx]) || '').trim();
+    return !!fragmentAttachSession.anchorAtomId;
+  }
+
+  function getPinnedFragmentAttachAnchorIndex(vol) {
+    if (!isSelectionFragmentCueArmed()) return -1;
+    if (!vol || !Array.isArray(vol.atoms) || !fragmentAttachSession.anchorAtomId) return -1;
+    const targetId = String(fragmentAttachSession.anchorAtomId || '').trim();
+    if (!targetId) return -1;
+    return vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom) || '') === targetId);
+  }
+
+  function getActiveFragmentAttachContext(vol, fallbackAnchorIndex = -1) {
+    if (!isFragmentPayloadLoaded()) return null;
+    const cueArmed = isSelectionFragmentCueArmed();
+    const pinnedAnchorIndex = cueArmed ? getPinnedFragmentAttachAnchorIndex(vol) : -1;
+    const fallbackIndex = Number.isInteger(fallbackAnchorIndex) ? (fallbackAnchorIndex | 0) : -1;
+    return {
+      source: cueArmed ? 'cue' : 'build',
+      cueArmed,
+      preserveAnchorSelection: cueArmed,
+      pinnedAnchorIndex,
+      anchorIndex: pinnedAnchorIndex >= 0 ? pinnedAnchorIndex : fallbackIndex,
+    };
+  }
+
+  function commitFragmentAttachAtWorld(anchorIndex, worldPos, context, options = {}) {
+    if (!(worldPos && worldPos.isVector3)) return false;
+    const attachContext = context || getActiveFragmentAttachContext((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null, anchorIndex);
+    if (!attachContext) return false;
+    const appended = appendFragmentAtWorld(anchorIndex, worldPos, {
+      preserveAnchorSelection: !!attachContext.preserveAnchorSelection,
+      attachPolicyOverride: options.attachPolicyOverride,
+    });
+    if (!appended) return false;
+    if (attachContext.cueArmed) setFragmentAttachCueAnchorByIndex(anchorIndex);
+    clearEditHaloGhostHoverState();
+    hideSelectionFragmentCuePopover();
+    updateEditToolboxUi({ syncSearch: false });
+    return true;
   }
 
   function getEditHaloGhostPayloadDescriptor(anchorZ = 0) {
@@ -10460,8 +10546,8 @@
       coordinationLabel,
       hydrogenLabel,
       angleLabel,
-      hudHint: `Click void to place ${symbol} • Click atom to select`,
-      rowMeta: `Loaded ${symbol} • click void to add • click atom to select`,
+      hudHint: `Click void to place ${symbol} • Right-click atom to select`,
+      rowMeta: `Loaded ${symbol} • click void to add • right-click atom to select`,
       scopeSummary: `${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • ${hydrogenLabel}`,
       currentSummary: `Build: ${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • angle ${angleLabel} • ${hydrogenLabel}`,
       operatorLabel: `Build ${symbol}`,
@@ -11468,6 +11554,7 @@
     if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
     const prevIntent = getEditIntent();
     const normalized = normalizeEditIntent(nextIntent);
+    if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) clearFragmentAttachSessionState();
     editTools.setEditIntent(normalized, options);
     syncEditIntentCompatibilityState();
     if (prevIntent !== normalized && editGestureController) editGestureController.clearState();
@@ -11481,6 +11568,7 @@
    */
   function setEditAddMode(nextMode, options = {}) {
     if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
+    if (nextMode !== EDIT_ADD_MODE.FRAGMENT) clearFragmentAttachSessionState();
     editTools.setEditAddMode(nextMode, options);
     syncEditIntentCompatibilityState();
   }
@@ -11922,12 +12010,12 @@
           return;
         }
         const selection = resolveBuildPaletteQuery(rawValue);
-        if (!applyBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
+      if (!applyBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Build item not recognized: "${rawValue}"`);
           return;
         }
-        syncBuildSearchField();
+        editBuildSearchEl.value = '';
         updateBuildPaletteFilter('');
         hideBuildPopover();
       };
@@ -11935,7 +12023,7 @@
         updateBuildPaletteFilter(String(editBuildSearchEl.value || ''));
       });
       editBuildSearchEl.addEventListener('blur', () => {
-        if (!String(editBuildSearchEl.value || '').trim()) syncBuildSearchField();
+        if (!String(editBuildSearchEl.value || '').trim() && !suppressBuildSearchBlurSync) syncBuildSearchField();
         updateBuildPaletteFilter('');
       });
       editBuildSearchEl.addEventListener('input', () => {
@@ -12232,7 +12320,7 @@
     },
     applySelectionClick: (atomIndex, additive) => editTools.applyEditAtomSelectionClick(atomIndex, additive),
     clearSelection: () => clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true }),
-    pickAtomObject: pickAtom,
+    pickAtomObject: pickGestureAtom,
     pickBondHit,
     resolveGrowDragAnchorIndex: resolveGestureGrowDragAnchorIndex,
     showVoidPlacementPreview: showGestureVoidPlacementPreview,
@@ -12375,8 +12463,7 @@
       return String(meta && meta.geometryId || '').trim();
     },
     getGrowBondLength: (anchorZ) => {
-      const attach = getActiveAddAttachSettings(anchorZ | 0);
-      return Number(attach && attach.bondLength) || 1.1;
+      return Number(getOpenCoordinationSiteDistance(anchorZ | 0)) || 1.1;
     },
     onUiStateChanged: (uiState) => {
       editHaloUiState = uiState || editHaloUiState;
@@ -12524,11 +12611,12 @@
   }
   let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
   let gestureBondSidePress = null;
-  let __contextDownPt = null; let __contextMoved = false;
+  let __contextDownPt = null; let __contextMoved = false; let __contextHandled = false;
 
   function resetContextClickState() {
     __contextDownPt = null;
     __contextMoved = false;
+    __contextHandled = false;
   }
   /**
    * Clear the current measurement/edit atom selection.
@@ -12651,7 +12739,14 @@
     const syncSearch = options.syncSearch !== false;
     const preserveSelection = options.preserveSelection !== false;
     if (nextActive) {
+      const selection = getEditAtomSelection();
+      if (!Array.isArray(selection) || !selection.length) return false;
       setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch, preserveSelection: true });
+      fragmentAttachSession.armed = true;
+      fragmentAttachSession.source = 'cue';
+      fragmentAttachSession.preserveAnchor = true;
+      if (selection.length === 1) setFragmentAttachCueAnchorByIndex(selection[0]);
+      else fragmentAttachSession.anchorAtomId = '';
       if (announce && editMode) {
         const fragment = getCurrentFragmentDefinition();
         if (fragment) {
@@ -12662,31 +12757,15 @@
       }
       return true;
     }
-    if (!isSelectionFragmentCueArmed()) {
+    const hadCue = isSelectionFragmentCueArmed() || !!fragmentAttachSession.armed;
+    clearFragmentAttachSessionState();
+    if (!hadCue) {
       hideSelectionFragmentCuePopover();
       return false;
     }
     hideSelectionFragmentCuePopover();
     setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch, preserveSelection });
     return true;
-  }
-
-  /**
-   * Decide whether one atom click should retarget the selection-fragment cue to a
-   * newly clicked anchor instead of starting fragment placement immediately.
-   * Clicking a bonded terminal hydrogen on the currently selected anchor should
-   * not retarget; that path is reserved for Replace-H attachment on the same
-   * anchor atom.
-   * @param {*} resolvedAnchorHit
-   * @returns {boolean}
-   */
-  function shouldRetargetSelectionFragmentCueAnchor(resolvedAnchorHit) {
-    if (!isSelectionFragmentCueActive()) return false;
-    const selection = getEditAtomSelection();
-    if (!Array.isArray(selection) || selection.length !== 1) return false;
-    const selectedAnchorIndex = selection[0] | 0;
-    const resolvedAnchorIndex = resolvedAnchorHit ? (resolvedAnchorHit.anchorIndex | 0) : -1;
-    return resolvedAnchorIndex >= 0 && resolvedAnchorIndex !== selectedAnchorIndex;
   }
 
   function beginSelectionCueDrag(action, buttonEl, e) {
@@ -12779,6 +12858,57 @@
     };
   }
 
+  function projectWorldRadiusToClientPixels(world, radiusWorld) {
+    if (!world || !camera || !canvasEl) return 0;
+    const radius = Math.max(0, Number(radiusWorld) || 0);
+    if (radius <= 1e-8) return 0;
+    const center = projectWorldToClient(world);
+    if (!center || !center.visible) return 0;
+    const right = new THREE.Vector3();
+    const up = new THREE.Vector3();
+    try {
+      right.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+      up.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+    } catch (_err) {
+      right.set(1, 0, 0);
+      up.set(0, 1, 0);
+    }
+    const worldVec = world && world.isVector3
+      ? world.clone()
+      : new THREE.Vector3(Number(world.x) || 0, Number(world.y) || 0, Number(world.z) || 0);
+    const rightProjected = projectWorldToClient(worldVec.clone().addScaledVector(right, radius));
+    const upProjected = projectWorldToClient(worldVec.clone().addScaledVector(up, radius));
+    let maxPixels = 0;
+    if (rightProjected && rightProjected.visible) {
+      maxPixels = Math.max(maxPixels, Math.hypot((rightProjected.x || 0) - center.x, (rightProjected.y || 0) - center.y));
+    }
+    if (upProjected && upProjected.visible) {
+      maxPixels = Math.max(maxPixels, Math.hypot((upProjected.x || 0) - center.x, (upProjected.y || 0) - center.y));
+    }
+    return maxPixels;
+  }
+
+  function getWorldUnitsPerClientPixelAt(world) {
+    if (!world || !camera || !canvasEl) return 0;
+    const canvasRect = canvasEl.getBoundingClientRect();
+    const viewportHeight = Math.max(1, Number(canvasRect && canvasRect.height) || 0);
+    const worldVec = world && world.isVector3
+      ? world.clone()
+      : new THREE.Vector3(Number(world.x) || 0, Number(world.y) || 0, Number(world.z) || 0);
+    if (camera.isPerspectiveCamera) {
+      const cameraSpace = worldVec.applyMatrix4(camera.matrixWorldInverse);
+      const depth = Math.max(1e-6, Math.abs(Number(cameraSpace.z) || 0));
+      const fovRadians = THREE.MathUtils.degToRad(Number(camera.fov) || 50);
+      return (2 * depth * Math.tan(fovRadians * 0.5)) / viewportHeight;
+    }
+    if (camera.isOrthographicCamera) {
+      const zoom = Math.max(1e-6, Number(camera.zoom) || 1);
+      const worldHeight = Math.abs((Number(camera.top) || 0) - (Number(camera.bottom) || 0)) / zoom;
+      return worldHeight / viewportHeight;
+    }
+    return 0;
+  }
+
   function hideEditSelectionTranslateCue() {
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
@@ -12845,12 +12975,43 @@
     });
   }
 
+  function restoreBuildSearchAutocompleteBinding() {
+    if (buildSearchListRestoreTimer) {
+      clearTimeout(buildSearchListRestoreTimer);
+      buildSearchListRestoreTimer = 0;
+    }
+    if (!editBuildSearchEl) return;
+    suppressBuildSearchBlurSync = false;
+    const cachedListId = String(editBuildSearchEl.getAttribute('data-build-list-id') || '').trim();
+    if (cachedListId && !editBuildSearchEl.getAttribute('list')) {
+      editBuildSearchEl.setAttribute('list', cachedListId);
+    }
+    if (cachedListId) editBuildSearchEl.removeAttribute('data-build-list-id');
+  }
+
+  function collapseBuildSearchAutocomplete() {
+    if (!editBuildSearchEl) return;
+    suppressBuildSearchBlurSync = true;
+    editBuildSearchEl.value = '';
+    const listId = String(editBuildSearchEl.getAttribute('list') || '').trim();
+    if (listId) {
+      editBuildSearchEl.setAttribute('data-build-list-id', listId);
+      editBuildSearchEl.removeAttribute('list');
+    }
+    try { editBuildSearchEl.blur(); } catch { }
+    buildSearchListRestoreTimer = window.setTimeout(() => {
+      buildSearchListRestoreTimer = 0;
+      restoreBuildSearchAutocompleteBinding();
+    }, 0);
+  }
+
   function hideBuildPopover(delayMs = 0) {
     if (buildPopoverHideTimer) {
       clearTimeout(buildPopoverHideTimer);
       buildPopoverHideTimer = 0;
     }
     const applyHide = () => {
+      collapseBuildSearchAutocomplete();
       if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
       restoreBuildPopoverPanes();
     };
@@ -12870,6 +13031,7 @@
       clearTimeout(buildPopoverHideTimer);
       buildPopoverHideTimer = 0;
     }
+    restoreBuildSearchAutocompleteBinding();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     syncBuildPopoverPanes();
@@ -13060,6 +13222,28 @@
     return mesh;
   }
 
+  function createWorldSegmentBondMesh(startWorld, endWorld, color, radius, opacity = 0.8) {
+    const start = startWorld && startWorld.isVector3 ? startWorld.clone() : new THREE.Vector3();
+    const end = endWorld && endWorld.isVector3 ? endWorld.clone() : new THREE.Vector3();
+    const delta = end.clone().sub(start);
+    const len = delta.length();
+    if (len <= 1e-6) return null;
+    const dir = delta.multiplyScalar(1 / len);
+    const geom = new THREE.CylinderGeometry(radius, radius, len, 12, 1, false);
+    const mat = new THREE.MeshPhysicalMaterial({
+      color,
+      transparent: opacity < 0.999,
+      opacity,
+      roughness: 0.28,
+      metalness: 0.04,
+      depthWrite: opacity >= 0.999,
+    });
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.copy(start).add(end).multiplyScalar(0.5);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    return mesh;
+  }
+
   function disposeSelectionCoordinationCuePreviews() {
     for (const entry of selectionCoordinationCuePreviewRenderers) {
       if (entry && entry.scene) disposeThreeSceneTree(entry.scene);
@@ -13113,6 +13297,7 @@
 
       const previewGroup = new THREE.Group();
       previewGroup.rotation.set(-0.58, 0.72, 0.18);
+      previewGroup.scale.setScalar(0.9);
       const centerRadius = Math.min(0.58, Math.max(0.34, getRenderedAtomDisplayRadius(state.atomZ | 0) * 0.46));
       previewGroup.add(createCoordinationCuePreviewAtomGroup(state.atomZ | 0, centerRadius));
 
@@ -13275,17 +13460,63 @@
     let visibleCount = 0;
     for (const idx of selected) {
       const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
-      const pos = mesh && mesh.position ? mesh.position : (vol.atoms[idx] ? atomUnitsToAng(vol, vol.atoms[idx]) : null);
+      const atom = vol.atoms[idx] || null;
+      const pos = mesh && mesh.position ? mesh.position : (atom ? atomUnitsToAng(vol, atom) : null);
       const projected = projectWorldToClient(pos);
       if (!projected || !projected.visible) continue;
-      minX = Math.min(minX, projected.x);
-      minY = Math.min(minY, projected.y);
-      maxX = Math.max(maxX, projected.x);
-      maxY = Math.max(maxY, projected.y);
+      const atomRadiusWorld = Math.max(
+        0.1,
+        (atom ? getRenderedAtomDisplayRadius(atom.Z | 0) : 0.5) + 0.08
+      );
+      const projectedRadius = Math.max(10, projectWorldRadiusToClientPixels(pos, atomRadiusWorld));
+      minX = Math.min(minX, projected.x - projectedRadius);
+      minY = Math.min(minY, projected.y - projectedRadius);
+      maxX = Math.max(maxX, projected.x + projectedRadius);
+      maxY = Math.max(maxY, projected.y + projectedRadius);
       visibleCount += 1;
     }
     if (!visibleCount) return null;
     return { minX, minY, maxX, maxY, visibleCount };
+  }
+
+  function getEditHaloGhostClientBounds(uiState) {
+    if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    let visibleCount = 0;
+    const ghostRadiusWorld = 0.24;
+    for (const ghost of uiState.ghosts) {
+      if (!(ghost && ghost.world)) continue;
+      const world = new THREE.Vector3(
+        Number(ghost.world.x) || 0,
+        Number(ghost.world.y) || 0,
+        Number(ghost.world.z) || 0
+      );
+      const projected = projectWorldToClient(world);
+      if (!projected || projected.visible === false) continue;
+      const projectedRadius = Math.max(12, projectWorldRadiusToClientPixels(world, ghostRadiusWorld) + 4);
+      minX = Math.min(minX, projected.x - projectedRadius);
+      minY = Math.min(minY, projected.y - projectedRadius);
+      maxX = Math.max(maxX, projected.x + projectedRadius);
+      maxY = Math.max(maxY, projected.y + projectedRadius);
+      visibleCount += 1;
+    }
+    if (!visibleCount) return null;
+    return { minX, minY, maxX, maxY, visibleCount };
+  }
+
+  function mergeClientBounds(primary, secondary) {
+    if (!primary) return secondary || null;
+    if (!secondary) return primary;
+    return {
+      minX: Math.min(Number(primary.minX) || 0, Number(secondary.minX) || 0),
+      minY: Math.min(Number(primary.minY) || 0, Number(secondary.minY) || 0),
+      maxX: Math.max(Number(primary.maxX) || 0, Number(secondary.maxX) || 0),
+      maxY: Math.max(Number(primary.maxY) || 0, Number(secondary.maxY) || 0),
+      visibleCount: (Number(primary.visibleCount) || 0) + (Number(secondary.visibleCount) || 0),
+    };
   }
 
   function formatBondSideAngleValue(deg) {
@@ -13355,7 +13586,9 @@
       hideEditSelectionTranslateCue();
       return;
     }
-    const bounds = getEditSelectionClientBounds(selection, vol);
+    const selectionBounds = getEditSelectionClientBounds(selection, vol);
+    const haloGhostBounds = getEditHaloGhostClientBounds(editHaloController ? editHaloController.getUiState() : editHaloUiState);
+    const bounds = mergeClientBounds(selectionBounds, haloGhostBounds);
     if (!bounds) {
       hideEditSelectionTranslateCue();
       return;
@@ -13412,6 +13645,10 @@
         hideSelectionCoordinationCuePopover();
       }
     }
+    if (editSelectionDeleteCueButtonEl) {
+      editSelectionDeleteCueButtonEl.hidden = false;
+      editSelectionDeleteCueButtonEl.setAttribute('aria-pressed', 'false');
+    }
     if (isBondSideSelection) {
       editSelectionTranslateCueEl.title = bondSideCueMode === 'distance'
         ? 'Adjust bond distance'
@@ -13424,11 +13661,16 @@
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
     const margin = 12;
-    let left = Math.round(bounds.maxX + 14);
-    let top = Math.round(bounds.minY - Math.round(badgeHeight * 0.55));
-    if (left + badgeWidth > viewportWidth - margin) left = Math.round(bounds.minX - badgeWidth - 14);
-    if (left < margin) left = Math.max(margin, Math.min(viewportWidth - badgeWidth - margin, Math.round(bounds.maxX + 8)));
-    if (top < margin) top = Math.round(bounds.maxY + 14);
+    const toolbarRect = toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function'
+      ? toolbarEl.getBoundingClientRect()
+      : null;
+    const minLeft = toolbarRect ? Math.max(margin, Math.round(toolbarRect.right + 12)) : margin;
+    const cueGap = 14;
+    let left = Math.round(bounds.maxX + cueGap);
+    let top = Math.round(bounds.minY - badgeHeight - cueGap);
+    if (left + badgeWidth > viewportWidth - margin) left = Math.round(bounds.minX - badgeWidth - cueGap);
+    if (left < minLeft) left = Math.max(minLeft, Math.min(viewportWidth - badgeWidth - margin, Math.round(bounds.maxX + cueGap)));
+    if (top < margin) top = Math.round(bounds.maxY + cueGap);
     if (top + badgeHeight > viewportHeight - margin) top = Math.max(margin, viewportHeight - badgeHeight - margin);
     editSelectionTranslateCueEl.style.left = `${left}px`;
     editSelectionTranslateCueEl.style.top = `${top}px`;
@@ -13452,6 +13694,13 @@
     clearGroup(editHaloGhostPreviewGroup);
   }
 
+  function clearEditHaloGhostHoverState() {
+    if (editHaloGhostHoverIndex >= 0 || editHaloGhostRenderKey) {
+      editHaloGhostHoverIndex = -1;
+      editHaloGhostRenderKey = '';
+    }
+  }
+
   function getEditHaloGhostCarrier(object) {
     let cur = object || null;
     while (cur) {
@@ -13464,11 +13713,6 @@
   function pickEditHaloGhostHit(e) {
     if (!editHaloGhostPreviewGroup || !Array.isArray(editHaloGhostPreviewGroup.children) || !editHaloGhostPreviewGroup.children.length) return null;
     const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-    if (uiState && uiState.anchorClient) {
-      const dx = (Number(e && e.clientX) || 0) - (Number(uiState.anchorClient.x) || 0);
-      const dy = (Number(e && e.clientY) || 0) - (Number(uiState.anchorClient.y) || 0);
-      if (Math.hypot(dx, dy) <= 22) return null;
-    }
     setRaycasterFromEvent(e);
     const hits = raycaster.intersectObjects(editHaloGhostPreviewGroup.children, true);
     for (const hit of hits) {
@@ -13480,7 +13724,35 @@
         ghostIndex,
       };
     }
-    return null;
+    if (!(uiState && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
+    const pointerX = Number(e && e.clientX);
+    const pointerY = Number(e && e.clientY);
+    if (!Number.isFinite(pointerX) || !Number.isFinite(pointerY)) return null;
+    let best = null;
+    for (const ghost of uiState.ghosts) {
+      if (!(ghost && ghost.world)) continue;
+      const projected = projectWorldToClient(new THREE.Vector3(
+        Number(ghost.world.x) || 0,
+        Number(ghost.world.y) || 0,
+        Number(ghost.world.z) || 0
+      ));
+      if (!projected || projected.visible === false) continue;
+      const dx = pointerX - (Number(projected.x) || 0);
+      const dy = pointerY - (Number(projected.y) || 0);
+      const distancePx = Math.hypot(dx, dy);
+      if (distancePx > 18) continue;
+      if (!best || distancePx < best.distancePx) {
+        best = {
+          ghostIndex: ghost.index | 0,
+          distancePx,
+        };
+      }
+    }
+    if (!best) return null;
+    return {
+      object: null,
+      ghostIndex: best.ghostIndex,
+    };
   }
 
   function renderEditHaloGhostPreview() {
@@ -13517,6 +13789,7 @@
     const bondRadialSegments = Math.max(12, getMoleculeStyleProfile().bondRadialSegments | 0);
     const up = new THREE.Vector3(0, 1, 0);
     const polyGhostsActive = renderState.ghostKind === 'fragment' || renderState.ghostKind === 'site';
+    const sharedOpenSiteRadius = 0.24;
     for (const ghost of renderState.ghosts) {
       const ghostWorld = new THREE.Vector3(ghost.world[0], ghost.world[1], ghost.world[2]);
       const hovered = (ghost.index | 0) === (editHaloGhostHoverIndex | 0);
@@ -13536,7 +13809,7 @@
       ghostGroup.userData.haloGhostIndex = ghost.index | 0;
       const atomRadius = getRenderedAtomDisplayRadius(previewZ);
       if (polyGhostsActive) {
-        const ghostRadius = Math.max(0.18, atomRadius * 0.95);
+        const ghostRadius = sharedOpenSiteRadius;
         const markerGroup = createOpenCoordinationMarkerGroup(ghostWorld, ghostRadius, {
           kind: renderState.ghostKind,
           hovered,
@@ -13564,25 +13837,35 @@
         atomMesh.userData.haloGhostIndex = ghost.index | 0;
         ghostGroup.add(atomMesh);
       }
-      const placement = getPreviewBondSegmentPlacement(anchorWorld, ghostWorld, anchorZ, previewZ, {
-        minGeomLen: 0.03,
-      });
-      if (placement.valid) {
-        const bondGeom = new THREE.CylinderGeometry(placement.bondRadius, placement.bondRadius, placement.geomLen, bondRadialSegments, 1, false);
-        const bondMat = new THREE.MeshPhysicalMaterial({
-          color: bondColor,
-          transparent: true,
-          opacity: hovered ? 0.78 : 0.34,
-          roughness: 0.28,
-          metalness: 0.04,
-          depthWrite: false,
+      if (polyGhostsActive) {
+        const bondRadius = hovered ? 0.062 : 0.054;
+        const bondMesh = createWorldSegmentBondMesh(anchorWorld, ghostWorld, bondColor, bondRadius, hovered ? 0.78 : 0.34);
+        if (bondMesh) {
+          bondMesh.renderOrder = 66;
+          bondMesh.userData.haloGhostIndex = ghost.index | 0;
+          ghostGroup.add(bondMesh);
+        }
+      } else {
+        const placement = getPreviewBondSegmentPlacement(anchorWorld, ghostWorld, anchorZ, previewZ, {
+          minGeomLen: 0.03,
         });
-        const bondMesh = new THREE.Mesh(bondGeom, bondMat);
-        bondMesh.position.copy(placement.mid);
-        bondMesh.quaternion.setFromUnitVectors(up, placement.dirNorm);
-        bondMesh.renderOrder = 66;
-        bondMesh.userData.haloGhostIndex = ghost.index | 0;
-        ghostGroup.add(bondMesh);
+        if (placement.valid) {
+          const bondGeom = new THREE.CylinderGeometry(placement.bondRadius, placement.bondRadius, placement.geomLen, bondRadialSegments, 1, false);
+          const bondMat = new THREE.MeshPhysicalMaterial({
+            color: bondColor,
+            transparent: true,
+            opacity: hovered ? 0.78 : 0.34,
+            roughness: 0.28,
+            metalness: 0.04,
+            depthWrite: false,
+          });
+          const bondMesh = new THREE.Mesh(bondGeom, bondMat);
+          bondMesh.position.copy(placement.mid);
+          bondMesh.quaternion.setFromUnitVectors(up, placement.dirNorm);
+          bondMesh.renderOrder = 66;
+          bondMesh.userData.haloGhostIndex = ghost.index | 0;
+          ghostGroup.add(bondMesh);
+        }
       }
       editHaloGhostPreviewGroup.add(ghostGroup);
     }
@@ -13784,37 +14067,33 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
-    const buildFragmentLoaded = isBuildFragmentLoaded();
-    const hit = pickAtomHit(e);
-    if (!(hit && hit.object && hit.object.userData) && editHaloController) {
-      const haloGhostHit = pickEditHaloGhostHit(e);
-      if (haloGhostHit) {
-        const uiState = editHaloController.getUiState();
-        const ghost = uiState && Array.isArray(uiState.ghosts)
-          ? uiState.ghosts.find((item) => (item.index | 0) === (haloGhostHit.ghostIndex | 0))
-          : null;
-        const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
-        if (ghost && ghost.world && anchorIndex >= 0) {
-          const world = new THREE.Vector3(Number(ghost.world.x) || 0, Number(ghost.world.y) || 0, Number(ghost.world.z) || 0);
-          if (appendFragmentAtWorld(anchorIndex, world, {
-            preserveAnchorSelection: isSelectionFragmentCueActive(),
-            attachPolicyOverride: EDIT_FRAGMENT_ATTACH_POLICY.APPEND,
-          })) {
-            if (typeof e.preventDefault === 'function') e.preventDefault();
-            return true;
-          }
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const haloGhostHit = editHaloController ? pickEditHaloGhostHit(e) : null;
+    if (haloGhostHit) {
+      const uiState = editHaloController.getUiState();
+      const ghost = uiState && Array.isArray(uiState.ghosts)
+        ? uiState.ghosts.find((item) => (item.index | 0) === (haloGhostHit.ghostIndex | 0))
+        : null;
+      const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
+      const attachContext = getActiveFragmentAttachContext(vol, anchorIndex);
+      if (attachContext && ghost && ghost.world && attachContext.anchorIndex >= 0) {
+        const world = new THREE.Vector3(Number(ghost.world.x) || 0, Number(ghost.world.y) || 0, Number(ghost.world.z) || 0);
+        if (commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext, {
+          attachPolicyOverride: EDIT_FRAGMENT_ATTACH_POLICY.APPEND,
+        })) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          return true;
         }
       }
     }
-    if (hit && hit.object && hit.object.userData) {
-      const vol = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null;
+    const hit = pickAtomHit(e);
+    if (hit && hit.object && hit.object.userData && vol) {
       const resolvedAnchorHit = resolveFragmentAnchorPlacementHit(vol, hit);
       const idx = resolvedAnchorHit ? (resolvedAnchorHit.anchorIndex | 0) : -1;
-      if (vol && Array.isArray(vol.atoms) && idx >= 0 && idx < vol.atoms.length) {
-        if (shouldRetargetSelectionFragmentCueAnchor(resolvedAnchorHit)) {
-          hideSelectionFragmentCuePopover();
-          applyEditAtomSelectionClick(idx, false);
-          setSelectionFragmentCueActive(true, { announce: true, syncSearch: false, preserveSelection: true });
+      const attachContext = getActiveFragmentAttachContext(vol, idx);
+      if (attachContext && Array.isArray(vol.atoms) && idx >= 0 && idx < vol.atoms.length) {
+        if (attachContext.cueArmed && attachContext.pinnedAnchorIndex >= 0 && idx !== attachContext.pinnedAnchorIndex) {
           if (typeof e.preventDefault === 'function') e.preventDefault();
           return true;
         }
@@ -13837,14 +14116,14 @@
         return true;
       }
     }
-    if (getEditAtomSelection().length > 0) {
+    if (isSelectionFragmentCueActive() && getEditAtomSelection().length > 0) {
       hideSelectionFragmentCuePopover();
       clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
       setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
-    if (buildFragmentLoaded) {
+    if (isBuildFragmentLoaded()) {
       beginQuaternionViewRotate(e);
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
@@ -13870,7 +14149,7 @@
 
   function handleUnifiedEditControllerPointerDown(intent, e) {
     if (moleculePlaceActive) return handleMoleculeIntentControllerPointerDown(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isBuildFragmentLoaded() || isSelectionFragmentCueActive())) return handleFragmentIntentControllerPointerDown(e);
+    if (intent === EDIT_INTENT.ATOM_MANIPULATION && isFragmentPayloadLoaded()) return handleFragmentIntentControllerPointerDown(e);
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerDown(e);
     if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerDown(e);
     return false;
@@ -14036,7 +14315,7 @@
       return true;
     }
     if (moleculePlaceActive) return handleMoleculeIntentControllerPointerMove(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && ((isBuildFragmentLoaded() || isSelectionFragmentCueActive()) || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerMove(e);
+    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isFragmentPayloadLoaded() || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerMove(e);
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerMove(e);
     if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerMove(e);
     return false;
@@ -14078,22 +14357,25 @@
       return true;
     }
     if (addGrowActive) {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
       const anchorIdx = addGrowAnchorIndex;
       const addPos = addGrowPreviewPos ? addGrowPreviewPos.clone() : null;
+      const attachContext = getActiveFragmentAttachContext(vol, anchorIdx);
       clearAddGrowPreview();
       controls.enabled = true;
-      if (addPos) appendFragmentAtWorld(anchorIdx, addPos, {
-        preserveAnchorSelection: isSelectionFragmentCueActive(),
-      });
+      if (__editMoved && addPos && attachContext) {
+        commitFragmentAttachAtWorld(anchorIdx, addPos, attachContext);
+      }
     } else if (!__editMoved && isSelectionFragmentCueActive()) {
-      setHintMessage('Fragment attach: click an anchor atom to place the fragment.');
+      setHintMessage('Fragment attach: click a ghost or drag from the pinned atom.');
     } else if (!__editMoved && isBuildFragmentLoaded()) {
       const hit = pickAtomHit(e);
-      const addPos = computeAddAtomPosition(e, hit);
-      if (addPos) {
+      const addPos = !hit ? computeAddAtomPosition(e, null) : null;
+      if (addPos && !hit) {
         startMoleculePlacementAtWorld(addPos, { kind: CATALOG_KIND.FRAGMENT, id: editAddFragmentId, returnToBuildFragment: true });
       } else {
-        setHintMessage('Build fragment: click an anchor atom to attach or click void to place.');
+        setHintMessage('Build fragment: drag from an atom, click a ghost to attach, or click void to place.');
       }
     }
     return true;
@@ -14147,7 +14429,7 @@
       return true;
     }
     if (moleculePlaceActive) return handleMoleculeIntentControllerPointerUp(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && ((isBuildFragmentLoaded() || isSelectionFragmentCueActive()) || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerUp(e);
+    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isFragmentPayloadLoaded() || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerUp(e);
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerUp(e);
     if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerUp(e);
     return false;
@@ -15667,34 +15949,31 @@
       .filter((idx) => idx >= 0 && vol && Array.isArray(vol.atoms) && idx < vol.atoms.length)));
     if (!selected.length) return null;
     const center = new THREE.Vector3();
-    let count = 0;
+    let totalMass = 0;
     for (const idx of selected) {
       let pos = null;
       const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
+      const atom = vol && Array.isArray(vol.atoms) ? vol.atoms[idx] : null;
       if (mesh && mesh.position) pos = mesh.position;
-      else if (vol && Array.isArray(vol.atoms) && vol.atoms[idx]) pos = atomUnitsToAng(vol, vol.atoms[idx]);
+      else if (atom) pos = atomUnitsToAng(vol, atom);
       if (!pos) continue;
-      center.add(pos);
-      count += 1;
+      const mass = Math.max(1e-6, Number(getAtomicMass(atom && atom.Z)) || 1);
+      center.addScaledVector(pos, mass);
+      totalMass += mass;
     }
-    if (!count) return null;
-    return center.multiplyScalar(1 / count);
+    if (totalMass <= 1e-8) return null;
+    return center.multiplyScalar(1 / totalMass);
   }
 
   function getMoveSelectionGizmoLength(indices, vol) {
     const center = getEditSelectionCenterWorld(indices, vol);
-    if (!center) return 0.9;
-    let maxDist = 0;
-    const selected = Array.from(new Set((Array.isArray(indices) ? indices : [])
-      .map((idx) => Number(idx) | 0)
-      .filter((idx) => idx >= 0 && vol && Array.isArray(vol.atoms) && idx < vol.atoms.length)));
-    for (const idx of selected) {
-      const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
-      const pos = mesh && mesh.position ? mesh.position : (vol && vol.atoms[idx] ? atomUnitsToAng(vol, vol.atoms[idx]) : null);
-      if (!pos) continue;
-      maxDist = Math.max(maxDist, pos.distanceTo(center));
-    }
-    return Math.max(0.7, Math.min(2.5, maxDist > 1e-6 ? (maxDist * 1.2 + 0.35) : 0.9));
+    if (!center) return 1.2;
+    const worldUnitsPerPixel = getWorldUnitsPerClientPixelAt(center);
+    if (!(Number.isFinite(worldUnitsPerPixel) && worldUnitsPerPixel > 1e-8)) return 1.2;
+    const gizmoBaseExtent = 1.18;
+    const targetScreenExtentPixels = 96;
+    const scale = (worldUnitsPerPixel * targetScreenExtentPixels) / gizmoBaseExtent;
+    return Math.max(0.825, Math.min(1.8, scale));
   }
 
   function setMoveSelectionGizmoHover(axis = '') {
@@ -16423,6 +16702,75 @@
     setRaycasterFromEvent(e);
     const hits = raycaster.intersectObjects(atomGroup.children, false);
     return hits.length > 0 ? hits[0] : null;
+  }
+
+  function pickSelectedAtomDragFallback(e) {
+    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION) return null;
+    const selection = getEditAtomSelection();
+    if (!Array.isArray(selection) || selection.length !== 1) return null;
+    const idx = selection[0] | 0;
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length) return null;
+    const atom = vol.atoms[idx];
+    const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
+    if (!atom || !(mesh && mesh.userData)) return null;
+    const world = mesh.position && mesh.position.isVector3 ? mesh.position : atomUnitsToAng(vol, atom);
+    const projected = projectWorldToClient(world);
+    if (!projected || !projected.visible) return null;
+    const projectedRadius = Math.max(
+      14,
+      projectWorldRadiusToClientPixels(world, getRenderedAtomDisplayRadius((atom.Z | 0))) + 6
+    );
+    const dx = (Number(e && e.clientX) || 0) - (Number(projected.x) || 0);
+    const dy = (Number(e && e.clientY) || 0) - (Number(projected.y) || 0);
+    return (dx * dx + dy * dy) <= (projectedRadius * projectedRadius) ? mesh : null;
+  }
+
+  function pickGestureAtom(e) {
+    const atomObject = pickAtom(e);
+    const selectedFallback = pickSelectedAtomDragFallback(e);
+    if (!selectedFallback) return atomObject;
+    if (!(atomObject && atomObject.userData)) return selectedFallback;
+    const hitIndex = atomObject.userData.index | 0;
+    const selectedIndex = selectedFallback.userData.index | 0;
+    return hitIndex === selectedIndex ? atomObject : selectedFallback;
+  }
+
+  function handleEditAtomContextSelection(e) {
+    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION) return false;
+    const hit = pickAtomHit(e);
+    if (!(hit && hit.object && hit.object.userData)) return false;
+    hideBuildPopover();
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const hitIndex = hit.object.userData.index | 0;
+    if (!vol || !Array.isArray(vol.atoms) || hitIndex < 0 || hitIndex >= vol.atoms.length) return false;
+    const resolvedAnchorHit = resolveFragmentAnchorPlacementHit(vol, hit);
+    const resolvedAnchorIndex = resolvedAnchorHit ? (resolvedAnchorHit.anchorIndex | 0) : hitIndex;
+    const attachContext = getActiveFragmentAttachContext(vol, resolvedAnchorIndex);
+    const hitAtom = vol.atoms[hitIndex];
+    if (attachContext && attachContext.cueArmed) {
+      const isPinnedHydrogenReplace = !!(
+        hitAtom
+        && (hitAtom.Z | 0) === 1
+        && resolvedAnchorHit
+        && resolvedAnchorIndex === attachContext.pinnedAnchorIndex
+        && resolvedAnchorHit.initialWorldPos
+        && resolvedAnchorHit.initialWorldPos.isVector3
+      );
+      if (isPinnedHydrogenReplace) {
+        return commitFragmentAttachAtWorld(attachContext.pinnedAnchorIndex, resolvedAnchorHit.initialWorldPos.clone(), attachContext);
+      }
+      if (resolvedAnchorIndex >= 0) {
+        applyEditAtomSelectionClick(resolvedAnchorIndex, false);
+        setFragmentAttachCueAnchorByIndex(resolvedAnchorIndex);
+        hideSelectionFragmentCuePopover();
+        updateEditToolboxUi({ syncSearch: false });
+        return true;
+      }
+    }
+    return !!applyEditAtomSelectionClick(hitIndex, !!(e && e.shiftKey));
   }
 
   function resolveGestureGrowDragAnchorIndex(atomIndex, e) {
@@ -18190,12 +18538,22 @@
 
   canvasEl.addEventListener('contextmenu', (e) => {
     if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && !__contextMoved) {
+      if (__contextHandled) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        resetContextClickState();
+        return;
+      }
       const bondHit = resolveGestureBondCenterClickHit(e) || pickBondHit(e) || (hoverBondObject && hoverBondSection === 'center'
         ? { object: hoverBondObject, section: 'center' }
         : null);
       if (bondHit && bondHit.object && bondHit.section === 'center') {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         stepGestureBondCenterOrder(bondHit, -1, e);
+        resetContextClickState();
+        return;
+      }
+      if (handleEditAtomContextSelection(e)) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
         resetContextClickState();
         return;
       }
@@ -18212,6 +18570,12 @@
 
   canvasEl.addEventListener('pointerdown', (e) => {
     if (e.button === 2) {
+      __contextHandled = false;
+      if (currentMode === MODES.EDIT && getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && handleEditAtomContextSelection(e)) {
+        __contextHandled = true;
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        return;
+      }
       __contextDownPt = {
         x: Number(e.clientX) || 0,
         y: Number(e.clientY) || 0,
@@ -19464,6 +19828,9 @@
       const next = Array.isArray(indices)
         ? indices.map((idx) => Number(idx) | 0).filter((idx) => idx >= 0)
         : [];
+      if (addAtomOperatorSession && String(addAtomOperatorSession.source || '') !== 'selection') {
+        finalizeAddAtomOperatorSession({ announce: false });
+      }
       const changed = setEditAtomSelection(next);
       updateSelectedHalos();
       updateEditSelectionVisuals();
@@ -19541,6 +19908,94 @@
         { axis: 'none' }
       );
       if (result.started) editTransformController.cancelMoveDrag();
+      return result;
+    },
+    performSelectionMoveDrag: (atomIndex, startClientX, startClientY, endClientX, endClientY) => {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const resolved = resolveGestureMoveScope(atomIndex | 0, { atomOnly: false, preview: false });
+      const beforeAtoms = vol && Array.isArray(vol.atoms)
+        ? vol.atoms.map((atom) => [Number(atom.x) || 0, Number(atom.y) || 0, Number(atom.z) || 0])
+        : [];
+      const result = {
+        resolvedCount: Array.isArray(resolved && resolved.indices) ? resolved.indices.length : 0,
+        hasAnchorWorld: !!(resolved && resolved.anchorWorld),
+        started: false,
+        updated: false,
+        finished: false,
+        movedCount: 0,
+      };
+      if (!editTransformController || !vol || !resolved || !Array.isArray(resolved.indices) || !resolved.indices.length) return result;
+      result.started = !!editTransformController.startMoveDrag(
+        {
+          clientX: Number(startClientX) || 0,
+          clientY: Number(startClientY) || 0,
+          pointerId: 1,
+        },
+        resolved.indices,
+        resolved.anchorWorld || null,
+        {
+          axis: 'none',
+          startClientX: Number(startClientX) || 0,
+          startClientY: Number(startClientY) || 0,
+        }
+      );
+      if (!result.started) return result;
+      result.updated = !!editTransformController.updateMoveDrag({
+        clientX: Number(endClientX) || 0,
+        clientY: Number(endClientY) || 0,
+        pointerId: 1,
+      });
+      result.finished = !!editTransformController.finishMoveDrag();
+      if (Array.isArray(vol.atoms) && beforeAtoms.length === vol.atoms.length) {
+        let moved = 0;
+        for (let i = 0; i < vol.atoms.length; i += 1) {
+          const atom = vol.atoms[i];
+          const before = beforeAtoms[i];
+          const dx = Math.abs((Number(atom && atom.x) || 0) - before[0]);
+          const dy = Math.abs((Number(atom && atom.y) || 0) - before[1]);
+          const dz = Math.abs((Number(atom && atom.z) || 0) - before[2]);
+          if (dx > 1e-6 || dy > 1e-6 || dz > 1e-6) moved += 1;
+        }
+        result.movedCount = moved;
+      }
+      return result;
+    },
+    triggerHaloGhostByIndex: (ghostIndex) => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      const result = {
+        attached: false,
+        anchorIndex: -1,
+        ghostIndex: ghostIndex | 0,
+        kind: '',
+      };
+      if (!(uiState && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return result;
+      const ghost = uiState.ghosts.find((item) => (item.index | 0) === (ghostIndex | 0));
+      const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
+      result.anchorIndex = anchorIndex;
+      if (!(ghost && ghost.world) || anchorIndex < 0) return result;
+      const world = new THREE.Vector3(
+        Number(ghost.world.x) || 0,
+        Number(ghost.world.y) || 0,
+        Number(ghost.world.z) || 0
+      );
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      if (isFragmentPayloadLoaded()) {
+        const attachContext = getActiveFragmentAttachContext(vol, anchorIndex);
+        if (!attachContext || attachContext.anchorIndex < 0) return result;
+        result.kind = 'fragment';
+        result.attached = !!commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext, {
+          attachPolicyOverride: EDIT_FRAGMENT_ATTACH_POLICY.APPEND,
+        });
+        return result;
+      }
+      result.kind = 'atom';
+      result.attached = !!appendGestureAtomFromAnchor(anchorIndex, world, {
+        elementZ: editAddElementZ,
+        bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
+        selectionAfter: [anchorIndex],
+      });
       return result;
     },
     pickEditHitAtClient: (clientX, clientY) => {

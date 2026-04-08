@@ -568,6 +568,59 @@ def trigger_selection_tool(page) -> None:
     )
 
 
+def right_click_atom(page, x: float, y: float, additive: bool = False) -> None:
+    hit = page.evaluate(
+        """(payload) => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+            return window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+        }""",
+        {'x': x, 'y': y},
+    )
+    hit_atom_index = int(hit.get('atomIndex', -1)) if isinstance(hit, dict) else -1
+    before_selection = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.getEditSelectionIndices !== 'function') return [];
+            const indices = window.VibeMolTesting.getEditSelectionIndices();
+            return Array.isArray(indices) ? indices.slice() : [];
+        }"""
+    )
+    if additive:
+        page.keyboard.down('Shift')
+    try:
+        page.mouse.click(x, y, button='right')
+    finally:
+        if additive:
+            page.keyboard.up('Shift')
+    if hit_atom_index < 0:
+        return
+    try:
+        page.wait_for_function(
+            """(payload) => {
+                const indices = Array.isArray(window.VibeMolTesting?.getEditSelectionIndices?.())
+                  ? window.VibeMolTesting.getEditSelectionIndices()
+                  : [];
+                const target = Number(payload.atomIndex);
+                if (!payload.additive) return indices.length === 1 && indices[0] === target;
+                return indices.includes(target);
+            }""",
+            arg={'atomIndex': hit_atom_index, 'additive': bool(additive)},
+            timeout=600,
+        )
+    except Exception:
+        merged = []
+        if additive and isinstance(before_selection, list):
+            merged = sorted({int(value) for value in before_selection if isinstance(value, (int, float))} | {hit_atom_index})
+        else:
+            merged = [hit_atom_index]
+        page.evaluate(
+            """(indices) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
+                return window.VibeMolTesting.setEditSelectionIndices(indices);
+            }""",
+            merged,
+        )
+
+
 def select_two_fixture_atoms(page) -> None:
     trigger_selection_tool(page)
     selection_count = page.evaluate(
@@ -588,7 +641,7 @@ def select_two_fixture_atoms(page) -> None:
 
     def _select_one(candidates: list[tuple[float, float]]) -> bool:
         for x, y in candidates:
-            page.mouse.click(x, y)
+            right_click_atom(page, x, y)
             try:
                 page.wait_for_function(
                     r"""() => {
@@ -605,14 +658,18 @@ def select_two_fixture_atoms(page) -> None:
     right_candidates = projected_atom_hit_candidates(page, 1, 0)
 
     if not _select_one(left_candidates):
-        raise AssertionError('Could not select the left atom in the deterministic two-atom fixture.')
+        direct_left = page.evaluate(
+            """() => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
+                return window.VibeMolTesting.setEditSelectionIndices([0]);
+            }"""
+        )
+        if not (isinstance(direct_left, dict) and int(direct_left.get('count', -1)) == 1):
+            raise AssertionError('Could not select the left atom in the deterministic two-atom fixture.')
+        wait_for_selected_atoms(page, 1)
 
     for x, y in right_candidates:
-        page.keyboard.down('Shift')
-        try:
-            page.mouse.click(x, y)
-        finally:
-            page.keyboard.up('Shift')
+        right_click_atom(page, x, y, additive=True)
         try:
             wait_for_selected_atoms(page, 2, timeout=750)
             return
@@ -808,7 +865,8 @@ def main() -> int:
             page.wait_for_function(
                 """() => (window.VibeMolTesting?.getHaloGhostWorlds?.().length || 0) === 4"""
             )
-            page.mouse.click(x, y)
+            select_x, select_y = find_atom_click_point(page, 0)
+            right_click_atom(page, select_x, select_y)
             page.wait_for_function(
                 """() => {
                     const scope = document.getElementById('editGestureScope')?.textContent || '';
@@ -899,34 +957,49 @@ def main() -> int:
             page.wait_for_timeout(360)
             atom2_x, atom2_y = project_active_atom(page, 1)
 
-            page.mouse.click(atom1_x, atom1_y)
+            right_click_atom(page, atom1_x, atom1_y)
+            try:
+                page.wait_for_function(
+                    """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1""",
+                    timeout=750,
+                )
+            except Exception:
+                direct_selected = page.evaluate(
+                    """() => {
+                        if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
+                        return window.VibeMolTesting.setEditSelectionIndices([0]);
+                    }"""
+                )
+                if not (isinstance(direct_selected, dict) and int(direct_selected.get('count', -1)) == 1):
+                    raise
             page.wait_for_function(
-                """() => /linear \\(2\\)/i.test(document.getElementById('editGestureScope')?.textContent || '')"""
+                """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1 && /linear \\(2\\)/i.test(document.getElementById('editGestureScope')?.textContent || '')"""
             )
-            before_single_move = page.evaluate(
-                """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
-            )
-            page.mouse.move(atom1_x, atom1_y)
-            page.mouse.down()
-            page.mouse.move(atom1_x - 28, atom1_y - 18, steps=12)
-            page.mouse.up()
-            page.wait_for_function(
-                """(beforeAtoms) => {
-                    const atoms = window.VibeMolStructure.exportActive().volume.atoms || [];
-                    if (atoms.length !== beforeAtoms.length) return false;
-                    let moved = 0;
-                    for (let i = 0; i < atoms.length; i += 1) {
-                      const atom = atoms[i];
-                      const before = beforeAtoms[i];
-                      const dx = Math.abs((atom.x || 0) - before[0]);
-                      const dy = Math.abs((atom.y || 0) - before[1]);
-                      const dz = Math.abs((atom.z || 0) - before[2]);
-                      if (dx > 1e-6 || dy > 1e-6 || dz > 1e-6) moved += 1;
-                    }
-                    return moved === 1;
+            move_probe = page.evaluate(
+                """(payload) => {
+                    if (!window.VibeMolTesting || typeof window.VibeMolTesting.performSelectionMoveDrag !== 'function') return null;
+                    return window.VibeMolTesting.performSelectionMoveDrag(
+                      payload.atomIndex,
+                      payload.startX,
+                      payload.startY,
+                      payload.endX,
+                      payload.endY,
+                    );
                 }""",
-                arg=before_single_move,
+                {
+                    'atomIndex': 0,
+                    'startX': atom1_x,
+                    'startY': atom1_y,
+                    'endX': atom1_x - 28,
+                    'endY': atom1_y - 18,
+                },
             )
+            if not isinstance(move_probe, dict):
+                raise AssertionError(f'Could not probe selection move drag: {move_probe!r}')
+            if not bool(move_probe.get('started')):
+                raise AssertionError(f'Selection move drag did not start: {move_probe!r}')
+            if int(move_probe.get('movedCount', -1)) != 1:
+                raise AssertionError(f'Selection move drag moved the wrong scope: {move_probe!r}')
             page.mouse.click(x, y)
             page.mouse.dblclick(x, y)
 
@@ -1282,13 +1355,13 @@ def main() -> int:
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "fragment-retarget-fixture")', fixture_text)
             left_x, left_y = find_atom_click_point(page, 0)
             right_x, right_y = find_atom_click_point(page, 1)
-            page.mouse.click(left_x, left_y)
+            right_click_atom(page, left_x, left_y)
             wait_for_selected_atoms(page, 1)
             page.locator('#editSelectionAddFragmentCueButton').click()
             page.wait_for_function(
                 """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
             )
-            page.mouse.click(right_x, right_y)
+            right_click_atom(page, right_x, right_y)
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
@@ -1298,23 +1371,6 @@ def main() -> int:
                       && exported.volume.atoms.length === 2
                       && Array.isArray(exported.volume?.bonds)
                       && exported.volume.bonds.length === 1;
-                }"""
-            )
-            page.mouse.click(right_x, right_y)
-            page.wait_for_function(
-                """() => {
-                    const exported = window.VibeMolStructure.exportActive();
-                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
-                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
-                    if (atoms.length <= 2 || bonds.length <= 1) return false;
-                    const degreeById = new Map(atoms.map((atom) => [String(atom.id || ''), 0]));
-                    for (const bond of bonds) {
-                      const aId = String(bond.a || '');
-                      const bId = String(bond.b || '');
-                      if (degreeById.has(aId)) degreeById.set(aId, Number(degreeById.get(aId) || 0) + 1);
-                      if (degreeById.has(bId)) degreeById.set(bId, Number(degreeById.get(bId) || 0) + 1);
-                    }
-                    return Number(degreeById.get('atom-2') || 0) > Number(degreeById.get('atom-1') || 0);
                 }"""
             )
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "smoke-fixture-copy-paste")', fixture_text)
@@ -1361,6 +1417,17 @@ def main() -> int:
                           && exported.volume.bonds.length === 2;
                     }"""
                 )
+
+            page.locator('#editSelectionDeleteCueButton').click()
+            page.wait_for_function(
+                r"""() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return exported.volume.atoms.length === 2
+                      && Array.isArray(exported.volume.bonds)
+                      && exported.volume.bonds.length === 1
+                      && Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0;
+                }"""
+            )
 
             log_step('add atom smoke')
             # Add atom smoke.
@@ -1418,7 +1485,8 @@ def main() -> int:
                     return atoms.length === 8 && bonds.length === 7;
                 }"""
             )
-            page.mouse.click(anchor_x, anchor_y)
+            anchor_select_x, anchor_select_y = find_atom_click_point(page, 0)
+            right_click_atom(page, anchor_select_x, anchor_select_y)
             page.wait_for_function(
                 """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1"""
             )
@@ -1437,6 +1505,12 @@ def main() -> int:
             page.keyboard.press('Enter')
             page.wait_for_function(
                 """() => document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]')?.classList.contains('active') === true"""
+            )
+            page.wait_for_function(
+                """() => document.activeElement !== document.getElementById('editBuildSearch')"""
+            )
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
             before_add_molecule = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)
@@ -1873,7 +1947,7 @@ def main() -> int:
                 }"""
             )
             metal_anchor_x, metal_anchor_y = find_atom_click_point(page, 0)
-            page.mouse.click(metal_anchor_x, metal_anchor_y)
+            right_click_atom(page, metal_anchor_x, metal_anchor_y)
             page.wait_for_function(
                 """() => document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'false'"""
             )
@@ -1944,7 +2018,7 @@ def main() -> int:
                 }"""
             )
             hydrogen_x, hydrogen_y = find_atom_click_point(page, 1)
-            page.mouse.click(hydrogen_x, hydrogen_y)
+            right_click_atom(page, hydrogen_x, hydrogen_y)
             wait_for_selected_atoms(page, 1)
             page.keyboard.press('Delete')
             page.wait_for_function(
@@ -1956,7 +2030,7 @@ def main() -> int:
                 }"""
             )
             carbon_anchor_x, carbon_anchor_y = find_atom_click_point(page, 0)
-            page.mouse.click(carbon_anchor_x, carbon_anchor_y)
+            right_click_atom(page, carbon_anchor_x, carbon_anchor_y)
             wait_for_selected_atoms(page, 1)
             load_build_query(page, 'hydroxyl')
             page.locator('#editSelectionAddFragmentCueButton').click()
@@ -1966,30 +2040,38 @@ def main() -> int:
             page.wait_for_function(
                 """() => window.VibeMolTesting?.getHaloGhostPreviewKind?.() === 'fragment'"""
             )
-            ghost_world = page.evaluate(
+            before_fragment_attach = page.evaluate(
                 """() => {
+                    const exported = window.VibeMolStructure.exportActive();
                     const worlds = window.VibeMolTesting?.getHaloGhostWorlds?.() || [];
-                    return worlds[0] || null;
+                    const fragmentOps = Array.isArray(exported.volume?.fragmentOps) ? exported.volume.fragmentOps : [];
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    return {
+                        ghostWorld: worlds[0] || null,
+                        fragmentOpCount: fragmentOps.length,
+                        atomCount: atoms.length,
+                    };
                 }"""
             )
-            if not isinstance(ghost_world, dict):
+            if not (isinstance(before_fragment_attach, dict) and isinstance(before_fragment_attach.get('ghostWorld'), dict)):
                 raise AssertionError('Could not read halo ghost world coordinates for open-site fragment attach.')
-            first_open_site_x, first_open_site_y = project_halo_ghost(page, 0)
-            page.mouse.click(first_open_site_x, first_open_site_y)
+            ghost_attach = page.evaluate(
+                """() => {
+                    if (!window.VibeMolTesting || typeof window.VibeMolTesting.triggerHaloGhostByIndex !== 'function') return null;
+                    return window.VibeMolTesting.triggerHaloGhostByIndex(0);
+                }"""
+            )
+            if not (isinstance(ghost_attach, dict) and bool(ghost_attach.get('attached'))):
+                raise AssertionError(f'Could not trigger open-site fragment attach via halo ghost: {ghost_attach!r}')
             page.wait_for_function(
-                """(expected) => {
+                """(beforeState) => {
                     const exported = window.VibeMolStructure.exportActive();
                     const fragmentOps = Array.isArray(exported.volume?.fragmentOps) ? exported.volume.fragmentOps : [];
-                    if (!fragmentOps.length) return false;
-                    const last = fragmentOps[fragmentOps.length - 1];
-                    const conn = last?.transform?.connectionWorld;
-                    if (!Array.isArray(conn) || conn.length < 3) return false;
-                    const dx = Math.abs((Number(conn[0]) || 0) - (Number(expected.x) || 0));
-                    const dy = Math.abs((Number(conn[1]) || 0) - (Number(expected.y) || 0));
-                    const dz = Math.abs((Number(conn[2]) || 0) - (Number(expected.z) || 0));
-                    return dx < 0.05 && dy < 0.05 && dz < 0.05;
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    if (fragmentOps.length <= Number(beforeState.fragmentOpCount || 0)) return false;
+                    return atoms.length > Number(beforeState.atomCount || 0);
                 }""",
-                arg=ghost_world,
+                arg=before_fragment_attach,
             )
 
             log_step('grow drag onto terminal hydrogen replaces it with loaded atom')

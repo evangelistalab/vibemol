@@ -146,6 +146,17 @@
   opacity: 0.82;
 }
 
+.editSelectionCueButton.is-delete {
+  border-color: rgba(255, 126, 126, 0.62);
+  background: rgba(86, 46, 52, 0.9);
+  color: rgba(255, 236, 239, 0.94);
+}
+
+.editSelectionCueButton.is-delete:hover {
+  border-color: rgba(255, 157, 157, 0.82);
+  background: rgba(104, 50, 58, 0.96);
+}
+
 #editSelectionCoordinationCuePopover {
   position: fixed;
   z-index: 35;
