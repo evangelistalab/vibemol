@@ -301,6 +301,18 @@ test('edit-gestures left click on bond center-third is inert', () => {
   assert.equal(calls.placeVoidAtom, 0);
 });
 
+test('edit-gestures bond center click resolver does not override a current near-side hit', () => {
+  const { controller } = createHarness({ selection: [] });
+
+  controller.handlePointerMove(pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'center' } }));
+
+  const resolved = controller.resolveBondCenterClickHit(
+    pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'nearB' } })
+  );
+
+  assert.equal(resolved, null);
+});
+
 test('edit-gestures left double-click on atom does not change selection', () => {
   const { controller, calls, getSelection } = createHarness({
     selection: [],
@@ -456,16 +468,17 @@ test('edit-gestures allows external drag handlers to own move and release withou
   assert.deepEqual(external, { active: false, down: 1, move: 1, up: 1 });
 });
 
-test('edit-gestures shift-drag from a bond resolves downstream move scope only', () => {
-  const bondHit = { object: { id: 'bond-carrier' }, point: { x: 1, y: 2, z: 3 } };
-  const { controller, calls, getSelection } = createHarness({ selection: [] });
+test('edit-gestures left click on a bond side is inert even with shift held', () => {
+  const bondHit = { object: { id: 'bond-carrier' }, section: 'nearB', point: { x: 1, y: 2, z: 3 } };
+  const { controller, calls, getSelection } = createHarness({ selection: [2] });
 
   controller.handlePointerDown(pointerEvent({ shiftKey: true, bondHit, clientX: 0, clientY: 0 }));
   controller.handlePointerMove(pointerEvent({ shiftKey: true, bondHit, clientX: 12, clientY: 0 }));
+  controller.handlePointerUp(pointerEvent({ shiftKey: true, bondHit, clientX: 12, clientY: 0 }));
 
-  assert.equal(calls.resolveDownstreamMoveScope.length, 1);
-  assert.deepEqual(calls.startMoveDrag.at(-1).indices, [4, 5]);
-  assert.deepEqual(getSelection(), [4, 5]);
+  assert.equal(calls.resolveDownstreamMoveScope.length, 0);
+  assert.equal(calls.startMoveDrag.length, 0);
+  assert.deepEqual(getSelection(), [2]);
 });
 
 test('edit-gestures can start a grow drag directly from a halo action', () => {

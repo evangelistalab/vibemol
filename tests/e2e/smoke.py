@@ -1534,6 +1534,93 @@ def main() -> int:
             )
 
             log_step('add molecule smoke')
+            # Build search keyboard navigation regression.
+            page.keyboard.press('/')
+            page.wait_for_function(
+                """() => document.activeElement === document.getElementById('editBuildSearch')"""
+            )
+            page.locator('#editBuildSearch').fill('N')
+            page.wait_for_function(
+                """() => {
+                    const sodium = document.querySelector('#editAddQuick button[data-z="11"]');
+                    const carbon = document.querySelector('#editAddQuick button[data-z="6"]');
+                    return !!sodium
+                      && sodium.hidden === false
+                      && (!carbon || carbon.hidden === true);
+                }"""
+            )
+            page.locator('#editAddQuick button[data-z="11"]').click()
+            page.wait_for_function(
+                """() => /Loaded Na\\b/i.test(document.getElementById('editAdaptiveAddAtomMeta')?.textContent || '')"""
+            )
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const search = document.getElementById('editBuildSearch');
+                    const sodium = document.querySelector('#editAddQuick button[data-z="11"]');
+                    const carbon = document.querySelector('#editAddQuick button[data-z="6"]');
+                    return search
+                      && search.value === 'N'
+                      && sodium
+                      && sodium.hidden === false
+                      && sodium.classList.contains('active')
+                      && (!carbon || carbon.hidden === true);
+                }"""
+            )
+            page.keyboard.press('/')
+            page.wait_for_function(
+                """() => document.activeElement === document.getElementById('editBuildSearch')"""
+            )
+            page.locator('#editBuildSearch').fill('Pr')
+            page.wait_for_function(
+                """() => {
+                    const pr = document.querySelector('#editAddQuick button[data-z="59"]');
+                    const pm = document.querySelector('#editAddQuick button[data-z="61"]');
+                    const pa = document.querySelector('#editAddQuick button[data-z="91"]');
+                    return !!pr
+                      && pr.hidden === false
+                      && !!pm
+                      && pm.hidden === false
+                      && !!pa
+                      && pa.hidden === false;
+                }"""
+            )
+            page.hover('#editAdaptiveAddAtomPopover')
+            page.locator('#editAddQuick button[data-z="59"]').click()
+            page.wait_for_function(
+                """() => /Loaded Pr\\b/i.test(document.getElementById('editAdaptiveAddAtomMeta')?.textContent || '')"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const search = document.getElementById('editBuildSearch');
+                    const pr = document.querySelector('#editAddQuick button[data-z="59"]');
+                    const pm = document.querySelector('#editAddQuick button[data-z="61"]');
+                    const pa = document.querySelector('#editAddQuick button[data-z="91"]');
+                    return search
+                      && search.value === 'Pr'
+                      && pr
+                      && pr.hidden === false
+                      && pr.classList.contains('active')
+                      && pm
+                      && pm.hidden === false
+                      && pa
+                      && pa.hidden === false
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false';
+                }"""
+            )
+            page.locator('#editBuildSearch').fill('ph')
+            page.wait_for_function(
+                """() => {
+                    const phenyl = document.querySelector('#editFragmentQuick button[data-fragment-id="phenyl"]');
+                    const hydroxyl = document.querySelector('#editFragmentQuick button[data-fragment-id="hydroxyl"]');
+                    return !!phenyl
+                      && phenyl.hidden === false
+                      && (!hydroxyl || hydroxyl.hidden === true);
+                }"""
+            )
+
             # Build search / standalone molecule placement smoke.
             page.keyboard.press('/')
             page.wait_for_function(
@@ -1545,10 +1632,18 @@ def main() -> int:
                 """() => document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]')?.classList.contains('active') === true"""
             )
             page.wait_for_function(
-                """() => document.activeElement !== document.getElementById('editBuildSearch')"""
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
             )
             page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
+                """() => {
+                    const search = document.getElementById('editBuildSearch');
+                    const benzene = document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]');
+                    return search
+                      && search.value === 'benzene'
+                      && benzene
+                      && benzene.hidden === false
+                      && benzene.classList.contains('active');
+                }"""
             )
             before_add_molecule = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)

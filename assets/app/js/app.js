@@ -800,16 +800,15 @@
   let editAdaptiveAlignPrincipalMetaEl = null;
   let editAdaptiveAddAtomPopoverEl = null;
   let editBuildSearchEl = null;
-  let editBuildSuggestionsEl = null;
   let editBuildAtomsHostEl = null;
   let editBuildFragmentsHostEl = null;
   let editBuildMoleculesHostEl = null;
   let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
   let bondCenterSelectionState = null;
+  let buildSearchKeyboardSelectionKey = '';
   let buildPopoverHideTimer = 0;
-  let buildSearchListRestoreTimer = 0;
-  let suppressBuildSearchBlurSync = false;
+  let buildPaletteFilterQuery = '';
 
   /**
    * Synchronize edit-mode construction helpers with the active tool and camera.
@@ -5711,7 +5710,6 @@
   editAdaptiveAlignPrincipalMetaEl = document.getElementById('editAdaptiveAlignPrincipalMeta');
   editAdaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
   editBuildSearchEl = document.getElementById('editBuildSearch');
-  editBuildSuggestionsEl = document.getElementById('editBuildSuggestions');
   editBuildAtomsHostEl = document.getElementById('editBuildAtomsHost');
   editBuildFragmentsHostEl = document.getElementById('editBuildFragmentsHost');
   editBuildMoleculesHostEl = document.getElementById('editBuildMoleculesHost');
@@ -11574,51 +11572,15 @@
       editMoleculeSearchEl.value = `${molecule.name} (${molecule.formula}) [${molecule.id}]`;
     }
 
-    if (editAddQuickEl) {
-      const quickButtons = editAddQuickEl.querySelectorAll('button[data-z]');
-      quickButtons.forEach((btn) => {
-        const z = Number(btn.getAttribute('data-z'));
-        const isSelected = buildPayload.kind === 'atom' && z === editAddElementZ;
-        btn.classList.toggle('active', isSelected);
-        const bgHex = getActiveElementHexColor(z);
-        try {
-          const color = new THREE.Color(bgHex);
-          const lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
-          btn.style.background = bgHex;
-          btn.style.color = lum > 0.6 ? UI_PALETTE.quickPickTextOnLightAlt : UI_PALETTE.quickPickTextOnDark;
-        } catch {
-          btn.style.background = UI_PALETTE.quickPickFallbackBg;
-          btn.style.color = UI_PALETTE.quickPickFallbackFg;
-        }
-      });
-    }
-    if (editFragmentQuickEl) {
-      const quickButtons = editFragmentQuickEl.querySelectorAll('button[data-fragment-id]');
-      quickButtons.forEach((btn) => {
-        const id = normalizeFragmentId(btn.getAttribute('data-fragment-id'));
-        btn.classList.toggle(
-          'active',
-          buildPayload.kind === 'fragment' && id === normalizeFragmentId(editAddFragmentId)
-        );
-      });
-    }
-    if (editMoleculeQuickEl) {
-      const quickButtons = editMoleculeQuickEl.querySelectorAll('button[data-molecule-id]');
-      quickButtons.forEach((btn) => {
-        const id = normalizeFragmentId(btn.getAttribute('data-molecule-id'));
-        btn.classList.toggle(
-          'active',
-          buildPayload.kind === 'molecule' && id === normalizeFragmentId(editAddMoleculeId)
-        );
-      });
-    }
+    syncBuildPaletteQuickButtonStates(buildPayload);
     syncBuildSearchField();
     if (editBuildSearchEl) {
-      const activeQuery = document.activeElement === editBuildSearchEl
-        ? String(editBuildSearchEl.value || '')
-        : '';
+      const activeQuery = getBuildPaletteFilterQuery()
+        || (document.activeElement === editBuildSearchEl ? String(editBuildSearchEl.value || '') : '');
       updateBuildPaletteFilter(activeQuery);
+      syncBuildPaletteQuickButtonStates(buildPayload);
     }
+    syncBuildSearchNavigationUi();
   }
 
   function setEditIntent(nextIntent, options = {}) {
@@ -11741,11 +11703,168 @@
     return `${atomSymbol} — ${atomName} (${z})`;
   }
 
-  function formatBuildSearchValue() {
+  function getBuildPaletteFilterQuery() {
+    return String(buildPaletteFilterQuery || '');
+  }
+
+  function setBuildPaletteFilterQuery(nextQuery, options = {}) {
+    buildPaletteFilterQuery = String(nextQuery || '');
+    if (options.syncInput !== false && editBuildSearchEl) {
+      editBuildSearchEl.value = buildPaletteFilterQuery;
+    }
+  }
+
+  function getCurrentBuildPayloadSelection() {
     const payload = getCurrentBuildPayload();
-    if (payload.kind === 'atom') return `${payload.symbol} — ${payload.name}`;
-    if (payload.formula) return `${payload.name} (${payload.formula})`;
-    return payload.name;
+    if (!payload || typeof payload !== 'object') return null;
+    if (payload.kind === 'atom') {
+      const z = Number(payload.id || editAddElementZ);
+      if (!Number.isInteger(z) || z <= 0) return null;
+      return { kind: 'atom', z };
+    }
+    const id = String(payload.id || '').trim();
+    if (!id) return null;
+    return {
+      kind: String(payload.kind || '').trim(),
+      id,
+    };
+  }
+
+  function isBuildSearchNavigationActive() {
+    if (!editBuildSearchEl) return false;
+    return document.activeElement === editBuildSearchEl && !!String(editBuildSearchEl.value || '').trim();
+  }
+
+  function syncBuildSearchNavigationUi() {
+    if (!editAdaptiveAddAtomPopoverEl) return;
+    editAdaptiveAddAtomPopoverEl.classList.toggle('is-search-navigating', isBuildSearchNavigationActive());
+  }
+
+  function makeBuildPaletteSelectionKey(selection) {
+    if (!selection || typeof selection !== 'object') return '';
+    const kind = String(selection.kind || '').trim();
+    if (!kind) return '';
+    if (kind === 'atom') {
+      const z = Number(selection.z);
+      return Number.isInteger(z) && z > 0 ? `atom:${z}` : '';
+    }
+    const id = String(selection.id || '').trim();
+    return id ? `${kind}:${id}` : '';
+  }
+
+  function setBuildSearchKeyboardSelectionKey(nextKey) {
+    const normalizedKey = String(nextKey || '').trim();
+    buildSearchKeyboardSelectionKey = normalizedKey;
+    const apply = (containerEl) => {
+      if (!containerEl) return;
+      const buttons = containerEl.querySelectorAll('button[data-build-search-key]');
+      buttons.forEach((buttonEl) => {
+        const isSelected = !!normalizedKey && String(buttonEl.getAttribute('data-build-search-key') || '') === normalizedKey;
+        buttonEl.classList.toggle('search-active', isSelected);
+        buttonEl.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+      });
+    };
+    apply(editAddQuickEl);
+    apply(editFragmentQuickEl);
+    apply(editMoleculeQuickEl);
+  }
+
+  function clearBuildSearchKeyboardSelection() {
+    setBuildSearchKeyboardSelectionKey('');
+  }
+
+  function collectBuildSearchCandidates() {
+    const candidates = [];
+    const appendButtonCandidates = (containerEl, selector, toSelection) => {
+      if (!containerEl) return;
+      const buttons = containerEl.querySelectorAll(selector);
+      buttons.forEach((buttonEl) => {
+        if (!buttonEl || buttonEl.hidden) return;
+        const key = String(buttonEl.getAttribute('data-build-search-key') || '').trim();
+        const selection = typeof toSelection === 'function' ? toSelection(buttonEl) : null;
+        if (!key || !selection) return;
+        candidates.push({ key, selection, buttonEl });
+      });
+    };
+    appendButtonCandidates(editAddQuickEl, 'button[data-z]', (buttonEl) => {
+      const z = Number(buttonEl.getAttribute('data-z'));
+      if (!Number.isInteger(z) || z <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return null;
+      const atomInfo = ATOM_Z_TO_DATA[z];
+      return {
+        kind: 'atom',
+        id: String(z),
+        z,
+        label: `${atomInfo.name} (${atomInfo.symbol})`,
+      };
+    });
+    appendButtonCandidates(editFragmentQuickEl, 'button[data-fragment-id]', (buttonEl) => {
+      const id = normalizeFragmentId(buttonEl.getAttribute('data-fragment-id'));
+      if (!id) return null;
+      const fragment = getCatalogEntryById(id, CATALOG_KIND.FRAGMENT);
+      return fragment ? {
+        kind: 'fragment',
+        id,
+        label: `${fragment.name} (${fragment.formula})`,
+      } : null;
+    });
+    appendButtonCandidates(editMoleculeQuickEl, 'button[data-molecule-id]', (buttonEl) => {
+      const id = normalizeFragmentId(buttonEl.getAttribute('data-molecule-id'));
+      if (!id) return null;
+      const molecule = getCatalogEntryById(id, CATALOG_KIND.MOLECULE);
+      return molecule ? {
+        kind: 'molecule',
+        id,
+        label: `${molecule.name} (${molecule.formula})`,
+      } : null;
+    });
+    return candidates;
+  }
+
+  function syncBuildSearchKeyboardSelectionVisibility() {
+    if (!buildSearchKeyboardSelectionKey) return;
+    const stillVisible = collectBuildSearchCandidates().some((candidate) => candidate.key === buildSearchKeyboardSelectionKey);
+    if (!stillVisible) {
+      clearBuildSearchKeyboardSelection();
+      return;
+    }
+    setBuildSearchKeyboardSelectionKey(buildSearchKeyboardSelectionKey);
+  }
+
+  function stepBuildSearchKeyboardSelection(delta) {
+    const candidates = collectBuildSearchCandidates();
+    if (!candidates.length) {
+      clearBuildSearchKeyboardSelection();
+      return null;
+    }
+    const direction = delta >= 0 ? 1 : -1;
+    let index = candidates.findIndex((candidate) => candidate.key === buildSearchKeyboardSelectionKey);
+    if (index < 0) {
+      index = direction > 0 ? 0 : (candidates.length - 1);
+    } else {
+      index = (index + direction + candidates.length) % candidates.length;
+    }
+    const candidate = candidates[index];
+    setBuildSearchKeyboardSelectionKey(candidate.key);
+    if (candidate.buttonEl && typeof candidate.buttonEl.scrollIntoView === 'function') {
+      candidate.buttonEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+    return candidate;
+  }
+
+  function primeBuildSearchKeyboardSelection() {
+    const candidates = collectBuildSearchCandidates();
+    if (!candidates.length) {
+      clearBuildSearchKeyboardSelection();
+      return null;
+    }
+    const candidate = candidates[0];
+    setBuildSearchKeyboardSelectionKey(candidate.key);
+    return candidate;
+  }
+
+  function getSelectedBuildSearchCandidate() {
+    if (!buildSearchKeyboardSelectionKey) return null;
+    return collectBuildSearchCandidates().find((candidate) => candidate.key === buildSearchKeyboardSelectionKey) || null;
   }
 
   function resolveBuildPaletteQuery(rawQuery) {
@@ -11781,23 +11900,124 @@
   }
 
   function syncBuildSearchField() {
-    if (!editBuildSearchEl || document.activeElement === editBuildSearchEl) return;
-    editBuildSearchEl.value = formatBuildSearchValue();
+    if (!editBuildSearchEl) return;
+    const activeQuery = getBuildPaletteFilterQuery();
+    if (editBuildSearchEl.value !== activeQuery) editBuildSearchEl.value = activeQuery;
   }
 
   function updateBuildPaletteFilter(query = '') {
     const q = String(query || '').trim().toLowerCase();
+    renderBuildAtomQuickButtons(q);
     const applyFilter = (containerEl) => {
       if (!containerEl) return;
       const buttons = containerEl.querySelectorAll('button');
       buttons.forEach((buttonEl) => {
         const terms = String(buttonEl.getAttribute('data-search-terms') || buttonEl.textContent || '').toLowerCase();
-        buttonEl.hidden = !!q && !terms.includes(q);
+        buttonEl.hidden = !matchesBuildPaletteTerms(terms, q);
       });
     };
     applyFilter(editAddQuickEl);
     applyFilter(editFragmentQuickEl);
     applyFilter(editMoleculeQuickEl);
+    syncBuildSearchKeyboardSelectionVisibility();
+  }
+
+  function syncBuildPaletteQuickButtonStates(buildPayload = getCurrentBuildPayload()) {
+    if (editAddQuickEl) {
+      const quickButtons = editAddQuickEl.querySelectorAll('button[data-z]');
+      quickButtons.forEach((btn) => {
+        const z = Number(btn.getAttribute('data-z'));
+        const isSelected = buildPayload.kind === 'atom' && z === editAddElementZ;
+        btn.classList.toggle('active', isSelected);
+        const bgHex = getActiveElementHexColor(z);
+        try {
+          const color = new THREE.Color(bgHex);
+          const lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+          btn.style.background = bgHex;
+          btn.style.color = lum > 0.6 ? UI_PALETTE.quickPickTextOnLightAlt : UI_PALETTE.quickPickTextOnDark;
+        } catch {
+          btn.style.background = UI_PALETTE.quickPickFallbackBg;
+          btn.style.color = UI_PALETTE.quickPickFallbackFg;
+        }
+      });
+    }
+    if (editFragmentQuickEl) {
+      const quickButtons = editFragmentQuickEl.querySelectorAll('button[data-fragment-id]');
+      quickButtons.forEach((btn) => {
+        const id = normalizeFragmentId(btn.getAttribute('data-fragment-id'));
+        btn.classList.toggle(
+          'active',
+          buildPayload.kind === 'fragment' && id === normalizeFragmentId(editAddFragmentId)
+        );
+      });
+    }
+    if (editMoleculeQuickEl) {
+      const quickButtons = editMoleculeQuickEl.querySelectorAll('button[data-molecule-id]');
+      quickButtons.forEach((btn) => {
+        const id = normalizeFragmentId(btn.getAttribute('data-molecule-id'));
+        btn.classList.toggle(
+          'active',
+          buildPayload.kind === 'molecule' && id === normalizeFragmentId(editAddMoleculeId)
+        );
+      });
+    }
+  }
+
+  function matchesBuildAtomQuery(z, query = '') {
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) return false;
+    if (!ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
+    const info = ATOM_Z_TO_DATA[z];
+    const symbol = String(info.symbol || '').toLowerCase();
+    const name = String(info.name || '').toLowerCase();
+    if (!symbol && !name) return false;
+    if (/^\d+$/.test(q)) return String(z).startsWith(q);
+    return symbol.startsWith(q) || name.startsWith(q);
+  }
+
+  function matchesBuildPaletteTerms(terms, query = '') {
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) return true;
+    const tokens = String(terms || '')
+      .toLowerCase()
+      .split(/[^a-z0-9.+-]+/)
+      .map((token) => token.trim())
+      .filter(Boolean);
+    return tokens.some((token) => token.startsWith(q));
+  }
+
+  function renderBuildAtomQuickButtons(query = '') {
+    if (!editAddQuickEl) return;
+    const q = String(query || '').trim();
+    const nextElements = q
+      ? getKnownElementNumbers().filter((z) => matchesBuildAtomQuery(z, q))
+      : EDIT_QUICK_ADD_ELEMENTS.slice();
+    const existingKey = String(editAddQuickEl.getAttribute('data-build-atom-query') || '');
+    const nextKey = q ? `search:${q.toLowerCase()}` : 'quick';
+    const existingButtons = Array.from(editAddQuickEl.querySelectorAll('button[data-z]')).map((buttonEl) => Number(buttonEl.getAttribute('data-z'))).filter((z) => Number.isInteger(z) && z > 0);
+    const sameSet = existingButtons.length === nextElements.length
+      && existingButtons.every((z, index) => z === nextElements[index]);
+    if (existingKey === nextKey && sameSet) return;
+    editAddQuickEl.innerHTML = '';
+    editAddQuickEl.setAttribute('data-build-atom-query', nextKey);
+    for (const z of nextElements) {
+      if (!ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
+      const info = ATOM_Z_TO_DATA[z];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('data-z', String(z));
+      btn.setAttribute('data-build-search-key', `atom:${z}`);
+      btn.setAttribute('data-search-terms', `${info.symbol} ${info.name} ${z}`.toLowerCase());
+      btn.title = `${info.name} (${info.symbol})`;
+      btn.textContent = info.symbol;
+      btn.onclick = () => {
+        const preservedQuery = getBuildPaletteFilterQuery();
+        setEditAddElement(z, { announce: true });
+        setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
+        keepBuildPopoverOpen({ query: preservedQuery });
+      };
+      editAddQuickEl.appendChild(btn);
+    }
   }
 
   function applyBuildPaletteSelection(selection, options = {}) {
@@ -11820,27 +12040,6 @@
       return changed;
     }
     return false;
-  }
-
-  function refreshBuildSearchSuggestions() {
-    if (!editBuildSuggestionsEl) return;
-    editBuildSuggestionsEl.innerHTML = '';
-    for (const z of getKnownElementNumbers()) {
-      const info = ATOM_Z_TO_DATA[z];
-      const opt = document.createElement('option');
-      opt.value = `${info.symbol} — ${info.name}`;
-      editBuildSuggestionsEl.appendChild(opt);
-    }
-    for (const fragment of getCatalogEntries(CATALOG_KIND.FRAGMENT)) {
-      const opt = document.createElement('option');
-      opt.value = `${fragment.name} (${fragment.formula})`;
-      editBuildSuggestionsEl.appendChild(opt);
-    }
-    for (const molecule of getCatalogEntries(CATALOG_KIND.MOLECULE)) {
-      const opt = document.createElement('option');
-      opt.value = `${molecule.name} (${molecule.formula})`;
-      editBuildSuggestionsEl.appendChild(opt);
-    }
   }
 
   /**
@@ -11914,14 +12113,15 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('data-fragment-id', fragment.id);
+        btn.setAttribute('data-build-search-key', `fragment:${fragment.id}`);
         btn.setAttribute('data-search-terms', `${fragment.name} ${fragment.formula} ${fragment.id} ${(Array.isArray(fragment.tags) ? fragment.tags.join(' ') : '')}`.toLowerCase());
         btn.title = `${fragment.name} (${fragment.formula})`;
         btn.textContent = fragment.name;
         btn.onclick = () => {
+          const preservedQuery = getBuildPaletteFilterQuery();
           setEditAddFragment(fragment.id, { announce: true, syncSearch: true });
           setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch: true });
-          syncBuildSearchField();
-          hideBuildPopover();
+          keepBuildPopoverOpen({ query: preservedQuery });
         };
         editFragmentQuickEl.appendChild(btn);
       }
@@ -11930,7 +12130,6 @@
     if (!setEditAddFragment(editAddFragmentId, { announce: false, syncSearch: true }) && fragmentEntries[0]) {
       setEditAddFragment(fragmentEntries[0].id, { announce: false, syncSearch: true });
     }
-    refreshBuildSearchSuggestions();
     updateEditToolboxUi({ syncSearch: true });
   }
 
@@ -11955,14 +12154,15 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('data-molecule-id', molecule.id);
+        btn.setAttribute('data-build-search-key', `molecule:${molecule.id}`);
         btn.setAttribute('data-search-terms', `${molecule.name} ${molecule.formula} ${molecule.id} ${(Array.isArray(molecule.tags) ? molecule.tags.join(' ') : '')}`.toLowerCase());
         btn.title = `${molecule.name} (${molecule.formula})`;
         btn.textContent = molecule.name;
         btn.onclick = () => {
+          const preservedQuery = getBuildPaletteFilterQuery();
           setEditAddMolecule(molecule.id, { announce: true, syncSearch: true });
           setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: false, syncSearch: true });
-          syncBuildSearchField();
-          hideBuildPopover();
+          keepBuildPopoverOpen({ query: preservedQuery });
         };
         editMoleculeQuickEl.appendChild(btn);
       }
@@ -11971,7 +12171,6 @@
     if (!setEditAddMolecule(editAddMoleculeId, { announce: false, syncSearch: true }) && moleculeEntries[0]) {
       setEditAddMolecule(moleculeEntries[0].id, { announce: false, syncSearch: true });
     }
-    refreshBuildSearchSuggestions();
     updateEditToolboxUi({ syncSearch: true });
   }
 
@@ -12008,29 +12207,9 @@
         editAddSuggestionsEl.appendChild(opt);
       }
     }
-    if (editAddQuickEl) {
-      editAddQuickEl.innerHTML = '';
-      for (const z of EDIT_QUICK_ADD_ELEMENTS) {
-        if (!ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
-        const info = ATOM_Z_TO_DATA[z];
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.setAttribute('data-z', String(z));
-        btn.setAttribute('data-search-terms', `${info.symbol} ${info.name} ${z}`.toLowerCase());
-        btn.title = `${info.name} (${info.symbol})`;
-        btn.textContent = info.symbol;
-        btn.onclick = () => {
-          setEditAddElement(z, { announce: true });
-          setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
-          syncBuildSearchField();
-          hideBuildPopover();
-        };
-        editAddQuickEl.appendChild(btn);
-      }
-    }
+    renderBuildAtomQuickButtons('');
     refreshEditAddFragmentControls();
     refreshEditAddMoleculeControls();
-    refreshBuildSearchSuggestions();
     if (editAddSearchEl) {
       const commit = () => {
         const rawValue = String(editAddSearchEl.value || '').trim();
@@ -12075,33 +12254,59 @@
       const commit = () => {
         const rawValue = String(editBuildSearchEl.value || '').trim();
         if (!rawValue) {
+          setBuildPaletteFilterQuery('', { syncInput: false });
+          clearBuildSearchKeyboardSelection();
           syncBuildSearchField();
           updateBuildPaletteFilter('');
           updateEditToolboxUi({ syncSearch: false });
           return;
         }
-        const selection = resolveBuildPaletteQuery(rawValue);
-      if (!applyBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
+        const selectedCandidate = getSelectedBuildSearchCandidate();
+        const selection = selectedCandidate ? selectedCandidate.selection : resolveBuildPaletteQuery(rawValue);
+        if (!applyBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Build item not recognized: "${rawValue}"`);
           return;
         }
-        editBuildSearchEl.value = '';
-        updateBuildPaletteFilter('');
-        hideBuildPopover();
+        keepBuildPopoverOpen({ query: rawValue });
       };
       editBuildSearchEl.addEventListener('focus', () => {
-        updateBuildPaletteFilter(String(editBuildSearchEl.value || ''));
+        const query = String(editBuildSearchEl.value || '');
+        setBuildPaletteFilterQuery(query, { syncInput: false });
+        renderBuildPopover({ preferPayloadSelection: false });
       });
-      editBuildSearchEl.addEventListener('blur', () => {
-        if (!String(editBuildSearchEl.value || '').trim() && !suppressBuildSearchBlurSync) syncBuildSearchField();
-        updateBuildPaletteFilter('');
+      editBuildSearchEl.addEventListener('blur', (e) => {
+        const nextTarget = e && e.relatedTarget;
+        if (
+          nextTarget
+          && editAdaptiveAddAtomPopoverEl
+          && editAdaptiveAddAtomPopoverEl.contains(nextTarget)
+        ) {
+          syncBuildSearchNavigationUi();
+          return;
+        }
+        clearBuildSearchKeyboardSelection();
+        syncBuildSearchNavigationUi();
       });
       editBuildSearchEl.addEventListener('input', () => {
-        updateBuildPaletteFilter(String(editBuildSearchEl.value || ''));
+        const query = String(editBuildSearchEl.value || '');
+        setBuildPaletteFilterQuery(query, { syncInput: false });
+        renderBuildPopover({ preferPayloadSelection: false });
       });
       editBuildSearchEl.addEventListener('change', commit);
       editBuildSearchEl.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          stepBuildSearchKeyboardSelection(1);
+          syncBuildSearchNavigationUi();
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          stepBuildSearchKeyboardSelection(-1);
+          syncBuildSearchNavigationUi();
+          return;
+        }
         if (e.key !== 'Enter') return;
         e.preventDefault();
         commit();
@@ -12174,11 +12379,19 @@
       editAdaptiveAddAtomBtn.onclick = () => {
         showBuildPopover({ focusSearch: true });
       };
-      editAdaptiveAddAtomBtn.addEventListener('mouseenter', () => showBuildPopover({ focusSearch: false }));
+      editAdaptiveAddAtomBtn.addEventListener('mouseenter', () => {
+        if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') showBuildPopover({ focusSearch: false });
+        else cancelBuildPopoverHide();
+      });
       editAdaptiveAddAtomBtn.addEventListener('mouseleave', () => hideBuildPopover(120));
     }
     if (editAdaptiveAddAtomPopoverEl) {
-      editAdaptiveAddAtomPopoverEl.addEventListener('mouseenter', () => showBuildPopover({ focusSearch: false }));
+      editAdaptiveAddAtomPopoverEl.addEventListener('pointerdown', (e) => {
+        const buttonEl = e && e.target ? e.target.closest('#editAddQuick button, #editFragmentQuick button, #editMoleculeQuick button') : null;
+        if (!buttonEl) return;
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+      });
+      editAdaptiveAddAtomPopoverEl.addEventListener('mouseenter', () => cancelBuildPopoverHide());
       editAdaptiveAddAtomPopoverEl.addEventListener('mouseleave', () => hideBuildPopover(120));
     }
     if (editAdaptiveCleanStructureBtn) editAdaptiveCleanStructureBtn.onclick = () => { optimizeActiveStructureWithUff(); };
@@ -13086,45 +13299,70 @@
     });
   }
 
-  function restoreBuildSearchAutocompleteBinding() {
-    if (buildSearchListRestoreTimer) {
-      clearTimeout(buildSearchListRestoreTimer);
-      buildSearchListRestoreTimer = 0;
-    }
+  function resetBuildSearchFieldOnHide() {
     if (!editBuildSearchEl) return;
-    suppressBuildSearchBlurSync = false;
-    const cachedListId = String(editBuildSearchEl.getAttribute('data-build-list-id') || '').trim();
-    if (cachedListId && !editBuildSearchEl.getAttribute('list')) {
-      editBuildSearchEl.setAttribute('list', cachedListId);
-    }
-    if (cachedListId) editBuildSearchEl.removeAttribute('data-build-list-id');
-  }
-
-  function collapseBuildSearchAutocomplete() {
-    if (!editBuildSearchEl) return;
-    suppressBuildSearchBlurSync = true;
-    editBuildSearchEl.value = '';
-    const listId = String(editBuildSearchEl.getAttribute('list') || '').trim();
-    if (listId) {
-      editBuildSearchEl.setAttribute('data-build-list-id', listId);
-      editBuildSearchEl.removeAttribute('list');
-    }
+    setBuildPaletteFilterQuery('', { syncInput: true });
     try { editBuildSearchEl.blur(); } catch { }
-    buildSearchListRestoreTimer = window.setTimeout(() => {
-      buildSearchListRestoreTimer = 0;
-      restoreBuildSearchAutocompleteBinding();
-    }, 0);
   }
 
-  function hideBuildPopover(delayMs = 0) {
+  function cancelBuildPopoverHide() {
     if (buildPopoverHideTimer) {
       clearTimeout(buildPopoverHideTimer);
       buildPopoverHideTimer = 0;
     }
+  }
+
+  function renderBuildPopover(options = {}) {
+    if (!editAdaptiveAddAtomPopoverEl || editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') return;
+    syncBuildPopoverPanes();
+    syncBuildSearchField();
+    const activeQuery = getBuildPaletteFilterQuery();
+    updateBuildPaletteFilter(activeQuery);
+    syncBuildPaletteQuickButtonStates();
+    if (String(activeQuery || '').trim()) {
+      const candidates = collectBuildSearchCandidates();
+      const explicitSelectionKey = String(options.selectionKey || '').trim();
+      const payloadSelection = getCurrentBuildPayloadSelection();
+      const payloadKey = makeBuildPaletteSelectionKey(payloadSelection);
+      const currentKey = String(buildSearchKeyboardSelectionKey || '').trim();
+      const chooseKey = explicitSelectionKey
+        || (options.preferPayloadSelection !== false ? payloadKey : '')
+        || (currentKey && candidates.some((candidate) => candidate.key === currentKey) ? currentKey : '');
+      if (chooseKey && candidates.some((candidate) => candidate.key === chooseKey)) {
+        setBuildSearchKeyboardSelectionKey(chooseKey);
+      } else if (candidates.length) {
+        setBuildSearchKeyboardSelectionKey(candidates[0].key);
+      } else {
+        clearBuildSearchKeyboardSelection();
+      }
+    } else {
+      clearBuildSearchKeyboardSelection();
+    }
+    syncBuildSearchNavigationUi();
+    positionBuildPopover();
+  }
+
+  function keepBuildPopoverOpen(options = {}) {
+    const preserveQuery = options.preserveQuery !== false;
+    const hasQueryOverride = Object.prototype.hasOwnProperty.call(options, 'query');
+    const activeQuery = preserveQuery
+      ? (hasQueryOverride ? String(options.query || '') : getBuildPaletteFilterQuery())
+      : '';
+    showBuildPopover({
+      focusSearch: !!options.focusSearch,
+      query: activeQuery,
+      preserveKeyboardSelection: !!options.preserveKeyboardSelection,
+    });
+  }
+
+  function hideBuildPopover(delayMs = 0) {
+    cancelBuildPopoverHide();
     const applyHide = () => {
-      collapseBuildSearchAutocomplete();
+      clearBuildSearchKeyboardSelection();
+      resetBuildSearchFieldOnHide();
       if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
       restoreBuildPopoverPanes();
+      syncBuildSearchNavigationUi();
     };
     if (delayMs > 0) {
       buildPopoverHideTimer = window.setTimeout(() => {
@@ -13138,18 +13376,18 @@
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
-    if (buildPopoverHideTimer) {
-      clearTimeout(buildPopoverHideTimer);
-      buildPopoverHideTimer = 0;
-    }
-    restoreBuildSearchAutocompleteBinding();
+    cancelBuildPopoverHide();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
+    if (Object.prototype.hasOwnProperty.call(options, 'query')) {
+      setBuildPaletteFilterQuery(String(options.query || ''), { syncInput: true });
+    }
     syncBuildPopoverPanes();
-    syncBuildSearchField();
-    updateBuildPaletteFilter(document.activeElement === editBuildSearchEl ? String(editBuildSearchEl.value || '') : '');
     editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'false');
-    positionBuildPopover();
+    renderBuildPopover({
+      selectionKey: String(options.selectionKey || '').trim(),
+      preferPayloadSelection: options.preferPayloadSelection !== false,
+    });
     if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
   }
 
@@ -14300,14 +14538,13 @@
         : null
     ) || resolveGestureBondCenterClickHit(e);
     if (currentTransformContext && currentTransformContext.type === 'bond' && centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
-      const cleared = clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: false });
-      if (cleared && typeof e.preventDefault === 'function') e.preventDefault();
-      return false;
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      return true;
     }
     if (activeBondCenterSelection) {
       const pickedAtomForBondScope = pickAtom(e);
       const atomIndexForBondScope = pickedAtomForBondScope && pickedAtomForBondScope.userData ? (pickedAtomForBondScope.userData.index | 0) : -1;
-      if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
+      if (pickedBondHit && pickedBondHit.object) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return true;
       }
@@ -14364,6 +14601,10 @@
     }
     const pickedAtom = pickAtom(e);
     const pickedAtomIndex = pickedAtom && pickedAtom.userData ? (pickedAtom.userData.index | 0) : -1;
+    if (pickedAtomIndex < 0 && pickedBondHit && pickedBondHit.object) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      return true;
+    }
     if (
       currentTransformContext
       && currentTransformContext.type === 'bond'
@@ -14386,25 +14627,6 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
-    if (pickedAtomIndex < 0 && pickedBondHit && pickedBondHit.object && isExplicitTransformBondSideHit(pickedBondHit)) {
-      const payload = applyGestureBondSideSelection(pickedBondHit);
-      if (payload) {
-        clearGestureVoidPreview();
-        gestureBondSidePress = {
-          pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
-          clientX: Number(e.clientX) || 0,
-          clientY: Number(e.clientY) || 0,
-          bondHit: pickedBondHit,
-          bondContext: cloneTransformBondContext(payload.context),
-          dragMode: e.shiftKey ? 'bondQuaternion' : 'bondAngleHorizontal',
-        };
-        if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.setPointerCapture === 'function') {
-          try { canvasEl.setPointerCapture(e.pointerId); } catch { }
-        }
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        return true;
-      }
-    }
     return false;
   }
 
@@ -14420,7 +14642,6 @@
       }
       const bondHit = pickBondHit(e);
       if (bondHit) {
-        startFuseRingPlacementFromBondHit(bondHit);
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return true;
       }
@@ -14441,7 +14662,7 @@
     if (activeBondCenterSelection) {
       const pickedAtomForBondScope = pickAtom(e);
       const atomIndexForBondScope = pickedAtomForBondScope && pickedAtomForBondScope.userData ? (pickedAtomForBondScope.userData.index | 0) : -1;
-      if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
+      if (pickedBondHit && pickedBondHit.object) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return true;
       }
@@ -14514,6 +14735,10 @@
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return true;
       }
+    }
+    if (pickedBondHit && pickedBondHit.object) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      return true;
     }
     if (isSelectionFragmentCueActive() && getEditAtomSelection().length > 0) {
       hideSelectionFragmentCuePopover();
@@ -17079,8 +17304,13 @@
     return changed;
   }
 
-  function handleBondCenterScopeSelection(e) {
-    const bondHit = resolveGestureBondCenterClickHit(e) || pickBondHit(e);
+  function handleBondCenterScopeSelection(e, initialBondHit = null) {
+    const pickedBondHit = initialBondHit && initialBondHit.object
+      ? initialBondHit
+      : pickBondHit(e);
+    const bondHit = (pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center')
+      ? pickedBondHit
+      : resolveGestureBondCenterClickHit(e);
     if (!(bondHit && bondHit.object && bondHit.section === 'center')) return false;
     hideBuildPopover();
     return setBondCenterSelectionFromHit(bondHit, { announce: true });
@@ -17310,10 +17540,19 @@
       clearBondCenterSelection({ updateVisuals: true });
       return true;
     }
-    const bondHit = resolveGestureBondCenterClickHit(e) || pickBondHit(e);
+    const pickedBondHit = pickBondHit(e);
+    if (pickedBondHit && pickedBondHit.object && isExplicitTransformBondSideHit(pickedBondHit)) {
+      clearBondCenterSelection({ updateVisuals: false });
+      const payload = applyGestureBondSideSelection(pickedBondHit);
+      if (payload) hideBuildPopover();
+      return !!payload;
+    }
+    const bondHit = (pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center')
+      ? pickedBondHit
+      : resolveGestureBondCenterClickHit(e);
     if (!(bondHit && bondHit.object)) return false;
     clearBondCenterSelection({ updateVisuals: false });
-    if (bondHit.section === 'center') return handleBondCenterScopeSelection(e);
+    if (bondHit.section === 'center') return handleBondCenterScopeSelection(e, bondHit);
     if (isExplicitTransformBondSideHit(bondHit)) {
       const payload = applyGestureBondSideSelection(bondHit);
       if (payload) hideBuildPopover();

@@ -236,16 +236,19 @@
     }
 
     function resolveBondCenterClickHit(e) {
+      const pickedBondHit = pickBondHit(e);
+      if (pickedBondHit && pickedBondHit.object) {
+        return pickedBondHit.section === 'center'
+          ? pickedBondHit
+          : null;
+      }
       const hoveredCenterBondHit = state.hoverBondHit && state.hoverBondHit.object && state.hoverBondHit.section === 'center'
         ? state.hoverBondHit
         : null;
       if (hoveredCenterBondHit) return hoveredCenterBondHit;
       const stickyCenterBondHit = getStickyCenterBondHit(e);
       if (stickyCenterBondHit) return stickyCenterBondHit;
-      const pickedBondHit = pickBondHit(e);
-      return pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center'
-        ? pickedBondHit
-        : null;
+      return null;
     }
 
     function updateIdleHover(e) {
@@ -355,7 +358,7 @@
         updateRotateDrag(e);
         return true;
       }
-      if (state.press.kind === 'bond-center-inert') {
+      if (state.press.kind === 'bond-inert') {
         state.press = null;
         if (state.activePointerId != null) releasePointer(state.activePointerId);
         state.activePointerId = null;
@@ -435,17 +438,17 @@
       state.activePointerId = e.pointerId;
       if (handleExternalPointerDown(intent, e, state)) return true;
       if (intent === EDIT_INTENT.ADD_MOLECULE) return false;
-      const centerBondHit = resolveBondCenterClickHit(e);
-      if (centerBondHit && centerBondHit.object && centerBondHit.section === 'center') {
+      const pickedBondHit = pickBondHit(e);
+      if (pickedBondHit && pickedBondHit.object) {
         state.press = {
-          kind: 'bond-center-inert',
+          kind: 'bond-inert',
           clientX: Number(e.clientX) || 0,
           clientY: Number(e.clientY) || 0,
           pointerId: e.pointerId,
-          bondHit: centerBondHit,
+          bondHit: pickedBondHit,
         };
         state.hoverAtomIndex = -1;
-        state.hoverBondHit = centerBondHit;
+        state.hoverBondHit = pickedBondHit;
         state.voidPreviewVisible = false;
         hideVoidPlacementPreview();
         capturePointer(e.pointerId);
@@ -453,19 +456,6 @@
         return true;
       }
       const selection = Array.isArray(getSelection()) ? getSelection() : [];
-      const bondHit = !!e.shiftKey ? (centerBondHit || pickBondHit(e)) : null;
-      if (bondHit && bondHit.object) {
-        state.press = {
-          kind: 'bond-downstream',
-          clientX: Number(e.clientX) || 0,
-          clientY: Number(e.clientY) || 0,
-          pointerId: e.pointerId,
-          bondHit,
-        };
-        capturePointer(e.pointerId);
-        notifyUi();
-        return true;
-      }
       const atomObj = pickAtomObject(e);
       const atomIndex = atomObj && atomObj.userData ? (atomObj.userData.index | 0) : -1;
       if (atomIndex >= 0) {
@@ -590,7 +580,7 @@
       state.press = null;
       if (press.kind === 'atom-press-pending' || press.kind === 'selected-atom') {
         clearLastAtomClick();
-      } else if (press.kind === 'bond-center-inert') {
+      } else if (press.kind === 'bond-inert') {
         clearLastAtomClick();
       } else if (press.kind === 'void-clear') {
         clearLastAtomClick();
