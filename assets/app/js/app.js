@@ -12909,6 +12909,13 @@
       && !!e
       && (e.button === 2 || (e.button === 0 && !!e.ctrlKey && !e.altKey && !e.metaKey));
   }
+
+  function isTrackedContextPointerEvent(e) {
+    if (isEditContextPointerEvent(e)) return true;
+    if (!__contextDownPt || !e) return false;
+    return !Number.isInteger(__contextDownPt.pointerId)
+      || __contextDownPt.pointerId === e.pointerId;
+  }
   /**
    * Clear the current measurement/edit atom selection.
    */
@@ -17504,7 +17511,7 @@
   }
 
   function handleEditAtomContextSelection(e) {
-    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION) return false;
+    if (currentMode !== MODES.EDIT) return false;
     const hit = pickAtomHit(e);
     if (!(hit && hit.object && hit.object.userData)) return false;
     hideBuildPopover();
@@ -17540,7 +17547,7 @@
   }
 
   function handleEditScopeContextSelection(e) {
-    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION) return false;
+    if (currentMode !== MODES.EDIT) return false;
     const atomHandled = handleEditAtomContextSelection(e);
     if (atomHandled) {
       clearBondCenterSelection({ updateVisuals: true });
@@ -19336,7 +19343,7 @@
 
   canvasEl.addEventListener('contextmenu', (e) => {
     if (currentMode === MODES.EDIT) {
-      if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && !__contextMoved) {
+      if (!__contextMoved) {
         if (__contextHandled) {
           if (typeof e.preventDefault === 'function') e.preventDefault();
           resetContextClickState();
@@ -19365,7 +19372,7 @@
   canvasEl.addEventListener('pointerdown', (e) => {
     if (isEditContextPointerEvent(e)) {
       __contextHandled = false;
-      if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && handleEditScopeContextSelection(e)) {
+      if (handleEditScopeContextSelection(e)) {
         __contextHandled = true;
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return;
@@ -19414,6 +19421,11 @@
     if (viewRotateActive && viewRotatePointerId === e.pointerId) {
       endQuaternionViewRotate(e);
     }
+    if (currentMode === MODES.EDIT && isTrackedContextPointerEvent(e)) {
+      resetContextClickState();
+      __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+      return;
+    }
     if (currentMode === MODES.EDIT) {
       if (editGestureController && editGestureController.handlePointerUp(e)) {
         updateAxisGuideLine();
@@ -19448,6 +19460,7 @@
     __editDownPt = null; __editClickIdx = -1; __editMoved = false;
   });
   canvasEl.addEventListener('pointercancel', (e) => {
+    resetContextClickState();
     if (currentMode === MODES.DISPLAY) endQuaternionViewRotate(e);
     if (gestureBondSidePress && canvasEl && Number.isInteger(gestureBondSidePress.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
       try { canvasEl.releasePointerCapture(gestureBondSidePress.pointerId); } catch { }
