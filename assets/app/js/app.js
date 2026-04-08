@@ -698,14 +698,25 @@
     perspectiveCamera.updateProjectionMatrix();
   }
 
-  // Lights
+  // Main scene lights are stored in a rig that tracks the active camera
+  // orientation, so highlights remain camera-relative while orbiting.
+  const sceneLightRig = new THREE.Group();
+  scene.add(sceneLightRig);
   const hemi = new THREE.HemisphereLight(0xffffff, 0x081018, 2.0);
   const dir = new THREE.DirectionalLight(0xffffff, 1.0);
   dir.position.set(1, 1, 1);
   const amb = new THREE.AmbientLight(0x999999, 0.65);
   const rim = new THREE.DirectionalLight(0x9fb8ff, 0.0);
   rim.position.set(-1.4, 1.0, -0.8);
-  scene.add(hemi, dir, amb, rim);
+  sceneLightRig.add(hemi, dir, amb, rim);
+
+  /**
+   * Keep the main scene light vectors camera-relative.
+   */
+  function updateSceneLightRigOrientation() {
+    sceneLightRig.quaternion.copy(camera.quaternion);
+    sceneLightRig.updateMatrixWorld();
+  }
 
   /**
    * Build the lightweight XY-plane edit grid shown only in edit mode.
@@ -1032,6 +1043,7 @@
   // Current atom/bond material style
   let moleculeStyle = 'default';
   // Independent molecule appearance features.
+  let moleculeSplitColorBondsEnabled = false;
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
   let moleculeBlackbodyEnabled = false;
@@ -1210,6 +1222,7 @@
    * @param {{bufferWidth:number,bufferHeight:number}} metrics
    */
   function renderSceneFrame(metrics) {
+    updateSceneLightRigOrientation();
     let didSplit = false;
     try {
       didSplit = renderAlphaBetaSplitPass(metrics);
@@ -2522,6 +2535,7 @@
   }
 
   /**
+   * Remap bond-gradient interpolation so default-mode color changes happen
    * Apply end-to-end color interpolation to a cylinder so bonds are color-graded.
    * @param {THREE.BufferGeometry} geom
    * @param {THREE.Color} colorA
@@ -3664,42 +3678,7 @@
       const glossyEndSlopeB = isGlossyStyle
         ? +Math.max(glossyFunnelMinSlope, sphereSlopeMagB * glossyFunnelScale)
         : 0.58;
-      const geom = isGlossyStyle
-        ? createGlossyBondConnectorGeometry(
-          localGeomLen,
-          componentCenterRadius,
-          glossyEndRadiusA,
-          glossyEndRadiusB,
-          glossyEndSlopeA,
-          glossyEndSlopeB
-        )
-        : isKitStyle
-          ? createKitCollaredBondGeometry(localGeomLen, componentCenterRadius, kitCollarRadius)
-            : new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, localGeomLen, bondRadialSegments, bondHeightSegments, false);
-      if (!isKitStyle) {
-        const gradientColorA = a.bondColor || a.color;
-        const gradientColorB = b.bondColor || b.color;
-        if (gradientColorA && gradientColorB) applyBondGradient(geom, gradientColorA, gradientColorB);
-      }
-      const cyl = new THREE.Mesh(geom, bondMat);
-      if (stylizedBondOutlineMat) {
-        const outline = new THREE.Mesh(geom, stylizedBondOutlineMat);
-        const outlineScale = isGlossyStyle ? 1.05 : isInkStyle ? 1.08 : 1.18;
-        outline.scale.set(outlineScale, 1.0, outlineScale);
-        outline.userData = { type: 'bondOutline' };
-        cyl.add(outline);
-      }
-      if (stylizedBondHighlightMat) {
-        const highlight = new THREE.Mesh(geom, stylizedBondHighlightMat);
-        const highlightScale = isGlossyStyle ? 1.012 : 1.03;
-        highlight.scale.set(highlightScale, 1.0, highlightScale);
-        highlight.userData = { type: 'bondHighlight' };
-        cyl.add(highlight);
-      }
-      cyl.position.copy(localMid);
-      const q = new THREE.Quaternion().setFromUnitVectors(up, dirNorm);
-      cyl.setRotationFromQuaternion(q);
-      cyl.userData = {
+      const carrierUserData = {
         bondId: renderEdges.find((edge) => edge.i === i && edge.j === j && edge.order === order && edge.kind === 'normal')?.id || buildVolumeBondId(ensureAtomId(vol.atoms[i]), ensureAtomId(vol.atoms[j])),
         baseLen: len,
         baseGeomLen: localGeomLen,
@@ -3719,6 +3698,82 @@
         connectorEndRadiusB: isGlossyStyle ? glossyEndRadiusB : undefined,
         bondDisplayRadius: Math.max(0.01, componentCenterRadius),
       };
+      const outlineScale = isGlossyStyle ? 1.05 : isInkStyle ? 1.08 : 1.18;
+      const highlightScale = isGlossyStyle ? 1.012 : 1.03;
+      /**
+       * Attach outline/highlight shells to one bond mesh when needed.
+       * @param {THREE.Mesh} mesh
+       * @param {THREE.BufferGeometry} meshGeom
+       */
+      function decorateBondMesh(mesh, meshGeom) {
+        if (stylizedBondOutlineMat) {
+          const outline = new THREE.Mesh(meshGeom, stylizedBondOutlineMat);
+          outline.scale.set(outlineScale, 1.0, outlineScale);
+          outline.userData = { type: 'bondOutline' };
+          mesh.add(outline);
+        }
+        if (stylizedBondHighlightMat) {
+          const highlight = new THREE.Mesh(meshGeom, stylizedBondHighlightMat);
+          highlight.scale.set(highlightScale, 1.0, highlightScale);
+          highlight.userData = { type: 'bondHighlight' };
+          mesh.add(highlight);
+        }
+      }
+      const gradientColorA = a.bondColor || a.color;
+      const gradientColorB = b.bondColor || b.color;
+      const q = new THREE.Quaternion().setFromUnitVectors(up, dirNorm);
+      const useSplitColorBondConnector = moleculeSplitColorBondsEnabled && (profile.key === 'default' || profile.key === 'toon');
+      if (useSplitColorBondConnector && !isGlossyStyle && !isKitStyle && gradientColorA && gradientColorB) {
+        const sameElement = (a.Z | 0) === (b.Z | 0);
+        if (sameElement) {
+          const geom = new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, localGeomLen, bondRadialSegments, 1, false);
+          applySolidVertexColor(geom, gradientColorA);
+          const cyl = new THREE.Mesh(geom, bondMat);
+          decorateBondMesh(cyl, geom);
+          cyl.position.copy(localMid);
+          cyl.setRotationFromQuaternion(q);
+          cyl.userData = carrierUserData;
+          group.add(cyl);
+          return;
+        }
+        const halfLen = Math.max(1e-4, localGeomLen * 0.5);
+        const halfOffset = localGeomLen * 0.25;
+        const carrier = new THREE.Group();
+        const geomA = new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, halfLen, bondRadialSegments, 1, false);
+        applySolidVertexColor(geomA, gradientColorA);
+        const meshA = new THREE.Mesh(geomA, bondMat);
+        meshA.position.y = -halfOffset;
+        decorateBondMesh(meshA, geomA);
+        const geomB = new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, halfLen, bondRadialSegments, 1, false);
+        applySolidVertexColor(geomB, gradientColorB);
+        const meshB = new THREE.Mesh(geomB, bondMat);
+        meshB.position.y = halfOffset;
+        decorateBondMesh(meshB, geomB);
+        carrier.add(meshA, meshB);
+        carrier.position.copy(localMid);
+        carrier.setRotationFromQuaternion(q);
+        carrier.userData = carrierUserData;
+        group.add(carrier);
+        return;
+      }
+      const geom = isGlossyStyle
+        ? createGlossyBondConnectorGeometry(
+          localGeomLen,
+          componentCenterRadius,
+          glossyEndRadiusA,
+          glossyEndRadiusB,
+          glossyEndSlopeA,
+          glossyEndSlopeB
+        )
+        : isKitStyle
+          ? createKitCollaredBondGeometry(localGeomLen, componentCenterRadius, kitCollarRadius)
+          : new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, localGeomLen, bondRadialSegments, bondHeightSegments, false);
+      if (!isKitStyle && gradientColorA && gradientColorB) applyBondGradient(geom, gradientColorA, gradientColorB);
+      const cyl = new THREE.Mesh(geom, bondMat);
+      decorateBondMesh(cyl, geom);
+      cyl.position.copy(localMid);
+      cyl.setRotationFromQuaternion(q);
+      cyl.userData = carrierUserData;
       group.add(cyl);
     }
 
@@ -5454,6 +5509,7 @@
   const moleculeStyleSel = document.getElementById('moleculeStyle');
   const rowGlossyBond = document.getElementById('rowGlossyBond');
   const glossyBondRadiusEl = document.getElementById('glossyBondRadius');
+  const moleculeSplitColorBondsToggleEl = document.getElementById('moleculeSplitColorBondsToggle');
   const moleculeFogToggleEl = document.getElementById('moleculeFogToggle');
   const rowMoleculeFogDepth = document.getElementById('rowMoleculeFogDepth');
   const moleculeFogDepthEl = document.getElementById('moleculeFogDepth');
@@ -19040,6 +19096,7 @@
    * Synchronize independent molecule feature controls.
    */
   function syncMoleculeFeatureControlsState() {
+    if (moleculeSplitColorBondsToggleEl) moleculeSplitColorBondsToggleEl.checked = !!moleculeSplitColorBondsEnabled;
     if (moleculeFogToggleEl) moleculeFogToggleEl.checked = !!moleculeFogEnabled;
     if (rowMoleculeFogDepth) rowMoleculeFogDepth.style.display = moleculeFogEnabled ? '' : 'none';
     if (moleculeFogDepthEl) moleculeFogDepthEl.value = getMoleculeFogDepth().toFixed(1);
@@ -19181,6 +19238,13 @@
     };
   } else {
     applyMoleculeStyleUiState();
+  }
+  if (moleculeSplitColorBondsToggleEl) {
+    moleculeSplitColorBondsToggleEl.onchange = () => {
+      moleculeSplitColorBondsEnabled = !!moleculeSplitColorBondsToggleEl.checked;
+      applyMoleculeStyleUiState();
+      rebuildScene({ preserveView: true });
+    };
   }
   if (moleculeFogToggleEl) {
     moleculeFogToggleEl.onchange = () => {
@@ -19618,6 +19682,10 @@
     glossyBondRadius = asFiniteNumber(value, getGlossyBondCenterRadius());
     glossyBondRadius = getGlossyBondCenterRadius();
     if (glossyBondRadiusEl) glossyBondRadiusEl.value = String(glossyBondRadius);
+  });
+  registerPresetSetting('molecule.feature.splitColorBonds', () => !!moleculeSplitColorBondsEnabled, (value) => {
+    moleculeSplitColorBondsEnabled = asBoolean(value);
+    applyMoleculeStyleUiState();
   });
   registerPresetSetting('molecule.feature.fog', () => !!moleculeFogEnabled, (value) => {
     moleculeFogEnabled = asBoolean(value);
