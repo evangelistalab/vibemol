@@ -721,10 +721,22 @@
   const hemi = new THREE.HemisphereLight(0xffffff, 0x081018, 2.0);
   const dir = new THREE.DirectionalLight(0xffffff, 1.0);
   dir.position.set(1, 1, 1);
+  dir.castShadow = false;
+  dir.shadow.mapSize.set(1536, 1536);
+  dir.shadow.bias = -0.00035;
+  dir.shadow.normalBias = 0.015;
+  dir.shadow.camera.near = 0.25;
+  dir.shadow.camera.far = 42;
+  dir.shadow.camera.left = -12;
+  dir.shadow.camera.right = 12;
+  dir.shadow.camera.top = 12;
+  dir.shadow.camera.bottom = -12;
   const amb = new THREE.AmbientLight(0x999999, 0.65);
   const rim = new THREE.DirectionalLight(0x9fb8ff, 0.0);
   rim.position.set(-1.4, 1.0, -0.8);
   sceneLightRig.add(hemi, dir, amb, rim);
+  renderer.shadowMap.enabled = false;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   /**
    * Keep the main scene light vectors camera-relative.
@@ -837,7 +849,6 @@
   let bondCenterSelectionState = null;
   let buildSearchKeyboardSelectionKey = '';
   let buildPopoverHideTimer = 0;
-  let symmetryPopoverHideTimer = 0;
   let editPopoverHoverOpenTimer = 0;
   let editPopoverHoverOpenKind = '';
   let editPopoverHoverSuppressKind = '';
@@ -1094,6 +1105,7 @@
   let moleculeStyle = 'default';
   // Independent molecule appearance features.
   let moleculeSplitColorBondsEnabled = false;
+  let moleculeShadowsEnabled = false;
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
   let moleculeBlackbodyEnabled = false;
@@ -1630,6 +1642,9 @@
     } else {
       scene.fog = null;
     }
+    renderer.shadowMap.enabled = !!moleculeShadowsEnabled;
+    dir.castShadow = !!moleculeShadowsEnabled;
+    dir.shadow.needsUpdate = true;
   }
 
   /**
@@ -5561,6 +5576,7 @@
   const rowGlossyBond = document.getElementById('rowGlossyBond');
   const glossyBondRadiusEl = document.getElementById('glossyBondRadius');
   const moleculeSplitColorBondsToggleEl = document.getElementById('moleculeSplitColorBondsToggle');
+  const moleculeShadowsToggleEl = document.getElementById('moleculeShadowsToggle');
   const moleculeFogToggleEl = document.getElementById('moleculeFogToggle');
   const rowMoleculeFogDepth = document.getElementById('rowMoleculeFogDepth');
   const moleculeFogDepthEl = document.getElementById('moleculeFogDepth');
@@ -6150,9 +6166,15 @@
     const skipAutoIso = !!options.skipAutoIso;
     const clearTransient = options.clearTransient !== false;
     const clearSceneWhenEmpty = !!options.clearSceneWhenEmpty;
+    const previousRecord = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const nextIndex = normalizeActiveVolumeIndex(index);
+    const nextRecord = (nextIndex >= 0 && volumes[nextIndex]) ? volumes[nextIndex] : null;
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
+    if (previousRecord !== nextRecord && isSymmetryPopoverOpen()) {
+      hideSymmetryPopover({ restore: true });
+    }
     if (clearTransient) clearTransientInteractionState();
-    currentIndex = normalizeActiveVolumeIndex(index);
+    currentIndex = nextIndex;
     syncActiveVolumeControls();
     if (currentIndex >= 0 && volumes[currentIndex]) {
       if (shouldRebuild) {
@@ -10893,7 +10915,7 @@
   }
 
   function showGestureVoidPlacementPreview(e) {
-    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION) {
+    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || isSymmetryPopoverOpen()) {
       clearGestureVoidPreview();
       return false;
     }
@@ -12481,23 +12503,11 @@
         if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
         else showSymmetryPopover();
       };
-      editAdaptiveSymmetryBtn.addEventListener('mouseenter', () => {
-        cancelEditPopoverHoverOpen();
-        cancelSymmetryPopoverHide();
-      });
-      editAdaptiveSymmetryBtn.addEventListener('mouseleave', () => {
-        if (isSymmetryPopoverOpen()) hideSymmetryPopover(120, { restore: true });
-      });
     }
     if (editAdaptiveSymmetryPopoverEl) {
       editAdaptiveSymmetryPopoverEl.addEventListener('pointerdown', (e) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       });
-      editAdaptiveSymmetryPopoverEl.addEventListener('mouseenter', () => {
-        cancelEditPopoverHoverOpen();
-        cancelSymmetryPopoverHide();
-      });
-      editAdaptiveSymmetryPopoverEl.addEventListener('mouseleave', () => hideSymmetryPopover(120, { restore: true }));
     }
     if (editSymmetryToleranceRangeEl) {
       editSymmetryToleranceRangeEl.addEventListener('input', () => setSymmetryTolerance(editSymmetryToleranceRangeEl.value));
@@ -13679,13 +13689,6 @@
     return !!(editAdaptiveSymmetryPopoverEl && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false');
   }
 
-  function cancelSymmetryPopoverHide() {
-    if (symmetryPopoverHideTimer) {
-      clearTimeout(symmetryPopoverHideTimer);
-      symmetryPopoverHideTimer = 0;
-    }
-  }
-
   function resolveEditSymmetryTarget() {
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
@@ -13928,33 +13931,30 @@
     if (!axis || axis.lengthSq() <= 1e-10) return;
     axis.normalize();
     const length = radius * 2.8;
-    const start = center.clone().addScaledVector(axis, -length * 0.5);
-    const end = center.clone().addScaledVector(axis, length * 0.5);
-    const group = new THREE.Group();
-    const lineGeom = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const lineMat = new THREE.LineBasicMaterial({
-      color: 0x6db4ff,
-      transparent: true,
-      opacity: 0.92,
-      depthWrite: false,
-      depthTest: false,
-    });
-    const line = new THREE.Line(lineGeom, lineMat);
-    group.add(line);
-    const tipGeom = new THREE.SphereGeometry(Math.max(0.06, radius * 0.08), 14, 12);
-    const tipMat = new THREE.MeshBasicMaterial({
-      color: 0xb9dcff,
-      transparent: true,
-      opacity: 0.96,
-      depthWrite: false,
-      depthTest: false,
-    });
-    for (const point of [start, end]) {
-      const tip = new THREE.Mesh(tipGeom.clone(), tipMat.clone());
-      tip.position.copy(point);
-      group.add(tip);
-    }
-    symmetryElementGuideGroup.add(group);
+    const thickness = Math.max(0.03, radius * 0.03);
+    const createSurfaceMaterial = (colorHex, options = {}) => {
+      const baseColor = new THREE.Color(colorHex);
+      const emissiveStrength = Number.isFinite(options.emissiveStrength) ? options.emissiveStrength : 0.16;
+      return new THREE.MeshPhongMaterial({
+        color: baseColor,
+        emissive: baseColor.clone().multiplyScalar(Math.max(0, emissiveStrength)),
+        specular: new THREE.Color(0xffffff),
+        shininess: Number.isFinite(options.shininess) ? options.shininess : 85,
+        transparent: true,
+        opacity: Number.isFinite(options.opacity) ? options.opacity : 0.88,
+        side: options.side || THREE.FrontSide,
+        depthTest: options.depthTest !== false,
+        depthWrite: false,
+      });
+    };
+    const shaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(thickness, thickness, length, 18, 1, false),
+      createSurfaceMaterial(0x7ab8ff, { opacity: 0.9, emissiveStrength: 0.18, shininess: 90 })
+    );
+    shaft.position.copy(center);
+    shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
+    shaft.renderOrder = 9994;
+    symmetryElementGuideGroup.add(shaft);
   }
 
   function renderSymmetryPlaneElement(element, center, radius) {
@@ -13969,30 +13969,35 @@
     const group = new THREE.Group();
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(planeSize, planeSize),
-      new THREE.MeshBasicMaterial({
+      new THREE.MeshPhongMaterial({
         color: 0x70a9ff,
+        emissive: new THREE.Color(0x70a9ff).multiplyScalar(0.08),
+        specular: new THREE.Color(0xffffff),
+        shininess: 70,
         transparent: true,
-        opacity: 0.15,
+        opacity: 0.22,
         side: THREE.DoubleSide,
         depthWrite: false,
-        depthTest: false,
+        depthTest: true,
       })
     );
     plane.position.copy(center);
     plane.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    plane.renderOrder = 9993;
     group.add(plane);
     const outline = new THREE.LineSegments(
       new THREE.EdgesGeometry(new THREE.PlaneGeometry(planeSize, planeSize)),
       new THREE.LineBasicMaterial({
         color: 0xcfe5ff,
         transparent: true,
-        opacity: 0.72,
+        opacity: 0.82,
         depthWrite: false,
-        depthTest: false,
+        depthTest: true,
       })
     );
     outline.position.copy(center);
     outline.quaternion.copy(plane.quaternion);
+    outline.renderOrder = 9994;
     group.add(outline);
     symmetryElementGuideGroup.add(group);
   }
@@ -14006,27 +14011,35 @@
     const group = new THREE.Group();
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(Math.max(0.08, radius * 0.1), 18, 16),
-      new THREE.MeshBasicMaterial({
+      new THREE.MeshPhongMaterial({
         color: 0xff8ad9,
+        emissive: new THREE.Color(0xff8ad9).multiplyScalar(0.16),
+        specular: new THREE.Color(0xffffff),
+        shininess: 95,
         transparent: true,
         opacity: 0.92,
         depthWrite: false,
-        depthTest: false,
+        depthTest: true,
       })
     );
     sphere.position.copy(point);
+    sphere.renderOrder = 9995;
     group.add(sphere);
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(Math.max(0.12, radius * 0.15), Math.max(0.012, radius * 0.018), 12, 42),
-      new THREE.MeshBasicMaterial({
+      new THREE.MeshPhongMaterial({
         color: 0xffd6ef,
+        emissive: new THREE.Color(0xffd6ef).multiplyScalar(0.1),
+        specular: new THREE.Color(0xffffff),
+        shininess: 90,
         transparent: true,
         opacity: 0.82,
         depthWrite: false,
-        depthTest: false,
+        depthTest: true,
       })
     );
     ring.position.copy(point);
+    ring.renderOrder = 9995;
     group.add(ring);
     symmetryElementGuideGroup.add(group);
   }
@@ -14139,7 +14152,6 @@
       delayMs = 0;
     }
     delayMs = Math.max(0, Number(delayMs) || 0);
-    cancelSymmetryPopoverHide();
     cancelEditPopoverHoverOpen();
     const applyHide = () => {
       clearSymmetryCurrentGroupHighlight();
@@ -14149,30 +14161,24 @@
       clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
       clearEditPopoverHoverSuppression('symmetry');
     };
-    if (delayMs > 0) {
-      symmetryPopoverHideTimer = window.setTimeout(() => {
-        symmetryPopoverHideTimer = 0;
-        applyHide();
-      }, delayMs);
-      return;
-    }
     applyHide();
   }
 
   function showSymmetryPopover() {
     if (!editAdaptiveSymmetryPopoverEl) return;
-    cancelSymmetryPopoverHide();
     cancelEditPopoverHoverOpen();
     clearSymmetryCurrentGroupHighlight();
     symmetryPopoverCurrentGroupLabel = '';
     symmetryPopoverSelectedElementId = '';
     clearSymmetryElementGuide();
+    clearGestureVoidPreview();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     hideBuildPopover();
     noteEditPopoverClickOwnership('symmetry');
     invalidateSymmetryPopoverAnalysisCache();
     editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
+    if (editGestureController) editGestureController.refreshUi();
     renderSymmetryPopover();
   }
 
@@ -20669,6 +20675,11 @@
       setHintMessage('Canceled fuse-ring placement.');
       return;
     }
+    if (e.key === 'Escape' && currentMode === MODES.EDIT && isSymmetryPopoverOpen()) {
+      e.preventDefault();
+      hideSymmetryPopover({ restore: true });
+      return;
+    }
     if (e.key === 'Escape') {
       let closed = false;
       if (displayInspector && displayInspector.classList.contains('open')) {
@@ -20753,6 +20764,7 @@
    */
   function syncMoleculeFeatureControlsState() {
     if (moleculeSplitColorBondsToggleEl) moleculeSplitColorBondsToggleEl.checked = !!moleculeSplitColorBondsEnabled;
+    if (moleculeShadowsToggleEl) moleculeShadowsToggleEl.checked = !!moleculeShadowsEnabled;
     if (moleculeFogToggleEl) moleculeFogToggleEl.checked = !!moleculeFogEnabled;
     if (rowMoleculeFogDepth) rowMoleculeFogDepth.style.display = moleculeFogEnabled ? '' : 'none';
     if (moleculeFogDepthEl) moleculeFogDepthEl.value = getMoleculeFogDepth().toFixed(1);
@@ -20809,6 +20821,27 @@
   }
 
   /**
+   * Enable or disable cast/receive shadows on rendered molecule meshes.
+   * Outline/highlight/label shells stay out of the shadow pass.
+   * @param {THREE.Object3D|null} root
+   */
+  function applyShadowParticipation(root) {
+    if (!root || typeof root.traverse !== 'function') return;
+    root.traverse((node) => {
+      if (!node || !node.isMesh) return;
+      const type = String(node.userData && node.userData.type || '');
+      const allow = !!moleculeShadowsEnabled
+        && type !== 'atomOutline'
+        && type !== 'atomHighlight'
+        && type !== 'atomLabel'
+        && type !== 'bondOutline'
+        && type !== 'bondHighlight';
+      node.castShadow = allow;
+      node.receiveShadow = allow;
+    });
+  }
+
+  /**
    * Bind a numeric input to a clamped state value with optional live scene rebuild.
    * @param {HTMLInputElement|null} inputEl
    * @param {() => number} getClampedValue
@@ -20856,6 +20889,8 @@
    */
   function applyMoleculeStyleUiState() {
     applyMoleculeStyleLighting();
+    applyShadowParticipation(atomGroup);
+    applyShadowParticipation(bondGroup);
     syncSurfaceStyleControlState();
     syncGlossyStyleControlsState();
     syncMoleculeFeatureControlsState();
@@ -20898,6 +20933,13 @@
   if (moleculeSplitColorBondsToggleEl) {
     moleculeSplitColorBondsToggleEl.onchange = () => {
       moleculeSplitColorBondsEnabled = !!moleculeSplitColorBondsToggleEl.checked;
+      applyMoleculeStyleUiState();
+      rebuildScene({ preserveView: true });
+    };
+  }
+  if (moleculeShadowsToggleEl) {
+    moleculeShadowsToggleEl.onchange = () => {
+      moleculeShadowsEnabled = !!moleculeShadowsToggleEl.checked;
       applyMoleculeStyleUiState();
       rebuildScene({ preserveView: true });
     };
@@ -21341,6 +21383,10 @@
   });
   registerPresetSetting('molecule.feature.splitColorBonds', () => !!moleculeSplitColorBondsEnabled, (value) => {
     moleculeSplitColorBondsEnabled = asBoolean(value);
+    applyMoleculeStyleUiState();
+  });
+  registerPresetSetting('molecule.feature.shadows', () => !!moleculeShadowsEnabled, (value) => {
+    moleculeShadowsEnabled = asBoolean(value);
     applyMoleculeStyleUiState();
   });
   registerPresetSetting('molecule.feature.fog', () => !!moleculeFogEnabled, (value) => {
@@ -24958,10 +25004,12 @@
   function applyPostGeometry(vol, hasGrid) {
     if (toggleAtoms.checked) {
       atomGroup = buildAtoms(vol);
+      applyShadowParticipation(atomGroup);
       contentGroup.add(atomGroup);
     }
     if (toggleBonds.checked) {
       bondGroup = buildBonds(vol);
+      applyShadowParticipation(bondGroup);
       contentGroup.add(bondGroup);
     }
     if (toggleBox.checked && hasGrid) {
