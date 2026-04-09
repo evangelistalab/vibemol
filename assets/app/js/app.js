@@ -15017,6 +15017,18 @@
     return true;
   }
 
+  function clearExternalGestureControllerState(controllerState, pointerId = null) {
+    if (controllerState && Number.isInteger(controllerState.activePointerId) && canvasEl && typeof canvasEl.releasePointerCapture === 'function') {
+      try { canvasEl.releasePointerCapture(controllerState.activePointerId); } catch { }
+    } else if (Number.isInteger(pointerId) && canvasEl && typeof canvasEl.releasePointerCapture === 'function') {
+      try { canvasEl.releasePointerCapture(pointerId); } catch { }
+    }
+    if (controllerState) {
+      controllerState.activePointerId = null;
+      controllerState.press = null;
+    }
+  }
+
   function handleUnifiedEditControllerPointerUp(intent, e, controllerState = null) {
     if (transformActive) {
       finalizeTransformDrag();
@@ -15028,10 +15040,7 @@
       if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
         try { canvasEl.releasePointerCapture(e.pointerId); } catch { }
       }
-      if (controllerState) {
-        controllerState.activePointerId = null;
-        controllerState.press = null;
-      }
+      clearExternalGestureControllerState(controllerState, e && e.pointerId);
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
@@ -15040,17 +15049,31 @@
       if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
         try { canvasEl.releasePointerCapture(e.pointerId); } catch { }
       }
-      if (controllerState) {
-        controllerState.activePointerId = null;
-        controllerState.press = null;
-      }
+      clearExternalGestureControllerState(controllerState, e && e.pointerId);
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
-    if (moleculePlaceActive) return handleMoleculeIntentControllerPointerUp(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isFragmentPayloadLoaded() || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerUp(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerUp(e);
-    if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerUp(e);
+    if (moleculePlaceActive) {
+      const handled = handleMoleculeIntentControllerPointerUp(e);
+      if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
+      return handled;
+    }
+    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isFragmentPayloadLoaded() || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) {
+      if (controllerState && controllerState.press) return false;
+      const handled = handleFragmentIntentControllerPointerUp(e);
+      if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
+      return handled;
+    }
+    if (intent === EDIT_INTENT.ATOM_MANIPULATION) {
+      const handled = handleAtomManipulationControllerPointerUp(e);
+      if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
+      return handled;
+    }
+    if (intent === EDIT_INTENT.ADD_MOLECULE) {
+      const handled = handleMoleculeIntentControllerPointerUp(e);
+      if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
+      return handled;
+    }
     return false;
   }
 
