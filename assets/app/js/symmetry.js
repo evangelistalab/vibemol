@@ -223,6 +223,10 @@
     ];
   }
 
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
   function matsApproxEqual(a, b, tol = 1e-8) {
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
@@ -255,6 +259,103 @@
       [-2 * y * x, 1 - 2 * y * y, -2 * y * z],
       [-2 * z * x, -2 * z * y, 1 - 2 * z * z],
     ];
+  }
+
+  function canonicalizeDirection(dir) {
+    const n = normalize(dir);
+    if (!n) return null;
+    if (Math.abs(n[0]) > 1e-8) return n[0] < 0 ? scale(n, -1) : n;
+    if (Math.abs(n[1]) > 1e-8) return n[1] < 0 ? scale(n, -1) : n;
+    if (Math.abs(n[2]) > 1e-8) return n[2] < 0 ? scale(n, -1) : n;
+    return n;
+  }
+
+  function directionsEquivalent(a, b, tol = 1e-5) {
+    const na = normalize(a);
+    const nb = normalize(b);
+    if (!na || !nb) return false;
+    return Math.abs(dot(na, nb)) >= 1 - tol;
+  }
+
+  function worldDirectionFromFrame(frame, localDir) {
+    if (!frame) return canonicalizeDirection(localDir);
+    const world = add(
+      add(scale(frame.x, Number(localDir && localDir[0]) || 0), scale(frame.y, Number(localDir && localDir[1]) || 0)),
+      scale(frame.z, Number(localDir && localDir[2]) || 0)
+    );
+    return canonicalizeDirection(world);
+  }
+
+  function traceOfMatrix(m) {
+    return (m[0][0] || 0) + (m[1][1] || 0) + (m[2][2] || 0);
+  }
+
+  function isNegativeIdentityMatrix(m, tol = 1e-6) {
+    return matsApproxEqual(m, matDiagonal(-1, -1, -1), tol);
+  }
+
+  function isIdentityMatrix(m, tol = 1e-6) {
+    return matsApproxEqual(m, matIdentity(), tol);
+  }
+
+  function isReflectionLikeMatrix(m, tol = 1e-6) {
+    return matDet(m) < 0 && matsApproxEqual(matMul(m, m), matIdentity(), tol) && !isNegativeIdentityMatrix(m, tol);
+  }
+
+  function axisFromHalfTurnMatrix(m) {
+    const xx = Math.max(0, (1 + (m[0][0] || 0)) * 0.5);
+    const yy = Math.max(0, (1 + (m[1][1] || 0)) * 0.5);
+    const zz = Math.max(0, (1 + (m[2][2] || 0)) * 0.5);
+    const axis = [
+      Math.sqrt(xx),
+      Math.sqrt(yy),
+      Math.sqrt(zz),
+    ];
+    if (axis[0] > 1e-6) axis[1] = ((m[0][1] || 0) + (m[1][0] || 0)) / (4 * axis[0]);
+    if (axis[0] > 1e-6) axis[2] = ((m[0][2] || 0) + (m[2][0] || 0)) / (4 * axis[0]);
+    if (!(length(axis) > 1e-6) && axis[1] > 1e-6) axis[2] = ((m[1][2] || 0) + (m[2][1] || 0)) / (4 * axis[1]);
+    if (!(length(axis) > 1e-6)) {
+      const rows = [
+        [1 + (m[0][0] || 0), (m[0][1] || 0), (m[0][2] || 0)],
+        [(m[1][0] || 0), 1 + (m[1][1] || 0), (m[1][2] || 0)],
+        [(m[2][0] || 0), (m[2][1] || 0), 1 + (m[2][2] || 0)],
+      ].sort((a, b) => lengthSq(b) - lengthSq(a));
+      return canonicalizeDirection(rows[0]);
+    }
+    return canonicalizeDirection(axis);
+  }
+
+  function extractRotationElementFromMatrix(m) {
+    if (!(matDet(m) > 0)) return null;
+    if (isIdentityMatrix(m)) return null;
+    const cosine = clamp((traceOfMatrix(m) - 1) * 0.5, -1, 1);
+    const angle = Math.acos(cosine);
+    if (!(angle > 1e-6)) return null;
+    const skewAxis = [
+      (m[2][1] || 0) - (m[1][2] || 0),
+      (m[0][2] || 0) - (m[2][0] || 0),
+      (m[1][0] || 0) - (m[0][1] || 0),
+    ];
+    const axis = length(skewAxis) > 1e-6
+      ? canonicalizeDirection(skewAxis)
+      : axisFromHalfTurnMatrix(m);
+    if (!axis) return null;
+    return {
+      type: 'axis',
+      axis,
+      angle,
+      order: Math.max(2, Math.round((2 * Math.PI) / angle)),
+    };
+  }
+
+  function extractReflectionNormalFromMatrix(m) {
+    if (!isReflectionLikeMatrix(m)) return null;
+    const rows = [
+      [1 - (m[0][0] || 0), -(m[0][1] || 0), -(m[0][2] || 0)],
+      [-(m[1][0] || 0), 1 - (m[1][1] || 0), -(m[1][2] || 0)],
+      [-(m[2][0] || 0), -(m[2][1] || 0), 1 - (m[2][2] || 0)],
+    ].sort((a, b) => lengthSq(b) - lengthSq(a));
+    return canonicalizeDirection(rows[0]);
   }
 
   function buildFrame(zAxis, xRef) {
@@ -1130,6 +1231,218 @@
     } : null;
   }
 
+  function frameFromRotationMatrix(rotation) {
+    if (!rotation) return buildFrame([0, 0, 1], [1, 0, 0]);
+    return {
+      x: canonicalizeDirection([rotation[0][0], rotation[1][0], rotation[2][0]]) || [1, 0, 0],
+      y: canonicalizeDirection([rotation[0][1], rotation[1][1], rotation[2][1]]) || [0, 1, 0],
+      z: canonicalizeDirection([rotation[0][2], rotation[1][2], rotation[2][2]]) || [0, 0, 1],
+    };
+  }
+
+  function classifyPlaneLabel(groupId, localNormal) {
+    const n = normalize(localNormal);
+    if (!n) return 'σ plane';
+    if (groupId === 'Cs') return 'σ plane';
+    if (Math.abs(Math.abs(n[2]) - 1) <= 1e-5) return 'σh plane';
+    if (/v$/u.test(groupId)) return 'σv plane';
+    if (/d$/u.test(groupId)) return 'σd plane';
+    return 'σ plane';
+  }
+
+  function addElementUnique(elements, next, options = {}) {
+    if (!next) return;
+    const tol = Number(options.tol) || 1e-5;
+    if (next.type === 'center') {
+      if (elements.some((entry) => entry.type === 'center')) return;
+      elements.push(next);
+      return;
+    }
+    if (next.type === 'plane') {
+      if (elements.some((entry) => entry.type === 'plane' && directionsEquivalent(entry.normal, next.normal, tol))) return;
+      elements.push(next);
+      return;
+    }
+    if (next.type === 'axis') {
+      const existing = elements.find((entry) => entry.type === 'axis' && directionsEquivalent(entry.axis, next.axis, tol));
+      if (!existing) {
+        elements.push(next);
+        return;
+      }
+      if ((next.order || 0) > (existing.order || 0)) {
+        existing.order = next.order;
+        existing.label = next.label;
+      }
+    }
+  }
+
+  function finalizeElementLabels(elements) {
+    const familyCounts = new Map();
+    for (const entry of elements) {
+      const base = String(entry.label || '').trim();
+      familyCounts.set(base, (familyCounts.get(base) || 0) + 1);
+    }
+    const familyIndex = new Map();
+    for (const entry of elements) {
+      const base = String(entry.label || '').trim();
+      const total = familyCounts.get(base) || 0;
+      if (total <= 1) continue;
+      const next = (familyIndex.get(base) || 0) + 1;
+      familyIndex.set(base, next);
+      entry.label = `${base} ${next}`;
+    }
+    for (let i = 0; i < elements.length; i++) {
+      const entry = elements[i];
+      entry.id = entry.id || `element-${i + 1}`;
+    }
+  }
+
+  function buildSpecialShellElements(candidate, centeredState) {
+    const elements = [];
+    const frame = frameFromRotationMatrix(candidate && candidate.rotation);
+    const groupId = String(candidate && candidate.groupId || '');
+    if (groupId === 'Td') {
+      for (const dir of TETRA_TEMPLATE) {
+        addElementUnique(elements, {
+          type: 'axis',
+          axis: worldDirectionFromFrame(frame, dir),
+          order: 3,
+          label: 'C3 axis',
+        });
+      }
+      for (const dir of OCTA_TEMPLATE.slice(0, 3)) {
+        addElementUnique(elements, {
+          type: 'axis',
+          axis: worldDirectionFromFrame(frame, dir),
+          order: 2,
+          label: 'C2 axis',
+        });
+      }
+      const planeNormals = [
+        normalize([1, 1, 0]), normalize([1, -1, 0]),
+        normalize([1, 0, 1]), normalize([1, 0, -1]),
+        normalize([0, 1, 1]), normalize([0, 1, -1]),
+      ].filter(Boolean);
+      for (const normal of planeNormals) {
+        addElementUnique(elements, {
+          type: 'plane',
+          normal: worldDirectionFromFrame(frame, normal),
+          label: 'σd plane',
+        });
+      }
+    } else if (groupId === 'Oh') {
+      addElementUnique(elements, { type: 'center', point: centeredState.centroid.slice(), label: 'Inversion center' });
+      for (const dir of OCTA_TEMPLATE.slice(0, 3)) {
+        addElementUnique(elements, {
+          type: 'axis',
+          axis: worldDirectionFromFrame(frame, dir),
+          order: 4,
+          label: 'C4 axis',
+        });
+      }
+      const c3Dirs = [
+        normalize([1, 1, 1]), normalize([1, 1, -1]),
+        normalize([1, -1, 1]), normalize([-1, 1, 1]),
+      ].filter(Boolean);
+      for (const dir of c3Dirs) {
+        addElementUnique(elements, {
+          type: 'axis',
+          axis: worldDirectionFromFrame(frame, dir),
+          order: 3,
+          label: 'C3 axis',
+        });
+      }
+      const c2Dirs = [
+        normalize([1, 1, 0]), normalize([1, -1, 0]),
+        normalize([1, 0, 1]), normalize([1, 0, -1]),
+        normalize([0, 1, 1]), normalize([0, 1, -1]),
+      ].filter(Boolean);
+      for (const dir of c2Dirs) {
+        addElementUnique(elements, {
+          type: 'axis',
+          axis: worldDirectionFromFrame(frame, dir),
+          order: 2,
+          label: 'C2 axis',
+        });
+        addElementUnique(elements, {
+          type: 'plane',
+          normal: worldDirectionFromFrame(frame, dir),
+          label: 'σd plane',
+        });
+      }
+      for (const normal of OCTA_TEMPLATE.slice(0, 3)) {
+        addElementUnique(elements, {
+          type: 'plane',
+          normal: worldDirectionFromFrame(frame, normal),
+          label: 'σh plane',
+        });
+      }
+    } else if (groupId === 'Ih') {
+      addElementUnique(elements, { type: 'center', point: centeredState.centroid.slice(), label: 'Inversion center' });
+      for (const dir of ICOSA_TEMPLATE) {
+        addElementUnique(elements, {
+          type: 'axis',
+          axis: worldDirectionFromFrame(frame, dir),
+          order: 5,
+          label: 'C5 axis',
+        });
+      }
+    }
+    finalizeElementLabels(elements);
+    return elements;
+  }
+
+  function describeSymmetryElements(analysis) {
+    const internal = analysis && analysis._internal;
+    const centeredState = internal && internal.centeredState;
+    const candidate = internal && internal.exactCandidate;
+    if (!centeredState || !candidate) return [];
+    if (candidate.kind === 'special-shell') return buildSpecialShellElements(candidate, centeredState);
+    const elements = [];
+    if (candidate.kind === 'linear') {
+      const axis = canonicalizeDirection(candidate.axis || [0, 0, 1]) || [0, 0, 1];
+      const frame = candidate.frame || buildFrame(axis, [1, 0, 0]);
+      addElementUnique(elements, { type: 'axis', axis, order: Infinity, label: 'C∞ axis' });
+      addElementUnique(elements, { type: 'plane', normal: worldDirectionFromFrame(frame, [0, 1, 0]), label: 'σv plane' });
+      if (candidate.groupId === 'Dinfh') {
+        addElementUnique(elements, { type: 'center', point: centeredState.centroid.slice(), label: 'Inversion center' });
+        addElementUnique(elements, { type: 'plane', normal: axis, label: 'σh plane' });
+        addElementUnique(elements, { type: 'axis', axis: worldDirectionFromFrame(frame, [1, 0, 0]), order: 2, label: 'C2 axis' });
+      }
+      finalizeElementLabels(elements);
+      return elements;
+    }
+    const frame = candidate.frame || buildFrame([0, 0, 1], [1, 0, 0]);
+    const ops = Array.isArray(candidate.ops) ? candidate.ops : [];
+    for (const op of ops) {
+      if (!op || isIdentityMatrix(op)) continue;
+      if (isNegativeIdentityMatrix(op)) {
+        addElementUnique(elements, { type: 'center', point: centeredState.centroid.slice(), label: 'Inversion center' });
+        continue;
+      }
+      const reflectionNormal = extractReflectionNormalFromMatrix(op);
+      if (reflectionNormal) {
+        addElementUnique(elements, {
+          type: 'plane',
+          normal: worldDirectionFromFrame(frame, reflectionNormal),
+          label: classifyPlaneLabel(candidate.groupId, reflectionNormal),
+        });
+        continue;
+      }
+      const rotation = extractRotationElementFromMatrix(op);
+      if (rotation) {
+        addElementUnique(elements, {
+          type: 'axis',
+          axis: worldDirectionFromFrame(frame, rotation.axis),
+          order: rotation.order,
+          label: `C${rotation.order} axis`,
+        });
+      }
+    }
+    finalizeElementLabels(elements);
+    return elements;
+  }
+
   function analyzePointGroup(targetAtoms, options = {}) {
     const toleranceAng = Math.max(EXACT_TOLERANCE_ANG, Number(options.toleranceAng) || DEFAULT_TOLERANCE_ANG);
     const centeredState = centerTargetAtoms(targetAtoms);
@@ -1242,6 +1555,9 @@
       getAnalysis() {
         return state.analysis;
       },
+      describeElements(analysis = state.analysis) {
+        return describeSymmetryElements(analysis);
+      },
       analyzeTarget(targetAtoms, extraOptions = {}) {
         state.analysis = analyzePointGroup(targetAtoms, Object.assign({}, extraOptions, { toleranceAng: state.toleranceAng }));
         return state.analysis;
@@ -1266,6 +1582,7 @@
     analyzePointGroup,
     buildSymmetryPreview,
     applySymmetryPreview,
+    describeSymmetryElements,
     createEditSymmetryController,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

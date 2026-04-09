@@ -42,6 +42,7 @@ function createHarness(options = {}) {
   const positions = options.positions || { 0: [0, 0, 0] };
   const controller = api.createEditHaloController({
     hoverDelayMs: Number.isFinite(options.hoverDelayMs) ? Number(options.hoverDelayMs) : 300,
+    enableHoverActivation: options.enableHoverActivation,
     isEnabled: () => true,
     isBlocked: () => false,
     getSelection: () => selection.slice(),
@@ -120,6 +121,18 @@ test('edit-halo hover halo stays visible while pointer remains inside halo-owned
     clientY: ui.anchorClient.y,
   }));
   assert.equal(harness.getUiState().visible, true);
+});
+
+test('edit-halo can disable hover activation while preserving selection-driven activation', () => {
+  const harness = createHarness({ selection: [], hoverDelayMs: 300, enableHoverActivation: false });
+  harness.controller.handlePointerMove(pointerEvent({ atomIndex: 0 }));
+  harness.setNow(350);
+  harness.controller.refresh();
+  assert.equal(harness.getUiState().visible, false);
+  harness.setSelection([0]);
+  harness.controller.refresh();
+  assert.equal(harness.getUiState().visible, true);
+  assert.equal(harness.getUiState().atomIndex, 0);
 });
 
 test('edit-halo bare carbon yields four tetrahedral ghost directions and coordination labels', () => {

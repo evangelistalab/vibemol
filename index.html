@@ -2828,25 +2828,50 @@
   <div id="editAdaptiveSymmetryPopover" aria-hidden="true">
     <div id="editSymmetryPanel">
       <div id="editSymmetryHeader">
-        <div id="editSymmetryTitle">Symmetry</div>
-        <div id="editSymmetryTargetSummary">Whole structure (0 atoms)</div>
+        <div id="editSymmetryTitleRow">
+          <span class="material-symbols-rounded editSymmetryTitleIcon" aria-hidden="true">hub</span>
+          <div id="editSymmetryHeaderText">
+            <div id="editSymmetryTitle">Symmetry</div>
+            <div id="editSymmetryTargetSummary">Whole structure (0 atoms)</div>
+          </div>
+        </div>
+        <div id="editSymmetryExactResultCard">
+          <span class="material-symbols-rounded editSymmetryInlineIcon" aria-hidden="true">diamond</span>
+          <span id="editSymmetryExactResult">Current point group: C1</span>
+        </div>
       </div>
-      <div id="editSymmetryExactResult">Exact point group: C1</div>
       <div id="editSymmetryToleranceSection">
         <label id="editSymmetryToleranceLabel" for="editSymmetryToleranceInput">Tolerance (Å)</label>
         <div id="editSymmetryToleranceControls">
-          <input id="editSymmetryToleranceRange" type="range" min="0.001" max="0.250" step="0.001" value="0.050" />
-          <input id="editSymmetryToleranceInput" type="number" min="0.001" max="0.250" step="0.001" value="0.050" />
+          <input id="editSymmetryToleranceRange" type="range" min="0.001" max="0.500" step="0.001" value="0.050" />
+          <input id="editSymmetryToleranceInput" type="number" min="0.001" max="0.500" step="0.001" value="0.050" />
         </div>
       </div>
+      <div id="editSymmetryElementSection">
+        <label id="editSymmetryElementLabel" for="editSymmetryElementSelect">Symmetry element</label>
+        <select id="editSymmetryElementSelect">
+          <option value="">None</option>
+        </select>
+      </div>
       <div class="editSymmetryCandidateSection">
-        <div class="editSymmetryCandidateSectionTitle">Approximate Point Groups</div>
+        <div class="editSymmetryCandidateSectionTitle">Approximate Fits</div>
         <div id="editSymmetryCandidates"></div>
       </div>
       <div id="editSymmetryFooter">
-        <button id="editSymmetryApplyBtn" class="secondary" type="button">Apply</button>
-        <button id="editSymmetryCancelBtn" class="secondary" type="button">Cancel preview</button>
-        <button id="editSymmetryAutoBtn" class="secondary" type="button">Auto-apply highest</button>
+        <button id="editSymmetryApplyBtn" class="editSymmetryActionBtn is-primary" type="button" title="Apply the current symmetry preview">
+          <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
+          <span>Apply</span>
+        </button>
+        <div id="editSymmetryFooterSecondary">
+          <button id="editSymmetryCancelBtn" class="editSymmetryActionBtn" type="button" title="Cancel the current symmetry preview">
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+            <span>Cancel</span>
+          </button>
+          <button id="editSymmetryAutoBtn" class="editSymmetryActionBtn" type="button" title="Detect and apply the highest valid point group">
+            <span class="material-symbols-rounded" aria-hidden="true">auto_fix_high</span>
+            <span>Auto</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

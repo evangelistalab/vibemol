@@ -129,6 +129,23 @@ test('symmetry approximate candidates honor tolerance thresholds', () => {
   assert.ok(!tightGroups.includes('Td'), `did not expect Td in tight candidates, got ${tightGroups.join(', ')}`);
 });
 
+test('symmetry exposes visual symmetry elements for common groups', () => {
+  const context = loadSymmetry();
+  const api = context.window.VibeMolSymmetry;
+
+  const waterAnalysis = analyze(context, buildWater(), { toleranceAng: 0.12 });
+  const waterElements = api.describeSymmetryElements(waterAnalysis);
+  const waterLabels = waterElements.map((entry) => entry.label);
+  assert.ok(waterLabels.some((label) => label.startsWith('C2 axis')), `expected water to expose a C2 axis, got ${waterLabels.join(', ')}`);
+  assert.ok(waterLabels.filter((label) => label.startsWith('σv plane')).length >= 2, `expected water to expose sigma-v planes, got ${waterLabels.join(', ')}`);
+
+  const methaneAnalysis = analyze(context, buildMethane(), { toleranceAng: 0.12 });
+  const methaneElements = api.describeSymmetryElements(methaneAnalysis);
+  const methaneLabels = methaneElements.map((entry) => entry.label);
+  assert.ok(methaneLabels.some((label) => label.startsWith('C3 axis')), `expected methane to expose C3 axes, got ${methaneLabels.join(', ')}`);
+  assert.ok(methaneLabels.some((label) => label.startsWith('σd plane')), `expected methane to expose sigma-d planes, got ${methaneLabels.join(', ')}`);
+});
+
 test('symmetry preview and apply preserve indexing while improving residuals', () => {
   const context = loadSymmetry();
   const api = context.window.VibeMolSymmetry;

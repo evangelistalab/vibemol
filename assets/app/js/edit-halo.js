@@ -321,6 +321,7 @@
 
   function createEditHaloController(options = {}) {
     const hoverDelayMs = Number.isFinite(options.hoverDelayMs) ? Math.max(120, Number(options.hoverDelayMs)) : 300;
+    const enableHoverActivation = options.enableHoverActivation !== false;
     const isEnabled = typeof options.isEnabled === 'function' ? options.isEnabled : (() => false);
     const isBlocked = typeof options.isBlocked === 'function' ? options.isBlocked : (() => false);
     const getSelection = typeof options.getSelection === 'function' ? options.getSelection : (() => []);
@@ -806,7 +807,7 @@
       if (selection.length === 1) {
         nextAtomIndex = selection[0] | 0;
         nextSource = 'selection';
-      } else if (selection.length === 0 && state.hoverCandidate >= 0 && (now - state.hoverStartedAt) >= hoverDelayMs) {
+      } else if (enableHoverActivation && selection.length === 0 && state.hoverCandidate >= 0 && (now - state.hoverStartedAt) >= hoverDelayMs) {
         nextAtomIndex = state.hoverCandidate | 0;
         nextSource = 'hover';
       }
@@ -850,7 +851,7 @@
         return false;
       }
       const selection = Array.isArray(getSelection()) ? getSelection() : [];
-      if (!selection.length) {
+      if (enableHoverActivation && !selection.length) {
         let atomIndex = -1;
         if (state.visible && state.source === 'hover' && state.descriptor && pointerWithinDescriptorOwnership(state.descriptor, state.lastPointer)) {
           atomIndex = state.descriptor.atomIndex | 0;

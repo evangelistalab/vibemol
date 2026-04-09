@@ -320,13 +320,17 @@
     analyzePointGroup,
     buildSymmetryPreview,
     applySymmetryPreview,
+    describeSymmetryElements,
     createEditSymmetryController,
   } = window.VibeMolSymmetry || {};
-  if (![analyzePointGroup, buildSymmetryPreview, applySymmetryPreview, createEditSymmetryController].every(fn => typeof fn === 'function')) {
+  if (![analyzePointGroup, buildSymmetryPreview, applySymmetryPreview, describeSymmetryElements, createEditSymmetryController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolSymmetry is not loaded. Ensure assets/app/js/symmetry.js is included before assets/app/js/app.js.');
   }
   const DEFAULT_SYMMETRY_TOLERANCE_ANG = 0.05;
   const EXACT_SYMMETRY_TOLERANCE_ANG = 1e-3;
+  const MAX_SYMMETRY_TOLERANCE_ANG = 0.5;
+  const EDIT_POPOVER_HOVER_OPEN_DELAY_MS = 180;
+  const EDIT_POPOVER_HOVER_SUPPRESS_MS = 420;
 
   const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
   if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
@@ -819,9 +823,11 @@
   let editBuildFragmentsHostEl = null;
   let editBuildMoleculesHostEl = null;
   let editSymmetryTargetSummaryEl = null;
+  let editSymmetryExactResultCardEl = null;
   let editSymmetryExactResultEl = null;
   let editSymmetryToleranceRangeEl = null;
   let editSymmetryToleranceInputEl = null;
+  let editSymmetryElementSelectEl = null;
   let editSymmetryCandidatesEl = null;
   let editSymmetryApplyBtnEl = null;
   let editSymmetryCancelBtnEl = null;
@@ -831,10 +837,19 @@
   let bondCenterSelectionState = null;
   let buildSearchKeyboardSelectionKey = '';
   let buildPopoverHideTimer = 0;
+  let symmetryPopoverHideTimer = 0;
+  let editPopoverHoverOpenTimer = 0;
+  let editPopoverHoverOpenKind = '';
+  let editPopoverHoverSuppressKind = '';
+  let editPopoverHoverSuppressUntilMs = 0;
   let buildPaletteFilterQuery = '';
   let symmetryController = null;
   let symmetryPreviewState = null;
   let symmetryPopoverAnalysisCache = null;
+  let symmetryPopoverCurrentGroupLabel = '';
+  let symmetryPopoverResultHighlightTimer = 0;
+  let symmetryPopoverElementsRenderKey = '';
+  let symmetryPopoverSelectedElementId = '';
   symmetryController = createEditSymmetryController({ toleranceAng: DEFAULT_SYMMETRY_TOLERANCE_ANG });
 
   /**
@@ -1062,6 +1077,10 @@
   let viewRotatePointerId = null;
   let viewRotateLastClientX = 0;
   let viewRotateLastClientY = 0;
+  let viewPanActive = false;
+  let viewPanPointerId = null;
+  let viewPanLastClientX = 0;
+  let viewPanLastClientY = 0;
   // Atom label shell meshes that should rotate to keep text visible to camera.
   const atomLabelTrackTargets = [];
   let atomLabelCapGeometry = null;
@@ -5730,13 +5749,6 @@
     ) {
       hideSelectionCoordinationCuePopover();
     }
-    if (
-      editAdaptiveSymmetryPopoverEl
-      && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false'
-      && !(editAdaptiveSymmetryPopoverEl.contains(target) || (editAdaptiveSymmetryBtn && editAdaptiveSymmetryBtn.contains(target)))
-    ) {
-      hideSymmetryPopover({ restore: true });
-    }
   });
   editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
   editAdaptiveAddAtomMetaEl = document.getElementById('editAdaptiveAddAtomMeta');
@@ -5755,9 +5767,11 @@
   editBuildFragmentsHostEl = document.getElementById('editBuildFragmentsHost');
   editBuildMoleculesHostEl = document.getElementById('editBuildMoleculesHost');
   editSymmetryTargetSummaryEl = document.getElementById('editSymmetryTargetSummary');
+  editSymmetryExactResultCardEl = document.getElementById('editSymmetryExactResultCard');
   editSymmetryExactResultEl = document.getElementById('editSymmetryExactResult');
   editSymmetryToleranceRangeEl = document.getElementById('editSymmetryToleranceRange');
   editSymmetryToleranceInputEl = document.getElementById('editSymmetryToleranceInput');
+  editSymmetryElementSelectEl = document.getElementById('editSymmetryElementSelect');
   editSymmetryCandidatesEl = document.getElementById('editSymmetryCandidates');
   editSymmetryApplyBtnEl = document.getElementById('editSymmetryApplyBtn');
   editSymmetryCancelBtnEl = document.getElementById('editSymmetryCancelBtn');
@@ -7785,6 +7799,8 @@
   contentGroup.add(addAngleGuideGroup);
   const transformGuideGroup = new THREE.Group();
   contentGroup.add(transformGuideGroup);
+  const symmetryElementGuideGroup = new THREE.Group();
+  contentGroup.add(symmetryElementGuideGroup);
   const autoHydrogenPreviewGroup = new THREE.Group();
   contentGroup.add(autoHydrogenPreviewGroup);
   const gestureVoidPreviewGroup = new THREE.Group();
@@ -12433,13 +12449,20 @@
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a template first, then align to Z.'); };
     if (editAdaptiveAddAtomBtn) {
       editAdaptiveAddAtomBtn.onclick = () => {
-        showBuildPopover({ focusSearch: true });
+        showBuildPopover({ focusSearch: true, source: 'click' });
       };
       editAdaptiveAddAtomBtn.addEventListener('mouseenter', () => {
-        if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') showBuildPopover({ focusSearch: false });
-        else cancelBuildPopoverHide();
+        if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') {
+          scheduleEditPopoverHoverOpen('build', () => showBuildPopover({ focusSearch: false, source: 'hover' }));
+        } else {
+          cancelEditPopoverHoverOpen();
+          cancelBuildPopoverHide();
+        }
       });
-      editAdaptiveAddAtomBtn.addEventListener('mouseleave', () => hideBuildPopover(120));
+      editAdaptiveAddAtomBtn.addEventListener('mouseleave', () => {
+        cancelEditPopoverHoverOpen();
+        hideBuildPopover(120);
+      });
     }
     if (editAdaptiveAddAtomPopoverEl) {
       editAdaptiveAddAtomPopoverEl.addEventListener('pointerdown', (e) => {
@@ -12447,7 +12470,10 @@
         if (!buttonEl) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
       });
-      editAdaptiveAddAtomPopoverEl.addEventListener('mouseenter', () => cancelBuildPopoverHide());
+      editAdaptiveAddAtomPopoverEl.addEventListener('mouseenter', () => {
+        cancelEditPopoverHoverOpen();
+        cancelBuildPopoverHide();
+      });
       editAdaptiveAddAtomPopoverEl.addEventListener('mouseleave', () => hideBuildPopover(120));
     }
     if (editAdaptiveSymmetryBtn) {
@@ -12455,11 +12481,23 @@
         if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
         else showSymmetryPopover();
       };
+      editAdaptiveSymmetryBtn.addEventListener('mouseenter', () => {
+        cancelEditPopoverHoverOpen();
+        cancelSymmetryPopoverHide();
+      });
+      editAdaptiveSymmetryBtn.addEventListener('mouseleave', () => {
+        if (isSymmetryPopoverOpen()) hideSymmetryPopover(120, { restore: true });
+      });
     }
     if (editAdaptiveSymmetryPopoverEl) {
       editAdaptiveSymmetryPopoverEl.addEventListener('pointerdown', (e) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       });
+      editAdaptiveSymmetryPopoverEl.addEventListener('mouseenter', () => {
+        cancelEditPopoverHoverOpen();
+        cancelSymmetryPopoverHide();
+      });
+      editAdaptiveSymmetryPopoverEl.addEventListener('mouseleave', () => hideSymmetryPopover(120, { restore: true }));
     }
     if (editSymmetryToleranceRangeEl) {
       editSymmetryToleranceRangeEl.addEventListener('input', () => setSymmetryTolerance(editSymmetryToleranceRangeEl.value));
@@ -12468,6 +12506,12 @@
     if (editSymmetryToleranceInputEl) {
       editSymmetryToleranceInputEl.addEventListener('input', () => setSymmetryTolerance(editSymmetryToleranceInputEl.value));
       editSymmetryToleranceInputEl.addEventListener('change', () => setSymmetryTolerance(editSymmetryToleranceInputEl.value));
+    }
+    if (editSymmetryElementSelectEl) {
+      editSymmetryElementSelectEl.addEventListener('change', () => {
+        symmetryPopoverSelectedElementId = String(editSymmetryElementSelectEl.value || '');
+        renderSymmetryElementGuide();
+      });
     }
     if (editSymmetryCandidatesEl) {
       editSymmetryCandidatesEl.addEventListener('click', (e) => {
@@ -12797,6 +12841,7 @@
 
   editHaloController = createEditHaloController({
     hoverDelayMs: 300,
+    enableHoverActivation: false,
     isEnabled: isAtomManipulationIntent,
     isBlocked: () => {
       const gestureState = editGestureController ? String((editGestureController.getUiState() || {}).gestureState || 'idle') : 'idle';
@@ -12873,6 +12918,36 @@
   }
 
   /**
+   * End one active camera pan gesture on the main canvas.
+   * @param {PointerEvent=} e
+   */
+  function endViewPan(e) {
+    if (!viewPanActive) return;
+    viewPanActive = false;
+    const pointerId = viewPanPointerId;
+    viewPanPointerId = null;
+    if (canvasEl && Number.isInteger(pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
+      try { canvasEl.releasePointerCapture(pointerId); } catch { }
+    }
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  }
+
+  /**
+   * Begin one camera pan gesture on the main canvas.
+   * @param {PointerEvent} e
+   */
+  function beginViewPan(e) {
+    hideSurfaceHoverLabel();
+    viewPanActive = true;
+    viewPanPointerId = Number.isInteger(e.pointerId) ? e.pointerId : null;
+    viewPanLastClientX = Number(e.clientX) || 0;
+    viewPanLastClientY = Number(e.clientY) || 0;
+    if (canvasEl && Number.isInteger(viewPanPointerId) && typeof canvasEl.setPointerCapture === 'function') {
+      try { canvasEl.setPointerCapture(viewPanPointerId); } catch { }
+    }
+  }
+
+  /**
    * Orbit the active camera about the current target using quaternion rotations.
    * This keeps the camera moving smoothly through the poles without OrbitControls'
    * spherical singularity.
@@ -12908,6 +12983,54 @@
     camera.up.copy(upAxis);
     camera.lookAt(target);
     updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight);
+    refreshViewUI();
+  }
+
+  /**
+   * Pan the active camera/target pair using OrbitControls-style screen deltas.
+   * @param {number} deltaX
+   * @param {number} deltaY
+   */
+  function applyViewPan(deltaX, deltaY) {
+    if (!(Number.isFinite(deltaX) && Number.isFinite(deltaY))) return;
+    if (Math.abs(deltaX) < 1e-6 && Math.abs(deltaY) < 1e-6) return;
+    const element = (renderer && renderer.domElement) ? renderer.domElement : canvasEl;
+    const clientWidth = Math.max(1, Number(element && element.clientWidth) || currentViewportMetrics.cssWidth || 1);
+    const clientHeight = Math.max(1, Number(element && element.clientHeight) || currentViewportMetrics.cssHeight || 1);
+    const panOffset = new THREE.Vector3();
+    const panLeft = (distance) => {
+      const v = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+      v.multiplyScalar(-distance);
+      panOffset.add(v);
+    };
+    const panUp = (distance) => {
+      const v = new THREE.Vector3();
+      if (controls && controls.screenSpacePanning === true) {
+        v.setFromMatrixColumn(camera.matrix, 1);
+      } else {
+        v.setFromMatrixColumn(camera.matrix, 0);
+        v.crossVectors(camera.up, v);
+      }
+      v.multiplyScalar(distance);
+      panOffset.add(v);
+    };
+    if (camera && camera.isPerspectiveCamera) {
+      const offset = camera.position.clone().sub(controls.target);
+      let targetDistance = offset.length();
+      targetDistance *= Math.tan(((Number(camera.fov) || DEFAULT_PERSPECTIVE_FOV) / 2) * Math.PI / 180.0);
+      panLeft(2 * deltaX * targetDistance / clientHeight);
+      panUp(2 * deltaY * targetDistance / clientHeight);
+    } else if (camera && camera.isOrthographicCamera) {
+      panLeft(deltaX * (camera.right - camera.left) / Math.max(1e-6, Number(camera.zoom) || 1) / clientWidth);
+      panUp(deltaY * (camera.top - camera.bottom) / Math.max(1e-6, Number(camera.zoom) || 1) / clientHeight);
+    } else {
+      return;
+    }
+    if (panOffset.lengthSq() <= 1e-14) return;
+    camera.position.add(panOffset);
+    controls.target.add(panOffset);
+    camera.updateMatrixWorld();
+    controls.update();
     refreshViewUI();
   }
   // --- Edit selection (temporary list) and visuals ---
@@ -13404,6 +13527,51 @@
     try { editBuildSearchEl.blur(); } catch { }
   }
 
+  function cancelEditPopoverHoverOpen() {
+    if (editPopoverHoverOpenTimer) {
+      clearTimeout(editPopoverHoverOpenTimer);
+      editPopoverHoverOpenTimer = 0;
+    }
+    editPopoverHoverOpenKind = '';
+  }
+
+  function clearEditPopoverHoverSuppression(kind = '') {
+    if (kind && editPopoverHoverSuppressKind && editPopoverHoverSuppressKind !== kind) return;
+    editPopoverHoverSuppressKind = '';
+    editPopoverHoverSuppressUntilMs = 0;
+  }
+
+  function noteEditPopoverClickOwnership(kind, durationMs = EDIT_POPOVER_HOVER_SUPPRESS_MS) {
+    editPopoverHoverSuppressKind = String(kind || '').trim();
+    editPopoverHoverSuppressUntilMs = Date.now() + Math.max(0, Number(durationMs) || 0);
+  }
+
+  function canHoverOpenEditPopover(kind) {
+    const nextKind = String(kind || '').trim();
+    if (!nextKind) return true;
+    if (editPopoverHoverSuppressUntilMs <= Date.now()) {
+      clearEditPopoverHoverSuppression();
+      return true;
+    }
+    return !(editPopoverHoverSuppressKind && editPopoverHoverSuppressKind !== nextKind);
+  }
+
+  function scheduleEditPopoverHoverOpen(kind, openFn, delayMs = EDIT_POPOVER_HOVER_OPEN_DELAY_MS) {
+    const nextKind = String(kind || '').trim();
+    if (!nextKind || typeof openFn !== 'function') return;
+    cancelEditPopoverHoverOpen();
+    if (!canHoverOpenEditPopover(nextKind)) return;
+    editPopoverHoverOpenKind = nextKind;
+    editPopoverHoverOpenTimer = window.setTimeout(() => {
+      const pendingKind = editPopoverHoverOpenKind;
+      editPopoverHoverOpenTimer = 0;
+      editPopoverHoverOpenKind = '';
+      if (pendingKind !== nextKind) return;
+      if (!canHoverOpenEditPopover(nextKind)) return;
+      openFn();
+    }, Math.max(0, Number(delayMs) || 0));
+  }
+
   function cancelBuildPopoverHide() {
     if (buildPopoverHideTimer) {
       clearTimeout(buildPopoverHideTimer);
@@ -13456,12 +13624,14 @@
 
   function hideBuildPopover(delayMs = 0) {
     cancelBuildPopoverHide();
+    cancelEditPopoverHoverOpen();
     const applyHide = () => {
       clearBuildSearchKeyboardSelection();
       resetBuildSearchFieldOnHide();
       if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
       restoreBuildPopoverPanes();
       syncBuildSearchNavigationUi();
+      clearEditPopoverHoverSuppression('build');
     };
     if (delayMs > 0) {
       buildPopoverHideTimer = window.setTimeout(() => {
@@ -13476,8 +13646,12 @@
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
     cancelBuildPopoverHide();
+    cancelEditPopoverHoverOpen();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
+    if (String(options.source || 'click') !== 'hover') {
+      noteEditPopoverClickOwnership('build');
+    }
     if (Object.prototype.hasOwnProperty.call(options, 'query')) {
       setBuildPaletteFilterQuery(String(options.query || ''), { syncInput: true });
     }
@@ -13496,13 +13670,20 @@
       popoverEl: editAdaptiveSymmetryPopoverEl,
       triggerEl: editAdaptiveSymmetryBtn,
       gap: 12,
-      defaultWidth: 380,
-      defaultHeight: 420,
+      defaultWidth: 220,
+      defaultHeight: 460,
     });
   }
 
   function isSymmetryPopoverOpen() {
     return !!(editAdaptiveSymmetryPopoverEl && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false');
+  }
+
+  function cancelSymmetryPopoverHide() {
+    if (symmetryPopoverHideTimer) {
+      clearTimeout(symmetryPopoverHideTimer);
+      symmetryPopoverHideTimer = 0;
+    }
   }
 
   function resolveEditSymmetryTarget() {
@@ -13536,6 +13717,7 @@
     if (editSymmetryCandidatesEl && editSymmetryCandidatesEl.dataset) {
       delete editSymmetryCandidatesEl.dataset.renderKey;
     }
+    symmetryPopoverElementsRenderKey = '';
   }
 
   function buildSymmetryAnalysisCacheKey(target, toleranceAng) {
@@ -13648,6 +13830,226 @@
     return candidates.find((candidate) => candidate && candidate.groupId === groupId) || null;
   }
 
+  function clearSymmetryCurrentGroupHighlight() {
+    if (symmetryPopoverResultHighlightTimer) {
+      clearTimeout(symmetryPopoverResultHighlightTimer);
+      symmetryPopoverResultHighlightTimer = 0;
+    }
+    if (editSymmetryExactResultCardEl) {
+      editSymmetryExactResultCardEl.classList.remove('is-updated');
+    }
+  }
+
+  function updateSymmetryCurrentGroupUi(groupLabel, options = {}) {
+    const label = String(groupLabel || 'C1').trim() || 'C1';
+    const allowHighlight = options.highlightChange !== false;
+    const previousLabel = String(symmetryPopoverCurrentGroupLabel || '').trim();
+    if (editSymmetryExactResultEl) {
+      editSymmetryExactResultEl.textContent = `Current point group: ${label}`;
+    }
+    const shouldHighlight = !!(allowHighlight && previousLabel && previousLabel !== label);
+    symmetryPopoverCurrentGroupLabel = label;
+    if (!editSymmetryExactResultCardEl) return;
+    clearSymmetryCurrentGroupHighlight();
+    if (!shouldHighlight) return;
+    editSymmetryExactResultCardEl.classList.add('is-updated');
+    symmetryPopoverResultHighlightTimer = window.setTimeout(() => {
+      symmetryPopoverResultHighlightTimer = 0;
+      if (editSymmetryExactResultCardEl) {
+        editSymmetryExactResultCardEl.classList.remove('is-updated');
+      }
+    }, 1400);
+  }
+
+  function clearSymmetryElementGuide() {
+    while (symmetryElementGuideGroup.children.length) {
+      const child = symmetryElementGuideGroup.children.pop();
+      if (!child) continue;
+      symmetryElementGuideGroup.remove(child);
+      disposeOverlayTree(child);
+    }
+  }
+
+  function getSymmetryElementGuideScale(target) {
+    const atoms = target && Array.isArray(target.atoms) ? target.atoms : [];
+    if (!atoms.length) {
+      return { center: new THREE.Vector3(0, 0, 0), radius: 1.2 };
+    }
+    const center = new THREE.Vector3(0, 0, 0);
+    for (const atom of atoms) {
+      center.x += Number(atom && atom.x) || 0;
+      center.y += Number(atom && atom.y) || 0;
+      center.z += Number(atom && atom.z) || 0;
+    }
+    center.multiplyScalar(1 / atoms.length);
+    let radius = 0;
+    for (const atom of atoms) {
+      const px = Number(atom && atom.x) || 0;
+      const py = Number(atom && atom.y) || 0;
+      const pz = Number(atom && atom.z) || 0;
+      radius = Math.max(radius, center.distanceTo(new THREE.Vector3(px, py, pz)));
+    }
+    return { center, radius: Math.max(radius, 1.2) };
+  }
+
+  function buildSymmetryElementOptionHtml(element) {
+    return `<option value="${String(element.id || '')}">${String(element.label || '')}</option>`;
+  }
+
+  function renderSymmetryElementOptions(analysis) {
+    if (!editSymmetryElementSelectEl) return [];
+    const elements = describeSymmetryElements(analysis) || [];
+    const renderKey = elements.map((element) => [
+      String(element.id || ''),
+      String(element.label || ''),
+      String(element.type || ''),
+    ].join('|')).join(';');
+    if (symmetryPopoverElementsRenderKey !== renderKey) {
+      editSymmetryElementSelectEl.innerHTML = [
+        '<option value="">None</option>',
+        ...elements.map(buildSymmetryElementOptionHtml),
+      ].join('');
+      symmetryPopoverElementsRenderKey = renderKey;
+    }
+    if (!elements.some((element) => String(element.id || '') === symmetryPopoverSelectedElementId)) {
+      symmetryPopoverSelectedElementId = '';
+    }
+    editSymmetryElementSelectEl.disabled = elements.length === 0;
+    editSymmetryElementSelectEl.value = symmetryPopoverSelectedElementId;
+    return elements;
+  }
+
+  function renderSymmetryAxisElement(element, center, radius) {
+    const axis = element && element.axis ? new THREE.Vector3(
+      Number(element.axis[0]) || 0,
+      Number(element.axis[1]) || 0,
+      Number(element.axis[2]) || 0
+    ) : null;
+    if (!axis || axis.lengthSq() <= 1e-10) return;
+    axis.normalize();
+    const length = radius * 2.8;
+    const start = center.clone().addScaledVector(axis, -length * 0.5);
+    const end = center.clone().addScaledVector(axis, length * 0.5);
+    const group = new THREE.Group();
+    const lineGeom = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const lineMat = new THREE.LineBasicMaterial({
+      color: 0x6db4ff,
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false,
+      depthTest: false,
+    });
+    const line = new THREE.Line(lineGeom, lineMat);
+    group.add(line);
+    const tipGeom = new THREE.SphereGeometry(Math.max(0.06, radius * 0.08), 14, 12);
+    const tipMat = new THREE.MeshBasicMaterial({
+      color: 0xb9dcff,
+      transparent: true,
+      opacity: 0.96,
+      depthWrite: false,
+      depthTest: false,
+    });
+    for (const point of [start, end]) {
+      const tip = new THREE.Mesh(tipGeom.clone(), tipMat.clone());
+      tip.position.copy(point);
+      group.add(tip);
+    }
+    symmetryElementGuideGroup.add(group);
+  }
+
+  function renderSymmetryPlaneElement(element, center, radius) {
+    const normal = element && element.normal ? new THREE.Vector3(
+      Number(element.normal[0]) || 0,
+      Number(element.normal[1]) || 0,
+      Number(element.normal[2]) || 0
+    ) : null;
+    if (!normal || normal.lengthSq() <= 1e-10) return;
+    normal.normalize();
+    const planeSize = radius * 2.5;
+    const group = new THREE.Group();
+    const plane = new THREE.Mesh(
+      new THREE.PlaneGeometry(planeSize, planeSize),
+      new THREE.MeshBasicMaterial({
+        color: 0x70a9ff,
+        transparent: true,
+        opacity: 0.15,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        depthTest: false,
+      })
+    );
+    plane.position.copy(center);
+    plane.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    group.add(plane);
+    const outline = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.PlaneGeometry(planeSize, planeSize)),
+      new THREE.LineBasicMaterial({
+        color: 0xcfe5ff,
+        transparent: true,
+        opacity: 0.72,
+        depthWrite: false,
+        depthTest: false,
+      })
+    );
+    outline.position.copy(center);
+    outline.quaternion.copy(plane.quaternion);
+    group.add(outline);
+    symmetryElementGuideGroup.add(group);
+  }
+
+  function renderSymmetryCenterElement(element, center, radius) {
+    const point = element && Array.isArray(element.point) ? new THREE.Vector3(
+      Number(element.point[0]) || 0,
+      Number(element.point[1]) || 0,
+      Number(element.point[2]) || 0
+    ) : center.clone();
+    const group = new THREE.Group();
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(Math.max(0.08, radius * 0.1), 18, 16),
+      new THREE.MeshBasicMaterial({
+        color: 0xff8ad9,
+        transparent: true,
+        opacity: 0.92,
+        depthWrite: false,
+        depthTest: false,
+      })
+    );
+    sphere.position.copy(point);
+    group.add(sphere);
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(Math.max(0.12, radius * 0.15), Math.max(0.012, radius * 0.018), 12, 42),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd6ef,
+        transparent: true,
+        opacity: 0.82,
+        depthWrite: false,
+        depthTest: false,
+      })
+    );
+    ring.position.copy(point);
+    group.add(ring);
+    symmetryElementGuideGroup.add(group);
+  }
+
+  function renderSymmetryElementGuide(analysis = null, target = null) {
+    clearSymmetryElementGuide();
+    if (currentMode !== MODES.EDIT || !isSymmetryPopoverOpen()) return;
+    const resolvedTarget = target || resolveEditSymmetryTarget();
+    if (!resolvedTarget) return;
+    const resolvedAnalysis = analysis || getSymmetryPopoverAnalysis(resolvedTarget);
+    const elements = describeSymmetryElements(resolvedAnalysis) || [];
+    const selected = elements.find((element) => String(element.id || '') === symmetryPopoverSelectedElementId);
+    if (!selected) return;
+    const guideScale = getSymmetryElementGuideScale(resolvedTarget);
+    if (selected.type === 'axis') {
+      renderSymmetryAxisElement(selected, guideScale.center, guideScale.radius);
+    } else if (selected.type === 'plane') {
+      renderSymmetryPlaneElement(selected, guideScale.center, guideScale.radius);
+    } else if (selected.type === 'center') {
+      renderSymmetryCenterElement(selected, guideScale.center, guideScale.radius);
+    }
+  }
+
   function formatSymmetryResidual(value) {
     return `${(Number(value) || 0).toFixed(3)} Å`;
   }
@@ -13663,7 +14065,7 @@
     if (!candidates.length) {
       const emptyKey = `empty:${selectedGroupId}`;
       if (editSymmetryCandidatesEl.dataset.renderKey !== emptyKey) {
-        editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryCandidateMeta">No approximate point groups within the current tolerance.</div>';
+        editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryEmptyState">No approximate point groups within the current tolerance.</div>';
         editSymmetryCandidatesEl.dataset.renderKey = emptyKey;
       }
       return;
@@ -13682,8 +14084,14 @@
       const activeClass = groupId === selectedGroupId ? ' is-active' : '';
       return [
         `<button class="editSymmetryCandidateBtn${activeClass}" type="button" data-symmetry-group-id="${groupId}">`,
+        '<span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span>',
+        '<span class="editSymmetryCandidateBody">',
         `<span class="editSymmetryCandidateLabel">${candidate.groupLabel}</span>`,
-        `<span class="editSymmetryCandidateMeta">max ${formatSymmetryResidual(candidate.maxDisplacementAng)} • rms ${formatSymmetryResidual(candidate.rmsDisplacementAng)}</span>`,
+        '<span class="editSymmetryCandidateMetrics">',
+        `<span class="editSymmetryCandidateMeta">max ${formatSymmetryResidual(candidate.maxDisplacementAng)}</span>`,
+        `<span class="editSymmetryCandidateMeta">rms ${formatSymmetryResidual(candidate.rmsDisplacementAng)}</span>`,
+        '</span>',
+        '</span>',
         '</button>',
       ].join('');
     }).join('');
@@ -13696,17 +14104,24 @@
     syncSymmetryToleranceUi();
     if (!target) {
       if (editSymmetryTargetSummaryEl) editSymmetryTargetSummaryEl.textContent = 'Whole structure (0 atoms)';
-      if (editSymmetryExactResultEl) editSymmetryExactResultEl.textContent = 'Exact point group: C1';
-      if (editSymmetryCandidatesEl) editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryCandidateMeta">No editable atoms available.</div>';
+      updateSymmetryCurrentGroupUi('C1', { highlightChange: false });
+      if (editSymmetryElementSelectEl) {
+        editSymmetryElementSelectEl.innerHTML = '<option value="">None</option>';
+        editSymmetryElementSelectEl.disabled = true;
+      }
+      symmetryPopoverSelectedElementId = '';
+      if (editSymmetryCandidatesEl) editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryEmptyState">No editable atoms available.</div>';
       if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.disabled = true;
       if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.disabled = !symmetryPreviewState;
       if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.disabled = true;
+      clearSymmetryElementGuide();
       positionSymmetryPopover();
       return;
     }
     const analysis = getSymmetryPopoverAnalysis(target);
     if (editSymmetryTargetSummaryEl) editSymmetryTargetSummaryEl.textContent = target.scopeLabel;
-    if (editSymmetryExactResultEl) editSymmetryExactResultEl.textContent = `Exact point group: ${analysis.exactGroupLabel}`;
+    updateSymmetryCurrentGroupUi(analysis.exactGroupLabel);
+    renderSymmetryElementOptions(analysis);
     renderSymmetryCandidates(analysis);
     const autoCandidate = analysis && analysis._internal && Array.isArray(analysis._internal.approximateCandidates)
       ? analysis._internal.approximateCandidates.find((candidate) => candidate && candidate.groupId !== 'C1')
@@ -13714,25 +14129,55 @@
     if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.disabled = !(symmetryPreviewState && symmetryPreviewState.preview);
     if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.disabled = !(symmetryPreviewState && symmetryPreviewState.preview);
     if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.disabled = !autoCandidate;
+    renderSymmetryElementGuide(analysis, target);
     positionSymmetryPopover();
   }
 
-  function hideSymmetryPopover(options = {}) {
-    clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
+  function hideSymmetryPopover(delayMs = 0, options = {}) {
+    if (typeof delayMs === 'object' && delayMs !== null) {
+      options = delayMs;
+      delayMs = 0;
+    }
+    delayMs = Math.max(0, Number(delayMs) || 0);
+    cancelSymmetryPopoverHide();
+    cancelEditPopoverHoverOpen();
+    const applyHide = () => {
+      clearSymmetryCurrentGroupHighlight();
+      symmetryPopoverCurrentGroupLabel = '';
+      symmetryPopoverSelectedElementId = '';
+      clearSymmetryElementGuide();
+      clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
+      clearEditPopoverHoverSuppression('symmetry');
+    };
+    if (delayMs > 0) {
+      symmetryPopoverHideTimer = window.setTimeout(() => {
+        symmetryPopoverHideTimer = 0;
+        applyHide();
+      }, delayMs);
+      return;
+    }
+    applyHide();
   }
 
   function showSymmetryPopover() {
     if (!editAdaptiveSymmetryPopoverEl) return;
+    cancelSymmetryPopoverHide();
+    cancelEditPopoverHoverOpen();
+    clearSymmetryCurrentGroupHighlight();
+    symmetryPopoverCurrentGroupLabel = '';
+    symmetryPopoverSelectedElementId = '';
+    clearSymmetryElementGuide();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     hideBuildPopover();
+    noteEditPopoverClickOwnership('symmetry');
     invalidateSymmetryPopoverAnalysisCache();
     editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
     renderSymmetryPopover();
   }
 
   function setSymmetryTolerance(nextValue) {
-    const value = Math.max(EXACT_SYMMETRY_TOLERANCE_ANG, Math.min(0.25, Number(nextValue) || DEFAULT_SYMMETRY_TOLERANCE_ANG));
+    const value = Math.max(EXACT_SYMMETRY_TOLERANCE_ANG, Math.min(MAX_SYMMETRY_TOLERANCE_ANG, Number(nextValue) || DEFAULT_SYMMETRY_TOLERANCE_ANG));
     if (symmetryController) symmetryController.setTolerance(value);
     syncSymmetryToleranceUi();
     invalidateSymmetryPopoverAnalysisCache();
@@ -19688,6 +20133,15 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return;
     }
+    if (viewPanActive && viewPanPointerId === e.pointerId) {
+      const dx = (Number(e.clientX) || 0) - viewPanLastClientX;
+      const dy = (Number(e.clientY) || 0) - viewPanLastClientY;
+      viewPanLastClientX = Number(e.clientX) || viewPanLastClientX;
+      viewPanLastClientY = Number(e.clientY) || viewPanLastClientY;
+      applyViewPan(dx, dy);
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      return;
+    }
     // Allow hover highlighting in Display, Edit, and Measurement modes.
     const allowHover = (currentMode === MODES.DISPLAY || currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
     if (!allowHover) {
@@ -19829,6 +20283,10 @@
         pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
       };
       __contextMoved = false;
+      __contextHandled = true;
+      if (e.shiftKey) beginViewPan(e);
+      else beginQuaternionViewRotate(e);
+      if (typeof e.preventDefault === 'function') e.preventDefault();
       return;
     }
     if (e.button !== 0) return;
@@ -19866,6 +20324,9 @@
   canvasEl.addEventListener('pointerup', (e) => {
     if (viewRotateActive && viewRotatePointerId === e.pointerId) {
       endQuaternionViewRotate(e);
+    }
+    if (viewPanActive && viewPanPointerId === e.pointerId) {
+      endViewPan(e);
     }
     if (currentMode === MODES.EDIT && isTrackedContextPointerEvent(e)) {
       resetContextClickState();
@@ -19907,7 +20368,8 @@
   });
   canvasEl.addEventListener('pointercancel', (e) => {
     resetContextClickState();
-    if (currentMode === MODES.DISPLAY) endQuaternionViewRotate(e);
+    if (viewRotateActive && (!Number.isInteger(viewRotatePointerId) || viewRotatePointerId === e.pointerId)) endQuaternionViewRotate(e);
+    if (viewPanActive && (!Number.isInteger(viewPanPointerId) || viewPanPointerId === e.pointerId)) endViewPan(e);
     if (gestureBondSidePress && canvasEl && Number.isInteger(gestureBondSidePress.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
       try { canvasEl.releasePointerCapture(gestureBondSidePress.pointerId); } catch { }
     }
