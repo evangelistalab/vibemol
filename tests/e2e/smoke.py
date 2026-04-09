@@ -157,6 +157,76 @@ def build_fixture_optimize_structure() -> str:
     return json.dumps(payload)
 
 
+def build_fixture_water_structure() -> str:
+    payload = {
+        'kind': 'vibemol.structure',
+        'structureVersion': 1,
+        'appVersion': 'smoke-test',
+        'name': 'water-fixture.structure.json',
+        'meta': {'source': 'test'},
+        'volume': {
+            'title': 'Water fixture',
+            'comment': 'Explicit water structure for symmetry smoke',
+            'natoms': 3,
+            'origin': [0, 0, 0],
+            'nxyz': [0, 0, 0],
+            'axes': [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            'atoms': [
+                {'id': 'atom-o', 'Z': 8, 'x': 0.0, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-h1', 'Z': 1, 'x': 0.7586, 'y': 0.0, 'z': 0.5043, 'formalCharge': 0},
+                {'id': 'atom-h2', 'Z': 1, 'x': -0.7586, 'y': 0.0, 'z': 0.5043, 'formalCharge': 0},
+            ],
+            'bonds': [
+                {'id': 'bond:o:h1', 'a': 'atom-o', 'b': 'atom-h1', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:o:h2', 'a': 'atom-o', 'b': 'atom-h2', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+            ],
+            'annotations': {'builder': {'byAtomId': {}}},
+            'fragmentOps': [],
+            'data': [],
+            'units': 'angstrom',
+        },
+        'recordState': {'measurementLabelOffsets': {}},
+    }
+    return json.dumps(payload)
+
+
+def build_fixture_distorted_methane_structure() -> str:
+    payload = {
+        'kind': 'vibemol.structure',
+        'structureVersion': 1,
+        'appVersion': 'smoke-test',
+        'name': 'distorted-methane-fixture.structure.json',
+        'meta': {'source': 'test'},
+        'volume': {
+            'title': 'Distorted methane fixture',
+            'comment': 'Slightly distorted methane for approximate symmetry smoke',
+            'natoms': 5,
+            'origin': [0, 0, 0],
+            'nxyz': [0, 0, 0],
+            'axes': [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            'atoms': [
+                {'id': 'atom-c', 'Z': 6, 'x': 0.0, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-h1', 'Z': 1, 'x': 0.68, 'y': 0.62, 'z': 0.63, 'formalCharge': 0},
+                {'id': 'atom-h2', 'Z': 1, 'x': 0.58, 'y': -0.60, 'z': -0.70, 'formalCharge': 0},
+                {'id': 'atom-h3', 'Z': 1, 'x': -0.61, 'y': 0.66, 'z': -0.60, 'formalCharge': 0},
+                {'id': 'atom-h4', 'Z': 1, 'x': -0.67, 'y': -0.55, 'z': 0.73, 'formalCharge': 0},
+            ],
+            'bonds': [
+                {'id': 'bond:c:h1', 'a': 'atom-c', 'b': 'atom-h1', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:c:h2', 'a': 'atom-c', 'b': 'atom-h2', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:c:h3', 'a': 'atom-c', 'b': 'atom-h3', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:c:h4', 'a': 'atom-c', 'b': 'atom-h4', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+            ],
+            'annotations': {'builder': {'byAtomId': {}}},
+            'fragmentOps': [],
+            'data': [],
+            'units': 'angstrom',
+        },
+        'recordState': {'measurementLabelOffsets': {}},
+    }
+    return json.dumps(payload)
+
+
 def build_fixture_inferred_xyz() -> str:
     return '\n'.join([
         '2',
@@ -214,6 +284,23 @@ def active_structure_summary(page) -> dict[str, Any]:
             };
         }"""
     )
+
+
+def active_atom_positions(page) -> list[list[float]]:
+    result = page.evaluate(
+        """() => {
+            const exported = window.VibeMolStructure.exportActive();
+            const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+            return atoms.map((atom) => [
+              Number(atom.x) || 0,
+              Number(atom.y) || 0,
+              Number(atom.z) || 0,
+            ]);
+        }"""
+    )
+    if not isinstance(result, list):
+        raise AssertionError(f'Could not export active atom positions: {result!r}')
+    return result
 
 
 def sample_scene_canvas_rgb(page) -> dict[str, float]:
@@ -1369,6 +1456,165 @@ def main() -> int:
                 """() => /Undo: Rotate 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
             )
 
+            log_step('symmetry popover smoke')
+            water_fixture_text = build_fixture_water_structure()
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "symmetry-water-fixture")', water_fixture_text)
+            page.locator('#modeDisplayBtn').click()
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const btn = document.getElementById('editAdaptiveSymmetryBtn');
+                    return !!btn && btn.hidden === false;
+                }"""
+            )
+            oxygen_x, oxygen_y = find_atom_click_point(page, 0)
+            right_click_atom(page, oxygen_x, oxygen_y)
+            wait_for_selected_atoms(page, 1)
+            page.locator('#editAdaptiveSymmetryBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false'"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const summary = document.getElementById('editSymmetryTargetSummary')?.textContent || '';
+                    return /Selected atoms \\(1\\)/i.test(summary);
+                }"""
+            )
+            page.locator('#editAdaptiveSymmetryBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+            clear_x, clear_y = find_empty_edit_canvas_point(page)
+            page.mouse.click(clear_x, clear_y)
+            page.wait_for_function("""() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0""")
+            page.locator('#editAdaptiveSymmetryBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false'"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const summary = document.getElementById('editSymmetryTargetSummary')?.textContent || '';
+                    const exact = document.getElementById('editSymmetryExactResult')?.textContent || '';
+                    return /Whole structure \\(3 atoms\\)/i.test(summary) && /Exact point group:\\s*C2v/i.test(exact);
+                }"""
+            )
+            distorted_methane_text = build_fixture_distorted_methane_structure()
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "symmetry-distorted-methane-fixture")', distorted_methane_text)
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+            page.locator('#editAdaptiveSymmetryBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false'"""
+            )
+            page.wait_for_function(
+                """() => /Whole structure \\(5 atoms\\)/i.test(document.getElementById('editSymmetryTargetSummary')?.textContent || '')"""
+            )
+            page.locator('#editSymmetryToleranceInput').fill('0.120')
+            page.locator('#editSymmetryToleranceInput').press('Enter')
+            page.wait_for_function(
+                """() => {
+                    const buttons = Array.from(document.querySelectorAll('#editSymmetryCandidates button[data-symmetry-group-id]'));
+                    return buttons.some((button) => String(button.getAttribute('data-symmetry-group-id') || '') === 'Td');
+                }"""
+            )
+            symmetry_before = active_atom_positions(page)
+            page.locator('#editSymmetryCandidates button[data-symmetry-group-id="Td"]').click()
+            page.wait_for_function(
+                """(beforeAtoms) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    if (!Array.isArray(beforeAtoms) || beforeAtoms.length !== atoms.length) return false;
+                    for (let i = 0; i < atoms.length; i += 1) {
+                      const before = beforeAtoms[i];
+                      const atom = atoms[i];
+                      if (!Array.isArray(before) || before.length < 3 || !atom) continue;
+                      const dx = (Number(atom.x) || 0) - (Number(before[0]) || 0);
+                      const dy = (Number(atom.y) || 0) - (Number(before[1]) || 0);
+                      const dz = (Number(atom.z) || 0) - (Number(before[2]) || 0);
+                      if ((dx * dx + dy * dy + dz * dz) > 1e-6) return true;
+                    }
+                    return false;
+                }""",
+                arg=symmetry_before,
+            )
+            page.locator('#editSymmetryCancelBtn').click()
+            page.wait_for_function(
+                """(beforeAtoms) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    if (!Array.isArray(beforeAtoms) || beforeAtoms.length !== atoms.length) return false;
+                    for (let i = 0; i < atoms.length; i += 1) {
+                      const before = beforeAtoms[i];
+                      const atom = atoms[i];
+                      if (!Array.isArray(before) || before.length < 3 || !atom) return false;
+                      if (Math.abs((Number(atom.x) || 0) - (Number(before[0]) || 0)) > 1e-6) return false;
+                      if (Math.abs((Number(atom.y) || 0) - (Number(before[1]) || 0)) > 1e-6) return false;
+                      if (Math.abs((Number(atom.z) || 0) - (Number(before[2]) || 0)) > 1e-6) return false;
+                    }
+                    return true;
+                }""",
+                arg=symmetry_before,
+            )
+            page.locator('#editSymmetryCandidates button[data-symmetry-group-id="Td"]').click()
+            page.wait_for_function(
+                """() => document.getElementById('editSymmetryApplyBtn')?.disabled === false"""
+            )
+            page.locator('#editSymmetryApplyBtn').click()
+            page.wait_for_function(
+                """() => /Exact point group:\\s*Td/i.test(document.getElementById('editSymmetryExactResult')?.textContent || '')"""
+            )
+            page.evaluate(
+                """(isMac) => {
+                    window.dispatchEvent(new KeyboardEvent('keydown', {
+                        key: 'z',
+                        metaKey: !!isMac,
+                        ctrlKey: !isMac,
+                        bubbles: true,
+                        cancelable: true,
+                    }));
+                }""",
+                arg=(sys.platform == 'darwin'),
+            )
+            page.wait_for_function(
+                """(beforeAtoms) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    if (!Array.isArray(beforeAtoms) || beforeAtoms.length !== atoms.length) return false;
+                    for (let i = 0; i < atoms.length; i += 1) {
+                      const before = beforeAtoms[i];
+                      const atom = atoms[i];
+                      if (!Array.isArray(before) || before.length < 3 || !atom) return false;
+                      if (Math.abs((Number(atom.x) || 0) - (Number(before[0]) || 0)) > 1e-6) return false;
+                      if (Math.abs((Number(atom.y) || 0) - (Number(before[1]) || 0)) > 1e-6) return false;
+                      if (Math.abs((Number(atom.z) || 0) - (Number(before[2]) || 0)) > 1e-6) return false;
+                    }
+                    return true;
+                }""",
+                arg=symmetry_before,
+            )
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "symmetry-distorted-methane-auto-fixture")', distorted_methane_text)
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+            page.locator('#editAdaptiveSymmetryBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false'"""
+            )
+            page.wait_for_function(
+                """() => /Whole structure \\(5 atoms\\)/i.test(document.getElementById('editSymmetryTargetSummary')?.textContent || '')"""
+            )
+            page.locator('#editSymmetryToleranceInput').fill('0.120')
+            page.locator('#editSymmetryToleranceInput').press('Enter')
+            page.locator('#editSymmetryAutoBtn').click()
+            page.wait_for_function(
+                """() => /Exact point group:\\s*Td/i.test(document.getElementById('editSymmetryExactResult')?.textContent || '')"""
+            )
+            page.locator('#editAdaptiveSymmetryBtn').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+
             log_step('fragment cue cancel returns to atom manipulation')
             select_two_fixture_atoms(page)
             page.locator('#editSelectionAddFragmentCueButton').click()
@@ -1708,7 +1954,7 @@ def main() -> int:
                 """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
             )
             side_x, side_y = find_bond_side_canvas_point(page)
-            page.mouse.click(side_x, side_y)
+            page.mouse.click(side_x, side_y, button='right')
             page.wait_for_function(
                 """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) > 0"""
             )
@@ -1773,7 +2019,7 @@ def main() -> int:
                 """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
             )
             side_x, side_y = find_bond_side_canvas_point(page)
-            page.mouse.click(side_x, side_y)
+            page.mouse.click(side_x, side_y, button='right')
             page.wait_for_function(
                 """() => {
                     const cue = window.VibeMolTesting?.getBondSideCueState?.();
@@ -1837,7 +2083,7 @@ def main() -> int:
                 """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
             )
             side_x, side_y = find_bond_side_canvas_point(page)
-            page.mouse.click(side_x, side_y)
+            page.mouse.click(side_x, side_y, button='right')
             page.wait_for_function(
                 """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) > 0"""
             )
@@ -2214,21 +2460,14 @@ def main() -> int:
             )
             if not isinstance(replace_target, dict):
                 raise AssertionError(f'Could not resolve heavy atom and terminal hydrogen for replace gesture: {replace_target!r}')
-            heavy_point = page.evaluate(
-                """(index) => window.VibeMolTesting.projectActiveAtomToClient(index)""",
-                replace_target['heavyIndex'],
-            )
-            hydrogen_point = page.evaluate(
-                """(index) => window.VibeMolTesting.projectActiveAtomToClient(index)""",
-                replace_target['hydrogenIndex'],
-            )
-            if not isinstance(heavy_point, dict) or not heavy_point.get('visible'):
-                raise AssertionError(f'Could not project heavy atom for replace gesture: {heavy_point!r}')
-            if not isinstance(hydrogen_point, dict) or not hydrogen_point.get('visible'):
-                raise AssertionError(f'Could not project terminal hydrogen for replace gesture: {hydrogen_point!r}')
-            page.mouse.move(heavy_point['x'], heavy_point['y'])
+            heavy_candidates = projected_atom_hit_candidates(page, replace_target['heavyIndex'], replace_target['hydrogenIndex'])
+            if not heavy_candidates:
+                raise AssertionError(f'Could not resolve heavy-atom drag candidates for replace gesture: {replace_target!r}')
+            heavy_x, heavy_y = heavy_candidates[0]
+            hydrogen_x, hydrogen_y = find_atom_click_point(page, replace_target['hydrogenIndex'])
+            page.mouse.move(heavy_x, heavy_y)
             page.mouse.down()
-            page.mouse.move(hydrogen_point['x'], hydrogen_point['y'], steps=18)
+            page.mouse.move(hydrogen_x, hydrogen_y, steps=18)
             page.mouse.up()
             page.wait_for_function(
                 """() => {

@@ -316,6 +316,18 @@
     throw new Error('VibeMolFileLoader is not loaded. Ensure assets/app/js/file-loader.js is included before assets/app/js/app.js.');
   }
 
+  const {
+    analyzePointGroup,
+    buildSymmetryPreview,
+    applySymmetryPreview,
+    createEditSymmetryController,
+  } = window.VibeMolSymmetry || {};
+  if (![analyzePointGroup, buildSymmetryPreview, applySymmetryPreview, createEditSymmetryController].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolSymmetry is not loaded. Ensure assets/app/js/symmetry.js is included before assets/app/js/app.js.');
+  }
+  const DEFAULT_SYMMETRY_TOLERANCE_ANG = 0.05;
+  const EXACT_SYMMETRY_TOLERANCE_ANG = 1e-3;
+
   const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
   if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/app.js.');
@@ -792,6 +804,8 @@
   let editAdaptiveMenuSubtitleEl = null;
   let editAdaptiveAddAtomBtn = null;
   let editAdaptiveAddAtomMetaEl = null;
+  let editAdaptiveSymmetryBtn = null;
+  let editAdaptiveSymmetryMetaEl = null;
   let editAdaptiveCleanStructureBtn = null;
   let editAdaptiveCleanStructureMetaEl = null;
   let editAdaptiveShiftComBtn = null;
@@ -799,16 +813,29 @@
   let editAdaptiveAlignPrincipalBtn = null;
   let editAdaptiveAlignPrincipalMetaEl = null;
   let editAdaptiveAddAtomPopoverEl = null;
+  let editAdaptiveSymmetryPopoverEl = null;
   let editBuildSearchEl = null;
   let editBuildAtomsHostEl = null;
   let editBuildFragmentsHostEl = null;
   let editBuildMoleculesHostEl = null;
+  let editSymmetryTargetSummaryEl = null;
+  let editSymmetryExactResultEl = null;
+  let editSymmetryToleranceRangeEl = null;
+  let editSymmetryToleranceInputEl = null;
+  let editSymmetryCandidatesEl = null;
+  let editSymmetryApplyBtnEl = null;
+  let editSymmetryCancelBtnEl = null;
+  let editSymmetryAutoBtnEl = null;
   let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
   let bondCenterSelectionState = null;
   let buildSearchKeyboardSelectionKey = '';
   let buildPopoverHideTimer = 0;
   let buildPaletteFilterQuery = '';
+  let symmetryController = null;
+  let symmetryPreviewState = null;
+  let symmetryPopoverAnalysisCache = null;
+  symmetryController = createEditSymmetryController({ toleranceAng: DEFAULT_SYMMETRY_TOLERANCE_ANG });
 
   /**
    * Synchronize edit-mode construction helpers with the active tool and camera.
@@ -839,6 +866,9 @@
     positionEditAdaptiveMenu();
     if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
       positionBuildPopover();
+    }
+    if (editAdaptiveSymmetryPopoverEl && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false') {
+      positionSymmetryPopover();
     }
     const addAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
     if (addAtomOperatorPanelEl && addAtomOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
@@ -5699,9 +5729,18 @@
     ) {
       hideSelectionCoordinationCuePopover();
     }
+    if (
+      editAdaptiveSymmetryPopoverEl
+      && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false'
+      && !(editAdaptiveSymmetryPopoverEl.contains(target) || (editAdaptiveSymmetryBtn && editAdaptiveSymmetryBtn.contains(target)))
+    ) {
+      hideSymmetryPopover({ restore: true });
+    }
   });
   editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
   editAdaptiveAddAtomMetaEl = document.getElementById('editAdaptiveAddAtomMeta');
+  editAdaptiveSymmetryBtn = document.getElementById('editAdaptiveSymmetryBtn');
+  editAdaptiveSymmetryMetaEl = document.getElementById('editAdaptiveSymmetryMeta');
   editAdaptiveCleanStructureBtn = document.getElementById('editAdaptiveCleanStructureBtn');
   editAdaptiveCleanStructureMetaEl = document.getElementById('editAdaptiveCleanStructureMeta');
   editAdaptiveShiftComBtn = document.getElementById('editAdaptiveShiftComBtn');
@@ -5709,10 +5748,19 @@
   editAdaptiveAlignPrincipalBtn = document.getElementById('editAdaptiveAlignPrincipalBtn');
   editAdaptiveAlignPrincipalMetaEl = document.getElementById('editAdaptiveAlignPrincipalMeta');
   editAdaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
+  editAdaptiveSymmetryPopoverEl = document.getElementById('editAdaptiveSymmetryPopover');
   editBuildSearchEl = document.getElementById('editBuildSearch');
   editBuildAtomsHostEl = document.getElementById('editBuildAtomsHost');
   editBuildFragmentsHostEl = document.getElementById('editBuildFragmentsHost');
   editBuildMoleculesHostEl = document.getElementById('editBuildMoleculesHost');
+  editSymmetryTargetSummaryEl = document.getElementById('editSymmetryTargetSummary');
+  editSymmetryExactResultEl = document.getElementById('editSymmetryExactResult');
+  editSymmetryToleranceRangeEl = document.getElementById('editSymmetryToleranceRange');
+  editSymmetryToleranceInputEl = document.getElementById('editSymmetryToleranceInput');
+  editSymmetryCandidatesEl = document.getElementById('editSymmetryCandidates');
+  editSymmetryApplyBtnEl = document.getElementById('editSymmetryApplyBtn');
+  editSymmetryCancelBtnEl = document.getElementById('editSymmetryCancelBtn');
+  editSymmetryAutoBtnEl = document.getElementById('editSymmetryAutoBtn');
   const editSelectionMarqueeEl = document.getElementById('editSelectionMarquee');
   const editAddAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
   const editAddAtomOperatorHeaderEl = document.getElementById('editAddAtomOperatorHeader');
@@ -8213,6 +8261,7 @@
    * @returns {boolean}
    */
   function undoLastEditAction() {
+    clearSymmetryPreview({ restore: true, keepPopover: false, quiet: true });
     clearTransformState();
     return editState.undo();
   }
@@ -8222,6 +8271,7 @@
    * @returns {boolean}
    */
   function redoLastEditAction() {
+    clearSymmetryPreview({ restore: true, keepPopover: false, quiet: true });
     clearTransformState();
     return editState.redo();
   }
@@ -8804,6 +8854,9 @@
       clearBondCenterSelection({ updateVisuals: false });
       if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
       clearGestureVoidPreview();
+      if (symmetryPreviewState) {
+        clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
+      }
       const selection = getEditAtomSelection();
       if (selection.length === 0 && isSelectionFragmentCueArmed()) {
         clearFragmentAttachSessionState();
@@ -8816,6 +8869,7 @@
       if (editGestureController) editGestureController.refreshUi();
       updateSelectedHalos();
       updateEditAdaptiveMenuUi();
+      if (isSymmetryPopoverOpen()) renderSymmetryPopover();
     },
   });
 
@@ -11689,6 +11743,7 @@
    */
   function hideAllAdaptiveToolPopovers(exceptKind = '') {
     if (exceptKind !== 'build') hideBuildPopover();
+    if (exceptKind !== 'symmetry') hideSymmetryPopover({ restore: true });
   }
 
   /**
@@ -12394,6 +12449,36 @@
       editAdaptiveAddAtomPopoverEl.addEventListener('mouseenter', () => cancelBuildPopoverHide());
       editAdaptiveAddAtomPopoverEl.addEventListener('mouseleave', () => hideBuildPopover(120));
     }
+    if (editAdaptiveSymmetryBtn) {
+      editAdaptiveSymmetryBtn.onclick = () => {
+        if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
+        else showSymmetryPopover();
+      };
+    }
+    if (editAdaptiveSymmetryPopoverEl) {
+      editAdaptiveSymmetryPopoverEl.addEventListener('pointerdown', (e) => {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      });
+    }
+    if (editSymmetryToleranceRangeEl) {
+      editSymmetryToleranceRangeEl.addEventListener('input', () => setSymmetryTolerance(editSymmetryToleranceRangeEl.value));
+      editSymmetryToleranceRangeEl.addEventListener('change', () => setSymmetryTolerance(editSymmetryToleranceRangeEl.value));
+    }
+    if (editSymmetryToleranceInputEl) {
+      editSymmetryToleranceInputEl.addEventListener('input', () => setSymmetryTolerance(editSymmetryToleranceInputEl.value));
+      editSymmetryToleranceInputEl.addEventListener('change', () => setSymmetryTolerance(editSymmetryToleranceInputEl.value));
+    }
+    if (editSymmetryCandidatesEl) {
+      editSymmetryCandidatesEl.addEventListener('click', (e) => {
+        const buttonEl = e && e.target ? e.target.closest('[data-symmetry-group-id]') : null;
+        if (!buttonEl) return;
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        previewSymmetryCandidate(String(buttonEl.getAttribute('data-symmetry-group-id') || ''));
+      });
+    }
+    if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };
+    if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };
+    if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
     if (editAdaptiveCleanStructureBtn) editAdaptiveCleanStructureBtn.onclick = () => { optimizeActiveStructureWithUff(); };
     if (editAdaptiveShiftComBtn) editAdaptiveShiftComBtn.onclick = () => { centerActiveMoleculeMassAtOrigin(); };
     if (editAdaptiveAlignPrincipalBtn) editAdaptiveAlignPrincipalBtn.onclick = () => { alignActiveMoleculePrincipalAxes(); };
@@ -13402,6 +13487,332 @@
       preferPayloadSelection: options.preferPayloadSelection !== false,
     });
     if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
+  }
+
+  function positionSymmetryPopover() {
+    if (!editAdaptiveSymmetryPopoverEl || !editAdaptiveSymmetryBtn) return;
+    positionFloatingPopoverUi({
+      popoverEl: editAdaptiveSymmetryPopoverEl,
+      triggerEl: editAdaptiveSymmetryBtn,
+      gap: 12,
+      defaultWidth: 380,
+      defaultHeight: 420,
+    });
+  }
+
+  function isSymmetryPopoverOpen() {
+    return !!(editAdaptiveSymmetryPopoverEl && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false');
+  }
+
+  function resolveEditSymmetryTarget() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) return null;
+    const selection = getEditAtomSelection();
+    const indices = selection.length ? selection.slice() : vol.atoms.map((_, index) => index);
+    const atoms = indices.map((index) => normalizeVolumeAtom(vol.atoms[index]));
+    const scopeLabel = selection.length
+      ? `Selected atoms (${indices.length})`
+      : `Whole structure (${vol.atoms.length} atoms)`;
+    return { record, vol, indices, atoms, scopeLabel };
+  }
+
+  function getSymmetryTargetKey(target) {
+    if (!target) return '';
+    return target.indices.map((index) => {
+      const atom = target.vol && target.vol.atoms && target.vol.atoms[index];
+      return resolveVolumeAtomId(target.vol, atom) || `idx:${index}`;
+    }).join('|');
+  }
+
+  function getSymmetryTargetAtomsFromSnapshot(snapshot, target) {
+    if (!snapshot || !Array.isArray(snapshot.atoms) || !target) return [];
+    return target.indices.map((index) => normalizeVolumeAtom(snapshot.atoms[index]));
+  }
+
+  function invalidateSymmetryPopoverAnalysisCache() {
+    symmetryPopoverAnalysisCache = null;
+    if (editSymmetryCandidatesEl && editSymmetryCandidatesEl.dataset) {
+      delete editSymmetryCandidatesEl.dataset.renderKey;
+    }
+  }
+
+  function buildSymmetryAnalysisCacheKey(target, toleranceAng) {
+    if (!target || !Array.isArray(target.atoms)) return '';
+    const parts = [
+      String(target.scopeLabel || ''),
+      String(getSymmetryTargetKey(target) || ''),
+      Number(toleranceAng || 0).toFixed(6),
+    ];
+    for (const atom of target.atoms) {
+      parts.push([
+        String(atom && atom.id || ''),
+        Number(atom && atom.Z) || 0,
+        (Number(atom && atom.x) || 0).toFixed(6),
+        (Number(atom && atom.y) || 0).toFixed(6),
+        (Number(atom && atom.z) || 0).toFixed(6),
+      ].join('|'));
+    }
+    return parts.join(';');
+  }
+
+  function getSymmetryPopoverAnalysis(target) {
+    if (!target) return null;
+    const toleranceAng = symmetryController ? symmetryController.getTolerance() : DEFAULT_SYMMETRY_TOLERANCE_ANG;
+    const cacheKey = buildSymmetryAnalysisCacheKey(target, toleranceAng);
+    if (
+      symmetryPopoverAnalysisCache
+      && symmetryPopoverAnalysisCache.key === cacheKey
+      && symmetryPopoverAnalysisCache.analysis
+    ) {
+      return symmetryPopoverAnalysisCache.analysis;
+    }
+    const analysis = symmetryController
+      ? symmetryController.analyzeTarget(target.atoms, { toleranceAng })
+      : analyzePointGroup(target.atoms, { toleranceAng: DEFAULT_SYMMETRY_TOLERANCE_ANG });
+    symmetryPopoverAnalysisCache = {
+      key: cacheKey,
+      analysis,
+    };
+    return analysis;
+  }
+
+  function applySymmetryCoordinateSnapshotToVolume(vol, snapshot) {
+    if (!vol || !Array.isArray(vol.atoms) || !snapshot || !Array.isArray(snapshot.atoms)) return false;
+    if (snapshot.atoms.length !== vol.atoms.length) return false;
+    for (let i = 0; i < vol.atoms.length; i++) {
+      const dst = vol.atoms[i];
+      const src = snapshot.atoms[i];
+      if (!dst || !src) continue;
+      dst.x = Number(src.x) || 0;
+      dst.y = Number(src.y) || 0;
+      dst.z = Number(src.z) || 0;
+    }
+    vol.natoms = vol.atoms.length;
+    return true;
+  }
+
+  function applySymmetryPreviewToTarget(target, preview) {
+    if (!target || !preview || !Array.isArray(preview.atoms)) return false;
+    const vol = target.vol;
+    if (!vol || !Array.isArray(vol.atoms)) return false;
+    if (preview.atoms.length !== target.indices.length) return false;
+    for (let i = 0; i < target.indices.length; i++) {
+      const atomIndex = target.indices[i] | 0;
+      const src = preview.atoms[i];
+      const dst = vol.atoms[atomIndex];
+      if (!src || !dst) continue;
+      dst.x = Number(src.x) || 0;
+      dst.y = Number(src.y) || 0;
+      dst.z = Number(src.z) || 0;
+    }
+    vol.natoms = vol.atoms.length;
+    return true;
+  }
+
+  function clearSymmetryPreview(options = {}) {
+    const restore = options.restore !== false;
+    const keepPopover = !!options.keepPopover;
+    const quiet = !!options.quiet;
+    if (symmetryPreviewState && restore) {
+      const record = symmetryPreviewState.record;
+      if (record && record.vol && symmetryPreviewState.baselineSnapshot) {
+        applySymmetryCoordinateSnapshotToVolume(record.vol, symmetryPreviewState.baselineSnapshot);
+        rebuildScene({ preserveView: true });
+        updateSidePanel();
+      }
+    }
+    symmetryPreviewState = null;
+    if (symmetryController) symmetryController.clearPreview();
+    invalidateSymmetryPopoverAnalysisCache();
+    if (!keepPopover && editAdaptiveSymmetryPopoverEl) {
+      editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'true');
+    }
+    if (!quiet) updateEditAdaptiveMenuUi();
+  }
+
+  function syncSymmetryToleranceUi() {
+    const value = symmetryController ? symmetryController.getTolerance() : DEFAULT_SYMMETRY_TOLERANCE_ANG;
+    if (editSymmetryToleranceRangeEl && document.activeElement !== editSymmetryToleranceRangeEl) {
+      editSymmetryToleranceRangeEl.value = value.toFixed(3);
+    }
+    if (editSymmetryToleranceInputEl && document.activeElement !== editSymmetryToleranceInputEl) {
+      editSymmetryToleranceInputEl.value = value.toFixed(3);
+    }
+  }
+
+  function findInternalSymmetryCandidate(analysis, groupId) {
+    const internal = analysis && analysis._internal;
+    const candidates = internal && Array.isArray(internal.approximateCandidates) ? internal.approximateCandidates : [];
+    return candidates.find((candidate) => candidate && candidate.groupId === groupId) || null;
+  }
+
+  function formatSymmetryResidual(value) {
+    return `${(Number(value) || 0).toFixed(3)} Å`;
+  }
+
+  function renderSymmetryCandidates(analysis) {
+    if (!editSymmetryCandidatesEl) return;
+    const selectedGroupId = symmetryPreviewState && symmetryPreviewState.preview
+      ? String(symmetryPreviewState.preview.groupId || '')
+      : '';
+    const candidates = analysis && analysis._internal && Array.isArray(analysis._internal.approximateCandidates)
+      ? analysis._internal.approximateCandidates
+      : [];
+    if (!candidates.length) {
+      const emptyKey = `empty:${selectedGroupId}`;
+      if (editSymmetryCandidatesEl.dataset.renderKey !== emptyKey) {
+        editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryCandidateMeta">No approximate point groups within the current tolerance.</div>';
+        editSymmetryCandidatesEl.dataset.renderKey = emptyKey;
+      }
+      return;
+    }
+    const renderKey = [
+      selectedGroupId,
+      ...candidates.map((candidate) => [
+        String(candidate.groupId || ''),
+        Number(candidate.maxDisplacementAng || 0).toFixed(6),
+        Number(candidate.rmsDisplacementAng || 0).toFixed(6),
+      ].join('|')),
+    ].join(';');
+    if (editSymmetryCandidatesEl.dataset.renderKey === renderKey) return;
+    editSymmetryCandidatesEl.innerHTML = candidates.map((candidate) => {
+      const groupId = String(candidate.groupId || '');
+      const activeClass = groupId === selectedGroupId ? ' is-active' : '';
+      return [
+        `<button class="editSymmetryCandidateBtn${activeClass}" type="button" data-symmetry-group-id="${groupId}">`,
+        `<span class="editSymmetryCandidateLabel">${candidate.groupLabel}</span>`,
+        `<span class="editSymmetryCandidateMeta">max ${formatSymmetryResidual(candidate.maxDisplacementAng)} • rms ${formatSymmetryResidual(candidate.rmsDisplacementAng)}</span>`,
+        '</button>',
+      ].join('');
+    }).join('');
+    editSymmetryCandidatesEl.dataset.renderKey = renderKey;
+  }
+
+  function renderSymmetryPopover() {
+    if (!editAdaptiveSymmetryPopoverEl || editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'true') return;
+    const target = resolveEditSymmetryTarget();
+    syncSymmetryToleranceUi();
+    if (!target) {
+      if (editSymmetryTargetSummaryEl) editSymmetryTargetSummaryEl.textContent = 'Whole structure (0 atoms)';
+      if (editSymmetryExactResultEl) editSymmetryExactResultEl.textContent = 'Exact point group: C1';
+      if (editSymmetryCandidatesEl) editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryCandidateMeta">No editable atoms available.</div>';
+      if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.disabled = true;
+      if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.disabled = !symmetryPreviewState;
+      if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.disabled = true;
+      positionSymmetryPopover();
+      return;
+    }
+    const analysis = getSymmetryPopoverAnalysis(target);
+    if (editSymmetryTargetSummaryEl) editSymmetryTargetSummaryEl.textContent = target.scopeLabel;
+    if (editSymmetryExactResultEl) editSymmetryExactResultEl.textContent = `Exact point group: ${analysis.exactGroupLabel}`;
+    renderSymmetryCandidates(analysis);
+    const autoCandidate = analysis && analysis._internal && Array.isArray(analysis._internal.approximateCandidates)
+      ? analysis._internal.approximateCandidates.find((candidate) => candidate && candidate.groupId !== 'C1')
+      : null;
+    if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.disabled = !(symmetryPreviewState && symmetryPreviewState.preview);
+    if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.disabled = !(symmetryPreviewState && symmetryPreviewState.preview);
+    if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.disabled = !autoCandidate;
+    positionSymmetryPopover();
+  }
+
+  function hideSymmetryPopover(options = {}) {
+    clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
+  }
+
+  function showSymmetryPopover() {
+    if (!editAdaptiveSymmetryPopoverEl) return;
+    hideSelectionCoordinationCuePopover();
+    hideSelectionFragmentCuePopover();
+    hideBuildPopover();
+    invalidateSymmetryPopoverAnalysisCache();
+    editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
+    renderSymmetryPopover();
+  }
+
+  function setSymmetryTolerance(nextValue) {
+    const value = Math.max(EXACT_SYMMETRY_TOLERANCE_ANG, Math.min(0.25, Number(nextValue) || DEFAULT_SYMMETRY_TOLERANCE_ANG));
+    if (symmetryController) symmetryController.setTolerance(value);
+    syncSymmetryToleranceUi();
+    invalidateSymmetryPopoverAnalysisCache();
+    clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
+    renderSymmetryPopover();
+    return value;
+  }
+
+  function previewSymmetryCandidate(groupId) {
+    const target = resolveEditSymmetryTarget();
+    if (!target) return false;
+    const targetKey = getSymmetryTargetKey(target);
+    let baselineSnapshot = symmetryPreviewState && symmetryPreviewState.record === target.record && symmetryPreviewState.targetKey === targetKey
+      ? symmetryPreviewState.baselineSnapshot
+      : null;
+    if (!baselineSnapshot) baselineSnapshot = cloneCoordinateSnapshot(target.vol);
+    applySymmetryCoordinateSnapshotToVolume(target.vol, baselineSnapshot);
+    const sourceAtoms = getSymmetryTargetAtomsFromSnapshot(baselineSnapshot, target);
+    const analysis = symmetryController
+      ? symmetryController.analyzeTarget(sourceAtoms, { toleranceAng: symmetryController.getTolerance() })
+      : analyzePointGroup(sourceAtoms, { toleranceAng: DEFAULT_SYMMETRY_TOLERANCE_ANG });
+    const candidate = findInternalSymmetryCandidate(analysis, groupId);
+    if (!candidate) return false;
+    const preview = symmetryController
+      ? symmetryController.buildPreview(sourceAtoms, groupId, { candidate })
+      : buildSymmetryPreview(sourceAtoms, groupId, { candidate });
+    if (!preview) return false;
+    if (!applySymmetryPreviewToTarget(target, preview)) return false;
+    invalidateSymmetryPopoverAnalysisCache();
+    symmetryPreviewState = {
+      record: target.record,
+      targetKey,
+      targetIndices: target.indices.slice(),
+      baselineSnapshot,
+      preview,
+    };
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    renderSymmetryPopover();
+    return true;
+  }
+
+  function cancelSymmetryPreview() {
+    clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
+    renderSymmetryPopover();
+    setHintMessage('Canceled symmetry preview.');
+    return true;
+  }
+
+  function applyActiveSymmetryPreview() {
+    if (!symmetryPreviewState || !symmetryPreviewState.preview) return false;
+    const record = symmetryPreviewState.record;
+    const vol = record && record.vol;
+    const preview = symmetryPreviewState.preview;
+    const beforeSnapshot = symmetryPreviewState.baselineSnapshot;
+    symmetryPreviewState = null;
+    if (symmetryController) symmetryController.clearPreview();
+    invalidateSymmetryPopoverAnalysisCache();
+    finalizeCoordinateSnapshotEdit(record, vol, beforeSnapshot, `Symmetrize to ${preview.groupLabel}`);
+    setHintMessage(`Symmetrized to ${preview.groupLabel}.`);
+    renderSymmetryPopover();
+    return true;
+  }
+
+  function autoApplyHighestSymmetry() {
+    if (symmetryPreviewState) clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
+    const target = resolveEditSymmetryTarget();
+    if (!target) return false;
+    const analysis = symmetryController
+      ? symmetryController.analyzeTarget(target.atoms, { toleranceAng: symmetryController.getTolerance() })
+      : analyzePointGroup(target.atoms, { toleranceAng: DEFAULT_SYMMETRY_TOLERANCE_ANG });
+    const candidate = analysis && analysis._internal && Array.isArray(analysis._internal.approximateCandidates)
+      ? analysis._internal.approximateCandidates.find((entry) => entry && entry.groupId !== 'C1')
+      : null;
+    if (!candidate) {
+      setHintMessage('No higher point group fits within the current tolerance.');
+      renderSymmetryPopover();
+      return false;
+    }
+    if (!previewSymmetryCandidate(candidate.groupId)) return false;
+    return applyActiveSymmetryPreview();
   }
 
   function hideSelectionFragmentCuePopover(delayMs = 0) {
@@ -15154,12 +15565,14 @@
       onHideAllPopovers: hideAllAdaptiveToolPopovers,
       visibleItems: [
         { el: editAdaptiveAddAtomBtn, visible: isVisible },
+        { el: editAdaptiveSymmetryBtn, visible: hasEditableAtoms },
         { el: editAdaptiveCleanStructureBtn, visible: hasEditableAtoms },
         { el: editAdaptiveShiftComBtn, visible: hasEditableAtoms },
         { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms },
       ],
       activeItems: [
         { el: editAdaptiveAddAtomBtn, active: isVisible },
+        { el: editAdaptiveSymmetryBtn, active: isSymmetryPopoverOpen() },
         { el: editAdaptiveCleanStructureBtn, active: false },
         { el: editAdaptiveShiftComBtn, active: false },
         { el: editAdaptiveAlignPrincipalBtn, active: false },
@@ -15175,6 +15588,10 @@
           })(),
         },
         {
+          el: editAdaptiveSymmetryMetaEl,
+          text: 'Selection-first point-group analysis',
+        },
+        {
           el: editAdaptiveCleanStructureMetaEl,
           text: getCleanStructurePresentation().rowMeta,
         },
@@ -15188,6 +15605,7 @@
         },
       ],
     });
+    if (isSymmetryPopoverOpen()) renderSymmetryPopover();
   }
 
   /**
@@ -15888,6 +16306,9 @@
   function clearTransientInteractionState(options = {}) {
     if (options.hydrogenPreview !== false && autoHydrogenController) {
       autoHydrogenController.clearPreview({ quiet: true });
+    }
+    if (options.symmetry !== false) {
+      clearSymmetryPreview({ restore: true, keepPopover: false, quiet: true });
     }
     editTools.clearTransientInteractionState(options);
   }
@@ -18530,6 +18951,7 @@
    * @returns {boolean}
    */
   function deleteSelectedOrHoveredAtom() {
+    clearSymmetryPreview({ restore: true, keepPopover: false, quiet: true });
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
     if (getBondCenterSelectionResolved(vol)) {

@@ -2762,6 +2762,14 @@
         <span class="adaptiveShortcutKey">N</span>
       </span>
     </button>
+    <button id="editAdaptiveSymmetryBtn" class="adaptiveEditItem" type="button" title="Symmetry">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="adaptiveEditItemLabel">Symmetry</span>
+        </span>
+        <span id="editAdaptiveSymmetryMeta" class="adaptiveEditItemMeta">Detect point-group symmetry and symmetrize the current target</span>
+      </span>
+    </button>
     <button id="editAdaptiveCleanStructureBtn" class="adaptiveEditItem" type="button" title="Clean structure">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
@@ -2814,6 +2822,31 @@
       <div class="editBuildPaletteSection">
         <div class="editBuildPaletteSectionTitle">Molecules</div>
         <div id="editBuildMoleculesHost"></div>
+      </div>
+    </div>
+  </div>
+  <div id="editAdaptiveSymmetryPopover" aria-hidden="true">
+    <div id="editSymmetryPanel">
+      <div id="editSymmetryHeader">
+        <div id="editSymmetryTitle">Symmetry</div>
+        <div id="editSymmetryTargetSummary">Whole structure (0 atoms)</div>
+      </div>
+      <div id="editSymmetryExactResult">Exact point group: C1</div>
+      <div id="editSymmetryToleranceSection">
+        <label id="editSymmetryToleranceLabel" for="editSymmetryToleranceInput">Tolerance (Å)</label>
+        <div id="editSymmetryToleranceControls">
+          <input id="editSymmetryToleranceRange" type="range" min="0.001" max="0.250" step="0.001" value="0.050" />
+          <input id="editSymmetryToleranceInput" type="number" min="0.001" max="0.250" step="0.001" value="0.050" />
+        </div>
+      </div>
+      <div class="editSymmetryCandidateSection">
+        <div class="editSymmetryCandidateSectionTitle">Approximate Point Groups</div>
+        <div id="editSymmetryCandidates"></div>
+      </div>
+      <div id="editSymmetryFooter">
+        <button id="editSymmetryApplyBtn" class="secondary" type="button">Apply</button>
+        <button id="editSymmetryCancelBtn" class="secondary" type="button">Cancel preview</button>
+        <button id="editSymmetryAutoBtn" class="secondary" type="button">Auto-apply highest</button>
       </div>
     </div>
   </div>
@@ -3273,6 +3306,8 @@
   <script src="./assets/app/js/structure-transport.js"></script>
   <!-- file loading helpers -->
   <script src="./assets/app/js/file-loader.js"></script>
+  <!-- symmetry helpers -->
+  <script src="./assets/app/js/symmetry.js"></script>
 
   <script src="./assets/app/js/app.js"></script>
 </body>
