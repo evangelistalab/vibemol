@@ -5292,6 +5292,7 @@
    * @returns {boolean}
    */
   function renderAlphaBetaSplitPass(metrics) {
+    if (currentMode !== MODES.DISPLAY) return false;
     const record = volumes[currentIndex];
     const vol = record && record.vol;
     const mode = record && record.component;
