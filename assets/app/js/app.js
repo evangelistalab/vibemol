@@ -133,8 +133,8 @@
     throw new Error('VibeMolEditState is not loaded. Ensure assets/app/js/edit-state.js is included before assets/app/js/app.js.');
   }
 
-  const { detectInputFileKind } = window.VibeMolIOUtils || {};
-  if (![detectInputFileKind].every(fn => typeof fn === 'function')) {
+  const { detectInputFileKind, detectPastedXyzText } = window.VibeMolIOUtils || {};
+  if (![detectInputFileKind, detectPastedXyzText].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolIOUtils is not loaded. Ensure assets/app/js/io-utils.js is included before assets/app/js/app.js.');
   }
 
@@ -328,7 +328,8 @@
   }
   const DEFAULT_SYMMETRY_TOLERANCE_ANG = 0.05;
   const EXACT_SYMMETRY_TOLERANCE_ANG = 1e-3;
-  const MAX_SYMMETRY_TOLERANCE_ANG = 0.5;
+  const MAX_SYMMETRY_TOLERANCE_ANG = 1.0;
+  const SYMMETRY_TOLERANCE_OPTIONS_ANG = Object.freeze([0.05, 0.1, 0.25, 0.5, 1.0]);
   const EDIT_POPOVER_HOVER_OPEN_DELAY_MS = 180;
   const EDIT_POPOVER_HOVER_SUPPRESS_MS = 420;
 
@@ -837,8 +838,7 @@
   let editSymmetryTargetSummaryEl = null;
   let editSymmetryExactResultCardEl = null;
   let editSymmetryExactResultEl = null;
-  let editSymmetryToleranceRangeEl = null;
-  let editSymmetryToleranceInputEl = null;
+  let editSymmetryToleranceSelectEl = null;
   let editSymmetryElementSelectEl = null;
   let editSymmetryCandidatesEl = null;
   let editSymmetryApplyBtnEl = null;
@@ -5785,8 +5785,7 @@
   editSymmetryTargetSummaryEl = document.getElementById('editSymmetryTargetSummary');
   editSymmetryExactResultCardEl = document.getElementById('editSymmetryExactResultCard');
   editSymmetryExactResultEl = document.getElementById('editSymmetryExactResult');
-  editSymmetryToleranceRangeEl = document.getElementById('editSymmetryToleranceRange');
-  editSymmetryToleranceInputEl = document.getElementById('editSymmetryToleranceInput');
+  editSymmetryToleranceSelectEl = document.getElementById('editSymmetryToleranceSelect');
   editSymmetryElementSelectEl = document.getElementById('editSymmetryElementSelect');
   editSymmetryCandidatesEl = document.getElementById('editSymmetryCandidates');
   editSymmetryApplyBtnEl = document.getElementById('editSymmetryApplyBtn');
@@ -7681,6 +7680,7 @@
   let rotateDragLastClientY = 0;
   let editClipboardSelection = null;
   let editClipboardPasteSerial = 0;
+  let pastedTextStructureSerial = 0;
   const EDIT_INTENT = Object.freeze({
     ATOM_MANIPULATION: 'atom_manipulation',
     ADD_MOLECULE: 'add_molecule',
@@ -10915,7 +10915,7 @@
   }
 
   function showGestureVoidPlacementPreview(e) {
-    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || isSymmetryPopoverOpen()) {
+    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || shouldBlockEditVoidPlacement()) {
       clearGestureVoidPreview();
       return false;
     }
@@ -10931,6 +10931,10 @@
     mesh.scale.setScalar(getRenderedAtomDisplayRadius(z));
     if (mesh.material && mesh.material.color) mesh.material.color.copy(getAtomRenderColor(z));
     return true;
+  }
+
+  function shouldBlockEditVoidPlacement() {
+    return currentMode === MODES.EDIT && isSymmetryPopoverOpen();
   }
 
   bondEditing = createBondEditingController({
@@ -12509,13 +12513,8 @@
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       });
     }
-    if (editSymmetryToleranceRangeEl) {
-      editSymmetryToleranceRangeEl.addEventListener('input', () => setSymmetryTolerance(editSymmetryToleranceRangeEl.value));
-      editSymmetryToleranceRangeEl.addEventListener('change', () => setSymmetryTolerance(editSymmetryToleranceRangeEl.value));
-    }
-    if (editSymmetryToleranceInputEl) {
-      editSymmetryToleranceInputEl.addEventListener('input', () => setSymmetryTolerance(editSymmetryToleranceInputEl.value));
-      editSymmetryToleranceInputEl.addEventListener('change', () => setSymmetryTolerance(editSymmetryToleranceInputEl.value));
+    if (editSymmetryToleranceSelectEl) {
+      editSymmetryToleranceSelectEl.addEventListener('change', () => setSymmetryTolerance(editSymmetryToleranceSelectEl.value));
     }
     if (editSymmetryElementSelectEl) {
       editSymmetryElementSelectEl.addEventListener('change', () => {
@@ -12768,12 +12767,15 @@
     cancelBoxSelection: () => {
       hideEditSelectionMarquee();
     },
-    placeVoidAtom: (e) => placeGestureAtomAtWorld(
-      gestureVoidPreviewWorld && gestureVoidPreviewWorld.isVector3
-        ? gestureVoidPreviewWorld.clone()
-        : computeAddAtomPosition(e, null),
-      editAddElementZ
-    ),
+    placeVoidAtom: (e) => {
+      if (shouldBlockEditVoidPlacement()) return null;
+      return placeGestureAtomAtWorld(
+        gestureVoidPreviewWorld && gestureVoidPreviewWorld.isVector3
+          ? gestureVoidPreviewWorld.clone()
+          : computeAddAtomPosition(e, null),
+        editAddElementZ
+      );
+    },
     beginGrowDrag: beginGestureGrowDrag,
     updateGrowDrag: updateGestureGrowDrag,
     commitGrowDrag: commitGestureGrowDrag,
@@ -13559,6 +13561,7 @@
   function canHoverOpenEditPopover(kind) {
     const nextKind = String(kind || '').trim();
     if (!nextKind) return true;
+    if (nextKind === 'build' && isSymmetryPopoverOpen()) return false;
     if (editPopoverHoverSuppressUntilMs <= Date.now()) {
       clearEditPopoverHoverSuppression();
       return true;
@@ -13655,6 +13658,7 @@
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
+    if (isSymmetryPopoverOpen()) return;
     cancelBuildPopoverHide();
     cancelEditPopoverHoverOpen();
     hideSelectionCoordinationCuePopover();
@@ -13817,13 +13821,25 @@
     if (!quiet) updateEditAdaptiveMenuUi();
   }
 
-  function syncSymmetryToleranceUi() {
-    const value = symmetryController ? symmetryController.getTolerance() : DEFAULT_SYMMETRY_TOLERANCE_ANG;
-    if (editSymmetryToleranceRangeEl && document.activeElement !== editSymmetryToleranceRangeEl) {
-      editSymmetryToleranceRangeEl.value = value.toFixed(3);
+  function snapSymmetryTolerance(value) {
+    const raw = Math.max(EXACT_SYMMETRY_TOLERANCE_ANG, Math.min(MAX_SYMMETRY_TOLERANCE_ANG, Number(value) || DEFAULT_SYMMETRY_TOLERANCE_ANG));
+    let best = SYMMETRY_TOLERANCE_OPTIONS_ANG[0];
+    let bestDelta = Math.abs(raw - best);
+    for (let i = 1; i < SYMMETRY_TOLERANCE_OPTIONS_ANG.length; i++) {
+      const candidate = SYMMETRY_TOLERANCE_OPTIONS_ANG[i];
+      const delta = Math.abs(raw - candidate);
+      if (delta + 1e-12 < bestDelta) {
+        best = candidate;
+        bestDelta = delta;
+      }
     }
-    if (editSymmetryToleranceInputEl && document.activeElement !== editSymmetryToleranceInputEl) {
-      editSymmetryToleranceInputEl.value = value.toFixed(3);
+    return best;
+  }
+
+  function syncSymmetryToleranceUi() {
+    const value = snapSymmetryTolerance(symmetryController ? symmetryController.getTolerance() : DEFAULT_SYMMETRY_TOLERANCE_ANG);
+    if (editSymmetryToleranceSelectEl && document.activeElement !== editSymmetryToleranceSelectEl) {
+      editSymmetryToleranceSelectEl.value = value.toFixed(3);
     }
   }
 
@@ -14072,6 +14088,7 @@
     const selectedGroupId = symmetryPreviewState && symmetryPreviewState.preview
       ? String(symmetryPreviewState.preview.groupId || '')
       : '';
+    const currentGroupId = analysis ? String(analysis.exactGroupId || '') : '';
     const candidates = analysis && analysis._internal && Array.isArray(analysis._internal.approximateCandidates)
       ? analysis._internal.approximateCandidates
       : [];
@@ -14084,24 +14101,25 @@
       return;
     }
     const renderKey = [
+      currentGroupId,
       selectedGroupId,
       ...candidates.map((candidate) => [
         String(candidate.groupId || ''),
-        Number(candidate.maxDisplacementAng || 0).toFixed(6),
         Number(candidate.rmsDisplacementAng || 0).toFixed(6),
       ].join('|')),
     ].join(';');
     if (editSymmetryCandidatesEl.dataset.renderKey === renderKey) return;
     editSymmetryCandidatesEl.innerHTML = candidates.map((candidate) => {
       const groupId = String(candidate.groupId || '');
-      const activeClass = groupId === selectedGroupId ? ' is-active' : '';
+      const classNames = ['editSymmetryCandidateBtn'];
+      if (groupId === currentGroupId) classNames.push('is-current');
+      if (groupId === selectedGroupId) classNames.push('is-active');
       return [
-        `<button class="editSymmetryCandidateBtn${activeClass}" type="button" data-symmetry-group-id="${groupId}">`,
+        `<button class="${classNames.join(' ')}" type="button" data-symmetry-group-id="${groupId}">`,
         '<span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span>',
         '<span class="editSymmetryCandidateBody">',
         `<span class="editSymmetryCandidateLabel">${candidate.groupLabel}</span>`,
         '<span class="editSymmetryCandidateMetrics">',
-        `<span class="editSymmetryCandidateMeta">max ${formatSymmetryResidual(candidate.maxDisplacementAng)}</span>`,
         `<span class="editSymmetryCandidateMeta">rms ${formatSymmetryResidual(candidate.rmsDisplacementAng)}</span>`,
         '</span>',
         '</span>',
@@ -14183,7 +14201,7 @@
   }
 
   function setSymmetryTolerance(nextValue) {
-    const value = Math.max(EXACT_SYMMETRY_TOLERANCE_ANG, Math.min(MAX_SYMMETRY_TOLERANCE_ANG, Number(nextValue) || DEFAULT_SYMMETRY_TOLERANCE_ANG));
+    const value = snapSymmetryTolerance(nextValue);
     if (symmetryController) symmetryController.setTolerance(value);
     syncSymmetryToleranceUi();
     invalidateSymmetryPopoverAnalysisCache();
@@ -15854,7 +15872,9 @@
     } else if (!__editMoved && isBuildFragmentLoaded()) {
       const hit = pickAtomHit(e);
       const addPos = !hit ? computeAddAtomPosition(e, null) : null;
-      if (addPos && !hit) {
+      if (shouldBlockEditVoidPlacement() && !hit) {
+        setHintMessage('Symmetry panel open: close it before placing a standalone fragment.');
+      } else if (addPos && !hit) {
         startMoleculePlacementAtWorld(addPos, { kind: CATALOG_KIND.FRAGMENT, id: editAddFragmentId, returnToBuildFragment: true });
       } else {
         setHintMessage('Build fragment: drag from an atom, click a ghost to attach, or click void to place.');
@@ -15870,11 +15890,21 @@
       moleculePlaceRotating = false;
       moleculePlaceMoved = false;
       try { controls.enabled = true; } catch { }
-      if (!wasRotating || !rotated) commitMoleculePlacement();
+      if (!wasRotating || !rotated) {
+        if (shouldBlockEditVoidPlacement()) {
+          setHintMessage('Symmetry panel open: close it before placing a standalone molecule.');
+        } else {
+          commitMoleculePlacement();
+        }
+      }
     } else if (!__editMoved) {
       const hit = pickAtomHit(e);
       const addPos = computeAddAtomPosition(e, hit);
-      if (addPos) startMoleculePlacementAtWorld(addPos);
+      if (shouldBlockEditVoidPlacement() && !hit) {
+        setHintMessage('Symmetry panel open: close it before placing a standalone molecule.');
+      } else if (addPos) {
+        startMoleculePlacementAtWorld(addPos);
+      }
     }
     __editDownPt = null; __editClickIdx = -1; __editMoved = false;
     return true;
@@ -16032,16 +16062,11 @@
       metaItems: [
         {
           el: editAdaptiveAddAtomMetaEl,
-          text: (() => {
-            const payload = getCurrentBuildPayload();
-            if (payload.kind === 'molecule') return getMoleculeAddPresentation().rowMeta;
-            if (payload.kind === 'fragment') return getFragmentBuildPresentation().rowMeta;
-            return atomPresentation.rowMeta;
-          })(),
+          text: '',
         },
         {
           el: editAdaptiveSymmetryMetaEl,
-          text: 'Selection-first point-group analysis',
+          text: '',
         },
         {
           el: editAdaptiveCleanStructureMetaEl,
@@ -16538,6 +16563,29 @@
     updateSidePanel();
     setHintMessage(`Pasted ${result.atomIndices.length} atom${result.atomIndices.length === 1 ? '' : 's'}.`);
     return true;
+  }
+
+  async function importPastedXyzText(rawText) {
+    const detected = detectPastedXyzText(rawText, { comment: 'Pasted XYZ' });
+    if (!detected) return false;
+    const fileName = `pasted-xyz-${++pastedTextStructureSerial}.xyz`;
+    try {
+      const result = await fileLoaderController.loadEmbeddedFiles([
+        { name: fileName, text: detected.xyzText, mimeType: 'chemical/x-xyz' },
+      ], { clearFirst: false });
+      if (!result || !result.ok) {
+        setHintMessage('Pasted XYZ import failed.');
+        return false;
+      }
+      setNavigationHint(`Loaded pasted XYZ (${detected.atomCount} atoms)`);
+      return true;
+    } catch (err) {
+      const msg = err && err.message ? err.message : String(err);
+      console.error('[Paste XYZ] import failed', err);
+      setHintMessage(`Pasted XYZ import failed: ${msg}`);
+      alert(`Pasted XYZ import failed: ${msg}`);
+      return false;
+    }
   }
 
   /**
@@ -18442,8 +18490,17 @@
     return !!applyEditAtomSelectionClick(hitIndex, !!(e && e.shiftKey));
   }
 
+  function shouldConsumeSymmetryContextHit(e) {
+    if (currentMode !== MODES.EDIT || !isSymmetryPopoverOpen()) return false;
+    const atomHit = pickAtomHit(e);
+    if (atomHit && atomHit.object && atomHit.object.userData) return true;
+    const bondHit = pickBondHit(e);
+    return !!(bondHit && bondHit.object);
+  }
+
   function handleEditScopeContextSelection(e) {
     if (currentMode !== MODES.EDIT) return false;
+    if (shouldConsumeSymmetryContextHit(e)) return true;
     const atomHandled = handleEditAtomContextSelection(e);
     if (atomHandled) {
       clearBondCenterSelection({ updateVisuals: true });
@@ -19067,11 +19124,12 @@
     beginGestureAddedAtomOperatorSession(record, vol, atom, beforeAtoms, beforeBonds, beforeAnnotations, {
       label: `Add ${getElementSymbol(z)}`,
       coordinationGeometryId: getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
+      cancelCommits: true,
       focusAtomIds: [newAtomId],
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
-      hint: `Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc cancel`,
+      hint: `Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc close`,
     });
     return { atomIndex: finalIndex >= 0 ? finalIndex : newIndex, selection: [] };
   }
@@ -20307,6 +20365,10 @@
     dragBeforeBondSnapshot = null;
     const obj = pickAtom(e);
     if (currentMode === MODES.EDIT) {
+      if (isSymmetryPopoverOpen()) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        return;
+      }
       if (editGestureController && editGestureController.handlePointerDown(e)) {
         e.preventDefault();
         return;
@@ -20517,6 +20579,11 @@
     showBuildPopover({ focusSearch: true });
     setHintMessage(`Build palette • Loaded ${formatBuildSearchValue()}.`);
   });
+  bind('down', MODES.EDIT, 's', (e) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
+    else showSymmetryPopover();
+  });
   bind('down', MODES.EDIT, '/', (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     showBuildPopover({ focusSearch: true });
@@ -20616,10 +20683,6 @@
       e.preventDefault();
       return copyEditSelectionToClipboard();
     }
-    if (!e.shiftKey && key === 'v') {
-      e.preventDefault();
-      return pasteEditClipboardSelection();
-    }
     return false;
   }
 
@@ -20714,6 +20777,22 @@
     if (handleEditCopyPasteHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
     routeShortcut(e, 'down', currentMode);
+  });
+  window.addEventListener('paste', (e) => {
+    if (isTypingInInput()) return;
+    const clipboardData = e && e.clipboardData;
+    const text = clipboardData && typeof clipboardData.getData === 'function'
+      ? String(clipboardData.getData('text/plain') || '')
+      : '';
+    if (text && detectPastedXyzText(text, { comment: 'Pasted XYZ' })) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      void importPastedXyzText(text);
+      return;
+    }
+    if (currentMode === MODES.EDIT && editClipboardSelection && editClipboardSelection.payload) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      pasteEditClipboardSelection();
+    }
   });
   window.addEventListener('keyup', (e) => routeShortcut(e, 'up', currentMode));
 

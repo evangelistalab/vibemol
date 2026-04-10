@@ -261,6 +261,12 @@
     ];
   }
 
+  function improperRotationMatrix(axis, angle) {
+    const n = normalize(axis);
+    if (!n) return matIdentity();
+    return matMul(reflectionMatrix(n), rotationMatrix(n, angle));
+  }
+
   function canonicalizeDirection(dir) {
     const n = normalize(dir);
     if (!n) return null;
@@ -777,6 +783,19 @@
         expectedOrder,
       };
     }
+    match = /^S(\d+)$/u.exec(groupId);
+    if (!spec && match) {
+      const n = Number(match[1]) || 0;
+      if (n > 2 && n % 2 === 0) {
+        spec = {
+          groupId,
+          label: `S${n}`,
+          order: n,
+          ops: groupClosure([improperRotationMatrix([0, 0, 1], (2 * Math.PI) / n)]),
+          expectedOrder: n,
+        };
+      }
+    }
     GENERIC_GROUP_SPEC_CACHE.set(groupId, spec);
     return spec;
   }
@@ -818,8 +837,8 @@
 
   function rankCandidates(a, b) {
     if ((b.order || 0) !== (a.order || 0)) return (b.order || 0) - (a.order || 0);
-    if ((a.maxDisplacementAng || 0) !== (b.maxDisplacementAng || 0)) return (a.maxDisplacementAng || 0) - (b.maxDisplacementAng || 0);
-    return (a.rmsDisplacementAng || 0) - (b.rmsDisplacementAng || 0);
+    if ((a.rmsDisplacementAng || 0) !== (b.rmsDisplacementAng || 0)) return (a.rmsDisplacementAng || 0) - (b.rmsDisplacementAng || 0);
+    return (a.maxDisplacementAng || 0) - (b.maxDisplacementAng || 0);
   }
 
   function pickBestCandidate(candidates) {
@@ -1182,6 +1201,7 @@
       ids.push(`D${n}`);
       ids.push(`D${n}h`);
       ids.push(`D${n}d`);
+      if (n > 2 && n % 2 === 0) ids.push(`S${n}`);
     }
     ids.push('Td', 'Oh', 'Ih', 'Cinfv', 'Dinfh');
     return ids;
@@ -1211,7 +1231,7 @@
     for (const groupId of enumerateCandidateGroups()) {
       const candidate = buildCandidateForGroup(groupId, centered);
       if (!candidate) continue;
-      if (candidate.maxDisplacementAng <= toleranceAng + 1e-12) candidates.push(candidate);
+      if (candidate.rmsDisplacementAng <= toleranceAng + 1e-12) candidates.push(candidate);
     }
     const deduped = new Map();
     for (const candidate of candidates) {
@@ -1413,6 +1433,18 @@
       return elements;
     }
     const frame = candidate.frame || buildFrame([0, 0, 1], [1, 0, 0]);
+    const improperMatch = /^S(\d+)$/u.exec(String(candidate.groupId || ''));
+    if (improperMatch) {
+      const order = Number(improperMatch[1]) || 0;
+      if (order > 0) {
+        addElementUnique(elements, {
+          type: 'axis',
+          axis: worldDirectionFromFrame(frame, [0, 0, 1]),
+          order,
+          label: `S${order} axis`,
+        });
+      }
+    }
     const ops = Array.isArray(candidate.ops) ? candidate.ops : [];
     for (const op of ops) {
       if (!op || isIdentityMatrix(op)) continue;
@@ -1449,7 +1481,7 @@
     const centered = centeredState.centered;
     const approximateCandidates = buildApproximateCandidates(centered, toleranceAng);
     const exactCandidate = pickBestCandidate(approximateCandidates.filter((candidate) => (
-      candidate && (candidate.maxDisplacementAng || 0) <= EXACT_TOLERANCE_ANG + 1e-12
+      candidate && (candidate.rmsDisplacementAng || 0) <= EXACT_TOLERANCE_ANG + 1e-12
     ))) || {
       groupId: 'C1',
       groupLabel: 'C1',

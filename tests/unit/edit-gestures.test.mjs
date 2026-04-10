@@ -391,6 +391,17 @@ test('edit-gestures resolves unselected-atom drag to grow instead of move', () =
   assert.equal(calls.startMoveDrag.length, 0);
 });
 
+test('edit-gestures prefers an atom hit over an overlapping bond hit on left drag', () => {
+  const bondHit = { object: { id: 'bond-carrier' }, section: 'nearA', point: { x: 0, y: 0, z: 0 } };
+  const { controller, calls } = createHarness({ selection: [] });
+
+  controller.handlePointerDown(pointerEvent({ atomIndex: 0, bondHit, clientX: 0, clientY: 0 }));
+  controller.handlePointerMove(pointerEvent({ atomIndex: 0, bondHit, clientX: 18, clientY: 0 }));
+
+  assert.deepEqual(calls.beginGrowDrag, [0]);
+  assert.equal(calls.startMoveDrag.length, 0);
+});
+
 test('edit-gestures passes the hovered target atom into grow commit and updates pending bond order controls', () => {
   const { controller, calls, getPendingBondOrder } = createHarness({ selection: [1], pendingBondOrder: 1 });
 

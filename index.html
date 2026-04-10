@@ -2763,18 +2763,21 @@
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Build</span>
         </span>
-        <span id="editAdaptiveAddAtomMeta" class="adaptiveEditItemMeta">Loaded C • click void to add • right-click atom to select</span>
+        <span id="editAdaptiveAddAtomMeta" class="adaptiveEditItemMeta"></span>
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">N</span>
       </span>
     </button>
-    <button id="editAdaptiveSymmetryBtn" class="adaptiveEditItem" type="button" title="Symmetry">
+    <button id="editAdaptiveSymmetryBtn" class="adaptiveEditItem" type="button" title="Symmetry (S)">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="adaptiveEditItemLabel">Symmetry</span>
         </span>
-        <span id="editAdaptiveSymmetryMeta" class="adaptiveEditItemMeta">Detect point-group symmetry and symmetrize the current target</span>
+        <span id="editAdaptiveSymmetryMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">S</span>
       </span>
     </button>
     <button id="editAdaptiveCleanStructureBtn" class="adaptiveEditItem" type="button" title="Clean structure">
@@ -2848,10 +2851,15 @@
         </div>
       </div>
       <div id="editSymmetryToleranceSection">
-        <label id="editSymmetryToleranceLabel" for="editSymmetryToleranceInput">Tolerance (Å)</label>
+        <label id="editSymmetryToleranceLabel" for="editSymmetryToleranceSelect">RMS TOLERANCE (Å)</label>
         <div id="editSymmetryToleranceControls">
-          <input id="editSymmetryToleranceRange" type="range" min="0.001" max="0.500" step="0.001" value="0.050" />
-          <input id="editSymmetryToleranceInput" type="number" min="0.001" max="0.500" step="0.001" value="0.050" />
+          <select id="editSymmetryToleranceSelect">
+            <option value="0.050">0.05</option>
+            <option value="0.100">0.10</option>
+            <option value="0.250">0.25</option>
+            <option value="0.500">0.50</option>
+            <option value="1.000">1.00</option>
+          </select>
         </div>
       </div>
       <div id="editSymmetryElementSection">

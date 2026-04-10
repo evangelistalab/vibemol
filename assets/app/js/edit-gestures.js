@@ -438,23 +438,6 @@
       state.activePointerId = e.pointerId;
       if (handleExternalPointerDown(intent, e, state)) return true;
       if (intent === EDIT_INTENT.ADD_MOLECULE) return false;
-      const pickedBondHit = pickBondHit(e);
-      if (pickedBondHit && pickedBondHit.object) {
-        state.press = {
-          kind: 'bond-inert',
-          clientX: Number(e.clientX) || 0,
-          clientY: Number(e.clientY) || 0,
-          pointerId: e.pointerId,
-          bondHit: pickedBondHit,
-        };
-        state.hoverAtomIndex = -1;
-        state.hoverBondHit = pickedBondHit;
-        state.voidPreviewVisible = false;
-        hideVoidPlacementPreview();
-        capturePointer(e.pointerId);
-        notifyUi();
-        return true;
-      }
       const selection = Array.isArray(getSelection()) ? getSelection() : [];
       const atomObj = pickAtomObject(e);
       const atomIndex = atomObj && atomObj.userData ? (atomObj.userData.index | 0) : -1;
@@ -470,6 +453,23 @@
           altKey: !!e.altKey,
         };
         state.hoverAtomIndex = atomIndex;
+        state.voidPreviewVisible = false;
+        hideVoidPlacementPreview();
+        capturePointer(e.pointerId);
+        notifyUi();
+        return true;
+      }
+      const pickedBondHit = pickBondHit(e);
+      if (pickedBondHit && pickedBondHit.object) {
+        state.press = {
+          kind: 'bond-inert',
+          clientX: Number(e.clientX) || 0,
+          clientY: Number(e.clientY) || 0,
+          pointerId: e.pointerId,
+          bondHit: pickedBondHit,
+        };
+        state.hoverAtomIndex = -1;
+        state.hoverBondHit = pickedBondHit;
         state.voidPreviewVisible = false;
         hideVoidPlacementPreview();
         capturePointer(e.pointerId);

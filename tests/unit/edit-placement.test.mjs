@@ -57,6 +57,7 @@ function createPlacementHarness() {
     getElementName: (z) => (z === 6 ? 'Carbon' : z === 1 ? 'Hydrogen' : 'Unknown'),
     getEditAddCoordinationGeometryId: () => '',
     pruneBuilderOperationsForVolume: () => false,
+    getVolumes: () => [record],
     syncBuilderExtensionFromVolumes: () => {},
     onDeleteAtomPostprocess: () => {},
     updateSidePanel: () => {},
@@ -79,6 +80,24 @@ test('edit-placement appendAtomAtWorld does not trigger global bond inference', 
   assert.equal(typeof state.addAtomOperatorSession?.atomId, 'string');
   assert.equal(state.addAtomOperatorCollapsed, true);
   assert.equal(state.addAtomOperatorSession?.translateAttachedHydrogens, true);
+});
+
+test('edit-placement void-added atom sessions commit on cancel-style finalize', () => {
+  const { controller, record, calls, state } = createPlacementHarness();
+
+  const ok = controller.appendAtomAtWorld({ x: 1.5, y: 0, z: 0 }, 6);
+
+  assert.equal(ok, true);
+  assert.equal(record.vol.atoms.length, 1);
+  assert.equal(calls.history.length, 0);
+  assert.equal(state.addAtomOperatorSession?.cancelCommits, true);
+
+  const finalized = controller.finalizeAddAtomOperatorSession({ commit: false, announce: false });
+
+  assert.equal(finalized, true);
+  assert.equal(record.vol.atoms.length, 1);
+  assert.equal(calls.history.length, 1);
+  assert.equal(state.addAtomOperatorSession, null);
 });
 
 test('edit-placement deleteAtomAtIndex prunes stale bonds without re-perceiving new ones', () => {

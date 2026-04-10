@@ -730,17 +730,10 @@
 }
 
 #editSymmetryToleranceControls {
-  display: grid;
-  grid-template-columns: 1fr 88px;
-  gap: 8px;
-  align-items: center;
+  display: block;
 }
 
-#editSymmetryToleranceRange {
-  width: 100%;
-}
-
-#editSymmetryToleranceInput {
+#editSymmetryToleranceSelect {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--vm-color-legacy-border-soft);
@@ -762,7 +755,7 @@
 
 #editSymmetryCandidates {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   max-height: min(40vh, 280px);
   overflow: auto;
   padding-right: 2px;
@@ -772,15 +765,15 @@
   appearance: none;
   width: 100%;
   border: 1px solid rgba(117, 129, 150, 0.28);
-  border-radius: 12px;
-  padding: 9px 10px;
+  border-radius: 10px;
+  padding: 4px 8px;
   background: linear-gradient(180deg, rgba(23, 31, 46, 0.92), rgba(17, 24, 39, 0.88));
   color: #f2f5fa;
   cursor: pointer;
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  gap: 10px;
-  align-items: start;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
   text-align: left;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
@@ -788,6 +781,13 @@
 .editSymmetryCandidateBtn:hover {
   border-color: rgba(113, 168, 255, 0.64);
   background: linear-gradient(180deg, rgba(30, 40, 58, 0.96), rgba(24, 33, 51, 0.94));
+}
+
+.editSymmetryCandidateBtn.is-current {
+  border-color: rgba(83, 151, 255, 0.82);
+  box-shadow:
+    inset 0 0 0 1px rgba(110, 173, 255, 0.18),
+    0 0 0 1px rgba(64, 128, 232, 0.12);
 }
 
 .editSymmetryCandidateBtn.is-active {
@@ -801,41 +801,48 @@
 .editSymmetryCandidateIcon {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 6px;
   background: rgba(83, 151, 255, 0.14);
   color: #8cb8ff;
-  font-size: 15px;
+  font-size: 11px;
 }
 
 .editSymmetryCandidateBody {
   display: grid;
-  gap: 4px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  min-width: 0;
 }
 
 .editSymmetryCandidateLabel {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   color: #f5f7fb;
+  line-height: 1.15;
+  min-width: 0;
 }
 
 .editSymmetryCandidateMetrics {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  gap: 0;
+  justify-content: flex-end;
+  min-width: max-content;
 }
 
 .editSymmetryCandidateMeta {
   display: inline-flex;
   align-items: center;
-  min-height: 18px;
-  padding: 0 6px;
+  min-height: 14px;
+  padding: 0 5px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: rgba(227, 233, 244, 0.8);
+  line-height: 1;
 }
 
 .editSymmetryEmptyState {

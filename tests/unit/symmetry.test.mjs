@@ -95,6 +95,40 @@ function buildDistortedMethane() {
   ];
 }
 
+function rotateXY(x, y, angle) {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  return [
+    (x * c) - (y * s),
+    (x * s) + (y * c),
+  ];
+}
+
+function buildImproperOrbit(seed, stepAngle, count, atomicNumber, prefix) {
+  const atoms = [];
+  for (let k = 0; k < count; k += 1) {
+    const angle = stepAngle * k;
+    const [x, y] = rotateXY(seed.x, seed.y, angle);
+    const z = (k % 2 === 0) ? seed.z : -seed.z;
+    atoms.push(atom(`${prefix}_${k + 1}`, atomicNumber, x, y, z));
+  }
+  return atoms;
+}
+
+function buildS4() {
+  return [
+    ...buildImproperOrbit({ x: 1.484828542365967, y: 0.8661667928056709, z: 0.6757731127595101 }, Math.PI * 0.5, 4, 9, 's4f'),
+    ...buildImproperOrbit({ x: 0.6606512954694687, y: 0.3816200867141606, z: 0.7933204343937544 }, Math.PI * 0.5, 4, 17, 's4cl'),
+  ];
+}
+
+function buildS6() {
+  return [
+    ...buildImproperOrbit({ x: 1.1120921368648333, y: 1.0876984176793343, z: 0.898896412399959 }, Math.PI / 3, 6, 9, 's6f'),
+    ...buildImproperOrbit({ x: 0.34469090440075645, y: 1.049307240880509, z: 0.5871639669264654 }, Math.PI / 3, 6, 17, 's6cl'),
+  ];
+}
+
 function analyze(context, atoms, options = {}) {
   return context.window.VibeMolSymmetry.analyzePointGroup(atoms, options);
 }
@@ -108,6 +142,8 @@ test('symmetry detects exact point groups for common symmetric molecules', () =>
     { label: 'benzene', atoms: buildBenzene(), exact: 'D6h' },
     { label: 'SF6', atoms: buildSF6(), exact: 'Oh' },
     { label: 'CO2', atoms: buildCO2(), exact: 'D∞h' },
+    { label: 'synthetic S4', atoms: buildS4(), exact: 'S4' },
+    { label: 'synthetic S6', atoms: buildS6(), exact: 'S6' },
     { label: 'asymmetric chiral', atoms: buildChiralAsymmetric(), exact: 'C1' },
   ];
 
@@ -144,6 +180,14 @@ test('symmetry exposes visual symmetry elements for common groups', () => {
   const methaneLabels = methaneElements.map((entry) => entry.label);
   assert.ok(methaneLabels.some((label) => label.startsWith('C3 axis')), `expected methane to expose C3 axes, got ${methaneLabels.join(', ')}`);
   assert.ok(methaneLabels.some((label) => label.startsWith('σd plane')), `expected methane to expose sigma-d planes, got ${methaneLabels.join(', ')}`);
+
+  const s4Analysis = analyze(context, buildS4(), { toleranceAng: 0.12 });
+  const s4Labels = api.describeSymmetryElements(s4Analysis).map((entry) => entry.label);
+  assert.ok(s4Labels.some((label) => label.startsWith('S4 axis')), `expected S4 fixture to expose an S4 axis, got ${s4Labels.join(', ')}`);
+
+  const s6Analysis = analyze(context, buildS6(), { toleranceAng: 0.12 });
+  const s6Labels = api.describeSymmetryElements(s6Analysis).map((entry) => entry.label);
+  assert.ok(s6Labels.some((label) => label.startsWith('S6 axis')), `expected S6 fixture to expose an S6 axis, got ${s6Labels.join(', ')}`);
 });
 
 test('symmetry preview and apply preserve indexing while improving residuals', () => {

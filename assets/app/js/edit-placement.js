@@ -551,6 +551,7 @@
         coordinationGeometryId: String(coordinationGeometryId || '').trim(),
         label: String(label || 'Add atom'),
         source: String(sessionOptions && sessionOptions.source || 'new-atom'),
+        cancelCommits: !!(sessionOptions && sessionOptions.cancelCommits),
         autoAdjustHydrogensOnCommit: sessionOptions && sessionOptions.autoAdjustHydrogensOnCommit !== false,
         translateAttachedHydrogens: !!(sessionOptions && sessionOptions.translateAttachedHydrogens),
         autoAdjustHydrogenFocusAtomIds: hydrogenFocusAtomIds,
@@ -586,12 +587,13 @@
       const session = state.addAtomOperatorSession;
       if (!session) return false;
       const commit = finalizeOptions.commit !== false;
+      const effectiveCommit = commit || (!commit && !!session.cancelCommits);
       const announce = finalizeOptions.announce !== false;
       const resolved = resolveAddAtomOperatorSession();
       state.addAtomOperatorSession = null;
       updateAddAtomOperatorUi();
       if (!resolved) return true;
-      if (!commit) {
+      if (!effectiveCommit) {
         options.applyAtomsSnapshotToRecord(session.record, session.beforeAtoms, undefined, session.beforeBonds);
         if (announce) setHintMessage('Canceled atom add.');
         return true;
@@ -707,11 +709,11 @@
         beforeAnnotations,
         `Add ${getElementSymbol(z)}`,
         getEditAddCoordinationGeometryId(),
-        { source: 'new-atom', autoAdjustHydrogensOnCommit: false, translateAttachedHydrogens: true, startCollapsed: true }
+        { source: 'new-atom', cancelCommits: true, autoAdjustHydrogensOnCommit: false, translateAttachedHydrogens: true, startCollapsed: true }
       );
       applyAutomaticHydrogenAdjustment(record, vol, [vol.atoms.length - 1], { source: 'operator' });
       updateAddAtomOperatorUi();
-      setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc cancel`);
+      setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc close`);
       return true;
     }
 

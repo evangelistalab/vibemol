@@ -1,4 +1,95 @@
 (function () {
+  function getCanonicalElementSymbol(token) {
+    const raw = String(token || '').trim();
+    if (!raw) return '';
+    const upper = raw.toUpperCase();
+    if (window.ATOM_SYMBOL_TO_Z && Object.prototype.hasOwnProperty.call(window.ATOM_SYMBOL_TO_Z, upper)) {
+      const z = window.ATOM_SYMBOL_TO_Z[upper];
+      const info = window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z];
+      return String((info && info.symbol) || raw);
+    }
+    const z = Number(raw);
+    if (Number.isInteger(z) && z > 0) {
+      const info = window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z];
+      if (info && info.symbol) return String(info.symbol);
+    }
+    return '';
+  }
+
+  function isKnownElementSymbol(symbol) {
+    return !!getCanonicalElementSymbol(symbol);
+  }
+
+  function isFiniteCoordinateToken(token) {
+    const text = String(token || '').trim();
+    if (!text) return false;
+    return Number.isFinite(Number(text));
+  }
+
+  function isValidXyzCoordinateLine(line) {
+    const parts = String(line || '').trim().split(/\s+/);
+    if (parts.length < 4) return false;
+    if (!isKnownElementSymbol(parts[0])) return false;
+    return isFiniteCoordinateToken(parts[1])
+      && isFiniteCoordinateToken(parts[2])
+      && isFiniteCoordinateToken(parts[3]);
+  }
+
+  function normalizeXyzCoordinateLine(line) {
+    const parts = String(line || '').trim().split(/\s+/);
+    if (parts.length < 4) return '';
+    const symbol = getCanonicalElementSymbol(parts[0]);
+    if (!symbol) return '';
+    if (!isFiniteCoordinateToken(parts[1]) || !isFiniteCoordinateToken(parts[2]) || !isFiniteCoordinateToken(parts[3])) {
+      return '';
+    }
+    return `${symbol} ${parts[1]} ${parts[2]} ${parts[3]}`;
+  }
+
+  /**
+   * Detect pasted XYZ text in either full XYZ or coordinates-only form.
+   * Returns normalized XYZ text ready for parseXYZ, or null when the text does
+   * not look like an XYZ structure.
+   * @param {string} text
+   * @param {{comment?:string}=} options
+   * @returns {{atomCount:number,wrapped:boolean,xyzText:string}|null}
+   */
+  function detectPastedXyzText(text, options = {}) {
+    const raw = String(text == null ? '' : text).replace(/\r/g, '');
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    const nonEmptyLines = trimmed
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (!nonEmptyLines.length) return null;
+
+    const countRaw = Number(nonEmptyLines[0]);
+    if (Number.isInteger(countRaw) && countRaw >= 0 && nonEmptyLines.length >= countRaw + 2) {
+      const atomLines = nonEmptyLines.slice(2, 2 + countRaw);
+      const normalizedAtomLines = atomLines.map(normalizeXyzCoordinateLine);
+      if (atomLines.length === countRaw && normalizedAtomLines.every(Boolean)) {
+        return {
+          atomCount: countRaw,
+          wrapped: false,
+          xyzText: `${countRaw}\n${nonEmptyLines[1]}\n${normalizedAtomLines.join('\n')}\n`,
+        };
+      }
+    }
+
+    if (nonEmptyLines.every(isValidXyzCoordinateLine)) {
+      const comment = String(options.comment || 'Pasted XYZ');
+      const normalizedAtomLines = nonEmptyLines.map(normalizeXyzCoordinateLine);
+      return {
+        atomCount: nonEmptyLines.length,
+        wrapped: true,
+        xyzText: `${nonEmptyLines.length}\n${comment}\n${normalizedAtomLines.join('\n')}\n`,
+      };
+    }
+
+    return null;
+  }
+
   /**
    * Detect one high-level file kind by name/content.
    * @param {string} name
@@ -23,5 +114,6 @@
 
   window.VibeMolIOUtils = Object.freeze({
     detectInputFileKind,
+    detectPastedXyzText,
   });
 })();
