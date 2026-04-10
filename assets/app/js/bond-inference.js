@@ -302,10 +302,54 @@
    * @deprecated App code should call perceiveBondConnectivity(...) directly.
    */
   function inferBondOrders(atomPositions, edges) {
-    if (!Array.isArray(edges)) return;
-    const accepted = acceptBondCandidatesByDistanceRank(atomPositions, edges);
-    edges.length = 0;
-    for (const edge of accepted) edges.push(edge);
+    if (!Array.isArray(atomPositions) || !Array.isArray(edges)) return;
+    const atomCount = atomPositions.length | 0;
+    const valence = new Array(atomCount).fill(0);
+    const targetValence = new Array(atomCount).fill(0);
+    for (const edge of edges) {
+      if (!edge) continue;
+      const i = edge.i | 0;
+      const j = edge.j | 0;
+      if (i < 0 || j < 0 || i >= atomCount || j >= atomCount || i === j) continue;
+      const atomI = atomPositions[i];
+      const atomJ = atomPositions[j];
+      if (!atomI || !atomJ) continue;
+      const baseOrder = Math.max(1, Number(edge.order) || 1);
+      edge.order = baseOrder;
+      edge.maxOrder = Math.max(
+        baseOrder,
+        Math.min(2, getPairMaxBondOrder(atomI.Z, atomJ.Z) | 0)
+      );
+      valence[i] += baseOrder;
+      valence[j] += baseOrder;
+    }
+    for (let index = 0; index < atomCount; index += 1) {
+      const atom = atomPositions[index];
+      targetValence[index] = atom ? chooseTargetValence(atom.Z, valence[index]) : valence[index];
+    }
+    while (true) {
+      let bestEdge = null;
+      let bestScore = Infinity;
+      for (const edge of edges) {
+        if (!edge) continue;
+        const i = edge.i | 0;
+        const j = edge.j | 0;
+        if (i < 0 || j < 0 || i >= atomCount || j >= atomCount || i === j) continue;
+        if ((Number(edge.order) || 1) >= (Number(edge.maxOrder) || 1)) continue;
+        if (valence[i] >= targetValence[i] || valence[j] >= targetValence[j]) continue;
+        const score = Number.isFinite(Number(edge.ratio)) ? Number(edge.ratio) : Number(edge.len) || Infinity;
+        if (score + 1e-12 < bestScore) {
+          bestEdge = edge;
+          bestScore = score;
+        }
+      }
+      if (!bestEdge) break;
+      const i = bestEdge.i | 0;
+      const j = bestEdge.j | 0;
+      bestEdge.order = Math.min((Number(bestEdge.maxOrder) || 1), (Number(bestEdge.order) || 1) + 1);
+      valence[i] += 1;
+      valence[j] += 1;
+    }
   }
 
   /**

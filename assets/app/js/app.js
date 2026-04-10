@@ -7935,11 +7935,12 @@
    * @param {*} vol
    * @returns {Array<{id:string,a:string,b:string,order:number,kind:'normal',origin:'perceived'}>}
    */
-  function buildPerceivedBondRecords(vol, atomPositions) {
+  function buildPerceivedBondRecords(vol, atomPositions, options = {}) {
     if (!vol || !Array.isArray(vol.atoms)) return [];
     ensureVolumeAtomIds(vol);
     const records = Array.isArray(atomPositions) ? atomPositions : buildBondAtomRecords(vol, { includeRenderColor: false });
     const edges = perceiveBondConnectivity(records);
+    if (options && options.inferOrders) inferBondOrders(records, edges);
     return edges.map((edge) => {
       const atomA = vol.atoms[edge.i];
       const atomB = vol.atoms[edge.j];
@@ -7949,14 +7950,14 @@
         id: buildVolumeBondId(a, b),
         a,
         b,
-        order: 1,
+        order: Math.max(1, Number(edge && edge.order) || 1),
         kind: 'normal',
         origin: 'perceived',
       };
     }).filter((bond) => bond.id && bond.a && bond.b && bond.a !== bond.b);
   }
 
-  function inferVolumeBonds(vol) {
+  function inferVolumeBonds(vol, options = {}) {
     if (!vol || !Array.isArray(vol.atoms)) return [];
     const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false });
     ensureVolumeSchema(vol, { inferMissingBonds: false });
@@ -7966,7 +7967,7 @@
         .filter((bond) => bond && normalizeVolumeBondOrigin(bond.origin) === 'explicit')
       : [];
     const explicitKeys = new Set(explicitBonds.map((bond) => buildVolumeBondId(bond.a, bond.b)));
-    const perceivedBonds = buildPerceivedBondRecords(vol, atomPositions)
+    const perceivedBonds = buildPerceivedBondRecords(vol, atomPositions, { inferOrders: !!options.inferOrders })
       .filter((bond) => !explicitKeys.has(buildVolumeBondId(bond.a, bond.b)));
     vol.bonds = explicitBonds.concat(perceivedBonds);
     pruneInvalidCoordinationPreferences(vol);
@@ -8005,7 +8006,9 @@
   function ensureVolumeSchema(vol, options = {}) {
     const normalized = ensureVolumeSchemaCore(vol, {
       inferMissingBonds: options.inferMissingBonds,
-      inferBonds: options.inferMissingBonds !== false ? inferVolumeBonds : null,
+      inferBonds: options.inferMissingBonds !== false
+        ? ((targetVol) => inferVolumeBonds(targetVol, { inferOrders: !!options.inferBondOrders }))
+        : null,
       rehydrateBuilderState: rehydrateBuilderStateForVolume,
       pruneAtomAnnotations: {
         isCoordinationMetaCompatible(atomId, meta) {
@@ -24259,7 +24262,10 @@
       appendParsedVolumeRecord(
         `${query} [CID ${cid}].xyz`,
         vol,
-        { pubchemMeta: pubchemMeta || buildPubChemMetadataFallback(cid, query) }
+        {
+          pubchemMeta: pubchemMeta || buildPubChemMetadataFallback(cid, query),
+          inferBondOrders: true,
+        }
       );
       finalizeLoadedVolumes(startIndex);
       setNavigationHint(`Loaded PubChem: ${query} (CID ${cid})`);

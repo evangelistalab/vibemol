@@ -42,7 +42,7 @@
       const meta = Object.assign({ name, vol }, extras || {});
       if (vol && vol.isTwoComponent) deps.setVolume2CComponent(meta, deps.getGlobal2CComponentMode());
       if (vol) {
-        deps.ensureVolumeSchema(vol);
+        deps.ensureVolumeSchema(vol, { inferBondOrders: !!(extras && extras.inferBondOrders) });
         const builderMap = deps.getBuilderFragmentOpsByFileFromExtensions();
         const fileKey = String(name || '').trim();
         const skipBuilderExtensionMerge = !!(extras && extras.skipBuilderExtensionMerge);
@@ -140,7 +140,7 @@
               startIndex = deps.getVolumes().length;
               hasPreparedTarget = true;
             }
-            appendParsedVolumeRecord(name || 'Psi4 output', bundle.vol);
+            appendParsedVolumeRecord(name || 'Psi4 output', bundle.vol, { inferBondOrders: true });
             loadedCount++;
             pendingVibrationPayloads.push({
               name: name || 'Psi4 output',
@@ -220,7 +220,7 @@
             startIndex = deps.getVolumes().length;
             hasPreparedTarget = true;
           }
-          appendParsedVolumeRecord(f.name, vol);
+          appendParsedVolumeRecord(f.name, vol, { inferBondOrders: true });
           if (deps.hasVolumetricGrid(vol)) loadedVolumetricCount++;
           loadedCount++;
         } catch (err) {
@@ -418,7 +418,7 @@
         deps.setCurrentIndex(-1);
         deps.clearSceneMeshes();
         deps.clearEditHistory();
-        for (const item of records) appendParsedVolumeRecord(item.name, item.vol, { isSample: true });
+        for (const item of records) appendParsedVolumeRecord(item.name, item.vol, { isSample: true, inferBondOrders: true });
         finalizeLoadedVolumes(0, { resetIsoToDefault: true, skipAutoIsoOnInitialRebuild: true });
         deps.setNavigationHint(`Loaded ${label}`, { includeStyles: true });
         return true;

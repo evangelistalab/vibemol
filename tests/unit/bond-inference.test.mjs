@@ -162,6 +162,29 @@ test('persistent perceived bonds remain single-order only', () => {
   ]);
 });
 
+test('bond-order promotion can infer imported carbonyl-style doubles from connectivity', () => {
+  const context = loadBondInference();
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const V3 = THREE.Vector3;
+    const atoms = [
+      { Z: 8, pos: new V3(-1.16, 0, 0) },
+      { Z: 6, pos: new V3(0, 0, 0) },
+      { Z: 8, pos: new V3(1.16, 0, 0) },
+    ];
+    const edges = window.VibeMolBondInference.perceiveBondConnectivity(atoms);
+    window.VibeMolBondInference.inferBondOrders(atoms, edges);
+    return edges.map((edge) => ({
+      order: edge.order,
+      maxOrder: edge.maxOrder,
+    }));
+  })())`));
+
+  assert.deepEqual(result, [
+    { order: 2, maxOrder: 2 },
+    { order: 2, maxOrder: 2 },
+  ]);
+});
+
 test('cleanup diff distinguishes additions, removable perceived bonds, and explicit warnings', () => {
   const context = loadBondInference();
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {

@@ -11,13 +11,17 @@ function createController(options = {}) {
   });
   let volumes = options.volumes || [];
   const events = [];
+  const ensureVolumeSchemaCalls = [];
   const controller = context.VibeMolFileLoader.createFileLoader({
     detectInputFileKind: options.detectInputFileKind || ((name) => name.endsWith('.xyz') ? 'xyz' : 'cube'),
     parseXYZ: (text) => ({ kind: 'xyz', text }),
     parseMolden: (text) => ({ kind: 'molden', text }),
     parseTwoComponentCube: (text) => ({ kind: 'two_component_cube', text }),
     parseCube: (text) => ({ kind: 'cube', text }),
-    ensureVolumeSchema: (vol) => vol,
+    ensureVolumeSchema: (vol, schemaOptions = {}) => {
+      ensureVolumeSchemaCalls.push(JSON.parse(JSON.stringify(schemaOptions || {})));
+      return vol;
+    },
     setVolume2CComponent: () => {},
     getGlobal2CComponentMode: () => 'alphaPhase',
     getBuilderFragmentOpsByFileFromExtensions: () => ({}),
@@ -59,7 +63,7 @@ function createController(options = {}) {
     DEFAULT_ISO_VALUE: 0.02,
     fetchImpl: options.fetchImpl,
   });
-  return { controller, events, getVolumes: () => volumes };
+  return { controller, events, getVolumes: () => volumes, ensureVolumeSchemaCalls };
 }
 
 test('file loader routes volume parsing by detected kind', () => {
@@ -97,4 +101,10 @@ test('file loader clearAllLoadedFiles resets state and emits startup hint', () =
     ['activateVolumeIndex', -1, { rebuild: false, clearSceneWhenEmpty: true }],
     ['setNavigationHint', 'Start', { includeStyles: true }],
   ]);
+});
+
+test('parsed file imports request inferred bond orders during schema normalization', () => {
+  const { controller, ensureVolumeSchemaCalls } = createController();
+  controller.appendParsedVolumeRecord('sample.xyz', { kind: 'xyz', atoms: [] }, { inferBondOrders: true });
+  assert.deepEqual(ensureVolumeSchemaCalls, [{ inferBondOrders: true }]);
 });
