@@ -51,6 +51,7 @@ test('structure schema exposes empty coordination annotations by default', () =>
   assert.deepEqual(result, {
     builder: { byAtomId: {} },
     coordination: { byAtomId: {} },
+    metalBonding: { byAtomId: {} },
   });
 });
 
@@ -113,7 +114,7 @@ test('ensureVolumeSchema can infer missing bonds via callback', () => {
 
   assert.equal(result.inferCalls, 1);
   assert.deepEqual(result.bonds, [
-    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal', origin: 'perceived' },
+    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal', origin: 'perceived', style: 'covalent' },
   ]);
 });
 
@@ -132,7 +133,7 @@ test('missing bond origin defaults to explicit for backward compatibility', () =
   })())`));
 
   assert.deepEqual(result, [
-    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal', origin: 'explicit' },
+    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'normal', origin: 'explicit', style: 'covalent' },
   ]);
 });
 
@@ -151,7 +152,7 @@ test('structure schema preserves blocked bond records for user-suppressed pairs'
   })())`));
 
   assert.deepEqual(result, [
-    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'blocked', origin: 'explicit' },
+    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 1, kind: 'blocked', origin: 'explicit', style: 'covalent' },
   ]);
 });
 
@@ -181,6 +182,7 @@ test('updating a perceived bond can promote it to explicit provenance', () => {
     order: 2,
     kind: 'normal',
     origin: 'explicit',
+    style: 'covalent',
   });
 });
 
@@ -209,6 +211,69 @@ test('structure coordination annotations normalize, update, and delete per atom'
   assert.deepEqual(result.snapshot, {
     builder: { byAtomId: {} },
     coordination: { byAtomId: { 'atom-1': { geometryId: 'tetrahedral' } } },
+    metalBonding: { byAtomId: {} },
+  });
+});
+
+test('structure metal bonding annotations normalize, update, and delete per atom', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = {
+      atoms: [
+        { id: 'atom-1', Z: 26, x: 0, y: 0, z: 0 },
+        { id: 'atom-2', Z: 7, x: 2.0, y: 0, z: 0 },
+      ],
+    };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const before = window.VibeMolStructureCore.getAtomMetalBondingMeta(vol, 0);
+    window.VibeMolStructureCore.setAtomMetalBondingMeta(vol, 0, { mode: 'force_dative' });
+    const afterSet = window.VibeMolStructureCore.getAtomMetalBondingMeta(vol, 0);
+    const snapshot = window.VibeMolStructureCore.cloneVolumeAnnotationsSnapshot(vol);
+    window.VibeMolStructureCore.setAtomMetalBondingMeta(vol, 0, { mode: 'auto' });
+    const afterClear = window.VibeMolStructureCore.getAtomMetalBondingMeta(vol, 0);
+    return { before, afterSet, afterClear, snapshot };
+  })())`));
+
+  assert.deepEqual(result.before, { mode: 'auto' });
+  assert.deepEqual(result.afterSet, { mode: 'force_dative' });
+  assert.deepEqual(result.afterClear, { mode: 'auto' });
+  assert.deepEqual(result.snapshot, {
+    builder: { byAtomId: {} },
+    coordination: { byAtomId: {} },
+    metalBonding: { byAtomId: { 'atom-1': { mode: 'force_dative' } } },
+  });
+});
+
+test('structure schema can prune metal bonding annotations via compatibility callback', () => {
+  const context = loadGlobalModule('assets/app/js/structure.js');
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const vol = {
+      atoms: [
+        { id: 'atom-1', Z: 26, x: 0, y: 0, z: 0 },
+        { id: 'atom-2', Z: 6, x: 1.5, y: 0, z: 0 },
+      ],
+      annotations: {
+        metalBonding: {
+          byAtomId: {
+            'atom-1': { mode: 'force_dative' },
+            'atom-2': { mode: 'force_covalent' },
+          },
+        },
+      },
+    };
+    window.VibeMolStructureCore.ensureVolumeSchema(vol, {
+      inferMissingBonds: false,
+      pruneAtomAnnotations: {
+        isMetalBondingMetaCompatible(atomId, meta) {
+          return atomId === 'atom-1' && String(meta && meta.mode || '') === 'force_dative';
+        },
+      },
+    });
+    return vol.annotations.metalBonding.byAtomId;
+  })())`));
+
+  assert.deepEqual(result, {
+    'atom-1': { mode: 'force_dative' },
   });
 });
 
@@ -326,5 +391,6 @@ test('structure clipboard helpers clone selected substructures with remapped bui
     order: 2,
     kind: 'normal',
     origin: 'explicit',
+    style: 'covalent',
   });
 });

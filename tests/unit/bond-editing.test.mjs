@@ -12,16 +12,20 @@ function createHarness(options = {}) {
   const initialOrder = Number.isFinite(options.order) ? Number(options.order) : 1;
   const initialKind = String(options.kind || 'normal');
   const initialOrigin = String(options.origin || 'perceived');
+  const initialStyle = String(options.style || 'covalent');
+  const atomZ1 = Number.isFinite(options.atomZ1) ? Number(options.atomZ1) : 6;
+  const atomZ2 = Number.isFinite(options.atomZ2) ? Number(options.atomZ2) : 6;
+  const withBond = options.withBond !== false;
   const record = {
     vol: {
       atoms: [
-        { id: 'atom-1', Z: 6, x: -0.7, y: 0, z: 0, formalCharge: 0 },
-        { id: 'atom-2', Z: 6, x: 0.7, y: 0, z: 0, formalCharge: 0 },
+        { id: 'atom-1', Z: atomZ1, x: -0.7, y: 0, z: 0, formalCharge: 0 },
+        { id: 'atom-2', Z: atomZ2, x: 0.7, y: 0, z: 0, formalCharge: 0 },
       ],
-      bonds: [
-        { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: initialOrder, kind: initialKind, origin: initialOrigin },
-      ],
-      annotations: { builder: { byAtomId: {} }, coordination: { byAtomId: {} } },
+      bonds: withBond ? [
+        { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: initialOrder, kind: initialKind, origin: initialOrigin, style: initialStyle },
+      ] : [],
+      annotations: { builder: { byAtomId: {} }, coordination: { byAtomId: {} }, metalBonding: { byAtomId: {} } },
       fragmentOps: [],
     },
   };
@@ -54,6 +58,7 @@ function createHarness(options = {}) {
       },
     },
     popupEl: null,
+    popupTitleEl: null,
     popupButtonsEl: null,
     canvasEl: null,
     getCamera: () => null,
@@ -88,9 +93,20 @@ function createHarness(options = {}) {
     ensureAtomId: core.ensureAtomId,
     findVolumeBondRecordIndex: core.findVolumeBondRecordIndex,
     normalizeVolumeBondRecord: core.normalizeVolumeBondRecord,
+    normalizeVolumeBondStyle: core.normalizeVolumeBondStyle,
     upsertVolumeBond: core.upsertVolumeBond,
     removeVolumeBond: core.removeVolumeBond,
-    getElementSymbol: (z) => ({ 6: 'C' }[z] || '?'),
+    getElementSymbol: (z) => ({ 6: 'C', 7: 'N', 26: 'Fe' }[z] || '?'),
+    isMetalAtomZ: (z) => z === 26,
+    getBondStyleLabel: (style) => ({
+      'covalent': 'Covalent',
+      'metal-strong': 'Coordination',
+      'metal-dative': 'Dative',
+      'metal-metal': 'Metal-metal',
+    }[String(style || 'covalent')] || String(style || 'covalent')),
+    resolveDefaultBondStyle: (atomA, atomB) => ((atomA && atomA.Z === 26) || (atomB && atomB.Z === 26))
+      ? (((atomA && atomA.Z === 26) && (atomB && atomB.Z === 26)) ? 'metal-metal' : 'metal-strong')
+      : 'covalent',
     getBondAction: () => 'set',
     getBondOrder: () => 1,
     setBondOrder: () => {},
@@ -101,7 +117,7 @@ function createHarness(options = {}) {
     controller,
     record,
     calls,
-    carrier: { userData: { i: 0, j: 1, bondOrder: initialOrder } },
+    carrier: { userData: { i: 0, j: 1, bondOrder: initialOrder, bondStyle: initialStyle } },
   };
 }
 
@@ -172,4 +188,52 @@ test('bond-editing bond-order changes run local hydrogen adjustment for both bon
   assert.equal(calls.history[0].beforeAnnotations?.coordination?.byAtomId?.['atom-1'], undefined);
   assert.equal(calls.history[0].afterAnnotations?.coordination?.byAtomId?.['atom-1']?.geometryId, 'trigonalPlanar');
   assert.equal(record.vol.bonds[0].order, 2);
+});
+
+test('bond-editing stepCarrierOrder cycles metal bonds through coordination styles', () => {
+  const { controller, record, calls, carrier } = createHarness({
+    atomZ1: 26,
+    atomZ2: 7,
+    style: 'covalent',
+    origin: 'explicit',
+  });
+
+  assert.equal(controller.stepCarrierOrder(carrier, 1), true);
+  assert.equal(record.vol.bonds[0].style, 'metal-strong');
+  assert.match(calls.hints.at(-1), /coordination/i);
+
+  carrier.userData.bondStyle = 'metal-strong';
+  assert.equal(controller.stepCarrierOrder(carrier, 1), true);
+  assert.equal(record.vol.bonds[0].style, 'metal-dative');
+  assert.match(calls.hints.at(-1), /dative/i);
+});
+
+test('bond-editing applyToAtom defaults new explicit metal bonds to coordination style', () => {
+  const { controller, record, calls } = createHarness({
+    atomZ1: 26,
+    atomZ2: 7,
+    withBond: false,
+  });
+
+  assert.equal(controller.applyToAtom(0), true);
+  assert.equal(controller.applyToAtom(1), true);
+  assert.equal(record.vol.bonds.length, 1);
+  assert.equal(record.vol.bonds[0].order, 1);
+  assert.equal(record.vol.bonds[0].style, 'metal-strong');
+  assert.equal(record.vol.bonds[0].origin, 'explicit');
+  assert.match(calls.hints.at(-1), /coordination/i);
+});
+
+test('bond-editing applyToAtomPair can block a metal bond explicitly', () => {
+  const { controller, record, calls } = createHarness({
+    atomZ1: 26,
+    atomZ2: 7,
+    style: 'metal-strong',
+    origin: 'explicit',
+  });
+
+  assert.equal(controller.applyToAtomPair(0, 1, { deleteOverride: true }), true);
+  assert.equal(record.vol.bonds[0].kind, 'blocked');
+  assert.equal(record.vol.bonds[0].origin, 'explicit');
+  assert.match(calls.hints.at(-1), /deleted/i);
 });

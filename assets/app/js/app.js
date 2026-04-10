@@ -152,18 +152,23 @@
     ensureVolumeAtomIds,
     getBuilderAnnotationsMap,
     getCoordinationAnnotationsMap,
+    getMetalBondingAnnotationsMap,
     normalizeVolumeAtom,
     resolveVolumeAtomId,
     getAtomBuilderMeta,
     setAtomBuilderMeta,
     getAtomCoordinationMeta,
     setAtomCoordinationMeta,
+    normalizeMetalBondingMode,
+    getAtomMetalBondingMeta,
+    setAtomMetalBondingMeta,
     migrateLegacyBuilderAnnotations,
     pruneVolumeAtomAnnotations,
     cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,
+    normalizeVolumeBondStyle,
     normalizeVolumeBondRecord,
     ensureVolumeSchema: ensureVolumeSchemaCore,
     cloneBondSnapshot,
@@ -189,18 +194,23 @@
     ensureVolumeAtomIds,
     getBuilderAnnotationsMap,
     getCoordinationAnnotationsMap,
+    getMetalBondingAnnotationsMap,
     normalizeVolumeAtom,
     resolveVolumeAtomId,
     getAtomBuilderMeta,
     setAtomBuilderMeta,
     getAtomCoordinationMeta,
     setAtomCoordinationMeta,
+    normalizeMetalBondingMode,
+    getAtomMetalBondingMeta,
+    setAtomMetalBondingMeta,
     migrateLegacyBuilderAnnotations,
     pruneVolumeAtomAnnotations,
     cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,
+    normalizeVolumeBondStyle,
     normalizeVolumeBondRecord,
     ensureVolumeSchemaCore,
     cloneBondSnapshot,
@@ -345,6 +355,9 @@
     getPairMaxBondOrder,
     isAutoBondSupportedAtomicNumber,
     getElementMaxCoordination,
+    getMetalBondRadiusAngstrom,
+    isMetalAtomicNumber,
+    normalizeMetalBondMode: normalizeMetalBondModeForInference,
     collectRawBondCandidates,
     acceptBondCandidatesByDistanceRank,
     perceiveBondConnectivity,
@@ -366,6 +379,9 @@
     getPairMaxBondOrder,
     isAutoBondSupportedAtomicNumber,
     getElementMaxCoordination,
+    getMetalBondRadiusAngstrom,
+    isMetalAtomicNumber,
+    normalizeMetalBondModeForInference,
     collectRawBondCandidates,
     acceptBondCandidatesByDistanceRank,
     perceiveBondConnectivity,
@@ -800,6 +816,7 @@
   let editSelectionTranslateCueButtonEl = null;
   let editSelectionRotateCueButtonEl = null;
   let editSelectionCoordinationCueButtonEl = null;
+  let editSelectionMetalBondingCueButtonEl = null;
   let editSelectionBondOrbitCueButtonEl = null;
   let editSelectionBondDistanceCueButtonEl = null;
   let editSelectionBondOrderCueButtonEl = null;
@@ -807,9 +824,12 @@
   let editSelectionDeleteCueButtonEl = null;
   let editSelectionFragmentCuePopoverEl = null;
   let editSelectionCoordinationCuePopoverEl = null;
+  let editSelectionMetalBondingCuePopoverEl = null;
   let selectionCoordinationCuePointerHandled = false;
   let selectionCoordinationCuePopoverRenderKey = '';
   let selectionCoordinationCuePreviewRenderers = [];
+  let selectionMetalBondingCuePointerHandled = false;
+  let selectionMetalBondingCuePopoverRenderKey = '';
   let editAdaptiveMenuEl = null;
   let editAdaptiveAddAtomBtn = null;
   let editAdaptiveAddAtomMetaEl = null;
@@ -893,6 +913,9 @@
     }
     if (editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSelectionCoordinationCuePopover();
+    }
+    if (editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+      positionSelectionMetalBondingCuePopover();
     }
     const currentBondOrderPopupEl = document.getElementById('bondOrderPopup');
     if (currentBondOrderPopupEl && currentBondOrderPopupEl.getAttribute('aria-hidden') === 'false') {
@@ -1907,6 +1930,58 @@
     const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];
     if (info && typeof info.name === 'string' && info.name.trim()) return info.name.trim();
     return getElementSymbol(z);
+  }
+
+  function isMetalAtomZ(z) {
+    return !!isMetalAtomicNumber(z | 0);
+  }
+
+  function isMetalBondStyle(style) {
+    const normalized = normalizeVolumeBondStyle(style);
+    return normalized === METAL_BOND_STYLE.STRONG
+      || normalized === METAL_BOND_STYLE.DATIVE
+      || normalized === METAL_BOND_STYLE.METAL_METAL;
+  }
+
+  function normalizeAppMetalBondMode(value) {
+    const mode = normalizeMetalBondModeForInference ? normalizeMetalBondModeForInference(value) : String(value || '').trim().toLowerCase();
+    if (mode === METAL_BOND_MODE.FORCE_COVALENT) return METAL_BOND_MODE.FORCE_COVALENT;
+    if (mode === METAL_BOND_MODE.FORCE_DATIVE) return METAL_BOND_MODE.FORCE_DATIVE;
+    if (mode === METAL_BOND_MODE.NO_BONDS) return METAL_BOND_MODE.NO_BONDS;
+    return METAL_BOND_MODE.AUTO;
+  }
+
+  function getMetalBondModeLabel(mode) {
+    const normalized = normalizeAppMetalBondMode(mode);
+    if (normalized === METAL_BOND_MODE.FORCE_COVALENT) return 'Covalent';
+    if (normalized === METAL_BOND_MODE.FORCE_DATIVE) return 'Dative';
+    if (normalized === METAL_BOND_MODE.NO_BONDS) return 'None';
+    return 'Automatic';
+  }
+
+  function getMetalBondStyleLabel(style) {
+    const normalized = normalizeVolumeBondStyle(style);
+    if (normalized === METAL_BOND_STYLE.STRONG) return 'Coordination';
+    if (normalized === METAL_BOND_STYLE.DATIVE) return 'Dative';
+    if (normalized === METAL_BOND_STYLE.METAL_METAL) return 'Metal-metal';
+    return 'Covalent';
+  }
+
+  function resolveMetalBondDefaultStyle(atomA, atomB) {
+    if (!atomA || !atomB) return METAL_BOND_STYLE.COVALENT;
+    const isMetalA = isMetalAtomZ(atomA.Z | 0);
+    const isMetalB = isMetalAtomZ(atomB.Z | 0);
+    if (isMetalA && isMetalB) return METAL_BOND_STYLE.METAL_METAL;
+    return (isMetalA || isMetalB) ? METAL_BOND_STYLE.STRONG : METAL_BOND_STYLE.COVALENT;
+  }
+
+  function getBondRecordStyle(vol, bond) {
+    const normalized = normalizeVolumeBondRecord(vol, bond);
+    return normalized ? normalizeVolumeBondStyle(normalized.style) : METAL_BOND_STYLE.COVALENT;
+  }
+
+  function isMetalBondRecord(vol, bond) {
+    return isMetalBondStyle(getBondRecordStyle(vol, bond));
   }
 
   /**
@@ -3442,7 +3517,7 @@
    * Build per-atom bond-render records in angstrom units.
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
    * @param {{includeRenderColor?:boolean}=} options
-   * @returns {Array<{pos:THREE.Vector3,Z:number,color:THREE.Color|null,bondColor:THREE.Color|null,displayRadius:number,styleScalar:number}>}
+   * @returns {Array<{pos:THREE.Vector3,Z:number,color:THREE.Color|null,bondColor:THREE.Color|null,displayRadius:number,styleScalar:number,metalBondMode:string}>}
    */
   function buildBondAtomRecords(vol, options = {}) {
     const includeRenderColor = options.includeRenderColor !== false;
@@ -3462,6 +3537,7 @@
         color: null,
         bondColor: null,
         styleScalar: 0,
+        metalBondMode: normalizeMetalBondingMode(getAtomMetalBondingMeta(vol, a).mode),
         // Sphere geometry radius is 0.5, then scaled by the style-dependent atom scale factor.
         displayRadius: 0.5 * getCovalentRadiusAngstrom(z) * getAtomRenderScaleFactor(z),
       });
@@ -3629,15 +3705,20 @@
       i: edge.i,
       j: edge.j,
       len: edge.len,
-      order: multiBondRenderingEnabled ? normalizeEditAddBondOrder(edge.order || 1) : 1,
+      order: normalizeVolumeBondStyle(edge.style) === METAL_BOND_STYLE.COVALENT && multiBondRenderingEnabled
+        ? normalizeEditAddBondOrder(edge.order || 1)
+        : 1,
       kind: edge.kind,
+      style: normalizeVolumeBondStyle(edge.style),
       maxOrder: edge.maxOrder,
     }));
+    const covalentRenderEdges = renderEdges.filter((edge) => edge.style === METAL_BOND_STYLE.COVALENT);
+    const metalStyleEdges = renderEdges.filter((edge) => edge.style !== METAL_BOND_STYLE.COVALENT);
     const aromaticRings = multiBondRenderingEnabled
-      ? inferAromaticSixRings(atomPositions, renderEdges)
+      ? inferAromaticSixRings(atomPositions, covalentRenderEdges)
       : [];
     const bondAdjacency = multiBondRenderingEnabled
-      ? buildBondAdjacency(renderEdges, atomPositions.length)
+      ? buildBondAdjacency(covalentRenderEdges, atomPositions.length)
       : [];
     const componentSpacing = Math.max(0.13, bondRadius * 2.1);
 
@@ -3731,7 +3812,7 @@
         ? +Math.max(glossyFunnelMinSlope, sphereSlopeMagB * glossyFunnelScale)
         : 0.58;
       const carrierUserData = {
-        bondId: renderEdges.find((edge) => edge.i === i && edge.j === j && edge.order === order && edge.kind === 'normal')?.id || buildVolumeBondId(ensureAtomId(vol.atoms[i]), ensureAtomId(vol.atoms[j])),
+        bondId: covalentRenderEdges.find((edge) => edge.i === i && edge.j === j && edge.order === order && edge.kind === 'normal')?.id || buildVolumeBondId(ensureAtomId(vol.atoms[i]), ensureAtomId(vol.atoms[j])),
         baseLen: len,
         baseGeomLen: localGeomLen,
         trimA: localTrimA,
@@ -3740,6 +3821,7 @@
         j,
         bondOrder: order,
         bondKind: 'normal',
+        bondStyle: METAL_BOND_STYLE.COVALENT,
         bondComponentOffset: offsetU,
         bondComponentOffsetU: offsetU,
         bondComponentOffsetV: offsetV,
@@ -4017,7 +4099,79 @@
       group.add(connector);
     }
 
-    for (const edge of renderEdges) {
+    function resolveMetalConnectorColor(edge, atomA, atomB) {
+      if (edge.style === METAL_BOND_STYLE.METAL_METAL) return new THREE.Color(0xaeb6c2);
+      const source = isMetalAtomZ(atomA.Z | 0) ? atomA : atomB;
+      if (source && source.color && typeof source.color.clone === 'function') return source.color.clone();
+      if (source && source.bondColor && typeof source.bondColor.clone === 'function') return source.bondColor.clone();
+      return new THREE.Color(0xc3ccd9);
+    }
+
+    function addMetalStyledBond(edge, atomA, atomB) {
+      const style = normalizeVolumeBondStyle(edge && edge.style);
+      const useDashedConnector = style === METAL_BOND_STYLE.STRONG || style === METAL_BOND_STYLE.DATIVE;
+      const radiusScale = style === METAL_BOND_STYLE.STRONG
+        ? 0.85
+        : (style === METAL_BOND_STYLE.DATIVE ? 0.70 : 0.75);
+      const radius = Math.max(0.018, bondRadius * radiusScale);
+      const placement = getPreviewBondSegmentPlacement(atomA.pos, atomB.pos, atomA.Z, atomB.Z, {
+        bondRadius: radius,
+        surfaceInset: 0.012,
+        minGeomLen: useDashedConnector ? 0.18 : 0.08,
+      });
+      if (!placement.valid || !(placement.geomLen > 1e-4)) return;
+      const color = resolveMetalConnectorColor(edge, atomA, atomB);
+      const carrier = new THREE.Group();
+      carrier.userData = {
+        bondId: edge.id || buildVolumeBondId(ensureAtomId(vol.atoms[edge.i]), ensureAtomId(vol.atoms[edge.j])),
+        baseLen: placement.len,
+        baseGeomLen: placement.geomLen,
+        trimA: placement.trimA,
+        trimB: placement.trimB,
+        i: edge.i,
+        j: edge.j,
+        bondOrder: 1,
+        bondKind: edge.kind || 'normal',
+        bondStyle: style,
+        connectorStyle: useDashedConnector ? (style === METAL_BOND_STYLE.STRONG ? 'metalStrongDashed' : 'metalDative') : 'metalMetal',
+        connectorCenterRadius: radius,
+        connectorEndRadius: radius,
+        bondDisplayRadius: radius,
+      };
+      if (useDashedConnector) {
+        const dashLength = style === METAL_BOND_STYLE.STRONG
+          ? Math.max(0.12, radius * 2.6)
+          : Math.max(0.10, radius * 2.2);
+        const gapLength = style === METAL_BOND_STYLE.STRONG
+          ? Math.max(0.12, radius * 2.8)
+          : Math.max(0.13, radius * 3.1);
+        let cursor = 0;
+        let dashIndex = 0;
+        while (cursor < placement.geomLen - 1e-4) {
+          const segStart = placement.aEnd.clone().addScaledVector(placement.dirNorm, cursor);
+          const segEnd = placement.aEnd.clone().addScaledVector(placement.dirNorm, Math.min(placement.geomLen, cursor + dashLength));
+          const dash = createWorldSegmentBondMesh(segStart, segEnd, color, radius, Math.max(0.42, moleculeBondOpacity));
+          if (dash) {
+            dash.userData = Object.assign({}, dash.userData || {}, {
+              type: 'metalBondDash',
+              dashIndex,
+            });
+            carrier.add(dash);
+            dashIndex += 1;
+          }
+          cursor += dashLength + gapLength;
+        }
+      } else {
+        const solid = createWorldSegmentBondMesh(placement.aEnd, placement.bEnd, color, radius, Math.max(0.55, moleculeBondOpacity));
+        if (solid) {
+          solid.userData = Object.assign({}, solid.userData || {}, { type: 'metalBondSolid' });
+          carrier.add(solid);
+        }
+      }
+      if (carrier.children.length) group.add(carrier);
+    }
+
+    for (const edge of covalentRenderEdges) {
       const i = edge.i;
       const j = edge.j;
       const a = atomPositions[i];
@@ -4110,6 +4264,15 @@
         addAromaticDashedRing(group, ring, atomPositions);
       }
     }
+    for (const edge of metalStyleEdges) {
+      const atomA = atomPositions[edge.i];
+      const atomB = atomPositions[edge.j];
+      if (!atomA || !atomB) continue;
+      addMetalStyledBond(edge, atomA, atomB);
+    }
+    group.userData = Object.assign({}, group.userData || {}, {
+      hasMetalStyleBonds: metalStyleEdges.length > 0,
+    });
     return group;
   }
 
@@ -4120,6 +4283,10 @@
   function updateBondsInPlace() {
     if (!bondGroup || !bondGroup.children || currentIndex < 0 || !volumes[currentIndex]) return;
     const vol = volumes[currentIndex].vol; if (!vol) return;
+    if (bondGroup.userData && bondGroup.userData.hasMetalStyleBonds) {
+      rebuildBondsFromAtoms();
+      return;
+    }
     if (shouldUseDynamicTrajectoryBondsForVolume(vol)) {
       rebuildBondsFromAtoms();
       return;
@@ -5611,6 +5778,7 @@
   editSelectionTranslateCueButtonEl = document.getElementById('editSelectionTranslateCueButton');
   editSelectionRotateCueButtonEl = document.getElementById('editSelectionRotateCueButton');
   editSelectionCoordinationCueButtonEl = document.getElementById('editSelectionCoordinationCueButton');
+  editSelectionMetalBondingCueButtonEl = document.getElementById('editSelectionMetalBondingCueButton');
   editSelectionBondOrbitCueButtonEl = document.getElementById('editSelectionBondOrbitCueButton');
   editSelectionBondDistanceCueButtonEl = document.getElementById('editSelectionBondDistanceCueButton');
   editSelectionBondOrderCueButtonEl = document.getElementById('editSelectionBondOrderCueButton');
@@ -5618,6 +5786,7 @@
   editSelectionDeleteCueButtonEl = document.getElementById('editSelectionDeleteCueButton');
   editSelectionFragmentCuePopoverEl = document.getElementById('editSelectionFragmentCuePopover');
   editSelectionCoordinationCuePopoverEl = document.getElementById('editSelectionCoordinationCuePopover');
+  editSelectionMetalBondingCuePopoverEl = document.getElementById('editSelectionMetalBondingCuePopover');
   editAdaptiveMenuEl = document.getElementById('editAdaptiveMenu');
 
   const bindSelectionCueButton = (buttonEl, action, clickAction = null) => {
@@ -5665,7 +5834,13 @@
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditBondSideCueMode('distance');
   });
-  bindSelectionCueButton(editSelectionBondOrderCueButtonEl, 'bondOrder');
+  bindSelectionCueButton(editSelectionBondOrderCueButtonEl, 'bondOrder', () => {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const resolved = getBondCenterSelectionResolved(vol);
+    if (!resolved || !resolved.carrier || !bondEditing) return;
+    bondEditing.showPopupForCarrier(resolved.carrier, { markClickHandled: true });
+  });
   if (editSelectionCoordinationCueButtonEl) {
     editSelectionCoordinationCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -5681,6 +5856,23 @@
         return;
       }
       toggleSelectionCoordinationCuePopover();
+    });
+  }
+  if (editSelectionMetalBondingCueButtonEl) {
+    editSelectionMetalBondingCueButtonEl.addEventListener('pointerdown', (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      selectionMetalBondingCuePointerHandled = true;
+      toggleSelectionMetalBondingCuePopover();
+    });
+    editSelectionMetalBondingCueButtonEl.addEventListener('click', (e) => {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      if (selectionMetalBondingCuePointerHandled) {
+        selectionMetalBondingCuePointerHandled = false;
+        return;
+      }
+      toggleSelectionMetalBondingCuePopover();
     });
   }
   if (editSelectionAddFragmentCueButtonEl) {
@@ -5704,6 +5896,7 @@
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       hideSelectionCoordinationCuePopover();
+      hideSelectionMetalBondingCuePopover();
       hideSelectionFragmentCuePopover();
       const record = ensureEditableVolumeRecord();
       const vol = record && record.vol;
@@ -5737,6 +5930,23 @@
       }
     });
   }
+  if (editSelectionMetalBondingCuePopoverEl) {
+    editSelectionMetalBondingCuePopoverEl.addEventListener('pointerdown', (e) => {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    });
+    editSelectionMetalBondingCuePopoverEl.addEventListener('click', (e) => {
+      const target = e && e.target ? e.target.closest('[data-metal-bonding-choice]') : null;
+      if (!target) return;
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      const atomIndex = Number(target.getAttribute('data-atom-index')) | 0;
+      const mode = String(target.getAttribute('data-metal-bonding-choice') || '').trim();
+      if (!mode) return;
+      if (applyAtomMetalBondingChoice(atomIndex, mode)) {
+        hideSelectionMetalBondingCuePopover();
+      }
+    });
+  }
   document.addEventListener('pointerdown', (evt) => {
     const target = evt && evt.target;
     if (
@@ -5745,6 +5955,13 @@
       && !(editSelectionCoordinationCuePopoverEl.contains(target) || (editSelectionCoordinationCueButtonEl && editSelectionCoordinationCueButtonEl.contains(target)))
     ) {
       hideSelectionCoordinationCuePopover();
+    }
+    if (
+      editSelectionMetalBondingCuePopoverEl
+      && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false'
+      && !(editSelectionMetalBondingCuePopoverEl.contains(target) || (editSelectionMetalBondingCueButtonEl && editSelectionMetalBondingCueButtonEl.contains(target)))
+    ) {
+      hideSelectionMetalBondingCuePopover();
     }
   });
   editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
@@ -5794,6 +6011,7 @@
   const editAddMoleculeOperatorAlignYBtn = document.getElementById('editAddMoleculeOperatorAlignY');
   const editAddMoleculeOperatorAlignZBtn = document.getElementById('editAddMoleculeOperatorAlignZ');
   const bondOrderPopupEl = document.getElementById('bondOrderPopup');
+  const bondOrderPopupTitleEl = document.getElementById('bondOrderPopupTitle');
   const bondOrderPopupButtonsEl = document.getElementById('bondOrderPopupButtons');
   const editToolboxEl = document.getElementById('editToolbox');
   const editAddPaneEl = document.getElementById('editAddPane');
@@ -7682,6 +7900,18 @@
     ADD_MOLECULE: 'add_molecule',
   });
   const EDIT_BOND_ACTION = Object.freeze({ SET: 'set', DELETE: 'delete' });
+  const METAL_BOND_STYLE = Object.freeze({
+    COVALENT: 'covalent',
+    STRONG: 'metal-strong',
+    DATIVE: 'metal-dative',
+    METAL_METAL: 'metal-metal',
+  });
+  const METAL_BOND_MODE = Object.freeze({
+    AUTO: 'auto',
+    FORCE_COVALENT: 'force_covalent',
+    FORCE_DATIVE: 'force_dative',
+    NO_BONDS: 'no_bonds',
+  });
   const EDIT_ADD_MODE = Object.freeze({ ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' });
   const CATALOG_KIND = Object.freeze({ FRAGMENT: 'fragment', MOLECULE: 'molecule' });
   const EDIT_FRAGMENT_ATTACH_POLICY = Object.freeze({
@@ -7933,7 +8163,7 @@
   /**
    * Infer a persistent bond graph for one volume from current geometry.
    * @param {*} vol
-   * @returns {Array<{id:string,a:string,b:string,order:number,kind:'normal',origin:'perceived'}>}
+   * @returns {Array<{id:string,a:string,b:string,order:number,kind:'normal',origin:'perceived',style:string}>}
    */
   function buildPerceivedBondRecords(vol, atomPositions, options = {}) {
     if (!vol || !Array.isArray(vol.atoms)) return [];
@@ -7953,6 +8183,7 @@
         order: Math.max(1, Number(edge && edge.order) || 1),
         kind: 'normal',
         origin: 'perceived',
+        style: normalizeVolumeBondStyle(edge && edge.style),
       };
     }).filter((bond) => bond.id && bond.a && bond.b && bond.a !== bond.b);
   }
@@ -7997,6 +8228,28 @@
     return vol;
   }
 
+  function isMetalBondingPreferenceCompatibleForAtom(vol, atomIndex, mode) {
+    const nextMode = normalizeMetalBondingMode(mode);
+    if (!vol || !Array.isArray(vol.atoms) || nextMode === 'auto') return false;
+    const idx = atomIndex | 0;
+    if (idx < 0 || idx >= vol.atoms.length || !vol.atoms[idx]) return false;
+    return !!isMetalAtomicNumber((vol.atoms[idx].Z) | 0);
+  }
+
+  function pruneInvalidMetalBondingPreferences(vol) {
+    if (!vol || !Array.isArray(vol.atoms)) return vol;
+    pruneVolumeAtomAnnotations(vol, {
+      isMetalBondingMetaCompatible(atomId, meta) {
+        const nextMode = normalizeMetalBondingMode(meta && meta.mode);
+        if (nextMode === 'auto') return false;
+        const atomIndex = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === String(atomId || ''));
+        if (atomIndex < 0) return false;
+        return isMetalBondingPreferenceCompatibleForAtom(vol, atomIndex, nextMode);
+      },
+    });
+    return vol;
+  }
+
   /**
    * Ensure one volume uses the minimal incremental schema.
    * @param {*} vol
@@ -8018,9 +8271,17 @@
           if (atomIndex < 0) return false;
           return isCoordinationPreferenceCompatibleForAtom(vol, atomIndex, nextGeometryId);
         },
+        isMetalBondingMetaCompatible(atomId, meta) {
+          const nextMode = normalizeMetalBondingMode(meta && meta.mode);
+          if (!vol || !Array.isArray(vol.atoms) || nextMode === 'auto') return false;
+          const atomIndex = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === String(atomId || ''));
+          if (atomIndex < 0) return false;
+          return isMetalBondingPreferenceCompatibleForAtom(vol, atomIndex, nextMode);
+        },
       },
     });
     pruneInvalidCoordinationPreferences(normalized);
+    pruneInvalidMetalBondingPreferences(normalized);
     return normalized;
   }
 
@@ -8044,7 +8305,7 @@
    * @param {*} vol
    * @param {Array<{pos:THREE.Vector3,Z:number,bondColor?:THREE.Color,displayRadius?:number}>} atomPositions
    * @param {{allowDynamic?:boolean,storedOnly?:boolean}=} options
-   * @returns {Array<{id:string,a:string,b:string,i:number,j:number,len:number,order:number,kind:'normal',origin:string,maxOrder:number}>}
+   * @returns {Array<{id:string,a:string,b:string,i:number,j:number,len:number,order:number,kind:'normal',origin:string,maxOrder:number,style:string}>}
    */
   function getVolumeBondEdges(vol, atomPositions, options = {}) {
     if (!vol || !Array.isArray(vol.atoms)) return [];
@@ -8081,6 +8342,7 @@
         order: normalizeEditAddBondOrder(bond.order || 1),
         kind: bond.kind,
         origin: normalizeVolumeBondOrigin(bond.origin),
+        style: normalizeVolumeBondStyle(bond.style),
         maxOrder: Math.max(
           normalizeEditAddBondOrder(bond.order || 1),
           getPairMaxBondOrder((vol.atoms[i] && vol.atoms[i].Z) | 0, (vol.atoms[j] && vol.atoms[j].Z) | 0)
@@ -10922,6 +11184,7 @@
   bondEditing = createBondEditingController({
     THREE,
     popupEl: bondOrderPopupEl,
+    popupTitleEl: bondOrderPopupTitleEl,
     popupButtonsEl: bondOrderPopupButtonsEl,
     canvasEl,
     getCamera: () => camera,
@@ -10949,9 +11212,13 @@
     ensureAtomId,
     findVolumeBondRecordIndex,
     normalizeVolumeBondRecord,
+    normalizeVolumeBondStyle,
     upsertVolumeBond,
     removeVolumeBond,
     getElementSymbol,
+    isMetalAtomZ,
+    getBondStyleLabel: getMetalBondStyleLabel,
+    resolveDefaultBondStyle: resolveMetalBondDefaultStyle,
     getBondAction: () => editBondAction,
     getBondOrder: () => editBondOrder,
     setBondOrder: setEditBondOrder,
@@ -13262,6 +13529,13 @@
       const vol = record && record.vol;
       const resolved = getBondCenterSelectionResolved(vol);
       if (!resolved) return false;
+      if (resolved.metalPair) {
+        if (resolved.carrier && bondEditing) {
+          bondEditing.showPopupForCarrier(resolved.carrier, { markClickHandled: true });
+          return true;
+        }
+        return false;
+      }
       selectionCueDragState = {
         pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
         buttonEl,
@@ -13429,6 +13703,7 @@
 
   function hideEditSelectionTranslateCue() {
     hideSelectionCoordinationCuePopover();
+    hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
     if (!editSelectionTranslateCueEl) return;
     editSelectionTranslateCueEl.setAttribute('aria-hidden', 'true');
@@ -13559,6 +13834,7 @@
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
     hideSelectionCoordinationCuePopover();
+    hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
     if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
     if (Object.prototype.hasOwnProperty.call(options, 'query')) {
@@ -14212,6 +14488,7 @@
       selectionFragmentCuePopoverHideTimer = 0;
     }
     hideSelectionCoordinationCuePopover();
+    hideSelectionMetalBondingCuePopover();
     hideBuildPopover();
     if (editAddFragmentPaneEl.parentElement !== editSelectionFragmentCuePopoverEl) {
       editSelectionFragmentCuePopoverEl.appendChild(editAddFragmentPaneEl);
@@ -14569,6 +14846,7 @@
     if (!editSelectionCoordinationCueButtonEl || !editSelectionCoordinationCuePopoverEl) return;
     const state = getSelectionCoordinationCueState();
     if (!state || !state.choices.length) return;
+    hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
     editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionCoordinationCuePopover();
@@ -14581,6 +14859,127 @@
       return;
     }
     showSelectionCoordinationCuePopover();
+  }
+
+  function getSelectionMetalBondingCueState() {
+    if (currentMode !== MODES.EDIT) return null;
+    const selection = getEditAtomSelection();
+    if (!Array.isArray(selection) || selection.length !== 1) return null;
+    if (getCurrentTransformSelectionContext()) return null;
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const atomIndex = selection[0] | 0;
+    if (!vol || !Array.isArray(vol.atoms) || atomIndex < 0 || atomIndex >= vol.atoms.length) return null;
+    const atom = vol.atoms[atomIndex];
+    if (!atom || !isMetalAtomZ(atom.Z | 0)) return null;
+    const activeMode = normalizeAppMetalBondMode(getAtomMetalBondingMeta(vol, atom).mode);
+    const choices = [
+      { mode: METAL_BOND_MODE.AUTO, label: 'Automatic', subtext: 'Use metal-aware inference' },
+      { mode: METAL_BOND_MODE.FORCE_COVALENT, label: 'Covalent', subtext: 'Solid covalent-only links' },
+      { mode: METAL_BOND_MODE.FORCE_DATIVE, label: 'Dative', subtext: 'Prefer dashed coordination links' },
+      { mode: METAL_BOND_MODE.NO_BONDS, label: 'None', subtext: 'Suppress inferred metal links' },
+    ];
+    return {
+      atomIndex,
+      atomZ: atom.Z | 0,
+      activeMode,
+      choices: choices.map((choice) => ({
+        ...choice,
+        active: choice.mode === activeMode,
+      })),
+    };
+  }
+
+  function hideSelectionMetalBondingCuePopover() {
+    if (!editSelectionMetalBondingCuePopoverEl) return;
+    editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'true');
+    selectionMetalBondingCuePopoverRenderKey = '';
+  }
+
+  function positionSelectionMetalBondingCuePopover() {
+    if (!editSelectionMetalBondingCueButtonEl || !editSelectionMetalBondingCuePopoverEl) return;
+    const gap = 12;
+    const triggerRect = editSelectionMetalBondingCueButtonEl.getBoundingClientRect();
+    const popoverRect = editSelectionMetalBondingCuePopoverEl.getBoundingClientRect();
+    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
+    const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionMetalBondingCuePopoverEl.offsetWidth || 320));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionMetalBondingCuePopoverEl.offsetHeight || 220));
+    const roomRight = viewportWidth - triggerRect.right - gap;
+    let left = 0;
+    let top = 0;
+    if (roomRight >= popoverWidth) {
+      left = Math.round(triggerRect.right + gap);
+      top = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
+    } else {
+      left = Math.round(Math.max(gap, triggerRect.left - popoverWidth - gap));
+      top = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
+    }
+    left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
+    top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
+    editSelectionMetalBondingCuePopoverEl.style.left = `${left}px`;
+    editSelectionMetalBondingCuePopoverEl.style.top = `${top}px`;
+  }
+
+  function renderSelectionMetalBondingCuePopover() {
+    if (!editSelectionMetalBondingCuePopoverEl) return;
+    if (editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
+    const state = getSelectionMetalBondingCueState();
+    if (!state || !state.choices.length) {
+      hideSelectionMetalBondingCuePopover();
+      return;
+    }
+    const renderKey = JSON.stringify({
+      atomIndex: state.atomIndex | 0,
+      atomZ: state.atomZ | 0,
+      activeMode: String(state.activeMode || ''),
+      choices: state.choices.map((choice) => ({
+        mode: String(choice && choice.mode || ''),
+        label: String(choice && choice.label || ''),
+        subtext: String(choice && choice.subtext || ''),
+        active: !!(choice && choice.active),
+      })),
+    });
+    if (renderKey !== selectionMetalBondingCuePopoverRenderKey) {
+      const optionsHtml = state.choices.map((choice) => [
+        `<button class="editCoordinationCueOption${choice.active ? ' is-active' : ''}" type="button" data-metal-bonding-choice="${escapeHtml(choice.mode)}" data-atom-index="${state.atomIndex | 0}">`,
+        '<span class="editCoordinationCuePreview" aria-hidden="true">',
+        `<span class="material-symbols-rounded" aria-hidden="true" style="font-size:32px;line-height:1;color:${choice.mode === METAL_BOND_MODE.NO_BONDS ? '#f5a5a5' : (choice.mode === METAL_BOND_MODE.FORCE_DATIVE ? '#b9d7ff' : '#d7e3f7')};display:flex;align-items:center;justify-content:center;width:100%;height:100%;">${choice.mode === METAL_BOND_MODE.NO_BONDS ? 'link_off' : (choice.mode === METAL_BOND_MODE.FORCE_DATIVE ? 'drag_handle' : 'settings_input_component')}</span>`,
+        '</span>',
+        '<span class="editCoordinationCueMeta">',
+        `<span class="editCoordinationCueLabel">${escapeHtml(choice.label)}</span>`,
+        `<span class="editCoordinationCueSubtext">${escapeHtml(choice.subtext)}</span>`,
+        '</span>',
+        '</button>',
+      ].join('')).join('');
+      editSelectionMetalBondingCuePopoverEl.innerHTML = [
+        '<div class="editCoordinationCueHeader">Metal bond mode</div>',
+        `<div class="editCoordinationCueHeaderSubtext">${escapeHtml(getElementName(state.atomZ | 0) || getElementSymbol(state.atomZ | 0) || 'Metal')}</div>`,
+        `<div class="editCoordinationCueGrid">${optionsHtml}</div>`,
+      ].join('');
+      selectionMetalBondingCuePopoverRenderKey = renderKey;
+    }
+    positionSelectionMetalBondingCuePopover();
+  }
+
+  function showSelectionMetalBondingCuePopover() {
+    if (!editSelectionMetalBondingCueButtonEl || !editSelectionMetalBondingCuePopoverEl) return;
+    const state = getSelectionMetalBondingCueState();
+    if (!state || !state.choices.length) return;
+    hideSelectionCoordinationCuePopover();
+    hideSelectionFragmentCuePopover();
+    hideBuildPopover({ quiet: true });
+    editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'false');
+    renderSelectionMetalBondingCuePopover();
+  }
+
+  function toggleSelectionMetalBondingCuePopover() {
+    if (!editSelectionMetalBondingCuePopoverEl) return;
+    if (editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+      hideSelectionMetalBondingCuePopover();
+      return;
+    }
+    showSelectionMetalBondingCuePopover();
   }
 
   function getEditSelectionClientBounds(indices, vol) {
@@ -14802,6 +15201,7 @@
     const effectiveMode = getEffectiveEditSelectionDragMode();
     const bondSideCueMode = getEffectiveEditBondSideCueMode();
     const fragmentCueActive = isSelectionFragmentCueActive();
+    const metalBondingCueState = getSelectionMetalBondingCueState();
     if (editSelectionTranslateCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
       editSelectionTranslateCueButtonEl.hidden = !visible;
@@ -14832,13 +15232,26 @@
     }
     if (editSelectionBondOrderCueButtonEl) {
       const visible = !!isBondCenterSelection;
-      const order = visible ? (bondCenterSelection.order | 0) : '';
+      const order = visible && !bondCenterSelection.metalPair ? (bondCenterSelection.order | 0) : '';
+      const label = visible
+        ? (bondCenterSelection.metalPair
+          ? getMetalBondStyleLabel(bondCenterSelection.style)
+          : `bond order (${order})`)
+        : 'Adjust bond order';
       editSelectionBondOrderCueButtonEl.hidden = !visible;
       editSelectionBondOrderCueButtonEl.classList.toggle('is-active', visible);
       editSelectionBondOrderCueButtonEl.setAttribute('aria-pressed', visible ? 'true' : 'false');
       editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
-      editSelectionBondOrderCueButtonEl.title = visible ? `Adjust bond order (${order})` : 'Adjust bond order';
-      editSelectionBondOrderCueButtonEl.setAttribute('aria-label', visible ? `Adjust bond order (${order})` : 'Adjust bond order');
+      editSelectionBondOrderCueButtonEl.title = visible ? `Adjust ${label}` : 'Adjust bond order';
+      editSelectionBondOrderCueButtonEl.setAttribute('aria-label', visible ? `Adjust ${label}` : 'Adjust bond order');
+    }
+    if (editSelectionMetalBondingCueButtonEl) {
+      const visible = !isBondSideSelection && !isBondCenterSelection && !!(metalBondingCueState && metalBondingCueState.choices.length);
+      const active = visible && editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false';
+      editSelectionMetalBondingCueButtonEl.hidden = !visible;
+      editSelectionMetalBondingCueButtonEl.classList.toggle('is-active', !!active);
+      editSelectionMetalBondingCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      if (!visible) hideSelectionMetalBondingCuePopover();
     }
     const coordinationCueState = getSelectionCoordinationCueState();
     if (editSelectionCoordinationCueButtonEl) {
@@ -14858,6 +15271,7 @@
       if (!visible) {
         hideSelectionFragmentCuePopover();
         hideSelectionCoordinationCuePopover();
+        hideSelectionMetalBondingCuePopover();
       }
     }
     if (editSelectionDeleteCueButtonEl) {
@@ -14865,7 +15279,9 @@
       editSelectionDeleteCueButtonEl.setAttribute('aria-pressed', 'false');
     }
     if (isBondCenterSelection) {
-      editSelectionTranslateCueEl.title = `Bond order ${bondCenterSelection.order | 0}`;
+      editSelectionTranslateCueEl.title = bondCenterSelection.metalPair
+        ? `Bond style ${getMetalBondStyleLabel(bondCenterSelection.style)}`
+        : `Bond order ${bondCenterSelection.order | 0}`;
     } else if (isBondSideSelection) {
       editSelectionTranslateCueEl.title = bondSideCueMode === 'distance'
         ? 'Adjust bond distance'
@@ -14894,6 +15310,9 @@
     editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
     if (editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       renderSelectionCoordinationCuePopover();
+    }
+    if (editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+      renderSelectionMetalBondingCuePopover();
     }
     if (editSelectionFragmentCuePopoverEl && editSelectionFragmentCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSelectionFragmentCuePopover();
@@ -18049,9 +18468,13 @@
     const midpoint = worldA.clone().add(worldB).multiplyScalar(0.5);
     const bondIndex = findVolumeBondRecordIndex(vol, atomIdA, atomIdB);
     const bondRecord = bondIndex >= 0 ? normalizeVolumeBondRecord(vol, vol.bonds[bondIndex]) : null;
+    const style = bondRecord
+      ? normalizeVolumeBondStyle(bondRecord.style)
+      : normalizeVolumeBondStyle(carrier && carrier.userData && carrier.userData.bondStyle);
     const order = bondRecord
       ? (bondRecord.kind === 'blocked' ? 0 : clampBondCenterInteractiveOrder(bondRecord.order || 1))
       : (carrier ? clampBondCenterInteractiveOrder(getBondCarrierDisplayedOrder(carrier)) : 0);
+    const metalPair = !!(isMetalAtomZ((atomA && atomA.Z) | 0) || isMetalAtomZ((atomB && atomB.Z) | 0));
     return {
       atomIdA,
       atomIdB,
@@ -18064,6 +18487,8 @@
       midpoint,
       carrier,
       order,
+      style,
+      metalPair,
     };
   }
 
@@ -18091,6 +18516,7 @@
     clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
     setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
     hideSelectionCoordinationCuePopover();
+    hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
     bondCenterSelectionState = normalizedIds;
     updateSelectedHalos();
@@ -18099,10 +18525,32 @@
       const symbolA = getElementSymbol(vol.atoms[i].Z | 0);
       const symbolB = getElementSymbol(vol.atoms[j].Z | 0);
       const resolved = getBondCenterSelectionResolved(vol);
-      const order = resolved ? resolved.order : 0;
-      setHintMessage(`Selected ${symbolA}-${symbolB} bond • Order ${order} • Drag the bond cue to change 0-4.`);
+      if (resolved && resolved.metalPair) {
+        setHintMessage(`Selected ${symbolA}-${symbolB} bond • Style ${getMetalBondStyleLabel(resolved.style)} • Click the bond cue or use 1/2/3/0.`);
+      } else {
+        const order = resolved ? resolved.order : 0;
+        setHintMessage(`Selected ${symbolA}-${symbolB} bond • Order ${order} • Drag the bond cue to change 0-4.`);
+      }
     }
     return true;
+  }
+
+  function applyBondCenterSelectionStyle(style) {
+    if (!bondEditing) return false;
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const resolved = getBondCenterSelectionResolved(vol);
+    if (!resolved) return false;
+    const nextStyle = normalizeVolumeBondStyle(style);
+    const changed = nextStyle === 'blocked'
+      ? !!bondEditing.applyToAtomPair(resolved.atomIndexA, resolved.atomIndexB, { deleteOverride: true })
+      : !!bondEditing.applyToAtomPair(resolved.atomIndexA, resolved.atomIndexB, { styleOverride: nextStyle });
+    if (changed) {
+      updateSelectedHalos();
+      updateEditAdaptiveMenuUi();
+      if (editGestureController) editGestureController.refreshUi();
+    }
+    return changed;
   }
 
   function applyBondCenterSelectionOrder(order) {
@@ -18111,6 +18559,13 @@
     const vol = record && record.vol;
     const resolved = getBondCenterSelectionResolved(vol);
     if (!resolved) return false;
+    if (resolved.metalPair) {
+      if ((order | 0) <= 0) return applyBondCenterSelectionStyle('blocked');
+      if ((order | 0) === 1) return applyBondCenterSelectionStyle(METAL_BOND_STYLE.COVALENT);
+      if ((order | 0) === 2) return applyBondCenterSelectionStyle(METAL_BOND_STYLE.STRONG);
+      if ((order | 0) === 3) return applyBondCenterSelectionStyle(METAL_BOND_STYLE.DATIVE);
+      return false;
+    }
     const nextOrder = clampBondCenterInteractiveOrder(order);
     const changed = nextOrder <= 0
       ? !!bondEditing.applyToAtomPair(resolved.atomIndexA, resolved.atomIndexB, { deleteOverride: true })
@@ -18132,6 +18587,26 @@
       : resolveGestureBondCenterClickHit(e);
     if (!(bondHit && bondHit.object && bondHit.section === 'center')) return false;
     return setBondCenterSelectionFromHit(bondHit, { announce: true });
+  }
+
+  function handleBondCenterSelectionShortcut(rawValue, e) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const resolved = getBondCenterSelectionResolved(vol);
+    if (!resolved) return false;
+    const value = Number(rawValue);
+    let handled = false;
+    if (resolved.metalPair) {
+      if (value === 0) handled = applyBondCenterSelectionStyle('blocked');
+      else if (value === 1) handled = applyBondCenterSelectionStyle(METAL_BOND_STYLE.COVALENT);
+      else if (value === 2) handled = applyBondCenterSelectionStyle(METAL_BOND_STYLE.STRONG);
+      else if (value === 3) handled = applyBondCenterSelectionStyle(METAL_BOND_STYLE.DATIVE);
+      else handled = false;
+    } else {
+      if (value >= 0 && value <= 4) handled = applyBondCenterSelectionOrder(value);
+    }
+    if (handled && e && typeof e.preventDefault === 'function') e.preventDefault();
+    return handled;
   }
 
   function getGestureCenterBondHoverHit() {
@@ -19384,6 +19859,48 @@
   }
 
   /**
+   * Persist one per-atom metal-bonding override as an undoable edit.
+   * This re-perceives geometry-driven bonds immediately so imported/perceived
+   * coordination updates without affecting explicit user-authored bonds.
+   * @param {number} atomIndex
+   * @param {string} mode
+   * @returns {boolean}
+   */
+  function applyAtomMetalBondingChoice(atomIndex, mode) {
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const idx = atomIndex | 0;
+    const nextMode = normalizeAppMetalBondMode(mode);
+    if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length) return false;
+    const atom = vol.atoms[idx];
+    if (!atom || !isMetalAtomZ(atom.Z | 0)) return false;
+    const prev = normalizeAppMetalBondMode(getAtomMetalBondingMeta(vol, atom).mode);
+    if (prev === nextMode) return false;
+    const beforeAtoms = cloneAtomsSnapshot(vol);
+    const beforeBonds = cloneBondSnapshot(vol);
+    const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+    setAtomMetalBondingMeta(vol, atom, { mode: nextMode });
+    inferVolumeBonds(vol, { inferOrders: true });
+    pruneInvalidMetalBondingPreferences(vol);
+    const afterBonds = cloneBondSnapshot(vol);
+    const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+    const label = getMetalBondModeLabel(nextMode);
+    pushEditHistoryEntry(record, beforeAtoms, beforeAtoms, `Set metal bond mode ${label}`, {
+      beforeBonds,
+      afterBonds,
+      beforeAnnotations,
+      afterAnnotations,
+    });
+    if (editHaloController) editHaloController.refresh();
+    updateSelectedHalos();
+    updateEditAdaptiveMenuUi();
+    rebuildScene({ preserveView: true });
+    updateSidePanel();
+    setHintMessage(`Metal bond mode set to ${label} for ${getElementSymbol((atom && atom.Z) | 0)}.`);
+    return true;
+  }
+
+  /**
    * Compute mass-weighted center (native units) for one molecule.
    * @param {*} vol
    * @returns {{totalMass:number,comX:number,comY:number,comZ:number}|null}
@@ -20472,25 +20989,40 @@
   bind('down', MODES.EDIT, '1', (e) => {
     if (editGestureController && editGestureController.handleBondOrderKey(1)) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    } else if (handleBondCenterSelectionShortcut(1, e)) {
+      return;
     } else if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) setEditAddBondOrder(1);
     else setMoleculeStyle('default');
   });
   bind('down', MODES.EDIT, '2', (e) => {
     if (editGestureController && editGestureController.handleBondOrderKey(2)) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    } else if (handleBondCenterSelectionShortcut(2, e)) {
+      return;
     } else if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) setEditAddBondOrder(2);
     else setMoleculeStyle('toon');
   });
   bind('down', MODES.EDIT, '3', (e) => {
     if (editGestureController && editGestureController.handleBondOrderKey(3)) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    } else if (handleBondCenterSelectionShortcut(3, e)) {
+      return;
     } else if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) setEditAddBondOrder(3);
     else setMoleculeStyle('kit');
   });
   // In Add mode, "4" selects quadruple bond preview; otherwise keep Glossy shortcut disabled in edit mode.
   bind('down', MODES.EDIT, '4', (e) => {
+    if (handleBondCenterSelectionShortcut(4, e)) {
+      return;
+    }
     if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) {
       setEditAddBondOrder(4);
+      return;
+    }
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  });
+  bind('down', MODES.EDIT, '0', (e) => {
+    if (handleBondCenterSelectionShortcut(0, e)) {
       return;
     }
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -21802,6 +22334,8 @@
       return {
         visible: !!(editSelectionBondOrderCueButtonEl && !editSelectionBondOrderCueButtonEl.hidden),
         order: resolved ? (resolved.order | 0) : -1,
+        style: resolved ? String(resolved.style || '') : '',
+        metalPair: !!(resolved && resolved.metalPair),
       };
     },
     pickTransformValueLabelAtClient: (clientX, clientY) => {

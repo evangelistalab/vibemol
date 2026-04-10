@@ -138,7 +138,7 @@ test('edit-placement replaceAtomElementAtIndex preserves explicit bonds without 
   assert.equal(record.vol.atoms[1].Z, 6);
   assert.equal(record.vol.atoms[1].id, 'atom-b');
   assert.deepEqual(plain(record.vol.bonds), [
-    { id: 'bond:atom-a:atom-b', a: 'atom-a', b: 'atom-b', order: 1, kind: 'normal', origin: 'explicit' },
+    { id: 'bond:atom-a:atom-b', a: 'atom-a', b: 'atom-b', order: 1, kind: 'normal', origin: 'explicit', style: 'covalent' },
   ]);
   assert.equal(calls.inferVolumeBonds, 0);
   assert.deepEqual(calls.ensureVolumeSchema.at(-1), { inferMissingBonds: false });

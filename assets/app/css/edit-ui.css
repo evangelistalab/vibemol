@@ -98,7 +98,8 @@
   box-shadow: 0 4px 10px rgba(8, 16, 28, 0.28);
 }
 
-#editSelectionCoordinationCuePopover {
+#editSelectionCoordinationCuePopover,
+#editSelectionMetalBondingCuePopover {
   position: fixed;
   z-index: 35;
   display: none;
@@ -112,7 +113,8 @@
   -webkit-backdrop-filter: blur(14px);
 }
 
-#editSelectionCoordinationCuePopover[aria-hidden="false"] {
+#editSelectionCoordinationCuePopover[aria-hidden="false"],
+#editSelectionMetalBondingCuePopover[aria-hidden="false"] {
   display: block;
 }
 
@@ -122,6 +124,13 @@
   font-weight: 800;
   color: #f2f6fb;
   letter-spacing: 0.02em;
+}
+
+.editCoordinationCueHeaderSubtext {
+  margin: -4px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(206, 216, 230, 0.78);
 }
 
 .editCoordinationCueGrid {
@@ -317,14 +326,14 @@
 #bondOrderPopupButtons button {
   appearance: none;
   border: 1px solid rgba(117, 129, 150, 0.28);
-  width: 22px;
+  width: auto;
   height: 22px;
   min-width: 22px;
-  padding: 0;
+  padding: 0 10px;
   background: rgba(17, 24, 39, 0.9);
   color: #f2f5fa;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;

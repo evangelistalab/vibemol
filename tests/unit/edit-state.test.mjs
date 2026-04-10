@@ -79,7 +79,11 @@ test('edit-state bootstraps an empty editable record', () => {
   assert.equal(record.vol.natoms, 0);
   assert.deepEqual(plain(record.vol.atoms), []);
   assert.deepEqual(plain(record.vol.bonds), []);
-  assert.deepEqual(plain(record.vol.annotations), { builder: { byAtomId: {} }, coordination: { byAtomId: {} } });
+  assert.deepEqual(plain(record.vol.annotations), {
+    builder: { byAtomId: {} },
+    coordination: { byAtomId: {} },
+    metalBonding: { byAtomId: {} },
+  });
 });
 
 test('edit-state undo and redo preserve atom and bond snapshots', () => {

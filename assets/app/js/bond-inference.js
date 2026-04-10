@@ -3,6 +3,46 @@
 
   const AUTO_BOND_TOLERANCE = 1.15;
   const AUTO_BOND_MIN_DISTANCE = 0.4;
+  const METAL_BOND_RADIUS = Object.freeze({
+    Li: 1.50, Be: 1.20, Na: 1.80, Mg: 1.60, Al: 1.50, K: 2.10, Ca: 1.90,
+    Sc: 1.70, Ti: 1.65, V: 1.60, Cr: 1.55, Mn: 1.55, Fe: 1.55, Co: 1.50,
+    Ni: 1.50, Cu: 1.50, Zn: 1.50, Ga: 1.45, Rb: 2.20, Sr: 2.00,
+    Y: 1.80, Zr: 1.75, Nb: 1.70, Mo: 1.65, Tc: 1.60, Ru: 1.55, Rh: 1.55,
+    Pd: 1.55, Ag: 1.65, Cd: 1.60, In: 1.55, Sn: 1.55,
+    La: 1.95, Hf: 1.75, Ta: 1.70, W: 1.65, Re: 1.60, Os: 1.55, Ir: 1.55,
+    Pt: 1.55, Au: 1.55, Hg: 1.55, Tl: 1.60, Pb: 1.60, Bi: 1.60,
+    Ce: 1.90, Pr: 1.90, Nd: 1.88, Sm: 1.85, Eu: 1.85, Gd: 1.82,
+    Tb: 1.80, Dy: 1.78, Ho: 1.78, Er: 1.76, Tm: 1.75, Yb: 1.75, Lu: 1.72,
+  });
+  const MAX_METAL_COORDINATION = Object.freeze({
+    Li: 6, Be: 4, Na: 6, Mg: 6, Al: 6, K: 8, Ca: 8,
+    Sc: 8, Ti: 8, V: 6, Cr: 6, Mn: 7, Fe: 6, Co: 6,
+    Ni: 6, Cu: 6, Zn: 6, Ga: 6,
+    Zr: 8, Mo: 7, Ru: 6, Rh: 6, Pd: 6, Ag: 6, Cd: 6,
+    La: 12, Hf: 8, Ta: 7, W: 6, Re: 7, Os: 6, Ir: 6,
+    Pt: 6, Au: 6, Hg: 6,
+    Ce: 12, Nd: 12, Gd: 10, Lu: 9,
+  });
+  const METAL_BOND_MODE_AUTO = 'auto';
+  const METAL_BOND_MODE_FORCE_COVALENT = 'force_covalent';
+  const METAL_BOND_MODE_FORCE_DATIVE = 'force_dative';
+  const METAL_BOND_MODE_NO_BONDS = 'no_bonds';
+
+  function getElementSymbol(z) {
+    return (global.ATOM_Z_TO_DATA && global.ATOM_Z_TO_DATA[z] && global.ATOM_Z_TO_DATA[z].symbol) || '';
+  }
+
+  function normalizeMetalBondMode(value) {
+    const mode = String(value || '').trim().toLowerCase();
+    if (mode === METAL_BOND_MODE_FORCE_COVALENT) return METAL_BOND_MODE_FORCE_COVALENT;
+    if (mode === METAL_BOND_MODE_FORCE_DATIVE) return METAL_BOND_MODE_FORCE_DATIVE;
+    if (mode === METAL_BOND_MODE_NO_BONDS) return METAL_BOND_MODE_NO_BONDS;
+    return METAL_BOND_MODE_AUTO;
+  }
+
+  function isMetalAtomicNumber(z) {
+    return !!METAL_BOND_RADIUS[getElementSymbol(z)];
+  }
 
   /**
    * Look up the covalent radius for an atomic number in angstroms.
@@ -136,6 +176,153 @@
       case 53: return 1;
       default: return 0;
     }
+  }
+
+  function getMetalBondRadiusAngstrom(z) {
+    const symbol = getElementSymbol(z);
+    return METAL_BOND_RADIUS[symbol] || 1.60;
+  }
+
+  function getMetalBondMode(atom) {
+    return normalizeMetalBondMode(atom && atom.metalBondMode);
+  }
+
+  function getMetalCoordinationCap(atom) {
+    const symbol = getElementSymbol(atom && atom.Z);
+    return MAX_METAL_COORDINATION[symbol] || 6;
+  }
+
+  function compareMetalCandidatePriority(left, right) {
+    const leftRank = left && left.style === 'metal-strong' ? 0 : 1;
+    const rightRank = right && right.style === 'metal-strong' ? 0 : 1;
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    const lenDelta = (Number(left && left.len) || 0) - (Number(right && right.len) || 0);
+    if (Math.abs(lenDelta) > 1e-8) return lenDelta;
+    const iDelta = (left && left.i || 0) - (right && right.i || 0);
+    if (iDelta !== 0) return iDelta;
+    return (left && left.j || 0) - (right && right.j || 0);
+  }
+
+  function classifyMetalLigandStyle(distance, metalAtom, ligandAtom) {
+    const mode = getMetalBondMode(metalAtom);
+    if (mode === METAL_BOND_MODE_NO_BONDS) return null;
+    const rM = getMetalBondRadiusAngstrom(metalAtom && metalAtom.Z);
+    const rL = getCovalentRadiusAngstrom(ligandAtom && ligandAtom.Z);
+    const rSum = rM + rL;
+    if (!(rSum > 0) || !Number.isFinite(distance) || distance < AUTO_BOND_MIN_DISTANCE) return null;
+    if (mode === METAL_BOND_MODE_FORCE_COVALENT) {
+      return distance <= 1.10 * rSum ? 'covalent' : null;
+    }
+    if (mode === METAL_BOND_MODE_FORCE_DATIVE) {
+      return distance <= 1.30 * rSum ? 'metal-dative' : null;
+    }
+    if (distance <= 1.10 * rSum) return 'metal-strong';
+    if (distance <= 1.30 * rSum) return 'metal-dative';
+    return null;
+  }
+
+  function buildMetalLigandCandidates(atomPositions) {
+    const candidatesByMetal = new Map();
+    const atomCount = Array.isArray(atomPositions) ? atomPositions.length : 0;
+    for (let i = 0; i < atomCount; i += 1) {
+      const atomI = atomPositions[i];
+      if (!atomI || !atomI.pos || typeof atomI.pos.distanceTo !== 'function') continue;
+      const isMetalI = isMetalAtomicNumber(atomI.Z);
+      for (let j = i + 1; j < atomCount; j += 1) {
+        const atomJ = atomPositions[j];
+        if (!atomJ || !atomJ.pos || typeof atomJ.pos.distanceTo !== 'function') continue;
+        const isMetalJ = isMetalAtomicNumber(atomJ.Z);
+        if (isMetalI === isMetalJ) continue;
+        const metalIndex = isMetalI ? i : j;
+        const ligandIndex = isMetalI ? j : i;
+        const metalAtom = isMetalI ? atomI : atomJ;
+        const ligandAtom = isMetalI ? atomJ : atomI;
+        const len = atomI.pos.distanceTo(atomJ.pos);
+        const style = classifyMetalLigandStyle(len, metalAtom, ligandAtom);
+        if (!style) continue;
+        const list = candidatesByMetal.get(metalIndex) || [];
+        list.push({
+          i: Math.min(metalIndex, ligandIndex),
+          j: Math.max(metalIndex, ligandIndex),
+          len,
+          singleRef: getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z),
+          cutoff: style === 'covalent' || style === 'metal-strong'
+            ? 1.10 * (getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z))
+            : 1.30 * (getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z)),
+          ratio: len / Math.max(1e-6, getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z)),
+          order: 1,
+          maxOrder: 1,
+          style,
+          metalIndex,
+          ligandIndex,
+        });
+        candidatesByMetal.set(metalIndex, list);
+      }
+    }
+    return candidatesByMetal;
+  }
+
+  function buildMetalLigandEdges(atomPositions) {
+    if (!Array.isArray(atomPositions) || !atomPositions.length) return [];
+    const candidatesByMetal = buildMetalLigandCandidates(atomPositions);
+    const accepted = [];
+    const seen = new Set();
+    for (const [metalIndex, candidates] of candidatesByMetal.entries()) {
+      const metalAtom = atomPositions[metalIndex];
+      if (!metalAtom) continue;
+      const maxCoordination = getMetalCoordinationCap(metalAtom);
+      const sorted = Array.isArray(candidates) ? candidates.slice().sort(compareMetalCandidatePriority) : [];
+      let count = 0;
+      for (const candidate of sorted) {
+        if (count >= maxCoordination) break;
+        const key = getUndirectedPairKey(candidate.i, candidate.j);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        accepted.push(candidate);
+        count += 1;
+      }
+    }
+    return accepted;
+  }
+
+  function classifyMetalMetalStyle(distance, atomA, atomB) {
+    const modeA = getMetalBondMode(atomA);
+    const modeB = getMetalBondMode(atomB);
+    if (modeA === METAL_BOND_MODE_NO_BONDS || modeB === METAL_BOND_MODE_NO_BONDS) return null;
+    const cutoff = 1.05 * (getMetalBondRadiusAngstrom(atomA && atomA.Z) + getMetalBondRadiusAngstrom(atomB && atomB.Z));
+    if (!Number.isFinite(distance) || distance < AUTO_BOND_MIN_DISTANCE || distance > cutoff) return null;
+    if (modeA === METAL_BOND_MODE_FORCE_DATIVE || modeB === METAL_BOND_MODE_FORCE_DATIVE) return 'metal-dative';
+    if (modeA === METAL_BOND_MODE_FORCE_COVALENT || modeB === METAL_BOND_MODE_FORCE_COVALENT) return 'covalent';
+    return 'metal-metal';
+  }
+
+  function buildMetalMetalEdges(atomPositions) {
+    const edges = [];
+    const atomCount = Array.isArray(atomPositions) ? atomPositions.length : 0;
+    for (let i = 0; i < atomCount; i += 1) {
+      const atomI = atomPositions[i];
+      if (!atomI || !atomI.pos || typeof atomI.pos.distanceTo !== 'function' || !isMetalAtomicNumber(atomI.Z)) continue;
+      for (let j = i + 1; j < atomCount; j += 1) {
+        const atomJ = atomPositions[j];
+        if (!atomJ || !atomJ.pos || typeof atomJ.pos.distanceTo !== 'function' || !isMetalAtomicNumber(atomJ.Z)) continue;
+        const len = atomI.pos.distanceTo(atomJ.pos);
+        const style = classifyMetalMetalStyle(len, atomI, atomJ);
+        if (!style) continue;
+        const singleRef = getMetalBondRadiusAngstrom(atomI.Z) + getMetalBondRadiusAngstrom(atomJ.Z);
+        edges.push({
+          i,
+          j,
+          len,
+          singleRef,
+          cutoff: 1.05 * singleRef,
+          ratio: len / Math.max(1e-6, singleRef),
+          order: 1,
+          maxOrder: 1,
+          style,
+        });
+      }
+    }
+    return edges;
   }
 
   /**
@@ -285,8 +472,39 @@
    * @returns {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,ratio:number,order:number,maxOrder:number}>}
    */
   function perceiveBondConnectivity(atomPositions, options = {}) {
-    const candidates = collectRawBondCandidates(atomPositions, options);
-    return acceptBondCandidatesByDistanceRank(atomPositions, candidates, options);
+    const covalentCandidates = collectRawBondCandidates(atomPositions, options);
+    const covalentEdges = acceptBondCandidatesByDistanceRank(atomPositions, covalentCandidates, options)
+      .map((edge) => ({
+        i: edge.i,
+        j: edge.j,
+        len: edge.len,
+        singleRef: edge.singleRef,
+        cutoff: edge.cutoff,
+        ratio: edge.ratio,
+        order: 1,
+        maxOrder: 1,
+        style: 'covalent',
+      }));
+    const seen = new Set(covalentEdges.map((edge) => getUndirectedPairKey(edge.i, edge.j)));
+    const accepted = covalentEdges.slice();
+    for (const edge of buildMetalLigandEdges(atomPositions)) {
+      const key = getUndirectedPairKey(edge.i, edge.j);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      accepted.push(edge);
+    }
+    for (const edge of buildMetalMetalEdges(atomPositions)) {
+      const key = getUndirectedPairKey(edge.i, edge.j);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      accepted.push(edge);
+    }
+    accepted.sort((left, right) => {
+      const iDelta = (left && left.i || 0) - (right && right.i || 0);
+      if (iDelta !== 0) return iDelta;
+      return (left && left.j || 0) - (right && right.j || 0);
+    });
+    return accepted;
   }
 
   /**
@@ -315,11 +533,13 @@
       const atomJ = atomPositions[j];
       if (!atomI || !atomJ) continue;
       const baseOrder = Math.max(1, Number(edge.order) || 1);
+      const style = String(edge.style || 'covalent');
       edge.order = baseOrder;
-      edge.maxOrder = Math.max(
-        baseOrder,
-        Math.min(2, getPairMaxBondOrder(atomI.Z, atomJ.Z) | 0)
-      );
+      if (style !== 'covalent') {
+        edge.maxOrder = 1;
+        continue;
+      }
+      edge.maxOrder = Math.max(baseOrder, Math.min(2, getPairMaxBondOrder(atomI.Z, atomJ.Z) | 0));
       valence[i] += baseOrder;
       valence[j] += baseOrder;
     }
@@ -429,6 +649,7 @@
         order: 1,
         kind: 'normal',
         origin: 'perceived',
+        style: String(edge.style || 'covalent'),
       };
     }).filter((edge) => edge.id && edge.a && edge.b && edge.a !== edge.b);
     const perceivedByKey = new Map(perceivedEdges.map((edge) => [edge.key, edge]));
@@ -462,6 +683,7 @@
         order: Number(raw.order) || 1,
         kind: String(raw.kind || 'normal') || 'normal',
         origin: normalizeBondOriginValue(raw.origin),
+        style: String(raw.style || 'covalent') || 'covalent',
       });
     }
     const additions = [];
@@ -698,7 +920,10 @@
   global.VibeMolBondInference = Object.freeze({
     AUTO_BOND_TOLERANCE,
     AUTO_BOND_MIN_DISTANCE,
+    METAL_BOND_RADIUS,
+    MAX_METAL_COORDINATION,
     getCovalentRadiusAngstrom,
+    getMetalBondRadiusAngstrom,
     isLanthanideOrActinideAtomicNumber,
     isMonovalentMainGroupAtomicNumber,
     getAllowedMainGroupValences,
@@ -706,6 +931,8 @@
     getPairMaxBondOrder,
     isAutoBondSupportedAtomicNumber,
     getElementMaxCoordination,
+    isMetalAtomicNumber,
+    normalizeMetalBondMode,
     collectRawBondCandidates,
     acceptBondCandidatesByDistanceRank,
     perceiveBondConnectivity,

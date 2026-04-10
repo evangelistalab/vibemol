@@ -8,8 +8,11 @@ function createController(options = {}) {
     name: 'sample.xyz',
     vol: {
       atoms: [{ id: 'a1', Z: 6, x: 0, y: 0, z: 0 }, { id: 'a2', Z: 6, x: 1.4, y: 0, z: 0 }],
-      bonds: [{ id: 'bond:a1:a2', a: 'a1', b: 'a2', order: 1, kind: 'normal', origin: 'perceived' }],
-      annotations: { coordination: { byAtomId: { a1: { geometryId: 'tetrahedral' } } } },
+      bonds: [{ id: 'bond:a1:a2', a: 'a1', b: 'a2', order: 1, kind: 'normal', origin: 'perceived', style: 'covalent' }],
+      annotations: {
+        coordination: { byAtomId: { a1: { geometryId: 'tetrahedral' } } },
+        metalBonding: { byAtomId: { a2: { mode: 'force_dative' } } },
+      },
     },
     measurementLabelOffsets: { dist: { dx: 1 } },
     pubchemMeta: { cid: 123 },
@@ -29,8 +32,14 @@ function createController(options = {}) {
       if (!vol.annotations) vol.annotations = {};
       if (!vol.annotations.coordination) vol.annotations.coordination = {};
       if (!vol.annotations.coordination.byAtomId) vol.annotations.coordination.byAtomId = {};
+      if (!vol.annotations.metalBonding) vol.annotations.metalBonding = {};
+      if (!vol.annotations.metalBonding.byAtomId) vol.annotations.metalBonding.byAtomId = {};
       if (vol && Array.isArray(vol.bonds)) {
-        vol.bonds = vol.bonds.map((bond) => ({ ...bond, origin: bond && bond.origin ? bond.origin : 'explicit' }));
+        vol.bonds = vol.bonds.map((bond) => ({
+          ...bond,
+          origin: bond && bond.origin ? bond.origin : 'explicit',
+          style: bond && bond.style ? bond.style : 'covalent',
+        }));
       }
       return vol;
     },
@@ -54,9 +63,10 @@ test('structure transport exports active structure envelope', () => {
   assert.equal(exported.structureVersion, 1);
   assert.equal(exported.appVersion, '0.6.5');
   assert.deepEqual(exported.volume.bonds, [
-    { id: 'bond:a1:a2', a: 'a1', b: 'a2', order: 1, kind: 'normal', origin: 'perceived' },
+    { id: 'bond:a1:a2', a: 'a1', b: 'a2', order: 1, kind: 'normal', origin: 'perceived', style: 'covalent' },
   ]);
   assert.deepEqual(exported.volume.annotations.coordination.byAtomId, { a1: { geometryId: 'tetrahedral' } });
+  assert.deepEqual(exported.volume.annotations.metalBonding.byAtomId, { a2: { mode: 'force_dative' } });
   assert.deepEqual(exported.recordState.measurementLabelOffsets, { dist: { dx: 1 } });
   assert.deepEqual(exported.recordState.pubchemMeta, { cid: 123 });
 });
@@ -82,8 +92,11 @@ test('structure transport round-trips record-state extras through parse and impo
     name: 'benzene.xyz',
     volume: {
       atoms: [{ id: 'a1', Z: 6, x: 0, y: 0, z: 0 }, { id: 'a2', Z: 6, x: 1.4, y: 0, z: 0 }],
-      bonds: [{ id: 'b1', a: 'a1', b: 'a2', order: 2, kind: 'normal' }],
-      annotations: { coordination: { byAtomId: { a2: { geometryId: 'linear' } } } },
+      bonds: [{ id: 'b1', a: 'a1', b: 'a2', order: 2, kind: 'normal', style: 'metal-dative' }],
+      annotations: {
+        coordination: { byAtomId: { a2: { geometryId: 'linear' } } },
+        metalBonding: { byAtomId: { a1: { mode: 'no_bonds' } } },
+      },
     },
     recordState: {
       measurementLabelOffsets: { angle: { dx: 2 } },
@@ -96,9 +109,10 @@ test('structure transport round-trips record-state extras through parse and impo
   assert.equal(appended.length, 1);
   assert.equal(appended[0].name, 'unique:benzene.xyz');
   assert.deepEqual(appended[0].vol.bonds, [
-    { id: 'b1', a: 'a1', b: 'a2', order: 2, kind: 'normal', origin: 'explicit' },
+    { id: 'b1', a: 'a1', b: 'a2', order: 2, kind: 'normal', origin: 'explicit', style: 'metal-dative' },
   ]);
   assert.deepEqual(appended[0].vol.annotations.coordination.byAtomId, { a2: { geometryId: 'linear' } });
+  assert.deepEqual(appended[0].vol.annotations.metalBonding.byAtomId, { a1: { mode: 'no_bonds' } });
   assert.equal(appended[0].extras.skipBuilderExtensionMerge, true);
   assert.equal(finalized.length, 1);
   assert.equal(finalized[0].startIndex, 2);

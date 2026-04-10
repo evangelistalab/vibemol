@@ -196,6 +196,29 @@
   }
 
   /**
+   * Return the metal-bonding annotation map for one volume.
+   * @param {*} vol
+   * @param {boolean=} create
+   * @returns {Record<string, {mode?:string}>|null}
+   */
+  function getMetalBondingAnnotationsMap(vol, create = true) {
+    if (!vol || typeof vol !== 'object') return null;
+    if (!isPlainObject(vol.annotations)) {
+      if (!create) return null;
+      vol.annotations = {};
+    }
+    if (!isPlainObject(vol.annotations.metalBonding)) {
+      if (!create) return null;
+      vol.annotations.metalBonding = {};
+    }
+    if (!isPlainObject(vol.annotations.metalBonding.byAtomId)) {
+      if (!create) return null;
+      vol.annotations.metalBonding.byAtomId = {};
+    }
+    return vol.annotations.metalBonding.byAtomId;
+  }
+
+  /**
    * Normalize one atom to the minimal incremental schema.
    * @param {*} raw
    * @returns {{id:string,Z:number,x:number,y:number,z:number,formalCharge:number}}
@@ -320,6 +343,49 @@
     map[atomId] = { geometryId };
   }
 
+  function normalizeMetalBondingMode(value) {
+    const mode = String(value || '').trim().toLowerCase();
+    if (mode === 'force_covalent') return 'force_covalent';
+    if (mode === 'force_dative') return 'force_dative';
+    if (mode === 'no_bonds') return 'no_bonds';
+    return 'auto';
+  }
+
+  /**
+   * Read one atom metal-bonding override from annotations.
+   * @param {*} vol
+   * @param {*=} atomOrIndex
+   * @returns {{mode:string}}
+   */
+  function getAtomMetalBondingMeta(vol, atomOrIndex) {
+    const atomId = resolveVolumeAtomId(vol, atomOrIndex);
+    const map = getMetalBondingAnnotationsMap(vol, false);
+    const stored = (map && atomId && isPlainObject(map[atomId])) ? map[atomId] : null;
+    return {
+      mode: normalizeMetalBondingMode(stored && stored.mode),
+    };
+  }
+
+  /**
+   * Apply one atom metal-bonding override via annotations.
+   * @param {*} vol
+   * @param {*=} atomOrIndex
+   * @param {{mode?:string|null}=} meta
+   */
+  function setAtomMetalBondingMeta(vol, atomOrIndex, meta = {}) {
+    const atomId = resolveVolumeAtomId(vol, atomOrIndex);
+    if (!atomId) return;
+    const map = getMetalBondingAnnotationsMap(vol, true);
+    if (!map) return;
+    const prev = getAtomMetalBondingMeta(vol, atomOrIndex);
+    const mode = meta.mode == null ? prev.mode : normalizeMetalBondingMode(meta.mode);
+    if (!mode || mode === 'auto') {
+      delete map[atomId];
+      return;
+    }
+    map[atomId] = { mode };
+  }
+
   /**
    * Migrate any legacy atom-level builder metadata into annotations.
    * @param {*} vol
@@ -350,8 +416,12 @@
     const liveIds = new Set(vol.atoms.map((atom) => String(ensureAtomId(atom))));
     const builderMap = getBuilderAnnotationsMap(vol, true);
     const coordinationMap = getCoordinationAnnotationsMap(vol, true);
+    const metalBondingMap = getMetalBondingAnnotationsMap(vol, true);
     const isCoordinationMetaCompatible = typeof options.isCoordinationMetaCompatible === 'function'
       ? options.isCoordinationMetaCompatible
+      : null;
+    const isMetalBondingMetaCompatible = typeof options.isMetalBondingMetaCompatible === 'function'
+      ? options.isMetalBondingMetaCompatible
       : null;
     for (const atomId of Object.keys(builderMap || {})) {
       if (!liveIds.has(atomId)) delete builderMap[atomId];
@@ -365,28 +435,41 @@
         delete coordinationMap[atomId];
       }
     }
+    for (const atomId of Object.keys(metalBondingMap || {})) {
+      if (!liveIds.has(atomId)) {
+        delete metalBondingMap[atomId];
+        continue;
+      }
+      if (isMetalBondingMetaCompatible && !isMetalBondingMetaCompatible(atomId, metalBondingMap[atomId])) {
+        delete metalBondingMap[atomId];
+      }
+    }
   }
 
   /**
    * Deep-copy one volume annotations object for history/transport snapshots.
    * @param {*} vol
-   * @returns {{builder:{byAtomId:object},coordination:{byAtomId:object}}}
+   * @returns {{builder:{byAtomId:object},coordination:{byAtomId:object},metalBonding:{byAtomId:object}}}
    */
   function cloneVolumeAnnotationsSnapshot(vol) {
     if (!vol || typeof vol !== 'object') {
       return {
         builder: { byAtomId: {} },
         coordination: { byAtomId: {} },
+        metalBonding: { byAtomId: {} },
       };
     }
     getBuilderAnnotationsMap(vol, true);
     getCoordinationAnnotationsMap(vol, true);
+    getMetalBondingAnnotationsMap(vol, true);
     pruneVolumeAtomAnnotations(vol);
     const snapshot = cloneJsonLike(vol.annotations) || {};
     if (!isPlainObject(snapshot.builder)) snapshot.builder = {};
     if (!isPlainObject(snapshot.builder.byAtomId)) snapshot.builder.byAtomId = {};
     if (!isPlainObject(snapshot.coordination)) snapshot.coordination = {};
     if (!isPlainObject(snapshot.coordination.byAtomId)) snapshot.coordination.byAtomId = {};
+    if (!isPlainObject(snapshot.metalBonding)) snapshot.metalBonding = {};
+    if (!isPlainObject(snapshot.metalBonding.byAtomId)) snapshot.metalBonding.byAtomId = {};
     return snapshot;
   }
 
@@ -423,10 +506,23 @@
   }
 
   /**
+   * Normalize one stored bond style.
+   * @param {*} value
+   * @returns {'covalent'|'metal-strong'|'metal-dative'|'metal-metal'}
+   */
+  function normalizeVolumeBondStyle(value) {
+    const style = String(value || '').trim().toLowerCase();
+    if (style === 'metal-strong') return 'metal-strong';
+    if (style === 'metal-dative') return 'metal-dative';
+    if (style === 'metal-metal') return 'metal-metal';
+    return 'covalent';
+  }
+
+  /**
    * Normalize one persistent bond record to ID endpoints.
    * @param {*} vol
    * @param {*} raw
-   * @returns {{id:string,a:string,b:string,order:number,kind:'normal'|'blocked',origin:'perceived'|'explicit'}|null}
+   * @returns {{id:string,a:string,b:string,order:number,kind:'normal'|'blocked',origin:'perceived'|'explicit',style:string}|null}
    */
   function normalizeVolumeBondRecord(vol, raw) {
     if (!vol || !Array.isArray(vol.atoms) || !raw || typeof raw !== 'object') return null;
@@ -460,6 +556,7 @@
       order: normalizeEditAddBondOrder(raw.order || 1),
       kind: normalizeVolumeBondKind(raw.kind),
       origin: normalizeVolumeBondOrigin(raw.origin),
+      style: normalizeVolumeBondStyle(raw.style),
     };
   }
 
@@ -481,6 +578,7 @@
     }
     getBuilderAnnotationsMap(vol, true);
     getCoordinationAnnotationsMap(vol, true);
+    getMetalBondingAnnotationsMap(vol, true);
     pruneVolumeAtomAnnotations(vol, options.pruneAtomAnnotations || {});
     if (!Array.isArray(vol.fragmentOps)) vol.fragmentOps = [];
     if (typeof options.rehydrateBuilderState === 'function') {
@@ -501,7 +599,7 @@
   /**
    * Deep-copy one normalized bond array for history snapshots.
    * @param {{atoms?:Array<object>,bonds?:Array<object>}|null} vol
-   * @returns {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string}>}
+   * @returns {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string,style:string}>}
    */
   function cloneBondSnapshot(vol) {
     const working = {
@@ -523,13 +621,14 @@
         order: normalizeEditAddBondOrder(bond.order || 1),
         kind: normalizeVolumeBondKind(bond.kind),
         origin: normalizeVolumeBondOrigin(bond.origin),
+        style: normalizeVolumeBondStyle(bond.style),
       }));
   }
 
   /**
    * Compare two bond snapshots by value.
-   * @param {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string}>} a
-   * @param {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string}>} b
+   * @param {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string,style:string}>} a
+   * @param {Array<{id:string,a:string,b:string,order:number,kind:string,origin:string,style:string}>} b
    * @returns {boolean}
    */
   function bondSnapshotsEqual(a, b) {
@@ -545,6 +644,7 @@
       if (normalizeEditAddBondOrder(left.order || 1) !== normalizeEditAddBondOrder(right.order || 1)) return false;
       if (normalizeVolumeBondKind(left.kind) !== normalizeVolumeBondKind(right.kind)) return false;
       if (normalizeVolumeBondOrigin(left.origin) !== normalizeVolumeBondOrigin(right.origin)) return false;
+      if (normalizeVolumeBondStyle(left.style) !== normalizeVolumeBondStyle(right.style)) return false;
     }
     return true;
   }
@@ -579,7 +679,7 @@
    * @param {*} [origin]
    * @returns {'created'|'updated'|'unchanged'|null}
    */
-  function upsertVolumeBond(vol, atomIdA, atomIdB, order, kind = 'normal', origin) {
+  function upsertVolumeBond(vol, atomIdA, atomIdB, order, kind = 'normal', origin, style) {
     if (!vol || !Array.isArray(vol.atoms)) return null;
     ensureVolumeSchema(vol, { inferMissingBonds: false });
     const a = String(atomIdA || '').trim();
@@ -587,12 +687,14 @@
     if (!a || !b || a === b) return null;
     const nextOrder = normalizeEditAddBondOrder(order || 1);
     const nextKind = normalizeVolumeBondKind(kind);
+    const nextStyle = normalizeVolumeBondStyle(style);
     const index = findVolumeBondRecordIndex(vol, a, b);
     if (index >= 0) {
       const existing = normalizeVolumeBondRecord(vol, vol.bonds[index]);
       if (!existing) return null;
       const nextOrigin = origin == null ? existing.origin : normalizeVolumeBondOrigin(origin);
-      if (existing.order === nextOrder && existing.kind === nextKind && existing.origin === nextOrigin) return 'unchanged';
+      const resolvedStyle = style == null ? existing.style : nextStyle;
+      if (existing.order === nextOrder && existing.kind === nextKind && existing.origin === nextOrigin && existing.style === resolvedStyle) return 'unchanged';
       vol.bonds[index] = {
         id: existing.id,
         a: existing.a,
@@ -600,6 +702,7 @@
         order: nextOrder,
         kind: nextKind,
         origin: nextOrigin,
+        style: resolvedStyle,
       };
       return 'updated';
     }
@@ -610,6 +713,7 @@
       order: nextOrder,
       kind: nextKind,
       origin: normalizeVolumeBondOrigin(origin),
+      style: nextStyle,
     });
     return 'created';
   }
@@ -686,7 +790,7 @@
    * @param {*} vol
    * @param {Array<number>} atomIndices
    * @param {{mapAtom?:(atom:object, sourceAtom:object, sourceIndex:number, localIndex:number)=>object}=} options
-   * @returns {{atoms:Array<{atom:object,builderMeta:object}>,bonds:Array<{a:number,b:number,order:number,kind:string,origin:string}>}|null}
+   * @returns {{atoms:Array<{atom:object,builderMeta:object}>,bonds:Array<{a:number,b:number,order:number,kind:string,origin:string,style:string}>}|null}
    */
   function buildVolumeSelectionClipboard(vol, atomIndices, options = {}) {
     if (!vol || !Array.isArray(vol.atoms)) return null;
@@ -711,6 +815,7 @@
         atom,
         builderMeta: getAtomBuilderMeta(vol, sourceAtom),
         coordinationMeta: getAtomCoordinationMeta(vol, sourceAtom),
+        metalBondingMeta: getAtomMetalBondingMeta(vol, sourceAtom),
       };
     });
     const bonds = cloneBondSnapshot(vol)
@@ -724,6 +829,7 @@
           order: normalizeEditAddBondOrder(bond.order || 1),
           kind: normalizeVolumeBondKind(bond.kind),
           origin: normalizeVolumeBondOrigin(bond.origin),
+          style: normalizeVolumeBondStyle(bond.style),
         };
       })
       .filter(Boolean);
@@ -734,7 +840,7 @@
    * Append one clipboard substructure payload into a volume using fresh atom ids.
    * Builder group ids are remapped so pasted groups remain distinct from the source.
    * @param {*} vol
-   * @param {{atoms?:Array<{atom:object,builderMeta?:object}>,bonds?:Array<{a:number,b:number,order:number,kind:string,origin?:string}>}} payload
+   * @param {{atoms?:Array<{atom:object,builderMeta?:object}>,bonds?:Array<{a:number,b:number,order:number,kind:string,origin?:string,style?:string}>}} payload
    * @param {{mapAtom?:(atom:object, entry:object, localIndex:number)=>object}=} options
    * @returns {{atomIndices:Array<number>,atomIds:Array<string>,bondCount:number}}
    */
@@ -778,6 +884,9 @@
       setAtomCoordinationMeta(vol, atom, {
         geometryId: String(coordinationMeta.geometryId || '').trim(),
       });
+      setAtomMetalBondingMeta(vol, atom, {
+        mode: String((entry.metalBondingMeta && entry.metalBondingMeta.mode) || '').trim(),
+      });
     }
     let bondCount = 0;
     const bonds = Array.isArray(payload && payload.bonds) ? payload.bonds : [];
@@ -792,7 +901,8 @@
         atomIds[localB],
         rawBond.order || 1,
         rawBond.kind || 'normal',
-        rawBond.origin
+        rawBond.origin,
+        rawBond.style
       );
       if (result === 'created' || result === 'updated') bondCount += 1;
     }
@@ -813,18 +923,23 @@
     ensureVolumeAtomIds,
     getBuilderAnnotationsMap,
     getCoordinationAnnotationsMap,
+    getMetalBondingAnnotationsMap,
     normalizeVolumeAtom,
     resolveVolumeAtomId,
     getAtomBuilderMeta,
     setAtomBuilderMeta,
     getAtomCoordinationMeta,
     setAtomCoordinationMeta,
+    normalizeMetalBondingMode,
+    getAtomMetalBondingMeta,
+    setAtomMetalBondingMeta,
     migrateLegacyBuilderAnnotations,
     pruneVolumeAtomAnnotations,
     cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,
+    normalizeVolumeBondStyle,
     normalizeVolumeBondRecord,
     ensureVolumeSchema,
     cloneBondSnapshot,
