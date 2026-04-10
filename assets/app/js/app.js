@@ -95,8 +95,8 @@
     throw new Error('VibeMolRendering is not loaded. Ensure assets/app/js/rendering.js is included before assets/app/js/app.js.');
   }
 
-  const { isTypingInInput, createShortcutRegistry } = window.VibeMolInteraction || {};
-  if (![isTypingInInput, createShortcutRegistry].every(fn => typeof fn === 'function')) {
+  const { isTypingInInput, normKey, createShortcutRegistry } = window.VibeMolInteraction || {};
+  if (![isTypingInInput, normKey, createShortcutRegistry].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolInteraction is not loaded. Ensure assets/app/js/interaction.js is included before assets/app/js/app.js.');
   }
 
@@ -330,8 +330,6 @@
   const EXACT_SYMMETRY_TOLERANCE_ANG = 1e-3;
   const MAX_SYMMETRY_TOLERANCE_ANG = 1.0;
   const SYMMETRY_TOLERANCE_OPTIONS_ANG = Object.freeze([0.05, 0.1, 0.25, 0.5, 1.0]);
-  const EDIT_POPOVER_HOVER_OPEN_DELAY_MS = 180;
-  const EDIT_POPOVER_HOVER_SUPPRESS_MS = 420;
 
   const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
   if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
@@ -813,8 +811,6 @@
   let selectionCoordinationCuePopoverRenderKey = '';
   let selectionCoordinationCuePreviewRenderers = [];
   let editAdaptiveMenuEl = null;
-  let editAdaptiveMenuTitleEl = null;
-  let editAdaptiveMenuSubtitleEl = null;
   let editAdaptiveAddAtomBtn = null;
   let editAdaptiveAddAtomMetaEl = null;
   let editAdaptiveSymmetryBtn = null;
@@ -844,11 +840,6 @@
   let selectionCueDragState = null;
   let bondCenterSelectionState = null;
   let buildSearchKeyboardSelectionKey = '';
-  let buildPopoverHideTimer = 0;
-  let editPopoverHoverOpenTimer = 0;
-  let editPopoverHoverOpenKind = '';
-  let editPopoverHoverSuppressKind = '';
-  let editPopoverHoverSuppressUntilMs = 0;
   let buildPaletteFilterQuery = '';
   let symmetryController = null;
   let symmetryPreviewState = null;
@@ -5628,8 +5619,6 @@
   editSelectionFragmentCuePopoverEl = document.getElementById('editSelectionFragmentCuePopover');
   editSelectionCoordinationCuePopoverEl = document.getElementById('editSelectionCoordinationCuePopover');
   editAdaptiveMenuEl = document.getElementById('editAdaptiveMenu');
-  editAdaptiveMenuTitleEl = document.getElementById('editAdaptiveMenuTitle');
-  editAdaptiveMenuSubtitleEl = document.getElementById('editAdaptiveMenuSubtitle');
 
   const bindSelectionCueButton = (buttonEl, action, clickAction = null) => {
     if (!buttonEl) return;
@@ -7164,8 +7153,7 @@
       { k: 'E', d: 'View mode' },
       { k: 'O', d: 'Clean structure' },
       { k: 'P', d: 'Align principal axes' },
-      { k: 'N', d: 'Build palette' },
-      { k: '/', d: 'Focus build search' },
+      { k: '/', d: 'Build palette and search' },
       { k: 'Cmd/Ctrl+A', d: 'Select all atoms' },
       { k: 'Cmd/Ctrl+C', d: 'Copy selected atoms' },
       { k: 'Cmd/Ctrl+V', d: 'Paste copied atoms' },
@@ -7330,7 +7318,23 @@
 
   const shortcutRegistry = createShortcutRegistry([MODES.DISPLAY, MODES.EDIT, MODES.MEASURE]);
   const bind = shortcutRegistry.bind;
-  const routeShortcut = shortcutRegistry.handle;
+  const dispatchShortcut = (e, kind, mode, options = {}) => {
+    if (!options.allowTyping && isTypingInInput()) return false;
+    const shortcuts = shortcutRegistry && shortcutRegistry.shortcuts;
+    const reg = shortcuts && shortcuts[kind];
+    if (!reg) return false;
+    const key = typeof normKey === 'function'
+      ? normKey(e)
+      : (() => {
+          let k = String(e && e.key || '');
+          if (k.length === 1) k = k.toLowerCase();
+          return k;
+        })();
+    const fn = (reg[mode] && reg[mode][key]) || (reg.global && reg.global[key]);
+    if (typeof fn !== 'function') return false;
+    fn(e);
+    return true;
+  };
   let currentShortcutContext = 'default';
   /**
    * Render shortcut hints for the active interaction context.
@@ -10748,13 +10752,6 @@
     };
   }
 
-  function getEditSurfaceSubtitle() {
-    const payload = getCurrentBuildPayload();
-    if (payload.kind === 'molecule') return `Build loaded • ${payload.name}`;
-    if (payload.kind === 'fragment') return `Build loaded • ${payload.name}`;
-    return `Build loaded • ${payload.name} (${payload.symbol})`;
-  }
-
   /**
    * Set the active add-mode preview bond order.
    * @param {number} order
@@ -11767,8 +11764,8 @@
    * @param {'atom'|'molecule'|''=} exceptKind
    */
   function hideAllAdaptiveToolPopovers(exceptKind = '') {
-    if (exceptKind !== 'build') hideBuildPopover();
-    if (exceptKind !== 'symmetry') hideSymmetryPopover({ restore: true });
+    if (exceptKind !== 'build') hideBuildPopover({ quiet: true });
+    if (exceptKind !== 'symmetry') hideSymmetryPopover({ restore: true, quiet: true });
   }
 
   /**
@@ -12375,6 +12372,11 @@
       });
       editBuildSearchEl.addEventListener('change', commit);
       editBuildSearchEl.addEventListener('keydown', (e) => {
+        if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          hideBuildPopover();
+          return;
+        }
         if (e.key === 'ArrowDown') {
           e.preventDefault();
           stepBuildSearchKeyboardSelection(1);
@@ -12457,20 +12459,9 @@
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a template first, then align to Z.'); };
     if (editAdaptiveAddAtomBtn) {
       editAdaptiveAddAtomBtn.onclick = () => {
-        showBuildPopover({ focusSearch: true, source: 'click' });
+        if (isBuildPopoverOpen()) hideBuildPopover();
+        else showBuildPopover({ focusSearch: true });
       };
-      editAdaptiveAddAtomBtn.addEventListener('mouseenter', () => {
-        if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') {
-          scheduleEditPopoverHoverOpen('build', () => showBuildPopover({ focusSearch: false, source: 'hover' }));
-        } else {
-          cancelEditPopoverHoverOpen();
-          cancelBuildPopoverHide();
-        }
-      });
-      editAdaptiveAddAtomBtn.addEventListener('mouseleave', () => {
-        cancelEditPopoverHoverOpen();
-        hideBuildPopover(120);
-      });
     }
     if (editAdaptiveAddAtomPopoverEl) {
       editAdaptiveAddAtomPopoverEl.addEventListener('pointerdown', (e) => {
@@ -12478,11 +12469,11 @@
         if (!buttonEl) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
       });
-      editAdaptiveAddAtomPopoverEl.addEventListener('mouseenter', () => {
-        cancelEditPopoverHoverOpen();
-        cancelBuildPopoverHide();
+      editAdaptiveAddAtomPopoverEl.addEventListener('keydown', (e) => {
+        if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        hideBuildPopover();
       });
-      editAdaptiveAddAtomPopoverEl.addEventListener('mouseleave', () => hideBuildPopover(120));
     }
     if (editAdaptiveSymmetryBtn) {
       editAdaptiveSymmetryBtn.onclick = () => {
@@ -12493,6 +12484,12 @@
     if (editAdaptiveSymmetryPopoverEl) {
       editAdaptiveSymmetryPopoverEl.addEventListener('pointerdown', (e) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      });
+      editAdaptiveSymmetryPopoverEl.addEventListener('keydown', (e) => {
+        const key = String(e && e.key || '').toLowerCase();
+        if (key !== 's' || (e && (e.ctrlKey || e.metaKey || e.altKey))) return;
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        hideSymmetryPopover({ restore: true });
       });
     }
     if (editSymmetryToleranceSelectEl) {
@@ -13499,59 +13496,6 @@
     try { editBuildSearchEl.blur(); } catch { }
   }
 
-  function cancelEditPopoverHoverOpen() {
-    if (editPopoverHoverOpenTimer) {
-      clearTimeout(editPopoverHoverOpenTimer);
-      editPopoverHoverOpenTimer = 0;
-    }
-    editPopoverHoverOpenKind = '';
-  }
-
-  function clearEditPopoverHoverSuppression(kind = '') {
-    if (kind && editPopoverHoverSuppressKind && editPopoverHoverSuppressKind !== kind) return;
-    editPopoverHoverSuppressKind = '';
-    editPopoverHoverSuppressUntilMs = 0;
-  }
-
-  function noteEditPopoverClickOwnership(kind, durationMs = EDIT_POPOVER_HOVER_SUPPRESS_MS) {
-    editPopoverHoverSuppressKind = String(kind || '').trim();
-    editPopoverHoverSuppressUntilMs = Date.now() + Math.max(0, Number(durationMs) || 0);
-  }
-
-  function canHoverOpenEditPopover(kind) {
-    const nextKind = String(kind || '').trim();
-    if (!nextKind) return true;
-    if (nextKind === 'build' && isSymmetryPopoverOpen()) return false;
-    if (editPopoverHoverSuppressUntilMs <= Date.now()) {
-      clearEditPopoverHoverSuppression();
-      return true;
-    }
-    return !(editPopoverHoverSuppressKind && editPopoverHoverSuppressKind !== nextKind);
-  }
-
-  function scheduleEditPopoverHoverOpen(kind, openFn, delayMs = EDIT_POPOVER_HOVER_OPEN_DELAY_MS) {
-    const nextKind = String(kind || '').trim();
-    if (!nextKind || typeof openFn !== 'function') return;
-    cancelEditPopoverHoverOpen();
-    if (!canHoverOpenEditPopover(nextKind)) return;
-    editPopoverHoverOpenKind = nextKind;
-    editPopoverHoverOpenTimer = window.setTimeout(() => {
-      const pendingKind = editPopoverHoverOpenKind;
-      editPopoverHoverOpenTimer = 0;
-      editPopoverHoverOpenKind = '';
-      if (pendingKind !== nextKind) return;
-      if (!canHoverOpenEditPopover(nextKind)) return;
-      openFn();
-    }, Math.max(0, Number(delayMs) || 0));
-  }
-
-  function cancelBuildPopoverHide() {
-    if (buildPopoverHideTimer) {
-      clearTimeout(buildPopoverHideTimer);
-      buildPopoverHideTimer = 0;
-    }
-  }
-
   function renderBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl || editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') return;
     syncBuildPopoverPanes();
@@ -13595,37 +13539,25 @@
     });
   }
 
-  function hideBuildPopover(delayMs = 0) {
-    cancelBuildPopoverHide();
-    cancelEditPopoverHoverOpen();
-    const applyHide = () => {
-      clearBuildSearchKeyboardSelection();
-      resetBuildSearchFieldOnHide();
-      if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
-      restoreBuildPopoverPanes();
-      syncBuildSearchNavigationUi();
-      clearEditPopoverHoverSuppression('build');
-    };
-    if (delayMs > 0) {
-      buildPopoverHideTimer = window.setTimeout(() => {
-        buildPopoverHideTimer = 0;
-        applyHide();
-      }, delayMs);
-      return;
-    }
-    applyHide();
+  function isBuildPopoverOpen() {
+    return !!(editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false');
+  }
+
+  function hideBuildPopover(options = {}) {
+    const quiet = !!(options && options.quiet);
+    clearBuildSearchKeyboardSelection();
+    resetBuildSearchFieldOnHide();
+    if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
+    restoreBuildPopoverPanes();
+    syncBuildSearchNavigationUi();
+    if (!quiet) updateEditAdaptiveMenuUi();
   }
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
-    if (isSymmetryPopoverOpen()) return;
-    cancelBuildPopoverHide();
-    cancelEditPopoverHoverOpen();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
-    if (String(options.source || 'click') !== 'hover') {
-      noteEditPopoverClickOwnership('build');
-    }
+    if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
     if (Object.prototype.hasOwnProperty.call(options, 'query')) {
       setBuildPaletteFilterQuery(String(options.query || ''), { syncInput: true });
     }
@@ -13635,6 +13567,7 @@
       selectionKey: String(options.selectionKey || '').trim(),
       preferPayloadSelection: options.preferPayloadSelection !== false,
     });
+    updateEditAdaptiveMenuUi();
     if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
   }
 
@@ -14129,22 +14062,19 @@
       options = delayMs;
       delayMs = 0;
     }
-    delayMs = Math.max(0, Number(delayMs) || 0);
-    cancelEditPopoverHoverOpen();
     const applyHide = () => {
       clearSymmetryCurrentGroupHighlight();
       symmetryPopoverCurrentGroupLabel = '';
       symmetryPopoverSelectedElementId = '';
       clearSymmetryElementGuide();
       clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
-      clearEditPopoverHoverSuppression('symmetry');
+      if (!options.quiet) updateEditAdaptiveMenuUi();
     };
     applyHide();
   }
 
   function showSymmetryPopover() {
     if (!editAdaptiveSymmetryPopoverEl) return;
-    cancelEditPopoverHoverOpen();
     clearSymmetryCurrentGroupHighlight();
     symmetryPopoverCurrentGroupLabel = '';
     symmetryPopoverSelectedElementId = '';
@@ -14153,11 +14083,11 @@
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     hideBuildPopover();
-    noteEditPopoverClickOwnership('symmetry');
     invalidateSymmetryPopoverAnalysisCache();
     editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
     if (editGestureController) editGestureController.refreshUi();
     renderSymmetryPopover();
+    updateEditAdaptiveMenuUi();
   }
 
   function setSymmetryTolerance(nextValue) {
@@ -14636,7 +14566,6 @@
     if (!editSelectionCoordinationCueButtonEl || !editSelectionCoordinationCuePopoverEl) return;
     const state = getSelectionCoordinationCueState();
     if (!state || !state.choices.length) return;
-    hideBuildPopover();
     hideSelectionFragmentCuePopover();
     editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionCoordinationCuePopover();
@@ -15976,10 +15905,6 @@
     const showLegacyDrawer = isVisible;
     if (!isVisible) hideEditSelectionTranslateCue();
     updateEditAtomsMenuUi();
-    if (editAdaptiveMenuTitleEl) editAdaptiveMenuTitleEl.textContent = 'Tools';
-    if (editAdaptiveMenuSubtitleEl) {
-      editAdaptiveMenuSubtitleEl.textContent = getEditSurfaceSubtitle();
-    }
     updateAdaptiveMenuUiHelper({
       menuEl: editAdaptiveMenuEl,
       isVisible: showLegacyDrawer,
@@ -15993,7 +15918,7 @@
         { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms },
       ],
       activeItems: [
-        { el: editAdaptiveAddAtomBtn, active: isVisible },
+        { el: editAdaptiveAddAtomBtn, active: isBuildPopoverOpen() },
         { el: editAdaptiveSymmetryBtn, active: isSymmetryPopoverOpen() },
         { el: editAdaptiveCleanStructureBtn, active: false },
         { el: editAdaptiveShiftComBtn, active: false },
@@ -16033,13 +15958,13 @@
     if (!menuEl) return;
     const gap = 12;
     let left = gap;
-    let top = 86;
+    let top = gap;
     const toolbarEl = document.getElementById('toolbar');
     if (!document.body.classList.contains('sidebar-collapsed') && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
       const toolbarRect = toolbarEl.getBoundingClientRect();
       if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
         left = Math.round(toolbarRect.right + gap);
-        if (Number.isFinite(toolbarRect.top)) top = Math.max(12, Math.round(toolbarRect.top + 74));
+        if (Number.isFinite(toolbarRect.top)) top = Math.max(gap, Math.round(toolbarRect.top));
       }
     }
     menuEl.style.left = `${left}px`;
@@ -18203,7 +18128,6 @@
       ? pickedBondHit
       : resolveGestureBondCenterClickHit(e);
     if (!(bondHit && bondHit.object && bondHit.section === 'center')) return false;
-    hideBuildPopover();
     return setBondCenterSelectionFromHit(bondHit, { announce: true });
   }
 
@@ -18392,7 +18316,6 @@
     if (currentMode !== MODES.EDIT) return false;
     const hit = pickAtomHit(e);
     if (!(hit && hit.object && hit.object.userData)) return false;
-    hideBuildPopover();
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const hitIndex = hit.object.userData.index | 0;
@@ -18444,7 +18367,6 @@
     if (pickedBondHit && pickedBondHit.object && isExplicitTransformBondSideHit(pickedBondHit)) {
       clearBondCenterSelection({ updateVisuals: false });
       const payload = applyGestureBondSideSelection(pickedBondHit);
-      if (payload) hideBuildPopover();
       return !!payload;
     }
     const bondHit = (pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center')
@@ -18455,7 +18377,6 @@
     if (bondHit.section === 'center') return handleBondCenterScopeSelection(e, bondHit);
     if (isExplicitTransformBondSideHit(bondHit)) {
       const payload = applyGestureBondSideSelection(bondHit);
-      if (payload) hideBuildPopover();
       return !!payload;
     }
     return false;
@@ -20527,10 +20448,6 @@
   });
   bind('down', MODES.EDIT, 'o', () => { optimizeActiveStructureWithUff(); });
   bind('down', MODES.EDIT, 'p', () => { alignActiveMoleculePrincipalAxes(); });
-  bind('down', MODES.EDIT, 'n', () => {
-    showBuildPopover({ focusSearch: true });
-    setHintMessage(`Build palette • Loaded ${formatBuildSearchValue()}.`);
-  });
   bind('down', MODES.EDIT, 's', (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
@@ -20538,7 +20455,8 @@
   });
   bind('down', MODES.EDIT, '/', (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    showBuildPopover({ focusSearch: true });
+    if (isBuildPopoverOpen()) hideBuildPopover();
+    else showBuildPopover({ focusSearch: true });
   });
   bind('down', MODES.EDIT, 'c', () => {
     setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
@@ -20640,6 +20558,7 @@
 
   // Global key listeners delegate to router
   window.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented) return;
     if (e.key === 'Escape' && elementColorOverlay && elementColorOverlay.style.display === 'flex') {
       e.preventDefault();
       setElementColorOverlayOpen(false);
@@ -20728,7 +20647,7 @@
     }
     if (handleEditCopyPasteHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
-    routeShortcut(e, 'down', currentMode);
+    dispatchShortcut(e, 'down', currentMode);
   });
   window.addEventListener('paste', (e) => {
     if (isTypingInInput()) return;
@@ -20746,7 +20665,7 @@
       pasteEditClipboardSelection();
     }
   });
-  window.addEventListener('keyup', (e) => routeShortcut(e, 'up', currentMode));
+  window.addEventListener('keyup', (e) => { dispatchShortcut(e, 'up', currentMode); });
 
   /**
    * Keep the surface-style control aligned with the active molecule style.

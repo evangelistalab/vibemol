@@ -4,8 +4,16 @@
    * @returns {boolean}
    */
   function isTypingInInput() {
-    const tag = (document.activeElement && document.activeElement.tagName) || '';
-    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    const el = document.activeElement;
+    if (!el) return false;
+    const tag = String(el.tagName || '').toUpperCase();
+    if (tag === 'TEXTAREA') return true;
+    if (tag === 'SELECT') return false;
+    if (tag === 'INPUT') {
+      const type = String(el.getAttribute('type') || el.type || 'text').toLowerCase();
+      return !['button', 'checkbox', 'color', 'file', 'hidden', 'image', 'radio', 'range', 'reset', 'submit'].includes(type);
+    }
+    return !!(typeof el.isContentEditable === 'boolean' && el.isContentEditable);
   }
 
   /**
