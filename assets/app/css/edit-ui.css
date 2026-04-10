@@ -289,7 +289,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  width: 180px;
+  width: fit-content;
+  min-width: 188px;
+  max-width: min(260px, calc(100vw - 24px));
   padding: 6px 8px;
   border: 1px solid rgba(117, 129, 150, 0.28);
   border-radius: 12px;
@@ -996,6 +998,13 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+
+.adaptiveEditItemIcon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+  color: rgba(223, 231, 242, 0.9);
 }
 
 .adaptiveEditItemLabel {

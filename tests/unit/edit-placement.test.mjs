@@ -120,3 +120,27 @@ test('edit-placement deleteAtomAtIndex prunes stale bonds without re-perceiving 
   assert.equal(calls.inferVolumeBonds, 0);
   assert.deepEqual(calls.ensureVolumeSchema.at(-1), { inferMissingBonds: false });
 });
+
+test('edit-placement replaceAtomElementAtIndex preserves explicit bonds without re-perceiving', () => {
+  const { structure, controller, record, calls } = createPlacementHarness();
+  const atomA = structure.normalizeVolumeAtom({ id: 'atom-a', Z: 6, x: 0, y: 0, z: 0, formalCharge: 0 });
+  const atomB = structure.normalizeVolumeAtom({ id: 'atom-b', Z: 1, x: 1.1, y: 0, z: 0, formalCharge: 0 });
+  record.vol.atoms = [atomA, atomB];
+  record.vol.natoms = 2;
+  record.vol.bonds = [
+    { id: 'bond:atom-a:atom-b', a: 'atom-a', b: 'atom-b', order: 1, kind: 'normal', origin: 'explicit' },
+  ];
+
+  const result = controller.replaceAtomElementAtIndex(1, 6);
+
+  assert.equal(!!result, true);
+  assert.equal(record.vol.atoms.length, 2);
+  assert.equal(record.vol.atoms[1].Z, 6);
+  assert.equal(record.vol.atoms[1].id, 'atom-b');
+  assert.deepEqual(plain(record.vol.bonds), [
+    { id: 'bond:atom-a:atom-b', a: 'atom-a', b: 'atom-b', order: 1, kind: 'normal', origin: 'explicit' },
+  ]);
+  assert.equal(calls.inferVolumeBonds, 0);
+  assert.deepEqual(calls.ensureVolumeSchema.at(-1), { inferMissingBonds: false });
+  assert.equal(calls.history.length, 1);
+});

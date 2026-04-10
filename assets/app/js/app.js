@@ -15783,7 +15783,7 @@
       return true;
     }
     if (addGrowActive) {
-      updateAddGrowPreviewFromEvent(e);
+      updateFragmentGrowDrag(e);
       return true;
     }
     return haloGhostHovering;
@@ -15860,11 +15860,18 @@
       const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
       const vol = record && record.vol;
       const anchorIdx = addGrowAnchorIndex;
+      const growState = updateFragmentGrowDrag(e) || {};
+      const targetAtomIndex = Number.isInteger(growState.targetAtomIndex) ? (growState.targetAtomIndex | 0) : -1;
+      const terminalHydrogenReplacement = vol
+        ? resolveGestureTerminalHydrogenReplacement(vol, anchorIdx, targetAtomIndex)
+        : null;
       const addPos = addGrowPreviewPos ? addGrowPreviewPos.clone() : null;
       const attachContext = getActiveFragmentAttachContext(vol, anchorIdx);
       clearAddGrowPreview();
       controls.enabled = true;
-      if (__editMoved && addPos && attachContext) {
+      if (terminalHydrogenReplacement && attachContext) {
+        commitFragmentAttachAtWorld(anchorIdx, terminalHydrogenReplacement.targetPos.clone(), attachContext);
+      } else if (__editMoved && addPos && attachContext) {
         commitFragmentAttachAtWorld(anchorIdx, addPos, attachContext);
       }
     } else if (!__editMoved && isSelectionFragmentCueActive()) {
@@ -15958,6 +15965,49 @@
       return handled;
     }
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) {
+      const clickPress = controllerState && controllerState.press ? controllerState.press : null;
+      const payload = getCurrentBuildPayload();
+      if (
+        clickPress
+        && !__editMoved
+        && payload
+        && payload.kind === 'atom'
+        && (clickPress.kind === 'atom-press-pending' || clickPress.kind === 'selected-atom')
+      ) {
+        const hit = pickAtomHit(e);
+        const releasedIndex = hit && hit.object && hit.object.userData ? (hit.object.userData.index | 0) : -1;
+        if (releasedIndex === (clickPress.atomIndex | 0)) {
+          const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+          const vol = record && record.vol;
+          const resolvedAnchorHit = vol && hit ? resolveFragmentAnchorPlacementHit(vol, hit) : null;
+          const terminalHydrogenReplacement = vol
+            && hit
+            && Array.isArray(vol.atoms)
+            && releasedIndex >= 0
+            && releasedIndex < vol.atoms.length
+            && vol.atoms[releasedIndex]
+            && (vol.atoms[releasedIndex].Z | 0) === 1
+            && resolvedAnchorHit
+            && (resolvedAnchorHit.anchorIndex | 0) !== releasedIndex
+            ? replaceGestureTerminalHydrogenFromAnchor(resolvedAnchorHit.anchorIndex | 0, releasedIndex, {
+              elementZ: editAddElementZ,
+              bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
+            })
+            : null;
+          const replaced = terminalHydrogenReplacement || replaceAtomAtIndex(releasedIndex, editAddElementZ, {
+            coordinationGeometryId: getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
+          });
+          if (replaced) {
+            setEditAtomSelection([]);
+            updateSelectedHalos();
+            updateEditSelectionVisuals();
+            updateEditAdaptiveMenuUi();
+            clearExternalGestureControllerState(controllerState, e && e.pointerId);
+            __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+            return true;
+          }
+        }
+      }
       const handled = handleAtomManipulationControllerPointerUp(e);
       if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
       return handled;
@@ -18764,6 +18814,12 @@
     return appended;
   }
 
+  function replaceAtomAtIndex(atomIndex, elementZ = editAddElementZ, options = {}) {
+    finalizePendingNewAtomOperatorSession();
+    if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
+    return editPlacement.replaceAtomElementAtIndex(atomIndex, elementZ, options);
+  }
+
   function mapCoordinationGeometryToHydrogenGeometry(geometryId, targetBondCount = 0, fallbackGeometry = null) {
     const id = String(geometryId || '').trim();
     if (!id) return fallbackGeometry || null;
@@ -19335,6 +19391,18 @@
         );
       }
     }
+    return { targetAtomIndex: target };
+  }
+
+  function updateFragmentGrowDrag(e) {
+    if (!addGrowActive) return { targetAtomIndex: -1 };
+    updateAddGrowPreviewFromEvent(e);
+    const hit = pickAtomHit(e);
+    const targetAtomIndex = hit && hit.object && hit.object.userData
+      ? (hit.object.userData.index | 0)
+      : -1;
+    const target = targetAtomIndex >= 0 && targetAtomIndex !== addGrowAnchorIndex ? targetAtomIndex : -1;
+    addGrowPreviewBondHit = target >= 0 ? hit : null;
     return { targetAtomIndex: target };
   }
 

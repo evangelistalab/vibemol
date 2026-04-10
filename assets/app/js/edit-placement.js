@@ -883,6 +883,45 @@
       return true;
     }
 
+    function replaceAtomElementAtIndex(atomIndex, elementZ, options = {}) {
+      const record = ensureEditableVolumeRecord();
+      const vol = record && record.vol;
+      const idx = atomIndex | 0;
+      const z = elementZ | 0;
+      if (!record || !vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length || !(z > 0)) return null;
+      const targetAtom = vol.atoms[idx];
+      if (!targetAtom) return null;
+      const beforeZ = targetAtom.Z | 0;
+      if (beforeZ === z) return null;
+      const beforeAtoms = cloneAtomsSnapshot(vol);
+      const beforeBonds = cloneBondSnapshot(vol);
+      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+      targetAtom.Z = z;
+      targetAtom.formalCharge = 0;
+      applyEditAddCoordinationToAtom(vol, targetAtom, options.coordinationGeometryId || getEditAddCoordinationGeometryId());
+      vol.natoms = vol.atoms.length;
+      ensureVolumeSchema(vol, { inferMissingBonds: false });
+      applyAutomaticHydrogenAdjustment(vol, [idx]);
+      const afterAtoms = cloneAtomsSnapshot(vol);
+      const afterBonds = cloneBondSnapshot(vol);
+      const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+      pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Replace ${getElementSymbol(beforeZ)} with ${getElementSymbol(z)}`, {
+        beforeBonds,
+        afterBonds,
+        beforeAnnotations,
+        afterAnnotations,
+      });
+      clearAddGrowPreview();
+      clearHover();
+      rebuildScene({ preserveView: true });
+      updateSidePanel();
+      setHintMessage(`Replaced ${getElementName(beforeZ)} (${getElementSymbol(beforeZ)}) with ${getElementName(z)} (${getElementSymbol(z)})`);
+      return {
+        atomIndex: idx,
+        selection: [],
+      };
+    }
+
     function deleteAtomAtIndex(atomIndex) {
       const record = ensureEditableVolumeRecord();
       const vol = record && record.vol;
@@ -946,6 +985,7 @@
       applyAddAtomOperatorInput,
       appendAtomAtWorld,
       appendFragmentAtWorld,
+      replaceAtomElementAtIndex,
       deleteAtomAtIndex,
       deleteHoveredAtom,
     };
