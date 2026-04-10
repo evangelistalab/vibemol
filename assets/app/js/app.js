@@ -795,10 +795,6 @@
   // --- Mode system + shortcut routing ---
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
   let currentMode = MODES.DISPLAY;
-  let editGestureHudEl = null;
-  let editGestureHintEl = null;
-  let editGestureScopeEl = null;
-  let editGestureBondOrderPillEl = null;
   let editAtomsMenuEl = null;
   let editAtomsMenuBodyEl = null;
   let editAtomsMenuCurrentEl = null;
@@ -5617,10 +5613,6 @@
   const cloudTypeSel = document.getElementById('cloudType');
   const cloudStrideEl = document.getElementById('cloudStride');
   const cloudAlphaEl = document.getElementById('cloudAlpha');
-  editGestureHudEl = document.getElementById('editGestureHud');
-  editGestureHintEl = document.getElementById('editGestureHint');
-  editGestureScopeEl = document.getElementById('editGestureScope');
-  editGestureBondOrderPillEl = document.getElementById('editGestureBondOrderPill');
   editAtomsMenuEl = document.getElementById('editAtomsMenu');
   editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
   editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
@@ -7726,16 +7718,6 @@
   let editTransformController = null;
   let editGestureController = null;
   let editHaloController = null;
-  let editGestureUiState = {
-    gestureState: 'idle',
-    hint: 'Click void to place C • Right-click atom to select',
-    scope: 'No selection',
-    loadedElementSymbol: 'C',
-    loadedElementName: 'Carbon',
-    bondOrderVisible: false,
-    bondOrder: 1,
-    highlightIndices: [],
-  };
   let editHaloUiState = {
     visible: false,
     atomIndex: -1,
@@ -12830,8 +12812,7 @@
       if (payload.kind === 'atom') return payload.symbol;
       return payload.name;
     },
-    onUiStateChanged: (uiState) => {
-      editGestureUiState = uiState || editGestureUiState;
+    onUiStateChanged: () => {
       updateEditAdaptiveMenuUi();
       updateSelectedHalos();
     },
@@ -13171,27 +13152,6 @@
     editAdvancedDrawerOpen = !!nextOpen;
     if (!editAdvancedDrawerOpen) hideAllAdaptiveToolPopovers();
     updateEditToolboxUi({ syncSearch: false });
-  }
-
-  function positionEditGestureHud() {
-    if (!editGestureHudEl) return;
-    const gap = 12;
-    let left = gap;
-    const toolbarEl = document.getElementById('toolbar');
-    if (!document.body.classList.contains('sidebar-collapsed') && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
-      const toolbarRect = toolbarEl.getBoundingClientRect();
-      if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
-        left = Math.round(toolbarRect.right + gap);
-      }
-    }
-    const viewportWidth = Math.max(
-      1,
-      Math.round(window.innerWidth || 0),
-      Math.round((document.documentElement && document.documentElement.clientWidth) || 0)
-    );
-    const hudWidth = Math.max(0, Math.round(editGestureHudEl.getBoundingClientRect().width || editGestureHudEl.offsetWidth || 420));
-    const maxLeft = Math.max(gap, viewportWidth - hudWidth - gap);
-    editGestureHudEl.style.left = `${Math.min(left, maxLeft)}px`;
   }
 
   function positionEditAtomsMenu() {
@@ -15314,75 +15274,6 @@
     }
   }
 
-  function updateEditGestureHudUi() {
-    const isVisible = currentMode === MODES.EDIT;
-    if (editGestureHudEl) editGestureHudEl.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-    if (!isVisible) {
-      updateEditAtomsMenuUi();
-      hideEditSelectionTranslateCue();
-      return;
-    }
-    positionEditGestureHud();
-    const uiState = editGestureController ? editGestureController.getUiState() : editGestureUiState;
-    editGestureUiState = uiState || editGestureUiState;
-    const haloState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-    editHaloUiState = haloState || editHaloUiState;
-    const standalonePlacementActive = !!moleculePlaceActive;
-    const gestureActive = getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && !standalonePlacementActive;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const selectionCount = getEditAtomSelection().length;
-    const bondCenterSelection = getBondCenterSelectionResolved(vol);
-    const atomPresentation = getAtomManipulationPresentation();
-    if (editGestureHintEl) {
-      if (gestureActive) {
-        if (bondCenterSelection) {
-          editGestureHintEl.textContent = `Bond selected • Drag cue to set order 0-4`;
-        } else {
-          editGestureHintEl.textContent = String((haloState && haloState.hint) || editGestureUiState.hint || atomPresentation.hudHint);
-        }
-      } else if (standalonePlacementActive) {
-        const templateData = moleculePlaceTemplateData;
-        const kindLabel = templateData && templateData.entryKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule';
-        editGestureHintEl.textContent = `Build standalone ${kindLabel}: drag rotate • click again to place`;
-      } else {
-        editGestureHintEl.textContent = `${getEditSurfaceSubtitle()}${selectionCount ? ` • ${selectionCount} selected` : ''}`;
-      }
-    }
-    if (editGestureScopeEl) {
-      if (gestureActive) {
-        if (bondCenterSelection) {
-          const symbolA = getElementSymbol(bondCenterSelection.atomA.Z | 0);
-          const symbolB = getElementSymbol(bondCenterSelection.atomB.Z | 0);
-          editGestureScopeEl.textContent = `${symbolA}-${symbolB} bond • order ${bondCenterSelection.order | 0}`;
-        } else {
-          editGestureScopeEl.textContent = String((haloState && haloState.scope) || editGestureUiState.scope || atomPresentation.scopeSummary);
-        }
-      } else if (standalonePlacementActive) {
-        const templateData = moleculePlaceTemplateData;
-        const label = templateData
-          ? `${templateData.name}${templateData.formula ? ` (${templateData.formula})` : ''}`
-          : 'Standalone placement';
-        editGestureScopeEl.textContent = label;
-      } else if (getEditIntent() === EDIT_INTENT.ADD_MOLECULE) {
-        editGestureScopeEl.textContent = getMoleculeAddPresentation().currentSummary;
-      } else if (selectionCount) {
-        editGestureScopeEl.textContent = `${selectionCount} atom${selectionCount === 1 ? '' : 's'} selected`;
-      } else if (vol && Array.isArray(vol.atoms)) {
-        editGestureScopeEl.textContent = `${vol.atoms.length} atom${vol.atoms.length === 1 ? '' : 's'} in structure`;
-      } else {
-        editGestureScopeEl.textContent = 'No selection';
-      }
-    }
-    if (editGestureBondOrderPillEl) {
-      const visible = gestureActive && !!editGestureUiState.bondOrderVisible;
-      editGestureBondOrderPillEl.setAttribute('aria-hidden', visible ? 'false' : 'true');
-      editGestureBondOrderPillEl.textContent = `Bond ${Math.max(1, Math.min(3, Number(editGestureUiState.bondOrder) || 1))}`;
-    }
-    updateEditAtomsMenuUi();
-    renderEditHaloOverlay();
-  }
-
   function handleAtomManipulationControllerPointerDown(e) {
     const valueLabelHit = pickTransformValueLabelHit(e);
     if (valueLabelHit && beginTransformValueLabelDrag(e, valueLabelHit)) {
@@ -16083,9 +15974,8 @@
     const vol = record && record.vol;
     const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
     const showLegacyDrawer = isVisible;
-    const intent = getEditIntent();
-    const atomPresentation = getAtomManipulationPresentation();
-    updateEditGestureHudUi();
+    if (!isVisible) hideEditSelectionTranslateCue();
+    updateEditAtomsMenuUi();
     if (editAdaptiveMenuTitleEl) editAdaptiveMenuTitleEl.textContent = 'Tools';
     if (editAdaptiveMenuSubtitleEl) {
       editAdaptiveMenuSubtitleEl.textContent = getEditSurfaceSubtitle();
@@ -16142,20 +16032,14 @@
     const menuEl = document.getElementById('editAdaptiveMenu');
     if (!menuEl) return;
     const gap = 12;
-    positionEditGestureHud();
     let left = gap;
-    let top = 166;
-    if (editGestureHudEl && editGestureHudEl.getAttribute('aria-hidden') === 'false') {
-      const hudRect = editGestureHudEl.getBoundingClientRect();
-      if (Number.isFinite(hudRect.left)) left = Math.round(hudRect.left);
-      if (Number.isFinite(hudRect.bottom)) top = Math.round(hudRect.bottom + gap);
-    } else {
-      const toolbarEl = document.getElementById('toolbar');
-      if (!document.body.classList.contains('sidebar-collapsed') && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
-        const toolbarRect = toolbarEl.getBoundingClientRect();
-        if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
-          left = Math.round(toolbarRect.right + gap);
-        }
+    let top = 86;
+    const toolbarEl = document.getElementById('toolbar');
+    if (!document.body.classList.contains('sidebar-collapsed') && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
+      const toolbarRect = toolbarEl.getBoundingClientRect();
+      if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
+        left = Math.round(toolbarRect.right + gap);
+        if (Number.isFinite(toolbarRect.top)) top = Math.max(12, Math.round(toolbarRect.top + 74));
       }
     }
     menuEl.style.left = `${left}px`;

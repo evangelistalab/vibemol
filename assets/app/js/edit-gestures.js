@@ -40,13 +40,8 @@
     const resolveDownstreamMoveScope = typeof options.resolveDownstreamMoveScope === 'function' ? options.resolveDownstreamMoveScope : (() => ({ indices: [], label: 'No downstream scope', anchorWorld: null }));
     const resolveMoleculeSelection = typeof options.resolveMoleculeSelection === 'function' ? options.resolveMoleculeSelection : ((atomIndex) => [atomIndex | 0]);
     const getAtomWorldPosition = typeof options.getAtomWorldPosition === 'function' ? options.getAtomWorldPosition : (() => null);
-    const getPendingBondOrder = typeof options.getPendingBondOrder === 'function' ? options.getPendingBondOrder : (() => 1);
     const cyclePendingBondOrder = typeof options.cyclePendingBondOrder === 'function' ? options.cyclePendingBondOrder : (() => 1);
     const setPendingBondOrder = typeof options.setPendingBondOrder === 'function' ? options.setPendingBondOrder : (() => 1);
-    const getLoadedElementSymbol = typeof options.getLoadedElementSymbol === 'function' ? options.getLoadedElementSymbol : (() => 'C');
-    const getLoadedElementName = typeof options.getLoadedElementName === 'function' ? options.getLoadedElementName : (() => 'Carbon');
-    const getLoadedPayloadKind = typeof options.getLoadedPayloadKind === 'function' ? options.getLoadedPayloadKind : (() => 'atom');
-    const getLoadedPayloadLabel = typeof options.getLoadedPayloadLabel === 'function' ? options.getLoadedPayloadLabel : (() => getLoadedElementSymbol());
     const onUiStateChanged = typeof options.onUiStateChanged === 'function' ? options.onUiStateChanged : (() => {});
     const setHintMessage = typeof options.setHintMessage === 'function' ? options.setHintMessage : (() => {});
     const startBoxSelection = typeof options.startBoxSelection === 'function' ? options.startBoxSelection : (() => false);
@@ -68,7 +63,6 @@
       hoverBondHit: null,
       lastCenterBondHover: null,
       voidPreviewVisible: false,
-      currentMoveScopeLabel: 'No selection',
       currentMoveScopeIndices: [],
       bondTargetIndex: -1,
       activePointerId: null,
@@ -79,17 +73,14 @@
       const selection = Array.isArray(getSelection()) ? getSelection() : [];
       if (selection.length > 1) {
         state.currentMoveScopeIndices = selection.slice();
-        state.currentMoveScopeLabel = `Move scope: current selection (${selection.length} atoms)`;
         return;
       }
       if (selection.length === 1) {
         const resolved = resolveMoveScope(selection[0], { atomOnly: false, preview: true }) || {};
         state.currentMoveScopeIndices = Array.isArray(resolved.indices) ? resolved.indices.slice() : selection.slice();
-        state.currentMoveScopeLabel = String(resolved.label || `Move scope: ${state.currentMoveScopeIndices.length || 1} atoms`);
         return;
       }
       state.currentMoveScopeIndices = [];
-      state.currentMoveScopeLabel = 'No selection';
     }
 
     function movementExceeded(e) {
@@ -123,80 +114,8 @@
     }
 
     function buildUiState() {
-      const intent = getEditIntent();
-      const selection = Array.isArray(getSelection()) ? getSelection() : [];
-      const payloadKind = String(getLoadedPayloadKind() || 'atom');
-      const payloadLabel = String(getLoadedPayloadLabel() || getLoadedElementSymbol());
-      let hint = payloadKind === 'fragment'
-        ? `Drag from atom or click ghost to attach ${payloadLabel} • Click void to place it standalone`
-        : `Click void to place ${getLoadedElementSymbol()} • Right-click atom to select`;
-      let scope = selection.length
-        ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected`
-        : 'No selection';
-      let bondOrderVisible = false;
-      if (!isEnabled()) {
-        hint = '';
-        scope = '';
-      } else if (intent === EDIT_INTENT.ADD_MOLECULE) {
-        hint = 'Build standalone: click to place • drag to rotate • click again to confirm';
-        scope = selection.length ? `${selection.length} atom${selection.length === 1 ? '' : 's'} selected` : 'Standalone placement';
-      } else if (state.gestureState === 'grow-drag') {
-        const targetText = state.bondTargetIndex >= 0
-          ? 'Release on atom to cycle bond'
-          : 'Release on void to add atom';
-        hint = `${targetText} • Wheel or 1/2/3 sets bond order`;
-        bondOrderVisible = true;
-      } else if (state.gestureState === 'move-drag') {
-        hint = 'Dragging move scope';
-        if (state.currentMoveScopeLabel) scope = state.currentMoveScopeLabel;
-      } else if (state.gestureState === 'rotate-drag') {
-        hint = 'Rotating selection';
-        if (state.currentMoveScopeLabel) scope = state.currentMoveScopeLabel;
-      } else if (state.gestureState === 'box-select-drag') {
-        hint = 'Dragging selection box';
-        scope = 'Selecting atoms in box';
-      } else if (state.hoverBondHit && state.hoverBondHit.section === 'center') {
-        hint = 'Right-click bond center to select bond order';
-        scope = 'Bond midpoint';
-      } else if (state.hoverBondHit && (state.hoverBondHit.section === 'nearA' || state.hoverBondHit.section === 'nearB')) {
-        hint = 'Click bond side to select fragment • Rotate cue turns torsion • Sphere cue turns 3D rotation • Distance cue changes bond length';
-        scope = 'Bond side';
-      } else if (selection.length === 1) {
-        const selectionDragMode = getSelectionDragMode() === 'rotate' ? 'rotate' : 'translate';
-        if (state.currentMoveScopeLabel) scope = state.currentMoveScopeLabel;
-        if (state.hoverAtomIndex >= 0 && state.hoverAtomIndex === selection[0]) {
-          hint = selectionDragMode === 'rotate'
-            ? 'Drag selected atom to rotate • Right-click atom to change selection'
-            : 'Drag selected atom to move • Alt drags only that atom';
-        } else if (state.hoverAtomIndex >= 0) {
-          hint = 'Right-click atom to select • Drag unselected atom to grow bond';
-        } else {
-          hint = selectionDragMode === 'rotate'
-            ? 'Drag selected atom to rotate • Drag unselected atom to edit chemistry'
-            : 'Drag selected atom to move • Drag unselected atom to edit chemistry';
-        }
-      } else if (selection.length > 1) {
-        hint = getSelectionDragMode() === 'rotate'
-          ? 'Drag any selected atom to rotate the current selection'
-          : 'Drag any selected atom to move the current selection';
-      } else if (state.hoverAtomIndex >= 0) {
-        hint = payloadKind === 'fragment'
-          ? `Drag from atom or click ghost to attach ${payloadLabel} • Click void to place it standalone`
-          : 'Right-click atom to select • Drag atom into void to grow bond';
-      } else if (state.voidPreviewVisible) {
-        hint = payloadKind === 'fragment'
-          ? `Click void to place ${payloadLabel} standalone`
-          : `Click void to place ${getLoadedElementSymbol()}`;
-      }
       return {
-        intent,
         gestureState: state.gestureState,
-        hint,
-        scope,
-        loadedElementSymbol: getLoadedElementSymbol(),
-        loadedElementName: getLoadedElementName(),
-        bondOrderVisible,
-        bondOrder: Math.max(1, Math.min(3, Number(getPendingBondOrder()) || 1)),
         highlightIndices: Array.isArray(state.currentMoveScopeIndices) ? state.currentMoveScopeIndices.slice() : [],
       };
     }
@@ -258,7 +177,6 @@
         state.lastCenterBondHover = null;
         state.voidPreviewVisible = false;
         state.currentMoveScopeIndices = [];
-        state.currentMoveScopeLabel = 'No selection';
         hideVoidPlacementPreview();
         notifyUi();
         return;
@@ -289,7 +207,6 @@
       state.voidPreviewVisible = false;
       state.lastCenterBondHover = null;
       state.currentMoveScopeIndices = [];
-      state.currentMoveScopeLabel = 'No selection';
       clearLastAtomClick();
       hideVoidPlacementPreview();
       cancelGrowDrag();
@@ -305,7 +222,6 @@
       const nextSelection = resolved.indices.slice();
       setSelection(nextSelection);
       state.currentMoveScopeIndices = nextSelection.slice();
-      state.currentMoveScopeLabel = String(resolved.label || `Move scope: ${nextSelection.length} atoms`);
       if (!startMoveDrag(e, nextSelection, resolved.anchorWorld || null, { axis: 'none' })) return false;
       state.gestureState = 'move-drag';
       notifyUi();
@@ -317,7 +233,6 @@
       const nextSelection = resolved.indices.slice();
       setSelection(nextSelection);
       state.currentMoveScopeIndices = nextSelection.slice();
-      state.currentMoveScopeLabel = String(resolved.label || `Rotate scope: ${nextSelection.length} atoms`);
       if (!startRotateDrag(e, nextSelection, { axis: 'none' })) return false;
       state.gestureState = 'rotate-drag';
       notifyUi();
@@ -336,7 +251,6 @@
         const nextSelection = Array.isArray(resolved && resolved.indices) ? resolved.indices.slice() : [];
         setSelection(nextSelection);
         state.currentMoveScopeIndices = nextSelection.slice();
-        state.currentMoveScopeLabel = String((resolved && resolved.label) || `Move scope: ${nextSelection.length} atoms`);
         state.gestureState = 'move-drag';
         notifyUi();
         updateMoveDrag(e);
@@ -352,7 +266,6 @@
         const nextSelection = Array.isArray(resolved && resolved.indices) ? resolved.indices.slice() : [];
         setSelection(nextSelection);
         state.currentMoveScopeIndices = nextSelection.slice();
-        state.currentMoveScopeLabel = String((resolved && resolved.label) || `Rotate scope: ${nextSelection.length} atoms`);
         state.gestureState = 'rotate-drag';
         notifyUi();
         updateRotateDrag(e);
