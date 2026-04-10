@@ -1113,6 +1113,69 @@
       color: var(--vm-color-splash-meta);
     }
 
+    #emptyStateWhatsNew {
+      margin-top: 14px;
+      display: grid;
+      gap: 8px;
+      text-align: left;
+    }
+
+    #emptyStateWhatsNewSummary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      color: var(--vm-color-splash-link);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+
+    #emptyStateWhatsNewSummary::-webkit-details-marker {
+      display: none;
+    }
+
+    #emptyStateWhatsNewSummary::before {
+      content: 'open_in_new';
+      font-family: 'Material Symbols Rounded';
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+
+    #emptyStateWhatsNew[open] #emptyStateWhatsNewSummary::before {
+      content: 'expand_less';
+    }
+
+    #emptyStateWhatsNewPanel {
+      display: grid;
+      gap: 8px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(120, 139, 168, 0.22);
+      background: rgba(86, 103, 129, 0.08);
+    }
+
+    .emptyStateWhatsNewLead {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--vm-color-splash-meta);
+    }
+
+    #emptyStateWhatsNewList {
+      margin: 0;
+      padding-left: 16px;
+      display: grid;
+      gap: 5px;
+      color: var(--vm-color-splash-card-fg);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
     #elementColorOverlay {
       position: fixed;
       inset: 0;
@@ -2736,6 +2799,20 @@
         <button id="emptyStateMethaneBtn" type="button">Open methane valence orbitals</button>
         <button id="emptyState2cBtn" type="button">Open 2-component cube set</button>
       </div>
+      <details id="emptyStateWhatsNew">
+        <summary id="emptyStateWhatsNewSummary">What's new compared to main</summary>
+        <div id="emptyStateWhatsNewPanel">
+          <div class="emptyStateWhatsNewLead">This branch adds:</div>
+          <ul id="emptyStateWhatsNewList">
+            <li>gesture-first edit mode with scope-aware right click, bond cues, and unified tool popups</li>
+            <li>a slash-open Build palette for atoms, fragments, and molecules with improved filtering</li>
+            <li>a Symmetry tool with point-group detection, symmetrization, and 3D symmetry-element previews</li>
+            <li>richer builder chemistry including fragment attach, terminal-H replacement, and direct atom replacement</li>
+            <li>smarter import and edit chemistry including pasted XYZ text import, imported double-bond inference, and metal-aware bond styles</li>
+            <li>visual upgrades including shadows, split-center bond coloring, and camera-relative lighting</li>
+          </ul>
+        </div>
+      </details>
     </div>
   </div>
   <div id="hint">Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy</div>
