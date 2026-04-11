@@ -1,26 +1,27 @@
 # Bond Inference
 
-VibeMol now uses a conservative **connectivity-first** bond perception model.
+VibeMol uses a conservative bond model that separates three concerns:
 
-The implementation lives in `assets/app/js/bond-inference.js`. The important design choice is:
+- geometry-based initial connectivity inference
+- explicit user-authored topology edits that must be preserved
+- render-only normalization for special display cases such as aromatic six-rings
 
-- geometry can create an initial bond graph on import
-- user-authored bonds and bond orders are preserved explicitly
-- moving atoms in edit mode does **not** auto-create or auto-delete bonds
-- aromatic six-ring normalization is a **render-only** display pass
+The implementation lives in `/Users/fevange/Source/vibemol/assets/app/js/bond-inference.js`.
 
 ## Overview
 
-There are four distinct behaviors:
+There are six distinct behaviors in the current system:
 
-1. infer an initial single-bond connectivity graph from geometry
-2. store inferred bonds with provenance `origin: 'perceived'`
-3. let the user override/create/delete bonds, which become `origin: 'explicit'`
-4. optionally show benzene-like alternating ring display without changing stored topology
+1. infer nonmetal-nonmetal covalent connectivity from geometry
+2. infer metal-aware coordination-style bonds in separate metal passes
+3. store inferred bonds with provenance `origin: 'perceived'`
+4. preserve user-authored bonds and suppressed pairs explicitly
+5. optionally promote imported nonmetal bond orders where supported
+6. optionally normalize benzene-like six-rings for rendering without mutating stored topology
 
-In trajectory playback, VibeMol uses a transient geometry-based bond graph for rendering only. The stored graph is not mutated frame-to-frame.
+Outside edit mode, trajectory playback still uses a transient geometry-derived graph for rendering only. Stored topology is not mutated frame to frame.
 
-## 1. Inferring Bonded Pairs
+## 1. Nonmetal Connectivity Inference
 
 This is implemented by:
 
@@ -28,9 +29,9 @@ This is implemented by:
 - `acceptBondCandidatesByDistanceRank(...)`
 - `perceiveBondConnectivity(...)`
 
-### Supported elements
+### Supported nonmetal elements
 
-Automatic bonding is intentionally limited to an organic/main-group allowlist:
+Automatic nonmetal connectivity inference is intentionally limited to a main-group allowlist:
 
 - `H`
 - `B`
@@ -45,16 +46,11 @@ Automatic bonding is intentionally limited to an organic/main-group allowlist:
 - `Br`
 - `I`
 
-Unsupported elements are skipped entirely during automatic perception. That includes:
-
-- transition metals
-- lanthanides/actinides
-- alkali and alkaline-earth metals
-- any element not in the allowlist
+Metal-containing pairs are handled separately in the metal-aware passes below.
 
 ### Raw distance test
 
-For each atom pair `(i, j)`:
+For each nonmetal pair `(i, j)`:
 
 - look up covalent radii:
   - `r_i = covalent_radius(Z_i)`
@@ -66,25 +62,23 @@ For each atom pair `(i, j)`:
 - compute the actual distance:
   - `len = |R_i - R_j|`
 
-The pair becomes a **raw candidate** only if:
+The pair becomes a raw candidate only if:
 
 ```text
-0.4 Å <= len <= 1.15 * (r_i + r_j)
+0.4 A <= len <= 1.15 * (r_i + r_j)
 ```
 
-This is only the first filter. VibeMol does **not** accept every passing pair as a bond.
+### Distance-ranked greedy acceptance
 
-## 2. Distance-Ranked Greedy Acceptance
-
-Raw candidates are then sorted by increasing:
+Raw candidates are sorted by increasing:
 
 ```text
 len / (r_i + r_j)
 ```
 
-So the shortest bond relative to the element-pair reference is accepted first.
+Then accepted greedily if both endpoint atoms are still below their coordination cap.
 
-Each supported element also has a maximum coordination cap:
+Current nonmetal caps are:
 
 - `H: 1`
 - `B: 4`
@@ -99,39 +93,126 @@ Each supported element also has a maximum coordination cap:
 - `Br: 1`
 - `I: 1`
 
-Candidates are accepted greedily in ranked order only if **both** endpoint atoms are still below their cap.
-
-Every automatically perceived bond is stored as:
+Accepted nonmetal inferred edges start as:
 
 - `order = 1`
 - `kind = 'normal'`
 - `origin = 'perceived'`
+- `style = 'covalent'`
 
-There is no automatic persistent promotion to double/triple/quadruple order anymore.
+## 2. Metal-Aware Bond Inference
 
-## 3. Bond Provenance
+Pairs involving metals use a separate inference path.
+
+### Metal-ligand pass
+
+Metal-ligand edges use an empirical metal bonding-radius table rather than pure covalent radii.
+The ligand side still uses its covalent radius.
+
+For one metal-ligand pair:
+
+```text
+rSum = metal_bond_radius(metal) + covalent_radius(ligand)
+```
+
+Classification:
+
+- `metal-strong` if `dist <= 1.10 * rSum`
+- `metal-dative` if `dist <= 1.30 * rSum`
+- otherwise no inferred bond
+
+Candidates are then ranked and capped per metal by a metal-specific coordination-number limit.
+
+Accepted metal-ligand edges are stored as:
+
+- `order = 1`
+- `kind = 'normal'`
+- `origin = 'perceived'`
+- `style = 'metal-strong'` or `style = 'metal-dative'`
+
+### Metal-metal pass
+
+Metal-metal edges are inferred in a dedicated tighter pass.
+They are stored as:
+
+- `order = 1`
+- `kind = 'normal'`
+- `origin = 'perceived'`
+- `style = 'metal-metal'`
+
+### Metal override modes
+
+Per-metal inference can be overridden through:
+
+- `vol.annotations.metalBonding.byAtomId[atomId].mode`
+
+Supported modes:
+
+- `auto`
+- `force_covalent`
+- `force_dative`
+- `no_bonds`
+
+These affect geometry-based metal inference only. Explicit user-authored bonds remain explicit unless blocked.
+
+### Ligand-side valence rule
+
+Metal-ligand bonds count toward the metal-side coordination budget, but do not count against the nonmetal ligand-side valence in:
+
+- geometry inference
+- auto-hydrogen planning
+- edit halo open-site reasoning
+
+This prevents ligands such as ammonia from losing their normal valence accounting when coordinated to a metal center.
+
+## 3. Bond Provenance and Persistence
 
 Stored bonds may carry:
 
 - `origin: 'perceived'`
 - `origin: 'explicit'`
 
+Stored bonds also carry style:
+
+- `style: 'covalent'`
+- `style: 'metal-strong'`
+- `style: 'metal-dative'`
+- `style: 'metal-metal'`
+
+Suppressed pairs are stored as:
+
+- `kind: 'blocked'`
+- `origin: 'explicit'`
+
 Rules:
 
 - geometry-based import inference creates `perceived` bonds
-- `vibemol.structure` import preserves stored origin
+- `vibemol.structure` import preserves stored `origin`, `kind`, and `style`
 - missing origin on older structure files defaults to `explicit`
 - bond-tool create/update operations produce `explicit` bonds
-- changing the order of a perceived bond upgrades it to `explicit`
-- molecule/template bonds are `explicit`
+- changing a perceived bond through the UI upgrades it to `explicit`
+- `kind: 'blocked'` prevents later geometry-based re-perception of that pair
 
-This lets cleanup and undo/redo preserve user intent.
+## 4. Imported Bond-Order Promotion
 
-## 4. Clean Up Bonds
+Imported molecules can promote nonmetal covalent single-bond connectivity to higher bond order where `inferBondOrders(...)` supports it.
 
-The Bond tool includes a reviewed **Clean Up Bonds** workflow.
+Examples:
 
-It recomputes the geometry-based perceived graph from the current coordinates and classifies the difference against the stored graph.
+- carbonyl-like `C=O`
+- other supported main-group multiple-bond motifs
+
+Important scope rule:
+
+- this promotion is for imported molecules
+- builder-created and edit-session bonds are not globally reinterpreted this way
+- metal-style bonds remain single-order connectivity with distinct `style`
+
+## 5. Clean Up Bonds
+
+The Bond tool includes a reviewed `Clean Up Bonds` workflow.
+
+It recomputes the geometry-derived graph from the current coordinates and classifies the difference against the stored graph.
 
 ### Diff classes
 
@@ -144,30 +225,48 @@ It recomputes the geometry-based perceived graph from the current coordinates an
 
 Important rule:
 
-- explicit bonds are **never** auto-removed by cleanup
+- explicit bonds are never auto-removed by cleanup
 
 Apply behavior:
 
-- add missing bonds as `origin: 'perceived'`
+- add missing inferred bonds as `origin: 'perceived'`
 - remove only `origin: 'perceived'` bonds in the removable set
 - leave explicit bonds untouched
+- continue honoring `kind: 'blocked'` suppression
 
-## 5. Aromatic Six-Ring Display
+## 6. Render-Only Normalization
 
-`inferAromaticSixRings(...)` still detects benzene-like planar carbon six-rings and normalizes a **copy** of the render-edge list to alternating single/double order for display.
+### Aromatic six-rings
+
+`inferAromaticSixRings(...)` still detects benzene-like planar carbon six-rings and normalizes a copy of the render-edge list to alternating single/double order for display.
 
 This affects:
 
 - multi-bond rendering
-- dashed aromatic inner-ring overlays
+- aromatic display overlays
 
-This does **not** overwrite the stored `vol.bonds`.
+This does not overwrite stored `vol.bonds`.
 
-## 6. Trajectory Rendering
+### Metal bond rendering
 
-When a record has multi-frame XYZ trajectory data and the app is **not** in edit mode:
+Metal styles are rendered distinctly from ordinary covalent bonds:
 
-- bond rendering uses a transient connectivity graph recomputed from the displayed frame
+- `covalent`
+  - normal split-color / multi-bond logic
+- `metal-strong`
+  - coordination-style connector
+- `metal-dative`
+  - dative-style connector
+- `metal-metal`
+  - dedicated metal-metal connector
+
+These are persistent bond styles, not temporary display guesses.
+
+## 7. Trajectory Rendering
+
+When a record has multi-frame XYZ trajectory data and the app is not in edit mode:
+
+- bond rendering uses a transient geometry-derived graph recomputed from the displayed frame
 
 This is render-only behavior:
 
@@ -175,62 +274,30 @@ This is render-only behavior:
 - `Save Structure` exports the stored graph
 - plain XYZ export remains coordinates-only
 
-## Pseudocode
+## High-Level Pseudocode
 
 ```text
-function perceive_connectivity(atom_positions):
-    raw_candidates = []
+function perceive_connectivity(atoms):
+    nonmetal_edges = perceive_nonmetal_covalent_pairs(atoms)
+    metal_ligand_edges = perceive_metal_ligand_pairs(atoms)
+    metal_metal_edges = perceive_metal_metal_pairs(atoms)
 
-    for each pair (i, j), i < j:
-        if element_i is unsupported or element_j is unsupported:
-            continue
+    return merge_without_duplicates(
+        nonmetal_edges,
+        metal_ligand_edges,
+        metal_metal_edges
+    )
+```
 
-        r_i = covalent_radius(Z_i)
-        r_j = covalent_radius(Z_j)
-        single_ref = r_i + r_j
-        cutoff = 1.15 * single_ref
-        len = distance(atom_i, atom_j)
+Imported bond-order promotion:
 
-        if len < 0.4 or len > cutoff:
-            continue
-
-        raw_candidates.append({
-            i: i,
-            j: j,
-            len: len,
-            ratio: len / single_ref
-        })
-
-    sort raw_candidates by:
-        1. ascending ratio
-        2. ascending len
-        3. ascending i
-        4. ascending j
-
-    accepted = []
-    coordination = zeros(atom_count)
-
-    for candidate in raw_candidates:
-        max_i = element_max_coordination(atom_i.Z)
-        max_j = element_max_coordination(atom_j.Z)
-
-        if max_i <= 0 or max_j <= 0:
-            continue
-        if coordination[i] >= max_i:
-            continue
-        if coordination[j] >= max_j:
-            continue
-
-        coordination[i] += 1
-        coordination[j] += 1
-        accepted.append({
-            i: i,
-            j: j,
-            order: 1,
-            maxOrder: 1
-        })
-
-    return accepted
+```text
+function infer_import_topology(atoms):
+    edges = perceive_connectivity(atoms)
+    covalent_edges = [edge for edge in edges if edge.style == 'covalent']
+    promoted = infer_bond_orders(covalent_edges)
+    keep metal-style edges at order 1
+    return promoted + metal_style_edges
 ```
 
 Cleanup classification:
@@ -252,34 +319,4 @@ function classify_cleanup(current_graph, atom_positions):
     }
 
     return { perceived, additions, removable, warnings }
-```
-
-## Flowchart
-
-```mermaid
-flowchart TD
-    A[Start with atom coordinates and atomic numbers] --> B[Loop over all atom pairs]
-    B --> C{Both atoms in supported organic/main-group allowlist?}
-    C -- No --> B
-    C -- Yes --> D[Look up covalent radii]
-    D --> E[Compute singleRef = r_i + r_j]
-    E --> F[Compute len and cutoff = 1.15 * singleRef]
-    F --> G{0.4 Å <= len <= cutoff?}
-    G -- No --> B
-    G -- Yes --> H[Create raw candidate]
-    H --> B
-    B --> I[Sort candidates by len / singleRef]
-    I --> J[Walk candidates shortest-first]
-    J --> K{Both atoms still below coordination cap?}
-    K -- No --> J
-    K -- Yes --> L[Accept bond as single perceived bond]
-    L --> M[Increment coordination counts]
-    M --> J
-    J --> N[Stored graph ready]
-    N --> O[Optional cleanup diff against current graph]
-    O --> P[Add missing perceived bonds]
-    O --> Q[Remove stale perceived bonds]
-    O --> R[Warn on explicit bonds only]
-    N --> S[Optional render-only aromatic six-ring normalization]
-    S --> T[Optional render-only dynamic trajectory bonds]
 ```

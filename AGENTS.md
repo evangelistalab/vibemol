@@ -36,10 +36,10 @@ Primary capabilities:
 - `assets/app/js/edit-commands.js`: history command object creation for atom snapshots.
 - `assets/app/js/edit-state.js`: editable-record bootstrap plus undo/redo history orchestration.
 - `assets/app/js/io-utils.js`: input-kind detection helpers shared by drag/drop and import flows.
-- `assets/app/js/structure.js`: minimal incremental structure schema helpers (atoms, bonds, builder annotations, structure export/import support).
+- `assets/app/js/structure.js`: minimal incremental structure schema helpers (atoms, styled bonds, builder/coordination/metal-bonding annotations, structure export/import support).
 - `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate and marching-cubes isosurface helpers.
 - `assets/app/js/volume-2c.js`: 2C phase and Bloch-colored isosurface builders.
-- `assets/app/js/bond-inference.js`: covalent bond candidate generation, bond-order inference, and aromatic six-ring detection helpers.
+- `assets/app/js/bond-inference.js`: nonmetal covalent candidate generation, metal-aware coordination-style inference, bond-order inference, and aromatic six-ring detection helpers.
 - `assets/app/js/coordination.js`: coordination-geometry catalog and element-aware coordination choice menus.
 - `assets/app/js/geometry-inference.js`: bond-order-driven main-group geometry inference plus transition-metal coordination defaults.
 - `assets/app/js/uff.js`: standalone UFF force-field implementation plus local energy/gradient helpers.
@@ -49,15 +49,16 @@ Primary capabilities:
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders.
 - `assets/app/js/preset.js`: preset registry, import/export controller, and builder-extension preset state helpers.
 - `assets/app/js/structure-transport.js`: reproducible structure envelope export/import controller and `window.VibeMolStructure` API.
-- `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, and embed file-loading controller.
+- `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, embed file-loading controller, and XYZ text normalization helpers.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
 - `assets/app/js/edit-tools.js`: edit-tool state, selection coordination, and transient edit cleanup.
 - `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover state, visibility, and picking helpers.
 - `assets/app/js/edit-transform.js`: shared move/rotate transform-session state, operator-panel application, and pointer-routing controller.
-- `assets/app/js/edit-gestures.js`: gesture-first edit interaction controller and gesture-HUD state coordinator.
-- `assets/app/js/edit-halo.js`: chemistry-aware context halo controller for gesture mode (hover/selection activation, coordination labels, and ghost directions).
+- `assets/app/js/edit-gestures.js`: gesture-first edit interaction controller and pointer-routing helpers for gesture mode.
+- `assets/app/js/edit-halo.js`: chemistry-aware context halo controller for gesture mode (hover/selection activation, coordination labels, build-target gating, and ghost directions).
+- `assets/app/js/symmetry.js`: point-group analysis, symmetrization preview/apply, and symmetry-element description helpers for edit mode.
 - `assets/fragments/library.json`: external fragment/molecule catalog manifest.
 - `assets/fragments/*.xyz`: fragment geometry sources using linker-at-origin / +Z bond-vector convention.
 - `assets/fragments/WORKFLOW.md`: fragment authoring workflow and conventions.
@@ -116,7 +117,8 @@ Required script order in `index.html`:
 34. `assets/app/js/preset.js`
 35. `assets/app/js/structure-transport.js`
 36. `assets/app/js/file-loader.js`
-37. `assets/app/js/app.js`
+37. `assets/app/js/symmetry.js`
+38. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -150,6 +152,7 @@ Required script order in `index.html`:
 - `window.VibeMolPresetModule`
 - `window.VibeMolStructureTransport`
 - `window.VibeMolFileLoader`
+- `window.VibeMolSymmetry`
 
 Preset automation contract exposed globally:
 - `window.VibeMolPreset.kind`
@@ -170,6 +173,7 @@ Preset automation contract exposed globally:
 - Camera rotation uses quaternion orbiting in all interaction modes to avoid pole locking.
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
+- `.xyz` file imports and pasted XYZ text accept either standard XYZ (`natoms`, comment, coordinates) or coordinates-only rows; the first token on each row may be an element symbol or an atomic number.
 - Preset JSON files can be drag-dropped directly into the app and are imported through the normal preset path.
 - Reproducible structure JSON files (`kind: "vibemol.structure"`) can be drag-dropped directly into the app and preserve explicit bonds plus builder annotations.
 - Edit Add mode has three submodes: `Atom`, `Fragment`, and `Molecule`.
@@ -188,6 +192,9 @@ Preset automation contract exposed globally:
 - Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency) are shown in View panel when available.
 - Trajectory playback and vibrational playback are mutually exclusive for one active file.
 - Outside edit mode, trajectory bond rendering is dynamic per frame and does not mutate stored `vol.bonds`.
+- In edit mode, the `Build` popover is toggled explicitly by the toolbar button or `/`, and the `Symmetry` popover is toggled explicitly by the toolbar button or `S`.
+- The `Symmetry` tool supports point-group analysis, RMS-based approximate fits, preview/apply/auto-apply symmetrization, and 3D symmetry-element visualization.
+- Appearance controls include an optional `Shadows` toggle for molecule self-shadowing.
 - View controls include `COM → Origin`, principal-axis alignment, orthographic toggle, and `+X/+Y/+Z` camera presets; shortcut `R` shifts active molecule center of mass to origin.
 - `View` and `Coordinates` are separate floating windows; the coordinates window can toggle between angstrom and bohr display and supports inline atom editing.
 - Malformed file imports (`.xyz`, `.cube`, `.2ccube`) are surfaced via popup errors.
@@ -221,28 +228,34 @@ Preset automation contract exposed globally:
 Implemented:
 - Edit mode opens in gesture-first editing by default; the legacy adaptive tool window remains visible as the advanced/fallback surface.
 - Edit tools currently include `Selection`, `Move`, `Rotate`, `Add`, `Bond`, and `Transform`; atom deletion is handled directly by `Delete` / `Backspace`.
-- The primary gesture HUD shows the current hint, move-scope summary, and a pending bond-order pill during grow/bond drags.
-- A compact `Atoms` menu is shown by default in gesture mode and remains the source of truth for the currently loaded element.
-- The `Atoms` menu also exposes an element-specific coordination selector plus an `Adjust hydrogens` toggle for new single-atom adds.
+- The old gesture HUD has been removed; current edit state is conveyed through the floating cue row, popovers, and transient previews instead.
+- The `Build` palette is the source of truth for the currently loaded atom/fragment/molecule payload and is opened by the toolbar button or `/`.
+- The Build palette exposes atoms, fragments, and molecules plus element-specific coordination and `Adjust hydrogens` behavior for single-atom placement.
 - Layer 2 context halo is active in gesture mode:
   - selecting one atom shows a chemistry-aware halo immediately
   - hovering one atom while idle for ~300 ms shows the same halo
   - main-group halo geometry is derived from explicit bond orders via `bond order -> lone pairs -> steric number -> VSEPR parent geometry`
-  - open main-group atoms show grow ghosts on the remaining bondable parent-geometry sites
-  - transition metals show first-pass coordination ghosts
+  - open-site grow ghosts and replaceable terminal-H targets are gated by the selection `+` build cue rather than shown continuously
+  - transition metals show first-pass coordination ghosts when build targets are enabled
   - floating coordination labels set a forward-looking preferred parent geometry for incomplete atoms
-  - clicking a ghost places the currently loaded element from the `Atoms` menu at that exact site
+  - clicking a ghost or replaceable-H target places the currently loaded Build payload at that exact site
+- The selection cue row supports translate/rotate, coordination, metal-bond mode, bond order/style, build (`+`), and delete actions.
+- The `+` selection cue arms build targets for the currently loaded atom or fragment and is the normal way to expose open sites on a selected atom.
 - Gesture-first editing currently supports:
   - click void to place the loaded element when nothing is selected, or clear selection when atoms are selected
   - click atom to select it
   - drag from an unselected atom into void to grow chemistry
   - drag from an unselected atom to another atom to create/update/delete a bond
+  - left-click on bonds is inert
   - drag from a selected atom to move the resolved move scope
   - `Alt+drag` to force atom-only movement
   - `Shift+drag` from a bond to move the downstream side
   - wheel or `1/2/3` during grow/bond drags to change the pending bond order
+  - right-click on atoms/bonds selects atom or bond scope; right-click on a selected atom upgrades to whole-molecule selection
+  - right-click on void rotates the camera, and `Shift+right-click` on void pans the view
 - Selection supports click-to-replace, `Shift+click` toggle, empty-click clear, and `Cmd/Ctrl+A` select-all.
 - Selection mode supports screen-space marquee box selection of atom centers.
+- `Esc` clears the current edit selection when something is selected.
 - Pressing `Space` in edit mode previews missing hydrogen placement for the current atom selection, or for the full active editable structure when nothing is selected; pressing `Space` again commits the previewed hydrogens.
 - Move mode supports multi-atom selection movement, a right-side XYZ displacement operator panel, and a 3-axis translation gizmo anchored at the geometric selection center.
 - Rotate mode supports multi-atom selection rotation, a right-side XYZ rotation operator panel, and a 3-axis broken-ring rotation gizmo anchored at the geometric selection center.
@@ -255,11 +268,15 @@ Implemented:
 - Standalone molecules can be placed by click/drag/click with quaternion rotation around the preview COM.
 - Standalone molecule placement includes a right-side operator panel with live XYZ/rotation editing and axis-align actions.
 - Transform mode is the advanced bond-aware rotation tool: it supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
+- Replacing an atom with a lower-valence element prunes excess bonds, preferring terminal hydrogens/terminal one-valence neighbors first, then runs local hydrogen repair on the surviving center.
+- Deleting atoms cascades to dangling one-valence neighbors and then repairs hydrogens on surviving frontier atoms in the same undo unit.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Direct delete via current selection or hovered atom (`Backspace`/`Delete`) is active.
-- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`), supports right-click delete, includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds, and offers `Optimize Structure` for one whole-structure UFF coordinate cleanup pass.
-- Structures now persist explicit/perceived/suppressed `vol.bonds` with `{ id, a, b, order, kind, origin }`, where `kind: 'blocked'` records user-suppressed pairs that must not be auto-perceived back into existence.
+- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`) for ordinary bonds, edits metal bonds through a style popup (`1 = covalent`, `2 = coordination`, `3 = dative`, `0 = none`), supports right-click delete, includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds, and offers `Optimize Structure` for one whole-structure UFF coordinate cleanup pass.
+- Structures now persist explicit/perceived/suppressed `vol.bonds` with `{ id, a, b, order, kind, origin, style }`, where `style` is one of `covalent`, `metal-strong`, `metal-dative`, or `metal-metal`, and `kind: 'blocked'` records user-suppressed pairs that must not be auto-perceived back into existence.
 - `vol.annotations.coordination.byAtomId[atomId].geometryId` is a preferred coordination target for incomplete atoms, not authoritative stored hybridization.
+- `vol.annotations.metalBonding.byAtomId[atomId].mode` stores per-metal override mode (`auto`, `force_covalent`, `force_dative`, `no_bonds`) for coordination-bond inference.
+- The `Symmetry` tool is available in edit mode, supports point-group analysis, RMS-based candidate filtering, preview/apply/auto-apply symmetrization, and 3D symmetry-element rendering.
 - `Save Structure` exports the active editable record as a reproducible `vibemol.structure` JSON document.
 - `tests/e2e/smoke.py` is the required automated regression check for edit-mode flow changes (adaptive menu, selection, move/rotate gizmos, add-atom/add-molecule operators, structure round-trip, bond popup editing, cleanup preview/apply, UFF structure optimization, and trajectory dynamic-bond behavior).
 - Atom labels and atom numbers can be toggled independently.
@@ -276,12 +293,12 @@ Discussed but not implemented yet (carry-forward backlog):
 ## Bond Order Inference Algorithm
 Bond perception lives in `assets/app/js/bond-inference.js`.
 
-Persistent imported topology is now **connectivity-first**:
+Persistent imported topology is now **connectivity-first with metal-aware coordination styles**:
 
-1. Raw candidate generation (`collectRawBondCandidates`):
+1. Nonmetal raw candidate generation (`collectRawBondCandidates`):
 - Only a supported organic/main-group allowlist is auto-bonded:
   - `H, B, C, N, O, F, Si, P, S, Cl, Br, I`
-- Unsupported elements, including metals and f-block atoms, are skipped.
+- Metal-containing pairs are handled in a separate pass.
 - Candidate pairs must satisfy:
   - `0.4 Å <= d(i,j) <= 1.15 * (r_cov(i) + r_cov(j))`
 
@@ -292,11 +309,20 @@ Persistent imported topology is now **connectivity-first**:
 - Each element has a hard maximum coordination cap:
   - `H 1`, `B 4`, `C 4`, `N 4`, `O 2`, `F 1`, `Si 4`, `P 5`, `S 6`, `Cl/Br/I 1`
 
-3. Persistent graph semantics:
+3. Metal-aware passes:
+- Metal-ligand pairs use an empirical metal-bond radius table plus ligand covalent radius.
+- Accepted metal-ligand edges are classified as:
+  - `metal-strong` when `dist <= 1.10 * (rM + rL)`
+  - `metal-dative` when `dist <= 1.30 * (rM + rL)`
+- Metal-ligand candidates are capped per metal by a metal-specific coordination-number limit.
+- Metal-metal edges are detected in a separate tighter pass and stored as `style: 'metal-metal'`.
+
+4. Persistent graph semantics:
 - Geometry-based inferred bonds are stored as:
-  - `order: 1`
+  - `order: 1` for metal styles and single-bond connectivity
   - `kind: 'normal'`
   - `origin: 'perceived'`
+  - `style: 'covalent' | 'metal-strong' | 'metal-dative' | 'metal-metal'`
 - User-authored or imported explicit bonds use:
   - `origin: 'explicit'`
 - User-suppressed pairs are stored as:
@@ -305,7 +331,19 @@ Persistent imported topology is now **connectivity-first**:
 - `kind: 'blocked'` records are not rendered and prevent later geometry-based re-perception of that pair.
 - Bond-tool edits always create/upgrade bonds to `origin: 'explicit'`
 
-4. Cleanup workflow (`classifyBondCleanupDiff`):
+5. Imported bond-order promotion:
+- Imported molecules can promote nonmetal covalent single-bond connectivity to higher bond order where `inferBondOrders(...)` supports it (for example carbonyl-style double bonds).
+- Builder-created/edit-session bonds are not globally reinterpreted this way; they remain under explicit edit control.
+
+6. Metal override behavior:
+- `vol.annotations.metalBonding.byAtomId[atomId].mode` can force metal inference for one atom to:
+  - `auto`
+  - `force_covalent`
+  - `force_dative`
+  - `no_bonds`
+- Metal-ligand bonds count toward the metal-side coordination budget but do not count against the nonmetal ligand-side valence in geometry and auto-hydrogen planning.
+
+7. Cleanup workflow (`classifyBondCleanupDiff`):
 - Computes a reviewed diff between the current graph and the current geometry.
 - Produces:
   - `additions`: newly perceived bonds not in the graph
@@ -313,11 +351,11 @@ Persistent imported topology is now **connectivity-first**:
   - `warnings`: `origin: 'explicit'` bonds that current geometry would not auto-perceive
 - Cleanup apply never auto-removes explicit bonds.
 
-5. Render-time aromatic display (`inferAromaticSixRings`):
+8. Render-time aromatic display (`inferAromaticSixRings`):
 - Benzene-like six-member carbon rings are normalized to alternating single/double order for rendering only.
 - This does not overwrite stored `vol.bonds`.
 
-6. Trajectory rendering:
+9. Trajectory rendering:
 - Outside edit mode, trajectory playback uses a transient per-frame perceived bond graph for rendering.
 - Stored topology is unchanged and remains the graph exported by `Save Structure`.
 
@@ -406,16 +444,19 @@ After non-trivial changes:
 6. Check molecule styles (`default`, `toon`, `kit/Kit`, `glossy`) and keyboard shortcuts `1/2/3/4`.
 7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
 8. In edit mode, verify the adaptive edit menu appears and the onboarding splash hides.
-9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, and `Cmd/Ctrl+A`.
-10. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels plus undo/redo and `Esc` cancel for molecule placement.
-11. In edit mode, press `Space` once on a simple unsaturated structure and verify ghost hydrogens appear without mutating the structure; press `Space` again and verify the hydrogens are added with one undoable history entry.
-12. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, and undo behavior on a selected atom set.
-13. In edit mode, test the bond tool: atom-to-atom create, clicked-bond popup `1–4,0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.
-14. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders survive round-trip.
-15. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, and inline coordinate edits.
-16. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
-17. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
-18. Save PNG and export XYZ; check browser console for errors.
+9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, and repeated right-click on a selected atom to upgrade to whole-molecule selection.
+10. In edit mode, test the `Build` tool via button and `/`, and confirm the `+` selection cue gates open-site build targets for selected atoms.
+11. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels plus undo/redo and `Esc` cancel for molecule placement.
+12. In edit mode, press `Space` once on a simple unsaturated structure and verify ghost hydrogens appear without mutating the structure; press `Space` again and verify the hydrogens are added with one undoable history entry.
+13. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, right-click void rotate, `Shift+right-click` void pan, and undo behavior on a selected atom set.
+14. In edit mode, test the bond tool: atom-to-atom create, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.
+15. In edit mode, test the `Symmetry` tool: open with button or `S`, preview one candidate, inspect a symmetry element in 3D, cancel/apply, and confirm the popover closes on file/mode changes.
+16. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders and metal bond styles survive round-trip.
+17. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, inline coordinate edits, and optional molecule shadows.
+18. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
+19. Load standard XYZ, coordinates-only XYZ, and pasted XYZ text; verify import succeeds for all supported XYZ forms.
+20. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
+21. Save PNG and export XYZ; check browser console for errors.
 
 ## Deployment Notes
 - Main deployment target is static hosting from repository root (`index.html`).
