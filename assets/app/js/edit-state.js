@@ -79,23 +79,33 @@
     function pushEditHistoryEntry(record, beforeAtoms, afterAtoms, label, historyOptions = {}) {
       if (!record || !record.vol) return;
       if (!Array.isArray(beforeAtoms) || !Array.isArray(afterAtoms)) return;
-      const beforeFragmentOps = Array.isArray(historyOptions.beforeFragmentOps) ? cloneJsonLike(historyOptions.beforeFragmentOps) : null;
-      const afterFragmentOps = Array.isArray(historyOptions.afterFragmentOps) ? cloneJsonLike(historyOptions.afterFragmentOps) : null;
-      const beforeBonds = Array.isArray(historyOptions.beforeBonds) ? cloneJsonLike(historyOptions.beforeBonds) : null;
-      const afterBonds = Array.isArray(historyOptions.afterBonds) ? cloneJsonLike(historyOptions.afterBonds) : null;
-      const beforeAnnotations = historyOptions.beforeAnnotations && typeof historyOptions.beforeAnnotations === 'object'
-        ? cloneJsonLike(historyOptions.beforeAnnotations)
-        : null;
-      const afterAnnotations = historyOptions.afterAnnotations && typeof historyOptions.afterAnnotations === 'object'
-        ? cloneJsonLike(historyOptions.afterAnnotations)
-        : null;
+      const hasOwn = (key) => Object.prototype.hasOwnProperty.call(historyOptions, key);
+      const cloneOptionalArray = (key) => {
+        if (!hasOwn(key)) return undefined;
+        const value = historyOptions[key];
+        if (value === null) return null;
+        return Array.isArray(value) ? cloneJsonLike(value) : undefined;
+      };
+      const cloneOptionalObject = (key) => {
+        if (!hasOwn(key)) return undefined;
+        const value = historyOptions[key];
+        if (value === null) return null;
+        return value && typeof value === 'object' ? cloneJsonLike(value) : undefined;
+      };
+      const serializeOptionalSnapshot = (value) => (value === undefined ? '__undefined__' : JSON.stringify(value));
+      const beforeFragmentOps = cloneOptionalArray('beforeFragmentOps');
+      const afterFragmentOps = cloneOptionalArray('afterFragmentOps');
+      const beforeBonds = cloneOptionalArray('beforeBonds');
+      const afterBonds = cloneOptionalArray('afterBonds');
+      const beforeAnnotations = cloneOptionalObject('beforeAnnotations');
+      const afterAnnotations = cloneOptionalObject('afterAnnotations');
       if (atomsSnapshotsEqual(beforeAtoms, afterAtoms)) {
-        const beforeJson = beforeFragmentOps ? JSON.stringify(beforeFragmentOps) : '';
-        const afterJson = afterFragmentOps ? JSON.stringify(afterFragmentOps) : '';
-        const beforeBondJson = beforeBonds ? JSON.stringify(beforeBonds) : '';
-        const afterBondJson = afterBonds ? JSON.stringify(afterBonds) : '';
-        const beforeAnnotationJson = beforeAnnotations ? JSON.stringify(beforeAnnotations) : '';
-        const afterAnnotationJson = afterAnnotations ? JSON.stringify(afterAnnotations) : '';
+        const beforeJson = serializeOptionalSnapshot(beforeFragmentOps);
+        const afterJson = serializeOptionalSnapshot(afterFragmentOps);
+        const beforeBondJson = serializeOptionalSnapshot(beforeBonds);
+        const afterBondJson = serializeOptionalSnapshot(afterBonds);
+        const beforeAnnotationJson = serializeOptionalSnapshot(beforeAnnotations);
+        const afterAnnotationJson = serializeOptionalSnapshot(afterAnnotations);
         if (beforeJson === afterJson && beforeBondJson === afterBondJson && beforeAnnotationJson === afterAnnotationJson) return;
       }
       const command = createAtomSnapshotCommand({

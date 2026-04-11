@@ -120,6 +120,47 @@ test('edit-state undo and redo preserve atom and bond snapshots', () => {
   assert.match(getHint(), /Redo: Add oxygen/);
 });
 
+test('edit-state atom-only history entries preserve existing bonds and annotations', () => {
+  const { controller, structure, volumes } = createEditStateHarness();
+  const record = controller.ensureEditableVolumeRecord();
+  const beforeAtoms = [
+    structure.normalizeVolumeAtom({ id: 'atom-1', Z: 6, x: -0.75, y: 0, z: 0, formalCharge: 0 }),
+    structure.normalizeVolumeAtom({ id: 'atom-2', Z: 6, x: 0.75, y: 0, z: 0, formalCharge: 0 }),
+  ];
+  const afterAtoms = [
+    structure.normalizeVolumeAtom({ id: 'atom-1', Z: 6, x: -0.67, y: -0.04, z: 0, formalCharge: 0 }),
+    structure.normalizeVolumeAtom({ id: 'atom-2', Z: 6, x: 0.67, y: 0.04, z: 0, formalCharge: 0 }),
+  ];
+  const bonds = [
+    { id: 'bond:atom-1:atom-2', a: 'atom-1', b: 'atom-2', order: 2, kind: 'normal', origin: 'explicit', style: 'covalent' },
+  ];
+  const annotations = {
+    builder: { byAtomId: {} },
+    coordination: { byAtomId: { 'atom-1': { geometryId: 'trigonalPlanar' } } },
+    metalBonding: { byAtomId: {} },
+  };
+
+  controller.applyAtomsSnapshotToRecord(record, beforeAtoms, [], bonds, annotations);
+  controller.applyAtomsSnapshotToRecord(record, afterAtoms);
+  controller.pushEditHistoryEntry(record, beforeAtoms, afterAtoms, 'Optimize structure');
+
+  assert.equal(volumes[0].vol.bonds.length, 1);
+  assert.equal(volumes[0].vol.bonds[0].order, 2);
+  assert.equal(volumes[0].vol.annotations.coordination.byAtomId['atom-1'].geometryId, 'trigonalPlanar');
+
+  assert.equal(controller.undo(), true);
+  assert.equal(volumes[0].vol.atoms[0].x, -0.75);
+  assert.equal(volumes[0].vol.bonds.length, 1);
+  assert.equal(volumes[0].vol.bonds[0].order, 2);
+  assert.equal(volumes[0].vol.annotations.coordination.byAtomId['atom-1'].geometryId, 'trigonalPlanar');
+
+  assert.equal(controller.redo(), true);
+  assert.equal(volumes[0].vol.atoms[0].x, -0.67);
+  assert.equal(volumes[0].vol.bonds.length, 1);
+  assert.equal(volumes[0].vol.bonds[0].order, 2);
+  assert.equal(volumes[0].vol.annotations.coordination.byAtomId['atom-1'].geometryId, 'trigonalPlanar');
+});
+
 test('edit-state applies coordinate snapshots through undo and redo', () => {
   const { controller, structure, volumes } = createEditStateHarness();
   const record = controller.ensureEditableVolumeRecord();
