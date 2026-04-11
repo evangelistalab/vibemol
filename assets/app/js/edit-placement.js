@@ -60,6 +60,7 @@
     const applyHydroxylAttachmentGeometry = typeof options.applyHydroxylAttachmentGeometry === 'function' ? options.applyHydroxylAttachmentGeometry : (() => {});
     const inferVolumeBonds = typeof options.inferVolumeBonds === 'function' ? options.inferVolumeBonds : (() => []);
     const pruneBuilderOperationsForVolume = typeof options.pruneBuilderOperationsForVolume === 'function' ? options.pruneBuilderOperationsForVolume : (() => false);
+    const pruneVolumeAtomAnnotations = typeof options.pruneVolumeAtomAnnotations === 'function' ? options.pruneVolumeAtomAnnotations : (() => {});
     const getCamera = typeof options.getCamera === 'function' ? options.getCamera : (() => null);
     const buildFuseRingPlacementGeometry = typeof options.buildFuseRingPlacementGeometry === 'function' ? options.buildFuseRingPlacementGeometry : (() => null);
     const rebuildFuseRingPreviewMeshes = typeof options.rebuildFuseRingPreviewMeshes === 'function' ? options.rebuildFuseRingPreviewMeshes : (() => {});
@@ -70,9 +71,12 @@
     const getEditAddFragmentAttachPolicy = typeof options.getEditAddFragmentAttachPolicy === 'function' ? options.getEditAddFragmentAttachPolicy : (() => 'append');
     const applyEditAddCoordinationToAtom = typeof options.applyEditAddCoordinationToAtom === 'function' ? options.applyEditAddCoordinationToAtom : (() => false);
     const applyAutomaticHydrogenAdjustment = typeof options.applyAutomaticHydrogenAdjustment === 'function' ? options.applyAutomaticHydrogenAdjustment : (() => ({ added: 0, removed: 0 }));
+    const baseValence = typeof options.baseValence === 'function' ? options.baseValence : (() => 0);
+    const getElementMaxCoordination = typeof options.getElementMaxCoordination === 'function' ? options.getElementMaxCoordination : (() => 0);
+    const countsTowardAtomValence = typeof options.countsTowardAtomValence === 'function' ? options.countsTowardAtomValence : (() => true);
     const CATALOG_KIND = options.CATALOG_KIND || { FRAGMENT: 'fragment', MOLECULE: 'molecule' };
     const EDIT_FRAGMENT_ATTACH_POLICY = options.EDIT_FRAGMENT_ATTACH_POLICY || { APPEND: 'append', REPLACE_H: 'replace_h', FUSE_RING: 'fuse_ring' };
-    const onDeleteAtomPostprocess = typeof options.onDeleteAtomPostprocess === 'function' ? options.onDeleteAtomPostprocess : (() => {});
+    const onDeleteAtomsPostprocess = typeof options.onDeleteAtomsPostprocess === 'function' ? options.onDeleteAtomsPostprocess : (() => {});
     const getVolumes = typeof options.getVolumes === 'function' ? options.getVolumes : (() => []);
 
     function findAtomIndexById(vol, atomId) {
@@ -96,6 +100,208 @@
       vol.fragmentOps.push(normalized);
       rehydrateBuilderStateForVolume(vol);
       syncBuilderExtensionFromVolumes();
+    }
+
+    function buildAtomIndexById(vol) {
+      const atomIndexById = new Map();
+      if (!vol || !Array.isArray(vol.atoms)) return atomIndexById;
+      for (let i = 0; i < vol.atoms.length; i += 1) {
+        const atom = vol.atoms[i];
+        if (!atom) continue;
+        atomIndexById.set(String(ensureAtomId(atom)), i);
+      }
+      return atomIndexById;
+    }
+
+    function buildVisibleBondEntries(vol) {
+      if (!vol || !Array.isArray(vol.atoms)) return [];
+      const atomIndexById = buildAtomIndexById(vol);
+      const out = [];
+      const bonds = Array.isArray(vol.bonds) ? vol.bonds : [];
+      for (const bond of bonds) {
+        if (!bond || typeof bond !== 'object') continue;
+        if (String(bond.kind || 'normal') === 'blocked') continue;
+        const atomIdA = typeof bond.a === 'string' ? String(bond.a).trim() : '';
+        const atomIdB = typeof bond.b === 'string' ? String(bond.b).trim() : '';
+        const atomIndexA = atomIndexById.get(atomIdA);
+        const atomIndexB = atomIndexById.get(atomIdB);
+        if (!Number.isInteger(atomIndexA) || !Number.isInteger(atomIndexB) || atomIndexA === atomIndexB) continue;
+        out.push({
+          bond,
+          atomIdA,
+          atomIdB,
+          atomIndexA,
+          atomIndexB,
+          order: normalizeEditAddBondOrder(bond.order || 1),
+        });
+      }
+      return out;
+    }
+
+    function buildBondPairKey(atomIdA, atomIdB) {
+      const left = String(atomIdA || '').trim();
+      const right = String(atomIdB || '').trim();
+      if (!left || !right) return '';
+      return left < right ? `${left}::${right}` : `${right}::${left}`;
+    }
+
+    function getRemainingNeighborCountForAtom(vol, atomIndex, deletedAtomIds, removedBondPairKeys) {
+      const atoms = Array.isArray(vol && vol.atoms) ? vol.atoms : [];
+      if (atomIndex < 0 || atomIndex >= atoms.length || !atoms[atomIndex]) return 0;
+      const atomId = String(ensureAtomId(atoms[atomIndex]));
+      if (deletedAtomIds.has(atomId)) return 0;
+      let count = 0;
+      for (const entry of buildVisibleBondEntries(vol)) {
+        if (removedBondPairKeys.has(buildBondPairKey(entry.atomIdA, entry.atomIdB))) continue;
+        const otherAtomId = entry.atomIndexA === atomIndex
+          ? entry.atomIdB
+          : (entry.atomIndexB === atomIndex ? entry.atomIdA : '');
+        if (!otherAtomId || deletedAtomIds.has(otherAtomId)) continue;
+        count += 1;
+      }
+      return count;
+    }
+
+    function isOneValenceAtom(atom) {
+      return !!atom && (getElementMaxCoordination((atom.Z | 0)) | 0) === 1;
+    }
+
+    function collectDanglingTerminalDeleteIds(vol, atomIds) {
+      const atoms = Array.isArray(vol && vol.atoms) ? vol.atoms : [];
+      const deletedAtomIds = new Set((Array.isArray(atomIds) ? atomIds : []).map((value) => String(value || '').trim()).filter(Boolean));
+      if (!deletedAtomIds.size) return deletedAtomIds;
+      const removedBondPairKeys = new Set();
+      for (const entry of buildVisibleBondEntries(vol)) {
+        if (deletedAtomIds.has(entry.atomIdA) || deletedAtomIds.has(entry.atomIdB)) {
+          removedBondPairKeys.add(buildBondPairKey(entry.atomIdA, entry.atomIdB));
+        }
+      }
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (let atomIndex = 0; atomIndex < atoms.length; atomIndex += 1) {
+          const atom = atoms[atomIndex];
+          if (!atom) continue;
+          const atomId = String(ensureAtomId(atom));
+          if (deletedAtomIds.has(atomId) || !isOneValenceAtom(atom)) continue;
+          const remainingNeighbors = getRemainingNeighborCountForAtom(vol, atomIndex, deletedAtomIds, removedBondPairKeys);
+          if (remainingNeighbors > 0) continue;
+          deletedAtomIds.add(atomId);
+          changed = true;
+          for (const entry of buildVisibleBondEntries(vol)) {
+            if (entry.atomIdA === atomId || entry.atomIdB === atomId) {
+              removedBondPairKeys.add(buildBondPairKey(entry.atomIdA, entry.atomIdB));
+            }
+          }
+        }
+      }
+      return deletedAtomIds;
+    }
+
+    function collectSurvivingFrontierAtomIds(vol, deletedAtomIds) {
+      const frontierIds = new Set();
+      const deletedIds = deletedAtomIds instanceof Set
+        ? deletedAtomIds
+        : new Set((Array.isArray(deletedAtomIds) ? deletedAtomIds : []).map((value) => String(value || '').trim()).filter(Boolean));
+      if (!deletedIds.size) return frontierIds;
+      for (const entry of buildVisibleBondEntries(vol)) {
+        const aDeleted = deletedIds.has(entry.atomIdA);
+        const bDeleted = deletedIds.has(entry.atomIdB);
+        if (aDeleted === bDeleted) continue;
+        frontierIds.add(aDeleted ? entry.atomIdB : entry.atomIdA);
+      }
+      return frontierIds;
+    }
+
+    function removeAtomsById(vol, atomIds) {
+      if (!vol || !Array.isArray(vol.atoms)) return 0;
+      const ids = new Set((Array.isArray(atomIds) ? atomIds : []).map((value) => String(value || '').trim()).filter(Boolean));
+      if (!ids.size) return 0;
+      let removed = 0;
+      for (let i = vol.atoms.length - 1; i >= 0; i -= 1) {
+        const atom = vol.atoms[i];
+        if (!atom) continue;
+        if (!ids.has(String(ensureAtomId(atom)))) continue;
+        vol.atoms.splice(i, 1);
+        removed += 1;
+      }
+      if (removed > 0) {
+        vol.natoms = vol.atoms.length;
+        ensureVolumeSchema(vol, { inferMissingBonds: false });
+        pruneVolumeAtomAnnotations(vol);
+      }
+      return removed;
+    }
+
+    function collectReplacementBondPrunePlan(vol, atomIndex, nextZ) {
+      const atoms = Array.isArray(vol && vol.atoms) ? vol.atoms : [];
+      const idx = atomIndex | 0;
+      const atom = atoms[idx];
+      if (!atom) return { bondPairKeysToRemove: new Set(), atomIdsToDelete: new Set() };
+      const allowedValence = Math.max(0, baseValence(nextZ, 0) | 0);
+      const targetProxy = { Z: nextZ | 0 };
+      const entries = buildVisibleBondEntries(vol)
+        .filter((entry) => (entry.atomIndexA === idx || entry.atomIndexB === idx))
+        .filter((entry) => {
+          const otherIndex = entry.atomIndexA === idx ? entry.atomIndexB : entry.atomIndexA;
+          const otherAtom = atoms[otherIndex];
+          return countsTowardAtomValence(targetProxy, otherAtom);
+        });
+      const excessCount = Math.max(0, entries.length - allowedValence);
+      if (!(excessCount > 0)) return { bondPairKeysToRemove: new Set(), atomIdsToDelete: new Set() };
+      const ranked = entries.map((entry) => {
+        const otherIndex = entry.atomIndexA === idx ? entry.atomIndexB : entry.atomIndexA;
+        const otherAtom = atoms[otherIndex];
+        const otherAtomId = String(ensureAtomId(otherAtom));
+        const remainingNeighborCount = getRemainingNeighborCountForAtom(vol, otherIndex, new Set(), new Set([buildBondPairKey(entry.atomIdA, entry.atomIdB)]));
+        const terminalAfterRemoval = remainingNeighborCount <= 0;
+        const atomWorld = atomUnitsToAng(vol, atom);
+        const otherWorld = atomUnitsToAng(vol, otherAtom);
+        const bondLength = atomWorld && otherWorld
+          ? Math.hypot(
+            (Number(otherWorld.x) || 0) - (Number(atomWorld.x) || 0),
+            (Number(otherWorld.y) || 0) - (Number(atomWorld.y) || 0),
+            (Number(otherWorld.z) || 0) - (Number(atomWorld.z) || 0)
+          )
+          : 0;
+        let priorityTier = 2;
+        if ((otherAtom.Z | 0) === 1) priorityTier = 0;
+        else if (terminalAfterRemoval) priorityTier = 1;
+        return {
+          pairKey: buildBondPairKey(entry.atomIdA, entry.atomIdB),
+          otherAtomId,
+          otherAtom,
+          otherIndex,
+          priorityTier,
+          terminalAfterRemoval,
+          bondOrder: entry.order,
+          bondLength,
+        };
+      }).sort((left, right) => {
+        if (left.priorityTier !== right.priorityTier) return left.priorityTier - right.priorityTier;
+        if (left.bondOrder !== right.bondOrder) return left.bondOrder - right.bondOrder;
+        if (Math.abs(left.bondLength - right.bondLength) > 1e-8) return right.bondLength - left.bondLength;
+        return right.otherIndex - left.otherIndex;
+      });
+      const bondPairKeysToRemove = new Set();
+      const atomIdsToDelete = new Set();
+      for (const entry of ranked.slice(0, excessCount)) {
+        bondPairKeysToRemove.add(entry.pairKey);
+        if (entry.terminalAfterRemoval && isOneValenceAtom(entry.otherAtom)) atomIdsToDelete.add(entry.otherAtomId);
+      }
+      return { bondPairKeysToRemove, atomIdsToDelete };
+    }
+
+    function removeBondsByPairKey(vol, pairKeys) {
+      if (!vol || !Array.isArray(vol.bonds)) return 0;
+      const keys = new Set((pairKeys instanceof Set ? Array.from(pairKeys) : pairKeys || []).map((value) => String(value || '').trim()).filter(Boolean));
+      if (!keys.size) return 0;
+      const before = vol.bonds.length;
+      vol.bonds = vol.bonds.filter((bond) => {
+        if (!bond || typeof bond !== 'object') return false;
+        return !keys.has(buildBondPairKey(bond.a, bond.b));
+      });
+      return before - vol.bonds.length;
     }
 
     function clearMoleculePlacementPreview() {
@@ -636,7 +842,7 @@
             }
           }
         }
-        if (focusIndices.length) applyAutomaticHydrogenAdjustment(resolved.record, resolved.vol, focusIndices, adjustmentOptions);
+        if (focusIndices.length) applyAutomaticHydrogenAdjustment(resolved.vol, focusIndices, adjustmentOptions);
       }
       const finalAtoms = cloneAtomsSnapshot(resolved.vol);
       const finalBonds = cloneBondSnapshot(resolved.vol);
@@ -711,7 +917,7 @@
         getEditAddCoordinationGeometryId(),
         { source: 'new-atom', cancelCommits: true, autoAdjustHydrogensOnCommit: false, translateAttachedHydrogens: true, startCollapsed: true }
       );
-      applyAutomaticHydrogenAdjustment(record, vol, [vol.atoms.length - 1], { source: 'operator' });
+      applyAutomaticHydrogenAdjustment(vol, [vol.atoms.length - 1], { source: 'operator' });
       updateAddAtomOperatorUi();
       setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc close`);
       return true;
@@ -896,52 +1102,25 @@
       const beforeAtoms = cloneAtomsSnapshot(vol);
       const beforeBonds = cloneBondSnapshot(vol);
       const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+      const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+      const targetAtomId = String(ensureAtomId(targetAtom));
+      const prunePlan = collectReplacementBondPrunePlan(vol, idx, z);
       targetAtom.Z = z;
       targetAtom.formalCharge = 0;
       applyEditAddCoordinationToAtom(vol, targetAtom, options.coordinationGeometryId || getEditAddCoordinationGeometryId());
+      removeBondsByPairKey(vol, prunePlan.bondPairKeysToRemove);
+      if (prunePlan.atomIdsToDelete.size) removeAtomsById(vol, Array.from(prunePlan.atomIdsToDelete));
       vol.natoms = vol.atoms.length;
       ensureVolumeSchema(vol, { inferMissingBonds: false });
-      applyAutomaticHydrogenAdjustment(vol, [idx]);
-      const afterAtoms = cloneAtomsSnapshot(vol);
-      const afterBonds = cloneBondSnapshot(vol);
-      const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
-      pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Replace ${getElementSymbol(beforeZ)} with ${getElementSymbol(z)}`, {
-        beforeBonds,
-        afterBonds,
-        beforeAnnotations,
-        afterAnnotations,
-      });
-      clearAddGrowPreview();
-      clearHover();
-      rebuildScene({ preserveView: true });
-      updateSidePanel();
-      setHintMessage(`Replaced ${getElementName(beforeZ)} (${getElementSymbol(beforeZ)}) with ${getElementName(z)} (${getElementSymbol(z)})`);
-      return {
-        atomIndex: idx,
-        selection: [],
-      };
-    }
-
-    function deleteAtomAtIndex(atomIndex) {
-      const record = ensureEditableVolumeRecord();
-      const vol = record && record.vol;
-      if (!vol || !Array.isArray(vol.atoms)) return false;
-      const idx = atomIndex | 0;
-      if (idx < 0 || idx >= vol.atoms.length) return false;
-      const beforeAtoms = cloneAtomsSnapshot(vol);
-      const beforeBonds = cloneBondSnapshot(vol);
-      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
-      const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
-      const removed = vol.atoms[idx];
-      vol.atoms.splice(idx, 1);
-      vol.natoms = vol.atoms.length;
-      ensureVolumeSchema(vol, { inferMissingBonds: false });
+      pruneVolumeAtomAnnotations(vol);
       const builderOpsChanged = pruneBuilderOperationsForVolume(vol);
+      const nextAtomIndex = vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === targetAtomId);
+      if (nextAtomIndex >= 0) applyAutomaticHydrogenAdjustment(vol, [nextAtomIndex]);
       const afterAtoms = cloneAtomsSnapshot(vol);
       const afterBonds = cloneBondSnapshot(vol);
       const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
       const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
-      pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Delete ${getElementSymbol(removed.Z | 0)}`, {
+      pushEditHistoryEntry(record, beforeAtoms, afterAtoms, `Replace ${getElementSymbol(beforeZ)} with ${getElementSymbol(z)}`, {
         beforeFragmentOps,
         afterFragmentOps,
         beforeBonds,
@@ -949,15 +1128,81 @@
         beforeAnnotations,
         afterAnnotations,
       });
-      onDeleteAtomPostprocess(idx, removed, vol, builderOpsChanged);
       clearAddGrowPreview();
       clearHover();
       rebuildScene({ preserveView: true });
       updateSidePanel();
       syncBuilderExtensionFromVolumes();
       const suffix = builderOpsChanged ? ' • Builder metadata updated' : '';
-      setHintMessage(`Deleted ${getElementName(removed.Z | 0)} (${getElementSymbol(removed.Z | 0)}) • Total atoms: ${vol.atoms.length}${suffix}`);
+      setHintMessage(`Replaced ${getElementName(beforeZ)} (${getElementSymbol(beforeZ)}) with ${getElementName(z)} (${getElementSymbol(z)})${suffix}`);
+      return {
+        atomIndex: nextAtomIndex,
+        selection: [],
+      };
+    }
+
+    function deleteAtomsByIndex(atomIndices) {
+      const record = ensureEditableVolumeRecord();
+      const vol = record && record.vol;
+      if (!vol || !Array.isArray(vol.atoms)) return false;
+      const uniqueDesc = Array.from(new Set((Array.isArray(atomIndices) ? atomIndices : [])
+        .map((value) => Number(value) | 0)
+        .filter((value) => value >= 0 && value < vol.atoms.length)))
+        .sort((a, b) => b - a);
+      if (!uniqueDesc.length) return false;
+      const beforeAtoms = cloneAtomsSnapshot(vol);
+      const beforeBonds = cloneBondSnapshot(vol);
+      const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+      const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+      const initialDeleteIds = uniqueDesc
+        .map((index) => vol.atoms[index])
+        .filter(Boolean)
+        .map((atom) => String(ensureAtomId(atom)));
+      const allDeleteIds = collectDanglingTerminalDeleteIds(vol, initialDeleteIds);
+      const frontierAtomIds = collectSurvivingFrontierAtomIds(vol, allDeleteIds);
+      const removedAtoms = vol.atoms
+        .filter((atom) => atom && allDeleteIds.has(String(ensureAtomId(atom))))
+        .map((atom) => cloneJsonLike(atom));
+      const removedCount = removeAtomsById(vol, Array.from(allDeleteIds));
+      if (!(removedCount > 0)) return false;
+      const repairAtomIndices = Array.from(frontierAtomIds)
+        .map((atomId) => findAtomIndexById(vol, atomId))
+        .filter((atomIndex) => atomIndex >= 0);
+      if (repairAtomIndices.length) {
+        applyAutomaticHydrogenAdjustment(vol, repairAtomIndices, { source: 'delete' });
+      }
+      const builderOpsChanged = pruneBuilderOperationsForVolume(vol);
+      const afterAtoms = cloneAtomsSnapshot(vol);
+      const afterBonds = cloneBondSnapshot(vol);
+      const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
+      const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
+      const label = removedAtoms.length === 1
+        ? `Delete ${getElementSymbol((removedAtoms[0] && removedAtoms[0].Z) | 0)}`
+        : `Delete ${removedAtoms.length} atoms`;
+      pushEditHistoryEntry(record, beforeAtoms, afterAtoms, label, {
+        beforeFragmentOps,
+        afterFragmentOps,
+        beforeBonds,
+        afterBonds,
+        beforeAnnotations,
+        afterAnnotations,
+      });
+      onDeleteAtomsPostprocess(uniqueDesc.slice(), removedAtoms, vol, builderOpsChanged);
+      clearAddGrowPreview();
+      clearHover();
+      rebuildScene({ preserveView: true });
+      updateSidePanel();
+      syncBuilderExtensionFromVolumes();
+      const suffix = builderOpsChanged ? ' • Builder metadata updated' : '';
+      const summary = removedAtoms.length === 1
+        ? `${getElementName((removedAtoms[0] && removedAtoms[0].Z) | 0)} (${getElementSymbol((removedAtoms[0] && removedAtoms[0].Z) | 0)})`
+        : `${removedAtoms.length} atoms`;
+      setHintMessage(`Deleted ${summary} • Total atoms: ${vol.atoms.length}${suffix}`);
       return true;
+    }
+
+    function deleteAtomAtIndex(atomIndex) {
+      return deleteAtomsByIndex([atomIndex]);
     }
 
     function deleteHoveredAtom() {
@@ -986,6 +1231,7 @@
       appendAtomAtWorld,
       appendFragmentAtWorld,
       replaceAtomElementAtIndex,
+      deleteAtomsByIndex,
       deleteAtomAtIndex,
       deleteHoveredAtom,
     };

@@ -1,6 +1,7 @@
 (function (global) {
   'use strict';
 
+  const { countsTowardAtomValence } = global.VibeMolBondInference || {};
   const {
     GeometryId,
     getGeometry,
@@ -8,8 +9,13 @@
     resolveAutoCoordinationChoice,
   } = global.VibeMolCoordination || {};
 
-  if (![GeometryId, getGeometry, getCoordinationProfile].every(Boolean) || typeof getGeometry !== 'function' || typeof getCoordinationProfile !== 'function') {
-    throw new Error('VibeMolGeometryInference requires VibeMolCoordination to be loaded first.');
+  if (
+    ![GeometryId, getGeometry, getCoordinationProfile].every(Boolean)
+    || typeof getGeometry !== 'function'
+    || typeof getCoordinationProfile !== 'function'
+    || typeof countsTowardAtomValence !== 'function'
+  ) {
+    throw new Error('VibeMolGeometryInference requires VibeMolBondInference and VibeMolCoordination to be loaded first.');
   }
 
   const EPSILON = 1e-8;
@@ -195,22 +201,28 @@
     return Math.max(0, Math.min(adjustedVE, 8 - adjustedVE));
   }
 
+  function baseValence(z, formalCharge = 0) {
+    const atomicNumber = z | 0;
+    const adjustedVE = valenceElectrons(atomicNumber) - (Number(formalCharge) || 0);
+    return computeBaseValenceFromAdjustedElectrons(adjustedVE);
+  }
+
   function resolveEffectiveValence(z, totalBondOrder, formalCharge = 0) {
     const atomicNumber = z | 0;
     const adjustedVE = valenceElectrons(atomicNumber) - (Number(formalCharge) || 0);
-    const baseValence = computeBaseValenceFromAdjustedElectrons(adjustedVE);
-    if (totalBondOrder <= baseValence) return baseValence;
-    if (period(atomicNumber) < 3) return baseValence;
-    let projected = baseValence;
+    const baseValenceValue = baseValence(atomicNumber, formalCharge);
+    if (totalBondOrder <= baseValenceValue) return baseValenceValue;
+    if (period(atomicNumber) < 3) return baseValenceValue;
+    let projected = baseValenceValue;
     const maxExpanded = Math.min(6, Math.max(0, adjustedVE));
-    for (let expanded = baseValence + 2; expanded <= maxExpanded; expanded += 2) {
+    for (let expanded = baseValenceValue + 2; expanded <= maxExpanded; expanded += 2) {
       if (expanded >= totalBondOrder) {
         projected = expanded;
         break;
       }
       projected = expanded;
     }
-    return Math.max(projected, Math.min(maxExpanded, Math.max(baseValence, totalBondOrder)));
+    return Math.max(projected, Math.min(maxExpanded, Math.max(baseValenceValue, totalBondOrder)));
   }
 
   function buildProjectedValenceCandidates(z, totalBondOrder, formalCharge = 0) {
@@ -476,6 +488,7 @@
     for (const bond of buildVisibleBondRecords(vol, options)) {
       if (bond.a !== idx && bond.b !== idx) continue;
       const otherIndex = bond.a === idx ? bond.b : bond.a;
+      if (!countsTowardAtomValence(atom, atoms[otherIndex])) continue;
       const other = getAtomPosition(vol, otherIndex, options);
       const direction = origin && other
         ? normalizeDir([
@@ -507,6 +520,7 @@
     VSEPR_TABLE,
     valenceElectrons,
     period,
+    baseValence,
     resolveEffectiveValence,
     inferGeometryFromState,
     inferAtomGeometry,

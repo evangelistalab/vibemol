@@ -236,8 +236,8 @@
     throw new Error('VibeMolCoordination is not loaded. Ensure assets/app/js/coordination.js is included before assets/app/js/app.js.');
   }
 
-  const { inferAtomGeometry } = window.VibeMolGeometryInference || {};
-  if (![inferAtomGeometry].every(fn => typeof fn === 'function')) {
+  const { inferAtomGeometry, baseValence } = window.VibeMolGeometryInference || {};
+  if (![inferAtomGeometry, baseValence].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolGeometryInference is not loaded. Ensure assets/app/js/geometry-inference.js is included before assets/app/js/app.js.');
   }
 
@@ -357,6 +357,7 @@
     getElementMaxCoordination,
     getMetalBondRadiusAngstrom,
     isMetalAtomicNumber,
+    countsTowardAtomValence,
     normalizeMetalBondMode: normalizeMetalBondModeForInference,
     collectRawBondCandidates,
     acceptBondCandidatesByDistanceRank,
@@ -381,6 +382,7 @@
     getElementMaxCoordination,
     getMetalBondRadiusAngstrom,
     isMetalAtomicNumber,
+    countsTowardAtomValence,
     normalizeMetalBondModeForInference,
     collectRawBondCandidates,
     acceptBondCandidatesByDistanceRank,
@@ -700,6 +702,7 @@
   controls.enableDamping = true;
   // Rotation is handled below with quaternion orbiting to avoid pole locking.
   controls.enableRotate = false;
+  controls.zoomSpeed = 1.5;
   // Default rotate speed
   controls.rotateSpeed = 1.5;
 
@@ -1114,7 +1117,7 @@
   // Current atom/bond material style
   let moleculeStyle = 'default';
   // Independent molecule appearance features.
-  let moleculeSplitColorBondsEnabled = false;
+  let moleculeSplitColorBondsEnabled = true;
   let moleculeShadowsEnabled = false;
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
@@ -7369,9 +7372,10 @@
     ],
     edit: [
       { k: 'E', d: 'View mode' },
-      { k: 'O', d: 'Clean structure' },
+      { k: 'O', d: 'Optimize structure' },
       { k: 'P', d: 'Align principal axes' },
       { k: '/', d: 'Build palette and search' },
+      { k: 'Esc', d: 'Clear selection' },
       { k: 'Cmd/Ctrl+A', d: 'Select all atoms' },
       { k: 'Cmd/Ctrl+C', d: 'Copy selected atoms' },
       { k: 'Cmd/Ctrl+V', d: 'Paste copied atoms' },
@@ -7989,6 +7993,7 @@
   const EDIT_QUICK_MOLECULES = ['benzene', 'pyridine', 'cyclohexane'];
   const GESTURE_BOND_ANGLE_DRAG_SENSITIVITY = 0.01;
   const GESTURE_BOND_DISTANCE_DRAG_SENSITIVITY = 0.01;
+  const EDIT_CONTEXT_DOUBLE_CLICK_THRESHOLD_MS = 400;
   let addGrowActive = false;
   let addGrowKind = '';
   let addGrowAnchorIndex = -1;
@@ -9078,6 +9083,7 @@
     applyMethylAttachmentGeometry,
     applyHydroxylAttachmentGeometry,
     inferVolumeBonds,
+    pruneVolumeAtomAnnotations,
     pruneBuilderOperationsForVolume: (...args) => presetController.pruneBuilderOperationsForVolume(...args),
     getCamera: () => camera,
     buildFuseRingPlacementGeometry,
@@ -9088,19 +9094,18 @@
     getEditAddCoordinationGeometryId: () => getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
     getEditAddFragmentAttachPolicy: () => editAddFragmentAttachPolicy,
     applyEditAddCoordinationToAtom,
-    applyAutomaticHydrogenAdjustment: (record, vol, atomIndices, options = {}) => applyAutomaticHydrogenAdjustmentToVolume(vol, atomIndices, options),
+    applyAutomaticHydrogenAdjustment: (vol, atomIndices, options = {}) => applyAutomaticHydrogenAdjustmentToVolume(vol, atomIndices, options),
+    baseValence,
+    getElementMaxCoordination,
+    countsTowardAtomValence,
     CATALOG_KIND,
     EDIT_FRAGMENT_ATTACH_POLICY,
     getVolumes: () => volumes,
     applyAtomsSnapshotToRecord,
     atomsSnapshotsEqual,
-    onDeleteAtomPostprocess: (idx, removed, vol) => {
-      editAtomSelectionIndices = getEditAtomSelection()
-        .filter((i) => i !== idx)
-        .map((i) => (i > idx ? i - 1 : i));
-      editSel = editSel
-        .filter((i) => i !== idx)
-        .map((i) => (i > idx ? i - 1 : i));
+    onDeleteAtomsPostprocess: (_removedIndices, _removedAtoms, vol) => {
+      editAtomSelectionIndices = normalizeEditAtomSelection([], vol);
+      editSel = [];
       updateSelectedHalos();
       updateEditSelectionVisuals();
       updateEditAdaptiveMenuUi();
@@ -13366,11 +13371,31 @@
   let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
   let gestureBondSidePress = null;
   let __contextDownPt = null; let __contextMoved = false; let __contextHandled = false;
+  let editContextAtomClickState = null;
 
   function resetContextClickState() {
     __contextDownPt = null;
     __contextMoved = false;
     __contextHandled = false;
+  }
+
+  function getPointerEventTimestamp(e) {
+    const stamp = Number(e && e.timeStamp);
+    return Number.isFinite(stamp) ? stamp : Date.now();
+  }
+
+  function clearRecentEditContextAtomClick() {
+    editContextAtomClickState = null;
+  }
+
+  function wasRecentRepeatedEditContextAtomClick(atomIndex, e) {
+    const last = editContextAtomClickState;
+    if (!last || (last.atomIndex | 0) !== (atomIndex | 0)) return false;
+    return (getPointerEventTimestamp(e) - last.at) <= EDIT_CONTEXT_DOUBLE_CLICK_THRESHOLD_MS;
+  }
+
+  function recordEditContextAtomClick(atomIndex, e) {
+    editContextAtomClickState = { atomIndex: atomIndex | 0, at: getPointerEventTimestamp(e) };
   }
 
   function isEditContextPointerEvent(e) {
@@ -18496,6 +18521,9 @@
     const hadSelection = !!bondCenterSelectionState;
     bondCenterSelectionState = null;
     if (!hadSelection) return false;
+    if (options.popup !== false && bondEditing && typeof bondEditing.hidePopup === 'function') {
+      bondEditing.hidePopup();
+    }
     if (options.updateVisuals !== false) {
       updateSelectedHalos();
       updateEditAdaptiveMenuUi();
@@ -18790,9 +18818,45 @@
     return hitIndex === selectedIndex ? atomObject : selectedFallback;
   }
 
+  function pickSelectedEditContextAtomFallback(e) {
+    if (currentMode !== MODES.EDIT) return null;
+    const selection = getEditAtomSelection();
+    if (!Array.isArray(selection) || selection.length !== 1) return null;
+    const idx = selection[0] | 0;
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length) return null;
+    const atom = vol.atoms[idx];
+    const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
+    if (!atom || !(mesh && mesh.userData)) return null;
+    const world = mesh.position && mesh.position.isVector3 ? mesh.position : atomUnitsToAng(vol, atom);
+    const projected = projectWorldToClient(world);
+    if (!projected || !projected.visible) return null;
+    const projectedRadius = Math.max(
+      14,
+      projectWorldRadiusToClientPixels(world, getRenderedAtomDisplayRadius((atom.Z | 0))) + 6
+    );
+    const dx = (Number(e && e.clientX) || 0) - (Number(projected.x) || 0);
+    const dy = (Number(e && e.clientY) || 0) - (Number(projected.y) || 0);
+    return (dx * dx + dy * dy) <= (projectedRadius * projectedRadius) ? mesh : null;
+  }
+
+  function pickEditContextAtomHit(e) {
+    const atomHit = pickAtomHit(e);
+    if (atomHit && atomHit.object && atomHit.object.userData) return atomHit;
+    const selectedFallback = pickSelectedEditContextAtomFallback(e);
+    if (!(selectedFallback && selectedFallback.userData)) return null;
+    return {
+      object: selectedFallback,
+      point: selectedFallback.position && selectedFallback.position.isVector3
+        ? selectedFallback.position.clone()
+        : null,
+    };
+  }
+
   function handleEditAtomContextSelection(e) {
     if (currentMode !== MODES.EDIT) return false;
-    const hit = pickAtomHit(e);
+    const hit = pickEditContextAtomHit(e);
     if (!(hit && hit.object && hit.object.userData)) return false;
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
@@ -18815,10 +18879,30 @@
         return commitFragmentAttachAtWorld(attachContext.pinnedAnchorIndex, resolvedAnchorHit.initialWorldPos.clone(), attachContext);
       }
       if (resolvedAnchorIndex >= 0) {
+        clearRecentEditContextAtomClick();
         applyEditAtomSelectionClick(resolvedAnchorIndex, false);
         setFragmentAttachCueAnchorByIndex(resolvedAnchorIndex);
         hideSelectionFragmentCuePopover();
         updateEditToolboxUi({ syncSearch: false });
+        return true;
+      }
+    }
+    const currentSelection = normalizeEditAtomSelection(getEditAtomSelection(), vol);
+    const isSameSingleSelectedAtom = currentSelection.length === 1 && currentSelection[0] === hitIndex;
+    if (isSameSingleSelectedAtom) {
+      clearRecentEditContextAtomClick();
+      const moleculeIndices = getMoleculeComponentIndices(vol, hitIndex);
+      if (Array.isArray(moleculeIndices) && moleculeIndices.length) {
+        applyEditAtomSelectionBox(moleculeIndices, !!(e && e.shiftKey));
+        return true;
+      }
+    }
+    const repeatedClick = wasRecentRepeatedEditContextAtomClick(hitIndex, e);
+    recordEditContextAtomClick(hitIndex, e);
+    if (repeatedClick) {
+      const moleculeIndices = getMoleculeComponentIndices(vol, hitIndex);
+      if (Array.isArray(moleculeIndices) && moleculeIndices.length) {
+        applyEditAtomSelectionBox(moleculeIndices, !!(e && e.shiftKey));
         return true;
       }
     }
@@ -18835,12 +18919,16 @@
 
   function handleEditScopeContextSelection(e) {
     if (currentMode !== MODES.EDIT) return false;
-    if (shouldConsumeSymmetryContextHit(e)) return true;
+    if (shouldConsumeSymmetryContextHit(e)) {
+      clearRecentEditContextAtomClick();
+      return true;
+    }
     const atomHandled = handleEditAtomContextSelection(e);
     if (atomHandled) {
       clearBondCenterSelection({ updateVisuals: true });
       return true;
     }
+    clearRecentEditContextAtomClick();
     const pickedBondHit = pickBondHit(e);
     if (pickedBondHit && pickedBondHit.object && isExplicitTransformBondSideHit(pickedBondHit)) {
       clearBondCenterSelection({ updateVisuals: false });
@@ -19139,8 +19227,17 @@
     if (!vol || !Array.isArray(vol.atoms)) return null;
     const idx = atomIndex | 0;
     if (idx < 0 || idx >= vol.atoms.length || !vol.atoms[idx]) return null;
+    const atom = vol.atoms[idx];
     const records = buildBondAtomRecords(vol, { includeRenderColor: false });
     const edges = getVolumeBondEdges(vol, records, { allowDynamic: false });
+    const neighborCountByIndex = new Array(vol.atoms.length).fill(0);
+    for (const edge of edges) {
+      if (!edge) continue;
+      const edgeI = edge.i | 0;
+      const edgeJ = edge.j | 0;
+      if (edgeI >= 0 && edgeI < neighborCountByIndex.length) neighborCountByIndex[edgeI] += 1;
+      if (edgeJ >= 0 && edgeJ < neighborCountByIndex.length) neighborCountByIndex[edgeJ] += 1;
+    }
     const hydrogenNeighbors = [];
     const heavyOccupiedDirs = [];
     let heavyBondOrderSum = 0;
@@ -19161,14 +19258,18 @@
       if (!(dist > 1e-8)) continue;
       dir.normalize();
       if ((otherAtom.Z | 0) === 1) {
+        const totalNeighborCount = neighborCountByIndex[otherIndex] | 0;
         hydrogenNeighbors.push({
           atomIndex: otherIndex,
           atomId: String(ensureAtomId(otherAtom)),
           direction: dir.clone(),
           distance: dist,
           order: normalizeEditAddBondOrder(edge.order || 1),
+          totalNeighborCount,
+          isTerminal: totalNeighborCount <= 1,
         });
       } else {
+        if (!countsTowardAtomValence(atom, otherAtom)) continue;
         heavyNeighborCount += 1;
         const order = normalizeEditAddBondOrder(edge.order || 1);
         heavyBondOrderSum += order;
@@ -19207,6 +19308,7 @@
       ? preferredDir.clone().normalize()
       : null;
     const ranked = env.hydrogenNeighbors
+      .filter((entry) => !entry || entry.isTerminal !== false)
       .map((entry) => {
         const dot = refDir ? entry.direction.dot(refDir) : 0;
         return {
@@ -19379,8 +19481,12 @@
       if (!env) continue;
       const desiredHydrogenCount = computeDesiredHydrogenCountForAtom(atom, env, geometryResolver);
       if (desiredHydrogenCount == null) continue;
-      const currentHydrogenCount = Array.isArray(env.hydrogenNeighbors) ? env.hydrogenNeighbors.length : 0;
-      const excess = Math.max(0, currentHydrogenCount - desiredHydrogenCount);
+      // Preserve bridging hydrogens (for example diborane B-H-B) during
+      // automatic cleanup; only terminal hydrogens are removable "excess".
+      const currentTerminalHydrogenCount = Array.isArray(env.hydrogenNeighbors)
+        ? env.hydrogenNeighbors.reduce((count, entry) => count + ((!entry || entry.isTerminal !== false) ? 1 : 0), 0)
+        : 0;
+      const excess = Math.max(0, currentTerminalHydrogenCount - desiredHydrogenCount);
       if (!(excess > 0)) continue;
       const preferredDir = preferredDirByAtomId.get(atomId) || null;
       for (const removeId of collectHydrogenRemovalIdsForAtom(vol, atomIndex, excess, preferredDir)) {
@@ -19759,52 +19865,7 @@
     if (!vol || !Array.isArray(vol.atoms)) return false;
     const indices = normalizeEditAtomSelection(getEditAtomSelection(), vol);
     if (!indices.length) return false;
-    const uniqueDesc = Array.from(new Set(indices.map((idx) => idx | 0)))
-      .filter((idx) => idx >= 0 && idx < vol.atoms.length)
-      .sort((a, b) => b - a);
-    if (!uniqueDesc.length) return false;
-    const removedAtoms = uniqueDesc
-      .slice()
-      .reverse()
-      .map((idx) => vol.atoms[idx])
-      .filter(Boolean);
-    const beforeAtoms = cloneAtomsSnapshot(vol);
-    const beforeBonds = cloneBondSnapshot(vol);
-    const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
-    const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
-    for (const idx of uniqueDesc) vol.atoms.splice(idx, 1);
-    vol.natoms = vol.atoms.length;
-    ensureVolumeSchema(vol, { inferMissingBonds: false });
-    pruneVolumeAtomAnnotations(vol);
-    const builderOpsChanged = pruneBuilderOperationsForVolume(vol);
-    const afterAtoms = cloneAtomsSnapshot(vol);
-    const afterBonds = cloneBondSnapshot(vol);
-    const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
-    const afterFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
-    const label = removedAtoms.length === 1
-      ? `Delete ${getElementSymbol((removedAtoms[0] && removedAtoms[0].Z) | 0)}`
-      : `Delete ${removedAtoms.length} atoms`;
-    pushEditHistoryEntry(record, beforeAtoms, afterAtoms, label, {
-      beforeFragmentOps,
-      afterFragmentOps,
-      beforeBonds,
-      afterBonds,
-      beforeAnnotations,
-      afterAnnotations,
-    });
-    clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
-    clearTransformState();
-    clearAddGrowPreview();
-    clearHover();
-    rebuildScene({ preserveView: true });
-    updateSidePanel();
-    syncBuilderExtensionFromVolumes();
-    const summary = removedAtoms.length === 1
-      ? `${getElementName((removedAtoms[0] && removedAtoms[0].Z) | 0)} (${getElementSymbol((removedAtoms[0] && removedAtoms[0].Z) | 0)})`
-      : `${removedAtoms.length} selected atoms`;
-    const suffix = builderOpsChanged ? ' • Builder metadata updated' : '';
-    setHintMessage(`Deleted ${summary}${suffix}`);
-    return true;
+    return editPlacement.deleteAtomsByIndex(indices);
   }
 
   /**
@@ -21048,7 +21109,12 @@
   bind('down', MODES.EDIT, 'x', () => axisDown('x'));
   bind('down', MODES.EDIT, 'y', () => axisDown('y'));
   bind('down', MODES.EDIT, 'z', () => axisDown('z'));
-  bind('down', MODES.EDIT, 'Escape', () => {});
+  bind('down', MODES.EDIT, 'Escape', (e) => {
+    const cleared = clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
+    if (!cleared) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    setHintMessage('Selection cleared.');
+  });
 
   // Measurement mode bindings
   bind('down', MODES.MEASURE, 'm', () => { setMode(MODES.DISPLAY); });
