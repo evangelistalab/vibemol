@@ -276,6 +276,16 @@
     throw new Error('VibeMolEditUi is not loaded. Ensure assets/app/js/edit-ui.js is included before assets/app/js/app.js.');
   }
 
+  const {
+    createDisplayWindowsController,
+    WINDOW_IDS: NON_EDIT_WINDOW_ID,
+    ESCAPABLE_WINDOW_IDS: ESCAPABLE_NON_EDIT_WINDOW_ORDER,
+    EXCLUSIVE_WINDOW_IDS: EXCLUSIVE_DISPLAY_WINDOW_IDS,
+  } = window.VibeMolDisplayWindows || {};
+  if (![createDisplayWindowsController, NON_EDIT_WINDOW_ID, ESCAPABLE_NON_EDIT_WINDOW_ORDER, EXCLUSIVE_DISPLAY_WINDOW_IDS].every(Boolean)) {
+    throw new Error('VibeMolDisplayWindows is not loaded. Ensure assets/app/js/display-windows.js is included before assets/app/js/app.js.');
+  }
+
   const { createEditPlacementController } = window.VibeMolEditPlacement || {};
   if (![createEditPlacementController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolEditPlacement is not loaded. Ensure assets/app/js/edit-placement.js is included before assets/app/js/app.js.');
@@ -812,6 +822,7 @@
   // --- Mode system + shortcut routing ---
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
   let currentMode = MODES.DISPLAY;
+  let displayWindowsController = null;
   let editAtomsMenuEl = null;
   let editAtomsMenuBodyEl = null;
   let editAtomsMenuCurrentEl = null;
@@ -899,17 +910,7 @@
     if (vibrationPanelEl && vibrationPanelEl.classList.contains('open')) {
       scheduleVibrationPanelLayoutSync(1);
     }
-    positionDisplayWindowAdaptiveMenu();
-    const moldenInspectorEl = document.getElementById('moldenInspector');
-    const moldenInspectorTriggerEl = document.getElementById('moldenInspectorBtn');
-    if (moldenInspectorEl && moldenInspectorEl.classList.contains('open')) {
-      positionDisplayWindowInspectorPopover(moldenInspectorEl, moldenInspectorTriggerEl);
-    }
-    const viewInspectorEl = document.getElementById('viewInspector');
-    const viewInspectorTriggerEl = document.getElementById('viewInspectorBtn');
-    if (viewInspectorEl && viewInspectorEl.classList.contains('open')) {
-      positionDisplayWindowInspectorPopover(viewInspectorEl, viewInspectorTriggerEl);
-    }
+    updateDisplayWindowAdaptiveMenuUi();
     positionEditAdaptiveMenu();
     if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
       positionBuildPopover();
@@ -7703,8 +7704,6 @@
     return !!(el && el.getAttribute('aria-hidden') === 'false');
   }
 
-  let displayWindowExclusiveSyncDepth = 0;
-
   /**
    * Shared top offset for canvas-side adaptive menus so they clear the toolbar show button.
    * @returns {number}
@@ -7714,51 +7713,47 @@
   }
 
   /**
-   * Position the non-edit adaptive window menu just below the main toolbar.
+   * List open cataloged non-edit windows.
+   * @param {string[]=} ids
+   * @returns {string[]}
    */
-  function positionDisplayWindowAdaptiveMenu() {
-    const menuEl = document.getElementById('displayWindowAdaptiveMenu');
-    if (!menuEl) return;
-    const gap = 12;
-    let left = gap;
-    let top = getCanvasAdaptiveMenuTopInset();
-    const toolbarEl = document.getElementById('toolbar');
-    if (!document.body.classList.contains('sidebar-collapsed') && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
-      const toolbarRect = toolbarEl.getBoundingClientRect();
-      if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
-        left = Math.round(toolbarRect.right + gap);
-      }
-      if (toolbarRect && Number.isFinite(toolbarRect.top)) {
-        const inset = getCanvasAdaptiveMenuTopInset();
-        top = Math.max(inset, Math.round(toolbarRect.top + inset));
-      }
-    }
-    const viewportWidth = Math.max(
-      1,
-      Math.round(window.innerWidth || 0),
-      Math.round((document.documentElement && document.documentElement.clientWidth) || 0)
-    );
-    const menuWidth = Math.max(0, Math.round(menuEl.getBoundingClientRect().width || menuEl.offsetWidth || 0));
-    const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
-    menuEl.style.left = `${Math.min(left, maxLeft)}px`;
-    menuEl.style.top = `${top}px`;
-    menuEl.style.right = 'auto';
+  function listOpenNonEditWindowIds(ids = undefined) {
+    return displayWindowsController ? displayWindowsController.listOpenWindowIds(ids) : [];
   }
 
   /**
-   * Position one floating auxiliary inspector beside its adaptive menu trigger.
-   * @param {HTMLElement|null} panelEl
-   * @param {HTMLElement|null} triggerEl
+   * Close one subset of cataloged non-edit windows.
+   * @param {string[]=} ids
+   * @returns {boolean}
    */
-  function positionDisplayWindowInspectorPopover(panelEl, triggerEl) {
-    if (!panelEl || !triggerEl) return;
-    positionFloatingPopoverUi({
-      popoverEl: panelEl,
-      triggerEl,
-      gap: 12,
-      defaultWidth: 340,
-      defaultHeight: 220,
-    });
+  function closeNonEditWindows(ids = undefined) {
+    return displayWindowsController ? displayWindowsController.closeWindows(ids) : false;
+  }
+
+  /**
+   * Close exclusive display windows, optionally leaving one open.
+   * @param {string=} exceptId
+   */
+  function closeExclusiveDisplayWindows(exceptId = '') {
+    if (!displayWindowsController) return;
+    displayWindowsController.closeExclusiveWindows(exceptId);
+  }
+
+  /**
+   * Toggle one exclusive display window by id.
+   * @param {string} id
+   */
+  function toggleExclusiveDisplayWindow(id) {
+    if (!displayWindowsController) return;
+    displayWindowsController.toggleExclusiveWindow(id);
+  }
+
+  /**
+   * Refresh the non-edit adaptive launcher visibility and active button state.
+   */
+  function updateDisplayWindowAdaptiveMenuUi() {
+    if (!displayWindowsController) return;
+    displayWindowsController.syncAdaptiveMenu();
   }
 
   const viewInspectorRefs = { panel: viewInspector, button: viewInspectorBtn };
@@ -7773,7 +7768,6 @@
     const shouldOpen = !!open;
     if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR);
     setToolbarInspectorOpen(viewInspectorRefs, shouldOpen);
-    if (shouldOpen) positionDisplayWindowInspectorPopover(viewInspector, viewInspectorBtn);
     updateDisplayWindowAdaptiveMenuUi();
   }
 
@@ -7798,7 +7792,6 @@
     const shouldOpen = !!open;
     if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR);
     setToolbarInspectorOpen(moldenInspectorRefs, shouldOpen);
-    if (shouldOpen) positionDisplayWindowInspectorPopover(moldenInspector, moldenInspectorBtn);
     updateDisplayWindowAdaptiveMenuUi();
   }
   if (moldenInspectorBtn) moldenInspectorBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR);
@@ -7881,216 +7874,86 @@
   if (helpBtn) helpBtn.onclick = openHelp;
   if (helpClose) helpClose.onclick = closeHelp;
   if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
-
-  const NON_EDIT_WINDOW_ID = Object.freeze({
-    DISPLAY_INSPECTOR: 'displayInspector',
-    MOLDEN_INSPECTOR: 'moldenInspector',
-    VIEW_INSPECTOR: 'viewInspector',
-    VIEW_PANEL: 'viewPanel',
-    COORDS_PANEL: 'coordsPanel',
-    TRAJECTORY_PANEL: 'trajectoryPanel',
-    VIBRATION_PANEL: 'vibrationPanel',
-    HELP_OVERLAY: 'helpOverlay',
-    ELEMENT_COLOR_OVERLAY: 'elementColorOverlay',
-  });
-
-  const nonEditWindowCatalog = Object.freeze({
-    [NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
-      label: 'Appearance inspector',
-      isOpen: () => isToolbarInspectorOpen(displayInspectorRefs),
-      setOpen: (open) => setDisplayInspectorOpen(open),
-    }),
-    [NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
-      label: 'Molden inspector',
-      isOpen: () => isToolbarInspectorOpen(moldenInspectorRefs),
-      setOpen: (open) => setMoldenInspectorOpen(open),
-    }),
-    [NON_EDIT_WINDOW_ID.VIEW_INSPECTOR]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
-      label: 'View inspector',
-      isOpen: () => isToolbarInspectorOpen(viewInspectorRefs),
-      setOpen: (open) => setViewInspectorOpen(open),
-    }),
-    [NON_EDIT_WINDOW_ID.VIEW_PANEL]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.VIEW_PANEL,
-      label: 'View window',
-      isOpen: () => isFloatingPanelCurrentlyOpen(sidePanel),
-      setOpen: (open) => setViewPanelOpen(open),
-    }),
-    [NON_EDIT_WINDOW_ID.COORDS_PANEL]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.COORDS_PANEL,
-      label: 'Coordinates window',
-      isOpen: () => isFloatingPanelCurrentlyOpen(coordsPanel),
-      setOpen: (open) => setCoordsPanelOpen(open),
-    }),
-    [NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
-      label: 'Trajectory window',
-      isOpen: () => isFloatingPanelCurrentlyOpen(trajectoryPanel),
-      setOpen: (open) => setTrajectoryPanelOpen(open),
-    }),
-    [NON_EDIT_WINDOW_ID.VIBRATION_PANEL]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.VIBRATION_PANEL,
-      label: 'Vibration window',
-      isOpen: () => isFloatingPanelCurrentlyOpen(vibrationPanel),
-      setOpen: (open) => setVibrationPanelOpen(open),
-    }),
-    [NON_EDIT_WINDOW_ID.HELP_OVERLAY]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.HELP_OVERLAY,
-      label: 'Help overlay',
-      isOpen: () => isAriaPopupVisible(helpOverlay),
-      setOpen: (open) => {
-        if (open) openHelp();
-        else closeHelp();
+  displayWindowsController = createDisplayWindowsController({
+    menuEl: displayWindowAdaptiveMenuEl,
+    positionFloatingPopover: positionFloatingPopoverUi,
+    updateAdaptiveMenuUi: updateAdaptiveMenuUiHelper,
+    getCurrentMode: () => currentMode,
+    getEditModeValue: () => MODES.EDIT,
+    getCurrentRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
+    getTrajectoryEnabled: () => !!getActiveTrajectoryInfo().enabled,
+    getVibrationEnabled: () => !!getActiveVibrationInfo().enabled,
+    getToolbarElement: () => document.getElementById('toolbar'),
+    getMenuTopInset: getCanvasAdaptiveMenuTopInset,
+    isSidebarCollapsed: () => document.body.classList.contains('sidebar-collapsed'),
+    entries: {
+      [NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR]: {
+        id: NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
+        label: 'Appearance inspector',
+        isOpen: () => isToolbarInspectorOpen(displayInspectorRefs),
+        setOpen: (open) => setDisplayInspectorOpen(open),
       },
-    }),
-    [NON_EDIT_WINDOW_ID.ELEMENT_COLOR_OVERLAY]: Object.freeze({
-      id: NON_EDIT_WINDOW_ID.ELEMENT_COLOR_OVERLAY,
-      label: 'Element colors overlay',
-      isOpen: () => isAriaPopupVisible(elementColorOverlay),
-      setOpen: (open) => setElementColorOverlayOpen(open),
-    }),
+      [NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR]: {
+        id: NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
+        label: 'Molden inspector',
+        buttonEl: moldenInspectorBtn,
+        panelEl: moldenInspector,
+        isOpen: () => isToolbarInspectorOpen(moldenInspectorRefs),
+        setOpen: (open) => setMoldenInspectorOpen(open),
+      },
+      [NON_EDIT_WINDOW_ID.VIEW_INSPECTOR]: {
+        id: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
+        label: 'View inspector',
+        buttonEl: viewInspectorBtn,
+        panelEl: viewInspector,
+        isOpen: () => isToolbarInspectorOpen(viewInspectorRefs),
+        setOpen: (open) => setViewInspectorOpen(open),
+      },
+      [NON_EDIT_WINDOW_ID.VIEW_PANEL]: {
+        id: NON_EDIT_WINDOW_ID.VIEW_PANEL,
+        label: 'View window',
+        buttonEl: viewPanelBtn,
+        isOpen: () => isFloatingPanelCurrentlyOpen(sidePanel),
+        setOpen: (open) => setViewPanelOpen(open),
+      },
+      [NON_EDIT_WINDOW_ID.COORDS_PANEL]: {
+        id: NON_EDIT_WINDOW_ID.COORDS_PANEL,
+        label: 'Coordinates window',
+        buttonEl: coordsPanelBtn,
+        isOpen: () => isFloatingPanelCurrentlyOpen(coordsPanel),
+        setOpen: (open) => setCoordsPanelOpen(open),
+      },
+      [NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL]: {
+        id: NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
+        label: 'Trajectory window',
+        buttonEl: trajectoryPanelBtn,
+        isOpen: () => isFloatingPanelCurrentlyOpen(trajectoryPanel),
+        setOpen: (open) => setTrajectoryPanelOpen(open),
+      },
+      [NON_EDIT_WINDOW_ID.VIBRATION_PANEL]: {
+        id: NON_EDIT_WINDOW_ID.VIBRATION_PANEL,
+        label: 'Vibration window',
+        buttonEl: vibrationPanelBtn,
+        isOpen: () => isFloatingPanelCurrentlyOpen(vibrationPanel),
+        setOpen: (open) => setVibrationPanelOpen(open),
+      },
+      [NON_EDIT_WINDOW_ID.HELP_OVERLAY]: {
+        id: NON_EDIT_WINDOW_ID.HELP_OVERLAY,
+        label: 'Help overlay',
+        isOpen: () => isAriaPopupVisible(helpOverlay),
+        setOpen: (open) => {
+          if (open) openHelp();
+          else closeHelp();
+        },
+      },
+      [NON_EDIT_WINDOW_ID.ELEMENT_COLOR_OVERLAY]: {
+        id: NON_EDIT_WINDOW_ID.ELEMENT_COLOR_OVERLAY,
+        label: 'Element colors overlay',
+        isOpen: () => isAriaPopupVisible(elementColorOverlay),
+        setOpen: (open) => setElementColorOverlayOpen(open),
+      },
+    },
   });
-
-  const ESCAPABLE_NON_EDIT_WINDOW_ORDER = Object.freeze([
-    NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
-    NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
-    NON_EDIT_WINDOW_ID.VIEW_PANEL,
-    NON_EDIT_WINDOW_ID.COORDS_PANEL,
-    NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
-    NON_EDIT_WINDOW_ID.VIBRATION_PANEL,
-  ]);
-
-  const EXCLUSIVE_DISPLAY_WINDOW_IDS = Object.freeze([
-    NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
-    NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
-    NON_EDIT_WINDOW_ID.VIEW_PANEL,
-    NON_EDIT_WINDOW_ID.COORDS_PANEL,
-    NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
-    NON_EDIT_WINDOW_ID.VIBRATION_PANEL,
-  ]);
-
-  /**
-   * Return one non-edit window catalog entry by id.
-   * @param {string} id
-   * @returns {{id:string,label:string,isOpen:Function,setOpen:Function}|null}
-   */
-  function getNonEditWindowEntry(id) {
-    const key = String(id || '').trim();
-    if (!key) return null;
-    return nonEditWindowCatalog[key] || null;
-  }
-
-  /**
-   * List currently open non-edit windows in catalog order.
-   * @param {string[]=} ids
-   * @returns {string[]}
-   */
-  function listOpenNonEditWindowIds(ids = undefined) {
-    const keys = Array.isArray(ids) && ids.length ? ids : Object.keys(nonEditWindowCatalog);
-    return keys.filter((id) => {
-      const entry = getNonEditWindowEntry(id);
-      return !!(entry && entry.isOpen());
-    });
-  }
-
-  /**
-   * Close one ordered subset of cataloged non-edit windows.
-   * @param {string[]=} ids
-   * @returns {boolean}
-   */
-  function closeNonEditWindows(ids = undefined) {
-    const keys = Array.isArray(ids) && ids.length ? ids : Object.keys(nonEditWindowCatalog);
-    let closed = false;
-    for (const id of keys) {
-      const entry = getNonEditWindowEntry(id);
-      if (!entry || !entry.isOpen()) continue;
-      entry.setOpen(false);
-      closed = true;
-    }
-    return closed;
-  }
-
-  /**
-   * Close all exclusive display windows except one optional target.
-   * @param {string=} exceptId
-   */
-  function closeExclusiveDisplayWindows(exceptId = '') {
-    if (displayWindowExclusiveSyncDepth > 0) return;
-    displayWindowExclusiveSyncDepth += 1;
-    try {
-      for (const id of EXCLUSIVE_DISPLAY_WINDOW_IDS) {
-        if (exceptId && id === exceptId) continue;
-        const entry = getNonEditWindowEntry(id);
-        if (!entry || !entry.isOpen()) continue;
-        entry.setOpen(false);
-      }
-    } finally {
-      displayWindowExclusiveSyncDepth = Math.max(0, displayWindowExclusiveSyncDepth - 1);
-    }
-  }
-
-  /**
-   * Toggle one exclusive display window by catalog id.
-   * @param {string} id
-   */
-  function toggleExclusiveDisplayWindow(id) {
-    const entry = getNonEditWindowEntry(id);
-    if (!entry) return;
-    if (entry.isOpen()) entry.setOpen(false);
-    else entry.setOpen(true);
-  }
-
-  /**
-   * Refresh the non-edit adaptive launcher visibility and active button state.
-   */
-  function updateDisplayWindowAdaptiveMenuUi() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const hasRecord = !!record;
-    const hasAtoms = !!(vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
-    const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
-    const showMolden = !!(molden && Array.isArray(molden.mos) && molden.mos.length > 0);
-    const showViewActions = hasAtoms;
-    const showView = hasRecord;
-    const showCoords = hasAtoms;
-    const showTrajectory = !!getActiveTrajectoryInfo().enabled;
-    const showVibration = !!getActiveVibrationInfo().enabled;
-    const isVisible = currentMode !== MODES.EDIT && (showMolden || showViewActions || showView || showCoords || showTrajectory || showVibration);
-    if (!showMolden && isToolbarInspectorOpen(moldenInspectorRefs)) setMoldenInspectorOpen(false);
-    if (!showViewActions && isToolbarInspectorOpen(viewInspectorRefs)) setViewInspectorOpen(false);
-    if (!showView && isFloatingPanelCurrentlyOpen(sidePanel)) setViewPanelOpen(false);
-    if (!showCoords && isFloatingPanelCurrentlyOpen(coordsPanel)) setCoordsPanelOpen(false);
-    if (!showTrajectory && isFloatingPanelCurrentlyOpen(trajectoryPanel)) setTrajectoryPanelOpen(false, { syncUi: false, exclusive: false });
-    if (!showVibration && isFloatingPanelCurrentlyOpen(vibrationPanel)) setVibrationPanelOpen(false);
-    updateAdaptiveMenuUiHelper({
-      menuEl: displayWindowAdaptiveMenuEl,
-      isVisible,
-      positionMenu: positionDisplayWindowAdaptiveMenu,
-      onHideAllPopovers: () => closeNonEditWindows(EXCLUSIVE_DISPLAY_WINDOW_IDS),
-      visibleItems: [
-        { el: moldenInspectorBtn, visible: showMolden },
-        { el: viewInspectorBtn, visible: showViewActions },
-        { el: viewPanelBtn, visible: showView },
-        { el: coordsPanelBtn, visible: showCoords },
-        { el: trajectoryPanelBtn, visible: showTrajectory },
-        { el: vibrationPanelBtn, visible: showVibration },
-      ],
-      activeItems: [
-        { el: moldenInspectorBtn, active: isToolbarInspectorOpen(moldenInspectorRefs) },
-        { el: viewInspectorBtn, active: isToolbarInspectorOpen(viewInspectorRefs) },
-        { el: viewPanelBtn, active: isFloatingPanelCurrentlyOpen(sidePanel) },
-        { el: coordsPanelBtn, active: isFloatingPanelCurrentlyOpen(coordsPanel) },
-        { el: trajectoryPanelBtn, active: isFloatingPanelCurrentlyOpen(trajectoryPanel) },
-        { el: vibrationPanelBtn, active: isFloatingPanelCurrentlyOpen(vibrationPanel) },
-      ],
-      metaItems: [],
-    });
-    if (isToolbarInspectorOpen(moldenInspectorRefs)) positionDisplayWindowInspectorPopover(moldenInspector, moldenInspectorBtn);
-    if (isToolbarInspectorOpen(viewInspectorRefs)) positionDisplayWindowInspectorPopover(viewInspector, viewInspectorBtn);
-  }
 
   /**
    * Apply a molecule style selection from UI or keyboard shortcuts.
@@ -22664,7 +22527,7 @@
     optimizeActiveStructureWithUff,
   });
   window.VibeMolTesting = Object.freeze({
-    listNonEditWindows: () => Object.keys(nonEditWindowCatalog),
+    listNonEditWindows: () => Object.values(NON_EDIT_WINDOW_ID),
     getOpenNonEditWindows: () => listOpenNonEditWindowIds(),
     getEditSelectionCount: () => {
       const selection = getEditAtomSelection();
