@@ -286,6 +286,11 @@
     throw new Error('VibeMolDisplayWindows is not loaded. Ensure assets/app/js/display-windows.js is included before assets/app/js/app.js.');
   }
 
+  const { createAppearanceInspectorController } = window.VibeMolAppearanceUi || {};
+  if (![createAppearanceInspectorController].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolAppearanceUi is not loaded. Ensure assets/app/js/appearance-ui.js is included before assets/app/js/app.js.');
+  }
+
   const { createEditPlacementController } = window.VibeMolEditPlacement || {};
   if (![createEditPlacementController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolEditPlacement is not loaded. Ensure assets/app/js/edit-placement.js is included before assets/app/js/app.js.');
@@ -823,6 +828,7 @@
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
   let currentMode = MODES.DISPLAY;
   let displayWindowsController = null;
+  let appearanceInspectorController = null;
   let editAtomsMenuEl = null;
   let editAtomsMenuBodyEl = null;
   let editAtomsMenuCurrentEl = null;
@@ -21593,7 +21599,6 @@
     if (blackbodyColdColorEl) blackbodyColdColorEl.value = normalizeHexColor(moleculeBlackbodyColdColor, '#2f0202');
     if (blackbodyHotColorEl) blackbodyHotColorEl.value = normalizeHexColor(moleculeBlackbodyHotColor, '#eaf6ff');
     if (rowBlackbodyColors) rowBlackbodyColors.style.display = moleculeBlackbodyEnabled ? '' : 'none';
-    syncAppearanceMirrorToggles();
     syncAllAppearanceActionToggleButtons();
     syncColorPickerFields();
   }
@@ -21602,72 +21607,16 @@
    * Synchronize the quick molecule-style chip row.
    */
   function syncMoleculeStyleChipState() {
-    if (!appearanceStyleChipEls.length) return;
-    const activeStyle = normalizeMoleculeStyleKey(moleculeStyle);
-    for (const chipEl of appearanceStyleChipEls) {
-      const chipStyle = normalizeMoleculeStyleKey(chipEl && chipEl.dataset ? chipEl.dataset.style : '');
-      const active = chipStyle === activeStyle;
-      chipEl.classList.toggle('active', active);
-      chipEl.setAttribute('aria-pressed', active ? 'true' : 'false');
-    }
-  }
-
-  /**
-   * Resolve the hidden checkbox/input backing one Appearance action toggle button.
-   * @param {HTMLElement|null} buttonEl
-   * @returns {HTMLInputElement|null}
-   */
-  function getAppearanceActionToggleInput(buttonEl) {
-    if (!buttonEl || !buttonEl.dataset) return null;
-    const inputId = String(buttonEl.dataset.toggleInput || '').trim();
-    if (!inputId) return null;
-    const inputEl = document.getElementById(inputId);
-    return inputEl && inputEl.tagName === 'INPUT' ? /** @type {HTMLInputElement} */ (inputEl) : null;
-  }
-
-  /**
-   * Check whether one Appearance action toggle inverts the meaning of its backing input.
-   * @param {HTMLElement|null} buttonEl
-   * @returns {boolean}
-   */
-  function isAppearanceActionToggleInverted(buttonEl) {
-    return !!(buttonEl && buttonEl.dataset && buttonEl.dataset.toggleInvert === 'true');
-  }
-
-  /**
-   * Synchronize one Appearance action toggle button from its backing checkbox/input.
-   * @param {HTMLElement|null} buttonEl
-   */
-  function syncAppearanceActionToggleButton(buttonEl) {
-    const inputEl = getAppearanceActionToggleInput(buttonEl);
-    if (!buttonEl || !inputEl) return;
-    const checked = isAppearanceActionToggleInverted(buttonEl) ? !inputEl.checked : !!inputEl.checked;
-    const disabled = !!inputEl.disabled;
-    const stateEl = buttonEl.querySelector('.inspectorActionToggleState');
-    buttonEl.classList.toggle('active', checked);
-    buttonEl.setAttribute('aria-pressed', checked ? 'true' : 'false');
-    buttonEl.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-    buttonEl.toggleAttribute('disabled', disabled);
-    if (inputEl.title) buttonEl.title = inputEl.title;
-    if (stateEl) stateEl.textContent = checked ? 'On' : 'Off';
+    if (!appearanceInspectorController) return;
+    appearanceInspectorController.syncStyleState(moleculeStyle);
   }
 
   /**
    * Synchronize all Appearance action toggle buttons from app state.
    */
   function syncAllAppearanceActionToggleButtons() {
-    for (const buttonEl of appearanceActionToggleButtonEls) {
-      syncAppearanceActionToggleButton(buttonEl);
-    }
-  }
-
-  /**
-   * Keep mirrored appearance toggles aligned across Molecule and Visibility sections.
-   */
-  function syncAppearanceMirrorToggles() {
-    if (toggleMultiBonds) toggleMultiBonds.checked = !!showMultiBonds;
-    if (visibilityElementColorsToggleEl) visibilityElementColorsToggleEl.checked = !!(elementColors && elementColors.checked);
-    syncAllAppearanceActionToggleButtons();
+    if (!appearanceInspectorController) return;
+    appearanceInspectorController.syncActionToggles();
   }
 
   /**
@@ -21675,27 +21624,8 @@
    * @param {*=} vol
    */
   function syncAppearanceInspectorSectionState(vol = undefined) {
-    const activeVol = vol || ((currentIndex >= 0 ? volumes[currentIndex] : null) || {}).vol || null;
-    const hasSurfaceControls = hasVolumetricGrid(activeVol);
-    const showTwoComponent = !!(hasSurfaceControls && activeVol && activeVol.isTwoComponent);
-    const showCloudOptions = !!(hasSurfaceControls && renderMode === 'cloud');
-    const surfaceToggleButton = displayInspector
-      ? displayInspector.querySelector('.inspectorActionToggle[data-toggle-input="surfBtn"]')
-      : null;
-    if (appearanceSurfacesSectionEl) {
-      appearanceSurfacesSectionEl.hidden = !hasSurfaceControls;
-      if (!hasSurfaceControls) appearanceSurfacesSectionEl.open = false;
-    }
-    if (surfaceToggleButton) surfaceToggleButton.style.display = hasSurfaceControls ? '' : 'none';
-    if (appearanceTwoComponentSectionEl) {
-      appearanceTwoComponentSectionEl.hidden = !showTwoComponent;
-      if (!showTwoComponent) appearanceTwoComponentSectionEl.open = false;
-    }
-    if (appearanceCloudSectionEl) {
-      appearanceCloudSectionEl.hidden = !showCloudOptions;
-      if (!showCloudOptions) appearanceCloudSectionEl.open = false;
-    }
-    syncAllAppearanceActionToggleButtons();
+    if (!appearanceInspectorController) return;
+    appearanceInspectorController.syncSections(vol, renderMode);
   }
 
   /**
@@ -21841,6 +21771,24 @@
     (n) => { moleculeBondOpacity = n; },
     () => true
   );
+  appearanceInspectorController = createAppearanceInspectorController({
+    displayInspectorEl: displayInspector,
+    styleChipEls: appearanceStyleChipEls,
+    actionToggleButtonEls: appearanceActionToggleButtonEls,
+    surfacesSectionEl: appearanceSurfacesSectionEl,
+    twoComponentSectionEl: appearanceTwoComponentSectionEl,
+    cloudSectionEl: appearanceCloudSectionEl,
+    toggleMultiBondsInput: toggleMultiBonds,
+    elementColorsInput: elementColors,
+    visibilityElementColorsToggleInput: visibilityElementColorsToggleEl,
+    normalizeStyleKey: normalizeMoleculeStyleKey,
+    onStyleChipSelected: (nextStyle) => setMoleculeStyle(nextStyle),
+    getActiveStyle: () => moleculeStyle,
+    getCurrentVolume: () => (((currentIndex >= 0 ? volumes[currentIndex] : null) || {}).vol || null),
+    getRenderMode: () => renderMode,
+    hasSurfaceControls: hasVolumetricGrid,
+    getShowMultiBonds: () => showMultiBonds,
+  });
   if (moleculeStyleSel) {
     moleculeStyle = normalizeMoleculeStyleKey(moleculeStyleSel.value || moleculeStyle);
     moleculeStyleSel.value = moleculeStyle;
@@ -21850,31 +21798,6 @@
     };
   } else {
     applyMoleculeStyleUiState();
-  }
-  for (const chipEl of appearanceStyleChipEls) {
-    chipEl.addEventListener('click', () => {
-      const nextStyle = chipEl && chipEl.dataset ? chipEl.dataset.style : '';
-      if (!nextStyle) return;
-      setMoleculeStyle(nextStyle);
-    });
-  }
-  for (const buttonEl of appearanceActionToggleButtonEls) {
-    buttonEl.addEventListener('click', () => {
-      const inputEl = getAppearanceActionToggleInput(buttonEl);
-      if (!inputEl || inputEl.disabled) {
-        syncAppearanceActionToggleButton(buttonEl);
-        return;
-      }
-      const currentVisibleState = isAppearanceActionToggleInverted(buttonEl) ? !inputEl.checked : !!inputEl.checked;
-      const nextVisibleState = !currentVisibleState;
-      inputEl.checked = isAppearanceActionToggleInverted(buttonEl) ? !nextVisibleState : nextVisibleState;
-      if (typeof inputEl.onchange === 'function') {
-        inputEl.onchange();
-      } else {
-        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      syncAppearanceActionToggleButton(buttonEl);
-    });
   }
   if (moleculeShadowsToggleEl) {
     moleculeShadowsToggleEl.onchange = () => {
@@ -25427,7 +25350,7 @@
   if (toggleMultiBonds) {
     toggleMultiBonds.onchange = () => {
       showMultiBonds = !!toggleMultiBonds.checked;
-      syncAppearanceMirrorToggles();
+      syncAllAppearanceActionToggleButtons();
       rebuildScene({ preserveView: true });
     };
   }
