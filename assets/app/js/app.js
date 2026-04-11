@@ -5886,8 +5886,9 @@
     editSelectionAddFragmentCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-      setSelectionFragmentCueActive(true, { announce: true, syncSearch: false, preserveSelection: true });
-      showSelectionFragmentCuePopover({ focusSearch: false });
+      hideSelectionCoordinationCuePopover();
+      hideSelectionMetalBondingCuePopover();
+      setSelectionBuildCueActive(!isSelectionBuildCueActive(), { announce: true, syncSearch: false, preserveSelection: true });
     });
   }
   if (editSelectionDeleteCueButtonEl) {
@@ -7939,6 +7940,7 @@
   let editAdvancedDrawerOpen = false;
   let editAtomSelectionIndices = [];
   let editAddMode = EDIT_ADD_MODE.ATOM;
+  let selectionBuildCueArmed = false;
   let fragmentAttachSession = {
     armed: false,
     source: '',
@@ -9153,10 +9155,8 @@
         clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
       }
       const selection = getEditAtomSelection();
-      if (selection.length === 0 && isSelectionFragmentCueArmed()) {
-        clearFragmentAttachSessionState();
-        editAddMode = EDIT_ADD_MODE.ATOM;
-        hideSelectionFragmentCuePopover();
+      if (selection.length === 0 && isSelectionBuildCueActive()) {
+        setSelectionBuildCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
       } else if (selection.length === 1 && isSelectionFragmentCueArmed()) {
         setFragmentAttachCueAnchorByIndex(selection[0]);
       }
@@ -10836,12 +10836,22 @@
     return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT;
   }
 
+  function isSelectionAtomBuildCueArmed() {
+    return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION
+      && editAddMode === EDIT_ADD_MODE.ATOM
+      && !!selectionBuildCueArmed;
+  }
+
   function isSelectionFragmentCueArmed() {
     return isFragmentPayloadLoaded() && !!fragmentAttachSession.armed && fragmentAttachSession.source === 'cue';
   }
 
   function isSelectionFragmentCueActive() {
     return isSelectionFragmentCueArmed();
+  }
+
+  function isSelectionBuildCueActive() {
+    return isSelectionAtomBuildCueArmed() || isSelectionFragmentCueArmed();
   }
 
   function isBuildFragmentLoaded() {
@@ -11938,7 +11948,10 @@
     if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
     const prevIntent = getEditIntent();
     const normalized = normalizeEditIntent(nextIntent);
-    if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) clearFragmentAttachSessionState();
+    if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) {
+      selectionBuildCueArmed = false;
+      clearFragmentAttachSessionState();
+    }
     editTools.setEditIntent(normalized, options);
     syncEditIntentCompatibilityState();
     if (prevIntent !== normalized && editGestureController) editGestureController.clearState();
@@ -11952,6 +11965,7 @@
    */
   function setEditAddMode(nextMode, options = {}) {
     if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
+    if (nextMode !== EDIT_ADD_MODE.ATOM) selectionBuildCueArmed = false;
     if (nextMode !== EDIT_ADD_MODE.FRAGMENT) clearFragmentAttachSessionState();
     editTools.setEditAddMode(nextMode, options);
     syncEditIntentCompatibilityState();
@@ -13138,6 +13152,7 @@
       if (payload.kind === 'atom') return `${payload.name} (${payload.symbol})`;
       return payload.name || payload.label || payload.id || payload.kind;
     },
+    showAddTargets: isSelectionBuildCueActive,
     getAtomCoordinationGeometryId: (vol, atomIndex) => {
       const meta = getAtomCoordinationMeta(vol, atomIndex);
       return String(meta && meta.geometryId || '').trim();
@@ -13507,12 +13522,9 @@
   function setSelectionFragmentCueActive(active, options = {}) {
     const nextActive = !!active;
     const announce = options.announce !== false;
-    const syncSearch = options.syncSearch !== false;
-    const preserveSelection = options.preserveSelection !== false;
     if (nextActive) {
       const selection = getEditAtomSelection();
       if (!Array.isArray(selection) || !selection.length) return false;
-      setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch, preserveSelection: true });
       fragmentAttachSession.armed = true;
       fragmentAttachSession.source = 'cue';
       fragmentAttachSession.preserveAnchor = true;
@@ -13530,20 +13542,54 @@
     }
     const hadCue = isSelectionFragmentCueArmed() || !!fragmentAttachSession.armed;
     clearFragmentAttachSessionState();
-    if (!hadCue) {
-      hideSelectionFragmentCuePopover();
+    return hadCue;
+  }
+
+  function setSelectionAtomBuildCueActive(active, options = {}) {
+    const nextActive = !!active;
+    const announce = options.announce !== false;
+    if (nextActive) {
+      const selection = getEditAtomSelection();
+      if (!Array.isArray(selection) || !selection.length) return false;
+      selectionBuildCueArmed = true;
+      if (announce && editMode) {
+        const payload = getCurrentBuildPayload();
+        const label = payload && payload.symbol ? `${payload.name} (${payload.symbol})` : (payload && payload.name ? payload.name : 'loaded build item');
+        setHintMessage(`Build cue: ${label} • click a highlighted site or replaceable H to place it.`);
+      }
+      return true;
+    }
+    const hadCue = !!selectionBuildCueArmed;
+    selectionBuildCueArmed = false;
+    return hadCue;
+  }
+
+  function setSelectionBuildCueActive(active, options = {}) {
+    const nextActive = !!active;
+    const announce = options.announce !== false;
+    if (nextActive) {
+      const selection = getEditAtomSelection();
+      if (!Array.isArray(selection) || !selection.length) {
+        if (announce && editMode) setHintMessage('Build cue: select one or more atoms first.');
+        return false;
+      }
+      const payload = getCurrentBuildPayload();
+      const payloadKind = String(payload && payload.kind || '').trim().toLowerCase();
+      if (payloadKind === 'fragment') return setSelectionFragmentCueActive(true, options);
+      if (payloadKind === 'atom') return setSelectionAtomBuildCueActive(true, options);
+      if (announce && editMode) setHintMessage('Build cue: choose an atom or fragment in Build first.');
       return false;
     }
-    hideSelectionFragmentCuePopover();
-    setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch, preserveSelection });
-    return true;
+    const atomChanged = setSelectionAtomBuildCueActive(false, options);
+    const fragmentChanged = setSelectionFragmentCueActive(false, options);
+    return atomChanged || fragmentChanged;
   }
 
   function beginSelectionCueDrag(action, buttonEl, e) {
     if (!buttonEl || !e || currentMode !== MODES.EDIT || e.button !== 0) return false;
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     if (action !== 'bondOrder') {
-      setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
+      setSelectionBuildCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
       setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     }
     const selection = getEditAtomSelection();
@@ -15241,32 +15287,35 @@
     const selectionCount = Array.isArray(selection) ? selection.length : 0;
     const effectiveMode = getEffectiveEditSelectionDragMode();
     const bondSideCueMode = getEffectiveEditBondSideCueMode();
-    const fragmentCueActive = isSelectionFragmentCueActive();
+    const buildCueActive = isSelectionBuildCueActive();
+    const buildPayload = getCurrentBuildPayload();
+    const buildPayloadKind = String(buildPayload && buildPayload.kind || '').trim().toLowerCase();
+    const buildCueSupported = buildPayloadKind === 'atom' || buildPayloadKind === 'fragment';
     const metalBondingCueState = getSelectionMetalBondingCueState();
     if (editSelectionTranslateCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
       editSelectionTranslateCueButtonEl.hidden = !visible;
-      editSelectionTranslateCueButtonEl.classList.toggle('is-active', visible && !fragmentCueActive && effectiveMode === 'translate');
-      editSelectionTranslateCueButtonEl.setAttribute('aria-pressed', (visible && !fragmentCueActive && effectiveMode === 'translate') ? 'true' : 'false');
+      editSelectionTranslateCueButtonEl.classList.toggle('is-active', visible && !buildCueActive && effectiveMode === 'translate');
+      editSelectionTranslateCueButtonEl.setAttribute('aria-pressed', (visible && !buildCueActive && effectiveMode === 'translate') ? 'true' : 'false');
     }
     if (editSelectionRotateCueButtonEl) {
       editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
       const rotateActive = isBondSideSelection
-        ? (!fragmentCueActive && bondSideCueMode === 'axis')
-        : (!fragmentCueActive && effectiveMode === 'rotate');
+        ? (!buildCueActive && bondSideCueMode === 'axis')
+        : (!buildCueActive && effectiveMode === 'rotate');
       editSelectionRotateCueButtonEl.classList.toggle('is-active', rotateActive);
       editSelectionRotateCueButtonEl.setAttribute('aria-pressed', rotateActive ? 'true' : 'false');
       editSelectionRotateCueButtonEl.title = isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection';
       editSelectionRotateCueButtonEl.setAttribute('aria-label', isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection');
     }
     if (editSelectionBondOrbitCueButtonEl) {
-      const active = !!isBondSideSelection && !fragmentCueActive && bondSideCueMode === 'orbit';
+      const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'orbit';
       editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
       editSelectionBondOrbitCueButtonEl.classList.toggle('is-active', active);
       editSelectionBondOrbitCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
     if (editSelectionBondDistanceCueButtonEl) {
-      const active = !!isBondSideSelection && !fragmentCueActive && bondSideCueMode === 'distance';
+      const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'distance';
       editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
       editSelectionBondDistanceCueButtonEl.classList.toggle('is-active', active);
       editSelectionBondDistanceCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -15305,10 +15354,17 @@
     }
     if (editSelectionAddFragmentCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
+      const cueLabel = buildCueSupported
+        ? (buildPayloadKind === 'fragment'
+          ? `Build ${buildPayload.name || 'fragment'} at open site`
+          : `Build ${buildPayload.symbol || buildPayload.name || 'loaded element'} at open site`)
+        : 'Choose an atom or fragment in Build first';
       editSelectionAddFragmentCueButtonEl.hidden = !visible;
-      editSelectionAddFragmentCueButtonEl.classList.toggle('is-active', visible && fragmentCueActive);
-      editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !fragmentCueActive);
-      editSelectionAddFragmentCueButtonEl.setAttribute('aria-pressed', (visible && fragmentCueActive) ? 'true' : 'false');
+      editSelectionAddFragmentCueButtonEl.classList.toggle('is-active', visible && buildCueActive);
+      editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !buildCueActive);
+      editSelectionAddFragmentCueButtonEl.setAttribute('aria-pressed', (visible && buildCueActive) ? 'true' : 'false');
+      editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
+      editSelectionAddFragmentCueButtonEl.title = cueLabel;
       if (!visible) {
         hideSelectionFragmentCuePopover();
         hideSelectionCoordinationCuePopover();
@@ -15354,9 +15410,6 @@
     }
     if (editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       renderSelectionMetalBondingCuePopover();
-    }
-    if (editSelectionFragmentCuePopoverEl && editSelectionFragmentCuePopoverEl.getAttribute('aria-hidden') === 'false') {
-      positionSelectionFragmentCuePopover();
     }
   }
 
@@ -15920,7 +15973,7 @@
     if (isSelectionFragmentCueActive() && getEditAtomSelection().length > 0) {
       hideSelectionFragmentCuePopover();
       clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
-      setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
+      setSelectionBuildCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
@@ -15932,7 +15985,7 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
-    setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
+    setSelectionBuildCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
     return false;
   }
 
@@ -18558,7 +18611,7 @@
     const normalizedIds = normalizeBondCenterSelectionIds(ensureAtomId(vol.atoms[i]), ensureAtomId(vol.atoms[j]));
     if (!normalizedIds) return false;
     clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
-    setSelectionFragmentCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
+    setSelectionBuildCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();

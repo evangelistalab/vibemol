@@ -30,6 +30,7 @@ function createHarness(options = {}) {
   const api = context.window.VibeMolEditHalo;
   let now = Number.isFinite(options.now) ? Number(options.now) : 0;
   let selection = Array.isArray(options.selection) ? options.selection.slice() : [];
+  let addTargetsVisible = options.showAddTargets !== false;
   const record = {
     vol: options.vol || {
       atoms: [{ id: 'a0', Z: 6 }],
@@ -53,6 +54,7 @@ function createHarness(options = {}) {
     getAtomWorld: (_vol, atomIndex) => positions[atomIndex] ? positions[atomIndex].slice() : null,
     projectWorldToClient: (world) => world ? { x: 200 + (world[0] || 0) * 80, y: 200 + (world[1] || 0) * 80, visible: true } : null,
     getElementSymbol: (z) => ({ 1: 'H', 6: 'C', 7: 'N', 8: 'O', 15: 'P', 16: 'S', 26: 'Fe', 28: 'Ni', 78: 'Pt' }[z | 0] || `Z${z | 0}`),
+    showAddTargets: () => addTargetsVisible,
     getAtomCoordinationGeometryId: (vol, atomIndex) => {
       const atom = Array.isArray(vol && vol.atoms) ? vol.atoms[atomIndex | 0] : null;
       const atomId = atom && atom.id != null ? String(atom.id) : '';
@@ -72,6 +74,7 @@ function createHarness(options = {}) {
     positions,
     setNow: (value) => { now = Number(value) || 0; },
     setSelection: (next) => { selection = Array.isArray(next) ? next.slice() : []; },
+    setShowAddTargets: (value) => { addTargetsVisible = !!value; },
     getUiState: () => controller.getUiState(),
   };
 }
@@ -147,6 +150,20 @@ test('edit-halo bare carbon yields four tetrahedral ghost directions and coordin
     'Trigonal planar (3)',
     'Tetrahedral (4)',
   ]);
+});
+
+test('edit-halo hides open-site ghosts until add targets are enabled', () => {
+  const harness = createHarness({ selection: [0], showAddTargets: false });
+  harness.controller.refresh();
+  const hiddenUi = harness.getUiState();
+  assert.equal(hiddenUi.visible, true);
+  assert.equal(hiddenUi.ghosts.length, 0);
+  assert.match(hiddenUi.hint, /Click \+/);
+
+  harness.setShowAddTargets(true);
+  harness.controller.refresh();
+  const visibleUi = harness.getUiState();
+  assert.equal(visibleUi.ghosts.length, 4);
 });
 
 test('edit-halo preserves ghost orientation after placing the first bond', () => {
@@ -285,6 +302,38 @@ test('edit-halo saturated carbon exposes replaceable terminal hydrogens for atom
     targetAtomIndex: target.atomIndex,
     worldPosition: [target.world.x, target.world.y, target.world.z],
   });
+});
+
+test('edit-halo hides replaceable hydrogens until add targets are enabled', () => {
+  const harness = createHarness({
+    selection: [0],
+    showAddTargets: false,
+    vol: {
+      atoms: [{ id: 'a0', Z: 6 }, { id: 'h1', Z: 1 }, { id: 'h2', Z: 1 }, { id: 'h3', Z: 1 }, { id: 'h4', Z: 1 }],
+      bonds: [
+        { a: 'a0', b: 'h1', order: 1, kind: 'normal' },
+        { a: 'a0', b: 'h2', order: 1, kind: 'normal' },
+        { a: 'a0', b: 'h3', order: 1, kind: 'normal' },
+        { a: 'a0', b: 'h4', order: 1, kind: 'normal' },
+      ],
+      annotations: { coordination: { byAtomId: {} } },
+    },
+    positions: {
+      0: [0, 0, 0],
+      1: [1, 0, 0],
+      2: [-1, 0, 0],
+      3: [0, 1, 0],
+      4: [0, -1, 0],
+    },
+  });
+  harness.controller.refresh();
+  const hiddenUi = harness.getUiState();
+  assert.equal(hiddenUi.replaceTargets.length, 0);
+
+  harness.setShowAddTargets(true);
+  harness.controller.refresh();
+  const visibleUi = harness.getUiState();
+  assert.equal(visibleUi.replaceTargets.length, 4);
 });
 
 test('edit-halo choice click returns set-coordination-choice and ghost layout follows override', () => {

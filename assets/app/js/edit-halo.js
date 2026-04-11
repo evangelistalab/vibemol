@@ -335,6 +335,7 @@
     const getElementSymbol = typeof options.getElementSymbol === 'function' ? options.getElementSymbol : ((z) => `Z${z | 0}`);
     const getLoadedPayloadKind = typeof options.getLoadedPayloadKind === 'function' ? options.getLoadedPayloadKind : (() => 'atom');
     const getLoadedPayloadLabel = typeof options.getLoadedPayloadLabel === 'function' ? options.getLoadedPayloadLabel : (() => 'loaded item');
+    const showAddTargets = typeof options.showAddTargets === 'function' ? options.showAddTargets : (() => true);
     const getAtomCoordinationGeometryId = typeof options.getAtomCoordinationGeometryId === 'function' ? options.getAtomCoordinationGeometryId : (() => '');
     const getGrowBondLength = typeof options.getGrowBondLength === 'function' ? options.getGrowBondLength : (() => 1.1);
     const nowProvider = typeof options.nowProvider === 'function' ? options.nowProvider : defaultNow;
@@ -529,13 +530,17 @@
       const growDistance = profile.isTransitionMetal
         ? Math.max(1.2, Number(getGrowBondLength(atom.Z | 0)) || 1.6)
         : Math.max(0.7, Number(getGrowBondLength(atom.Z | 0)) || 1.1);
+      const addTargetsEnabled = !!showAddTargets();
+      const hasOpenSites = partition.ghostIndices.length > 0;
       const ghosts = [];
-      for (const index of partition.ghostIndices) {
-        const dir = vecNormalize(aligned.rotatedTemplate[index]);
-        const world = vecAdd(anchorWorld, vecScale(dir, growDistance));
-        const client = projectWorldToClient(world);
-        if (!client || client.visible === false) continue;
-        ghosts.push({ index, dir, world, client, recommended: ghosts.length === 0 });
+      if (addTargetsEnabled) {
+        for (const index of partition.ghostIndices) {
+          const dir = vecNormalize(aligned.rotatedTemplate[index]);
+          const world = vecAdd(anchorWorld, vecScale(dir, growDistance));
+          const client = projectWorldToClient(world);
+          if (!client || client.visible === false) continue;
+          ghosts.push({ index, dir, world, client, recommended: ghosts.length === 0 });
+        }
       }
       const occupied = env.occupiedDirs.map((dir, index) => {
         const world = vecAdd(anchorWorld, vecScale(vecNormalize(dir), growDistance * 0.85));
@@ -544,7 +549,7 @@
       }).filter(Boolean);
       const payloadKind = String(getLoadedPayloadKind() || '').trim().toLowerCase();
       const replaceTargets = [];
-      if ((payloadKind === 'atom' || payloadKind === 'fragment') && (atom.Z | 0) !== 1) {
+      if (addTargetsEnabled && (payloadKind === 'atom' || payloadKind === 'fragment') && (atom.Z | 0) !== 1) {
         const degreeByAtomIndex = new Map();
         for (const bond of Array.isArray(env.visibleBonds) ? env.visibleBonds : []) {
           if (!bond) continue;
@@ -571,13 +576,14 @@
         atomIndex,
         mode: profile.isTransitionMetal
           ? 'metal-coordination'
-          : (ghosts.length ? 'coordination-open' : 'coordination-saturated'),
+          : (hasOpenSites ? 'coordination-open' : 'coordination-saturated'),
         label: activeChoice.text,
         activeChoice,
         activeGeometryId: geometry.id,
         activeGeometryLabel: geometry.label,
         activeGeometryText: activeChoice.text,
         inference,
+        addTargetsEnabled,
         ghosts,
         replaceTargets,
         occupied,
@@ -711,6 +717,7 @@
         : (payloadKind === 'molecule'
           ? `molecule ${payloadLabel || 'molecule'}`
           : (payloadLabel || 'the loaded element'));
+      const canShowAddTargets = payloadKind === 'atom' || payloadKind === 'fragment';
       let hint = '';
       let scope = '';
       if (visible && descriptor) {
@@ -722,6 +729,8 @@
           hint = `Click to place ${payloadText} in ${descriptor.activeGeometryText}`;
         } else if (descriptor.mode === 'metal-coordination') {
           hint = `Coordination halo: ${descriptor.activeGeometryText}`;
+        } else if (!descriptor.addTargetsEnabled && canShowAddTargets) {
+          hint = `Coordination halo: ${descriptor.activeGeometryText} • Click + to show build sites`;
         } else if ((descriptor.ghosts || []).length && (descriptor.replaceTargets || []).length) {
           hint = `Click a ghost to place ${payloadText} • Click a highlighted H to replace it`;
         } else if ((descriptor.replaceTargets || []).length) {
