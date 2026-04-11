@@ -1,8 +1,12 @@
 (function (global) {
   'use strict';
 
-  const { getCovalentRadiusAngstrom, isAutoBondSupportedAtomicNumber } = global.VibeMolBondInference || {};
-  if (![getCovalentRadiusAngstrom, isAutoBondSupportedAtomicNumber].every((fn) => typeof fn === 'function')) {
+  const {
+    getCovalentRadiusAngstrom,
+    isAutoBondSupportedAtomicNumber,
+    countsTowardAtomValence,
+  } = global.VibeMolBondInference || {};
+  if (![getCovalentRadiusAngstrom, isAutoBondSupportedAtomicNumber, countsTowardAtomValence].every((fn) => typeof fn === 'function')) {
     throw new Error('VibeMolBondInference is not loaded. Ensure assets/app/js/bond-inference.js is included before assets/app/js/auto-hydrogen.js.');
   }
 
@@ -436,14 +440,18 @@
       const order = normalizeBondOrder(rawBond.order || 1);
       const envI = envs[i];
       const envJ = envs[j];
-      envI.bondOrderSum += order;
-      envJ.bondOrderSum += order;
-      envI.maxBondOrder = Math.max(envI.maxBondOrder, order);
-      envJ.maxBondOrder = Math.max(envJ.maxBondOrder, order);
-      envI.neighborIndices.push(j);
-      envJ.neighborIndices.push(i);
-      envI.occupiedDirs.push(vecNormalize(deltaIJ));
-      envJ.occupiedDirs.push(vecNormalize(deltaJI));
+      if (countsTowardAtomValence(atomI, atomJ)) {
+        envI.bondOrderSum += order;
+        envI.maxBondOrder = Math.max(envI.maxBondOrder, order);
+        envI.neighborIndices.push(j);
+        envI.occupiedDirs.push(vecNormalize(deltaIJ));
+      }
+      if (countsTowardAtomValence(atomJ, atomI)) {
+        envJ.bondOrderSum += order;
+        envJ.maxBondOrder = Math.max(envJ.maxBondOrder, order);
+        envJ.neighborIndices.push(i);
+        envJ.occupiedDirs.push(vecNormalize(deltaJI));
+      }
     }
     envs.forEach((env) => {
       env.neighborCount = env.neighborIndices.length;

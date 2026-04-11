@@ -8,6 +8,7 @@ function plain(value) {
 
 function loadInference() {
   const context = loadGlobalModules([
+    'assets/app/js/bond-inference.js',
     'assets/app/js/coordination.js',
     'assets/app/js/geometry-inference.js',
   ], {
@@ -22,6 +23,7 @@ function loadInference() {
         15: { symbol: 'P', name: 'Phosphorus' },
         16: { symbol: 'S', name: 'Sulfur' },
         17: { symbol: 'Cl', name: 'Chlorine' },
+        29: { symbol: 'Cu', name: 'Copper' },
         28: { symbol: 'Ni', name: 'Nickel' },
         54: { symbol: 'Xe', name: 'Xenon' },
         78: { symbol: 'Pt', name: 'Platinum' },
@@ -162,4 +164,28 @@ test('transition metals stay on the coordination-number path', () => {
   assert.equal(nickel.isTM, true);
   assert.equal(nickel.geometryId, 'squarePlanar');
   assert.equal(platinum.geometryId, 'squarePlanar');
+});
+
+test('geometry inference ignores metal-ligand bonds on the nonmetal ligand side', () => {
+  const api = loadInference();
+  const coordinatedAmideLikeNitrogen = plain(api.inferAtomGeometry({
+    atoms: [
+      { id: 'n', Z: 7, x: 0, y: 0, z: 0 },
+      { id: 'h1', Z: 1, x: 0.9, y: 0, z: 0 },
+      { id: 'h2', Z: 1, x: -0.3, y: 0.9, z: 0 },
+      { id: 'h3', Z: 1, x: -0.3, y: -0.9, z: 0 },
+      { id: 'cu', Z: 29, x: 0, y: 0, z: 2.0 },
+    ],
+    bonds: [
+      { a: 'n', b: 'h1', order: 1, kind: 'normal', origin: 'explicit' },
+      { a: 'n', b: 'h2', order: 1, kind: 'normal', origin: 'explicit' },
+      { a: 'n', b: 'h3', order: 1, kind: 'normal', origin: 'explicit' },
+      { a: 'n', b: 'cu', order: 1, kind: 'normal', origin: 'explicit', style: 'metal-dative' },
+    ],
+    annotations: { coordination: { byAtomId: {} } },
+  }, 0));
+
+  assert.equal(coordinatedAmideLikeNitrogen.geometryId, 'tetrahedral');
+  assert.equal(coordinatedAmideLikeNitrogen.molecularLabel, 'trigonal pyramidal');
+  assert.equal(coordinatedAmideLikeNitrogen.fullBondCount, 3);
 });

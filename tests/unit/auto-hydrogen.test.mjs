@@ -19,6 +19,7 @@ function loadAutoHydrogen(extraGlobals = {}) {
         15: { radius_covalent: 1.07 },
         16: { radius_covalent: 1.05 },
         17: { radius_covalent: 1.02 },
+        29: { symbol: 'Cu', radius_covalent: 1.32 },
         35: { radius_covalent: 1.2 },
         53: { radius_covalent: 1.39 },
       },
@@ -150,6 +151,33 @@ test('auto-hydrogen skips unsupported atoms and reports scope-sensitive summarie
   assert.equal(result.selectionSummary, 'No missing hydrogens found on the selected atoms.');
   assert.equal(result.structureHydrogens, 4);
   assert.equal(result.skippedReason, 'unsupported');
+});
+
+test('auto-hydrogen ignores metal-ligand bonds on the nonmetal ligand side', () => {
+  const context = loadAutoHydrogen();
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const plan = window.VibeMolAutoHydrogen.buildAutoHydrogenPlan({
+      atoms: [
+        { id: 'n', Z: 7, x: 0, y: 0, z: 0 },
+        { id: 'h1', Z: 1, x: 0.95, y: 0, z: 0 },
+        { id: 'h2', Z: 1, x: -0.3, y: 0.9, z: 0 },
+        { id: 'cu', Z: 29, x: -2.0, y: 0, z: 0 },
+      ],
+      bonds: [
+        { a: 'n', b: 'h1', order: 1, kind: 'normal', origin: 'explicit' },
+        { a: 'n', b: 'h2', order: 1, kind: 'normal', origin: 'explicit' },
+        { a: 'n', b: 'cu', order: 1, kind: 'normal', origin: 'explicit', style: 'metal-dative' },
+      ],
+    }, { focusAtomIndices: [0] });
+    return {
+      hydrogenCount: plan.stats.hydrogenCount,
+      parent: plan.parents[0],
+    };
+  })())`));
+
+  assert.equal(result.hydrogenCount, 1);
+  assert.equal(result.parent.atomId, 'n');
+  assert.equal(result.parent.targetValence, 3);
 });
 
 test('auto-hydrogen controller previews on first shortcut and applies on second shortcut', () => {

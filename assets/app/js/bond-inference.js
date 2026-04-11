@@ -44,6 +44,18 @@
     return !!METAL_BOND_RADIUS[getElementSymbol(z)];
   }
 
+  function resolveAtomicNumber(atomOrZ) {
+    if (atomOrZ && typeof atomOrZ === 'object') return Number(atomOrZ.Z) | 0;
+    return Number(atomOrZ) | 0;
+  }
+
+  function countsTowardAtomValence(atomOrZ, otherAtomOrZ) {
+    const atomIsMetal = isMetalAtomicNumber(resolveAtomicNumber(atomOrZ));
+    const otherIsMetal = isMetalAtomicNumber(resolveAtomicNumber(otherAtomOrZ));
+    if (atomIsMetal === otherIsMetal) return true;
+    return atomIsMetal;
+  }
+
   /**
    * Look up the covalent radius for an atomic number in angstroms.
    * Falls back to a generic radius when element metadata is unavailable.
@@ -932,6 +944,7 @@
     isAutoBondSupportedAtomicNumber,
     getElementMaxCoordination,
     isMetalAtomicNumber,
+    countsTowardAtomValence,
     normalizeMetalBondMode,
     collectRawBondCandidates,
     acceptBondCandidatesByDistanceRank,

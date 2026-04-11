@@ -2,17 +2,19 @@
   'use strict';
 
   const EPSILON = 1e-8;
+  const { countsTowardAtomValence } = global.VibeMolBondInference || {};
   const {
     getGeometry: getCoordinationGeometry,
     getCoordinationProfile,
   } = global.VibeMolCoordination || {};
   const { inferAtomGeometry } = global.VibeMolGeometryInference || {};
   if (![
+    countsTowardAtomValence,
     getCoordinationGeometry,
     getCoordinationProfile,
     inferAtomGeometry,
   ].every((fn) => typeof fn === 'function')) {
-    throw new Error('VibeMolEditHalo requires VibeMolCoordination and VibeMolGeometryInference to be loaded first.');
+    throw new Error('VibeMolEditHalo requires VibeMolBondInference, VibeMolCoordination and VibeMolGeometryInference to be loaded first.');
   }
 
   function clamp(value, min, max) {
@@ -389,6 +391,7 @@
       for (const bond of bonds) {
         if (bond.a !== atomIndex && bond.b !== atomIndex) continue;
         const other = bond.a === atomIndex ? bond.b : bond.a;
+        if (!countsTowardAtomValence(atoms[atomIndex], atoms[other])) continue;
         const origin = getAtomWorld(vol, atomIndex);
         const neighbor = getAtomWorld(vol, other);
         if (!origin || !neighbor) continue;

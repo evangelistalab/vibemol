@@ -8,6 +8,7 @@ function plain(value) {
 
 function createHarness(options = {}) {
   const context = loadGlobalModules([
+    'assets/app/js/bond-inference.js',
     'assets/app/js/coordination.js',
     'assets/app/js/geometry-inference.js',
     'assets/app/js/edit-halo.js',

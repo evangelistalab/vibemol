@@ -3,7 +3,6 @@
 
   function createEditGestureController(options = {}) {
     const dragThresholdPx = Number.isFinite(options.dragThresholdPx) ? Math.max(2, Number(options.dragThresholdPx)) : 6;
-    const doubleClickThresholdMs = Number.isFinite(options.doubleClickThresholdMs) ? Math.max(100, Number(options.doubleClickThresholdMs)) : 400;
     const isEnabled = typeof options.isEnabled === 'function' ? options.isEnabled : (() => false);
     const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
     const EDIT_INTENT = options.EDIT_INTENT || Object.freeze({
@@ -38,7 +37,6 @@
     const cancelRotateDrag = typeof options.cancelRotateDrag === 'function' ? options.cancelRotateDrag : (() => {});
     const resolveMoveScope = typeof options.resolveMoveScope === 'function' ? options.resolveMoveScope : (() => ({ indices: [], label: 'No move scope', anchorWorld: null }));
     const resolveDownstreamMoveScope = typeof options.resolveDownstreamMoveScope === 'function' ? options.resolveDownstreamMoveScope : (() => ({ indices: [], label: 'No downstream scope', anchorWorld: null }));
-    const resolveMoleculeSelection = typeof options.resolveMoleculeSelection === 'function' ? options.resolveMoleculeSelection : ((atomIndex) => [atomIndex | 0]);
     const getAtomWorldPosition = typeof options.getAtomWorldPosition === 'function' ? options.getAtomWorldPosition : (() => null);
     const cyclePendingBondOrder = typeof options.cyclePendingBondOrder === 'function' ? options.cyclePendingBondOrder : (() => 1);
     const setPendingBondOrder = typeof options.setPendingBondOrder === 'function' ? options.setPendingBondOrder : (() => 1);
@@ -66,7 +64,6 @@
       currentMoveScopeIndices: [],
       bondTargetIndex: -1,
       activePointerId: null,
-      lastAtomClick: null,
     };
 
     function syncSelectionScope() {
@@ -88,29 +85,6 @@
       const dx = (Number(e && e.clientX) || 0) - state.press.clientX;
       const dy = (Number(e && e.clientY) || 0) - state.press.clientY;
       return (dx * dx + dy * dy) >= (dragThresholdPx * dragThresholdPx);
-    }
-
-    function isDoubleClickEvent(e) {
-      return (Number(e && e.detail) || 0) >= 2;
-    }
-
-    function getEventTimestamp(e) {
-      const stamp = Number(e && e.timeStamp);
-      return Number.isFinite(stamp) ? stamp : Date.now();
-    }
-
-    function wasRecentRepeatedAtomClick(atomIndex, e) {
-      const last = state.lastAtomClick;
-      if (!last || (last.atomIndex | 0) !== (atomIndex | 0)) return false;
-      return (getEventTimestamp(e) - last.at) <= doubleClickThresholdMs;
-    }
-
-    function recordAtomClick(atomIndex, e) {
-      state.lastAtomClick = { atomIndex: atomIndex | 0, at: getEventTimestamp(e) };
-    }
-
-    function clearLastAtomClick() {
-      state.lastAtomClick = null;
     }
 
     function buildUiState() {
@@ -207,7 +181,6 @@
       state.voidPreviewVisible = false;
       state.lastCenterBondHover = null;
       state.currentMoveScopeIndices = [];
-      clearLastAtomClick();
       hideVoidPlacementPreview();
       cancelGrowDrag();
       cancelMoveDrag();
@@ -443,7 +416,6 @@
         finishMoveDrag();
         state.gestureState = 'idle';
         state.press = null;
-        clearLastAtomClick();
         if (activePointerId != null) releasePointer(activePointerId);
         state.activePointerId = null;
         updateIdleHover(e);
@@ -453,7 +425,6 @@
         finishRotateDrag();
         state.gestureState = 'idle';
         state.press = null;
-        clearLastAtomClick();
         if (activePointerId != null) releasePointer(activePointerId);
         state.activePointerId = null;
         updateIdleHover(e);
@@ -463,7 +434,6 @@
         finishBoxSelection(!!(press && press.additive));
         state.gestureState = 'idle';
         state.press = null;
-        clearLastAtomClick();
         if (activePointerId != null) releasePointer(activePointerId);
         state.activePointerId = null;
         updateIdleHover(e);
@@ -477,7 +447,6 @@
         state.gestureState = 'idle';
         state.press = null;
         state.bondTargetIndex = -1;
-        clearLastAtomClick();
         if (result && Array.isArray(result.selection) && result.selection.length) setSelection(result.selection);
         if (activePointerId != null) releasePointer(activePointerId);
         state.activePointerId = null;
@@ -491,15 +460,9 @@
         return false;
       }
       state.press = null;
-      if (press.kind === 'atom-press-pending' || press.kind === 'selected-atom') {
-        clearLastAtomClick();
-      } else if (press.kind === 'bond-inert') {
-        clearLastAtomClick();
-      } else if (press.kind === 'void-clear') {
-        clearLastAtomClick();
+      if (press.kind === 'void-clear') {
         if (clearSelection()) setHintMessage('Selection cleared.');
       } else if (press.kind === 'void-place') {
-        clearLastAtomClick();
         const result = placeVoidAtom(e) || null;
         if (result && Array.isArray(result.selection) && result.selection.length) setSelection(result.selection);
       }
