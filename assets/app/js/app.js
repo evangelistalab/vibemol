@@ -1117,7 +1117,6 @@
   // Current atom/bond material style
   let moleculeStyle = 'default';
   // Independent molecule appearance features.
-  let moleculeSplitColorBondsEnabled = true;
   let moleculeShadowsEnabled = false;
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
@@ -3859,7 +3858,7 @@
       const gradientColorA = a.bondColor || a.color;
       const gradientColorB = b.bondColor || b.color;
       const q = new THREE.Quaternion().setFromUnitVectors(up, dirNorm);
-      const useSplitColorBondConnector = moleculeSplitColorBondsEnabled && (profile.key === 'default' || profile.key === 'toon');
+      const useSplitColorBondConnector = profile.key === 'default' || profile.key === 'toon';
       if (useSplitColorBondConnector && !isGlossyStyle && !isKitStyle && gradientColorA && gradientColorB) {
         const sameElement = (a.Z | 0) === (b.Z | 0);
         if (sameElement) {
@@ -5616,6 +5615,7 @@
   const toggleAtomLabels = document.getElementById('showAtomLabels');
   const toggleAtomLabelNumbers = document.getElementById('showAtomLabelNumbers');
   const elementColors = document.getElementById('elementColors');
+  const visibilityElementColorsToggleEl = document.getElementById('visibilityElementColorsToggle');
   const elementColorBtn = document.getElementById('elementColorBtn');
   const elementColorOverlay = document.getElementById('elementColorOverlay');
   const elementColorClose = document.getElementById('elementColorClose');
@@ -5643,6 +5643,11 @@
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
   const displayInspectorToggleIcon = document.getElementById('displayInspectorToggleIcon');
   const displayInspector = document.getElementById('displayInspector');
+  const appearanceStyleChipEls = Array.from(document.querySelectorAll('#displayInspector .appearanceStyleChip[data-style]'));
+  const appearanceActionToggleButtonEls = Array.from(document.querySelectorAll('#displayInspector .inspectorActionToggle[data-toggle-input]'));
+  const appearanceSurfacesSectionEl = document.getElementById('appearanceSurfacesSection');
+  const appearanceTwoComponentSectionEl = document.getElementById('appearanceTwoComponentSection');
+  const appearanceCloudSectionEl = document.getElementById('appearanceCloudSection');
   const moldenToolbarSection = document.getElementById('moldenToolbarSection');
   const moldenInspectorBtn = document.getElementById('moldenInspectorBtn');
   const moldenInspectorToggleIcon = document.getElementById('moldenInspectorToggleIcon');
@@ -5732,7 +5737,6 @@
   const moleculeStyleSel = document.getElementById('moleculeStyle');
   const rowGlossyBond = document.getElementById('rowGlossyBond');
   const glossyBondRadiusEl = document.getElementById('glossyBondRadius');
-  const moleculeSplitColorBondsToggleEl = document.getElementById('moleculeSplitColorBondsToggle');
   const moleculeShadowsToggleEl = document.getElementById('moleculeShadowsToggle');
   const moleculeFogToggleEl = document.getElementById('moleculeFogToggle');
   const rowMoleculeFogDepth = document.getElementById('rowMoleculeFogDepth');
@@ -6491,6 +6495,7 @@
     if (isCheckbox) {
       surfBtn.checked = !!showSurfaces;
       surfBtn.title = 'Toggle iso-surface rendering';
+      syncAllAppearanceActionToggleButtons();
       return;
     }
     surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces';
@@ -7863,6 +7868,7 @@
     if (notEditing(damp)) damp.value = (controls.dampingFactor ?? 0.05).toFixed(2);
     if (notEditing(autoRotSpeed)) autoRotSpeed.value = (controls.autoRotateSpeed ?? 2.0).toFixed(2);
     updateProjectionModeUI();
+    syncAppearanceInspectorSectionState();
   }
 
   // Initialize view UI
@@ -21054,7 +21060,11 @@
   bind('down', 'global', 's', () => saveBtn && saveBtn.click());
   bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
   bind('down', 'global', 'i', () => { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); });
-  bind('down', 'global', 'a', () => { window.__showAxes__ = !window.__showAxes__; if (toggleAxes) toggleAxes.checked = !!window.__showAxes__; });
+  bind('down', 'global', 'a', () => {
+    window.__showAxes__ = !window.__showAxes__;
+    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
+    syncAllAppearanceActionToggleButtons();
+  });
   bind('down', 'global', 'r', () => centerActiveMoleculeMassAtOrigin());
   // Global: molecule style presets (1=Default, 2=Toon, 3=Kit, 4=Glossy)
   bind('down', 'global', '1', () => setMoleculeStyle('default'));
@@ -21383,7 +21393,6 @@
    * Synchronize independent molecule feature controls.
    */
   function syncMoleculeFeatureControlsState() {
-    if (moleculeSplitColorBondsToggleEl) moleculeSplitColorBondsToggleEl.checked = !!moleculeSplitColorBondsEnabled;
     if (moleculeShadowsToggleEl) moleculeShadowsToggleEl.checked = !!moleculeShadowsEnabled;
     if (moleculeFogToggleEl) moleculeFogToggleEl.checked = !!moleculeFogEnabled;
     if (rowMoleculeFogDepth) rowMoleculeFogDepth.style.display = moleculeFogEnabled ? '' : 'none';
@@ -21396,7 +21405,109 @@
     if (blackbodyColdColorEl) blackbodyColdColorEl.value = normalizeHexColor(moleculeBlackbodyColdColor, '#2f0202');
     if (blackbodyHotColorEl) blackbodyHotColorEl.value = normalizeHexColor(moleculeBlackbodyHotColor, '#eaf6ff');
     if (rowBlackbodyColors) rowBlackbodyColors.style.display = moleculeBlackbodyEnabled ? '' : 'none';
+    syncAppearanceMirrorToggles();
+    syncAllAppearanceActionToggleButtons();
     syncColorPickerFields();
+  }
+
+  /**
+   * Synchronize the quick molecule-style chip row.
+   */
+  function syncMoleculeStyleChipState() {
+    if (!appearanceStyleChipEls.length) return;
+    const activeStyle = normalizeMoleculeStyleKey(moleculeStyle);
+    for (const chipEl of appearanceStyleChipEls) {
+      const chipStyle = normalizeMoleculeStyleKey(chipEl && chipEl.dataset ? chipEl.dataset.style : '');
+      const active = chipStyle === activeStyle;
+      chipEl.classList.toggle('active', active);
+      chipEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+  }
+
+  /**
+   * Resolve the hidden checkbox/input backing one Appearance action toggle button.
+   * @param {HTMLElement|null} buttonEl
+   * @returns {HTMLInputElement|null}
+   */
+  function getAppearanceActionToggleInput(buttonEl) {
+    if (!buttonEl || !buttonEl.dataset) return null;
+    const inputId = String(buttonEl.dataset.toggleInput || '').trim();
+    if (!inputId) return null;
+    const inputEl = document.getElementById(inputId);
+    return inputEl && inputEl.tagName === 'INPUT' ? /** @type {HTMLInputElement} */ (inputEl) : null;
+  }
+
+  /**
+   * Check whether one Appearance action toggle inverts the meaning of its backing input.
+   * @param {HTMLElement|null} buttonEl
+   * @returns {boolean}
+   */
+  function isAppearanceActionToggleInverted(buttonEl) {
+    return !!(buttonEl && buttonEl.dataset && buttonEl.dataset.toggleInvert === 'true');
+  }
+
+  /**
+   * Synchronize one Appearance action toggle button from its backing checkbox/input.
+   * @param {HTMLElement|null} buttonEl
+   */
+  function syncAppearanceActionToggleButton(buttonEl) {
+    const inputEl = getAppearanceActionToggleInput(buttonEl);
+    if (!buttonEl || !inputEl) return;
+    const checked = isAppearanceActionToggleInverted(buttonEl) ? !inputEl.checked : !!inputEl.checked;
+    const disabled = !!inputEl.disabled;
+    const stateEl = buttonEl.querySelector('.inspectorActionToggleState');
+    buttonEl.classList.toggle('active', checked);
+    buttonEl.setAttribute('aria-pressed', checked ? 'true' : 'false');
+    buttonEl.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    buttonEl.toggleAttribute('disabled', disabled);
+    if (inputEl.title) buttonEl.title = inputEl.title;
+    if (stateEl) stateEl.textContent = checked ? 'On' : 'Off';
+  }
+
+  /**
+   * Synchronize all Appearance action toggle buttons from app state.
+   */
+  function syncAllAppearanceActionToggleButtons() {
+    for (const buttonEl of appearanceActionToggleButtonEls) {
+      syncAppearanceActionToggleButton(buttonEl);
+    }
+  }
+
+  /**
+   * Keep mirrored appearance toggles aligned across Molecule and Visibility sections.
+   */
+  function syncAppearanceMirrorToggles() {
+    if (toggleMultiBonds) toggleMultiBonds.checked = !!showMultiBonds;
+    if (visibilityElementColorsToggleEl) visibilityElementColorsToggleEl.checked = !!(elementColors && elementColors.checked);
+    syncAllAppearanceActionToggleButtons();
+  }
+
+  /**
+   * Keep Appearance sections aligned with the active file and render mode.
+   * @param {*=} vol
+   */
+  function syncAppearanceInspectorSectionState(vol = undefined) {
+    const activeVol = vol || ((currentIndex >= 0 ? volumes[currentIndex] : null) || {}).vol || null;
+    const hasSurfaceControls = hasVolumetricGrid(activeVol);
+    const showTwoComponent = !!(hasSurfaceControls && activeVol && activeVol.isTwoComponent);
+    const showCloudOptions = !!(hasSurfaceControls && renderMode === 'cloud');
+    const surfaceToggleButton = displayInspector
+      ? displayInspector.querySelector('.inspectorActionToggle[data-toggle-input="surfBtn"]')
+      : null;
+    if (appearanceSurfacesSectionEl) {
+      appearanceSurfacesSectionEl.hidden = !hasSurfaceControls;
+      if (!hasSurfaceControls) appearanceSurfacesSectionEl.open = false;
+    }
+    if (surfaceToggleButton) surfaceToggleButton.style.display = hasSurfaceControls ? '' : 'none';
+    if (appearanceTwoComponentSectionEl) {
+      appearanceTwoComponentSectionEl.hidden = !showTwoComponent;
+      if (!showTwoComponent) appearanceTwoComponentSectionEl.open = false;
+    }
+    if (appearanceCloudSectionEl) {
+      appearanceCloudSectionEl.hidden = !showCloudOptions;
+      if (!showCloudOptions) appearanceCloudSectionEl.open = false;
+    }
+    syncAllAppearanceActionToggleButtons();
   }
 
   /**
@@ -21438,6 +21549,7 @@
     if (dofFocusDistanceEl) dofFocusDistanceEl.value = getDofFocusDistance().toFixed(1);
     if (dofFocusRangeEl) dofFocusRangeEl.value = getDofFocusRange().toFixed(1);
     if (dofBlurAmountEl) dofBlurAmountEl.value = getDofBlurAmount().toFixed(2);
+    syncAllAppearanceActionToggleButtons();
   }
 
   /**
@@ -21511,6 +21623,7 @@
     applyMoleculeStyleLighting();
     applyShadowParticipation(atomGroup);
     applyShadowParticipation(bondGroup);
+    syncMoleculeStyleChipState();
     syncSurfaceStyleControlState();
     syncGlossyStyleControlsState();
     syncMoleculeFeatureControlsState();
@@ -21550,12 +21663,30 @@
   } else {
     applyMoleculeStyleUiState();
   }
-  if (moleculeSplitColorBondsToggleEl) {
-    moleculeSplitColorBondsToggleEl.onchange = () => {
-      moleculeSplitColorBondsEnabled = !!moleculeSplitColorBondsToggleEl.checked;
-      applyMoleculeStyleUiState();
-      rebuildScene({ preserveView: true });
-    };
+  for (const chipEl of appearanceStyleChipEls) {
+    chipEl.addEventListener('click', () => {
+      const nextStyle = chipEl && chipEl.dataset ? chipEl.dataset.style : '';
+      if (!nextStyle) return;
+      setMoleculeStyle(nextStyle);
+    });
+  }
+  for (const buttonEl of appearanceActionToggleButtonEls) {
+    buttonEl.addEventListener('click', () => {
+      const inputEl = getAppearanceActionToggleInput(buttonEl);
+      if (!inputEl || inputEl.disabled) {
+        syncAppearanceActionToggleButton(buttonEl);
+        return;
+      }
+      const currentVisibleState = isAppearanceActionToggleInverted(buttonEl) ? !inputEl.checked : !!inputEl.checked;
+      const nextVisibleState = !currentVisibleState;
+      inputEl.checked = isAppearanceActionToggleInverted(buttonEl) ? !nextVisibleState : nextVisibleState;
+      if (typeof inputEl.onchange === 'function') {
+        inputEl.onchange();
+      } else {
+        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      syncAppearanceActionToggleButton(buttonEl);
+    });
   }
   if (moleculeShadowsToggleEl) {
     moleculeShadowsToggleEl.onchange = () => {
@@ -21717,6 +21848,7 @@
     if (rowStyle) rowStyle.style.display = isCloud ? 'none' : '';
     if (rowCloudType) rowCloudType.style.display = isCloud ? '' : 'none';
     if (rowCloudParams) rowCloudParams.style.display = isCloud ? '' : 'none';
+    syncAppearanceInspectorSectionState();
   }
   /**
    * Read and normalize cloud-rendering options from UI controls.
@@ -21739,6 +21871,7 @@
   if (cloudAlphaEl) cloudAlphaEl.onchange = () => rebuildScene({ preserveView: true });
   // Initialize UI visibility based on current mode
   updateRenderModeUI();
+  syncAppearanceInspectorSectionState();
 
   // --- Preset import/export (shared with CLI via window.VibeMolPreset) ---
   const STRUCTURE_KIND = 'vibemol.structure';
@@ -21849,9 +21982,8 @@
       toggleAtomLabelNumbers.checked = !!showAtomLabelNumbers && labelsEnabled;
       toggleAtomLabelNumbers.disabled = !labelsEnabled;
       toggleAtomLabelNumbers.setAttribute('aria-disabled', labelsEnabled ? 'false' : 'true');
-      const chip = toggleAtomLabelNumbers.closest('.toggleChip');
-      if (chip) chip.style.opacity = labelsEnabled ? '1' : '0.55';
     }
+    syncAllAppearanceActionToggleButtons();
   }
 
   /**
@@ -22000,10 +22132,6 @@
     glossyBondRadius = asFiniteNumber(value, getGlossyBondCenterRadius());
     glossyBondRadius = getGlossyBondCenterRadius();
     if (glossyBondRadiusEl) glossyBondRadiusEl.value = String(glossyBondRadius);
-  });
-  registerPresetSetting('molecule.feature.splitColorBonds', () => !!moleculeSplitColorBondsEnabled, (value) => {
-    moleculeSplitColorBondsEnabled = asBoolean(value);
-    applyMoleculeStyleUiState();
   });
   registerPresetSetting('molecule.feature.shadows', () => !!moleculeShadowsEnabled, (value) => {
     moleculeShadowsEnabled = asBoolean(value);
@@ -25108,6 +25236,7 @@
   if (toggleMultiBonds) {
     toggleMultiBonds.onchange = () => {
       showMultiBonds = !!toggleMultiBonds.checked;
+      syncAppearanceMirrorToggles();
       rebuildScene({ preserveView: true });
     };
   }
@@ -25132,8 +25261,21 @@
   }
   elementColors.onchange = () => {
     refreshPeriodicCells();
+    if (visibilityElementColorsToggleEl) visibilityElementColorsToggleEl.checked = !!elementColors.checked;
+    syncAllAppearanceActionToggleButtons();
     rebuildScene({ preserveView: true });
   };
+  if (visibilityElementColorsToggleEl) {
+    visibilityElementColorsToggleEl.onchange = () => {
+      if (!elementColors) return;
+      elementColors.checked = !!visibilityElementColorsToggleEl.checked;
+      if (typeof elementColors.onchange === 'function') {
+        elementColors.onchange();
+        return;
+      }
+      syncAllAppearanceActionToggleButtons();
+    };
+  }
   if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);
   if (elementColorClose) elementColorClose.onclick = () => setElementColorOverlayOpen(false);
   if (elementColorOverlay) {
@@ -25595,6 +25737,7 @@
     if (twoComponentModeSelect) {
       twoComponentModeSelect.value = effectiveMode;
     }
+    syncAppearanceInspectorSectionState(vol);
 
     try {
       if (schemeSelect) {

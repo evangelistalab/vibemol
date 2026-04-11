@@ -1842,9 +1842,9 @@
 
     #toolbar .tb-toolbarInspectorFields .inspectorGroup {
       border: none;
-      border-top: 1px solid var(--tb-section-divider);
       border-radius: 0;
-      padding: 8px 0 4px 0;
+      padding: 0;
+      margin: 0;
       background: transparent;
     }
 
@@ -1852,7 +1852,7 @@
       color: var(--tb-text-color-emphasis);
       font-size: var(--tb-text-size-label);
       font-weight: var(--tb-text-weight-bold);
-      margin-bottom: 6px;
+      margin: 0;
     }
 
     #toolbar .tb-toolbarInspectorFields label {
@@ -2038,6 +2038,236 @@
       grid-template-columns: 94px minmax(0, 1fr);
     }
 
+    #toolbar #displayInspector .inspectorQuickStyleGroup {
+      border-top: none;
+      padding: 2px 0 10px 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    #toolbar #displayInspector .appearanceQuickStyleHeader {
+      display: block;
+      min-width: 0;
+    }
+
+    #toolbar #displayInspector .inspectorQuickStyleGroup .inspectorTitle {
+      white-space: nowrap;
+    }
+
+    #toolbar #displayInspector .appearanceQuickBgRow {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    #toolbar #displayInspector .appearanceQuickBg {
+      width: 100%;
+      min-width: 0;
+    }
+
+    #toolbar #displayInspector .appearanceQuickBgField {
+      width: 100%;
+    }
+
+    #toolbar #displayInspector .appearanceStyleChipRow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    #toolbar #displayInspector .appearanceStyleChip,
+    #toolbar #displayInspector .appearanceModeChip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 30px;
+      min-width: 0;
+      border: none;
+      border-radius: var(--tb-radius-tight);
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-subtle);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
+      line-height: 1;
+      padding: 0 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+    }
+
+    #toolbar #displayInspector .appearanceStyleChip:hover,
+    #toolbar #displayInspector .appearanceModeChip:hover {
+      background: var(--tb-surface-emphasis-hover);
+      color: var(--tb-text-color-strong);
+    }
+
+    #toolbar #displayInspector .appearanceStyleChip.active,
+    #toolbar #displayInspector .appearanceStyleChip[aria-pressed="true"],
+    #toolbar #displayInspector .appearanceModeChip.active,
+    #toolbar #displayInspector .appearanceModeChip[aria-pressed="true"] {
+      background: var(--tb-color-accent);
+      color: var(--tb-text-color-inverse);
+      box-shadow: inset 0 0 0 1px var(--tb-color-accent-outline);
+    }
+
+    #toolbar #displayInspector .appearanceSegmentedControl {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    #toolbar #displayInspector .appearanceHiddenControl {
+      display: none;
+    }
+
+    #toolbar #displayInspector .tb-quickActionBtn {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #toolbar #displayInspector .tb-quickActionIcon {
+      font-size: 18px;
+      line-height: 1;
+      opacity: 0.9;
+      flex: 0 0 auto;
+    }
+
+    #toolbar #displayInspector .tb-quickActionLabel {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1 1 auto;
+    }
+
+    #toolbar #displayInspector .inspectorActionToggle {
+      width: 100%;
+    }
+
+    #toolbar #displayInspector .inspectorActionToggleRow {
+      margin-bottom: 7px;
+    }
+
+    #toolbar #displayInspector .appearanceActionToggleGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    #toolbar #displayInspector #appearanceVisibilitySection .appearanceActionToggleGrid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    #toolbar #displayInspector .inspectorActionToggleState {
+      flex: 0 0 auto;
+      min-width: 36px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: calc(var(--tb-radius-tight) - 2px);
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-subtle);
+      font-size: 11px;
+      font-weight: var(--tb-text-weight-bold);
+      line-height: 20px;
+      text-align: center;
+    }
+
+    #toolbar #displayInspector .inspectorActionToggle.active .inspectorActionToggleState {
+      background: var(--tb-surface-emphasis-hover);
+      color: var(--tb-text-color-strong);
+    }
+
+    #toolbar #displayInspector .inspectorActionToggle .tb-quickActionIcon,
+    #toolbar #displayInspector .inspectorActionToggle .tb-quickActionLabel,
+    #toolbar #displayInspector .inspectorActionToggle .inspectorActionToggleState {
+      pointer-events: none;
+    }
+
+    #toolbar #displayInspector .inspectorActionToggle:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    #toolbar #displayInspector .inspectorAccordion {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      border-top: 1px solid var(--tb-section-divider);
+      padding-top: 6px;
+    }
+
+    #toolbar #displayInspector .inspectorAccordionSummary,
+    #toolbar #displayInspector .inspectorSubsectionSummary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+      padding: 2px 0 8px 0;
+    }
+
+    #toolbar #displayInspector .inspectorAccordionSummary::-webkit-details-marker,
+    #toolbar #displayInspector .inspectorSubsectionSummary::-webkit-details-marker {
+      display: none;
+    }
+
+    #toolbar #displayInspector .inspectorAccordionSummary::after,
+    #toolbar #displayInspector .inspectorSubsectionSummary::after {
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1;
+      color: var(--tb-text-color-subtle);
+      content: "▸";
+      flex: 0 0 auto;
+    }
+
+    #toolbar #displayInspector details[open]>.inspectorAccordionSummary::after,
+    #toolbar #displayInspector details[open]>.inspectorSubsectionSummary::after {
+      content: "▾";
+      color: var(--tb-text-color-emphasis);
+    }
+
+    #toolbar #displayInspector .inspectorAccordionBody {
+      display: grid;
+      gap: 0;
+      padding: 0 0 4px 0;
+    }
+
+    #toolbar #displayInspector .inspectorAccordionBody>.secondary {
+      justify-self: start;
+      margin-top: 2px;
+    }
+
+    #toolbar #displayInspector .inspectorSubsection {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 2px;
+      border-top: 1px dashed var(--tb-section-divider);
+      padding-top: 4px;
+    }
+
+    #toolbar #displayInspector .inspectorSubsectionSummary {
+      padding: 2px 0 6px 0;
+      color: var(--tb-text-color-emphasis);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
+    }
+
+    #toolbar #displayInspector .inspectorSubsectionBody {
+      padding-left: 8px;
+      padding-bottom: 2px;
+    }
+
     #toolbar #displayInspector .inspectorBooleanControl {
       display: inline-flex;
       align-items: center;
@@ -2206,6 +2436,10 @@
       color: var(--tb-text-color-chip-muted);
       border-radius: 0;
       padding: 2px 0;
+    }
+
+    #toolbar #displayInspector .toggleChip input[type="checkbox"] {
+      accent-color: var(--vm-accent-700);
     }
 
     #toolbar #displayInspector .isoField {
@@ -2433,9 +2667,28 @@
           class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
       </button>
       <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields" aria-hidden="true">
-        <div class="inspectorGroup">
-          <div class="inspectorTitle">Molecule</div>
-          <div class="inspectorRow inspectorSelectRow">
+        <div class="inspectorGroup inspectorQuickStyleGroup">
+          <div class="appearanceQuickStyleHeader">
+            <div class="inspectorTitle">Quick style</div>
+          </div>
+          <div class="appearanceStyleChipRow" role="group" aria-label="Quick molecule styles">
+            <button type="button" class="appearanceStyleChip" data-style="default" aria-pressed="true">Default</button>
+            <button type="button" class="appearanceStyleChip" data-style="toon" aria-pressed="false">Toon</button>
+            <button type="button" class="appearanceStyleChip" data-style="kit" aria-pressed="false">Kit</button>
+          </div>
+          <div class="appearanceQuickBgRow">
+            <label class="appearanceQuickBg" for="bgColor">
+              <span class="colorPickerWrap">
+                <span class="colorPickerTag">BG</span>
+                <span class="colorPickerField appearanceQuickBgField">
+                  <input type="color" id="bgColor" value="#ffffff" aria-label="Background color" />
+                  <span class="colorPickerSwatch" id="bgColorSwatch" aria-hidden="true"></span>
+                  <span class="colorPickerHex" id="bgColorHex">FFFFFF</span>
+                </span>
+              </span>
+            </label>
+          </div>
+          <div class="appearanceHiddenControl" aria-hidden="true">
             <label for="moleculeStyle">Style</label>
             <select id="moleculeStyle"
               title="Choose atom/bond rendering style (shortcuts: 1=Default, 2=Toon, 3=Kit, 4=Glossy)">
@@ -2444,231 +2697,328 @@
               <option value="kit">Kit (collar joints)</option>
               <option value="glossy">Glossy (glass edge)</option>
             </select>
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowGlossyBond" style="display:none;">
-            <label for="glossyBondRadius">Glossy bond</label>
-            <input type="number" id="glossyBondRadius" min="0.04" max="0.16" step="0.005" value="0.072"
-              title="Center radius for glossy bond connectors (angstrom)" />
-          </div>
-          <div class="inspectorRow inspectorSelectRow inspectorBooleanRow">
-            <label for="moleculeSplitColorBondsToggle">Bond colors</label>
-            <label class="inspectorBooleanControl" for="moleculeSplitColorBondsToggle">
-              <input type="checkbox" id="moleculeSplitColorBondsToggle" checked
-                title="Default and Toon styles: split heteroatom bonds into two solid half-connectors" />
-              <span>Split at center</span>
-            </label>
-          </div>
-          <div class="inspectorRow inspectorSelectRow inspectorBooleanRow">
-            <label for="moleculeShadowsToggle">Shadows</label>
-            <label class="inspectorBooleanControl" for="moleculeShadowsToggle">
-              <input type="checkbox" id="moleculeShadowsToggle" />
-              <span>Enable</span>
-            </label>
-          </div>
-          <div class="inspectorRow inspectorSelectRow inspectorBooleanRow">
-            <label for="moleculeFogToggle">Fog</label>
-            <label class="inspectorBooleanControl" for="moleculeFogToggle">
-              <input type="checkbox" id="moleculeFogToggle" />
-              <span>Enable</span>
-            </label>
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowMoleculeFogDepth" style="display:none;">
-            <label for="moleculeFogDepth">Fog depth</label>
-            <label class="inspectorSliderField" for="moleculeFogDepth">
-              <input type="range" id="moleculeFogDepth" min="6" max="40" step="0.5" value="14.0"
-                title="Fog far distance (near is derived automatically)" />
-              <span id="moleculeFogDepthValue" class="inspectorSliderValue">14.0</span>
-            </label>
-          </div>
-          <div class="inspectorRow inspectorSelectRow inspectorBooleanRow">
-            <label for="moleculeInkToggle">Ink scheme</label>
-            <label class="inspectorBooleanControl" for="moleculeInkToggle">
-              <input type="checkbox" id="moleculeInkToggle" />
-              <span>Enable</span>
-            </label>
-          </div>
-          <div class="inspectorRow inspectorSelectRow">
-            <label for="moleculeAtomOpacity">Atom alpha</label>
-            <input type="number" id="moleculeAtomOpacity" min="0.05" max="1" step="0.05" value="1.00"
-              title="Global atom opacity (0.05 to 1.00)" />
-          </div>
-          <div class="inspectorRow inspectorSelectRow">
-            <label for="moleculeBondOpacity">Bond alpha</label>
-            <input type="number" id="moleculeBondOpacity" min="0.05" max="1" step="0.05" value="1.00"
-              title="Global bond opacity (0.05 to 1.00)" />
-          </div>
-          <div class="inspectorRow inspectorSelectRow inspectorBooleanRow">
-            <label for="moleculeBlackbodyToggle">Blackbody</label>
-            <label class="inspectorBooleanControl" for="moleculeBlackbodyToggle">
-              <input type="checkbox" id="moleculeBlackbodyToggle" />
-              <span>Enable</span>
-            </label>
-          </div>
-          <div class="inspectorRow colorPickerRow" id="rowBlackbodyColors" style="display:none;">
-            <label class="colorPickerWrap">
-              <span class="colorPickerTag">Cold</span>
-              <span class="colorPickerField">
-                <input type="color" id="blackbodyColdColor" value="#2f0202" aria-label="Blackbody cold color" />
-                <span class="colorPickerSwatch" id="blackbodyColdSwatch" aria-hidden="true"></span>
-                <span class="colorPickerHex" id="blackbodyColdHex">2F0202</span>
-              </span>
-            </label>
-            <label class="colorPickerWrap">
-              <span class="colorPickerTag">Hot</span>
-              <span class="colorPickerField">
-                <input type="color" id="blackbodyHotColor" value="#eaf6ff" aria-label="Blackbody hot color" />
-                <span class="colorPickerSwatch" id="blackbodyHotSwatch" aria-hidden="true"></span>
-                <span class="colorPickerHex" id="blackbodyHotHex">EAF6FF</span>
-              </span>
-            </label>
+            <input type="checkbox" id="elementColors" checked hidden />
           </div>
         </div>
-        <div class="inspectorGroup">
-          <div class="inspectorTitle">Surface</div>
-          <div class="inspectorRow inspectorSelectRow">
-            <label for="schemeSelect">Color scheme</label>
-            <select id="schemeSelect" title="Choose default +/- surface colors">
-              <option value="emory" selected>Emory (gold/blue)</option>
-              <option value="national">National (red/blue)</option>
-              <option value="bright">Bright (yellow/cyan)</option>
-              <option value="electron">Electron (magenta/green)</option>
-              <option value="classic">Classic (blue/red)</option>
-              <option value="custom">Custom (via color pickers)</option>
-            </select>
+        <details class="inspectorGroup inspectorAccordion" id="appearanceMoleculeSection">
+          <summary class="inspectorAccordionSummary">
+            <span class="inspectorTitle">Molecule</span>
+          </summary>
+          <div class="inspectorAccordionBody">
+            <div class="inspectorRow inspectorSelectRow" id="rowGlossyBond" style="display:none;">
+              <label for="glossyBondRadius">Glossy bond radius</label>
+              <input type="number" id="glossyBondRadius" min="0.04" max="0.16" step="0.005" value="0.072"
+                title="Center radius for glossy bond connectors (angstrom)" />
+            </div>
+            <div class="inspectorActionToggleRow">
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="showMultiBonds" data-toggle-invert="true" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">horizontal_rule</span>
+                <span class="tb-quickActionLabel">Simple bonds</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="showMultiBonds" checked hidden
+                title="Show multiple-bond rendering when Simple bonds is OFF." />
+            </div>
+            <button id="elementColorBtn" class="secondary tb-modeBtn" title="Edit per-element default colors">Element
+              colors...</button>
           </div>
-          <div class="inspectorRow inspectorSelectRow">
-            <label for="renderMode">Render mode</label>
-            <select id="renderMode" title="Choose visualization mode">
-              <option value="surface" selected>Surfaces</option>
-              <option value="cloud">Cloud</option>
-            </select>
+        </details>
+        <details class="inspectorGroup inspectorAccordion" id="appearanceLightingSection">
+          <summary class="inspectorAccordionSummary">
+            <span class="inspectorTitle">Lighting &amp; atmosphere</span>
+          </summary>
+          <div class="inspectorAccordionBody">
+            <div class="inspectorActionToggleRow">
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="moleculeShadowsToggle" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">gradient</span>
+                <span class="tb-quickActionLabel">Shadows</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="moleculeShadowsToggle" hidden />
+            </div>
+            <div class="inspectorActionToggleRow">
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="moleculeFogToggle" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">foggy</span>
+                <span class="tb-quickActionLabel">Fog</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="moleculeFogToggle" hidden />
+            </div>
+            <div class="inspectorRow inspectorSelectRow" id="rowMoleculeFogDepth" style="display:none;">
+              <label for="moleculeFogDepth">Depth</label>
+              <label class="inspectorSliderField" for="moleculeFogDepth">
+                <input type="range" id="moleculeFogDepth" min="6" max="40" step="0.5" value="14.0"
+                  title="Fog far distance (near is derived automatically)" />
+                <span id="moleculeFogDepthValue" class="inspectorSliderValue">14.0</span>
+              </label>
+            </div>
+            <div class="inspectorActionToggleRow">
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="moleculeInkToggle" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">draw</span>
+                <span class="tb-quickActionLabel">Ink scheme</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="moleculeInkToggle" hidden />
+            </div>
+            <div class="appearanceHiddenControl" aria-hidden="true">
+              <div class="inspectorRow inspectorSelectRow">
+                <label for="moleculeAtomOpacity">Atom alpha</label>
+                <input type="number" id="moleculeAtomOpacity" min="0.05" max="1" step="0.05" value="1.00"
+                  title="Global atom opacity (0.05 to 1.00)" />
+              </div>
+              <div class="inspectorRow inspectorSelectRow">
+                <label for="moleculeBondOpacity">Bond alpha</label>
+                <input type="number" id="moleculeBondOpacity" min="0.05" max="1" step="0.05" value="1.00"
+                  title="Global bond opacity (0.05 to 1.00)" />
+              </div>
+            </div>
+            <div class="inspectorActionToggleRow">
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="moleculeBlackbodyToggle" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">local_fire_department</span>
+                <span class="tb-quickActionLabel">Blackbody ramp</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="moleculeBlackbodyToggle" hidden />
+            </div>
+            <div class="inspectorRow colorPickerRow" id="rowBlackbodyColors" style="display:none;">
+              <label class="colorPickerWrap">
+                <span class="colorPickerTag">Cold</span>
+                <span class="colorPickerField">
+                  <input type="color" id="blackbodyColdColor" value="#2f0202" aria-label="Blackbody cold color" />
+                  <span class="colorPickerSwatch" id="blackbodyColdSwatch" aria-hidden="true"></span>
+                  <span class="colorPickerHex" id="blackbodyColdHex">2F0202</span>
+                </span>
+              </label>
+              <label class="colorPickerWrap">
+                <span class="colorPickerTag">Hot</span>
+                <span class="colorPickerField">
+                  <input type="color" id="blackbodyHotColor" value="#eaf6ff" aria-label="Blackbody hot color" />
+                  <span class="colorPickerSwatch" id="blackbodyHotSwatch" aria-hidden="true"></span>
+                  <span class="colorPickerHex" id="blackbodyHotHex">EAF6FF</span>
+                </span>
+              </label>
+            </div>
           </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowStyle">
-            <label for="styleSelect">Surface style</label>
-            <select id="styleSelect" title="Choose iso-surface material style">
-              <option value="emissive" selected>Emissive (physical)</option>
-              <option value="glass">Glass (physical)</option>
-            </select>
+        </details>
+        <details class="inspectorGroup inspectorAccordion" id="appearanceCameraSection">
+          <summary class="inspectorAccordionSummary">
+            <span class="inspectorTitle">Camera</span>
+          </summary>
+          <div class="inspectorAccordionBody">
+            <button id="projectionModeBtn" class="secondary tb-quickActionBtn inspectorActionToggle"
+              title="Orthographic projection is OFF. Click to turn it ON."
+              data-tip="Orthographic: OFF. Click to enable orthographic projection.">
+              <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">view_in_ar</span>
+              <span class="tb-quickActionLabel" id="projectionModeLabel">Orthographic</span>
+              <span id="projectionModeState" class="inspectorActionToggleState">Off</span>
+            </button>
+            <div class="inspectorActionToggleRow" id="rowDofToggle">
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="dofToggle" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">blur_on</span>
+                <span class="tb-quickActionLabel">Depth of field</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="dofToggle" hidden />
+            </div>
+            <div class="inspectorRow inspectorSelectRow" id="rowDofFocusMode">
+              <label for="dofFocusMode">Focus mode</label>
+              <select id="dofFocusMode"
+                title="Choose whether depth of field focuses on the current camera target or a manual distance">
+                <option value="auto" selected>Auto (target)</option>
+                <option value="manual">Manual</option>
+              </select>
+            </div>
+            <div class="inspectorRow inspectorSelectRow" id="rowDofFocusDistance" style="display:none;">
+              <label for="dofFocusDistance">Distance</label>
+              <input type="number" id="dofFocusDistance" min="0.5" max="80" step="0.1" value="8.0"
+                title="Manual focus distance from the camera in angstrom" />
+            </div>
+            <div class="inspectorRow inspectorSelectRow" id="rowDofFocusRange">
+              <label for="dofFocusRange">Range</label>
+              <input type="number" id="dofFocusRange" min="0.1" max="20" step="0.1" value="1.5"
+                title="Half-width of the in-focus depth band in angstrom" />
+            </div>
+            <div class="inspectorRow inspectorSelectRow" id="rowDofBlurAmount">
+              <label for="dofBlurAmount">Blur</label>
+              <input type="number" id="dofBlurAmount" min="0" max="12" step="0.25" value="4.0"
+                title="Maximum depth-of-field blur radius in screen pixels" />
+            </div>
           </div>
-          <div class="inspectorRow inspectorSelectRow inspectorBooleanRow" id="rowDofToggle">
-            <label for="dofToggle">Depth of field</label>
-            <label class="inspectorBooleanControl" for="dofToggle">
-              <input type="checkbox" id="dofToggle" />
-              <span>Enable</span>
-            </label>
+        </details>
+        <details class="inspectorGroup inspectorAccordion" id="appearanceSurfacesSection" hidden>
+          <summary class="inspectorAccordionSummary">
+            <span class="inspectorTitle">Surfaces</span>
+          </summary>
+          <div class="inspectorAccordionBody">
+            <div class="inspectorRow inspectorSelectRow">
+              <label for="schemeSelect">Color scheme</label>
+              <select id="schemeSelect" title="Choose default +/- surface colors">
+                <option value="emory" selected>Emory (gold/blue)</option>
+                <option value="national">National (red/blue)</option>
+                <option value="bright">Bright (yellow/cyan)</option>
+                <option value="electron">Electron (magenta/green)</option>
+                <option value="classic">Classic (blue/red)</option>
+                <option value="custom">Custom (via color pickers)</option>
+              </select>
+            </div>
+            <div class="inspectorRow inspectorSelectRow">
+              <label for="renderMode">Render mode</label>
+              <select id="renderMode" title="Choose visualization mode">
+                <option value="surface" selected>Surfaces</option>
+                <option value="cloud">Cloud</option>
+              </select>
+            </div>
+            <div class="inspectorRow inspectorSelectRow" id="rowStyle">
+              <label for="styleSelect">Surface style</label>
+              <select id="styleSelect" title="Choose iso-surface material style">
+                <option value="emissive" selected>Emissive (physical)</option>
+                <option value="glass">Glass (physical)</option>
+              </select>
+            </div>
+            <div class="inspectorRow isoRow">
+              <label class="isoField">
+                <span class="isoTag">Iso</span>
+                <input type="number" id="iso" value="0.02" step="0.005" aria-label="Iso value" />
+              </label>
+              <button id="autoIsoBtn" class="secondary isoAutoBtn ms-icon-button" type="button" aria-pressed="false"
+                title="Autoiso OFF: load/select a .cube/.2ccube file to apply.">auto_fix_high</button>
+            </div>
+            <div class="inspectorRow">
+              <label class="opacityField">Opacity
+                <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="1.00" />
+                <span id="opacityPercent" class="opacityPercent">100%</span>
+              </label>
+            </div>
+            <div class="inspectorRow colorPickerRow">
+              <label class="colorPickerWrap">
+                <span class="colorPickerTag">+</span>
+                <span class="colorPickerField">
+                  <input type="color" id="posColor" value="#f2a900" aria-label="Positive surface color" />
+                  <span class="colorPickerSwatch" id="posColorSwatch" aria-hidden="true"></span>
+                  <span class="colorPickerHex" id="posColorHex">F2A900</span>
+                </span>
+              </label>
+              <label class="colorPickerWrap">
+                <span class="colorPickerTag">−</span>
+                <span class="colorPickerField">
+                  <input type="color" id="negColor" value="#0033a0" aria-label="Negative surface color" />
+                  <span class="colorPickerSwatch" id="negColorSwatch" aria-hidden="true"></span>
+                  <span class="colorPickerHex" id="negColorHex">0033A0</span>
+                </span>
+              </label>
+            </div>
+            <details class="inspectorSubsection" id="appearanceTwoComponentSection" hidden>
+              <summary class="inspectorSubsectionSummary">Two-component</summary>
+              <div class="inspectorAccordionBody inspectorSubsectionBody">
+                <div class="inspectorRow inspectorSelectRow" id="twoComponentModeRow" style="display:none;">
+                  <label for="twoComponentModeSelect">Mode</label>
+                  <select id="twoComponentModeSelect" title="Select 2C cube component or phase surface">
+                    <option value="alphaRe">alphaRe</option>
+                    <option value="alphaIm">alphaIm</option>
+                    <option value="betaRe">betaRe</option>
+                    <option value="betaIm">betaIm</option>
+                    <option value="alphaPhase">Alpha (phase hue)</option>
+                    <option value="betaPhase">Beta (phase hue)</option>
+                    <option value="alphaBetaPhase">Alpha/Beta phase</option>
+                    <option value="totalBloch">Total (Bloch color)</option>
+                  </select>
+                </div>
+              </div>
+            </details>
+            <details class="inspectorSubsection" id="appearanceCloudSection" hidden>
+              <summary class="inspectorSubsectionSummary">Cloud options</summary>
+              <div class="inspectorAccordionBody inspectorSubsectionBody">
+                <div class="inspectorRow inspectorSelectRow" id="rowCloudType">
+                  <label for="cloudType">Cloud type</label>
+                  <select id="cloudType" title="Cloud renderer">
+                    <option value="cubes" selected>Cubes</option>
+                    <option value="points">Points</option>
+                  </select>
+                </div>
+                <div class="inspectorRow inspectorSelectRow" id="rowCloudParams">
+                  <label for="cloudStride">Cloud opts</label>
+                  <span style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; align-items:center;">
+                    <input type="number" id="cloudStride" min="1" max="8" step="1" value="1"
+                      title="Sample every N voxels per axis" />
+                    <input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1"
+                      title="Maximum cloud alpha" />
+                  </span>
+                </div>
+              </div>
+            </details>
           </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowDofFocusMode">
-            <label for="dofFocusMode">Focus mode</label>
-            <select id="dofFocusMode"
-              title="Choose whether depth of field focuses on the current camera target or a manual distance">
-              <option value="auto" selected>Auto (target)</option>
-              <option value="manual">Manual</option>
-            </select>
+        </details>
+        <details class="inspectorGroup inspectorAccordion" id="appearanceVisibilitySection">
+          <summary class="inspectorAccordionSummary">
+            <span class="inspectorTitle">Visibility</span>
+          </summary>
+          <div class="inspectorAccordionBody">
+            <div class="appearanceActionToggleGrid">
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="showAtoms" aria-pressed="true">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">radio_button_checked</span>
+                <span class="tb-quickActionLabel">Atoms</span>
+                <span class="inspectorActionToggleState">On</span>
+              </button>
+              <input type="checkbox" id="showAtoms" checked hidden />
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="showBonds" aria-pressed="true">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">share</span>
+                <span class="tb-quickActionLabel">Bonds</span>
+                <span class="inspectorActionToggleState">On</span>
+              </button>
+              <input type="checkbox" id="showBonds" checked hidden />
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="visibilityElementColorsToggle" aria-pressed="true">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">palette</span>
+                <span class="tb-quickActionLabel">Elem colors</span>
+                <span class="inspectorActionToggleState">On</span>
+              </button>
+              <input type="checkbox" id="visibilityElementColorsToggle" checked hidden />
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="showAtomLabels" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">label</span>
+                <span class="tb-quickActionLabel">Atom labels</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="showAtomLabels" hidden />
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="showAtomLabelNumbers" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">tag</span>
+                <span class="tb-quickActionLabel">Atom numbers</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="showAtomLabelNumbers" hidden />
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="showBox" aria-pressed="false">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">crop_square</span>
+                <span class="tb-quickActionLabel">Box</span>
+                <span class="inspectorActionToggleState">Off</span>
+              </button>
+              <input type="checkbox" id="showBox" hidden />
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="showAxes" aria-pressed="true">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">track_changes</span>
+                <span class="tb-quickActionLabel">Axes</span>
+                <span class="inspectorActionToggleState">On</span>
+              </button>
+              <input type="checkbox" id="showAxes" checked hidden />
+              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
+                data-toggle-input="surfBtn" aria-pressed="true">
+                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">layers</span>
+                <span class="tb-quickActionLabel">Surfaces</span>
+                <span class="inspectorActionToggleState">On</span>
+              </button>
+              <input type="checkbox" id="surfBtn" checked hidden />
+            </div>
           </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowDofFocusDistance" style="display:none;">
-            <label for="dofFocusDistance">Focus dist.</label>
-            <input type="number" id="dofFocusDistance" min="0.5" max="80" step="0.1" value="8.0"
-              title="Manual focus distance from the camera in angstrom" />
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowDofFocusRange">
-            <label for="dofFocusRange">Focus range</label>
-            <input type="number" id="dofFocusRange" min="0.1" max="20" step="0.1" value="1.5"
-              title="Half-width of the in-focus depth band in angstrom" />
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowDofBlurAmount">
-            <label for="dofBlurAmount">Blur amount</label>
-            <input type="number" id="dofBlurAmount" min="0" max="12" step="0.25" value="4.0"
-              title="Maximum depth-of-field blur radius in screen pixels" />
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="twoComponentModeRow" style="display:none;">
-            <label for="twoComponentModeSelect">2C Surface</label>
-            <select id="twoComponentModeSelect" title="Select 2C cube component or phase surface">
-              <option value="alphaRe">alphaRe</option>
-              <option value="alphaIm">alphaIm</option>
-              <option value="betaRe">betaRe</option>
-              <option value="betaIm">betaIm</option>
-              <option value="alphaPhase">Alpha (phase hue)</option>
-              <option value="betaPhase">Beta (phase hue)</option>
-              <option value="alphaBetaPhase">Alpha/Beta phase</option>
-              <option value="totalBloch">Total (Bloch color)</option>
-            </select>
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowCloudType">
-            <label for="cloudType">Cloud type</label>
-            <select id="cloudType" title="Cloud renderer">
-              <option value="cubes" selected>Cubes</option>
-              <option value="points">Points</option>
-            </select>
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="rowCloudParams">
-            <label for="cloudStride">Cloud opts</label>
-            <span style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; align-items:center;">
-              <input type="number" id="cloudStride" min="1" max="8" step="1" value="1"
-                title="Sample every N voxels per axis" />
-              <input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1"
-                title="Maximum cloud alpha" />
-            </span>
-          </div>
-          <div class="inspectorRow isoRow">
-            <label class="isoField">
-              <span class="isoTag">Iso</span>
-              <input type="number" id="iso" value="0.02" step="0.005" aria-label="Iso value" />
-            </label>
-            <button id="autoIsoBtn" class="secondary isoAutoBtn ms-icon-button" type="button" aria-pressed="false"
-              title="Autoiso OFF: load/select a .cube/.2ccube file to apply.">auto_fix_high</button>
-          </div>
-          <div class="inspectorRow">
-            <label class="opacityField">Opacity
-              <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="1.00" />
-              <span id="opacityPercent" class="opacityPercent">100%</span>
-            </label>
-          </div>
-          <div class="inspectorRow colorPickerRow">
-            <label class="colorPickerWrap">
-              <span class="colorPickerTag">+</span>
-              <span class="colorPickerField">
-                <input type="color" id="posColor" value="#f2a900" aria-label="Positive surface color" />
-                <span class="colorPickerSwatch" id="posColorSwatch" aria-hidden="true"></span>
-                <span class="colorPickerHex" id="posColorHex">F2A900</span>
-              </span>
-            </label>
-            <label class="colorPickerWrap">
-              <span class="colorPickerTag">−</span>
-              <span class="colorPickerField">
-                <input type="color" id="negColor" value="#0033a0" aria-label="Negative surface color" />
-                <span class="colorPickerSwatch" id="negColorSwatch" aria-hidden="true"></span>
-                <span class="colorPickerHex" id="negColorHex">0033A0</span>
-              </span>
-            </label>
-            <label class="colorPickerWrap">
-              <span class="colorPickerTag">BG</span>
-              <span class="colorPickerField">
-                <input type="color" id="bgColor" value="#ffffff" aria-label="Background color" />
-                <span class="colorPickerSwatch" id="bgColorSwatch" aria-hidden="true"></span>
-                <span class="colorPickerHex" id="bgColorHex">FFFFFF</span>
-              </span>
-            </label>
-          </div>
-        </div>
-        <div class="inspectorGroup">
-          <div class="inspectorTitle">Visibility</div>
-          <div class="toggleRow">
-            <label class="toggleChip"><input type="checkbox" id="showAtoms" checked /> atoms</label>
-            <label class="toggleChip"><input type="checkbox" id="showBonds" checked /> bonds</label>
-            <label class="toggleChip"><input type="checkbox" id="showMultiBonds" checked /> multi bonds</label>
-            <label class="toggleChip"><input type="checkbox" id="elementColors" checked /> elem colors</label>
-            <label class="toggleChip"><input type="checkbox" id="showAtomLabels" /> atom labels</label>
-            <label class="toggleChip"><input type="checkbox" id="showBox" /> box</label>
-            <label class="toggleChip"><input type="checkbox" id="showAtomLabelNumbers" /> atom numbers</label>
-            <label class="toggleChip"><input type="checkbox" id="showAxes" checked /> axes</label>
-            <label class="toggleChip"><input type="checkbox" id="surfBtn" checked /> surfaces</label>
-          </div>
-        </div>
-        <div class="inspectorGroup">
-          <div class="inspectorTitle">Elements</div>
-          <button id="elementColorBtn" class="secondary tb-modeBtn" title="Edit per-element default colors">Element
-            colors...</button>
-        </div>
+        </details>
       </div>
     </div>
 
@@ -2737,13 +3087,6 @@
             data-tip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z.">
             <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">3d_rotation</span>
             <span class="tb-quickActionLabel">Align Principal Axes</span>
-          </button>
-          <button id="projectionModeBtn" class="secondary tb-quickActionBtn"
-            title="Orthographic projection is OFF. Click to turn it ON."
-            data-tip="Orthographic: OFF. Click to enable orthographic projection.">
-            <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">view_in_ar</span>
-            <span class="tb-quickActionLabel" id="projectionModeLabel">Orthographic</span>
-            <span id="projectionModeState">Off</span>
           </button>
           <div class="viewPresetRow">
             <button id="viewAxisXBtn" class="secondary tb-quickActionBtn"
