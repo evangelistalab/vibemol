@@ -1,0 +1,542 @@
+#displayWindowAdaptiveMenu {
+  position: fixed;
+  top: 56px;
+  left: 12px;
+  right: auto;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 34;
+  pointer-events: auto;
+  max-width: min(260px, calc(100vw - 24px));
+}
+
+#displayWindowAdaptiveMenu[aria-hidden="false"] {
+  display: flex;
+}
+
+.floatingAuxInspector {
+  position: fixed;
+  z-index: 35;
+  display: none;
+  width: min(340px, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid rgba(110, 123, 148, 0.36);
+  border-radius: 16px;
+  background: rgba(34, 39, 47, 0.96);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-sizing: border-box;
+}
+
+.floatingAuxInspector.open {
+  display: block;
+}
+
+.floatingAuxInspector button {
+  border: none;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.floatingAuxInspector button.secondary {
+  background: var(--vm-color-legacy-secondary-bg);
+  color: var(--vm-color-legacy-secondary-fg);
+}
+
+.floatingAuxInspector button.secondary:hover,
+.floatingAuxInspector button.secondary.active {
+  background: var(--vm-color-legacy-secondary-active-bg);
+  color: var(--vm-color-legacy-secondary-active-fg);
+}
+
+.floatingAuxInspectorFields .inspectorGroup {
+  border: none;
+  padding: 0;
+  background: transparent;
+  min-width: 0;
+}
+
+.floatingAuxInspectorFields .inspectorTitle {
+  color: #dbe6f6;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+}
+
+.floatingAuxInspectorFields .inspectorRow {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.floatingAuxInspectorFields .inspectorSelectRow {
+  display: grid;
+  grid-template-columns: 94px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.floatingAuxInspectorFields .inspectorSelectRow:last-child,
+.floatingAuxInspectorFields .inspectorSelectRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.floatingAuxInspectorFields .inspectorSelectRow label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: auto;
+  min-width: 0;
+  white-space: nowrap;
+  color: var(--tb-text-color-subtle);
+  font-size: var(--tb-text-size-label);
+  font-weight: var(--tb-text-weight-semibold);
+}
+
+.floatingAuxInspectorFields .inspectorSelectRow select,
+.floatingAuxInspectorFields .inspectorSelectRow input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  border: none;
+  box-shadow: none;
+  border-radius: var(--tb-radius-tight);
+  background: var(--tb-surface-emphasis);
+  color: var(--tb-text-color-icon);
+  padding: 0 10px;
+}
+
+.floatingAuxInspectorFields .inspectorSelectRow select:focus,
+.floatingAuxInspectorFields .inspectorSelectRow input[type="number"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+#moldenInspector .moldenInspectorSummary,
+#toolbar #moldenInspector .moldenInspectorSummary {
+  color: var(--tb-text-color-muted);
+  font-size: var(--tb-text-size-meta);
+  font-weight: var(--tb-text-weight-semibold);
+  line-height: 1.35;
+  padding-left: 0;
+  margin: -1px 0 8px 0;
+  min-height: 1em;
+}
+
+#viewInspector {
+  width: min(208px, calc(100vw - 24px));
+}
+
+.floatingAuxInspectorView .viewInspectorGroup,
+#toolbar .tb-toolbarInspectorView .viewInspectorGroup {
+  border: none;
+  border-top: 1px solid var(--tb-section-divider);
+  border-radius: 0;
+  padding: 8px 0 4px 0;
+  background: transparent;
+  display: grid;
+  gap: 6px;
+}
+
+.floatingAuxInspectorView .viewInspectorGroup:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.floatingAuxInspectorView .viewInspectorTitle,
+#toolbar .tb-toolbarInspectorView .viewInspectorTitle {
+  color: var(--tb-text-color-emphasis);
+  font-size: var(--tb-text-size-label);
+  font-weight: var(--tb-text-weight-bold);
+  margin-bottom: 2px;
+}
+
+.floatingAuxInspectorView button,
+#toolbar .tb-toolbarInspectorView button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.floatingAuxInspectorView .tb-quickActionBtn,
+#toolbar .tb-toolbarInspectorView .tb-quickActionBtn {
+  gap: 8px;
+}
+
+.floatingAuxInspectorView .tb-quickActionIcon,
+#toolbar .tb-toolbarInspectorView .tb-quickActionIcon {
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.9;
+  flex: 0 0 auto;
+}
+
+.floatingAuxInspectorView .tb-quickActionLabel,
+#toolbar .tb-toolbarInspectorView .tb-quickActionLabel {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+}
+
+#toolbar .tb-toolbarInspectorView #projectionModeBtn {
+  align-items: center;
+}
+
+#toolbar .tb-toolbarInspectorView #projectionModeBtn .tb-quickActionIcon,
+#toolbar .tb-toolbarInspectorView #projectionModeBtn .tb-quickActionLabel,
+#toolbar .tb-toolbarInspectorView #projectionModeState {
+  pointer-events: none;
+}
+
+#toolbar .tb-toolbarInspectorView #projectionModeState,
+#toolbar #displayInspector .inspectorActionToggleState {
+  flex: 0 0 auto;
+  min-width: 36px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: calc(var(--tb-radius-tight) - 2px);
+  background: var(--tb-surface-emphasis);
+  color: var(--tb-text-color-subtle);
+  font-size: 11px;
+  font-weight: var(--tb-text-weight-bold);
+  line-height: 20px;
+  text-align: center;
+}
+
+#toolbar .tb-toolbarInspectorView #projectionModeBtn.active #projectionModeState,
+#toolbar #displayInspector .inspectorActionToggle.active .inspectorActionToggleState {
+  background: var(--tb-surface-emphasis-hover);
+  color: var(--tb-text-color-strong);
+}
+
+#toolbar .tb-toolbarInspectorView .tb-windowBtn {
+  background: var(--tb-surface-emphasis);
+  color: var(--tb-text-color-primary);
+  border-radius: var(--tb-radius-tight);
+}
+
+#toolbar .tb-toolbarInspectorView #viewPanelBtn,
+#toolbar .tb-toolbarInspectorView #coordsPanelBtn {
+  width: auto;
+  justify-self: start;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+#toolbar .tb-toolbarInspectorView .tb-windowBtn:hover,
+#toolbar .tb-toolbarInspectorView .tb-windowBtn.active {
+  background: var(--tb-surface-emphasis-hover);
+  color: var(--tb-text-color-strong);
+}
+
+#toolbar .tb-toolbarInspectorView .viewInspectorGroup.viewInspectorWindows {
+  grid-template-columns: max-content max-content;
+  justify-content: flex-start;
+  align-items: start;
+  column-gap: 6px;
+  row-gap: 6px;
+}
+
+#toolbar .tb-toolbarInspectorView .viewInspectorGroup.viewInspectorWindows #trajectoryPanelBtn {
+  grid-column: 1 / -1;
+}
+
+.floatingAuxInspectorView .viewPresetRow,
+#toolbar .tb-toolbarInspectorView .viewPresetRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.floatingAuxInspectorView .viewPresetRow button,
+#toolbar .tb-toolbarInspectorView .viewPresetRow button {
+  justify-content: center;
+  text-align: center;
+  padding: 0 4px;
+}
+
+#toolbar #displayInspector .inspectorBooleanRow {
+  grid-template-columns: 94px minmax(0, 1fr);
+}
+
+#toolbar #displayInspector .inspectorQuickStyleGroup {
+  border-top: none;
+  padding: 2px 0 10px 0;
+  display: grid;
+  gap: 8px;
+}
+
+#toolbar #displayInspector .appearanceQuickStyleHeader {
+  display: block;
+  min-width: 0;
+}
+
+#toolbar #displayInspector .inspectorQuickStyleGroup .inspectorTitle {
+  white-space: nowrap;
+}
+
+#toolbar #displayInspector .appearanceQuickBgRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+#toolbar #displayInspector .appearanceQuickBg {
+  width: 100%;
+  min-width: 0;
+}
+
+#toolbar #displayInspector .appearanceQuickBgField {
+  width: 100%;
+}
+
+#toolbar #displayInspector .appearanceStyleChipRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+#toolbar #displayInspector .appearanceStyleChip,
+#toolbar #displayInspector .appearanceModeChip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 0;
+  border: none;
+  border-radius: var(--tb-radius-tight);
+  background: var(--tb-surface-emphasis);
+  color: var(--tb-text-color-subtle);
+  font-size: var(--tb-text-size-label);
+  font-weight: var(--tb-text-weight-semibold);
+  line-height: 1;
+  padding: 0 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+#toolbar #displayInspector .appearanceStyleChip:hover,
+#toolbar #displayInspector .appearanceModeChip:hover {
+  background: var(--tb-surface-emphasis-hover);
+  color: var(--tb-text-color-strong);
+}
+
+#toolbar #displayInspector .appearanceStyleChip.active,
+#toolbar #displayInspector .appearanceStyleChip[aria-pressed="true"],
+#toolbar #displayInspector .appearanceModeChip.active,
+#toolbar #displayInspector .appearanceModeChip[aria-pressed="true"] {
+  background: var(--tb-color-accent);
+  color: var(--tb-text-color-inverse);
+  box-shadow: inset 0 0 0 1px var(--tb-color-accent-outline);
+}
+
+#toolbar #displayInspector .appearanceSegmentedControl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+#toolbar #displayInspector .appearanceHiddenControl {
+  display: none;
+}
+
+#toolbar #displayInspector .tb-quickActionBtn {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 8px;
+  align-items: center;
+}
+
+#toolbar #displayInspector .tb-quickActionIcon {
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.9;
+  flex: 0 0 auto;
+}
+
+#toolbar #displayInspector .tb-quickActionLabel {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+}
+
+#toolbar #displayInspector .inspectorActionToggle {
+  width: 100%;
+}
+
+#toolbar #displayInspector .inspectorActionToggleRow {
+  margin-bottom: 7px;
+}
+
+#toolbar #displayInspector .appearanceActionToggleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+#toolbar #displayInspector #appearanceVisibilitySection .appearanceActionToggleGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#toolbar #displayInspector .inspectorActionToggle .tb-quickActionIcon,
+#toolbar #displayInspector .inspectorActionToggle .tb-quickActionLabel,
+#toolbar #displayInspector .inspectorActionToggle .inspectorActionToggleState {
+  pointer-events: none;
+}
+
+#toolbar #displayInspector .inspectorActionToggle:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+#toolbar #displayInspector .inspectorAccordion {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border-top: 1px solid var(--tb-section-divider);
+  padding-top: 6px;
+}
+
+#toolbar #displayInspector .inspectorAccordionSummary,
+#toolbar #displayInspector .inspectorSubsectionSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0 8px 0;
+}
+
+#toolbar #displayInspector .inspectorAccordionSummary::-webkit-details-marker,
+#toolbar #displayInspector .inspectorSubsectionSummary::-webkit-details-marker {
+  display: none;
+}
+
+#toolbar #displayInspector .inspectorAccordionSummary::after,
+#toolbar #displayInspector .inspectorSubsectionSummary::after {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--tb-text-color-subtle);
+  content: "▸";
+  flex: 0 0 auto;
+}
+
+#toolbar #displayInspector details[open] > .inspectorAccordionSummary::after,
+#toolbar #displayInspector details[open] > .inspectorSubsectionSummary::after {
+  content: "▾";
+  color: var(--tb-text-color-emphasis);
+}
+
+#toolbar #displayInspector .inspectorAccordionBody {
+  display: grid;
+  gap: 0;
+  padding: 0 0 4px 0;
+}
+
+#toolbar #displayInspector .inspectorAccordionBody > .secondary {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+#toolbar #displayInspector .inspectorSubsection {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 2px;
+  border-top: 1px dashed var(--tb-section-divider);
+  padding-top: 4px;
+}
+
+#toolbar #displayInspector .inspectorSubsectionSummary {
+  padding: 2px 0 6px 0;
+  color: var(--tb-text-color-emphasis);
+  font-size: var(--tb-text-size-label);
+  font-weight: var(--tb-text-weight-semibold);
+}
+
+#toolbar #displayInspector .inspectorSubsectionBody {
+  padding-left: 8px;
+  padding-bottom: 2px;
+}
+
+#toolbar #displayInspector .inspectorBooleanControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  color: var(--tb-text-color-subtle);
+  font-size: var(--tb-text-size-label);
+  font-weight: var(--tb-text-weight-semibold);
+  cursor: pointer;
+  user-select: none;
+}
+
+#toolbar #displayInspector .inspectorBooleanControl input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--vm-accent-700);
+}
+
+#toolbar #displayInspector label.inspectorSliderField {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+#toolbar #displayInspector .inspectorSliderField input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#toolbar #displayInspector .inspectorSliderValue {
+  min-width: 46px;
+  text-align: right;
+  color: var(--tb-text-color-emphasis);
+  font-weight: var(--tb-text-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+#toolbar #displayInspector .inspectorSelectRow select,
+#toolbar #displayInspector .inspectorSelectRow input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  border: none;
+  box-shadow: none;
+  border-radius: var(--tb-radius-tight);
+  background: var(--tb-surface-emphasis);
+  color: var(--tb-text-color-icon);
+  padding: 0 10px;
+}
+
+#toolbar #displayInspector .inspectorSelectRow select:focus,
+#toolbar #displayInspector .inspectorSelectRow input[type="number"]:focus {
+  outline: none;
+  box-shadow: none;
+}
