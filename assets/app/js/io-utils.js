@@ -64,17 +64,40 @@
       .filter(Boolean);
     if (!nonEmptyLines.length) return null;
 
-    const countRaw = Number(nonEmptyLines[0]);
-    if (Number.isInteger(countRaw) && countRaw >= 0 && nonEmptyLines.length >= countRaw + 2) {
-      const atomLines = nonEmptyLines.slice(2, 2 + countRaw);
-      const normalizedAtomLines = atomLines.map(normalizeXyzCoordinateLine);
-      if (atomLines.length === countRaw && normalizedAtomLines.every(Boolean)) {
-        return {
-          atomCount: countRaw,
-          wrapped: false,
-          xyzText: `${countRaw}\n${nonEmptyLines[1]}\n${normalizedAtomLines.join('\n')}\n`,
-        };
+    let cursor = 0;
+    let firstFrameAtomCount = null;
+    const normalizedBlocks = [];
+    while (cursor < nonEmptyLines.length) {
+      const countRaw = Number(nonEmptyLines[cursor]);
+      if (!Number.isInteger(countRaw) || countRaw < 0) {
+        normalizedBlocks.length = 0;
+        break;
       }
+      if (cursor + 1 >= nonEmptyLines.length) {
+        normalizedBlocks.length = 0;
+        break;
+      }
+      const frameAtomCount = countRaw | 0;
+      if (firstFrameAtomCount == null) firstFrameAtomCount = frameAtomCount;
+      else if (frameAtomCount !== firstFrameAtomCount) {
+        normalizedBlocks.length = 0;
+        break;
+      }
+      const atomLines = nonEmptyLines.slice(cursor + 2, cursor + 2 + frameAtomCount);
+      const normalizedAtomLines = atomLines.map(normalizeXyzCoordinateLine);
+      if (atomLines.length !== frameAtomCount || !normalizedAtomLines.every(Boolean)) {
+        normalizedBlocks.length = 0;
+        break;
+      }
+      normalizedBlocks.push(`${frameAtomCount}\n${nonEmptyLines[cursor + 1]}\n${normalizedAtomLines.join('\n')}`);
+      cursor += frameAtomCount + 2;
+    }
+    if (normalizedBlocks.length && cursor === nonEmptyLines.length) {
+      return {
+        atomCount: firstFrameAtomCount == null ? 0 : firstFrameAtomCount,
+        wrapped: false,
+        xyzText: `${normalizedBlocks.join('\n')}\n`,
+      };
     }
 
     if (nonEmptyLines.every(isValidXyzCoordinateLine)) {

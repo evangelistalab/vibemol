@@ -388,6 +388,202 @@
       user-select: none;
     }
 
+    #displayWindowAdaptiveMenu {
+      position: fixed;
+      top: 56px;
+      left: 12px;
+      right: auto;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 34;
+      pointer-events: auto;
+      max-width: min(260px, calc(100vw - 24px));
+    }
+
+    #displayWindowAdaptiveMenu[aria-hidden="false"] {
+      display: flex;
+    }
+
+    .floatingAuxInspector {
+      position: fixed;
+      z-index: 35;
+      display: none;
+      width: min(340px, calc(100vw - 24px));
+      padding: 12px;
+      border: 1px solid rgba(110, 123, 148, 0.36);
+      border-radius: 16px;
+      background: rgba(34, 39, 47, 0.96);
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-sizing: border-box;
+    }
+
+    .floatingAuxInspector.open {
+      display: block;
+    }
+
+    .floatingAuxInspector button {
+      border: none;
+      height: 30px;
+      padding: 0 11px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      box-sizing: border-box;
+    }
+
+    .floatingAuxInspector button.secondary {
+      background: var(--vm-color-legacy-secondary-bg);
+      color: var(--vm-color-legacy-secondary-fg);
+    }
+
+    .floatingAuxInspector button.secondary:hover,
+    .floatingAuxInspector button.secondary.active {
+      background: var(--vm-color-legacy-secondary-active-bg);
+      color: var(--vm-color-legacy-secondary-active-fg);
+    }
+
+    .floatingAuxInspectorFields .inspectorGroup {
+      border: none;
+      padding: 0;
+      background: transparent;
+      min-width: 0;
+    }
+
+    .floatingAuxInspectorFields .inspectorTitle {
+      color: #dbe6f6;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+    }
+
+    .floatingAuxInspectorFields .inspectorRow {
+      flex-wrap: nowrap;
+      gap: 4px;
+    }
+
+    .floatingAuxInspectorFields .inspectorSelectRow {
+      display: grid;
+      grid-template-columns: 94px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+
+    .floatingAuxInspectorFields .inspectorSelectRow:last-child,
+    .floatingAuxInspectorFields .inspectorSelectRow:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .floatingAuxInspectorFields .inspectorSelectRow label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: auto;
+      min-width: 0;
+      white-space: nowrap;
+      color: var(--tb-text-color-subtle);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
+    }
+
+    .floatingAuxInspectorFields .inspectorSelectRow select,
+    .floatingAuxInspectorFields .inspectorSelectRow input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      border: none;
+      box-shadow: none;
+      border-radius: var(--tb-radius-tight);
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-icon);
+      padding: 0 10px;
+    }
+
+    .floatingAuxInspectorFields .inspectorSelectRow select:focus,
+    .floatingAuxInspectorFields .inspectorSelectRow input[type="number"]:focus {
+      outline: none;
+      box-shadow: none;
+    }
+
+    #moldenInspector .moldenInspectorSummary {
+      color: var(--tb-text-color-muted);
+      font-size: var(--tb-text-size-meta);
+      font-weight: var(--tb-text-weight-semibold);
+      line-height: 1.35;
+      padding-left: 0;
+      margin: -1px 0 8px 0;
+      min-height: 1em;
+    }
+
+    #viewInspector {
+      width: min(208px, calc(100vw - 24px));
+    }
+
+    .floatingAuxInspectorView .viewInspectorGroup {
+      border: none;
+      border-top: 1px solid var(--tb-section-divider);
+      border-radius: 0;
+      padding: 8px 0 4px 0;
+      background: transparent;
+      display: grid;
+      gap: 6px;
+    }
+
+    .floatingAuxInspectorView .viewInspectorGroup:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .floatingAuxInspectorView .viewInspectorTitle {
+      color: var(--tb-text-color-emphasis);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-bold);
+      margin-bottom: 2px;
+    }
+
+    .floatingAuxInspectorView button {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .floatingAuxInspectorView .tb-quickActionBtn {
+      gap: 8px;
+    }
+
+    .floatingAuxInspectorView .tb-quickActionIcon {
+      font-size: 18px;
+      line-height: 1;
+      opacity: 0.9;
+      flex: 0 0 auto;
+    }
+
+    .floatingAuxInspectorView .tb-quickActionLabel {
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1 1 auto;
+    }
+
+    .floatingAuxInspectorView .viewPresetRow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .floatingAuxInspectorView .viewPresetRow button {
+      justify-content: center;
+      text-align: center;
+      padding: 0 4px;
+    }
+
     @media (max-width: 1260px) {
       #toolbar {
         grid-template-columns: 1fr;
@@ -3022,96 +3218,6 @@
       </div>
     </div>
 
-    <div id="moldenToolbarSection" class="tb-section tb-main tb-molden tb-framed" style="display:none;">
-      <button id="moldenInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide Molden orbital controls">
-        <span>Molden</span><span id="moldenInspectorToggleIcon"
-          class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
-      </button>
-      <div id="moldenInspector" class="tb-toolbarInspector tb-toolbarInspectorFields" aria-hidden="true">
-        <div class="inspectorGroup">
-          <div class="inspectorTitle">Orbitals</div>
-          <div class="inspectorRow inspectorSelectRow" id="moldenMoRow" style="display:none;">
-            <label for="moldenMoSelect">Molden MO</label>
-            <select id="moldenMoSelect" title="Select one molecular orbital parsed from the Molden file"></select>
-          </div>
-          <div id="moldenMoSummary" class="moldenInspectorSummary"></div>
-          <div class="inspectorRow inspectorSelectRow" id="moldenGridRow" style="display:none;">
-            <label for="moldenGridStep">Grid step</label>
-            <input type="number" id="moldenGridStep" min="0.12" max="1.20" step="0.01" value="0.35"
-              title="Grid spacing in angstrom" />
-          </div>
-          <div class="inspectorRow inspectorSelectRow" id="moldenGridPaddingRow" style="display:none;">
-            <label for="moldenGridPadding">Grid pad</label>
-            <input type="number" id="moldenGridPadding" min="0.5" max="8" step="0.1" value="3.0"
-              title="Padding added around the molecule in angstrom" />
-          </div>
-          <div id="moldenGridSummary" class="moldenInspectorSummary"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="vibrationToolbarSection" class="tb-section tb-main tb-vibration tb-framed" style="display:none;">
-      <button id="vibrationPanelBtn" class="secondary"
-        title="No vibrational mode data in active file">Frequencies</button>
-    </div>
-
-    <div class="tb-section tb-main tb-windows tb-framed">
-      <button id="viewInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide view and coordinates tools">
-        <span>View/Coords</span><span id="viewInspectorToggleIcon"
-          class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
-      </button>
-      <div id="viewInspector" class="tb-toolbarInspector tb-toolbarInspectorView" aria-hidden="true">
-        <div class="viewInspectorGroup viewInspectorWindows">
-          <button id="viewPanelBtn" class="secondary tb-windowBtn" title="Open/close View window">View</button>
-          <button id="coordsPanelBtn" class="secondary tb-windowBtn"
-            title="Open/close Coordinates window">Coordinates</button>
-          <button id="trajectoryPanelBtn" class="secondary" title="No trajectory data in active file"
-            style="display:none;">Trajectory</button>
-        </div>
-        <div class="viewInspectorGroup">
-          <div class="viewInspectorTitle">Quick actions</div>
-          <button id="centerMassBtn" class="secondary tb-quickActionBtn"
-            title="Shift active molecule center of mass to the origin (shortcut: R)"
-            data-tip="COM → Origin: shift the active molecule center of mass to (0,0,0). Shortcut: R.">
-            <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">center_focus_strong</span>
-            <span class="tb-quickActionLabel">COM → Origin</span>
-          </button>
-          <button id="pointCameraComBtn" class="secondary tb-quickActionBtn"
-            title="Point the camera so the active molecule center of mass is centered in view"
-            data-tip="Point Camera to COM: keep the current camera pose but retarget the view to the active molecule center of mass.">
-            <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">my_location</span>
-            <span class="tb-quickActionLabel">Point Camera to COM</span>
-          </button>
-          <button id="alignInertiaBtn" class="secondary tb-quickActionBtn"
-            title="Rotate active molecule so principal inertia axes align with XYZ"
-            data-tip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z.">
-            <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">3d_rotation</span>
-            <span class="tb-quickActionLabel">Align Principal Axes</span>
-          </button>
-          <div class="viewPresetRow">
-            <button id="viewAxisXBtn" class="secondary tb-quickActionBtn"
-              title="Set camera along +X axis looking toward target"
-              data-tip="View +X: place the camera on +X looking at the current target.">
-              <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">east</span>
-              <span class="tb-quickActionLabel">+X</span>
-            </button>
-            <button id="viewAxisYBtn" class="secondary tb-quickActionBtn"
-              title="Set camera along +Y axis looking toward target"
-              data-tip="View +Y: place the camera on +Y looking at the current target.">
-              <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north</span>
-              <span class="tb-quickActionLabel">+Y</span>
-            </button>
-            <button id="viewAxisZBtn" class="secondary tb-quickActionBtn"
-              title="Set camera along +Z axis looking toward target"
-              data-tip="View +Z: place the camera on +Z looking at the current target.">
-              <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north_east</span>
-              <span class="tb-quickActionLabel">+Z</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="tb-section tb-actions">
       <button id="helpBtn" class="secondary" title="Help and shortcuts">Help</button>
     </div>
@@ -3121,6 +3227,144 @@
 
   <div id="drop">
     <canvas id="canvas"></canvas>
+  </div>
+  <div id="displayWindowAdaptiveMenu" aria-hidden="true">
+    <button id="moldenInspectorBtn" class="adaptiveEditItem" type="button" title="Orbitals (O)" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">blur_on</span>
+          <span class="adaptiveEditItemLabel">Orbitals</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">O</span>
+      </span>
+    </button>
+    <button id="viewInspectorBtn" class="adaptiveEditItem" type="button" title="View actions (Q)" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">tune</span>
+          <span class="adaptiveEditItemLabel">View actions</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">Q</span>
+      </span>
+    </button>
+    <button id="viewPanelBtn" class="adaptiveEditItem" type="button" title="View window (V)" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">view_in_ar</span>
+          <span class="adaptiveEditItemLabel">View</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">V</span>
+      </span>
+    </button>
+    <button id="coordsPanelBtn" class="adaptiveEditItem" type="button" title="Coordinates (C)" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">table_rows</span>
+          <span class="adaptiveEditItemLabel">Coordinates</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">C</span>
+      </span>
+    </button>
+    <button id="trajectoryPanelBtn" class="adaptiveEditItem" type="button" title="Trajectory (T)" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">timeline</span>
+          <span class="adaptiveEditItemLabel">Trajectory</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">T</span>
+      </span>
+    </button>
+    <button id="vibrationPanelBtn" class="adaptiveEditItem" type="button" title="Frequencies (F)" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">graphic_eq</span>
+          <span class="adaptiveEditItemLabel">Frequencies</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">F</span>
+      </span>
+    </button>
+  </div>
+  <div id="moldenInspector" class="floatingAuxInspector floatingAuxInspectorFields" aria-hidden="true">
+    <div class="inspectorGroup">
+      <div class="inspectorTitle">Orbitals</div>
+      <div class="inspectorRow inspectorSelectRow" id="moldenMoRow" style="display:none;">
+        <label for="moldenMoSelect">Molden MO</label>
+        <select id="moldenMoSelect" title="Select one molecular orbital parsed from the Molden file"></select>
+      </div>
+      <div id="moldenMoSummary" class="moldenInspectorSummary"></div>
+      <div class="inspectorRow inspectorSelectRow" id="moldenGridRow" style="display:none;">
+        <label for="moldenGridStep">Grid step</label>
+        <input type="number" id="moldenGridStep" min="0.12" max="1.20" step="0.01" value="0.35"
+          title="Grid spacing in angstrom" />
+      </div>
+      <div class="inspectorRow inspectorSelectRow" id="moldenGridPaddingRow" style="display:none;">
+        <label for="moldenGridPadding">Grid pad</label>
+        <input type="number" id="moldenGridPadding" min="0.5" max="8" step="0.1" value="3.0"
+          title="Padding added around the molecule in angstrom" />
+      </div>
+      <div id="moldenGridSummary" class="moldenInspectorSummary"></div>
+    </div>
+  </div>
+  <div id="viewInspector" class="floatingAuxInspector floatingAuxInspectorView" aria-hidden="true">
+    <div class="viewInspectorGroup">
+      <div class="viewInspectorTitle">Quick actions</div>
+      <button id="centerMassBtn" class="secondary tb-quickActionBtn"
+        title="Shift active molecule center of mass to the origin (shortcut: R)"
+        data-tip="COM → Origin: shift the active molecule center of mass to (0,0,0). Shortcut: R.">
+        <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">center_focus_strong</span>
+        <span class="tb-quickActionLabel">COM → Origin</span>
+      </button>
+      <button id="pointCameraComBtn" class="secondary tb-quickActionBtn"
+        title="Point the camera so the active molecule center of mass is centered in view"
+        data-tip="Point Camera to COM: keep the current camera pose but retarget the view to the active molecule center of mass.">
+        <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">my_location</span>
+        <span class="tb-quickActionLabel">Point Camera to COM</span>
+      </button>
+      <button id="alignInertiaBtn" class="secondary tb-quickActionBtn"
+        title="Rotate active molecule so principal inertia axes align with XYZ"
+        data-tip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z.">
+        <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">3d_rotation</span>
+        <span class="tb-quickActionLabel">Align Principal Axes</span>
+      </button>
+      <div class="viewPresetRow">
+        <button id="viewAxisXBtn" class="secondary tb-quickActionBtn"
+          title="Set camera along +X axis looking toward target"
+          data-tip="View +X: place the camera on +X looking at the current target.">
+          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">east</span>
+          <span class="tb-quickActionLabel">+X</span>
+        </button>
+        <button id="viewAxisYBtn" class="secondary tb-quickActionBtn"
+          title="Set camera along +Y axis looking toward target"
+          data-tip="View +Y: place the camera on +Y looking at the current target.">
+          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north</span>
+          <span class="tb-quickActionLabel">+Y</span>
+        </button>
+        <button id="viewAxisZBtn" class="secondary tb-quickActionBtn"
+          title="Set camera along +Z axis looking toward target"
+          data-tip="View +Z: place the camera on +Z looking at the current target.">
+          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north_east</span>
+          <span class="tb-quickActionLabel">+Z</span>
+        </button>
+      </div>
+    </div>
   </div>
   <div id="emptyState">
     <div id="emptyStateCard">

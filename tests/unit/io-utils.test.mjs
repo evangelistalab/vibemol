@@ -81,6 +81,28 @@ water by Z
   );
 });
 
+test('io-utils preserves multi-frame XYZ trajectory text', () => {
+  const context = loadIoUtils();
+  const detected = context.window.VibeMolIOUtils.detectPastedXyzText(`
+2
+frame 1
+C 0.0 0.0 0.0
+H 0.0 0.0 1.0
+2
+frame 2
+C 0.1 0.0 0.0
+H 0.1 0.0 1.0
+`);
+
+  assert.ok(detected);
+  assert.equal(detected.atomCount, 2);
+  assert.equal(detected.wrapped, false);
+  assert.equal(
+    detected.xyzText,
+    '2\nframe 1\nC 0.0 0.0 0.0\nH 0.0 0.0 1.0\n2\nframe 2\nC 0.1 0.0 0.0\nH 0.1 0.0 1.0\n'
+  );
+});
+
 test('io-utils wraps coordinates-only clipboard text with atomic numbers into XYZ', () => {
   const context = loadIoUtils();
   const detected = context.window.VibeMolIOUtils.detectPastedXyzText(`

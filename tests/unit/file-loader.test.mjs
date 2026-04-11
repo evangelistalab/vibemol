@@ -96,6 +96,31 @@ test('file loader wraps coordinates-only xyz files before parsing', () => {
   assert.equal(parsed.text, '2\ncoords-only.xyz\nC 0 0 0\nH 0 0 1\n');
 });
 
+test('file loader preserves multi-frame xyz trajectory text during normalization', () => {
+  const trajectoryText = [
+    '2',
+    'frame 1',
+    'C 0 0 0',
+    'H 0 0 1',
+    '2',
+    'frame 2',
+    'C 0.1 0 0',
+    'H 0.1 0 1',
+    '',
+  ].join('\n');
+  const { controller } = createController({
+    detectInputFileKind: (name) => name.endsWith('.xyz') ? 'xyz' : 'cube',
+    detectPastedXyzText: () => ({
+      atomCount: 2,
+      wrapped: false,
+      xyzText: trajectoryText,
+    }),
+  });
+  const parsed = controller.parseVolumeByName('traj.xyz', trajectoryText);
+  assert.equal(parsed.kind, 'xyz');
+  assert.equal(parsed.text, trajectoryText);
+});
+
 test('file loader builds embedded files from text and base64 payloads', async () => {
   const { controller } = createController();
   const textFile = controller.buildEmbeddedFile({ name: 'a.txt', text: 'hello', mimeType: 'text/plain' }, 0);

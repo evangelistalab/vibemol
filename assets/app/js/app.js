@@ -899,6 +899,17 @@
     if (vibrationPanelEl && vibrationPanelEl.classList.contains('open')) {
       scheduleVibrationPanelLayoutSync(1);
     }
+    positionDisplayWindowAdaptiveMenu();
+    const moldenInspectorEl = document.getElementById('moldenInspector');
+    const moldenInspectorTriggerEl = document.getElementById('moldenInspectorBtn');
+    if (moldenInspectorEl && moldenInspectorEl.classList.contains('open')) {
+      positionDisplayWindowInspectorPopover(moldenInspectorEl, moldenInspectorTriggerEl);
+    }
+    const viewInspectorEl = document.getElementById('viewInspector');
+    const viewInspectorTriggerEl = document.getElementById('viewInspectorBtn');
+    if (viewInspectorEl && viewInspectorEl.classList.contains('open')) {
+      positionDisplayWindowInspectorPopover(viewInspectorEl, viewInspectorTriggerEl);
+    }
     positionEditAdaptiveMenu();
     if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
       positionBuildPopover();
@@ -4806,7 +4817,7 @@
     if (trajectoryPanelBtn) {
       trajectoryPanelBtn.style.display = info.enabled ? '' : 'none';
       trajectoryPanelBtn.title = info.enabled
-        ? 'Trajectory controls'
+        ? 'Trajectory controls (T)'
         : 'No trajectory data in active file';
     }
     if (trajectoryRow) trajectoryRow.style.display = info.enabled ? 'grid' : 'none';
@@ -4816,6 +4827,7 @@
       setTrajectoryPanelOpen(false, { syncUi: false });
       stopTrajectoryPlayback({ syncUi: false });
       if (trajectoryNowPlaying) trajectoryNowPlaying.textContent = 'No trajectory selected';
+      updateDisplayWindowAdaptiveMenuUi();
       return;
     }
 
@@ -4835,6 +4847,7 @@
     setMotionPanelButtonGlyph(trajectoryPlayBtn, trajectoryPlaying ? 'pause' : 'play_arrow');
     if (trajectoryLoopEl) trajectoryLoopEl.checked = !!traj.loop;
     if (trajectoryFpsEl && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
+    updateDisplayWindowAdaptiveMenuUi();
   }
   /**
    * Resolve vibrational-mode metadata for the active volume.
@@ -5210,10 +5223,9 @@
    */
   function syncVibrationControls() {
     const info = getActiveVibrationInfo();
-    if (vibrationToolbarSection) vibrationToolbarSection.style.display = info.enabled ? '' : 'none';
     if (vibrationPanelBtn) {
       vibrationPanelBtn.title = info.enabled
-        ? 'Vibrational mode controls'
+        ? 'Vibrational mode controls (F)'
         : 'No vibrational mode data in active file';
     }
     if (vibrationRow) vibrationRow.style.display = info.enabled ? 'grid' : 'none';
@@ -5226,6 +5238,7 @@
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       if (vibrationNowPlaying) vibrationNowPlaying.textContent = 'No mode selected';
+      updateDisplayWindowAdaptiveMenuUi();
       return;
     }
     const vib = info.vib;
@@ -5254,6 +5267,7 @@
       setMotionPanelButtonGlyph(vibrationPlayBtn, 'play_arrow');
       if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = `-- ${CM_INV_HTML}`;
       renderVibrationSpectrum(info, tableState);
+      updateDisplayWindowAdaptiveMenuUi();
       return;
     }
 
@@ -5280,6 +5294,7 @@
       ? `${freq.toFixed(1)} ${CM_INV_HTML}`
       : `-- ${CM_INV_HTML}`;
     renderVibrationSpectrum(info, tableState);
+    updateDisplayWindowAdaptiveMenuUi();
   }
 
   /**
@@ -5635,8 +5650,8 @@
   const clearBtn = document.getElementById('clearBtn');
   const helpBtn = document.getElementById('helpBtn');
   // Side panel controls
+  const displayWindowAdaptiveMenuEl = document.getElementById('displayWindowAdaptiveMenu');
   const viewInspectorBtn = document.getElementById('viewInspectorBtn');
-  const viewInspectorToggleIcon = document.getElementById('viewInspectorToggleIcon');
   const viewInspector = document.getElementById('viewInspector');
   const viewPanelBtn = document.getElementById('viewPanelBtn');
   const coordsPanelBtn = document.getElementById('coordsPanelBtn');
@@ -5648,11 +5663,8 @@
   const appearanceSurfacesSectionEl = document.getElementById('appearanceSurfacesSection');
   const appearanceTwoComponentSectionEl = document.getElementById('appearanceTwoComponentSection');
   const appearanceCloudSectionEl = document.getElementById('appearanceCloudSection');
-  const moldenToolbarSection = document.getElementById('moldenToolbarSection');
   const moldenInspectorBtn = document.getElementById('moldenInspectorBtn');
-  const moldenInspectorToggleIcon = document.getElementById('moldenInspectorToggleIcon');
   const moldenInspector = document.getElementById('moldenInspector');
-  const vibrationToolbarSection = document.getElementById('vibrationToolbarSection');
   const trajectoryPanelBtn = document.getElementById('trajectoryPanelBtn');
   const vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
   const sidePanel = document.getElementById('sidePanel');
@@ -6264,7 +6276,6 @@
     const vol = record && record.vol;
     const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
     if (!molden || !Array.isArray(molden.mos) || molden.mos.length === 0) {
-      if (moldenToolbarSection) moldenToolbarSection.style.display = 'none';
       setMoldenInspectorOpen(false);
       moldenMoRow.style.display = 'none';
       moldenGridRow.style.display = 'none';
@@ -6272,9 +6283,9 @@
       moldenMoSelect.innerHTML = '';
       moldenMoSummary.textContent = '';
       moldenGridSummary.textContent = '';
+      updateDisplayWindowAdaptiveMenuUi();
       return;
     }
-    if (moldenToolbarSection) moldenToolbarSection.style.display = '';
     moldenMoRow.style.display = 'grid';
     moldenGridRow.style.display = 'grid';
     moldenGridPaddingRow.style.display = 'grid';
@@ -6297,6 +6308,7 @@
     moldenGridStepEl.value = gridSettings.stepAng.toFixed(2);
     moldenGridPaddingEl.value = gridSettings.paddingAng.toFixed(1);
     moldenGridSummary.textContent = formatMoldenGridSummary(record);
+    updateDisplayWindowAdaptiveMenuUi();
   }
 
   const triggerOpenFiles = () => fileInput.click();
@@ -7357,6 +7369,10 @@
       { k: 'B', d: 'Batch export' },
       { k: 'I', d: 'Toggle surfaces' },
       { k: 'A', d: 'Toggle axes' },
+      { k: 'O', d: 'Orbitals' },
+      { k: 'Q', d: 'View actions' },
+      { k: 'T', d: 'Trajectory' },
+      { k: 'F', d: 'Frequencies' },
       { k: 'C', d: 'Toggle Coordinates window' },
       { k: 'R', d: 'Center mass at origin' },
       { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
@@ -7409,6 +7425,10 @@
     measure: [
       { k: 'M', d: 'Display mode' },
       { k: 'E', d: 'Edit mode' },
+      { k: 'O', d: 'Orbitals' },
+      { k: 'Q', d: 'View actions' },
+      { k: 'T', d: 'Trajectory' },
+      { k: 'F', d: 'Frequencies' },
       { k: 'C', d: 'Toggle Coordinates window' },
       { k: 'Click', d: 'Select points' },
       { k: 'R', d: 'Center mass at origin' },
@@ -7537,6 +7557,7 @@
     updateAxisGuideLine && updateAxisGuideLine();
     updateEmptyStateVisibility();
     updateModeButtons();
+    updateDisplayWindowAdaptiveMenuUi();
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
@@ -7594,10 +7615,12 @@
   function setViewPanelOpen(open) {
     if (!sidePanel) return;
     const shouldOpen = !!open;
+    if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIEW_PANEL);
     sidePanel.classList.toggle('open', shouldOpen);
     sidePanel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
     renderRibbon((shouldOpen || (coordsPanel && coordsPanel.classList.contains('open'))) ? 'panel' : 'default');
     if (viewPanelBtn) viewPanelBtn.classList.toggle('active', shouldOpen);
+    updateDisplayWindowAdaptiveMenuUi();
   }
 
   /**
@@ -7621,9 +7644,11 @@
    */
   function setCoordsPanelOpen(open) {
     const shouldOpen = !!open;
+    if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
     setFloatingPanelOpen(coordsPanel, shouldOpen);
     renderRibbon((shouldOpen || (sidePanel && sidePanel.classList.contains('open'))) ? 'panel' : 'default');
     if (coordsPanelBtn) coordsPanelBtn.classList.toggle('active', shouldOpen);
+    updateDisplayWindowAdaptiveMenuUi();
   }
 
   /**
@@ -7650,19 +7675,111 @@
     refs.button.onclick = () => setToolbarInspectorOpen(refs, !refs.panel.classList.contains('open'));
   }
 
-  const viewInspectorRefs = { panel: viewInspector, button: viewInspectorBtn, icon: viewInspectorToggleIcon };
+  /**
+   * Return whether one toolbar inspector shell is currently open.
+   * @param {{panel:HTMLElement|null}=} refs
+   * @returns {boolean}
+   */
+  function isToolbarInspectorOpen(refs) {
+    const panel = refs && refs.panel;
+    return !!(panel && panel.classList.contains('open'));
+  }
+
+  /**
+   * Return whether one floating panel is currently open.
+   * @param {HTMLElement|null} panelEl
+   * @returns {boolean}
+   */
+  function isFloatingPanelCurrentlyOpen(panelEl) {
+    return !!(panelEl && panelEl.classList.contains('open'));
+  }
+
+  /**
+   * Return whether one aria-hidden based popup is currently visible.
+   * @param {HTMLElement|null} el
+   * @returns {boolean}
+   */
+  function isAriaPopupVisible(el) {
+    return !!(el && el.getAttribute('aria-hidden') === 'false');
+  }
+
+  let displayWindowExclusiveSyncDepth = 0;
+
+  /**
+   * Shared top offset for canvas-side adaptive menus so they clear the toolbar show button.
+   * @returns {number}
+   */
+  function getCanvasAdaptiveMenuTopInset() {
+    return 56;
+  }
+
+  /**
+   * Position the non-edit adaptive window menu just below the main toolbar.
+   */
+  function positionDisplayWindowAdaptiveMenu() {
+    const menuEl = document.getElementById('displayWindowAdaptiveMenu');
+    if (!menuEl) return;
+    const gap = 12;
+    let left = gap;
+    let top = getCanvasAdaptiveMenuTopInset();
+    const toolbarEl = document.getElementById('toolbar');
+    if (!document.body.classList.contains('sidebar-collapsed') && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
+      const toolbarRect = toolbarEl.getBoundingClientRect();
+      if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
+        left = Math.round(toolbarRect.right + gap);
+      }
+      if (toolbarRect && Number.isFinite(toolbarRect.top)) {
+        const inset = getCanvasAdaptiveMenuTopInset();
+        top = Math.max(inset, Math.round(toolbarRect.top + inset));
+      }
+    }
+    const viewportWidth = Math.max(
+      1,
+      Math.round(window.innerWidth || 0),
+      Math.round((document.documentElement && document.documentElement.clientWidth) || 0)
+    );
+    const menuWidth = Math.max(0, Math.round(menuEl.getBoundingClientRect().width || menuEl.offsetWidth || 0));
+    const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
+    menuEl.style.left = `${Math.min(left, maxLeft)}px`;
+    menuEl.style.top = `${top}px`;
+    menuEl.style.right = 'auto';
+  }
+
+  /**
+   * Position one floating auxiliary inspector beside its adaptive menu trigger.
+   * @param {HTMLElement|null} panelEl
+   * @param {HTMLElement|null} triggerEl
+   */
+  function positionDisplayWindowInspectorPopover(panelEl, triggerEl) {
+    if (!panelEl || !triggerEl) return;
+    positionFloatingPopoverUi({
+      popoverEl: panelEl,
+      triggerEl,
+      gap: 12,
+      defaultWidth: 340,
+      defaultHeight: 220,
+    });
+  }
+
+  const viewInspectorRefs = { panel: viewInspector, button: viewInspectorBtn };
   const displayInspectorRefs = { panel: displayInspector, button: displayInspectorBtn, icon: displayInspectorToggleIcon };
-  const moldenInspectorRefs = { panel: moldenInspector, button: moldenInspectorBtn, icon: moldenInspectorToggleIcon };
+  const moldenInspectorRefs = { panel: moldenInspector, button: moldenInspectorBtn };
 
   /**
    * Open/close the compact View/Coords inspector in the toolbar.
    * @param {boolean} open
    */
-  function setViewInspectorOpen(open) { setToolbarInspectorOpen(viewInspectorRefs, open); }
+  function setViewInspectorOpen(open) {
+    const shouldOpen = !!open;
+    if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR);
+    setToolbarInspectorOpen(viewInspectorRefs, shouldOpen);
+    if (shouldOpen) positionDisplayWindowInspectorPopover(viewInspector, viewInspectorBtn);
+    updateDisplayWindowAdaptiveMenuUi();
+  }
 
-  bindToolbarInspectorToggle(viewInspectorRefs);
-  if (viewPanelBtn) viewPanelBtn.onclick = () => setViewPanelOpen(!(sidePanel && sidePanel.classList.contains('open')));
-  if (coordsPanelBtn) coordsPanelBtn.onclick = () => setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
+  if (viewInspectorBtn) viewInspectorBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR);
+  if (viewPanelBtn) viewPanelBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL);
+  if (coordsPanelBtn) coordsPanelBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL);
   if (sideClose) sideClose.onclick = () => setViewPanelOpen(false);
   if (coordsPanelClose) coordsPanelClose.onclick = () => setCoordsPanelOpen(false);
 
@@ -7677,8 +7794,14 @@
    * Open/close the dedicated Molden toolbar inspector.
    * @param {boolean} open
    */
-  function setMoldenInspectorOpen(open) { setToolbarInspectorOpen(moldenInspectorRefs, open); }
-  bindToolbarInspectorToggle(moldenInspectorRefs);
+  function setMoldenInspectorOpen(open) {
+    const shouldOpen = !!open;
+    if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR);
+    setToolbarInspectorOpen(moldenInspectorRefs, shouldOpen);
+    if (shouldOpen) positionDisplayWindowInspectorPopover(moldenInspector, moldenInspectorBtn);
+    updateDisplayWindowAdaptiveMenuUi();
+  }
+  if (moldenInspectorBtn) moldenInspectorBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR);
 
   /**
    * Toggle a dedicated floating motion panel.
@@ -7699,9 +7822,11 @@
    */
   function setTrajectoryPanelOpen(open, options = {}) {
     const shouldOpen = !!open;
+    if (shouldOpen && options.exclusive !== false) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL);
     if (!shouldOpen) stopTrajectoryPlayback({ syncUi: false });
     setFloatingPanelOpen(trajectoryPanel, shouldOpen);
     if (options.syncUi !== false) syncTrajectoryControls();
+    updateDisplayWindowAdaptiveMenuUi();
   }
 
   /**
@@ -7710,6 +7835,7 @@
    */
   function setVibrationPanelOpen(open) {
     const shouldOpen = !!open;
+    if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIBRATION_PANEL);
     if (!shouldOpen) {
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
@@ -7721,16 +7847,17 @@
     }
     setFloatingPanelOpen(vibrationPanel, shouldOpen);
     if (shouldOpen) scheduleVibrationPanelLayoutSync(2);
+    updateDisplayWindowAdaptiveMenuUi();
   }
 
   if (trajectoryPanelBtn) {
     trajectoryPanelBtn.onclick = () => {
-      setTrajectoryPanelOpen(!(trajectoryPanel && trajectoryPanel.classList.contains('open')));
+      toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL);
     };
   }
   if (vibrationPanelBtn) {
     vibrationPanelBtn.onclick = () => {
-      setVibrationPanelOpen(!(vibrationPanel && vibrationPanel.classList.contains('open')));
+      toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIBRATION_PANEL);
     };
   }
   if (trajectoryPanelClose) {
@@ -7754,6 +7881,216 @@
   if (helpBtn) helpBtn.onclick = openHelp;
   if (helpClose) helpClose.onclick = closeHelp;
   if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
+
+  const NON_EDIT_WINDOW_ID = Object.freeze({
+    DISPLAY_INSPECTOR: 'displayInspector',
+    MOLDEN_INSPECTOR: 'moldenInspector',
+    VIEW_INSPECTOR: 'viewInspector',
+    VIEW_PANEL: 'viewPanel',
+    COORDS_PANEL: 'coordsPanel',
+    TRAJECTORY_PANEL: 'trajectoryPanel',
+    VIBRATION_PANEL: 'vibrationPanel',
+    HELP_OVERLAY: 'helpOverlay',
+    ELEMENT_COLOR_OVERLAY: 'elementColorOverlay',
+  });
+
+  const nonEditWindowCatalog = Object.freeze({
+    [NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
+      label: 'Appearance inspector',
+      isOpen: () => isToolbarInspectorOpen(displayInspectorRefs),
+      setOpen: (open) => setDisplayInspectorOpen(open),
+    }),
+    [NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
+      label: 'Molden inspector',
+      isOpen: () => isToolbarInspectorOpen(moldenInspectorRefs),
+      setOpen: (open) => setMoldenInspectorOpen(open),
+    }),
+    [NON_EDIT_WINDOW_ID.VIEW_INSPECTOR]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
+      label: 'View inspector',
+      isOpen: () => isToolbarInspectorOpen(viewInspectorRefs),
+      setOpen: (open) => setViewInspectorOpen(open),
+    }),
+    [NON_EDIT_WINDOW_ID.VIEW_PANEL]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.VIEW_PANEL,
+      label: 'View window',
+      isOpen: () => isFloatingPanelCurrentlyOpen(sidePanel),
+      setOpen: (open) => setViewPanelOpen(open),
+    }),
+    [NON_EDIT_WINDOW_ID.COORDS_PANEL]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.COORDS_PANEL,
+      label: 'Coordinates window',
+      isOpen: () => isFloatingPanelCurrentlyOpen(coordsPanel),
+      setOpen: (open) => setCoordsPanelOpen(open),
+    }),
+    [NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
+      label: 'Trajectory window',
+      isOpen: () => isFloatingPanelCurrentlyOpen(trajectoryPanel),
+      setOpen: (open) => setTrajectoryPanelOpen(open),
+    }),
+    [NON_EDIT_WINDOW_ID.VIBRATION_PANEL]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.VIBRATION_PANEL,
+      label: 'Vibration window',
+      isOpen: () => isFloatingPanelCurrentlyOpen(vibrationPanel),
+      setOpen: (open) => setVibrationPanelOpen(open),
+    }),
+    [NON_EDIT_WINDOW_ID.HELP_OVERLAY]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.HELP_OVERLAY,
+      label: 'Help overlay',
+      isOpen: () => isAriaPopupVisible(helpOverlay),
+      setOpen: (open) => {
+        if (open) openHelp();
+        else closeHelp();
+      },
+    }),
+    [NON_EDIT_WINDOW_ID.ELEMENT_COLOR_OVERLAY]: Object.freeze({
+      id: NON_EDIT_WINDOW_ID.ELEMENT_COLOR_OVERLAY,
+      label: 'Element colors overlay',
+      isOpen: () => isAriaPopupVisible(elementColorOverlay),
+      setOpen: (open) => setElementColorOverlayOpen(open),
+    }),
+  });
+
+  const ESCAPABLE_NON_EDIT_WINDOW_ORDER = Object.freeze([
+    NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
+    NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
+    NON_EDIT_WINDOW_ID.VIEW_PANEL,
+    NON_EDIT_WINDOW_ID.COORDS_PANEL,
+    NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
+    NON_EDIT_WINDOW_ID.VIBRATION_PANEL,
+  ]);
+
+  const EXCLUSIVE_DISPLAY_WINDOW_IDS = Object.freeze([
+    NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
+    NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
+    NON_EDIT_WINDOW_ID.VIEW_PANEL,
+    NON_EDIT_WINDOW_ID.COORDS_PANEL,
+    NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
+    NON_EDIT_WINDOW_ID.VIBRATION_PANEL,
+  ]);
+
+  /**
+   * Return one non-edit window catalog entry by id.
+   * @param {string} id
+   * @returns {{id:string,label:string,isOpen:Function,setOpen:Function}|null}
+   */
+  function getNonEditWindowEntry(id) {
+    const key = String(id || '').trim();
+    if (!key) return null;
+    return nonEditWindowCatalog[key] || null;
+  }
+
+  /**
+   * List currently open non-edit windows in catalog order.
+   * @param {string[]=} ids
+   * @returns {string[]}
+   */
+  function listOpenNonEditWindowIds(ids = undefined) {
+    const keys = Array.isArray(ids) && ids.length ? ids : Object.keys(nonEditWindowCatalog);
+    return keys.filter((id) => {
+      const entry = getNonEditWindowEntry(id);
+      return !!(entry && entry.isOpen());
+    });
+  }
+
+  /**
+   * Close one ordered subset of cataloged non-edit windows.
+   * @param {string[]=} ids
+   * @returns {boolean}
+   */
+  function closeNonEditWindows(ids = undefined) {
+    const keys = Array.isArray(ids) && ids.length ? ids : Object.keys(nonEditWindowCatalog);
+    let closed = false;
+    for (const id of keys) {
+      const entry = getNonEditWindowEntry(id);
+      if (!entry || !entry.isOpen()) continue;
+      entry.setOpen(false);
+      closed = true;
+    }
+    return closed;
+  }
+
+  /**
+   * Close all exclusive display windows except one optional target.
+   * @param {string=} exceptId
+   */
+  function closeExclusiveDisplayWindows(exceptId = '') {
+    if (displayWindowExclusiveSyncDepth > 0) return;
+    displayWindowExclusiveSyncDepth += 1;
+    try {
+      for (const id of EXCLUSIVE_DISPLAY_WINDOW_IDS) {
+        if (exceptId && id === exceptId) continue;
+        const entry = getNonEditWindowEntry(id);
+        if (!entry || !entry.isOpen()) continue;
+        entry.setOpen(false);
+      }
+    } finally {
+      displayWindowExclusiveSyncDepth = Math.max(0, displayWindowExclusiveSyncDepth - 1);
+    }
+  }
+
+  /**
+   * Toggle one exclusive display window by catalog id.
+   * @param {string} id
+   */
+  function toggleExclusiveDisplayWindow(id) {
+    const entry = getNonEditWindowEntry(id);
+    if (!entry) return;
+    if (entry.isOpen()) entry.setOpen(false);
+    else entry.setOpen(true);
+  }
+
+  /**
+   * Refresh the non-edit adaptive launcher visibility and active button state.
+   */
+  function updateDisplayWindowAdaptiveMenuUi() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const hasRecord = !!record;
+    const hasAtoms = !!(vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
+    const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
+    const showMolden = !!(molden && Array.isArray(molden.mos) && molden.mos.length > 0);
+    const showViewActions = hasAtoms;
+    const showView = hasRecord;
+    const showCoords = hasAtoms;
+    const showTrajectory = !!getActiveTrajectoryInfo().enabled;
+    const showVibration = !!getActiveVibrationInfo().enabled;
+    const isVisible = currentMode !== MODES.EDIT && (showMolden || showViewActions || showView || showCoords || showTrajectory || showVibration);
+    if (!showMolden && isToolbarInspectorOpen(moldenInspectorRefs)) setMoldenInspectorOpen(false);
+    if (!showViewActions && isToolbarInspectorOpen(viewInspectorRefs)) setViewInspectorOpen(false);
+    if (!showView && isFloatingPanelCurrentlyOpen(sidePanel)) setViewPanelOpen(false);
+    if (!showCoords && isFloatingPanelCurrentlyOpen(coordsPanel)) setCoordsPanelOpen(false);
+    if (!showTrajectory && isFloatingPanelCurrentlyOpen(trajectoryPanel)) setTrajectoryPanelOpen(false, { syncUi: false, exclusive: false });
+    if (!showVibration && isFloatingPanelCurrentlyOpen(vibrationPanel)) setVibrationPanelOpen(false);
+    updateAdaptiveMenuUiHelper({
+      menuEl: displayWindowAdaptiveMenuEl,
+      isVisible,
+      positionMenu: positionDisplayWindowAdaptiveMenu,
+      onHideAllPopovers: () => closeNonEditWindows(EXCLUSIVE_DISPLAY_WINDOW_IDS),
+      visibleItems: [
+        { el: moldenInspectorBtn, visible: showMolden },
+        { el: viewInspectorBtn, visible: showViewActions },
+        { el: viewPanelBtn, visible: showView },
+        { el: coordsPanelBtn, visible: showCoords },
+        { el: trajectoryPanelBtn, visible: showTrajectory },
+        { el: vibrationPanelBtn, visible: showVibration },
+      ],
+      activeItems: [
+        { el: moldenInspectorBtn, active: isToolbarInspectorOpen(moldenInspectorRefs) },
+        { el: viewInspectorBtn, active: isToolbarInspectorOpen(viewInspectorRefs) },
+        { el: viewPanelBtn, active: isFloatingPanelCurrentlyOpen(sidePanel) },
+        { el: coordsPanelBtn, active: isFloatingPanelCurrentlyOpen(coordsPanel) },
+        { el: trajectoryPanelBtn, active: isFloatingPanelCurrentlyOpen(trajectoryPanel) },
+        { el: vibrationPanelBtn, active: isFloatingPanelCurrentlyOpen(vibrationPanel) },
+      ],
+      metaItems: [],
+    });
+    if (isToolbarInspectorOpen(moldenInspectorRefs)) positionDisplayWindowInspectorPopover(moldenInspector, moldenInspectorBtn);
+    if (isToolbarInspectorOpen(viewInspectorRefs)) positionDisplayWindowInspectorPopover(viewInspector, viewInspectorBtn);
+  }
 
   /**
    * Apply a molecule style selection from UI or keyboard shortcuts.
@@ -16480,13 +16817,16 @@
     if (!menuEl) return;
     const gap = 12;
     let left = gap;
-    let top = gap;
+    let top = getCanvasAdaptiveMenuTopInset();
     const toolbarEl = document.getElementById('toolbar');
     if (!document.body.classList.contains('sidebar-collapsed') && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
       const toolbarRect = toolbarEl.getBoundingClientRect();
       if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
         left = Math.round(toolbarRect.right + gap);
-        if (Number.isFinite(toolbarRect.top)) top = Math.max(gap, Math.round(toolbarRect.top));
+        if (Number.isFinite(toolbarRect.top)) {
+          const inset = getCanvasAdaptiveMenuTopInset();
+          top = Math.max(inset, Math.round(toolbarRect.top + inset));
+        }
       }
     }
     menuEl.style.left = `${left}px`;
@@ -21094,9 +21434,13 @@
   bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
   bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
   // Toggle View window in standard (display) mode
-  bind('down', MODES.DISPLAY, 'v', () => { toggleSide(); });
+  bind('down', MODES.DISPLAY, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });
   // Toggle Coordinates window in standard (display) mode
-  bind('down', MODES.DISPLAY, 'c', () => { setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open'))); });
+  bind('down', MODES.DISPLAY, 'c', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL); });
+  bind('down', MODES.DISPLAY, 'q', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR); });
+  bind('down', MODES.DISPLAY, 'o', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR); });
+  bind('down', MODES.DISPLAY, 't', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL); });
+  bind('down', MODES.DISPLAY, 'f', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIBRATION_PANEL); });
 
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
@@ -21198,7 +21542,12 @@
   // Measurement mode bindings
   bind('down', MODES.MEASURE, 'm', () => { setMode(MODES.DISPLAY); });
   bind('down', MODES.MEASURE, 'e', () => { setMode(MODES.EDIT); });
-  bind('down', MODES.MEASURE, 'c', () => { setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open'))); });
+  bind('down', MODES.MEASURE, 'c', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL); });
+  bind('down', MODES.MEASURE, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });
+  bind('down', MODES.MEASURE, 'q', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR); });
+  bind('down', MODES.MEASURE, 'o', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR); });
+  bind('down', MODES.MEASURE, 't', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL); });
+  bind('down', MODES.MEASURE, 'f', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIBRATION_PANEL); });
   // Esc clears current measurement selection (but does not change mode)
   bind('down', MODES.MEASURE, 'Escape', () => { clearEditSelection(); updateSelectedHalos(); updateEditSelectionVisuals(); });
 
@@ -21295,31 +21644,7 @@
       return;
     }
     if (e.key === 'Escape') {
-      let closed = false;
-      if (displayInspector && displayInspector.classList.contains('open')) {
-        setDisplayInspectorOpen(false);
-        closed = true;
-      }
-      if (viewInspector && viewInspector.classList.contains('open')) {
-        setViewInspectorOpen(false);
-        closed = true;
-      }
-      if (sidePanel && sidePanel.classList.contains('open')) {
-        setViewPanelOpen(false);
-        closed = true;
-      }
-      if (coordsPanel && coordsPanel.classList.contains('open')) {
-        setCoordsPanelOpen(false);
-        closed = true;
-      }
-      if (trajectoryPanel && trajectoryPanel.classList.contains('open')) {
-        setTrajectoryPanelOpen(false);
-        closed = true;
-      }
-      if (vibrationPanel && vibrationPanel.classList.contains('open')) {
-        setVibrationPanelOpen(false);
-        closed = true;
-      }
+      const closed = closeNonEditWindows(ESCAPABLE_NON_EDIT_WINDOW_ORDER);
       if (closed) {
         e.preventDefault();
         return;
@@ -21872,6 +22197,7 @@
   // Initialize UI visibility based on current mode
   updateRenderModeUI();
   syncAppearanceInspectorSectionState();
+  updateDisplayWindowAdaptiveMenuUi();
 
   // --- Preset import/export (shared with CLI via window.VibeMolPreset) ---
   const STRUCTURE_KIND = 'vibemol.structure';
@@ -22338,6 +22664,8 @@
     optimizeActiveStructureWithUff,
   });
   window.VibeMolTesting = Object.freeze({
+    listNonEditWindows: () => Object.keys(nonEditWindowCatalog),
+    getOpenNonEditWindows: () => listOpenNonEditWindowIds(),
     getEditSelectionCount: () => {
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.length : 0;
