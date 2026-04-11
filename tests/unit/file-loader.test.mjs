@@ -14,6 +14,7 @@ function createController(options = {}) {
   const ensureVolumeSchemaCalls = [];
   const controller = context.VibeMolFileLoader.createFileLoader({
     detectInputFileKind: options.detectInputFileKind || ((name) => name.endsWith('.xyz') ? 'xyz' : 'cube'),
+    detectPastedXyzText: options.detectPastedXyzText || (() => null),
     parseXYZ: (text) => ({ kind: 'xyz', text }),
     parseMolden: (text) => ({ kind: 'molden', text }),
     parseTwoComponentCube: (text) => ({ kind: 'two_component_cube', text }),
@@ -79,6 +80,20 @@ test('file loader routes volume parsing by detected kind', () => {
   assert.equal(controller.parseVolumeByName('sample.molden', 'x').kind, 'molden');
   assert.equal(controller.parseVolumeByName('sample.2ccube', 'x').kind, 'two_component_cube');
   assert.equal(controller.parseVolumeByName('sample.cube', 'x').kind, 'cube');
+});
+
+test('file loader wraps coordinates-only xyz files before parsing', () => {
+  const { controller } = createController({
+    detectInputFileKind: (name) => name.endsWith('.xyz') ? 'xyz' : 'cube',
+    detectPastedXyzText: (text, options = {}) => ({
+      atomCount: 2,
+      wrapped: true,
+      xyzText: `2\n${String(options.comment || 'Imported XYZ')}\nC 0 0 0\nH 0 0 1\n`,
+    }),
+  });
+  const parsed = controller.parseVolumeByName('coords-only.xyz', 'C 0 0 0\nH 0 0 1\n');
+  assert.equal(parsed.kind, 'xyz');
+  assert.equal(parsed.text, '2\ncoords-only.xyz\nC 0 0 0\nH 0 0 1\n');
 });
 
 test('file loader builds embedded files from text and base64 payloads', async () => {

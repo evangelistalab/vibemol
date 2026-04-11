@@ -32,7 +32,12 @@
 
     function parseVolumeByName(name, text) {
       const kind = deps.detectInputFileKind(name, text);
-      if (kind === 'xyz') return deps.parseXYZ(text);
+      if (kind === 'xyz') {
+        const detected = typeof deps.detectPastedXyzText === 'function'
+          ? deps.detectPastedXyzText(text, { comment: String(name || '').trim() || 'Imported XYZ' })
+          : null;
+        return deps.parseXYZ(detected && detected.xyzText ? detected.xyzText : text);
+      }
       if (kind === 'molden') return deps.parseMolden(text);
       if (kind === 'two_component_cube') return deps.parseTwoComponentCube(text);
       return deps.parseCube(text);

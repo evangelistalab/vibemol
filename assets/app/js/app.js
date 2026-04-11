@@ -24355,6 +24355,7 @@
     setVolumes: (next) => { volumes = next; },
     setCurrentIndex: (next) => { currentIndex = next; },
     detectInputFileKind,
+    detectPastedXyzText,
     parseCube,
     parseTwoComponentCube,
     parseXYZ,
