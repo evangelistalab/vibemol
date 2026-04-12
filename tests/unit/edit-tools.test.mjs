@@ -12,7 +12,7 @@ function createEditToolsHarness() {
     ADD_MOLECULE: 'add_molecule',
   };
   const EDIT_ADD_MODE = { ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' };
-  const EDIT_FRAGMENT_ATTACH_POLICY = { AUTO: 'auto', FUSE_RING: 'fuse_ring' };
+  const EDIT_FRAGMENT_ATTACH_POLICY = { SMART: 'smart', APPEND: 'append', REPLACE_H: 'replace_h' };
   const record = {
     vol: {
       atoms: [
@@ -27,7 +27,7 @@ function createEditToolsHarness() {
     editAtomSelectionIndices: [],
     editAddMode: EDIT_ADD_MODE.ATOM,
     editAddElementZ: 6,
-    editAddFragmentAttachPolicy: EDIT_FRAGMENT_ATTACH_POLICY.AUTO,
+    editAddFragmentAttachPolicy: EDIT_FRAGMENT_ATTACH_POLICY.SMART,
     addAtomOperatorSession: null,
     editDownPt: { x: 1, y: 2 },
     editMoved: true,

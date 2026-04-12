@@ -3052,11 +3052,11 @@
           placeholder="e.g. phenyl, hydroxyl, C6H5" />
         <datalist id="editFragmentSuggestions"></datalist>
         <label for="editFragmentAttachPolicy">Attach policy</label>
-        <select id="editFragmentAttachPolicy">
-          <option value="auto" selected>Auto</option>
+        <select id="editFragmentAttachPolicy"
+          title="Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.">
+          <option value="smart" selected>Smart</option>
           <option value="append">Append</option>
           <option value="replace_h">Replace H</option>
-          <option value="fuse_ring">Fuse ring</option>
         </select>
         <div id="editFragmentQuick"></div>
       </div>
@@ -3275,6 +3275,10 @@
             animate that mode, and view the IR spectrum with the active mode highlighted.</li>
           <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) for free placement,
             while grow-drag from an atom stays in the plane orthogonal to the camera view.</li>
+          <li>Fragment attach policy now controls only host-valence handling: <strong>Smart</strong> is the default and
+            prefers Replace H when available, <strong>Append</strong> always keeps the host intact, and
+            <strong>Replace H</strong> falls back to Append when needed. Ring fusion is automatic when you click a bond
+            with a fusion-capable fragment loaded.</li>
           <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show
             element symbols over atoms.</li>
           <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>

@@ -75,7 +75,8 @@
     const getElementMaxCoordination = typeof options.getElementMaxCoordination === 'function' ? options.getElementMaxCoordination : (() => 0);
     const countsTowardAtomValence = typeof options.countsTowardAtomValence === 'function' ? options.countsTowardAtomValence : (() => true);
     const CATALOG_KIND = options.CATALOG_KIND || { FRAGMENT: 'fragment', MOLECULE: 'molecule' };
-    const EDIT_FRAGMENT_ATTACH_POLICY = options.EDIT_FRAGMENT_ATTACH_POLICY || { APPEND: 'append', REPLACE_H: 'replace_h', FUSE_RING: 'fuse_ring' };
+    const EDIT_FRAGMENT_ATTACH_POLICY = options.EDIT_FRAGMENT_ATTACH_POLICY || { SMART: 'smart', APPEND: 'append', REPLACE_H: 'replace_h' };
+    const FRAGMENT_ATTACH_MODE_FUSE_RING = 'fuse_ring';
     const onDeleteAtomsPostprocess = typeof options.onDeleteAtomsPostprocess === 'function' ? options.onDeleteAtomsPostprocess : (() => {});
     const getVolumes = typeof options.getVolumes === 'function' ? options.getVolumes : (() => []);
 
@@ -652,7 +653,7 @@
         timestamp: new Date().toISOString(),
         entryId: nextState.fragment.id,
         entryKind: CATALOG_KIND.FRAGMENT,
-        attachPolicy: EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING,
+        attachPolicy: FRAGMENT_ATTACH_MODE_FUSE_RING,
         hostBondAtomIds: [ensureAtomId(vol.atoms[nextState.hostBond.i]), ensureAtomId(vol.atoms[nextState.hostBond.j])],
         hostBondIndices: [nextState.hostBond.i, nextState.hostBond.j],
         addedAtomIds,
@@ -957,17 +958,20 @@
         if (attachDir.lengthSq() < 1e-10) attachDir.set(1, 0, 0);
       }
       attachDir.normalize();
-      const attachPolicyOverride = String(options && options.attachPolicyOverride || '').trim();
+      const rawAttachPolicyOverride = options && options.attachPolicyOverride;
+      const attachPolicyOverride = rawAttachPolicyOverride && typeof rawAttachPolicyOverride === 'object'
+        ? String(rawAttachPolicyOverride.policy || '').trim()
+        : String(rawAttachPolicyOverride || '').trim();
+      const attachPolicyOverrideReason = rawAttachPolicyOverride && typeof rawAttachPolicyOverride === 'object'
+        ? String(rawAttachPolicyOverride.reason || '').trim()
+        : '';
       const resolvedPolicy = attachPolicyOverride === EDIT_FRAGMENT_ATTACH_POLICY.APPEND
-        ? { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null }
+        ? { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null, reason: attachPolicyOverrideReason }
         : resolveFragmentAttachPolicy(fragment, vol, anchor, attachDir);
-      if (resolvedPolicy.error && resolvedPolicy.policy !== EDIT_FRAGMENT_ATTACH_POLICY.APPEND) {
-        setHintMessage(resolvedPolicy.error);
-        return false;
-      }
       let attachMode = resolvedPolicy.policy === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H
         ? EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H
         : EDIT_FRAGMENT_ATTACH_POLICY.APPEND;
+      const attachReason = String(resolvedPolicy && resolvedPolicy.reason || '').trim();
       const removedAtomIndices = [];
       const removedAtomIds = [];
       const replaceHydrogen = resolvedPolicy.replaceHydrogen || null;
@@ -1085,7 +1089,17 @@
       if (cleanupResult.bondLengthApplied) detailParts.push('cleanup: bond length');
       if (cleanupResult.overlapShift > 1e-6) detailParts.push(`cleanup: overlap +${cleanupResult.overlapShift.toFixed(2)} Å`);
       const detailSuffix = detailParts.length ? ` • ${detailParts.join(' • ')}` : '';
-      setHintMessage(`Added fragment ${fragment.name} (${fragment.formula}) via ${attachMode === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H ? 'Replace H' : 'Append'}${detailSuffix}`);
+      let viaText = 'Append';
+      if (attachMode === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H) {
+        viaText = 'Replace H';
+      } else if (attachReason === 'open_site') {
+        viaText = 'Append (open site)';
+      } else if (attachReason === 'no_h_to_replace') {
+        viaText = 'Append (no H to replace)';
+      } else if (attachReason === 'fragment_does_not_support_replace_h') {
+        viaText = 'Append (fragment does not support Replace H)';
+      }
+      setHintMessage(`Attached ${fragment.name} via ${viaText}${detailSuffix}`);
       return true;
     }
 

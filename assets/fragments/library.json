@@ -220,6 +220,45 @@
     },
     {
       "kind": "fragment",
+      "id": "appendmethyl",
+      "name": "Append-only methyl",
+      "formula": "CH3",
+      "tags": [
+        "alkyl",
+        "test",
+        "fixture"
+      ],
+      "xyz": "./methyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append"
+      ]
+    },
+    {
+      "kind": "fragment",
       "id": "phenyl",
       "name": "Phenyl",
       "formula": "C6H5",
@@ -297,6 +336,93 @@
       "attachModes": [
         "append",
         "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "fusionphenyl",
+      "name": "Fusion phenyl",
+      "formula": "C6H5",
+      "tags": [
+        "aryl",
+        "ring",
+        "fusion",
+        "test",
+        "fixture"
+      ],
+      "xyz": "./phenyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 2
+        },
+        {
+          "i": 3,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 9,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 10,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h",
+        "fuse_ring"
+      ],
+      "fuseBondLocalPair": [
+        0,
+        1
       ]
     },
     {

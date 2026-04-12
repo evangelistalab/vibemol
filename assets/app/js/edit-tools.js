@@ -166,10 +166,11 @@
       if (state.editIntent === EDIT_INTENT.ATOM_MANIPULATION && state.editAddMode === EDIT_ADD_MODE.FRAGMENT) {
         const fragment = getCurrentFragmentDefinition();
         const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
-        if (state.editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-          return `Fragment attach: ${label} • Fuse ring • Click a host bond • Drag to spin • Click again to confirm`;
+        const parts = [`Fragment attach: ${label}`, `Policy ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)}`];
+        if (fragment && Array.isArray(fragment.attachModes) && fragment.attachModes.includes('fuse_ring')) {
+          parts.push('Click bond to fuse ring');
         }
-        return `Fragment attach: ${label} • Policy ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)}`;
+        return parts.join(' • ');
       }
       if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) {
         const molecule = getCurrentMoleculeDefinition();

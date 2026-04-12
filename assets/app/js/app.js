@@ -8132,7 +8132,11 @@
   const EDIT_ADD_MODE = Object.freeze({ ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' });
   const CATALOG_KIND = Object.freeze({ FRAGMENT: 'fragment', MOLECULE: 'molecule' });
   const EDIT_FRAGMENT_ATTACH_POLICY = Object.freeze({
-    AUTO: 'auto',
+    SMART: 'smart',
+    APPEND: 'append',
+    REPLACE_H: 'replace_h',
+  });
+  const FRAGMENT_ATTACH_MODE = Object.freeze({
     APPEND: 'append',
     REPLACE_H: 'replace_h',
     FUSE_RING: 'fuse_ring',
@@ -8194,7 +8198,7 @@
   const editAddMoleculePaneHomeParent = editAddMoleculePaneEl ? editAddMoleculePaneEl.parentElement : null;
   const editAddMoleculePaneHomeNextSibling = editAddMoleculePaneEl ? editAddMoleculePaneEl.nextSibling : null;
   const DEFAULT_LOCAL_CLEANUP_STRENGTH = 0.6;
-  let editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
+  let editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.SMART;
   let editAddFragmentId = (getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT) && getCatalogEntryById('methyl', CATALOG_KIND.FRAGMENT).id) || ((getCatalogEntries(CATALOG_KIND.FRAGMENT)[0] && getCatalogEntries(CATALOG_KIND.FRAGMENT)[0].id) || 'methyl');
   let editAddMoleculeId = (getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE) && getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE).id) || ((getCatalogEntries(CATALOG_KIND.MOLECULE)[0] && getCatalogEntries(CATALOG_KIND.MOLECULE)[0].id) || 'benzene');
   let editTransformScope = EDIT_TRANSFORM_SCOPE.AUTO;
@@ -8998,25 +9002,46 @@
   /**
    * Normalize fragment attach policy values.
    * @param {*} value
-   * @returns {'auto'|'append'|'replace_h'|'fuse_ring'}
+   * @returns {'smart'|'append'|'replace_h'}
    */
   function normalizeEditFragmentAttachPolicy(value) {
+    if (value === EDIT_FRAGMENT_ATTACH_POLICY.SMART) return EDIT_FRAGMENT_ATTACH_POLICY.SMART;
     if (value === EDIT_FRAGMENT_ATTACH_POLICY.APPEND) return EDIT_FRAGMENT_ATTACH_POLICY.APPEND;
     if (value === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H) return EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H;
-    if (value === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) return EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING;
-    return EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
+    return EDIT_FRAGMENT_ATTACH_POLICY.SMART;
   }
 
   /**
    * Human-readable label for fragment attach policy.
-   * @param {'auto'|'append'|'replace_h'|'fuse_ring'} policy
+   * @param {'smart'|'append'|'replace_h'} policy
    * @returns {string}
    */
   function getEditFragmentAttachPolicyLabel(policy) {
+    if (policy === EDIT_FRAGMENT_ATTACH_POLICY.SMART) return 'Smart';
     if (policy === EDIT_FRAGMENT_ATTACH_POLICY.APPEND) return 'Append';
     if (policy === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H) return 'Replace H';
-    if (policy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) return 'Fuse ring';
-    return 'Auto';
+    return 'Smart';
+  }
+
+  function fragmentSupportsReplaceH(fragment) {
+    return !!(fragment && Array.isArray(fragment.attachModes) && fragment.attachModes.includes(FRAGMENT_ATTACH_MODE.REPLACE_H));
+  }
+
+  function fragmentSupportsFuseRing(fragment) {
+    return !!(
+      fragment
+      && Array.isArray(fragment.attachModes)
+      && fragment.attachModes.includes(FRAGMENT_ATTACH_MODE.FUSE_RING)
+      && Array.isArray(fragment.fuseBondLocalPair)
+      && fragment.fuseBondLocalPair.length >= 2
+    );
+  }
+
+  function buildFragmentAttachUiHint(fragment, policy = editAddFragmentAttachPolicy) {
+    const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
+    const parts = [`Fragment attach: ${label}`, `Policy ${getEditFragmentAttachPolicyLabel(policy)}`];
+    if (fragmentSupportsFuseRing(fragment)) parts.push('Click bond to fuse ring');
+    return parts.join(' • ');
   }
 
   /**
@@ -9641,31 +9666,28 @@
    * @param {*} vol
    * @param {number} anchorIndex
    * @param {THREE.Vector3} attachDir
-   * @returns {{policy:'append'|'replace_h'|'fuse_ring',replaceHydrogen?:{index:number,direction:THREE.Vector3,score:number}|null,error?:string}}
+   * @returns {{policy:'append'|'replace_h',replaceHydrogen?:{index:number,direction:THREE.Vector3,score:number}|null,reason?:string}}
    */
   function resolveFragmentAttachPolicy(fragment, vol, anchorIndex, attachDir) {
     const allowed = Array.isArray(fragment && fragment.attachModes) ? fragment.attachModes : [];
     const requested = normalizeEditFragmentAttachPolicy(editAddFragmentAttachPolicy);
     const replaceHydrogen = findAnchorReplaceableHydrogen(vol, anchorIndex, attachDir);
-    if (requested === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-      if (!allowed.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING)) {
-        return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, error: 'Selected fragment does not support fuse-ring placement.' };
-      }
-      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING, replaceHydrogen: null };
-    }
     if (requested === EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H) {
-      if (!replaceHydrogen) {
-        return { policy: EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H, replaceHydrogen: null, error: 'Replace H requires a bonded hydrogen on the anchor atom.' };
+      if (!allowed.includes(EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H)) {
+        return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null, reason: 'fragment_does_not_support_replace_h' };
       }
-      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H, replaceHydrogen };
+      if (!replaceHydrogen) {
+        return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null, reason: 'no_h_to_replace' };
+      }
+      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H, replaceHydrogen, reason: '' };
     }
     if (requested === EDIT_FRAGMENT_ATTACH_POLICY.APPEND) {
-      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null };
+      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null, reason: '' };
     }
     if (replaceHydrogen && allowed.includes(EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H)) {
-      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H, replaceHydrogen };
+      return { policy: EDIT_FRAGMENT_ATTACH_POLICY.REPLACE_H, replaceHydrogen, reason: '' };
     }
-    return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null };
+    return { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, replaceHydrogen: null, reason: '' };
   }
 
   /**
@@ -12124,15 +12146,6 @@
     syncEditAddCoordinationControl();
     if (editAddAdjustHydrogensEl) editAddAdjustHydrogensEl.checked = !!editAddAdjustHydrogensEnabled;
     const fragment = getCurrentFragmentDefinition();
-    if (editFragmentAttachPolicyEl) {
-      const fuseOption = editFragmentAttachPolicyEl.querySelector('option[value="fuse_ring"]');
-      const supportsFuse = !!(fragment && Array.isArray(fragment.attachModes) && fragment.attachModes.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING));
-      if (fuseOption) fuseOption.disabled = !supportsFuse;
-      if (!supportsFuse && editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-        editAddFragmentAttachPolicy = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
-        editFragmentAttachPolicyEl.value = EDIT_FRAGMENT_ATTACH_POLICY.AUTO;
-      }
-    }
     const molecule = getCurrentMoleculeDefinition();
     if (syncSearch && isAtomAddMode && editAddSearchEl && document.activeElement !== editAddSearchEl) {
       editAddSearchEl.value = formatEditAddElementSearchValue(editAddElementZ);
@@ -12632,19 +12645,13 @@
     const normalizedId = normalizeFragmentId(fragmentId);
     const fragment = getCatalogEntryById(normalizedId, CATALOG_KIND.FRAGMENT) || resolveCatalogQuery(fragmentId, CATALOG_KIND.FRAGMENT);
     if (!fragment) return false;
+    clearFuseRingPreview();
     editAddFragmentId = fragment.id;
-    if (!Array.isArray(fragment.attachModes) || !fragment.attachModes.includes(EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING)) {
-      clearFuseRingPreview();
-    }
     editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
     refreshActiveAddGrowPreview();
     updateEditToolboxUi({ syncSearch });
     if (announce && editMode && isSelectionFragmentCueArmed()) {
-      if (editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-        setHintMessage(`Fragment attach: ${fragment.name} (${fragment.formula}) • Fuse ring • Click a host bond`);
-      } else {
-        setHintMessage(`Fragment attach: ${fragment.name} (${fragment.formula}) • Policy ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}`);
-      }
+      setHintMessage(buildFragmentAttachUiHint(fragment, editAddFragmentAttachPolicy));
     }
     return true;
   }
@@ -12930,10 +12937,12 @@
       editFragmentAttachPolicyEl.addEventListener('change', () => {
         editAddFragmentAttachPolicy = normalizeEditFragmentAttachPolicy(editFragmentAttachPolicyEl.value);
         clearAddGrowPreview();
-        if (editAddFragmentAttachPolicy !== EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) clearFuseRingPreview();
         updateEditToolboxUi({ syncSearch: false });
         if (editMode && isSelectionFragmentCueArmed()) {
-          setHintMessage(`Fragment attach policy: ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}.`);
+          const fragment = getCurrentFragmentDefinition();
+          setHintMessage(fragment
+            ? buildFragmentAttachUiHint(fragment, editAddFragmentAttachPolicy)
+            : `Fragment attach policy: ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}.`);
         }
       });
     }
@@ -13745,9 +13754,9 @@
       if (announce && editMode) {
         const fragment = getCurrentFragmentDefinition();
         if (fragment) {
-          setHintMessage(`Fragment attach: ${fragment.name} (${fragment.formula}) • Policy ${getEditFragmentAttachPolicyLabel(editAddFragmentAttachPolicy)}`);
+          setHintMessage(buildFragmentAttachUiHint(fragment, editAddFragmentAttachPolicy));
         } else {
-          setHintMessage('Fragment attach: choose a fragment and attach policy.');
+          setHintMessage('Fragment attach: choose a fragment and valence policy.');
         }
       }
       return true;
@@ -16073,22 +16082,11 @@
   }
 
   function handleFragmentIntentControllerPointerDown(e) {
-    if (editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-      if (addFusePreviewState) {
-        addFusePreviewState.rotating = true;
-        addFusePreviewState.moved = false;
-        addFusePreviewState.lastClientX = Number(e.clientX) || 0;
-        try { controls.enabled = false; } catch { }
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        return true;
-      }
-      const bondHit = pickBondHit(e);
-      if (bondHit) {
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        return true;
-      }
-      beginQuaternionViewRotate(e);
-      setHintMessage('Fragment attach: fuse ring policy expects a host bond.');
+    if (addFusePreviewState) {
+      addFusePreviewState.rotating = true;
+      addFusePreviewState.moved = false;
+      addFusePreviewState.lastClientX = Number(e.clientX) || 0;
+      try { controls.enabled = false; } catch { }
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
@@ -16101,6 +16099,18 @@
         ? pickedBondHit
         : null
     ) || resolveGestureBondCenterClickHit(e);
+    const fragment = getCurrentFragmentDefinition();
+    if (centerBondHit) {
+      if (fragmentSupportsFuseRing(fragment)) {
+        const started = startFuseRingPlacementFromBondHit(centerBondHit);
+        if (started && typeof e.preventDefault === 'function') e.preventDefault();
+        return started;
+      }
+      setHintMessage('This fragment cannot fuse to a bond.');
+      __editMoved = true;
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      return true;
+    }
     if (activeBondCenterSelection) {
       const pickedAtomForBondScope = pickAtom(e);
       const atomIndexForBondScope = pickedAtomForBondScope && pickedAtomForBondScope.userData ? (pickedAtomForBondScope.userData.index | 0) : -1;
@@ -16142,7 +16152,7 @@
       if (attachContext && ghost && ghost.world && attachContext.anchorIndex >= 0) {
         const world = new THREE.Vector3(Number(ghost.world.x) || 0, Number(ghost.world.y) || 0, Number(ghost.world.z) || 0);
         if (commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext, {
-          attachPolicyOverride: EDIT_FRAGMENT_ATTACH_POLICY.APPEND,
+          attachPolicyOverride: { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, reason: 'open_site' },
         })) {
           if (typeof e.preventDefault === 'function') e.preventDefault();
           return true;
@@ -16384,23 +16394,19 @@
   }
 
   function handleFragmentIntentControllerPointerUp(e) {
-    if (editAddFragmentAttachPolicy === EDIT_FRAGMENT_ATTACH_POLICY.FUSE_RING) {
-      if (addFusePreviewState) {
-        if (addFusePreviewState.justStarted) {
-          addFusePreviewState.justStarted = false;
-          try { controls.enabled = true; } catch { }
-          __editDownPt = null; __editClickIdx = -1; __editMoved = false;
-          return true;
-        }
-        const wasRotating = !!addFusePreviewState.rotating;
-        const rotated = !!addFusePreviewState.moved || __editMoved;
-        addFusePreviewState.rotating = false;
-        addFusePreviewState.moved = false;
+    if (addFusePreviewState) {
+      if (addFusePreviewState.justStarted) {
+        addFusePreviewState.justStarted = false;
         try { controls.enabled = true; } catch { }
-        if (!wasRotating || !rotated) commitFuseRingPlacement();
-      } else if (!__editMoved) {
-        setHintMessage('Fragment attach: click a host bond to start fuse-ring placement.');
+        __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+        return true;
       }
+      const wasRotating = !!addFusePreviewState.rotating;
+      const rotated = !!addFusePreviewState.moved || __editMoved;
+      addFusePreviewState.rotating = false;
+      addFusePreviewState.moved = false;
+      try { controls.enabled = true; } catch { }
+      if (!wasRotating || !rotated) commitFuseRingPlacement();
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
@@ -22450,6 +22456,8 @@
     optimizeActiveStructureWithUff,
   });
   window.VibeMolTesting = Object.freeze({
+    getHintMessage: () => String(hintEl && hintEl.textContent || ''),
+    isFuseRingPreviewActive: () => !!addFusePreviewState,
     listNonEditWindows: () => Object.values(NON_EDIT_WINDOW_ID),
     getOpenNonEditWindows: () => listOpenNonEditWindowIds(),
     getEditSelectionCount: () => {
@@ -22489,6 +22497,16 @@
         z: Number(ghost.world && ghost.world.z) || 0,
       }));
     },
+    getHaloReplaceTargetWorlds: () => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      if (!(uiState && uiState.visible && Array.isArray(uiState.replaceTargets) && uiState.replaceTargets.length)) return [];
+      return uiState.replaceTargets.map((target) => ({
+        atomIndex: target.atomIndex | 0,
+        x: Number(target.world && target.world.x) || 0,
+        y: Number(target.world && target.world.y) || 0,
+        z: Number(target.world && target.world.z) || 0,
+      }));
+    },
     projectHaloGhostToClient: (ghostIndex = 0) => {
       const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
       if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
@@ -22504,6 +22522,26 @@
       if (!projected) return null;
       return {
         index: target.index | 0,
+        x: Number(projected.x) || 0,
+        y: Number(projected.y) || 0,
+        visible: !!projected.visible,
+      };
+    },
+    projectHaloReplaceTargetToClient: (atomIndex = -1) => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      if (!(uiState && uiState.visible && Array.isArray(uiState.replaceTargets) && uiState.replaceTargets.length)) return null;
+      const target = uiState.replaceTargets.find((item) => (item.atomIndex | 0) === (Number(atomIndex) | 0))
+        || uiState.replaceTargets[0]
+        || null;
+      if (!(target && target.world)) return null;
+      const projected = projectWorldToClient(new THREE.Vector3(
+        Number(target.world.x) || 0,
+        Number(target.world.y) || 0,
+        Number(target.world.z) || 0
+      ));
+      if (!projected) return null;
+      return {
+        atomIndex: target.atomIndex | 0,
         x: Number(projected.x) || 0,
         y: Number(projected.y) || 0,
         visible: !!projected.visible,
@@ -22618,7 +22656,7 @@
         if (!attachContext || attachContext.anchorIndex < 0) return result;
         result.kind = 'fragment';
         result.attached = !!commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext, {
-          attachPolicyOverride: EDIT_FRAGMENT_ATTACH_POLICY.APPEND,
+          attachPolicyOverride: { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, reason: 'open_site' },
         });
         return result;
       }
@@ -22628,6 +22666,74 @@
         bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
         selectionAfter: [anchorIndex],
       });
+      return result;
+    },
+    triggerHaloReplaceTargetByAtomIndex: (atomIndex) => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      const result = {
+        attached: false,
+        anchorIndex: uiState ? (uiState.atomIndex | 0) : -1,
+        atomIndex: Number(atomIndex) | 0,
+      };
+      if (!(uiState && Array.isArray(uiState.replaceTargets) && uiState.replaceTargets.length)) return result;
+      const target = uiState.replaceTargets.find((item) => (item.atomIndex | 0) === (Number(atomIndex) | 0))
+        || uiState.replaceTargets[0]
+        || null;
+      const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
+      result.anchorIndex = anchorIndex;
+      if (!(target && target.world) || anchorIndex < 0) return result;
+      const world = new THREE.Vector3(
+        Number(target.world.x) || 0,
+        Number(target.world.y) || 0,
+        Number(target.world.z) || 0
+      );
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const attachContext = getActiveFragmentAttachContext(vol, anchorIndex);
+      if (!attachContext || attachContext.anchorIndex < 0) return result;
+      result.attached = !!commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext);
+      return result;
+    },
+    replaceGestureTerminalHydrogen: (anchorIndex, hydrogenIndex, options = {}) => {
+      const result = {
+        attached: false,
+        anchorIndex: Number(anchorIndex) | 0,
+        hydrogenIndex: Number(hydrogenIndex) | 0,
+        removedAtomId: '',
+        atomIndex: -1,
+      };
+      const replacement = replaceGestureTerminalHydrogenFromAnchor(
+        result.anchorIndex,
+        result.hydrogenIndex,
+        options || {}
+      );
+      if (!replacement) return result;
+      result.attached = true;
+      result.removedAtomId = String(replacement.removedAtomId || '');
+      result.atomIndex = Number(replacement.atomIndex) | 0;
+      return result;
+    },
+    attachFragmentFromAnchorIndex: (anchorIndex, offset = null, options = {}) => {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const idx = Number(anchorIndex) | 0;
+      const result = {
+        attached: false,
+        anchorIndex: idx,
+      };
+      if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length || !vol.atoms[idx]) return result;
+      const attachContext = getActiveFragmentAttachContext(vol, idx);
+      if (!attachContext || attachContext.anchorIndex < 0) return result;
+      const anchorWorld = atomUnitsToAng(vol, vol.atoms[idx]);
+      const dx = Number(offset && offset.x);
+      const dy = Number(offset && offset.y);
+      const dz = Number(offset && offset.z);
+      const world = anchorWorld.clone().add(new THREE.Vector3(
+        Number.isFinite(dx) ? dx : 1.5,
+        Number.isFinite(dy) ? dy : 0,
+        Number.isFinite(dz) ? dz : 0
+      ));
+      result.attached = !!commitFragmentAttachAtWorld(idx, world, attachContext, options || {});
       return result;
     },
     pickEditHitAtClient: (clientX, clientY) => {

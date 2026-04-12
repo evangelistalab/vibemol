@@ -56,6 +56,71 @@ def build_fixture_structure() -> str:
     return json.dumps(payload)
 
 
+def build_bare_carbon_structure() -> str:
+    payload = {
+        'kind': 'vibemol.structure',
+        'structureVersion': 1,
+        'appVersion': 'smoke-test',
+        'name': 'bare-carbon.structure.json',
+        'meta': {'source': 'test'},
+        'volume': {
+            'title': 'Bare carbon',
+            'comment': 'Single carbon fixture',
+            'natoms': 1,
+            'origin': [0, 0, 0],
+            'nxyz': [0, 0, 0],
+            'axes': [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            'atoms': [
+                {'id': 'atom-1', 'Z': 6, 'x': 0.0, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+            ],
+            'bonds': [],
+            'annotations': {'builder': {'byAtomId': {}}},
+            'fragmentOps': [],
+            'data': [],
+            'units': 'angstrom',
+        },
+        'recordState': {'measurementLabelOffsets': {}},
+    }
+    return json.dumps(payload)
+
+
+def build_methane_structure() -> str:
+    payload = {
+        'kind': 'vibemol.structure',
+        'structureVersion': 1,
+        'appVersion': 'smoke-test',
+        'name': 'methane.structure.json',
+        'meta': {'source': 'test'},
+        'volume': {
+            'title': 'Methane',
+            'comment': 'Explicit methane fixture',
+            'natoms': 5,
+            'origin': [0, 0, 0],
+            'nxyz': [0, 0, 0],
+            'axes': [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            'atoms': [
+                {'id': 'atom-1', 'Z': 6, 'x': 0.0, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-2', 'Z': 1, 'x': 1.09, 'y': 0.0, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-3', 'Z': 1, 'x': -0.36, 'y': 1.03, 'z': 0.0, 'formalCharge': 0},
+                {'id': 'atom-4', 'Z': 1, 'x': -0.36, 'y': -0.51, 'z': 0.89, 'formalCharge': 0},
+                {'id': 'atom-5', 'Z': 1, 'x': -0.36, 'y': -0.51, 'z': -0.89, 'formalCharge': 0},
+            ],
+            'bonds': [
+                {'id': 'bond:atom-1:atom-2', 'a': 'atom-1', 'b': 'atom-2', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:atom-1:atom-3', 'a': 'atom-1', 'b': 'atom-3', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:atom-1:atom-4', 'a': 'atom-1', 'b': 'atom-4', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+                {'id': 'bond:atom-1:atom-5', 'a': 'atom-1', 'b': 'atom-5', 'order': 1, 'kind': 'normal', 'origin': 'explicit'},
+            ],
+            'annotations': {'builder': {'byAtomId': {}}},
+            'fragmentOps': [],
+            'data': [],
+            'units': 'angstrom',
+        },
+        'recordState': {'measurementLabelOffsets': {}},
+    }
+    return json.dumps(payload)
+
+
 def build_fixture_cleanup_structure() -> str:
     payload = {
         'kind': 'vibemol.structure',
@@ -669,6 +734,98 @@ def load_build_query(page, query: str) -> None:
     ensure_build_popover_open(page, focus_search=True)
     page.locator('#editBuildSearch').fill(query)
     page.keyboard.press('Enter')
+
+
+def get_hint_text(page) -> str:
+    value = page.evaluate("""() => String(window.VibeMolTesting?.getHintMessage?.() || '')""")
+    return value if isinstance(value, str) else ''
+
+
+def wait_for_hint_contains(page, snippet: str) -> None:
+    page.wait_for_function(
+        """(text) => String(window.VibeMolTesting?.getHintMessage?.() || '').includes(String(text || ''))""",
+        arg=snippet,
+    )
+
+
+def start_new_edit_file(page) -> None:
+    page.locator('#newFileBtn').click()
+    page.locator('#modeEditBtn').click()
+    page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+
+
+def build_bare_carbon(page) -> None:
+    page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "fragment-attach-bare-carbon")', build_bare_carbon_structure())
+    page.wait_for_function(
+        """() => {
+            const exported = window.VibeMolStructure.exportActive();
+            const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+            return atoms.length === 1 && Number(atoms[0]?.Z) === 6;
+        }"""
+    )
+
+
+def build_methane(page) -> None:
+    page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "fragment-attach-methane")', build_methane_structure())
+    page.wait_for_function(
+        """() => {
+            const exported = window.VibeMolStructure.exportActive();
+            const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+            const hydrogens = atoms.filter((atom) => Number(atom?.Z) === 1).length;
+            const carbons = atoms.filter((atom) => Number(atom?.Z) === 6).length;
+            return atoms.length === 5 && hydrogens === 4 && carbons === 1;
+        }"""
+    )
+
+
+def arm_fragment_attach_cue(page, atom_index: int = 0) -> None:
+    atom_x, atom_y = find_atom_click_point(page, atom_index)
+    right_click_atom(page, atom_x, atom_y)
+    wait_for_selected_atoms(page, 1)
+    page.locator('#editSelectionAddFragmentCueButton').click()
+    page.wait_for_function(
+        """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
+    )
+
+
+def trigger_replace_target(page, atom_index: int) -> dict:
+    result = page.evaluate(
+        """(targetAtomIndex) => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.triggerHaloReplaceTargetByAtomIndex !== 'function') return null;
+            return window.VibeMolTesting.triggerHaloReplaceTargetByAtomIndex(targetAtomIndex);
+        }""",
+        atom_index,
+    )
+    if not isinstance(result, dict) or not bool(result.get('attached')):
+        raise AssertionError(f'Could not trigger replace-target fragment attach: {result!r}')
+    return result
+
+
+def attach_fragment_from_anchor(page, anchor_index: int, offset: dict | None = None) -> dict:
+    payload = offset or {'x': 1.5, 'y': 0.0, 'z': 0.0}
+    result = page.evaluate(
+        """(data) => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.attachFragmentFromAnchorIndex !== 'function') return null;
+            return window.VibeMolTesting.attachFragmentFromAnchorIndex(data.anchorIndex, data.offset || null);
+        }""",
+        {'anchorIndex': anchor_index, 'offset': payload},
+    )
+    if not isinstance(result, dict) or not bool(result.get('attached')):
+        raise AssertionError(f'Could not attach fragment from anchor {anchor_index}: {result!r}')
+    return result
+
+
+def replace_terminal_hydrogen_from_anchor(page, anchor_index: int, hydrogen_index: int) -> dict:
+    result = page.evaluate(
+        """(data) => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.replaceGestureTerminalHydrogen !== 'function') return null;
+            return window.VibeMolTesting.replaceGestureTerminalHydrogen(data.anchorIndex, data.hydrogenIndex);
+        }""",
+        {'anchorIndex': anchor_index, 'hydrogenIndex': hydrogen_index},
+    )
+    if not isinstance(result, dict) or not bool(result.get('attached')):
+        raise AssertionError(f'Could not replace terminal hydrogen from anchor {anchor_index}: {result!r}')
+    return result
 
 
 def ensure_build_popover_open(page, *, focus_search: bool = False) -> None:
@@ -1765,7 +1922,7 @@ def main() -> int:
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            load_build_query(page, 'C')
+            load_build_query(page, 'Carbon')
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             grow_x, grow_y = canvas_point(page, 0.56, 0.55)
             page.mouse.click(grow_x, grow_y)
@@ -2258,7 +2415,7 @@ def main() -> int:
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            load_build_query(page, 'C')
+            load_build_query(page, 'Carbon')
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             set_select_value(page, '#editAddCoordination', 'linear')
             before_adjust_ids = page.evaluate(
@@ -2390,23 +2547,45 @@ def main() -> int:
                 arg=second_fragment_atom_count,
             )
 
-            log_step('fragment ghost click keeps the chosen open coordination site on partially hydrogenated carbon')
-            page.locator('#newFileBtn').click()
-            page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            load_build_query(page, 'C')
-            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
-            set_select_value(page, '#editAddCoordination', 'tetrahedral')
-            carbon_x, carbon_y = canvas_point(page, 0.52, 0.50)
-            page.mouse.click(carbon_x, carbon_y)
+            log_step('fragment attach Smart on methane resolves to Replace H')
+            start_new_edit_file(page)
+            build_methane(page)
+            load_build_query(page, 'methyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'smart')
+            attach_fragment_from_anchor(page, 0)
+            wait_for_hint_contains(page, 'Attached Methyl via Replace H')
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
                     const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const carbons = atoms.filter((atom) => Number(atom?.Z) === 6).length;
                     const hydrogens = atoms.filter((atom) => Number(atom?.Z) === 1).length;
-                    return atoms.length === 5 && hydrogens === 4;
+                    return atoms.length === 8 && bonds.length === 7 && carbons === 2 && hydrogens === 6;
                 }"""
             )
+
+            log_step('fragment attach Smart on bare carbon resolves to Append')
+            start_new_edit_file(page)
+            build_bare_carbon(page)
+            load_build_query(page, 'methyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'smart')
+            attach_fragment_from_anchor(page, 0)
+            wait_for_hint_contains(page, 'Attached Methyl via Append')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const carbons = atoms.filter((atom) => Number(atom?.Z) === 6).length;
+                    const hydrogens = atoms.filter((atom) => Number(atom?.Z) === 1).length;
+                    return atoms.length === 5 && bonds.length === 4 && carbons === 2 && hydrogens === 3;
+                }"""
+            )
+
+            log_step('fragment attach Smart on open-site ghost resolves to Append with open-site hint')
+            start_new_edit_file(page)
+            build_methane(page)
             hydrogen_x, hydrogen_y = find_atom_click_point(page, 1)
             right_click_atom(page, hydrogen_x, hydrogen_y)
             wait_for_selected_atoms(page, 1)
@@ -2420,36 +2599,10 @@ def main() -> int:
                     return atoms.length === 4 && hydrogens === 3;
                 }"""
             )
-            carbon_anchor_x, carbon_anchor_y = find_atom_click_point(page, 0)
-            right_click_atom(page, carbon_anchor_x, carbon_anchor_y)
-            wait_for_selected_atoms(page, 1)
-            load_build_query(page, 'hydroxyl')
-            page.keyboard.press('/')
-            page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
-            )
-            page.locator('#editSelectionAddFragmentCueButton').click()
-            page.wait_for_function(
-                """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
-            )
-            page.wait_for_function(
-                """() => window.VibeMolTesting?.getHaloGhostPreviewKind?.() === 'fragment'"""
-            )
-            before_fragment_attach = page.evaluate(
-                """() => {
-                    const exported = window.VibeMolStructure.exportActive();
-                    const worlds = window.VibeMolTesting?.getHaloGhostWorlds?.() || [];
-                    const fragmentOps = Array.isArray(exported.volume?.fragmentOps) ? exported.volume.fragmentOps : [];
-                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
-                    return {
-                        ghostWorld: worlds[0] || null,
-                        fragmentOpCount: fragmentOps.length,
-                        atomCount: atoms.length,
-                    };
-                }"""
-            )
-            if not (isinstance(before_fragment_attach, dict) and isinstance(before_fragment_attach.get('ghostWorld'), dict)):
-                raise AssertionError('Could not read halo ghost world coordinates for open-site fragment attach.')
+            load_build_query(page, 'methyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'smart')
+            arm_fragment_attach_cue(page, 0)
+            page.wait_for_function("""() => window.VibeMolTesting?.getHaloGhostPreviewKind?.() === 'fragment'""")
             ghost_attach = page.evaluate(
                 """() => {
                     if (!window.VibeMolTesting || typeof window.VibeMolTesting.triggerHaloGhostByIndex !== 'function') return null;
@@ -2458,26 +2611,59 @@ def main() -> int:
             )
             if not (isinstance(ghost_attach, dict) and bool(ghost_attach.get('attached'))):
                 raise AssertionError(f'Could not trigger open-site fragment attach via halo ghost: {ghost_attach!r}')
+            wait_for_hint_contains(page, 'Attached Methyl via Append (open site)')
             page.wait_for_function(
-                """(beforeState) => {
+                """() => {
                     const exported = window.VibeMolStructure.exportActive();
-                    const fragmentOps = Array.isArray(exported.volume?.fragmentOps) ? exported.volume.fragmentOps : [];
                     const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
-                    if (fragmentOps.length <= Number(beforeState.fragmentOpCount || 0)) return false;
-                    return atoms.length > Number(beforeState.atomCount || 0);
-                }""",
-                arg=before_fragment_attach,
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const carbons = atoms.filter((atom) => Number(atom?.Z) === 6).length;
+                    const hydrogens = atoms.filter((atom) => Number(atom?.Z) === 1).length;
+                    return atoms.length === 8 && bonds.length === 7 && carbons === 2 && hydrogens === 6;
+                }"""
             )
 
-            log_step('grow drag onto terminal hydrogen replaces it with loaded atom')
-            page.locator('#newFileBtn').click()
-            page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
-            load_build_query(page, 'C')
-            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
-            set_select_value(page, '#editAddCoordination', 'tetrahedral')
-            replace_x, replace_y = canvas_point(page, 0.46, 0.54)
-            page.mouse.click(replace_x, replace_y)
+            log_step('fragment attach Append keeps host hydrogens')
+            start_new_edit_file(page)
+            build_methane(page)
+            load_build_query(page, 'methyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'append')
+            attach_fragment_from_anchor(page, 0)
+            wait_for_hint_contains(page, 'Attached Methyl via Append')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const carbons = atoms.filter((atom) => Number(atom?.Z) === 6).length;
+                    const hydrogens = atoms.filter((atom) => Number(atom?.Z) === 1).length;
+                    return atoms.length === 9 && bonds.length === 8 && carbons === 2 && hydrogens === 7;
+                }"""
+            )
+
+            log_step('fragment attach explicit Replace H on methane resolves to Replace H')
+            start_new_edit_file(page)
+            build_methane(page)
+            load_build_query(page, 'methyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'replace_h')
+            attach_fragment_from_anchor(page, 0)
+            wait_for_hint_contains(page, 'Attached Methyl via Replace H')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    return atoms.length === 8 && bonds.length === 7;
+                }"""
+            )
+
+            log_step('fragment attach explicit Replace H falls back to Append when no host hydrogen exists')
+            start_new_edit_file(page)
+            build_bare_carbon(page)
+            load_build_query(page, 'methyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'replace_h')
+            attach_fragment_from_anchor(page, 0)
+            wait_for_hint_contains(page, 'Attached Methyl via Append (no H to replace)')
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
@@ -2486,6 +2672,56 @@ def main() -> int:
                     return atoms.length === 5 && bonds.length === 4;
                 }"""
             )
+
+            log_step('fragment attach explicit Replace H falls back when fragment lacks replace_h support')
+            start_new_edit_file(page)
+            build_methane(page)
+            load_build_query(page, 'appendmethyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'replace_h')
+            attach_fragment_from_anchor(page, 0)
+            wait_for_hint_contains(page, 'via Append (fragment does not support Replace H)')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    return atoms.length === 9 && bonds.length === 8;
+                }"""
+            )
+
+            log_step('clicking a bond with a fusion-capable fragment enters fuse preview regardless of policy')
+            start_new_edit_file(page)
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "fusion-bond-fixture")', build_fixture_structure())
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    return bonds.length === 1;
+                }"""
+            )
+            load_build_query(page, 'fusionphenyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'append')
+            midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
+            page.mouse.click(midpoint_x, midpoint_y)
+            page.wait_for_function("""() => !!window.VibeMolTesting?.isFuseRingPreviewActive?.()""")
+            wait_for_hint_contains(page, 'Fuse ring preview: Fusion phenyl')
+
+            log_step('clicking a bond with a non-fusion fragment leaves fuse preview inactive')
+            load_build_query(page, 'methyl')
+            page.wait_for_function("""() => window.VibeMolTesting?.isFuseRingPreviewActive?.() === false""")
+            midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
+            page.mouse.click(midpoint_x, midpoint_y)
+            page.wait_for_timeout(120)
+            if page.evaluate("""() => !!window.VibeMolTesting?.isFuseRingPreviewActive?.()"""):
+                raise AssertionError('Non-fusion fragment unexpectedly entered fuse-ring preview.')
+            wait_for_hint_contains(page, 'This fragment cannot fuse to a bond.')
+
+            log_step('grow drag onto terminal hydrogen replaces it with loaded atom')
+            start_new_edit_file(page)
+            build_methane(page)
+            load_build_query(page, 'Carbon')
+            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
+            set_select_value(page, '#editAddCoordination', 'tetrahedral')
             replace_target = page.evaluate(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
@@ -2509,15 +2745,11 @@ def main() -> int:
             )
             if not isinstance(replace_target, dict):
                 raise AssertionError(f'Could not resolve heavy atom and terminal hydrogen for replace gesture: {replace_target!r}')
-            heavy_candidates = projected_atom_hit_candidates(page, replace_target['heavyIndex'], replace_target['hydrogenIndex'])
-            if not heavy_candidates:
-                raise AssertionError(f'Could not resolve heavy-atom drag candidates for replace gesture: {replace_target!r}')
-            heavy_x, heavy_y = heavy_candidates[0]
-            hydrogen_x, hydrogen_y = find_atom_click_point(page, replace_target['hydrogenIndex'])
-            page.mouse.move(heavy_x, heavy_y)
-            page.mouse.down()
-            page.mouse.move(hydrogen_x, hydrogen_y, steps=18)
-            page.mouse.up()
+            replace_terminal_hydrogen_from_anchor(
+                page,
+                replace_target['heavyIndex'],
+                replace_target['hydrogenIndex'],
+            )
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
