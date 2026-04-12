@@ -109,15 +109,35 @@
   }
 
   /**
+   * Parse one builder-style numeric suffix without regex allocation.
+   * Returns 0 when the input does not match `${prefix}-<positive integer>`.
+   * @param {*} raw
+   * @param {'atom'|'group'|'op'} prefix
+   * @returns {number}
+   */
+  function parseObservedBuilderIdSuffix(raw, prefix) {
+    const value = String(raw || '').trim();
+    const head = `${prefix}-`;
+    if (!value.startsWith(head)) return 0;
+    const suffix = value.slice(head.length);
+    if (!suffix) return 0;
+    let n = 0;
+    for (let i = 0; i < suffix.length; i += 1) {
+      const digit = suffix.charCodeAt(i) - 48;
+      if (digit < 0 || digit > 9) return 0;
+      n = (n * 10) + digit;
+    }
+    return n >= 1 ? n : 0;
+  }
+
+  /**
    * Ensure counters advance past an observed builder id suffix.
    * @param {*} raw
    * @param {'atom'|'group'|'op'} prefix
    */
   function absorbObservedBuilderId(raw, prefix) {
-    const match = String(raw || '').match(new RegExp(`^${prefix}-(\\d+)$`));
-    if (!match) return;
-    const n = Number(match[1]);
-    if (!Number.isInteger(n) || n < 1) return;
+    const n = parseObservedBuilderIdSuffix(raw, prefix);
+    if (n < 1) return;
     if (prefix === 'atom') nextBuilderAtomId = Math.max(nextBuilderAtomId, n + 1);
     else if (prefix === 'group') nextBuilderGroupId = Math.max(nextBuilderGroupId, n + 1);
     else if (prefix === 'op') nextBuilderOpId = Math.max(nextBuilderOpId, n + 1);
@@ -487,6 +507,26 @@
   }
 
   /**
+   * Build one reusable atom-id lookup context for bond normalization.
+   * @param {*} vol
+   * @returns {{atoms:Array<object>,atomIds:Set<string>,atomIndexById:Map<string, number>}}
+   */
+  function createVolumeBondNormalizationContext(vol) {
+    const atoms = (vol && Array.isArray(vol.atoms)) ? vol.atoms : [];
+    const atomIds = new Set();
+    const atomIndexById = new Map();
+    for (let i = 0; i < atoms.length; i += 1) {
+      const atom = atoms[i];
+      if (!atom) continue;
+      const atomId = String(ensureAtomId(atom) || '').trim();
+      if (!atomId) continue;
+      atomIds.add(atomId);
+      atomIndexById.set(atomId, i);
+    }
+    return { atoms, atomIds, atomIndexById };
+  }
+
+  /**
    * Normalize one stored bond kind.
    * @param {*} value
    * @returns {'normal'|'blocked'}
@@ -524,16 +564,13 @@
    * @param {*} raw
    * @returns {{id:string,a:string,b:string,order:number,kind:'normal'|'blocked',origin:'perceived'|'explicit',style:string}|null}
    */
-  function normalizeVolumeBondRecord(vol, raw) {
+  function normalizeVolumeBondRecord(vol, raw, context = null) {
     if (!vol || !Array.isArray(vol.atoms) || !raw || typeof raw !== 'object') return null;
     const atoms = vol.atoms;
-    const atomIds = new Set();
-    for (let i = 0; i < atoms.length; i += 1) {
-      const atom = atoms[i];
-      if (!atom) continue;
-      const atomId = String(ensureAtomId(atom) || '').trim();
-      if (atomId) atomIds.add(atomId);
-    }
+    const resolvedContext = (context && context.atoms === atoms)
+      ? context
+      : createVolumeBondNormalizationContext(vol);
+    const atomIds = resolvedContext.atomIds;
     const resolveEndpoint = (value) => {
       if (typeof value === 'string') {
         const atomId = String(value).trim();
@@ -585,8 +622,9 @@
       options.rehydrateBuilderState(vol);
     }
     if (Array.isArray(vol.bonds)) {
+      const bondContext = createVolumeBondNormalizationContext(vol);
       vol.bonds = vol.bonds
-        .map((bond) => normalizeVolumeBondRecord(vol, bond))
+        .map((bond) => normalizeVolumeBondRecord(vol, bond, bondContext))
         .filter(Boolean);
     } else if (options.inferMissingBonds !== false && typeof options.inferBonds === 'function') {
       options.inferBonds(vol);
@@ -606,8 +644,9 @@
       atoms: vol && Array.isArray(vol.atoms) ? vol.atoms : [],
       bonds: vol && Array.isArray(vol.bonds) ? vol.bonds : [],
     };
+    const bondContext = createVolumeBondNormalizationContext(working);
     return working.bonds
-      .map((bond) => normalizeVolumeBondRecord(working, bond))
+      .map((bond) => normalizeVolumeBondRecord(working, bond, bondContext))
       .filter(Boolean)
       .sort((left, right) => {
         const aKey = `${left.a}:${left.b}:${left.id}`;
@@ -661,8 +700,9 @@
     const a = String(atomIdA || '').trim();
     const b = String(atomIdB || '').trim();
     if (!a || !b || a === b) return -1;
+    const bondContext = createVolumeBondNormalizationContext(vol);
     for (let i = 0; i < vol.bonds.length; i++) {
-      const bond = normalizeVolumeBondRecord(vol, vol.bonds[i]);
+      const bond = normalizeVolumeBondRecord(vol, vol.bonds[i], bondContext);
       if (!bond) continue;
       if ((bond.a === a && bond.b === b) || (bond.a === b && bond.b === a)) return i;
     }
@@ -690,7 +730,8 @@
     const nextStyle = normalizeVolumeBondStyle(style);
     const index = findVolumeBondRecordIndex(vol, a, b);
     if (index >= 0) {
-      const existing = normalizeVolumeBondRecord(vol, vol.bonds[index]);
+      const bondContext = createVolumeBondNormalizationContext(vol);
+      const existing = normalizeVolumeBondRecord(vol, vol.bonds[index], bondContext);
       if (!existing) return null;
       const nextOrigin = origin == null ? existing.origin : normalizeVolumeBondOrigin(origin);
       const resolvedStyle = style == null ? existing.style : nextStyle;
@@ -937,6 +978,7 @@
     pruneVolumeAtomAnnotations,
     cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
+    createVolumeBondNormalizationContext,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,
     normalizeVolumeBondStyle,

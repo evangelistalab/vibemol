@@ -166,6 +166,7 @@
     pruneVolumeAtomAnnotations,
     cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
+    createVolumeBondNormalizationContext,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,
     normalizeVolumeBondStyle,
@@ -208,6 +209,7 @@
     pruneVolumeAtomAnnotations,
     cloneVolumeAnnotationsSnapshot,
     buildVolumeBondId,
+    createVolumeBondNormalizationContext,
     normalizeVolumeBondKind,
     normalizeVolumeBondOrigin,
     normalizeVolumeBondStyle,
@@ -8413,9 +8415,10 @@
     if (!vol || !Array.isArray(vol.atoms)) return [];
     const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false });
     ensureVolumeSchema(vol, { inferMissingBonds: false });
+    const bondContext = createVolumeBondNormalizationContext(vol);
     const explicitBonds = Array.isArray(vol.bonds)
       ? vol.bonds
-        .map((bond) => normalizeVolumeBondRecord(vol, bond))
+        .map((bond) => normalizeVolumeBondRecord(vol, bond, bondContext))
         .filter((bond) => bond && normalizeVolumeBondOrigin(bond.origin) === 'explicit')
       : [];
     const explicitKeys = new Set(explicitBonds.map((bond) => buildVolumeBondId(bond.a, bond.b)));
@@ -8533,18 +8536,14 @@
     const storedOnly = shouldUseStoredBondsOnly(vol, options);
     ensureVolumeSchema(vol, { inferMissingBonds: storedOnly ? false : undefined });
     const records = Array.isArray(atomPositions) ? atomPositions : buildBondAtomRecords(vol, { includeRenderColor: false });
-    const atomIndexById = new Map();
-    for (let i = 0; i < vol.atoms.length; i++) {
-      const atom = vol.atoms[i];
-      if (!atom) continue;
-      atomIndexById.set(String(ensureAtomId(atom)), i);
-    }
+    const bondContext = createVolumeBondNormalizationContext(vol);
+    const atomIndexById = bondContext.atomIndexById;
     const edges = [];
     const source = (options.allowDynamic !== false && shouldUseDynamicTrajectoryBondsForVolume(vol))
       ? buildPerceivedBondRecords(vol, records)
       : ((Array.isArray(vol.bonds) && vol.bonds.length) ? vol.bonds : (storedOnly ? [] : inferVolumeBonds(vol)));
     for (const raw of source) {
-      const bond = normalizeVolumeBondRecord(vol, raw);
+      const bond = normalizeVolumeBondRecord(vol, raw, bondContext);
       if (!bond) continue;
       if (normalizeVolumeBondKind(bond.kind) !== 'normal') continue;
       const i = atomIndexById.get(bond.a);
