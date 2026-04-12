@@ -11128,17 +11128,29 @@
 
   function commitFragmentAttachAtWorld(anchorIndex, worldPos, context, options = {}) {
     if (!(worldPos && worldPos.isVector3)) return false;
-    const attachContext = context || getActiveFragmentAttachContext((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null, anchorIndex);
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const attachContext = context || getActiveFragmentAttachContext(vol, anchorIndex);
     if (!attachContext) return false;
     const appended = appendFragmentAtWorld(anchorIndex, worldPos, {
       preserveAnchorSelection: !!attachContext.preserveAnchorSelection,
       attachPolicyOverride: options.attachPolicyOverride,
     });
     if (!appended) return false;
-    if (attachContext.cueArmed) setFragmentAttachCueAnchorByIndex(anchorIndex);
+    let cueAnchorIndex = -1;
+    if (attachContext.cueArmed) {
+      setFragmentAttachCueAnchorByIndex(anchorIndex);
+      cueAnchorIndex = getPinnedFragmentAttachAnchorIndex((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null);
+    }
     clearEditHaloGhostHoverState();
     hideSelectionFragmentCuePopover();
     updateEditToolboxUi({ syncSearch: false });
+    if (cueAnchorIndex >= 0) {
+      setEditAtomSelection([cueAnchorIndex]);
+      updateSelectedHalos();
+      updateEditSelectionVisuals();
+      updateEditAdaptiveMenuUi();
+    }
     return true;
   }
 
@@ -16018,10 +16030,10 @@
           const replacedHydrogen = replaceGestureTerminalHydrogenFromAnchor(anchorIndex, haloReplaceHit.atomIndex | 0, {
             elementZ: editAddElementZ,
             bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
+            selectionAfter: [anchorIndex],
           });
           if (replacedHydrogen) {
             clearEditHaloGhostHoverState();
-            setEditAtomSelection([]);
             updateSelectedHalos();
             updateEditSelectionVisuals();
             updateEditAdaptiveMenuUi();
@@ -16546,13 +16558,16 @@
             ? replaceGestureTerminalHydrogenFromAnchor(resolvedAnchorHit.anchorIndex | 0, releasedIndex, {
               elementZ: editAddElementZ,
               bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
+              selectionAfter: isSelectionAtomBuildCueArmed() ? [resolvedAnchorHit.anchorIndex | 0] : [],
             })
             : null;
           const replaced = terminalHydrogenReplacement || replaceAtomAtIndex(releasedIndex, editAddElementZ, {
             coordinationGeometryId: getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
           });
           if (replaced) {
-            setEditAtomSelection([]);
+            if (!terminalHydrogenReplacement || !isSelectionAtomBuildCueArmed()) {
+              setEditAtomSelection([]);
+            }
             updateSelectedHalos();
             updateEditSelectionVisuals();
             updateEditAdaptiveMenuUi();
@@ -16805,6 +16820,9 @@
     const focusAtomIds = Array.isArray(options.focusAtomIds) && options.focusAtomIds.length
       ? options.focusAtomIds
       : [atomId];
+    const selectionAfter = Array.isArray(options.selectionAfter)
+      ? options.selectionAfter.map((value) => Number(value) | 0).filter((value) => value >= 0)
+      : [];
     editPlacement.beginAddAtomOperatorSession(
       record,
       atomId,
@@ -16815,6 +16833,7 @@
       String(options.coordinationGeometryId || '').trim(),
       {
         source: 'new-atom',
+        cancelCommits: !!options.cancelCommits,
         autoAdjustHydrogensOnCommit: !!options.autoAdjustHydrogensOnCommit,
         translateAttachedHydrogens: options.translateAttachedHydrogens !== false,
         autoAdjustHydrogenFocusAtomIds: focusAtomIds,
@@ -16822,13 +16841,16 @@
         startCollapsed: options.startCollapsed !== false,
       }
     );
-    setEditAtomSelection([]);
+    setEditAtomSelection(selectionAfter);
     rebuildScene({ preserveView: true });
     updateSidePanel();
     updateSelectedHalos();
     updateEditSelectionVisuals();
     updateEditAdaptiveMenuUi();
-    setHintMessage(String(options.hint || `Added ${getElementName((atom && atom.Z) | 0)} (${symbol}) atom • Adjust location • Enter confirm • Esc cancel`));
+    setHintMessage(String(
+      options.hint
+      || `Added ${getElementName((atom && atom.Z) | 0)} (${symbol}) atom • Adjust location • Enter confirm • Esc ${options.cancelCommits ? 'close' : 'cancel'}`
+    ));
     return true;
   }
 
@@ -19914,6 +19936,7 @@
       coordinationGeometryId: getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
       focusAtomIds: [anchorId, newAtomId],
       anchorAtomId: anchorId,
+      selectionAfter: Array.isArray(options.selectionAfter) ? options.selectionAfter : [],
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
@@ -20012,6 +20035,7 @@
       coordinationGeometryId: getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
       focusAtomIds: [anchorId, newAtomId],
       anchorAtomId: anchorId,
+      selectionAfter: Array.isArray(options.selectionAfter) ? options.selectionAfter : [],
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
@@ -22463,6 +22487,10 @@
     getEditSelectionCount: () => {
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.length : 0;
+    },
+    getEditSelectionIndices: () => {
+      const selection = getEditAtomSelection();
+      return Array.isArray(selection) ? selection.slice() : [];
     },
     setEditSelectionIndices: (indices) => {
       const next = Array.isArray(indices)

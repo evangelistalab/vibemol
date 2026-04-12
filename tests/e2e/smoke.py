@@ -1223,10 +1223,14 @@ def main() -> int:
                     const atom0 = exported.volume?.atoms?.[0] || null;
                     const atom0Id = atom0 && atom0.id != null ? String(atom0.id) : '';
                     const geometryId = atom0Id ? exported.volume?.annotations?.coordination?.byAtomId?.[atom0Id]?.geometryId : '';
+                    const cuePressed = document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true';
+                    const selectionCount = Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0);
                     return exported.volume.atoms.length === 2
                       && exported.volume.atoms[1]?.Z === 7
                       && bonds.length === 1
                       && bonds[0].order === 1
+                      && cuePressed
+                      && selectionCount === 1
                       && geometryId === 'linear';
                 }"""
             )
@@ -1917,6 +1921,13 @@ def main() -> int:
                 raise AssertionError(f'Add atom did not increase the structure size: {before_add_atom} -> {after_add_atom}')
             if after_add_atom['atomicNumbers'].count(6) != before_add_atom['atomicNumbers'].count(6) + 1:
                 raise AssertionError(f'Add atom did not place exactly one new carbon: {before_add_atom} -> {after_add_atom}')
+            page.keyboard.press('Escape')
+            page.wait_for_function("() => document.getElementById('editAddAtomOperatorPanel')?.getAttribute('aria-hidden') === 'true'")
+            after_add_escape = active_structure_summary(page)
+            if after_add_escape['atomCount'] != after_add_atom['atomCount']:
+                raise AssertionError(f'Esc unexpectedly removed the newly placed atom: {after_add_atom} -> {after_add_escape}')
+            if after_add_escape['atomicNumbers'].count(6) != after_add_atom['atomicNumbers'].count(6):
+                raise AssertionError(f'Esc unexpectedly changed the placed atom identity: {after_add_atom} -> {after_add_escape}')
 
             log_step('grow-add can be followed immediately by atom selection')
             page.locator('#newFileBtn').click()
@@ -2562,6 +2573,49 @@ def main() -> int:
                     const carbons = atoms.filter((atom) => Number(atom?.Z) === 6).length;
                     const hydrogens = atoms.filter((atom) => Number(atom?.Z) === 1).length;
                     return atoms.length === 8 && bonds.length === 7 && carbons === 2 && hydrogens === 6;
+                }"""
+            )
+
+            log_step('fragment cue replace target keeps anchor selected and cue armed')
+            start_new_edit_file(page)
+            build_methane(page)
+            load_build_query(page, 'methyl')
+            set_select_value(page, '#editFragmentAttachPolicy', 'smart')
+            arm_fragment_attach_cue(page, 0)
+            replace_target = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                    const anchor = atoms[0] || null;
+                    const anchorId = anchor && anchor.id != null ? String(anchor.id) : '';
+                    if (!anchorId) return -1;
+                    const hydrogenId = bonds.flatMap((bond) => {
+                        const aId = String(bond.a || '');
+                        const bId = String(bond.b || '');
+                        if (aId === anchorId) return [bId];
+                        if (bId === anchorId) return [aId];
+                        return [];
+                    }).find((atomId) => Number(atoms.find((atom) => String(atom.id || '') === String(atomId || ''))?.Z) === 1) || '';
+                    return atoms.findIndex((atom) => String(atom.id || '') === String(hydrogenId || ''));
+                }"""
+            )
+            if not isinstance(replace_target, int) or replace_target < 0:
+                raise AssertionError(f'Could not resolve cue replace-target hydrogen: {replace_target!r}')
+            trigger_replace_target(page, replace_target)
+            wait_for_hint_contains(page, 'Attached Methyl via Replace H')
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atomCount = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms.length : 0;
+                    const cuePressed = document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true';
+                    const selection = Array.isArray(window.VibeMolTesting?.getEditSelectionIndices?.())
+                      ? window.VibeMolTesting.getEditSelectionIndices()
+                      : [];
+                    return atomCount === 8
+                      && cuePressed
+                      && selection.length === 1
+                      && Number(selection[0]) === 0;
                 }"""
             )
 
