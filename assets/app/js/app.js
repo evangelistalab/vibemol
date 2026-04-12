@@ -4346,11 +4346,9 @@
         connectorCenterRadius,
         connectorEndRadius
       } = obj.userData;
-      if (!obj.isMesh) {
-        // Curved kit connectors are composite groups; rebuild to keep geometry consistent.
-        if (connectorStyle === 'kitCurved') { needsFullRebuild = true; break; }
-        continue;
-      }
+      // Curved kit connectors are composite groups whose shaft path depends on
+      // the full endpoint geometry, so they still need a rebuild.
+      if (connectorStyle === 'kitCurved') { needsFullRebuild = true; break; }
       if (i == null || j == null) continue;
       const aInfo = atomPositions[i];
       const bInfo = atomPositions[j];
@@ -4375,7 +4373,7 @@
       }
       obj.position.copy(mid);
       obj.quaternion.setFromUnitVectors(up, dirNorm);
-      if (connectorStyle === 'kit') {
+      if (connectorStyle === 'kit' && obj.isMesh) {
         // Rebuild kit connector geometry to preserve fixed flange height/profile when bond length changes.
         const prevGeom = obj.geometry;
         const newGeom = createKitCollaredBondGeometry(
@@ -22491,6 +22489,33 @@
     getEditSelectionIndices: () => {
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.slice() : [];
+    },
+    getBondCarrierSnapshots: () => {
+      if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
+      const out = [];
+      for (const child of bondGroup.children) {
+        const carrier = getBondCarrierObject(child) || child;
+        if (!carrier || !carrier.userData) continue;
+        const i = carrier.userData.i;
+        const j = carrier.userData.j;
+        if (!Number.isInteger(i) || !Number.isInteger(j) || i === j) continue;
+        out.push({
+          i: i | 0,
+          j: j | 0,
+          logicalKey: String(getBondCarrierLogicalKey(carrier) || ''),
+          connectorStyle: String(carrier.userData.connectorStyle || ''),
+          isMesh: !!carrier.isMesh,
+          x: Number(carrier.position && carrier.position.x) || 0,
+          y: Number(carrier.position && carrier.position.y) || 0,
+          z: Number(carrier.position && carrier.position.z) || 0,
+          qx: Number(carrier.quaternion && carrier.quaternion.x) || 0,
+          qy: Number(carrier.quaternion && carrier.quaternion.y) || 0,
+          qz: Number(carrier.quaternion && carrier.quaternion.z) || 0,
+          qw: Number(carrier.quaternion && carrier.quaternion.w) || 1,
+          sy: Number(carrier.scale && carrier.scale.y) || 1,
+        });
+      }
+      return out;
     },
     setEditSelectionIndices: (indices) => {
       const next = Array.isArray(indices)

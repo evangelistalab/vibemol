@@ -1629,8 +1629,71 @@ def main() -> int:
                 """() => /Undo: Rotate 2 atoms/i.test(document.getElementById('hint')?.textContent || '')"""
             )
 
-            log_step('symmetry popover smoke')
+            log_step('live rotate updates grouped bond carriers')
             water_fixture_text = build_fixture_water_structure()
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "rotate-water-fixture")', water_fixture_text)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return Array.isArray(exported.volume?.atoms) && exported.volume.atoms.length === 3;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
+                    return window.VibeMolTesting.setEditSelectionIndices([0, 1]);
+                }"""
+            )
+            wait_for_selected_atoms(page, 2)
+            page.wait_for_function(
+                """() => {
+                    const rotateBtn = document.getElementById('editSelectionRotateCueButton');
+                    return !!rotateBtn && !rotateBtn.hidden;
+                }"""
+            )
+            before_group_bond = page.evaluate(
+                """() => {
+                    const bonds = Array.isArray(window.VibeMolTesting?.getBondCarrierSnapshots?.())
+                      ? window.VibeMolTesting.getBondCarrierSnapshots()
+                      : [];
+                    return bonds.find((bond) => (
+                      (Number(bond?.i) === 0 && Number(bond?.j) === 1)
+                      || (Number(bond?.i) === 1 && Number(bond?.j) === 0)
+                    )) || null;
+                }"""
+            )
+            if not isinstance(before_group_bond, dict):
+                raise AssertionError(f'Could not capture grouped bond carrier before live rotate: {before_group_bond!r}')
+            rotate_cue_box = page.locator('#editSelectionRotateCueButton').bounding_box()
+            if not rotate_cue_box:
+                raise AssertionError('Rotate selection cue is not visible for grouped-bond rotate smoke')
+            rotate_x = rotate_cue_box['x'] + rotate_cue_box['width'] * 0.5
+            rotate_y = rotate_cue_box['y'] + rotate_cue_box['height'] * 0.5
+            page.mouse.move(rotate_x, rotate_y)
+            page.mouse.down()
+            page.mouse.move(rotate_x + 46, rotate_y + 28)
+            page.wait_for_function(
+                """(before) => {
+                    const bonds = Array.isArray(window.VibeMolTesting?.getBondCarrierSnapshots?.())
+                      ? window.VibeMolTesting.getBondCarrierSnapshots()
+                      : [];
+                    const next = bonds.find((bond) => String(bond?.logicalKey || '') === String(before?.logicalKey || ''));
+                    if (!next) return false;
+                    const changed = (a, b) => Math.abs((Number(a) || 0) - (Number(b) || 0)) > 1e-6;
+                    return changed(next.x, before.x)
+                      || changed(next.y, before.y)
+                      || changed(next.z, before.z)
+                      || changed(next.qx, before.qx)
+                      || changed(next.qy, before.qy)
+                      || changed(next.qz, before.qz)
+                      || changed(next.qw, before.qw)
+                      || changed(next.sy, before.sy);
+                }""",
+                arg=before_group_bond,
+            )
+            page.mouse.up()
+
+            log_step('symmetry popover smoke')
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "symmetry-water-fixture")', water_fixture_text)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
