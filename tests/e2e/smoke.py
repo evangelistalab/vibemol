@@ -470,13 +470,21 @@ def find_bond_side_canvas_point(page, side: str | None = None) -> tuple[float, f
         x, y = canvas_point(page, fx, fy)
         page.mouse.move(x, y)
         page.wait_for_timeout(60)
-        hit = page.evaluate(
+        probe = page.evaluate(
             """(payload) => {
                 if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
-                return window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+                const hit = window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+                const top = document.elementFromPoint(payload.x, payload.y);
+                const onCanvas = !!(top && (top.id === 'canvas' || (typeof top.closest === 'function' && top.closest('#canvas'))));
+                return { hit, onCanvas };
             }""",
             {'x': x, 'y': y},
         )
+        if not isinstance(probe, dict):
+            continue
+        if not bool(probe.get('onCanvas')):
+            continue
+        hit = probe.get('hit')
         if not isinstance(hit, dict):
             continue
         bond_section = str(hit.get('bondSection', '')).strip().lower()
@@ -713,6 +721,32 @@ def set_checkbox_state(page, selector: str, checked: bool) -> None:
     )
     if not ok:
         raise AssertionError(f'Could not set checkbox state for {selector} -> {checked}')
+
+
+def max_camera_snapshot_delta(a: dict[str, Any], b: dict[str, Any]) -> float:
+    values_a = [
+        float(a.get('camera', {}).get('x', 0.0)),
+        float(a.get('camera', {}).get('y', 0.0)),
+        float(a.get('camera', {}).get('z', 0.0)),
+        float(a.get('target', {}).get('x', 0.0)),
+        float(a.get('target', {}).get('y', 0.0)),
+        float(a.get('target', {}).get('z', 0.0)),
+        float(a.get('up', {}).get('x', 0.0)),
+        float(a.get('up', {}).get('y', 0.0)),
+        float(a.get('up', {}).get('z', 0.0)),
+    ]
+    values_b = [
+        float(b.get('camera', {}).get('x', 0.0)),
+        float(b.get('camera', {}).get('y', 0.0)),
+        float(b.get('camera', {}).get('z', 0.0)),
+        float(b.get('target', {}).get('x', 0.0)),
+        float(b.get('target', {}).get('y', 0.0)),
+        float(b.get('target', {}).get('z', 0.0)),
+        float(b.get('up', {}).get('x', 0.0)),
+        float(b.get('up', {}).get('y', 0.0)),
+        float(b.get('up', {}).get('z', 0.0)),
+    ]
+    return max(abs(x - y) for x, y in zip(values_a, values_b))
 
 
 def set_select_value(page, selector: str, value: str) -> None:
@@ -1693,6 +1727,79 @@ def main() -> int:
             )
             page.mouse.up()
 
+            log_step('edit void orbit matches display orbit')
+            orbit_drag_dx = 52
+            orbit_drag_dy = 34
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "orbit-compare-display")', water_fixture_text)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return Array.isArray(exported.volume?.atoms) && exported.volume.atoms.length === 3;
+                }"""
+            )
+            page.locator('#modeEditBtn').click()
+            edit_void_x, edit_void_y = find_empty_edit_canvas_point(page)
+            page.locator('#modeDisplayBtn').click()
+            page.wait_for_timeout(50)
+            page.mouse.move(edit_void_x, edit_void_y)
+            page.mouse.down()
+            page.mouse.move(edit_void_x + orbit_drag_dx, edit_void_y + orbit_drag_dy, steps=8)
+            page.mouse.up()
+            page.evaluate(
+                """() => new Promise((resolve) => {
+                    requestAnimationFrame(() => requestAnimationFrame(resolve));
+                })"""
+            )
+            display_after = page.evaluate("""() => window.VibeMolTesting?.getCameraSnapshot?.() || null""")
+            page.evaluate(
+                """() => new Promise((resolve) => {
+                    requestAnimationFrame(() => requestAnimationFrame(resolve));
+                })"""
+            )
+            display_stable = page.evaluate("""() => window.VibeMolTesting?.getCameraSnapshot?.() || null""")
+            if not isinstance(display_after, dict) or not isinstance(display_stable, dict):
+                raise AssertionError('Could not capture display camera snapshots for orbit comparison')
+            if max_camera_snapshot_delta(display_after, display_stable) > 1e-6:
+                raise AssertionError(
+                    f'Display orbit drifted after release: {max_camera_snapshot_delta(display_after, display_stable):.6g}'
+                )
+
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "orbit-compare-edit")', water_fixture_text)
+            page.wait_for_function(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return Array.isArray(exported.volume?.atoms) && exported.volume.atoms.length === 3;
+                }"""
+            )
+            page.locator('#modeEditBtn').click()
+            edit_void_x, edit_void_y = find_empty_edit_canvas_point(page)
+            page.mouse.move(edit_void_x, edit_void_y)
+            page.mouse.down(button='right')
+            page.mouse.move(edit_void_x + orbit_drag_dx, edit_void_y + orbit_drag_dy, steps=8)
+            page.mouse.up(button='right')
+            page.evaluate(
+                """() => new Promise((resolve) => {
+                    requestAnimationFrame(() => requestAnimationFrame(resolve));
+                })"""
+            )
+            edit_after = page.evaluate("""() => window.VibeMolTesting?.getCameraSnapshot?.() || null""")
+            page.evaluate(
+                """() => new Promise((resolve) => {
+                    requestAnimationFrame(() => requestAnimationFrame(resolve));
+                })"""
+            )
+            edit_stable = page.evaluate("""() => window.VibeMolTesting?.getCameraSnapshot?.() || null""")
+            if not isinstance(edit_after, dict) or not isinstance(edit_stable, dict):
+                raise AssertionError('Could not capture edit camera snapshots for orbit comparison')
+            if max_camera_snapshot_delta(edit_after, edit_stable) > 1e-6:
+                raise AssertionError(
+                    f'Edit orbit drifted after release: {max_camera_snapshot_delta(edit_after, edit_stable):.6g}'
+                )
+            if max_camera_snapshot_delta(display_after, edit_after) > 1e-5:
+                raise AssertionError(
+                    f'Edit void orbit does not match display orbit: {max_camera_snapshot_delta(display_after, edit_after):.6g}'
+                )
+
             log_step('symmetry popover smoke')
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "symmetry-water-fixture")', water_fixture_text)
             page.locator('#modeDisplayBtn').click()
@@ -2194,10 +2301,6 @@ def main() -> int:
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture")', dihedral_fixture_text)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
-            page.locator('#editAdaptiveAddAtomBtn').click()
-            page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
-            )
             side_x, side_y = find_bond_side_canvas_point(page)
             page.mouse.click(side_x, side_y, button='right')
             page.wait_for_function(
@@ -2259,10 +2362,6 @@ def main() -> int:
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture-distance")', dihedral_fixture_text)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
-            page.locator('#editAdaptiveAddAtomBtn').click()
-            page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
-            )
             side_x, side_y = find_bond_side_canvas_point(page)
             page.mouse.click(side_x, side_y, button='right')
             page.wait_for_function(
@@ -2323,10 +2422,6 @@ def main() -> int:
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture")', fixture_text)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
-            page.locator('#editAdaptiveAddAtomBtn').click()
-            page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomBtn')?.classList.contains('active')"""
-            )
             side_x, side_y = find_bond_side_canvas_point(page)
             page.mouse.click(side_x, side_y, button='right')
             page.wait_for_function(
