@@ -2895,7 +2895,7 @@
       <div id="editSymmetryToleranceSection">
         <label id="editSymmetryToleranceLabel" for="editSymmetryToleranceSelect">RMS TOLERANCE (Å)</label>
         <div id="editSymmetryToleranceControls">
-          <select id="editSymmetryToleranceSelect">
+          <select id="editSymmetryToleranceSelect" class="editPopupSelect">
             <option value="0.050">0.05</option>
             <option value="0.100">0.10</option>
             <option value="0.250">0.25</option>
@@ -2906,7 +2906,7 @@
       </div>
       <div id="editSymmetryElementSection">
         <label id="editSymmetryElementLabel" for="editSymmetryElementSelect">Symmetry element</label>
-        <select id="editSymmetryElementSelect">
+        <select id="editSymmetryElementSelect" class="editPopupSelect">
           <option value="">None</option>
         </select>
       </div>
@@ -3040,7 +3040,7 @@
         <datalist id="editAddSuggestions"></datalist>
         <div id="editAddQuick"></div>
         <label for="editAddCoordination">Coordination</label>
-        <select id="editAddCoordination"></select>
+        <select id="editAddCoordination" class="editPopupSelect"></select>
         <label class="editAddToggleRow" for="editAddAdjustHydrogens">
           <input id="editAddAdjustHydrogens" type="checkbox" checked />
           <span>Adjust hydrogens</span>
@@ -3052,7 +3052,7 @@
           placeholder="e.g. phenyl, hydroxyl, C6H5" />
         <datalist id="editFragmentSuggestions"></datalist>
         <label for="editFragmentAttachPolicy">Attach policy</label>
-        <select id="editFragmentAttachPolicy"
+        <select id="editFragmentAttachPolicy" class="editPopupSelect"
           title="Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.">
           <option value="smart" selected>Smart</option>
           <option value="append">Append</option>

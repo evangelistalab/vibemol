@@ -648,26 +648,6 @@
   display: block;
 }
 
-#editSymmetryToleranceSelect {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--vm-color-legacy-border-soft);
-  border-radius: 10px;
-  padding: 8px 10px;
-  background: var(--vm-color-legacy-muted-chip-3);
-  color: var(--vm-color-legacy-text-on-dark);
-}
-
-#editSymmetryElementSelect {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--vm-color-legacy-border-soft);
-  border-radius: 10px;
-  padding: 8px 10px;
-  background: var(--vm-color-legacy-muted-chip-3);
-  color: var(--vm-color-legacy-text-on-dark);
-}
-
 #editSymmetryCandidates {
   display: grid;
   gap: 4px;
@@ -1013,8 +993,7 @@
   margin-bottom: 5px;
 }
 
-#editAddSearch,
-#editAddCoordination {
+#editAddSearch {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--vm-color-legacy-border-soft);
@@ -1054,6 +1033,16 @@
   border: 1px solid var(--vm-color-legacy-border-soft);
   border-radius: 8px;
   padding: 6px 8px;
+  background: var(--vm-color-legacy-muted-chip-3);
+  color: var(--vm-color-legacy-text-on-dark);
+}
+
+.editPopupSelect {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--vm-color-legacy-border-soft);
+  border-radius: 10px;
+  padding: 8px 10px;
   background: var(--vm-color-legacy-muted-chip-3);
   color: var(--vm-color-legacy-text-on-dark);
 }
