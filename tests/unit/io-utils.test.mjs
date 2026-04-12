@@ -29,9 +29,9 @@ function loadIoUtils() {
   });
 }
 
-test('io-utils detects full XYZ clipboard text', () => {
+test('io-utils detects full XYZ text', () => {
   const context = loadIoUtils();
-  const detected = context.window.VibeMolIOUtils.detectPastedXyzText(`
+  const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText(`
 3
 water
 O 0.000 0.000 0.000
@@ -45,9 +45,9 @@ H -0.758 0.000 0.504
   assert.match(detected.xyzText, /^3\nwater\nO /);
 });
 
-test('io-utils wraps coordinates-only clipboard text into XYZ', () => {
+test('io-utils wraps coordinates-only XYZ text into XYZ', () => {
   const context = loadIoUtils();
-  const detected = context.window.VibeMolIOUtils.detectPastedXyzText(`
+  const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText(`
 Fe 0.0 0.0 0.0
 Cl 1.2 0.0 0.0
 Br -1.2 0.0 0.0
@@ -62,9 +62,9 @@ Br -1.2 0.0 0.0
   );
 });
 
-test('io-utils detects full XYZ clipboard text with atomic numbers in column 1', () => {
+test('io-utils detects full XYZ text with atomic numbers in column 1', () => {
   const context = loadIoUtils();
-  const detected = context.window.VibeMolIOUtils.detectPastedXyzText(`
+  const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText(`
 3
 water by Z
 8 0.000 0.000 0.000
@@ -83,7 +83,7 @@ water by Z
 
 test('io-utils preserves multi-frame XYZ trajectory text', () => {
   const context = loadIoUtils();
-  const detected = context.window.VibeMolIOUtils.detectPastedXyzText(`
+  const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText(`
 2
 frame 1
 C 0.0 0.0 0.0
@@ -103,9 +103,9 @@ H 0.1 0.0 1.0
   );
 });
 
-test('io-utils wraps coordinates-only clipboard text with atomic numbers into XYZ', () => {
+test('io-utils wraps coordinates-only XYZ text with atomic numbers into XYZ', () => {
   const context = loadIoUtils();
-  const detected = context.window.VibeMolIOUtils.detectPastedXyzText(`
+  const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText(`
 26 0.0 0.0 0.0
 17 1.2 0.0 0.0
 35 -1.2 0.0 0.0
@@ -120,9 +120,9 @@ test('io-utils wraps coordinates-only clipboard text with atomic numbers into XY
   );
 });
 
-test('io-utils ignores non-XYZ clipboard text', () => {
+test('io-utils ignores non-XYZ text', () => {
   const context = loadIoUtils();
-  const detected = context.window.VibeMolIOUtils.detectPastedXyzText('hello world\nnot a structure');
+  const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText('hello world\nnot a structure');
 
   assert.equal(detected, null);
 });

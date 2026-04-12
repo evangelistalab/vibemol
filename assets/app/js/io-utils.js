@@ -47,14 +47,14 @@
   }
 
   /**
-   * Detect pasted XYZ text in either full XYZ or coordinates-only form.
+   * Detect and normalize XYZ text in either full XYZ or coordinates-only form.
    * Returns normalized XYZ text ready for parseXYZ, or null when the text does
    * not look like an XYZ structure.
    * @param {string} text
    * @param {{comment?:string}=} options
    * @returns {{atomCount:number,wrapped:boolean,xyzText:string}|null}
    */
-  function detectPastedXyzText(text, options = {}) {
+  function detectAndNormalizeXyzText(text, options = {}) {
     const raw = String(text == null ? '' : text).replace(/\r/g, '');
     const trimmed = raw.trim();
     if (!trimmed) return null;
@@ -137,6 +137,6 @@
 
   window.VibeMolIOUtils = Object.freeze({
     detectInputFileKind,
-    detectPastedXyzText,
+    detectAndNormalizeXyzText,
   });
 })();

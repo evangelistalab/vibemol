@@ -133,8 +133,8 @@
     throw new Error('VibeMolEditState is not loaded. Ensure assets/app/js/edit-state.js is included before assets/app/js/app.js.');
   }
 
-  const { detectInputFileKind, detectPastedXyzText } = window.VibeMolIOUtils || {};
-  if (![detectInputFileKind, detectPastedXyzText].every(fn => typeof fn === 'function')) {
+  const { detectInputFileKind, detectAndNormalizeXyzText } = window.VibeMolIOUtils || {};
+  if (![detectInputFileKind, detectAndNormalizeXyzText].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolIOUtils is not loaded. Ensure assets/app/js/io-utils.js is included before assets/app/js/app.js.');
   }
 
@@ -17156,7 +17156,7 @@
   }
 
   async function importPastedXyzText(rawText) {
-    const detected = detectPastedXyzText(rawText, { comment: 'Pasted XYZ' });
+    const detected = detectAndNormalizeXyzText(rawText, { comment: 'Pasted XYZ' });
     if (!detected) return false;
     const fileName = `pasted-xyz-${++pastedTextStructureSerial}.xyz`;
     try {
@@ -21529,7 +21529,7 @@
     const text = clipboardData && typeof clipboardData.getData === 'function'
       ? String(clipboardData.getData('text/plain') || '')
       : '';
-    if (text && detectPastedXyzText(text, { comment: 'Pasted XYZ' })) {
+    if (text && detectAndNormalizeXyzText(text, { comment: 'Pasted XYZ' })) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       void importPastedXyzText(text);
       return;
@@ -24666,7 +24666,7 @@
     setVolumes: (next) => { volumes = next; },
     setCurrentIndex: (next) => { currentIndex = next; },
     detectInputFileKind,
-    detectPastedXyzText,
+    detectAndNormalizeXyzText,
     parseCube,
     parseTwoComponentCube,
     parseXYZ,

@@ -14,7 +14,7 @@ function createController(options = {}) {
   const ensureVolumeSchemaCalls = [];
   const controller = context.VibeMolFileLoader.createFileLoader({
     detectInputFileKind: options.detectInputFileKind || ((name) => name.endsWith('.xyz') ? 'xyz' : 'cube'),
-    detectPastedXyzText: options.detectPastedXyzText || (() => null),
+    detectAndNormalizeXyzText: options.detectAndNormalizeXyzText || (() => null),
     parseXYZ: (text) => ({ kind: 'xyz', text }),
     parseMolden: (text) => ({ kind: 'molden', text }),
     parseTwoComponentCube: (text) => ({ kind: 'two_component_cube', text }),
@@ -85,7 +85,7 @@ test('file loader routes volume parsing by detected kind', () => {
 test('file loader wraps coordinates-only xyz files before parsing', () => {
   const { controller } = createController({
     detectInputFileKind: (name) => name.endsWith('.xyz') ? 'xyz' : 'cube',
-    detectPastedXyzText: (text, options = {}) => ({
+    detectAndNormalizeXyzText: (text, options = {}) => ({
       atomCount: 2,
       wrapped: true,
       xyzText: `2\n${String(options.comment || 'Imported XYZ')}\nC 0 0 0\nH 0 0 1\n`,
@@ -110,7 +110,7 @@ test('file loader preserves multi-frame xyz trajectory text during normalization
   ].join('\n');
   const { controller } = createController({
     detectInputFileKind: (name) => name.endsWith('.xyz') ? 'xyz' : 'cube',
-    detectPastedXyzText: () => ({
+    detectAndNormalizeXyzText: () => ({
       atomCount: 2,
       wrapped: false,
       xyzText: trajectoryText,

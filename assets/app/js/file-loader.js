@@ -33,8 +33,8 @@
     function parseVolumeByName(name, text) {
       const kind = deps.detectInputFileKind(name, text);
       if (kind === 'xyz') {
-        const detected = typeof deps.detectPastedXyzText === 'function'
-          ? deps.detectPastedXyzText(text, { comment: String(name || '').trim() || 'Imported XYZ' })
+        const detected = typeof deps.detectAndNormalizeXyzText === 'function'
+          ? deps.detectAndNormalizeXyzText(text, { comment: String(name || '').trim() || 'Imported XYZ' })
           : null;
         return deps.parseXYZ(detected && detected.xyzText ? detected.xyzText : text);
       }
