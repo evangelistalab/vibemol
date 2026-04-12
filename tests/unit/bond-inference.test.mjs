@@ -130,7 +130,7 @@ test('metal-ligand perception classifies strong, dative, and absent contacts', (
     const atoms = [
       { Z: 26, pos: new V3(0, 0, 0) },
       { Z: 7, pos: new V3(1.95, 0, 0) },
-      { Z: 7, pos: new V3(0, 2.65, 0) },
+      { Z: 7, pos: new V3(0, 2.50, 0) },
       { Z: 7, pos: new V3(0, 0, 3.05) },
     ];
     return window.VibeMolBondInference.perceiveBondConnectivity(atoms).map((edge) => ({
@@ -192,7 +192,14 @@ test('metal coordination caps accept nearest candidates first', () => {
 
   assert.equal(result.length, 6);
   assert.deepEqual(result.map((edge) => edge.j), [1, 2, 3, 4, 5, 6]);
-  assert.ok(result.every((edge) => edge.style === 'metal-strong'));
+  assert.deepEqual(result.map((edge) => edge.style), [
+    'metal-strong',
+    'metal-strong',
+    'metal-strong',
+    'metal-strong',
+    'metal-dative',
+    'metal-dative',
+  ]);
 });
 
 test('metal-metal perception emits dedicated metal-metal style', () => {
@@ -256,6 +263,33 @@ test('bond-order promotion can infer imported carbonyl-style doubles from connec
   ]);
 });
 
+test('bond-order promotion can infer imported carbon-carbon triples from connectivity', () => {
+  const context = loadBondInference();
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const V3 = THREE.Vector3;
+    const atoms = [
+      { Z: 6, pos: new V3(0, 0, 0) },
+      { Z: 1, pos: new V3(0, 1.06, 0) },
+      { Z: 6, pos: new V3(1.20, 0, 0) },
+      { Z: 6, pos: new V3(2.62, 0, 0) },
+    ];
+    const edges = window.VibeMolBondInference.perceiveBondConnectivity(atoms);
+    window.VibeMolBondInference.inferBondOrders(atoms, edges);
+    return edges.map((edge) => ({
+      i: edge.i,
+      j: edge.j,
+      order: edge.order,
+      maxOrder: edge.maxOrder,
+    }));
+  })())`));
+
+  assert.deepEqual(result, [
+    { i: 0, j: 1, order: 1, maxOrder: 1 },
+    { i: 0, j: 2, order: 3, maxOrder: 4 },
+    { i: 2, j: 3, order: 1, maxOrder: 4 },
+  ]);
+});
+
 test('cleanup diff distinguishes additions, removable perceived bonds, and explicit warnings', () => {
   const context = loadBondInference();
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
@@ -300,7 +334,7 @@ test('cleanup diff suppresses blocked metal pairs and carries perceived styles',
       atoms: [
         { id: 'fe', Z: 26, x: 0, y: 0, z: 0 },
         { id: 'n1', Z: 7, x: 2.0, y: 0, z: 0 },
-        { id: 'n2', Z: 7, x: 0, y: 2.6, z: 0 },
+        { id: 'n2', Z: 7, x: 0, y: 2.5, z: 0 },
       ],
       bonds: [
         { id: 'bond:fe:n1', a: 'fe', b: 'n1', order: 1, kind: 'blocked', origin: 'explicit' },
@@ -309,7 +343,7 @@ test('cleanup diff suppresses blocked metal pairs and carries perceived styles',
     const atomPositions = [
       { Z: 26, pos: new V3(0, 0, 0) },
       { Z: 7, pos: new V3(2.0, 0, 0) },
-      { Z: 7, pos: new V3(0, 2.6, 0) },
+      { Z: 7, pos: new V3(0, 2.5, 0) },
     ];
     const diff = window.VibeMolBondInference.classifyBondCleanupDiff(vol, atomPositions);
     return {

@@ -1491,39 +1491,50 @@ def main() -> int:
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
             page.keyboard.press(' ')
-            page.wait_for_function(
-                """() => {
-                    const hint = document.getElementById('hint');
-                    return !!hint && /Press Space again to apply/i.test(hint.textContent || '');
-                }"""
-            )
-            hydrogen_preview_summary = active_structure_summary(page)
-            if hydrogen_preview_summary['atomCount'] != 2 or hydrogen_preview_summary['bondCount'] != 1:
-                raise AssertionError(f'Auto-hydrogen preview mutated the structure too early: {hydrogen_preview_summary}')
-            page.keyboard.press(' ')
-            page.wait_for_function(
-                """(payload) => {
-                    const exported = window.VibeMolStructure.exportActive();
-                    const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
-                    const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
-                    const hydrogenCount = atoms.filter((atom) => (atom.Z | 0) === 1).length;
-                    const explicitCount = bonds.filter((bond) => String(bond.origin || '') === 'explicit').length;
-                    return hydrogenCount === Number(payload.expectedHydrogenCount)
-                      && explicitCount === Number(payload.expectedHydrogenCount)
-                      && bonds.length === Number(payload.expectedBondCount);
-                }""",
-                arg={
-                    'expectedHydrogenCount': expected_hydrogen_count,
-                    'expectedBondCount': expected_bond_count,
-                },
-            )
-            hydrogenated_summary = active_structure_summary(page)
-            if hydrogenated_summary['atomCount'] != expected_atom_count or hydrogenated_summary['bondCount'] != expected_bond_count:
-                raise AssertionError(f'Auto-hydrogenation produced an unexpected structure: {hydrogenated_summary}')
-            if hydrogenated_summary['atomicNumbers'].count(1) != expected_hydrogen_count:
-                raise AssertionError(f'Auto-hydrogenation did not add the expected hydrogens: {hydrogenated_summary}')
-            if hydrogenated_summary['bondOrigins'].count('explicit') != expected_hydrogen_count or hydrogenated_summary['bondOrigins'].count('perceived') != 1:
-                raise AssertionError(f'Auto-hydrogenation bond provenance is wrong: {hydrogenated_summary}')
+            if expected_hydrogen_count > 0:
+                page.wait_for_function(
+                    """() => {
+                        const hint = document.getElementById('hint');
+                        return !!hint && /Press Space again to apply/i.test(hint.textContent || '');
+                    }"""
+                )
+                hydrogen_preview_summary = active_structure_summary(page)
+                if hydrogen_preview_summary['atomCount'] != 2 or hydrogen_preview_summary['bondCount'] != 1:
+                    raise AssertionError(f'Auto-hydrogen preview mutated the structure too early: {hydrogen_preview_summary}')
+                page.keyboard.press(' ')
+                page.wait_for_function(
+                    """(payload) => {
+                        const exported = window.VibeMolStructure.exportActive();
+                        const atoms = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms : [];
+                        const bonds = Array.isArray(exported.volume?.bonds) ? exported.volume.bonds : [];
+                        const hydrogenCount = atoms.filter((atom) => (atom.Z | 0) === 1).length;
+                        const explicitCount = bonds.filter((bond) => String(bond.origin || '') === 'explicit').length;
+                        return hydrogenCount === Number(payload.expectedHydrogenCount)
+                          && explicitCount === Number(payload.expectedHydrogenCount)
+                          && bonds.length === Number(payload.expectedBondCount);
+                    }""",
+                    arg={
+                        'expectedHydrogenCount': expected_hydrogen_count,
+                        'expectedBondCount': expected_bond_count,
+                    },
+                )
+                hydrogenated_summary = active_structure_summary(page)
+                if hydrogenated_summary['atomCount'] != expected_atom_count or hydrogenated_summary['bondCount'] != expected_bond_count:
+                    raise AssertionError(f'Auto-hydrogenation produced an unexpected structure: {hydrogenated_summary}')
+                if hydrogenated_summary['atomicNumbers'].count(1) != expected_hydrogen_count:
+                    raise AssertionError(f'Auto-hydrogenation did not add the expected hydrogens: {hydrogenated_summary}')
+                if hydrogenated_summary['bondOrigins'].count('explicit') != expected_hydrogen_count or hydrogenated_summary['bondOrigins'].count('perceived') != 1:
+                    raise AssertionError(f'Auto-hydrogenation bond provenance is wrong: {hydrogenated_summary}')
+            else:
+                page.wait_for_function(
+                    """() => {
+                        const hint = document.getElementById('hint');
+                        return !!hint && /No missing hydrogens found/i.test(hint.textContent || '');
+                    }"""
+                )
+                hydrogen_noop_summary = active_structure_summary(page)
+                if hydrogen_noop_summary['atomCount'] != 2 or hydrogen_noop_summary['bondCount'] != 1:
+                    raise AssertionError(f'Auto-hydrogen no-op unexpectedly mutated the structure: {hydrogen_noop_summary}')
 
             log_step('deterministic fixture import')
             # Replace active content with a deterministic explicit-bond fixture.

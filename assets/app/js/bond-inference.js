@@ -223,13 +223,13 @@
     const rSum = rM + rL;
     if (!(rSum > 0) || !Number.isFinite(distance) || distance < AUTO_BOND_MIN_DISTANCE) return null;
     if (mode === METAL_BOND_MODE_FORCE_COVALENT) {
-      return distance <= 1.10 * rSum ? 'covalent' : null;
+      return distance <= 0.90 * rSum ? 'covalent' : null;
     }
     if (mode === METAL_BOND_MODE_FORCE_DATIVE) {
-      return distance <= 1.30 * rSum ? 'metal-dative' : null;
+      return distance <= 1.15 * rSum ? 'metal-dative' : null;
     }
-    if (distance <= 1.10 * rSum) return 'metal-strong';
-    if (distance <= 1.30 * rSum) return 'metal-dative';
+    if (distance <= 0.90 * rSum) return 'metal-strong';
+    if (distance <= 1.15 * rSum) return 'metal-dative';
     return null;
   }
 
@@ -259,8 +259,8 @@
           len,
           singleRef: getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z),
           cutoff: style === 'covalent' || style === 'metal-strong'
-            ? 1.10 * (getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z))
-            : 1.30 * (getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z)),
+            ? 0.90 * (getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z))
+            : 1.15 * (getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z)),
           ratio: len / Math.max(1e-6, getMetalBondRadiusAngstrom(metalAtom.Z) + getCovalentRadiusAngstrom(ligandAtom.Z)),
           order: 1,
           maxOrder: 1,
@@ -551,7 +551,7 @@
         edge.maxOrder = 1;
         continue;
       }
-      edge.maxOrder = Math.max(baseOrder, Math.min(2, getPairMaxBondOrder(atomI.Z, atomJ.Z) | 0));
+      edge.maxOrder = Math.max(baseOrder, getPairMaxBondOrder(atomI.Z, atomJ.Z) | 0);
       valence[i] += baseOrder;
       valence[j] += baseOrder;
     }

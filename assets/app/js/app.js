@@ -1125,6 +1125,7 @@
   let viewPanPointerId = null;
   let viewPanLastClientX = 0;
   let viewPanLastClientY = 0;
+  let manualViewGestureSuspendedControls = false;
   // Atom label shell meshes that should rotate to keep text visible to camera.
   const atomLabelTrackTargets = [];
   let atomLabelCapGeometry = null;
@@ -3720,6 +3721,7 @@
     const bondHeightSegments = profile.bondHeightSegments;
     // Glossy mode forces single connectors to avoid multi-bond overlap artifacts.
     const multiBondRenderingEnabled = !!showMultiBonds && !isGlossyStyle;
+    const metalDashSegments = [];
     const renderEdges = bondEdges.map((edge) => ({
       id: edge.id,
       a: edge.a,
@@ -4131,7 +4133,7 @@
 
     function addMetalStyledBond(edge, atomA, atomB) {
       const style = normalizeVolumeBondStyle(edge && edge.style);
-      const useDashedConnector = style === METAL_BOND_STYLE.STRONG || style === METAL_BOND_STYLE.DATIVE;
+      const useDashedConnector = style === METAL_BOND_STYLE.DATIVE;
       const radiusScale = style === METAL_BOND_STYLE.STRONG
         ? 0.85
         : (style === METAL_BOND_STYLE.DATIVE ? 0.70 : 0.75);
@@ -4143,7 +4145,7 @@
       });
       if (!placement.valid || !(placement.geomLen > 1e-4)) return;
       const color = resolveMetalConnectorColor(edge, atomA, atomB);
-      const carrier = new THREE.Group();
+      const carrier = new THREE.Object3D();
       carrier.userData = {
         bondId: edge.id || buildVolumeBondId(ensureAtomId(vol.atoms[edge.i]), ensureAtomId(vol.atoms[edge.j])),
         baseLen: placement.len,
@@ -4155,11 +4157,14 @@
         bondOrder: 1,
         bondKind: edge.kind || 'normal',
         bondStyle: style,
-        connectorStyle: useDashedConnector ? (style === METAL_BOND_STYLE.STRONG ? 'metalStrongDashed' : 'metalDative') : 'metalMetal',
+        connectorStyle: style === METAL_BOND_STYLE.STRONG
+          ? 'metalStrong'
+          : (useDashedConnector ? 'metalDative' : 'metalMetal'),
         connectorCenterRadius: radius,
         connectorEndRadius: radius,
         bondDisplayRadius: radius,
       };
+      group.add(carrier);
       if (useDashedConnector) {
         const dashLength = style === METAL_BOND_STYLE.STRONG
           ? Math.max(0.12, radius * 2.6)
@@ -4168,19 +4173,15 @@
           ? Math.max(0.12, radius * 2.8)
           : Math.max(0.13, radius * 3.1);
         let cursor = 0;
-        let dashIndex = 0;
         while (cursor < placement.geomLen - 1e-4) {
           const segStart = placement.aEnd.clone().addScaledVector(placement.dirNorm, cursor);
           const segEnd = placement.aEnd.clone().addScaledVector(placement.dirNorm, Math.min(placement.geomLen, cursor + dashLength));
-          const dash = createWorldSegmentBondMesh(segStart, segEnd, color, radius, Math.max(0.42, moleculeBondOpacity));
-          if (dash) {
-            dash.userData = Object.assign({}, dash.userData || {}, {
-              type: 'metalBondDash',
-              dashIndex,
-            });
-            carrier.add(dash);
-            dashIndex += 1;
-          }
+          metalDashSegments.push({
+            start: segStart,
+            end: segEnd,
+            color,
+            radius,
+          });
           cursor += dashLength + gapLength;
         }
       } else {
@@ -4190,7 +4191,6 @@
           carrier.add(solid);
         }
       }
-      if (carrier.children.length) group.add(carrier);
     }
 
     for (const edge of covalentRenderEdges) {
@@ -4292,6 +4292,8 @@
       if (!atomA || !atomB) continue;
       addMetalStyledBond(edge, atomA, atomB);
     }
+    const metalDashMesh = createWorldSegmentBondInstances(metalDashSegments, Math.max(0.42, moleculeBondOpacity));
+    if (metalDashMesh) group.add(metalDashMesh);
     group.userData = Object.assign({}, group.userData || {}, {
       hasMetalStyleBonds: metalStyleEdges.length > 0,
     });
@@ -13409,6 +13411,12 @@
     if (canvasEl && Number.isInteger(pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
       try { canvasEl.releasePointerCapture(pointerId); } catch { }
     }
+    if (manualViewGestureSuspendedControls) {
+      manualViewGestureSuspendedControls = false;
+      try { controls.enabled = true; } catch { }
+      try { controls.update(); } catch { }
+      refreshViewUI();
+    }
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
   }
 
@@ -13422,6 +13430,10 @@
     viewRotatePointerId = Number.isInteger(e.pointerId) ? e.pointerId : null;
     viewRotateLastClientX = Number(e.clientX) || 0;
     viewRotateLastClientY = Number(e.clientY) || 0;
+    manualViewGestureSuspendedControls = !!(controls && controls.enabled !== false);
+    if (manualViewGestureSuspendedControls) {
+      try { controls.enabled = false; } catch { manualViewGestureSuspendedControls = false; }
+    }
     if (canvasEl && Number.isInteger(viewRotatePointerId) && typeof canvasEl.setPointerCapture === 'function') {
       try { canvasEl.setPointerCapture(viewRotatePointerId); } catch { }
     }
@@ -13439,6 +13451,12 @@
     if (canvasEl && Number.isInteger(pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
       try { canvasEl.releasePointerCapture(pointerId); } catch { }
     }
+    if (manualViewGestureSuspendedControls) {
+      manualViewGestureSuspendedControls = false;
+      try { controls.enabled = true; } catch { }
+      try { controls.update(); } catch { }
+      refreshViewUI();
+    }
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
   }
 
@@ -13452,6 +13470,10 @@
     viewPanPointerId = Number.isInteger(e.pointerId) ? e.pointerId : null;
     viewPanLastClientX = Number(e.clientX) || 0;
     viewPanLastClientY = Number(e.clientY) || 0;
+    manualViewGestureSuspendedControls = !!(controls && controls.enabled !== false);
+    if (manualViewGestureSuspendedControls) {
+      try { controls.enabled = false; } catch { manualViewGestureSuspendedControls = false; }
+    }
     if (canvasEl && Number.isInteger(viewPanPointerId) && typeof canvasEl.setPointerCapture === 'function') {
       try { canvasEl.setPointerCapture(viewPanPointerId); } catch { }
     }
@@ -14971,6 +14993,66 @@
     const mesh = new THREE.Mesh(geom, mat);
     mesh.position.copy(start).add(end).multiplyScalar(0.5);
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    return mesh;
+  }
+
+  /**
+   * Build one instanced mesh for many straight bond segments.
+   * Each segment scales one shared unit cylinder by radius/length and uses
+   * per-instance color so large dashed metal-bond sets stay cheap to draw.
+   * @param {Array<{start:THREE.Vector3,end:THREE.Vector3,color:THREE.Color,radius:number}>} segments
+   * @param {number=} opacity
+   * @returns {THREE.InstancedMesh|null}
+   */
+  function createWorldSegmentBondInstances(segments, opacity = 0.8) {
+    const items = Array.isArray(segments) ? segments.filter((segment) => {
+      if (!segment || !segment.start || !segment.end || !segment.color) return false;
+      return Number(segment.radius) > 0;
+    }) : [];
+    if (!items.length) return null;
+    const geom = new THREE.CylinderGeometry(1, 1, 1, 12, 1, false);
+    const mat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      transparent: opacity < 0.999,
+      opacity,
+      roughness: 0.28,
+      metalness: 0.04,
+      depthWrite: opacity >= 0.999,
+    });
+    const mesh = new THREE.InstancedMesh(geom, mat, items.length);
+    const up = new THREE.Vector3(0, 1, 0);
+    const dummy = new THREE.Object3D();
+    let count = 0;
+    for (const segment of items) {
+      const start = segment.start.clone();
+      const end = segment.end.clone();
+      const delta = end.clone().sub(start);
+      const len = delta.length();
+      const radius = Math.max(1e-4, Number(segment.radius) || 0);
+      if (!(len > 1e-6)) continue;
+      const dir = delta.multiplyScalar(1 / len);
+      dummy.position.copy(start).add(end).multiplyScalar(0.5);
+      dummy.quaternion.setFromUnitVectors(up, dir);
+      dummy.scale.set(radius, len, radius);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(count, dummy.matrix);
+      if (typeof mesh.setColorAt === 'function') mesh.setColorAt(count, segment.color);
+      count += 1;
+    }
+    if (count <= 0) {
+      geom.dispose();
+      mat.dispose();
+      return null;
+    }
+    mesh.count = count;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.userData = Object.assign({}, mesh.userData || {}, {
+      type: 'metalBondDashInstances',
+      segmentCount: count,
+    });
+    // Bond interaction resolves through lightweight carrier objects instead.
+    mesh.raycast = () => {};
     return mesh;
   }
 
@@ -22489,6 +22571,25 @@
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.slice() : [];
     },
+    getCameraSnapshot: () => ({
+      mode: String(viewState && viewState.mode || ''),
+      camera: {
+        x: Number(camera && camera.position && camera.position.x) || 0,
+        y: Number(camera && camera.position && camera.position.y) || 0,
+        z: Number(camera && camera.position && camera.position.z) || 0,
+      },
+      target: {
+        x: Number(controls && controls.target && controls.target.x) || 0,
+        y: Number(controls && controls.target && controls.target.y) || 0,
+        z: Number(controls && controls.target && controls.target.z) || 0,
+      },
+      up: {
+        x: Number(camera && camera.up && camera.up.x) || 0,
+        y: Number(camera && camera.up && camera.up.y) || 0,
+        z: Number(camera && camera.up && camera.up.z) || 0,
+      },
+      controlsEnabled: !!(controls && controls.enabled !== false),
+    }),
     getBondCarrierSnapshots: () => {
       if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
       const out = [];
