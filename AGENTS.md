@@ -25,6 +25,8 @@ Primary capabilities:
 ## Project Layout
 - `Makefile`: local check/test entrypoints (`check`, `test-unit`, `test-e2e`, `test`).
 - `index.html`: UI shell, controls, and required script loading order.
+- `assets/app/css/edit-ui.css`: edit-mode adaptive menu, cue-row, popover, and operator-panel styling.
+- `assets/app/css/display-ui.css`: non-edit adaptive launcher, floating auxiliary inspector, and Appearance inspector styling.
 - `assets/app/js/app.js`: main app orchestration, scene lifecycle, style logic, preset API, file loading.
 - `assets/app/js/fragments.js`: fragment/molecule catalog loading, manifest support, and fragment builders.
 - `assets/app/js/parsers.js`: parsers (`parseCube`, `parseTwoComponentCube`, `parseXYZ`) including streaming tokenization.
@@ -49,9 +51,11 @@ Primary capabilities:
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders.
 - `assets/app/js/preset.js`: preset registry, import/export controller, and builder-extension preset state helpers.
 - `assets/app/js/structure-transport.js`: reproducible structure envelope export/import controller and `window.VibeMolStructure` API.
-- `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, embed file-loading controller, and XYZ text normalization helpers.
+- `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, embed file-loading controller, and XYZ text detection/normalization helpers.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
+- `assets/app/js/display-windows.js`: non-edit adaptive launcher/window catalog, exclusivity rules, positioning, and floating-inspector anchoring controller.
+- `assets/app/js/appearance-ui.js`: Appearance inspector chip/action-toggle binding plus conditional-section sync controller.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
 - `assets/app/js/edit-tools.js`: edit-tool state, selection coordination, and transient edit cleanup.
 - `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover state, visibility, and picking helpers.
@@ -80,6 +84,10 @@ Primary capabilities:
 ## Runtime Model
 No build step is required for the web app. It runs directly from static files.
 
+Required stylesheet order in `index.html`:
+1. `assets/app/css/edit-ui.css`
+2. `assets/app/css/display-ui.css`
+
 Required script order in `index.html`:
 1. `assets/vendor/js/three.min.js`
 2. `assets/vendor/js/orbit-controls.global.js`
@@ -104,21 +112,23 @@ Required script order in `index.html`:
 21. `assets/app/js/cloud-rendering.js`
 22. `assets/app/js/bond-editing.js`
 23. `assets/app/js/edit-ui.js`
-24. `assets/app/js/edit-placement.js`
-25. `assets/app/js/edit-tools.js`
-26. `assets/app/js/edit-gizmos.js`
-27. `assets/app/js/edit-transform.js`
-28. `assets/app/js/edit-gestures.js`
-29. `assets/app/js/coordination.js`
-30. `assets/app/js/geometry-inference.js`
-31. `assets/app/js/uff.js`
-32. `assets/app/js/uff-adapter.js`
-33. `assets/app/js/edit-halo.js`
-34. `assets/app/js/preset.js`
-35. `assets/app/js/structure-transport.js`
-36. `assets/app/js/file-loader.js`
-37. `assets/app/js/symmetry.js`
-38. `assets/app/js/app.js`
+24. `assets/app/js/display-windows.js`
+25. `assets/app/js/appearance-ui.js`
+26. `assets/app/js/edit-placement.js`
+27. `assets/app/js/edit-tools.js`
+28. `assets/app/js/edit-gizmos.js`
+29. `assets/app/js/edit-transform.js`
+30. `assets/app/js/edit-gestures.js`
+31. `assets/app/js/coordination.js`
+32. `assets/app/js/geometry-inference.js`
+33. `assets/app/js/uff.js`
+34. `assets/app/js/uff-adapter.js`
+35. `assets/app/js/edit-halo.js`
+36. `assets/app/js/preset.js`
+37. `assets/app/js/structure-transport.js`
+38. `assets/app/js/file-loader.js`
+39. `assets/app/js/symmetry.js`
+40. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -143,6 +153,8 @@ Required script order in `index.html`:
 - `window.VibeMolCloudRendering`
 - `window.VibeMolBondEditing`
 - `window.VibeMolEditUi`
+- `window.VibeMolDisplayWindows`
+- `window.VibeMolAppearanceUi`
 - `window.VibeMolEditPlacement`
 - `window.VibeMolEditTools`
 - `window.VibeMolEditGizmos`
@@ -188,17 +200,19 @@ Preset automation contract exposed globally:
 - ORCA `.hess` files are parsed for `$vibrational_frequencies` + `$normal_modes` and attached using the same matching logic.
 - Dropping an ORCA `.hess` without a same-stem `.xyz` in the same upload batch triggers an explicit warning popup before import continues.
 - Psi4 output logs (`.dat/.out`) are parsed from the harmonic table and create a molecule from the **last** `Geometry (in Angstrom)` block before attaching modes.
-- Molden files expose Molden-specific toolbar controls for MO selection and grid step/padding.
-- Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency) are shown in View panel when available.
+- Molden files expose an Orbitals floating inspector for MO selection and grid step/padding.
+- The non-edit adaptive launcher lives on-canvas above Appearance, shows only context-relevant windows (`Orbitals`, `View actions`, `View`, `Coordinates`, `Trajectory`, `Frequencies`), and enforces mutual exclusivity within that launcher set.
+- Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency) are shown in the Frequencies panel when available.
 - Trajectory playback and vibrational playback are mutually exclusive for one active file.
 - Outside edit mode, trajectory bond rendering is dynamic per frame and does not mutate stored `vol.bonds`.
 - In edit mode, the `Build` popover is toggled explicitly by the toolbar button or `/`, and the `Symmetry` popover is toggled explicitly by the toolbar button or `S`.
 - The `Symmetry` tool supports point-group analysis, RMS-based approximate fits, preview/apply/auto-apply symmetrization, and 3D symmetry-element visualization.
+- Appearance is a compact accordion inspector with an always-visible `Quick style` strip and collapsed `Molecule`, `Lighting & atmosphere`, `Camera`, `Surfaces`, and `Visibility` sections; `Surfaces` and its 2C/cloud subsections appear only when relevant.
 - Appearance controls include an optional `Shadows` toggle for molecule self-shadowing.
-- View controls include `COM → Origin`, principal-axis alignment, orthographic toggle, and `+X/+Y/+Z` camera presets; shortcut `R` shifts active molecule center of mass to origin.
-- `View` and `Coordinates` are separate floating windows; the coordinates window can toggle between angstrom and bohr display and supports inline atom editing.
+- View actions include `COM → Origin`, principal-axis alignment, and `+X/+Y/+Z` camera presets; shortcut `R` shifts active molecule center of mass to origin.
+- `View` and `Coordinates` are separate floating windows launched from the adaptive non-edit menu; the coordinates window can toggle between angstrom and bohr display and supports inline atom editing.
 - Malformed file imports (`.xyz`, `.cube`, `.2ccube`) are surfaced via popup errors.
-- Multi-frame `.xyz` files are parsed as trajectories and can be animated from View panel controls.
+- Multi-frame `.xyz` files are parsed as trajectories and can be animated from the Trajectory panel controls.
 - Autoiso caches per file/component/orbital and falls back to synchronous estimation when the worker path is unavailable.
 - Surface hover metrics are shown only for normalized orbital-like grids (`∫q² dV ≈ 1`) and are cached per surface.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
@@ -388,12 +402,15 @@ Fast JS syntax checks:
 - `node --check assets/app/js/file-loader.js`
 - `node --check assets/app/js/bond-editing.js`
 - `node --check assets/app/js/edit-ui.js`
+- `node --check assets/app/js/display-windows.js`
+- `node --check assets/app/js/appearance-ui.js`
 - `node --check assets/app/js/edit-state.js`
 - `node --check assets/app/js/edit-placement.js`
 - `node --check assets/app/js/edit-tools.js`
 - `node --check assets/app/js/edit-gizmos.js`
 - `node --check assets/app/js/edit-transform.js`
 - `node --check assets/app/js/edit-gestures.js`
+- `node --check assets/app/js/symmetry.js`
 - `node --check assets/app/js/app.js`
 
 Python API setup:
