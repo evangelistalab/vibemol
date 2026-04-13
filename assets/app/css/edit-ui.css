@@ -5,7 +5,7 @@
 #editAddPane {
   display: none;
   margin-top: 8px;
-  border-top: 1px solid var(--vm-color-legacy-border-strong);
+  border-top: 1px solid var(--vm-color-border-strong);
   padding-top: 8px;
 }
 
@@ -50,15 +50,19 @@
 }
 
 .editSelectionCueButton:hover {
-  border-color: rgba(168, 211, 255, 0.7);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 52%, white);
   background: rgba(66, 77, 94, 0.94);
 }
 
 .editSelectionCueButton.is-active {
-  border-color: rgba(168, 211, 255, 0.82);
-  background: linear-gradient(180deg, rgba(74, 129, 214, 0.98), rgba(48, 93, 171, 0.96));
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 58%, white);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vm-brand-accent) 82%, white),
+    color-mix(in srgb, var(--vm-brand-accent) 78%, black)
+  );
   color: #f8fbff;
-  box-shadow: 0 10px 24px rgba(16, 36, 76, 0.34), 0 0 0 4px rgba(103, 168, 255, 0.18);
+  box-shadow: 0 10px 24px rgba(16, 36, 76, 0.34), 0 0 0 4px color-mix(in srgb, var(--vm-brand-accent) 18%, transparent);
 }
 
 .editSelectionCueButton[hidden] {
@@ -105,12 +109,10 @@
   display: none;
   width: min(360px, calc(100vw - 24px));
   padding: 12px;
-  border: 1px solid rgba(110, 123, 148, 0.36);
+  border: 1px solid var(--vm-color-border-subtle);
   border-radius: 16px;
-  background: rgba(34, 39, 47, 0.96);
-  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--vm-color-surface-raised);
+  box-shadow: var(--vm-shadow-lg);
 }
 
 #editSelectionCoordinationCuePopover[aria-hidden="false"],
@@ -122,14 +124,14 @@
   margin: 0 0 10px;
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-heading);
-  color: #f2f6fb;
+  color: var(--vm-color-text-primary);
 }
 
 .editCoordinationCueHeaderSubtext {
   margin: -4px 0 10px;
   font-size: var(--vm-text-xs);
   font-weight: var(--vm-font-weight-strong);
-  color: rgba(206, 216, 230, 0.78);
+  color: var(--vm-color-text-secondary);
 }
 
 .editCoordinationCueGrid {
@@ -159,9 +161,9 @@
 }
 
 .editCoordinationCueOption.is-active {
-  border-color: rgba(122, 172, 255, 0.76);
-  background: rgba(56, 76, 108, 0.96);
-  box-shadow: 0 0 0 3px rgba(103, 168, 255, 0.16);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 76%, transparent);
+  background: color-mix(in srgb, var(--vm-brand-accent) 20%, rgba(56, 76, 108, 0.96));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vm-brand-accent) 16%, transparent);
 }
 
 .editCoordinationCuePreview {
@@ -232,15 +234,15 @@
   min-width: 188px;
   max-width: min(260px, calc(100vw - 24px));
   padding: 6px 8px;
-  border: 1px solid rgba(117, 129, 150, 0.28);
+  border: 1px solid var(--vm-color-border);
   border-radius: 12px;
-  background: rgba(48, 53, 61, 0.92);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
-  color: #f2f5fa;
+  background: color-mix(in srgb, var(--vm-color-surface-raised) 92%, transparent);
+  box-shadow: var(--vm-shadow-lg);
+  color: var(--vm-color-text-primary);
   cursor: pointer;
   text-align: left;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
 }
 
 .adaptiveEditItem[hidden],
@@ -249,14 +251,23 @@
 }
 
 .adaptiveEditItem:hover {
-  border-color: rgba(145, 156, 176, 0.42);
-  background: rgba(56, 62, 71, 0.96);
+  border-color: var(--vm-color-border-strong);
+  background: var(--vm-color-surface-panel);
 }
 
 .adaptiveEditItem.active {
-  border-color: rgba(122, 172, 255, 0.72);
-  background: rgba(56, 76, 108, 0.95);
-  box-shadow: 0 14px 30px rgba(18, 30, 54, 0.34);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 72%, transparent);
+  background: color-mix(in srgb, var(--vm-brand-accent) 14%, var(--vm-color-surface-raised));
+  box-shadow: 0 14px 30px rgba(18, 30, 54, 0.18);
+}
+
+.adaptiveEditItem[data-static="true"] {
+  cursor: default;
+}
+
+.adaptiveEditItem[data-static="true"]:hover {
+  border-color: var(--vm-color-border);
+  background: color-mix(in srgb, var(--vm-color-surface-raised) 92%, transparent);
 }
 
 #editAdaptiveAddAtomPopover,
@@ -266,12 +277,10 @@
   display: none;
   width: min(360px, calc(100vw - 24px));
   padding: 12px 14px;
-  border: 1px solid rgba(117, 129, 150, 0.28);
+  border: 1px solid var(--vm-color-border-subtle);
   border-radius: 12px;
-  background: rgba(48, 53, 61, 0.96);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--vm-color-surface-raised);
+  box-shadow: var(--vm-shadow-lg);
   z-index: 35;
 }
 
@@ -288,8 +297,8 @@
   top: 0;
   width: 0;
   height: 0;
-  border: 1px solid rgba(83, 151, 255, 0.9);
-  background: rgba(83, 151, 255, 0.14);
+  border: 1px solid color-mix(in srgb, var(--vm-brand-accent) 90%, transparent);
+  background: color-mix(in srgb, var(--vm-brand-accent) 14%, transparent);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   pointer-events: none;
   z-index: 35;
@@ -305,11 +314,11 @@
   flex-direction: column;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid rgba(117, 129, 150, 0.28);
+  border: 1px solid var(--vm-color-border-subtle);
   border-radius: 14px;
-  background: rgba(48, 53, 61, 0.96);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
-  color: #f2f5fa;
+  background: var(--vm-color-surface-raised);
+  box-shadow: var(--vm-shadow-lg);
+  color: var(--vm-color-text-primary);
   z-index: 36;
   pointer-events: auto;
 }
@@ -321,7 +330,7 @@
 #bondOrderPopupTitle {
   font-size: var(--vm-text-xs);
   font-weight: var(--vm-font-weight-heading);
-  color: #f2f5fa;
+  color: var(--vm-color-text-primary);
 }
 
 #bondOrderPopupButtons {
@@ -351,13 +360,13 @@
 
 #bondOrderPopupButtons button:hover {
   background: rgba(24, 33, 51, 0.96);
-  border-color: rgba(113, 168, 255, 0.64);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 64%, transparent);
 }
 
 #bondOrderPopupButtons button.active {
   background: rgba(15, 23, 42, 0.98);
-  border-color: rgba(53, 130, 246, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(103, 176, 255, 0.28);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 96%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 28%, transparent);
 }
 
 #editAddAtomOperatorPanel,
@@ -470,8 +479,8 @@
 
 .editAddAtomOperatorCoord:focus {
   outline: none;
-  border-color: rgba(122, 172, 255, 0.72);
-  box-shadow: 0 0 0 2px rgba(122, 172, 255, 0.18);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 72%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vm-brand-accent) 18%, transparent);
 }
 
 .editAddAtomOperatorFoot {
@@ -561,8 +570,8 @@
   width: 28px;
   height: 28px;
   border-radius: 10px;
-  background: rgba(83, 151, 255, 0.16);
-  color: #8cb8ff;
+  background: color-mix(in srgb, var(--vm-brand-accent) 16%, transparent);
+  color: color-mix(in srgb, var(--vm-brand-accent) 72%, white);
   font-size: var(--vm-text-lg);
 }
 
@@ -601,11 +610,15 @@
 }
 
 #editSymmetryExactResultCard.is-updated {
-  border-color: rgba(110, 173, 255, 0.88);
-  background: linear-gradient(180deg, rgba(31, 52, 88, 0.94), rgba(22, 35, 58, 0.94));
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 88%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vm-brand-accent) 22%, rgba(31, 52, 88, 0.94)),
+    color-mix(in srgb, var(--vm-brand-accent) 18%, rgba(22, 35, 58, 0.94))
+  );
   box-shadow:
-    inset 0 0 0 1px rgba(154, 202, 255, 0.2),
-    0 0 0 1px rgba(75, 136, 237, 0.18),
+    inset 0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 20%, white),
+    0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 18%, transparent),
     0 8px 20px rgba(18, 43, 86, 0.24);
   transform: translateY(-1px);
 }
@@ -627,7 +640,7 @@
 }
 
 .editSymmetryInlineIcon {
-  color: #8cb8ff;
+  color: color-mix(in srgb, var(--vm-brand-accent) 72%, white);
 }
 
 #editSymmetryToleranceSection,
@@ -653,7 +666,7 @@
   font-weight: var(--vm-font-weight-heading);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #d8dfeb;
+  color: var(--vm-color-text-label);
 }
 
 #editSymmetryToleranceControls {
@@ -686,23 +699,27 @@
 }
 
 .editSymmetryCandidateBtn:hover {
-  border-color: rgba(113, 168, 255, 0.64);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 64%, transparent);
   background: linear-gradient(180deg, rgba(30, 40, 58, 0.96), rgba(24, 33, 51, 0.94));
 }
 
 .editSymmetryCandidateBtn.is-current {
-  border-color: rgba(83, 151, 255, 0.82);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 82%, transparent);
   box-shadow:
-    inset 0 0 0 1px rgba(110, 173, 255, 0.18),
-    0 0 0 1px rgba(64, 128, 232, 0.12);
+    inset 0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 18%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 12%, transparent);
 }
 
 .editSymmetryCandidateBtn.is-active {
-  border-color: rgba(83, 151, 255, 0.96);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 96%, transparent);
   box-shadow:
-    inset 0 0 0 1px rgba(110, 173, 255, 0.28),
-    0 0 0 1px rgba(64, 128, 232, 0.18);
-  background: linear-gradient(180deg, rgba(31, 46, 72, 0.98), rgba(24, 33, 51, 0.98));
+    inset 0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 28%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 18%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vm-brand-accent) 18%, rgba(31, 46, 72, 0.98)),
+    rgba(24, 33, 51, 0.98)
+  );
 }
 
 .editSymmetryCandidateIcon {
@@ -711,8 +728,8 @@
   width: 16px;
   height: 16px;
   border-radius: 6px;
-  background: rgba(83, 151, 255, 0.14);
-  color: #8cb8ff;
+  background: color-mix(in srgb, var(--vm-brand-accent) 14%, transparent);
+  color: color-mix(in srgb, var(--vm-brand-accent) 72%, white);
   font-size: var(--vm-text-xs);
 }
 
@@ -796,18 +813,26 @@
 }
 
 .editSymmetryActionBtn:hover:not([disabled]) {
-  border-color: rgba(113, 168, 255, 0.56);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 56%, transparent);
   background: linear-gradient(180deg, rgba(31, 40, 58, 0.96), rgba(22, 30, 44, 0.94));
 }
 
 .editSymmetryActionBtn.is-primary {
-  border-color: rgba(85, 147, 247, 0.72);
-  background: linear-gradient(180deg, rgba(66, 120, 214, 0.96), rgba(53, 99, 184, 0.96));
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 72%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vm-brand-accent) 84%, white),
+    color-mix(in srgb, var(--vm-brand-accent) 78%, black)
+  );
   color: #f8fbff;
 }
 
 .editSymmetryActionBtn.is-primary:hover:not([disabled]) {
-  background: linear-gradient(180deg, rgba(78, 132, 226, 0.98), rgba(59, 109, 196, 0.98));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vm-brand-accent) 88%, white),
+    color-mix(in srgb, var(--vm-brand-accent) 82%, black)
+  );
 }
 
 .editSymmetryActionBtn[disabled] {
@@ -818,9 +843,6 @@
 #editBuildSearchLabel {
   display: block;
   margin: 0;
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
-  color: #d8dfeb;
 }
 
 #editBuildSearchRow {
@@ -833,11 +855,11 @@
 #editBuildSearch {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--vm-color-legacy-border-soft);
+  border: 1px solid var(--vm-color-border-soft);
   border-radius: 10px;
   padding: 8px 10px;
-  background: var(--vm-color-legacy-muted-chip-3);
-  color: var(--vm-color-legacy-text-on-dark);
+  background: var(--vm-color-surface-chip-strong);
+  color: var(--vm-color-text-primary);
 }
 
 #editBuildSearchShortcut {
@@ -861,11 +883,7 @@
 }
 
 .editBuildPaletteSectionTitle {
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #d8dfeb;
+  margin: 0;
 }
 
 #editBuildAtomsHost,
@@ -909,14 +927,14 @@
   flex: 0 0 auto;
   font-size: var(--vm-text-lg);
   line-height: 1;
-  color: rgba(223, 231, 242, 0.9);
+  color: var(--vm-color-text-secondary);
 }
 
 .adaptiveEditItemLabel {
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-heading);
   line-height: 1.1;
-  color: #f5f7fb;
+  color: var(--vm-color-text-primary);
   white-space: nowrap;
 }
 
@@ -924,7 +942,7 @@
   font-size: 10px;
   font-weight: var(--vm-font-weight-strong);
   line-height: 1.25;
-  color: rgba(214, 221, 233, 0.78);
+  color: var(--vm-color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -944,23 +962,7 @@
 }
 
 .adaptiveShortcutKey {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
   height: 24px;
-  padding: 0;
-  border-radius: 8px;
-  background: rgba(187, 195, 208, 0.14);
-  border: 1px solid rgba(166, 176, 191, 0.2);
-  color: rgba(221, 227, 236, 0.82);
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-strong);
-  font-family: var(--shortcut-key-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
-  font-variant-ligatures: none;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
 }
 
 #editAddModeToggle {
@@ -972,9 +974,9 @@
 
 #editAddModeToggle button {
   appearance: none;
-  border: 1px solid var(--vm-color-legacy-border-soft);
-  background: var(--vm-color-legacy-dark-surface);
-  color: var(--vm-color-legacy-text-on-dark);
+  border: 1px solid var(--vm-color-border-soft);
+  background: var(--vm-color-surface-panel);
+  color: var(--vm-color-text-primary);
   border-radius: 8px;
   padding: 5px 8px;
   cursor: pointer;
@@ -1002,19 +1004,17 @@
 
 #editAddPane label {
   display: block;
-  font-size: var(--vm-text-sm);
-  color: #a9bdd6;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 #editAddSearch {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--vm-color-legacy-border-soft);
+  border: 1px solid var(--vm-color-border-soft);
   border-radius: 8px;
   padding: 6px 8px;
-  background: var(--vm-color-legacy-muted-chip-3);
-  color: var(--vm-color-legacy-text-on-dark);
+  background: var(--vm-color-surface-chip-strong);
+  color: var(--vm-color-text-primary);
 }
 
 .editAddToggleRow {
@@ -1023,8 +1023,7 @@
   gap: 8px;
   margin-top: 9px;
   margin-bottom: 0 !important;
-  color: #c8d8ec !important;
-  font-size: var(--vm-text-sm);
+  color: var(--vm-color-text-secondary) !important;
 }
 
 .editAddToggleRow input[type="checkbox"] {
@@ -1034,31 +1033,31 @@
 #editFragmentSearch {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--vm-color-legacy-border-soft);
+  border: 1px solid var(--vm-color-border-soft);
   border-radius: 8px;
   padding: 6px 8px;
-  background: var(--vm-color-legacy-muted-chip-3);
-  color: var(--vm-color-legacy-text-on-dark);
+  background: var(--vm-color-surface-chip-strong);
+  color: var(--vm-color-text-primary);
 }
 
 #editMoleculeSearch {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--vm-color-legacy-border-soft);
+  border: 1px solid var(--vm-color-border-soft);
   border-radius: 8px;
   padding: 6px 8px;
-  background: var(--vm-color-legacy-muted-chip-3);
-  color: var(--vm-color-legacy-text-on-dark);
+  background: var(--vm-color-surface-chip-strong);
+  color: var(--vm-color-text-primary);
 }
 
 .editPopupSelect {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--vm-color-legacy-border-soft);
+  border: 1px solid var(--vm-color-border-soft);
   border-radius: 10px;
   padding: 8px 10px;
-  background: var(--vm-color-legacy-muted-chip-3);
-  color: var(--vm-color-legacy-text-on-dark);
+  background: var(--vm-color-surface-chip-strong);
+  color: var(--vm-color-text-primary);
 }
 
 #editAddQuick,
@@ -1074,13 +1073,13 @@
 #editFragmentQuick button,
 #editMoleculeQuick button {
   appearance: none;
-  border: 1px solid var(--vm-color-legacy-border-soft);
+  border: 1px solid var(--vm-color-border-soft);
   border-radius: 999px;
   padding: 3px 8px;
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-heading);
-  background: var(--vm-color-legacy-dark-surface);
-  color: var(--vm-color-legacy-secondary-active-fg);
+  background: var(--vm-color-surface-panel);
+  color: var(--vm-color-text-primary);
   cursor: pointer;
 }
 
@@ -1090,8 +1089,8 @@
   border-width: 2px;
   border-color: var(--vm-color-accent-primary);
   box-shadow:
-    0 0 0 2px rgba(74, 163, 255, 0.28),
-    0 0 0 1px rgba(74, 163, 255, 0.4) inset;
+    0 0 0 2px color-mix(in srgb, var(--vm-brand-accent) 28%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 40%, transparent) inset;
 }
 
 #editAddQuick button.search-active,
@@ -1112,14 +1111,14 @@
 #editAdaptiveAddAtomPopover.is-search-navigating #editFragmentQuick button.active:not(.search-active),
 #editAdaptiveAddAtomPopover.is-search-navigating #editMoleculeQuick button.active:not(.search-active) {
   border-width: 1px;
-  border-color: var(--vm-color-legacy-border-soft);
+  border-color: var(--vm-color-border-soft);
   box-shadow: none;
 }
 
 #editTransformCurrent {
   margin-top: 7px;
   font-size: var(--vm-text-sm);
-  color: #c8d8ec;
+  color: var(--vm-color-text-secondary);
   min-height: 1.4em;
 }
 
@@ -1131,13 +1130,13 @@
 
 #editMoleculeAlign button {
   appearance: none;
-  border: 1px solid var(--vm-color-legacy-border-soft);
+  border: 1px solid var(--vm-color-border-soft);
   border-radius: 8px;
   padding: 5px 8px;
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-heading);
-  background: var(--vm-color-legacy-dark-surface);
-  color: var(--vm-color-legacy-secondary-active-fg);
+  background: var(--vm-color-surface-panel);
+  color: var(--vm-color-text-on-accent);
   cursor: pointer;
   min-width: 0;
   flex: 1 1 0;
@@ -1145,7 +1144,7 @@
 
 #editSnapPane {
   margin-top: 8px;
-  border-top: 1px solid var(--vm-color-legacy-border-strong);
+  border-top: 1px solid var(--vm-color-border-strong);
   padding-top: 8px;
 }
 

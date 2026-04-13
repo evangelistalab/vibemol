@@ -868,14 +868,45 @@ def ensure_build_popover_open(page, *, focus_search: bool = False) -> None:
         """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
     )
     if not is_open:
-        page.locator('#editAdaptiveAddAtomBtn').click()
+        can_click_button = page.evaluate(
+            """() => {
+                const btn = document.getElementById('editAdaptiveAddAtomBtn');
+                return !!btn && !btn.hidden && getComputedStyle(btn).display !== 'none';
+            }"""
+        )
+        if can_click_button:
+            page.locator('#editAdaptiveAddAtomBtn').click()
+        else:
+            page.keyboard.press('/')
         page.wait_for_function(
             """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
         )
     if focus_search:
-        page.locator('#editBuildSearch').click()
+        page.evaluate(
+            """() => {
+                const input = document.getElementById('editBuildSearch');
+                if (input && typeof input.focus === 'function') input.focus();
+            }"""
+        )
         page.wait_for_function(
             """() => document.activeElement === document.getElementById('editBuildSearch')"""
+        )
+
+
+def ensure_build_popover_closed(page) -> None:
+    page.wait_for_function("""() => !!document.getElementById('editAdaptiveAddAtomPopover')""")
+    is_open = page.evaluate(
+        """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
+    )
+    if is_open:
+        page.evaluate(
+            """() => {
+                const btn = document.getElementById('editAdaptiveAddAtomBtn');
+                if (btn && typeof btn.click === 'function') btn.click();
+            }"""
+        )
+        page.wait_for_function(
+            """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
         )
 
 
@@ -1148,21 +1179,45 @@ def main() -> int:
                         const el = document.getElementById(id);
                         return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
                     };
+                    const labelOf = (id) => {
+                        const el = document.getElementById(id);
+                        const label = el ? el.querySelector('.adaptiveEditItemLabel') : null;
+                        return label ? (label.textContent || '').trim() : '';
+                    };
+                    const keyOf = (id) => {
+                        const el = document.getElementById(id);
+                        const key = el ? el.querySelector('.adaptiveShortcutKey') : null;
+                        return key ? (key.textContent || '').trim() : '';
+                    };
                     return {
                         build: isShown('editAdaptiveAddAtomBtn'),
-                        cleanStructure: isShown('editAdaptiveCleanStructureBtn'),
+                        bondOrder: isShown('editAdaptiveSymmetryBtn'),
+                        toggleH: isShown('editAdaptiveCleanStructureBtn'),
                         shiftCom: isShown('editAdaptiveShiftComBtn'),
                         alignPrincipal: isShown('editAdaptiveAlignPrincipalBtn'),
+                        buildLabel: labelOf('editAdaptiveAddAtomBtn'),
+                        bondOrderLabel: labelOf('editAdaptiveSymmetryBtn'),
+                        toggleHLabel: labelOf('editAdaptiveCleanStructureBtn'),
+                        buildKey: keyOf('editAdaptiveAddAtomBtn'),
+                        bondOrderKey: keyOf('editAdaptiveSymmetryBtn'),
+                        toggleHKey: keyOf('editAdaptiveCleanStructureBtn'),
                     };
                 }"""
             )
             if empty_edit_visibility != {
                 'build': True,
-                'cleanStructure': False,
+                'bondOrder': True,
+                'toggleH': True,
                 'shiftCom': False,
                 'alignPrincipal': False,
+                'buildLabel': 'Elements',
+                'bondOrderLabel': 'Bond order',
+                'toggleHLabel': 'Toggle H',
+                'buildKey': '/',
+                'bondOrderKey': '1-4',
+                'toggleHKey': 'Space',
             }:
-                raise AssertionError(f'Unexpected empty edit menu visibility: {empty_edit_visibility}')
+                raise AssertionError(f'Unexpected build adaptive menu state: {empty_edit_visibility}')
 
             # Gesture void-click places one carbon, but the first placed atom should not stay selected.
             x, y = canvas_point(page)
@@ -1324,17 +1379,26 @@ def main() -> int:
 
             # After the first atom exists, the advanced drawer should expose atom-dependent tools.
             ensure_advanced_drawer_open(page)
+            ensure_build_popover_closed(page)
             page.wait_for_function(
                 """() => {
-                    const ids = [
-                      'editAdaptiveCleanStructureBtn',
-                      'editAdaptiveShiftComBtn',
-                      'editAdaptiveAlignPrincipalBtn',
-                    ];
-                    return ids.every((id) => {
+                    const isShown = (id) => {
                       const el = document.getElementById(id);
                       return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
-                    });
+                    };
+                    const labelOf = (id) => {
+                      const el = document.getElementById(id);
+                      const label = el ? el.querySelector('.adaptiveEditItemLabel') : null;
+                      return label ? (label.textContent || '').trim() : '';
+                    };
+                    return isShown('editAdaptiveSymmetryBtn')
+                      && isShown('editAdaptiveCleanStructureBtn')
+                      && isShown('editAdaptiveAlignPrincipalBtn')
+                      && !isShown('editAdaptiveAddAtomBtn')
+                      && !isShown('editAdaptiveShiftComBtn')
+                      && labelOf('editAdaptiveSymmetryBtn') === 'Symmetry'
+                      && labelOf('editAdaptiveCleanStructureBtn') === 'Optimize'
+                      && labelOf('editAdaptiveAlignPrincipalBtn') === 'Align';
                 }"""
             )
             ensure_advanced_drawer_closed(page)
@@ -1550,17 +1614,22 @@ def main() -> int:
             page.wait_for_function("() => !document.getElementById('emptyState') || getComputedStyle(document.getElementById('emptyState')).display === 'none'")
             page.wait_for_function(
                 """() => {
-                    const addAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
-                    return !!addAtomBtn
-                      && !addAtomBtn.hidden;
-                }"""
-            )
-            page.locator('#editAdaptiveAddAtomBtn').click()
-            page.wait_for_function(
-                """() => {
-                    const atomBtn = document.getElementById('editAdaptiveAddAtomBtn');
-                    return !!atomBtn
-                      && atomBtn.classList.contains('active');
+                    const isShown = (id) => {
+                      const el = document.getElementById(id);
+                      return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
+                    };
+                    const labelOf = (id) => {
+                      const el = document.getElementById(id);
+                      const label = el ? el.querySelector('.adaptiveEditItemLabel') : null;
+                      return label ? (label.textContent || '').trim() : '';
+                    };
+                    return !isShown('editAdaptiveAddAtomBtn')
+                      && isShown('editAdaptiveSymmetryBtn')
+                      && isShown('editAdaptiveCleanStructureBtn')
+                      && isShown('editAdaptiveAlignPrincipalBtn')
+                      && labelOf('editAdaptiveSymmetryBtn') === 'Symmetry'
+                      && labelOf('editAdaptiveCleanStructureBtn') === 'Optimize'
+                      && labelOf('editAdaptiveAlignPrincipalBtn') === 'Align';
                 }"""
             )
 

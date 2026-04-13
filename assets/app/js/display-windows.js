@@ -37,6 +37,7 @@
     const positionFloatingPopover = deps && deps.positionFloatingPopover;
     const updateAdaptiveMenuUi = deps && deps.updateAdaptiveMenuUi;
     const getCurrentMode = deps && deps.getCurrentMode;
+    const getDisplayModeValue = deps && deps.getDisplayModeValue;
     const getEditModeValue = deps && deps.getEditModeValue;
     const getCurrentRecord = deps && deps.getCurrentRecord;
     const getTrajectoryEnabled = deps && deps.getTrajectoryEnabled;
@@ -161,7 +162,11 @@
       const showCoords = hasAtoms;
       const showTrajectory = !!getTrajectoryEnabled();
       const showVibration = !!getVibrationEnabled();
-      const isVisible = getCurrentMode() !== getEditModeValue() && (showMolden || showViewActions || showView || showCoords || showTrajectory || showVibration);
+      const currentMode = getCurrentMode();
+      const isVisible = (
+        (typeof getDisplayModeValue === 'function' ? currentMode === getDisplayModeValue() : currentMode !== getEditModeValue())
+        && (showMolden || showViewActions || showView || showCoords || showTrajectory || showVibration)
+      );
       return {
         showMolden,
         showViewActions,

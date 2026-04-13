@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.1';
+  const APP_VERSION = '0.8.2';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -47,8 +47,8 @@
     irSelectedBand: 'rgba(255, 157, 33, 0.22)',
     irSelectedText: '#ffb155',
     irAxisText: '#92a5bf',
-    editBadgeDisplayBorder: '#4aa3ff',
-    editBadgeDisplayBg: 'rgba(74, 163, 255, 0.18)',
+    editBadgeDisplayBorder: '#3b5bd9',
+    editBadgeDisplayBg: 'rgba(59, 91, 217, 0.18)',
     editBadgeAddBorder: '#57cd8a',
     editBadgeAddBg: 'rgba(87, 205, 138, 0.2)',
     editBadgeTransformBorder: '#b790ff',
@@ -61,7 +61,7 @@
     quickPickFallbackBg: '#1a2230',
     quickPickFallbackFg: '#eef6ff',
     measurementLabelBg: 'rgba(20,22,24,0.85)',
-    measurementLabelBgHover: 'rgba(20,112,255,0.94)',
+    measurementLabelBgHover: 'rgba(59, 91, 217, 0.94)',
     measurementLabelText: '#e8eef6',
     atomLabelTextDefault: '#f3f7ff',
   });
@@ -855,6 +855,10 @@
   let selectionMetalBondingCuePopoverRenderKey = '';
   let editAdaptiveMenuEl = null;
   let editAdaptiveMenuAutoHideController = null;
+  let modeAssistMenuEl = null;
+  let modeAssistMenuAutoHideController = null;
+  let modeAssistItemEls = [];
+  let editHaloController = null;
   let editAdaptiveAddAtomBtn = null;
   let editAdaptiveAddAtomMetaEl = null;
   let editAdaptiveSymmetryBtn = null;
@@ -5690,8 +5694,20 @@
   const vibrationPanel = document.getElementById('vibrationPanel');
   const vibrationResetBtn = document.getElementById('vibrationResetBtn');
   const vibrationPanelClose = document.getElementById('vibrationPanelClose');
+  const helpFab = document.getElementById('helpFab');
+  modeAssistMenuEl = document.getElementById('modeAssistMenu');
+  modeAssistItemEls = [
+    document.getElementById('modeAssistItem1'),
+    document.getElementById('modeAssistItem2'),
+    document.getElementById('modeAssistItem3'),
+  ];
   const helpOverlay = document.getElementById('helpOverlay');
+  const helpModal = document.getElementById('helpModal');
   const helpClose = document.getElementById('helpClose');
+  const helpResetToastsBtn = document.getElementById('helpResetToasts');
+  const modeToastEl = document.getElementById('modeToast');
+  const modeToastBodyEl = document.getElementById('modeToastBody');
+  const modeToastDismissBtn = document.getElementById('modeToastDismiss');
   const versionText = document.getElementById('versionText');
   if (versionText) versionText.textContent = APP_VERSION;
   const toolbarVersion = document.getElementById('toolbarVersion');
@@ -5722,9 +5738,17 @@
   const tgtY = document.getElementById('tgtY');
   const tgtZ = document.getElementById('tgtZ');
   const autoRot = document.getElementById('autoRot');
+  const rotSpeedRange = document.getElementById('rotSpeedRange');
   const rotSpeed = document.getElementById('rotSpeed');
+  const dampRange = document.getElementById('dampRange');
   const damp = document.getElementById('damp');
+  const autoRotSpeedRange = document.getElementById('autoRotSpeedRange');
   const autoRotSpeed = document.getElementById('autoRotSpeed');
+  const viewAutoRotateSpeedRow = document.getElementById('viewAutoRotateSpeedRow');
+  const viewCopyShiftBtn = document.getElementById('viewCopyShiftBtn');
+  const viewCopyCamBtn = document.getElementById('viewCopyCamBtn');
+  const viewCopyTargetBtn = document.getElementById('viewCopyTargetBtn');
+  const viewPanelToast = document.getElementById('viewPanelToast');
   const trajectoryRow = document.getElementById('trajectoryRow');
   const trajectoryRow2 = document.getElementById('trajectoryRow2');
   const trajectoryPlayBtn = document.getElementById('trajectoryPlayBtn');
@@ -5793,6 +5817,397 @@
   const moldenMoRow = document.getElementById('moldenMoRow');
   const moldenMoSelect = document.getElementById('moldenMoSelect');
   const moldenMoSummary = document.getElementById('moldenMoSummary');
+
+  const viewNumberInputRegistry = new WeakMap();
+  const viewSliderRegistry = new WeakMap();
+  const VIEW_COPY_ICON_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="3" width="8" height="8" rx="1.5"></rect><path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path></svg>';
+  const VIEW_CHECK_ICON_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.25L6.5 11.25L12.5 5.25"></path></svg>';
+  let viewPanelToastTimer = 0;
+
+  /**
+   * Parse a finite step value from an input or fallback.
+   * @param {HTMLInputElement|null} input
+   * @param {number} fallback
+   * @returns {number}
+   */
+  function getViewNumericStep(input, fallback = 1) {
+    const step = Number(input && input.step);
+    return Number.isFinite(step) && step > 0 ? step : fallback;
+  }
+
+  /**
+   * Clamp a numeric value to optional min/max bounds.
+   * @param {number} value
+   * @param {number|null} min
+   * @param {number|null} max
+   * @returns {number}
+   */
+  function clampViewNumericValue(value, min = null, max = null) {
+    let next = Number(value);
+    if (!Number.isFinite(next)) next = 0;
+    if (Number.isFinite(min)) next = Math.max(Number(min), next);
+    if (Number.isFinite(max)) next = Math.min(Number(max), next);
+    return next;
+  }
+
+  /**
+   * Dispatch a bubbling input/change pair for a hidden control.
+   * @param {HTMLInputElement|null} input
+   */
+  function emitViewNumericInputEvents(input) {
+    if (!input) return;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  class VmNumberInput {
+    /**
+     * @param {HTMLDivElement} root
+     * @param {{ onChange?: ((value:number)=>void) }} [options]
+     */
+    constructor(root, options = {}) {
+      this.root = root;
+      this.input = root ? root.querySelector('.vm-num__input') : null;
+      this.valueEl = root ? root.querySelector('.vm-num__value') : null;
+      this.prefixEl = root ? root.querySelector('.vm-num__prefix') : null;
+      this.onChange = typeof options.onChange === 'function' ? options.onChange : null;
+      this.precision = Math.max(0, Number(root && root.dataset && root.dataset.precision) || 3);
+      this.dragState = null;
+      this.boundMouseMove = (evt) => this.handleMouseMove(evt);
+      this.boundMouseUp = () => this.handleMouseUp();
+      if (!(this.root && this.input && this.valueEl)) return;
+      this.root.tabIndex = this.input.disabled ? -1 : 0;
+      this.input.tabIndex = -1;
+      this.root.setAttribute('role', 'spinbutton');
+      this.root.setAttribute(
+        'aria-label',
+        String(root.dataset.label || this.input.getAttribute('aria-label') || this.input.title || this.input.id || 'Value')
+      );
+      this.root.addEventListener('mousedown', (evt) => this.handleMouseDown(evt));
+      this.root.addEventListener('keydown', (evt) => this.handleKeyDown(evt));
+      this.root.addEventListener('focus', () => {
+        if (!this.dragState && document.activeElement === this.root) {
+          this.input.focus({ preventScroll: true });
+        }
+      });
+      this.root.addEventListener('focusin', () => this.root.classList.add('is-focused'));
+      this.root.addEventListener('focusout', () => {
+        if (!this.root.contains(document.activeElement)) this.root.classList.remove('is-focused');
+      });
+      this.input.addEventListener('keydown', (evt) => this.handleKeyDown(evt));
+      this.input.addEventListener('input', () => this.syncFromInput());
+      this.input.addEventListener('change', () => this.syncFromInput());
+      this.syncFromInput();
+    }
+
+    getValue() {
+      const value = Number(this.input && this.input.value);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    getMin() {
+      const raw = this.input ? String(this.input.min || '').trim() : '';
+      if (!raw) return null;
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    getMax() {
+      const raw = this.input ? String(this.input.max || '').trim() : '';
+      if (!raw) return null;
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    getStep() {
+      return getViewNumericStep(this.input, 1);
+    }
+
+    format(value) {
+      const next = Number(value);
+      return (Number.isFinite(next) ? next : 0).toFixed(this.precision);
+    }
+
+    syncFromInput() {
+      if (!(this.input && this.valueEl && this.root)) return;
+      const value = clampViewNumericValue(this.getValue(), this.getMin(), this.getMax());
+      this.valueEl.textContent = this.format(value);
+      this.root.tabIndex = this.input.disabled ? -1 : 0;
+      this.root.classList.toggle('is-disabled', !!this.input.disabled);
+      this.root.setAttribute('aria-disabled', this.input.disabled ? 'true' : 'false');
+      this.root.setAttribute('aria-valuenow', this.format(value));
+      const min = this.getMin();
+      const max = this.getMax();
+      if (Number.isFinite(min)) this.root.setAttribute('aria-valuemin', String(min));
+      else this.root.removeAttribute('aria-valuemin');
+      if (Number.isFinite(max)) this.root.setAttribute('aria-valuemax', String(max));
+      else this.root.removeAttribute('aria-valuemax');
+    }
+
+    /**
+     * @param {number} value
+     * @param {{ emit?: boolean }} [options]
+     */
+    setValue(value, options = {}) {
+      if (!this.input) return;
+      const next = clampViewNumericValue(value, this.getMin(), this.getMax());
+      this.input.value = this.format(next);
+      this.syncFromInput();
+      if (options && options.emit) {
+        if (this.onChange) this.onChange(next);
+        emitViewNumericInputEvents(this.input);
+      }
+    }
+
+    setDisabled(disabled) {
+      if (!this.input) return;
+      this.input.disabled = !!disabled;
+      this.syncFromInput();
+    }
+
+    stepBy(multiplier = 1) {
+      const delta = this.getStep() * Number(multiplier || 1);
+      this.setValue(this.getValue() + delta, { emit: true });
+    }
+
+    handleKeyDown(evt) {
+      if (!this.input || this.input.disabled) return;
+      if (evt.key === 'ArrowUp' || evt.key === 'ArrowRight') {
+        evt.preventDefault();
+        this.stepBy(evt.shiftKey ? 10 : 1);
+      } else if (evt.key === 'ArrowDown' || evt.key === 'ArrowLeft') {
+        evt.preventDefault();
+        this.stepBy(evt.shiftKey ? -10 : -1);
+      }
+    }
+
+    handleMouseDown(evt) {
+      if (!this.input || this.input.disabled || evt.button !== 0) return;
+      evt.preventDefault();
+      this.root.focus();
+      this.dragState = {
+        startX: Number(evt.clientX) || 0,
+        startValue: this.getValue(),
+        moved: false,
+      };
+      document.addEventListener('mousemove', this.boundMouseMove);
+      document.addEventListener('mouseup', this.boundMouseUp);
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'ew-resize';
+    }
+
+    handleMouseMove(evt) {
+      if (!this.dragState) return;
+      const dx = (Number(evt.clientX) || 0) - this.dragState.startX;
+      if (Math.abs(dx) >= 1) this.dragState.moved = true;
+      const modifier = evt.shiftKey ? 10 : (evt.altKey ? 0.1 : 1);
+      const next = this.dragState.startValue + dx * this.getStep() * modifier;
+      this.setValue(next, { emit: true });
+    }
+
+    handleMouseUp() {
+      if (!this.dragState) return;
+      this.dragState = null;
+      document.removeEventListener('mousemove', this.boundMouseMove);
+      document.removeEventListener('mouseup', this.boundMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    }
+  }
+
+  class VmSlider {
+    /**
+     * @param {HTMLDivElement} root
+     */
+    constructor(root) {
+      this.root = root;
+      this.range = root ? root.querySelector('.vm-slider__range') : null;
+      this.numberRoot = root ? root.querySelector('.vm-num') : null;
+      this.numberInput = this.numberRoot ? this.numberRoot.querySelector('.vm-num__input') : null;
+      this.number = this.numberInput ? viewNumberInputRegistry.get(this.numberInput) : null;
+      this.syncing = false;
+      if (!(this.root && this.range && this.number && this.numberInput)) return;
+      const trackWidth = Number(root.dataset.trackWidth);
+      if (Number.isFinite(trackWidth) && trackWidth > 0) this.root.style.setProperty('--vm-slider-track-width', `${trackWidth}px`);
+      this.range.addEventListener('input', () => this.handleRangeInput());
+      this.range.addEventListener('change', () => this.handleRangeInput());
+      this.numberInput.addEventListener('input', () => this.syncFromNumberInput());
+      this.numberInput.addEventListener('change', () => this.syncFromNumberInput());
+      this.syncFromNumberInput();
+    }
+
+    syncFromNumberInput() {
+      if (this.syncing) return;
+      this.syncing = true;
+      const value = clampViewNumericValue(this.number.getValue(), Number(this.range.min), Number(this.range.max));
+      this.range.value = String(value);
+      this.updateFill();
+      this.syncing = false;
+    }
+
+    handleRangeInput() {
+      if (this.syncing) return;
+      this.syncing = true;
+      const value = Number(this.range.value);
+      this.number.setValue(value, { emit: true });
+      this.updateFill();
+      this.syncing = false;
+    }
+
+    updateFill() {
+      const min = Number(this.range.min);
+      const max = Number(this.range.max);
+      const value = Number(this.range.value);
+      const span = Number.isFinite(max - min) && (max - min) > 0 ? (max - min) : 1;
+      const percent = ((value - min) / span) * 100;
+      this.root.style.setProperty('--vm-slider-fill-percent', `${Math.max(0, Math.min(100, percent))}%`);
+    }
+
+    setValue(value, options = {}) {
+      if (!(this.range && this.number)) return;
+      this.syncing = true;
+      this.number.setValue(value, options);
+      this.range.value = String(clampViewNumericValue(this.number.getValue(), Number(this.range.min), Number(this.range.max)));
+      this.updateFill();
+      this.syncing = false;
+    }
+
+    setDisabled(disabled) {
+      const next = !!disabled;
+      if (this.range) this.range.disabled = next;
+      if (this.number) this.number.setDisabled(next);
+      this.root.setAttribute('data-disabled', next ? 'true' : 'false');
+    }
+  }
+
+  /**
+   * @param {HTMLInputElement|null} input
+   * @returns {VmNumberInput|null}
+   */
+  function getViewNumberInputComponent(input) {
+    return input ? (viewNumberInputRegistry.get(input) || null) : null;
+  }
+
+  /**
+   * @param {HTMLInputElement|null} input
+   * @returns {VmSlider|null}
+   */
+  function getViewSliderComponent(input) {
+    return input ? (viewSliderRegistry.get(input) || null) : null;
+  }
+
+  /**
+   * @param {HTMLInputElement|null} input
+   * @param {number} value
+   */
+  function setViewControlValue(input, value) {
+    if (!input) return;
+    const slider = getViewSliderComponent(input);
+    if (slider) {
+      slider.setValue(value);
+      return;
+    }
+    const number = getViewNumberInputComponent(input);
+    if (number) {
+      number.setValue(value);
+      return;
+    }
+    input.value = String(value);
+  }
+
+  function syncViewAutoRotateState() {
+    const enabled = !!(autoRot && autoRot.checked);
+    if (viewAutoRotateSpeedRow) viewAutoRotateSpeedRow.setAttribute('data-disabled', enabled ? 'false' : 'true');
+    const slider = getViewSliderComponent(autoRotSpeed);
+    if (slider) slider.setDisabled(!enabled);
+    else if (autoRotSpeed) autoRotSpeed.disabled = !enabled;
+  }
+
+  function initializeViewControlComponents() {
+    const numberRoots = Array.from(document.querySelectorAll('#sidePanel .vm-num'));
+    for (const root of numberRoots) {
+      const input = root.querySelector('.vm-num__input');
+      if (!(input instanceof HTMLInputElement)) continue;
+      const instance = new VmNumberInput(root);
+      viewNumberInputRegistry.set(input, instance);
+    }
+    const sliderRoots = Array.from(document.querySelectorAll('#sidePanel .vm-slider'));
+    for (const root of sliderRoots) {
+      const numberInput = root.querySelector('.vm-num__input');
+      if (!(numberInput instanceof HTMLInputElement)) continue;
+      const instance = new VmSlider(root);
+      viewSliderRegistry.set(numberInput, instance);
+    }
+    syncViewAutoRotateState();
+  }
+
+  initializeViewControlComponents();
+
+  async function copyTextToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      const ta = document.createElement('textarea');
+      ta.value = String(text || '');
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        return true;
+      } catch {
+        return false;
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
+  }
+
+  function showViewPanelToast(anchorEl, message) {
+    if (!(viewPanelToast && anchorEl && message)) return;
+    viewPanelToast.textContent = String(message);
+    viewPanelToast.hidden = false;
+    const rect = anchorEl.getBoundingClientRect();
+    const width = Math.max(48, viewPanelToast.offsetWidth || 0);
+    viewPanelToast.style.left = `${Math.round(rect.left + (rect.width - width) / 2)}px`;
+    viewPanelToast.style.top = `${Math.round(rect.bottom + 8)}px`;
+    viewPanelToast.classList.remove('is-visible');
+    void viewPanelToast.offsetWidth;
+    viewPanelToast.classList.add('is-visible');
+    if (viewPanelToastTimer) window.clearTimeout(viewPanelToastTimer);
+    viewPanelToastTimer = window.setTimeout(() => {
+      viewPanelToast.classList.remove('is-visible');
+      viewPanelToast.hidden = true;
+    }, 1200);
+  }
+
+  function setViewCopyButtonCopied(buttonEl, copied) {
+    if (!buttonEl) return;
+    buttonEl.classList.toggle('is-copied', !!copied);
+    buttonEl.innerHTML = copied ? VIEW_CHECK_ICON_SVG : VIEW_COPY_ICON_SVG;
+  }
+
+  async function copyViewVector(kind, buttonEl) {
+    const vectorMap = {
+      shift: [shiftX, shiftY, shiftZ],
+      cam: [camX, camY, camZ],
+      target: [tgtX, tgtY, tgtZ],
+    };
+    const inputs = vectorMap[String(kind || '')] || null;
+    if (!inputs) return;
+    const text = inputs
+      .map((input) => {
+        const instance = getViewNumberInputComponent(input);
+        const value = instance ? instance.getValue() : Number(input && input.value);
+        return (Number.isFinite(value) ? value : 0).toFixed(3);
+      })
+      .join(', ');
+    const ok = await copyTextToClipboard(text);
+    if (!ok) return;
+    setViewCopyButtonCopied(buttonEl, true);
+    showViewPanelToast(buttonEl, `Copied ${String(kind || '').replace(/^./, (m) => m.toUpperCase())} vector`);
+    window.setTimeout(() => setViewCopyButtonCopied(buttonEl, false), 1200);
+  }
   const moldenGridRow = document.getElementById('moldenGridRow');
   const moldenGridPaddingRow = document.getElementById('moldenGridPaddingRow');
   const moldenGridStepEl = document.getElementById('moldenGridStep');
@@ -6066,7 +6481,6 @@
   const editMoleculeAlignXBtn = document.getElementById('editMoleculeAlignXBtn');
   const editMoleculeAlignYBtn = document.getElementById('editMoleculeAlignYBtn');
   const editMoleculeAlignZBtn = document.getElementById('editMoleculeAlignZBtn');
-  const shortcutRibbon = document.getElementById('shortcutRibbon');
   const hintEl = document.getElementById('hint');
   const emptyStateEl = document.getElementById('emptyState');
   const emptyStateCardEl = document.getElementById('emptyStateCard');
@@ -7372,82 +7786,6 @@
     }
   }
 
-  // Keyboard shortcuts registry and ribbon
-  const SHORTCUTS = {
-    default: [
-      { k: 'S', d: 'Save PNG' },
-      { k: 'B', d: 'Batch export' },
-      { k: 'I', d: 'Toggle surfaces' },
-      { k: 'A', d: 'Toggle axes' },
-      { k: 'O', d: 'Orbitals' },
-      { k: 'Q', d: 'View actions' },
-      { k: 'T', d: 'Trajectory' },
-      { k: 'F', d: 'Frequencies' },
-      { k: 'C', d: 'Toggle Coordinates window' },
-      { k: 'R', d: 'Center mass at origin' },
-      { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
-      { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
-      { k: 'V', d: 'Toggle View window' },
-      { k: 'E', d: 'Edit mode' },
-      { k: 'M', d: 'Measurement mode' },
-      { k: '1/2/3/4', d: 'Style: Default/Toon/Kit/Glossy' },
-      { k: '←/→', d: 'Prev/Next file' },
-      { k: '?', d: 'Help' },
-    ],
-    panel: [
-      { k: 'S', d: 'Save PNG' },
-      { k: 'I', d: 'Toggle surfaces' },
-      { k: 'C', d: 'Toggle Coordinates window' },
-    ],
-    help: [
-      { k: '←/→', d: 'Prev/Next file' },
-    ],
-    edit: [
-      { k: 'E', d: 'View mode' },
-      { k: 'O', d: 'Optimize structure' },
-      { k: 'P', d: 'Align principal axes' },
-      { k: '/', d: 'Build palette and search' },
-      { k: 'Esc', d: 'Clear selection' },
-      { k: 'Cmd/Ctrl+A', d: 'Select all atoms' },
-      { k: 'Cmd/Ctrl+C', d: 'Copy selected atoms' },
-      { k: 'Cmd/Ctrl+V', d: 'Paste copied atoms' },
-      { k: 'Space', d: 'Preview/apply missing hydrogens' },
-      { k: '1/2/3/4', d: 'Bond order during grow/bond actions' },
-      { k: 'C', d: 'Coordinates window' },
-      { k: 'Click', d: 'Select atom' },
-      { k: 'Shift+Click', d: 'Add/remove atom from selection' },
-      { k: 'Click empty', d: 'Clear selection' },
-      { k: 'Click+Drag', d: 'Move selection or atom (translate cue)' },
-      { k: 'Click+Drag', d: 'Rotate selection (rotate cue)' },
-      { k: 'Click empty', d: 'Place loaded build item' },
-      { k: 'Right-click bond center', d: 'Select bond order scope' },
-      { k: 'Click bond side', d: 'Select bond-side fragment' },
-      { k: 'Drag bond side', d: 'Rotate around bond axis' },
-      { k: 'Shift+Drag bond side', d: 'Free 3D bond-side rotation' },
-      { k: 'Drag bond-side value', d: 'Adjust torsion or bond distance' },
-      { k: 'Backspace/Delete', d: 'Delete selection or hovered atom' },
-      { k: 'R', d: 'Center mass at origin' },
-      { k: 'Cmd/Ctrl+Z', d: 'Undo edit' },
-      { k: 'Cmd/Ctrl+Shift+Z', d: 'Redo edit' },
-      { k: 'X/Y/Z', d: 'Align standalone preview' },
-      { k: 'Shift+Place', d: 'Bypass auto angle snap for free placement' },
-    ],
-    measure: [
-      { k: 'M', d: 'Display mode' },
-      { k: 'E', d: 'Edit mode' },
-      { k: 'O', d: 'Orbitals' },
-      { k: 'Q', d: 'View actions' },
-      { k: 'T', d: 'Trajectory' },
-      { k: 'F', d: 'Frequencies' },
-      { k: 'C', d: 'Toggle Coordinates window' },
-      { k: '2 atoms', d: 'Distance' },
-      { k: '3 atoms', d: 'Angle' },
-      { k: '4 atoms', d: 'Dihedral' },
-      { k: 'R', d: 'Center mass at origin' },
-      { k: 'Esc', d: 'Remove measurements' },
-    ],
-  };
-
   /**
    * Reflect the active interaction mode in toolbar mode buttons.
    */
@@ -7504,8 +7842,6 @@
     updateAxisButtons();
     updateEditPlaneHelpers();
     updateEditToolboxUi();
-    const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
-    renderRibbon(ctx);
     if (currentMode === MODES.MEASURE) {
       setHintMessage(HINT_MEASURE, { accent: false });
     } else if (currentMode === MODES.DISPLAY) {
@@ -7575,6 +7911,15 @@
     updateEmptyStateVisibility();
     updateModeButtons();
     updateDisplayWindowAdaptiveMenuUi();
+    updateModeAssistMenuUi();
+    if (currentMode === MODES.MEASURE) showEnteredModeToast('measure');
+    else if (currentMode === MODES.EDIT) {
+      const activeRecord = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const activeVol = activeRecord && activeRecord.vol;
+      if (activeVol && Array.isArray(activeVol.atoms) && activeVol.atoms.length > 0) showEnteredModeToast('edit');
+      else hideModeToast({ immediate: true });
+    }
+    else hideModeToast({ immediate: true });
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
@@ -7601,23 +7946,12 @@
     fn(e);
     return true;
   };
-  let currentShortcutContext = 'default';
   let hintAccentTimer = 0;
   /**
-   * Render shortcut hints for the active interaction context.
-   * @param {string} ctx
+   * Legacy shortcut-ribbon render hook retained as a no-op for controllers
+   * that still expect the dependency.
    */
-  function renderRibbon(ctx = currentShortcutContext) {
-    currentShortcutContext = ctx;
-    const list = SHORTCUTS[ctx] || SHORTCUTS.default;
-    if (!shortcutRibbon) return;
-    const parts = list.map((s) => (
-      `<span class="shortcutRibbonItem"><span class="shortcutRibbonKey">${escapeHtml(s.k)}</span>${escapeHtml(s.d)}</span>`
-    ));
-    shortcutRibbon.innerHTML = parts.join('<span class="shortcutRibbonSeparator"> • </span>');
-    shortcutRibbon.setAttribute('aria-hidden', 'false');
-  }
-  renderRibbon('default');
+  function renderRibbon() {}
   if (surfBtn && typeof surfBtn.type === 'string' && surfBtn.type.toLowerCase() === 'checkbox') {
     surfBtn.onchange = () => {
       showSurfaces = !!surfBtn.checked;
@@ -7637,7 +7971,6 @@
     if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIEW_PANEL);
     sidePanel.classList.toggle('open', shouldOpen);
     sidePanel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
-    renderRibbon((shouldOpen || (coordsPanel && coordsPanel.classList.contains('open'))) ? 'panel' : 'default');
     if (viewPanelBtn) viewPanelBtn.classList.toggle('active', shouldOpen);
     updateDisplayWindowAdaptiveMenuUi();
   }
@@ -7665,7 +7998,6 @@
     const shouldOpen = !!open;
     if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
     setFloatingPanelOpen(coordsPanel, shouldOpen);
-    renderRibbon((shouldOpen || (sidePanel && sidePanel.classList.contains('open'))) ? 'panel' : 'default');
     if (coordsPanelBtn) coordsPanelBtn.classList.toggle('active', shouldOpen);
     updateDisplayWindowAdaptiveMenuUi();
   }
@@ -7770,11 +8102,309 @@
    * Refresh the non-edit adaptive launcher visibility and active button state.
    */
   function updateDisplayWindowAdaptiveMenuUi() {
-    if (!displayWindowsController) return;
-    displayWindowsController.syncAdaptiveMenu();
+    if (displayWindowsController) displayWindowsController.syncAdaptiveMenu();
     if (displayAdaptiveMenuAutoHideController && displayWindowAdaptiveMenuEl) {
       displayAdaptiveMenuAutoHideController.setEnabled(displayWindowAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
     }
+    updateModeAssistMenuUi();
+  }
+
+  const MODE_TOAST_MESSAGES = Object.freeze({
+    edit: 'Drag handles to move · Right-drag to rotate',
+    measure: 'Click atoms: 2=distance, 3=angle, 4=dihedral',
+    build: 'Click to place · 1/2/3/4 bond order · Esc to exit',
+  });
+  const MODE_TOAST_STORAGE_KEYS = Object.freeze({
+    edit: 'vm.toast.edit.dismissed',
+    measure: 'vm.toast.measure.dismissed',
+    build: 'vm.toast.build.dismissed',
+  });
+  let helpRestoreFocusEl = null;
+  let modeToastHideTimer = 0;
+  let modeToastTransitionTimer = 0;
+  let modeToastDismissMode = '';
+
+  function getMeasureAssistItems() {
+    return [
+      { icon: 'straighten', label: 'Distance', meta: '2 atoms', key: '2' },
+      { icon: 'change_history', label: 'Angle', meta: '3 atoms', key: '3' },
+      { icon: '3d_rotation', label: 'Dihedral', meta: '4 atoms', key: '4' },
+    ];
+  }
+
+  function isSidebarCollapsedUi() {
+    return !!(document.body && document.body.classList.contains('sidebar-collapsed'));
+  }
+
+  function clearModeToastHideTimer() {
+    if (!modeToastHideTimer) return;
+    window.clearTimeout(modeToastHideTimer);
+    modeToastHideTimer = 0;
+  }
+
+  function clearModeToastTransitionTimer() {
+    if (!modeToastTransitionTimer) return;
+    window.clearTimeout(modeToastTransitionTimer);
+    modeToastTransitionTimer = 0;
+  }
+
+  function positionModeAssistMenu() {
+    if (!modeAssistMenuEl) return;
+    const gap = 12;
+    const inset = getCanvasAdaptiveMenuTopInset();
+    let left = gap;
+    let top = inset;
+    if (!isSidebarCollapsedUi() && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
+      const toolbarRect = toolbarEl.getBoundingClientRect();
+      if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
+        left = Math.round(toolbarRect.right + gap);
+      }
+      if (toolbarRect && Number.isFinite(toolbarRect.top)) {
+        top = Math.max(inset, Math.round(toolbarRect.top + inset));
+      }
+    }
+    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
+    const menuWidth = Math.max(0, Math.round(modeAssistMenuEl.getBoundingClientRect().width || modeAssistMenuEl.offsetWidth || 0));
+    const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
+    modeAssistMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
+    modeAssistMenuEl.style.top = `${top}px`;
+    modeAssistMenuEl.style.right = 'auto';
+  }
+
+  function setAdaptiveItemPresentation(buttonEl, options = {}) {
+    if (!buttonEl) return;
+    const iconEl = buttonEl.querySelector('.adaptiveEditItemIcon');
+    const labelEl = buttonEl.querySelector('.adaptiveEditItemLabel');
+    const metaEl = buttonEl.querySelector('.adaptiveEditItemMeta');
+    const keyEl = buttonEl.querySelector('.adaptiveShortcutKey');
+    if (iconEl && typeof options.icon === 'string') iconEl.textContent = options.icon;
+    if (labelEl && typeof options.label === 'string') labelEl.textContent = options.label;
+    if (metaEl) metaEl.textContent = String(options.meta || '');
+    if (keyEl && typeof options.key === 'string') keyEl.textContent = options.key;
+    buttonEl.dataset.static = options.static ? 'true' : 'false';
+    if (options.static) {
+      buttonEl.setAttribute('aria-disabled', 'true');
+      buttonEl.tabIndex = -1;
+    } else {
+      buttonEl.removeAttribute('aria-disabled');
+      buttonEl.tabIndex = 0;
+    }
+    const title = String(options.title || '').trim();
+    buttonEl.title = title || buttonEl.title || '';
+    if (title) buttonEl.setAttribute('aria-label', title);
+  }
+
+  function setModeAssistItemPresentation(index, item) {
+    const buttonEl = modeAssistItemEls[index];
+    if (!buttonEl) return;
+    setAdaptiveItemPresentation(buttonEl, {
+      icon: item && item.icon,
+      label: item && item.label,
+      meta: item && item.meta,
+      key: item && item.key,
+      title: item && item.title,
+      static: true,
+    });
+  }
+
+  function updateModeAssistMenuUi() {
+    const measureAssistItems = getMeasureAssistItems();
+    const isVisible = currentMode === MODES.MEASURE;
+    for (let i = 0; i < modeAssistItemEls.length; i += 1) {
+      if (measureAssistItems[i]) setModeAssistItemPresentation(i, measureAssistItems[i]);
+    }
+    updateAdaptiveMenuUiHelper({
+      menuEl: modeAssistMenuEl,
+      isVisible,
+      positionMenu: positionModeAssistMenu,
+      visibleItems: modeAssistItemEls.map((el, index) => ({ el, visible: isVisible && !!measureAssistItems[index] })),
+      activeItems: [],
+      metaItems: [],
+    });
+    if (modeAssistMenuAutoHideController && modeAssistMenuEl) {
+      modeAssistMenuAutoHideController.setEnabled(modeAssistMenuEl.getAttribute('aria-hidden') === 'false');
+    }
+  }
+
+  function getHelpFocusableElements() {
+    if (!helpModal) return [];
+    return Array.from(helpModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter((el) => !el.disabled && el.getAttribute('aria-hidden') !== 'true');
+  }
+
+  function isHelpOpen() {
+    return !!(helpOverlay && helpOverlay.getAttribute('aria-hidden') === 'false');
+  }
+
+  function openHelp(sourceEl = null) {
+    if (!helpOverlay) return;
+    helpRestoreFocusEl = sourceEl || document.activeElement || null;
+    helpOverlay.setAttribute('aria-hidden', 'false');
+    const focusables = getHelpFocusableElements();
+    const target = focusables[0] || helpModal;
+    if (target && typeof target.focus === 'function') {
+      window.setTimeout(() => {
+        try { target.focus({ preventScroll: true }); } catch { try { target.focus(); } catch { } }
+      }, 0);
+    }
+  }
+
+  function closeHelp(options = {}) {
+    if (!helpOverlay) return;
+    helpOverlay.setAttribute('aria-hidden', 'true');
+    const restoreFocus = options.restoreFocus !== false;
+    const target = helpRestoreFocusEl;
+    helpRestoreFocusEl = null;
+    if (restoreFocus && target && typeof target.focus === 'function') {
+      window.setTimeout(() => {
+        try { target.focus({ preventScroll: true }); } catch { try { target.focus(); } catch { } }
+      }, 0);
+    }
+  }
+
+  function toggleHelp(sourceEl = null) {
+    if (isHelpOpen()) closeHelp();
+    else openHelp(sourceEl);
+  }
+
+  function handleHelpOverlayKeydown(event) {
+    if (!event || !isHelpOpen()) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeHelp();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusables = getHelpFocusableElements();
+    if (!focusables.length) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey) {
+      if (active === first || active === helpModal) {
+        event.preventDefault();
+        last.focus();
+      }
+      return;
+    }
+    if (active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  function isModeToastDismissed(mode) {
+    const key = MODE_TOAST_STORAGE_KEYS[mode];
+    if (!key) return false;
+    try {
+      return window.localStorage.getItem(key) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  function setModeToastDismissed(mode, dismissed) {
+    const key = MODE_TOAST_STORAGE_KEYS[mode];
+    if (!key) return;
+    try {
+      if (dismissed) window.localStorage.setItem(key, '1');
+      else window.localStorage.removeItem(key);
+    } catch { }
+  }
+
+  function resetModeToastDismissals() {
+    for (const key of Object.keys(MODE_TOAST_STORAGE_KEYS)) setModeToastDismissed(key, false);
+    hideModeToast({ immediate: true });
+    setHintMessage('Help toasts reset.', { accent: false });
+  }
+
+  function positionModeToast(anchorEl) {
+    if (!modeToastEl || !anchorEl || typeof anchorEl.getBoundingClientRect !== 'function') return false;
+    const rect = anchorEl.getBoundingClientRect();
+    const toastRect = modeToastEl.getBoundingClientRect();
+    const gap = 10;
+    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
+    const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0));
+    const width = Math.max(1, Math.round(toastRect.width || modeToastEl.offsetWidth || 280));
+    const height = Math.max(1, Math.round(toastRect.height || modeToastEl.offsetHeight || 48));
+    const left = Math.min(Math.max(12, Math.round(rect.left)), Math.max(12, viewportWidth - width - 12));
+    let top = Math.round(rect.bottom + gap);
+    if (top + height > viewportHeight - 12) top = Math.max(12, Math.round(rect.top - height - gap));
+    modeToastEl.style.left = `${left}px`;
+    modeToastEl.style.top = `${top}px`;
+    return true;
+  }
+
+  function hideModeToast(options = {}) {
+    if (!modeToastEl) return;
+    clearModeToastHideTimer();
+    clearModeToastTransitionTimer();
+    modeToastEl.classList.remove('is-visible');
+    if (options.immediate) {
+      modeToastEl.classList.remove('is-hiding');
+      modeToastEl.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    modeToastEl.classList.add('is-hiding');
+    modeToastTransitionTimer = window.setTimeout(() => {
+      modeToastTransitionTimer = 0;
+      if (!modeToastEl) return;
+      modeToastEl.classList.remove('is-hiding');
+      modeToastEl.setAttribute('aria-hidden', 'true');
+    }, 400);
+  }
+
+  function showModeToast(mode, anchorEl, message) {
+    if (!modeToastEl || !modeToastBodyEl) return;
+    if (!message || isModeToastDismissed(mode)) return;
+    modeToastDismissMode = mode;
+    clearModeToastTransitionTimer();
+    modeToastBodyEl.textContent = String(message);
+    modeToastEl.classList.remove('is-hiding');
+    modeToastEl.setAttribute('aria-hidden', 'false');
+    positionModeToast(anchorEl);
+    requestAnimationFrame(() => {
+      if (!modeToastEl || modeToastEl.getAttribute('aria-hidden') === 'true') return;
+      modeToastEl.classList.add('is-visible');
+    });
+    clearModeToastHideTimer();
+    modeToastHideTimer = window.setTimeout(() => {
+      hideModeToast();
+    }, 4000);
+  }
+
+  function getVisibleEditAdaptiveToastAnchor() {
+    const candidates = [
+      editAdaptiveAddAtomBtn,
+      editAdaptiveSymmetryBtn,
+      editAdaptiveCleanStructureBtn,
+      editAdaptiveAlignPrincipalBtn,
+    ];
+    return candidates.find((el) => el && !el.hidden && el.getAttribute('aria-hidden') !== 'true') || null;
+  }
+
+  function showEnteredModeToast(mode) {
+    const message = MODE_TOAST_MESSAGES[mode];
+    if (!message) return;
+    const anchorEl = (() => {
+      if (mode === 'measure') {
+        return isSidebarCollapsedUi()
+          ? (modeAssistItemEls.find((el) => el && !el.hidden && el.getAttribute('aria-hidden') !== 'true') || null)
+          : modeMeasureBtn;
+      }
+      if (mode === 'edit') {
+        return isSidebarCollapsedUi() ? getVisibleEditAdaptiveToastAnchor() : modeEditBtn;
+      }
+      if (mode === 'build') return editAdaptiveAddAtomBtn || modeEditBtn;
+      return null;
+    })();
+    if (!anchorEl) return;
+    requestAnimationFrame(() => {
+      showModeToast(mode, anchorEl, message);
+    });
   }
 
   const viewInspectorRefs = { panel: viewInspector, button: viewInspectorBtn };
@@ -7883,23 +8513,28 @@
   }
   if (vibrationPanelClose) vibrationPanelClose.onclick = () => setVibrationPanelOpen(false);
 
-  // Help modal logic
-  /**
-   * Open the shortcuts/help modal.
-   */
-  function openHelp() { helpOverlay.style.display = 'flex'; helpOverlay.setAttribute('aria-hidden', 'false'); renderRibbon('help'); }
-  /**
-   * Close the shortcuts/help modal.
-   */
-  function closeHelp() { helpOverlay.style.display = 'none'; helpOverlay.setAttribute('aria-hidden', 'true'); renderRibbon('default'); }
-  if (helpBtn) helpBtn.onclick = openHelp;
-  if (helpClose) helpClose.onclick = closeHelp;
-  if (helpOverlay) helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) closeHelp(); });
+  if (helpBtn) helpBtn.onclick = () => openHelp(helpBtn);
+  if (helpFab) helpFab.onclick = () => openHelp(helpFab);
+  if (helpClose) helpClose.onclick = () => closeHelp();
+  if (helpResetToastsBtn) helpResetToastsBtn.onclick = () => resetModeToastDismissals();
+  if (helpOverlay) {
+    helpOverlay.addEventListener('click', (e) => {
+      if (e.target === helpOverlay) closeHelp();
+    });
+    helpOverlay.addEventListener('keydown', handleHelpOverlayKeydown);
+  }
+  if (modeToastDismissBtn) {
+    modeToastDismissBtn.onclick = () => {
+      if (modeToastDismissMode) setModeToastDismissed(modeToastDismissMode, true);
+      hideModeToast();
+    };
+  }
   displayWindowsController = createDisplayWindowsController({
     menuEl: displayWindowAdaptiveMenuEl,
     positionFloatingPopover: positionFloatingPopoverUi,
     updateAdaptiveMenuUi: updateAdaptiveMenuUiHelper,
     getCurrentMode: () => currentMode,
+    getDisplayModeValue: () => MODES.DISPLAY,
     getEditModeValue: () => MODES.EDIT,
     getCurrentRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
     getTrajectoryEnabled: () => !!getActiveTrajectoryInfo().enabled,
@@ -7982,6 +8617,12 @@
     revealSlack: 20,
     getPinned: () => isToolbarInspectorOpen(moldenInspectorRefs) || isToolbarInspectorOpen(viewInspectorRefs),
     getRelatedElements: () => [moldenInspector, viewInspector],
+  });
+  modeAssistMenuAutoHideController = createAdaptiveMenuAutoHideController({
+    menuEl: modeAssistMenuEl,
+    delayMs: 5000,
+    revealEdgeWidth: 64,
+    revealSlack: 20,
   });
   editAdaptiveMenuAutoHideController = createAdaptiveMenuAutoHideController({
     menuEl: editAdaptiveMenuEl,
@@ -8085,25 +8726,20 @@
    * Synchronize camera/target/shift form controls from the current scene state.
    */
   function refreshViewUI() {
-    /**
-     * Check that an input is not currently focused (to avoid overwriting edits).
-     * @param {HTMLElement} el
-     * @returns {boolean}
-     */
-    const notEditing = (el) => document.activeElement !== el;
-    if (notEditing(shiftX)) shiftX.value = contentGroup.position.x.toFixed(3);
-    if (notEditing(shiftY)) shiftY.value = contentGroup.position.y.toFixed(3);
-    if (notEditing(shiftZ)) shiftZ.value = contentGroup.position.z.toFixed(3);
-    if (notEditing(camX)) camX.value = camera.position.x.toFixed(3);
-    if (notEditing(camY)) camY.value = camera.position.y.toFixed(3);
-    if (notEditing(camZ)) camZ.value = camera.position.z.toFixed(3);
-    if (notEditing(tgtX)) tgtX.value = controls.target.x.toFixed(3);
-    if (notEditing(tgtY)) tgtY.value = controls.target.y.toFixed(3);
-    if (notEditing(tgtZ)) tgtZ.value = controls.target.z.toFixed(3);
+    setViewControlValue(shiftX, contentGroup.position.x);
+    setViewControlValue(shiftY, contentGroup.position.y);
+    setViewControlValue(shiftZ, contentGroup.position.z);
+    setViewControlValue(camX, camera.position.x);
+    setViewControlValue(camY, camera.position.y);
+    setViewControlValue(camZ, camera.position.z);
+    setViewControlValue(tgtX, controls.target.x);
+    setViewControlValue(tgtY, controls.target.y);
+    setViewControlValue(tgtZ, controls.target.z);
     autoRot.checked = controls.autoRotate === true;
-    if (notEditing(rotSpeed)) rotSpeed.value = (controls.rotateSpeed ?? 1.0).toFixed(2);
-    if (notEditing(damp)) damp.value = (controls.dampingFactor ?? 0.05).toFixed(2);
-    if (notEditing(autoRotSpeed)) autoRotSpeed.value = (controls.autoRotateSpeed ?? 2.0).toFixed(2);
+    setViewControlValue(rotSpeed, controls.rotateSpeed ?? 1.0);
+    setViewControlValue(damp, controls.dampingFactor ?? 0.05);
+    setViewControlValue(autoRotSpeed, controls.autoRotateSpeed ?? 2.0);
+    syncViewAutoRotateState();
     updateProjectionModeUI();
     syncAppearanceInspectorSectionState();
   }
@@ -8204,7 +8840,7 @@
   let editGizmos = null;
   let editTransformController = null;
   let editGestureController = null;
-  let editHaloController = null;
+  editHaloController = null;
   let editHaloUiState = {
     visible: false,
     atomIndex: -1,
@@ -13027,6 +13663,7 @@
     }
     if (editAdaptiveSymmetryBtn) {
       editAdaptiveSymmetryBtn.onclick = () => {
+        if (editAdaptiveSymmetryBtn.dataset.static === 'true') return;
         if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
         else showSymmetryPopover();
       };
@@ -13062,7 +13699,15 @@
     if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };
     if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };
     if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
-    if (editAdaptiveCleanStructureBtn) editAdaptiveCleanStructureBtn.onclick = () => { optimizeActiveStructureWithUff(); };
+    if (editAdaptiveCleanStructureBtn) {
+      editAdaptiveCleanStructureBtn.onclick = () => {
+        if (isBuildPopoverOpen()) {
+          if (autoHydrogenController) autoHydrogenController.handleShortcut();
+          return;
+        }
+        optimizeActiveStructureWithUff();
+      };
+    }
     if (editAdaptiveShiftComBtn) editAdaptiveShiftComBtn.onclick = () => { centerActiveMoleculeMassAtOrigin(); };
     if (editAdaptiveAlignPrincipalBtn) editAdaptiveAlignPrincipalBtn.onclick = () => { alignActiveMoleculePrincipalAxes(); };
     if (editAddAtomOperatorHeaderEl) {
@@ -14185,6 +14830,7 @@
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
+    const wasOpen = isBuildPopoverOpen();
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
@@ -14199,6 +14845,7 @@
       preferPayloadSelection: options.preferPayloadSelection !== false,
     });
     updateEditAdaptiveMenuUi();
+    if (!wasOpen) showEnteredModeToast('build');
     if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
   }
 
@@ -14652,7 +15299,7 @@
         '<span class="editSymmetryCandidateBody">',
         `<span class="editSymmetryCandidateLabel">${candidate.groupLabel}</span>`,
         '<span class="editSymmetryCandidateMetrics">',
-        `<span class="editSymmetryCandidateMeta">rms ${formatSymmetryResidual(candidate.rmsDisplacementAng)}</span>`,
+        `<span class="editSymmetryCandidateMeta rms-value">rms ${formatSymmetryResidual(candidate.rmsDisplacementAng)}</span>`,
         '</span>',
         '</span>',
         '</button>',
@@ -16759,24 +17406,86 @@
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
+    const buildModeActive = !!(isVisible && isBuildPopoverOpen());
+    const emptyEditState = !!(isVisible && !buildModeActive && !hasEditableAtoms);
     const showLegacyDrawer = isVisible;
     if (!isVisible) hideEditSelectionTranslateCue();
     updateEditAtomsMenuUi();
+    if (buildModeActive) {
+      setAdaptiveItemPresentation(editAdaptiveAddAtomBtn, {
+        icon: 'add',
+        label: 'Elements',
+        meta: '',
+        key: '/',
+        title: 'Build palette (/)',
+        static: false,
+      });
+      setAdaptiveItemPresentation(editAdaptiveSymmetryBtn, {
+        icon: 'linear_scale',
+        label: 'Bond order',
+        meta: '',
+        key: '1-4',
+        title: 'Bond order keys 1-4',
+        static: true,
+      });
+      setAdaptiveItemPresentation(editAdaptiveCleanStructureBtn, {
+        icon: 'auto_fix_high',
+        label: 'Toggle H',
+        meta: '',
+        key: 'Space',
+        title: 'Preview or apply missing hydrogens (Space)',
+        static: false,
+      });
+    } else if (emptyEditState) {
+      setAdaptiveItemPresentation(editAdaptiveAddAtomBtn, {
+        icon: 'add',
+        label: 'Build',
+        meta: '',
+        key: '/',
+        title: 'Build palette (/)',
+        static: false,
+      });
+    } else {
+      setAdaptiveItemPresentation(editAdaptiveSymmetryBtn, {
+        icon: 'hub',
+        label: 'Symmetry',
+        meta: '',
+        key: 'S',
+        title: 'Symmetry (S)',
+        static: false,
+      });
+      setAdaptiveItemPresentation(editAdaptiveCleanStructureBtn, {
+        icon: 'cleaning_services',
+        label: 'Optimize',
+        meta: '',
+        key: 'O',
+        title: 'Optimize structure (O)',
+        static: false,
+      });
+      setAdaptiveItemPresentation(editAdaptiveAlignPrincipalBtn, {
+        icon: '3d_rotation',
+        label: 'Align',
+        meta: '',
+        key: 'P',
+        title: 'Align principal axes (P)',
+        static: false,
+      });
+    }
     updateAdaptiveMenuUiHelper({
       menuEl: editAdaptiveMenuEl,
       isVisible: showLegacyDrawer,
       positionMenu: positionEditAdaptiveMenu,
       onHideAllPopovers: hideAllAdaptiveToolPopovers,
       visibleItems: [
-        { el: editAdaptiveAddAtomBtn, visible: isVisible },
-        { el: editAdaptiveSymmetryBtn, visible: hasEditableAtoms },
-        { el: editAdaptiveCleanStructureBtn, visible: hasEditableAtoms },
-        { el: editAdaptiveShiftComBtn, visible: hasEditableAtoms },
-        { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms },
+        { el: editAdaptiveAddAtomBtn, visible: isVisible && (buildModeActive || emptyEditState) },
+        { el: editAdaptiveSymmetryBtn, visible: buildModeActive || hasEditableAtoms },
+        { el: editAdaptiveCleanStructureBtn, visible: buildModeActive || hasEditableAtoms },
+        { el: editAdaptiveShiftComBtn, visible: false },
+        { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms && !buildModeActive },
       ],
       activeItems: [
-        { el: editAdaptiveAddAtomBtn, active: isBuildPopoverOpen() },
-        { el: editAdaptiveSymmetryBtn, active: isSymmetryPopoverOpen() },
+        { el: editAdaptiveAddAtomBtn, active: buildModeActive || emptyEditState },
+        { el: editAdaptiveSymmetryBtn, active: !buildModeActive && isSymmetryPopoverOpen() },
         { el: editAdaptiveCleanStructureBtn, active: false },
         { el: editAdaptiveShiftComBtn, active: false },
         { el: editAdaptiveAlignPrincipalBtn, active: false },
@@ -16792,15 +17501,15 @@
         },
         {
           el: editAdaptiveCleanStructureMetaEl,
-          text: getCleanStructurePresentation().rowMeta,
+          text: '',
         },
         {
           el: editAdaptiveShiftComMetaEl,
-          text: getShiftComPresentation().rowMeta,
+          text: '',
         },
         {
           el: editAdaptiveAlignPrincipalMetaEl,
-          text: getAlignPrincipalPresentation().rowMeta,
+          text: '',
         },
       ],
     });
@@ -21396,13 +22105,6 @@
   if (viewAxisZBtn) viewAxisZBtn.onclick = () => setCameraAxisPreset('z');
 
   // --- Shortcut bindings ---
-  // Global: help toggle
-  /**
-   * Toggle the help modal open/closed.
-   */
-  const toggleHelp = () => { if (helpOverlay && helpOverlay.style.display !== 'flex') openHelp(); else closeHelp(); };
-  bind('down', 'global', 'h', () => toggleHelp());
-  bind('down', 'global', '?', () => toggleHelp());
 
   // Global: save, batch, toggle surfaces/axes
   bind('down', 'global', 's', () => saveBtn && saveBtn.click());
@@ -21593,9 +22295,43 @@
     return false;
   }
 
+  function handleGlobalFileHotkey(e) {
+    if (isTypingInInput()) return false;
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return false;
+    const key = String(e.key || '').toLowerCase();
+    if (!e.shiftKey && key === 'o') {
+      e.preventDefault();
+      triggerOpenFiles();
+      return true;
+    }
+    if (!e.shiftKey && key === 's') {
+      e.preventDefault();
+      if (saveBtn && typeof saveBtn.click === 'function') saveBtn.click();
+      return true;
+    }
+    return false;
+  }
+
   // Global key listeners delegate to router
   window.addEventListener('keydown', (e) => {
     if (e.defaultPrevented) return;
+    const helpTogglePressed = !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === '?' || (e.key === '/' && e.shiftKey));
+    if (helpTogglePressed) {
+      e.preventDefault();
+      toggleHelp(document.activeElement || helpFab || helpBtn || null);
+      return;
+    }
+    if (isHelpOpen()) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeHelp();
+        return;
+      }
+      if (e.key === 'Tab') {
+        handleHelpOverlayKeydown(e);
+        if (e.defaultPrevented) return;
+      }
+    }
     if (e.key === 'Escape' && elementColorOverlay && elementColorOverlay.style.display === 'flex') {
       e.preventDefault();
       setElementColorOverlayOpen(false);
@@ -21659,6 +22395,7 @@
       }
     }
     if (handleEditCopyPasteHotkey(e)) return;
+    if (handleGlobalFileHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
     dispatchShortcut(e, 'down', currentMode);
   });
@@ -22340,7 +23077,7 @@
     const root = document.documentElement;
     const inlineValue = root && root.style ? root.style.getPropertyValue('--vm-accent') : '';
     const computedValue = root ? getComputedStyle(root).getPropertyValue('--vm-accent') : '';
-    const fallback = '#2373eb';
+    const fallback = '#3b5bd9';
     return asHexColor((inlineValue || computedValue || '').trim(), fallback);
   }
 
@@ -22549,7 +23286,7 @@
   for (const { axis, input } of viewShiftBindings) {
     registerPresetSetting(`view.shift.${axis}`, () => contentGroup.position[axis], (value) => {
       contentGroup.position[axis] = asFiniteNumber(value, contentGroup.position[axis]);
-      if (input) input.value = Number(contentGroup.position[axis]).toFixed(3);
+      setViewControlValue(input, contentGroup.position[axis]);
     }, { section: 'view', type: 'number' });
   }
   for (const axis of ['x', 'y', 'z']) {
@@ -22566,18 +23303,22 @@
     const next = value === 'orthographic' ? 'orthographic' : 'perspective';
     setProjectionMode(next, { refreshUi: false });
   });
-  registerPresetSetting('view.autoRotate', () => !!controls.autoRotate, (value) => { controls.autoRotate = asBoolean(value); if (autoRot) autoRot.checked = !!controls.autoRotate; });
+  registerPresetSetting('view.autoRotate', () => !!controls.autoRotate, (value) => {
+    controls.autoRotate = asBoolean(value);
+    if (autoRot) autoRot.checked = !!controls.autoRotate;
+    syncViewAutoRotateState();
+  });
   registerPresetSetting('view.rotateSpeed', () => controls.rotateSpeed ?? 1.0, (value) => {
     controls.rotateSpeed = asFiniteNumber(value, controls.rotateSpeed ?? 1.0);
-    if (rotSpeed) rotSpeed.value = Number(controls.rotateSpeed).toFixed(2);
+    setViewControlValue(rotSpeed, controls.rotateSpeed);
   });
   registerPresetSetting('view.damping', () => controls.dampingFactor ?? 0.05, (value) => {
     controls.dampingFactor = asFiniteNumber(value, controls.dampingFactor ?? 0.05);
-    if (damp) damp.value = Number(controls.dampingFactor).toFixed(2);
+    setViewControlValue(damp, controls.dampingFactor);
   });
   registerPresetSetting('view.autoRotateSpeed', () => controls.autoRotateSpeed ?? 2.0, (value) => {
     controls.autoRotateSpeed = asFiniteNumber(value, controls.autoRotateSpeed ?? 2.0);
-    if (autoRotSpeed) autoRotSpeed.value = Number(controls.autoRotateSpeed).toFixed(2);
+    setViewControlValue(autoRotSpeed, controls.autoRotateSpeed);
   });
   registerPresetSetting('vibration.modeIndex', () => {
     const info = getActiveVibrationInfo();
@@ -23119,10 +23860,16 @@
       controls.update();
     };
   }
-  autoRot.onchange = () => { controls.autoRotate = !!autoRot.checked; };
+  autoRot.onchange = () => {
+    controls.autoRotate = !!autoRot.checked;
+    syncViewAutoRotateState();
+  };
   rotSpeed.oninput = () => { const v = toNum(rotSpeed.value, 1.0); if (Number.isFinite(v)) controls.rotateSpeed = v; };
   damp.oninput = () => { const v = toNum(damp.value, 0.05); if (Number.isFinite(v)) controls.dampingFactor = v; };
   autoRotSpeed.oninput = () => { const v = toNum(autoRotSpeed.value, 2.0); if (Number.isFinite(v)) controls.autoRotateSpeed = v; };
+  if (viewCopyShiftBtn) viewCopyShiftBtn.onclick = () => copyViewVector('shift', viewCopyShiftBtn);
+  if (viewCopyCamBtn) viewCopyCamBtn.onclick = () => copyViewVector('cam', viewCopyCamBtn);
+  if (viewCopyTargetBtn) viewCopyTargetBtn.onclick = () => copyViewVector('target', viewCopyTargetBtn);
   if (trajectoryPlayBtn) {
     let suppressNextTrajectoryClick = false;
     const toggleTrajectoryFromControl = (evt) => {
@@ -25126,8 +25873,12 @@
     ];
     if (meta.query) rows.splice(1, 0, ['Query', meta.query]);
     if (meta.url) rows.push(['URL', meta.url]);
-    const body = rows.map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('');
-    pubchemMetaContent.innerHTML = `<table class="meta-table"><tbody>${body}</tbody></table>`;
+    const monoKeys = new Set(['CID', 'Weight']);
+    const body = rows.map(([k, v]) => {
+      const valueClass = monoKeys.has(String(k)) ? ' class="pubchemMonoValue"' : '';
+      return `<tr><th>${escapeHtml(k)}</th><td${valueClass}>${escapeHtml(v)}</td></tr>`;
+    }).join('');
+    pubchemMetaContent.innerHTML = `<table class="meta-table pubchem-metadata"><tbody>${body}</tbody></table>`;
   }
 
   /**
@@ -25508,11 +26259,14 @@
     pubchemBusy = !!busy;
     if (!pubchemLoadBtn) return;
     pubchemLoadBtn.disabled = pubchemBusy;
-    pubchemLoadBtn.textContent = pubchemBusy ? 'hourglass_top' : 'arrow_downward';
+    pubchemLoadBtn.innerHTML = pubchemBusy
+      ? '<span class="vm-spinner" aria-hidden="true"></span>'
+      : 'arrow_downward';
     pubchemLoadBtn.title = pubchemBusy
       ? 'Loading PubChem…'
       : 'Search PubChem and load the selected molecule';
     pubchemLoadBtn.setAttribute('aria-label', pubchemBusy ? 'Loading PubChem' : 'Load from PubChem');
+    pubchemLoadBtn.setAttribute('aria-busy', pubchemBusy ? 'true' : 'false');
   }
 
   /**

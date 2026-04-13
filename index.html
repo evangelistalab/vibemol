@@ -14,6 +14,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>VibeMol — CUBE Isosurface Viewer</title>
+  <link rel="icon" type="image/svg+xml" href="assets/app/img/favicon-tetra.svg" />
   <script>
     (function () {
       try {
@@ -26,6 +27,9 @@
   </script>
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="src/styles/tokens.css" />
   <link rel="stylesheet" href="assets/app/css/palette.css" />
   <link rel="stylesheet" href="assets/app/css/edit-ui.css" />
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
@@ -48,7 +52,8 @@
 
     :root {
       --vm-font-sans: "Geist", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      --vm-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --vm-font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      --vm-color-accent: var(--vm-brand-accent);
       --vm-font-weight-body: 400;
       --vm-font-weight-emphasis: 500;
       --vm-font-weight-strong: 600;
@@ -59,23 +64,17 @@
       --vm-text-md: 15px;
       --vm-text-lg: 18px;
       --vm-text-xl: 22px;
-      --bg: var(--vm-color-bg-main);
-      --panel: var(--vm-color-bg-panel);
+      --bg: var(--vm-color-surface-base);
+      --panel: var(--vm-color-surface-panel);
       --text: var(--vm-color-text-main);
-      --muted: var(--vm-color-text-muted);
-      --accent: var(--vm-color-accent-primary);
+      --accent: var(--vm-brand-accent);
       --floating-panel-top-offset: 68px;
       --floating-panel-bottom-clearance: 64px;
       --status-ribbon-height: 26px;
-      --status-ribbon-bg: rgba(10, 14, 20, 0.96);
-      --status-ribbon-text: #e6edf6;
-      --status-ribbon-border: rgba(255, 255, 255, 0.08);
-      --status-ribbon-shadow: 0 -8px 16px -8px rgba(0, 0, 0, 0.5);
-      --status-ribbon-pill-bg: #1a2230;
-      --status-ribbon-pill-text: #e9f1ff;
-      --status-ribbon-pill-border: #3a4860;
-      --status-hint-accent: #4aa3ff;
+      --status-hint-accent: var(--vm-brand-accent);
       --shortcut-key-font-family: var(--vm-font-mono);
+      --vm-tetrahedral-spinner-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M8 8.5V3.25' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M8 8.5L3.55 10.05' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M8 8.5L12.45 10.05' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Ccircle cx='8' cy='8.5' r='1.1' fill='white'/%3E%3C/svg%3E");
+      --vm-tetrahedral-heading-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8' fill='none'%3E%3Cpath d='M5 6L1.74 3.69' stroke='white' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M5 6L8.26 3.69' stroke='white' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
     }
 
     html,
@@ -88,11 +87,191 @@
       font-weight: var(--vm-font-weight-body);
     }
 
+    a {
+      color: var(--vm-brand-accent);
+    }
+
     button,
     input,
     select,
     textarea {
       font: inherit;
+    }
+
+    .vm-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px 12px;
+      padding-right: 28px !important;
+      font-family: var(--vm-font-sans);
+      font-size: var(--vm-text-base);
+      font-weight: var(--vm-font-weight-emphasis);
+      transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+    }
+
+    .vm-select:focus,
+    .vm-select:focus-visible {
+      outline: none;
+      border-color: var(--vm-color-accent);
+      box-shadow: var(--vm-shadow-focus-ring);
+    }
+
+    .vm-nums {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'ss01';
+    }
+
+    .vm-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+      background: var(--vm-color-accent);
+      -webkit-mask: center / contain no-repeat var(--vm-tetrahedral-spinner-mask);
+      mask: center / contain no-repeat var(--vm-tetrahedral-spinner-mask);
+      animation: vmSpinnerSpin 900ms linear infinite;
+      transform-origin: 50% 50%;
+      pointer-events: none;
+    }
+
+    @keyframes vmSpinnerSpin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .vm-heroHeading {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .vm-heroHeading::before {
+      content: "";
+      width: 10px;
+      height: 8px;
+      flex: 0 0 auto;
+      background: var(--vm-color-accent);
+      -webkit-mask: center / contain no-repeat var(--vm-tetrahedral-heading-mask);
+      mask: center / contain no-repeat var(--vm-tetrahedral-heading-mask);
+      opacity: 0.9;
+    }
+
+    #emptyStateLeadLogo,
+    #emptyStateLeadLogoDark {
+      display: block;
+      width: min(220px, 58vw);
+      height: auto;
+    }
+
+    #toolbar .tb-brandLogo {
+      display: block;
+      height: 24px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .themeLogoDark {
+      display: none !important;
+    }
+
+    :root[data-theme='dark'] .themeLogoLight {
+      display: none !important;
+    }
+
+    :root[data-theme='dark'] .themeLogoDark {
+      display: block !important;
+    }
+
+    .vm-versionBadge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 20px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid var(--vm-color-border-subtle);
+      background: var(--vm-color-surface-panel);
+      color: var(--vm-color-text-secondary);
+      font-family: var(--vm-font-mono);
+      font-size: var(--vm-text-xs);
+      font-weight: var(--vm-font-weight-emphasis);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    [data-tooltip] {
+      position: relative;
+    }
+
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translate(-50%, -2px);
+      opacity: 0;
+      padding: 6px;
+      border-radius: var(--vm-radius-sm);
+      background: var(--vm-color-surface-raised);
+      color: var(--vm-color-text-primary);
+      font-family: var(--vm-font-sans);
+      font-size: var(--vm-text-xs);
+      font-weight: var(--vm-font-weight-emphasis);
+      line-height: 1.2;
+      white-space: nowrap;
+      box-shadow: var(--vm-shadow-sm);
+      pointer-events: none;
+      z-index: 60;
+      transition: opacity 150ms ease, transform 150ms ease;
+    }
+
+    [data-tooltip]:hover::after,
+    [data-tooltip]:focus-visible::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .vm-section-label {
+      font-size: var(--vm-text-xs);
+      font-weight: var(--vm-font-weight-heading);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--vm-color-text-label);
+      margin: 16px 0 8px;
+    }
+
+    .vm-field-label {
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-emphasis);
+      color: var(--vm-color-text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .status-bar,
+    #hint,
+    .pubchem-metadata td,
+    #toolbar #pubchemMetaContent table.meta-table td,
+    .symmetry-panel .rms-value,
+    #editSymmetryTargetSummary,
+    #editSymmetryExactResult,
+    .editSymmetryCandidateMeta,
+    .coord-readout,
+    #coordsContent,
+    .measure-list,
+    #vibrationModeTable,
+    #trajectoryFrameLabel,
+    #vibrationModeLabel,
+    #vibrationFreqLabel,
+    [class*='-value'],
+    [class*='-num'] {
+      font-variant-numeric: tabular-nums;
     }
 
     #toolbar {
@@ -101,7 +280,7 @@
       left: 0;
       right: 0;
       background: linear-gradient(180deg, #111b2a 0%, #0f1723 100%);
-      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
+      border-bottom: 1px solid var(--vm-color-border-strong);
       padding: 8px 10px;
       display: grid;
       grid-template-columns: minmax(380px, 1.2fr) auto minmax(340px, 1fr);
@@ -116,7 +295,7 @@
       align-items: center;
       gap: 8px;
       padding: 4px 6px;
-      border: 1px solid var(--vm-color-legacy-border-mid);
+      border: 1px solid var(--vm-color-border-subtle);
       border-radius: 10px;
       background: #121c2a;
     }
@@ -138,7 +317,7 @@
 
     #toolbar .tb-brand {
       font-weight: var(--vm-font-weight-heading);
-      color: var(--vm-color-legacy-text-on-dark);
+      color: var(--vm-color-text-primary);
       padding: 0 4px;
       white-space: nowrap;
     }
@@ -147,7 +326,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-sm);
       white-space: nowrap;
     }
@@ -156,10 +335,10 @@
     #toolbar input[type="number"],
     #toolbar input[type="text"] {
       height: 30px;
-      border: 1px solid var(--vm-color-legacy-input-border);
+      border: 1px solid var(--vm-color-border-input);
       border-radius: 8px;
-      background: var(--vm-color-legacy-input-bg);
-      color: var(--vm-color-legacy-input-fg);
+      background: var(--vm-color-surface-input);
+      color: var(--vm-color-text-primary);
       padding: 0 8px;
     }
 
@@ -182,16 +361,18 @@
       font-weight: var(--vm-font-weight-strong);
       cursor: pointer;
       white-space: nowrap;
+      transform-origin: 50% 55%;
+      transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
     }
 
     #toolbar button.secondary {
-      background: var(--vm-color-legacy-secondary-bg);
-      color: var(--vm-color-legacy-secondary-fg);
+      background: var(--vm-color-surface-secondary);
+      color: var(--vm-color-text-primary);
     }
 
     #toolbar button.secondary.active {
-      background: var(--vm-color-legacy-secondary-active-bg);
-      color: var(--vm-color-legacy-secondary-active-fg);
+      background: var(--vm-color-surface-secondary-active);
+      color: var(--vm-color-text-on-accent);
     }
 
     #toolbar button:disabled {
@@ -343,10 +524,10 @@
       display: none;
       gap: 10px;
       z-index: 31;
-      background: rgba(10, 16, 24, 0.94);
-      border: 1px solid var(--vm-color-legacy-border-mid);
+      background: var(--vm-color-surface-raised);
+      border: 1px solid var(--vm-color-border-subtle);
       border-radius: 12px;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+      box-shadow: var(--vm-shadow-lg);
       padding: 10px;
       grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
     }
@@ -356,15 +537,15 @@
     }
 
     #displayInspector .inspectorGroup {
-      border: 1px solid #253244;
+      border: 1px solid var(--vm-color-border-subtle);
       border-radius: 10px;
       padding: 8px;
-      background: #111b29;
+      background: var(--vm-color-surface-panel);
       min-width: 0;
     }
 
     #displayInspector .inspectorTitle {
-      color: #dbe6f6;
+      color: var(--tb-text-color-emphasis);
       font-size: var(--vm-text-sm);
       font-weight: var(--vm-font-weight-heading);
       margin-bottom: 8px;
@@ -386,7 +567,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-sm);
       white-space: nowrap;
     }
@@ -394,10 +575,10 @@
     #displayInspector input[type="number"] {
       width: 76px;
       height: 28px;
-      border: 1px solid var(--vm-color-legacy-input-border);
+      border: 1px solid var(--vm-color-border-input);
       border-radius: 8px;
-      background: var(--vm-color-legacy-input-bg);
-      color: var(--vm-color-legacy-input-fg);
+      background: var(--vm-color-surface-input);
+      color: var(--vm-color-text-primary);
       padding: 0 8px;
     }
 
@@ -408,7 +589,7 @@
     #displayInspector input[type="color"] {
       width: 28px;
       height: 28px;
-      border: 1px solid var(--vm-color-legacy-input-border);
+      border: 1px solid var(--vm-color-border-input);
       border-radius: 7px;
       background: transparent;
       padding: 0;
@@ -424,7 +605,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border: 1px solid var(--vm-color-legacy-input-border);
+      border: 1px solid var(--vm-color-border-input);
       border-radius: 8px;
       padding: 6px 8px;
       background: #162130;
@@ -469,7 +650,7 @@
       max-height: calc(100vh - var(--floating-panel-top-offset) - var(--floating-panel-bottom-clearance));
       height: auto;
       background: var(--panel);
-      border: 1px solid var(--vm-color-legacy-border-strong);
+      border: 1px solid var(--vm-color-border-strong);
       border-radius: 10px;
       box-shadow: 0 12px 24px #0007;
       transform: translateX(110%);
@@ -492,7 +673,7 @@
       width: min(420px, calc(100vw - 24px));
       max-height: calc(100vh - var(--floating-panel-top-offset) - var(--floating-panel-bottom-clearance));
       background: var(--panel);
-      border: 1px solid var(--vm-color-legacy-border-strong);
+      border: 1px solid var(--vm-color-border-strong);
       border-radius: 10px;
       box-shadow: 0 12px 24px #0007;
       z-index: 24;
@@ -514,7 +695,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 10px 12px;
-      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
+      border-bottom: 1px solid var(--vm-color-border-strong);
       color: var(--text);
     }
 
@@ -568,8 +749,8 @@
     }
 
     .motionPanelClose {
-      background: var(--vm-color-legacy-secondary-bg);
-      color: var(--vm-color-legacy-secondary-fg);
+      background: var(--vm-color-surface-secondary);
+      color: var(--vm-color-text-primary);
       border: none;
       min-width: 32px;
       height: 30px;
@@ -585,7 +766,7 @@
     .motionPanelBody {
       padding: 10px 12px;
       color: var(--text);
-      background: var(--vm-color-legacy-muted-chip);
+      background: var(--vm-color-surface-chip);
       border-radius: 0 0 10px 10px;
     }
 
@@ -625,7 +806,7 @@
     }
 
     .motionPanelBody label {
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-sm);
       width: auto;
     }
@@ -633,19 +814,19 @@
     .motionPanelBody input[type="number"] {
       width: 100%;
       padding: 3px 6px;
-      background: var(--vm-color-legacy-dark-surface);
+      background: var(--vm-color-surface-panel);
       color: var(--text);
-      border: 1px solid var(--vm-color-legacy-border-strong);
+      border: 1px solid var(--vm-color-border-strong);
       border-radius: 4px;
     }
 
     #vibrationModeTableWrap {
       display: none;
       margin-top: 8px;
-      border: 1px solid var(--vm-color-legacy-border-strong);
+      border: 1px solid var(--vm-color-border-strong);
       border-radius: 8px;
       overflow: hidden;
-      background: var(--vm-color-legacy-muted-chip-2);
+      background: var(--vm-color-surface-chip-muted);
       max-height: 260px;
       overflow-y: auto;
     }
@@ -653,9 +834,9 @@
     #vibrationSpectrumWrap {
       display: none;
       margin-top: 8px;
-      border: 1px solid var(--vm-color-legacy-border-strong);
+      border: 1px solid var(--vm-color-border-strong);
       border-radius: 8px;
-      background: var(--vm-color-legacy-muted-chip-2);
+      background: var(--vm-color-surface-chip-muted);
       padding: 6px 8px 4px;
     }
 
@@ -669,7 +850,7 @@
 
     #vibrationSpectrumMeta {
       margin-top: 5px;
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-xs);
       line-height: 1.2;
       font-variant-numeric: tabular-nums;
@@ -685,7 +866,7 @@
     #vibrationModeTable th,
     #vibrationModeTable td {
       padding: 6px 8px;
-      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
+      border-bottom: 1px solid var(--vm-color-border-strong);
       text-align: left;
       vertical-align: middle;
       white-space: nowrap;
@@ -695,8 +876,8 @@
       position: sticky;
       top: 0;
       z-index: 1;
-      background: var(--vm-color-legacy-muted-chip);
-      color: var(--muted);
+      background: var(--vm-color-surface-chip);
+      color: var(--vm-color-text-label);
       font-weight: var(--vm-font-weight-strong);
     }
 
@@ -706,7 +887,7 @@
     }
 
     #vibrationModeTable td:nth-child(2) {
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-variant-numeric: tabular-nums;
     }
 
@@ -768,7 +949,7 @@
     #vibrationNowPlaying {
       margin-top: 4px;
       margin-bottom: 8px;
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-sm);
       line-height: 1.2;
       font-variant-numeric: tabular-nums;
@@ -776,7 +957,7 @@
 
     #vibrationModeEmpty {
       display: none;
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-sm);
       padding: 10px 2px 2px;
     }
@@ -792,7 +973,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 10px 12px;
-      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
+      border-bottom: 1px solid var(--vm-color-border-strong);
       color: var(--text);
     }
 
@@ -801,8 +982,8 @@
     }
 
     #sideClose {
-      background: var(--vm-color-legacy-secondary-bg);
-      color: var(--vm-color-legacy-secondary-fg);
+      background: var(--vm-color-surface-secondary);
+      color: var(--vm-color-text-primary);
       border: none;
       padding: 4px 8px;
       border-radius: 6px;
@@ -815,11 +996,12 @@
       color: var(--text);
       font-size: var(--vm-text-base);
       font-variant-numeric: tabular-nums;
+      font-family: var(--vm-font-mono);
     }
 
     #coordsContent .coordsActiveLabel {
       margin-bottom: 8px;
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
     }
 
     #toolbar #pubchemMetaContent {
@@ -841,7 +1023,7 @@
     }
 
     #toolbar #pubchemMetaTitle {
-      color: var(--tb-text-color-muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--tb-text-size-meta);
       font-weight: var(--tb-text-weight-bold);
       margin: 0 0 4px 1px;
@@ -878,11 +1060,15 @@
       font-variant-numeric: tabular-nums;
     }
 
+    #toolbar #pubchemMetaContent table.meta-table td.pubchemMonoValue {
+      font-family: var(--vm-font-mono);
+    }
+
     #viewControls {
       padding: 10px 12px;
-      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
+      border-bottom: 1px solid var(--vm-color-border-strong);
       color: var(--text);
-      background: var(--vm-color-legacy-muted-chip);
+      background: var(--vm-color-surface-chip);
     }
 
     #viewControls .row {
@@ -902,16 +1088,16 @@
     }
 
     #viewControls label {
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-sm);
     }
 
     #viewControls input[type="number"] {
       width: 100%;
       padding: 3px 6px;
-      background: var(--vm-color-legacy-dark-surface);
+      background: var(--vm-color-surface-panel);
       color: var(--text);
-      border: 1px solid var(--vm-color-legacy-border-strong);
+      border: 1px solid var(--vm-color-border-strong);
       border-radius: 4px;
     }
 
@@ -920,7 +1106,7 @@
     }
 
     #viewControls .axis {
-      color: var(--muted);
+      color: var(--vm-color-text-label);
       font-size: var(--vm-text-sm);
       text-align: center;
     }
@@ -934,12 +1120,12 @@
     #coordsContent td {
       text-align: right;
       padding: 4px 6px;
-      border-bottom: 1px solid var(--vm-color-legacy-border-strong);
+      border-bottom: 1px solid var(--vm-color-border-strong);
     }
 
     #coordsContent th {
       text-align: left;
-      color: var(--muted);
+      color: var(--vm-color-text-label);
       font-weight: var(--vm-font-weight-strong);
     }
 
@@ -949,7 +1135,7 @@
 
     #coordsContent tbody tr[data-atom-index]:hover,
     #coordsContent tbody tr.coordsRowHovered {
-      background: rgba(74, 163, 255, 0.12);
+      background: color-mix(in srgb, var(--vm-brand-accent) 12%, transparent);
     }
 
     #coordsContent .coordsCellButton {
@@ -958,6 +1144,7 @@
       background: transparent;
       color: inherit;
       font: inherit;
+      font-family: var(--vm-font-mono);
       padding: 0;
       margin: 0;
       width: 100%;
@@ -966,18 +1153,19 @@
     }
 
     #coordsContent .coordsCellButton:hover {
-      color: #d7ebff;
+      color: var(--vm-brand-accent);
     }
 
     #coordsContent .coordsCellEditor {
       width: 100%;
       box-sizing: border-box;
       padding: 2px 4px;
-      border: 1px solid var(--vm-color-legacy-border-soft);
+      border: 1px solid var(--vm-color-border-soft);
       border-radius: 4px;
-      background: var(--vm-color-legacy-dark-surface);
+      background: var(--vm-color-surface-panel);
       color: var(--text);
       font: inherit;
+      font-family: var(--vm-font-mono);
       text-align: inherit;
       outline: none;
     }
@@ -999,8 +1187,7 @@
     #hint {
       position: fixed;
       left: 160px;
-      bottom: calc(var(--status-ribbon-height) + 12px);
-      /* sit above the shortcuts ribbon */
+      bottom: 12px;
       right: 12px;
       max-width: calc(100vw - 24px);
       box-sizing: border-box;
@@ -1019,7 +1206,6 @@
       -webkit-backdrop-filter: blur(8px) saturate(120%);
       transition: background-color 180ms ease, border-left-color 180ms ease, box-shadow 180ms ease;
       z-index: 31;
-      /* above the ribbon (z-index:30) */
     }
 
     #hint.is-accented {
@@ -1043,7 +1229,7 @@
       top: 56px;
       left: 0;
       right: 0;
-      bottom: var(--status-ribbon-height);
+      bottom: 0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1064,7 +1250,7 @@
       border-radius: 16px;
       padding: 22px 24px;
       line-height: 1.35;
-      box-shadow: 0 18px 34px var(--vm-color-splash-card-shadow);
+      box-shadow: var(--vm-shadow-lg);
       pointer-events: auto;
     }
 
@@ -1073,35 +1259,20 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 12px;
+      flex-wrap: wrap;
       width: 100%;
       text-align: center;
     }
 
-    #emptyStateLeadLogo,
-    #emptyStateLeadLogoDark {
-      display: block;
-      width: min(220px, 58vw);
-      height: auto;
-    }
-
     #emptyStateVersion {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 24px;
-      padding: 0 10px;
-      border-radius: 999px;
-      background: rgba(86, 103, 129, 0.14);
-      border: 1px solid rgba(120, 139, 168, 0.22);
-      font-size: var(--vm-text-sm);
-      font-weight: var(--vm-font-weight-heading);
       color: var(--vm-color-splash-version);
     }
 
     #emptyStateDropZone {
-      border: 2px dashed var(--vm-color-splash-drop-border);
+      border: 1px solid var(--vm-color-splash-drop-border);
       background: var(--vm-color-splash-drop-bg);
+      box-shadow: var(--vm-shadow-lg);
       border-radius: 12px;
       padding: 16px 14px;
       text-align: center;
@@ -1118,6 +1289,11 @@
       color: var(--vm-color-splash-drop-code-fg);
       font-size: 0.92em;
       font-weight: var(--vm-font-weight-heading);
+      font-family: var(--vm-font-mono);
+    }
+
+    kbd {
+      font-family: var(--vm-font-mono);
     }
 
     #emptyStateDropIcon {
@@ -1146,6 +1322,13 @@
       font-size: 14px;
       font-weight: var(--vm-font-weight-heading);
       cursor: pointer;
+      transform-origin: 50% 55%;
+      transition: filter 150ms ease, transform 150ms ease;
+    }
+
+    #toolbar button:not(.secondary):hover,
+    #emptyStateOpenBtn:hover {
+      transform: rotate(calc(var(--vm-angle-tetrahedral) * 0.00456746));
     }
 
     #emptyStateOpenBtn:hover {
@@ -1191,9 +1374,6 @@
     }
 
     #emptyStateWhatsNewSummary {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
       width: fit-content;
       color: var(--vm-color-splash-link);
       font-size: var(--vm-text-sm);
@@ -1207,7 +1387,7 @@
       display: none;
     }
 
-    #emptyStateWhatsNewSummary::before {
+    #emptyStateWhatsNewSummary::after {
       content: 'open_in_new';
       font-family: 'Material Symbols Rounded';
       font-size: 14px;
@@ -1216,7 +1396,7 @@
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
     }
 
-    #emptyStateWhatsNew[open] #emptyStateWhatsNewSummary::before {
+    #emptyStateWhatsNew[open] #emptyStateWhatsNewSummary::after {
       content: 'expand_less';
     }
 
@@ -1260,7 +1440,7 @@
       max-height: 86vh;
       overflow: auto;
       background: var(--panel);
-      border: 1px solid var(--vm-color-legacy-border-strong);
+      border: 1px solid var(--vm-color-border-strong);
       border-radius: 10px;
       box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
       padding: 10px 12px 12px;
@@ -1284,7 +1464,7 @@
       align-items: center;
       gap: 10px;
       margin-bottom: 10px;
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
     }
 
     #elementColorName {
@@ -1312,7 +1492,7 @@
 
     .pt-legend {
       margin-top: 8px;
-      color: var(--muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-sm);
     }
 
@@ -1333,7 +1513,6 @@
       --tb-text-weight-bold: var(--vm-font-weight-heading);
       --tb-text-color-primary: var(--vm-color-toolbar-text-primary);
       --tb-text-color-strong: var(--vm-color-toolbar-text-strong);
-      --tb-text-color-muted: var(--vm-color-toolbar-text-muted);
       --tb-text-color-subtle: var(--vm-color-toolbar-text-subtle);
       --tb-text-color-emphasis: var(--vm-color-toolbar-text-emphasis);
       --tb-text-color-icon: var(--vm-color-toolbar-icon-strong);
@@ -1356,7 +1535,7 @@
       --toolbar-mode-tab-fg-hover: var(--vm-color-toolbar-tab-fg-hover);
       --toolbar-mode-tab-fg-active: var(--vm-color-toolbar-tab-fg-active);
       --toolbar-mode-tab-accent: var(--vm-color-toolbar-tab-accent);
-      --tb-surface-base: var(--vm-color-toolbar-bg);
+      --tb-surface-base: var(--vm-color-surface-panel);
       --tb-surface-emphasis: var(--vm-color-toolbar-control-bg);
       --tb-surface-emphasis-hover: var(--vm-color-toolbar-control-bg-hover);
       --tb-surface-button: var(--vm-color-toolbar-button-bg);
@@ -1379,7 +1558,7 @@
       inset: 0 auto 0 0;
       width: var(--workspace-sidebar-width);
       right: auto;
-      border-right: 1px solid var(--vm-color-toolbar-border);
+      border-right: 1px solid var(--vm-color-border);
       border-bottom: none;
       background: var(--tb-surface-base);
       color: var(--tb-text-color-primary);
@@ -1422,47 +1601,15 @@
 
     #toolbar .tb-brand {
       color: var(--tb-text-color-strong);
-      font-size: var(--tb-text-size-title);
-      font-weight: var(--tb-text-weight-bold);
       padding: 0;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       margin-right: auto;
     }
 
-    #toolbar .tb-brandLogo {
-      display: block;
-      height: 24px;
-      width: auto;
-      object-fit: contain;
-    }
-
-    .themeLogoDark {
-      display: none !important;
-    }
-
-    :root[data-theme='dark'] .themeLogoLight {
-      display: none !important;
-    }
-
-    :root[data-theme='dark'] .themeLogoDark {
-      display: block !important;
-    }
-
     #toolbar .tb-versionBadge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 20px;
-      padding: 0 8px;
-      border-radius: 6px;
-      background: var(--tb-surface-emphasis);
-      color: var(--tb-text-color-muted);
-      font-size: var(--vm-text-sm);
-      font-weight: var(--tb-text-weight-semibold);
-      font-variant-numeric: tabular-nums;
-      line-height: 1.1;
+      color: var(--vm-color-text-secondary);
     }
 
     #toolbarModeRow {
@@ -1501,12 +1648,11 @@
     #toolbarModeRow .tb-modeBtn::after {
       content: "";
       position: absolute;
-      left: 12%;
-      right: 12%;
+      left: 12px;
+      right: 12px;
       bottom: -1px;
-      height: 3px;
-      border-radius: 2px;
-      background: var(--toolbar-mode-tab-accent);
+      height: 0;
+      border-bottom: 2px solid var(--vm-color-accent);
       transform: scaleX(0);
       transform-origin: center;
       opacity: 0;
@@ -1814,7 +1960,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      color: var(--tb-text-color-muted);
+      color: var(--vm-color-text-secondary);
       font-size: var(--tb-text-size-label);
       font-weight: var(--tb-text-weight-semibold);
       white-space: normal;
@@ -2085,7 +2231,7 @@
     }
 
     #toolbar #displayInspector .toggleChip input[type="checkbox"] {
-      accent-color: var(--vm-accent-700);
+      accent-color: var(--vm-brand-accent);
     }
 
     #toolbar #displayInspector .isoField {
@@ -2182,66 +2328,6 @@
       max-width: calc(100vw - var(--workspace-left-offset) - 36px);
     }
 
-    #shortcutRibbon {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      min-height: var(--status-ribbon-height);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 4px 10px;
-      box-sizing: border-box;
-      background: var(--status-ribbon-bg);
-      color: var(--status-ribbon-text);
-      font-size: var(--vm-text-base);
-      font-weight: var(--vm-font-weight-emphasis);
-      font-variant-numeric: tabular-nums;
-      border-top: 1px solid var(--status-ribbon-border);
-      box-shadow: var(--status-ribbon-shadow);
-      backdrop-filter: blur(8px) saturate(120%);
-      -webkit-backdrop-filter: blur(8px) saturate(120%);
-      pointer-events: none;
-      z-index: 30;
-    }
-
-    #shortcutRibbon[aria-hidden="true"] {
-      display: none;
-    }
-
-    .shortcutRibbonItem {
-      opacity: 0.92;
-    }
-
-    .shortcutRibbonSeparator {
-      opacity: 0.38;
-    }
-
-    .shortcutRibbonKey {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 1.25em;
-      margin-right: 6px;
-      padding: 2px 6px;
-      border: 1px solid var(--status-ribbon-pill-border);
-      border-radius: 5px;
-      background: var(--status-ribbon-pill-bg);
-      color: var(--status-ribbon-pill-text);
-      line-height: 1;
-      font-weight: var(--vm-font-weight-strong);
-      font-family: var(--shortcut-key-font-family);
-      letter-spacing: 0.02em;
-      font-variant-ligatures: none;
-      box-sizing: border-box;
-    }
-
-    body:not(.sidebar-collapsed) #shortcutRibbon {
-      display: none !important;
-      visibility: hidden;
-    }
-
     @media (max-width: 980px) {
       body {
         --workspace-left-offset: 0px;
@@ -2291,7 +2377,7 @@
         <div class="tb-brand">
           <img class="tb-brandLogo themeLogoLight" src="assets/app/img/logo_600px.png" alt="VibeMol" />
           <img class="tb-brandLogo themeLogoDark" src="assets/app/img/logo_dark_600px.png" alt="VibeMol" />
-          <span id="toolbarVersion" class="tb-versionBadge" aria-label="VibeMol version">v0.0.0</span>
+          <span id="toolbarVersion" class="tb-versionBadge vm-versionBadge" aria-label="VibeMol version">v0.0.0</span>
         </div>
         <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button"
           title="Hide sidebar">chevron_left</button>
@@ -2313,30 +2399,31 @@
 
     <div class="tb-section tb-file">
       <div class="tb-fileActionRow">
-        <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" title="Open molecule files"
+        <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" title="Open files"
           aria-label="Open files"
-          data-tip="Open files (.xyz, .molden, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
-        <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Create a new empty file"
-          aria-label="New file" data-tip="Create a new empty editable file">note_add</button>
+          data-tooltip="Open files (.xyz, .molden, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
+        <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Create new file"
+          aria-label="Create new file"
+          data-tooltip="Create a new empty editable file">note_add</button>
         <div class="tb-iconActions">
           <button id="saveBtn" class="secondary tb-iconBtn ms-icon-button"
-            title="Save the current view as a PNG image (S)" aria-label="Save PNG"
-            data-tip="Save the current view as a PNG image. Shortcut: S">image</button>
-          <button id="batchBtn" class="secondary tb-iconBtn ms-icon-button" title="Export all views as PNG images (B)"
-            aria-label="Batch export"
-            data-tip="Export all loaded files as PNG images. Shortcut: B">photo_library</button>
+            title="Save PNG image" aria-label="Save PNG image"
+            data-tooltip="Save the current view as a PNG image. Shortcut: S">image</button>
+          <button id="batchBtn" class="secondary tb-iconBtn ms-icon-button" title="Batch export PNG images"
+            aria-label="Batch export PNG images"
+            data-tooltip="Export all loaded files as PNG images. Shortcut: B">photo_library</button>
           <button id="savePresetBtn" class="secondary tb-iconBtn ms-icon-button"
-            title="Download current visualization preset as JSON" aria-label="Save preset"
-            data-tip="Download current visualization preset as JSON">tune</button>
+            title="Download preset JSON" aria-label="Download preset JSON"
+            data-tooltip="Download current visualization preset as JSON">tune</button>
           <button id="saveStructureBtn" class="secondary tb-iconBtn ms-icon-button"
-            title="Download current structure as reproducible JSON" aria-label="Save structure"
-            data-tip="Download current structure as reproducible JSON">file_download</button>
+            title="Download structure JSON" aria-label="Download structure JSON"
+            data-tooltip="Download current structure as reproducible JSON">file_download</button>
         </div>
       </div>
       <div class="tb-field">
         <label for="fileSelect">Active file</label>
         <div class="tb-inline">
-          <select id="fileSelect"></select>
+          <select id="fileSelect" class="vm-select"></select>
         </div>
         <div class="tb-fileRecordActions" aria-label="Active file actions">
           <button id="duplicateFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Duplicate active file"
@@ -2390,7 +2477,7 @@
           </div>
           <div class="appearanceHiddenControl" aria-hidden="true">
             <label for="moleculeStyle">Style</label>
-            <select id="moleculeStyle"
+            <select id="moleculeStyle" class="vm-select"
               title="Choose atom/bond rendering style (shortcuts: 1=Default, 2=Toon, 3=Kit, 4=Glossy)">
               <option value="default" selected>Default</option>
               <option value="toon">Toon (luminous)</option>
@@ -2528,7 +2615,7 @@
             </div>
             <div class="inspectorRow inspectorSelectRow" id="rowDofFocusMode">
               <label for="dofFocusMode">Focus mode</label>
-              <select id="dofFocusMode"
+              <select id="dofFocusMode" class="vm-select"
                 title="Choose whether depth of field focuses on the current camera target or a manual distance">
                 <option value="auto" selected>Auto (target)</option>
                 <option value="manual">Manual</option>
@@ -2558,7 +2645,7 @@
           <div class="inspectorAccordionBody">
             <div class="inspectorRow inspectorSelectRow">
               <label for="schemeSelect">Color scheme</label>
-              <select id="schemeSelect" title="Choose default +/- surface colors">
+              <select id="schemeSelect" class="vm-select" title="Choose default +/- surface colors">
                 <option value="emory" selected>Emory (gold/blue)</option>
                 <option value="national">National (red/blue)</option>
                 <option value="bright">Bright (yellow/cyan)</option>
@@ -2569,14 +2656,14 @@
             </div>
             <div class="inspectorRow inspectorSelectRow">
               <label for="renderMode">Render mode</label>
-              <select id="renderMode" title="Choose visualization mode">
+              <select id="renderMode" class="vm-select" title="Choose visualization mode">
                 <option value="surface" selected>Surfaces</option>
                 <option value="cloud">Cloud</option>
               </select>
             </div>
             <div class="inspectorRow inspectorSelectRow" id="rowStyle">
               <label for="styleSelect">Surface style</label>
-              <select id="styleSelect" title="Choose iso-surface material style">
+              <select id="styleSelect" class="vm-select" title="Choose iso-surface material style">
                 <option value="emissive" selected>Emissive (physical)</option>
                 <option value="glass">Glass (physical)</option>
               </select>
@@ -2618,7 +2705,7 @@
               <div class="inspectorAccordionBody inspectorSubsectionBody">
                 <div class="inspectorRow inspectorSelectRow" id="twoComponentModeRow" style="display:none;">
                   <label for="twoComponentModeSelect">Mode</label>
-                  <select id="twoComponentModeSelect" title="Select 2C cube component or phase surface">
+                  <select id="twoComponentModeSelect" class="vm-select" title="Select 2C cube component or phase surface">
                     <option value="alphaRe">alphaRe</option>
                     <option value="alphaIm">alphaIm</option>
                     <option value="betaRe">betaRe</option>
@@ -2636,7 +2723,7 @@
               <div class="inspectorAccordionBody inspectorSubsectionBody">
                 <div class="inspectorRow inspectorSelectRow" id="rowCloudType">
                   <label for="cloudType">Cloud type</label>
-                  <select id="cloudType" title="Cloud renderer">
+                  <select id="cloudType" class="vm-select" title="Cloud renderer">
                     <option value="cubes" selected>Cubes</option>
                     <option value="points">Points</option>
                   </select>
@@ -2732,6 +2819,46 @@
   <div id="drop">
     <canvas id="canvas"></canvas>
   </div>
+  <button id="helpFab" class="vm-btn vm-btn--icon vm-btn--ghost" type="button" aria-label="Keyboard shortcuts (?)"
+    title="Keyboard shortcuts (?)" data-tooltip="Keyboard shortcuts (?)">?</button>
+  <div id="modeAssistMenu" aria-hidden="true">
+    <div id="modeAssistItem1" class="adaptiveEditItem adaptiveEditItem--static" aria-hidden="true" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span id="modeAssistItem1Icon" class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">straighten</span>
+          <span id="modeAssistItem1Label" class="adaptiveEditItemLabel">Distance</span>
+        </span>
+        <span id="modeAssistItem1Meta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span id="modeAssistItem1Key" class="adaptiveShortcutKey">2</span>
+      </span>
+    </div>
+    <div id="modeAssistItem2" class="adaptiveEditItem adaptiveEditItem--static" aria-hidden="true" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span id="modeAssistItem2Icon" class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">change_history</span>
+          <span id="modeAssistItem2Label" class="adaptiveEditItemLabel">Angle</span>
+        </span>
+        <span id="modeAssistItem2Meta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span id="modeAssistItem2Key" class="adaptiveShortcutKey">3</span>
+      </span>
+    </div>
+    <div id="modeAssistItem3" class="adaptiveEditItem adaptiveEditItem--static" aria-hidden="true" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span id="modeAssistItem3Icon" class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">3d_rotation</span>
+          <span id="modeAssistItem3Label" class="adaptiveEditItemLabel">Dihedral</span>
+        </span>
+        <span id="modeAssistItem3Meta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span id="modeAssistItem3Key" class="adaptiveShortcutKey">4</span>
+      </span>
+    </div>
+  </div>
   <div id="displayWindowAdaptiveMenu" aria-hidden="true">
     <button id="moldenInspectorBtn" class="adaptiveEditItem" type="button" title="Orbitals (O)" hidden>
       <span class="adaptiveEditItemBody">
@@ -2811,7 +2938,7 @@
       <div class="inspectorTitle">Orbitals</div>
       <div class="inspectorRow inspectorSelectRow" id="moldenMoRow" style="display:none;">
         <label for="moldenMoSelect">Molden MO</label>
-        <select id="moldenMoSelect" title="Select one molecular orbital parsed from the Molden file"></select>
+        <select id="moldenMoSelect" class="vm-select" title="Select one molecular orbital parsed from the Molden file"></select>
       </div>
       <div id="moldenMoSummary" class="moldenInspectorSummary"></div>
       <div class="inspectorRow inspectorSelectRow" id="moldenGridRow" style="display:none;">
@@ -2875,7 +3002,7 @@
       <div id="emptyStateLead">
         <img id="emptyStateLeadLogo" class="themeLogoLight" src="assets/app/img/logo_600px.png" alt="VibeMol" />
         <img id="emptyStateLeadLogoDark" class="themeLogoDark" src="assets/app/img/logo_dark_600px.png" alt="VibeMol" />
-        <span id="emptyStateVersion"></span>
+        <span id="emptyStateVersion" class="vm-versionBadge"></span>
       </div>
       <div id="emptyStateDropZone">
         <span id="emptyStateDropIcon" class="material-symbols-outlined">upload_file</span>
@@ -2891,9 +3018,9 @@
         <button id="emptyState2cBtn" type="button">Open 2-component cube set</button>
       </div>
       <details id="emptyStateWhatsNew">
-        <summary id="emptyStateWhatsNewSummary">What's new since v0.7.0</summary>
+        <summary id="emptyStateWhatsNewSummary" class="vm-heroHeading">What's new since v0.7.0</summary>
         <div id="emptyStateWhatsNewPanel">
-          <div class="emptyStateWhatsNewLead">Since v0.7.0, VibeMol adds:</div>
+          <div class="emptyStateWhatsNewLead vm-heroHeading">Since v0.7.0, VibeMol adds:</div>
           <ul id="emptyStateWhatsNewList">
             <li>gesture-first edit mode with scope-aware right click, bond cues, and unified tool popups</li>
             <li>a slash-open Build palette for atoms, fragments, and molecules with smarter attach behavior</li>
@@ -2976,27 +3103,27 @@
   </div>
   <div id="editAdaptiveAddAtomPopover" aria-hidden="true">
     <div id="editBuildPalette">
-      <label id="editBuildSearchLabel" for="editBuildSearch">Search</label>
+      <label id="editBuildSearchLabel" class="vm-field-label" for="editBuildSearch">Search</label>
       <div id="editBuildSearchRow">
         <input id="editBuildSearch" type="text" autocomplete="off" placeholder="Type to filter..." />
         <span id="editBuildSearchShortcut" aria-hidden="true">/</span>
       </div>
       <div class="editBuildPaletteSection">
-        <div class="editBuildPaletteSectionTitle">Atoms</div>
+        <div class="editBuildPaletteSectionTitle vm-section-label">Atoms</div>
         <div id="editBuildAtomsHost"></div>
       </div>
       <div class="editBuildPaletteSection">
-        <div class="editBuildPaletteSectionTitle">Fragments</div>
+        <div class="editBuildPaletteSectionTitle vm-section-label">Fragments</div>
         <div id="editBuildFragmentsHost"></div>
       </div>
       <div class="editBuildPaletteSection">
-        <div class="editBuildPaletteSectionTitle">Molecules</div>
+        <div class="editBuildPaletteSectionTitle vm-section-label">Molecules</div>
         <div id="editBuildMoleculesHost"></div>
       </div>
     </div>
   </div>
   <div id="editAdaptiveSymmetryPopover" aria-hidden="true">
-    <div id="editSymmetryPanel">
+    <div id="editSymmetryPanel" class="symmetry-panel">
       <div id="editSymmetryHeader">
         <div id="editSymmetryTitleRow">
           <span class="material-symbols-rounded editSymmetryTitleIcon" aria-hidden="true">hub</span>
@@ -3013,7 +3140,7 @@
       <div id="editSymmetryToleranceSection">
         <label id="editSymmetryToleranceLabel" for="editSymmetryToleranceSelect">RMS TOLERANCE (Å)</label>
         <div id="editSymmetryToleranceControls">
-          <select id="editSymmetryToleranceSelect" class="editPopupSelect">
+          <select id="editSymmetryToleranceSelect" class="editPopupSelect vm-select">
             <option value="0.050">0.05</option>
             <option value="0.100">0.10</option>
             <option value="0.250">0.25</option>
@@ -3024,7 +3151,7 @@
       </div>
       <div id="editSymmetryElementSection">
         <label id="editSymmetryElementLabel" for="editSymmetryElementSelect">Symmetry element</label>
-        <select id="editSymmetryElementSelect" class="editPopupSelect">
+        <select id="editSymmetryElementSelect" class="editPopupSelect vm-select">
           <option value="">None</option>
         </select>
       </div>
@@ -3152,25 +3279,25 @@
         <button id="editAddModeMoleculeBtn" type="button" title="Place standalone molecules">Molecule</button>
       </div>
       <div id="editAddAtomPane" class="active">
-        <label for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
+        <label class="vm-field-label" for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
         <input id="editAddSearch" type="text" list="editAddSuggestions" autocomplete="off"
           placeholder="e.g. C, Carbon, 6" />
         <datalist id="editAddSuggestions"></datalist>
         <div id="editAddQuick"></div>
-        <label for="editAddCoordination">Coordination</label>
-        <select id="editAddCoordination" class="editPopupSelect"></select>
-        <label class="editAddToggleRow" for="editAddAdjustHydrogens">
+        <label class="vm-field-label" for="editAddCoordination">Coordination</label>
+        <select id="editAddCoordination" class="editPopupSelect vm-select"></select>
+        <label class="editAddToggleRow vm-field-label" for="editAddAdjustHydrogens">
           <input id="editAddAdjustHydrogens" type="checkbox" checked />
           <span>Adjust hydrogens</span>
         </label>
       </div>
       <div id="editAddFragmentPane">
-        <label for="editFragmentSearch">Fragment to add (name, id, or formula)</label>
+        <label class="vm-field-label" for="editFragmentSearch">Fragment to add (name, id, or formula)</label>
         <input id="editFragmentSearch" type="text" list="editFragmentSuggestions" autocomplete="off"
           placeholder="e.g. phenyl, hydroxyl, C6H5" />
         <datalist id="editFragmentSuggestions"></datalist>
-        <label for="editFragmentAttachPolicy">Attach policy</label>
-        <select id="editFragmentAttachPolicy" class="editPopupSelect"
+        <label class="vm-field-label" for="editFragmentAttachPolicy">Attach policy</label>
+        <select id="editFragmentAttachPolicy" class="editPopupSelect vm-select"
           title="Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.">
           <option value="smart" selected>Smart</option>
           <option value="append">Append</option>
@@ -3179,7 +3306,7 @@
         <div id="editFragmentQuick"></div>
       </div>
       <div id="editAddMoleculePane">
-        <label for="editMoleculeSearch">Molecule to add (name, id, or formula)</label>
+        <label class="vm-field-label" for="editMoleculeSearch">Molecule to add (name, id, or formula)</label>
         <input id="editMoleculeSearch" type="text" list="editMoleculeSuggestions" autocomplete="off"
           placeholder="e.g. benzene, pyridine, C6H6" />
         <datalist id="editMoleculeSuggestions"></datalist>
@@ -3200,63 +3327,157 @@
         nearest valid angle (180°, 120°, 109.5°, 90°, 60°).</div>
     </div>
   </div>
-  <div id="shortcutRibbon" aria-hidden="true"></div>
-
-  <!-- Right side panel (toggle) -->
-  <div id="sidePanel" aria-hidden="true">
-    <div id="sideHeader">
-      <div class="title">View</div>
-      <div>
-        <button id="viewReset" class="secondary" title="Reset the view to the initial state">Reset View</button>
-        <button id="sideClose" class="ms-icon-button" title="Close">close</button>
+  <!-- View floating panel -->
+  <div id="sidePanel" class="vm-popover vm-view-panel" aria-hidden="true">
+    <header class="vm-popover__header">
+      <h2>View</h2>
+      <div class="vm-popover__actions">
+        <button id="viewReset" class="vm-btn vm-btn--ghost" type="button"
+          title="Reset the view to the initial state">Reset View</button>
+        <button id="sideClose" class="vm-btn vm-btn--icon" type="button" aria-label="Close" title="Close">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M4 4L12 12"></path>
+            <path d="M12 4L4 12"></path>
+          </svg>
+        </button>
       </div>
+    </header>
+
+    <div id="viewControls" class="vm-view-controls">
+      <section class="vm-view-section">
+        <h3 class="vm-section-label">Camera</h3>
+        <div class="vm-vec-row" data-vector-kind="shift">
+          <label>Shift</label>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Shift X">
+            <span class="vm-num__prefix" aria-hidden="true">X</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="shiftX" class="vm-num__input" step="0.1" title="Shift the molecule in the X-direction" />
+          </div>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Shift Y">
+            <span class="vm-num__prefix" aria-hidden="true">Y</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="shiftY" class="vm-num__input" step="0.1" title="Shift the molecule in the Y-direction" />
+          </div>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Shift Z">
+            <span class="vm-num__prefix" aria-hidden="true">Z</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="shiftZ" class="vm-num__input" step="0.1" title="Shift the molecule in the Z-direction" />
+          </div>
+          <button id="viewCopyShiftBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Shift vector"
+            title="Copy Shift vector" data-copy-vector="shift">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
+              <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="vm-vec-row" data-vector-kind="cam">
+          <label>Cam</label>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Camera X">
+            <span class="vm-num__prefix" aria-hidden="true">X</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="camX" class="vm-num__input" step="0.1" title="Camera position in the X-direction" />
+          </div>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Camera Y">
+            <span class="vm-num__prefix" aria-hidden="true">Y</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="camY" class="vm-num__input" step="0.1" title="Camera position in the Y-direction" />
+          </div>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Camera Z">
+            <span class="vm-num__prefix" aria-hidden="true">Z</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="camZ" class="vm-num__input" step="0.1" title="Camera position in the Z-direction" />
+          </div>
+          <button id="viewCopyCamBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Camera vector"
+            title="Copy Camera vector" data-copy-vector="cam">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
+              <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="vm-vec-row" data-vector-kind="target">
+          <label>Target</label>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Target X">
+            <span class="vm-num__prefix" aria-hidden="true">X</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="tgtX" class="vm-num__input" step="0.1" title="Target position in the X-direction" />
+          </div>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Target Y">
+            <span class="vm-num__prefix" aria-hidden="true">Y</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="tgtY" class="vm-num__input" step="0.1" title="Target position in the Y-direction" />
+          </div>
+          <div class="vm-num" data-vm-num data-precision="3" data-label="Target Z">
+            <span class="vm-num__prefix" aria-hidden="true">Z</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="tgtZ" class="vm-num__input" step="0.1" title="Target position in the Z-direction" />
+          </div>
+          <button id="viewCopyTargetBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Target vector"
+            title="Copy Target vector" data-copy-vector="target">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
+              <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="vm-view-section">
+        <h3 class="vm-section-label">Motion</h3>
+        <div class="vm-field-row">
+          <label for="rotSpeedRange">Rotate speed</label>
+          <div class="vm-slider" data-vm-slider>
+            <input id="rotSpeedRange" class="vm-slider__range" type="range" min="0" max="5" step="0.05" value="1.00"
+              title="Speed at which the view rotates" />
+            <div class="vm-num" data-vm-num data-precision="2" data-label="Rotate speed">
+              <span class="vm-num__value">1.00</span>
+              <input type="number" id="rotSpeed" class="vm-num__input" min="0" max="5" step="0.05"
+                title="Speed at which the view rotates" />
+            </div>
+          </div>
+        </div>
+        <div class="vm-field-row">
+          <label for="dampRange">Damping</label>
+          <div class="vm-slider" data-vm-slider>
+            <input id="dampRange" class="vm-slider__range" type="range" min="0" max="1" step="0.01" value="0.05"
+              title="Damping factor for the view rotation" />
+            <div class="vm-num" data-vm-num data-precision="2" data-label="Damping">
+              <span class="vm-num__value">0.05</span>
+              <input type="number" id="damp" class="vm-num__input" min="0" max="1" step="0.01"
+                title="Damping factor for the view rotation" />
+            </div>
+          </div>
+        </div>
+        <div class="vm-field-row vm-field-row--toggle">
+          <label class="vm-toggle" for="autoRot">
+            <input type="checkbox" id="autoRot" class="vm-toggle__input" title="Toggle auto rotation of the camera" />
+            <span class="vm-toggle__label">Auto-rotate</span>
+          </label>
+        </div>
+        <div id="viewAutoRotateSpeedRow" class="vm-field-row" data-disabled="false">
+          <label for="autoRotSpeedRange">&#x21B3; Speed</label>
+          <div class="vm-slider" data-vm-slider>
+            <input id="autoRotSpeedRange" class="vm-slider__range" type="range" min="0" max="10" step="0.1" value="2.0"
+              title="Speed of auto-rotation" />
+            <div class="vm-num" data-vm-num data-precision="2" data-label="Auto-rotate speed">
+              <span class="vm-num__value">2.00</span>
+              <input type="number" id="autoRotSpeed" class="vm-num__input" min="0" max="10" step="0.1"
+                title="Speed of auto-rotation" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="vm-view-section vm-view-section--diagnostics">
+        <h3 class="vm-section-label">Diagnostics</h3>
+        <div class="vm-stat-row">
+          <span class="vm-stat-label">FPS</span>
+          <span id="fpsValue" class="vm-stat-value vm-nums">--</span>
+        </div>
+      </section>
     </div>
-
-    <div id="viewControls">
-      <div class="row-vec">
-        <label>Shift</label>
-        <span class="axis">X</span><input type="number" id="shiftX" step="0.1"
-          title="Shift the molecule in the X-direction" />
-        <span class="axis">Y</span><input type="number" id="shiftY" step="0.1"
-          title="Shift the molecule in the Y-direction" />
-        <span class="axis">Z</span><input type="number" id="shiftZ" step="0.1"
-          title="Shift the molecule in the Z-direction" />
-      </div>
-      <div class="row-vec">
-        <label>Cam</label>
-        <span class="axis">X</span><input type="number" id="camX" step="0.1"
-          title="Camera position in the X-direction" />
-        <span class="axis">Y</span><input type="number" id="camY" step="0.1"
-          title="Camera position in the Y-direction" />
-        <span class="axis">Z</span><input type="number" id="camZ" step="0.1"
-          title="Camera position in the Z-direction" />
-      </div>
-      <div class="row-vec">
-        <label>Target</label>
-        <span class="axis">X</span><input type="number" id="tgtX" step="0.1"
-          title="Target position in the X-direction" />
-        <span class="axis">Y</span><input type="number" id="tgtY" step="0.1"
-          title="Target position in the Y-direction" />
-        <span class="axis">Z</span><input type="number" id="tgtZ" step="0.1"
-          title="Target position in the Z-direction" />
-      </div>
-      <div class="row">
-        <label>Rotate speed</label><input type="number" id="rotSpeed" step="0.01"
-          title="Speed at which the view rotates" />
-        <label>Damping</label><input type="number" id="damp" step="0.01" title="Damping factor for the view rotation" />
-      </div>
-
-      <div class="row">
-        <label style="width:100px"><input type="checkbox" id="autoRot" title="Toggle auto rotation of the camera" />
-          Auto-rotate</label>
-        <label>Speed</label><input type="number" id="autoRotSpeed" step="1" title="Speed of auto-rotation" />
-      </div>
-      <div class="row">
-        <label style="width: 80px;">FPS</label>
-        <div id="fpsValue" style="font-variant-numeric: tabular-nums; color: var(--muted);">--</div>
-        <span></span><span></span>
-      </div>
-    </div>
+    <div id="viewPanelToast" class="vm-toast" aria-live="polite" aria-atomic="true" hidden></div>
   </div>
 
   <div id="coordsPanel" class="motionPanel" aria-hidden="true">
@@ -3271,7 +3492,7 @@
       </div>
     </div>
     <div class="motionPanelBody" style="padding:0;">
-      <div id="coordsContent">
+      <div id="coordsContent" class="coord-readout">
         <!-- Filled dynamically -->
       </div>
     </div>
@@ -3295,7 +3516,7 @@
       <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:1fr auto;">
         <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" title="Trajectory frame index" />
         <div id="trajectoryFrameLabel"
-          style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">1/1</div>
+          style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:right;">1/1</div>
       </div>
       <div class="row" id="trajectoryRow2" style="display:none; grid-template-columns:50px 96px auto 1fr;">
         <label style="width:auto;">FPS</label>
@@ -3326,7 +3547,7 @@
       </div>
       <div id="vibrationNowPlaying">No mode selected</div>
       <div class="row" id="vibrationRow" style="display:none; grid-template-columns:1fr;">
-        <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:left;">
+        <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:left;">
           No mode selected</div>
       </div>
       <div class="row" id="vibrationRow2" style="display:none; grid-template-columns:58px 94px 64px 94px 1fr;">
@@ -3336,7 +3557,7 @@
         <label style="width:auto;">Speed</label>
         <input type="number" id="vibrationSpeed" min="0.1" max="30" step="0.05" value="0.75"
           title="Oscillation speed in cycles per second" />
-        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--muted); text-align:right;">
+        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:right;">
           -- cm<sup>−1</sup></div>
       </div>
       <div id="vibrationSpectrumWrap" aria-label="IR spectrum">
@@ -3361,61 +3582,91 @@
     </div>
   </div>
 
-  <!-- Help / Shortcuts modal -->
-  <div id="helpOverlay" aria-hidden="true"
-    style="display:none; position:fixed; inset:0; background:#0008; z-index:50; align-items:center; justify-content:center;">
-    <div id="helpModal" role="dialog" aria-modal="true"
-      style="background:var(--panel); color:var(--text); width:min(680px,92vw); max-height:80vh; overflow:auto; border:1px solid var(--vm-color-legacy-border-strong); border-radius:10px; box-shadow:0 10px 30px #000a;">
-      <div
-        style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--vm-color-legacy-border-strong);">
-        <div style="font-weight: var(--vm-font-weight-heading);">
-          Help & Shortcuts
-          <span id="versionText" style="font-weight: var(--vm-font-weight-emphasis); font-size:12px; opacity:.75; margin-left:8px;"></span>
+  <div id="modeToast" class="vm-popover vm-modeToast" aria-hidden="true" role="status" aria-live="polite" aria-atomic="true">
+    <div id="modeToastBody" class="vm-modeToast__body"></div>
+    <button id="modeToastDismiss" class="vm-btn vm-btn--icon vm-modeToast__dismiss" type="button"
+      aria-label="Dismiss this help toast forever" title="Dismiss this help toast forever">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M4 4L12 12"></path>
+        <path d="M12 4L4 12"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div id="helpOverlay" aria-hidden="true">
+    <div id="helpModal" class="vm-popover vm-helpOverlayModal" role="dialog" aria-modal="true" tabindex="-1"
+      aria-labelledby="helpTitle" aria-describedby="helpSubtitle">
+      <header class="vm-popover__header vm-helpOverlayHeader">
+        <div>
+          <h2 id="helpTitle">Keyboard shortcuts</h2>
+          <div id="helpSubtitle" class="vm-popover__subtitle">Press <kbd class="vm-key-pill">?</kbd> anytime to toggle this overlay <span
+              id="versionText" class="vm-helpOverlayVersion"></span></div>
         </div>
-        <button id="helpClose" class="secondary ms-icon-button" title="Close">close</button>
-      </div>
-      <div style="padding:12px 14px; font-size:13px; line-height:1.45;">
-        <p>Tips</p>
-        <ul>
-          <li>Orbit: mouse drag • Zoom: wheel • Pan: right-drag</li>
-          <li>Use View/Coords to adjust camera, target, and scene shift.</li>
-          <li>Atoms/Bonds can be toggled independently, and Multi bonds enables inferred multiple-bond rendering.
-            Keyboard shortcuts 1/2/3/4 switch Default/Toon/Kit/Glossy, while Fog, Ink scheme, Blackbody ramp, and
-            atom/bond alpha are independent molecule feature toggles.</li>
-          <li>Multi-frame XYZ trajectories expose playback controls in the dedicated Trajectory window (play, frame
-            slider, FPS, loop).</li>
-          <li>Molden files (<code>.molden</code>) load geometry, basis metadata, and molecular-orbital coefficients for
-            later wavefunction-based workflows.</li>
-          <li>Optional vibrational mode sidecar files (<code>.vib.json</code>, ORCA <code>.hess</code>, and Psi4 output
-            logs) expose mode playback controls in the dedicated Vibration window; click a frequency row to select and
-            animate that mode, and view the IR spectrum with the active mode highlighted.</li>
-          <li>In edit mode, Add atom uses automatic angle snapping (180°, 120°, 109.5°, 90°, 60°) for free placement,
-            while grow-drag from an atom stays in the plane orthogonal to the camera view.</li>
-          <li>Fragment attach policy now controls only host-valence handling: <strong>Smart</strong> is the default and
-            prefers Replace H when available, <strong>Append</strong> always keeps the host intact, and
-            <strong>Replace H</strong> falls back to Append when needed. Ring fusion is automatic when you click a bond
-            with a fusion-capable fragment loaded.</li>
-          <li>Use <strong>Element colors…</strong> to edit per-element colors and <strong>atom labels</strong> to show
-            element symbols over atoms.</li>
-          <li>Use Save Preset / Load Preset to reuse visualization settings across sessions and CLI runs.</li>
-          <li>The Cartesian coordinates are displayed as red (X), green (Y), and blue (Z) arrows.</li>
-        </ul>
-        <p>Shortcuts</p>
-        <ul>
-          <li><strong>S</strong> — Save PNG</li>
-          <li><strong>B</strong> — Batch export all files</li>
-          <li><strong>I</strong> — Toggle iso‑surfaces on/off</li>
-          <li><strong>A</strong> — Toggle axis gizmo on/off</li>
-          <li><strong>C</strong> — Toggle Coordinates window (in Edit/Add mode, C still selects Carbon)</li>
-          <li><strong>R</strong> — Shift active molecule COM to origin</li>
-          <li><strong>1/2/3/4</strong> — Molecule style: Default / Toon / Kit / Glossy</li>
-          <li><strong>Cmd/Ctrl+Z</strong> / <strong>Cmd/Ctrl+Shift+Z</strong> — Undo / Redo edit action</li>
-          <li><strong>Edit tools:</strong> <strong>/</strong>=Build palette,
-            <strong>O</strong>=Optimize structure,
-            <strong>P</strong>=Align principal axes, <strong>D</strong>=Delete</li>
-          <li><strong>Edit mode:</strong> hold <strong>Shift</strong> during free placement to bypass auto angle snapping</li>
-          <li><strong>←/→</strong> or <strong>↑/↓</strong> — Previous / Next file (view preserved)</li>
-        </ul>
+        <div class="vm-popover__actions">
+          <button id="helpResetToasts" class="vm-btn vm-btn--ghost vm-helpOverlayReset" type="button">Reset help toasts</button>
+          <button id="helpClose" class="vm-btn vm-btn--icon" type="button" aria-label="Close keyboard shortcuts"
+            title="Close keyboard shortcuts">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4 4L12 12"></path>
+              <path d="M12 4L4 12"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+      <div class="vm-helpOverlayContent">
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Navigation</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Drag</kbd></div><div class="vm-helpDescription">Orbit the scene</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Wheel</kbd></div><div class="vm-helpDescription">Zoom in or out</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Right-drag</kbd></div><div class="vm-helpDescription">Pan the view</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Reset View</kbd></div><div class="vm-helpDescription">Restore the default camera pose</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Modes</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">/</kbd></div><div class="vm-helpDescription">Open Build palette and search (Edit)</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">V</kbd></div><div class="vm-helpDescription">Open View panel</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">M</kbd></div><div class="vm-helpDescription">Switch to Measure from View</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">E</kbd></div><div class="vm-helpDescription">Switch to Edit from View or Measure</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Selection</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Click</kbd></div><div class="vm-helpDescription">Select one atom or target</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Shift+Click</kbd></div><div class="vm-helpDescription">Add or remove from the current selection</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+A</kbd></div><div class="vm-helpDescription">Select all editable atoms</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Esc</kbd></div><div class="vm-helpDescription">Clear selection or close the topmost popup</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">File</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+O</kbd></div><div class="vm-helpDescription">Open files</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+S</kbd></div><div class="vm-helpDescription">Save PNG</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+C</kbd></div><div class="vm-helpDescription">Copy selected atoms in Edit</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+V</kbd></div><div class="vm-helpDescription">Paste copied atoms or pasted XYZ</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Build</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">1</kbd><kbd class="vm-key-pill">2</kbd><kbd class="vm-key-pill">3</kbd><kbd class="vm-key-pill">4</kbd></div><div class="vm-helpDescription">Set grow or bond order during build gestures</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Space</kbd></div><div class="vm-helpDescription">Preview or apply missing hydrogens</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Enter</kbd></div><div class="vm-helpDescription">Confirm the active add-atom or placement operator</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">/</kbd></div><div class="vm-helpDescription">Open Build palette, search atoms, fragments, and molecules</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">View</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Q</kbd></div><div class="vm-helpDescription">Open View actions</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">V</kbd></div><div class="vm-helpDescription">Open View panel</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">C</kbd></div><div class="vm-helpDescription">Open Coordinates panel</div></div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
