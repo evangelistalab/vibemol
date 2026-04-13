@@ -256,6 +256,13 @@ kbd,
   line-height: 1.4;
 }
 
+.vm-helpPreferenceLabel {
+  color: var(--vm-color-text-primary);
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-emphasis);
+  line-height: 1.4;
+}
+
 .vm-helpOverlayReset {
   white-space: nowrap;
 }
@@ -590,6 +597,56 @@ kbd,
   border-color: color-mix(in srgb, var(--vm-color-accent) 36%, var(--vm-color-border));
 }
 
+.vm-radio-group {
+  display: flex;
+  gap: 8px;
+}
+
+.vm-radio {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--vm-color-border);
+  border-radius: var(--vm-radius-md);
+  background: var(--vm-color-surface-panel);
+  color: var(--vm-color-text-primary);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.vm-radio:hover {
+  border-color: var(--vm-color-border-strong);
+  background: color-mix(in srgb, var(--vm-color-surface-secondary) 65%, var(--vm-color-surface-panel));
+}
+
+.vm-radio:focus-visible {
+  outline: none;
+  box-shadow: var(--vm-shadow-focus-ring);
+}
+
+.vm-radio[aria-checked='true'] {
+  border-color: var(--vm-brand-accent);
+  background: color-mix(in srgb, var(--vm-brand-accent) 8%, var(--vm-color-surface-panel));
+}
+
+.vm-radio__sample {
+  font-size: var(--vm-text-lg);
+  font-weight: var(--vm-font-weight-strong);
+  color: var(--vm-color-text-primary);
+  line-height: 1;
+}
+
+.vm-radio__label {
+  font-family: var(--vm-font-sans);
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-emphasis);
+  color: var(--vm-color-text-secondary);
+  line-height: 1.2;
+}
+
 .floatingAuxInspector {
   position: fixed;
   z-index: 35;
@@ -775,6 +832,8 @@ kbd,
 
 .floatingAuxInspectorView .tb-quickActionBtn,
 #toolbar .tb-toolbarInspectorView .tb-quickActionBtn {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -1061,6 +1120,20 @@ kbd,
   display: grid;
   gap: 0;
   padding: 0 0 4px 0;
+}
+
+#toolbar #displayInspector .appearancePreferenceRow {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+#toolbar #displayInspector .appearancePreferenceRow > .vm-field-label {
+  margin: 0;
+}
+
+#toolbar #displayInspector .appearancePreferenceRow .vm-radio-group {
+  width: 100%;
 }
 
 #toolbar #displayInspector .inspectorAccordionBody > .secondary {

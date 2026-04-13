@@ -1165,6 +1165,21 @@ def main() -> int:
                       && labels.includes('Tetrahedral (4)');
                 }"""
             )
+            page.wait_for_function(
+                """() => document.activeElement !== document.getElementById('editBuildSearch')"""
+            )
+            page.keyboard.press('s')
+            page.wait_for_function(
+                """() => {
+                    return document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'
+                      && document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false';
+                }"""
+            )
+            page.keyboard.press('Escape')
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+            ensure_build_popover_open(page)
             page.hover('#editAdaptiveAddAtomBtn')
             set_checkbox_state(page, '#editAddAdjustHydrogens', False)
             page.wait_for_function(
@@ -1394,8 +1409,9 @@ def main() -> int:
                     return isShown('editAdaptiveSymmetryBtn')
                       && isShown('editAdaptiveCleanStructureBtn')
                       && isShown('editAdaptiveAlignPrincipalBtn')
-                      && !isShown('editAdaptiveAddAtomBtn')
+                      && isShown('editAdaptiveAddAtomBtn')
                       && !isShown('editAdaptiveShiftComBtn')
+                      && labelOf('editAdaptiveAddAtomBtn') === 'Build'
                       && labelOf('editAdaptiveSymmetryBtn') === 'Symmetry'
                       && labelOf('editAdaptiveCleanStructureBtn') === 'Optimize'
                       && labelOf('editAdaptiveAlignPrincipalBtn') === 'Align';
@@ -1623,10 +1639,11 @@ def main() -> int:
                       const label = el ? el.querySelector('.adaptiveEditItemLabel') : null;
                       return label ? (label.textContent || '').trim() : '';
                     };
-                    return !isShown('editAdaptiveAddAtomBtn')
+                    return isShown('editAdaptiveAddAtomBtn')
                       && isShown('editAdaptiveSymmetryBtn')
                       && isShown('editAdaptiveCleanStructureBtn')
                       && isShown('editAdaptiveAlignPrincipalBtn')
+                      && labelOf('editAdaptiveAddAtomBtn') === 'Build'
                       && labelOf('editAdaptiveSymmetryBtn') === 'Symmetry'
                       && labelOf('editAdaptiveCleanStructureBtn') === 'Optimize'
                       && labelOf('editAdaptiveAlignPrincipalBtn') === 'Align';

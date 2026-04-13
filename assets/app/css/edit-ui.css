@@ -763,6 +763,7 @@
   padding: 0 5px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
+  font-family: var(--vm-font-mono);
   font-size: 9px;
   font-weight: var(--vm-font-weight-heading);
   color: rgba(227, 233, 244, 0.8);
@@ -1088,9 +1089,18 @@
 #editMoleculeQuick button.active {
   border-width: 2px;
   border-color: var(--vm-color-accent-primary);
+  background: var(--vm-color-surface-panel);
+  color: var(--vm-color-text-primary);
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--vm-brand-accent) 28%, transparent),
     0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 40%, transparent) inset;
+}
+
+#editFragmentQuick button,
+#editMoleculeQuick button,
+#editFragmentQuick button.active,
+#editMoleculeQuick button.active {
+  color: var(--vm-color-text-primary);
 }
 
 #editAddQuick button.search-active,
@@ -1136,7 +1146,7 @@
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-heading);
   background: var(--vm-color-surface-panel);
-  color: var(--vm-color-text-on-accent);
+  color: var(--vm-color-text-primary);
   cursor: pointer;
   min-width: 0;
   flex: 1 1 0;

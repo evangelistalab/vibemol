@@ -293,6 +293,11 @@
     throw new Error('VibeMolAppearanceUi is not loaded. Ensure assets/app/js/appearance-ui.js is included before assets/app/js/app.js.');
   }
 
+  const { getFontPair, setFontPair, applyFontPair } = window.VibeMolPrefs || {};
+  if (![getFontPair, setFontPair, applyFontPair].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolPrefs is not loaded. Ensure src/prefs.js is included before assets/app/js/app.js.');
+  }
+
   const { createEditPlacementController } = window.VibeMolEditPlacement || {};
   if (![createEditPlacementController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolEditPlacement is not loaded. Ensure assets/app/js/edit-placement.js is included before assets/app/js/app.js.');
@@ -1488,8 +1493,11 @@
     const key = normalizeMoleculeStyleKey(styleKey);
     return MOLECULE_STYLE_PROFILE[key] || MOLECULE_STYLE_PROFILE.default;
   }
-  // Center radius (Å) for glossy bond connectors
+  // Center radius (Å) for glossy bond connectors before the global bond scale is applied.
   let glossyBondRadius = 0.072;
+  // Global molecule render multipliers applied on top of the active style profile.
+  let moleculeAtomRadiusScale = 1.0;
+  let moleculeBondRadiusScale = 1.0;
   // Disable expensive scene rebuild fanout while applying batched preset updates.
   let suspendPresetRebuild = false;
   const bondMaterialCache = new Map();
@@ -1899,10 +1907,38 @@
    * Clamp the configured glossy bond connector center radius (angstrom).
    * @returns {number}
    */
-  function getGlossyBondCenterRadius() {
+  function getConfiguredGlossyBondCenterRadius() {
     const n = Number(glossyBondRadius);
     if (!Number.isFinite(n)) return 0.072;
     return Math.max(0.04, Math.min(0.16, n));
+  }
+
+  /**
+   * Clamp the configured atom-radius scale multiplier.
+   * @returns {number}
+   */
+  function getMoleculeAtomRadiusScale() {
+    const n = Number(moleculeAtomRadiusScale);
+    if (!Number.isFinite(n)) return 1.0;
+    return Math.max(0.60, Math.min(1.60, n));
+  }
+
+  /**
+   * Clamp the configured bond-radius scale multiplier.
+   * @returns {number}
+   */
+  function getMoleculeBondRadiusScale() {
+    const n = Number(moleculeBondRadiusScale);
+    if (!Number.isFinite(n)) return 1.0;
+    return Math.max(0.60, Math.min(1.60, n));
+  }
+
+  /**
+   * Get the rendered glossy bond center radius after the global bond scale.
+   * @returns {number}
+   */
+  function getGlossyBondCenterRadius() {
+    return getConfiguredGlossyBondCenterRadius() * getMoleculeBondRadiusScale();
   }
 
   /**
@@ -1913,6 +1949,16 @@
   function getGlossyBondEndRadius() {
     const c = getGlossyBondCenterRadius();
     return Math.max(c + 0.03, Math.min(0.18, c * 1.68));
+  }
+
+  /**
+   * Format a shared molecule-scale multiplier label.
+   * @param {number} value
+   * @returns {string}
+   */
+  function formatScaleMultiplierValue(value) {
+    const n = Number(value);
+    return `${(Number.isFinite(n) ? n : 1).toFixed(2)}×`;
   }
 
   /**
@@ -2254,9 +2300,22 @@
    */
   function getAtomRenderScaleFactor(z) {
     const profile = getMoleculeStyleProfile();
-    return isTransitionMetalAtomicNumber(z)
+    const baseScale = isTransitionMetalAtomicNumber(z)
       ? profile.atomScaleTransitionMetal
       : profile.atomScaleMain;
+    return baseScale * getMoleculeAtomRadiusScale();
+  }
+
+  /**
+   * Resolve the active rendered bond radius after applying the global scale.
+   * @param {*=} styleKey
+   * @returns {number}
+   */
+  function getRenderedBondRadius(styleKey = moleculeStyle) {
+    const profile = getMoleculeStyleProfile(styleKey);
+    return profile.key === 'glossy'
+      ? getGlossyBondCenterRadius()
+      : profile.bondRadius * getMoleculeBondRadiusScale();
   }
 
   /**
@@ -2275,8 +2334,7 @@
    * @returns {number}
    */
   function getPreviewBondRadius() {
-    const profile = getMoleculeStyleProfile();
-    return profile.key === 'glossy' ? getGlossyBondCenterRadius() : profile.bondRadius;
+    return getRenderedBondRadius();
   }
 
   /**
@@ -2648,7 +2706,7 @@
     const radius = Math.max(0.16, Number.isFinite(ring.radius) ? ring.radius : 0.7);
 
     const profile = getMoleculeStyleProfile();
-    const baseBondRadius = profile.key === 'glossy' ? getGlossyBondCenterRadius() : profile.bondRadius;
+    const baseBondRadius = getRenderedBondRadius(profile.key);
     const dashRadius = Math.max(0.012, Math.min(0.042, baseBondRadius * 0.42));
     const circumference = 2 * Math.PI * radius;
     const dashCount = Math.max(10, Math.min(28, Math.round(circumference / 0.26)));
@@ -3720,9 +3778,9 @@
     const up = new THREE.Vector3(0, 1, 0);
     const glossyCenterRadius = getGlossyBondCenterRadius();
     const glossyEndRadius = getGlossyBondEndRadius();
-    const kitCenterRadius = profile.bondRadius;
-    const kitCollarRadius = profile.kitCollarRadius || 0.114;
-    const bondRadius = isGlossyStyle ? glossyCenterRadius : profile.bondRadius;
+    const kitCenterRadius = profile.bondRadius * getMoleculeBondRadiusScale();
+    const kitCollarRadius = (profile.kitCollarRadius || 0.114) * getMoleculeBondRadiusScale();
+    const bondRadius = getRenderedBondRadius(profile.key);
     const bondRadialSegments = profile.bondRadialSegments;
     const bondHeightSegments = profile.bondHeightSegments;
     // Glossy mode forces single connectors to avoid multi-bond overlap artifacts.
@@ -5675,6 +5733,7 @@
   const displayInspector = document.getElementById('displayInspector');
   const appearanceStyleChipEls = Array.from(document.querySelectorAll('#displayInspector .appearanceStyleChip[data-style]'));
   const appearanceActionToggleButtonEls = Array.from(document.querySelectorAll('#displayInspector .inspectorActionToggle[data-toggle-input]'));
+  const appearanceFontPairButtonEls = Array.from(document.querySelectorAll('#displayInspector .vm-radio[data-font-pair]'));
   const appearanceSurfacesSectionEl = document.getElementById('appearanceSurfacesSection');
   const appearanceTwoComponentSectionEl = document.getElementById('appearanceTwoComponentSection');
   const appearanceCloudSectionEl = document.getElementById('appearanceCloudSection');
@@ -5709,6 +5768,7 @@
   const modeToastBodyEl = document.getElementById('modeToastBody');
   const modeToastDismissBtn = document.getElementById('modeToastDismiss');
   const versionText = document.getElementById('versionText');
+  applyFontPair(getFontPair());
   if (versionText) versionText.textContent = APP_VERSION;
   const toolbarVersion = document.getElementById('toolbarVersion');
   if (toolbarVersion) toolbarVersion.textContent = `v${APP_VERSION}`;
@@ -5782,6 +5842,10 @@
   const styleSelect = document.getElementById('styleSelect');
   const pointCameraComBtn = document.getElementById('pointCameraComBtn');
   const moleculeStyleSel = document.getElementById('moleculeStyle');
+  const moleculeAtomRadiusScaleEl = document.getElementById('moleculeAtomRadiusScale');
+  const moleculeAtomRadiusScaleValueEl = document.getElementById('moleculeAtomRadiusScaleValue');
+  const moleculeBondRadiusScaleEl = document.getElementById('moleculeBondRadiusScale');
+  const moleculeBondRadiusScaleValueEl = document.getElementById('moleculeBondRadiusScaleValue');
   const rowGlossyBond = document.getElementById('rowGlossyBond');
   const glossyBondRadiusEl = document.getElementById('glossyBondRadius');
   const moleculeShadowsToggleEl = document.getElementById('moleculeShadowsToggle');
@@ -13646,7 +13710,7 @@
     if (editAdaptiveAddAtomBtn) {
       editAdaptiveAddAtomBtn.onclick = () => {
         if (isBuildPopoverOpen()) hideBuildPopover();
-        else showBuildPopover({ focusSearch: true });
+        else showBuildPopover();
       };
     }
     if (editAdaptiveAddAtomPopoverEl) {
@@ -17446,6 +17510,14 @@
         static: false,
       });
     } else {
+      setAdaptiveItemPresentation(editAdaptiveAddAtomBtn, {
+        icon: 'add',
+        label: 'Build',
+        meta: '',
+        key: '/',
+        title: 'Build palette (/)',
+        static: false,
+      });
       setAdaptiveItemPresentation(editAdaptiveSymmetryBtn, {
         icon: 'hub',
         label: 'Symmetry',
@@ -17477,7 +17549,7 @@
       positionMenu: positionEditAdaptiveMenu,
       onHideAllPopovers: hideAllAdaptiveToolPopovers,
       visibleItems: [
-        { el: editAdaptiveAddAtomBtn, visible: isVisible && (buildModeActive || emptyEditState) },
+        { el: editAdaptiveAddAtomBtn, visible: isVisible },
         { el: editAdaptiveSymmetryBtn, visible: buildModeActive || hasEditableAtoms },
         { el: editAdaptiveCleanStructureBtn, visible: buildModeActive || hasEditableAtoms },
         { el: editAdaptiveShiftComBtn, visible: false },
@@ -22170,7 +22242,7 @@
   bind('down', MODES.EDIT, '/', (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (isBuildPopoverOpen()) hideBuildPopover();
-    else showBuildPopover({ focusSearch: true });
+    else showBuildPopover();
   });
   bind('down', MODES.EDIT, 'c', () => {
     setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
@@ -22468,6 +22540,10 @@
     if (rowMoleculeFogDepth) rowMoleculeFogDepth.style.display = moleculeFogEnabled ? '' : 'none';
     if (moleculeFogDepthEl) moleculeFogDepthEl.value = getMoleculeFogDepth().toFixed(1);
     if (moleculeFogDepthValueEl) moleculeFogDepthValueEl.textContent = getMoleculeFogDepth().toFixed(1);
+    if (moleculeAtomRadiusScaleEl) moleculeAtomRadiusScaleEl.value = getMoleculeAtomRadiusScale().toFixed(2);
+    if (moleculeAtomRadiusScaleValueEl) moleculeAtomRadiusScaleValueEl.textContent = formatScaleMultiplierValue(getMoleculeAtomRadiusScale());
+    if (moleculeBondRadiusScaleEl) moleculeBondRadiusScaleEl.value = getMoleculeBondRadiusScale().toFixed(2);
+    if (moleculeBondRadiusScaleValueEl) moleculeBondRadiusScaleValueEl.textContent = formatScaleMultiplierValue(getMoleculeBondRadiusScale());
     if (moleculeInkToggleEl) moleculeInkToggleEl.checked = !!moleculeInkEnabled;
     if (moleculeBlackbodyToggleEl) moleculeBlackbodyToggleEl.checked = !!moleculeBlackbodyEnabled;
     if (moleculeAtomOpacityEl) moleculeAtomOpacityEl.value = Number(moleculeAtomOpacity).toFixed(2);
@@ -22596,6 +22672,37 @@
   }
 
   /**
+   * Bind a range input plus readout to a clamped state value.
+   * @param {HTMLInputElement|null} inputEl
+   * @param {HTMLElement|null} valueEl
+   * @param {() => number} getClampedValue
+   * @param {(n:number) => void} setValue
+   * @param {(() => boolean)=} shouldRebuild
+   * @param {(n:number) => string=} formatValue
+   */
+  function bindClampedRangeInput(inputEl, valueEl, getClampedValue, setValue, shouldRebuild, formatValue) {
+    if (!inputEl) return;
+    const formatter = (typeof formatValue === 'function') ? formatValue : ((n) => String(n));
+    const syncFromState = () => {
+      const clamped = getClampedValue();
+      setValue(clamped);
+      inputEl.value = clamped.toFixed(2);
+      if (valueEl) valueEl.textContent = formatter(clamped);
+    };
+    const applyInput = () => {
+      const parsed = Number(inputEl.value);
+      if (Number.isFinite(parsed)) setValue(parsed);
+      syncFromState();
+      if (typeof shouldRebuild === 'function' && shouldRebuild()) {
+        rebuildScene({ preserveView: true });
+      }
+    };
+    syncFromState();
+    inputEl.oninput = applyInput;
+    inputEl.onchange = applyInput;
+  }
+
+  /**
    * Bind one DOF numeric control.
    * @param {HTMLInputElement|null} inputEl
    * @param {() => number} getValue
@@ -22631,9 +22738,25 @@
   }
   bindClampedNumericInput(
     glossyBondRadiusEl,
-    getGlossyBondCenterRadius,
+    getConfiguredGlossyBondCenterRadius,
     (n) => { glossyBondRadius = n; },
     useGlossyMoleculeStyle
+  );
+  bindClampedRangeInput(
+    moleculeAtomRadiusScaleEl,
+    moleculeAtomRadiusScaleValueEl,
+    getMoleculeAtomRadiusScale,
+    (n) => { moleculeAtomRadiusScale = n; },
+    () => true,
+    formatScaleMultiplierValue
+  );
+  bindClampedRangeInput(
+    moleculeBondRadiusScaleEl,
+    moleculeBondRadiusScaleValueEl,
+    getMoleculeBondRadiusScale,
+    (n) => { moleculeBondRadiusScale = n; },
+    () => true,
+    formatScaleMultiplierValue
   );
   bindClampedNumericInput(
     moleculeAtomOpacityEl,
@@ -22651,6 +22774,7 @@
     displayInspectorEl: displayInspector,
     styleChipEls: appearanceStyleChipEls,
     actionToggleButtonEls: appearanceActionToggleButtonEls,
+    fontPairButtonEls: appearanceFontPairButtonEls,
     surfacesSectionEl: appearanceSurfacesSectionEl,
     twoComponentSectionEl: appearanceTwoComponentSectionEl,
     cloudSectionEl: appearanceCloudSectionEl,
@@ -22664,7 +22788,10 @@
     getRenderMode: () => renderMode,
     hasSurfaceControls: hasVolumetricGrid,
     getShowMultiBonds: () => showMultiBonds,
+    getFontPair,
+    onFontPairSelected: (nextFontPair) => setFontPair(nextFontPair),
   });
+  appearanceInspectorController.syncAll();
   if (moleculeStyleSel) {
     moleculeStyle = normalizeMoleculeStyleKey(moleculeStyleSel.value || moleculeStyle);
     moleculeStyleSel.value = moleculeStyle;
@@ -22978,7 +23105,7 @@
    * @returns {string}
    */
   function getUiSansFontFamily() {
-    return getRootCssCustomProperty('--vm-font-sans', 'Geist, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif');
+    return getRootCssCustomProperty('--vm-font-sans', 'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif');
   }
 
   /**
@@ -23184,9 +23311,21 @@
     const normalized = normalizeMoleculeStyleKey(value);
     setMoleculeStyle(normalized, { rebuild: false });
   });
-  registerPresetSetting('molecule.glossyBondRadius', () => getGlossyBondCenterRadius(), (value) => {
-    glossyBondRadius = asFiniteNumber(value, getGlossyBondCenterRadius());
-    glossyBondRadius = getGlossyBondCenterRadius();
+  registerPresetSetting('molecule.atomRadiusScale', () => getMoleculeAtomRadiusScale(), (value) => {
+    moleculeAtomRadiusScale = asFiniteNumber(value, getMoleculeAtomRadiusScale());
+    moleculeAtomRadiusScale = getMoleculeAtomRadiusScale();
+    if (moleculeAtomRadiusScaleEl) moleculeAtomRadiusScaleEl.value = moleculeAtomRadiusScale.toFixed(2);
+    if (moleculeAtomRadiusScaleValueEl) moleculeAtomRadiusScaleValueEl.textContent = formatScaleMultiplierValue(moleculeAtomRadiusScale);
+  });
+  registerPresetSetting('molecule.bondRadiusScale', () => getMoleculeBondRadiusScale(), (value) => {
+    moleculeBondRadiusScale = asFiniteNumber(value, getMoleculeBondRadiusScale());
+    moleculeBondRadiusScale = getMoleculeBondRadiusScale();
+    if (moleculeBondRadiusScaleEl) moleculeBondRadiusScaleEl.value = moleculeBondRadiusScale.toFixed(2);
+    if (moleculeBondRadiusScaleValueEl) moleculeBondRadiusScaleValueEl.textContent = formatScaleMultiplierValue(moleculeBondRadiusScale);
+  });
+  registerPresetSetting('molecule.glossyBondRadius', () => getConfiguredGlossyBondCenterRadius(), (value) => {
+    glossyBondRadius = asFiniteNumber(value, getConfiguredGlossyBondCenterRadius());
+    glossyBondRadius = getConfiguredGlossyBondCenterRadius();
     if (glossyBondRadiusEl) glossyBondRadiusEl.value = String(glossyBondRadius);
   });
   registerPresetSetting('molecule.feature.shadows', () => !!moleculeShadowsEnabled, (value) => {
@@ -25873,10 +26012,8 @@
     ];
     if (meta.query) rows.splice(1, 0, ['Query', meta.query]);
     if (meta.url) rows.push(['URL', meta.url]);
-    const monoKeys = new Set(['CID', 'Weight']);
     const body = rows.map(([k, v]) => {
-      const valueClass = monoKeys.has(String(k)) ? ' class="pubchemMonoValue"' : '';
-      return `<tr><th>${escapeHtml(k)}</th><td${valueClass}>${escapeHtml(v)}</td></tr>`;
+      return `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`;
     }).join('');
     pubchemMetaContent.innerHTML = `<table class="meta-table pubchem-metadata"><tbody>${body}</tbody></table>`;
   }

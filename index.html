@@ -2,6 +2,16 @@
 <html lang="en">
 
 <head>
+  <script>
+    (function () {
+      try {
+        var storedFontPair = window.localStorage.getItem('vm.prefs.font');
+        if (storedFontPair === 'inter' || storedFontPair === 'plex') {
+          document.documentElement.setAttribute('data-font', storedFontPair);
+        }
+      } catch (_) { }
+    })();
+  </script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-WSP0EFW68E"></script>
   <script>
@@ -25,34 +35,12 @@
       } catch (_) { }
     })();
   </script>
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" />
   <link rel="stylesheet" href="src/styles/tokens.css" />
   <link rel="stylesheet" href="assets/app/css/palette.css" />
   <link rel="stylesheet" href="assets/app/css/edit-ui.css" />
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
   <style>
-    @font-face {
-      font-family: 'Geist';
-      font-style: normal;
-      font-weight: 100 900;
-      font-display: swap;
-      src: url('assets/app/fonts/Geist-Variable.woff2') format('woff2');
-    }
-
-    @font-face {
-      font-family: 'Geist Mono';
-      font-style: normal;
-      font-weight: 100 900;
-      font-display: swap;
-      src: url('assets/app/fonts/GeistMono-Variable.woff2') format('woff2');
-    }
-
     :root {
-      --vm-font-sans: "Geist", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      --vm-font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
       --vm-color-accent: var(--vm-brand-accent);
       --vm-font-weight-body: 400;
       --vm-font-weight-emphasis: 500;
@@ -122,6 +110,18 @@
     .vm-nums {
       font-variant-numeric: tabular-nums;
       font-feature-settings: 'ss01';
+    }
+
+    .vm-mono {
+      font-family: var(--vm-font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-bar {
+      font-family: var(--vm-font-mono);
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-emphasis);
+      font-variant-numeric: tabular-nums;
     }
 
     .vm-spinner {
@@ -255,7 +255,6 @@
     }
 
     .status-bar,
-    #hint,
     .pubchem-metadata td,
     #toolbar #pubchemMetaContent table.meta-table td,
     .symmetry-panel .rms-value,
@@ -345,6 +344,15 @@
     #toolbar #fileSelect {
       min-width: 180px;
       max-width: 280px;
+      font-family: var(--vm-font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #toolbar #fileSelect option {
+      font-family: var(--vm-font-mono);
+      font-size: var(--vm-text-base);
+      font-weight: var(--vm-font-weight-emphasis);
+      font-variant-numeric: tabular-nums;
     }
 
     #toolbar input.pubchem-query {
@@ -733,7 +741,7 @@
 
     .motionPanelIconGlyph {
       pointer-events: none;
-      font-family: 'Material Symbols Rounded';
+      font-family: var(--vm-font-icon);
       font-weight: var(--vm-font-weight-body);
       font-style: normal;
       font-size: 20px;
@@ -935,7 +943,7 @@
       font-size: var(--vm-text-lg);
       cursor: pointer;
       padding: 0;
-      font-family: 'Material Symbols Rounded';
+      font-family: var(--vm-font-icon);
       font-weight: var(--vm-font-weight-body);
       line-height: 1;
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
@@ -1060,8 +1068,9 @@
       font-variant-numeric: tabular-nums;
     }
 
-    #toolbar #pubchemMetaContent table.meta-table td.pubchemMonoValue {
+    #toolbar #pubchemMetaContent table.meta-table th + td {
       font-family: var(--vm-font-mono);
+      font-variant-numeric: tabular-nums;
     }
 
     #viewControls {
@@ -1199,7 +1208,8 @@
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
       padding: 7px 10px;
       border-radius: 6px;
-      font-size: var(--vm-text-base);
+      font-family: var(--vm-font-mono);
+      font-size: var(--vm-text-sm);
       font-weight: var(--vm-font-weight-emphasis);
       font-variant-numeric: tabular-nums;
       backdrop-filter: blur(8px) saturate(120%);
@@ -1287,8 +1297,8 @@
       border-radius: 5px;
       padding: 1px 5px;
       color: var(--vm-color-splash-drop-code-fg);
-      font-size: 0.92em;
-      font-weight: var(--vm-font-weight-heading);
+      font-size: var(--vm-text-base);
+      font-weight: var(--vm-font-weight-emphasis);
       font-family: var(--vm-font-mono);
     }
 
@@ -1389,7 +1399,7 @@
 
     #emptyStateWhatsNewSummary::after {
       content: 'open_in_new';
-      font-family: 'Material Symbols Rounded';
+      font-family: var(--vm-font-icon);
       font-size: 14px;
       font-weight: var(--vm-font-weight-body);
       line-height: 1;
@@ -1678,7 +1688,7 @@
 
     .material-symbols-outlined,
     .material-symbols-rounded {
-      font-family: 'Material Symbols Rounded';
+      font-family: var(--vm-font-icon);
       font-weight: var(--vm-font-weight-body);
       font-style: normal;
       line-height: 1;
@@ -1696,7 +1706,7 @@
     }
 
     .ms-icon-button {
-      font-family: 'Material Symbols Rounded';
+      font-family: var(--vm-font-icon);
       font-weight: var(--vm-font-weight-body) !important;
       font-size: 20px !important;
       line-height: 1 !important;
@@ -2492,6 +2502,22 @@
             <span class="inspectorTitle">Molecule</span>
           </summary>
           <div class="inspectorAccordionBody">
+            <div class="inspectorRow inspectorSelectRow">
+              <label for="moleculeAtomRadiusScale">Atom radius</label>
+              <label class="inspectorSliderField" for="moleculeAtomRadiusScale">
+                <input type="range" id="moleculeAtomRadiusScale" min="0.60" max="1.60" step="0.05" value="1.00"
+                  title="Scale rendered atom radii across all molecule styles" />
+                <span id="moleculeAtomRadiusScaleValue" class="inspectorSliderValue">1.00×</span>
+              </label>
+            </div>
+            <div class="inspectorRow inspectorSelectRow">
+              <label for="moleculeBondRadiusScale">Bond radius</label>
+              <label class="inspectorSliderField" for="moleculeBondRadiusScale">
+                <input type="range" id="moleculeBondRadiusScale" min="0.60" max="1.60" step="0.05" value="1.00"
+                  title="Scale rendered bond radii across all molecule styles" />
+                <span id="moleculeBondRadiusScaleValue" class="inspectorSliderValue">1.00×</span>
+              </label>
+            </div>
             <div class="inspectorRow inspectorSelectRow" id="rowGlossyBond" style="display:none;">
               <label for="glossyBondRadius">Glossy bond radius</label>
               <input type="number" id="glossyBondRadius" min="0.04" max="0.16" step="0.005" value="0.072"
@@ -2803,6 +2829,33 @@
                 <span class="inspectorActionToggleState">On</span>
               </button>
               <input type="checkbox" id="surfBtn" checked hidden />
+            </div>
+          </div>
+        </details>
+        <details class="inspectorGroup inspectorAccordion" id="appearancePreferencesSection">
+          <summary class="inspectorAccordionSummary">
+            <span class="inspectorTitle">Preferences</span>
+          </summary>
+          <div class="inspectorAccordionBody">
+            <div class="vm-field-row appearancePreferenceRow">
+              <label class="vm-field-label" for="appearanceFontPairGeistBtn">Typeface</label>
+              <div id="appearanceFontPairGroup" class="vm-radio-group" role="radiogroup" aria-label="Typeface">
+                <button id="appearanceFontPairGeistBtn" class="vm-radio" type="button" role="radio"
+                  data-font-pair="geist" aria-checked="true">
+                  <span class="vm-radio__sample" style="font-family: Geist, sans-serif">Aa</span>
+                  <span class="vm-radio__label">Geist</span>
+                </button>
+                <button id="appearanceFontPairInterBtn" class="vm-radio" type="button" role="radio"
+                  data-font-pair="inter" aria-checked="false">
+                  <span class="vm-radio__sample" style="font-family: Inter, sans-serif">Aa</span>
+                  <span class="vm-radio__label">Inter</span>
+                </button>
+                <button id="appearanceFontPairPlexBtn" class="vm-radio" type="button" role="radio"
+                  data-font-pair="plex" aria-checked="false">
+                  <span class="vm-radio__sample" style="font-family: 'IBM Plex Sans', sans-serif">Aa</span>
+                  <span class="vm-radio__label">IBM Plex</span>
+                </button>
+              </div>
             </div>
           </div>
         </details>
@@ -3667,6 +3720,15 @@
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">C</kbd></div><div class="vm-helpDescription">Open Coordinates panel</div></div>
           </div>
         </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Preferences</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow">
+              <div class="vm-helpPreferenceLabel">Typeface</div>
+              <div class="vm-helpDescription">Set in Appearance panel</div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -3768,6 +3830,8 @@
   <script src="./assets/app/js/file-loader.js"></script>
   <!-- symmetry helpers -->
   <script src="./assets/app/js/symmetry.js"></script>
+  <!-- persistent UI preferences -->
+  <script src="./src/prefs.js"></script>
 
   <script src="./assets/app/js/app.js"></script>
 </body>

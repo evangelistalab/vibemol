@@ -9,6 +9,7 @@
     const surfacesSectionEl = deps && deps.surfacesSectionEl ? deps.surfacesSectionEl : null;
     const twoComponentSectionEl = deps && deps.twoComponentSectionEl ? deps.twoComponentSectionEl : null;
     const cloudSectionEl = deps && deps.cloudSectionEl ? deps.cloudSectionEl : null;
+    const fontPairButtonEls = Array.isArray(deps && deps.fontPairButtonEls) ? deps.fontPairButtonEls : [];
     const toggleMultiBondsInput = deps && deps.toggleMultiBondsInput ? deps.toggleMultiBondsInput : null;
     const elementColorsInput = deps && deps.elementColorsInput ? deps.elementColorsInput : null;
     const visibilityElementColorsToggleInput = deps && deps.visibilityElementColorsToggleInput ? deps.visibilityElementColorsToggleInput : null;
@@ -19,6 +20,8 @@
     const getRenderMode = deps && deps.getRenderMode;
     const hasSurfaceControls = deps && deps.hasSurfaceControls;
     const getShowMultiBonds = deps && deps.getShowMultiBonds;
+    const getFontPair = typeof (deps && deps.getFontPair) === 'function' ? deps.getFontPair : null;
+    const onFontPairSelected = typeof (deps && deps.onFontPairSelected) === 'function' ? deps.onFontPairSelected : null;
 
     if (typeof normalizeStyleKey !== 'function' || typeof onStyleChipSelected !== 'function' || typeof getActiveStyle !== 'function') {
       throw new Error('VibeMolAppearanceUi requires style normalization and chip selection callbacks.');
@@ -84,6 +87,17 @@
       }
     }
 
+    function syncFontPairState(nextFontPair = undefined) {
+      if (!fontPairButtonEls.length || !getFontPair) return;
+      const activeFontPair = String(nextFontPair == null ? getFontPair() : nextFontPair || 'geist').trim().toLowerCase() || 'geist';
+      for (const buttonEl of fontPairButtonEls) {
+        const buttonFontPair = String(buttonEl && buttonEl.dataset ? buttonEl.dataset.fontPair || '' : '').trim().toLowerCase();
+        const active = buttonFontPair === activeFontPair;
+        buttonEl.setAttribute('aria-checked', active ? 'true' : 'false');
+        buttonEl.classList.toggle('active', active);
+      }
+    }
+
     function syncSections(vol = undefined, renderMode = undefined) {
       const activeVol = vol || getCurrentVolume() || null;
       const activeRenderMode = renderMode == null ? getRenderMode() : renderMode;
@@ -112,6 +126,7 @@
       syncStyleState(style);
       syncSections(vol, renderMode);
       syncActionToggles();
+      syncFontPairState();
     }
 
     for (const chipEl of styleChipEls) {
@@ -141,9 +156,26 @@
       });
     }
 
+    for (const buttonEl of fontPairButtonEls) {
+      buttonEl.addEventListener('click', () => {
+        if (!onFontPairSelected) {
+          syncFontPairState();
+          return;
+        }
+        const nextFontPair = String(buttonEl && buttonEl.dataset ? buttonEl.dataset.fontPair || '' : '').trim().toLowerCase();
+        if (!nextFontPair) {
+          syncFontPairState();
+          return;
+        }
+        onFontPairSelected(nextFontPair);
+        syncFontPairState(nextFontPair);
+      });
+    }
+
     return Object.freeze({
       syncAll,
       syncActionToggles,
+      syncFontPairState,
       syncSections,
       syncStyleState,
     });
