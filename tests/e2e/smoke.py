@@ -1146,6 +1146,21 @@ def main() -> int:
                       && getComputedStyle(splashDark).display === 'none';
                 }"""
             )
+            page.wait_for_function(
+                """() => {
+                    const toolbar = document.getElementById('toolbar');
+                    const emptyCard = document.getElementById('emptyStateCard');
+                    const displayBtn = document.getElementById('modeDisplayBtn');
+                    if (!toolbar || !emptyCard || !displayBtn) return false;
+                    const toolbarStyle = getComputedStyle(toolbar);
+                    const emptyCardStyle = getComputedStyle(emptyCard);
+                    const displayBtnStyle = getComputedStyle(displayBtn);
+                    return toolbarStyle.backgroundColor === 'rgb(238, 241, 245)'
+                      && emptyCardStyle.backgroundColor === 'rgb(255, 255, 255)'
+                      && emptyCardStyle.boxShadow !== 'none'
+                      && displayBtnStyle.backgroundColor === 'rgb(255, 255, 255)';
+                }"""
+            )
 
             # Gesture-first edit mode keeps the adaptive menu and add popover as the primary affordances.
             log_step('initial edit mode and adaptive menu')
@@ -2613,6 +2628,21 @@ def main() -> int:
                       && getComputedStyle(btn).display !== 'none';
                 }"""
             )
+            page.wait_for_function(
+                """() => {
+                    const chip = document.getElementById('viewInspectorBtn');
+                    const hint = document.getElementById('hint');
+                    if (!chip || !hint) return false;
+                    const chipStyle = getComputedStyle(chip);
+                    const hintStyle = getComputedStyle(hint);
+                    return chipStyle.backgroundColor !== 'rgba(0, 0, 0, 0)'
+                      && chipStyle.backgroundColor !== 'transparent'
+                      && chipStyle.backgroundColor !== 'rgb(255, 255, 255)'
+                      && chipStyle.color === 'rgb(233, 241, 255)'
+                      && hintStyle.backgroundColor === 'rgb(26, 34, 48)'
+                      && hintStyle.color === 'rgb(233, 241, 255)';
+                }"""
+            )
             page.locator('#trajectoryPanelBtn').click()
             page.wait_for_function(
                 """() => {
@@ -2629,6 +2659,15 @@ def main() -> int:
                       && trajectory.getAttribute('aria-hidden') === 'true'
                       && !!panel
                       && panel.getAttribute('aria-hidden') === 'false';
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('sidePanel');
+                    if (!panel) return false;
+                    const style = getComputedStyle(panel);
+                    return style.backgroundColor === 'rgb(255, 255, 255)'
+                      && style.boxShadow !== 'none';
                 }"""
             )
             page.keyboard.press('t')

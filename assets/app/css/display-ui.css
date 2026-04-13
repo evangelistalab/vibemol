@@ -52,6 +52,7 @@
 
 .vm-popover {
   background: var(--vm-color-surface-raised);
+  color: var(--vm-color-on-raised);
   border: 1px solid var(--vm-color-border);
   border-radius: var(--vm-radius-lg);
   box-shadow: var(--vm-shadow-lg);
@@ -179,14 +180,16 @@ kbd,
 }
 
 #helpFab.vm-btn {
-  border-color: var(--vm-color-border);
-  background: color-mix(in srgb, var(--vm-color-surface-raised) 92%, transparent);
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border-color: var(--vm-color-border-control);
+  background: var(--vm-color-surface-control);
+  color: var(--vm-color-on-control);
+  box-shadow: var(--vm-shadow-control);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
 }
 
 #helpFab.vm-btn:hover {
-  background: var(--vm-color-surface-raised);
+  background: color-mix(in srgb, var(--vm-brand-accent) 12%, var(--vm-color-surface-control));
 }
 
 #helpOverlay {
@@ -316,11 +319,11 @@ kbd,
 }
 
 #modeAssistMenu .adaptiveEditItemLabel {
-  color: var(--vm-color-text-primary);
+  color: var(--vm-color-on-control);
 }
 
 #modeAssistMenu .adaptiveEditItemMeta {
-  color: var(--vm-color-text-secondary);
+  color: var(--vm-color-on-control-dim);
 }
 
 @media (max-width: 720px) {
@@ -1118,8 +1121,13 @@ kbd,
 
 #toolbar #displayInspector .inspectorAccordionBody {
   display: grid;
-  gap: 0;
-  padding: 0 0 4px 0;
+  gap: 8px;
+  padding: 12px;
+  margin-top: 8px;
+  background: var(--vm-color-surface-panel);
+  border: 1px solid var(--vm-color-border);
+  border-radius: var(--vm-radius-md);
+  box-shadow: var(--vm-shadow-sm);
 }
 
 #toolbar #displayInspector .appearancePreferenceRow {

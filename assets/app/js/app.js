@@ -8178,6 +8178,7 @@
     measure: 'Click atoms: 2=distance, 3=angle, 4=dihedral',
     build: 'Click to place · 1/2/3/4 bond order · Esc to exit',
   });
+  const MODE_TOASTS_ENABLED = false;
   const MODE_TOAST_STORAGE_KEYS = Object.freeze({
     edit: 'vm.toast.edit.dismissed',
     measure: 'vm.toast.measure.dismissed',
@@ -8451,6 +8452,7 @@
   }
 
   function showEnteredModeToast(mode) {
+    if (!MODE_TOASTS_ENABLED) return;
     const message = MODE_TOAST_MESSAGES[mode];
     if (!message) return;
     const anchorEl = (() => {

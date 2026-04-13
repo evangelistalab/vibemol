@@ -21,17 +21,17 @@
   --vm-color-text-main: var(--vm-color-text-primary);
 
   /* Sidebar / toolbar neutrals */
-  --vm-color-toolbar-bg: var(--vm-color-surface-panel);
+  --vm-color-toolbar-bg: var(--vm-color-surface-base);
   --vm-color-toolbar-border: var(--vm-color-border);
   --vm-color-toolbar-divider: var(--vm-color-toolbar-border);
-  --vm-color-toolbar-control-bg: var(--vm-neutral-150);
-  --vm-color-toolbar-control-bg-hover: #e2e7ee;
-  --vm-color-toolbar-button-bg: var(--vm-neutral-150);
-  --vm-color-toolbar-input-bg: var(--vm-color-surface-raised);
+  --vm-color-toolbar-control-bg: var(--vm-color-surface-panel);
+  --vm-color-toolbar-control-bg-hover: color-mix(in srgb, var(--vm-color-surface-panel) 88%, var(--vm-color-surface-base));
+  --vm-color-toolbar-button-bg: var(--vm-color-surface-control);
+  --vm-color-toolbar-input-bg: var(--vm-color-surface-panel);
   --vm-color-toolbar-input-border: var(--vm-color-border-input);
-  --vm-color-toolbar-tooltip-bg: var(--vm-color-surface-raised);
+  --vm-color-toolbar-tooltip-bg: var(--vm-color-surface-control);
   --vm-color-toolbar-section-divider: var(--vm-color-toolbar-divider);
-  --vm-color-toolbar-icon-strong: var(--vm-neutral-600);
+  --vm-color-toolbar-icon-strong: var(--vm-color-text-primary);
   --vm-color-toolbar-action: var(--vm-accent);
   --vm-color-toolbar-action-outline: var(--vm-accent-outline);
   --vm-color-toolbar-tooltip-shadow: var(--vm-shadow-soft);
@@ -43,32 +43,32 @@
   --vm-color-periodic-grad-c: #0c121c;
 
   /* Toolbar text hierarchy */
-  --vm-color-toolbar-text-primary: var(--vm-neutral-600);
-  --vm-color-toolbar-text-strong: var(--vm-neutral-600);
-  --vm-color-toolbar-text-subtle: var(--vm-neutral-600);
-  --vm-color-toolbar-text-emphasis: var(--vm-neutral-600);
+  --vm-color-toolbar-text-primary: var(--vm-color-text-primary);
+  --vm-color-toolbar-text-strong: var(--vm-color-text-primary);
+  --vm-color-toolbar-text-subtle: var(--vm-color-text-secondary);
+  --vm-color-toolbar-text-emphasis: var(--vm-color-text-primary);
   --vm-color-toolbar-text-tooltip: var(--vm-color-text-main);
-  --vm-color-toolbar-text-meta-key: var(--vm-neutral-600);
-  --vm-color-toolbar-text-meta-empty: var(--vm-neutral-400);
-  --vm-color-toolbar-text-chip: var(--vm-neutral-600);
-  --vm-color-toolbar-text-chip-muted: var(--vm-neutral-600);
-  --vm-color-toolbar-text-code: var(--vm-neutral-600);
-  --vm-color-toolbar-text-inverse: var(--vm-color-white);
+  --vm-color-toolbar-text-meta-key: var(--vm-color-text-label);
+  --vm-color-toolbar-text-meta-empty: var(--vm-color-text-muted);
+  --vm-color-toolbar-text-chip: var(--vm-color-on-control);
+  --vm-color-toolbar-text-chip-muted: var(--vm-color-on-control-dim);
+  --vm-color-toolbar-text-code: var(--vm-color-text-primary);
+  --vm-color-toolbar-text-inverse: var(--vm-color-on-control);
 
   /* Mode tabs */
-  --vm-color-toolbar-tab-fg: var(--vm-neutral-400);
-  --vm-color-toolbar-tab-fg-hover: var(--vm-neutral-600);
-  --vm-color-toolbar-tab-fg-active: var(--vm-neutral-600);
+  --vm-color-toolbar-tab-fg: var(--vm-color-text-secondary);
+  --vm-color-toolbar-tab-fg-hover: var(--vm-color-text-primary);
+  --vm-color-toolbar-tab-fg-active: var(--vm-brand-accent);
   --vm-color-toolbar-tab-accent: var(--vm-accent);
 
   /* Onboarding / splash card */
   --vm-color-splash-card-fg: #0d1728;
-  --vm-color-splash-card-bg: var(--vm-color-surface-raised);
+  --vm-color-splash-card-bg: var(--vm-color-surface-panel);
   --vm-color-splash-card-border: var(--vm-color-border-subtle);
-  --vm-color-splash-card-shadow: rgba(15, 20, 30, 0.06);
+  --vm-color-splash-card-shadow: rgba(15, 20, 30, 0.10);
   --vm-color-splash-version: #667c99;
   --vm-color-splash-drop-border: var(--vm-color-border-subtle);
-  --vm-color-splash-drop-bg: var(--vm-color-surface-raised);
+  --vm-color-splash-drop-bg: var(--vm-color-surface-base);
   --vm-color-splash-drop-fg: #31435d;
   --vm-color-splash-drop-code-bg: var(--vm-color-surface-base);
   --vm-color-splash-drop-code-border: var(--vm-color-border-subtle);
@@ -105,17 +105,17 @@
   --vm-color-bg-panel: var(--vm-color-surface-panel);
   --vm-color-text-main: var(--vm-color-text-primary);
 
-  --vm-color-toolbar-bg: var(--vm-color-surface-panel);
+  --vm-color-toolbar-bg: var(--vm-color-surface-base);
   --vm-color-toolbar-border: var(--vm-color-border);
   --vm-color-toolbar-divider: var(--vm-color-toolbar-border);
-  --vm-color-toolbar-control-bg: #1b2636;
-  --vm-color-toolbar-control-bg-hover: #202d40;
-  --vm-color-toolbar-button-bg: var(--vm-color-surface-raised);
-  --vm-color-toolbar-input-bg: var(--vm-color-surface-raised);
+  --vm-color-toolbar-control-bg: var(--vm-color-surface-panel);
+  --vm-color-toolbar-control-bg-hover: color-mix(in srgb, var(--vm-color-surface-panel) 78%, var(--vm-color-surface-raised));
+  --vm-color-toolbar-button-bg: var(--vm-color-surface-control);
+  --vm-color-toolbar-input-bg: var(--vm-color-surface-panel);
   --vm-color-toolbar-input-border: var(--vm-color-border-input);
-  --vm-color-toolbar-tooltip-bg: var(--vm-color-surface-raised);
+  --vm-color-toolbar-tooltip-bg: var(--vm-color-surface-control);
   --vm-color-toolbar-section-divider: var(--vm-color-toolbar-divider);
-  --vm-color-toolbar-icon-strong: #d7deea;
+  --vm-color-toolbar-icon-strong: var(--vm-color-text-primary);
   --vm-color-toolbar-action: var(--vm-accent);
   --vm-color-toolbar-action-outline: var(--vm-accent-outline);
   --vm-color-toolbar-tooltip-shadow: rgba(0, 0, 0, 0.4);
@@ -132,10 +132,10 @@
   --vm-color-toolbar-text-tooltip: #f3f7ff;
   --vm-color-toolbar-text-meta-key: #b7c4d4;
   --vm-color-toolbar-text-meta-empty: #8291a4;
-  --vm-color-toolbar-text-chip: #d9e1ec;
-  --vm-color-toolbar-text-chip-muted: #b2becd;
+  --vm-color-toolbar-text-chip: var(--vm-color-on-control);
+  --vm-color-toolbar-text-chip-muted: var(--vm-color-on-control-dim);
   --vm-color-toolbar-text-code: #dce5f1;
-  --vm-color-toolbar-text-inverse: #ffffff;
+  --vm-color-toolbar-text-inverse: var(--vm-color-on-control);
 
   --vm-color-toolbar-tab-fg: #a3b1c4;
   --vm-color-toolbar-tab-fg-hover: #d6deea;
@@ -143,12 +143,12 @@
   --vm-color-toolbar-tab-accent: var(--vm-accent);
 
   --vm-color-splash-card-fg: #eaf1fb;
-  --vm-color-splash-card-bg: var(--vm-color-surface-raised);
+  --vm-color-splash-card-bg: var(--vm-color-surface-panel);
   --vm-color-splash-card-border: var(--vm-color-border-subtle);
   --vm-color-splash-card-shadow: rgba(0, 0, 0, 0.34);
   --vm-color-splash-version: #9eb0c7;
   --vm-color-splash-drop-border: var(--vm-color-border-subtle);
-  --vm-color-splash-drop-bg: var(--vm-color-surface-raised);
+  --vm-color-splash-drop-bg: var(--vm-color-surface-base);
   --vm-color-splash-drop-fg: #dbe6f5;
   --vm-color-splash-drop-code-bg: var(--vm-color-surface-panel);
   --vm-color-splash-drop-code-border: var(--vm-color-border-subtle);

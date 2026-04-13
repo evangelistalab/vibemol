@@ -40,29 +40,27 @@
   height: 42px;
   padding: 0;
   border-radius: 999px;
-  border: 1px solid rgba(128, 145, 172, 0.56);
-  background: rgba(55, 63, 76, 0.88);
-  color: rgba(236, 242, 250, 0.9);
-  box-shadow: 0 10px 24px rgba(16, 36, 76, 0.22);
+  border: 1px solid var(--vm-color-border-control);
+  background: var(--vm-color-surface-control);
+  color: var(--vm-color-on-control);
+  box-shadow: var(--vm-shadow-control);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
   pointer-events: auto;
   cursor: pointer;
   position: relative;
 }
 
 .editSelectionCueButton:hover {
-  border-color: color-mix(in srgb, var(--vm-brand-accent) 52%, white);
-  background: rgba(66, 77, 94, 0.94);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 58%, var(--vm-color-border-control));
+  background: color-mix(in srgb, var(--vm-brand-accent) 10%, var(--vm-color-surface-control));
 }
 
 .editSelectionCueButton.is-active {
-  border-color: color-mix(in srgb, var(--vm-brand-accent) 58%, white);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--vm-brand-accent) 82%, white),
-    color-mix(in srgb, var(--vm-brand-accent) 78%, black)
-  );
-  color: #f8fbff;
-  box-shadow: 0 10px 24px rgba(16, 36, 76, 0.34), 0 0 0 4px color-mix(in srgb, var(--vm-brand-accent) 18%, transparent);
+  border-color: var(--vm-brand-accent);
+  background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
+  color: var(--vm-color-on-control);
+  box-shadow: var(--vm-shadow-control), 0 0 0 4px color-mix(in srgb, var(--vm-brand-accent) 18%, transparent);
 }
 
 .editSelectionCueButton[hidden] {
@@ -70,19 +68,19 @@
 }
 
 .editSelectionCueButton.is-muted {
-  color: rgba(224, 231, 241, 0.78);
+  color: var(--vm-color-on-control-dim);
   opacity: 0.82;
 }
 
 .editSelectionCueButton.is-delete {
-  border-color: rgba(255, 126, 126, 0.62);
-  background: rgba(86, 46, 52, 0.9);
-  color: rgba(255, 236, 239, 0.94);
+  border-color: color-mix(in srgb, #ff7e7e 58%, var(--vm-color-border-control));
+  background: color-mix(in srgb, #7b2f3b 55%, var(--vm-color-surface-control));
+  color: #ffecef;
 }
 
 .editSelectionCueButton.is-delete:hover {
   border-color: rgba(255, 157, 157, 0.82);
-  background: rgba(104, 50, 58, 0.96);
+  background: color-mix(in srgb, #923947 68%, var(--vm-color-surface-control));
 }
 
 .editSelectionCueButton[data-bond-order]:not([data-bond-order=""])::after {
@@ -94,8 +92,8 @@
   height: 18px;
   padding: 0 4px;
   border-radius: 999px;
-  background: rgba(248, 251, 255, 0.96);
-  color: rgba(28, 36, 48, 0.96);
+  background: var(--vm-color-surface-raised);
+  color: var(--vm-color-on-raised);
   font-size: var(--vm-text-xs);
   font-weight: var(--vm-font-weight-heading);
   line-height: 18px;
@@ -147,22 +145,23 @@
   gap: 12px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(104, 119, 140, 0.38);
+  border: 1px solid var(--vm-color-border-control);
   border-radius: 14px;
-  background: rgba(49, 55, 66, 0.94);
-  color: #eef3fa;
+  background: var(--vm-color-surface-control);
+  color: var(--vm-color-on-control);
   text-align: left;
   cursor: pointer;
+  box-shadow: var(--vm-shadow-control);
 }
 
 .editCoordinationCueOption:hover {
-  border-color: rgba(145, 173, 215, 0.54);
-  background: rgba(58, 65, 78, 0.98);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 42%, var(--vm-color-border-control));
+  background: color-mix(in srgb, var(--vm-brand-accent) 8%, var(--vm-color-surface-control));
 }
 
 .editCoordinationCueOption.is-active {
   border-color: color-mix(in srgb, var(--vm-brand-accent) 76%, transparent);
-  background: color-mix(in srgb, var(--vm-brand-accent) 20%, rgba(56, 76, 108, 0.96));
+  background: color-mix(in srgb, var(--vm-brand-accent) 20%, var(--vm-color-surface-control));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--vm-brand-accent) 16%, transparent);
 }
 
@@ -190,13 +189,13 @@
 .editCoordinationCueLabel {
   font-size: var(--vm-text-base);
   font-weight: var(--vm-font-weight-heading);
-  color: #f5f8fd;
+  color: var(--vm-color-on-control);
 }
 
 .editCoordinationCueSubtext {
   font-size: var(--vm-text-xs);
   font-weight: var(--vm-font-weight-strong);
-  color: rgba(206, 216, 230, 0.78);
+  color: var(--vm-color-on-control-dim);
 }
 
 #editAdaptiveMenu {
@@ -234,15 +233,15 @@
   min-width: 188px;
   max-width: min(260px, calc(100vw - 24px));
   padding: 6px 8px;
-  border: 1px solid var(--vm-color-border);
+  border: 1px solid var(--vm-color-border-control);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--vm-color-surface-raised) 92%, transparent);
-  box-shadow: var(--vm-shadow-lg);
-  color: var(--vm-color-text-primary);
+  background: var(--vm-color-surface-control);
+  box-shadow: var(--vm-shadow-control);
+  color: var(--vm-color-on-control);
   cursor: pointer;
   text-align: left;
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
 }
 
 .adaptiveEditItem[hidden],
@@ -251,14 +250,14 @@
 }
 
 .adaptiveEditItem:hover {
-  border-color: var(--vm-color-border-strong);
-  background: var(--vm-color-surface-panel);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 26%, var(--vm-color-border-control));
+  background: color-mix(in srgb, var(--vm-brand-accent) 8%, var(--vm-color-surface-control));
 }
 
 .adaptiveEditItem.active {
-  border-color: color-mix(in srgb, var(--vm-brand-accent) 72%, transparent);
-  background: color-mix(in srgb, var(--vm-brand-accent) 14%, var(--vm-color-surface-raised));
-  box-shadow: 0 14px 30px rgba(18, 30, 54, 0.18);
+  border-color: var(--vm-brand-accent);
+  background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
+  box-shadow: var(--vm-shadow-control);
 }
 
 .adaptiveEditItem[data-static="true"] {
@@ -266,8 +265,8 @@
 }
 
 .adaptiveEditItem[data-static="true"]:hover {
-  border-color: var(--vm-color-border);
-  background: color-mix(in srgb, var(--vm-color-surface-raised) 92%, transparent);
+  border-color: var(--vm-color-border-control);
+  background: var(--vm-color-surface-control);
 }
 
 #editAdaptiveAddAtomPopover,
@@ -341,13 +340,13 @@
 
 #bondOrderPopupButtons button {
   appearance: none;
-  border: 1px solid rgba(117, 129, 150, 0.28);
+  border: 1px solid var(--vm-color-border-control);
   width: auto;
   height: 22px;
   min-width: 22px;
   padding: 0 10px;
-  background: rgba(17, 24, 39, 0.9);
-  color: #f2f5fa;
+  background: var(--vm-color-surface-control);
+  color: var(--vm-color-on-control);
   border-radius: 999px;
   font-size: var(--vm-text-xs);
   font-weight: var(--vm-font-weight-heading);
@@ -359,12 +358,12 @@
 }
 
 #bondOrderPopupButtons button:hover {
-  background: rgba(24, 33, 51, 0.96);
+  background: color-mix(in srgb, var(--vm-brand-accent) 8%, var(--vm-color-surface-control));
   border-color: color-mix(in srgb, var(--vm-brand-accent) 64%, transparent);
 }
 
 #bondOrderPopupButtons button.active {
-  background: rgba(15, 23, 42, 0.98);
+  background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
   border-color: color-mix(in srgb, var(--vm-brand-accent) 96%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 28%, transparent);
 }
@@ -376,12 +375,13 @@
   bottom: 24px;
   display: none;
   width: min(340px, calc(100vw - 24px));
-  border: 1px solid rgba(117, 129, 150, 0.28);
+  border: 1px solid var(--vm-color-border-control);
   border-radius: 12px;
-  background: rgba(30, 34, 40, 0.96);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--vm-color-surface-control);
+  color: var(--vm-color-on-control);
+  box-shadow: var(--vm-shadow-control);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
   z-index: 35;
   overflow: hidden;
 }
@@ -402,7 +402,7 @@
   padding: 10px 12px;
   border: 0;
   background: transparent;
-  color: #f2f5fa;
+  color: var(--vm-color-on-control);
   cursor: pointer;
   text-align: left;
 }
@@ -423,7 +423,7 @@
 .editAddAtomOperatorChevron,
 .editAddMoleculeOperatorChevron {
   font-size: var(--vm-text-sm);
-  color: rgba(214, 221, 233, 0.86);
+  color: var(--vm-color-on-control-dim);
   width: 12px;
   flex: 0 0 auto;
 }
@@ -433,7 +433,7 @@
   font-size: var(--vm-text-base);
   font-weight: var(--vm-font-weight-heading);
   line-height: 1.1;
-  color: #f5f7fb;
+  color: var(--vm-color-on-control);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -468,10 +468,10 @@
 .editAddAtomOperatorCoord {
   width: 84px;
   min-width: 84px;
-  border: 1px solid rgba(117, 129, 150, 0.28);
+  border: 1px solid var(--vm-color-border-control);
   border-radius: 8px;
-  background: rgba(94, 100, 109, 0.9);
-  color: #f2f5fa;
+  background: color-mix(in srgb, var(--vm-color-surface-control) 78%, var(--vm-color-surface-panel));
+  color: var(--vm-color-on-control);
   padding: 6px 8px;
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-strong);
@@ -510,10 +510,10 @@
 .editAddMoleculeOperatorButtonRow button {
   appearance: none;
   flex: 0 0 auto;
-  border: 1px solid rgba(117, 129, 150, 0.28);
+  border: 1px solid var(--vm-color-border-control);
   border-radius: 8px;
-  background: rgba(94, 100, 109, 0.9);
-  color: #f2f5fa;
+  background: color-mix(in srgb, var(--vm-color-surface-control) 78%, var(--vm-color-surface-panel));
+  color: var(--vm-color-on-control);
   min-width: 24px;
   padding: 6px 0;
   font-size: var(--vm-text-xs);
@@ -522,8 +522,8 @@
 }
 
 .editAddMoleculeOperatorButtonRow button:hover {
-  border-color: rgba(145, 156, 176, 0.42);
-  background: rgba(104, 111, 121, 0.94);
+  border-color: color-mix(in srgb, var(--vm-brand-accent) 48%, var(--vm-color-border-control));
+  background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
 }
 
 #editAdaptiveAddAtomPopover #editAddAtomPane,
@@ -583,7 +583,7 @@
 #editSymmetryTitle {
   font-size: var(--vm-text-base);
   font-weight: var(--vm-font-weight-heading);
-  color: #f5f7fb;
+  color: var(--vm-color-on-raised);
 }
 
 #editSymmetryTargetSummary {
@@ -625,7 +625,7 @@
 
 #editSymmetryExactResultCard.is-updated .editSymmetryInlineIcon,
 #editSymmetryExactResultCard.is-updated #editSymmetryExactResult {
-  color: #e9f3ff;
+  color: var(--vm-color-on-control);
 }
 
 .editSymmetryInlineIcon,
@@ -688,7 +688,7 @@
   border-radius: 10px;
   padding: 4px 8px;
   background: linear-gradient(180deg, rgba(23, 31, 46, 0.92), rgba(17, 24, 39, 0.88));
-  color: #f2f5fa;
+  color: var(--vm-color-on-control);
   cursor: pointer;
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);
@@ -744,7 +744,7 @@
 .editSymmetryCandidateLabel {
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-heading);
-  color: #f5f7fb;
+  color: var(--vm-color-on-control);
   line-height: 1.15;
   min-width: 0;
 }
@@ -803,7 +803,7 @@
   justify-content: center;
   gap: 6px;
   background: linear-gradient(180deg, rgba(25, 32, 45, 0.94), rgba(17, 24, 39, 0.9));
-  color: #edf2f9;
+  color: var(--vm-color-on-control);
   font-size: var(--vm-text-xs);
   font-weight: var(--vm-font-weight-heading);
   cursor: pointer;
@@ -825,7 +825,7 @@
     color-mix(in srgb, var(--vm-brand-accent) 84%, white),
     color-mix(in srgb, var(--vm-brand-accent) 78%, black)
   );
-  color: #f8fbff;
+  color: var(--vm-color-text-on-accent);
 }
 
 .editSymmetryActionBtn.is-primary:hover:not([disabled]) {
@@ -928,14 +928,14 @@
   flex: 0 0 auto;
   font-size: var(--vm-text-lg);
   line-height: 1;
-  color: var(--vm-color-text-secondary);
+  color: var(--vm-color-on-control-dim);
 }
 
 .adaptiveEditItemLabel {
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-heading);
   line-height: 1.1;
-  color: var(--vm-color-text-primary);
+  color: var(--vm-color-on-control);
   white-space: nowrap;
 }
 
@@ -943,7 +943,7 @@
   font-size: 10px;
   font-weight: var(--vm-font-weight-strong);
   line-height: 1.25;
-  color: var(--vm-color-text-secondary);
+  color: var(--vm-color-on-control-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -964,6 +964,9 @@
 
 .adaptiveShortcutKey {
   height: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--vm-color-on-control-dim);
+  border-color: var(--vm-color-border-control);
 }
 
 #editAddModeToggle {
@@ -988,7 +991,7 @@
 #editAddModeToggle button.active {
   border-color: var(--vm-color-accent-primary);
   background: var(--vm-color-accent-primary-soft);
-  color: #eef7ff;
+  color: var(--vm-color-text-on-accent);
 }
 
 #editAddAtomPane,
@@ -1109,7 +1112,7 @@
   border-width: 2px;
   border-color: rgba(196, 221, 255, 0.84);
   background: rgba(77, 100, 135, 0.95);
-  color: #f8fbff;
+  color: var(--vm-color-on-control);
   box-shadow:
     0 0 0 3px rgba(150, 195, 255, 0.24),
     0 0 0 1px rgba(150, 195, 255, 0.36) inset,
@@ -1161,7 +1164,7 @@
 #editSnapPane .title {
   display: block;
   font-size: var(--vm-text-sm);
-  color: #a9bdd6;
+  color: var(--vm-color-on-control-dim);
   margin-bottom: 5px;
   font-weight: var(--vm-font-weight-heading);
 }
@@ -1169,5 +1172,5 @@
 #editSnapHint {
   margin-top: 5px;
   font-size: var(--vm-text-xs);
-  color: #96adca;
+  color: var(--vm-color-on-control-dim);
 }

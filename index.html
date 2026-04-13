@@ -89,6 +89,9 @@
     .vm-select {
       appearance: none;
       -webkit-appearance: none;
+      border: 1px solid var(--vm-color-border);
+      border-radius: var(--vm-radius-md);
+      background-color: var(--vm-color-surface-panel);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 10px center;
@@ -97,6 +100,7 @@
       font-family: var(--vm-font-sans);
       font-size: var(--vm-text-base);
       font-weight: var(--vm-font-weight-emphasis);
+      color: var(--vm-color-text-primary);
       transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
     }
 
@@ -118,10 +122,23 @@
     }
 
     .status-bar {
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
+      border-top: 1px solid var(--vm-color-border-control);
       font-family: var(--vm-font-mono);
       font-size: var(--vm-text-sm);
       font-weight: var(--vm-font-weight-emphasis);
       font-variant-numeric: tabular-nums;
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
+      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .status-bar .vm-key-pill,
+    .status-bar kbd {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--vm-color-on-control-dim);
+      border-color: var(--vm-color-border-control);
     }
 
     .vm-spinner {
@@ -278,7 +295,8 @@
       top: 0;
       left: 0;
       right: 0;
-      background: linear-gradient(180deg, #111b2a 0%, #0f1723 100%);
+      background: var(--vm-color-surface-base);
+      color: var(--vm-color-on-base);
       border-bottom: 1px solid var(--vm-color-border-strong);
       padding: 8px 10px;
       display: grid;
@@ -296,7 +314,8 @@
       padding: 4px 6px;
       border: 1px solid var(--vm-color-border-subtle);
       border-radius: 10px;
-      background: #121c2a;
+      background: var(--vm-color-surface-panel);
+      box-shadow: var(--vm-shadow-sm);
     }
 
     #toolbar .tb-file {
@@ -305,7 +324,7 @@
 
     #toolbar .tb-main {
       justify-content: center;
-      background: #101826;
+      background: var(--vm-color-surface-panel);
     }
 
     #toolbar .tb-actions {
@@ -334,9 +353,9 @@
     #toolbar input[type="number"],
     #toolbar input[type="text"] {
       height: 30px;
-      border: 1px solid var(--vm-color-border-input);
+      border: 1px solid var(--vm-color-border);
       border-radius: 8px;
-      background: var(--vm-color-surface-input);
+      background: var(--vm-color-surface-panel);
       color: var(--vm-color-text-primary);
       padding: 0 8px;
     }
@@ -357,11 +376,13 @@
 
     #toolbar input.pubchem-query {
       width: min(220px, 24vw);
+      background: var(--vm-color-surface-panel);
+      border-color: var(--vm-color-border);
     }
 
     #toolbar button {
       background: var(--accent);
-      color: #03213e;
+      color: var(--vm-color-text-on-accent);
       border: none;
       height: 30px;
       padding: 0 11px;
@@ -616,8 +637,9 @@
       border: 1px solid var(--vm-color-border-input);
       border-radius: 8px;
       padding: 6px 8px;
-      background: #162130;
-      color: #cfdaea;
+      background: var(--vm-color-surface-panel);
+      color: var(--vm-color-text-primary);
+      box-shadow: var(--vm-shadow-sm);
       font-size: var(--vm-text-sm);
       user-select: none;
     }
@@ -657,10 +679,11 @@
       width: min(420px, calc(100vw - 24px));
       max-height: calc(100vh - var(--floating-panel-top-offset) - var(--floating-panel-bottom-clearance));
       height: auto;
-      background: var(--panel);
-      border: 1px solid var(--vm-color-border-strong);
+      background: var(--vm-color-surface-raised);
+      color: var(--vm-color-on-raised);
+      border: 1px solid var(--vm-color-border);
       border-radius: 10px;
-      box-shadow: 0 12px 24px #0007;
+      box-shadow: var(--vm-shadow-lg);
       transform: translateX(110%);
       z-index: 24;
       display: flex;
@@ -680,10 +703,11 @@
       right: 12px;
       width: min(420px, calc(100vw - 24px));
       max-height: calc(100vh - var(--floating-panel-top-offset) - var(--floating-panel-bottom-clearance));
-      background: var(--panel);
-      border: 1px solid var(--vm-color-border-strong);
+      background: var(--vm-color-surface-raised);
+      color: var(--vm-color-on-raised);
+      border: 1px solid var(--vm-color-border);
       border-radius: 10px;
-      box-shadow: 0 12px 24px #0007;
+      box-shadow: var(--vm-shadow-lg);
       z-index: 24;
       display: none;
     }
@@ -720,10 +744,10 @@
     .motionPanelIconBtn {
       min-width: 32px;
       height: 30px;
-      border: 1px solid #2d3a4f;
+      border: 1px solid var(--vm-color-border-control);
       border-radius: 7px;
-      background: #1a2434;
-      color: #e3ecf8;
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
       font-size: 14px;
       line-height: 1;
       cursor: pointer;
@@ -733,10 +757,13 @@
       justify-content: center;
       vertical-align: middle;
       overflow: hidden;
+      box-shadow: var(--vm-shadow-control);
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
     }
 
     .motionPanelIconBtn:hover {
-      background: #23314a;
+      background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
     }
 
     .motionPanelIconGlyph {
@@ -853,7 +880,11 @@
       height: 128px;
       display: block;
       border-radius: 6px;
-      background: linear-gradient(180deg, #111a28 0%, #0d141f 100%);
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--vm-color-surface-control) 92%, var(--vm-color-surface-raised)),
+        var(--vm-color-surface-control)
+      );
     }
 
     #vibrationSpectrumMeta {
@@ -904,7 +935,7 @@
       width: 120px;
       text-align: right;
       font-variant-numeric: tabular-nums;
-      color: #cfd8e3;
+      color: var(--vm-color-text-secondary);
     }
 
     #vibrationModeTable[data-has-intensity="false"] th.vibrationIntensityCol,
@@ -918,15 +949,15 @@
     }
 
     #vibrationModeTable tr.mode-row:hover {
-      background: #1b273a;
+      background: color-mix(in srgb, var(--vm-color-surface-control) 70%, var(--vm-color-surface-panel));
     }
 
     #vibrationModeTable tr.mode-row.active {
-      background: #1f3551;
+      background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
     }
 
     #vibrationModeTable tr.mode-row.active td {
-      color: #e8f1ff;
+      color: var(--vm-color-on-control);
       font-weight: var(--vm-font-weight-strong);
     }
 
@@ -937,9 +968,9 @@
       width: 24px;
       height: 24px;
       border-radius: 6px;
-      border: 1px solid #2b3950;
-      background: #162131;
-      color: #d8e4f4;
+      border: 1px solid var(--vm-color-border-control);
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
       font-size: var(--vm-text-lg);
       cursor: pointer;
       padding: 0;
@@ -947,10 +978,11 @@
       font-weight: var(--vm-font-weight-body);
       line-height: 1;
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      box-shadow: var(--vm-shadow-control);
     }
 
     .vibrationPlayCell:hover {
-      background: #1f3048;
+      background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
     }
 
     #trajectoryNowPlaying,
@@ -1014,13 +1046,14 @@
 
     #toolbar #pubchemMetaContent {
       padding: 6px 8px;
-      border: 1px solid #dde0e6;
+      border: 1px solid var(--vm-color-border);
       border-radius: var(--tb-radius-tight);
       color: var(--tb-text-color-primary);
       font-size: var(--tb-text-size-meta);
       max-height: 140px;
       overflow: auto;
-      background: #eaecf0;
+      background: var(--vm-color-surface-panel);
+      box-shadow: var(--vm-shadow-sm);
       scrollbar-width: thin;
     }
 
@@ -1051,7 +1084,7 @@
     #toolbar #pubchemMetaContent table.meta-table th,
     #toolbar #pubchemMetaContent table.meta-table td {
       padding: 3px 4px;
-      border-bottom: 1px solid #d5d9e2;
+      border-bottom: 1px solid var(--vm-color-border);
       vertical-align: top;
       word-break: break-word;
       text-align: left;
@@ -1201,19 +1234,19 @@
       max-width: calc(100vw - 24px);
       box-sizing: border-box;
       white-space: normal;
-      color: #eef4fc;
-      background: rgba(10, 14, 20, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--vm-color-on-control);
+      background: var(--vm-color-surface-control);
+      border: 1px solid var(--vm-color-border-control);
       border-left: 2px solid transparent;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
-      padding: 7px 10px;
+      box-shadow: var(--vm-shadow-control);
+      padding: 6px 14px;
       border-radius: 6px;
       font-family: var(--vm-font-mono);
       font-size: var(--vm-text-sm);
       font-weight: var(--vm-font-weight-emphasis);
       font-variant-numeric: tabular-nums;
-      backdrop-filter: blur(8px) saturate(120%);
-      -webkit-backdrop-filter: blur(8px) saturate(120%);
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
       transition: background-color 180ms ease, border-left-color 180ms ease, box-shadow 180ms ease;
       z-index: 31;
     }
@@ -1225,12 +1258,12 @@
 
     @keyframes hintStatusPulse {
       0% {
-        background: rgba(20, 32, 51, 0.98);
-        box-shadow: 0 14px 32px rgba(9, 16, 28, 0.34);
+        background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
+        box-shadow: var(--vm-shadow-control);
       }
       100% {
-        background: rgba(10, 14, 20, 0.92);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+        background: var(--vm-color-surface-control);
+        box-shadow: var(--vm-shadow-control);
       }
     }
 
@@ -1260,7 +1293,7 @@
       border-radius: 16px;
       padding: 22px 24px;
       line-height: 1.35;
-      box-shadow: var(--vm-shadow-lg);
+      box-shadow: var(--vm-shadow-md);
       pointer-events: auto;
     }
 
@@ -1282,7 +1315,7 @@
     #emptyStateDropZone {
       border: 1px solid var(--vm-color-splash-drop-border);
       background: var(--vm-color-splash-drop-bg);
-      box-shadow: var(--vm-shadow-lg);
+      box-shadow: var(--vm-shadow-sm);
       border-radius: 12px;
       padding: 16px 14px;
       text-align: center;
@@ -1449,10 +1482,11 @@
       width: min(920px, 96vw);
       max-height: 86vh;
       overflow: auto;
-      background: var(--panel);
-      border: 1px solid var(--vm-color-border-strong);
+      background: var(--vm-color-surface-raised);
+      color: var(--vm-color-on-raised);
+      border: 1px solid var(--vm-color-border);
       border-radius: 10px;
-      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+      box-shadow: var(--vm-shadow-lg);
       padding: 10px 12px 12px;
     }
 
@@ -1545,7 +1579,7 @@
       --toolbar-mode-tab-fg-hover: var(--vm-color-toolbar-tab-fg-hover);
       --toolbar-mode-tab-fg-active: var(--vm-color-toolbar-tab-fg-active);
       --toolbar-mode-tab-accent: var(--vm-color-toolbar-tab-accent);
-      --tb-surface-base: var(--vm-color-surface-panel);
+      --tb-surface-base: var(--vm-color-surface-base);
       --tb-surface-emphasis: var(--vm-color-toolbar-control-bg);
       --tb-surface-emphasis-hover: var(--vm-color-toolbar-control-bg-hover);
       --tb-surface-button: var(--vm-color-toolbar-button-bg);
@@ -1653,6 +1687,7 @@
       overflow: visible;
       border: none !important;
       box-shadow: none !important;
+      transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
     }
 
     #toolbarModeRow .tb-modeBtn::after {
@@ -1671,14 +1706,14 @@
     }
 
     #toolbarModeRow .tb-modeBtn:hover {
-      background: transparent !important;
+      background: color-mix(in srgb, var(--vm-color-surface-panel) 72%, transparent) !important;
       color: var(--toolbar-mode-tab-fg-hover) !important;
     }
 
     #toolbarModeRow .tb-modeBtn.active {
-      background: transparent !important;
+      background: var(--vm-color-surface-panel) !important;
       color: var(--toolbar-mode-tab-accent) !important;
-      box-shadow: none;
+      box-shadow: var(--vm-shadow-sm);
     }
 
     #toolbarModeRow .tb-modeBtn.active::after {
@@ -1807,8 +1842,12 @@
       justify-content: center;
       font-size: 16px;
       line-height: 1;
-      background: var(--tb-surface-button);
-      box-shadow: none;
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
+      border: 1px solid var(--vm-color-border-control);
+      box-shadow: var(--vm-shadow-control);
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
       text-align: center;
     }
 
@@ -3656,7 +3695,6 @@
               id="versionText" class="vm-helpOverlayVersion"></span></div>
         </div>
         <div class="vm-popover__actions">
-          <button id="helpResetToasts" class="vm-btn vm-btn--ghost vm-helpOverlayReset" type="button">Reset help toasts</button>
           <button id="helpClose" class="vm-btn vm-btn--icon" type="button" aria-label="Close keyboard shortcuts"
             title="Close keyboard shortcuts">
             <svg viewBox="0 0 16 16" aria-hidden="true">

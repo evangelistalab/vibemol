@@ -271,20 +271,28 @@
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --vm-color-surface-base: #f5f6f8;
+  --vm-color-surface-base: #eef1f5;
   --vm-color-surface-panel: #ffffff;
   --vm-color-surface-raised: #ffffff;
+  --vm-color-surface-control: #1a2230;
   --vm-color-surface-canvas: var(--vm-color-surface-base);
-  --vm-color-surface-input: #ffffff;
-  --vm-color-surface-secondary: #eef2f6;
+  --vm-color-surface-input: var(--vm-color-surface-panel);
+  --vm-color-surface-secondary: #f4f6f9;
   --vm-color-surface-secondary-active: var(--vm-brand-accent);
-  --vm-color-surface-chip: #eef2f6;
-  --vm-color-surface-chip-muted: #f0f3f7;
-  --vm-color-surface-chip-strong: #e8ecf1;
+  --vm-color-surface-chip: var(--vm-color-surface-panel);
+  --vm-color-surface-chip-muted: #f7f9fb;
+  --vm-color-surface-chip-strong: #e8edf4;
 
-  --vm-color-border: rgba(15, 20, 30, 0.1);
+  --vm-color-on-base: var(--vm-color-text-primary);
+  --vm-color-on-panel: var(--vm-color-text-primary);
+  --vm-color-on-raised: var(--vm-color-text-primary);
+  --vm-color-on-control: #e9f1ff;
+  --vm-color-on-control-dim: #9fb4d4;
+
   --vm-color-border-subtle: rgba(15, 20, 30, 0.06);
-  --vm-color-border-strong: rgba(15, 20, 30, 0.12);
+  --vm-color-border: rgba(15, 20, 30, 0.10);
+  --vm-color-border-strong: rgba(15, 20, 30, 0.16);
+  --vm-color-border-control: rgba(255, 255, 255, 0.10);
   --vm-color-border-default: var(--vm-color-border);
   --vm-color-border-soft: var(--vm-color-border-subtle);
   --vm-color-border-input: rgba(15, 20, 30, 0.12);
@@ -300,9 +308,10 @@
   --vm-color-accent-primary-soft: color-mix(in srgb, var(--vm-brand-accent) 18%, transparent);
   --vm-color-accent-outline: color-mix(in srgb, var(--vm-brand-accent) 22%, transparent);
 
-  --vm-shadow-sm: 0 1px 2px rgba(15, 20, 30, 0.04);
-  --vm-shadow-md: 0 8px 24px rgba(15, 20, 30, 0.06);
-  --vm-shadow-lg: 0 1px 2px rgba(15, 20, 30, 0.04), 0 8px 24px rgba(15, 20, 30, 0.06);
+  --vm-shadow-sm: 0 1px 2px rgba(15, 20, 30, 0.05);
+  --vm-shadow-md: 0 1px 2px rgba(15, 20, 30, 0.05), 0 4px 12px rgba(15, 20, 30, 0.07);
+  --vm-shadow-lg: 0 1px 2px rgba(15, 20, 30, 0.06), 0 8px 24px rgba(15, 20, 30, 0.10), 0 24px 48px rgba(15, 20, 30, 0.06);
+  --vm-shadow-control: 0 2px 8px rgba(15, 20, 30, 0.18), 0 8px 24px rgba(15, 20, 30, 0.12);
 }
 
 :root[data-theme='dark'] {
@@ -311,20 +320,28 @@
   --vm-color-surface-base: #0a0e14;
   --vm-color-surface-panel: #0f141c;
   --vm-color-surface-raised: #141a24;
+  --vm-color-surface-control: #0c1119;
   --vm-color-surface-canvas: var(--vm-color-surface-base);
-  --vm-color-surface-input: #141a24;
+  --vm-color-surface-input: var(--vm-color-surface-panel);
   --vm-color-surface-secondary: #1b2636;
   --vm-color-surface-secondary-active: var(--vm-brand-accent);
-  --vm-color-surface-chip: #141a24;
+  --vm-color-surface-chip: var(--vm-color-surface-panel);
   --vm-color-surface-chip-muted: #182030;
   --vm-color-surface-chip-strong: #1b2536;
 
-  --vm-color-border: #243041;
-  --vm-color-border-subtle: rgba(255, 255, 255, 0.08);
-  --vm-color-border-strong: #2a3445;
+  --vm-color-on-base: var(--vm-color-text-primary);
+  --vm-color-on-panel: var(--vm-color-text-primary);
+  --vm-color-on-raised: var(--vm-color-text-primary);
+  --vm-color-on-control: #e9f1ff;
+  --vm-color-on-control-dim: #9fb4d4;
+
+  --vm-color-border-subtle: rgba(255, 255, 255, 0.04);
+  --vm-color-border: rgba(255, 255, 255, 0.08);
+  --vm-color-border-strong: rgba(255, 255, 255, 0.16);
+  --vm-color-border-control: rgba(255, 255, 255, 0.08);
   --vm-color-border-default: var(--vm-color-border);
   --vm-color-border-soft: var(--vm-color-border-subtle);
-  --vm-color-border-input: #314357;
+  --vm-color-border-input: rgba(255, 255, 255, 0.12);
 
   --vm-color-text-primary: #e6edf6;
   --vm-color-text-secondary: #9aa7ba;
@@ -337,7 +354,8 @@
   --vm-color-accent-primary-soft: color-mix(in srgb, var(--vm-brand-accent) 22%, transparent);
   --vm-color-accent-outline: color-mix(in srgb, var(--vm-brand-accent) 28%, transparent);
 
-  --vm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32);
-  --vm-shadow-md: 0 10px 24px rgba(0, 0, 0, 0.34);
-  --vm-shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.32), 0 10px 28px rgba(0, 0, 0, 0.4);
+  --vm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --vm-shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5);
+  --vm-shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.6), 0 24px 48px rgba(0, 0, 0, 0.4);
+  --vm-shadow-control: 0 2px 8px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.4);
 }
