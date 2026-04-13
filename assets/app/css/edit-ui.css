@@ -27,7 +27,7 @@
 }
 
 #editSelectionTranslateCue .material-symbols-rounded {
-  font-size: 22px;
+  font-size: var(--vm-text-xl);
   font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24;
 }
 
@@ -92,8 +92,8 @@
   border-radius: 999px;
   background: rgba(248, 251, 255, 0.96);
   color: rgba(28, 36, 48, 0.96);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   line-height: 18px;
   box-shadow: 0 4px 10px rgba(8, 16, 28, 0.28);
 }
@@ -120,16 +120,15 @@
 
 .editCoordinationCueHeader {
   margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
   color: #f2f6fb;
-  letter-spacing: 0.02em;
 }
 
 .editCoordinationCueHeaderSubtext {
   margin: -4px 0 10px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-strong);
   color: rgba(206, 216, 230, 0.78);
 }
 
@@ -187,14 +186,14 @@
 }
 
 .editCoordinationCueLabel {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--vm-text-base);
+  font-weight: var(--vm-font-weight-heading);
   color: #f5f8fd;
 }
 
 .editCoordinationCueSubtext {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-strong);
   color: rgba(206, 216, 230, 0.78);
 }
 
@@ -320,8 +319,8 @@
 }
 
 #bondOrderPopupTitle {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   color: #f2f5fa;
 }
 
@@ -341,8 +340,8 @@
   background: rgba(17, 24, 39, 0.9);
   color: #f2f5fa;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -414,7 +413,7 @@
 
 .editAddAtomOperatorChevron,
 .editAddMoleculeOperatorChevron {
-  font-size: 12px;
+  font-size: var(--vm-text-sm);
   color: rgba(214, 221, 233, 0.86);
   width: 12px;
   flex: 0 0 auto;
@@ -422,8 +421,8 @@
 
 .editAddAtomOperatorLabel,
 .editAddMoleculeOperatorLabel {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--vm-text-base);
+  font-weight: var(--vm-font-weight-heading);
   line-height: 1.1;
   color: #f5f7fb;
   white-space: nowrap;
@@ -450,8 +449,8 @@
 }
 
 .editAddAtomOperatorRowLabel {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   color: rgba(214, 221, 233, 0.78);
   text-align: left;
   min-width: 52px;
@@ -465,8 +464,8 @@
   background: rgba(94, 100, 109, 0.9);
   color: #f2f5fa;
   padding: 6px 8px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-strong);
 }
 
 .editAddAtomOperatorCoord:focus {
@@ -478,7 +477,7 @@
 .editAddAtomOperatorFoot {
   grid-column: 1 / -1;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: var(--vm-font-weight-strong);
   color: rgba(214, 221, 233, 0.72);
   padding-top: 2px;
 }
@@ -492,8 +491,8 @@
 }
 
 .editAddMoleculeOperatorButtonLabel {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   color: rgba(214, 221, 233, 0.78);
   white-space: nowrap;
   margin-right: 2px;
@@ -508,8 +507,8 @@
   color: #f2f5fa;
   min-width: 24px;
   padding: 6px 0;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   cursor: pointer;
 }
 
@@ -564,7 +563,7 @@
   border-radius: 10px;
   background: rgba(83, 151, 255, 0.16);
   color: #8cb8ff;
-  font-size: 18px;
+  font-size: var(--vm-text-lg);
 }
 
 #editSymmetryHeaderText {
@@ -573,15 +572,16 @@
 }
 
 #editSymmetryTitle {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--vm-text-base);
+  font-weight: var(--vm-font-weight-heading);
   color: #f5f7fb;
 }
 
 #editSymmetryTargetSummary {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   color: rgba(214, 221, 233, 0.84);
+  font-variant-numeric: tabular-nums;
 }
 
 #editSymmetryExactResultCard {
@@ -617,9 +617,13 @@
 
 .editSymmetryInlineIcon,
 #editSymmetryExactResult {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   color: rgba(214, 221, 233, 0.84);
+}
+
+#editSymmetryExactResult {
+  font-variant-numeric: tabular-nums;
 }
 
 .editSymmetryInlineIcon {
@@ -645,8 +649,8 @@
 #editSymmetryToleranceLabel,
 .editSymmetryCandidateSectionTitle,
 #editSymmetryElementLabel {
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #d8dfeb;
@@ -709,7 +713,7 @@
   border-radius: 6px;
   background: rgba(83, 151, 255, 0.14);
   color: #8cb8ff;
-  font-size: 11px;
+  font-size: var(--vm-text-xs);
 }
 
 .editSymmetryCandidateBody {
@@ -721,8 +725,8 @@
 }
 
 .editSymmetryCandidateLabel {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
   color: #f5f7fb;
   line-height: 1.15;
   min-width: 0;
@@ -743,17 +747,18 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--vm-font-weight-heading);
   color: rgba(227, 233, 244, 0.8);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .editSymmetryEmptyState {
   padding: 10px;
   border: 1px dashed rgba(117, 129, 150, 0.28);
   border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-strong);
   color: rgba(214, 221, 233, 0.76);
 }
 
@@ -781,9 +786,8 @@
   gap: 6px;
   background: linear-gradient(180deg, rgba(25, 32, 45, 0.94), rgba(17, 24, 39, 0.9));
   color: #edf2f9;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-heading);
   cursor: pointer;
 }
 
@@ -814,8 +818,8 @@
 #editBuildSearchLabel {
   display: block;
   margin: 0;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
   color: #d8dfeb;
 }
 
@@ -847,8 +851,8 @@
   border: 1px solid rgba(166, 176, 191, 0.2);
   background: rgba(187, 195, 208, 0.14);
   color: rgba(221, 227, 236, 0.82);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
 }
 
 .editBuildPaletteSection {
@@ -857,8 +861,8 @@
 }
 
 .editBuildPaletteSectionTitle {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #d8dfeb;
@@ -903,14 +907,14 @@
 
 .adaptiveEditItemIcon {
   flex: 0 0 auto;
-  font-size: 18px;
+  font-size: var(--vm-text-lg);
   line-height: 1;
   color: rgba(223, 231, 242, 0.9);
 }
 
 .adaptiveEditItemLabel {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
   line-height: 1.1;
   color: #f5f7fb;
   white-space: nowrap;
@@ -918,7 +922,7 @@
 
 .adaptiveEditItemMeta {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: var(--vm-font-weight-strong);
   line-height: 1.25;
   color: rgba(214, 221, 233, 0.78);
   white-space: nowrap;
@@ -950,8 +954,8 @@
   background: rgba(187, 195, 208, 0.14);
   border: 1px solid rgba(166, 176, 191, 0.2);
   color: rgba(221, 227, 236, 0.82);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--vm-text-xs);
+  font-weight: var(--vm-font-weight-strong);
   font-family: var(--shortcut-key-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
   font-variant-ligatures: none;
   line-height: 1;
@@ -974,8 +978,8 @@
   border-radius: 8px;
   padding: 5px 8px;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 12px;
+  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-text-sm);
 }
 
 #editAddModeToggle button.active {
@@ -998,7 +1002,7 @@
 
 #editAddPane label {
   display: block;
-  font-size: 12px;
+  font-size: var(--vm-text-sm);
   color: #a9bdd6;
   margin-bottom: 5px;
 }
@@ -1020,7 +1024,7 @@
   margin-top: 9px;
   margin-bottom: 0 !important;
   color: #c8d8ec !important;
-  font-size: 12px;
+  font-size: var(--vm-text-sm);
 }
 
 .editAddToggleRow input[type="checkbox"] {
@@ -1073,8 +1077,8 @@
   border: 1px solid var(--vm-color-legacy-border-soft);
   border-radius: 999px;
   padding: 3px 8px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
   background: var(--vm-color-legacy-dark-surface);
   color: var(--vm-color-legacy-secondary-active-fg);
   cursor: pointer;
@@ -1114,7 +1118,7 @@
 
 #editTransformCurrent {
   margin-top: 7px;
-  font-size: 12px;
+  font-size: var(--vm-text-sm);
   color: #c8d8ec;
   min-height: 1.4em;
 }
@@ -1130,8 +1134,8 @@
   border: 1px solid var(--vm-color-legacy-border-soft);
   border-radius: 8px;
   padding: 5px 8px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
   background: var(--vm-color-legacy-dark-surface);
   color: var(--vm-color-legacy-secondary-active-fg);
   cursor: pointer;
@@ -1147,14 +1151,14 @@
 
 #editSnapPane .title {
   display: block;
-  font-size: 12px;
+  font-size: var(--vm-text-sm);
   color: #a9bdd6;
   margin-bottom: 5px;
-  font-weight: 700;
+  font-weight: var(--vm-font-weight-heading);
 }
 
 #editSnapHint {
   margin-top: 5px;
-  font-size: 11px;
+  font-size: var(--vm-text-xs);
   color: #96adca;
 }

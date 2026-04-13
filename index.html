@@ -31,22 +31,34 @@
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
   <style>
     @font-face {
-      font-family: 'JetBrains Mono';
+      font-family: 'Geist';
       font-style: normal;
-      font-weight: 500;
+      font-weight: 100 900;
       font-display: swap;
-      src: url('assets/app/fonts/JetBrainsMono-shortcuts.woff2') format('woff2');
+      src: url('assets/app/fonts/Geist-Variable.woff2') format('woff2');
     }
 
     @font-face {
-      font-family: 'JetBrains Mono';
+      font-family: 'Geist Mono';
       font-style: normal;
-      font-weight: 600;
+      font-weight: 100 900;
       font-display: swap;
-      src: url('assets/app/fonts/JetBrainsMono-shortcuts.woff2') format('woff2');
+      src: url('assets/app/fonts/GeistMono-Variable.woff2') format('woff2');
     }
 
     :root {
+      --vm-font-sans: "Geist", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      --vm-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --vm-font-weight-body: 400;
+      --vm-font-weight-emphasis: 500;
+      --vm-font-weight-strong: 600;
+      --vm-font-weight-heading: 700;
+      --vm-text-xs: 11px;
+      --vm-text-sm: 12px;
+      --vm-text-base: 13px;
+      --vm-text-md: 15px;
+      --vm-text-lg: 18px;
+      --vm-text-xl: 22px;
       --bg: var(--vm-color-bg-main);
       --panel: var(--vm-color-bg-panel);
       --text: var(--vm-color-text-main);
@@ -63,7 +75,7 @@
       --status-ribbon-pill-text: #e9f1ff;
       --status-ribbon-pill-border: #3a4860;
       --status-hint-accent: #4aa3ff;
-      --shortcut-key-font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --shortcut-key-font-family: var(--vm-font-mono);
     }
 
     html,
@@ -72,7 +84,15 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font: 14px/1.3 system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      font: var(--vm-text-base)/1.3 var(--vm-font-sans);
+      font-weight: var(--vm-font-weight-body);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
     }
 
     #toolbar {
@@ -117,8 +137,7 @@
     }
 
     #toolbar .tb-brand {
-      font-weight: 700;
-      letter-spacing: 0.02em;
+      font-weight: var(--vm-font-weight-heading);
       color: var(--vm-color-legacy-text-on-dark);
       padding: 0 4px;
       white-space: nowrap;
@@ -129,7 +148,7 @@
       align-items: center;
       gap: 6px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       white-space: nowrap;
     }
 
@@ -160,7 +179,7 @@
       height: 30px;
       padding: 0 11px;
       border-radius: 8px;
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
       cursor: pointer;
       white-space: nowrap;
     }
@@ -279,7 +298,7 @@
       position: relative;
       min-width: 96px;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: var(--vm-font-weight-emphasis);
       line-height: 1;
       white-space: nowrap;
     }
@@ -346,9 +365,8 @@
 
     #displayInspector .inspectorTitle {
       color: #dbe6f6;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-heading);
       margin-bottom: 8px;
     }
 
@@ -369,7 +387,7 @@
       align-items: center;
       gap: 6px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       white-space: nowrap;
     }
 
@@ -411,7 +429,7 @@
       padding: 6px 8px;
       background: #162130;
       color: #cfdaea;
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       user-select: none;
     }
 
@@ -501,7 +519,7 @@
     }
 
     .motionPanelHeader .title {
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
     }
 
     .motionPanelHeader .actions {
@@ -535,7 +553,7 @@
     .motionPanelIconGlyph {
       pointer-events: none;
       font-family: 'Material Symbols Rounded';
-      font-weight: 400;
+      font-weight: var(--vm-font-weight-body);
       font-style: normal;
       font-size: 20px;
       line-height: 1;
@@ -608,7 +626,7 @@
 
     .motionPanelBody label {
       color: var(--muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       width: auto;
     }
 
@@ -652,7 +670,7 @@
     #vibrationSpectrumMeta {
       margin-top: 5px;
       color: var(--muted);
-      font-size: 11px;
+      font-size: var(--vm-text-xs);
       line-height: 1.2;
       font-variant-numeric: tabular-nums;
     }
@@ -660,7 +678,7 @@
     #vibrationModeTable {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       color: var(--text);
     }
 
@@ -679,7 +697,7 @@
       z-index: 1;
       background: var(--vm-color-legacy-muted-chip);
       color: var(--muted);
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
     }
 
     #vibrationModeTable td:nth-child(1) {
@@ -720,7 +738,7 @@
 
     #vibrationModeTable tr.mode-row.active td {
       color: #e8f1ff;
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
     }
 
     .vibrationPlayCell {
@@ -733,11 +751,11 @@
       border: 1px solid #2b3950;
       background: #162131;
       color: #d8e4f4;
-      font-size: 18px;
+      font-size: var(--vm-text-lg);
       cursor: pointer;
       padding: 0;
       font-family: 'Material Symbols Rounded';
-      font-weight: normal;
+      font-weight: var(--vm-font-weight-body);
       line-height: 1;
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
     }
@@ -751,7 +769,7 @@
       margin-top: 4px;
       margin-bottom: 8px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       line-height: 1.2;
       font-variant-numeric: tabular-nums;
     }
@@ -759,7 +777,7 @@
     #vibrationModeEmpty {
       display: none;
       color: var(--muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       padding: 10px 2px 2px;
     }
 
@@ -779,7 +797,7 @@
     }
 
     #sideHeader .title {
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
     }
 
     #sideClose {
@@ -795,7 +813,8 @@
       padding: 10px 12px;
       overflow: visible;
       color: var(--text);
-      font-size: 13px;
+      font-size: var(--vm-text-base);
+      font-variant-numeric: tabular-nums;
     }
 
     #coordsContent .coordsActiveLabel {
@@ -827,7 +846,6 @@
       font-weight: var(--tb-text-weight-bold);
       margin: 0 0 4px 1px;
       text-transform: none;
-      letter-spacing: 0.01em;
     }
 
     #toolbar #pubchemMetaContent .meta-empty {
@@ -857,6 +875,7 @@
 
     #toolbar #pubchemMetaContent table.meta-table td {
       color: var(--tb-text-color-primary);
+      font-variant-numeric: tabular-nums;
     }
 
     #viewControls {
@@ -884,7 +903,7 @@
 
     #viewControls label {
       color: var(--muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
     }
 
     #viewControls input[type="number"] {
@@ -902,7 +921,7 @@
 
     #viewControls .axis {
       color: var(--muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       text-align: center;
     }
 
@@ -921,7 +940,7 @@
     #coordsContent th {
       text-align: left;
       color: var(--muted);
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
     }
 
     #coordsContent tbody tr[data-atom-index] {
@@ -993,9 +1012,8 @@
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
       padding: 7px 10px;
       border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
+      font-size: var(--vm-text-base);
+      font-weight: var(--vm-font-weight-emphasis);
       font-variant-numeric: tabular-nums;
       backdrop-filter: blur(8px) saturate(120%);
       -webkit-backdrop-filter: blur(8px) saturate(120%);
@@ -1076,10 +1094,9 @@
       border-radius: 999px;
       background: rgba(86, 103, 129, 0.14);
       border: 1px solid rgba(120, 139, 168, 0.22);
-      font-size: 12px;
-      font-weight: 700;
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-heading);
       color: var(--vm-color-splash-version);
-      letter-spacing: 0.02em;
     }
 
     #emptyStateDropZone {
@@ -1089,7 +1106,7 @@
       padding: 16px 14px;
       text-align: center;
       color: var(--vm-color-splash-drop-fg);
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
       font-size: clamp(15px, 1.8vw, 18px);
     }
 
@@ -1100,7 +1117,7 @@
       padding: 1px 5px;
       color: var(--vm-color-splash-drop-code-fg);
       font-size: 0.92em;
-      font-weight: 700;
+      font-weight: var(--vm-font-weight-heading);
     }
 
     #emptyStateDropIcon {
@@ -1127,7 +1144,7 @@
       background: var(--vm-color-splash-cta-bg);
       color: var(--vm-color-splash-cta-fg);
       font-size: 14px;
-      font-weight: 700;
+      font-weight: var(--vm-font-weight-heading);
       cursor: pointer;
     }
 
@@ -1151,8 +1168,8 @@
       background: transparent;
       color: var(--vm-color-splash-link);
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-strong);
       padding: 2px 4px;
       text-decoration: underline;
       text-underline-offset: 2px;
@@ -1161,8 +1178,8 @@
     #emptyStateMeta {
       margin-top: 12px;
       text-align: center;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-emphasis);
       color: var(--vm-color-splash-meta);
     }
 
@@ -1179,8 +1196,8 @@
       gap: 6px;
       width: fit-content;
       color: var(--vm-color-splash-link);
-      font-size: 12px;
-      font-weight: 700;
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-heading);
       cursor: pointer;
       list-style: none;
       user-select: none;
@@ -1194,7 +1211,7 @@
       content: 'open_in_new';
       font-family: 'Material Symbols Rounded';
       font-size: 14px;
-      font-weight: 400;
+      font-weight: var(--vm-font-weight-body);
       line-height: 1;
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
     }
@@ -1213,9 +1230,8 @@
     }
 
     .emptyStateWhatsNewLead {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
+      font-size: var(--vm-text-xs);
+      font-weight: var(--vm-font-weight-heading);
       color: var(--vm-color-splash-meta);
     }
 
@@ -1225,7 +1241,7 @@
       display: grid;
       gap: 5px;
       color: var(--vm-color-splash-card-fg);
-      font-size: 11px;
+      font-size: var(--vm-text-xs);
       line-height: 1.4;
     }
 
@@ -1259,7 +1275,7 @@
     }
 
     #elementColorHead .title {
-      font-weight: 700;
+      font-weight: var(--vm-font-weight-heading);
     }
 
     #elementColorPickerRow {
@@ -1274,7 +1290,7 @@
     #elementColorName {
       min-width: 180px;
       color: var(--text);
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
     }
 
     #periodicTableViewport {
@@ -1297,7 +1313,7 @@
     .pt-legend {
       margin-top: 8px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
     }
 
     /* --- Workspace Sidebar (Figma-like left dock) --- */
@@ -1307,14 +1323,14 @@
       --vibration-panel-bottom-clearance: 52px;
       --toolbar-divider: var(--vm-color-toolbar-divider);
       /* Toolbar typography tokens */
-      --tb-font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      --tb-text-size-title: 15px;
-      --tb-text-size-ui: 13px;
-      --tb-text-size-label: 12px;
-      --tb-text-size-meta: 11px;
-      --tb-text-weight-regular: 400;
-      --tb-text-weight-semibold: 600;
-      --tb-text-weight-bold: 700;
+      --tb-font-family: var(--vm-font-sans);
+      --tb-text-size-title: var(--vm-text-md);
+      --tb-text-size-ui: var(--vm-text-base);
+      --tb-text-size-label: var(--vm-text-sm);
+      --tb-text-size-meta: var(--vm-text-xs);
+      --tb-text-weight-regular: var(--vm-font-weight-body);
+      --tb-text-weight-semibold: var(--vm-font-weight-strong);
+      --tb-text-weight-bold: var(--vm-font-weight-heading);
       --tb-text-color-primary: var(--vm-color-toolbar-text-primary);
       --tb-text-color-strong: var(--vm-color-toolbar-text-strong);
       --tb-text-color-muted: var(--vm-color-toolbar-text-muted);
@@ -1408,7 +1424,6 @@
       color: var(--tb-text-color-strong);
       font-size: var(--tb-text-size-title);
       font-weight: var(--tb-text-weight-bold);
-      letter-spacing: 0.01em;
       padding: 0;
       display: inline-flex;
       align-items: center;
@@ -1444,9 +1459,8 @@
       border-radius: 6px;
       background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-muted);
-      font-size: 12px;
+      font-size: var(--vm-text-sm);
       font-weight: var(--tb-text-weight-semibold);
-      letter-spacing: 0.01em;
       font-variant-numeric: tabular-nums;
       line-height: 1.1;
     }
@@ -1519,7 +1533,7 @@
     .material-symbols-outlined,
     .material-symbols-rounded {
       font-family: 'Material Symbols Rounded';
-      font-weight: normal;
+      font-weight: var(--vm-font-weight-body);
       font-style: normal;
       line-height: 1;
       letter-spacing: normal;
@@ -1537,7 +1551,7 @@
 
     .ms-icon-button {
       font-family: 'Material Symbols Rounded';
-      font-weight: normal !important;
+      font-weight: var(--vm-font-weight-body) !important;
       font-size: 20px !important;
       line-height: 1 !important;
       text-transform: none;
@@ -1576,8 +1590,8 @@
 
     #toolbar .tb-inspectorToggleIcon {
       margin-left: auto;
-      font-size: 18px;
-      font-weight: 400;
+      font-size: var(--vm-text-lg);
+      font-weight: var(--vm-font-weight-body);
       line-height: 1;
       opacity: 0.8;
     }
@@ -2011,7 +2025,6 @@
       color: var(--tb-text-color-chip);
       font-weight: var(--tb-text-weight-bold);
       font-size: var(--tb-text-size-label);
-      letter-spacing: 0.01em;
       text-align: center;
     }
 
@@ -2058,7 +2071,6 @@
       color: var(--tb-text-color-code);
       font-weight: var(--tb-text-weight-bold);
       font-size: var(--tb-text-size-meta);
-      letter-spacing: 0.03em;
       font-variant-numeric: tabular-nums;
       pointer-events: none;
       text-transform: uppercase;
@@ -2128,7 +2140,6 @@
       padding: 0 10px;
       background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-icon);
-      letter-spacing: 0.01em;
     }
 
     #toolbar #displayInspector .isoField input[type="number"] {
@@ -2184,9 +2195,8 @@
       box-sizing: border-box;
       background: var(--status-ribbon-bg);
       color: var(--status-ribbon-text);
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
+      font-size: var(--vm-text-base);
+      font-weight: var(--vm-font-weight-emphasis);
       font-variant-numeric: tabular-nums;
       border-top: 1px solid var(--status-ribbon-border);
       box-shadow: var(--status-ribbon-shadow);
@@ -2220,8 +2230,9 @@
       background: var(--status-ribbon-pill-bg);
       color: var(--status-ribbon-pill-text);
       line-height: 1;
-      font-weight: 600;
+      font-weight: var(--vm-font-weight-strong);
       font-family: var(--shortcut-key-font-family);
+      letter-spacing: 0.02em;
       font-variant-ligatures: none;
       box-sizing: border-box;
     }
@@ -3357,9 +3368,9 @@
       style="background:var(--panel); color:var(--text); width:min(680px,92vw); max-height:80vh; overflow:auto; border:1px solid var(--vm-color-legacy-border-strong); border-radius:10px; box-shadow:0 10px 30px #000a;">
       <div
         style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--vm-color-legacy-border-strong);">
-        <div style="font-weight:700;">
+        <div style="font-weight: var(--vm-font-weight-heading);">
           Help & Shortcuts
-          <span id="versionText" style="font-weight:500; font-size:12px; opacity:.75; margin-left:8px;"></span>
+          <span id="versionText" style="font-weight: var(--vm-font-weight-emphasis); font-size:12px; opacity:.75; margin-left:8px;"></span>
         </div>
         <button id="helpClose" class="secondary ms-icon-button" title="Close">close</button>
       </div>

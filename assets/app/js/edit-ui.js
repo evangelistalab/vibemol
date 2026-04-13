@@ -129,6 +129,177 @@
   }
 
   /**
+   * Create one auto-hide controller for a floating adaptive menu.
+   * The menu stays visible while hovered or pinned, hides after inactivity,
+   * and can be revealed again by moving near the left edge.
+   * @param {{
+   *   menuEl?: HTMLElement|null,
+   *   delayMs?: number,
+   *   fadeClassName?: string,
+   *   revealEdgeWidth?: number,
+   *   revealSlack?: number,
+   *   getPinned?: ()=>boolean,
+   *   getRelatedElements?: ()=>Array<HTMLElement|null>|null,
+   * }} options
+   */
+  function createAdaptiveMenuAutoHideController(options = {}) {
+    const menuEl = options.menuEl || null;
+    const delayMs = Number.isFinite(options.delayMs) ? Math.max(0, Number(options.delayMs)) : 5000;
+    const fadeClassName = String(options.fadeClassName || 'is-auto-hidden').trim() || 'is-auto-hidden';
+    const revealEdgeWidth = Number.isFinite(options.revealEdgeWidth) ? Math.max(8, Number(options.revealEdgeWidth)) : 64;
+    const revealSlack = Number.isFinite(options.revealSlack) ? Math.max(0, Number(options.revealSlack)) : 20;
+    const getPinned = typeof options.getPinned === 'function' ? options.getPinned : (() => false);
+    const getRelatedElements = typeof options.getRelatedElements === 'function'
+      ? options.getRelatedElements
+      : (() => []);
+    let enabled = false;
+    let hideTimer = 0;
+    let lastPointerX = Number.NaN;
+    let lastPointerY = Number.NaN;
+
+    function clearHideTimer() {
+      if (!hideTimer) return;
+      window.clearTimeout(hideTimer);
+      hideTimer = 0;
+    }
+
+    function isMenuEligible() {
+      return !!(enabled && menuEl && menuEl.getAttribute('aria-hidden') === 'false');
+    }
+
+    function isElementShown(el) {
+      if (!el || !el.isConnected || el.hidden) return false;
+      if (typeof el.getAttribute === 'function' && el.getAttribute('aria-hidden') === 'true') return false;
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    }
+
+    function getTrackedElements() {
+      if (!menuEl) return [];
+      const related = Array.isArray(getRelatedElements()) ? getRelatedElements() : [];
+      return [menuEl, ...related].filter(isElementShown);
+    }
+
+    function elementContainsPoint(el, clientX, clientY) {
+      if (!el || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return false;
+      const rect = el.getBoundingClientRect();
+      return (
+        clientX >= rect.left
+        && clientX <= rect.right
+        && clientY >= rect.top
+        && clientY <= rect.bottom
+      );
+    }
+
+    function isPointerOverTrackedElements(clientX = lastPointerX, clientY = lastPointerY) {
+      if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return false;
+      const topEl = document.elementFromPoint(clientX, clientY);
+      const tracked = getTrackedElements();
+      if (topEl && tracked.some((el) => el === topEl || el.contains(topEl))) return true;
+      return tracked.some((el) => elementContainsPoint(el, clientX, clientY));
+    }
+
+    function isRevealPointer(clientX = lastPointerX, clientY = lastPointerY) {
+      if (!Number.isFinite(clientX)) return false;
+      if (clientX <= revealEdgeWidth) return true;
+      if (!menuEl || !isElementShown(menuEl) || !Number.isFinite(clientY)) return false;
+      const rect = menuEl.getBoundingClientRect();
+      return (
+        clientX <= rect.right + revealSlack
+        && clientY >= rect.top - revealSlack
+        && clientY <= rect.bottom + revealSlack
+      );
+    }
+
+    function applyVisibleState(isVisible) {
+      if (!menuEl) return;
+      menuEl.classList.toggle(fadeClassName, !isVisible);
+    }
+
+    function showMenu() {
+      clearHideTimer();
+      applyVisibleState(true);
+    }
+
+    function hideMenu() {
+      clearHideTimer();
+      if (!isMenuEligible() || !!getPinned() || isPointerOverTrackedElements()) {
+        applyVisibleState(true);
+        return;
+      }
+      applyVisibleState(false);
+    }
+
+    function scheduleHide() {
+      if (!isMenuEligible() || !!getPinned()) return;
+      clearHideTimer();
+      hideTimer = window.setTimeout(() => {
+        hideTimer = 0;
+        hideMenu();
+      }, delayMs);
+    }
+
+    function handlePointerMove(event) {
+      if (!event) return;
+      lastPointerX = Number(event.clientX);
+      lastPointerY = Number(event.clientY);
+      if (!isMenuEligible()) return;
+      if (!!getPinned() || isPointerOverTrackedElements()) {
+        showMenu();
+        return;
+      }
+      if (isRevealPointer()) {
+        showMenu();
+        scheduleHide();
+        return;
+      }
+      if (!hideTimer && !menuEl.classList.contains(fadeClassName)) scheduleHide();
+    }
+
+    function setEnabled(nextEnabled) {
+      enabled = !!nextEnabled;
+      clearHideTimer();
+      if (!enabled || !menuEl) {
+        applyVisibleState(true);
+        return;
+      }
+      showMenu();
+      if (!!getPinned() || isPointerOverTrackedElements()) return;
+      scheduleHide();
+    }
+
+    if (menuEl) {
+      menuEl.addEventListener('mouseenter', () => {
+        if (!isMenuEligible()) return;
+        showMenu();
+      });
+      menuEl.addEventListener('mouseleave', () => {
+        if (!isMenuEligible()) return;
+        scheduleHide();
+      });
+      menuEl.addEventListener('focusin', () => {
+        if (!isMenuEligible()) return;
+        showMenu();
+      });
+      menuEl.addEventListener('focusout', () => {
+        if (!isMenuEligible()) return;
+        window.setTimeout(() => {
+          if (!isMenuEligible() || isPointerOverTrackedElements()) return;
+          scheduleHide();
+        }, 0);
+      });
+      document.addEventListener('pointermove', handlePointerMove, true);
+    }
+
+    return Object.freeze({
+      setEnabled,
+      showNow: showMenu,
+      scheduleHide,
+      hideNow: hideMenu,
+    });
+  }
+
+  /**
    * Position one right-side operator panel against the viewport edge.
    * @param {HTMLElement|null} panelEl
    * @param {{gap?:number,bottom?:number}=} options
@@ -391,6 +562,7 @@
     positionFloatingPopover,
     restorePaneHome,
     updateAdaptiveMenuUi,
+    createAdaptiveMenuAutoHideController,
     positionRightOperatorPanel,
     updateAddAtomOperatorPanelUi,
     updateAddMoleculeOperatorPanelUi,

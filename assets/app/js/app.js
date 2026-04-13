@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.0';
+  const APP_VERSION = '0.8.1';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -6102,8 +6102,7 @@
       color: '#edf4ff',
       border: '1px solid rgba(134, 158, 194, 0.28)',
       boxShadow: '0 8px 22px rgba(4, 8, 16, 0.28)',
-      font: '600 12px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-      letterSpacing: '0.01em',
+      font: getUiOverlayChipDomFont(),
       pointerEvents: 'none',
       zIndex: '1700',
       whiteSpace: 'nowrap',
@@ -18319,9 +18318,7 @@
     const hpad = Math.max(4, Math.round(6 * uiScale));
     const wpad = Math.max(5, Math.round(8 * uiScale));
     const radius = Math.max(10, Math.round(16 * uiScale)); // px rounded corner radius (pre-scale)
-    // make the font bold
-    const fontPx = Math.max(14, Math.round(20 * uiScale));
-    const font = `bold ${fontPx}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
+    const { font, fontPx } = getUiOverlayChipCanvasFont(uiScale);
     const c = document.createElement('canvas');
     const ctx = c.getContext('2d');
     ctx.font = font;
@@ -22222,6 +22219,74 @@
     const n = Number(value);
     if (Number.isFinite(n)) return n;
     return Number.isFinite(fallback) ? Number(fallback) : 0;
+  }
+
+  /**
+   * Read one CSS custom property from the root element.
+   * @param {string} name
+   * @param {string} fallback
+   * @returns {string}
+   */
+  function getRootCssCustomProperty(name, fallback = '') {
+    const root = document.documentElement;
+    if (!root) return fallback;
+    const inlineValue = root.style ? root.style.getPropertyValue(name) : '';
+    const computedValue = getComputedStyle(root).getPropertyValue(name);
+    const value = String(inlineValue || computedValue || '').trim();
+    return value || fallback;
+  }
+
+  /**
+   * Resolve the app sans stack from root typography tokens.
+   * @returns {string}
+   */
+  function getUiSansFontFamily() {
+    return getRootCssCustomProperty('--vm-font-sans', 'Geist, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif');
+  }
+
+  /**
+   * Resolve one typography size token to a pixel value.
+   * @param {string} name
+   * @param {number} fallbackPx
+   * @returns {number}
+   */
+  function getUiTextTokenPx(name, fallbackPx) {
+    const raw = getRootCssCustomProperty(name, `${fallbackPx}px`);
+    const parsed = Number.parseFloat(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackPx;
+  }
+
+  /**
+   * Resolve the shared strong font weight token.
+   * @returns {number}
+   */
+  function getUiStrongFontWeight() {
+    const parsed = Number.parseInt(getRootCssCustomProperty('--vm-font-weight-strong', '600'), 10);
+    return Number.isFinite(parsed) ? parsed : 600;
+  }
+
+  /**
+   * Font shorthand for DOM-based overlay chips.
+   * @returns {string}
+   */
+  function getUiOverlayChipDomFont() {
+    return `${getUiStrongFontWeight()} ${getUiTextTokenPx('--vm-text-base', 13)}px/1.35 ${getUiSansFontFamily()}`;
+  }
+
+  /**
+   * Font shorthand for canvas-backed overlay chips.
+   * @param {number} uiScale
+   * @returns {{font:string,fontPx:number}}
+   */
+  function getUiOverlayChipCanvasFont(uiScale) {
+    const clampedScale = Math.max(0.6, Math.min(1.5, Number(uiScale) || 1));
+    const basePx = getUiTextTokenPx('--vm-text-lg', 18);
+    const minPx = getUiTextTokenPx('--vm-text-md', 15);
+    const fontPx = Math.max(minPx, Math.round(basePx * clampedScale));
+    return {
+      font: `${getUiStrongFontWeight()} ${fontPx}px ${getUiSansFontFamily()}`,
+      fontPx,
+    };
   }
 
   /**
