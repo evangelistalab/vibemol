@@ -5,6 +5,7 @@
   const APP_VERSION = '0.8.0';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
+  const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
   const HINT_START = '';
   const VIBRATION_KIND = 'vibemol.vibrations';
   const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
@@ -46,9 +47,6 @@
     irSelectedBand: 'rgba(255, 157, 33, 0.22)',
     irSelectedText: '#ffb155',
     irAxisText: '#92a5bf',
-    shortcutKeyBg: '#1a2230',
-    shortcutKeyText: '#e9f1ff',
-    shortcutKeyBorder: '#2a3546',
     editBadgeDisplayBorder: '#4aa3ff',
     editBadgeDisplayBg: 'rgba(74, 163, 255, 0.18)',
     editBadgeAddBorder: '#57cd8a',
@@ -258,6 +256,7 @@
     positionFloatingPopover: positionFloatingPopoverUi,
     restorePaneHome: restorePaneHomeHelper,
     updateAdaptiveMenuUi: updateAdaptiveMenuUiHelper,
+    createAdaptiveMenuAutoHideController,
     positionRightOperatorPanel: positionRightOperatorPanelUi,
     updateAddAtomOperatorPanelUi,
     updateAddMoleculeOperatorPanelUi,
@@ -269,6 +268,7 @@
     positionFloatingPopoverUi,
     restorePaneHomeHelper,
     updateAdaptiveMenuUiHelper,
+    createAdaptiveMenuAutoHideController,
     positionRightOperatorPanelUi,
     updateAddAtomOperatorPanelUi,
     updateAddMoleculeOperatorPanelUi,
@@ -830,6 +830,7 @@
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
   let currentMode = MODES.DISPLAY;
   let displayWindowsController = null;
+  let displayAdaptiveMenuAutoHideController = null;
   let appearanceInspectorController = null;
   let editAtomsMenuEl = null;
   let editAtomsMenuBodyEl = null;
@@ -853,6 +854,7 @@
   let selectionMetalBondingCuePointerHandled = false;
   let selectionMetalBondingCuePopoverRenderKey = '';
   let editAdaptiveMenuEl = null;
+  let editAdaptiveMenuAutoHideController = null;
   let editAdaptiveAddAtomBtn = null;
   let editAdaptiveAddAtomMetaEl = null;
   let editAdaptiveSymmetryBtn = null;
@@ -7439,9 +7441,11 @@
       { k: 'T', d: 'Trajectory' },
       { k: 'F', d: 'Frequencies' },
       { k: 'C', d: 'Toggle Coordinates window' },
-      { k: 'Click', d: 'Select points' },
+      { k: '2 atoms', d: 'Distance' },
+      { k: '3 atoms', d: 'Angle' },
+      { k: '4 atoms', d: 'Dihedral' },
       { k: 'R', d: 'Center mass at origin' },
-      { k: 'Esc', d: 'Clear measurement' },
+      { k: 'Esc', d: 'Remove measurements' },
     ],
   };
 
@@ -7503,6 +7507,11 @@
     updateEditToolboxUi();
     const ctx = (currentMode === MODES.EDIT) ? 'edit' : (currentMode === MODES.MEASURE ? 'measure' : 'default');
     renderRibbon(ctx);
+    if (currentMode === MODES.MEASURE) {
+      setHintMessage(HINT_MEASURE, { accent: false });
+    } else if (currentMode === MODES.DISPLAY) {
+      setNavigationHint(HINT_START, { includeStyles: true });
+    }
     // Entering measurement mode: hide surfaces (preserve view), save prior state (once)
     if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
       if (__savedShowSurfaces === null) __savedShowSurfaces = showSurfaces;
@@ -7594,6 +7603,7 @@
     return true;
   };
   let currentShortcutContext = 'default';
+  let hintAccentTimer = 0;
   /**
    * Render shortcut hints for the active interaction context.
    * @param {string} ctx
@@ -7602,9 +7612,10 @@
     currentShortcutContext = ctx;
     const list = SHORTCUTS[ctx] || SHORTCUTS.default;
     if (!shortcutRibbon) return;
-    const shortcutKeyStyle = `background:${UI_PALETTE.shortcutKeyBg}; color:${UI_PALETTE.shortcutKeyText}; padding:1px 6px; border:1px solid ${UI_PALETTE.shortcutKeyBorder}; border-radius:4px;`;
-    const parts = list.map(s => `<span style="opacity:.85"><span style="${shortcutKeyStyle}">${s.k}</span> ${s.d}</span>`);
-    shortcutRibbon.innerHTML = parts.join('<span style="opacity:.35"> • </span>');
+    const parts = list.map((s) => (
+      `<span class="shortcutRibbonItem"><span class="shortcutRibbonKey">${escapeHtml(s.k)}</span>${escapeHtml(s.d)}</span>`
+    ));
+    shortcutRibbon.innerHTML = parts.join('<span class="shortcutRibbonSeparator"> • </span>');
     shortcutRibbon.setAttribute('aria-hidden', 'false');
   }
   renderRibbon('default');
@@ -7762,6 +7773,9 @@
   function updateDisplayWindowAdaptiveMenuUi() {
     if (!displayWindowsController) return;
     displayWindowsController.syncAdaptiveMenu();
+    if (displayAdaptiveMenuAutoHideController && displayWindowAdaptiveMenuEl) {
+      displayAdaptiveMenuAutoHideController.setEnabled(displayWindowAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+    }
   }
 
   const viewInspectorRefs = { panel: viewInspector, button: viewInspectorBtn };
@@ -7961,6 +7975,22 @@
         setOpen: (open) => setElementColorOverlayOpen(open),
       },
     },
+  });
+  displayAdaptiveMenuAutoHideController = createAdaptiveMenuAutoHideController({
+    menuEl: displayWindowAdaptiveMenuEl,
+    delayMs: 5000,
+    revealEdgeWidth: 64,
+    revealSlack: 20,
+    getPinned: () => isToolbarInspectorOpen(moldenInspectorRefs) || isToolbarInspectorOpen(viewInspectorRefs),
+    getRelatedElements: () => [moldenInspector, viewInspector],
+  });
+  editAdaptiveMenuAutoHideController = createAdaptiveMenuAutoHideController({
+    menuEl: editAdaptiveMenuEl,
+    delayMs: 5000,
+    revealEdgeWidth: 64,
+    revealSlack: 20,
+    getPinned: () => isBuildPopoverOpen() || isSymmetryPopoverOpen(),
+    getRelatedElements: () => [editAdaptiveAddAtomPopoverEl, editAdaptiveSymmetryPopoverEl],
   });
 
   /**
@@ -16775,6 +16805,9 @@
         },
       ],
     });
+    if (editAdaptiveMenuAutoHideController && editAdaptiveMenuEl) {
+      editAdaptiveMenuAutoHideController.setEnabled(editAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+    }
     if (isSymmetryPopoverOpen()) renderSymmetryPopover();
   }
 
@@ -25060,9 +25093,24 @@
   /**
    * Update the hint message if the hint UI element exists.
    * @param {string} message
+   * @param {{accent?: boolean}=} options
    */
-  function setHintMessage(message) {
-    if (hintEl) hintEl.textContent = message;
+  function setHintMessage(message, options = {}) {
+    if (!hintEl) return;
+    hintEl.textContent = message;
+    const shouldAccent = options.accent !== false && String(message || '').trim().length > 0;
+    if (hintAccentTimer) {
+      clearTimeout(hintAccentTimer);
+      hintAccentTimer = 0;
+    }
+    hintEl.classList.remove('is-accented');
+    if (!shouldAccent) return;
+    void hintEl.offsetWidth;
+    hintEl.classList.add('is-accented');
+    hintAccentTimer = window.setTimeout(() => {
+      hintAccentTimer = 0;
+      if (hintEl) hintEl.classList.remove('is-accented');
+    }, 1500);
   }
 
   /**
@@ -25074,7 +25122,7 @@
     const includeStyles = !!options.includeStyles;
     const parts = [String(prefix || '').trim(), HINT_NAVIGATION];
     if (includeStyles) parts.push(HINT_STYLE_KEYS);
-    setHintMessage(parts.filter(Boolean).join(' • '));
+    setHintMessage(parts.filter(Boolean).join(' • '), { accent: false });
   }
 
   /**

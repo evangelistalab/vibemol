@@ -30,6 +30,22 @@
   <link rel="stylesheet" href="assets/app/css/edit-ui.css" />
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
   <style>
+    @font-face {
+      font-family: 'JetBrains Mono';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('assets/app/fonts/JetBrainsMono-shortcuts.woff2') format('woff2');
+    }
+
+    @font-face {
+      font-family: 'JetBrains Mono';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('assets/app/fonts/JetBrainsMono-shortcuts.woff2') format('woff2');
+    }
+
     :root {
       --bg: var(--vm-color-bg-main);
       --panel: var(--vm-color-bg-panel);
@@ -38,6 +54,16 @@
       --accent: var(--vm-color-accent-primary);
       --floating-panel-top-offset: 68px;
       --floating-panel-bottom-clearance: 64px;
+      --status-ribbon-height: 26px;
+      --status-ribbon-bg: rgba(10, 14, 20, 0.96);
+      --status-ribbon-text: #e6edf6;
+      --status-ribbon-border: rgba(255, 255, 255, 0.08);
+      --status-ribbon-shadow: 0 -8px 16px -8px rgba(0, 0, 0, 0.5);
+      --status-ribbon-pill-bg: #1a2230;
+      --status-ribbon-pill-text: #e9f1ff;
+      --status-ribbon-pill-border: #3a4860;
+      --status-hint-accent: #4aa3ff;
+      --shortcut-key-font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
     html,
@@ -954,18 +980,44 @@
     #hint {
       position: fixed;
       left: 160px;
-      bottom: 40px;
+      bottom: calc(var(--status-ribbon-height) + 12px);
       /* sit above the shortcuts ribbon */
       right: 12px;
       max-width: calc(100vw - 24px);
       box-sizing: border-box;
       white-space: normal;
-      color: rgb(20, 22, 24);
-      background: var(--vm-color-text-muted);
-      padding: 6px 8px;
+      color: #eef4fc;
+      background: rgba(10, 14, 20, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 2px solid transparent;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      padding: 7px 10px;
       border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      font-variant-numeric: tabular-nums;
+      backdrop-filter: blur(8px) saturate(120%);
+      -webkit-backdrop-filter: blur(8px) saturate(120%);
+      transition: background-color 180ms ease, border-left-color 180ms ease, box-shadow 180ms ease;
       z-index: 31;
       /* above the ribbon (z-index:30) */
+    }
+
+    #hint.is-accented {
+      border-left-color: var(--status-hint-accent);
+      animation: hintStatusPulse 1500ms ease;
+    }
+
+    @keyframes hintStatusPulse {
+      0% {
+        background: rgba(20, 32, 51, 0.98);
+        box-shadow: 0 14px 32px rgba(9, 16, 28, 0.34);
+      }
+      100% {
+        background: rgba(10, 14, 20, 0.92);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      }
     }
 
     #emptyState {
@@ -973,7 +1025,7 @@
       top: 56px;
       left: 0;
       right: 0;
-      bottom: 24px;
+      bottom: var(--status-ribbon-height);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2104,7 +2156,7 @@
       top: 0;
       left: var(--workspace-left-offset);
       right: 0;
-      bottom: 24px;
+      bottom: var(--status-ribbon-height);
     }
 
     #hint {
@@ -2117,6 +2169,61 @@
       right: 12px;
       bottom: 8px;
       max-width: calc(100vw - var(--workspace-left-offset) - 36px);
+    }
+
+    #shortcutRibbon {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      min-height: var(--status-ribbon-height);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 10px;
+      box-sizing: border-box;
+      background: var(--status-ribbon-bg);
+      color: var(--status-ribbon-text);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      font-variant-numeric: tabular-nums;
+      border-top: 1px solid var(--status-ribbon-border);
+      box-shadow: var(--status-ribbon-shadow);
+      backdrop-filter: blur(8px) saturate(120%);
+      -webkit-backdrop-filter: blur(8px) saturate(120%);
+      pointer-events: none;
+      z-index: 30;
+    }
+
+    #shortcutRibbon[aria-hidden="true"] {
+      display: none;
+    }
+
+    .shortcutRibbonItem {
+      opacity: 0.92;
+    }
+
+    .shortcutRibbonSeparator {
+      opacity: 0.38;
+    }
+
+    .shortcutRibbonKey {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.25em;
+      margin-right: 6px;
+      padding: 2px 6px;
+      border: 1px solid var(--status-ribbon-pill-border);
+      border-radius: 5px;
+      background: var(--status-ribbon-pill-bg);
+      color: var(--status-ribbon-pill-text);
+      line-height: 1;
+      font-weight: 600;
+      font-family: var(--shortcut-key-font-family);
+      font-variant-ligatures: none;
+      box-sizing: border-box;
     }
 
     body:not(.sidebar-collapsed) #shortcutRibbon {
@@ -3082,9 +3189,7 @@
         nearest valid angle (180°, 120°, 109.5°, 90°, 60°).</div>
     </div>
   </div>
-  <div id="shortcutRibbon" aria-hidden="true"
-    style="position:fixed; left:0; right:0; bottom:0; height:24px; display:flex; align-items:center; gap:12px; padding:4px 10px; background:rgba(10,14,20,0.72); color:#cfd8e3; font-size:12px; border-top:1px solid var(--vm-color-legacy-border-strong); pointer-events:none; z-index:30;">
-  </div>
+  <div id="shortcutRibbon" aria-hidden="true"></div>
 
   <!-- Right side panel (toggle) -->
   <div id="sidePanel" aria-hidden="true">
