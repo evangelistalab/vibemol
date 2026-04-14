@@ -373,14 +373,10 @@
       display: flex;
       gap: 2px;
       flex: 0 0 auto;
-      opacity: 0.6;
-      transition: opacity 120ms ease;
+      opacity: 1;
+      transition: color 120ms ease;
       position: relative;
       z-index: 2;
-    }
-
-    #toolbar .vm-active-file__chip:hover .vm-active-file__actions {
-      opacity: 1;
     }
 
     #toolbar #fileSelect {
@@ -402,6 +398,11 @@
       -webkit-appearance: none;
       opacity: 0;
       z-index: 0;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
       cursor: default;
     }
 
@@ -1975,8 +1976,29 @@
     }
 
     #toolbar .vm-active-file__actions .vm-btn {
+      width: 22px;
+      min-width: 22px;
+      height: 22px;
+      min-height: 22px;
+      padding: 0;
+      border-radius: 4px;
+      justify-content: center !important;
+      background: transparent !important;
       border-color: transparent;
       color: var(--vm-color-text-secondary);
+      font-size: 12px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    #toolbar .vm-active-file__actions .vm-btn svg {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 auto;
+    }
+
+    #toolbar .vm-active-file__chip:hover .vm-active-file__actions .vm-btn {
+      color: var(--vm-color-text-primary);
     }
 
     #toolbar .tb-toolbarInspector {
