@@ -22574,8 +22574,7 @@
   });
   bind('down', MODES.EDIT, '/', (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    if (isBuildPopoverOpen()) hideBuildPopover();
-    else showBuildPopover();
+    showBuildPopover({ focusSearch: true });
   });
   bind('down', MODES.EDIT, 'c', () => {
     setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
