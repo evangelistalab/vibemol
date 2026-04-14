@@ -224,13 +224,29 @@
       line-height: 1.1;
     }
 
-    .vm-section-label {
-      font-size: var(--vm-text-xs);
-      font-weight: var(--vm-font-weight-heading);
-      letter-spacing: 0.06em;
+    .vm-sidebar-section-label {
+      font-family: var(--vm-font-sans);
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: var(--vm-color-text-label);
-      margin: 16px 0 8px;
+      margin: 16px 0 6px;
+      padding: 0 8px;
+    }
+
+    .vm-section-label {
+      font-family: var(--vm-font-sans);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--vm-color-text-secondary);
+      margin: 14px 0 6px;
+    }
+
+    .vm-section-label:first-child {
+      margin-top: 4px;
     }
 
     .vm-field-label {
@@ -2206,7 +2222,7 @@
           data-tooltip="Download structure">file_download</button>
       </div>
       <div class="tb-field">
-        <label for="fileSelect">Active file</label>
+        <div class="vm-sidebar-section-label">Active file</div>
         <div class="vm-active-file">
           <div class="vm-active-file__chip" role="group" aria-label="Active file">
             <svg class="vm-active-file__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -2236,7 +2252,8 @@
           </div>
         </div>
       </div>
-      <label class="tb-field">PubChem
+      <div class="tb-field">
+        <div class="vm-sidebar-section-label">PubChem</div>
         <span class="tb-inline">
           <input type="text" id="pubchemQuery" class="pubchem-query" placeholder="Search (e.g. ben)"
             data-tooltip="Type a compound name. Suggestions are filtered to PubChem entries with 3D structures."
@@ -2244,7 +2261,7 @@
           <button id="pubchemLoadBtn" class="secondary ms-icon-button"
             data-tooltip="Search PubChem and load the selected molecule" aria-label="Load from PubChem">arrow_downward</button>
         </span>
-      </label>
+      </div>
       <div id="pubchemMetaWrap" style="display:none;">
         <div id="pubchemMetaTitle">PubChem metadata</div>
         <div id="pubchemMetaContent"></div>
