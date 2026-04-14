@@ -1528,6 +1528,26 @@ def main() -> int:
                       && window.localStorage.getItem('vibemol.uiTheme') === 'dark';
                 }"""
             )
+            page.wait_for_function(
+                """() => {
+                    const canvas = document.getElementById('canvas');
+                    if (!(canvas instanceof HTMLCanvasElement)) return false;
+                    const probe = document.createElement('canvas');
+                    probe.width = 1;
+                    probe.height = 1;
+                    const ctx = probe.getContext('2d');
+                    if (!ctx) return false;
+                    const sx = Math.max(0, Math.floor(canvas.width * 0.05));
+                    const sy = Math.max(0, Math.floor(canvas.height * 0.05));
+                    ctx.drawImage(canvas, sx, sy, 1, 1, 0, 0, 1, 1);
+                    const data = ctx.getImageData(0, 0, 1, 1).data;
+                    const values = [data[0] / 255, data[1] / 255, data[2] / 255];
+                    return Math.min(...values) > 0.1
+                      && Math.min(...values) < 0.3
+                      && Math.max(...values) > 0.1
+                      && Math.max(...values) < 0.3;
+                }"""
+            )
             dark_bg = sample_scene_canvas_rgb(page)
             assert dark_bg['r'] < light_bg['r'] and dark_bg['g'] < light_bg['g'] and dark_bg['b'] < light_bg['b'], (light_bg, dark_bg)
             assert 0.1 < min(dark_bg['r'], dark_bg['g'], dark_bg['b']) < 0.3, dark_bg
@@ -1540,6 +1560,24 @@ def main() -> int:
                       && themeInput.checked === false
                       && document.documentElement.getAttribute('data-theme') === 'light'
                       && window.localStorage.getItem('vibemol.uiTheme') === 'light';
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const canvas = document.getElementById('canvas');
+                    if (!(canvas instanceof HTMLCanvasElement)) return false;
+                    const probe = document.createElement('canvas');
+                    probe.width = 1;
+                    probe.height = 1;
+                    const ctx = probe.getContext('2d');
+                    if (!ctx) return false;
+                    const sx = Math.max(0, Math.floor(canvas.width * 0.05));
+                    const sy = Math.max(0, Math.floor(canvas.height * 0.05));
+                    ctx.drawImage(canvas, sx, sy, 1, 1, 0, 0, 1, 1);
+                    const data = ctx.getImageData(0, 0, 1, 1).data;
+                    return data[0] / 255 > 0.9
+                      && data[1] / 255 > 0.9
+                      && data[2] / 255 > 0.9;
                 }"""
             )
             light_bg_2 = sample_scene_canvas_rgb(page)
