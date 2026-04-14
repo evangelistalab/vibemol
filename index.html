@@ -1772,17 +1772,40 @@
       width: 100%;
     }
 
-    #toolbar .tb-inspectorBtn {
-      justify-content: space-between !important;
+    #toolbar .vm-sidebar-accordion {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 14px 8px 6px;
+      margin: 0;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
       text-align: left;
     }
 
-    #toolbar .tb-inspectorToggleIcon {
-      margin-left: auto;
-      font-size: var(--vm-text-lg);
-      font-weight: var(--vm-font-weight-body);
-      line-height: 1;
-      opacity: 0.8;
+    #toolbar .vm-sidebar-accordion:hover {
+      background: color-mix(in srgb, var(--vm-color-text-primary) 4%, transparent);
+    }
+
+    #toolbar .vm-sidebar-accordion .vm-sidebar-section-label {
+      margin: 0;
+      padding: 0;
+    }
+
+    #toolbar .vm-sidebar-accordion__chevron {
+      color: var(--vm-color-text-secondary);
+      flex: 0 0 auto;
+      transition: transform 150ms ease, color 150ms ease;
+    }
+
+    #toolbar .vm-sidebar-accordion[aria-expanded='true'] .vm-sidebar-accordion__chevron {
+      transform: rotate(180deg);
+    }
+
+    #toolbar .vm-sidebar-accordion:hover .vm-sidebar-accordion__chevron {
+      color: var(--vm-color-text-primary);
     }
 
     #toolbar .tb-fileActionRow {
@@ -2331,11 +2354,15 @@
     </div>
 
     <div class="tb-section tb-main tb-appearance tb-framed">
-      <button id="displayInspectorBtn" class="secondary tb-inspectorBtn vm-sidebar__section-header" data-tooltip="Show/hide compact display inspector">
-        <span>Appearance</span><span id="displayInspectorToggleIcon"
-          class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
+      <button id="displayInspectorBtn" class="vm-sidebar-accordion" type="button" aria-expanded="false"
+        aria-controls="displayInspector" data-tooltip="Show/hide compact display inspector">
+        <span class="vm-sidebar-section-label">Appearance</span>
+        <svg id="displayInspectorToggleIcon" class="vm-sidebar-accordion__chevron" width="12" height="12" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
-      <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields" aria-hidden="true">
+      <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields vm-sidebar-accordion__panel" aria-hidden="true">
         <div class="appearanceHiddenControl" aria-hidden="true">
           <select id="moleculeStyle" class="vm-select"
             data-tooltip="Choose atom/bond rendering style (shortcuts: 1=Basic, 2=Toon, 3=Kit, 4=Glossy)">
@@ -2475,7 +2502,7 @@
               <div class="vm-field-row">
                 <label class="vm-field-label" for="elementColorBtn">Element colors</label>
                 <div class="vm-field-control vm-field-control--button">
-                  <button id="elementColorBtn" class="secondary vm-btn vm-btn--ghost vm-btn--sm" type="button" data-tooltip="Edit per-element default colors">Edit…</button>
+                  <button id="elementColorBtn" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" aria-label="Customize element colors" data-tooltip="Customize element colors">Edit…</button>
                 </div>
               </div>
               <div class="vm-field-row">
