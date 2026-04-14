@@ -1,15 +1,21 @@
 (function () {
   const SHOW_DELAY_MS = 400;
   const HIDE_DELAY_MS = 80;
+  const POINTER_GRACE_MS = 200;
   const VIEWPORT_PAD_PX = 8;
   const VALID_PLACEMENTS = new Set(['bottom', 'top', 'left', 'right']);
 
   let tooltipEl = null;
   let currentTarget = null;
+  let currentTriggerKind = null;
   let showTimer = null;
   let hideTimer = null;
   let installed = false;
   let mutationObserver = null;
+  let lastPointerX = Number.NaN;
+  let lastPointerY = Number.NaN;
+  let lastPointerDownAt = 0;
+  let lastPointerDownTarget = null;
 
   function ensureTooltipElement() {
     if (tooltipEl) return tooltipEl;
@@ -49,6 +55,7 @@
   function hideTooltip() {
     clearTimers();
     currentTarget = null;
+    currentTriggerKind = null;
     if (!tooltipEl) return;
     tooltipEl.classList.remove('vm-tooltip--visible');
     tooltipEl.setAttribute('aria-hidden', 'true');
@@ -101,7 +108,42 @@
     el.style.top = `${Math.round(top)}px`;
   }
 
-  function showTooltipNow(target) {
+  function isTooltipVisible() {
+    return !!(tooltipEl && tooltipEl.getAttribute('aria-hidden') === 'false');
+  }
+
+  function isFinitePointerCoord(value) {
+    return Number.isFinite(value);
+  }
+
+  function isPointerInsideTarget(target, clientX, clientY) {
+    if (!target || !document.documentElement.contains(target)) return false;
+    if (!isFinitePointerCoord(clientX) || !isFinitePointerCoord(clientY)) return false;
+    const rect = target.getBoundingClientRect();
+    return clientX >= rect.left
+      && clientX <= rect.right
+      && clientY >= rect.top
+      && clientY <= rect.bottom;
+  }
+
+  function syncPointerTooltipVisibility(delay) {
+    if (currentTriggerKind !== 'pointer' || !isTooltipVisible()) return;
+    if (!currentTarget || !document.documentElement.contains(currentTarget)) {
+      hideTooltip();
+      return;
+    }
+    if (isPointerInsideTarget(currentTarget, lastPointerX, lastPointerY)) {
+      if (hideTimer) {
+        window.clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+      positionTooltip(currentTarget);
+      return;
+    }
+    scheduleHide(currentTarget, typeof delay === 'number' ? delay : POINTER_GRACE_MS);
+  }
+
+  function showTooltipNow(target, triggerKind) {
     clearTimers();
     if (!target || !document.documentElement.contains(target)) {
       hideTooltip();
@@ -113,6 +155,7 @@
       return;
     }
     currentTarget = target;
+    currentTriggerKind = triggerKind === 'focus' ? 'focus' : 'pointer';
     const el = ensureTooltipElement();
     el.textContent = content;
     el.style.visibility = 'hidden';
@@ -127,7 +170,11 @@
 
   function scheduleShow(target) {
     clearTimers();
+    if (currentTarget && currentTarget !== target && isTooltipVisible()) {
+      hideTooltip();
+    }
     currentTarget = target;
+    currentTriggerKind = 'pointer';
     showTimer = window.setTimeout(() => {
       if (currentTarget === target) showTooltipNow(target);
     }, SHOW_DELAY_MS);
@@ -159,7 +206,8 @@
   function handleFocusIn(event) {
     const target = getTooltipTarget(event.target);
     if (!target) return;
-    showTooltipNow(target);
+    if (lastPointerDownTarget === target && (Date.now() - lastPointerDownAt) < 600) return;
+    showTooltipNow(target, 'focus');
   }
 
   function handleFocusOut(event) {
@@ -171,14 +219,25 @@
   }
 
   function handlePointerDown(event) {
+    lastPointerDownAt = Date.now();
+    lastPointerDownTarget = getTooltipTarget(event.target);
     if (!currentTarget) return;
-    const target = getTooltipTarget(event.target);
-    if (target !== currentTarget) hideTooltip();
+    hideTooltip();
   }
 
   function handleViewportChange() {
     if (!currentTarget || !tooltipEl || tooltipEl.getAttribute('aria-hidden') === 'true') return;
+    if (currentTriggerKind === 'pointer') {
+      syncPointerTooltipVisibility(0);
+      return;
+    }
     positionTooltip(currentTarget);
+  }
+
+  function handleMouseMove(event) {
+    lastPointerX = Number(event.clientX);
+    lastPointerY = Number(event.clientY);
+    syncPointerTooltipVisibility(POINTER_GRACE_MS);
   }
 
   function installGlobalTooltipDelegation() {
@@ -190,6 +249,7 @@
     document.addEventListener('focusin', handleFocusIn, true);
     document.addEventListener('focusout', handleFocusOut, true);
     document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('mousemove', handleMouseMove, true);
     document.addEventListener('scroll', handleViewportChange, true);
     window.addEventListener('resize', handleViewportChange);
     mutationObserver = new MutationObserver(() => {
