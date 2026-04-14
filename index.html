@@ -433,10 +433,40 @@
       font-variant-numeric: tabular-nums;
     }
 
-    #toolbar input.pubchem-query {
-      width: min(220px, 24vw);
+    #toolbar .vm-search-field {
+      display: flex;
+      align-items: center;
+      width: 100%;
       background: var(--vm-color-surface-panel);
-      border-color: var(--vm-color-border);
+      border: 1px solid var(--vm-color-border);
+      border-radius: 6px;
+      overflow: hidden;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    #toolbar .vm-search-field:focus-within {
+      border-color: var(--vm-brand-accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--vm-brand-accent) 20%, transparent);
+    }
+
+    #toolbar .vm-search-field .vm-search-field__input {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: auto;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--vm-color-text-primary);
+      padding: 6px 10px;
+      font-family: var(--vm-font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      box-shadow: none;
+      outline: none;
+    }
+
+    #toolbar .vm-search-field .vm-search-field__input::placeholder {
+      color: var(--vm-color-text-muted);
     }
 
     #toolbar button {
@@ -1965,30 +1995,43 @@
       gap: 6px;
     }
 
-    #toolbar .tb-inline input.pubchem-query {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
     #toolbar .tb-inline select {
       flex: 1 1 auto;
       min-width: 0;
     }
 
-    #pubchemLoadBtn {
+    #toolbar .vm-search-field__submit {
       width: 28px !important;
       min-width: 28px;
       height: 28px;
       padding: 0;
-      border-radius: var(--tb-radius-tight);
-      background: var(--tb-surface-emphasis) !important;
-      color: var(--tb-text-color-icon) !important;
-      font-size: 19px;
-      font-weight: var(--tb-text-weight-regular);
+      border: 0;
+      border-left: 1px solid var(--vm-color-border);
+      border-radius: 0;
+      background: transparent !important;
+      color: var(--vm-color-text-secondary) !important;
+      font-size: 12px;
+      font-weight: 500;
       line-height: 1;
       justify-content: center !important;
       text-align: center !important;
       align-self: center;
+    }
+
+    #toolbar .vm-search-field__submit svg {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    #toolbar .vm-search-field__submit:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--vm-color-text-primary) 6%, transparent) !important;
+      color: var(--vm-color-text-primary) !important;
     }
 
     #toolbar .vm-active-file__actions .vm-btn {
@@ -2254,13 +2297,20 @@
       </div>
       <div class="tb-field">
         <div class="vm-sidebar-section-label">PubChem</div>
-        <span class="tb-inline">
-          <input type="text" id="pubchemQuery" class="pubchem-query" placeholder="Search (e.g. ben)"
+        <div class="vm-search-field">
+          <input type="text" id="pubchemQuery" class="pubchem-query vm-search-field__input" placeholder="Search (e.g. ben)"
+            aria-label="PubChem search"
             data-tooltip="Type a compound name. Suggestions are filtered to PubChem entries with 3D structures."
             list="pubchemSuggestions" autocomplete="off" />
-          <button id="pubchemLoadBtn" class="secondary ms-icon-button"
-            data-tooltip="Search PubChem and load the selected molecule" aria-label="Load from PubChem">arrow_downward</button>
-        </span>
+          <button id="pubchemLoadBtn" class="vm-search-field__submit" type="button"
+            data-tooltip="Search PubChem and load the selected molecule" aria-label="Search PubChem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div id="pubchemMetaWrap" style="display:none;">
         <div id="pubchemMetaTitle">PubChem metadata</div>

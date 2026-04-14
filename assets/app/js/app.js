@@ -5891,6 +5891,7 @@
   const viewSliderRegistry = new WeakMap();
   const VIEW_COPY_ICON_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="3" width="8" height="8" rx="1.5"></rect><path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path></svg>';
   const VIEW_CHECK_ICON_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.25L6.5 11.25L12.5 5.25"></path></svg>';
+  const PUBCHEM_SEARCH_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
 
   /**
    * Parse a finite step value from an input or fallback.
@@ -26502,11 +26503,11 @@
     pubchemLoadBtn.disabled = pubchemBusy;
     pubchemLoadBtn.innerHTML = pubchemBusy
       ? '<span class="vm-spinner" aria-hidden="true"></span>'
-      : 'arrow_downward';
+      : PUBCHEM_SEARCH_ICON_SVG;
     setTooltipText(pubchemLoadBtn, pubchemBusy
       ? 'Loading PubChem…'
       : 'Search PubChem and load the selected molecule');
-    pubchemLoadBtn.setAttribute('aria-label', pubchemBusy ? 'Loading PubChem' : 'Load from PubChem');
+    pubchemLoadBtn.setAttribute('aria-label', pubchemBusy ? 'Loading PubChem' : 'Search PubChem');
     pubchemLoadBtn.setAttribute('aria-busy', pubchemBusy ? 'true' : 'false');
   }
 
