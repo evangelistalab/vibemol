@@ -332,6 +332,16 @@ def build_fixture_molden() -> str:
         'Spin= Alpha',
         'Occup= 2.0',
         '1 1.0',
+        'Sym= A1',
+        'Ene= -0.1',
+        'Spin= Alpha',
+        'Occup= 0.0',
+        '1 1.0',
+        'Sym= A1',
+        'Ene= 0.8',
+        'Spin= Beta',
+        'Occup= 0.0',
+        '1 -1.0',
     ])
 
 
@@ -1543,12 +1553,19 @@ def main() -> int:
                 }""",
                 molden_text,
             )
+            page.keyboard.press('o')
             page.wait_for_function(
                 """() => {
-                    const row = document.getElementById('moldenMoRow');
+                    const panel = document.getElementById('moldenInspector');
+                    const table = document.querySelector('#moldenInspectorBody table');
+                    const headers = table
+                      ? Array.from(table.querySelectorAll('thead th')).map((el) => (el.textContent || '').trim())
+                      : [];
                     const summary = document.getElementById('moldenGridSummary');
-                    return !!row
-                      && getComputedStyle(row).display !== 'none'
+                    return !!panel
+                      && panel.classList.contains('open')
+                      && !!table
+                      && headers.join('|') == '#|Energy|Occ|Sym|Spin'
                       && !!summary
                       && (summary.textContent || '').trim().length > 0;
                 }"""
@@ -1556,14 +1573,21 @@ def main() -> int:
             molden_summary = page.evaluate(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
+                    const rows = Array.from(document.querySelectorAll('#moldenInspectorBody tbody tr[data-row-index]'));
+                    const visibleRows = rows.filter((row) => getComputedStyle(row).display !== 'none');
                     return {
                         kind: exported.kind,
                         volumeKind: exported.volume && exported.volume.kind,
                         atomCount: exported.volume && Array.isArray(exported.volume.atoms) ? exported.volume.atoms.length : 0,
                         nxyz: exported.volume && Array.isArray(exported.volume.nxyz) ? exported.volume.nxyz.slice() : [],
                         dataLength: exported.volume && Array.isArray(exported.volume.data) ? exported.volume.data.length : 0,
-                        moSummary: (document.getElementById('moldenMoSummary')?.textContent || '').trim(),
                         gridSummary: (document.getElementById('moldenGridSummary')?.textContent || '').trim(),
+                        footer: (document.getElementById('moldenInspectorFooter')?.textContent || '').trim(),
+                        rowCount: rows.length,
+                        visibleRowCount: visibleRows.length,
+                        dividerText: Array.from(document.querySelectorAll('#moldenInspectorBody tbody tr.vm-list-popover__divider'))
+                          .map((row) => (row.textContent || '').trim())
+                          .filter(Boolean),
                     };
                 }"""
             )
@@ -1575,8 +1599,85 @@ def main() -> int:
                 raise AssertionError(f'Molden load did not generate a valid grid: {molden_summary}')
             if molden_summary['dataLength'] <= 0:
                 raise AssertionError(f'Molden render path did not populate grid data: {molden_summary}')
-            if not molden_summary['moSummary'] or not molden_summary['gridSummary']:
+            if molden_summary['rowCount'] != 3 or molden_summary['visibleRowCount'] != 3:
+                raise AssertionError(f'Molden inspector did not render all orbital rows: {molden_summary}')
+            if not molden_summary['gridSummary'] or 'selected: 1 (HOMO)' not in molden_summary['footer']:
                 raise AssertionError(f'Molden inspector summaries are missing: {molden_summary}')
+            if 'HOMO / LUMO' not in molden_summary['dividerText']:
+                raise AssertionError(f'Molden HOMO/LUMO divider is missing: {molden_summary}')
+
+            page.locator('#moldenInspectorBody tbody tr[data-row-index="1"]').click()
+            page.wait_for_function(
+                """() => {
+                    const row = document.querySelector('#moldenInspectorBody tbody tr[data-row-index="1"]');
+                    const footer = document.getElementById('moldenInspectorFooter');
+                    return !!row
+                      && row.classList.contains('vm-list-popover__row--selected')
+                      && !!footer
+                      && /selected:\\s*2\\s*\\(LUMO\\)/i.test(footer.textContent || '');
+                }"""
+            )
+
+            page.fill('#moldenEnergyFilter', '0.5')
+            page.wait_for_function(
+                """() => {
+                    const visibleRows = Array.from(document.querySelectorAll('#moldenInspectorBody tbody tr[data-row-index]'))
+                      .filter((row) => getComputedStyle(row).display !== 'none');
+                    const visibleDivider = Array.from(document.querySelectorAll('#moldenInspectorBody tbody tr.vm-list-popover__divider'))
+                      .find((row) => getComputedStyle(row).display !== 'none');
+                    return visibleRows.length === 2
+                      && !!visibleDivider
+                      && /HOMO\\s*\\/\\s*LUMO/i.test(visibleDivider.textContent || '');
+                }"""
+            )
+            page.fill('#moldenEnergyFilter', '')
+            page.wait_for_function(
+                """() => {
+                    const visibleRows = Array.from(document.querySelectorAll('#moldenInspectorBody tbody tr[data-row-index]'))
+                      .filter((row) => getComputedStyle(row).display !== 'none');
+                    return visibleRows.length === 3;
+                }"""
+            )
+
+            click_when_ready(page, '#coordsPanelBtn')
+            page.wait_for_function("() => document.getElementById('coordsPanel')?.classList.contains('open')")
+            page.locator('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]').click()
+            page.locator('#coordsContent .coordsCellEditor').fill('abc')
+            page.locator('#coordsContent .coordsCellEditor').press('Enter')
+            page.wait_for_function(
+                """() => {
+                    const cell = document.querySelector('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]');
+                    return !!cell && (cell.textContent || '').trim() === '0.000';
+                }"""
+            )
+            page.locator('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]').click()
+            page.locator('#coordsContent .coordsCellEditor').fill('3.5')
+            page.locator('#coordsContent .coordsCellEditor').press('Enter')
+            page.wait_for_function(
+                """() => {
+                    const cell = document.querySelector('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]');
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atom = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms[0] : null;
+                    return !!cell
+                      && (cell.textContent || '').trim() === '3.500'
+                      && !!atom
+                      && Math.abs(Number(atom.x) - 3.5) < 1e-6;
+                }"""
+            )
+            page.locator('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]').click()
+            page.locator('#coordsContent .coordsCellEditor').fill('0')
+            page.locator('#coordsContent .coordsCellEditor').press('Enter')
+            page.wait_for_function(
+                """() => {
+                    const cell = document.querySelector('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]');
+                    const exported = window.VibeMolStructure.exportActive();
+                    const atom = Array.isArray(exported.volume?.atoms) ? exported.volume.atoms[0] : null;
+                    return !!cell
+                      && (cell.textContent || '').trim() === '0.000'
+                      && !!atom
+                      && Math.abs(Number(atom.x)) < 1e-6;
+                }"""
+            )
 
             # Geometry-only imports should infer perceived connectivity.
             inferred_xyz_text = build_fixture_inferred_xyz()

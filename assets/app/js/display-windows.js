@@ -15,6 +15,7 @@
 
   const ESCAPABLE_WINDOW_IDS = Object.freeze([
     WINDOW_IDS.DISPLAY_INSPECTOR,
+    WINDOW_IDS.MOLDEN_INSPECTOR,
     WINDOW_IDS.VIEW_INSPECTOR,
     WINDOW_IDS.VIEW_PANEL,
     WINDOW_IDS.COORDS_PANEL,
@@ -141,6 +142,7 @@
     function positionInspectorPopover(id) {
       const entry = getEntry(id);
       if (!entry || !entry.panelEl || !entry.buttonEl) return;
+      if (!entry.panelEl.classList || !entry.panelEl.classList.contains('floatingAuxInspector')) return;
       positionFloatingPopover({
         popoverEl: entry.panelEl,
         triggerEl: entry.buttonEl,

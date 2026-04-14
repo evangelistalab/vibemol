@@ -104,6 +104,17 @@
   }
 
   const {
+    createListPopoverController,
+    formatOrbitalSpinGlyph,
+    getOrbitalBoundary,
+    formatOrbitalRelativeLabel,
+    passesOrbitalEnergyThreshold,
+  } = window.VibeMolListPopover || {};
+  if (![createListPopoverController, formatOrbitalSpinGlyph, getOrbitalBoundary, formatOrbitalRelativeLabel, passesOrbitalEnergyThreshold].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolListPopover is not loaded. Ensure src/components/VmListPopover.js is included before assets/app/js/app.js.');
+  }
+
+  const {
     copyCameraPose: copyCameraPoseUtil,
     computeOrthographicFrustum,
   } = window.VibeMolViewUtils || {};
@@ -1115,6 +1126,11 @@
   let coordsDisplayUnits = 'angstrom';
   let coordsHoveredAtomIndex = -1;
   let coordsInlineEditState = null;
+  let coordsListPopover = null;
+  let moldenListPopover = null;
+  let moldenEnergyThresholdEh = 0;
+  let moldenPendingRowIndex = -1;
+  let moldenFilterDebounceTimer = 0;
   let showSurfaces = true; // toggle iso-surface visibility
   let renderMode = 'surface';
   let cloudType = 'cubes';
@@ -5784,6 +5800,9 @@
   const emptyStateVersion = document.getElementById('emptyStateVersion');
   if (emptyStateVersion) emptyStateVersion.textContent = `v${APP_VERSION}`;
   const coordsContent = document.getElementById('coordsContent');
+  const coordsSubheader = document.getElementById('coordsSubheader');
+  const coordsControls = document.getElementById('coordsControls');
+  const coordsFooter = document.getElementById('coordsFooter');
   const pubchemMetaWrap = document.getElementById('pubchemMetaWrap');
   const pubchemMetaContent = document.getElementById('pubchemMetaContent');
   const copyXYZBtn = document.getElementById('copyXYZ');
@@ -5883,9 +5902,13 @@
   const twoComponentModeRow = document.getElementById('twoComponentModeRow');
   const twoComponentModeSelect = document.getElementById('twoComponentModeSelect');
   const phaseWheelEl = document.getElementById('phaseWheel');
-  const moldenMoRow = document.getElementById('moldenMoRow');
-  const moldenMoSelect = document.getElementById('moldenMoSelect');
-  const moldenMoSummary = document.getElementById('moldenMoSummary');
+  const moldenInspectorTitle = document.getElementById('moldenInspectorTitle');
+  const moldenInspectorClose = document.getElementById('moldenInspectorClose');
+  const moldenInspectorSubheader = document.getElementById('moldenInspectorSubheader');
+  const moldenInspectorControls = document.getElementById('moldenInspectorControls');
+  const moldenInspectorBody = document.getElementById('moldenInspectorBody');
+  const moldenInspectorFooter = document.getElementById('moldenInspectorFooter');
+  const moldenEnergyFilter = document.getElementById('moldenEnergyFilter');
 
   const viewNumberInputRegistry = new WeakMap();
   const viewSliderRegistry = new WeakMap();
@@ -6406,8 +6429,6 @@
     setViewCopyButtonCopied(buttonEl, true);
     window.setTimeout(() => setViewCopyButtonCopied(buttonEl, false), 1200);
   }
-  const moldenGridRow = document.getElementById('moldenGridRow');
-  const moldenGridPaddingRow = document.getElementById('moldenGridPaddingRow');
   const moldenGridStepEl = document.getElementById('moldenGridStep');
   const moldenGridPaddingEl = document.getElementById('moldenGridPadding');
   const moldenGridSummary = document.getElementById('moldenGridSummary');
@@ -6839,49 +6860,6 @@
   }
 
   /**
-   * Build one compact option label for a parsed Molden molecular orbital.
-   * @param {*} mo
-   * @param {number} index
-   * @returns {string}
-   */
-  function formatMoldenMoOptionLabel(mo, index) {
-    const parts = [`MO ${index + 1}`];
-    if (mo && typeof mo.symmetry === 'string' && mo.symmetry.trim()) parts.push(mo.symmetry.trim());
-    if (mo && Number.isFinite(mo.energy)) parts.push(`E=${mo.energy.toFixed(3)}`);
-    if (mo && Number.isFinite(mo.occupation)) parts.push(`occ=${mo.occupation.toFixed(2)}`);
-    return parts.join(' • ');
-  }
-
-  /**
-   * Normalize Molden spin text for compact UI display.
-   * @param {*} spin
-   * @returns {string}
-   */
-  function formatMoldenSpinLabel(spin) {
-    const raw = (typeof spin === 'string') ? spin.trim().toLowerCase() : '';
-    if (raw === 'alpha' || raw === 'a') return 'α';
-    if (raw === 'beta' || raw === 'b') return 'β';
-    return (typeof spin === 'string') ? spin.trim() : '';
-  }
-
-  /**
-   * Build one short summary line for the selected Molden molecular orbital.
-   * @param {*} mo
-   * @param {number} moCount
-   * @param {number} basisCount
-   * @returns {string}
-   */
-  function formatMoldenMoSummary(mo, moCount, basisCount) {
-    if (!mo) return `${moCount} orbitals`;
-    const parts = [];
-    const spinLabel = formatMoldenSpinLabel(mo.spin);
-    if (spinLabel) parts.push(`Spin ${spinLabel}`);
-    if (Number.isFinite(mo.energy)) parts.push(`E ${mo.energy.toFixed(3)}`);
-    if (Number.isFinite(mo.occupation)) parts.push(`Occ ${mo.occupation.toFixed(2)}`);
-    return parts.join(' • ');
-  }
-
-  /**
    * Clamp Molden grid spacing to the supported UI range.
    * @param {*} value
    * @returns {number}
@@ -6927,51 +6905,347 @@
     }
     if (!spec || !Array.isArray(spec.nxyz)) return '';
     const [nx, ny, nz] = spec.nxyz;
-    return `Grid ${nx}×${ny}×${nz} • ${(nx * ny * nz).toLocaleString()} points`;
+    return `Grid ${nx}×${ny}×${nz} · ${(nx * ny * nz).toLocaleString()} pts`;
   }
 
   /**
-   * Sync Molden MO controls for the active record.
+   * Build table rows for the active Molden orbital list.
    * @param {*} record
+   * @returns {Array<object>}
    */
-  function updateMoldenMoControls(record) {
-    if (!moldenMoRow || !moldenMoSelect || !moldenMoSummary || !moldenGridRow || !moldenGridPaddingRow || !moldenGridStepEl || !moldenGridPaddingEl || !moldenGridSummary) return;
+  function buildMoldenOrbitalItems(record) {
     const vol = record && record.vol;
     const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
-    if (!molden || !Array.isArray(molden.mos) || molden.mos.length === 0) {
-      setMoldenInspectorOpen(false);
-      moldenMoRow.style.display = 'none';
-      moldenGridRow.style.display = 'none';
-      moldenGridPaddingRow.style.display = 'none';
-      moldenMoSelect.innerHTML = '';
-      moldenMoSummary.textContent = '';
+    if (!molden || !Array.isArray(molden.mos) || molden.mos.length === 0) return [];
+    return molden.mos.map((mo, index) => {
+      const energyEh = Number.isFinite(Number(mo && mo.energy)) ? Number(mo.energy) : 0;
+      const occValue = Number.isFinite(Number(mo && mo.occupation)) ? Number(mo.occupation) : 0;
+      return {
+        index: index + 1,
+        energyEh,
+        occ: occValue,
+        occValue,
+        sym: mo && typeof mo.symmetry === 'string' && mo.symmetry.trim() ? mo.symmetry.trim() : '—',
+        spinGlyph: formatOrbitalSpinGlyph(mo && mo.spin),
+        isOccupied: occValue > 0,
+      };
+    });
+  }
+
+  /**
+   * Return visible Molden MO row indices for the current energy threshold.
+   * @param {Array<object>} items
+   * @returns {number[]}
+   */
+  function getVisibleMoldenOrbitalIndices(items) {
+    const rows = Array.isArray(items) ? items : [];
+    const out = [];
+    for (let index = 0; index < rows.length; index += 1) {
+      if (passesOrbitalEnergyThreshold(rows[index] && rows[index].energyEh, moldenEnergyThresholdEh)) out.push(index);
+    }
+    return out;
+  }
+
+  /**
+   * Return the HOMO/LUMO divider label if one should appear before a row.
+   * @param {number} rowIndex
+   * @param {Array<object>} items
+   * @param {number[]} visibleRowIndices
+   * @returns {string}
+   */
+  function getMoldenOrbitalDividerLabel(rowIndex, items, visibleRowIndices) {
+    const visible = Array.isArray(visibleRowIndices) ? visibleRowIndices : [];
+    const occupiedVisible = visible.filter((index) => items[index] && items[index].isOccupied);
+    const virtualVisible = visible.filter((index) => items[index] && !items[index].isOccupied);
+    if (!occupiedVisible.length || !virtualVisible.length) return '';
+    const firstVisibleVirtualIndex = virtualVisible[0];
+    return rowIndex === firstVisibleVirtualIndex ? 'HOMO / LUMO' : '';
+  }
+
+  /**
+   * Format the Orbitals footer text for the current record.
+   * @param {*} record
+   * @param {Array<object>} items
+   * @returns {string}
+   */
+  function formatMoldenOrbitalsFooter(record, items) {
+    const rows = Array.isArray(items) ? items : [];
+    if (!rows.length) return '';
+    const selectedIndex = record && Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : -1;
+    if (selectedIndex < 0 || selectedIndex >= rows.length) return `${rows.length} MOs`;
+    const relativeLabel = formatOrbitalRelativeLabel(rows, selectedIndex);
+    return relativeLabel
+      ? `${rows.length} MOs · selected: ${selectedIndex + 1} (${relativeLabel})`
+      : `${rows.length} MOs · selected: ${selectedIndex + 1}`;
+  }
+
+  /**
+   * Create one loading spinner node for the pending orbital row.
+   * @returns {HTMLElement}
+   */
+  function createMoldenPendingSpinner() {
+    const el = document.createElement('span');
+    el.className = 'vm-list-popover__spinner';
+    el.setAttribute('aria-hidden', 'true');
+    return el;
+  }
+
+  /**
+   * Ensure the shared list-popover controllers exist.
+   */
+  function ensureListPopovers() {
+    if (!coordsListPopover && coordsContent) {
+      coordsListPopover = createListPopoverController({
+        rootEl: coordsPanel,
+        titleEl: coordsPanelTitle,
+        subheaderEl: coordsSubheader,
+        controlsEl: coordsControls,
+        bodyEl: coordsContent,
+        footerEl: coordsFooter,
+        getSubheaderText: () => {
+          const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+          return record ? `Active: ${record.name}` : '';
+        },
+        getEmptyText: () => {
+          const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+          return record ? 'No atoms' : 'No file loaded';
+        },
+        getItems: () => buildCoordsPopoverItems(currentIndex >= 0 ? volumes[currentIndex] : null),
+        getHoveredRowIndex: () => coordsHoveredAtomIndex,
+        setHoveredRowIndex: (index) => setCoordsHoveredAtomIndex(index),
+        onRequestClose: () => setCoordsPanelOpen(false),
+        onInlineEditStateChange: (value) => { coordsInlineEditState = value; },
+        onEditCell: (rowIndex, columnKey, value) => applyCoordsPopoverEdit(rowIndex, columnKey, value),
+        hoverClassName: 'coordsRowHovered',
+        tableClassName: 'coordsTable',
+        getRowDataset: (_item, rowIndex) => ({ atomIndex: rowIndex }),
+        columnSchema: [
+          {
+            key: 'order',
+            label: '#',
+            align: 'right',
+            mono: true,
+            editable: true,
+            width: 42,
+            buttonClassName: 'coordsCellButton',
+            editorClassName: 'coordsCellEditor',
+            inputType: 'text',
+            inputAttributes: { inputmode: 'numeric' },
+            format: (value) => String(value),
+            getEditValue: (value) => String(value),
+            parse: (text, item, rowIndex, items) => parseCoordsOrderInput(text, item, rowIndex, items),
+          },
+          {
+            key: 'sym',
+            label: 'Sym',
+            editable: true,
+            width: 56,
+            buttonClassName: 'coordsCellButton',
+            editorClassName: 'coordsCellEditor',
+            inputType: 'text',
+            format: (value) => String(value),
+            getEditValue: (value) => String(value),
+            parse: (text) => parseCoordsSymbolInput(text),
+          },
+          {
+            key: 'z',
+            label: 'Z',
+            align: 'right',
+            mono: true,
+            editable: true,
+            width: 44,
+            buttonClassName: 'coordsCellButton',
+            editorClassName: 'coordsCellEditor',
+            inputType: 'text',
+            inputAttributes: { inputmode: 'numeric' },
+            format: (value) => String(value),
+            getEditValue: (value) => String(value),
+            parse: (text) => parseCoordsAtomicNumberInput(text),
+          },
+          {
+            key: 'x',
+            label: 'x',
+            align: 'right',
+            mono: true,
+            editable: true,
+            buttonClassName: 'coordsCellButton',
+            editorClassName: 'coordsCellEditor',
+            inputType: 'text',
+            inputAttributes: { inputmode: 'decimal' },
+            format: (value) => Number(value).toFixed(3),
+            getEditValue: (value) => Number(value).toFixed(6).replace(/0+$/u, '').replace(/\.$/u, ''),
+            parse: (text) => parseCoordsCoordinateInput(text),
+          },
+          {
+            key: 'y',
+            label: 'y',
+            align: 'right',
+            mono: true,
+            editable: true,
+            buttonClassName: 'coordsCellButton',
+            editorClassName: 'coordsCellEditor',
+            inputType: 'text',
+            inputAttributes: { inputmode: 'decimal' },
+            format: (value) => Number(value).toFixed(3),
+            getEditValue: (value) => Number(value).toFixed(6).replace(/0+$/u, '').replace(/\.$/u, ''),
+            parse: (text) => parseCoordsCoordinateInput(text),
+          },
+          {
+            key: 'zCoord',
+            label: 'z',
+            align: 'right',
+            mono: true,
+            editable: true,
+            buttonClassName: 'coordsCellButton',
+            editorClassName: 'coordsCellEditor',
+            inputType: 'text',
+            inputAttributes: { inputmode: 'decimal' },
+            format: (value) => Number(value).toFixed(3),
+            getEditValue: (value) => Number(value).toFixed(6).replace(/0+$/u, '').replace(/\.$/u, ''),
+            parse: (text) => parseCoordsCoordinateInput(text),
+          },
+        ],
+      });
+    }
+    if (!moldenListPopover && moldenInspectorBody) {
+      moldenListPopover = createListPopoverController({
+        rootEl: moldenInspector,
+        titleEl: moldenInspectorTitle,
+        subheaderEl: moldenInspectorSubheader,
+        controlsEl: moldenInspectorControls,
+        bodyEl: moldenInspectorBody,
+        footerEl: moldenInspectorFooter,
+        filterInputEl: moldenEnergyFilter,
+        getTitleText: () => 'Orbitals',
+        getSubheaderText: () => {
+          const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+          const items = buildMoldenOrbitalItems(record);
+          return items.length && record ? `Active: ${record.name}` : '';
+        },
+        getFooterText: () => {
+          const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+          return formatMoldenOrbitalsFooter(record, buildMoldenOrbitalItems(record));
+        },
+        getEmptyText: () => {
+          const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+          return record ? 'No orbitals' : 'No file loaded';
+        },
+        getItems: () => buildMoldenOrbitalItems(currentIndex >= 0 ? volumes[currentIndex] : null),
+        getVisibleRowIndices: (items) => getVisibleMoldenOrbitalIndices(items),
+        getSelectedRowIndex: () => {
+          const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+          const items = buildMoldenOrbitalItems(record);
+          const selectedIndex = record && Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : -1;
+          return selectedIndex >= 0 && selectedIndex < items.length ? selectedIndex : -1;
+        },
+        getPendingRowIndex: () => moldenPendingRowIndex,
+        getDividerBeforeIndex: (rowIndex, items, visibleRowIndices) => getMoldenOrbitalDividerLabel(rowIndex, items, visibleRowIndices),
+        onActivateRow: (rowIndex, item) => activateMoldenOrbitalRow(rowIndex, item),
+        onRequestClose: () => setMoldenInspectorOpen(false),
+        columnSchema: [
+          {
+            key: 'index',
+            label: '#',
+            align: 'right',
+            mono: true,
+            width: 42,
+            renderCell: (value, _item, _rowIndex, _items, context) => (
+              context && context.isPending ? createMoldenPendingSpinner() : String(value)
+            ),
+          },
+          {
+            key: 'energyEh',
+            label: 'Energy',
+            align: 'right',
+            mono: true,
+            width: 96,
+            format: (value) => (Number.isFinite(Number(value)) ? Number(value).toFixed(4) : '—'),
+          },
+          {
+            key: 'occ',
+            label: 'Occ',
+            align: 'right',
+            mono: true,
+            width: 74,
+            format: (value) => (Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '0.00'),
+          },
+          {
+            key: 'sym',
+            label: 'Sym',
+            align: 'center',
+            italic: true,
+            width: 64,
+          },
+          {
+            key: 'spinGlyph',
+            label: 'Spin',
+            align: 'center',
+            width: 54,
+          },
+        ],
+      });
+    }
+  }
+
+  /**
+   * Sync the Orbitals panel for the active record.
+   * @param {*} record
+   */
+  function syncMoldenOrbitalsPanel(record) {
+    ensureListPopovers();
+    if (!moldenListPopover || !moldenInspectorControls || !moldenGridStepEl || !moldenGridPaddingEl || !moldenGridSummary) return;
+    const items = buildMoldenOrbitalItems(record);
+    if (!items.length) {
+      moldenPendingRowIndex = -1;
+      moldenInspectorControls.hidden = true;
       moldenGridSummary.textContent = '';
+      if (moldenEnergyFilter && document.activeElement !== moldenEnergyFilter) moldenEnergyFilter.value = String(moldenEnergyThresholdEh || 0);
+      moldenListPopover.render();
+      setMoldenInspectorOpen(false);
       updateDisplayWindowAdaptiveMenuUi();
       return;
     }
-    moldenMoRow.style.display = 'grid';
-    moldenGridRow.style.display = 'grid';
-    moldenGridPaddingRow.style.display = 'grid';
-    const moCount = molden.mos.length;
-    const basisCount = Number.isFinite(molden.basisCount) ? molden.basisCount : 0;
-    let selectedIndex = Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : 0;
-    if (selectedIndex < 0 || selectedIndex >= moCount) selectedIndex = 0;
-    record.moldenMoIndex = selectedIndex;
-    moldenMoSelect.innerHTML = '';
-    for (let i = 0; i < moCount; i++) {
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = formatMoldenMoOptionLabel(molden.mos[i], i);
-      moldenMoSelect.appendChild(opt);
+    if (record) {
+      if (!Number.isInteger(record.moldenMoIndex) || record.moldenMoIndex < 0 || record.moldenMoIndex >= items.length) {
+        record.moldenMoIndex = 0;
+      }
+      const gridSettings = getMoldenGridSettings(record);
+      moldenGridStepEl.value = gridSettings.stepAng.toFixed(2);
+      moldenGridPaddingEl.value = gridSettings.paddingAng.toFixed(1);
+      moldenGridSummary.textContent = formatMoldenGridSummary(record);
     }
-    moldenMoSelect.value = String(selectedIndex);
-    setTooltipText(moldenMoSelect, 'Select one molecular orbital parsed from the Molden file for surface/cloud rendering.');
-    moldenMoSummary.textContent = formatMoldenMoSummary(molden.mos[selectedIndex], moCount, basisCount);
-    const gridSettings = getMoldenGridSettings(record);
-    moldenGridStepEl.value = gridSettings.stepAng.toFixed(2);
-    moldenGridPaddingEl.value = gridSettings.paddingAng.toFixed(1);
-    moldenGridSummary.textContent = formatMoldenGridSummary(record);
+    moldenInspectorControls.hidden = false;
+    if (moldenEnergyFilter && document.activeElement !== moldenEnergyFilter) {
+      moldenEnergyFilter.value = String(moldenEnergyThresholdEh || 0);
+    }
+    moldenListPopover.render();
     updateDisplayWindowAdaptiveMenuUi();
+  }
+
+  /**
+   * Trigger Molden cube generation for one orbital list row.
+   * @param {number} rowIndex
+   * @param {*} _item
+   */
+  function activateMoldenOrbitalRow(rowIndex, _item) {
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const items = buildMoldenOrbitalItems(record);
+    if (!record || !vol || vol.kind !== 'molden' || !items.length) return;
+    if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= items.length) return;
+    if (moldenPendingRowIndex >= 0) return;
+    if ((record.moldenMoIndex | 0) === rowIndex) return;
+    record.moldenMoIndex = rowIndex;
+    moldenPendingRowIndex = rowIndex;
+    syncMoldenOrbitalsPanel(record);
+    window.requestAnimationFrame(() => {
+      try {
+        rebuildScene({ preserveView: true });
+      } finally {
+        moldenPendingRowIndex = -1;
+        syncMoldenOrbitalsPanel(currentIndex >= 0 ? volumes[currentIndex] : null);
+      }
+    });
   }
 
   const triggerOpenFiles = () => fileInput.click();
@@ -8159,6 +8433,11 @@
     if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
     setFloatingPanelOpen(coordsPanel, shouldOpen);
     if (coordsPanelBtn) coordsPanelBtn.classList.toggle('active', shouldOpen);
+    if (shouldOpen && coordsListPopover) {
+      window.setTimeout(() => {
+        if (coordsListPopover) coordsListPopover.focusBody();
+      }, 0);
+    }
     updateDisplayWindowAdaptiveMenuUi();
   }
 
@@ -8435,7 +8714,6 @@
 
   const viewInspectorRefs = { panel: viewInspector, button: viewInspectorBtn };
   const displayInspectorRefs = { panel: displayInspector, button: displayInspectorBtn, icon: displayInspectorToggleIcon };
-  const moldenInspectorRefs = { panel: moldenInspector, button: moldenInspectorBtn };
 
   /**
    * Open/close the compact View/Coords inspector in the toolbar.
@@ -8462,16 +8740,26 @@
   bindToolbarInspectorToggle(displayInspectorRefs);
 
   /**
-   * Open/close the dedicated Molden toolbar inspector.
+   * Open/close the dedicated Molden orbitals panel.
    * @param {boolean} open
    */
   function setMoldenInspectorOpen(open) {
     const shouldOpen = !!open;
     if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR);
-    setToolbarInspectorOpen(moldenInspectorRefs, shouldOpen);
+    setFloatingPanelOpen(moldenInspector, shouldOpen);
+    if (moldenInspectorBtn) {
+      moldenInspectorBtn.classList.toggle('active', shouldOpen);
+      moldenInspectorBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    }
+    if (shouldOpen && moldenListPopover) {
+      window.setTimeout(() => {
+        if (moldenListPopover) moldenListPopover.focusBody();
+      }, 0);
+    }
     updateDisplayWindowAdaptiveMenuUi();
   }
   if (moldenInspectorBtn) moldenInspectorBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR);
+  if (moldenInspectorClose) moldenInspectorClose.onclick = () => setMoldenInspectorOpen(false);
 
   /**
    * Toggle a dedicated floating motion panel.
@@ -8573,7 +8861,7 @@
         label: 'Molden inspector',
         buttonEl: moldenInspectorBtn,
         panelEl: moldenInspector,
-        isOpen: () => isToolbarInspectorOpen(moldenInspectorRefs),
+        isOpen: () => isFloatingPanelCurrentlyOpen(moldenInspector),
         setOpen: (open) => setMoldenInspectorOpen(open),
       },
       [NON_EDIT_WINDOW_ID.VIEW_INSPECTOR]: {
@@ -8634,7 +8922,7 @@
     delayMs: 5000,
     revealEdgeWidth: 64,
     revealSlack: 20,
-    getPinned: () => isToolbarInspectorOpen(moldenInspectorRefs) || isToolbarInspectorOpen(viewInspectorRefs),
+    getPinned: () => isFloatingPanelCurrentlyOpen(moldenInspector) || isToolbarInspectorOpen(viewInspectorRefs),
     getRelatedElements: () => [moldenInspector, viewInspector],
   });
   modeAssistMenuAutoHideController = createAdaptiveMenuAutoHideController({
@@ -10051,7 +10339,10 @@
     setHintMessage,
     clearMeasurementSelectionForContextChange,
     setCoordsHoveredAtomIndex,
-    setCoordsInlineEditState: (value) => { coordsInlineEditState = value; },
+    setCoordsInlineEditState: (value) => {
+      if (value == null && coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });
+      coordsInlineEditState = value;
+    },
     getBondEditing: () => bondEditing,
     onSelectionChanged: () => {
       clearBondCenterSelection({ updateVisuals: false });
@@ -22954,24 +23245,28 @@
       rebuildScene({ preserveView: true });
     };
   }
-  if (moldenMoSelect) {
-    moldenMoSelect.onchange = () => {
-      const record = currentIndex >= 0 ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
-      if (!record || !molden || !Array.isArray(molden.mos) || molden.mos.length === 0) return;
-      let next = parseInt(moldenMoSelect.value, 10);
-      if (!Number.isInteger(next) || next < 0 || next >= molden.mos.length) next = 0;
-      record.moldenMoIndex = next;
-      moldenMoSummary.textContent = formatMoldenMoSummary(
-        molden.mos[next],
-        molden.mos.length,
-        Number.isFinite(molden.basisCount) ? molden.basisCount : 0
-      );
-      rebuildScene({ preserveView: true });
-      if (moldenGridSummary) moldenGridSummary.textContent = formatMoldenGridSummary(record);
-      setHintMessage(`Selected Molden MO ${next + 1} of ${molden.mos.length}.`);
+  if (moldenEnergyFilter) {
+    const applyMoldenEnergyFilter = () => {
+      const raw = String(moldenEnergyFilter.value || '').trim();
+      const next = raw ? Number(raw) : 0;
+      moldenEnergyThresholdEh = Number.isFinite(next) && next > 0 ? next : 0;
+      if (document.activeElement !== moldenEnergyFilter) moldenEnergyFilter.value = String(moldenEnergyThresholdEh || 0);
+      if (moldenListPopover) moldenListPopover.syncVisibleRows();
     };
+    moldenEnergyFilter.addEventListener('input', () => {
+      if (moldenFilterDebounceTimer) clearTimeout(moldenFilterDebounceTimer);
+      moldenFilterDebounceTimer = window.setTimeout(() => {
+        moldenFilterDebounceTimer = 0;
+        applyMoldenEnergyFilter();
+      }, 100);
+    });
+    moldenEnergyFilter.addEventListener('change', () => {
+      if (moldenFilterDebounceTimer) {
+        clearTimeout(moldenFilterDebounceTimer);
+        moldenFilterDebounceTimer = 0;
+      }
+      applyMoldenEnergyFilter();
+    });
   }
   if (moldenGridStepEl || moldenGridPaddingEl) {
     const applyMoldenGridUi = () => {
@@ -22983,9 +23278,7 @@
       if (moldenGridStepEl) moldenGridStepEl.value = record.moldenGridStepAng.toFixed(2);
       if (moldenGridPaddingEl) moldenGridPaddingEl.value = record.moldenGridPaddingAng.toFixed(1);
       if (moldenGridSummary) moldenGridSummary.textContent = formatMoldenGridSummary(record);
-      rebuildScene({ preserveView: true });
-      if (moldenGridSummary) moldenGridSummary.textContent = formatMoldenGridSummary(record);
-      setHintMessage(`Updated Molden grid: step ${record.moldenGridStepAng.toFixed(2)} Å, padding ${record.moldenGridPaddingAng.toFixed(1)} Å.`);
+      syncMoldenOrbitalsPanel(record);
     };
     if (moldenGridStepEl) {
       moldenGridStepEl.onchange = applyMoldenGridUi;
@@ -24566,21 +24859,128 @@
   }
 
   /**
+   * Build the Coordinates rows for the active record.
+   * @param {*} record
+   * @returns {Array<object>}
+   */
+  function buildCoordsPopoverItems(record) {
+    const vol = record && record.vol;
+    if (!vol || !Array.isArray(vol.atoms) || !vol.atoms.length) return [];
+    return vol.atoms.map((atom, atomIndex) => ({
+      atomIndex,
+      order: atomIndex + 1,
+      sym: getElementSymbol(atom.Z | 0),
+      z: atom.Z | 0,
+      x: getCoordsDisplayValue(vol, atom, 'x'),
+      y: getCoordsDisplayValue(vol, atom, 'y'),
+      zCoord: getCoordsDisplayValue(vol, atom, 'zCoord'),
+    }));
+  }
+
+  /**
+   * Parse an atom-order edit from the Coordinates popover.
+   * @param {string} text
+   * @param {*} _item
+   * @param {number} _rowIndex
+   * @param {Array<object>} items
+   * @returns {{ok:boolean,value?:number}}
+   */
+  function parseCoordsOrderInput(text, _item, _rowIndex, items) {
+    const value = Math.trunc(Number(text));
+    if (!Number.isInteger(value) || value <= 0 || value > (Array.isArray(items) ? items.length : 0)) return { ok: false };
+    return { ok: true, value };
+  }
+
+  /**
+   * Parse an element symbol/name edit from the Coordinates popover.
+   * @param {string} text
+   * @returns {{ok:boolean,value?:number}}
+   */
+  function parseCoordsSymbolInput(text) {
+    const nextZ = resolveElementQueryToZ(text);
+    if (!Number.isInteger(nextZ) || nextZ <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[nextZ]) return { ok: false };
+    return { ok: true, value: nextZ };
+  }
+
+  /**
+   * Parse an atomic-number edit from the Coordinates popover.
+   * @param {string} text
+   * @returns {{ok:boolean,value?:number}}
+   */
+  function parseCoordsAtomicNumberInput(text) {
+    const nextZ = Math.trunc(Number(text));
+    if (!Number.isInteger(nextZ) || nextZ < 1 || nextZ > 118 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[nextZ]) return { ok: false };
+    return { ok: true, value: nextZ };
+  }
+
+  /**
+   * Parse a Cartesian coordinate edit from the Coordinates popover.
+   * @param {string} text
+   * @returns {{ok:boolean,value?:number}}
+   */
+  function parseCoordsCoordinateInput(text) {
+    const value = Number(text);
+    if (!Number.isFinite(value)) return { ok: false };
+    return { ok: true, value };
+  }
+
+  /**
+   * Apply one parsed Coordinates edit and preserve existing aux-state/history behavior.
+   * @param {number} atomIndex
+   * @param {'order'|'sym'|'z'|'x'|'y'|'zCoord'} field
+   * @param {*} parsedValue
+   * @returns {Array<object>}
+   */
+  function applyCoordsPopoverEdit(atomIndex, field, parsedValue) {
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!record || !vol || !Array.isArray(vol.atoms) || atomIndex < 0 || atomIndex >= vol.atoms.length) {
+      return buildCoordsPopoverItems(record);
+    }
+    const atom = vol.atoms[atomIndex];
+    const beforeState = cloneCoordsPanelEditState(vol);
+    let actionLabel = '';
+    if (field === 'order') {
+      const nextOrder = Math.trunc(Number(parsedValue));
+      if (!Number.isInteger(nextOrder) || nextOrder <= 0 || nextOrder > vol.atoms.length) return buildCoordsPopoverItems(record);
+      const targetIndex = nextOrder - 1;
+      if (targetIndex === atomIndex) return buildCoordsPopoverItems(record);
+      const order = buildAtomMoveOrder(vol.atoms.length, atomIndex, targetIndex);
+      const [movedAtom] = vol.atoms.splice(atomIndex, 1);
+      vol.atoms.splice(targetIndex, 0, movedAtom);
+      applyAtomOrderToVolumeAuxState(vol, order);
+      syncVolumeAuxStateAfterCoordsEdit(vol);
+      actionLabel = `Renumber atom ${atomIndex + 1} → ${nextOrder}`;
+    } else if (field === 'sym' || field === 'z') {
+      const nextZ = Math.trunc(Number(parsedValue));
+      if (!Number.isInteger(nextZ) || nextZ < 1 || nextZ > 118 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[nextZ]) return buildCoordsPopoverItems(record);
+      if ((atom.Z | 0) === nextZ) return buildCoordsPopoverItems(record);
+      atom.Z = nextZ;
+      syncVolumeAuxStateAfterCoordsEdit(vol);
+      actionLabel = field === 'sym'
+        ? `Change atom ${atomIndex + 1} element to ${getElementSymbol(nextZ)}`
+        : `Change atom ${atomIndex + 1} atomic number to ${nextZ}`;
+    } else {
+      const nextValue = coordsDisplayValueToNative(vol, Number(parsedValue));
+      if (!Number.isFinite(nextValue)) return buildCoordsPopoverItems(record);
+      const axis = field === 'x' ? 'x' : field === 'y' ? 'y' : 'z';
+      if (Math.abs((Number(atom[axis]) || 0) - nextValue) <= 1e-12) return buildCoordsPopoverItems(record);
+      atom[axis] = nextValue;
+      syncVolumeAuxStateAfterCoordsEdit(vol);
+      actionLabel = `Edit atom ${atomIndex + 1} ${axis}`;
+    }
+    finalizeCoordsPanelEdit(record, beforeState, actionLabel);
+    return buildCoordsPopoverItems(record);
+  }
+
+  /**
    * Update row hover in the Coordinates panel and mirror it into scene atom hover.
    * @param {number} atomIndex
    */
   function setCoordsHoveredAtomIndex(atomIndex) {
     const nextIndex = Number.isInteger(atomIndex) ? atomIndex : -1;
     if (coordsHoveredAtomIndex === nextIndex) return;
-    if (coordsContent) {
-      const prevRow = coordsContent.querySelector(`tr.coordsRowHovered[data-atom-index="${coordsHoveredAtomIndex}"]`);
-      if (prevRow) prevRow.classList.remove('coordsRowHovered');
-    }
     coordsHoveredAtomIndex = nextIndex;
-    if (coordsContent && coordsHoveredAtomIndex >= 0) {
-      const row = coordsContent.querySelector(`tr[data-atom-index="${coordsHoveredAtomIndex}"]`);
-      if (row) row.classList.add('coordsRowHovered');
-    }
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     const mesh = (record && record.vol && Array.isArray(record.vol.atoms) && atomGroup && atomGroup.children && coordsHoveredAtomIndex >= 0)
       ? atomGroup.children[coordsHoveredAtomIndex]
@@ -24595,149 +24995,18 @@
    * Close one in-place coordinates-table editor without mutating data.
    */
   function cancelCoordsInlineEdit() {
-    if (!coordsInlineEditState) return;
-    coordsInlineEditState = null;
-    updateSidePanel();
-  }
-
-  /**
-   * Start editing one coordinates-table cell inline.
-   * @param {number} atomIndex
-   * @param {'order'|'sym'|'z'|'x'|'y'|'zCoord'} field
-   * @param {HTMLElement} cell
-   */
-  function beginCoordsInlineEdit(atomIndex, field, cell) {
-    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    if (!record || !vol || !Array.isArray(vol.atoms) || atomIndex < 0 || atomIndex >= vol.atoms.length || !cell) return;
-    if (coordsInlineEditState) cancelCoordsInlineEdit();
-    const atom = vol.atoms[atomIndex];
-    const input = document.createElement('input');
-    input.className = 'coordsCellEditor';
-    if (field === 'sym') input.type = 'text';
-    else input.type = 'number';
-    if (field === 'order' || field === 'z') {
-      input.step = '1';
-      input.min = '1';
-      input.inputMode = 'numeric';
-    } else if (field === 'x' || field === 'y' || field === 'zCoord') {
-      input.step = '0.001';
+    if (!coordsListPopover) {
+      coordsInlineEditState = null;
+      return;
     }
-    if (field === 'order') input.value = String(atomIndex + 1);
-    else if (field === 'sym') input.value = getElementSymbol(atom.Z | 0);
-    else if (field === 'z') input.value = String(atom.Z | 0);
-    else input.value = getCoordsDisplayValue(vol, atom, field).toFixed(6).replace(/0+$/u, '').replace(/\.$/u, '');
-    cell.innerHTML = '';
-    cell.appendChild(input);
-    coordsInlineEditState = { atomIndex, field, cell, input };
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        void commitCoordsInlineEdit();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        cancelCoordsInlineEdit();
-      }
-      if (typeof e.stopPropagation === 'function') e.stopPropagation();
-    });
-    input.addEventListener('click', (e) => {
-      if (typeof e.stopPropagation === 'function') e.stopPropagation();
-    });
-    input.addEventListener('blur', () => { void commitCoordsInlineEdit(); });
-    input.focus();
-    input.select();
+    coordsListPopover.cancelInlineEdit();
   }
 
   /**
    * Commit the currently active inline coordinates-table edit.
    */
   function commitCoordsInlineEdit() {
-    const state = coordsInlineEditState;
-    if (!state) return;
-    coordsInlineEditState = null;
-    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    if (!record || !vol || !Array.isArray(vol.atoms)) {
-      updateSidePanel();
-      return;
-    }
-    const atomIndex = state.atomIndex | 0;
-    if (atomIndex < 0 || atomIndex >= vol.atoms.length) {
-      updateSidePanel();
-      return;
-    }
-    const atom = vol.atoms[atomIndex];
-    const rawValue = String(state.input && state.input.value || '').trim();
-    if (!rawValue) {
-      updateSidePanel();
-      return;
-    }
-    const beforeState = cloneCoordsPanelEditState(vol);
-    let actionLabel = '';
-    if (state.field === 'order') {
-      const nextOrder = Math.trunc(Number(rawValue));
-      if (!Number.isInteger(nextOrder) || nextOrder <= 0 || nextOrder > vol.atoms.length) {
-        setHintMessage(`Atom number must be between 1 and ${vol.atoms.length}.`);
-        updateSidePanel();
-        return;
-      }
-      const targetIndex = nextOrder - 1;
-      if (targetIndex === atomIndex) {
-        updateSidePanel();
-        return;
-      }
-      const order = buildAtomMoveOrder(vol.atoms.length, atomIndex, targetIndex);
-      const [movedAtom] = vol.atoms.splice(atomIndex, 1);
-      vol.atoms.splice(targetIndex, 0, movedAtom);
-      applyAtomOrderToVolumeAuxState(vol, order);
-      syncVolumeAuxStateAfterCoordsEdit(vol);
-      actionLabel = `Renumber atom ${atomIndex + 1} → ${nextOrder}`;
-    } else if (state.field === 'sym') {
-      const nextZ = resolveElementQueryToZ(rawValue);
-      if (!Number.isInteger(nextZ) || nextZ <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[nextZ]) {
-        setHintMessage(`Invalid element symbol or name: "${rawValue}".`);
-        updateSidePanel();
-        return;
-      }
-      if ((atom.Z | 0) === nextZ) {
-        updateSidePanel();
-        return;
-      }
-      atom.Z = nextZ;
-      syncVolumeAuxStateAfterCoordsEdit(vol);
-      actionLabel = `Change atom ${atomIndex + 1} element to ${getElementSymbol(nextZ)}`;
-    } else if (state.field === 'z') {
-      const nextZ = Math.trunc(Number(rawValue));
-      if (!Number.isInteger(nextZ) || nextZ <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[nextZ]) {
-        setHintMessage(`Atomic number must be a valid element between 1 and ${Object.keys(ATOM_Z_TO_DATA || {}).length}.`);
-        updateSidePanel();
-        return;
-      }
-      if ((atom.Z | 0) === nextZ) {
-        updateSidePanel();
-        return;
-      }
-      atom.Z = nextZ;
-      syncVolumeAuxStateAfterCoordsEdit(vol);
-      actionLabel = `Change atom ${atomIndex + 1} atomic number to ${nextZ}`;
-    } else {
-      const nextValue = coordsDisplayValueToNative(vol, Number(rawValue));
-      if (!Number.isFinite(nextValue)) {
-        setHintMessage(`Coordinate must be numeric: "${rawValue}".`);
-        updateSidePanel();
-        return;
-      }
-      const axis = state.field === 'x' ? 'x' : state.field === 'y' ? 'y' : 'z';
-      if (Math.abs((Number(atom[axis]) || 0) - nextValue) <= 1e-12) {
-        updateSidePanel();
-        return;
-      }
-      atom[axis] = nextValue;
-      syncVolumeAuxStateAfterCoordsEdit(vol);
-      actionLabel = `Edit atom ${atomIndex + 1} ${axis}`;
-    }
-    finalizeCoordsPanelEdit(record, beforeState, actionLabel);
-    setHintMessage(`${actionLabel}.`);
+    return coordsListPopover ? coordsListPopover.commitInlineEdit() : false;
   }
 
   /**
@@ -24765,17 +25034,14 @@
    */
   function updateSidePanel() {
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    ensureListPopovers();
+    if (coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });
     coordsInlineEditState = null;
-    coordsHoveredAtomIndex = -1;
+    setCoordsHoveredAtomIndex(-1);
     syncCoordsUnitsUi();
-    coordsContent.innerHTML = renderCoordsContent(
-      record,
-      BOHR_TO_ANG,
-      window.ATOM_Z_TO_DATA,
-      normalizeCoordsDisplayUnits(coordsDisplayUnits)
-    );
+    if (coordsListPopover) coordsListPopover.render();
     updatePubChemMetadataPanel(record);
-    updateMoldenMoControls(record);
+    syncMoldenOrbitalsPanel(record);
     syncTrajectoryControls();
     syncVibrationControls();
     updateAutoIsoButtonState();
@@ -24841,42 +25107,6 @@
       coordsDisplayUnits = normalizeCoordsDisplayUnits(coordsDisplayUnits) === 'bohr' ? 'angstrom' : 'bohr';
       updateSidePanel();
     };
-  }
-
-  if (coordsContent) {
-    coordsContent.addEventListener('mouseover', (e) => {
-      const row = e.target && typeof e.target.closest === 'function'
-        ? e.target.closest('tr[data-atom-index]')
-        : null;
-      if (!row || !coordsContent.contains(row)) {
-        setCoordsHoveredAtomIndex(-1);
-        return;
-      }
-      const atomIndex = Number.parseInt(String(row.dataset.atomIndex || ''), 10);
-      setCoordsHoveredAtomIndex(Number.isInteger(atomIndex) ? atomIndex : -1);
-    });
-
-    coordsContent.addEventListener('mouseleave', () => {
-      setCoordsHoveredAtomIndex(-1);
-    });
-
-    coordsContent.addEventListener('click', (e) => {
-      if (e.target && typeof e.target.closest === 'function') {
-        const editor = e.target.closest('.coordsCellEditor');
-        if (editor) return;
-      }
-      const button = e.target && typeof e.target.closest === 'function'
-        ? e.target.closest('.coordsCellButton')
-        : null;
-      if (!button || !coordsContent.contains(button)) return;
-      const atomIndex = Number.parseInt(String(button.dataset.atomIndex || ''), 10);
-      const field = String(button.dataset.editField || '');
-      if (!Number.isInteger(atomIndex) || atomIndex < 0) return;
-      if (!['order', 'sym', 'z', 'x', 'y', 'zCoord'].includes(field)) return;
-      beginCoordsInlineEdit(atomIndex, field, button.parentElement || button);
-      if (typeof e.preventDefault === 'function') e.preventDefault();
-      if (typeof e.stopPropagation === 'function') e.stopPropagation();
-    });
   }
 
   /**

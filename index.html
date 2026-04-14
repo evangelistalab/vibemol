@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="assets/app/css/palette.css" />
   <link rel="stylesheet" href="assets/app/css/edit-ui.css" />
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
+  <link rel="stylesheet" href="src/styles/vm-list-popover.css" />
   <style>
     :root {
       --vm-color-accent: var(--vm-brand-accent);
@@ -703,6 +704,12 @@
       display: block;
     }
 
+    .motionPanel.vm-list-popover.open {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #moldenInspector,
     #coordsPanel,
     #trajectoryPanel,
     #vibrationPanel {
@@ -2942,26 +2949,37 @@
       </span>
     </button>
   </div>
-  <div id="moldenInspector" class="floatingAuxInspector floatingAuxInspectorFields" aria-hidden="true">
-    <div class="inspectorGroup">
-      <div class="inspectorTitle">Orbitals</div>
-      <div class="inspectorRow inspectorSelectRow" id="moldenMoRow" style="display:none;">
-        <label for="moldenMoSelect">Molden MO</label>
-        <select id="moldenMoSelect" class="vm-select" data-tooltip="Select one molecular orbital parsed from the Molden file"></select>
+  <div id="moldenInspector" class="motionPanel vm-list-popover" aria-hidden="true">
+    <div class="motionPanelHeader vm-list-popover__header">
+      <div class="title vm-list-popover__title" id="moldenInspectorTitle">Orbitals</div>
+      <div class="actions vm-list-popover__actions">
+        <label class="vm-list-popover__filter" for="moldenEnergyFilter">
+          <span class="vm-list-popover__filter-prefix">|E| ≥</span>
+          <input id="moldenEnergyFilter" class="vm-list-popover__filter-input" type="text" inputmode="decimal"
+            placeholder="…" aria-label="Filter orbitals by absolute energy threshold"
+            data-tooltip="Hide orbitals whose absolute energy is below this Hartree threshold" />
+          <span class="vm-list-popover__filter-suffix">Eh</span>
+        </label>
+        <button id="moldenInspectorClose" class="motionPanelClose" data-tooltip="Close orbitals"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
-      <div id="moldenMoSummary" class="moldenInspectorSummary"></div>
-      <div class="inspectorRow inspectorSelectRow" id="moldenGridRow" style="display:none;">
-        <label for="moldenGridStep">Grid step</label>
+    </div>
+    <div id="moldenInspectorSubheader" class="vm-list-popover__subheader" hidden></div>
+    <div id="moldenInspectorControls" class="vm-list-popover__controls" hidden>
+      <label class="vm-list-popover__toolbar-control" for="moldenGridStep">
+        <span>Grid step</span>
         <input type="number" id="moldenGridStep" min="0.12" max="1.20" step="0.01" value="0.35"
           data-tooltip="Grid spacing in angstrom" />
-      </div>
-      <div class="inspectorRow inspectorSelectRow" id="moldenGridPaddingRow" style="display:none;">
-        <label for="moldenGridPadding">Grid pad</label>
+      </label>
+      <label class="vm-list-popover__toolbar-control" for="moldenGridPadding">
+        <span>Grid pad</span>
         <input type="number" id="moldenGridPadding" min="0.5" max="8" step="0.1" value="3.0"
           data-tooltip="Padding added around the molecule in angstrom" />
-      </div>
-      <div id="moldenGridSummary" class="moldenInspectorSummary"></div>
+      </label>
+      <div id="moldenGridSummary" class="vm-list-popover__toolbar-status"></div>
     </div>
+    <div id="moldenInspectorBody" class="motionPanelBody vm-list-popover__body" style="padding:0;"></div>
+    <div id="moldenInspectorFooter" class="vm-list-popover__footer" hidden></div>
   </div>
   <div id="viewInspector" class="floatingAuxInspector floatingAuxInspectorView" aria-hidden="true">
     <div class="viewInspectorGroup">
@@ -3476,10 +3494,10 @@
     </div>
   </div>
 
-  <div id="coordsPanel" class="motionPanel" aria-hidden="true">
-    <div class="motionPanelHeader">
-      <div class="title" id="coordsPanelTitle">Coordinates (Å)</div>
-      <div class="actions">
+  <div id="coordsPanel" class="motionPanel vm-list-popover" aria-hidden="true">
+    <div class="motionPanelHeader vm-list-popover__header">
+      <div class="title vm-list-popover__title" id="coordsPanelTitle">Coordinates (Å)</div>
+      <div class="actions vm-list-popover__actions">
         <button id="coordsUnitsBtn" class="secondary" data-tooltip="Toggle coordinate units">Bohr</button>
         <button id="copyXYZ" class="secondary" data-tooltip="Copy XYZ">Copy</button>
         <button id="downloadXYZ" class="secondary" data-tooltip="Download XYZ">Download</button>
@@ -3487,11 +3505,12 @@
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
-    <div class="motionPanelBody" style="padding:0;">
-      <div id="coordsContent" class="coord-readout">
-        <!-- Filled dynamically -->
-      </div>
+    <div id="coordsSubheader" class="vm-list-popover__subheader" hidden></div>
+    <div id="coordsControls" class="vm-list-popover__controls" hidden></div>
+    <div id="coordsContent" class="coord-readout motionPanelBody vm-list-popover__body" style="padding:0;">
+      <!-- Filled dynamically -->
     </div>
+    <div id="coordsFooter" class="vm-list-popover__footer" hidden></div>
   </div>
 
   <div id="trajectoryPanel" class="motionPanel" aria-hidden="true">
@@ -3763,6 +3782,8 @@
   <script src="./assets/app/js/symmetry.js"></script>
   <!-- persistent UI preferences -->
   <script src="./src/prefs.js"></script>
+  <!-- shared list popover component -->
+  <script src="./src/components/VmListPopover.js"></script>
   <!-- root tooltip portal -->
   <script src="./src/components/VmTooltip.js"></script>
 
