@@ -5776,10 +5776,6 @@
   const helpOverlay = document.getElementById('helpOverlay');
   const helpModal = document.getElementById('helpModal');
   const helpClose = document.getElementById('helpClose');
-  const helpResetToastsBtn = document.getElementById('helpResetToasts');
-  const modeToastEl = document.getElementById('modeToast');
-  const modeToastBodyEl = document.getElementById('modeToastBody');
-  const modeToastDismissBtn = document.getElementById('modeToastDismiss');
   const versionText = document.getElementById('versionText');
   applyFontPair(getFontPair());
   if (versionText) versionText.textContent = APP_VERSION;
@@ -5820,7 +5816,6 @@
   const viewCopyShiftBtn = document.getElementById('viewCopyShiftBtn');
   const viewCopyCamBtn = document.getElementById('viewCopyCamBtn');
   const viewCopyTargetBtn = document.getElementById('viewCopyTargetBtn');
-  const viewPanelToast = document.getElementById('viewPanelToast');
   const trajectoryRow = document.getElementById('trajectoryRow');
   const trajectoryRow2 = document.getElementById('trajectoryRow2');
   const trajectoryPlayBtn = document.getElementById('trajectoryPlayBtn');
@@ -5896,7 +5891,6 @@
   const viewSliderRegistry = new WeakMap();
   const VIEW_COPY_ICON_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="3" width="8" height="8" rx="1.5"></rect><path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path></svg>';
   const VIEW_CHECK_ICON_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.25L6.5 11.25L12.5 5.25"></path></svg>';
-  let viewPanelToastTimer = 0;
 
   /**
    * Parse a finite step value from an input or fallback.
@@ -6385,24 +6379,6 @@
     }
   }
 
-  function showViewPanelToast(anchorEl, message) {
-    if (!(viewPanelToast && anchorEl && message)) return;
-    viewPanelToast.textContent = String(message);
-    viewPanelToast.hidden = false;
-    const rect = anchorEl.getBoundingClientRect();
-    const width = Math.max(48, viewPanelToast.offsetWidth || 0);
-    viewPanelToast.style.left = `${Math.round(rect.left + (rect.width - width) / 2)}px`;
-    viewPanelToast.style.top = `${Math.round(rect.bottom + 8)}px`;
-    viewPanelToast.classList.remove('is-visible');
-    void viewPanelToast.offsetWidth;
-    viewPanelToast.classList.add('is-visible');
-    if (viewPanelToastTimer) window.clearTimeout(viewPanelToastTimer);
-    viewPanelToastTimer = window.setTimeout(() => {
-      viewPanelToast.classList.remove('is-visible');
-      viewPanelToast.hidden = true;
-    }, 1200);
-  }
-
   function setViewCopyButtonCopied(buttonEl, copied) {
     if (!buttonEl) return;
     buttonEl.classList.toggle('is-copied', !!copied);
@@ -6427,7 +6403,6 @@
     const ok = await copyTextToClipboard(text);
     if (!ok) return;
     setViewCopyButtonCopied(buttonEl, true);
-    showViewPanelToast(buttonEl, `Copied ${String(kind || '').replace(/^./, (m) => m.toUpperCase())} vector`);
     window.setTimeout(() => setViewCopyButtonCopied(buttonEl, false), 1200);
   }
   const moldenGridRow = document.getElementById('moldenGridRow');
@@ -8104,14 +8079,6 @@
     updateModeButtons();
     updateDisplayWindowAdaptiveMenuUi();
     updateModeAssistMenuUi();
-    if (currentMode === MODES.MEASURE) showEnteredModeToast('measure');
-    else if (currentMode === MODES.EDIT) {
-      const activeRecord = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const activeVol = activeRecord && activeRecord.vol;
-      if (activeVol && Array.isArray(activeVol.atoms) && activeVol.atoms.length > 0) showEnteredModeToast('edit');
-      else hideModeToast({ immediate: true });
-    }
-    else hideModeToast({ immediate: true });
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
@@ -8301,21 +8268,7 @@
     updateModeAssistMenuUi();
   }
 
-  const MODE_TOAST_MESSAGES = Object.freeze({
-    edit: 'Drag handles to move · Right-drag to rotate',
-    measure: 'Click atoms: 2=distance, 3=angle, 4=dihedral',
-    build: 'Click to place · 1/2/3/4 bond order · Esc to exit',
-  });
-  const MODE_TOASTS_ENABLED = false;
-  const MODE_TOAST_STORAGE_KEYS = Object.freeze({
-    edit: 'vm.toast.edit.dismissed',
-    measure: 'vm.toast.measure.dismissed',
-    build: 'vm.toast.build.dismissed',
-  });
   let helpRestoreFocusEl = null;
-  let modeToastHideTimer = 0;
-  let modeToastTransitionTimer = 0;
-  let modeToastDismissMode = '';
 
   function getMeasureAssistItems() {
     return [
@@ -8327,18 +8280,6 @@
 
   function isSidebarCollapsedUi() {
     return !!(document.body && document.body.classList.contains('sidebar-collapsed'));
-  }
-
-  function clearModeToastHideTimer() {
-    if (!modeToastHideTimer) return;
-    window.clearTimeout(modeToastHideTimer);
-    modeToastHideTimer = 0;
-  }
-
-  function clearModeToastTransitionTimer() {
-    if (!modeToastTransitionTimer) return;
-    window.clearTimeout(modeToastTransitionTimer);
-    modeToastTransitionTimer = 0;
   }
 
   function positionModeAssistMenu() {
@@ -8432,9 +8373,9 @@
   function openHelp(sourceEl = null) {
     if (!helpOverlay) return;
     helpRestoreFocusEl = sourceEl || document.activeElement || null;
+    hideActiveTooltip();
     helpOverlay.setAttribute('aria-hidden', 'false');
-    const focusables = getHelpFocusableElements();
-    const target = focusables[0] || helpModal;
+    const target = helpModal || getHelpFocusableElements()[0] || null;
     if (target && typeof target.focus === 'function') {
       window.setTimeout(() => {
         try { target.focus({ preventScroll: true }); } catch { try { target.focus(); } catch { } }
@@ -8487,118 +8428,6 @@
       event.preventDefault();
       first.focus();
     }
-  }
-
-  function isModeToastDismissed(mode) {
-    const key = MODE_TOAST_STORAGE_KEYS[mode];
-    if (!key) return false;
-    try {
-      return window.localStorage.getItem(key) === '1';
-    } catch {
-      return false;
-    }
-  }
-
-  function setModeToastDismissed(mode, dismissed) {
-    const key = MODE_TOAST_STORAGE_KEYS[mode];
-    if (!key) return;
-    try {
-      if (dismissed) window.localStorage.setItem(key, '1');
-      else window.localStorage.removeItem(key);
-    } catch { }
-  }
-
-  function resetModeToastDismissals() {
-    for (const key of Object.keys(MODE_TOAST_STORAGE_KEYS)) setModeToastDismissed(key, false);
-    hideModeToast({ immediate: true });
-    setHintMessage('Help toasts reset.', { accent: false });
-  }
-
-  function positionModeToast(anchorEl) {
-    if (!modeToastEl || !anchorEl || typeof anchorEl.getBoundingClientRect !== 'function') return false;
-    const rect = anchorEl.getBoundingClientRect();
-    const toastRect = modeToastEl.getBoundingClientRect();
-    const gap = 10;
-    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
-    const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0));
-    const width = Math.max(1, Math.round(toastRect.width || modeToastEl.offsetWidth || 280));
-    const height = Math.max(1, Math.round(toastRect.height || modeToastEl.offsetHeight || 48));
-    const left = Math.min(Math.max(12, Math.round(rect.left)), Math.max(12, viewportWidth - width - 12));
-    let top = Math.round(rect.bottom + gap);
-    if (top + height > viewportHeight - 12) top = Math.max(12, Math.round(rect.top - height - gap));
-    modeToastEl.style.left = `${left}px`;
-    modeToastEl.style.top = `${top}px`;
-    return true;
-  }
-
-  function hideModeToast(options = {}) {
-    if (!modeToastEl) return;
-    clearModeToastHideTimer();
-    clearModeToastTransitionTimer();
-    modeToastEl.classList.remove('is-visible');
-    if (options.immediate) {
-      modeToastEl.classList.remove('is-hiding');
-      modeToastEl.setAttribute('aria-hidden', 'true');
-      return;
-    }
-    modeToastEl.classList.add('is-hiding');
-    modeToastTransitionTimer = window.setTimeout(() => {
-      modeToastTransitionTimer = 0;
-      if (!modeToastEl) return;
-      modeToastEl.classList.remove('is-hiding');
-      modeToastEl.setAttribute('aria-hidden', 'true');
-    }, 400);
-  }
-
-  function showModeToast(mode, anchorEl, message) {
-    if (!modeToastEl || !modeToastBodyEl) return;
-    if (!message || isModeToastDismissed(mode)) return;
-    modeToastDismissMode = mode;
-    clearModeToastTransitionTimer();
-    modeToastBodyEl.textContent = String(message);
-    modeToastEl.classList.remove('is-hiding');
-    modeToastEl.setAttribute('aria-hidden', 'false');
-    positionModeToast(anchorEl);
-    requestAnimationFrame(() => {
-      if (!modeToastEl || modeToastEl.getAttribute('aria-hidden') === 'true') return;
-      modeToastEl.classList.add('is-visible');
-    });
-    clearModeToastHideTimer();
-    modeToastHideTimer = window.setTimeout(() => {
-      hideModeToast();
-    }, 4000);
-  }
-
-  function getVisibleEditAdaptiveToastAnchor() {
-    const candidates = [
-      editAdaptiveAddAtomBtn,
-      editAdaptiveSymmetryBtn,
-      editAdaptiveCleanStructureBtn,
-      editAdaptiveAlignPrincipalBtn,
-    ];
-    return candidates.find((el) => el && !el.hidden && el.getAttribute('aria-hidden') !== 'true') || null;
-  }
-
-  function showEnteredModeToast(mode) {
-    if (!MODE_TOASTS_ENABLED) return;
-    const message = MODE_TOAST_MESSAGES[mode];
-    if (!message) return;
-    const anchorEl = (() => {
-      if (mode === 'measure') {
-        return isSidebarCollapsedUi()
-          ? (modeAssistItemEls.find((el) => el && !el.hidden && el.getAttribute('aria-hidden') !== 'true') || null)
-          : modeMeasureBtn;
-      }
-      if (mode === 'edit') {
-        return isSidebarCollapsedUi() ? getVisibleEditAdaptiveToastAnchor() : modeEditBtn;
-      }
-      if (mode === 'build') return editAdaptiveAddAtomBtn || modeEditBtn;
-      return null;
-    })();
-    if (!anchorEl) return;
-    requestAnimationFrame(() => {
-      showModeToast(mode, anchorEl, message);
-    });
   }
 
   const viewInspectorRefs = { panel: viewInspector, button: viewInspectorBtn };
@@ -8707,21 +8536,14 @@
   }
   if (vibrationPanelClose) vibrationPanelClose.onclick = () => setVibrationPanelOpen(false);
 
-  if (helpBtn) helpBtn.onclick = () => openHelp(helpBtn);
-  if (helpFab) helpFab.onclick = () => openHelp(helpFab);
+  if (helpBtn) helpBtn.onclick = () => toggleHelp(helpBtn);
+  if (helpFab) helpFab.onclick = () => toggleHelp(helpFab);
   if (helpClose) helpClose.onclick = () => closeHelp();
-  if (helpResetToastsBtn) helpResetToastsBtn.onclick = () => resetModeToastDismissals();
   if (helpOverlay) {
     helpOverlay.addEventListener('click', (e) => {
       if (e.target === helpOverlay) closeHelp();
     });
     helpOverlay.addEventListener('keydown', handleHelpOverlayKeydown);
-  }
-  if (modeToastDismissBtn) {
-    modeToastDismissBtn.onclick = () => {
-      if (modeToastDismissMode) setModeToastDismissed(modeToastDismissMode, true);
-      hideModeToast();
-    };
   }
   displayWindowsController = createDisplayWindowsController({
     menuEl: displayWindowAdaptiveMenuEl,
@@ -15025,7 +14847,6 @@
       preferPayloadSelection: options.preferPayloadSelection !== false,
     });
     updateEditAdaptiveMenuUi();
-    if (!wasOpen) showEnteredModeToast('build');
     if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
   }
 

@@ -2652,7 +2652,18 @@
     </div>
 
     <div class="tb-section tb-actions">
-      <button id="helpBtn" class="secondary" data-tooltip="Help and shortcuts">Help</button>
+      <button id="helpBtn" class="vm-btn vm-btn--ghost vm-btn--sm vm-help-btn"
+        type="button"
+        data-tooltip="Keyboard shortcuts (?)"
+        aria-label="Open keyboard shortcuts">
+        <svg class="vm-btn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <span>Help</span>
+      </button>
     </div>
   </div>
   <button id="toolbarShowBtn" class="secondary ms-icon-button" type="button" data-tooltip="Show sidebar">menu</button>
@@ -3305,7 +3316,6 @@
         </div>
       </section>
     </div>
-    <div id="viewPanelToast" class="vm-toast" aria-live="polite" aria-atomic="true" hidden></div>
   </div>
 
   <div id="coordsPanel" class="motionPanel" aria-hidden="true">
@@ -3408,17 +3418,6 @@
       </div>
       <div id="vibrationModeEmpty">No vibrational modes available for the active file.</div>
     </div>
-  </div>
-
-  <div id="modeToast" class="vm-popover vm-modeToast" aria-hidden="true" role="status" aria-live="polite" aria-atomic="true">
-    <div id="modeToastBody" class="vm-modeToast__body"></div>
-    <button id="modeToastDismiss" class="vm-btn vm-btn--icon vm-modeToast__dismiss" type="button"
-      aria-label="Dismiss this help toast forever" data-tooltip="Dismiss this help toast forever">
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path d="M4 4L12 12"></path>
-        <path d="M12 4L4 12"></path>
-      </svg>
-    </button>
   </div>
 
   <div id="helpOverlay" aria-hidden="true">

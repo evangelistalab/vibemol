@@ -193,6 +193,21 @@
   pointer-events: none;
 }
 
+#toolbar .vm-help-btn {
+  width: 100%;
+  justify-content: flex-start;
+  border-color: transparent;
+  color: var(--vm-color-text-secondary);
+  font-family: var(--vm-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#toolbar .vm-help-btn:hover:not(:disabled) {
+  color: var(--vm-color-text-primary);
+  background: color-mix(in srgb, var(--vm-color-text-primary) 6%, transparent);
+}
+
 .vm-key-pill,
 kbd,
 .adaptiveShortcutKey {
@@ -311,53 +326,6 @@ kbd,
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-emphasis);
   line-height: 1.4;
-}
-
-.vm-helpOverlayReset {
-  white-space: nowrap;
-}
-
-.vm-modeToast {
-  position: fixed;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 240px;
-  max-width: min(360px, calc(100vw - 24px));
-  padding: 8px 10px;
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-  transition: opacity 200ms ease, transform 200ms ease;
-  z-index: 45;
-}
-
-.vm-modeToast[aria-hidden="false"] {
-  pointer-events: auto;
-}
-
-.vm-modeToast.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.vm-modeToast.is-hiding {
-  opacity: 0;
-  transform: translateY(-4px);
-  transition-duration: 400ms;
-}
-
-.vm-modeToast__body {
-  min-width: 0;
-  flex: 1 1 auto;
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-emphasis);
-  color: var(--vm-color-text-primary);
-  line-height: 1.35;
-}
-
-.vm-modeToast__dismiss {
-  flex: 0 0 auto;
 }
 
 #modeAssistMenu .adaptiveEditItem {
@@ -701,28 +669,6 @@ kbd,
 
 .vm-toggle__input:checked+.vm-toggle__thumb {
   left: 18px;
-}
-
-.vm-toast {
-  position: fixed;
-  z-index: 60;
-  padding: 6px 8px;
-  border: 1px solid var(--vm-color-border);
-  border-radius: var(--vm-radius-sm);
-  background: var(--vm-color-surface-raised);
-  color: var(--vm-color-text-primary);
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-emphasis);
-  box-shadow: var(--vm-shadow-md);
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 150ms ease, transform 150ms ease;
-}
-
-.vm-toast.is-visible {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .vm-copy.is-copied {
