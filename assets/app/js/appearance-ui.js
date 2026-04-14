@@ -2,100 +2,84 @@
   'use strict';
 
   function createAppearanceInspectorController(deps) {
-    const documentRef = global.document;
-    const displayInspectorEl = deps && deps.displayInspectorEl ? deps.displayInspectorEl : null;
-    const styleChipEls = Array.isArray(deps && deps.styleChipEls) ? deps.styleChipEls : [];
-    const actionToggleButtonEls = Array.isArray(deps && deps.actionToggleButtonEls) ? deps.actionToggleButtonEls : [];
     const surfacesSectionEl = deps && deps.surfacesSectionEl ? deps.surfacesSectionEl : null;
     const twoComponentSectionEl = deps && deps.twoComponentSectionEl ? deps.twoComponentSectionEl : null;
     const cloudSectionEl = deps && deps.cloudSectionEl ? deps.cloudSectionEl : null;
-    const fontPairButtonEls = Array.isArray(deps && deps.fontPairButtonEls) ? deps.fontPairButtonEls : [];
-    const toggleMultiBondsInput = deps && deps.toggleMultiBondsInput ? deps.toggleMultiBondsInput : null;
-    const elementColorsInput = deps && deps.elementColorsInput ? deps.elementColorsInput : null;
-    const visibilityElementColorsToggleInput = deps && deps.visibilityElementColorsToggleInput ? deps.visibilityElementColorsToggleInput : null;
-    const normalizeStyleKey = deps && deps.normalizeStyleKey;
-    const onStyleChipSelected = deps && deps.onStyleChipSelected;
-    const getActiveStyle = deps && deps.getActiveStyle;
     const getCurrentVolume = deps && deps.getCurrentVolume;
     const getRenderMode = deps && deps.getRenderMode;
     const hasSurfaceControls = deps && deps.hasSurfaceControls;
-    const getShowMultiBonds = deps && deps.getShowMultiBonds;
+    const normalizeStyleKey = deps && deps.normalizeStyleKey;
+    const getActiveStyle = deps && deps.getActiveStyle;
+    const styleGroupEl = deps && deps.styleGroupEl ? deps.styleGroupEl : null;
+    const onStyleSelected = typeof (deps && deps.onStyleSelected) === 'function' ? deps.onStyleSelected : null;
+    const fontPairGroupEl = deps && deps.fontPairGroupEl ? deps.fontPairGroupEl : null;
     const getFontPair = typeof (deps && deps.getFontPair) === 'function' ? deps.getFontPair : null;
     const onFontPairSelected = typeof (deps && deps.onFontPairSelected) === 'function' ? deps.onFontPairSelected : null;
+    const buttonGroups = Array.isArray(deps && deps.buttonGroups) ? deps.buttonGroups.slice() : [];
+    const mirrorToggles = Array.isArray(deps && deps.mirrorToggles) ? deps.mirrorToggles.slice() : [];
 
-    if (typeof normalizeStyleKey !== 'function' || typeof onStyleChipSelected !== 'function' || typeof getActiveStyle !== 'function') {
-      throw new Error('VibeMolAppearanceUi requires style normalization and chip selection callbacks.');
-    }
     if (typeof getCurrentVolume !== 'function' || typeof getRenderMode !== 'function' || typeof hasSurfaceControls !== 'function') {
       throw new Error('VibeMolAppearanceUi requires section state readers.');
     }
 
-    const surfaceToggleButtonEl = displayInspectorEl
-      ? displayInspectorEl.querySelector('.inspectorActionToggle[data-toggle-input="surfBtn"]')
-      : null;
-
-    function getActionToggleInput(buttonEl) {
-      if (!buttonEl || !buttonEl.dataset || !documentRef) return null;
-      const inputId = String(buttonEl.dataset.toggleInput || '').trim();
-      if (!inputId) return null;
-      const inputEl = documentRef.getElementById(inputId);
-      return inputEl && inputEl.tagName === 'INPUT' ? inputEl : null;
+    function getGroupButtons(rootEl) {
+      return rootEl ? Array.from(rootEl.querySelectorAll('.vm-button-group__item[data-value]')) : [];
     }
 
-    function isInvertedActionToggle(buttonEl) {
-      return !!(buttonEl && buttonEl.dataset && buttonEl.dataset.toggleInvert === 'true');
+    function syncButtonGroup(group) {
+      if (!group || !group.rootEl) return;
+      const buttons = getGroupButtons(group.rootEl);
+      if (!buttons.length) return;
+      const currentValue = String(typeof group.getValue === 'function' ? group.getValue() : '').trim();
+      const disabledValues = typeof group.getDisabledValues === 'function'
+        ? new Set(Array.from(group.getDisabledValues() || []).map((value) => String(value).trim()))
+        : null;
+      const groupDisabled = !!(typeof group.isDisabled === 'function' && group.isDisabled());
+      for (const buttonEl of buttons) {
+        const value = String(buttonEl.dataset.value || '').trim();
+        const active = value === currentValue;
+        const disabled = groupDisabled || (disabledValues ? disabledValues.has(value) : false);
+        buttonEl.setAttribute('aria-checked', active ? 'true' : 'false');
+        buttonEl.classList.toggle('active', active);
+        buttonEl.disabled = disabled;
+        buttonEl.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+      }
     }
 
-    function syncMirrorInputs() {
-      if (toggleMultiBondsInput && typeof getShowMultiBonds === 'function') {
-        toggleMultiBondsInput.checked = !!getShowMultiBonds();
-      }
-      if (visibilityElementColorsToggleInput) {
-        visibilityElementColorsToggleInput.checked = !!(elementColorsInput && elementColorsInput.checked);
-      }
+    function syncAllButtonGroups() {
+      for (const group of buttonGroups) syncButtonGroup(group);
+    }
+
+    function syncMirrorToggle(toggle) {
+      if (!(toggle && toggle.inputEl)) return;
+      const checked = !!(typeof toggle.getChecked === 'function' ? toggle.getChecked() : toggle.inputEl.checked);
+      const disabled = !!(typeof toggle.isDisabled === 'function' ? toggle.isDisabled() : toggle.inputEl.disabled);
+      toggle.inputEl.checked = checked;
+      toggle.inputEl.disabled = disabled;
+      toggle.inputEl.setAttribute('aria-checked', checked ? 'true' : 'false');
+      toggle.inputEl.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    }
+
+    function syncMirrorToggles() {
+      for (const toggle of mirrorToggles) syncMirrorToggle(toggle);
     }
 
     function syncStyleState(nextStyle = undefined) {
-      if (!styleChipEls.length) return;
+      if (!styleGroupEl || typeof normalizeStyleKey !== 'function' || typeof getActiveStyle !== 'function') return;
       const activeStyle = normalizeStyleKey(nextStyle == null ? getActiveStyle() : nextStyle);
-      for (const chipEl of styleChipEls) {
-        const chipStyle = normalizeStyleKey(chipEl && chipEl.dataset ? chipEl.dataset.style : '');
-        const active = chipStyle === activeStyle;
-        chipEl.classList.toggle('active', active);
-        chipEl.setAttribute('aria-pressed', active ? 'true' : 'false');
-      }
-    }
-
-    function syncActionToggleButton(buttonEl) {
-      const inputEl = getActionToggleInput(buttonEl);
-      if (!buttonEl || !inputEl) return;
-      const checked = isInvertedActionToggle(buttonEl) ? !inputEl.checked : !!inputEl.checked;
-      const disabled = !!inputEl.disabled;
-      const stateEl = buttonEl.querySelector('.inspectorActionToggleState');
-      buttonEl.classList.toggle('active', checked);
-      buttonEl.setAttribute('aria-pressed', checked ? 'true' : 'false');
-      buttonEl.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-      buttonEl.toggleAttribute('disabled', disabled);
-      if (inputEl.title) buttonEl.title = inputEl.title;
-      if (stateEl) stateEl.textContent = checked ? 'On' : 'Off';
-    }
-
-    function syncActionToggles() {
-      syncMirrorInputs();
-      for (const buttonEl of actionToggleButtonEls) {
-        syncActionToggleButton(buttonEl);
-      }
+      syncButtonGroup({
+        rootEl: styleGroupEl,
+        getValue: () => activeStyle,
+      });
     }
 
     function syncFontPairState(nextFontPair = undefined) {
-      if (!fontPairButtonEls.length || !getFontPair) return;
-      const activeFontPair = String(nextFontPair == null ? getFontPair() : nextFontPair || 'geist').trim().toLowerCase() || 'geist';
-      for (const buttonEl of fontPairButtonEls) {
-        const buttonFontPair = String(buttonEl && buttonEl.dataset ? buttonEl.dataset.fontPair || '' : '').trim().toLowerCase();
-        const active = buttonFontPair === activeFontPair;
-        buttonEl.setAttribute('aria-checked', active ? 'true' : 'false');
-        buttonEl.classList.toggle('active', active);
-      }
+      if (!fontPairGroupEl || !getFontPair) return;
+      const active = String(nextFontPair == null ? getFontPair() : nextFontPair || 'geist').trim().toLowerCase() || 'geist';
+      syncButtonGroup({
+        rootEl: fontPairGroupEl,
+        getValue: () => active,
+      });
     }
 
     function syncSections(vol = undefined, renderMode = undefined) {
@@ -104,72 +88,91 @@
       const hasSurfaceSection = !!hasSurfaceControls(activeVol);
       const showTwoComponent = !!(hasSurfaceSection && activeVol && activeVol.isTwoComponent);
       const showCloudOptions = !!(hasSurfaceSection && activeRenderMode === 'cloud');
-      if (surfacesSectionEl) {
-        surfacesSectionEl.hidden = !hasSurfaceSection;
-        if (!hasSurfaceSection) surfacesSectionEl.open = false;
-      }
-      if (surfaceToggleButtonEl) {
-        surfaceToggleButtonEl.style.display = hasSurfaceSection ? '' : 'none';
-      }
-      if (twoComponentSectionEl) {
-        twoComponentSectionEl.hidden = !showTwoComponent;
-        if (!showTwoComponent) twoComponentSectionEl.open = false;
-      }
-      if (cloudSectionEl) {
-        cloudSectionEl.hidden = !showCloudOptions;
-        if (!showCloudOptions) cloudSectionEl.open = false;
-      }
-      syncActionToggles();
+      if (surfacesSectionEl) surfacesSectionEl.hidden = !hasSurfaceSection;
+      if (twoComponentSectionEl) twoComponentSectionEl.hidden = !showTwoComponent;
+      if (cloudSectionEl) cloudSectionEl.hidden = !showCloudOptions;
+      syncMirrorToggles();
+      syncAllButtonGroups();
+    }
+
+    function syncActionToggles() {
+      syncMirrorToggles();
+      syncAllButtonGroups();
     }
 
     function syncAll(vol = undefined, renderMode = undefined, style = undefined) {
       syncStyleState(style);
       syncSections(vol, renderMode);
-      syncActionToggles();
+      syncMirrorToggles();
+      syncAllButtonGroups();
       syncFontPairState();
     }
 
-    for (const chipEl of styleChipEls) {
-      chipEl.addEventListener('click', () => {
-        const nextStyle = chipEl && chipEl.dataset ? chipEl.dataset.style : '';
-        if (!nextStyle) return;
-        onStyleChipSelected(nextStyle);
+    for (const group of buttonGroups) {
+      const buttons = getGroupButtons(group.rootEl);
+      for (const buttonEl of buttons) {
+        buttonEl.addEventListener('click', () => {
+          if (buttonEl.disabled || typeof group.setValue !== 'function') {
+            syncButtonGroup(group);
+            return;
+          }
+          const nextValue = String(buttonEl.dataset.value || '').trim();
+          if (!nextValue) {
+            syncButtonGroup(group);
+            return;
+          }
+          group.setValue(nextValue);
+          syncButtonGroup(group);
+        });
+      }
+    }
+
+    for (const toggle of mirrorToggles) {
+      if (!(toggle && toggle.inputEl)) continue;
+      toggle.inputEl.addEventListener('change', () => {
+        if (toggle.inputEl.disabled || typeof toggle.setChecked !== 'function') {
+          syncMirrorToggle(toggle);
+          return;
+        }
+        toggle.setChecked(!!toggle.inputEl.checked);
+        syncMirrorToggle(toggle);
       });
     }
 
-    for (const buttonEl of actionToggleButtonEls) {
-      buttonEl.addEventListener('click', () => {
-        const inputEl = getActionToggleInput(buttonEl);
-        if (!inputEl || inputEl.disabled) {
-          syncActionToggleButton(buttonEl);
-          return;
-        }
-        const currentVisibleState = isInvertedActionToggle(buttonEl) ? !inputEl.checked : !!inputEl.checked;
-        const nextVisibleState = !currentVisibleState;
-        inputEl.checked = isInvertedActionToggle(buttonEl) ? !nextVisibleState : nextVisibleState;
-        if (typeof inputEl.onchange === 'function') {
-          inputEl.onchange();
-        } else {
-          inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-        syncActionToggleButton(buttonEl);
-      });
+    if (fontPairGroupEl && onFontPairSelected) {
+      for (const buttonEl of getGroupButtons(fontPairGroupEl)) {
+        buttonEl.addEventListener('click', () => {
+          if (buttonEl.disabled) {
+            syncFontPairState();
+            return;
+          }
+          const nextValue = String(buttonEl.dataset.value || '').trim().toLowerCase();
+          if (!nextValue) {
+            syncFontPairState();
+            return;
+          }
+          onFontPairSelected(nextValue);
+          syncFontPairState(nextValue);
+        });
+      }
     }
 
-    for (const buttonEl of fontPairButtonEls) {
-      buttonEl.addEventListener('click', () => {
-        if (!onFontPairSelected) {
-          syncFontPairState();
-          return;
-        }
-        const nextFontPair = String(buttonEl && buttonEl.dataset ? buttonEl.dataset.fontPair || '' : '').trim().toLowerCase();
-        if (!nextFontPair) {
-          syncFontPairState();
-          return;
-        }
-        onFontPairSelected(nextFontPair);
-        syncFontPairState(nextFontPair);
-      });
+    if (styleGroupEl && onStyleSelected) {
+      for (const buttonEl of getGroupButtons(styleGroupEl)) {
+        buttonEl.addEventListener('click', () => {
+          if (buttonEl.disabled) {
+            syncStyleState();
+            return;
+          }
+          const nextValue = String(buttonEl.dataset.value || '').trim();
+          if (!nextValue) {
+            syncStyleState();
+            return;
+          }
+          onStyleSelected(nextValue);
+          syncStyleState(nextValue);
+        });
+      }
     }
 
     return Object.freeze({

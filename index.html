@@ -36,6 +36,7 @@
     })();
   </script>
   <link rel="stylesheet" href="src/styles/tokens.css" />
+  <link rel="stylesheet" href="src/styles/vm-tooltip.css" />
   <link rel="stylesheet" href="assets/app/css/palette.css" />
   <link rel="stylesheet" href="assets/app/css/edit-ui.css" />
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
@@ -223,38 +224,6 @@
       line-height: 1.1;
     }
 
-    [data-tooltip] {
-      position: relative;
-    }
-
-    [data-tooltip]::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      top: calc(100% + 8px);
-      left: 50%;
-      transform: translate(-50%, -2px);
-      opacity: 0;
-      padding: 6px;
-      border-radius: var(--vm-radius-sm);
-      background: var(--vm-color-surface-raised);
-      color: var(--vm-color-text-primary);
-      font-family: var(--vm-font-sans);
-      font-size: var(--vm-text-xs);
-      font-weight: var(--vm-font-weight-emphasis);
-      line-height: 1.2;
-      white-space: nowrap;
-      box-shadow: var(--vm-shadow-sm);
-      pointer-events: none;
-      z-index: 60;
-      transition: opacity 150ms ease, transform 150ms ease;
-    }
-
-    [data-tooltip]:hover::after,
-    [data-tooltip]:focus-visible::after {
-      opacity: 1;
-      transform: translate(-50%, 0);
-    }
-
     .vm-section-label {
       font-size: var(--vm-text-xs);
       font-weight: var(--vm-font-weight-heading);
@@ -360,17 +329,61 @@
       padding: 0 8px;
     }
 
-    #toolbar #fileSelect {
-      min-width: 180px;
-      max-width: 280px;
+    #toolbar .tb-inline.tb-inline--file {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--vm-color-surface-base);
+      min-height: 28px;
+    }
+
+    #toolbar .tb-inline--file .vm-file-chip__label {
+      min-width: 0;
+      flex: 1 1 auto;
+      color: var(--vm-color-text-primary);
       font-family: var(--vm-font-mono);
+      font-size: 12px;
+      font-weight: 500;
       font-variant-numeric: tabular-nums;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    #toolbar #fileSelect {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      background-image: none;
+      box-shadow: none;
+      color: transparent;
+      appearance: none;
+      -webkit-appearance: none;
+      opacity: 0;
+      cursor: default;
+    }
+
+    #toolbar #fileSelect[data-interactive='true'] {
+      cursor: pointer;
     }
 
     #toolbar #fileSelect option {
       font-family: var(--vm-font-mono);
-      font-size: var(--vm-text-base);
-      font-weight: var(--vm-font-weight-emphasis);
+      font-size: 12px;
+      font-weight: 500;
       font-variant-numeric: tabular-nums;
     }
 
@@ -545,105 +558,6 @@
       color: var(--vm-color-utility-overlay-fg-hover);
     }
 
-    #displayInspector {
-      position: fixed;
-      top: 56px;
-      left: 10px;
-      right: 10px;
-      display: none;
-      gap: 10px;
-      z-index: 31;
-      background: var(--vm-color-surface-raised);
-      border: 1px solid var(--vm-color-border-subtle);
-      border-radius: 12px;
-      box-shadow: var(--vm-shadow-lg);
-      padding: 10px;
-      grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
-    }
-
-    #displayInspector.open {
-      display: grid;
-    }
-
-    #displayInspector .inspectorGroup {
-      border: 1px solid var(--vm-color-border-subtle);
-      border-radius: 10px;
-      padding: 8px;
-      background: var(--vm-color-surface-panel);
-      min-width: 0;
-    }
-
-    #displayInspector .inspectorTitle {
-      color: var(--tb-text-color-emphasis);
-      font-size: var(--vm-text-sm);
-      font-weight: var(--vm-font-weight-heading);
-      margin-bottom: 8px;
-    }
-
-    #displayInspector .inspectorRow {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 7px;
-    }
-
-    #displayInspector .inspectorRow:last-child {
-      margin-bottom: 0;
-    }
-
-    #displayInspector label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--vm-color-text-secondary);
-      font-size: var(--vm-text-sm);
-      white-space: nowrap;
-    }
-
-    #displayInspector input[type="number"] {
-      width: 76px;
-      height: 28px;
-      border: 1px solid var(--vm-color-border-input);
-      border-radius: 8px;
-      background: var(--vm-color-surface-input);
-      color: var(--vm-color-text-primary);
-      padding: 0 8px;
-    }
-
-    #displayInspector input[type="range"] {
-      width: 180px;
-    }
-
-    #displayInspector input[type="color"] {
-      width: 28px;
-      height: 28px;
-      border: 1px solid var(--vm-color-border-input);
-      border-radius: 7px;
-      background: transparent;
-      padding: 0;
-    }
-
-    #displayInspector .toggleRow {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(90px, 1fr));
-      gap: 6px;
-    }
-
-    #displayInspector .toggleChip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: 1px solid var(--vm-color-border-input);
-      border-radius: 8px;
-      padding: 6px 8px;
-      background: var(--vm-color-surface-panel);
-      color: var(--vm-color-text-primary);
-      box-shadow: var(--vm-shadow-sm);
-      font-size: var(--vm-text-sm);
-      user-select: none;
-    }
-
     @media (max-width: 1260px) {
       #toolbar {
         grid-template-columns: 1fr;
@@ -658,9 +572,6 @@
         justify-content: flex-start;
       }
 
-      #displayInspector {
-        grid-template-columns: 1fr;
-      }
     }
 
     #drop {
@@ -840,6 +751,15 @@
       margin-bottom: 0;
     }
 
+    #vibrationRow2 {
+      grid-template-columns: max-content minmax(72px, 76px) max-content minmax(84px, 88px) 1fr !important;
+      column-gap: 8px;
+    }
+
+    #vibrationRow2 > * {
+      min-width: 0;
+    }
+
     .motionPanelBody label {
       color: var(--vm-color-text-secondary);
       font-size: var(--vm-text-sm);
@@ -848,6 +768,8 @@
 
     .motionPanelBody input[type="number"] {
       width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       padding: 3px 6px;
       background: var(--vm-color-surface-panel);
       color: var(--text);
@@ -1542,7 +1464,7 @@
 
     /* --- Workspace Sidebar (Figma-like left dock) --- */
     body {
-      --workspace-sidebar-width: 200px;
+      --workspace-sidebar-width: 320px;
       --workspace-left-offset: var(--workspace-sidebar-width);
       --vibration-panel-bottom-clearance: 52px;
       --toolbar-divider: var(--vm-color-toolbar-divider);
@@ -1791,8 +1713,9 @@
       width: 100%;
       display: flex;
       align-items: center;
-      gap: 2px;
+      gap: 8px;
       min-width: 0;
+      flex-wrap: nowrap;
     }
 
     #toolbar button.secondary,
@@ -1904,12 +1827,12 @@
       background: transparent;
     }
 
-    #toolbar .tb-iconActions {
-      display: grid;
-      grid-template-columns: repeat(4, 28px);
-      gap: 2px;
-      align-items: center;
-      justify-content: flex-start;
+    #toolbar .vm-toolbar-divider {
+      flex: 0 0 auto;
+      width: 1px;
+      height: 16px;
+      margin: 0 4px;
+      background: var(--vm-color-border-strong);
     }
 
     #toolbar .tb-iconBtn {
@@ -1935,54 +1858,6 @@
       color: var(--tb-text-color-strong) !important;
     }
 
-    #toolbarTooltip {
-      position: fixed;
-      left: -9999px;
-      top: -9999px;
-      min-width: 176px;
-      max-width: min(260px, calc(100vw - 16px));
-      padding: 6px 8px;
-      border-radius: var(--tb-radius-tight);
-      background: var(--tb-tooltip-bg);
-      color: var(--tb-text-color-tooltip);
-      font-size: var(--tb-text-size-meta);
-      font-weight: var(--tb-text-weight-semibold);
-      font-family: var(--tb-font-family);
-      line-height: 1.3;
-      letter-spacing: normal;
-      text-align: left;
-      white-space: normal;
-      pointer-events: none;
-      z-index: 1200;
-      box-shadow: 0 3px 10px var(--vm-color-toolbar-tooltip-shadow);
-      opacity: 0;
-      transition: opacity 80ms linear;
-    }
-
-    #toolbarTooltip.open {
-      opacity: 1;
-    }
-
-    #toolbarTooltip::before {
-      content: "";
-      position: absolute;
-      left: -5px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 0;
-      height: 0;
-      border-top: 5px solid transparent;
-      border-bottom: 5px solid transparent;
-      border-right: 5px solid var(--tb-tooltip-bg);
-    }
-
-    #toolbarTooltip[data-side="left"]::before {
-      left: auto;
-      right: -5px;
-      border-right: none;
-      border-left: 5px solid var(--tb-tooltip-bg);
-    }
-
     #openBtn {
       align-self: auto;
     }
@@ -1998,9 +1873,7 @@
     #toolbar,
     #toolbar .tb-section,
     #toolbar .tb-field,
-    #toolbar #displayInspector,
-    #toolbar #displayInspector .inspectorRow,
-    #toolbar #displayInspector .toggleRow {
+    #toolbar #displayInspector .inspectorRow {
       text-align: left;
       justify-items: start;
     }
@@ -2170,187 +2043,6 @@
       box-shadow: none;
     }
 
-
-    #toolbar #displayInspector label[for="opacity"],
-    #toolbar #displayInspector label.opacityField {
-      min-width: 0;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-    }
-
-    #toolbar #displayInspector #opacity {
-      flex: 0 0 41%;
-      width: 41%;
-      min-width: 52px;
-      max-width: 41%;
-    }
-
-    #toolbar #displayInspector .opacityPercent {
-      min-width: 42px;
-      text-align: right;
-      color: var(--tb-text-color-emphasis);
-      font-weight: var(--tb-text-weight-bold);
-      font-variant-numeric: tabular-nums;
-    }
-
-    #toolbar #displayInspector .toggleRow {
-      grid-template-columns: repeat(2, minmax(110px, 1fr));
-    }
-
-    #toolbar #displayInspector .colorPickerRow {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 6px;
-      margin-top: 2px;
-    }
-
-    #toolbar #displayInspector .colorPickerWrap {
-      width: 100%;
-      min-width: 0;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    #toolbar #displayInspector .colorPickerTag {
-      flex: 0 0 20px;
-      color: var(--tb-text-color-chip);
-      font-weight: var(--tb-text-weight-bold);
-      font-size: var(--tb-text-size-label);
-      text-align: center;
-    }
-
-    #toolbar #displayInspector .colorPickerField {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex: 1 1 auto;
-      min-width: 0;
-      height: 30px;
-      padding: 0 10px;
-      border-radius: var(--tb-radius-tight);
-      background: var(--tb-surface-emphasis);
-      color: var(--tb-text-color-icon);
-      overflow: hidden;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    #toolbar #displayInspector .colorPickerField input[type="color"] {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      border: none;
-      padding: 0;
-      margin: 0;
-      cursor: pointer;
-      z-index: 2;
-    }
-
-    #toolbar #displayInspector .colorPickerSwatch {
-      flex: 0 0 18px;
-      width: 18px;
-      height: 18px;
-      border-radius: var(--tb-radius-tight);
-      box-shadow: inset 0 0 0 1px var(--tb-swatch-outline);
-      pointer-events: none;
-    }
-
-    #toolbar #displayInspector .colorPickerHex {
-      color: var(--tb-text-color-code);
-      font-weight: var(--tb-text-weight-bold);
-      font-size: var(--tb-text-size-meta);
-      font-variant-numeric: tabular-nums;
-      pointer-events: none;
-      text-transform: uppercase;
-    }
-
-    #toolbar #displayInspector .toggleChip {
-      border: none;
-      background: transparent;
-      color: var(--tb-text-color-chip-muted);
-      border-radius: 0;
-      padding: 2px 0;
-    }
-
-    #toolbar #displayInspector .toggleChip input[type="checkbox"] {
-      accent-color: var(--vm-brand-accent);
-    }
-
-    #toolbar #displayInspector .isoField {
-      display: inline-flex;
-      align-items: center;
-      height: 32px;
-      border-radius: var(--tb-radius-tight);
-      overflow: hidden;
-      background: var(--tb-surface-emphasis);
-      color: var(--tb-text-color-icon);
-      font-weight: var(--tb-text-weight-bold);
-    }
-
-    #toolbar #displayInspector .isoRow {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    #toolbar #displayInspector .isoRow .isoField {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    #toolbar #displayInspector .isoAutoBtn {
-      width: 32px;
-      min-width: 32px;
-      max-width: 32px;
-      height: 32px;
-      padding: 0;
-      border-radius: var(--tb-radius-tight);
-      background: var(--tb-surface-emphasis) !important;
-      color: var(--tb-text-color-icon) !important;
-      font-size: 20px;
-      font-weight: var(--tb-text-weight-regular);
-      line-height: 1;
-      justify-content: center !important;
-      text-align: center !important;
-    }
-
-    #toolbar #displayInspector .isoAutoBtn.active,
-    #toolbar #displayInspector .isoAutoBtn[aria-pressed="true"] {
-      background: var(--tb-color-accent) !important;
-      color: var(--tb-text-color-inverse) !important;
-      box-shadow: inset 0 0 0 1px var(--tb-color-accent-outline);
-    }
-
-    #toolbar #displayInspector .isoField .isoTag {
-      display: inline-flex;
-      align-items: center;
-      height: 100%;
-      padding: 0 10px;
-      background: var(--tb-surface-emphasis);
-      color: var(--tb-text-color-icon);
-    }
-
-    #toolbar #displayInspector .isoField input[type="number"] {
-      width: 87px;
-      min-width: 87px;
-      height: 100%;
-      border: none;
-      outline: none;
-      box-shadow: none;
-      border-radius: 0;
-      background: var(--tb-surface-emphasis);
-      color: var(--tb-text-color-icon);
-      padding: 0 10px 0 6px;
-      font-weight: var(--tb-text-weight-bold);
-    }
-
     #drop {
       top: 0;
       left: var(--workspace-left-offset);
@@ -2397,13 +2089,13 @@
   <div id="topRightUtilities" aria-label="Global utilities">
     <div id="topRightUtilitiesReveal">
       <a id="githubRepoLink" class="topRightUtilityLink" href="https://github.com/evangelistalab/vibemol" target="_blank"
-        rel="noopener noreferrer" aria-label="Open VibeMol GitHub repository" title="Open VibeMol on GitHub">
+        rel="noopener noreferrer" aria-label="Open VibeMol GitHub repository" data-tooltip="Open VibeMol on GitHub">
         <svg class="topRightUtilityGithubMark" viewBox="0 0 16 16" aria-hidden="true">
           <path
             d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82a7.66 7.66 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.09.16 1.9.08 2.1.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
         </svg>
       </a>
-      <label id="themeToggleShell" class="themeToggleShell" title="Theme toggle placeholder">
+      <label id="themeToggleShell" class="themeToggleShell" data-tooltip="Theme toggle placeholder">
         <input id="themeToggleInput" type="checkbox" />
         <span class="themeToggleTrack" aria-hidden="true">
           <span class="themeToggleKnob"></span>
@@ -2429,490 +2121,546 @@
           <span id="toolbarVersion" class="tb-versionBadge vm-versionBadge" aria-label="VibeMol version">v0.0.0</span>
         </div>
         <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button"
-          title="Hide sidebar">chevron_left</button>
+          data-tooltip="Hide sidebar">chevron_left</button>
       </div>
     </div>
 
     <div class="tb-section tb-main tb-modes">
       <div id="toolbarModeRow" role="group" aria-label="Interaction mode">
         <button id="modeDisplayBtn" class="secondary tb-modeBtn" type="button" aria-label="Display mode"
-          title="Display mode"
-          data-tip="Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.">View</button>
+          data-tooltip="Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.">View</button>
         <button id="modeMeasureBtn" class="secondary tb-modeBtn" type="button" aria-label="Measurement mode"
-          title="Measurement mode"
-          data-tip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure</button>
-        <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode" title="Edit mode"
-          data-tip="Edit mode: move/add/delete atoms. Shortcut: E">Edit</button>
+          data-tooltip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure</button>
+        <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode"
+          data-tooltip="Edit mode: move/add/delete atoms. Shortcut: E">Edit</button>
       </div>
     </div>
 
     <div class="tb-section tb-file">
-      <div class="tb-fileActionRow">
-        <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" title="Open files"
-          aria-label="Open files"
-          data-tooltip="Open files (.xyz, .molden, .cube, .2ccube, .vib.json, .hess)">upload_file</button>
-        <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Create new file"
-          aria-label="Create new file"
-          data-tooltip="Create a new empty editable file">note_add</button>
-        <div class="tb-iconActions">
-          <button id="saveBtn" class="secondary tb-iconBtn ms-icon-button"
-            title="Save PNG image" aria-label="Save PNG image"
-            data-tooltip="Save the current view as a PNG image. Shortcut: S">image</button>
-          <button id="batchBtn" class="secondary tb-iconBtn ms-icon-button" title="Batch export PNG images"
-            aria-label="Batch export PNG images"
-            data-tooltip="Export all loaded files as PNG images. Shortcut: B">photo_library</button>
-          <button id="savePresetBtn" class="secondary tb-iconBtn ms-icon-button"
-            title="Download preset JSON" aria-label="Download preset JSON"
-            data-tooltip="Download current visualization preset as JSON">tune</button>
-          <button id="saveStructureBtn" class="secondary tb-iconBtn ms-icon-button"
-            title="Download structure JSON" aria-label="Download structure JSON"
-            data-tooltip="Download current structure as reproducible JSON">file_download</button>
-        </div>
+      <div class="tb-fileActionRow" aria-label="Primary toolbar actions">
+        <button id="openBtn" class="secondary tb-iconBtn ms-icon-button"
+          aria-label="Open file"
+          data-tooltip="Open file">upload_file</button>
+        <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button"
+          aria-label="Add file"
+          data-tooltip="Add file">note_add</button>
+        <span class="vm-toolbar-divider" aria-hidden="true"></span>
+        <button id="saveBtn" class="secondary tb-iconBtn ms-icon-button"
+          aria-label="Export image"
+          data-tooltip="Export image">image</button>
+        <button id="batchBtn" class="secondary tb-iconBtn ms-icon-button"
+          aria-label="Export image set"
+          data-tooltip="Export image set">photo_library</button>
+        <span class="vm-toolbar-divider" aria-hidden="true"></span>
+        <button id="savePresetBtn" class="secondary tb-iconBtn ms-icon-button"
+          aria-label="Download preset"
+          data-tooltip="Download preset">tune</button>
+        <button id="saveStructureBtn" class="secondary tb-iconBtn ms-icon-button"
+          aria-label="Download structure"
+          data-tooltip="Download structure">file_download</button>
       </div>
       <div class="tb-field">
         <label for="fileSelect">Active file</label>
-        <div class="tb-inline">
-          <select id="fileSelect" class="vm-select"></select>
+        <div class="tb-inline tb-inline--file">
+          <span id="fileSelectDisplay" class="vm-file-chip__label">No file loaded</span>
+          <select id="fileSelect" class="vm-select" aria-label="Active file"></select>
         </div>
         <div class="tb-fileRecordActions" aria-label="Active file actions">
-          <button id="duplicateFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Duplicate active file"
-            aria-label="Duplicate active file" data-tip="Duplicate active file">content_copy</button>
-          <button id="removeFileBtn" class="secondary tb-iconBtn ms-icon-button" title="Remove active file"
-            aria-label="Remove active file" data-tip="Remove active file">delete</button>
+          <button id="duplicateFileBtn" class="secondary tb-iconBtn ms-icon-button"
+            aria-label="Duplicate active file" data-tooltip="Duplicate active file">content_copy</button>
+          <button id="removeFileBtn" class="secondary tb-iconBtn ms-icon-button"
+            aria-label="Remove active file" data-tooltip="Remove active file">delete</button>
         </div>
       </div>
       <label class="tb-field">PubChem
         <span class="tb-inline">
           <input type="text" id="pubchemQuery" class="pubchem-query" placeholder="Search (e.g. ben)"
-            title="Type a compound name. Suggestions are filtered to PubChem entries with 3D structures."
+            data-tooltip="Type a compound name. Suggestions are filtered to PubChem entries with 3D structures."
             list="pubchemSuggestions" autocomplete="off" />
           <button id="pubchemLoadBtn" class="secondary ms-icon-button"
-            title="Search PubChem and load the selected molecule" aria-label="Load from PubChem">arrow_downward</button>
+            data-tooltip="Search PubChem and load the selected molecule" aria-label="Load from PubChem">arrow_downward</button>
         </span>
       </label>
       <div id="pubchemMetaWrap" style="display:none;">
         <div id="pubchemMetaTitle">PubChem metadata</div>
         <div id="pubchemMetaContent"></div>
       </div>
-      <button id="clearBtn" class="secondary" title="Clear all loaded cubes">Clear files</button>
+      <button id="clearBtn"
+        class="vm-btn vm-btn--ghost vm-btn--danger vm-btn--sm vm-clear-files"
+        type="button"
+        aria-label="Remove all loaded files"
+        data-tooltip="Remove all loaded files"
+        disabled>
+        <svg class="vm-btn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+        </svg>
+        <span>Clear files</span>
+      </button>
     </div>
 
     <div class="tb-section tb-main tb-appearance tb-framed">
-      <button id="displayInspectorBtn" class="secondary tb-inspectorBtn" title="Show/hide compact display inspector">
+      <button id="displayInspectorBtn" class="secondary tb-inspectorBtn vm-sidebar__section-header" data-tooltip="Show/hide compact display inspector">
         <span>Appearance</span><span id="displayInspectorToggleIcon"
           class="material-symbols-outlined tb-inspectorToggleIcon">add</span>
       </button>
       <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields" aria-hidden="true">
-        <div class="inspectorGroup inspectorQuickStyleGroup">
-          <div class="appearanceQuickStyleHeader">
-            <div class="inspectorTitle">Quick style</div>
-          </div>
-          <div class="appearanceStyleChipRow" role="group" aria-label="Quick molecule styles">
-            <button type="button" class="appearanceStyleChip" data-style="default" aria-pressed="true">Default</button>
-            <button type="button" class="appearanceStyleChip" data-style="toon" aria-pressed="false">Toon</button>
-            <button type="button" class="appearanceStyleChip" data-style="kit" aria-pressed="false">Kit</button>
-          </div>
-          <div class="appearanceQuickBgRow">
-            <label class="appearanceQuickBg" for="bgColor">
-              <span class="colorPickerWrap">
-                <span class="colorPickerTag">BG</span>
-                <span class="colorPickerField appearanceQuickBgField">
-                  <input type="color" id="bgColor" value="#ffffff" aria-label="Background color" />
-                  <span class="colorPickerSwatch" id="bgColorSwatch" aria-hidden="true"></span>
-                  <span class="colorPickerHex" id="bgColorHex">FFFFFF</span>
-                </span>
-              </span>
-            </label>
-          </div>
-          <div class="appearanceHiddenControl" aria-hidden="true">
-            <label for="moleculeStyle">Style</label>
-            <select id="moleculeStyle" class="vm-select"
-              title="Choose atom/bond rendering style (shortcuts: 1=Default, 2=Toon, 3=Kit, 4=Glossy)">
-              <option value="default" selected>Default</option>
-              <option value="toon">Toon (luminous)</option>
-              <option value="kit">Kit (collar joints)</option>
-              <option value="glossy">Glossy (glass edge)</option>
-            </select>
-            <input type="checkbox" id="elementColors" checked hidden />
+        <div class="appearanceHiddenControl" aria-hidden="true">
+          <select id="moleculeStyle" class="vm-select"
+            data-tooltip="Choose atom/bond rendering style (shortcuts: 1=Basic, 2=Toon, 3=Kit, 4=Glossy)">
+            <option value="basic" selected>Basic</option>
+            <option value="toon">Toon (luminous)</option>
+            <option value="kit">Kit (collar joints)</option>
+            <option value="glossy">Glossy (glass edge)</option>
+          </select>
+          <select id="dofFocusMode" class="vm-select">
+            <option value="auto" selected>Auto (target)</option>
+            <option value="manual">Manual</option>
+          </select>
+          <select id="renderMode" class="vm-select">
+            <option value="surface" selected>Surfaces</option>
+            <option value="cloud">Cloud</option>
+          </select>
+          <select id="styleSelect" class="vm-select">
+            <option value="emissive" selected>Emissive (physical)</option>
+            <option value="glass">Glass (physical)</option>
+          </select>
+          <select id="cloudType" class="vm-select">
+            <option value="cubes" selected>Cubes</option>
+            <option value="points">Points</option>
+          </select>
+          <input type="checkbox" id="elementColors" checked hidden />
+          <input type="checkbox" id="showMultiBonds" checked hidden />
+        </div>
+        <div class="inspectorGroup inspectorAccordion">
+          <div class="inspectorAccordionBody">
+            <section class="vm-appearance-section" id="appearanceRenderingSection">
+              <h3 class="vm-section-label">Rendering</h3>
+              <div class="vm-field-row" id="appearanceStyleRow">
+                <label class="vm-field-label" for="appearanceMoleculeStyleBasicBtn">Style</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceMoleculeStyleGroup" class="vm-button-group" role="radiogroup" aria-label="Molecule style">
+                    <button id="appearanceMoleculeStyleBasicBtn" class="vm-button-group__item" type="button" role="radio" data-value="basic" aria-checked="true" data-tooltip="Basic molecule style">Basic</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="toon" aria-checked="false" data-tooltip="Toon molecule style">Toon</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="kit" aria-checked="false" data-tooltip="Kit molecule style">Kit</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="glossy" aria-checked="false" data-tooltip="Glossy molecule style">Glossy</button>
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeShadowsToggle">Shadows</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="moleculeShadowsToggle">
+                    <input type="checkbox" id="moleculeShadowsToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle molecule shadows" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeFogToggle">Fog</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="moleculeFogToggle">
+                    <input type="checkbox" id="moleculeFogToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle atmospheric fog" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowMoleculeFogDepth" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="moleculeFogDepth">Fog depth</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider data-min="6" data-max="40" data-precision="1">
+                    <input id="moleculeFogDepthRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Fog far distance (near is derived automatically)" />
+                    <input id="moleculeFogDepth" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="14.0" data-tooltip="Fog far distance (near is derived automatically)" />
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeInkToggle">Ink scheme</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="moleculeInkToggle">
+                    <input type="checkbox" id="moleculeInkToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle ink-style outlines" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeBlackbodyToggle">Blackbody ramp</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="moleculeBlackbodyToggle">
+                    <input type="checkbox" id="moleculeBlackbodyToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle blackbody color ramp" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowBlackbodyColdColor" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="blackbodyColdColor">Cold color</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="blackbodyColdColor">
+                    <input type="color" id="blackbodyColdColor" class="vm-color-swatch__input" value="#2f0202" aria-label="Blackbody cold color" data-tooltip="Pick the cold color for the blackbody ramp" />
+                    <span class="vm-color-swatch__preview" id="blackbodyColdSwatch" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowBlackbodyHotColor" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="blackbodyHotColor">Hot color</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="blackbodyHotColor">
+                    <input type="color" id="blackbodyHotColor" class="vm-color-swatch__input" value="#eaf6ff" aria-label="Blackbody hot color" data-tooltip="Pick the hot color for the blackbody ramp" />
+                    <span class="vm-color-swatch__preview" id="blackbodyHotSwatch" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceAtomsSection">
+              <h3 class="vm-section-label">Atoms</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showAtoms">Show atoms</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showAtoms">
+                    <input type="checkbox" id="showAtoms" class="vm-toggle__input" role="switch" checked data-tooltip="Toggle atom rendering" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeAtomRadiusScale">Scale</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider data-min="0.60" data-max="1.60" data-precision="2">
+                    <input id="moleculeAtomRadiusScaleRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Scale rendered atom radii across all molecule styles" />
+                    <input id="moleculeAtomRadiusScale" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" data-tooltip="Scale rendered atom radii across all molecule styles" />
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="visibilityElementColorsToggle">Use element colors</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="visibilityElementColorsToggle">
+                    <input type="checkbox" id="visibilityElementColorsToggle" class="vm-toggle__input" role="switch" checked data-tooltip="Toggle per-element colors for atoms and bonds" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="elementColorBtn">Element colors</label>
+                <div class="vm-field-control vm-field-control--button">
+                  <button id="elementColorBtn" class="secondary vm-btn vm-btn--ghost vm-btn--sm" type="button" data-tooltip="Edit per-element default colors">Edit…</button>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showAtomLabels">Labels</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showAtomLabels">
+                    <input type="checkbox" id="showAtomLabels" class="vm-toggle__input" role="switch" data-tooltip="Toggle atom labels" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showAtomLabelNumbers">Numbers</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showAtomLabelNumbers">
+                    <input type="checkbox" id="showAtomLabelNumbers" class="vm-toggle__input" role="switch" data-tooltip="Toggle atom numbers inside labels" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceBondsSection">
+              <h3 class="vm-section-label">Bonds</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showBonds">Show bonds</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showBonds">
+                    <input type="checkbox" id="showBonds" class="vm-toggle__input" role="switch" checked data-tooltip="Toggle bond rendering" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeBondRadiusScale">Radius</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider data-min="0.60" data-max="1.60" data-precision="2">
+                    <input id="moleculeBondRadiusScaleRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Scale rendered bond radii across all molecule styles" />
+                    <input id="moleculeBondRadiusScale" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" data-tooltip="Scale rendered bond radii across all molecule styles" />
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="appearanceSimpleBondsToggle">Simple bonds</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="appearanceSimpleBondsToggle">
+                    <input type="checkbox" id="appearanceSimpleBondsToggle" class="vm-toggle__input" role="switch" data-tooltip="Show multiple-bond rendering when Simple bonds is OFF." />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowGlossyBond" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="glossyBondRadius">Glossy center</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider data-min="0.04" data-max="0.16" data-precision="3">
+                    <input id="glossyBondRadiusRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Center radius for glossy bond connectors (angstrom)" />
+                    <input id="glossyBondRadius" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.072" data-tooltip="Center radius for glossy bond connectors (angstrom)" />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceCameraSection">
+              <h3 class="vm-section-label">Camera</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="projectionPerspectiveBtn">Projection</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="projectionModeGroup" class="vm-button-group" role="radiogroup" aria-label="Projection mode">
+                    <button id="projectionPerspectiveBtn" class="vm-button-group__item" type="button" role="radio" data-value="perspective" aria-checked="true" data-tooltip="Perspective projection">Perspective</button>
+                    <button id="projectionOrthographicBtn" class="vm-button-group__item" type="button" role="radio" data-value="orthographic" aria-checked="false" data-tooltip="Orthographic projection">Orthographic</button>
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row" id="rowDofToggle">
+                <label class="vm-field-label" for="dofToggle">Depth of field</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="dofToggle">
+                    <input type="checkbox" id="dofToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle depth-of-field postprocessing" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowDofFocusMode" class="vm-field-row">
+                <label class="vm-field-label" for="appearanceDofFocusModeAutoBtn">Focus mode</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceDofFocusModeGroup" class="vm-button-group" role="radiogroup" aria-label="Depth of field focus mode">
+                    <button id="appearanceDofFocusModeAutoBtn" class="vm-button-group__item" type="button" role="radio" data-value="auto" aria-checked="true" data-tooltip="Focus depth of field on the camera target">Auto</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="manual" aria-checked="false" data-tooltip="Use a manual focus distance for depth of field">Manual</button>
+                  </div>
+                </div>
+              </div>
+              <div id="rowDofFocusDistance" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="dofFocusDistance">Focus distance</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider data-min="0.5" data-max="80" data-precision="1">
+                    <input id="dofFocusDistanceRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Manual focus distance from the camera in angstrom" />
+                    <input id="dofFocusDistance" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="8.0" data-tooltip="Manual focus distance from the camera in angstrom" />
+                  </div>
+                </div>
+              </div>
+              <div id="rowDofFocusRange" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="dofFocusRange">Focus range</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider data-min="0.1" data-max="20" data-precision="1">
+                    <input id="dofFocusRangeRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Half-width of the in-focus depth band in angstrom" />
+                    <input id="dofFocusRange" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.5" data-tooltip="Half-width of the in-focus depth band in angstrom" />
+                  </div>
+                </div>
+              </div>
+              <div id="rowDofBlurAmount" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="dofBlurAmount">Blur amount</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider data-min="0" data-max="12" data-precision="2">
+                    <input id="dofBlurAmountRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Maximum depth-of-field blur radius in screen pixels" />
+                    <input id="dofBlurAmount" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="4.0" data-tooltip="Maximum depth-of-field blur radius in screen pixels" />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceSceneSection">
+              <h3 class="vm-section-label">Scene</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="bgColor">Background</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="bgColor">
+                    <input type="color" id="bgColor" class="vm-color-swatch__input" value="#ffffff" aria-label="Background color" data-tooltip="Pick the scene background color" />
+                    <span class="vm-color-swatch__preview" id="bgColorSwatch" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showBox">Box</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showBox">
+                    <input type="checkbox" id="showBox" class="vm-toggle__input" role="switch" data-tooltip="Toggle the simulation box outline" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showAxes">Axes</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showAxes">
+                    <input type="checkbox" id="showAxes" class="vm-toggle__input" role="switch" checked data-tooltip="Toggle scene axes" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceSurfacesSection" hidden>
+              <h3 class="vm-section-label">Surfaces</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="surfBtn">Show surfaces</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="surfBtn">
+                    <input type="checkbox" id="surfBtn" class="vm-toggle__input" role="switch" checked data-tooltip="Toggle iso-surface rendering" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="schemeSelect">Color scheme</label>
+                <div class="vm-field-control">
+                  <select id="schemeSelect" class="vm-select" data-tooltip="Choose default +/- surface colors">
+                    <option value="emory" selected>Emory (gold/blue)</option>
+                    <option value="national">National (red/blue)</option>
+                    <option value="bright">Bright (yellow/cyan)</option>
+                    <option value="electron">Electron (magenta/green)</option>
+                    <option value="classic">Classic (blue/red)</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+              </div>
+              <div id="rowSurfacePosColor" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="posColor">Positive color</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="posColor">
+                    <input type="color" id="posColor" class="vm-color-swatch__input" value="#f2a900" aria-label="Positive surface color" data-tooltip="Pick the positive surface color" />
+                    <span class="vm-color-swatch__preview" id="posColorSwatch" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowSurfaceNegColor" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="negColor">Negative color</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="negColor">
+                    <input type="color" id="negColor" class="vm-color-swatch__input" value="#0033a0" aria-label="Negative surface color" data-tooltip="Pick the negative surface color" />
+                    <span class="vm-color-swatch__preview" id="negColorSwatch" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="appearanceRenderModeSurfaceBtn">Render mode</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceRenderModeGroup" class="vm-button-group" role="radiogroup" aria-label="Surface render mode">
+                    <button id="appearanceRenderModeSurfaceBtn" class="vm-button-group__item" type="button" role="radio" data-value="surface" aria-checked="true" data-tooltip="Render filled iso-surfaces">Surfaces</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="cloud" aria-checked="false" data-tooltip="Render point or cube clouds">Cloud</button>
+                  </div>
+                </div>
+              </div>
+              <div id="rowStyle" class="vm-field-row">
+                <label class="vm-field-label" for="appearanceSurfaceStyleEmissiveBtn">Surface style</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceSurfaceStyleGroup" class="vm-button-group" role="radiogroup" aria-label="Surface material style">
+                    <button id="appearanceSurfaceStyleEmissiveBtn" class="vm-button-group__item" type="button" role="radio" data-value="emissive" aria-checked="true" data-tooltip="Emissive iso-surface style">Emissive</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="glass" aria-checked="false" data-tooltip="Glass iso-surface style">Glass</button>
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="iso">Iso</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div id="isoSlider" class="vm-slider" data-vm-slider data-scale="log" data-min="0.0001" data-max="1.0" data-precision="4">
+                    <input id="isoRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Iso value" />
+                    <input id="iso" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.0200" aria-label="Iso value" data-tooltip="Iso value" />
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="autoIsoBtn">Auto-iso</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="autoIsoBtn">
+                    <input type="checkbox" id="autoIsoBtn" class="vm-toggle__input" role="switch" data-tooltip="Autoiso OFF: load/select a .cube/.2ccube/.molden file to apply." />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="opacity">Opacity</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider data-min="0.05" data-max="1.0" data-precision="2">
+                    <input id="opacityRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Surface opacity" />
+                    <input id="opacity" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" data-tooltip="Surface opacity" />
+                  </div>
+                </div>
+              </div>
+              <div id="appearanceTwoComponentSection" class="vm-appearance-section vm-appearance-section--nested" hidden>
+                <h3 class="vm-section-label">2C</h3>
+                <div id="twoComponentModeRow" class="vm-field-row vm-appearance-hidden">
+                  <label class="vm-field-label" for="twoComponentModeSelect">2C mode</label>
+                  <div class="vm-field-control">
+                    <select id="twoComponentModeSelect" class="vm-select" data-tooltip="Select 2C cube component or phase surface">
+                      <option value="alphaRe">alphaRe</option>
+                      <option value="alphaIm">alphaIm</option>
+                      <option value="betaRe">betaRe</option>
+                      <option value="betaIm">betaIm</option>
+                      <option value="alphaPhase">Alpha (phase hue)</option>
+                      <option value="betaPhase">Beta (phase hue)</option>
+                      <option value="alphaBetaPhase">Alpha/Beta phase</option>
+                      <option value="totalBloch">Total (Bloch color)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div id="appearanceCloudSection" class="vm-appearance-section vm-appearance-section--nested" hidden>
+                <h3 class="vm-section-label">Cloud</h3>
+                <div id="rowCloudType" class="vm-field-row vm-appearance-hidden">
+                  <label class="vm-field-label" for="appearanceCloudTypeCubesBtn">Cloud type</label>
+                  <div class="vm-field-control vm-field-control--group">
+                    <div id="appearanceCloudTypeGroup" class="vm-button-group" role="radiogroup" aria-label="Cloud type">
+                      <button id="appearanceCloudTypeCubesBtn" class="vm-button-group__item" type="button" role="radio" data-value="cubes" aria-checked="true" data-tooltip="Cube cloud renderer">Cubes</button>
+                      <button class="vm-button-group__item" type="button" role="radio" data-value="points" aria-checked="false" data-tooltip="Point cloud renderer">Points</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="rowCloudStride" class="vm-field-row vm-appearance-hidden">
+                  <label class="vm-field-label" for="cloudStride">Sample stride</label>
+                  <div class="vm-field-control vm-field-control--slider">
+                    <div class="vm-slider" data-vm-slider data-min="1" data-max="8" data-precision="0">
+                      <input id="cloudStrideRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Sample every N voxels per axis" />
+                      <input id="cloudStride" class="vm-slider__value vm-mono" type="text" inputmode="numeric" value="1" data-tooltip="Sample every N voxels per axis" />
+                    </div>
+                  </div>
+                </div>
+                <div id="rowCloudAlpha" class="vm-field-row vm-appearance-hidden">
+                  <label class="vm-field-label" for="cloudAlpha">Max alpha</label>
+                  <div class="vm-field-control vm-field-control--slider">
+                    <div class="vm-slider" data-vm-slider data-min="0.025" data-max="1.0" data-precision="3">
+                      <input id="cloudAlphaRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Maximum cloud alpha" />
+                      <input id="cloudAlpha" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.100" data-tooltip="Maximum cloud alpha" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearancePreferencesSection">
+              <h3 class="vm-section-label">Preferences</h3>
+              <div class="vm-field-row" id="appearanceTypefaceRow">
+                <label class="vm-field-label" for="appearanceFontPairGeistBtn">Typeface</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceFontPairGroup" class="vm-button-group" role="radiogroup" aria-label="Typeface">
+                    <button id="appearanceFontPairGeistBtn" class="vm-button-group__item" type="button" role="radio" data-value="geist" aria-checked="true" data-tooltip="Use Geist and Geist Mono">Geist</button>
+                    <button id="appearanceFontPairInterBtn" class="vm-button-group__item" type="button" role="radio" data-value="inter" aria-checked="false" data-tooltip="Use Inter and JetBrains Mono">Inter</button>
+                    <button id="appearanceFontPairPlexBtn" class="vm-button-group__item" type="button" role="radio" data-value="plex" aria-checked="false" data-tooltip="Use IBM Plex Sans and IBM Plex Mono">IBM Plex</button>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
-        <details class="inspectorGroup inspectorAccordion" id="appearanceMoleculeSection">
-          <summary class="inspectorAccordionSummary">
-            <span class="inspectorTitle">Molecule</span>
-          </summary>
-          <div class="inspectorAccordionBody">
-            <div class="inspectorRow inspectorSelectRow">
-              <label for="moleculeAtomRadiusScale">Atom radius</label>
-              <label class="inspectorSliderField" for="moleculeAtomRadiusScale">
-                <input type="range" id="moleculeAtomRadiusScale" min="0.60" max="1.60" step="0.05" value="1.00"
-                  title="Scale rendered atom radii across all molecule styles" />
-                <span id="moleculeAtomRadiusScaleValue" class="inspectorSliderValue">1.00×</span>
-              </label>
-            </div>
-            <div class="inspectorRow inspectorSelectRow">
-              <label for="moleculeBondRadiusScale">Bond radius</label>
-              <label class="inspectorSliderField" for="moleculeBondRadiusScale">
-                <input type="range" id="moleculeBondRadiusScale" min="0.60" max="1.60" step="0.05" value="1.00"
-                  title="Scale rendered bond radii across all molecule styles" />
-                <span id="moleculeBondRadiusScaleValue" class="inspectorSliderValue">1.00×</span>
-              </label>
-            </div>
-            <div class="inspectorRow inspectorSelectRow" id="rowGlossyBond" style="display:none;">
-              <label for="glossyBondRadius">Glossy bond radius</label>
-              <input type="number" id="glossyBondRadius" min="0.04" max="0.16" step="0.005" value="0.072"
-                title="Center radius for glossy bond connectors (angstrom)" />
-            </div>
-            <div class="inspectorActionToggleRow">
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="showMultiBonds" data-toggle-invert="true" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">horizontal_rule</span>
-                <span class="tb-quickActionLabel">Simple bonds</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="showMultiBonds" checked hidden
-                title="Show multiple-bond rendering when Simple bonds is OFF." />
-            </div>
-            <button id="elementColorBtn" class="secondary tb-modeBtn" title="Edit per-element default colors">Element
-              colors...</button>
-          </div>
-        </details>
-        <details class="inspectorGroup inspectorAccordion" id="appearanceLightingSection">
-          <summary class="inspectorAccordionSummary">
-            <span class="inspectorTitle">Lighting &amp; atmosphere</span>
-          </summary>
-          <div class="inspectorAccordionBody">
-            <div class="inspectorActionToggleRow">
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="moleculeShadowsToggle" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">gradient</span>
-                <span class="tb-quickActionLabel">Shadows</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="moleculeShadowsToggle" hidden />
-            </div>
-            <div class="inspectorActionToggleRow">
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="moleculeFogToggle" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">foggy</span>
-                <span class="tb-quickActionLabel">Fog</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="moleculeFogToggle" hidden />
-            </div>
-            <div class="inspectorRow inspectorSelectRow" id="rowMoleculeFogDepth" style="display:none;">
-              <label for="moleculeFogDepth">Depth</label>
-              <label class="inspectorSliderField" for="moleculeFogDepth">
-                <input type="range" id="moleculeFogDepth" min="6" max="40" step="0.5" value="14.0"
-                  title="Fog far distance (near is derived automatically)" />
-                <span id="moleculeFogDepthValue" class="inspectorSliderValue">14.0</span>
-              </label>
-            </div>
-            <div class="inspectorActionToggleRow">
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="moleculeInkToggle" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">draw</span>
-                <span class="tb-quickActionLabel">Ink scheme</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="moleculeInkToggle" hidden />
-            </div>
-            <div class="appearanceHiddenControl" aria-hidden="true">
-              <div class="inspectorRow inspectorSelectRow">
-                <label for="moleculeAtomOpacity">Atom alpha</label>
-                <input type="number" id="moleculeAtomOpacity" min="0.05" max="1" step="0.05" value="1.00"
-                  title="Global atom opacity (0.05 to 1.00)" />
-              </div>
-              <div class="inspectorRow inspectorSelectRow">
-                <label for="moleculeBondOpacity">Bond alpha</label>
-                <input type="number" id="moleculeBondOpacity" min="0.05" max="1" step="0.05" value="1.00"
-                  title="Global bond opacity (0.05 to 1.00)" />
-              </div>
-            </div>
-            <div class="inspectorActionToggleRow">
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="moleculeBlackbodyToggle" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">local_fire_department</span>
-                <span class="tb-quickActionLabel">Blackbody ramp</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="moleculeBlackbodyToggle" hidden />
-            </div>
-            <div class="inspectorRow colorPickerRow" id="rowBlackbodyColors" style="display:none;">
-              <label class="colorPickerWrap">
-                <span class="colorPickerTag">Cold</span>
-                <span class="colorPickerField">
-                  <input type="color" id="blackbodyColdColor" value="#2f0202" aria-label="Blackbody cold color" />
-                  <span class="colorPickerSwatch" id="blackbodyColdSwatch" aria-hidden="true"></span>
-                  <span class="colorPickerHex" id="blackbodyColdHex">2F0202</span>
-                </span>
-              </label>
-              <label class="colorPickerWrap">
-                <span class="colorPickerTag">Hot</span>
-                <span class="colorPickerField">
-                  <input type="color" id="blackbodyHotColor" value="#eaf6ff" aria-label="Blackbody hot color" />
-                  <span class="colorPickerSwatch" id="blackbodyHotSwatch" aria-hidden="true"></span>
-                  <span class="colorPickerHex" id="blackbodyHotHex">EAF6FF</span>
-                </span>
-              </label>
-            </div>
-          </div>
-        </details>
-        <details class="inspectorGroup inspectorAccordion" id="appearanceCameraSection">
-          <summary class="inspectorAccordionSummary">
-            <span class="inspectorTitle">Camera</span>
-          </summary>
-          <div class="inspectorAccordionBody">
-            <button id="projectionModeBtn" class="secondary tb-quickActionBtn inspectorActionToggle"
-              title="Orthographic projection is OFF. Click to turn it ON."
-              data-tip="Orthographic: OFF. Click to enable orthographic projection.">
-              <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">view_in_ar</span>
-              <span class="tb-quickActionLabel" id="projectionModeLabel">Orthographic</span>
-              <span id="projectionModeState" class="inspectorActionToggleState">Off</span>
-            </button>
-            <div class="inspectorActionToggleRow" id="rowDofToggle">
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="dofToggle" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">blur_on</span>
-                <span class="tb-quickActionLabel">Depth of field</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="dofToggle" hidden />
-            </div>
-            <div class="inspectorRow inspectorSelectRow" id="rowDofFocusMode">
-              <label for="dofFocusMode">Focus mode</label>
-              <select id="dofFocusMode" class="vm-select"
-                title="Choose whether depth of field focuses on the current camera target or a manual distance">
-                <option value="auto" selected>Auto (target)</option>
-                <option value="manual">Manual</option>
-              </select>
-            </div>
-            <div class="inspectorRow inspectorSelectRow" id="rowDofFocusDistance" style="display:none;">
-              <label for="dofFocusDistance">Distance</label>
-              <input type="number" id="dofFocusDistance" min="0.5" max="80" step="0.1" value="8.0"
-                title="Manual focus distance from the camera in angstrom" />
-            </div>
-            <div class="inspectorRow inspectorSelectRow" id="rowDofFocusRange">
-              <label for="dofFocusRange">Range</label>
-              <input type="number" id="dofFocusRange" min="0.1" max="20" step="0.1" value="1.5"
-                title="Half-width of the in-focus depth band in angstrom" />
-            </div>
-            <div class="inspectorRow inspectorSelectRow" id="rowDofBlurAmount">
-              <label for="dofBlurAmount">Blur</label>
-              <input type="number" id="dofBlurAmount" min="0" max="12" step="0.25" value="4.0"
-                title="Maximum depth-of-field blur radius in screen pixels" />
-            </div>
-          </div>
-        </details>
-        <details class="inspectorGroup inspectorAccordion" id="appearanceSurfacesSection" hidden>
-          <summary class="inspectorAccordionSummary">
-            <span class="inspectorTitle">Surfaces</span>
-          </summary>
-          <div class="inspectorAccordionBody">
-            <div class="inspectorRow inspectorSelectRow">
-              <label for="schemeSelect">Color scheme</label>
-              <select id="schemeSelect" class="vm-select" title="Choose default +/- surface colors">
-                <option value="emory" selected>Emory (gold/blue)</option>
-                <option value="national">National (red/blue)</option>
-                <option value="bright">Bright (yellow/cyan)</option>
-                <option value="electron">Electron (magenta/green)</option>
-                <option value="classic">Classic (blue/red)</option>
-                <option value="custom">Custom (via color pickers)</option>
-              </select>
-            </div>
-            <div class="inspectorRow inspectorSelectRow">
-              <label for="renderMode">Render mode</label>
-              <select id="renderMode" class="vm-select" title="Choose visualization mode">
-                <option value="surface" selected>Surfaces</option>
-                <option value="cloud">Cloud</option>
-              </select>
-            </div>
-            <div class="inspectorRow inspectorSelectRow" id="rowStyle">
-              <label for="styleSelect">Surface style</label>
-              <select id="styleSelect" class="vm-select" title="Choose iso-surface material style">
-                <option value="emissive" selected>Emissive (physical)</option>
-                <option value="glass">Glass (physical)</option>
-              </select>
-            </div>
-            <div class="inspectorRow isoRow">
-              <label class="isoField">
-                <span class="isoTag">Iso</span>
-                <input type="number" id="iso" value="0.02" step="0.005" aria-label="Iso value" />
-              </label>
-              <button id="autoIsoBtn" class="secondary isoAutoBtn ms-icon-button" type="button" aria-pressed="false"
-                title="Autoiso OFF: load/select a .cube/.2ccube file to apply.">auto_fix_high</button>
-            </div>
-            <div class="inspectorRow">
-              <label class="opacityField">Opacity
-                <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="1.00" />
-                <span id="opacityPercent" class="opacityPercent">100%</span>
-              </label>
-            </div>
-            <div class="inspectorRow colorPickerRow">
-              <label class="colorPickerWrap">
-                <span class="colorPickerTag">+</span>
-                <span class="colorPickerField">
-                  <input type="color" id="posColor" value="#f2a900" aria-label="Positive surface color" />
-                  <span class="colorPickerSwatch" id="posColorSwatch" aria-hidden="true"></span>
-                  <span class="colorPickerHex" id="posColorHex">F2A900</span>
-                </span>
-              </label>
-              <label class="colorPickerWrap">
-                <span class="colorPickerTag">−</span>
-                <span class="colorPickerField">
-                  <input type="color" id="negColor" value="#0033a0" aria-label="Negative surface color" />
-                  <span class="colorPickerSwatch" id="negColorSwatch" aria-hidden="true"></span>
-                  <span class="colorPickerHex" id="negColorHex">0033A0</span>
-                </span>
-              </label>
-            </div>
-            <details class="inspectorSubsection" id="appearanceTwoComponentSection" hidden>
-              <summary class="inspectorSubsectionSummary">Two-component</summary>
-              <div class="inspectorAccordionBody inspectorSubsectionBody">
-                <div class="inspectorRow inspectorSelectRow" id="twoComponentModeRow" style="display:none;">
-                  <label for="twoComponentModeSelect">Mode</label>
-                  <select id="twoComponentModeSelect" class="vm-select" title="Select 2C cube component or phase surface">
-                    <option value="alphaRe">alphaRe</option>
-                    <option value="alphaIm">alphaIm</option>
-                    <option value="betaRe">betaRe</option>
-                    <option value="betaIm">betaIm</option>
-                    <option value="alphaPhase">Alpha (phase hue)</option>
-                    <option value="betaPhase">Beta (phase hue)</option>
-                    <option value="alphaBetaPhase">Alpha/Beta phase</option>
-                    <option value="totalBloch">Total (Bloch color)</option>
-                  </select>
-                </div>
-              </div>
-            </details>
-            <details class="inspectorSubsection" id="appearanceCloudSection" hidden>
-              <summary class="inspectorSubsectionSummary">Cloud options</summary>
-              <div class="inspectorAccordionBody inspectorSubsectionBody">
-                <div class="inspectorRow inspectorSelectRow" id="rowCloudType">
-                  <label for="cloudType">Cloud type</label>
-                  <select id="cloudType" class="vm-select" title="Cloud renderer">
-                    <option value="cubes" selected>Cubes</option>
-                    <option value="points">Points</option>
-                  </select>
-                </div>
-                <div class="inspectorRow inspectorSelectRow" id="rowCloudParams">
-                  <label for="cloudStride">Cloud opts</label>
-                  <span style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; align-items:center;">
-                    <input type="number" id="cloudStride" min="1" max="8" step="1" value="1"
-                      title="Sample every N voxels per axis" />
-                    <input type="number" id="cloudAlpha" min="0.025" max="1" step="0.025" value="0.1"
-                      title="Maximum cloud alpha" />
-                  </span>
-                </div>
-              </div>
-            </details>
-          </div>
-        </details>
-        <details class="inspectorGroup inspectorAccordion" id="appearanceVisibilitySection">
-          <summary class="inspectorAccordionSummary">
-            <span class="inspectorTitle">Visibility</span>
-          </summary>
-          <div class="inspectorAccordionBody">
-            <div class="appearanceActionToggleGrid">
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="showAtoms" aria-pressed="true">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">radio_button_checked</span>
-                <span class="tb-quickActionLabel">Atoms</span>
-                <span class="inspectorActionToggleState">On</span>
-              </button>
-              <input type="checkbox" id="showAtoms" checked hidden />
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="showBonds" aria-pressed="true">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">share</span>
-                <span class="tb-quickActionLabel">Bonds</span>
-                <span class="inspectorActionToggleState">On</span>
-              </button>
-              <input type="checkbox" id="showBonds" checked hidden />
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="visibilityElementColorsToggle" aria-pressed="true">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">palette</span>
-                <span class="tb-quickActionLabel">Elem colors</span>
-                <span class="inspectorActionToggleState">On</span>
-              </button>
-              <input type="checkbox" id="visibilityElementColorsToggle" checked hidden />
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="showAtomLabels" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">label</span>
-                <span class="tb-quickActionLabel">Atom labels</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="showAtomLabels" hidden />
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="showAtomLabelNumbers" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">tag</span>
-                <span class="tb-quickActionLabel">Atom numbers</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="showAtomLabelNumbers" hidden />
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="showBox" aria-pressed="false">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">crop_square</span>
-                <span class="tb-quickActionLabel">Box</span>
-                <span class="inspectorActionToggleState">Off</span>
-              </button>
-              <input type="checkbox" id="showBox" hidden />
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="showAxes" aria-pressed="true">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">track_changes</span>
-                <span class="tb-quickActionLabel">Axes</span>
-                <span class="inspectorActionToggleState">On</span>
-              </button>
-              <input type="checkbox" id="showAxes" checked hidden />
-              <button type="button" class="secondary tb-quickActionBtn inspectorActionToggle"
-                data-toggle-input="surfBtn" aria-pressed="true">
-                <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">layers</span>
-                <span class="tb-quickActionLabel">Surfaces</span>
-                <span class="inspectorActionToggleState">On</span>
-              </button>
-              <input type="checkbox" id="surfBtn" checked hidden />
-            </div>
-          </div>
-        </details>
-        <details class="inspectorGroup inspectorAccordion" id="appearancePreferencesSection">
-          <summary class="inspectorAccordionSummary">
-            <span class="inspectorTitle">Preferences</span>
-          </summary>
-          <div class="inspectorAccordionBody">
-            <div class="vm-field-row appearancePreferenceRow">
-              <label class="vm-field-label" for="appearanceFontPairGeistBtn">Typeface</label>
-              <div id="appearanceFontPairGroup" class="vm-radio-group" role="radiogroup" aria-label="Typeface">
-                <button id="appearanceFontPairGeistBtn" class="vm-radio" type="button" role="radio"
-                  data-font-pair="geist" aria-checked="true">
-                  <span class="vm-radio__sample" style="font-family: Geist, sans-serif">Aa</span>
-                  <span class="vm-radio__label">Geist</span>
-                </button>
-                <button id="appearanceFontPairInterBtn" class="vm-radio" type="button" role="radio"
-                  data-font-pair="inter" aria-checked="false">
-                  <span class="vm-radio__sample" style="font-family: Inter, sans-serif">Aa</span>
-                  <span class="vm-radio__label">Inter</span>
-                </button>
-                <button id="appearanceFontPairPlexBtn" class="vm-radio" type="button" role="radio"
-                  data-font-pair="plex" aria-checked="false">
-                  <span class="vm-radio__sample" style="font-family: 'IBM Plex Sans', sans-serif">Aa</span>
-                  <span class="vm-radio__label">IBM Plex</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </details>
       </div>
     </div>
 
     <div class="tb-section tb-actions">
-      <button id="helpBtn" class="secondary" title="Help and shortcuts">Help</button>
+      <button id="helpBtn" class="secondary" data-tooltip="Help and shortcuts">Help</button>
     </div>
   </div>
-  <button id="toolbarShowBtn" class="secondary ms-icon-button" type="button" title="Show sidebar">menu</button>
-  <div id="toolbarTooltip" role="tooltip" aria-hidden="true"></div>
+  <button id="toolbarShowBtn" class="secondary ms-icon-button" type="button" data-tooltip="Show sidebar">menu</button>
 
   <div id="drop">
     <canvas id="canvas"></canvas>
   </div>
-  <button id="helpFab" class="vm-btn vm-btn--icon vm-btn--ghost" type="button" aria-label="Keyboard shortcuts (?)"
-    title="Keyboard shortcuts (?)" data-tooltip="Keyboard shortcuts (?)">?</button>
+  <button id="helpFab" class="vm-btn vm-btn--icon vm-btn--ghost" type="button" aria-label="Keyboard shortcuts (?)" data-tooltip="Keyboard shortcuts (?)">?</button>
   <div id="modeAssistMenu" aria-hidden="true">
     <div id="modeAssistItem1" class="adaptiveEditItem adaptiveEditItem--static" aria-hidden="true" hidden>
       <span class="adaptiveEditItemBody">
@@ -2952,7 +2700,7 @@
     </div>
   </div>
   <div id="displayWindowAdaptiveMenu" aria-hidden="true">
-    <button id="moldenInspectorBtn" class="adaptiveEditItem" type="button" title="Orbitals (O)" hidden>
+    <button id="moldenInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="Orbitals (O)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">blur_on</span>
@@ -2964,7 +2712,7 @@
         <span class="adaptiveShortcutKey">O</span>
       </span>
     </button>
-    <button id="viewInspectorBtn" class="adaptiveEditItem" type="button" title="View actions (Q)" hidden>
+    <button id="viewInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="View actions (Q)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">tune</span>
@@ -2976,7 +2724,7 @@
         <span class="adaptiveShortcutKey">Q</span>
       </span>
     </button>
-    <button id="viewPanelBtn" class="adaptiveEditItem" type="button" title="View window (V)" hidden>
+    <button id="viewPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="View window (V)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">view_in_ar</span>
@@ -2988,7 +2736,7 @@
         <span class="adaptiveShortcutKey">V</span>
       </span>
     </button>
-    <button id="coordsPanelBtn" class="adaptiveEditItem" type="button" title="Coordinates (C)" hidden>
+    <button id="coordsPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="Coordinates (C)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">table_rows</span>
@@ -3000,7 +2748,7 @@
         <span class="adaptiveShortcutKey">C</span>
       </span>
     </button>
-    <button id="trajectoryPanelBtn" class="adaptiveEditItem" type="button" title="Trajectory (T)" hidden>
+    <button id="trajectoryPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="Trajectory (T)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">timeline</span>
@@ -3012,7 +2760,7 @@
         <span class="adaptiveShortcutKey">T</span>
       </span>
     </button>
-    <button id="vibrationPanelBtn" class="adaptiveEditItem" type="button" title="Frequencies (F)" hidden>
+    <button id="vibrationPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="Frequencies (F)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">graphic_eq</span>
@@ -3030,18 +2778,18 @@
       <div class="inspectorTitle">Orbitals</div>
       <div class="inspectorRow inspectorSelectRow" id="moldenMoRow" style="display:none;">
         <label for="moldenMoSelect">Molden MO</label>
-        <select id="moldenMoSelect" class="vm-select" title="Select one molecular orbital parsed from the Molden file"></select>
+        <select id="moldenMoSelect" class="vm-select" data-tooltip="Select one molecular orbital parsed from the Molden file"></select>
       </div>
       <div id="moldenMoSummary" class="moldenInspectorSummary"></div>
       <div class="inspectorRow inspectorSelectRow" id="moldenGridRow" style="display:none;">
         <label for="moldenGridStep">Grid step</label>
         <input type="number" id="moldenGridStep" min="0.12" max="1.20" step="0.01" value="0.35"
-          title="Grid spacing in angstrom" />
+          data-tooltip="Grid spacing in angstrom" />
       </div>
       <div class="inspectorRow inspectorSelectRow" id="moldenGridPaddingRow" style="display:none;">
         <label for="moldenGridPadding">Grid pad</label>
         <input type="number" id="moldenGridPadding" min="0.5" max="8" step="0.1" value="3.0"
-          title="Padding added around the molecule in angstrom" />
+          data-tooltip="Padding added around the molecule in angstrom" />
       </div>
       <div id="moldenGridSummary" class="moldenInspectorSummary"></div>
     </div>
@@ -3050,41 +2798,35 @@
     <div class="viewInspectorGroup">
       <div class="viewInspectorTitle">Quick actions</div>
       <button id="centerMassBtn" class="secondary tb-quickActionBtn"
-        title="Shift active molecule center of mass to the origin (shortcut: R)"
-        data-tip="COM → Origin: shift the active molecule center of mass to (0,0,0). Shortcut: R.">
+        data-tooltip="COM → Origin: shift the active molecule center of mass to (0,0,0). Shortcut: R.">
         <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">center_focus_strong</span>
-        <span class="tb-quickActionLabel">COM → Origin</span>
+        <span class="tb-quickActionText">COM → Origin</span>
       </button>
       <button id="pointCameraComBtn" class="secondary tb-quickActionBtn"
-        title="Point the camera so the active molecule center of mass is centered in view"
-        data-tip="Point Camera to COM: keep the current camera pose but retarget the view to the active molecule center of mass.">
+        data-tooltip="Point Camera to COM: keep the current camera pose but retarget the view to the active molecule center of mass.">
         <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">my_location</span>
-        <span class="tb-quickActionLabel">Point Camera to COM</span>
+        <span class="tb-quickActionText">Point Camera to COM</span>
       </button>
       <button id="alignInertiaBtn" class="secondary tb-quickActionBtn"
-        title="Rotate active molecule so principal inertia axes align with XYZ"
-        data-tip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z.">
+        data-tooltip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z.">
         <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">3d_rotation</span>
-        <span class="tb-quickActionLabel">Align Principal Axes</span>
+        <span class="tb-quickActionText">Align Principal Axes</span>
       </button>
       <div class="viewPresetRow">
         <button id="viewAxisXBtn" class="secondary tb-quickActionBtn"
-          title="Set camera along +X axis looking toward target"
-          data-tip="View +X: place the camera on +X looking at the current target.">
+          data-tooltip="View +X: place the camera on +X looking at the current target.">
           <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">east</span>
-          <span class="tb-quickActionLabel">+X</span>
+          <span class="tb-quickActionText">+X</span>
         </button>
         <button id="viewAxisYBtn" class="secondary tb-quickActionBtn"
-          title="Set camera along +Y axis looking toward target"
-          data-tip="View +Y: place the camera on +Y looking at the current target.">
+          data-tooltip="View +Y: place the camera on +Y looking at the current target.">
           <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north</span>
-          <span class="tb-quickActionLabel">+Y</span>
+          <span class="tb-quickActionText">+Y</span>
         </button>
         <button id="viewAxisZBtn" class="secondary tb-quickActionBtn"
-          title="Set camera along +Z axis looking toward target"
-          data-tip="View +Z: place the camera on +Z looking at the current target.">
+          data-tooltip="View +Z: place the camera on +Z looking at the current target.">
           <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north_east</span>
-          <span class="tb-quickActionLabel">+Z</span>
+          <span class="tb-quickActionText">+Z</span>
         </button>
       </div>
     </div>
@@ -3125,14 +2867,14 @@
       </details>
     </div>
   </div>
-  <div id="hint">Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Default 2=Toon 3=Kit 4=Glossy</div>
+  <div id="hint">Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Basic 2=Toon 3=Kit 4=Glossy</div>
   <!-- Phase wheel legend (shown in phase-hue modes) -->
   <div id="phaseWheel" aria-hidden="true"
     style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
     <canvas id="phaseWheelCanvas" width="96" height="120" style="width:100%; height:100%;"></canvas>
   </div>
   <div id="editAdaptiveMenu" aria-hidden="true">
-    <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem" type="button" title="Build palette (/)">
+    <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem" type="button" data-tooltip="Build palette (/)">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">add</span>
@@ -3144,7 +2886,7 @@
         <span class="adaptiveShortcutKey">/</span>
       </span>
     </button>
-    <button id="editAdaptiveSymmetryBtn" class="adaptiveEditItem" type="button" title="Symmetry (S)">
+    <button id="editAdaptiveSymmetryBtn" class="adaptiveEditItem" type="button" data-tooltip="Symmetry (S)">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">hub</span>
@@ -3156,7 +2898,7 @@
         <span class="adaptiveShortcutKey">S</span>
       </span>
     </button>
-    <button id="editAdaptiveCleanStructureBtn" class="adaptiveEditItem" type="button" title="Optimize structure">
+    <button id="editAdaptiveCleanStructureBtn" class="adaptiveEditItem" type="button" data-tooltip="Optimize structure">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">cleaning_services</span>
@@ -3168,7 +2910,7 @@
         <span class="adaptiveShortcutKey">O</span>
       </span>
     </button>
-    <button id="editAdaptiveShiftComBtn" class="adaptiveEditItem" type="button" title="Shift COM to origin">
+    <button id="editAdaptiveShiftComBtn" class="adaptiveEditItem" type="button" data-tooltip="Shift COM to origin">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">center_focus_strong</span>
@@ -3180,7 +2922,7 @@
         <span class="adaptiveShortcutKey">R</span>
       </span>
     </button>
-    <button id="editAdaptiveAlignPrincipalBtn" class="adaptiveEditItem" type="button" title="Align principal axes">
+    <button id="editAdaptiveAlignPrincipalBtn" class="adaptiveEditItem" type="button" data-tooltip="Align principal axes">
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">3d_rotation</span>
@@ -3252,16 +2994,16 @@
         <div id="editSymmetryCandidates"></div>
       </div>
       <div id="editSymmetryFooter">
-        <button id="editSymmetryApplyBtn" class="editSymmetryActionBtn is-primary" type="button" title="Apply the current symmetry preview">
+        <button id="editSymmetryApplyBtn" class="editSymmetryActionBtn is-primary" type="button" data-tooltip="Apply the current symmetry preview">
           <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
           <span>Apply</span>
         </button>
         <div id="editSymmetryFooterSecondary">
-          <button id="editSymmetryCancelBtn" class="editSymmetryActionBtn" type="button" title="Cancel the current symmetry preview">
+          <button id="editSymmetryCancelBtn" class="editSymmetryActionBtn" type="button" data-tooltip="Cancel the current symmetry preview">
             <span class="material-symbols-rounded" aria-hidden="true">close</span>
             <span>Cancel</span>
           </button>
-          <button id="editSymmetryAutoBtn" class="editSymmetryActionBtn" type="button" title="Detect and apply the highest valid point group">
+          <button id="editSymmetryAutoBtn" class="editSymmetryActionBtn" type="button" data-tooltip="Detect and apply the highest valid point group">
             <span class="material-symbols-rounded" aria-hidden="true">auto_fix_high</span>
             <span>Auto</span>
           </button>
@@ -3269,32 +3011,32 @@
       </div>
     </div>
   </div>
-  <div id="editSelectionTranslateCue" aria-hidden="true" title="Selected atoms">
-    <button id="editSelectionTranslateCueButton" class="editSelectionCueButton is-active" type="button" aria-label="Translate selection" title="Translate selection">
+  <div id="editSelectionTranslateCue" aria-hidden="true" data-tooltip="Selected atoms">
+    <button id="editSelectionTranslateCueButton" class="editSelectionCueButton is-active" type="button" aria-label="Translate selection" data-tooltip="Translate selection">
       <span class="material-symbols-rounded" aria-hidden="true">open_with</span>
     </button>
-    <button id="editSelectionRotateCueButton" class="editSelectionCueButton" type="button" aria-label="Rotate selection" title="Rotate selection">
+    <button id="editSelectionRotateCueButton" class="editSelectionCueButton" type="button" aria-label="Rotate selection" data-tooltip="Rotate selection">
       <span class="material-symbols-rounded" aria-hidden="true">rotate_right</span>
     </button>
-    <button id="editSelectionCoordinationCueButton" class="editSelectionCueButton" type="button" aria-label="Choose coordination" title="Choose coordination">
+    <button id="editSelectionCoordinationCueButton" class="editSelectionCueButton" type="button" aria-label="Choose coordination" data-tooltip="Choose coordination">
       <span class="material-symbols-rounded" aria-hidden="true">hub</span>
     </button>
-    <button id="editSelectionMetalBondingCueButton" class="editSelectionCueButton" type="button" aria-label="Metal bond mode" title="Metal bond mode">
+    <button id="editSelectionMetalBondingCueButton" class="editSelectionCueButton" type="button" aria-label="Metal bond mode" data-tooltip="Metal bond mode">
       <span class="material-symbols-rounded" aria-hidden="true">settings_input_component</span>
     </button>
-    <button id="editSelectionBondOrbitCueButton" class="editSelectionCueButton" type="button" aria-label="Rotate fragment in 3D" title="Rotate fragment in 3D" hidden>
+    <button id="editSelectionBondOrbitCueButton" class="editSelectionCueButton" type="button" aria-label="Rotate fragment in 3D" data-tooltip="Rotate fragment in 3D" hidden>
       <span class="material-symbols-rounded" aria-hidden="true">3d_rotation</span>
     </button>
-    <button id="editSelectionBondDistanceCueButton" class="editSelectionCueButton" type="button" aria-label="Adjust bond distance" title="Adjust bond distance" hidden>
+    <button id="editSelectionBondDistanceCueButton" class="editSelectionCueButton" type="button" aria-label="Adjust bond distance" data-tooltip="Adjust bond distance" hidden>
       <span class="material-symbols-rounded" aria-hidden="true">swap_horiz</span>
     </button>
-    <button id="editSelectionBondOrderCueButton" class="editSelectionCueButton" type="button" aria-label="Adjust bond order" title="Adjust bond order" hidden data-bond-order="">
+    <button id="editSelectionBondOrderCueButton" class="editSelectionCueButton" type="button" aria-label="Adjust bond order" data-tooltip="Adjust bond order" hidden data-bond-order="">
       <span class="material-symbols-rounded" aria-hidden="true">linear_scale</span>
     </button>
-    <button id="editSelectionAddFragmentCueButton" class="editSelectionCueButton" type="button" aria-label="Build at open site" title="Build at open site">
+    <button id="editSelectionAddFragmentCueButton" class="editSelectionCueButton" type="button" aria-label="Build at open site" data-tooltip="Build at open site">
       <span class="material-symbols-rounded" aria-hidden="true">add</span>
     </button>
-    <button id="editSelectionDeleteCueButton" class="editSelectionCueButton is-delete" type="button" aria-label="Delete selection" title="Delete selection">
+    <button id="editSelectionDeleteCueButton" class="editSelectionCueButton is-delete" type="button" aria-label="Delete selection" data-tooltip="Delete selection">
       <span class="material-symbols-rounded" aria-hidden="true">delete</span>
     </button>
   </div>
@@ -3367,8 +3109,8 @@
   <div id="editToolbox" aria-hidden="true">
     <div id="editAddPane">
       <div id="editAddModeToggle">
-        <button id="editAddModeAtomBtn" type="button" class="active" title="Add single atoms">Atom</button>
-        <button id="editAddModeMoleculeBtn" type="button" title="Place standalone molecules">Molecule</button>
+        <button id="editAddModeAtomBtn" type="button" class="active" data-tooltip="Add single atoms">Atom</button>
+        <button id="editAddModeMoleculeBtn" type="button" data-tooltip="Place standalone molecules">Molecule</button>
       </div>
       <div id="editAddAtomPane" class="active">
         <label class="vm-field-label" for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
@@ -3390,7 +3132,7 @@
         <datalist id="editFragmentSuggestions"></datalist>
         <label class="vm-field-label" for="editFragmentAttachPolicy">Attach policy</label>
         <select id="editFragmentAttachPolicy" class="editPopupSelect vm-select"
-          title="Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.">
+          data-tooltip="Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.">
           <option value="smart" selected>Smart</option>
           <option value="append">Append</option>
           <option value="replace_h">Replace H</option>
@@ -3405,11 +3147,11 @@
         <div id="editMoleculeQuick"></div>
         <div id="editMoleculeAlign">
           <button id="editMoleculeAlignXBtn" type="button"
-            title="Align molecule principal axis to +X during placement">Align X</button>
+            data-tooltip="Align molecule principal axis to +X during placement">Align X</button>
           <button id="editMoleculeAlignYBtn" type="button"
-            title="Align molecule principal axis to +Y during placement">Align Y</button>
+            data-tooltip="Align molecule principal axis to +Y during placement">Align Y</button>
           <button id="editMoleculeAlignZBtn" type="button"
-            title="Align molecule principal axis to +Z during placement">Align Z</button>
+            data-tooltip="Align molecule principal axis to +Z during placement">Align Z</button>
         </div>
       </div>
     </div>
@@ -3425,8 +3167,8 @@
       <h2>View</h2>
       <div class="vm-popover__actions">
         <button id="viewReset" class="vm-btn vm-btn--ghost" type="button"
-          title="Reset the view to the initial state">Reset View</button>
-        <button id="sideClose" class="vm-btn vm-btn--icon" type="button" aria-label="Close" title="Close">
+          data-tooltip="Reset the view to the initial state">Reset View</button>
+        <button id="sideClose" class="vm-btn vm-btn--icon" type="button" aria-label="Close" data-tooltip="Close">
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <path d="M4 4L12 12"></path>
             <path d="M12 4L4 12"></path>
@@ -3443,20 +3185,20 @@
           <div class="vm-num" data-vm-num data-precision="3" data-label="Shift X">
             <span class="vm-num__prefix" aria-hidden="true">X</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="shiftX" class="vm-num__input" step="0.1" title="Shift the molecule in the X-direction" />
+            <input type="number" id="shiftX" class="vm-num__input" step="0.1" data-tooltip="Shift the molecule in the X-direction" />
           </div>
           <div class="vm-num" data-vm-num data-precision="3" data-label="Shift Y">
             <span class="vm-num__prefix" aria-hidden="true">Y</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="shiftY" class="vm-num__input" step="0.1" title="Shift the molecule in the Y-direction" />
+            <input type="number" id="shiftY" class="vm-num__input" step="0.1" data-tooltip="Shift the molecule in the Y-direction" />
           </div>
           <div class="vm-num" data-vm-num data-precision="3" data-label="Shift Z">
             <span class="vm-num__prefix" aria-hidden="true">Z</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="shiftZ" class="vm-num__input" step="0.1" title="Shift the molecule in the Z-direction" />
+            <input type="number" id="shiftZ" class="vm-num__input" step="0.1" data-tooltip="Shift the molecule in the Z-direction" />
           </div>
           <button id="viewCopyShiftBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Shift vector"
-            title="Copy Shift vector" data-copy-vector="shift">
+            data-tooltip="Copy Shift vector" data-copy-vector="shift">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
               <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
@@ -3468,20 +3210,20 @@
           <div class="vm-num" data-vm-num data-precision="3" data-label="Camera X">
             <span class="vm-num__prefix" aria-hidden="true">X</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="camX" class="vm-num__input" step="0.1" title="Camera position in the X-direction" />
+            <input type="number" id="camX" class="vm-num__input" step="0.1" data-tooltip="Camera position in the X-direction" />
           </div>
           <div class="vm-num" data-vm-num data-precision="3" data-label="Camera Y">
             <span class="vm-num__prefix" aria-hidden="true">Y</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="camY" class="vm-num__input" step="0.1" title="Camera position in the Y-direction" />
+            <input type="number" id="camY" class="vm-num__input" step="0.1" data-tooltip="Camera position in the Y-direction" />
           </div>
           <div class="vm-num" data-vm-num data-precision="3" data-label="Camera Z">
             <span class="vm-num__prefix" aria-hidden="true">Z</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="camZ" class="vm-num__input" step="0.1" title="Camera position in the Z-direction" />
+            <input type="number" id="camZ" class="vm-num__input" step="0.1" data-tooltip="Camera position in the Z-direction" />
           </div>
           <button id="viewCopyCamBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Camera vector"
-            title="Copy Camera vector" data-copy-vector="cam">
+            data-tooltip="Copy Camera vector" data-copy-vector="cam">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
               <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
@@ -3493,20 +3235,20 @@
           <div class="vm-num" data-vm-num data-precision="3" data-label="Target X">
             <span class="vm-num__prefix" aria-hidden="true">X</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="tgtX" class="vm-num__input" step="0.1" title="Target position in the X-direction" />
+            <input type="number" id="tgtX" class="vm-num__input" step="0.1" data-tooltip="Target position in the X-direction" />
           </div>
           <div class="vm-num" data-vm-num data-precision="3" data-label="Target Y">
             <span class="vm-num__prefix" aria-hidden="true">Y</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="tgtY" class="vm-num__input" step="0.1" title="Target position in the Y-direction" />
+            <input type="number" id="tgtY" class="vm-num__input" step="0.1" data-tooltip="Target position in the Y-direction" />
           </div>
           <div class="vm-num" data-vm-num data-precision="3" data-label="Target Z">
             <span class="vm-num__prefix" aria-hidden="true">Z</span>
             <span class="vm-num__value">0.000</span>
-            <input type="number" id="tgtZ" class="vm-num__input" step="0.1" title="Target position in the Z-direction" />
+            <input type="number" id="tgtZ" class="vm-num__input" step="0.1" data-tooltip="Target position in the Z-direction" />
           </div>
           <button id="viewCopyTargetBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Target vector"
-            title="Copy Target vector" data-copy-vector="target">
+            data-tooltip="Copy Target vector" data-copy-vector="target">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
               <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
@@ -3521,42 +3263,36 @@
           <label for="rotSpeedRange">Rotate speed</label>
           <div class="vm-slider" data-vm-slider>
             <input id="rotSpeedRange" class="vm-slider__range" type="range" min="0" max="5" step="0.05" value="1.00"
-              title="Speed at which the view rotates" />
-            <div class="vm-num" data-vm-num data-precision="2" data-label="Rotate speed">
-              <span class="vm-num__value">1.00</span>
-              <input type="number" id="rotSpeed" class="vm-num__input" min="0" max="5" step="0.05"
-                title="Speed at which the view rotates" />
-            </div>
+              data-tooltip="Speed at which the view rotates" />
+            <input type="text" id="rotSpeed" class="vm-slider__value vm-mono" inputmode="decimal" value="1.00"
+              data-tooltip="Speed at which the view rotates" />
           </div>
         </div>
         <div class="vm-field-row">
           <label for="dampRange">Damping</label>
           <div class="vm-slider" data-vm-slider>
             <input id="dampRange" class="vm-slider__range" type="range" min="0" max="1" step="0.01" value="0.05"
-              title="Damping factor for the view rotation" />
-            <div class="vm-num" data-vm-num data-precision="2" data-label="Damping">
-              <span class="vm-num__value">0.05</span>
-              <input type="number" id="damp" class="vm-num__input" min="0" max="1" step="0.01"
-                title="Damping factor for the view rotation" />
-            </div>
+              data-tooltip="Damping factor for the view rotation" />
+            <input type="text" id="damp" class="vm-slider__value vm-mono" inputmode="decimal" value="0.05"
+              data-tooltip="Damping factor for the view rotation" />
           </div>
         </div>
-        <div class="vm-field-row vm-field-row--toggle">
-          <label class="vm-toggle" for="autoRot">
-            <input type="checkbox" id="autoRot" class="vm-toggle__input" title="Toggle auto rotation of the camera" />
-            <span class="vm-toggle__label">Auto-rotate</span>
-          </label>
+        <div class="vm-field-row">
+          <label for="autoRot">Auto-rotate</label>
+          <div class="vm-field-control">
+            <label class="vm-toggle" for="autoRot">
+              <input type="checkbox" id="autoRot" class="vm-toggle__input" role="switch" data-tooltip="Toggle auto rotation of the camera" />
+              <span class="vm-toggle__thumb" aria-hidden="true"></span>
+            </label>
+          </div>
         </div>
         <div id="viewAutoRotateSpeedRow" class="vm-field-row" data-disabled="false">
           <label for="autoRotSpeedRange">&#x21B3; Speed</label>
           <div class="vm-slider" data-vm-slider>
             <input id="autoRotSpeedRange" class="vm-slider__range" type="range" min="0" max="10" step="0.1" value="2.0"
-              title="Speed of auto-rotation" />
-            <div class="vm-num" data-vm-num data-precision="2" data-label="Auto-rotate speed">
-              <span class="vm-num__value">2.00</span>
-              <input type="number" id="autoRotSpeed" class="vm-num__input" min="0" max="10" step="0.1"
-                title="Speed of auto-rotation" />
-            </div>
+              data-tooltip="Speed of auto-rotation" />
+            <input type="text" id="autoRotSpeed" class="vm-slider__value vm-mono" inputmode="decimal" value="2.00"
+              data-tooltip="Speed of auto-rotation" />
           </div>
         </div>
       </section>
@@ -3576,10 +3312,10 @@
     <div class="motionPanelHeader">
       <div class="title" id="coordsPanelTitle">Coordinates (Å)</div>
       <div class="actions">
-        <button id="coordsUnitsBtn" class="secondary" title="Toggle coordinate units">Bohr</button>
-        <button id="copyXYZ" class="secondary" title="Copy XYZ">Copy</button>
-        <button id="downloadXYZ" class="secondary" title="Download XYZ">Download</button>
-        <button id="coordsPanelClose" class="motionPanelClose" title="Close coordinates"><span
+        <button id="coordsUnitsBtn" class="secondary" data-tooltip="Toggle coordinate units">Bohr</button>
+        <button id="copyXYZ" class="secondary" data-tooltip="Copy XYZ">Copy</button>
+        <button id="downloadXYZ" class="secondary" data-tooltip="Download XYZ">Download</button>
+        <button id="coordsPanelClose" class="motionPanelClose" data-tooltip="Close coordinates"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
@@ -3594,11 +3330,11 @@
     <div class="motionPanelHeader">
       <div class="title">Trajectory</div>
       <div class="actions">
-        <button id="trajectoryPlayBtn" class="motionPanelIconBtn" title="Play/Pause trajectory"><span
+        <button id="trajectoryPlayBtn" class="motionPanelIconBtn" data-tooltip="Play/Pause trajectory"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
-        <button id="trajectoryResetBtn" class="motionPanelIconBtn" title="Reset to first frame"><span
+        <button id="trajectoryResetBtn" class="motionPanelIconBtn" data-tooltip="Reset to first frame"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
-        <button id="trajectoryPanelClose" class="motionPanelClose" title="Close trajectory controls"><span
+        <button id="trajectoryPanelClose" class="motionPanelClose" data-tooltip="Close trajectory controls"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
@@ -3606,14 +3342,14 @@
       <div id="trajectoryNowPlaying">No trajectory selected</div>
       <div id="trajectoryBondModeNote" style="display:none;">Trajectory bonds are dynamic</div>
       <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:1fr auto;">
-        <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" title="Trajectory frame index" />
+        <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" data-tooltip="Trajectory frame index" />
         <div id="trajectoryFrameLabel"
           style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:right;">1/1</div>
       </div>
       <div class="row" id="trajectoryRow2" style="display:none; grid-template-columns:50px 96px auto 1fr;">
         <label style="width:auto;">FPS</label>
         <input type="number" id="trajectoryFps" min="1" max="120" step="1" value="12"
-          title="Trajectory playback speed (frames per second)" />
+          data-tooltip="Trajectory playback speed (frames per second)" />
         <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked /> Loop</label>
         <span></span>
       </div>
@@ -3624,11 +3360,11 @@
     <div class="motionPanelHeader">
       <div class="title">Vibrational Frequencies</div>
       <div class="actions">
-        <button id="vibrationPlayBtn" class="motionPanelIconBtn" title="Play/Pause vibrational mode"><span
+        <button id="vibrationPlayBtn" class="motionPanelIconBtn" data-tooltip="Play/Pause vibrational mode"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
-        <button id="vibrationResetBtn" class="motionPanelIconBtn" title="Reset to equilibrium geometry"><span
+        <button id="vibrationResetBtn" class="motionPanelIconBtn" data-tooltip="Reset to equilibrium geometry"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
-        <button id="vibrationPanelClose" class="motionPanelClose" title="Close vibration controls"><span
+        <button id="vibrationPanelClose" class="motionPanelClose" data-tooltip="Close vibration controls"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
@@ -3642,13 +3378,13 @@
         <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:left;">
           No mode selected</div>
       </div>
-      <div class="row" id="vibrationRow2" style="display:none; grid-template-columns:58px 94px 64px 94px 1fr;">
+      <div class="row" id="vibrationRow2" style="display:none;">
         <label style="width:auto;">Vib Amp</label>
         <input type="number" id="vibrationAmplitude" min="0" max="8" step="0.05" value="0.50"
-          title="Mode displacement scale factor" />
+          data-tooltip="Mode displacement scale factor" />
         <label style="width:auto;">Speed</label>
         <input type="number" id="vibrationSpeed" min="0.1" max="30" step="0.05" value="0.75"
-          title="Oscillation speed in cycles per second" />
+          data-tooltip="Oscillation speed in cycles per second" />
         <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:right;">
           -- cm<sup>−1</sup></div>
       </div>
@@ -3677,7 +3413,7 @@
   <div id="modeToast" class="vm-popover vm-modeToast" aria-hidden="true" role="status" aria-live="polite" aria-atomic="true">
     <div id="modeToastBody" class="vm-modeToast__body"></div>
     <button id="modeToastDismiss" class="vm-btn vm-btn--icon vm-modeToast__dismiss" type="button"
-      aria-label="Dismiss this help toast forever" title="Dismiss this help toast forever">
+      aria-label="Dismiss this help toast forever" data-tooltip="Dismiss this help toast forever">
       <svg viewBox="0 0 16 16" aria-hidden="true">
         <path d="M4 4L12 12"></path>
         <path d="M12 4L4 12"></path>
@@ -3696,7 +3432,7 @@
         </div>
         <div class="vm-popover__actions">
           <button id="helpClose" class="vm-btn vm-btn--icon" type="button" aria-label="Close keyboard shortcuts"
-            title="Close keyboard shortcuts">
+            data-tooltip="Close keyboard shortcuts">
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M4 4L12 12"></path>
               <path d="M12 4L4 12"></path>
@@ -3775,13 +3511,13 @@
     <div id="elementColorModal" role="dialog" aria-modal="true" aria-label="Element Color Editor">
       <div id="elementColorHead">
         <div class="title">Element Colors</div>
-        <button id="elementColorClose" class="secondary ms-icon-button" title="Close">close</button>
+        <button id="elementColorClose" class="secondary ms-icon-button" data-tooltip="Close">close</button>
       </div>
       <div id="elementColorPickerRow">
         <span id="elementColorName">Select an element</span>
         <input type="color" id="elementColorPicker" value="#ffffff" />
-        <button id="elementColorResetOne" class="secondary" title="Reset selected element color">Reset Selected</button>
-        <button id="elementColorResetAll" class="secondary" title="Reset all element colors to defaults">Reset
+        <button id="elementColorResetOne" class="secondary" data-tooltip="Reset selected element color">Reset Selected</button>
+        <button id="elementColorResetAll" class="secondary" data-tooltip="Reset all element colors to defaults">Reset
           All</button>
       </div>
       <div id="periodicTableViewport" aria-label="Periodic table color editor">
@@ -3870,6 +3606,8 @@
   <script src="./assets/app/js/symmetry.js"></script>
   <!-- persistent UI preferences -->
   <script src="./src/prefs.js"></script>
+  <!-- root tooltip portal -->
+  <script src="./src/components/VmTooltip.js"></script>
 
   <script src="./assets/app/js/app.js"></script>
 </body>

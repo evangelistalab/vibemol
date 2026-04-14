@@ -4,7 +4,7 @@
   // App version displayed in Help
   const APP_VERSION = '0.8.2';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
-  const HINT_STYLE_KEYS = 'Style: 1=Default 2=Toon 3=Kit 4=Glossy';
+  const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
   const HINT_START = '';
   const VIBRATION_KIND = 'vibemol.vibrations';
@@ -1147,7 +1147,7 @@
   // Current iso-surface material style
   let surfaceStyle = 'emissive';
   // Current atom/bond material style
-  let moleculeStyle = 'default';
+  let moleculeStyle = 'basic';
   // Independent molecule appearance features.
   let moleculeShadowsEnabled = false;
   let moleculeFogEnabled = false;
@@ -1350,19 +1350,20 @@
     renderer.setScissorTest(false);
   }
   const MOLECULE_STYLE_KEYS = Object.freeze([
-    'default',
+    'basic',
     'toon',
     'kit',
     'glossy',
   ]);
   const MOLECULE_STYLE_ALIASES = Object.freeze({
+    default: 'basic',
     fancy: 'toon',
     studio: 'kit',
   });
   const MOLECULE_STYLE_SET = new Set(MOLECULE_STYLE_KEYS);
   const MOLECULE_STYLE_PROFILE = Object.freeze({
-    default: Object.freeze({
-      key: 'default',
+    basic: Object.freeze({
+      key: 'basic',
       atomScaleMain: 1.0,
       atomScaleTransitionMetal: 1.0,
       sphereWidthSegments: 36,
@@ -1476,22 +1477,22 @@
   /**
    * Normalize molecule-style keys and compatibility aliases.
    * @param {*} value
-   * @returns {'default'|'toon'|'kit'|'glossy'}
+   * @returns {'basic'|'toon'|'kit'|'glossy'}
    */
   function normalizeMoleculeStyleKey(value) {
     const raw = (typeof value === 'string') ? value.trim().toLowerCase() : '';
     const mapped = MOLECULE_STYLE_ALIASES[raw] || raw;
-    return MOLECULE_STYLE_SET.has(mapped) ? mapped : 'default';
+    return MOLECULE_STYLE_SET.has(mapped) ? mapped : 'basic';
   }
 
   /**
    * Resolve one style profile.
    * @param {*} [styleKey]
-   * @returns {typeof MOLECULE_STYLE_PROFILE['default']}
+   * @returns {typeof MOLECULE_STYLE_PROFILE['basic']}
    */
   function getMoleculeStyleProfile(styleKey = moleculeStyle) {
     const key = normalizeMoleculeStyleKey(styleKey);
-    return MOLECULE_STYLE_PROFILE[key] || MOLECULE_STYLE_PROFILE.default;
+    return MOLECULE_STYLE_PROFILE[key] || MOLECULE_STYLE_PROFILE.basic;
   }
   // Center radius (Å) for glossy bond connectors before the global bond scale is applied.
   let glossyBondRadius = 0.072;
@@ -1741,7 +1742,7 @@
   }
 
   /**
-   * Determine whether molecule rendering is using a stylized non-default mode.
+   * Determine whether molecule rendering is using a stylized non-basic mode.
    * @returns {boolean}
    */
   function useStylizedMoleculeStyle() {
@@ -1767,13 +1768,13 @@
   /**
    * Determine whether straight bond connectors should be seated against atom
    * surfaces instead of rendered center-to-center.
-   * Default and toon intentionally share this geometry policy.
+   * Basic and toon intentionally share this geometry policy.
    * @param {{key?:string}|null|undefined} profile
    * @returns {boolean}
    */
   function useSurfaceSeatedStraightBondConnectors(profile = null) {
     const key = String((profile && profile.key) || getMoleculeStyleProfile().key || '');
-    return key === 'default' || key === 'toon';
+    return key === 'basic' || key === 'toon';
   }
 
   /**
@@ -2749,7 +2750,7 @@
   }
 
   /**
-   * Remap bond-gradient interpolation so default-mode color changes happen
+   * Remap bond-gradient interpolation so basic-mode color changes happen
    * Apply end-to-end color interpolation to a cylinder so bonds are color-graded.
    * @param {THREE.BufferGeometry} geom
    * @param {THREE.Color} colorA
@@ -3913,7 +3914,7 @@
         bondComponentOffset: offsetU,
         bondComponentOffsetU: offsetU,
         bondComponentOffsetV: offsetV,
-        connectorStyle: isKitStyle ? 'kit' : isGlossyStyle ? 'glossy' : 'default',
+        connectorStyle: isKitStyle ? 'kit' : isGlossyStyle ? 'glossy' : 'basic',
         connectorCenterRadius: componentCenterRadius,
         connectorEndRadius: isKitStyle ? kitCollarRadius : isGlossyStyle ? Math.max(glossyEndRadiusA, glossyEndRadiusB) : componentCenterRadius,
         connectorEndRadiusA: isGlossyStyle ? glossyEndRadiusA : undefined,
@@ -3944,7 +3945,7 @@
       const gradientColorA = a.bondColor || a.color;
       const gradientColorB = b.bondColor || b.color;
       const q = new THREE.Quaternion().setFromUnitVectors(up, dirNorm);
-      const useSplitColorBondConnector = profile.key === 'default' || profile.key === 'toon';
+      const useSplitColorBondConnector = profile.key === 'basic' || profile.key === 'toon';
       if (useSplitColorBondConnector && !isGlossyStyle && !isKitStyle && gradientColorA && gradientColorB) {
         const sameElement = (a.Z | 0) === (b.Z | 0);
         if (sameElement) {
@@ -4285,7 +4286,7 @@
           trimA = Math.max(0, a.displayRadius * glossySeatFraction + glossySeatInset);
           trimB = Math.max(0, b.displayRadius * glossySeatFraction + glossySeatInset);
         } else if (useSurfaceSeatedStraightBond) {
-          // Default/toon straight bonds: seat at sphere contact for constant
+          // Basic/toon straight bonds: seat at sphere contact for constant
           // bond radius and add a tiny overlap so bonds dip into atom shells.
           // Keeping this in one branch prevents the styles from drifting.
           const defaultSeatOverlap = 0.01;
@@ -4407,7 +4408,7 @@
       if (!obj || !obj.userData) continue;
       const {
         i, j, baseLen, baseGeomLen, trimA = 0, trimB = 0,
-        connectorStyle = 'default',
+        connectorStyle = 'basic',
         bondComponentOffset = 0,
         bondComponentOffsetU,
         bondComponentOffsetV = 0,
@@ -4650,7 +4651,13 @@
     getComponentMode,
     isAutoIsoEnabled: () => autoIsoEnabled,
     setIsoInputValue: (value) => {
-      if (isoInput) isoInput.value = value;
+      if (!isoInput) return;
+      const numeric = Number(value);
+      if (Number.isFinite(numeric)) {
+        setViewControlValue(isoInput, numeric);
+        return;
+      }
+      isoInput.value = value;
     },
     hasIsoInput: () => !!isoInput,
     rebuildScene,
@@ -4889,9 +4896,9 @@
     const info = getActiveTrajectoryInfo();
     if (trajectoryPanelBtn) {
       trajectoryPanelBtn.style.display = info.enabled ? '' : 'none';
-      trajectoryPanelBtn.title = info.enabled
+      setTooltipText(trajectoryPanelBtn, info.enabled
         ? 'Trajectory controls (T)'
-        : 'No trajectory data in active file';
+        : 'No trajectory data in active file');
     }
     if (trajectoryRow) trajectoryRow.style.display = info.enabled ? 'grid' : 'none';
     if (trajectoryRow2) trajectoryRow2.style.display = info.enabled ? 'grid' : 'none';
@@ -5270,8 +5277,8 @@
       const intensity = getVibrationModeIrIntensity(mode);
       const intensityCell = hasAnyIntensity ? formatVibrationIntensityCell(intensity) : '--';
       rows.push(
-        `<tr class="mode-row${activeClass}" data-mode-index="${i}" title="Select ${escapeHtml(rawLabel)}">`
-        + `<td><button class="vibrationPlayCell" data-action="play" data-mode-index="${i}" title="Play ${escapeHtml(rawLabel)}">${(i === (vib.modeIndex | 0) && vibrationPlaying) ? 'pause' : 'play_arrow'}</button></td>`
+        `<tr class="mode-row${activeClass}" data-mode-index="${i}" data-tooltip="Select ${escapeHtml(rawLabel)}">`
+        + `<td><button class="vibrationPlayCell" data-action="play" data-mode-index="${i}" data-tooltip="Play ${escapeHtml(rawLabel)}">${(i === (vib.modeIndex | 0) && vibrationPlaying) ? 'pause' : 'play_arrow'}</button></td>`
         + `<td>${i + 1}</td>`
         + `<td>${escapeHtml(rawLabel)}</td>`
         + `<td>${escapeHtml(freqCell)}</td>`
@@ -5297,9 +5304,9 @@
   function syncVibrationControls() {
     const info = getActiveVibrationInfo();
     if (vibrationPanelBtn) {
-      vibrationPanelBtn.title = info.enabled
+      setTooltipText(vibrationPanelBtn, info.enabled
         ? 'Vibrational mode controls (F)'
-        : 'No vibrational mode data in active file';
+        : 'No vibrational mode data in active file');
     }
     if (vibrationRow) vibrationRow.style.display = info.enabled ? 'grid' : 'none';
     if (vibrationRow2) vibrationRow2.style.display = info.enabled ? 'grid' : 'none';
@@ -5684,10 +5691,10 @@
   const duplicateFileBtn = document.getElementById('duplicateFileBtn');
   const removeFileBtn = document.getElementById('removeFileBtn');
   const fileSelect = document.getElementById('fileSelect');
+  const fileSelectDisplay = document.getElementById('fileSelectDisplay');
   const isoInput = document.getElementById('iso');
   const autoIsoBtn = document.getElementById('autoIsoBtn');
   const opInput = document.getElementById('opacity');
-  const opacityPercentEl = document.getElementById('opacityPercent');
   const posColor = document.getElementById('posColor');
   const posColorHexEl = document.getElementById('posColorHex');
   const posColorSwatchEl = document.getElementById('posColorSwatch');
@@ -5731,9 +5738,14 @@
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
   const displayInspectorToggleIcon = document.getElementById('displayInspectorToggleIcon');
   const displayInspector = document.getElementById('displayInspector');
-  const appearanceStyleChipEls = Array.from(document.querySelectorAll('#displayInspector .appearanceStyleChip[data-style]'));
-  const appearanceActionToggleButtonEls = Array.from(document.querySelectorAll('#displayInspector .inspectorActionToggle[data-toggle-input]'));
-  const appearanceFontPairButtonEls = Array.from(document.querySelectorAll('#displayInspector .vm-radio[data-font-pair]'));
+  const appearanceMoleculeStyleGroupEl = document.getElementById('appearanceMoleculeStyleGroup');
+  const appearanceFontPairGroupEl = document.getElementById('appearanceFontPairGroup');
+  const projectionModeGroupEl = document.getElementById('projectionModeGroup');
+  const appearanceDofFocusModeGroupEl = document.getElementById('appearanceDofFocusModeGroup');
+  const appearanceRenderModeGroupEl = document.getElementById('appearanceRenderModeGroup');
+  const appearanceSurfaceStyleGroupEl = document.getElementById('appearanceSurfaceStyleGroup');
+  const appearanceCloudTypeGroupEl = document.getElementById('appearanceCloudTypeGroup');
+  const appearanceSimpleBondsToggleEl = document.getElementById('appearanceSimpleBondsToggle');
   const appearanceSurfacesSectionEl = document.getElementById('appearanceSurfacesSection');
   const appearanceTwoComponentSectionEl = document.getElementById('appearanceTwoComponentSection');
   const appearanceCloudSectionEl = document.getElementById('appearanceCloudSection');
@@ -5785,9 +5797,8 @@
   const shiftZ = document.getElementById('shiftZ');
   const centerMassBtn = document.getElementById('centerMassBtn');
   const alignInertiaBtn = document.getElementById('alignInertiaBtn');
-  const projectionModeBtn = document.getElementById('projectionModeBtn');
-  const projectionModeLabel = document.getElementById('projectionModeLabel');
-  const projectionModeState = document.getElementById('projectionModeState');
+  const projectionPerspectiveBtn = document.getElementById('projectionPerspectiveBtn');
+  const projectionOrthographicBtn = document.getElementById('projectionOrthographicBtn');
   const viewAxisXBtn = document.getElementById('viewAxisXBtn');
   const viewAxisYBtn = document.getElementById('viewAxisYBtn');
   const viewAxisZBtn = document.getElementById('viewAxisZBtn');
@@ -5843,26 +5854,22 @@
   const pointCameraComBtn = document.getElementById('pointCameraComBtn');
   const moleculeStyleSel = document.getElementById('moleculeStyle');
   const moleculeAtomRadiusScaleEl = document.getElementById('moleculeAtomRadiusScale');
-  const moleculeAtomRadiusScaleValueEl = document.getElementById('moleculeAtomRadiusScaleValue');
   const moleculeBondRadiusScaleEl = document.getElementById('moleculeBondRadiusScale');
-  const moleculeBondRadiusScaleValueEl = document.getElementById('moleculeBondRadiusScaleValue');
   const rowGlossyBond = document.getElementById('rowGlossyBond');
   const glossyBondRadiusEl = document.getElementById('glossyBondRadius');
   const moleculeShadowsToggleEl = document.getElementById('moleculeShadowsToggle');
   const moleculeFogToggleEl = document.getElementById('moleculeFogToggle');
   const rowMoleculeFogDepth = document.getElementById('rowMoleculeFogDepth');
   const moleculeFogDepthEl = document.getElementById('moleculeFogDepth');
-  const moleculeFogDepthValueEl = document.getElementById('moleculeFogDepthValue');
   const moleculeInkToggleEl = document.getElementById('moleculeInkToggle');
   const moleculeAtomOpacityEl = document.getElementById('moleculeAtomOpacity');
   const moleculeBondOpacityEl = document.getElementById('moleculeBondOpacity');
   const moleculeBlackbodyToggleEl = document.getElementById('moleculeBlackbodyToggle');
-  const rowBlackbodyColors = document.getElementById('rowBlackbodyColors');
+  const rowBlackbodyColdColor = document.getElementById('rowBlackbodyColdColor');
+  const rowBlackbodyHotColor = document.getElementById('rowBlackbodyHotColor');
   const blackbodyColdColorEl = document.getElementById('blackbodyColdColor');
-  const blackbodyColdHexEl = document.getElementById('blackbodyColdHex');
   const blackbodyColdSwatchEl = document.getElementById('blackbodyColdSwatch');
   const blackbodyHotColorEl = document.getElementById('blackbodyHotColor');
-  const blackbodyHotHexEl = document.getElementById('blackbodyHotHex');
   const blackbodyHotSwatchEl = document.getElementById('blackbodyHotSwatch');
   const dofToggleEl = document.getElementById('dofToggle');
   const rowDofFocusMode = document.getElementById('rowDofFocusMode');
@@ -5875,6 +5882,8 @@
   const dofBlurAmountEl = document.getElementById('dofBlurAmount');
   const schemeSelect = document.getElementById('schemeSelect');
   const renderModeSel = document.getElementById('renderMode');
+  const rowSurfacePosColor = document.getElementById('rowSurfacePosColor');
+  const rowSurfaceNegColor = document.getElementById('rowSurfaceNegColor');
   const twoComponentModeRow = document.getElementById('twoComponentModeRow');
   const twoComponentModeSelect = document.getElementById('twoComponentModeSelect');
   const phaseWheelEl = document.getElementById('phaseWheel');
@@ -5945,7 +5954,14 @@
       this.root.setAttribute('role', 'spinbutton');
       this.root.setAttribute(
         'aria-label',
-        String(root.dataset.label || this.input.getAttribute('aria-label') || this.input.title || this.input.id || 'Value')
+        String(
+          root.dataset.label
+          || this.input.getAttribute('data-label')
+          || this.input.getAttribute('aria-label')
+          || this.input.getAttribute('name')
+          || this.input.id
+          || 'Value'
+        )
       );
       this.root.addEventListener('mousedown', (evt) => this.handleMouseDown(evt));
       this.root.addEventListener('keydown', (evt) => this.handleKeyDown(evt));
@@ -6086,60 +6102,179 @@
     constructor(root) {
       this.root = root;
       this.range = root ? root.querySelector('.vm-slider__range') : null;
-      this.numberRoot = root ? root.querySelector('.vm-num') : null;
-      this.numberInput = this.numberRoot ? this.numberRoot.querySelector('.vm-num__input') : null;
-      this.number = this.numberInput ? viewNumberInputRegistry.get(this.numberInput) : null;
+      this.valueInput = root ? root.querySelector('.vm-slider__value') : null;
       this.syncing = false;
-      if (!(this.root && this.range && this.number && this.numberInput)) return;
+      this.trackSteps = 1000;
+      this.scale = root && root.dataset && root.dataset.scale === 'log' ? 'log' : 'linear';
+      this.precision = Math.max(0, Number.parseInt(root && root.dataset ? root.dataset.precision || '2' : '2', 10) || 0);
+      this.min = 0;
+      this.max = 1;
+      this.value = 0;
+      this.lastCommittedValue = 0;
+      this.isEditing = false;
+      if (!(this.root && this.range && this.valueInput)) return;
       const trackWidth = Number(root.dataset.trackWidth);
       if (Number.isFinite(trackWidth) && trackWidth > 0) this.root.style.setProperty('--vm-slider-track-width', `${trackWidth}px`);
-      this.range.addEventListener('input', () => this.handleRangeInput());
-      this.range.addEventListener('change', () => this.handleRangeInput());
-      this.numberInput.addEventListener('input', () => this.syncFromNumberInput());
-      this.numberInput.addEventListener('change', () => this.syncFromNumberInput());
-      this.syncFromNumberInput();
+      this.range.min = '0';
+      this.range.max = String(this.trackSteps);
+      this.range.step = '1';
+      this.setBounds(
+        Number(root && root.dataset ? root.dataset.min : 0),
+        Number(root && root.dataset ? root.dataset.max : 1),
+        { preserveValue: false, value: Number(this.valueInput.value) }
+      );
+      this.range.addEventListener('input', () => this.handleRangeInput('input'));
+      this.range.addEventListener('change', () => this.handleRangeInput('change'));
+      this.valueInput.addEventListener('focus', () => {
+        this.isEditing = true;
+        this.valueInput.select();
+      });
+      this.valueInput.addEventListener('keydown', (evt) => this.handleValueKeyDown(evt));
+      this.valueInput.addEventListener('blur', () => this.commitValueInput({ revert: false }));
+      this.syncUi({ formatInput: true });
     }
 
-    syncFromNumberInput() {
-      if (this.syncing) return;
-      this.syncing = true;
-      const value = clampViewNumericValue(this.number.getValue(), Number(this.range.min), Number(this.range.max));
-      this.range.value = String(value);
-      this.updateFill();
-      this.syncing = false;
+    normalizeBounds(min, max) {
+      const nextMin = Number.isFinite(min) ? min : 0;
+      const nextMax = Number.isFinite(max) ? max : 1;
+      if (this.scale === 'log') {
+        return {
+          min: Math.max(1e-9, Math.min(nextMin, nextMax)),
+          max: Math.max(Math.max(1e-9, Math.min(nextMin, nextMax)) * 10, Math.max(nextMin, nextMax)),
+        };
+      }
+      return {
+        min: Math.min(nextMin, nextMax),
+        max: Math.max(nextMin, nextMax),
+      };
     }
 
-    handleRangeInput() {
+    formatValue(value) {
+      if (!Number.isFinite(value)) return '';
+      if (this.precision <= 0) return String(Math.round(value));
+      if (this.scale === 'log') {
+        const abs = Math.abs(Number(value));
+        if (!(abs > 0)) return '0';
+        const exponent = Math.floor(Math.log10(abs));
+        const decimals = Math.max(0, this.precision - exponent - 1);
+        if (decimals <= 12) return Number(value).toFixed(decimals);
+        return Number(value).toPrecision(this.precision);
+      }
+      return Number(value).toFixed(this.precision);
+    }
+
+    getValue() {
+      return Number.isFinite(this.value) ? this.value : this.min;
+    }
+
+    trackToValue(trackValue) {
+      const t = Math.max(0, Math.min(1, Number(trackValue) / this.trackSteps));
+      if (this.scale === 'log') {
+        const logMin = Math.log10(this.min);
+        const logMax = Math.log10(this.max);
+        return Math.pow(10, logMin + t * (logMax - logMin));
+      }
+      return this.min + t * (this.max - this.min);
+    }
+
+    valueToTrack(value) {
+      const clamped = this.scale === 'log'
+        ? Math.max(this.min, Math.min(this.max, Number.isFinite(value) ? value : this.min))
+        : Math.max(this.min, Math.min(this.max, Number.isFinite(value) ? value : this.min));
+      let t = 0;
+      if (this.scale === 'log') {
+        const logMin = Math.log10(this.min);
+        const logMax = Math.log10(this.max);
+        t = (Math.log10(clamped) - logMin) / (logMax - logMin);
+      } else {
+        const span = this.max - this.min;
+        t = span > 0 ? (clamped - this.min) / span : 0;
+      }
+      return Math.round(Math.max(0, Math.min(1, t)) * this.trackSteps);
+    }
+
+    syncUi(options = {}) {
+      if (!(this.range && this.valueInput)) return;
+      this.range.value = String(this.valueToTrack(this.value));
+      this.updateFill();
+      if (options.formatInput !== false && !this.isEditing) {
+        this.valueInput.value = this.formatValue(this.value);
+      }
+    }
+
+    commitValueInput(options = {}) {
+      if (!this.valueInput) return;
+      const revert = !!options.revert;
+      this.isEditing = false;
+      if (revert) {
+        this.valueInput.value = this.formatValue(this.lastCommittedValue);
+        this.value = this.lastCommittedValue;
+        this.syncUi({ formatInput: true });
+        return;
+      }
+      const parsed = Number(this.valueInput.value);
+      if (!Number.isFinite(parsed)) {
+        this.value = this.lastCommittedValue;
+        this.syncUi({ formatInput: true });
+        return;
+      }
+      this.setValue(parsed, { emitType: 'change', formatInput: true });
+    }
+
+    handleValueKeyDown(evt) {
+      if (!this.valueInput || this.valueInput.disabled) return;
+      if (evt.key === 'Enter') {
+        evt.preventDefault();
+        this.commitValueInput({ revert: false });
+        this.valueInput.blur();
+      } else if (evt.key === 'Escape') {
+        evt.preventDefault();
+        this.commitValueInput({ revert: true });
+        this.valueInput.blur();
+      }
+    }
+
+    handleRangeInput(eventType) {
       if (this.syncing) return;
       this.syncing = true;
-      const value = Number(this.range.value);
-      this.number.setValue(value, { emit: true });
-      this.updateFill();
+      const value = this.trackToValue(Number(this.range.value));
+      this.setValue(value, { emitType: eventType, formatInput: true });
       this.syncing = false;
     }
 
     updateFill() {
-      const min = Number(this.range.min);
-      const max = Number(this.range.max);
       const value = Number(this.range.value);
-      const span = Number.isFinite(max - min) && (max - min) > 0 ? (max - min) : 1;
-      const percent = ((value - min) / span) * 100;
+      const percent = (value / this.trackSteps) * 100;
       this.root.style.setProperty('--vm-slider-fill-percent', `${Math.max(0, Math.min(100, percent))}%`);
     }
 
+    setBounds(min, max, options = {}) {
+      const normalized = this.normalizeBounds(min, max);
+      this.min = normalized.min;
+      this.max = normalized.max;
+      this.root.dataset.min = String(this.min);
+      this.root.dataset.max = String(this.max);
+      if (!options.preserveValue) {
+        this.value = Number.isFinite(options.value) ? Number(options.value) : this.min;
+        this.lastCommittedValue = this.value;
+      }
+      this.syncUi({ formatInput: options.formatInput !== false });
+    }
+
     setValue(value, options = {}) {
-      if (!(this.range && this.number)) return;
-      this.syncing = true;
-      this.number.setValue(value, options);
-      this.range.value = String(clampViewNumericValue(this.number.getValue(), Number(this.range.min), Number(this.range.max)));
-      this.updateFill();
-      this.syncing = false;
+      if (!(this.range && this.valueInput) || !Number.isFinite(value)) return;
+      this.value = value;
+      this.lastCommittedValue = value;
+      this.syncUi({ formatInput: options.formatInput !== false });
+      if (options.emitType === 'input' || options.emitType === 'change') {
+        this.valueInput.dispatchEvent(new Event(options.emitType, { bubbles: true }));
+      }
     }
 
     setDisabled(disabled) {
       const next = !!disabled;
       if (this.range) this.range.disabled = next;
-      if (this.number) this.number.setDisabled(next);
+      if (this.valueInput) this.valueInput.disabled = next;
       this.root.setAttribute('data-disabled', next ? 'true' : 'false');
     }
   }
@@ -6179,6 +6314,20 @@
     input.value = String(value);
   }
 
+  /**
+   * Apply one slider bound update when the target input belongs to a VmSlider.
+   * @param {HTMLInputElement|null} input
+   * @param {number} min
+   * @param {number} max
+   * @param {{preserveValue?:boolean,value?:number}=} options
+   */
+  function setViewSliderBounds(input, min, max, options = {}) {
+    if (!input) return;
+    const slider = getViewSliderComponent(input);
+    if (!slider) return;
+    slider.setBounds(min, max, options);
+  }
+
   function syncViewAutoRotateState() {
     const enabled = !!(autoRot && autoRot.checked);
     if (viewAutoRotateSpeedRow) viewAutoRotateSpeedRow.setAttribute('data-disabled', enabled ? 'false' : 'true');
@@ -6195,12 +6344,12 @@
       const instance = new VmNumberInput(root);
       viewNumberInputRegistry.set(input, instance);
     }
-    const sliderRoots = Array.from(document.querySelectorAll('#sidePanel .vm-slider'));
+    const sliderRoots = Array.from(document.querySelectorAll('.vm-slider'));
     for (const root of sliderRoots) {
-      const numberInput = root.querySelector('.vm-num__input');
-      if (!(numberInput instanceof HTMLInputElement)) continue;
+      const valueInput = root.querySelector('.vm-slider__value');
+      if (!(valueInput instanceof HTMLInputElement)) continue;
       const instance = new VmSlider(root);
-      viewSliderRegistry.set(numberInput, instance);
+      viewSliderRegistry.set(valueInput, instance);
     }
     syncViewAutoRotateState();
   }
@@ -6557,7 +6706,6 @@
   const pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
   const pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
   const toolbarEl = document.getElementById('toolbar');
-  const toolbarTooltipEl = document.getElementById('toolbarTooltip');
   const toolbarCollapseBtn = document.getElementById('toolbarCollapseBtn');
   const toolbarShowBtn = document.getElementById('toolbarShowBtn');
   const modeDisplayBtn = document.getElementById('modeDisplayBtn');
@@ -6590,7 +6738,6 @@
     document.body.appendChild(el);
     return el;
   })();
-  let toolbarTooltipAnchorEl = null;
   let global2CComponentMode = DEFAULT_2C_COMPONENT_MODE;
   if (twoComponentModeSelect) twoComponentModeSelect.value = global2CComponentMode;
 
@@ -6600,6 +6747,49 @@
    */
   function getUiTheme() {
     return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  /**
+   * Set one element's tooltip text using the shared portal tooltip contract.
+   * @param {Element|null} el
+   * @param {*} text
+   */
+  function setTooltipText(el, text) {
+    if (!el || typeof el.setAttribute !== 'function') return;
+    const next = String(text == null ? '' : text).trim();
+    if (next) el.setAttribute('data-tooltip', next);
+    else el.removeAttribute('data-tooltip');
+  }
+
+  /**
+   * Assign one explicit tooltip placement to an element.
+   * @param {Element|null} el
+   * @param {'bottom'|'top'|'left'|'right'} placement
+   */
+  function setTooltipPlacement(el, placement) {
+    if (!el || typeof el.setAttribute !== 'function') return;
+    if (placement === 'top' || placement === 'left' || placement === 'right' || placement === 'bottom') {
+      el.setAttribute('data-tooltip-placement', placement);
+      return;
+    }
+    el.removeAttribute('data-tooltip-placement');
+  }
+
+  /**
+   * Hide the shared root tooltip when shell layout changes.
+   */
+  function hideActiveTooltip() {
+    if (window.VibeMolTooltip && typeof window.VibeMolTooltip.hideTooltip === 'function') {
+      window.VibeMolTooltip.hideTooltip();
+    }
+  }
+
+  /**
+   * Apply static tooltip-placement defaults to recurring control groups.
+   */
+  function initializeTooltipPlacementDefaults() {
+    document.querySelectorAll('.adaptiveEditItem').forEach((el) => setTooltipPlacement(el, 'right'));
+    document.querySelectorAll('.motionPanelIconBtn, .motionPanelClose').forEach((el) => setTooltipPlacement(el, 'top'));
   }
 
   /**
@@ -6638,7 +6828,7 @@
     }
     if (themeToggleShellEl) {
       themeToggleShellEl.setAttribute('aria-label', `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`);
-      themeToggleShellEl.title = `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`;
+      setTooltipText(themeToggleShellEl, `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`);
     }
     applyMoleculeStyleLighting();
   }
@@ -6790,7 +6980,7 @@
       moldenMoSelect.appendChild(opt);
     }
     moldenMoSelect.value = String(selectedIndex);
-    moldenMoSelect.title = 'Select one molecular orbital parsed from the Molden file for surface/cloud rendering.';
+    setTooltipText(moldenMoSelect, 'Select one molecular orbital parsed from the Molden file for surface/cloud rendering.');
     moldenMoSummary.textContent = formatMoldenMoSummary(molden.mos[selectedIndex], moCount, basisCount);
     const gridSettings = getMoldenGridSettings(record);
     moldenGridStepEl.value = gridSettings.stepAng.toFixed(2);
@@ -6842,6 +7032,14 @@
     } else if (currentIndex < 0) {
       fileSelect.value = '';
     }
+    if (fileSelectDisplay) {
+      const activeName = (currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].name)
+        ? String(volumes[currentIndex].name)
+        : 'No file loaded';
+      fileSelectDisplay.textContent = activeName;
+    }
+    fileSelect.dataset.interactive = fileSelect.options.length > 1 ? 'true' : 'false';
+    fileSelect.disabled = fileSelect.options.length <= 1;
   }
 
   /**
@@ -6994,24 +7192,13 @@
     const isCheckbox = typeof surfBtn.type === 'string' && surfBtn.type.toLowerCase() === 'checkbox';
     if (isCheckbox) {
       surfBtn.checked = !!showSurfaces;
-      surfBtn.title = 'Toggle iso-surface rendering';
+      setTooltipText(surfBtn, 'Toggle iso-surface rendering');
       syncAllAppearanceActionToggleButtons();
       return;
     }
     surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces';
   };
   updateSurfBtn();
-
-  /**
-   * Sync opacity readout text (`NN%`) beside the surface opacity slider.
-   */
-  function updateOpacityPercentLabel() {
-    if (!opacityPercentEl) return;
-    const raw = parseFloat((opInput && opInput.value) || '1');
-    const clamped = Math.max(0.05, Math.min(1, Number.isFinite(raw) ? raw : 1));
-    opacityPercentEl.textContent = `${Math.round(clamped * 100)}%`;
-  }
-  updateOpacityPercentLabel();
 
   /**
    * Synchronize custom color picker chips (swatch + uppercase hex text).
@@ -7022,8 +7209,8 @@
       [posColor, posColorHexEl, posColorSwatchEl],
       [negColor, negColorHexEl, negColorSwatchEl],
       [bgColor, bgColorHexEl, bgColorSwatchEl],
-      [blackbodyColdColorEl, blackbodyColdHexEl, blackbodyColdSwatchEl],
-      [blackbodyHotColorEl, blackbodyHotHexEl, blackbodyHotSwatchEl],
+      [blackbodyColdColorEl, null, blackbodyColdSwatchEl],
+      [blackbodyHotColorEl, null, blackbodyHotSwatchEl],
     ];
     for (const [inputEl, hexEl, swatchEl] of fields) {
       if (!inputEl) continue;
@@ -7041,7 +7228,11 @@
    */
   function formatIsoInputValue(value) {
     const v = Math.max(0, Number.isFinite(value) ? value : 0);
-    return v.toFixed(4).replace(/(\.\d*?[1-9])0+$/u, '$1').replace(/\.0+$/u, '');
+    if (!(v > 0)) return '0';
+    const exponent = Math.floor(Math.log10(v));
+    const decimals = Math.max(0, 4 - exponent - 1);
+    if (decimals <= 12) return v.toFixed(decimals);
+    return v.toPrecision(4);
   }
 
   /**
@@ -7387,11 +7578,11 @@
     const vol = record && record.vol;
     const hasGrid = hasVolumetricGrid(vol);
     autoIsoBtn.disabled = false;
-    autoIsoBtn.classList.toggle('active', autoIsoEnabled);
-    autoIsoBtn.setAttribute('aria-pressed', autoIsoEnabled ? 'true' : 'false');
-    autoIsoBtn.title = hasGrid
+    autoIsoBtn.checked = !!autoIsoEnabled;
+    autoIsoBtn.setAttribute('aria-checked', autoIsoEnabled ? 'true' : 'false');
+    setTooltipText(autoIsoBtn, hasGrid
       ? `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: target ${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% density (cached per orbital/component).`
-      : `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube/.molden file to apply.`;
+      : `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube/.molden file to apply.`);
   }
   updateAutoIsoButtonState();
 
@@ -7403,7 +7594,7 @@
     const isCollapsed = !!collapsed;
     document.body.classList.toggle('sidebar-collapsed', isCollapsed);
     if (toolbarEl) toolbarEl.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
-    hideToolbarTooltip();
+    hideActiveTooltip();
     // Refresh projection immediately because sidebar open/close is now non-animated.
     resize();
   }
@@ -7412,105 +7603,10 @@
   if (toolbarShowBtn) toolbarShowBtn.onclick = () => setWorkspaceSidebarCollapsed(false);
   setWorkspaceSidebarCollapsed(false);
   initializeUiThemeToggle();
-
-  /**
-   * Hide the floating toolbar tooltip.
-   */
-  function hideToolbarTooltip() {
-    if (!toolbarTooltipEl) return;
-    toolbarTooltipAnchorEl = null;
-    toolbarTooltipEl.classList.remove('open');
-    toolbarTooltipEl.setAttribute('aria-hidden', 'true');
-    toolbarTooltipEl.style.left = '-9999px';
-    toolbarTooltipEl.style.top = '-9999px';
-    toolbarTooltipEl.textContent = '';
-    toolbarTooltipEl.removeAttribute('data-side');
+  initializeTooltipPlacementDefaults();
+  if (window.VibeMolTooltip && typeof window.VibeMolTooltip.installGlobalTooltipDelegation === 'function') {
+    window.VibeMolTooltip.installGlobalTooltipDelegation();
   }
-
-  /**
-   * Position the floating toolbar tooltip near one anchor control.
-   * @param {HTMLElement} anchorEl
-   */
-  function positionToolbarTooltip(anchorEl) {
-    if (!toolbarTooltipEl || !anchorEl) return;
-    const rect = anchorEl.getBoundingClientRect();
-    const margin = 8;
-    const gap = 10;
-
-    toolbarTooltipEl.style.left = '-9999px';
-    toolbarTooltipEl.style.top = '-9999px';
-    toolbarTooltipEl.classList.add('open');
-    toolbarTooltipEl.setAttribute('aria-hidden', 'false');
-
-    const tooltipW = Math.max(176, toolbarTooltipEl.offsetWidth || 0);
-    const tooltipH = Math.max(22, toolbarTooltipEl.offsetHeight || 0);
-
-    let side = 'right';
-    let left = rect.right + gap;
-    if (left + tooltipW > window.innerWidth - margin) {
-      side = 'left';
-      left = rect.left - gap - tooltipW;
-    }
-    if (left < margin) left = margin;
-
-    let top = rect.top + ((rect.height - tooltipH) * 0.5);
-    if (top < margin) top = margin;
-    const maxTop = window.innerHeight - margin - tooltipH;
-    if (top > maxTop) top = Math.max(margin, maxTop);
-
-    toolbarTooltipEl.setAttribute('data-side', side);
-    toolbarTooltipEl.style.left = `${Math.round(left)}px`;
-    toolbarTooltipEl.style.top = `${Math.round(top)}px`;
-  }
-
-  /**
-   * Show the floating toolbar tooltip for one control.
-   * @param {HTMLElement} anchorEl
-   */
-  function showToolbarTooltip(anchorEl) {
-    if (!toolbarTooltipEl || !anchorEl) return;
-    const text = String(anchorEl.getAttribute('data-tip') || '').trim();
-    if (!text) {
-      hideToolbarTooltip();
-      return;
-    }
-    toolbarTooltipAnchorEl = anchorEl;
-    toolbarTooltipEl.textContent = text;
-    positionToolbarTooltip(anchorEl);
-  }
-
-  /**
-   * Attach floating tooltip behavior to toolbar controls with `data-tip`.
-   */
-  function initializeToolbarTooltips() {
-    if (!toolbarEl || !toolbarTooltipEl) return;
-    const targets = toolbarEl.querySelectorAll('button[data-tip]');
-    targets.forEach((el) => {
-      el.addEventListener('mouseenter', () => showToolbarTooltip(el));
-      el.addEventListener('focus', () => showToolbarTooltip(el));
-      el.addEventListener('mouseleave', () => {
-        if (toolbarTooltipAnchorEl === el) hideToolbarTooltip();
-      });
-      el.addEventListener('blur', () => {
-        if (toolbarTooltipAnchorEl === el) hideToolbarTooltip();
-      });
-      el.addEventListener('click', () => {
-        if (toolbarTooltipAnchorEl === el) hideToolbarTooltip();
-      });
-    });
-
-    window.addEventListener('resize', () => {
-      if (toolbarTooltipAnchorEl) positionToolbarTooltip(toolbarTooltipAnchorEl);
-    });
-    document.addEventListener('scroll', () => {
-      if (toolbarTooltipAnchorEl) positionToolbarTooltip(toolbarTooltipAnchorEl);
-    }, true);
-    document.addEventListener('pointerdown', (evt) => {
-      if (!toolbarTooltipAnchorEl) return;
-      if (!(toolbarEl && toolbarEl.contains(evt.target))) hideToolbarTooltip();
-    });
-  }
-  initializeToolbarTooltips();
 
   const PERIODIC_TABLE_LAYOUT = [
     ['H', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'He'],
@@ -8255,7 +8351,7 @@
       buttonEl.tabIndex = 0;
     }
     const title = String(options.title || '').trim();
-    buttonEl.title = title || buttonEl.title || '';
+    setTooltipText(buttonEl, title || buttonEl.getAttribute('data-tooltip') || '');
     if (title) buttonEl.setAttribute('aria-label', title);
   }
 
@@ -8701,7 +8797,7 @@
 
   /**
    * Apply a molecule style selection from UI or keyboard shortcuts.
-   * @param {'default'|'toon'|'kit'|'glossy'} nextStyle
+   * @param {'basic'|'toon'|'kit'|'glossy'} nextStyle
    * @param {{rebuild?:boolean}=} options
    */
   function setMoleculeStyle(nextStyle, options = {}) {
@@ -8719,25 +8815,11 @@
   }
 
   /**
-   * Update the projection toggle button text/title to reflect current camera mode.
+   * Update the projection button-group state to reflect current camera mode.
    */
   function updateProjectionModeUI() {
-    if (!projectionModeBtn) return;
-    if (viewState.mode === 'orthographic') {
-      if (projectionModeLabel) projectionModeLabel.textContent = 'Orthographic';
-      if (projectionModeState) projectionModeState.textContent = 'On';
-      projectionModeBtn.classList.add('active');
-      projectionModeBtn.setAttribute('aria-pressed', 'true');
-      projectionModeBtn.title = 'Orthographic projection is ON. Click to switch to Perspective.';
-      projectionModeBtn.setAttribute('data-tip', 'Orthographic: ON. Click to switch to perspective projection.');
-      return;
-    }
-    if (projectionModeLabel) projectionModeLabel.textContent = 'Orthographic';
-    if (projectionModeState) projectionModeState.textContent = 'Off';
-    projectionModeBtn.classList.remove('active');
-    projectionModeBtn.setAttribute('aria-pressed', 'false');
-    projectionModeBtn.title = 'Orthographic projection is OFF. Click to turn it ON.';
-    projectionModeBtn.setAttribute('data-tip', 'Orthographic: OFF. Click to enable orthographic projection.');
+    if (!appearanceInspectorController) return;
+    appearanceInspectorController.syncActionToggles();
   }
 
   /**
@@ -13341,7 +13423,7 @@
       btn.setAttribute('data-z', String(z));
       btn.setAttribute('data-build-search-key', `atom:${z}`);
       btn.setAttribute('data-search-terms', `${info.symbol} ${info.name} ${z}`.toLowerCase());
-      btn.title = `${info.name} (${info.symbol})`;
+      setTooltipText(btn, `${info.name} (${info.symbol})`);
       btn.textContent = info.symbol;
       btn.onclick = () => {
         const preservedQuery = getBuildPaletteFilterQuery();
@@ -13442,7 +13524,7 @@
         btn.setAttribute('data-fragment-id', fragment.id);
         btn.setAttribute('data-build-search-key', `fragment:${fragment.id}`);
         btn.setAttribute('data-search-terms', `${fragment.name} ${fragment.formula} ${fragment.id} ${(Array.isArray(fragment.tags) ? fragment.tags.join(' ') : '')}`.toLowerCase());
-        btn.title = `${fragment.name} (${fragment.formula})`;
+        setTooltipText(btn, `${fragment.name} (${fragment.formula})`);
         btn.textContent = fragment.name;
         btn.onclick = () => {
           const preservedQuery = getBuildPaletteFilterQuery();
@@ -13483,7 +13565,7 @@
         btn.setAttribute('data-molecule-id', molecule.id);
         btn.setAttribute('data-build-search-key', `molecule:${molecule.id}`);
         btn.setAttribute('data-search-terms', `${molecule.name} ${molecule.formula} ${molecule.id} ${(Array.isArray(molecule.tags) ? molecule.tags.join(' ') : '')}`.toLowerCase());
-        btn.title = `${molecule.name} (${molecule.formula})`;
+        setTooltipText(btn, `${molecule.name} (${molecule.formula})`);
         btn.textContent = molecule.name;
         btn.onclick = () => {
           const preservedQuery = getBuildPaletteFilterQuery();
@@ -16359,8 +16441,9 @@
         : (!buildCueActive && effectiveMode === 'rotate');
       editSelectionRotateCueButtonEl.classList.toggle('is-active', rotateActive);
       editSelectionRotateCueButtonEl.setAttribute('aria-pressed', rotateActive ? 'true' : 'false');
-      editSelectionRotateCueButtonEl.title = isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection';
-      editSelectionRotateCueButtonEl.setAttribute('aria-label', isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection');
+      const rotateTooltip = isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection';
+      setTooltipText(editSelectionRotateCueButtonEl, rotateTooltip);
+      editSelectionRotateCueButtonEl.setAttribute('aria-label', rotateTooltip);
     }
     if (editSelectionBondOrbitCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'orbit';
@@ -16386,8 +16469,9 @@
       editSelectionBondOrderCueButtonEl.classList.toggle('is-active', visible);
       editSelectionBondOrderCueButtonEl.setAttribute('aria-pressed', visible ? 'true' : 'false');
       editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
-      editSelectionBondOrderCueButtonEl.title = visible ? `Adjust ${label}` : 'Adjust bond order';
-      editSelectionBondOrderCueButtonEl.setAttribute('aria-label', visible ? `Adjust ${label}` : 'Adjust bond order');
+      const bondOrderTooltip = visible ? `Adjust ${label}` : 'Adjust bond order';
+      setTooltipText(editSelectionBondOrderCueButtonEl, bondOrderTooltip);
+      editSelectionBondOrderCueButtonEl.setAttribute('aria-label', bondOrderTooltip);
     }
     if (editSelectionMetalBondingCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(metalBondingCueState && metalBondingCueState.choices.length);
@@ -16418,7 +16502,7 @@
       editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !buildCueActive);
       editSelectionAddFragmentCueButtonEl.setAttribute('aria-pressed', (visible && buildCueActive) ? 'true' : 'false');
       editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
-      editSelectionAddFragmentCueButtonEl.title = cueLabel;
+      setTooltipText(editSelectionAddFragmentCueButtonEl, cueLabel);
       if (!visible) {
         hideSelectionFragmentCuePopover();
         hideSelectionCoordinationCuePopover();
@@ -16430,15 +16514,15 @@
       editSelectionDeleteCueButtonEl.setAttribute('aria-pressed', 'false');
     }
     if (isBondCenterSelection) {
-      editSelectionTranslateCueEl.title = bondCenterSelection.metalPair
+      setTooltipText(editSelectionTranslateCueEl, bondCenterSelection.metalPair
         ? `Bond style ${getMetalBondStyleLabel(bondCenterSelection.style)}`
-        : `Bond order ${bondCenterSelection.order | 0}`;
+        : `Bond order ${bondCenterSelection.order | 0}`);
     } else if (isBondSideSelection) {
-      editSelectionTranslateCueEl.title = bondSideCueMode === 'distance'
+      setTooltipText(editSelectionTranslateCueEl, bondSideCueMode === 'distance'
         ? 'Adjust bond distance'
-        : (bondSideCueMode === 'orbit' ? 'Rotate fragment in 3D' : 'Rotate around bond axis');
+        : (bondSideCueMode === 'orbit' ? 'Rotate fragment in 3D' : 'Rotate around bond axis'));
     } else {
-      editSelectionTranslateCueEl.title = effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection';
+      setTooltipText(editSelectionTranslateCueEl, effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection');
     }
     const badgeWidth = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().width || editSelectionTranslateCueEl.offsetWidth || 42));
     const badgeHeight = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().height || editSelectionTranslateCueEl.offsetHeight || 42));
@@ -22144,14 +22228,6 @@
   if (pointCameraComBtn) pointCameraComBtn.onclick = () => pointCameraAtActiveMoleculeMassCenter();
   // View action: rotate active molecule to principal-inertia frame.
   if (alignInertiaBtn) alignInertiaBtn.onclick = () => alignActiveMoleculePrincipalAxes();
-  // View action: toggle camera projection model while preserving pose/target.
-  if (projectionModeBtn) {
-    projectionModeBtn.onclick = () => {
-      const next = viewState.mode === 'orthographic' ? 'perspective' : 'orthographic';
-      setProjectionMode(next);
-    };
-  }
-
   /**
    * Snap camera to one principal axis direction while keeping target and distance.
    * @param {'x'|'y'|'z'} axis
@@ -22190,8 +22266,8 @@
     syncAllAppearanceActionToggleButtons();
   });
   bind('down', 'global', 'r', () => centerActiveMoleculeMassAtOrigin());
-  // Global: molecule style presets (1=Default, 2=Toon, 3=Kit, 4=Glossy)
-  bind('down', 'global', '1', () => setMoleculeStyle('default'));
+  // Global: molecule style presets (1=Basic, 2=Toon, 3=Kit, 4=Glossy)
+  bind('down', 'global', '1', () => setMoleculeStyle('basic'));
   bind('down', 'global', '2', () => setMoleculeStyle('toon'));
   bind('down', 'global', '3', () => setMoleculeStyle('kit'));
   bind('down', 'global', '4', () => setMoleculeStyle('glossy'));
@@ -22260,7 +22336,7 @@
     } else if (handleBondCenterSelectionShortcut(1, e)) {
       return;
     } else if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) setEditAddBondOrder(1);
-    else setMoleculeStyle('default');
+    else setMoleculeStyle('basic');
   });
   bind('down', MODES.EDIT, '2', (e) => {
     if (editGestureController && editGestureController.handleBondOrderKey(2)) {
@@ -22499,9 +22575,10 @@
     if (!styleSelect) return;
     const toonSurfaces = useToonSurfaceStyle();
     styleSelect.disabled = toonSurfaces;
-    styleSelect.title = toonSurfaces
+    setTooltipText(styleSelect, toonSurfaces
       ? 'Disabled: Toon molecule style enforces toon surfaces'
-      : 'Choose iso-surface material style';
+      : 'Choose iso-surface material style');
+    syncAllAppearanceActionToggleButtons();
   }
 
   /**
@@ -22514,9 +22591,12 @@
    */
   function syncConditionalControlState(rowEl, inputEl, enabled, enabledTitle, disabledTitle) {
     if (rowEl) rowEl.style.display = enabled ? '' : 'none';
+    const tooltipText = enabled ? enabledTitle : disabledTitle;
+    if (rowEl) setTooltipText(rowEl, tooltipText);
     if (!inputEl) return;
     inputEl.disabled = !enabled;
-    inputEl.title = enabled ? enabledTitle : disabledTitle;
+    if (rowEl) inputEl.removeAttribute('data-tooltip');
+    else setTooltipText(inputEl, tooltipText);
   }
 
   /**
@@ -22539,20 +22619,19 @@
   function syncMoleculeFeatureControlsState() {
     if (moleculeShadowsToggleEl) moleculeShadowsToggleEl.checked = !!moleculeShadowsEnabled;
     if (moleculeFogToggleEl) moleculeFogToggleEl.checked = !!moleculeFogEnabled;
-    if (rowMoleculeFogDepth) rowMoleculeFogDepth.style.display = moleculeFogEnabled ? '' : 'none';
-    if (moleculeFogDepthEl) moleculeFogDepthEl.value = getMoleculeFogDepth().toFixed(1);
-    if (moleculeFogDepthValueEl) moleculeFogDepthValueEl.textContent = getMoleculeFogDepth().toFixed(1);
-    if (moleculeAtomRadiusScaleEl) moleculeAtomRadiusScaleEl.value = getMoleculeAtomRadiusScale().toFixed(2);
-    if (moleculeAtomRadiusScaleValueEl) moleculeAtomRadiusScaleValueEl.textContent = formatScaleMultiplierValue(getMoleculeAtomRadiusScale());
-    if (moleculeBondRadiusScaleEl) moleculeBondRadiusScaleEl.value = getMoleculeBondRadiusScale().toFixed(2);
-    if (moleculeBondRadiusScaleValueEl) moleculeBondRadiusScaleValueEl.textContent = formatScaleMultiplierValue(getMoleculeBondRadiusScale());
+    if (rowMoleculeFogDepth) rowMoleculeFogDepth.classList.toggle('vm-appearance-hidden', !moleculeFogEnabled);
+    setViewControlValue(moleculeFogDepthEl, getMoleculeFogDepth());
+    setViewControlValue(moleculeAtomRadiusScaleEl, getMoleculeAtomRadiusScale());
+    setViewControlValue(moleculeBondRadiusScaleEl, getMoleculeBondRadiusScale());
     if (moleculeInkToggleEl) moleculeInkToggleEl.checked = !!moleculeInkEnabled;
     if (moleculeBlackbodyToggleEl) moleculeBlackbodyToggleEl.checked = !!moleculeBlackbodyEnabled;
-    if (moleculeAtomOpacityEl) moleculeAtomOpacityEl.value = Number(moleculeAtomOpacity).toFixed(2);
-    if (moleculeBondOpacityEl) moleculeBondOpacityEl.value = Number(moleculeBondOpacity).toFixed(2);
+    setViewControlValue(moleculeAtomOpacityEl, Number(moleculeAtomOpacity));
+    setViewControlValue(moleculeBondOpacityEl, Number(moleculeBondOpacity));
     if (blackbodyColdColorEl) blackbodyColdColorEl.value = normalizeHexColor(moleculeBlackbodyColdColor, '#2f0202');
     if (blackbodyHotColorEl) blackbodyHotColorEl.value = normalizeHexColor(moleculeBlackbodyHotColor, '#eaf6ff');
-    if (rowBlackbodyColors) rowBlackbodyColors.style.display = moleculeBlackbodyEnabled ? '' : 'none';
+    if (rowBlackbodyColdColor) rowBlackbodyColdColor.classList.toggle('vm-appearance-hidden', !moleculeBlackbodyEnabled);
+    if (rowBlackbodyHotColor) rowBlackbodyHotColor.classList.toggle('vm-appearance-hidden', !moleculeBlackbodyEnabled);
+    if (appearanceSimpleBondsToggleEl) appearanceSimpleBondsToggleEl.checked = !showMultiBonds;
     syncAllAppearanceActionToggleButtons();
     syncColorPickerFields();
   }
@@ -22618,9 +22697,9 @@
       'Enable depth of field to change blur amount'
     );
     if (dofFocusModeEl) dofFocusModeEl.value = focusMode;
-    if (dofFocusDistanceEl) dofFocusDistanceEl.value = getDofFocusDistance().toFixed(1);
-    if (dofFocusRangeEl) dofFocusRangeEl.value = getDofFocusRange().toFixed(1);
-    if (dofBlurAmountEl) dofBlurAmountEl.value = getDofBlurAmount().toFixed(2);
+    setViewControlValue(dofFocusDistanceEl, getDofFocusDistance());
+    setViewControlValue(dofFocusRangeEl, getDofFocusRange());
+    setViewControlValue(dofBlurAmountEl, getDofBlurAmount());
     syncAllAppearanceActionToggleButtons();
   }
 
@@ -22654,12 +22733,15 @@
    */
   function bindClampedNumericInput(inputEl, getClampedValue, setValue, shouldRebuild) {
     if (!inputEl) return;
+    const slider = getViewSliderComponent(inputEl);
     const syncFromState = () => {
       const clamped = getClampedValue();
       setValue(clamped);
-      inputEl.value = String(clamped);
+      if (slider) slider.setValue(clamped);
+      else inputEl.value = String(clamped);
     };
-    const applyInput = () => {
+    const applyInput = (event) => {
+      if (slider && slider.isEditing && event && event.type === 'input') return;
       const parsed = Number(inputEl.value);
       if (Number.isFinite(parsed)) setValue(parsed);
       syncFromState();
@@ -22671,37 +22753,6 @@
     inputEl.onchange = applyInput;
     // `input` enables immediate feedback while keeping logic centralized.
     inputEl.oninput = applyInput;
-  }
-
-  /**
-   * Bind a range input plus readout to a clamped state value.
-   * @param {HTMLInputElement|null} inputEl
-   * @param {HTMLElement|null} valueEl
-   * @param {() => number} getClampedValue
-   * @param {(n:number) => void} setValue
-   * @param {(() => boolean)=} shouldRebuild
-   * @param {(n:number) => string=} formatValue
-   */
-  function bindClampedRangeInput(inputEl, valueEl, getClampedValue, setValue, shouldRebuild, formatValue) {
-    if (!inputEl) return;
-    const formatter = (typeof formatValue === 'function') ? formatValue : ((n) => String(n));
-    const syncFromState = () => {
-      const clamped = getClampedValue();
-      setValue(clamped);
-      inputEl.value = clamped.toFixed(2);
-      if (valueEl) valueEl.textContent = formatter(clamped);
-    };
-    const applyInput = () => {
-      const parsed = Number(inputEl.value);
-      if (Number.isFinite(parsed)) setValue(parsed);
-      syncFromState();
-      if (typeof shouldRebuild === 'function' && shouldRebuild()) {
-        rebuildScene({ preserveView: true });
-      }
-    };
-    syncFromState();
-    inputEl.oninput = applyInput;
-    inputEl.onchange = applyInput;
   }
 
   /**
@@ -22717,6 +22768,156 @@
       setValue,
       () => false
     );
+  }
+
+  const isoCalibrationRecordIds = new WeakMap();
+  let nextIsoCalibrationRecordId = 1;
+  let lastIsoCalibrationRecord = null;
+  let lastIsoCalibrationKey = '';
+
+  /**
+   * Get one stable numeric identity for a record object.
+   * @param {object|null} target
+   * @returns {number}
+   */
+  function getIsoCalibrationRecordId(target) {
+    if (!(target && typeof target === 'object')) return 0;
+    if (!isoCalibrationRecordIds.has(target)) {
+      isoCalibrationRecordIds.set(target, nextIsoCalibrationRecordId++);
+    }
+    return isoCalibrationRecordIds.get(target) || 0;
+  }
+
+  /**
+   * Sample one scalar value used to calibrate the Iso slider.
+   * @param {*} vol
+   * @param {string} compMode
+   * @param {number} index
+   * @returns {number}
+   */
+  function readIsoCalibrationSampleValue(vol, compMode, index) {
+    if (!vol) return 0;
+    if (!vol.isTwoComponent) {
+      const data = vol.data;
+      return Number(data && data[index]) || 0;
+    }
+    if (isRaw2CComponent(compMode)) {
+      const data = vol[compMode] || vol.alphaRe;
+      return Number(data && data[index]) || 0;
+    }
+    const ar = Number(vol.alphaRe && vol.alphaRe[index]) || 0;
+    const ai = Number(vol.alphaIm && vol.alphaIm[index]) || 0;
+    const br = Number(vol.betaRe && vol.betaRe[index]) || 0;
+    const bi = Number(vol.betaIm && vol.betaIm[index]) || 0;
+    if (compMode === 'alphaPhase') return Math.hypot(ar, ai);
+    if (compMode === 'betaPhase') return Math.hypot(br, bi);
+    if (compMode === 'alphaBetaPhase') return Math.max(Math.hypot(ar, ai), Math.hypot(br, bi));
+    if (compMode === 'totalBloch') return Math.hypot(ar, ai, br, bi);
+    return Number(vol.data && vol.data[index]) || 0;
+  }
+
+  /**
+   * Build one stable calibration key for the active scalar field.
+   * @param {*} record
+   * @param {*} vol
+   * @param {string} compMode
+   * @returns {string}
+   */
+  function buildIsoCalibrationKey(record, vol, compMode) {
+    const recordId = getIsoCalibrationRecordId(record);
+    if (!vol) return `${recordId}|empty`;
+    if (vol.kind === 'molden') {
+      const grid = getMoldenGridSettings(record);
+      const moIndex = Number.isInteger(record && record.moldenMoIndex) ? record.moldenMoIndex : 0;
+      return [
+        recordId,
+        'molden',
+        moIndex,
+        grid.stepAng.toFixed(2),
+        grid.paddingAng.toFixed(1),
+        buildMoldenAtomSignature(vol),
+        compMode || 'alphaRe',
+      ].join('|');
+    }
+    const nxyz = Array.isArray(vol.nxyz) ? vol.nxyz.join('x') : '0x0x0';
+    return [recordId, vol.kind || 'grid', nxyz, compMode || 'alphaRe'].join('|');
+  }
+
+  /**
+   * Round one Iso slider endpoint outward to a clean power of ten.
+   * @param {number} value
+   * @param {'min'|'max'} side
+   * @returns {number}
+   */
+  function roundIsoCalibrationEndpoint(value, side) {
+    if (!(Number.isFinite(value) && value > 0)) return side === 'min' ? 1e-4 : 1;
+    const exponent = Math.log10(value);
+    return Math.pow(10, side === 'min' ? Math.floor(exponent) : Math.ceil(exponent));
+  }
+
+  /**
+   * Compute one bounded, log-friendly Iso slider range for the active scalar field.
+   * @param {*} record
+   * @param {*} vol
+   * @param {string} compMode
+   * @returns {{key:string,min:number,max:number,defaultValue:number}}
+   */
+  function getIsoCalibration(record, vol, compMode) {
+    const key = buildIsoCalibrationKey(record, vol, compMode);
+    const cached = record && record._isoCalibration;
+    if (cached && cached.key === key) return cached;
+    const total = vol && vol.data && Number(vol.data.length);
+    const sampleCountTarget = 32768;
+    const values = [];
+    if (Number.isFinite(total) && total > 0) {
+      const step = Math.max(1, Math.floor(total / sampleCountTarget));
+      for (let i = 0; i < total; i += step) {
+        const sample = Math.abs(readIsoCalibrationSampleValue(vol, compMode, i));
+        if (Number.isFinite(sample) && sample > 0) values.push(sample);
+      }
+      if ((total - 1) % step !== 0) {
+        const tail = Math.abs(readIsoCalibrationSampleValue(vol, compMode, total - 1));
+        if (Number.isFinite(tail) && tail > 0) values.push(tail);
+      }
+    }
+    values.sort((a, b) => a - b);
+    let min = 1e-4;
+    let max = 1;
+    if (values.length) {
+      const p01 = values[Math.max(0, Math.min(values.length - 1, Math.floor(values.length * 0.01)))];
+      const p99 = values[Math.max(0, Math.min(values.length - 1, Math.floor(values.length * 0.99)))];
+      min = roundIsoCalibrationEndpoint(p01, 'min');
+      max = roundIsoCalibrationEndpoint(p99, 'max');
+      if (!(Number.isFinite(min) && min > 0)) min = 1e-4;
+      if (!(Number.isFinite(max) && max > min)) max = Math.max(min * 10, 1);
+    }
+    const hint = Math.abs(Number(vol && vol.isoHint));
+    const defaultValue = (Number.isFinite(hint) && hint > 0) ? hint : Math.sqrt(min * max);
+    const calibration = { key, min, max, defaultValue };
+    if (record) record._isoCalibration = calibration;
+    return calibration;
+  }
+
+  /**
+   * Recalibrate the Iso slider for the active scalar field.
+   * Resets the current iso only when the active scalar source changes.
+   * @param {*} record
+   * @param {*} vol
+   * @param {string} compMode
+   */
+  function syncIsoSliderCalibration(record, vol, compMode) {
+    if (!isoInput || !hasVolumetricGrid(vol)) return;
+    const calibration = getIsoCalibration(record, vol, compMode);
+    const isNewSource = record !== lastIsoCalibrationRecord || calibration.key !== lastIsoCalibrationKey;
+    setViewSliderBounds(isoInput, calibration.min, calibration.max, {
+      preserveValue: !isNewSource,
+      value: calibration.defaultValue,
+    });
+    if (isNewSource) {
+      setViewControlValue(isoInput, calibration.defaultValue);
+      lastIsoCalibrationRecord = record;
+      lastIsoCalibrationKey = calibration.key;
+    }
   }
 
   /**
@@ -22736,7 +22937,11 @@
   // Surface style selector
   if (styleSelect) {
     styleSelect.value = surfaceStyle;
-    styleSelect.onchange = () => { surfaceStyle = styleSelect.value; rebuildScene({ preserveView: true }); };
+    styleSelect.onchange = () => {
+      surfaceStyle = styleSelect.value;
+      if (appearanceInspectorController) appearanceInspectorController.syncActionToggles();
+      rebuildScene({ preserveView: true });
+    };
   }
   bindClampedNumericInput(
     glossyBondRadiusEl,
@@ -22744,21 +22949,17 @@
     (n) => { glossyBondRadius = n; },
     useGlossyMoleculeStyle
   );
-  bindClampedRangeInput(
+  bindClampedNumericInput(
     moleculeAtomRadiusScaleEl,
-    moleculeAtomRadiusScaleValueEl,
     getMoleculeAtomRadiusScale,
     (n) => { moleculeAtomRadiusScale = n; },
-    () => true,
-    formatScaleMultiplierValue
+    () => true
   );
-  bindClampedRangeInput(
+  bindClampedNumericInput(
     moleculeBondRadiusScaleEl,
-    moleculeBondRadiusScaleValueEl,
     getMoleculeBondRadiusScale,
     (n) => { moleculeBondRadiusScale = n; },
-    () => true,
-    formatScaleMultiplierValue
+    () => true
   );
   bindClampedNumericInput(
     moleculeAtomOpacityEl,
@@ -22773,25 +22974,76 @@
     () => true
   );
   appearanceInspectorController = createAppearanceInspectorController({
-    displayInspectorEl: displayInspector,
-    styleChipEls: appearanceStyleChipEls,
-    actionToggleButtonEls: appearanceActionToggleButtonEls,
-    fontPairButtonEls: appearanceFontPairButtonEls,
+    styleGroupEl: appearanceMoleculeStyleGroupEl,
+    fontPairGroupEl: appearanceFontPairGroupEl,
     surfacesSectionEl: appearanceSurfacesSectionEl,
     twoComponentSectionEl: appearanceTwoComponentSectionEl,
     cloudSectionEl: appearanceCloudSectionEl,
-    toggleMultiBondsInput: toggleMultiBonds,
-    elementColorsInput: elementColors,
-    visibilityElementColorsToggleInput: visibilityElementColorsToggleEl,
     normalizeStyleKey: normalizeMoleculeStyleKey,
-    onStyleChipSelected: (nextStyle) => setMoleculeStyle(nextStyle),
+    onStyleSelected: (nextStyle) => setMoleculeStyle(nextStyle),
     getActiveStyle: () => moleculeStyle,
     getCurrentVolume: () => (((currentIndex >= 0 ? volumes[currentIndex] : null) || {}).vol || null),
     getRenderMode: () => renderMode,
     hasSurfaceControls: hasVolumetricGrid,
-    getShowMultiBonds: () => showMultiBonds,
     getFontPair,
     onFontPairSelected: (nextFontPair) => setFontPair(nextFontPair),
+    buttonGroups: [
+      {
+        rootEl: projectionModeGroupEl,
+        getValue: () => (viewState.mode === 'orthographic' ? 'orthographic' : 'perspective'),
+        setValue: (nextValue) => setProjectionMode(nextValue),
+      },
+      {
+        rootEl: appearanceDofFocusModeGroupEl,
+        getValue: () => getDofFocusMode(),
+        setValue: (nextValue) => {
+          if (!dofFocusModeEl) return;
+          dofFocusModeEl.value = nextValue === 'manual' ? 'manual' : 'auto';
+          if (typeof dofFocusModeEl.onchange === 'function') dofFocusModeEl.onchange();
+        },
+        isDisabled: () => !dofState.enabled,
+      },
+      {
+        rootEl: appearanceRenderModeGroupEl,
+        getValue: () => renderMode,
+        setValue: (nextValue) => {
+          if (!renderModeSel) return;
+          renderModeSel.value = nextValue === 'cloud' ? 'cloud' : 'surface';
+          if (typeof renderModeSel.onchange === 'function') renderModeSel.onchange();
+        },
+      },
+      {
+        rootEl: appearanceSurfaceStyleGroupEl,
+        getValue: () => surfaceStyle,
+        setValue: (nextValue) => {
+          if (!styleSelect) return;
+          styleSelect.value = nextValue === 'glass' ? 'glass' : 'emissive';
+          if (typeof styleSelect.onchange === 'function') styleSelect.onchange();
+        },
+        isDisabled: () => useToonSurfaceStyle(),
+      },
+      {
+        rootEl: appearanceCloudTypeGroupEl,
+        getValue: () => cloudType,
+        setValue: (nextValue) => {
+          if (!cloudTypeSel) return;
+          cloudTypeSel.value = nextValue === 'points' ? 'points' : 'cubes';
+          if (typeof cloudTypeSel.onchange === 'function') cloudTypeSel.onchange();
+        },
+        isDisabled: () => renderMode !== 'cloud',
+      },
+    ],
+    mirrorToggles: [
+      {
+        inputEl: appearanceSimpleBondsToggleEl,
+        getChecked: () => !showMultiBonds,
+        setChecked: (checked) => {
+          if (!toggleMultiBonds) return;
+          toggleMultiBonds.checked = !checked;
+          if (typeof toggleMultiBonds.onchange === 'function') toggleMultiBonds.onchange();
+        },
+      },
+    ],
   });
   appearanceInspectorController.syncAll();
   if (moleculeStyleSel) {
@@ -22799,7 +23051,7 @@
     moleculeStyleSel.value = moleculeStyle;
     applyMoleculeStyleUiState();
     moleculeStyleSel.onchange = () => {
-      setMoleculeStyle(moleculeStyleSel.value || 'default');
+      setMoleculeStyle(moleculeStyleSel.value || 'basic');
     };
   } else {
     applyMoleculeStyleUiState();
@@ -22822,8 +23074,7 @@
       const parsed = Number(moleculeFogDepthEl.value);
       if (Number.isFinite(parsed)) moleculeFogDepth = parsed;
       moleculeFogDepth = getMoleculeFogDepth();
-      moleculeFogDepthEl.value = moleculeFogDepth.toFixed(1);
-      if (moleculeFogDepthValueEl) moleculeFogDepthValueEl.textContent = moleculeFogDepth.toFixed(1);
+      setViewControlValue(moleculeFogDepthEl, moleculeFogDepth);
       applyMoleculeStyleLighting();
     };
     applyFogDepth();
@@ -22937,6 +23188,12 @@
   syncDofControlState();
 
   // Default color schemes for +/- surfaces
+  function syncSurfaceColorSchemeUi() {
+    const isCustom = !schemeSelect || schemeSelect.value === 'custom';
+    if (rowSurfacePosColor) rowSurfacePosColor.classList.toggle('vm-appearance-hidden', !isCustom);
+    if (rowSurfaceNegColor) rowSurfaceNegColor.classList.toggle('vm-appearance-hidden', !isCustom);
+  }
+
   if (schemeSelect) {
     schemeSelect.onchange = () => {
       const v = schemeSelect.value;
@@ -22947,8 +23204,10 @@
         syncColorPickerFields();
         updateOpacityAndColors();
       }
+      syncSurfaceColorSchemeUi();
     };
   }
+  syncSurfaceColorSchemeUi();
 
   // Render mode / cloud params
   renderMode = (renderModeSel && renderModeSel.value) || renderMode;
@@ -22960,10 +23219,12 @@
     const isCloud = renderMode === 'cloud';
     const rowStyle = document.getElementById('rowStyle');
     const rowCloudType = document.getElementById('rowCloudType');
-    const rowCloudParams = document.getElementById('rowCloudParams');
+    const rowCloudStrideEl = document.getElementById('rowCloudStride');
+    const rowCloudAlphaEl = document.getElementById('rowCloudAlpha');
     if (rowStyle) rowStyle.style.display = isCloud ? 'none' : '';
     if (rowCloudType) rowCloudType.style.display = isCloud ? '' : 'none';
-    if (rowCloudParams) rowCloudParams.style.display = isCloud ? '' : 'none';
+    if (rowCloudStrideEl) rowCloudStrideEl.style.display = isCloud ? '' : 'none';
+    if (rowCloudAlphaEl) rowCloudAlphaEl.style.display = isCloud ? '' : 'none';
     syncAppearanceInspectorSectionState();
   }
   /**
@@ -22983,8 +23244,14 @@
   }
   if (renderModeSel) renderModeSel.onchange = () => { renderMode = renderModeSel.value; updateRenderModeUI(); rebuildScene({ preserveView: true }); };
   if (cloudTypeSel) cloudTypeSel.onchange = () => { cloudType = cloudTypeSel.value; rebuildScene({ preserveView: true }); };
-  if (cloudStrideEl) cloudStrideEl.onchange = () => rebuildScene({ preserveView: true });
-  if (cloudAlphaEl) cloudAlphaEl.onchange = () => rebuildScene({ preserveView: true });
+  if (cloudStrideEl) {
+    cloudStrideEl.oninput = () => rebuildScene({ preserveView: true });
+    cloudStrideEl.onchange = () => rebuildScene({ preserveView: true });
+  }
+  if (cloudAlphaEl) {
+    cloudAlphaEl.oninput = () => rebuildScene({ preserveView: true });
+    cloudAlphaEl.onchange = () => rebuildScene({ preserveView: true });
+  }
   // Initialize UI visibility based on current mode
   updateRenderModeUI();
   syncAppearanceInspectorSectionState();
@@ -23229,13 +23496,12 @@
 
   registerPresetSetting('surface.iso', () => asFiniteNumber(isoInput && isoInput.value, 0.02), (value) => {
     const n = Math.max(0, asFiniteNumber(value, 0.02));
-    if (isoInput) isoInput.value = String(n);
+    setViewControlValue(isoInput, n);
   });
   registerPresetSetting('surface.opacity', () => asFiniteNumber(opInput && opInput.value, 1), (value) => {
     const n = Math.min(1, Math.max(0.05, asFiniteNumber(value, 1)));
     const snapped = Math.round(n / 0.05) * 0.05;
-    if (opInput) opInput.value = snapped.toFixed(2);
-    updateOpacityPercentLabel();
+    setViewControlValue(opInput, snapped);
   });
   registerPresetSetting('surface.enabled', () => !!showSurfaces, (value) => { showSurfaces = asBoolean(value); });
   registerPresetSetting('surface.style', () => surfaceStyle, (value) => {
@@ -23251,18 +23517,20 @@
     if (posColor) posColor.value = asHexColor(value, posColor.value || DEFAULT_POS_SURFACE_COLOR);
     if (schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
+    syncSurfaceColorSchemeUi();
   });
   registerPresetSetting('surface.negColor', () => (negColor && negColor.value) || DEFAULT_NEG_SURFACE_COLOR, (value) => {
     if (negColor) negColor.value = asHexColor(value, negColor.value || DEFAULT_NEG_SURFACE_COLOR);
     if (schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
+    syncSurfaceColorSchemeUi();
   });
   registerPresetSetting('surface.colorScheme', () => (schemeSelect && schemeSelect.value) || 'custom', (value) => {
     if (!schemeSelect) return;
     const options = new Set(Array.from(schemeSelect.options).map((o) => o.value));
     const next = (typeof value === 'string' && options.has(value)) ? value : 'custom';
     schemeSelect.value = next;
-    if (next !== 'custom' && typeof schemeSelect.onchange === 'function') schemeSelect.onchange();
+    if (typeof schemeSelect.onchange === 'function') schemeSelect.onchange();
   });
   registerPresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || UI_PALETTE.white, (value) => {
     if (!bgColor) return;
@@ -23316,19 +23584,17 @@
   registerPresetSetting('molecule.atomRadiusScale', () => getMoleculeAtomRadiusScale(), (value) => {
     moleculeAtomRadiusScale = asFiniteNumber(value, getMoleculeAtomRadiusScale());
     moleculeAtomRadiusScale = getMoleculeAtomRadiusScale();
-    if (moleculeAtomRadiusScaleEl) moleculeAtomRadiusScaleEl.value = moleculeAtomRadiusScale.toFixed(2);
-    if (moleculeAtomRadiusScaleValueEl) moleculeAtomRadiusScaleValueEl.textContent = formatScaleMultiplierValue(moleculeAtomRadiusScale);
+    setViewControlValue(moleculeAtomRadiusScaleEl, moleculeAtomRadiusScale);
   });
   registerPresetSetting('molecule.bondRadiusScale', () => getMoleculeBondRadiusScale(), (value) => {
     moleculeBondRadiusScale = asFiniteNumber(value, getMoleculeBondRadiusScale());
     moleculeBondRadiusScale = getMoleculeBondRadiusScale();
-    if (moleculeBondRadiusScaleEl) moleculeBondRadiusScaleEl.value = moleculeBondRadiusScale.toFixed(2);
-    if (moleculeBondRadiusScaleValueEl) moleculeBondRadiusScaleValueEl.textContent = formatScaleMultiplierValue(moleculeBondRadiusScale);
+    setViewControlValue(moleculeBondRadiusScaleEl, moleculeBondRadiusScale);
   });
   registerPresetSetting('molecule.glossyBondRadius', () => getConfiguredGlossyBondCenterRadius(), (value) => {
     glossyBondRadius = asFiniteNumber(value, getConfiguredGlossyBondCenterRadius());
     glossyBondRadius = getConfiguredGlossyBondCenterRadius();
-    if (glossyBondRadiusEl) glossyBondRadiusEl.value = String(glossyBondRadius);
+    setViewControlValue(glossyBondRadiusEl, glossyBondRadius);
   });
   registerPresetSetting('molecule.feature.shadows', () => !!moleculeShadowsEnabled, (value) => {
     moleculeShadowsEnabled = asBoolean(value);
@@ -23340,8 +23606,7 @@
   });
   registerPresetSetting('molecule.feature.fog.depth', () => getMoleculeFogDepth(), (value) => {
     moleculeFogDepth = Math.max(6.0, Math.min(40.0, asFiniteNumber(value, getMoleculeFogDepth())));
-    if (moleculeFogDepthEl) moleculeFogDepthEl.value = moleculeFogDepth.toFixed(1);
-    if (moleculeFogDepthValueEl) moleculeFogDepthValueEl.textContent = moleculeFogDepth.toFixed(1);
+    setViewControlValue(moleculeFogDepthEl, moleculeFogDepth);
     applyMoleculeStyleUiState();
   });
   registerPresetSetting('molecule.feature.blackbody.enabled', () => !!moleculeBlackbodyEnabled, (value) => {
@@ -23387,11 +23652,11 @@
   });
   registerPresetSetting('render.cloudStride', () => asFiniteNumber(cloudStrideEl && cloudStrideEl.value, 1), (value) => {
     const n = Math.max(1, Math.min(8, Math.round(asFiniteNumber(value, 1))));
-    if (cloudStrideEl) cloudStrideEl.value = String(n);
+    setViewControlValue(cloudStrideEl, n);
   });
   registerPresetSetting('render.cloudAlpha', () => asFiniteNumber(cloudAlphaEl && cloudAlphaEl.value, 0.1), (value) => {
     const n = Math.max(0.025, Math.min(1, asFiniteNumber(value, 0.1)));
-    if (cloudAlphaEl) cloudAlphaEl.value = String(n);
+    setViewControlValue(cloudAlphaEl, n);
   });
   registerPresetSetting('render.dof.enabled', () => !!dofState.enabled, (value) => {
     dofState.enabled = asBoolean(value);
@@ -24654,9 +24919,9 @@
     if (coordsUnitsBtn) {
       const next = units === 'bohr' ? 'Å' : 'Bohr';
       coordsUnitsBtn.textContent = next;
-      coordsUnitsBtn.title = units === 'bohr'
+      setTooltipText(coordsUnitsBtn, units === 'bohr'
         ? 'Show coordinates in angstrom'
-        : 'Show coordinates in bohr';
+        : 'Show coordinates in bohr');
       coordsUnitsBtn.setAttribute('aria-label', units === 'bohr'
         ? 'Switch coordinates to angstrom'
         : 'Switch coordinates to bohr');
@@ -25923,7 +26188,15 @@
     cloneJsonLike,
     pruneBuilderOperationsForVolume,
     getIsoInputValue: () => (isoInput ? String(isoInput.value || '') : ''),
-    setIsoInputValue: (value) => { if (isoInput) isoInput.value = value; },
+    setIsoInputValue: (value) => {
+      if (!isoInput) return;
+      const numeric = Number(value);
+      if (Number.isFinite(numeric)) {
+        setViewControlValue(isoInput, numeric);
+        return;
+      }
+      isoInput.value = value;
+    },
     arrayMinMax,
     activateVolumeIndex,
     syncActiveVolumeControls,
@@ -26401,9 +26674,9 @@
     pubchemLoadBtn.innerHTML = pubchemBusy
       ? '<span class="vm-spinner" aria-hidden="true"></span>'
       : 'arrow_downward';
-    pubchemLoadBtn.title = pubchemBusy
+    setTooltipText(pubchemLoadBtn, pubchemBusy
       ? 'Loading PubChem…'
-      : 'Search PubChem and load the selected molecule';
+      : 'Search PubChem and load the selected molecule');
     pubchemLoadBtn.setAttribute('aria-label', pubchemBusy ? 'Loading PubChem' : 'Load from PubChem');
     pubchemLoadBtn.setAttribute('aria-busy', pubchemBusy ? 'true' : 'false');
   }
@@ -26569,6 +26842,12 @@
     if (duplicateFileBtn) duplicateFileBtn.disabled = !hasActive;
     if (removeFileBtn) removeFileBtn.disabled = !hasActive;
     if (saveStructureBtn) saveStructureBtn.disabled = !hasActive;
+    if (clearBtn) clearBtn.disabled = volumes.length === 0;
+    if (fileSelectDisplay) {
+      fileSelectDisplay.textContent = hasActive ? String(volumes[currentIndex] && volumes[currentIndex].name || '') : 'No file loaded';
+    }
+    fileSelect.dataset.interactive = fileSelect.options.length > 1 ? 'true' : 'false';
+    fileSelect.disabled = fileSelect.options.length <= 1;
   }
 
   fileSelect.onchange = () => {
@@ -26577,10 +26856,11 @@
 
   // (subsample controls removed)
 
+  isoInput.oninput = () => rebuildScene({ preserveView: true });
   isoInput.onchange = () => rebuildScene({ preserveView: true });
   if (autoIsoBtn) {
-    autoIsoBtn.onclick = () => {
-      autoIsoEnabled = !autoIsoEnabled;
+    autoIsoBtn.onchange = () => {
+      autoIsoEnabled = !!autoIsoBtn.checked;
       updateAutoIsoButtonState();
       if (!autoIsoEnabled) {
         setHintMessage('Autoiso OFF');
@@ -27121,9 +27401,9 @@
     try {
       if (schemeSelect) {
         schemeSelect.disabled = is2c && isPhaseLikeComponent(effectiveMode);
-        schemeSelect.title = schemeSelect.disabled
+        setTooltipText(schemeSelect, schemeSelect.disabled
           ? 'Disabled: 2C mode uses intrinsic colors'
-          : 'Choose default +/- surface colors';
+          : 'Choose default +/- surface colors');
       }
     } catch { }
 
@@ -27201,6 +27481,8 @@
     const savedCam = preserveView ? camera.clone() : null;
     const savedTarget = preserveView ? controls.target.clone() : null;
     if (currentIndex < 0) {
+      lastIsoCalibrationRecord = null;
+      lastIsoCalibrationKey = '';
       updateEditAdaptiveMenuUi();
       updateEmptyStateVisibility();
       return;
@@ -27221,6 +27503,12 @@
     const compMode = getComponentMode(vol);
     selectActiveRawComponent(vol, compMode);
     const hasGrid = hasVolumetricGrid(vol);
+    if (hasGrid) {
+      syncIsoSliderCalibration(record, vol, compMode);
+    } else {
+      lastIsoCalibrationRecord = null;
+      lastIsoCalibrationKey = '';
+    }
 
     if (!skipAutoIso && autoIsoEnabled && hasGrid) {
       try {
@@ -27262,7 +27550,6 @@
    */
   function updateOpacityAndColors() {
     const op = parseFloat(opInput.value || "1.00");
-    updateOpacityPercentLabel();
     for (const m of meshes) {
       if (!m || !m.material) continue;
       if (m.userData && m.userData.phaseHue) {
@@ -27423,3 +27710,5 @@
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 
 })();
+  const rowCloudStride = document.getElementById('rowCloudStride');
+  const rowCloudAlpha = document.getElementById('rowCloudAlpha');

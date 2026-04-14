@@ -70,16 +70,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--iso", type=float, default=None, help="Optional iso value")
     parser.add_argument(
         "--style",
-        choices=[
-            "default",
-            "toon",
-            "fancy",
-            "kit",
-            "studio",
-            "glossy",
-        ],
+        type=_parse_style_arg,
         default=None,
-        help="Optional molecule style (aliases: fancy->toon, studio->kit)",
+        help="Optional molecule style (aliases: default->basic, fancy->toon, studio->kit)",
     )
     parser.add_argument(
         "--extra-file",
@@ -139,10 +132,20 @@ def _normalize_style(style: str | None) -> str | None:
     if style is None:
         return None
     aliases = {
+        "default": "basic",
         "fancy": "toon",
         "studio": "kit",
     }
     return aliases.get(style, style)
+
+
+def _parse_style_arg(style: str) -> str:
+    normalized = _normalize_style(style)
+    if normalized not in ("basic", "toon", "kit", "glossy"):
+        raise argparse.ArgumentTypeError(
+            f"Unsupported style: {style}. Choose one of basic, toon, kit, glossy"
+        )
+    return normalized
 
 
 def _normalize_preset_mode(mode: str | None) -> str:
@@ -412,6 +415,8 @@ def _set_style_with_alias(page: Any, style: str) -> str | None:
             const values = Array.from(sel.options).map((o) => o.value);
             const candidates = [];
             if (style) candidates.push(style);
+            if (style === 'basic') candidates.push('default');
+            if (style === 'default') candidates.push('basic');
             if (style === 'toon') candidates.push('fancy');
             if (style === 'fancy') candidates.push('toon');
             if (style === 'kit') candidates.push('studio');
@@ -574,7 +579,7 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
                 appVersion,
                 iso: str('iso', '0.02'),
                 opacity: str('opacity', '1.0'),
-                style: str('moleculeStyle', 'default'),
+                style: str('moleculeStyle', 'basic'),
                 surfaceStyle: str('styleSelect', 'emissive'),
                 colorScheme: str('schemeSelect', 'custom'),
                 autoIsoEnabled: pressed('autoIsoBtn', false),
@@ -594,7 +599,7 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
             };
         }"""
     )
-    style = _normalize_style(values.get("style", "default"))
+    style = _normalize_style(values.get("style", "basic"))
     preset = {
         "kind": "vibemol.preset",
         "presetVersion": 1,
@@ -618,7 +623,7 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
             "global.showAxes": bool(values.get("showAxes", True)),
             "vibration.hideSmallFrequencies": bool(values.get("vibrationHideSmallFrequencies", True)),
             "render.mode": values.get("renderMode", "surface"),
-            "molecule.style": style or "default",
+            "molecule.style": style or "basic",
         },
         "meta": {"source": "cli-dom-fallback", "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
     }

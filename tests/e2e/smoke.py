@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import sys
+import time
 from typing import Any
 
 from playwright.sync_api import sync_playwright
@@ -782,6 +783,25 @@ def wait_for_hint_contains(page, snippet: str) -> None:
     )
 
 
+def wait_for_clickable(page, selector: str, timeout: int = 30000) -> None:
+    deadline = time.monotonic() + (max(0, int(timeout)) / 1000.0)
+    last_error = None
+    locator = page.locator(selector)
+    while time.monotonic() < deadline:
+        try:
+            locator.click(trial=True, timeout=1000)
+            return
+        except Exception as exc:  # Playwright raises actionability errors until the control can receive events.
+            last_error = exc
+            page.wait_for_timeout(100)
+    raise AssertionError(f'Control did not become clickable: {selector}: {last_error}')
+
+
+def click_when_ready(page, selector: str, timeout: int = 30000) -> None:
+    wait_for_clickable(page, selector, timeout=timeout)
+    page.locator(selector).click()
+
+
 def start_new_edit_file(page) -> None:
     page.locator('#newFileBtn').click()
     page.locator('#modeEditBtn').click()
@@ -875,7 +895,7 @@ def ensure_build_popover_open(page, *, focus_search: bool = False) -> None:
             }"""
         )
         if can_click_button:
-            page.locator('#editAdaptiveAddAtomBtn').click()
+            click_when_ready(page, '#editAdaptiveAddAtomBtn')
         else:
             page.keyboard.press('/')
         page.wait_for_function(
@@ -1925,7 +1945,7 @@ def main() -> int:
             oxygen_x, oxygen_y = find_atom_click_point(page, 0)
             right_click_atom(page, oxygen_x, oxygen_y)
             wait_for_selected_atoms(page, 1)
-            page.locator('#editAdaptiveSymmetryBtn').click()
+            click_when_ready(page, '#editAdaptiveSymmetryBtn')
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false'"""
             )
@@ -1935,13 +1955,13 @@ def main() -> int:
                     return /Selected atoms \\(1\\)/i.test(summary);
                 }"""
             )
-            page.locator('#editAdaptiveSymmetryBtn').click()
+            click_when_ready(page, '#editAdaptiveSymmetryBtn')
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
             page.keyboard.press('Escape')
             page.wait_for_function("""() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0""")
-            page.locator('#editAdaptiveSymmetryBtn').click()
+            click_when_ready(page, '#editAdaptiveSymmetryBtn')
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false'"""
             )
@@ -1957,7 +1977,7 @@ def main() -> int:
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
-            page.locator('#editAdaptiveSymmetryBtn').click()
+            click_when_ready(page, '#editAdaptiveSymmetryBtn')
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false'"""
             )
@@ -2061,7 +2081,7 @@ def main() -> int:
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
-            page.locator('#editAdaptiveSymmetryBtn').click()
+            click_when_ready(page, '#editAdaptiveSymmetryBtn')
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'false'"""
             )
@@ -2073,7 +2093,7 @@ def main() -> int:
             page.wait_for_function(
                 """() => /point group:\\s*Td/i.test(document.getElementById('editSymmetryExactResult')?.textContent || '')"""
             )
-            page.locator('#editAdaptiveSymmetryBtn').click()
+            click_when_ready(page, '#editAdaptiveSymmetryBtn')
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
@@ -2590,7 +2610,7 @@ def main() -> int:
                     return Math.sqrt(dx * dx + dy * dy + dz * dz);
                 }"""
             )
-            page.locator('#editAdaptiveCleanStructureBtn').click()
+            click_when_ready(page, '#editAdaptiveCleanStructureBtn')
             page.wait_for_function(
                 """() => /Optimized structure with UFF:/i.test(document.getElementById('hint')?.textContent || '')"""
             )

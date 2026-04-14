@@ -69,7 +69,7 @@ test('preset controller exports registered settings into a preset envelope', () 
 });
 
 test('preset controller imports in relaxed mode and preserves unknown keys', () => {
-  const state = { style: 'default' };
+  const state = { style: 'basic' };
   const afterApplyCalls = [];
   const { controller } = createController({
     normalizeImportedSettingValue: (key, value, warnings) => {
