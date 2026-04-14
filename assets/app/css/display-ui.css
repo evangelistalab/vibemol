@@ -178,21 +178,7 @@
   stroke-linejoin: round;
 }
 
-#toolbar .vm-clear-files {
-  width: 100%;
-  justify-content: flex-start;
-  margin-top: 4px;
-  border-color: transparent;
-  font-family: var(--vm-font-sans);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-#toolbar .vm-clear-files:disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
+#toolbar .vm-clear-files,
 #toolbar .vm-help-btn {
   width: 100%;
   justify-content: flex-start;
@@ -201,6 +187,21 @@
   font-family: var(--vm-font-sans);
   font-size: 12px;
   font-weight: 500;
+}
+
+#toolbar .vm-clear-files {
+  margin-top: 4px;
+}
+
+#toolbar .vm-clear-files:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+#toolbar .vm-clear-files > span,
+#toolbar .vm-help-btn > span {
+  color: inherit;
+  font: inherit;
 }
 
 #toolbar .vm-help-btn:hover:not(:disabled) {
