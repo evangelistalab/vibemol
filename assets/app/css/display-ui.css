@@ -1152,6 +1152,34 @@ kbd,
   min-width: 0;
 }
 
+#toolbar #displayInspector #elementColorBtn {
+  justify-content: flex-start;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 28px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--vm-color-text-secondary);
+  font-family: var(--vm-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+#toolbar #displayInspector #elementColorBtn:hover:not(:disabled) {
+  color: var(--vm-color-text-primary);
+  background: color-mix(in srgb, var(--vm-color-text-primary) 6%, transparent);
+}
+
+#toolbar #displayInspector #elementColorBtn:focus,
+#toolbar #displayInspector #elementColorBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--vm-shadow-focus-ring);
+}
+
 #toolbar #displayInspector .vm-button-group__item {
   position: static;
   display: inline-flex;
@@ -1204,42 +1232,6 @@ kbd,
 
 #toolbar #displayInspector .vm-field-control--slider .vm-slider {
   --vm-slider-track-width: 100%;
-}
-
-#toolbar #displayInspector .vm-field-control--button {
-  justify-content: flex-start;
-}
-
-#toolbar #displayInspector .vm-field-control--button .vm-btn {
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  width: auto;
-  min-width: 0;
-  height: 24px;
-  min-height: 24px;
-  padding: 0 10px;
-  border: 1px solid var(--vm-color-border);
-  border-radius: 5px;
-  background: var(--vm-color-surface-panel);
-  color: var(--vm-color-text-primary);
-  font-family: var(--vm-font-sans);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1;
-  box-shadow: none;
-}
-
-#toolbar #displayInspector .vm-field-control--button .vm-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--vm-color-text-primary) 6%, var(--vm-color-surface-panel));
-  border-color: var(--vm-color-border-strong);
-}
-
-#toolbar #displayInspector .vm-field-control--button .vm-btn:focus,
-#toolbar #displayInspector .vm-field-control--button .vm-btn:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--vm-brand-accent) 50%, transparent);
-  outline-offset: 1px;
-  box-shadow: none;
 }
 
 #toolbar #displayInspector #appearanceTypefaceRow .vm-button-group__item {
