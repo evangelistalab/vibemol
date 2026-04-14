@@ -329,20 +329,32 @@
       padding: 0 8px;
     }
 
-    #toolbar .tb-inline.tb-inline--file {
+    #toolbar .vm-active-file {
+      width: 100%;
+    }
+
+    #toolbar .vm-active-file__chip {
       position: relative;
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 10px;
-      border-radius: 6px;
+      padding: 6px 6px 6px 10px;
       background: var(--vm-color-surface-base);
+      border-radius: 6px;
       min-height: 28px;
     }
 
-    #toolbar .tb-inline--file .vm-file-chip__label {
-      min-width: 0;
+    #toolbar .vm-active-file__icon {
+      color: var(--vm-color-text-secondary);
+      flex: 0 0 auto;
+      pointer-events: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    #toolbar .vm-active-file__name {
       flex: 1 1 auto;
+      min-width: 0;
       color: var(--vm-color-text-primary);
       font-family: var(--vm-font-mono);
       font-size: 12px;
@@ -353,6 +365,22 @@
       overflow: hidden;
       text-overflow: ellipsis;
       pointer-events: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    #toolbar .vm-active-file__actions {
+      display: flex;
+      gap: 2px;
+      flex: 0 0 auto;
+      opacity: 0.6;
+      transition: opacity 120ms ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    #toolbar .vm-active-file__chip:hover .vm-active-file__actions {
+      opacity: 1;
     }
 
     #toolbar #fileSelect {
@@ -373,6 +401,7 @@
       appearance: none;
       -webkit-appearance: none;
       opacity: 0;
+      z-index: 0;
       cursor: default;
     }
 
@@ -1929,16 +1958,6 @@
       min-width: 0;
     }
 
-    #toolbar .tb-fileRecordActions {
-      display: grid;
-      grid-template-columns: repeat(2, 28px);
-      gap: 4px;
-      align-items: center;
-      justify-content: flex-start;
-    }
-
-    #duplicateFileBtn,
-    #removeFileBtn,
     #pubchemLoadBtn {
       width: 28px !important;
       min-width: 28px;
@@ -1953,6 +1972,11 @@
       justify-content: center !important;
       text-align: center !important;
       align-self: center;
+    }
+
+    #toolbar .vm-active-file__actions .vm-btn {
+      border-color: transparent;
+      color: var(--vm-color-text-secondary);
     }
 
     #toolbar .tb-toolbarInspector {
@@ -2161,15 +2185,33 @@
       </div>
       <div class="tb-field">
         <label for="fileSelect">Active file</label>
-        <div class="tb-inline tb-inline--file">
-          <span id="fileSelectDisplay" class="vm-file-chip__label">No file loaded</span>
-          <select id="fileSelect" class="vm-select" aria-label="Active file"></select>
-        </div>
-        <div class="tb-fileRecordActions" aria-label="Active file actions">
-          <button id="duplicateFileBtn" class="secondary tb-iconBtn ms-icon-button"
-            aria-label="Duplicate active file" data-tooltip="Duplicate active file">content_copy</button>
-          <button id="removeFileBtn" class="secondary tb-iconBtn ms-icon-button"
-            aria-label="Remove active file" data-tooltip="Remove active file">delete</button>
+        <div class="vm-active-file">
+          <div class="vm-active-file__chip" role="group" aria-label="Active file">
+            <svg class="vm-active-file__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span id="fileSelectDisplay" class="vm-active-file__name">No file loaded</span>
+            <select id="fileSelect" class="vm-select" aria-label="Active file"></select>
+            <div class="vm-active-file__actions" aria-label="Active file actions">
+              <button id="duplicateFileBtn" class="vm-btn vm-btn--icon vm-btn--ghost vm-btn--xs"
+                type="button" aria-label="Duplicate active file" data-tooltip="Duplicate file">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              </button>
+              <button id="removeFileBtn" class="vm-btn vm-btn--icon vm-btn--ghost vm-btn--xs vm-btn--danger"
+                type="button" aria-label="Delete active file" data-tooltip="Delete file">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <label class="tb-field">PubChem

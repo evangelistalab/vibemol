@@ -178,6 +178,22 @@
   stroke-linejoin: round;
 }
 
+.vm-btn--xs {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  padding: 0;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vm-btn--xs svg {
+  width: 12px;
+  height: 12px;
+}
+
 #toolbar .vm-clear-files,
 #toolbar .vm-help-btn {
   width: 100%;
