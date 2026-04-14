@@ -273,7 +273,7 @@ kbd,
   margin-top: 14px;
 }
 
-.vm-helpSection + .vm-helpSection {
+.vm-helpSection+.vm-helpSection {
   margin-top: 14px;
 }
 
@@ -405,7 +405,7 @@ kbd,
   flex-direction: column;
 }
 
-.vm-view-section + .vm-view-section {
+.vm-view-section+.vm-view-section {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--vm-color-border);
@@ -422,20 +422,20 @@ kbd,
   align-items: center;
 }
 
-.vm-vec-row + .vm-vec-row {
+.vm-vec-row+.vm-vec-row {
   margin-top: 8px;
 }
 
 .vm-field-row {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: 110px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   min-height: 32px;
   padding: 4px 0;
 }
 
-.vm-field-row + .vm-field-row {
+.vm-field-row+.vm-field-row {
   margin-top: 0;
 }
 
@@ -448,9 +448,9 @@ kbd,
   pointer-events: none;
 }
 
-.vm-vec-row > label,
-.vm-field-row > label,
-.vm-field-row > .vm-field-label,
+.vm-vec-row>label,
+.vm-field-row>label,
+.vm-field-row>.vm-field-label,
 .vm-stat-label {
   margin: 0;
   font-family: var(--vm-font-sans);
@@ -461,15 +461,15 @@ kbd,
   line-height: 1.3;
 }
 
-.vm-field-row > .vm-field-label {
-  width: 120px;
-  max-width: 120px;
+.vm-field-row>.vm-field-label {
+  width: 115px;
+  max-width: 115px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.vm-field-row > .vm-field-control {
+.vm-field-row>.vm-field-control {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -567,8 +567,9 @@ kbd,
 .vm-slider {
   --vm-slider-fill-percent: 0%;
   --vm-slider-track-width: 188px;
+  --vm-slider-value-width: 56px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 56px;
+  grid-template-columns: minmax(0, 1fr) var(--vm-slider-value-width);
   gap: 10px;
   align-items: center;
   width: 100%;
@@ -583,11 +584,9 @@ kbd,
   border-radius: 999px;
   border: none;
   box-sizing: border-box;
-  background: linear-gradient(
-    90deg,
-    var(--vm-color-accent) 0 var(--vm-slider-fill-percent),
-    var(--vm-color-border-strong) var(--vm-slider-fill-percent) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--vm-color-accent) 0 var(--vm-slider-fill-percent),
+      var(--vm-color-border-strong) var(--vm-slider-fill-percent) 100%);
   outline: none;
 }
 
@@ -618,7 +617,7 @@ kbd,
 }
 
 .vm-slider__value {
-  width: 56px;
+  width: var(--vm-slider-value-width);
   min-width: 0;
   padding: 2px 4px;
   border: 1px solid transparent;
@@ -700,7 +699,7 @@ kbd,
   transition: left 150ms ease;
 }
 
-.vm-toggle__input:checked + .vm-toggle__thumb {
+.vm-toggle__input:checked+.vm-toggle__thumb {
   left: 18px;
 }
 
@@ -1124,8 +1123,8 @@ kbd,
   flex: 0 0 auto;
 }
 
-#toolbar #displayInspector details[open] > .inspectorAccordionSummary::after,
-#toolbar #displayInspector details[open] > .inspectorSubsectionSummary::after {
+#toolbar #displayInspector details[open]>.inspectorAccordionSummary::after,
+#toolbar #displayInspector details[open]>.inspectorSubsectionSummary::after {
   content: "▾";
   color: var(--tb-text-color-emphasis);
 }
@@ -1151,7 +1150,7 @@ kbd,
   box-sizing: border-box;
 }
 
-#toolbar #displayInspector .inspectorAccordionBody > .secondary {
+#toolbar #displayInspector .inspectorAccordionBody>.secondary {
   justify-self: start;
   margin-top: 2px;
 }
@@ -1162,7 +1161,7 @@ kbd,
   gap: 8px;
 }
 
-#toolbar #displayInspector .vm-appearance-section + .vm-appearance-section {
+#toolbar #displayInspector .vm-appearance-section+.vm-appearance-section {
   margin-top: 16px;
 }
 
@@ -1170,13 +1169,13 @@ kbd,
   margin: 0 0 8px;
 }
 
-#toolbar #displayInspector .vm-field-row > .vm-field-control > .vm-button-group,
-#toolbar #displayInspector .vm-field-row > .vm-field-control > .vm-select,
-#toolbar #displayInspector .vm-field-row > .vm-field-control > .vm-slider {
+#toolbar #displayInspector .vm-field-row>.vm-field-control>.vm-button-group,
+#toolbar #displayInspector .vm-field-row>.vm-field-control>.vm-select,
+#toolbar #displayInspector .vm-field-row>.vm-field-control>.vm-slider {
   width: 100%;
 }
 
-#toolbar #displayInspector .vm-field-row > .vm-field-control > .vm-button-group {
+#toolbar #displayInspector .vm-field-row>.vm-field-control>.vm-button-group {
   display: inline-flex;
   align-items: stretch;
   flex: 1 1 auto;
@@ -1212,11 +1211,11 @@ kbd,
   box-shadow: var(--vm-shadow-sm);
 }
 
-#toolbar #displayInspector .vm-field-row > .vm-field-control > .vm-select {
+#toolbar #displayInspector .vm-field-row>.vm-field-control>.vm-select {
   min-width: 0;
 }
 
-#toolbar #displayInspector .vm-field-row > .vm-field-control > .secondary {
+#toolbar #displayInspector .vm-field-row>.vm-field-control>.secondary {
   justify-self: start;
 }
 

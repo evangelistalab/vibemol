@@ -5749,6 +5749,7 @@
   const appearanceSurfacesSectionEl = document.getElementById('appearanceSurfacesSection');
   const appearanceTwoComponentSectionEl = document.getElementById('appearanceTwoComponentSection');
   const appearanceCloudSectionEl = document.getElementById('appearanceCloudSection');
+  const rowIso = document.getElementById('rowIso');
   const moldenInspectorBtn = document.getElementById('moldenInspectorBtn');
   const moldenInspector = document.getElementById('moldenInspector');
   const trajectoryPanelBtn = document.getElementById('trajectoryPanelBtn');
@@ -6106,6 +6107,7 @@
       this.syncing = false;
       this.trackSteps = 1000;
       this.scale = root && root.dataset && root.dataset.scale === 'log' ? 'log' : 'linear';
+      this.formatMode = root && root.dataset && root.dataset.format === 'sigfig' ? 'sigfig' : 'fixed';
       this.precision = Math.max(0, Number.parseInt(root && root.dataset ? root.dataset.precision || '2' : '2', 10) || 0);
       this.min = 0;
       this.max = 1;
@@ -6115,6 +6117,8 @@
       if (!(this.root && this.range && this.valueInput)) return;
       const trackWidth = Number(root.dataset.trackWidth);
       if (Number.isFinite(trackWidth) && trackWidth > 0) this.root.style.setProperty('--vm-slider-track-width', `${trackWidth}px`);
+      const valueWidth = Number(root.dataset.valueWidth);
+      if (Number.isFinite(valueWidth) && valueWidth > 0) this.root.style.setProperty('--vm-slider-value-width', `${valueWidth}px`);
       this.range.min = '0';
       this.range.max = String(this.trackSteps);
       this.range.step = '1';
@@ -6152,6 +6156,11 @@
     formatValue(value) {
       if (!Number.isFinite(value)) return '';
       if (this.precision <= 0) return String(Math.round(value));
+      if (this.formatMode === 'sigfig') {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return '';
+        return formatSignificantValue(numeric, this.precision);
+      }
       if (this.scale === 'log') {
         const abs = Math.abs(Number(value));
         if (!(abs > 0)) return '0';
@@ -7229,10 +7238,28 @@
   function formatIsoInputValue(value) {
     const v = Math.max(0, Number.isFinite(value) ? value : 0);
     if (!(v > 0)) return '0';
-    const exponent = Math.floor(Math.log10(v));
-    const decimals = Math.max(0, 4 - exponent - 1);
-    if (decimals <= 12) return v.toFixed(decimals);
-    return v.toPrecision(4);
+    return formatSignificantValue(v, 4);
+  }
+
+  /**
+   * Format one number with significant figures, then trim insignificant
+   * trailing zeros from the decimal portion.
+   * @param {number} value
+   * @param {number} precision
+   * @returns {string}
+   */
+  function formatSignificantValue(value, precision) {
+    const numeric = Number(value);
+    const digits = Math.max(1, Number.parseInt(String(precision), 10) || 1);
+    if (!Number.isFinite(numeric)) return '';
+    if (numeric === 0) return '0';
+    const raw = numeric.toPrecision(digits);
+    const parts = raw.split(/e/i);
+    const mantissa = parts[0]
+      .replace(/(\.\d*?[1-9])0+$/u, '$1')
+      .replace(/\.0+$/u, '');
+    if (parts.length > 1) return `${mantissa}e${parts[1]}`;
+    return mantissa;
   }
 
   /**
@@ -7577,9 +7604,14 @@
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const hasGrid = hasVolumetricGrid(vol);
+    const isoSlider = getViewSliderComponent(isoInput);
+    const manualIsoEnabled = !autoIsoEnabled;
     autoIsoBtn.disabled = false;
     autoIsoBtn.checked = !!autoIsoEnabled;
     autoIsoBtn.setAttribute('aria-checked', autoIsoEnabled ? 'true' : 'false');
+    if (rowIso) rowIso.setAttribute('data-disabled', manualIsoEnabled ? 'false' : 'true');
+    if (isoSlider) isoSlider.setDisabled(!manualIsoEnabled);
+    else if (isoInput) isoInput.disabled = !manualIsoEnabled;
     setTooltipText(autoIsoBtn, hasGrid
       ? `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: target ${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% density (cached per orbital/component).`
       : `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube/.molden file to apply.`);
@@ -22866,33 +22898,9 @@
     const key = buildIsoCalibrationKey(record, vol, compMode);
     const cached = record && record._isoCalibration;
     if (cached && cached.key === key) return cached;
-    const total = vol && vol.data && Number(vol.data.length);
-    const sampleCountTarget = 32768;
-    const values = [];
-    if (Number.isFinite(total) && total > 0) {
-      const step = Math.max(1, Math.floor(total / sampleCountTarget));
-      for (let i = 0; i < total; i += step) {
-        const sample = Math.abs(readIsoCalibrationSampleValue(vol, compMode, i));
-        if (Number.isFinite(sample) && sample > 0) values.push(sample);
-      }
-      if ((total - 1) % step !== 0) {
-        const tail = Math.abs(readIsoCalibrationSampleValue(vol, compMode, total - 1));
-        if (Number.isFinite(tail) && tail > 0) values.push(tail);
-      }
-    }
-    values.sort((a, b) => a - b);
-    let min = 1e-4;
-    let max = 1;
-    if (values.length) {
-      const p01 = values[Math.max(0, Math.min(values.length - 1, Math.floor(values.length * 0.01)))];
-      const p99 = values[Math.max(0, Math.min(values.length - 1, Math.floor(values.length * 0.99)))];
-      min = roundIsoCalibrationEndpoint(p01, 'min');
-      max = roundIsoCalibrationEndpoint(p99, 'max');
-      if (!(Number.isFinite(min) && min > 0)) min = 1e-4;
-      if (!(Number.isFinite(max) && max > min)) max = Math.max(min * 10, 1);
-    }
-    const hint = Math.abs(Number(vol && vol.isoHint));
-    const defaultValue = (Number.isFinite(hint) && hint > 0) ? hint : Math.sqrt(min * max);
+    const min = 1e-4;
+    const max = 1.0;
+    const defaultValue = DEFAULT_ISO_VALUE;
     const calibration = { key, min, max, defaultValue };
     if (record) record._isoCalibration = calibration;
     return calibration;

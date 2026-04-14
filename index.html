@@ -2275,7 +2275,7 @@
                 </div>
               </div>
               <div class="vm-field-row">
-                <label class="vm-field-label" for="moleculeInkToggle">Ink scheme</label>
+                <label class="vm-field-label" for="moleculeInkToggle">Ink outlines</label>
                 <div class="vm-field-control">
                   <label class="vm-toggle" for="moleculeInkToggle">
                     <input type="checkbox" id="moleculeInkToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle ink-style outlines" />
@@ -2556,10 +2556,10 @@
                   </div>
                 </div>
               </div>
-              <div class="vm-field-row">
+              <div id="rowIso" class="vm-field-row">
                 <label class="vm-field-label" for="iso">Iso</label>
                 <div class="vm-field-control vm-field-control--slider">
-                  <div id="isoSlider" class="vm-slider" data-vm-slider data-scale="log" data-min="0.0001" data-max="1.0" data-precision="4">
+                  <div id="isoSlider" class="vm-slider" data-vm-slider data-scale="log" data-format="sigfig" data-min="0.0001" data-max="1.0" data-precision="4" data-value-width="84">
                     <input id="isoRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Iso value" />
                     <input id="iso" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.0200" aria-label="Iso value" data-tooltip="Iso value" />
                   </div>
