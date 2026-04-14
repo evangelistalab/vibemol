@@ -1131,6 +1131,8 @@
   let moldenEnergyThresholdEh = 0;
   let moldenPendingRowIndex = -1;
   let moldenFilterDebounceTimer = 0;
+  let moldenGridCommitDebounceTimer = 0;
+  let moldenGridBlurDefersToRowActivation = false;
   let showSurfaces = true; // toggle iso-surface visibility
   let renderMode = 'surface';
   let cloudType = 'cubes';
@@ -7223,18 +7225,57 @@
   }
 
   /**
-   * Trigger Molden cube generation for one orbital list row.
-   * @param {number} rowIndex
-   * @param {*} _item
+   * Cancel any pending debounced Orbitals-grid commit.
    */
-  function activateMoldenOrbitalRow(rowIndex, _item) {
+  function clearMoldenGridCommitDebounce() {
+    if (!moldenGridCommitDebounceTimer) return;
+    clearTimeout(moldenGridCommitDebounceTimer);
+    moldenGridCommitDebounceTimer = 0;
+  }
+
+  /**
+   * Parse one grid-step input value using silent-revert semantics.
+   * @param {string} rawValue
+   * @param {number} fallback
+   * @returns {{ok:boolean,value:number}}
+   */
+  function parseMoldenGridStepInput(rawValue, fallback) {
+    const text = String(rawValue || '').trim();
+    if (!text) return { ok: false, value: fallback };
+    const next = Number(text);
+    if (!Number.isFinite(next) || next < 0.12 || next > 1.20) return { ok: false, value: fallback };
+    return { ok: true, value: normalizeMoldenGridStepAng(next) };
+  }
+
+  /**
+   * Parse one grid-padding input value using silent-revert semantics.
+   * @param {string} rawValue
+   * @param {number} fallback
+   * @returns {{ok:boolean,value:number}}
+   */
+  function parseMoldenGridPaddingInput(rawValue, fallback) {
+    const text = String(rawValue || '').trim();
+    if (!text) return { ok: false, value: fallback };
+    const next = Number(text);
+    if (!Number.isFinite(next) || next < 0.5 || next > 8.0) return { ok: false, value: fallback };
+    return { ok: true, value: normalizeMoldenGridPaddingAng(next) };
+  }
+
+  /**
+   * Trigger Molden cube generation for one orbital row.
+   * @param {number} rowIndex
+   * @param {{force?:boolean}=} options
+   * @returns {boolean}
+   */
+  function requestMoldenOrbitalRender(rowIndex, options = {}) {
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const items = buildMoldenOrbitalItems(record);
     if (!record || !vol || vol.kind !== 'molden' || !items.length) return;
     if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= items.length) return;
     if (moldenPendingRowIndex >= 0) return;
-    if ((record.moldenMoIndex | 0) === rowIndex) return;
+    const force = !!options.force;
+    if (!force && (record.moldenMoIndex | 0) === rowIndex) return false;
     record.moldenMoIndex = rowIndex;
     moldenPendingRowIndex = rowIndex;
     syncMoldenOrbitalsPanel(record);
@@ -7246,6 +7287,60 @@
         syncMoldenOrbitalsPanel(currentIndex >= 0 ? volumes[currentIndex] : null);
       }
     });
+    return true;
+  }
+
+  /**
+   * Commit pending Orbitals grid-input values, optionally regenerating the selected MO.
+   * @param {{triggerRender?:boolean}=} options
+   * @returns {{changed:boolean,rendered:boolean}}
+   */
+  function commitMoldenGridInputs(options = {}) {
+    clearMoldenGridCommitDebounce();
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    if (!record || !vol || vol.kind !== 'molden') return { changed: false, rendered: false };
+    const previous = getMoldenGridSettings(record);
+    const stepResult = parseMoldenGridStepInput(moldenGridStepEl && moldenGridStepEl.value, previous.stepAng);
+    const paddingResult = parseMoldenGridPaddingInput(moldenGridPaddingEl && moldenGridPaddingEl.value, previous.paddingAng);
+    const nextStep = stepResult.ok ? stepResult.value : previous.stepAng;
+    const nextPadding = paddingResult.ok ? paddingResult.value : previous.paddingAng;
+    const changed = Math.abs(nextStep - previous.stepAng) > 1e-12 || Math.abs(nextPadding - previous.paddingAng) > 1e-12;
+    record.moldenGridStepAng = nextStep;
+    record.moldenGridPaddingAng = nextPadding;
+    if (moldenGridStepEl) moldenGridStepEl.value = nextStep.toFixed(2);
+    if (moldenGridPaddingEl) moldenGridPaddingEl.value = nextPadding.toFixed(1);
+    if (moldenGridSummary) moldenGridSummary.textContent = formatMoldenGridSummary(record);
+    if (!changed || options.triggerRender === false) return { changed, rendered: false };
+    const items = buildMoldenOrbitalItems(record);
+    const selectedIndex = Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : -1;
+    if (selectedIndex < 0 || selectedIndex >= items.length) return { changed, rendered: false };
+    return {
+      changed,
+      rendered: requestMoldenOrbitalRender(selectedIndex, { force: true }),
+    };
+  }
+
+  /**
+   * Schedule a debounced Orbitals grid commit.
+   */
+  function scheduleMoldenGridCommit() {
+    clearMoldenGridCommitDebounce();
+    moldenGridCommitDebounceTimer = window.setTimeout(() => {
+      moldenGridCommitDebounceTimer = 0;
+      commitMoldenGridInputs({ triggerRender: true });
+    }, 300);
+  }
+
+  /**
+   * Trigger Molden cube generation for one orbital list row.
+   * @param {number} rowIndex
+   * @param {*} _item
+   */
+  function activateMoldenOrbitalRow(rowIndex, _item) {
+    const gridCommit = commitMoldenGridInputs({ triggerRender: false });
+    moldenGridBlurDefersToRowActivation = false;
+    requestMoldenOrbitalRender(rowIndex, { force: !!gridCommit.changed });
   }
 
   const triggerOpenFiles = () => fileInput.click();
@@ -23268,23 +23363,50 @@
       applyMoldenEnergyFilter();
     });
   }
+  if (moldenInspectorBody) {
+    moldenInspectorBody.addEventListener('pointerdown', (event) => {
+      const row = event.target && typeof event.target.closest === 'function'
+        ? event.target.closest('tr[data-row-index]')
+        : null;
+      if (!row || !moldenInspectorBody.contains(row)) return;
+      moldenGridBlurDefersToRowActivation = true;
+      window.setTimeout(() => {
+        moldenGridBlurDefersToRowActivation = false;
+      }, 0);
+    }, true);
+  }
   if (moldenGridStepEl || moldenGridPaddingEl) {
-    const applyMoldenGridUi = () => {
-      const record = currentIndex >= 0 ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      if (!record || !vol || vol.kind !== 'molden') return;
-      record.moldenGridStepAng = normalizeMoldenGridStepAng(moldenGridStepEl && moldenGridStepEl.value);
-      record.moldenGridPaddingAng = normalizeMoldenGridPaddingAng(moldenGridPaddingEl && moldenGridPaddingEl.value);
-      if (moldenGridStepEl) moldenGridStepEl.value = record.moldenGridStepAng.toFixed(2);
-      if (moldenGridPaddingEl) moldenGridPaddingEl.value = record.moldenGridPaddingAng.toFixed(1);
-      if (moldenGridSummary) moldenGridSummary.textContent = formatMoldenGridSummary(record);
-      syncMoldenOrbitalsPanel(record);
+    const handleGridInput = () => {
+      scheduleMoldenGridCommit();
+    };
+    const handleGridCommit = (triggerRender = true) => {
+      commitMoldenGridInputs({ triggerRender });
     };
     if (moldenGridStepEl) {
-      moldenGridStepEl.onchange = applyMoldenGridUi;
+      moldenGridStepEl.addEventListener('input', handleGridInput);
+      moldenGridStepEl.addEventListener('blur', () => {
+        const defer = moldenGridBlurDefersToRowActivation;
+        moldenGridBlurDefersToRowActivation = false;
+        handleGridCommit(!defer);
+      });
+      moldenGridStepEl.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        handleGridCommit(true);
+      });
     }
     if (moldenGridPaddingEl) {
-      moldenGridPaddingEl.onchange = applyMoldenGridUi;
+      moldenGridPaddingEl.addEventListener('input', handleGridInput);
+      moldenGridPaddingEl.addEventListener('blur', () => {
+        const defer = moldenGridBlurDefersToRowActivation;
+        moldenGridBlurDefersToRowActivation = false;
+        handleGridCommit(!defer);
+      });
+      moldenGridPaddingEl.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        handleGridCommit(true);
+      });
     }
   }
 

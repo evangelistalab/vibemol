@@ -1617,6 +1617,103 @@ def main() -> int:
                       && /selected:\\s*2\\s*\\(LUMO\\)/i.test(footer.textContent || '');
                 }"""
             )
+            molden_grid_before = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return {
+                        nxyz: Array.isArray(exported.volume?.nxyz) ? exported.volume.nxyz.slice() : [],
+                        dataLength: Array.isArray(exported.volume?.data) ? exported.volume.data.length : 0,
+                    };
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const body = document.getElementById('moldenInspectorBody');
+                    if (!(body instanceof HTMLElement)) return;
+                    if (window.__moldenPendingObserver) window.__moldenPendingObserver.disconnect();
+                    window.__moldenPendingRows = [];
+                    const recordPending = () => {
+                        const pendingRows = Array.from(body.querySelectorAll('tr.vm-list-popover__row--pending[data-row-index]'))
+                          .map((row) => Number(row.getAttribute('data-row-index')));
+                        if (pendingRows.length) window.__moldenPendingRows.push(pendingRows);
+                    };
+                    const observer = new MutationObserver(() => recordPending());
+                    observer.observe(body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style'] });
+                    window.__moldenPendingObserver = observer;
+                    recordPending();
+                }"""
+            )
+            page.fill('#moldenGridStep', '0.15')
+            page.wait_for_function(
+                """(previousGrid) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const nextGrid = Array.isArray(exported.volume?.nxyz) ? exported.volume.nxyz.slice() : [];
+                    return nextGrid.length === 3
+                      && previousGrid.length === 3
+                      && nextGrid.join('x') !== previousGrid.join('x');
+                }""",
+                arg=molden_grid_before['nxyz'],
+            )
+            molden_after_step = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return {
+                        nxyz: Array.isArray(exported.volume?.nxyz) ? exported.volume.nxyz.slice() : [],
+                        dataLength: Array.isArray(exported.volume?.data) ? exported.volume.data.length : 0,
+                        pendingRows: Array.isArray(window.__moldenPendingRows) ? window.__moldenPendingRows.slice() : [],
+                        stepValue: document.getElementById('moldenGridStep')?.value || '',
+                    };
+                }"""
+            )
+            if molden_after_step['stepValue'] != '0.15':
+                raise AssertionError(f'Molden grid-step input did not commit the new value: {molden_after_step}')
+            if molden_after_step['nxyz'] == molden_grid_before['nxyz'] or molden_after_step['dataLength'] == molden_grid_before['dataLength']:
+                raise AssertionError(f'Molden grid-step change did not regenerate the selected orbital grid: before={molden_grid_before}, after={molden_after_step}')
+            if not molden_after_step['pendingRows']:
+                raise AssertionError(f'Molden grid-step change never marked the selected row pending: {molden_after_step}')
+
+            page.fill('#moldenGridPadding', '5.0')
+            page.locator('#moldenGridPadding').press('Enter')
+            page.wait_for_function(
+                """(previousGrid) => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    const nextGrid = Array.isArray(exported.volume?.nxyz) ? exported.volume.nxyz.slice() : [];
+                    return nextGrid.length === 3
+                      && previousGrid.length === 3
+                      && nextGrid.join('x') !== previousGrid.join('x');
+                }""",
+                arg=molden_after_step['nxyz'],
+            )
+            molden_after_padding = page.evaluate(
+                """() => {
+                    const exported = window.VibeMolStructure.exportActive();
+                    return {
+                        nxyz: Array.isArray(exported.volume?.nxyz) ? exported.volume.nxyz.slice() : [],
+                        dataLength: Array.isArray(exported.volume?.data) ? exported.volume.data.length : 0,
+                        paddingValue: document.getElementById('moldenGridPadding')?.value || '',
+                    };
+                }"""
+            )
+            if molden_after_padding['paddingValue'] != '5.0':
+                raise AssertionError(f'Molden grid-padding input did not commit the new value: {molden_after_padding}')
+            if molden_after_padding['nxyz'] == molden_after_step['nxyz'] or molden_after_padding['dataLength'] == molden_after_step['dataLength']:
+                raise AssertionError(f'Molden grid-padding change did not regenerate the selected orbital grid: before={molden_after_step}, after={molden_after_padding}')
+
+            page.evaluate(
+                """() => {
+                    const input = document.getElementById('moldenGridStep');
+                    if (!(input instanceof HTMLInputElement)) return;
+                    input.value = '';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('blur', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const input = document.getElementById('moldenGridStep');
+                    return !!input && input.value === '0.15';
+                }"""
+            )
 
             page.fill('#moldenEnergyFilter', '0.5')
             page.wait_for_function(

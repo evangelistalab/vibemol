@@ -86,6 +86,19 @@
     return Math.abs(energy) >= limit;
   }
 
+  function resolveSingleDividerPlacement(items, visibleRowIndices, getDividerBeforeIndex) {
+    const list = Array.isArray(items) ? items : [];
+    const visible = normalizeVisibleRowIndices(list.length, visibleRowIndices);
+    if (typeof getDividerBeforeIndex !== 'function' || !visible.length) return null;
+    const visibleSet = new Set(visible);
+    for (let rowIndex = 0; rowIndex < list.length; rowIndex += 1) {
+      if (!visibleSet.has(rowIndex)) continue;
+      const label = getDividerBeforeIndex(rowIndex, list.slice(), visible);
+      if (label) return { rowIndex, label: String(label) };
+    }
+    return null;
+  }
+
   function applyColumnClasses(el, column, prefix) {
     if (!el || !column) return;
     const align = String(column.align || '').toLowerCase();
@@ -132,6 +145,8 @@
     const state = {
       items: [],
       rows: [],
+      dividerEl: null,
+      dividerCellEl: null,
       keyboardRowIndex: -1,
       hoveredRowIndex: -1,
       activeEdit: null,
@@ -399,17 +414,23 @@
       const visibleSet = new Set(visibleRowIndices);
       for (const row of state.rows) {
         row.rowEl.style.display = visibleSet.has(row.rowIndex) ? '' : 'none';
-        if (row.dividerEl) {
-          const label = typeof options.getDividerBeforeIndex === 'function'
-            ? options.getDividerBeforeIndex(row.rowIndex, state.items.slice(), visibleRowIndices)
-            : '';
-          if (label) {
-            row.dividerEl.style.display = '';
-            const labelCell = row.dividerEl.querySelector('td');
-            if (labelCell) labelCell.textContent = String(label);
-          } else {
-            row.dividerEl.style.display = 'none';
+      }
+      const dividerPlacement = resolveSingleDividerPlacement(
+        state.items,
+        visibleRowIndices,
+        options.getDividerBeforeIndex
+      );
+      if (state.dividerEl && state.tbodyEl) {
+        if (dividerPlacement) {
+          const targetRow = getRowMetaByIndex(dividerPlacement.rowIndex);
+          if (state.dividerCellEl) state.dividerCellEl.textContent = dividerPlacement.label;
+          if (targetRow && targetRow.rowEl) {
+            state.tbodyEl.insertBefore(state.dividerEl, targetRow.rowEl);
+          } else if (state.dividerEl.parentNode !== state.tbodyEl) {
+            state.tbodyEl.appendChild(state.dividerEl);
           }
+        } else if (state.dividerEl.parentNode === state.tbodyEl) {
+          state.tbodyEl.removeChild(state.dividerEl);
         }
       }
       if (!visibleSet.size) {
@@ -450,21 +471,15 @@
       }
       theadEl.appendChild(headerRowEl);
       const tbodyEl = global.document.createElement('tbody');
+      const dividerEl = global.document.createElement('tr');
+      dividerEl.className = 'vm-list-popover__divider';
+      const dividerCellEl = global.document.createElement('td');
+      dividerCellEl.colSpan = getColumnSchema().length;
+      dividerEl.appendChild(dividerCellEl);
       const visibleRowIndices = getVisibleRowIndices();
       const rows = [];
       for (let rowIndex = 0; rowIndex < state.items.length; rowIndex += 1) {
         const item = state.items[rowIndex];
-        const dividerLabel = typeof options.getDividerBeforeIndex === 'function'
-          ? options.getDividerBeforeIndex(rowIndex, state.items.slice(), visibleRowIndices)
-          : '';
-        const dividerEl = global.document.createElement('tr');
-        dividerEl.className = 'vm-list-popover__divider';
-        const dividerCellEl = global.document.createElement('td');
-        dividerCellEl.colSpan = getColumnSchema().length;
-        dividerCellEl.textContent = String(dividerLabel || '');
-        dividerEl.appendChild(dividerCellEl);
-        dividerEl.style.display = dividerLabel ? '' : 'none';
-        tbodyEl.appendChild(dividerEl);
         const rowEl = global.document.createElement('tr');
         rowEl.className = 'vm-list-popover__row';
         rowEl.dataset.rowIndex = String(rowIndex);
@@ -500,13 +515,15 @@
           rowEl.appendChild(td);
         }
         tbodyEl.appendChild(rowEl);
-        rows.push({ rowIndex, rowEl, dividerEl });
+        rows.push({ rowIndex, rowEl });
       }
       tableEl.appendChild(theadEl);
       tableEl.appendChild(tbodyEl);
       bodyEl.appendChild(tableEl);
       state.tableEl = tableEl;
       state.tbodyEl = tbodyEl;
+      state.dividerEl = dividerEl;
+      state.dividerCellEl = dividerCellEl;
       state.rows = rows;
       syncVisibleRows();
     }
@@ -677,5 +694,6 @@
     getOrbitalBoundary,
     formatOrbitalRelativeLabel,
     passesOrbitalEnergyThreshold,
+    resolveSingleDividerPlacement,
   });
 })(window);
