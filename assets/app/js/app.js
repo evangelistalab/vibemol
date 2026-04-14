@@ -8386,6 +8386,9 @@
     }
     // Entering measurement mode: hide surfaces (preserve view), save prior state (once)
     if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
+      setBondHover(null);
+      setSurfaceHover(null);
+      hideSurfaceHoverLabel();
       if (__savedShowSurfaces === null) __savedShowSurfaces = showSurfaces;
       if (showSurfaces) {
         showSurfaces = false;
@@ -8648,11 +8651,7 @@
   let helpRestoreFocusEl = null;
 
   function getMeasureAssistItems() {
-    return [
-      { icon: 'straighten', label: 'Distance', meta: '2 atoms', key: '2' },
-      { icon: 'change_history', label: 'Angle', meta: '3 atoms', key: '3' },
-      { icon: '3d_rotation', label: 'Dihedral', meta: '4 atoms', key: '4' },
-    ];
+    return [];
   }
 
   function isSidebarCollapsedUi() {
@@ -20255,6 +20254,13 @@
       hideSurfaceHoverLabel();
       return;
     }
+    if (currentMode === MODES.MEASURE) {
+      setHover(null);
+      setBondHover(null);
+      setSurfaceHover(null);
+      hideSurfaceHoverLabel();
+      return;
+    }
     const bondHit = pickBondHit(pointerLike);
     setHover(null);
     setBondHover(bondHit || null);
@@ -22238,6 +22244,13 @@
       const atomObj = pickAtom(e);
       if (atomObj) {
         setHover(atomObj);
+        setBondHover(null);
+        setSurfaceHover(null);
+        hideSurfaceHoverLabel();
+        return;
+      }
+      if (currentMode === MODES.MEASURE) {
+        setHover(null);
         setBondHover(null);
         setSurfaceHover(null);
         hideSurfaceHoverLabel();
