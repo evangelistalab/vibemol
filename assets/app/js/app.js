@@ -8173,8 +8173,10 @@
     const shouldOpen = !!open;
     panel.classList.toggle('open', shouldOpen);
     panel.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
-    if (refs.button) refs.button.classList.toggle('active', shouldOpen);
-    if (refs.icon) refs.icon.textContent = shouldOpen ? 'remove' : 'add';
+    if (refs.button) {
+      refs.button.classList.toggle('active', shouldOpen);
+      refs.button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    }
   }
 
   /**
