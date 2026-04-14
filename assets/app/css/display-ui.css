@@ -979,7 +979,7 @@ kbd,
   color: var(--tb-text-color-emphasis);
   font-size: var(--tb-text-size-label);
   font-weight: var(--tb-text-weight-bold);
-  margin-bottom: 2px;
+  margin: 0 0 2px;
 }
 
 .floatingAuxInspectorView button,

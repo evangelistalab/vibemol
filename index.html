@@ -2945,35 +2945,47 @@
   </div>
   <div id="viewInspector" class="floatingAuxInspector floatingAuxInspectorView" aria-hidden="true">
     <div class="viewInspectorGroup">
-      <div class="viewInspectorTitle">Quick actions</div>
+      <h2 class="viewInspectorTitle">Quick actions</h2>
       <button id="centerMassBtn" class="secondary tb-quickActionBtn"
-        data-tooltip="COM → Origin: shift the active molecule center of mass to (0,0,0). Shortcut: R.">
+        data-tooltip="COM → Origin: shift the active molecule center of mass to (0,0,0). Shortcut: R."
+        aria-label="Translate center of mass to origin"
+        title="Translate center of mass to origin">
         <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">center_focus_strong</span>
         <span class="tb-quickActionText">COM → Origin</span>
       </button>
       <button id="pointCameraComBtn" class="secondary tb-quickActionBtn"
-        data-tooltip="Point Camera to COM: keep the current camera pose but retarget the view to the active molecule center of mass.">
+        data-tooltip="Point Camera to COM: keep the current camera pose but retarget the view to the active molecule center of mass."
+        aria-label="Point camera at center of mass"
+        title="Point camera at center of mass">
         <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">my_location</span>
         <span class="tb-quickActionText">Point Camera to COM</span>
       </button>
       <button id="alignInertiaBtn" class="secondary tb-quickActionBtn"
-        data-tooltip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z.">
+        data-tooltip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z."
+        aria-label="Align camera to principal axes of inertia"
+        title="Align camera to principal axes of inertia">
         <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">3d_rotation</span>
         <span class="tb-quickActionText">Align Principal Axes</span>
       </button>
       <div class="viewPresetRow">
         <button id="viewAxisXBtn" class="secondary tb-quickActionBtn"
-          data-tooltip="View +X: place the camera on +X looking at the current target.">
+          data-tooltip="View +X: place the camera on +X looking at the current target."
+          aria-label="View along positive X axis"
+          title="View along positive X axis">
           <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">east</span>
           <span class="tb-quickActionText">+X</span>
         </button>
         <button id="viewAxisYBtn" class="secondary tb-quickActionBtn"
-          data-tooltip="View +Y: place the camera on +Y looking at the current target.">
+          data-tooltip="View +Y: place the camera on +Y looking at the current target."
+          aria-label="View along positive Y axis"
+          title="View along positive Y axis">
           <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north</span>
           <span class="tb-quickActionText">+Y</span>
         </button>
         <button id="viewAxisZBtn" class="secondary tb-quickActionBtn"
-          data-tooltip="View +Z: place the camera on +Z looking at the current target.">
+          data-tooltip="View +Z: place the camera on +Z looking at the current target."
+          aria-label="View along positive Z axis"
+          title="View along positive Z axis">
           <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north_east</span>
           <span class="tb-quickActionText">+Z</span>
         </button>
