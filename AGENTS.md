@@ -18,16 +18,25 @@ Primary capabilities:
 - Edit mode, transform mode, and measurement mode
 - Fragment attachment and standalone molecule placement in the editor
 - Multi-frame XYZ trajectory playback (play/pause, frame slider, FPS, loop)
-- PNG export and XYZ export
+- Vibrational mode playback (mode table, amplitude, speed, hide-small-frequencies filter)
+- PNG export, XYZ export, and cropped WebM export for trajectories and vibrational modes
 - Portable preset save/load (web and CLI compatible)
 - Molden molecular-orbital parsing, grid generation, and rendering
 
 ## Project Layout
 - `Makefile`: local check/test entrypoints (`check`, `test-unit`, `test-e2e`, `test`).
 - `index.html`: UI shell, controls, and required script loading order.
+- `src/styles/tokens.css`: shared design tokens and theme variables.
+- `src/styles/vm-tooltip.css`: shared tooltip presentation.
+- `src/styles/vm-list-popover.css`: shared floating list-popover shell styling used by Coordinates, Orbitals, and Trajectory chrome.
+- `assets/app/css/palette.css`: shared palette/theme utility rules.
 - `assets/app/css/edit-ui.css`: edit-mode adaptive menu, cue-row, popover, and operator-panel styling.
 - `assets/app/css/display-ui.css`: non-edit adaptive launcher, floating auxiliary inspector, and Appearance inspector styling.
+- `src/prefs.js`: persistent UI preference helpers (theme/font pair globals).
+- `src/components/VmListPopover.js`: shared schema-driven list-popover controller used by Coordinates and Orbitals.
+- `src/components/VmTooltip.js`: shared root tooltip portal and delegation helpers.
 - `assets/app/js/app.js`: main app orchestration, scene lifecycle, style logic, preset API, file loading.
+- `assets/app/js/trajectory-video.js`: shared cropped-canvas WebM export controller for trajectory and vibration panels.
 - `assets/app/js/fragments.js`: fragment/molecule catalog loading, manifest support, and fragment builders.
 - `assets/app/js/parsers.js`: parsers (`parseCube`, `parseTwoComponentCube`, `parseXYZ`) including streaming tokenization.
 - `assets/app/js/rendering.js`: volume/stat helpers used by `app.js`.
@@ -75,6 +84,7 @@ Primary capabilities:
 - `api/README.md`: CLI usage, presets, and `.vibemolrc` behavior.
 - `api/requirements.txt`: Python dependencies.
 - `tests/unit/*.test.mjs`: browserless Node unit tests for structure, parser, edit-state, and edit-tool logic.
+- `tests/unit/trajectory-video.test.mjs`: browserless unit coverage for the shared crop/layout video-export helpers.
 - `tests/unit/load-global-module.mjs`: VM-based loader for global/IIFE modules under Node.
 - `tests/e2e/smoke.py`: Playwright smoke/E2E test that starts a temporary local static server.
 - `tests/e2e/helpers.py`: shared server/artifact helpers for browser smoke tests.
@@ -85,8 +95,12 @@ Primary capabilities:
 No build step is required for the web app. It runs directly from static files.
 
 Required stylesheet order in `index.html`:
-1. `assets/app/css/edit-ui.css`
-2. `assets/app/css/display-ui.css`
+1. `src/styles/tokens.css`
+2. `src/styles/vm-tooltip.css`
+3. `assets/app/css/palette.css`
+4. `assets/app/css/edit-ui.css`
+5. `assets/app/css/display-ui.css`
+6. `src/styles/vm-list-popover.css`
 
 Required script order in `index.html`:
 1. `assets/vendor/js/three.min.js`
@@ -128,13 +142,18 @@ Required script order in `index.html`:
 37. `assets/app/js/structure-transport.js`
 38. `assets/app/js/file-loader.js`
 39. `assets/app/js/symmetry.js`
-40. `assets/app/js/app.js`
+40. `src/prefs.js`
+41. `src/components/VmListPopover.js`
+42. `src/components/VmTooltip.js`
+43. `assets/app/js/trajectory-video.js`
+44. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
 - `window.VibeMolRendering`
 - `window.VibeMolInteraction`
 - `window.VibeMolUI`
+- `window.VibeMolListPopover`
 - `window.VibeMolViewUtils`
 - `window.VibeMolEditUtils`
 - `window.VibeMolEditCommands`
@@ -155,6 +174,7 @@ Required script order in `index.html`:
 - `window.VibeMolEditUi`
 - `window.VibeMolDisplayWindows`
 - `window.VibeMolAppearanceUi`
+- `window.VibeMolPrefs`
 - `window.VibeMolEditPlacement`
 - `window.VibeMolEditTools`
 - `window.VibeMolEditGizmos`
@@ -165,6 +185,7 @@ Required script order in `index.html`:
 - `window.VibeMolStructureTransport`
 - `window.VibeMolFileLoader`
 - `window.VibeMolSymmetry`
+- `window.VibeMolTrajectoryVideo`
 
 Preset automation contract exposed globally:
 - `window.VibeMolPreset.kind`
@@ -202,10 +223,12 @@ Preset automation contract exposed globally:
 - Psi4 output logs (`.dat/.out`) are parsed from the harmonic table and create a molecule from the **last** `Geometry (in Angstrom)` block before attaching modes.
 - Molden files expose an Orbitals floating inspector for MO selection and grid step/padding.
 - The non-edit adaptive launcher lives on-canvas above Appearance, shows only context-relevant windows (`Orbitals`, `View actions`, `View`, `Coordinates`, `Trajectory`, `Frequencies`), and enforces mutual exclusivity within that launcher set.
-- Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency) are shown in the Frequencies panel when available.
+- Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency, hide-small-frequencies toggle) are shown in the Frequencies panel when available.
+- The `Hide small frequencies` checkbox uses a `5.0 cm^-1` absolute-frequency threshold.
 - Trajectory playback and vibrational playback are mutually exclusive for one active file.
+- Trajectory and Frequencies panels both expose `Save video`, which opens a crop overlay over the 3D canvas and exports one cropped WebM pass of the current animation.
 - Outside edit mode, trajectory bond rendering is dynamic per frame and does not mutate stored `vol.bonds`.
-- In edit mode, the `Build` popover is toggled explicitly by the toolbar button or `/`, and the `Symmetry` popover is toggled explicitly by the toolbar button or `S`.
+- In edit mode, the `Build` popover is toggled explicitly by the toolbar button or `/`; pressing `/` focuses the Build search field when the palette is already open. The `Symmetry` popover is toggled explicitly by the toolbar button or `S`.
 - The `Symmetry` tool supports point-group analysis, RMS-based approximate fits, preview/apply/auto-apply symmetrization, and 3D symmetry-element visualization.
 - Appearance is a compact accordion inspector with an always-visible `Quick style` strip and collapsed `Molecule`, `Lighting & atmosphere`, `Camera`, `Surfaces`, and `Visibility` sections; `Surfaces` and its 2C/cloud subsections appear only when relevant.
 - Appearance controls include an optional `Shadows` toggle for molecule self-shadowing.
@@ -243,7 +266,7 @@ Implemented:
 - Edit mode opens in gesture-first editing by default; the legacy adaptive tool window remains visible as the advanced/fallback surface.
 - Edit tools currently include `Selection`, `Move`, `Rotate`, `Add`, `Bond`, and `Transform`; atom deletion is handled directly by `Delete` / `Backspace`.
 - The old gesture HUD has been removed; current edit state is conveyed through the floating cue row, popovers, and transient previews instead.
-- The `Build` palette is the source of truth for the currently loaded atom/fragment/molecule payload and is opened by the toolbar button or `/`.
+- The `Build` palette is the source of truth for the currently loaded atom/fragment/molecule payload; it is opened by the toolbar button or `/`, and `/` focuses the Build search field when the palette is already visible.
 - The Build palette exposes atoms, fragments, and molecules plus element-specific coordination and `Adjust hydrogens` behavior for single-atom placement.
 - Layer 2 context halo is active in gesture mode:
   - selecting one atom shows a chemistry-aware halo immediately
@@ -292,7 +315,7 @@ Implemented:
 - `vol.annotations.metalBonding.byAtomId[atomId].mode` stores per-metal override mode (`auto`, `force_covalent`, `force_dative`, `no_bonds`) for coordination-bond inference.
 - The `Symmetry` tool is available in edit mode, supports point-group analysis, RMS-based candidate filtering, preview/apply/auto-apply symmetrization, and 3D symmetry-element rendering.
 - `Save Structure` exports the active editable record as a reproducible `vibemol.structure` JSON document.
-- `tests/e2e/smoke.py` is the required automated regression check for edit-mode flow changes (adaptive menu, selection, move/rotate gizmos, add-atom/add-molecule operators, structure round-trip, bond popup editing, cleanup preview/apply, UFF structure optimization, and trajectory dynamic-bond behavior).
+- `tests/e2e/smoke.py` is the required automated regression check for edit-mode flow changes (adaptive menu, Build-search hotkeys, selection, move/rotate gizmos, add-atom/add-molecule operators, structure round-trip, bond popup editing, cleanup preview/apply, UFF structure optimization, trajectory playback, and trajectory/vibration video export behavior).
 - Atom labels and atom numbers can be toggled independently.
 - New untitled editable files can be created from the toolbar and duplicated/removed from the active-file control area.
 - Coordinates-window rows mirror atom hover, and the table supports inline editing of atom order, element symbol/atomic number, and Cartesian coordinates with validation.
@@ -411,6 +434,8 @@ Fast JS syntax checks:
 - `node --check assets/app/js/edit-transform.js`
 - `node --check assets/app/js/edit-gestures.js`
 - `node --check assets/app/js/symmetry.js`
+- `node --check assets/app/js/trajectory-video.js`
+- `node --check src/prefs.js`
 - `node --check assets/app/js/app.js`
 
 Python API setup:
@@ -462,18 +487,18 @@ After non-trivial changes:
 7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
 8. In edit mode, verify the adaptive edit menu appears and the onboarding splash hides.
 9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, and repeated right-click on a selected atom to upgrade to whole-molecule selection.
-10. In edit mode, test the `Build` tool via button and `/`, and confirm the `+` selection cue gates open-site build targets for selected atoms.
+10. In edit mode, test the `Build` tool via button and `/`; confirm `/` opens or focuses the Build search field and that the `+` selection cue gates open-site build targets for selected atoms.
 11. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels plus undo/redo and `Esc` cancel for molecule placement.
 12. In edit mode, press `Space` once on a simple unsaturated structure and verify ghost hydrogens appear without mutating the structure; press `Space` again and verify the hydrogens are added with one undoable history entry.
 13. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, right-click void rotate, `Shift+right-click` void pan, and undo behavior on a selected atom set.
 14. In edit mode, test the bond tool: atom-to-atom create, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.
 15. In edit mode, test the `Symmetry` tool: open with button or `S`, preview one candidate, inspect a symmetry element in 3D, cancel/apply, and confirm the popover closes on file/mode changes.
 16. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders and metal bond styles survive round-trip.
-17. Open `View` and `Coordinates`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, inline coordinate edits, and optional molecule shadows.
+17. Open `View`, `Coordinates`, `Trajectory`, and `Frequencies`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, inline coordinate edits, trajectory play/reset/frame/FPS/loop, and vibration mode/amplitude/speed/hide-small-frequencies behavior.
 18. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
 19. Load standard XYZ, coordinates-only XYZ, and pasted XYZ text; verify import succeeds for all supported XYZ forms.
 20. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
-21. Save PNG and export XYZ; check browser console for errors.
+21. Save PNG, export XYZ, and export cropped WebM from both Trajectory and Frequencies; check browser console for errors.
 
 ## Deployment Notes
 - Main deployment target is static hosting from repository root (`index.html`).
