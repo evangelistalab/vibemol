@@ -23,6 +23,11 @@
   min-width: 0;
 }
 
+.vm-list-popover__header-action,
+.vm-list-popover__close {
+  flex: 0 0 auto;
+}
+
 .vm-list-popover__subheader,
 .vm-list-popover__footer,
 .vm-list-popover__controls {

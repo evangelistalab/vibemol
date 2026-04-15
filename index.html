@@ -3506,19 +3506,25 @@
     <div id="coordsFooter" class="vm-list-popover__footer" hidden></div>
   </div>
 
-  <div id="trajectoryPanel" class="motionPanel" aria-hidden="true">
-    <div class="motionPanelHeader">
-      <div class="title">Trajectory</div>
-      <div class="actions">
-        <button id="trajectoryPlayBtn" class="motionPanelIconBtn" data-tooltip="Play/Pause trajectory"><span
+  <div id="trajectoryPanel" class="motionPanel vm-list-popover" aria-hidden="true">
+    <div class="motionPanelHeader vm-list-popover__header">
+      <div class="title vm-list-popover__title">Trajectory</div>
+      <div class="actions vm-list-popover__actions">
+        <button id="trajectoryPlayBtn" class="motionPanelIconBtn vm-list-popover__header-action"
+          data-tooltip="Play or pause trajectory playback" aria-label="Play or pause trajectory playback"
+          title="Play or pause trajectory playback"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
-        <button id="trajectoryResetBtn" class="motionPanelIconBtn" data-tooltip="Reset to first frame"><span
+        <button id="trajectoryResetBtn" class="motionPanelIconBtn vm-list-popover__header-action"
+          data-tooltip="Reset trajectory to first frame" aria-label="Reset trajectory to first frame"
+          title="Reset trajectory to first frame"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
-        <button id="trajectoryPanelClose" class="motionPanelClose" data-tooltip="Close trajectory controls"><span
+        <button id="trajectoryPanelClose" class="motionPanelClose vm-list-popover__close"
+          data-tooltip="Close trajectory panel" aria-label="Close trajectory panel"
+          title="Close trajectory panel"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
-    <div class="motionPanelBody">
+    <div class="motionPanelBody vm-list-popover__body">
       <div id="trajectoryNowPlaying">No trajectory selected</div>
       <div id="trajectoryBondModeNote" style="display:none;">Trajectory bonds are dynamic</div>
       <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:1fr auto;">
