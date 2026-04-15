@@ -2856,7 +2856,7 @@
     <canvas id="canvas"></canvas>
   </div>
   <button id="helpFab" class="vm-btn vm-btn--icon vm-btn--ghost" type="button" aria-label="Keyboard shortcuts (?)" data-tooltip="Keyboard shortcuts (?)">?</button>
-  <div id="displayWindowAdaptiveMenu" aria-hidden="true">
+  <div id="displayWindowAdaptiveMenu" class="adaptiveMenu" data-mode="display" aria-hidden="true">
     <button id="moldenInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="Orbitals (O)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
@@ -2927,6 +2927,66 @@
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">F</span>
+      </span>
+    </button>
+    <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem" type="button" data-tooltip="Build palette (/)">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">add</span>
+          <span class="adaptiveEditItemLabel">Build</span>
+        </span>
+        <span id="editAdaptiveAddAtomMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">/</span>
+      </span>
+    </button>
+    <button id="editAdaptiveSymmetryBtn" class="adaptiveEditItem" type="button" data-tooltip="Symmetry (S)">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">hub</span>
+          <span class="adaptiveEditItemLabel">Symmetry</span>
+        </span>
+        <span id="editAdaptiveSymmetryMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">S</span>
+      </span>
+    </button>
+    <button id="editAdaptiveCleanStructureBtn" class="adaptiveEditItem" type="button" data-tooltip="Optimize structure">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">cleaning_services</span>
+          <span class="adaptiveEditItemLabel">Optimize structure</span>
+        </span>
+        <span id="editAdaptiveCleanStructureMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">O</span>
+      </span>
+    </button>
+    <button id="editAdaptiveShiftComBtn" class="adaptiveEditItem" type="button" data-tooltip="Shift COM to origin">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">center_focus_strong</span>
+          <span class="adaptiveEditItemLabel">Shift COM to origin</span>
+        </span>
+        <span id="editAdaptiveShiftComMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">R</span>
+      </span>
+    </button>
+    <button id="editAdaptiveAlignPrincipalBtn" class="adaptiveEditItem" type="button" data-tooltip="Align principal axes">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">3d_rotation</span>
+          <span class="adaptiveEditItemLabel">Align principal axes</span>
+        </span>
+        <span id="editAdaptiveAlignPrincipalMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">P</span>
       </span>
     </button>
   </div>
@@ -3052,68 +3112,6 @@
   <div id="phaseWheel" aria-hidden="true"
     style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
     <canvas id="phaseWheelCanvas" width="96" height="120" style="width:100%; height:100%;"></canvas>
-  </div>
-  <div id="editAdaptiveMenu" aria-hidden="true">
-    <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem" type="button" data-tooltip="Build palette (/)">
-      <span class="adaptiveEditItemBody">
-        <span class="adaptiveEditItemTitleRow">
-          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">add</span>
-          <span class="adaptiveEditItemLabel">Build</span>
-        </span>
-        <span id="editAdaptiveAddAtomMeta" class="adaptiveEditItemMeta"></span>
-      </span>
-      <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">/</span>
-      </span>
-    </button>
-    <button id="editAdaptiveSymmetryBtn" class="adaptiveEditItem" type="button" data-tooltip="Symmetry (S)">
-      <span class="adaptiveEditItemBody">
-        <span class="adaptiveEditItemTitleRow">
-          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">hub</span>
-          <span class="adaptiveEditItemLabel">Symmetry</span>
-        </span>
-        <span id="editAdaptiveSymmetryMeta" class="adaptiveEditItemMeta"></span>
-      </span>
-      <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">S</span>
-      </span>
-    </button>
-    <button id="editAdaptiveCleanStructureBtn" class="adaptiveEditItem" type="button" data-tooltip="Optimize structure">
-      <span class="adaptiveEditItemBody">
-        <span class="adaptiveEditItemTitleRow">
-          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">cleaning_services</span>
-          <span class="adaptiveEditItemLabel">Optimize structure</span>
-        </span>
-        <span id="editAdaptiveCleanStructureMeta" class="adaptiveEditItemMeta"></span>
-      </span>
-      <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">O</span>
-      </span>
-    </button>
-    <button id="editAdaptiveShiftComBtn" class="adaptiveEditItem" type="button" data-tooltip="Shift COM to origin">
-      <span class="adaptiveEditItemBody">
-        <span class="adaptiveEditItemTitleRow">
-          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">center_focus_strong</span>
-          <span class="adaptiveEditItemLabel">Shift COM to origin</span>
-        </span>
-        <span id="editAdaptiveShiftComMeta" class="adaptiveEditItemMeta"></span>
-      </span>
-      <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">R</span>
-      </span>
-    </button>
-    <button id="editAdaptiveAlignPrincipalBtn" class="adaptiveEditItem" type="button" data-tooltip="Align principal axes">
-      <span class="adaptiveEditItemBody">
-        <span class="adaptiveEditItemTitleRow">
-          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">3d_rotation</span>
-          <span class="adaptiveEditItemLabel">Align principal axes</span>
-        </span>
-        <span id="editAdaptiveAlignPrincipalMeta" class="adaptiveEditItemMeta"></span>
-      </span>
-      <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">P</span>
-      </span>
-    </button>
   </div>
   <div id="editAdaptiveAddAtomPopover" aria-hidden="true">
     <div id="editBuildPalette">

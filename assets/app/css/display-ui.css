@@ -1,4 +1,4 @@
-#displayWindowAdaptiveMenu {
+.adaptiveMenu {
   position: fixed;
   top: 56px;
   left: 12px;
@@ -14,37 +14,11 @@
   transition: opacity 220ms ease, transform 220ms ease;
 }
 
-#modeAssistMenu {
-  position: fixed;
-  top: 56px;
-  left: 12px;
-  right: auto;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 34;
-  pointer-events: auto;
-  max-width: min(260px, calc(100vw - 24px));
-  opacity: 1;
-  transform: translateX(0);
-  transition: opacity 220ms ease, transform 220ms ease;
-}
-
-#displayWindowAdaptiveMenu[aria-hidden="false"] {
+.adaptiveMenu[aria-hidden="false"] {
   display: flex;
 }
 
-#modeAssistMenu[aria-hidden="false"] {
-  display: flex;
-}
-
-#displayWindowAdaptiveMenu[aria-hidden="false"].is-auto-hidden {
-  opacity: 0;
-  transform: translateX(-14px);
-  pointer-events: none;
-}
-
-#modeAssistMenu[aria-hidden="false"].is-auto-hidden {
+.adaptiveMenu[aria-hidden="false"].is-auto-hidden {
   opacity: 0;
   transform: translateX(-14px);
   pointer-events: none;
@@ -349,19 +323,6 @@ kbd,
   font-size: var(--vm-text-sm);
   font-weight: var(--vm-font-weight-emphasis);
   line-height: 1.4;
-}
-
-#modeAssistMenu .adaptiveEditItem {
-  width: fit-content;
-  min-width: 192px;
-}
-
-#modeAssistMenu .adaptiveEditItemLabel {
-  color: var(--vm-color-on-control);
-}
-
-#modeAssistMenu .adaptiveEditItemMeta {
-  color: var(--vm-color-on-control-dim);
 }
 
 @media (max-width: 720px) {

@@ -510,11 +510,11 @@ def find_bond_side_canvas_point(page, side: str | None = None) -> tuple[float, f
 
 
 def ensure_advanced_drawer_open(page) -> None:
-    page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+    page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
 
 
 def ensure_advanced_drawer_closed(page) -> None:
-    page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+    page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
 
 
 def wait_for_selected_atoms(page, count: int, timeout: int = 30000) -> None:
@@ -815,7 +815,7 @@ def click_when_ready(page, selector: str, timeout: int = 30000) -> None:
 def start_new_edit_file(page) -> None:
     page.locator('#newFileBtn').click()
     page.locator('#modeEditBtn').click()
-    page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+    page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
 
 
 def build_bare_carbon(page) -> None:
@@ -1195,7 +1195,7 @@ def main() -> int:
             # Gesture-first edit mode keeps the adaptive menu and add popover as the primary affordances.
             log_step('initial edit mode and adaptive menu')
             page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
             ensure_build_popover_open(page)
             page.wait_for_function(
                 """() => {
@@ -1841,7 +1841,7 @@ def main() -> int:
 
             # Edit-mode Space should preview hydrogens first, then apply them on the second press.
             page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
             page.keyboard.press(' ')
             if expected_hydrogen_count > 0:
                 page.wait_for_function(
@@ -2471,7 +2471,7 @@ def main() -> int:
             log_step('grow-add can be followed immediately by atom selection')
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
             load_build_query(page, 'Carbon')
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             grow_x, grow_y = canvas_point(page, 0.56, 0.55)
@@ -3004,7 +3004,7 @@ def main() -> int:
             log_step('new file edit smoke')
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
             load_build_query(page, 'Carbon')
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             set_select_value(page, '#editAddCoordination', 'linear')
@@ -3064,7 +3064,7 @@ def main() -> int:
             log_step('fragment cue shows fragment ghost on undercoordinated atom')
             page.locator('#newFileBtn').click()
             page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => document.getElementById('editAdaptiveMenu')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
             load_build_query(page, 'Fe')
             metal_x, metal_y = canvas_point(page, 0.52, 0.48)
             page.mouse.click(metal_x, metal_y)

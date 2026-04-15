@@ -198,31 +198,6 @@
   color: var(--vm-color-on-control-dim);
 }
 
-#editAdaptiveMenu {
-  position: fixed;
-  top: 56px;
-  left: 12px;
-  transform: none;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 34;
-  pointer-events: auto;
-  max-width: min(260px, calc(100vw - 24px));
-  opacity: 1;
-  transition: opacity 220ms ease, transform 220ms ease;
-}
-
-#editAdaptiveMenu[aria-hidden="false"] {
-  display: flex;
-}
-
-#editAdaptiveMenu[aria-hidden="false"].is-auto-hidden {
-  opacity: 0;
-  transform: translateX(-14px);
-  pointer-events: none;
-}
-
 .adaptiveEditItem {
   appearance: none;
   display: flex;

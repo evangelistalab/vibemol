@@ -845,6 +845,7 @@
   // --- Mode system + shortcut routing ---
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
   let currentMode = MODES.DISPLAY;
+  let canvasAdaptiveMenuEl = null;
   let displayWindowsController = null;
   let displayAdaptiveMenuAutoHideController = null;
   let appearanceInspectorController = null;
@@ -869,11 +870,6 @@
   let selectionCoordinationCuePreviewRenderers = [];
   let selectionMetalBondingCuePointerHandled = false;
   let selectionMetalBondingCuePopoverRenderKey = '';
-  let editAdaptiveMenuEl = null;
-  let editAdaptiveMenuAutoHideController = null;
-  let modeAssistMenuEl = null;
-  let modeAssistMenuAutoHideController = null;
-  let modeAssistItemEls = [];
   let editHaloController = null;
   let editAdaptiveAddAtomBtn = null;
   let editAdaptiveAddAtomMetaEl = null;
@@ -941,7 +937,6 @@
       scheduleVibrationPanelLayoutSync(1);
     }
     updateDisplayWindowAdaptiveMenuUi();
-    positionEditAdaptiveMenu();
     if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
       positionBuildPopover();
     }
@@ -5749,6 +5744,7 @@
   const helpBtn = document.getElementById('helpBtn');
   // Side panel controls
   const displayWindowAdaptiveMenuEl = document.getElementById('displayWindowAdaptiveMenu');
+  canvasAdaptiveMenuEl = displayWindowAdaptiveMenuEl;
   const viewInspectorBtn = document.getElementById('viewInspectorBtn');
   const viewInspector = document.getElementById('viewInspector');
   const viewPanelBtn = document.getElementById('viewPanelBtn');
@@ -5785,12 +5781,6 @@
   const vibrationResetBtn = document.getElementById('vibrationResetBtn');
   const vibrationPanelClose = document.getElementById('vibrationPanelClose');
   const helpFab = document.getElementById('helpFab');
-  modeAssistMenuEl = document.getElementById('modeAssistMenu');
-  modeAssistItemEls = [
-    document.getElementById('modeAssistItem1'),
-    document.getElementById('modeAssistItem2'),
-    document.getElementById('modeAssistItem3'),
-  ];
   const helpOverlay = document.getElementById('helpOverlay');
   const helpModal = document.getElementById('helpModal');
   const helpClose = document.getElementById('helpClose');
@@ -6453,7 +6443,6 @@
   editSelectionFragmentCuePopoverEl = document.getElementById('editSelectionFragmentCuePopover');
   editSelectionCoordinationCuePopoverEl = document.getElementById('editSelectionCoordinationCuePopover');
   editSelectionMetalBondingCuePopoverEl = document.getElementById('editSelectionMetalBondingCuePopover');
-  editAdaptiveMenuEl = document.getElementById('editAdaptiveMenu');
 
   const bindSelectionCueButton = (buttonEl, action, clickAction = null) => {
     if (!buttonEl) return;
@@ -8484,7 +8473,6 @@
     updateEmptyStateVisibility();
     updateModeButtons();
     updateDisplayWindowAdaptiveMenuUi();
-    updateModeAssistMenuUi();
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
@@ -8671,28 +8659,10 @@
   }
 
   /**
-   * Refresh the non-edit adaptive launcher visibility and active button state.
+   * Position the shared canvas adaptive menu against the sidebar edge.
    */
-  function updateDisplayWindowAdaptiveMenuUi() {
-    if (displayWindowsController) displayWindowsController.syncAdaptiveMenu();
-    if (displayAdaptiveMenuAutoHideController && displayWindowAdaptiveMenuEl) {
-      displayAdaptiveMenuAutoHideController.setEnabled(displayWindowAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
-    }
-    updateModeAssistMenuUi();
-  }
-
-  let helpRestoreFocusEl = null;
-
-  function getMeasureAssistItems() {
-    return [];
-  }
-
-  function isSidebarCollapsedUi() {
-    return !!(document.body && document.body.classList.contains('sidebar-collapsed'));
-  }
-
-  function positionModeAssistMenu() {
-    if (!modeAssistMenuEl) return;
+  function positionCanvasAdaptiveMenu() {
+    if (!canvasAdaptiveMenuEl) return;
     const gap = 12;
     const inset = getCanvasAdaptiveMenuTopInset();
     let left = gap;
@@ -8707,11 +8677,17 @@
       }
     }
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
-    const menuWidth = Math.max(0, Math.round(modeAssistMenuEl.getBoundingClientRect().width || modeAssistMenuEl.offsetWidth || 0));
+    const menuWidth = Math.max(0, Math.round(canvasAdaptiveMenuEl.getBoundingClientRect().width || canvasAdaptiveMenuEl.offsetWidth || 0));
     const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
-    modeAssistMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
-    modeAssistMenuEl.style.top = `${top}px`;
-    modeAssistMenuEl.style.right = 'auto';
+    canvasAdaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
+    canvasAdaptiveMenuEl.style.top = `${top}px`;
+    canvasAdaptiveMenuEl.style.right = 'auto';
+  }
+
+  let helpRestoreFocusEl = null;
+
+  function isSidebarCollapsedUi() {
+    return !!(document.body && document.body.classList.contains('sidebar-collapsed'));
   }
 
   function setAdaptiveItemPresentation(buttonEl, options = {}) {
@@ -8733,40 +8709,288 @@
       buttonEl.tabIndex = 0;
     }
     const title = String(options.title || '').trim();
-    setTooltipText(buttonEl, title || buttonEl.getAttribute('data-tooltip') || '');
-    if (title) buttonEl.setAttribute('aria-label', title);
-  }
-
-  function setModeAssistItemPresentation(index, item) {
-    const buttonEl = modeAssistItemEls[index];
-    if (!buttonEl) return;
-    setAdaptiveItemPresentation(buttonEl, {
-      icon: item && item.icon,
-      label: item && item.label,
-      meta: item && item.meta,
-      key: item && item.key,
-      title: item && item.title,
-      static: true,
-    });
-  }
-
-  function updateModeAssistMenuUi() {
-    const measureAssistItems = getMeasureAssistItems();
-    const isVisible = currentMode === MODES.MEASURE;
-    for (let i = 0; i < modeAssistItemEls.length; i += 1) {
-      if (measureAssistItems[i]) setModeAssistItemPresentation(i, measureAssistItems[i]);
+    const fallbackTitle = String(buttonEl.getAttribute('data-tooltip') || '').trim();
+    const resolvedTitle = title || fallbackTitle;
+    setTooltipText(buttonEl, resolvedTitle);
+    if (resolvedTitle) {
+      buttonEl.setAttribute('aria-label', resolvedTitle);
+      buttonEl.setAttribute('title', resolvedTitle);
+    } else {
+      buttonEl.removeAttribute('aria-label');
+      buttonEl.removeAttribute('title');
     }
-    updateAdaptiveMenuUiHelper({
-      menuEl: modeAssistMenuEl,
-      isVisible,
-      positionMenu: positionModeAssistMenu,
-      visibleItems: modeAssistItemEls.map((el, index) => ({ el, visible: isVisible && !!measureAssistItems[index] })),
-      activeItems: [],
+  }
+
+  function buildDisplayAdaptiveMenuModel() {
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol ? record.vol : null;
+    const hasRecord = !!record;
+    const hasAtoms = !!(vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
+    const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
+    const showMolden = !!(molden && Array.isArray(molden.mos) && molden.mos.length > 0);
+    const showViewActions = hasAtoms;
+    const showView = hasRecord;
+    const showCoords = hasAtoms;
+    const showTrajectory = !!getActiveTrajectoryInfo().enabled;
+    const showVibration = !!getActiveVibrationInfo().enabled;
+    const itemDefs = [
+      {
+        windowId: NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
+        buttonEl: moldenInspectorBtn,
+        visible: showMolden,
+        presentation: { icon: 'blur_on', label: 'Orbitals', meta: '', key: 'O', title: 'Orbitals (O)', static: false },
+      },
+      {
+        windowId: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
+        buttonEl: viewInspectorBtn,
+        visible: showViewActions,
+        presentation: { icon: 'tune', label: 'View actions', meta: '', key: 'Q', title: 'View actions (Q)', static: false },
+      },
+      {
+        windowId: NON_EDIT_WINDOW_ID.VIEW_PANEL,
+        buttonEl: viewPanelBtn,
+        visible: showView,
+        presentation: { icon: 'view_in_ar', label: 'View', meta: '', key: 'V', title: 'View window (V)', static: false },
+      },
+      {
+        windowId: NON_EDIT_WINDOW_ID.COORDS_PANEL,
+        buttonEl: coordsPanelBtn,
+        visible: showCoords,
+        presentation: { icon: 'table_rows', label: 'Coordinates', meta: '', key: 'C', title: 'Coordinates (C)', static: false },
+      },
+      {
+        windowId: NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
+        buttonEl: trajectoryPanelBtn,
+        visible: showTrajectory,
+        presentation: { icon: 'timeline', label: 'Trajectory', meta: '', key: 'T', title: 'Trajectory (T)', static: false },
+      },
+      {
+        windowId: NON_EDIT_WINDOW_ID.VIBRATION_PANEL,
+        buttonEl: vibrationPanelBtn,
+        visible: showVibration,
+        presentation: { icon: 'graphic_eq', label: 'Frequencies', meta: '', key: 'F', title: 'Frequencies (F)', static: false },
+      },
+    ];
+    const visibleItems = [];
+    const activeItems = [];
+    const editModeButtons = [
+      editAdaptiveAddAtomBtn,
+      editAdaptiveSymmetryBtn,
+      editAdaptiveCleanStructureBtn,
+      editAdaptiveShiftComBtn,
+      editAdaptiveAlignPrincipalBtn,
+    ];
+    for (const itemDef of itemDefs) {
+      setAdaptiveItemPresentation(itemDef.buttonEl, itemDef.presentation);
+      const entry = displayWindowsController ? displayWindowsController.getEntry(itemDef.windowId) : null;
+      if (!itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen() && typeof entry.setOpen === 'function') {
+        entry.setOpen(false);
+      }
+      visibleItems.push({ el: itemDef.buttonEl, visible: itemDef.visible });
+      activeItems.push({ el: itemDef.buttonEl, active: !!(itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen()) });
+    }
+    for (const buttonEl of editModeButtons) {
+      visibleItems.push({ el: buttonEl, visible: false });
+      activeItems.push({ el: buttonEl, active: false });
+    }
+    return {
+      mode: currentMode === MODES.MEASURE ? 'measure' : MODES.DISPLAY,
+      isVisible: (currentMode !== MODES.EDIT) && itemDefs.some((itemDef) => itemDef.visible),
+      onHideAllPopovers: () => closeExclusiveDisplayWindows(),
+      visibleItems,
+      activeItems,
       metaItems: [],
-    });
-    if (modeAssistMenuAutoHideController && modeAssistMenuEl) {
-      modeAssistMenuAutoHideController.setEnabled(modeAssistMenuEl.getAttribute('aria-hidden') === 'false');
+    };
+  }
+
+  function buildEditAdaptiveMenuModel() {
+    const isVisible = currentMode === MODES.EDIT;
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
+    const buildModeActive = !!(isVisible && isBuildPopoverOpen());
+    const emptyEditState = !!(isVisible && !buildModeActive && !hasEditableAtoms);
+    const itemDefs = [
+      {
+        buttonEl: editAdaptiveAddAtomBtn,
+        metaEl: editAdaptiveAddAtomMetaEl,
+        resolve() {
+          return {
+            visible: isVisible,
+            active: buildModeActive || emptyEditState,
+            presentation: {
+              icon: 'add',
+              label: buildModeActive ? 'Elements' : 'Build',
+              meta: '',
+              key: '/',
+              title: 'Build palette (/)',
+              static: false,
+            },
+          };
+        },
+      },
+      {
+        buttonEl: editAdaptiveSymmetryBtn,
+        metaEl: editAdaptiveSymmetryMetaEl,
+        resolve() {
+          if (buildModeActive) {
+            return {
+              visible: true,
+              active: false,
+              presentation: {
+                icon: 'linear_scale',
+                label: 'Bond order',
+                meta: '',
+                key: '1-4',
+                title: 'Bond order keys 1-4',
+                static: true,
+              },
+            };
+          }
+          return {
+            visible: hasEditableAtoms,
+            active: isSymmetryPopoverOpen(),
+            presentation: {
+              icon: 'hub',
+              label: 'Symmetry',
+              meta: '',
+              key: 'S',
+              title: 'Symmetry (S)',
+              static: false,
+            },
+          };
+        },
+      },
+      {
+        buttonEl: editAdaptiveCleanStructureBtn,
+        metaEl: editAdaptiveCleanStructureMetaEl,
+        resolve() {
+          if (buildModeActive) {
+            return {
+              visible: true,
+              active: false,
+              presentation: {
+                icon: 'auto_fix_high',
+                label: 'Toggle H',
+                meta: '',
+                key: 'Space',
+                title: 'Preview or apply missing hydrogens (Space)',
+                static: false,
+              },
+            };
+          }
+          return {
+            visible: hasEditableAtoms,
+            active: false,
+            presentation: {
+              icon: 'cleaning_services',
+              label: 'Optimize',
+              meta: '',
+              key: 'O',
+              title: 'Optimize structure (O)',
+              static: false,
+            },
+          };
+        },
+      },
+      {
+        buttonEl: editAdaptiveShiftComBtn,
+        metaEl: editAdaptiveShiftComMetaEl,
+        resolve() {
+          return {
+            visible: hasEditableAtoms && !buildModeActive,
+            active: false,
+            presentation: {
+              icon: 'center_focus_strong',
+              label: 'COM → Origin',
+              meta: '',
+              key: 'R',
+              title: 'Shift COM to origin (R)',
+              static: false,
+            },
+          };
+        },
+      },
+      {
+        buttonEl: editAdaptiveAlignPrincipalBtn,
+        metaEl: editAdaptiveAlignPrincipalMetaEl,
+        resolve() {
+          return {
+            visible: hasEditableAtoms && !buildModeActive,
+            active: false,
+            presentation: {
+              icon: '3d_rotation',
+              label: 'Align',
+              meta: '',
+              key: 'P',
+              title: 'Align principal axes (P)',
+              static: false,
+            },
+          };
+        },
+      },
+    ];
+    const visibleItems = [];
+    const activeItems = [];
+    const metaItems = [];
+    const displayModeButtons = [
+      moldenInspectorBtn,
+      viewInspectorBtn,
+      viewPanelBtn,
+      coordsPanelBtn,
+      trajectoryPanelBtn,
+      vibrationPanelBtn,
+    ];
+    for (const itemDef of itemDefs) {
+      const itemState = itemDef.resolve();
+      setAdaptiveItemPresentation(itemDef.buttonEl, itemState.presentation);
+      visibleItems.push({ el: itemDef.buttonEl, visible: !!itemState.visible });
+      activeItems.push({ el: itemDef.buttonEl, active: !!itemState.active });
+      metaItems.push({ el: itemDef.metaEl, text: itemState.presentation.meta || '' });
     }
+    for (const buttonEl of displayModeButtons) {
+      visibleItems.push({ el: buttonEl, visible: false });
+      activeItems.push({ el: buttonEl, active: false });
+    }
+    return {
+      mode: MODES.EDIT,
+      isVisible,
+      onHideAllPopovers: hideAllAdaptiveToolPopovers,
+      visibleItems,
+      activeItems,
+      metaItems,
+    };
+  }
+
+  function updateCanvasAdaptiveMenuUi() {
+    if (!canvasAdaptiveMenuEl) return;
+    if (currentMode === MODES.EDIT) closeExclusiveDisplayWindows();
+    const menuModel = currentMode === MODES.EDIT
+      ? buildEditAdaptiveMenuModel()
+      : buildDisplayAdaptiveMenuModel();
+    canvasAdaptiveMenuEl.dataset.mode = menuModel.mode;
+    updateAdaptiveMenuUiHelper({
+      menuEl: canvasAdaptiveMenuEl,
+      isVisible: !!menuModel.isVisible,
+      positionMenu: positionCanvasAdaptiveMenu,
+      onHideAllPopovers: menuModel.onHideAllPopovers,
+      visibleItems: menuModel.visibleItems,
+      activeItems: menuModel.activeItems,
+      metaItems: menuModel.metaItems,
+    });
+    if (displayWindowsController && currentMode !== MODES.EDIT) {
+      displayWindowsController.positionOpenButtonAnchoredPopovers();
+    }
+    if (displayAdaptiveMenuAutoHideController) {
+      displayAdaptiveMenuAutoHideController.setEnabled(canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+    }
+  }
+
+  /**
+   * Refresh the shared canvas adaptive launcher visibility and active button state.
+   */
+  function updateDisplayWindowAdaptiveMenuUi() {
+    updateCanvasAdaptiveMenuUi();
   }
 
   function getHelpFocusableElements() {
@@ -8964,18 +9188,7 @@
     helpOverlay.addEventListener('keydown', handleHelpOverlayKeydown);
   }
   displayWindowsController = createDisplayWindowsController({
-    menuEl: displayWindowAdaptiveMenuEl,
     positionFloatingPopover: positionFloatingPopoverUi,
-    updateAdaptiveMenuUi: updateAdaptiveMenuUiHelper,
-    getCurrentMode: () => currentMode,
-    getDisplayModeValue: () => MODES.DISPLAY,
-    getEditModeValue: () => MODES.EDIT,
-    getCurrentRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
-    getTrajectoryEnabled: () => !!getActiveTrajectoryInfo().enabled,
-    getVibrationEnabled: () => !!getActiveVibrationInfo().enabled,
-    getToolbarElement: () => document.getElementById('toolbar'),
-    getMenuTopInset: getCanvasAdaptiveMenuTopInset,
-    isSidebarCollapsed: () => document.body.classList.contains('sidebar-collapsed'),
     entries: {
       [NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR]: {
         id: NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
@@ -9045,26 +9258,20 @@
     },
   });
   displayAdaptiveMenuAutoHideController = createAdaptiveMenuAutoHideController({
-    menuEl: displayWindowAdaptiveMenuEl,
+    menuEl: canvasAdaptiveMenuEl,
     delayMs: 5000,
     revealEdgeWidth: 64,
     revealSlack: 20,
-    getPinned: () => isFloatingPanelCurrentlyOpen(moldenInspector) || isToolbarInspectorOpen(viewInspectorRefs),
-    getRelatedElements: () => [moldenInspector, viewInspector],
-  });
-  modeAssistMenuAutoHideController = createAdaptiveMenuAutoHideController({
-    menuEl: modeAssistMenuEl,
-    delayMs: 5000,
-    revealEdgeWidth: 64,
-    revealSlack: 20,
-  });
-  editAdaptiveMenuAutoHideController = createAdaptiveMenuAutoHideController({
-    menuEl: editAdaptiveMenuEl,
-    delayMs: 5000,
-    revealEdgeWidth: 64,
-    revealSlack: 20,
-    getPinned: () => isBuildPopoverOpen() || isSymmetryPopoverOpen(),
-    getRelatedElements: () => [editAdaptiveAddAtomPopoverEl, editAdaptiveSymmetryPopoverEl],
+    getPinned: () => (
+      currentMode === MODES.EDIT
+        ? (isBuildPopoverOpen() || isSymmetryPopoverOpen())
+        : (isFloatingPanelCurrentlyOpen(moldenInspector) || isToolbarInspectorOpen(viewInspectorRefs))
+    ),
+    getRelatedElements: () => (
+      currentMode === MODES.EDIT
+        ? [editAdaptiveAddAtomPopoverEl, editAdaptiveSymmetryPopoverEl]
+        : [moldenInspector, viewInspector]
+    ),
   });
 
   /**
@@ -17823,164 +18030,13 @@
   }
 
   /**
-   * Refresh the floating adaptive edit menu.
+   * Refresh the shared canvas adaptive menu for edit mode.
    */
   function updateEditAdaptiveMenuUi() {
-    const isVisible = currentMode === MODES.EDIT;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
-    const buildModeActive = !!(isVisible && isBuildPopoverOpen());
-    const emptyEditState = !!(isVisible && !buildModeActive && !hasEditableAtoms);
-    const showLegacyDrawer = isVisible;
-    if (!isVisible) hideEditSelectionTranslateCue();
+    if (currentMode !== MODES.EDIT) hideEditSelectionTranslateCue();
     updateEditAtomsMenuUi();
-    if (buildModeActive) {
-      setAdaptiveItemPresentation(editAdaptiveAddAtomBtn, {
-        icon: 'add',
-        label: 'Elements',
-        meta: '',
-        key: '/',
-        title: 'Build palette (/)',
-        static: false,
-      });
-      setAdaptiveItemPresentation(editAdaptiveSymmetryBtn, {
-        icon: 'linear_scale',
-        label: 'Bond order',
-        meta: '',
-        key: '1-4',
-        title: 'Bond order keys 1-4',
-        static: true,
-      });
-      setAdaptiveItemPresentation(editAdaptiveCleanStructureBtn, {
-        icon: 'auto_fix_high',
-        label: 'Toggle H',
-        meta: '',
-        key: 'Space',
-        title: 'Preview or apply missing hydrogens (Space)',
-        static: false,
-      });
-    } else if (emptyEditState) {
-      setAdaptiveItemPresentation(editAdaptiveAddAtomBtn, {
-        icon: 'add',
-        label: 'Build',
-        meta: '',
-        key: '/',
-        title: 'Build palette (/)',
-        static: false,
-      });
-    } else {
-      setAdaptiveItemPresentation(editAdaptiveAddAtomBtn, {
-        icon: 'add',
-        label: 'Build',
-        meta: '',
-        key: '/',
-        title: 'Build palette (/)',
-        static: false,
-      });
-      setAdaptiveItemPresentation(editAdaptiveSymmetryBtn, {
-        icon: 'hub',
-        label: 'Symmetry',
-        meta: '',
-        key: 'S',
-        title: 'Symmetry (S)',
-        static: false,
-      });
-      setAdaptiveItemPresentation(editAdaptiveCleanStructureBtn, {
-        icon: 'cleaning_services',
-        label: 'Optimize',
-        meta: '',
-        key: 'O',
-        title: 'Optimize structure (O)',
-        static: false,
-      });
-      setAdaptiveItemPresentation(editAdaptiveShiftComBtn, {
-        icon: 'center_focus_strong',
-        label: 'COM → Origin',
-        meta: '',
-        key: 'R',
-        title: 'Shift COM to origin (R)',
-        static: false,
-      });
-      setAdaptiveItemPresentation(editAdaptiveAlignPrincipalBtn, {
-        icon: '3d_rotation',
-        label: 'Align',
-        meta: '',
-        key: 'P',
-        title: 'Align principal axes (P)',
-        static: false,
-      });
-    }
-    updateAdaptiveMenuUiHelper({
-      menuEl: editAdaptiveMenuEl,
-      isVisible: showLegacyDrawer,
-      positionMenu: positionEditAdaptiveMenu,
-      onHideAllPopovers: hideAllAdaptiveToolPopovers,
-      visibleItems: [
-        { el: editAdaptiveAddAtomBtn, visible: isVisible },
-        { el: editAdaptiveSymmetryBtn, visible: buildModeActive || hasEditableAtoms },
-        { el: editAdaptiveCleanStructureBtn, visible: buildModeActive || hasEditableAtoms },
-        { el: editAdaptiveShiftComBtn, visible: hasEditableAtoms && !buildModeActive },
-        { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms && !buildModeActive },
-      ],
-      activeItems: [
-        { el: editAdaptiveAddAtomBtn, active: buildModeActive || emptyEditState },
-        { el: editAdaptiveSymmetryBtn, active: !buildModeActive && isSymmetryPopoverOpen() },
-        { el: editAdaptiveCleanStructureBtn, active: false },
-        { el: editAdaptiveShiftComBtn, active: false },
-        { el: editAdaptiveAlignPrincipalBtn, active: false },
-      ],
-      metaItems: [
-        {
-          el: editAdaptiveAddAtomMetaEl,
-          text: '',
-        },
-        {
-          el: editAdaptiveSymmetryMetaEl,
-          text: '',
-        },
-        {
-          el: editAdaptiveCleanStructureMetaEl,
-          text: '',
-        },
-        {
-          el: editAdaptiveShiftComMetaEl,
-          text: '',
-        },
-        {
-          el: editAdaptiveAlignPrincipalMetaEl,
-          text: '',
-        },
-      ],
-    });
-    if (editAdaptiveMenuAutoHideController && editAdaptiveMenuEl) {
-      editAdaptiveMenuAutoHideController.setEnabled(editAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
-    }
+    updateCanvasAdaptiveMenuUi();
     if (isSymmetryPopoverOpen()) renderSymmetryPopover();
-  }
-
-  /**
-   * Anchor the adaptive edit menu against the actual sidebar edge.
-   */
-  function positionEditAdaptiveMenu() {
-    const menuEl = document.getElementById('editAdaptiveMenu');
-    if (!menuEl) return;
-    const gap = 12;
-    let left = gap;
-    let top = getCanvasAdaptiveMenuTopInset();
-    const toolbarEl = document.getElementById('toolbar');
-    if (!document.body.classList.contains('sidebar-collapsed') && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
-      const toolbarRect = toolbarEl.getBoundingClientRect();
-      if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
-        left = Math.round(toolbarRect.right + gap);
-        if (Number.isFinite(toolbarRect.top)) {
-          const inset = getCanvasAdaptiveMenuTopInset();
-          top = Math.max(inset, Math.round(toolbarRect.top + inset));
-        }
-      }
-    }
-    menuEl.style.left = `${left}px`;
-    menuEl.style.top = `${top}px`;
   }
 
   /**
