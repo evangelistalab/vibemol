@@ -6630,6 +6630,131 @@
   editAdaptiveShiftComMetaEl = document.getElementById('editAdaptiveShiftComMeta');
   editAdaptiveAlignPrincipalBtn = document.getElementById('editAdaptiveAlignPrincipalBtn');
   editAdaptiveAlignPrincipalMetaEl = document.getElementById('editAdaptiveAlignPrincipalMeta');
+  const EDIT_ADAPTIVE_CHIP_DEFS = Object.freeze([
+    {
+      id: 'build',
+      getButtonEl: () => editAdaptiveAddAtomBtn,
+      getMetaEl: () => editAdaptiveAddAtomMetaEl,
+      getState(context) {
+        return {
+          visible: context.isVisible,
+          active: context.buildModeActive || context.emptyEditState,
+          presentation: {
+            icon: 'add',
+            label: context.buildModeActive ? 'Elements' : 'Build',
+            meta: '',
+            key: '/',
+            title: 'Build palette (/)',
+            static: false,
+          },
+        };
+      },
+    },
+    {
+      id: 'symmetry',
+      getButtonEl: () => editAdaptiveSymmetryBtn,
+      getMetaEl: () => editAdaptiveSymmetryMetaEl,
+      getState(context) {
+        if (context.buildModeActive) {
+          return {
+            visible: true,
+            active: false,
+            presentation: {
+              icon: 'linear_scale',
+              label: 'Bond order',
+              meta: '',
+              key: '1-4',
+              title: 'Bond order keys 1-4',
+              static: true,
+            },
+          };
+        }
+        return {
+          visible: context.hasEditableAtoms,
+          active: context.symmetryPopoverOpen,
+          presentation: {
+            icon: 'hub',
+            label: 'Symmetry',
+            meta: '',
+            key: 'S',
+            title: 'Symmetry (S)',
+            static: false,
+          },
+        };
+      },
+    },
+    {
+      id: 'optimize',
+      getButtonEl: () => editAdaptiveCleanStructureBtn,
+      getMetaEl: () => editAdaptiveCleanStructureMetaEl,
+      getState(context) {
+        if (context.buildModeActive) {
+          return {
+            visible: true,
+            active: false,
+            presentation: {
+              icon: 'auto_fix_high',
+              label: 'Toggle H',
+              meta: '',
+              key: 'Space',
+              title: 'Preview or apply missing hydrogens (Space)',
+              static: false,
+            },
+          };
+        }
+        return {
+          visible: context.hasEditableAtoms,
+          active: false,
+          presentation: {
+            icon: 'cleaning_services',
+            label: 'Optimize',
+            meta: '',
+            key: 'O',
+            title: 'Optimize structure (O)',
+            static: false,
+          },
+        };
+      },
+    },
+    {
+      id: 'center-mass',
+      getButtonEl: () => editAdaptiveShiftComBtn,
+      getMetaEl: () => editAdaptiveShiftComMetaEl,
+      getState(context) {
+        return {
+          visible: context.hasEditableAtoms && !context.buildModeActive,
+          active: false,
+          presentation: {
+            icon: 'center_focus_strong',
+            label: 'COM → Origin',
+            meta: '',
+            key: 'R',
+            title: 'Shift COM to origin (R)',
+            static: false,
+          },
+        };
+      },
+    },
+    {
+      id: 'align',
+      getButtonEl: () => editAdaptiveAlignPrincipalBtn,
+      getMetaEl: () => editAdaptiveAlignPrincipalMetaEl,
+      getState(context) {
+        return {
+          visible: context.hasEditableAtoms && !context.buildModeActive,
+          active: false,
+          presentation: {
+            icon: '3d_rotation',
+            label: 'Align',
+            meta: '',
+            key: 'P',
+            title: 'Align principal axes (P)',
+            static: false,
+          },
+        };
+      },
+    },
+  ]);
   editAdaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
   editAdaptiveSymmetryPopoverEl = document.getElementById('editAdaptiveSymmetryPopover');
   editBuildSearchEl = document.getElementById('editBuildSearch');
@@ -8721,6 +8846,25 @@
     }
   }
 
+  function getEditAdaptiveButtonEls() {
+    return EDIT_ADAPTIVE_CHIP_DEFS.map((chipDef) => chipDef.getButtonEl()).filter(Boolean);
+  }
+
+  function buildEditAdaptiveMenuContext() {
+    const isVisible = currentMode === MODES.EDIT;
+    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const vol = record && record.vol;
+    const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
+    const buildModeActive = !!(isVisible && isBuildPopoverOpen());
+    return {
+      isVisible,
+      hasEditableAtoms,
+      buildModeActive,
+      emptyEditState: !!(isVisible && !buildModeActive && !hasEditableAtoms),
+      symmetryPopoverOpen: !!isSymmetryPopoverOpen(),
+    };
+  }
+
   function buildDisplayAdaptiveMenuModel() {
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol ? record.vol : null;
@@ -8773,13 +8917,6 @@
     ];
     const visibleItems = [];
     const activeItems = [];
-    const editModeButtons = [
-      editAdaptiveAddAtomBtn,
-      editAdaptiveSymmetryBtn,
-      editAdaptiveCleanStructureBtn,
-      editAdaptiveShiftComBtn,
-      editAdaptiveAlignPrincipalBtn,
-    ];
     for (const itemDef of itemDefs) {
       setAdaptiveItemPresentation(itemDef.buttonEl, itemDef.presentation);
       const entry = displayWindowsController ? displayWindowsController.getEntry(itemDef.windowId) : null;
@@ -8789,7 +8926,7 @@
       visibleItems.push({ el: itemDef.buttonEl, visible: itemDef.visible });
       activeItems.push({ el: itemDef.buttonEl, active: !!(itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen()) });
     }
-    for (const buttonEl of editModeButtons) {
+    for (const buttonEl of getEditAdaptiveButtonEls()) {
       visibleItems.push({ el: buttonEl, visible: false });
       activeItems.push({ el: buttonEl, active: false });
     }
@@ -8804,132 +8941,7 @@
   }
 
   function buildEditAdaptiveMenuModel() {
-    const isVisible = currentMode === MODES.EDIT;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const hasEditableAtoms = !!(isVisible && vol && Array.isArray(vol.atoms) && vol.atoms.length > 0);
-    const buildModeActive = !!(isVisible && isBuildPopoverOpen());
-    const emptyEditState = !!(isVisible && !buildModeActive && !hasEditableAtoms);
-    const itemDefs = [
-      {
-        buttonEl: editAdaptiveAddAtomBtn,
-        metaEl: editAdaptiveAddAtomMetaEl,
-        resolve() {
-          return {
-            visible: isVisible,
-            active: buildModeActive || emptyEditState,
-            presentation: {
-              icon: 'add',
-              label: buildModeActive ? 'Elements' : 'Build',
-              meta: '',
-              key: '/',
-              title: 'Build palette (/)',
-              static: false,
-            },
-          };
-        },
-      },
-      {
-        buttonEl: editAdaptiveSymmetryBtn,
-        metaEl: editAdaptiveSymmetryMetaEl,
-        resolve() {
-          if (buildModeActive) {
-            return {
-              visible: true,
-              active: false,
-              presentation: {
-                icon: 'linear_scale',
-                label: 'Bond order',
-                meta: '',
-                key: '1-4',
-                title: 'Bond order keys 1-4',
-                static: true,
-              },
-            };
-          }
-          return {
-            visible: hasEditableAtoms,
-            active: isSymmetryPopoverOpen(),
-            presentation: {
-              icon: 'hub',
-              label: 'Symmetry',
-              meta: '',
-              key: 'S',
-              title: 'Symmetry (S)',
-              static: false,
-            },
-          };
-        },
-      },
-      {
-        buttonEl: editAdaptiveCleanStructureBtn,
-        metaEl: editAdaptiveCleanStructureMetaEl,
-        resolve() {
-          if (buildModeActive) {
-            return {
-              visible: true,
-              active: false,
-              presentation: {
-                icon: 'auto_fix_high',
-                label: 'Toggle H',
-                meta: '',
-                key: 'Space',
-                title: 'Preview or apply missing hydrogens (Space)',
-                static: false,
-              },
-            };
-          }
-          return {
-            visible: hasEditableAtoms,
-            active: false,
-            presentation: {
-              icon: 'cleaning_services',
-              label: 'Optimize',
-              meta: '',
-              key: 'O',
-              title: 'Optimize structure (O)',
-              static: false,
-            },
-          };
-        },
-      },
-      {
-        buttonEl: editAdaptiveShiftComBtn,
-        metaEl: editAdaptiveShiftComMetaEl,
-        resolve() {
-          return {
-            visible: hasEditableAtoms && !buildModeActive,
-            active: false,
-            presentation: {
-              icon: 'center_focus_strong',
-              label: 'COM → Origin',
-              meta: '',
-              key: 'R',
-              title: 'Shift COM to origin (R)',
-              static: false,
-            },
-          };
-        },
-      },
-      {
-        buttonEl: editAdaptiveAlignPrincipalBtn,
-        metaEl: editAdaptiveAlignPrincipalMetaEl,
-        resolve() {
-          return {
-            visible: hasEditableAtoms && !buildModeActive,
-            active: false,
-            presentation: {
-              icon: '3d_rotation',
-              label: 'Align',
-              meta: '',
-              key: 'P',
-              title: 'Align principal axes (P)',
-              static: false,
-            },
-          };
-        },
-      },
-    ];
+    const context = buildEditAdaptiveMenuContext();
     const visibleItems = [];
     const activeItems = [];
     const metaItems = [];
@@ -8941,12 +8953,14 @@
       trajectoryPanelBtn,
       vibrationPanelBtn,
     ];
-    for (const itemDef of itemDefs) {
-      const itemState = itemDef.resolve();
-      setAdaptiveItemPresentation(itemDef.buttonEl, itemState.presentation);
-      visibleItems.push({ el: itemDef.buttonEl, visible: !!itemState.visible });
-      activeItems.push({ el: itemDef.buttonEl, active: !!itemState.active });
-      metaItems.push({ el: itemDef.metaEl, text: itemState.presentation.meta || '' });
+    for (const chipDef of EDIT_ADAPTIVE_CHIP_DEFS) {
+      const buttonEl = chipDef.getButtonEl();
+      const metaEl = chipDef.getMetaEl();
+      const chipState = chipDef.getState(context);
+      setAdaptiveItemPresentation(buttonEl, chipState.presentation);
+      visibleItems.push({ el: buttonEl, visible: !!chipState.visible });
+      activeItems.push({ el: buttonEl, active: !!chipState.active });
+      metaItems.push({ el: metaEl, text: chipState.presentation.meta || '' });
     }
     for (const buttonEl of displayModeButtons) {
       visibleItems.push({ el: buttonEl, visible: false });
@@ -8954,7 +8968,7 @@
     }
     return {
       mode: MODES.EDIT,
-      isVisible,
+      isVisible: context.isVisible,
       onHideAllPopovers: hideAllAdaptiveToolPopovers,
       visibleItems,
       activeItems,
