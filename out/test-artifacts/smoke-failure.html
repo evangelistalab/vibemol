@@ -1,0 +1,3670 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head>
+  <script>
+    (function () {
+      try {
+        var storedFontPair = window.localStorage.getItem('vm.prefs.font');
+        if (storedFontPair === 'inter' || storedFontPair === 'plex') {
+          document.documentElement.setAttribute('data-font', storedFontPair);
+        }
+      } catch (_) { }
+    })();
+  </script>
+  <!-- Google tag (gtag.js) -->
+  <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-WSP0EFW68E"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-WSP0EFW68E');
+  </script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VibeMol — CUBE Isosurface Viewer</title>
+  <link rel="icon" type="image/svg+xml" href="assets/app/img/favicon-tetra.svg">
+  <script>
+    (function () {
+      try {
+        var storedTheme = window.localStorage.getItem('vibemol.uiTheme');
+        if (storedTheme === 'light' || storedTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', storedTheme);
+        }
+      } catch (_) { }
+    })();
+  </script>
+  <link rel="stylesheet" href="src/styles/tokens.css">
+  <link rel="stylesheet" href="src/styles/vm-tooltip.css">
+  <link rel="stylesheet" href="assets/app/css/palette.css">
+  <link rel="stylesheet" href="assets/app/css/edit-ui.css">
+  <link rel="stylesheet" href="assets/app/css/display-ui.css">
+  <link rel="stylesheet" href="src/styles/vm-list-popover.css">
+  <style>
+    :root {
+      --vm-color-accent: #0c3575;
+      --vm-font-weight-body: 400;
+      --vm-font-weight-emphasis: 500;
+      --vm-font-weight-strong: 600;
+      --vm-font-weight-heading: 700;
+      --vm-text-xs: 11px;
+      --vm-text-sm: 12px;
+      --vm-text-base: 13px;
+      --vm-text-md: 15px;
+      --vm-text-lg: 18px;
+      --vm-text-xl: 22px;
+      --bg: var(--vm-color-surface-base);
+      --panel: var(--vm-color-surface-panel);
+      --text: var(--vm-color-text-main);
+      --accent: var(--vm-brand-accent);
+      --floating-panel-top-offset: 68px;
+      --floating-panel-bottom-clearance: 64px;
+      --status-ribbon-height: 26px;
+      --status-hint-accent: var(--vm-brand-accent);
+      --shortcut-key-font-family: var(--vm-font-mono);
+      --vm-tetrahedral-spinner-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M8 8.5V3.25' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M8 8.5L3.55 10.05' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M8 8.5L12.45 10.05' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Ccircle cx='8' cy='8.5' r='1.1' fill='white'/%3E%3C/svg%3E");
+      --vm-tetrahedral-heading-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8' fill='none'%3E%3Cpath d='M5 6L1.74 3.69' stroke='white' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M5 6L8.26 3.69' stroke='white' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+
+    :root[data-theme='dark'] {
+      --vm-color-accent: #6b9bff;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: var(--vm-text-base)/1.3 var(--vm-font-sans);
+      font-weight: var(--vm-font-weight-body);
+    }
+
+    a {
+      color: var(--vm-brand-accent);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .vm-select {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--vm-color-border);
+      border-radius: var(--vm-radius-md);
+      background-color: var(--vm-color-surface-panel);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px 12px;
+      padding-right: 28px !important;
+      font-family: var(--vm-font-sans);
+      font-size: var(--vm-text-base);
+      font-weight: var(--vm-font-weight-emphasis);
+      color: var(--vm-color-text-primary);
+      transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+    }
+
+    .vm-select:focus,
+    .vm-select:focus-visible {
+      outline: none;
+      border-color: var(--vm-color-accent);
+      box-shadow: var(--vm-shadow-focus-ring);
+    }
+
+    .vm-nums {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'ss01';
+    }
+
+    .vm-mono {
+      font-family: var(--vm-font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status-bar {
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
+      border-top: 1px solid var(--vm-color-border-control);
+      font-family: var(--vm-font-mono);
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-emphasis);
+      font-variant-numeric: tabular-nums;
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
+      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .status-bar .vm-key-pill,
+    .status-bar kbd {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--vm-color-on-control-dim);
+      border-color: var(--vm-color-border-control);
+    }
+
+    .vm-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+      background: var(--vm-color-accent);
+      -webkit-mask: center / contain no-repeat var(--vm-tetrahedral-spinner-mask);
+      mask: center / contain no-repeat var(--vm-tetrahedral-spinner-mask);
+      animation: vmSpinnerSpin 900ms linear infinite;
+      transform-origin: 50% 50%;
+      pointer-events: none;
+    }
+
+    @keyframes vmSpinnerSpin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .vm-heroHeading {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .vm-heroHeading::before {
+      content: "";
+      width: 10px;
+      height: 8px;
+      flex: 0 0 auto;
+      background: var(--vm-color-accent);
+      -webkit-mask: center / contain no-repeat var(--vm-tetrahedral-heading-mask);
+      mask: center / contain no-repeat var(--vm-tetrahedral-heading-mask);
+      opacity: 0.9;
+    }
+
+    #emptyStateLeadLogo,
+    #emptyStateLeadLogoDark {
+      display: block;
+      width: min(220px, 58vw);
+      height: auto;
+    }
+
+    #toolbar .tb-brandLogo {
+      display: block;
+      height: 24px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .themeLogoDark {
+      display: none !important;
+    }
+
+    :root[data-theme='dark'] .themeLogoLight {
+      display: none !important;
+    }
+
+    :root[data-theme='dark'] .themeLogoDark {
+      display: block !important;
+    }
+
+    .vm-versionBadge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 20px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid var(--vm-color-border-subtle);
+      background: var(--vm-color-surface-panel);
+      color: var(--vm-color-text-secondary);
+      font-family: var(--vm-font-mono);
+      font-size: var(--vm-text-xs);
+      font-weight: var(--vm-font-weight-emphasis);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .vm-sidebar-section-label {
+      font-family: var(--vm-font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--vm-color-text-label);
+      margin: 16px 0 6px;
+      padding: 0 8px;
+    }
+
+    .vm-section-label {
+      font-family: var(--vm-font-sans);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--vm-color-text-secondary);
+      margin: 14px 0 6px;
+    }
+
+    .vm-section-label:first-child {
+      margin-top: 4px;
+    }
+
+    .vm-field-label {
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-emphasis);
+      color: var(--vm-color-text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .status-bar,
+    .pubchem-metadata td,
+    #toolbar #pubchemMetaContent table.meta-table td,
+    .symmetry-panel .rms-value,
+    #editSymmetryTargetSummary,
+    #editSymmetryExactResult,
+    .editSymmetryCandidateMeta,
+    .coord-readout,
+    #coordsContent,
+    .measure-list,
+    #vibrationModeTable,
+    #trajectoryFrameLabel,
+    #vibrationModeLabel,
+    #vibrationFreqLabel,
+    [class*='-value'],
+    [class*='-num'] {
+      font-variant-numeric: tabular-nums;
+    }
+
+    #toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--vm-color-surface-base);
+      color: var(--vm-color-on-base);
+      border-bottom: 1px solid var(--vm-color-border-strong);
+      padding: 8px 10px;
+      display: grid;
+      grid-template-columns: minmax(380px, 1.2fr) auto minmax(340px, 1fr);
+      gap: 10px;
+      align-items: center;
+      z-index: 32;
+    }
+
+    #toolbar .tb-section {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px;
+      border: 1px solid var(--vm-color-border-subtle);
+      border-radius: 10px;
+      background: var(--vm-color-surface-panel);
+      box-shadow: var(--vm-shadow-sm);
+    }
+
+    #toolbar .tb-file {
+      justify-content: flex-start;
+    }
+
+    #toolbar .tb-main {
+      justify-content: center;
+      background: var(--vm-color-surface-panel);
+    }
+
+    #toolbar .tb-actions {
+      justify-content: flex-end;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    #toolbar .tb-brand {
+      font-weight: var(--vm-font-weight-heading);
+      color: var(--vm-color-text-primary);
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    #toolbar .tb-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--vm-color-text-secondary);
+      font-size: var(--vm-text-sm);
+      white-space: nowrap;
+    }
+
+    #toolbar select,
+    #toolbar input[type="number"],
+    #toolbar input[type="text"] {
+      height: 30px;
+      border: 1px solid var(--vm-color-border);
+      border-radius: 8px;
+      background: var(--vm-color-surface-panel);
+      color: var(--vm-color-text-primary);
+      padding: 0 8px;
+    }
+
+    #toolbar .vm-active-file {
+      width: 100%;
+    }
+
+    #toolbar .vm-active-file__chip {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 6px 6px 10px;
+      background: var(--vm-color-surface-base);
+      border-radius: 6px;
+      min-height: 28px;
+    }
+
+    #toolbar .vm-active-file__icon {
+      color: var(--vm-color-text-secondary);
+      flex: 0 0 auto;
+      pointer-events: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    #toolbar .vm-active-file__name {
+      flex: 1 1 auto;
+      min-width: 0;
+      color: var(--vm-color-text-primary);
+      font-family: var(--vm-font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    #toolbar .vm-active-file__actions {
+      display: flex;
+      gap: 2px;
+      flex: 0 0 auto;
+      opacity: 1;
+      transition: color 120ms ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    #toolbar #fileSelect {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      background-image: none;
+      box-shadow: none;
+      color: transparent;
+      appearance: none;
+      -webkit-appearance: none;
+      opacity: 0;
+      z-index: 0;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    #toolbar #fileSelect[data-interactive='true'] {
+      cursor: pointer;
+    }
+
+    #toolbar #fileSelect option {
+      font-family: var(--vm-font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #toolbar .vm-search-field {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      background: var(--vm-color-surface-panel);
+      border: 1px solid var(--vm-color-border);
+      border-radius: 6px;
+      overflow: hidden;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    #toolbar .vm-search-field:focus-within {
+      border-color: var(--vm-brand-accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--vm-brand-accent) 20%, transparent);
+    }
+
+    #toolbar .vm-search-field .vm-search-field__input {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: auto;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--vm-color-text-primary);
+      padding: 6px 10px;
+      font-family: var(--vm-font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      box-shadow: none;
+      outline: none;
+    }
+
+    #toolbar .vm-search-field .vm-search-field__input::placeholder {
+      color: var(--vm-color-text-muted);
+    }
+
+    #toolbar button {
+      background: var(--accent);
+      color: var(--vm-color-text-on-accent);
+      border: none;
+      height: 30px;
+      padding: 0 11px;
+      border-radius: 8px;
+      font-weight: var(--vm-font-weight-strong);
+      cursor: pointer;
+      white-space: nowrap;
+      transform-origin: 50% 55%;
+      transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+    }
+
+    #toolbar button.secondary {
+      background: var(--vm-color-surface-secondary);
+      color: var(--vm-color-text-primary);
+    }
+
+    #toolbar button.secondary.active {
+      background: var(--vm-color-surface-secondary-active);
+      color: var(--vm-color-text-on-accent);
+    }
+
+    #toolbar button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #topRightUtilities {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      width: min(260px, calc(100vw - 24px));
+      height: 52px;
+      z-index: 36;
+    }
+
+    #topRightUtilitiesReveal {
+      position: absolute;
+      top: 0;
+      right: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    #topRightUtilities:hover #topRightUtilitiesReveal,
+    #topRightUtilities:focus-within #topRightUtilitiesReveal {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .topRightUtilityLink {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      color: var(--vm-color-utility-overlay-fg);
+      text-decoration: none;
+      filter: drop-shadow(0 1px 1px var(--vm-color-utility-overlay-shadow)) drop-shadow(0 0 8px var(--vm-color-utility-overlay-glow));
+      transition: color 160ms ease, transform 160ms ease, filter 160ms ease;
+    }
+
+    .topRightUtilityLink:hover,
+    .topRightUtilityLink:focus-visible {
+      color: var(--vm-color-utility-overlay-fg-hover);
+      transform: translateY(-1px);
+      filter: drop-shadow(0 1px 1px var(--vm-color-utility-overlay-shadow)) drop-shadow(0 0 10px var(--vm-color-utility-overlay-glow));
+      outline: none;
+    }
+
+    .topRightUtilityGithubMark {
+      width: 24px;
+      height: 24px;
+      display: block;
+      fill: currentColor;
+    }
+
+    .themeToggleShell {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--vm-color-utility-overlay-fg);
+      cursor: pointer;
+      user-select: none;
+      filter: drop-shadow(0 1px 1px var(--vm-color-utility-overlay-shadow));
+    }
+
+    .themeToggleShell input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .themeToggleTrack {
+      position: relative;
+      width: calc(58px * 0.8);
+      height: calc(30px * 0.8);
+      border: 2px solid currentColor;
+      border-radius: 999px;
+      box-sizing: border-box;
+      background: transparent;
+      transition: border-color 180ms ease;
+    }
+
+    .themeToggleKnob {
+      position: absolute;
+      top: calc(2px * 0.8);
+      left: calc(2px * 0.8);
+      width: calc(22px * 0.8);
+      height: calc(22px * 0.8);
+      border-radius: 50%;
+      background: currentColor;
+      transition: transform 180ms ease, background-color 180ms ease;
+    }
+
+    .themeToggleText {
+      position: relative;
+      min-width: 96px;
+      font-size: 14px;
+      font-weight: var(--vm-font-weight-emphasis);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .themeToggleTextLight,
+    .themeToggleTextDark {
+      transition: opacity 140ms ease, transform 140ms ease;
+      display: inline-block;
+    }
+
+    .themeToggleTextDark {
+      position: absolute;
+      inset: 0 auto auto 0;
+      opacity: 0;
+      transform: translateY(2px);
+    }
+
+    .themeToggleShell input:checked + .themeToggleTrack .themeToggleKnob {
+      transform: translateX(calc(28px * 0.8));
+    }
+
+    .themeToggleShell input:checked~.themeToggleText .themeToggleTextLight {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+
+    .themeToggleShell input:checked~.themeToggleText .themeToggleTextDark {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .themeToggleShell:hover,
+    .themeToggleShell:focus-within {
+      color: var(--vm-color-utility-overlay-fg-hover);
+    }
+
+    @media (max-width: 1260px) {
+      #toolbar {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      #toolbar .tb-main {
+        justify-content: flex-start;
+      }
+
+      #toolbar .tb-actions {
+        justify-content: flex-start;
+      }
+
+    }
+
+    #drop {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    /* View window: floating panel that sizes to content. */
+    #sidePanel {
+      position: fixed;
+      top: var(--floating-panel-top-offset);
+      right: 12px;
+      width: min(420px, calc(100vw - 24px));
+      max-height: calc(100vh - var(--floating-panel-top-offset) - var(--floating-panel-bottom-clearance));
+      height: auto;
+      background: var(--vm-color-surface-raised);
+      color: var(--vm-color-on-raised);
+      border: 1px solid var(--vm-color-border);
+      border-radius: 10px;
+      box-shadow: var(--vm-shadow-lg);
+      transform: translateX(110%);
+      z-index: 24;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    #sidePanel.open {
+      transform: translateX(0);
+    }
+
+    /* Dedicated motion control windows */
+    .motionPanel {
+      position: fixed;
+      top: var(--floating-panel-top-offset);
+      right: 12px;
+      width: min(420px, calc(100vw - 24px));
+      max-height: calc(100vh - var(--floating-panel-top-offset) - var(--floating-panel-bottom-clearance));
+      background: var(--vm-color-surface-raised);
+      color: var(--vm-color-on-raised);
+      border: 1px solid var(--vm-color-border);
+      border-radius: 10px;
+      box-shadow: var(--vm-shadow-lg);
+      z-index: 24;
+      display: none;
+    }
+
+    .motionPanel.open {
+      display: block;
+    }
+
+    .motionPanel.vm-list-popover.open {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #moldenInspector,
+    #coordsPanel,
+    #trajectoryPanel,
+    #vibrationPanel {
+      overflow: hidden;
+    }
+
+    .motionPanelHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--vm-color-border-strong);
+      color: var(--text);
+    }
+
+    .motionPanelHeader .title {
+      font-weight: var(--vm-font-weight-strong);
+    }
+
+    .motionPanelHeader .actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .motionPanelIconBtn {
+      min-width: 32px;
+      height: 30px;
+      border: 1px solid var(--vm-color-border-control);
+      border-radius: 7px;
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      overflow: hidden;
+      box-shadow: var(--vm-shadow-control);
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
+    }
+
+    .motionPanelIconBtn:hover {
+      background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
+    }
+
+    .motionPanelIconGlyph {
+      pointer-events: none;
+      font-family: var(--vm-font-icon);
+      font-weight: var(--vm-font-weight-body);
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-feature-settings: 'liga';
+      font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+
+    .motionPanelClose {
+      background: var(--vm-color-surface-secondary);
+      color: var(--vm-color-text-primary);
+      border: none;
+      min-width: 32px;
+      height: 30px;
+      padding: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .motionPanelBody {
+      padding: 10px 12px;
+      color: var(--text);
+      background: var(--vm-color-surface-chip);
+      border-radius: 0 0 10px 10px;
+    }
+
+    #vibrationPanel.open {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #coordsPanel.open {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #vibrationPanel .motionPanelBody {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    #coordsPanel .motionPanelBody {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .motionPanelBody .row {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .motionPanelBody .row:last-child {
+      margin-bottom: 0;
+    }
+
+    #vibrationRow2 {
+      grid-template-columns: max-content minmax(72px, 76px) max-content minmax(84px, 88px) 1fr !important;
+      column-gap: 8px;
+    }
+
+    #vibrationRow2 > * {
+      min-width: 0;
+    }
+
+    .motionPanelBody label {
+      color: var(--vm-color-text-secondary);
+      font-size: var(--vm-text-sm);
+      width: auto;
+    }
+
+    .motionPanelBody input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 3px 6px;
+      background: var(--vm-color-surface-panel);
+      color: var(--text);
+      border: 1px solid var(--vm-color-border-strong);
+      border-radius: 4px;
+    }
+
+    #vibrationModeTableWrap {
+      display: none;
+      margin-top: 8px;
+      border: 1px solid var(--vm-color-border-strong);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--vm-color-surface-chip-muted);
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    #vibrationSpectrumWrap {
+      display: none;
+      margin-top: 8px;
+      border: 1px solid var(--vm-color-border-strong);
+      border-radius: 8px;
+      background: var(--vm-color-surface-chip-muted);
+      padding: 6px 8px 4px;
+    }
+
+    #vibrationSpectrumCanvas {
+      width: 100%;
+      height: 128px;
+      display: block;
+      border-radius: 6px;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--vm-color-surface-control) 92%, var(--vm-color-surface-raised)),
+        var(--vm-color-surface-control)
+      );
+    }
+
+    #vibrationSpectrumMeta {
+      margin-top: 5px;
+      color: var(--vm-color-text-secondary);
+      font-size: var(--vm-text-xs);
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #vibrationModeTable {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--vm-text-sm);
+      color: var(--text);
+    }
+
+    #vibrationModeTable th,
+    #vibrationModeTable td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--vm-color-border-strong);
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    #vibrationModeTable th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--vm-color-surface-chip);
+      color: var(--vm-color-text-label);
+      font-weight: var(--vm-font-weight-strong);
+    }
+
+    #vibrationModeTable td:nth-child(1) {
+      width: 46px;
+      text-align: center;
+    }
+
+    #vibrationModeTable td:nth-child(2) {
+      color: var(--vm-color-text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #vibrationModeTable td:nth-child(4),
+    #vibrationModeTable td:nth-child(5) {
+      width: 120px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--vm-color-text-secondary);
+    }
+
+    #vibrationModeTable[data-has-intensity="false"] th.vibrationIntensityCol,
+    #vibrationModeTable[data-has-intensity="false"] td.vibrationIntensityCol {
+      display: none;
+    }
+
+    #vibrationModeTable tr.mode-row {
+      cursor: pointer;
+      transition: background-color 120ms ease;
+    }
+
+    #vibrationModeTable tr.mode-row:hover {
+      background: color-mix(in srgb, var(--vm-color-surface-control) 70%, var(--vm-color-surface-panel));
+    }
+
+    #vibrationModeTable tr.mode-row.active {
+      background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
+    }
+
+    #vibrationModeTable tr.mode-row.active td {
+      color: var(--vm-color-on-control);
+      font-weight: var(--vm-font-weight-strong);
+    }
+
+    .vibrationPlayCell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid var(--vm-color-border-control);
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
+      font-size: var(--vm-text-lg);
+      cursor: pointer;
+      padding: 0;
+      font-family: var(--vm-font-icon);
+      font-weight: var(--vm-font-weight-body);
+      line-height: 1;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      box-shadow: var(--vm-shadow-control);
+    }
+
+    .vibrationPlayCell:hover {
+      background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
+    }
+
+    #trajectoryNowPlaying,
+    #vibrationNowPlaying {
+      margin-top: 4px;
+      margin-bottom: 8px;
+      color: var(--vm-color-text-secondary);
+      font-size: var(--vm-text-sm);
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #vibrationModeEmpty {
+      display: none;
+      color: var(--vm-color-text-secondary);
+      font-size: var(--vm-text-sm);
+      padding: 10px 2px 2px;
+    }
+
+    @media (max-width: 900px) {
+      :root {
+        --floating-panel-top-offset: 68px;
+      }
+    }
+
+    #sideHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--vm-color-border-strong);
+      color: var(--text);
+    }
+
+    #sideHeader .title {
+      font-weight: var(--vm-font-weight-strong);
+    }
+
+    #sideClose {
+      background: var(--vm-color-surface-secondary);
+      color: var(--vm-color-text-primary);
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #coordsContent {
+      padding: 10px 12px;
+      overflow: visible;
+      color: var(--text);
+      font-size: var(--vm-text-base);
+      font-variant-numeric: tabular-nums;
+      font-family: var(--vm-font-mono);
+    }
+
+    #coordsContent .coordsActiveLabel {
+      margin-bottom: 8px;
+      color: var(--vm-color-text-secondary);
+    }
+
+    #toolbar #pubchemMetaContent {
+      padding: 6px 8px;
+      border: 1px solid var(--vm-color-border);
+      border-radius: var(--tb-radius-tight);
+      color: var(--tb-text-color-primary);
+      font-size: var(--tb-text-size-meta);
+      max-height: 140px;
+      overflow: auto;
+      background: var(--vm-color-surface-panel);
+      box-shadow: var(--vm-shadow-sm);
+      scrollbar-width: thin;
+    }
+
+    #toolbar #pubchemMetaWrap {
+      display: none;
+      width: 100%;
+      margin-top: 2px;
+    }
+
+    #toolbar #pubchemMetaTitle {
+      color: var(--vm-color-text-secondary);
+      font-size: var(--tb-text-size-meta);
+      font-weight: var(--tb-text-weight-bold);
+      margin: 0 0 4px 1px;
+      text-transform: none;
+    }
+
+    #toolbar #pubchemMetaContent .meta-empty {
+      color: var(--tb-text-color-meta-empty);
+      font-style: italic;
+    }
+
+    #toolbar #pubchemMetaContent table.meta-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #toolbar #pubchemMetaContent table.meta-table th,
+    #toolbar #pubchemMetaContent table.meta-table td {
+      padding: 3px 4px;
+      border-bottom: 1px solid var(--vm-color-border);
+      vertical-align: top;
+      word-break: break-word;
+      text-align: left;
+    }
+
+    #toolbar #pubchemMetaContent table.meta-table th {
+      width: 68px;
+      color: var(--tb-text-color-meta-key);
+      font-weight: var(--tb-text-weight-semibold);
+    }
+
+    #toolbar #pubchemMetaContent table.meta-table td {
+      color: var(--tb-text-color-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #toolbar #pubchemMetaContent table.meta-table th + td {
+      font-family: var(--vm-font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #viewControls {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--vm-color-border-strong);
+      color: var(--text);
+      background: var(--vm-color-surface-chip);
+    }
+
+    #viewControls .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    #viewControls .row-vec {
+      display: grid;
+      grid-template-columns: 60px 10px 1fr 10px 1fr 10px 1fr;
+      gap: 4px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    #viewControls label {
+      color: var(--vm-color-text-secondary);
+      font-size: var(--vm-text-sm);
+    }
+
+    #viewControls input[type="number"] {
+      width: 100%;
+      padding: 3px 6px;
+      background: var(--vm-color-surface-panel);
+      color: var(--text);
+      border: 1px solid var(--vm-color-border-strong);
+      border-radius: 4px;
+    }
+
+    #viewControls input[type="checkbox"] {
+      vertical-align: middle;
+    }
+
+    #viewControls .axis {
+      color: var(--vm-color-text-label);
+      font-size: var(--vm-text-sm);
+      text-align: center;
+    }
+
+    #coordsContent table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #coordsContent th,
+    #coordsContent td {
+      text-align: right;
+      padding: 4px 6px;
+      border-bottom: 1px solid var(--vm-color-border-strong);
+    }
+
+    #coordsContent th {
+      text-align: left;
+      color: var(--vm-color-text-label);
+      font-weight: var(--vm-font-weight-strong);
+    }
+
+    #coordsContent tbody tr[data-atom-index] {
+      transition: background-color 120ms ease;
+    }
+
+    #coordsContent tbody tr[data-atom-index]:hover,
+    #coordsContent tbody tr.coordsRowHovered {
+      background: color-mix(in srgb, var(--vm-brand-accent) 12%, transparent);
+    }
+
+    #coordsContent .coordsCellButton {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-family: var(--vm-font-mono);
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      text-align: inherit;
+      cursor: pointer;
+    }
+
+    #coordsContent .coordsCellButton:hover {
+      color: var(--vm-brand-accent);
+    }
+
+    #coordsContent .coordsCellEditor {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 2px 4px;
+      border: 1px solid var(--vm-color-border-soft);
+      border-radius: 4px;
+      background: var(--vm-color-surface-panel);
+      color: var(--text);
+      font: inherit;
+      font-family: var(--vm-font-mono);
+      text-align: inherit;
+      outline: none;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    #presetInput {
+      display: none;
+    }
+
+    #hint {
+      position: fixed;
+      left: 160px;
+      bottom: 12px;
+      right: 12px;
+      max-width: calc(100vw - 24px);
+      box-sizing: border-box;
+      white-space: normal;
+      color: var(--vm-color-on-control);
+      background: var(--vm-color-surface-control);
+      border: 1px solid var(--vm-color-border-control);
+      border-left: 2px solid transparent;
+      box-shadow: var(--vm-shadow-control);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-family: var(--vm-font-mono);
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-emphasis);
+      font-variant-numeric: tabular-nums;
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
+      transition: background-color 180ms ease, border-left-color 180ms ease, box-shadow 180ms ease;
+      z-index: 31;
+    }
+
+    #hint.is-accented {
+      border-left-color: var(--status-hint-accent);
+      animation: hintStatusPulse 1500ms ease;
+    }
+
+    @keyframes hintStatusPulse {
+      0% {
+        background: color-mix(in srgb, var(--vm-brand-accent) 18%, var(--vm-color-surface-control));
+        box-shadow: var(--vm-shadow-control);
+      }
+      100% {
+        background: var(--vm-color-surface-control);
+        box-shadow: var(--vm-shadow-control);
+      }
+    }
+
+    #emptyState {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 6;
+      padding: 20px;
+    }
+
+    #emptyState.hidden {
+      display: none;
+    }
+
+    #emptyStateCard {
+      width: min(620px, 92vw);
+      color: var(--vm-color-splash-card-fg);
+      background: var(--vm-color-splash-card-bg);
+      border: 1px solid var(--vm-color-splash-card-border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      line-height: 1.35;
+      box-shadow: var(--vm-shadow-md);
+      pointer-events: auto;
+    }
+
+    #emptyStateLead {
+      margin: 0 0 12px 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      width: 100%;
+      text-align: center;
+    }
+
+    #emptyStateVersion {
+      color: var(--vm-color-splash-version);
+    }
+
+    #emptyStateDropZone {
+      border: 1px solid var(--vm-color-splash-drop-border);
+      background: var(--vm-color-splash-drop-bg);
+      box-shadow: var(--vm-shadow-sm);
+      border-radius: 12px;
+      padding: 16px 14px;
+      text-align: center;
+      color: var(--vm-color-splash-drop-fg);
+      font-weight: var(--vm-font-weight-strong);
+      font-size: clamp(15px, 1.8vw, 18px);
+    }
+
+    #emptyStateDropZone code {
+      background: var(--vm-color-splash-drop-code-bg);
+      border: 1px solid var(--vm-color-splash-drop-code-border);
+      border-radius: 5px;
+      padding: 1px 5px;
+      color: var(--vm-color-splash-drop-code-fg);
+      font-size: var(--vm-text-base);
+      font-weight: var(--vm-font-weight-emphasis);
+      font-family: var(--vm-font-mono);
+    }
+
+    kbd {
+      font-family: var(--vm-font-mono);
+    }
+
+    #emptyStateDropIcon {
+      display: block;
+      font-size: 30px;
+      line-height: 1;
+      margin-bottom: 8px;
+      color: var(--vm-color-splash-drop-icon);
+    }
+
+    #emptyStatePrimaryAction {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      pointer-events: auto;
+    }
+
+    #emptyStateOpenBtn {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      min-width: 160px;
+      background: var(--vm-color-splash-cta-bg);
+      color: var(--vm-color-splash-cta-fg);
+      font-size: 14px;
+      font-weight: var(--vm-font-weight-heading);
+      cursor: pointer;
+      transform-origin: 50% 55%;
+      transition: filter 150ms ease, transform 150ms ease;
+    }
+
+    #toolbar button:not(.secondary):hover,
+    #emptyStateOpenBtn:hover {
+      transform: rotate(calc(var(--vm-angle-tetrahedral) * 0.00456746));
+    }
+
+    #emptyStateOpenBtn:hover {
+      filter: brightness(1.05);
+    }
+
+    #emptyStateSecondary {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      justify-content: center;
+      pointer-events: auto;
+    }
+
+    #emptyStateSecondary button {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--vm-color-splash-link);
+      cursor: pointer;
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-strong);
+      padding: 2px 4px;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    #emptyStateMeta {
+      margin-top: 12px;
+      text-align: center;
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-emphasis);
+      color: var(--vm-color-splash-meta);
+    }
+
+    #emptyStateWhatsNew {
+      margin-top: 14px;
+      display: grid;
+      gap: 8px;
+      text-align: left;
+    }
+
+    #emptyStateWhatsNewSummary {
+      width: fit-content;
+      color: var(--vm-color-splash-link);
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-heading);
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+
+    #emptyStateWhatsNewSummary::-webkit-details-marker {
+      display: none;
+    }
+
+    #emptyStateWhatsNewSummary::after {
+      content: 'open_in_new';
+      font-family: var(--vm-font-icon);
+      font-size: 14px;
+      font-weight: var(--vm-font-weight-body);
+      line-height: 1;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+
+    #emptyStateWhatsNew[open] #emptyStateWhatsNewSummary::after {
+      content: 'expand_less';
+    }
+
+    #emptyStateWhatsNewPanel {
+      display: grid;
+      gap: 8px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(120, 139, 168, 0.22);
+      background: rgba(86, 103, 129, 0.08);
+    }
+
+    .emptyStateWhatsNewLead {
+      font-size: var(--vm-text-xs);
+      font-weight: var(--vm-font-weight-heading);
+      color: var(--vm-color-splash-meta);
+    }
+
+    #emptyStateWhatsNewList {
+      margin: 0;
+      padding-left: 16px;
+      display: grid;
+      gap: 5px;
+      color: var(--vm-color-splash-card-fg);
+      font-size: var(--vm-text-xs);
+      line-height: 1.4;
+    }
+
+    #elementColorOverlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.52);
+      z-index: 60;
+    }
+
+    #elementColorModal {
+      width: min(920px, 96vw);
+      max-height: 86vh;
+      overflow: auto;
+      background: var(--vm-color-surface-raised);
+      color: var(--vm-color-on-raised);
+      border: 1px solid var(--vm-color-border);
+      border-radius: 10px;
+      box-shadow: var(--vm-shadow-lg);
+      padding: 10px 12px 12px;
+    }
+
+    #elementColorHead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    #elementColorHead .title {
+      font-weight: var(--vm-font-weight-heading);
+    }
+
+    #elementColorPickerRow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: var(--vm-color-text-secondary);
+    }
+
+    #elementColorName {
+      min-width: 180px;
+      color: var(--text);
+      font-weight: var(--vm-font-weight-strong);
+    }
+
+    #periodicTableViewport {
+      width: 100%;
+      height: 420px;
+      border: 1px solid var(--vm-color-panel-border-strong);
+      border-radius: 8px;
+      background: radial-gradient(circle at 35% 28%, var(--vm-color-periodic-grad-a) 0%, var(--vm-color-periodic-grad-b) 52%, var(--vm-color-periodic-grad-c) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #periodicTableCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: default;
+    }
+
+    .pt-legend {
+      margin-top: 8px;
+      color: var(--vm-color-text-secondary);
+      font-size: var(--vm-text-sm);
+    }
+
+    /* --- Workspace Sidebar (Figma-like left dock) --- */
+    body {
+      --workspace-sidebar-width: 320px;
+      --workspace-left-offset: var(--workspace-sidebar-width);
+      --vibration-panel-bottom-clearance: 52px;
+      --toolbar-divider: var(--vm-color-toolbar-divider);
+      /* Toolbar typography tokens */
+      --tb-font-family: var(--vm-font-sans);
+      --tb-text-size-title: var(--vm-text-md);
+      --tb-text-size-ui: var(--vm-text-base);
+      --tb-text-size-label: var(--vm-text-sm);
+      --tb-text-size-meta: var(--vm-text-xs);
+      --tb-text-weight-regular: var(--vm-font-weight-body);
+      --tb-text-weight-semibold: var(--vm-font-weight-strong);
+      --tb-text-weight-bold: var(--vm-font-weight-heading);
+      --tb-text-color-primary: var(--vm-color-toolbar-text-primary);
+      --tb-text-color-strong: var(--vm-color-toolbar-text-strong);
+      --tb-text-color-subtle: var(--vm-color-toolbar-text-subtle);
+      --tb-text-color-emphasis: var(--vm-color-toolbar-text-emphasis);
+      --tb-text-color-icon: var(--vm-color-toolbar-icon-strong);
+      --tb-text-color-tooltip: var(--vm-color-toolbar-text-tooltip);
+      --tb-text-color-meta-key: var(--vm-color-toolbar-text-meta-key);
+      --tb-text-color-meta-empty: var(--vm-color-toolbar-text-meta-empty);
+      --tb-text-color-chip: var(--vm-color-toolbar-text-chip);
+      --tb-text-color-chip-muted: var(--vm-color-toolbar-text-chip-muted);
+      --tb-text-color-code: var(--vm-color-toolbar-text-code);
+      --tb-text-color-inverse: var(--vm-color-toolbar-text-inverse);
+      --tb-radius-tight: 3px;
+      --toolbar-font-size: var(--tb-text-size-ui);
+      --toolbar-font-weight: var(--tb-text-weight-semibold);
+      --toolbar-mode-tab-height: 23px;
+      --toolbar-mode-tab-radius: var(--tb-radius-tight);
+      --toolbar-mode-tab-bg: var(--vm-color-toolbar-control-bg);
+      --toolbar-mode-tab-bg-hover: var(--vm-color-toolbar-control-bg-hover);
+      --toolbar-mode-tab-bg-active: var(--vm-color-toolbar-control-bg);
+      --toolbar-mode-tab-fg: var(--vm-color-toolbar-tab-fg);
+      --toolbar-mode-tab-fg-hover: var(--vm-color-toolbar-tab-fg-hover);
+      --toolbar-mode-tab-fg-active: var(--vm-color-toolbar-tab-fg-active);
+      --toolbar-mode-tab-accent: var(--vm-color-toolbar-tab-accent);
+      --tb-surface-base: var(--vm-color-surface-base);
+      --tb-surface-emphasis: var(--vm-color-toolbar-control-bg);
+      --tb-surface-emphasis-hover: var(--vm-color-toolbar-control-bg-hover);
+      --tb-surface-button: var(--vm-color-toolbar-button-bg);
+      --tb-surface-input: var(--vm-color-toolbar-input-bg);
+      --tb-border-input: var(--vm-color-toolbar-input-border);
+      --tb-tooltip-bg: var(--vm-color-toolbar-tooltip-bg);
+      --tb-section-divider: var(--vm-color-toolbar-section-divider);
+      --tb-color-accent: var(--vm-color-toolbar-action);
+      --tb-color-accent-outline: var(--vm-color-toolbar-action-outline);
+      --tb-swatch-outline: rgba(40, 44, 52, 0.22);
+    }
+
+    body.sidebar-collapsed {
+      --workspace-left-offset: 0px;
+      --vibration-panel-bottom-clearance: 86px;
+    }
+
+    #toolbar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--workspace-sidebar-width);
+      right: auto;
+      border-right: 1px solid var(--vm-color-border);
+      border-bottom: none;
+      background: var(--tb-surface-base);
+      color: var(--tb-text-color-primary);
+      font-family: var(--tb-font-family);
+      box-shadow: none;
+      z-index: 42;
+      padding: 8px 10px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      transform: translateX(0);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    body.sidebar-collapsed #toolbar {
+      transform: translateX(calc(-100% - 12px));
+      pointer-events: none;
+    }
+
+    #toolbarHead {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 8px;
+      padding: 2px 2px 10px 8px;
+      border-bottom: 1px solid var(--toolbar-divider);
+      margin-bottom: 8px;
+    }
+
+    #toolbarHead .tb-headTop {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+    }
+
+    #toolbar .tb-brand {
+      color: var(--tb-text-color-strong);
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-right: auto;
+    }
+
+    #toolbar .tb-versionBadge {
+      color: var(--vm-color-text-secondary);
+    }
+
+    #toolbarModeRow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      width: 100%;
+      padding-right: 0;
+      box-sizing: border-box;
+      border-bottom: 1px solid var(--toolbar-divider);
+      margin-bottom: 1px;
+    }
+
+    /* Mode tabs: text-only controls with active underline accent. */
+    #toolbarModeRow .tb-modeBtn {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      padding: 0 8px;
+      border-radius: 0;
+      background: transparent !important;
+      color: var(--toolbar-mode-tab-fg) !important;
+      justify-content: center !important;
+      text-align: center !important;
+      font-family: var(--tb-font-family);
+      font-size: var(--tb-text-size-ui);
+      font-weight: var(--tb-text-weight-semibold);
+      line-height: 1.2;
+      letter-spacing: normal;
+      position: relative;
+      overflow: visible;
+      border: none !important;
+      box-shadow: none !important;
+      transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+    }
+
+    #toolbarModeRow .tb-modeBtn::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: -1px;
+      height: 0;
+      border-bottom: 3px solid var(--toolbar-mode-tab-accent);
+      transform: scaleX(0);
+      transform-origin: center;
+      opacity: 0;
+      transition: transform 120ms ease, opacity 120ms ease;
+      pointer-events: none;
+    }
+
+    #toolbarModeRow .tb-modeBtn:hover {
+      background: color-mix(in srgb, var(--vm-color-surface-panel) 72%, transparent) !important;
+      color: var(--toolbar-mode-tab-fg-hover) !important;
+    }
+
+    #toolbarModeRow .tb-modeBtn.active {
+      background: var(--vm-color-surface-panel) !important;
+      color: var(--toolbar-mode-tab-accent) !important;
+      box-shadow: var(--vm-shadow-sm);
+    }
+
+    #toolbarModeRow .tb-modeBtn.active::after {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+
+    .material-symbols-outlined,
+    .material-symbols-rounded {
+      font-family: var(--vm-font-icon);
+      font-weight: var(--vm-font-weight-body);
+      font-style: normal;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .ms-icon-button {
+      font-family: var(--vm-font-icon);
+      font-weight: var(--vm-font-weight-body) !important;
+      font-size: 20px !important;
+      line-height: 1 !important;
+      text-transform: none;
+      letter-spacing: normal !important;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    #toolbar button,
+    #toolbarShowBtn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--tb-text-color-primary);
+      height: 32px;
+      border-radius: var(--tb-radius-tight);
+      padding: 0 10px;
+      font-size: var(--tb-text-size-ui);
+      font-weight: var(--tb-text-weight-semibold);
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    #toolbar .tb-section>button {
+      width: 100%;
+    }
+
+    #toolbar .vm-sidebar-accordion {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 14px 8px 6px;
+      margin: 0;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    #toolbar .vm-sidebar-accordion:hover {
+      background: color-mix(in srgb, var(--vm-color-text-primary) 4%, transparent);
+    }
+
+    #toolbar .vm-sidebar-accordion .vm-sidebar-section-label {
+      margin: 0;
+      padding: 0;
+    }
+
+    #toolbar .vm-sidebar-accordion__chevron {
+      color: var(--vm-color-text-secondary);
+      flex: 0 0 auto;
+      transition: transform 150ms ease, color 150ms ease;
+    }
+
+    #toolbar .vm-sidebar-accordion[aria-expanded='true'] .vm-sidebar-accordion__chevron {
+      transform: rotate(180deg);
+    }
+
+    #toolbar .vm-sidebar-accordion:hover .vm-sidebar-accordion__chevron {
+      color: var(--vm-color-text-primary);
+    }
+
+    #toolbar .tb-fileActionRow {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: nowrap;
+    }
+
+    #toolbar button.secondary,
+    #toolbarShowBtn.secondary {
+      background: transparent;
+      color: var(--tb-text-color-primary);
+    }
+
+    #toolbar button.secondary.active {
+      background: var(--tb-surface-emphasis-hover);
+      color: var(--tb-text-color-strong);
+    }
+
+    #toolbar button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    :root[data-theme='dark'] #toolbar #toolbarModeRow .tb-modeBtn {
+      background: transparent !important;
+      color: #a3b1c4 !important;
+    }
+
+    :root[data-theme='dark'] #toolbar #toolbarModeRow .tb-modeBtn:hover {
+      background: color-mix(in srgb, var(--vm-color-surface-panel) 72%, transparent) !important;
+      color: #d6deea !important;
+    }
+
+    :root[data-theme='dark'] #toolbar #toolbarModeRow .tb-modeBtn.active {
+      background: var(--vm-color-surface-panel) !important;
+      color: #6b9bff !important;
+    }
+
+    #toolbar button:focus,
+    #toolbar button:focus-visible,
+    #toolbarShowBtn:focus,
+    #toolbarShowBtn:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
+
+    #toolbarCollapseBtn {
+      min-width: 34px;
+      width: 34px;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+      text-align: center;
+      justify-content: center;
+    }
+
+    #toolbarShowBtn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 43;
+      width: 34px;
+      min-width: 34px;
+      padding: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      line-height: 1;
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
+      border: 1px solid var(--vm-color-border-control);
+      box-shadow: var(--vm-shadow-control);
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
+      text-align: center;
+    }
+
+    body.sidebar-collapsed #toolbarShowBtn {
+      display: inline-flex;
+    }
+
+    #toolbar .tb-section {
+      border: none;
+      border-bottom: 1px solid var(--toolbar-divider);
+      border-radius: 0;
+      background: transparent;
+      padding: 10px 2px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+      justify-items: start;
+      justify-content: flex-start;
+    }
+
+    #toolbar .tb-section:last-child {
+      border-bottom: none;
+    }
+
+    #toolbar .tb-file,
+    #toolbar .tb-main,
+    #toolbar .tb-actions {
+      justify-content: flex-start;
+      align-items: stretch;
+      overflow: visible;
+      scrollbar-width: thin;
+      text-align: left;
+    }
+
+    #toolbar .tb-main.tb-modes {
+      border-bottom: none;
+      padding-bottom: 5px;
+    }
+
+    #toolbar .tb-file {
+      padding-top: 5px;
+    }
+
+    /* Keep file/main/actions sections visually identical in width and left edge. */
+    #toolbar .tb-file,
+    #toolbar .tb-main,
+    #toolbar .tb-actions {
+      width: 100%;
+      box-sizing: border-box;
+      align-self: stretch;
+      margin: 0;
+      background: transparent;
+    }
+
+    #toolbar .vm-toolbar-divider {
+      flex: 0 0 auto;
+      width: 1px;
+      height: 16px;
+      margin: 0 4px;
+      background: var(--vm-color-border-strong);
+    }
+
+    #toolbar .tb-iconBtn {
+      width: 28px;
+      min-width: 28px;
+      max-width: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: var(--tb-radius-tight);
+      background: transparent !important;
+      color: var(--tb-text-color-icon) !important;
+      justify-content: center !important;
+      text-align: center !important;
+      font-size: 19px;
+      font-weight: var(--tb-text-weight-regular);
+      line-height: 1;
+      position: relative;
+      overflow: visible;
+    }
+
+    #toolbar .tb-iconBtn:hover {
+      background: transparent !important;
+      color: var(--tb-text-color-strong) !important;
+    }
+
+    #openBtn {
+      align-self: auto;
+    }
+
+    /* Explicitly framed sections (line above + below). */
+    #toolbar .tb-framed {
+      border-top: 1px solid var(--toolbar-divider);
+      border-bottom: 1px solid var(--toolbar-divider);
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+
+    #toolbar,
+    #toolbar .tb-section,
+    #toolbar .tb-field,
+    #toolbar #displayInspector .inspectorRow {
+      text-align: left;
+      justify-items: start;
+    }
+
+    #toolbar .tb-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: var(--vm-color-text-secondary);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
+      white-space: normal;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+
+    #toolbar select,
+    #toolbar input[type="number"],
+    #toolbar input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      height: 32px;
+      border: 1px solid var(--tb-border-input);
+      border-radius: var(--tb-radius-tight);
+      background: var(--tb-surface-input);
+      color: var(--tb-text-color-primary);
+      padding: 0 9px;
+    }
+
+    #toolbar #fileSelect,
+    #toolbar input.pubchem-query {
+      min-width: 0;
+      max-width: none;
+      width: 100%;
+      border: none;
+      box-shadow: none;
+    }
+
+    #toolbar .tb-inline {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #toolbar .tb-inline select {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    #toolbar .vm-search-field__submit {
+      width: 28px !important;
+      min-width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-left: 1px solid var(--vm-color-border);
+      border-radius: 0;
+      background: transparent !important;
+      color: var(--vm-color-text-secondary) !important;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1;
+      justify-content: center !important;
+      text-align: center !important;
+      align-self: center;
+    }
+
+    #toolbar .vm-search-field__submit svg {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    #toolbar .vm-search-field__submit:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--vm-color-text-primary) 6%, transparent) !important;
+      color: var(--vm-color-text-primary) !important;
+    }
+
+    #toolbar .vm-active-file__actions .vm-btn {
+      width: 22px;
+      min-width: 22px;
+      height: 22px;
+      min-height: 22px;
+      padding: 0;
+      border-radius: 4px;
+      justify-content: center !important;
+      background: transparent !important;
+      border-color: transparent;
+      color: var(--vm-color-text-secondary);
+      font-size: 12px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    #toolbar .vm-active-file__actions .vm-btn svg {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 auto;
+    }
+
+    #toolbar .vm-active-file__chip:hover .vm-active-file__actions .vm-btn {
+      color: var(--vm-color-text-primary);
+    }
+
+    #toolbar .tb-toolbarInspector {
+      position: static;
+      inset: auto;
+      display: none;
+      grid-template-columns: 1fr;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
+      padding: 0 2px 8px 2px;
+      z-index: auto;
+      margin-top: 0;
+      border-bottom: none;
+    }
+
+    #toolbar .tb-toolbarInspector.open {
+      display: grid;
+      gap: 0;
+    }
+
+    #toolbar .tb-toolbarInspectorFields .inspectorGroup {
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+    }
+
+    #toolbar .tb-toolbarInspectorFields .inspectorTitle {
+      color: var(--tb-text-color-emphasis);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-bold);
+      margin: 0;
+    }
+
+    #toolbar .tb-toolbarInspectorFields label {
+      color: var(--tb-text-color-subtle);
+    }
+
+    #toolbar .tb-toolbarInspectorFields .inspectorRow {
+      flex-wrap: nowrap;
+      gap: 4px;
+    }
+
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow {
+      display: grid;
+      grid-template-columns: 94px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow:last-child,
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow:last-of-type {
+      margin-bottom: 0;
+    }
+
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: auto;
+      min-width: 0;
+      white-space: nowrap;
+      color: var(--tb-text-color-subtle);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
+    }
+
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow select,
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      border: none;
+      box-shadow: none;
+      border-radius: var(--tb-radius-tight);
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-icon);
+      padding: 0 10px;
+    }
+
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow select:focus,
+    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"]:focus {
+      outline: none;
+      box-shadow: none;
+    }
+
+    #drop {
+      top: 0;
+      left: var(--workspace-left-offset);
+      right: 0;
+      bottom: 0;
+    }
+
+    #emptyState {
+      top: 0;
+      left: var(--workspace-left-offset);
+      right: 0;
+      bottom: var(--status-ribbon-height);
+    }
+
+    #hint {
+      left: calc(var(--workspace-left-offset) + 12px);
+      max-width: calc(100vw - var(--workspace-left-offset) - 24px);
+    }
+
+    body:not(.sidebar-collapsed) #hint {
+      left: calc(var(--workspace-left-offset) + 24px);
+      right: 12px;
+      bottom: 8px;
+      max-width: calc(100vw - var(--workspace-left-offset) - 36px);
+    }
+
+    @media (max-width: 980px) {
+      body {
+        --workspace-left-offset: 0px;
+      }
+
+      #toolbar {
+        width: min(94vw, 200px);
+      }
+
+      body:not(.sidebar-collapsed) #toolbarShowBtn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="topRightUtilities" aria-label="Global utilities">
+    <div id="topRightUtilitiesReveal">
+      <a id="githubRepoLink" class="topRightUtilityLink" href="https://github.com/evangelistalab/vibemol" target="_blank" rel="noopener noreferrer" aria-label="Open VibeMol GitHub repository" data-tooltip="Open VibeMol on GitHub">
+        <svg class="topRightUtilityGithubMark" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82a7.66 7.66 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.09.16 1.9.08 2.1.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path>
+        </svg>
+      </a>
+      <label id="themeToggleShell" class="themeToggleShell" data-tooltip="Theme: Light" aria-label="Theme: Light">
+        <input id="themeToggleInput" type="checkbox" aria-checked="false" style="">
+        <span class="themeToggleTrack" aria-hidden="true">
+          <span class="themeToggleKnob"></span>
+        </span>
+        <span class="themeToggleText">
+          <span class="themeToggleTextLight">Theme: Light</span>
+          <span class="themeToggleTextDark">Theme: Dark</span>
+        </span>
+      </label>
+    </div>
+  </div>
+  <div id="toolbar" aria-expanded="true">
+    <input type="file" id="fileInput" accept=".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,application/json,text/plain" multiple="" style="">
+    <datalist id="pubchemSuggestions"></datalist>
+
+    <div id="toolbarHead">
+      <div class="tb-headTop">
+        <div class="tb-brand">
+          <img class="tb-brandLogo themeLogoLight" src="assets/app/img/logo_600px.png" alt="VibeMol">
+          <img class="tb-brandLogo themeLogoDark" src="assets/app/img/logo_dark_600px.png" alt="VibeMol">
+          <span id="toolbarVersion" class="tb-versionBadge vm-versionBadge" aria-label="VibeMol version">v0.8.2</span>
+        </div>
+        <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button" data-tooltip="Hide sidebar">chevron_left</button>
+      </div>
+    </div>
+
+    <div class="tb-section tb-main tb-modes">
+      <div id="toolbarModeRow" role="group" aria-label="Interaction mode">
+        <button id="modeDisplayBtn" class="secondary tb-modeBtn" type="button" aria-label="Display mode" data-tooltip="Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit." aria-pressed="false" style="">View</button>
+        <button id="modeMeasureBtn" class="secondary tb-modeBtn" type="button" aria-label="Measurement mode" data-tooltip="Measurement mode: select atoms and measure distances/angles. Shortcut: M" aria-pressed="false">Measure</button>
+        <button id="modeEditBtn" class="secondary tb-modeBtn active" type="button" aria-label="Edit mode" data-tooltip="Edit mode: move/add/delete atoms. Shortcut: E" aria-pressed="true">Edit</button>
+      </div>
+    </div>
+
+    <div class="tb-section tb-file">
+      <div class="tb-fileActionRow" aria-label="Primary toolbar actions">
+        <button id="openBtn" class="secondary tb-iconBtn ms-icon-button" aria-label="Open file" data-tooltip="Open file">upload_file</button>
+        <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button" aria-label="Add file" data-tooltip="Add file">note_add</button>
+        <span class="vm-toolbar-divider" aria-hidden="true"></span>
+        <button id="saveBtn" class="secondary tb-iconBtn ms-icon-button" aria-label="Export image" data-tooltip="Export image">image</button>
+        <button id="batchBtn" class="secondary tb-iconBtn ms-icon-button" aria-label="Export image set" data-tooltip="Export image set">photo_library</button>
+        <span class="vm-toolbar-divider" aria-hidden="true"></span>
+        <button id="savePresetBtn" class="secondary tb-iconBtn ms-icon-button" aria-label="Download preset" data-tooltip="Download preset">tune</button>
+        <button id="saveStructureBtn" class="secondary tb-iconBtn ms-icon-button" aria-label="Download structure" data-tooltip="Download structure">file_download</button>
+      </div>
+      <div class="tb-field">
+        <div class="vm-sidebar-section-label">Active file</div>
+        <div class="vm-active-file">
+          <div class="vm-active-file__chip" role="group" aria-label="Active file">
+            <svg class="vm-active-file__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <span id="fileSelectDisplay" class="vm-active-file__name">bond-fixture.structure (3).json</span>
+            <select id="fileSelect" class="vm-select" aria-label="Active file" data-interactive="true"><option value="0">two-carbons.xyz</option><option value="1">bond-fixture.structure.json</option><option value="2">water-fixture.structure.json</option><option value="3">water-fixture.structure (2).json</option><option value="4">water-fixture.structure (3).json</option><option value="5">water-fixture.structure (4).json</option><option value="6">distorted-methane-fixture.structure.json</option><option value="7">distorted-methane-fixture.structure (2).json</option><option value="8">bond-fixture.structure (2).json</option><option value="9">bond-fixture.structure (3).json</option></select>
+            <div class="vm-active-file__actions" aria-label="Active file actions">
+              <button id="duplicateFileBtn" class="vm-btn vm-btn--icon vm-btn--ghost vm-btn--xs" type="button" aria-label="Duplicate active file" data-tooltip="Duplicate file">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+              <button id="removeFileBtn" class="vm-btn vm-btn--icon vm-btn--ghost vm-btn--xs vm-btn--danger" type="button" aria-label="Delete active file" data-tooltip="Delete file">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tb-field">
+        <div class="vm-sidebar-section-label">PubChem</div>
+        <div class="vm-search-field">
+          <input type="text" id="pubchemQuery" class="pubchem-query vm-search-field__input" placeholder="Search (e.g. ben)" aria-label="PubChem search" data-tooltip="Type a compound name. Suggestions are filtered to PubChem entries with 3D structures." list="pubchemSuggestions" autocomplete="off" style="">
+          <button id="pubchemLoadBtn" class="vm-search-field__submit" type="button" data-tooltip="Search PubChem and load the selected molecule" aria-label="Search PubChem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="pubchemMetaWrap" style="display:none;">
+        <div id="pubchemMetaTitle">PubChem metadata</div>
+        <div id="pubchemMetaContent"></div>
+      </div>
+      <button id="clearBtn" class="vm-btn vm-btn--ghost vm-btn--danger vm-btn--sm vm-clear-files" type="button" aria-label="Remove all loaded files" data-tooltip="Remove all loaded files">
+        <svg class="vm-btn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+        </svg>
+        <span>Clear files</span>
+      </button>
+    </div>
+
+    <div class="tb-section tb-main tb-appearance tb-framed">
+      <button id="displayInspectorBtn" class="vm-sidebar-accordion" type="button" aria-expanded="false" aria-controls="displayInspector" data-tooltip="Show/hide compact display inspector">
+        <span class="vm-sidebar-section-label">Appearance</span>
+        <svg id="displayInspectorToggleIcon" class="vm-sidebar-accordion__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields vm-sidebar-accordion__panel" aria-hidden="true">
+        <div class="appearanceHiddenControl" aria-hidden="true">
+          <select id="moleculeStyle" class="vm-select" data-tooltip="Choose atom/bond rendering style (shortcuts: 1=Basic, 2=Toon, 3=Kit, 4=Glossy)">
+            <option value="basic" selected="">Basic</option>
+            <option value="toon">Toon (luminous)</option>
+            <option value="kit">Kit (collar joints)</option>
+            <option value="glossy">Glossy (glass edge)</option>
+          </select>
+          <select id="dofFocusMode" class="vm-select" disabled="">
+            <option value="auto" selected="">Auto (target)</option>
+            <option value="manual">Manual</option>
+          </select>
+          <select id="renderMode" class="vm-select">
+            <option value="surface" selected="">Surfaces</option>
+            <option value="cloud">Cloud</option>
+          </select>
+          <select id="styleSelect" class="vm-select" data-tooltip="Choose iso-surface material style">
+            <option value="emissive" selected="">Emissive (physical)</option>
+            <option value="glass">Glass (physical)</option>
+          </select>
+          <select id="cloudType" class="vm-select">
+            <option value="cubes" selected="">Cubes</option>
+            <option value="points">Points</option>
+          </select>
+          <input type="checkbox" id="elementColors" checked="" hidden="" style="">
+          <input type="checkbox" id="showMultiBonds" checked="" hidden="" style="">
+        </div>
+        <div class="inspectorGroup inspectorAccordion">
+          <div class="inspectorAccordionBody">
+            <section class="vm-appearance-section" id="appearanceRenderingSection">
+              <h3 class="vm-section-label">Rendering</h3>
+              <div class="vm-field-row" id="appearanceStyleRow">
+                <label class="vm-field-label" for="appearanceMoleculeStyleBasicBtn">Style</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceMoleculeStyleGroup" class="vm-button-group" role="radiogroup" aria-label="Molecule style">
+                    <button id="appearanceMoleculeStyleBasicBtn" class="vm-button-group__item active" type="button" role="radio" data-value="basic" aria-checked="true" data-tooltip="Basic molecule style" aria-disabled="false">Basic</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="toon" aria-checked="false" data-tooltip="Toon molecule style" aria-disabled="false">Toon</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="kit" aria-checked="false" data-tooltip="Kit molecule style" aria-disabled="false">Kit</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="glossy" aria-checked="false" data-tooltip="Glossy molecule style" aria-disabled="false">Glossy</button>
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeShadowsToggle">Shadows</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="moleculeShadowsToggle">
+                    <input type="checkbox" id="moleculeShadowsToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle molecule shadows" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeFogToggle">Fog</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="moleculeFogToggle">
+                    <input type="checkbox" id="moleculeFogToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle atmospheric fog" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowMoleculeFogDepth" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="moleculeFogDepth">Fog depth</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider="" data-min="6" data-max="40" data-precision="1" style="--vm-slider-fill-percent: 23.5%;">
+                    <input id="moleculeFogDepthRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Fog far distance (near is derived automatically)" style="">
+                    <input id="moleculeFogDepth" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="14.0" data-tooltip="Fog far distance (near is derived automatically)" style="">
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeInkToggle">Ink outlines</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="moleculeInkToggle">
+                    <input type="checkbox" id="moleculeInkToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle ink-style outlines" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeBlackbodyToggle">Blackbody coloring</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="moleculeBlackbodyToggle">
+                    <input type="checkbox" id="moleculeBlackbodyToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle blackbody color ramp" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowBlackbodyColdColor" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="blackbodyColdColor">Cold color</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="blackbodyColdColor">
+                    <input type="color" id="blackbodyColdColor" class="vm-color-swatch__input" value="#2f0202" aria-label="Blackbody cold color" data-tooltip="Pick the cold color for the blackbody ramp" style="">
+                    <span class="vm-color-swatch__preview" id="blackbodyColdSwatch" aria-hidden="true" style="background-color: rgb(47, 2, 2);"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowBlackbodyHotColor" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="blackbodyHotColor">Hot color</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="blackbodyHotColor">
+                    <input type="color" id="blackbodyHotColor" class="vm-color-swatch__input" value="#eaf6ff" aria-label="Blackbody hot color" data-tooltip="Pick the hot color for the blackbody ramp" style="">
+                    <span class="vm-color-swatch__preview" id="blackbodyHotSwatch" aria-hidden="true" style="background-color: rgb(234, 246, 255);"></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceAtomsSection">
+              <h3 class="vm-section-label">Atoms</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showAtoms">Show atoms</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showAtoms">
+                    <input type="checkbox" id="showAtoms" class="vm-toggle__input" role="switch" checked="" data-tooltip="Toggle atom rendering" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeAtomRadiusScale">Scale</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider="" data-min="0.6" data-max="1.6" data-precision="2" style="--vm-slider-fill-percent: 40%;">
+                    <input id="moleculeAtomRadiusScaleRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Scale rendered atom radii across all molecule styles" style="">
+                    <input id="moleculeAtomRadiusScale" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" data-tooltip="Scale rendered atom radii across all molecule styles" style="">
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="visibilityElementColorsToggle">Use element colors</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="visibilityElementColorsToggle">
+                    <input type="checkbox" id="visibilityElementColorsToggle" class="vm-toggle__input" role="switch" checked="" data-tooltip="Toggle per-element colors for atoms and bonds" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="elementColorBtn">Element colors</label>
+                <div class="vm-field-control">
+                  <button id="elementColorBtn" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" aria-label="Customize element colors" data-tooltip="Customize element colors">Edit…</button>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showAtomLabels">Labels</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showAtomLabels">
+                    <input type="checkbox" id="showAtomLabels" class="vm-toggle__input" role="switch" data-tooltip="Toggle atom labels" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showAtomLabelNumbers">Numbers</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showAtomLabelNumbers">
+                    <input type="checkbox" id="showAtomLabelNumbers" class="vm-toggle__input" role="switch" data-tooltip="Toggle atom numbers inside labels" disabled="" aria-disabled="true" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceBondsSection">
+              <h3 class="vm-section-label">Bonds</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showBonds">Show bonds</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showBonds">
+                    <input type="checkbox" id="showBonds" class="vm-toggle__input" role="switch" checked="" data-tooltip="Toggle bond rendering" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="moleculeBondRadiusScale">Radius</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider="" data-min="0.6" data-max="1.6" data-precision="2" style="--vm-slider-fill-percent: 40%;">
+                    <input id="moleculeBondRadiusScaleRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Scale rendered bond radii across all molecule styles" style="">
+                    <input id="moleculeBondRadiusScale" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" data-tooltip="Scale rendered bond radii across all molecule styles" style="">
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="appearanceSimpleBondsToggle">Simple bonds</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="appearanceSimpleBondsToggle">
+                    <input type="checkbox" id="appearanceSimpleBondsToggle" class="vm-toggle__input" role="switch" data-tooltip="Show multiple-bond rendering when Simple bonds is OFF." aria-checked="false" aria-disabled="false" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowGlossyBond" class="vm-field-row vm-appearance-hidden" data-tooltip="Available when Molecule style is Glossy" style="display: none;">
+                <label class="vm-field-label" for="glossyBondRadius">Glossy center</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider="" data-min="0.04" data-max="0.16" data-precision="3" style="--vm-slider-fill-percent: 26.700000000000003%;">
+                    <input id="glossyBondRadiusRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Center radius for glossy bond connectors (angstrom)" style="">
+                    <input id="glossyBondRadius" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.072" disabled="" style="">
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceCameraSection">
+              <h3 class="vm-section-label">Camera</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="projectionPerspectiveBtn">Projection</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="projectionModeGroup" class="vm-button-group" role="radiogroup" aria-label="Projection mode">
+                    <button id="projectionPerspectiveBtn" class="vm-button-group__item active" type="button" role="radio" data-value="perspective" aria-checked="true" data-tooltip="Perspective projection" aria-disabled="false">Perspective</button>
+                    <button id="projectionOrthographicBtn" class="vm-button-group__item" type="button" role="radio" data-value="orthographic" aria-checked="false" data-tooltip="Orthographic projection" aria-disabled="false">Orthographic</button>
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row" id="rowDofToggle">
+                <label class="vm-field-label" for="dofToggle">Depth of field</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="dofToggle">
+                    <input type="checkbox" id="dofToggle" class="vm-toggle__input" role="switch" data-tooltip="Toggle depth-of-field postprocessing" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowDofFocusMode" class="vm-field-row" data-tooltip="Enable depth of field to change focus mode" style="display: none;">
+                <label class="vm-field-label" for="appearanceDofFocusModeAutoBtn">Focus mode</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceDofFocusModeGroup" class="vm-button-group" role="radiogroup" aria-label="Depth of field focus mode">
+                    <button id="appearanceDofFocusModeAutoBtn" class="vm-button-group__item active" type="button" role="radio" data-value="auto" aria-checked="true" data-tooltip="Focus depth of field on the camera target" disabled="" aria-disabled="true">Auto</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="manual" aria-checked="false" data-tooltip="Use a manual focus distance for depth of field" disabled="" aria-disabled="true">Manual</button>
+                  </div>
+                </div>
+              </div>
+              <div id="rowDofFocusDistance" class="vm-field-row vm-appearance-hidden" data-tooltip="Available when Focus mode is Manual" style="display: none;">
+                <label class="vm-field-label" for="dofFocusDistance">Focus distance</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider="" data-min="0.5" data-max="80" data-precision="1" style="--vm-slider-fill-percent: 9.4%;">
+                    <input id="dofFocusDistanceRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Manual focus distance from the camera in angstrom" style="">
+                    <input id="dofFocusDistance" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="8.0" disabled="" style="">
+                  </div>
+                </div>
+              </div>
+              <div id="rowDofFocusRange" class="vm-field-row vm-appearance-hidden" data-tooltip="Enable depth of field to change focus range" style="display: none;">
+                <label class="vm-field-label" for="dofFocusRange">Focus range</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider="" data-min="0.1" data-max="20" data-precision="1" style="--vm-slider-fill-percent: 7.000000000000001%;">
+                    <input id="dofFocusRangeRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Half-width of the in-focus depth band in angstrom" style="">
+                    <input id="dofFocusRange" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.5" disabled="" style="">
+                  </div>
+                </div>
+              </div>
+              <div id="rowDofBlurAmount" class="vm-field-row vm-appearance-hidden" data-tooltip="Enable depth of field to change blur amount" style="display: none;">
+                <label class="vm-field-label" for="dofBlurAmount">Blur amount</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider="" data-min="0" data-max="12" data-precision="2" style="--vm-slider-fill-percent: 33.300000000000004%;">
+                    <input id="dofBlurAmountRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Maximum depth-of-field blur radius in screen pixels" style="">
+                    <input id="dofBlurAmount" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="4.0" disabled="" style="">
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceSceneSection">
+              <h3 class="vm-section-label">Scene</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="bgColor">Background</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="bgColor">
+                    <input type="color" id="bgColor" class="vm-color-swatch__input" value="#ffffff" aria-label="Background color" data-tooltip="Pick the scene background color" style="">
+                    <span class="vm-color-swatch__preview" id="bgColorSwatch" aria-hidden="true" style="background-color: rgb(255, 255, 255);"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showBox">Box</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showBox">
+                    <input type="checkbox" id="showBox" class="vm-toggle__input" role="switch" data-tooltip="Toggle the simulation box outline" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="showAxes">Axes</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="showAxes">
+                    <input type="checkbox" id="showAxes" class="vm-toggle__input" role="switch" checked="" data-tooltip="Toggle scene axes" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearanceSurfacesSection" hidden="">
+              <h3 class="vm-section-label">Surfaces</h3>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="surfBtn">Show surfaces</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="surfBtn">
+                    <input type="checkbox" id="surfBtn" class="vm-toggle__input" role="switch" checked="" data-tooltip="Toggle iso-surface rendering" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="schemeSelect">Color scheme</label>
+                <div class="vm-field-control">
+                  <select id="schemeSelect" class="vm-select" data-tooltip="Choose default +/- surface colors">
+                    <option value="emory" selected="">Emory (gold/blue)</option>
+                    <option value="national">National (red/blue)</option>
+                    <option value="bright">Bright (yellow/cyan)</option>
+                    <option value="electron">Electron (magenta/green)</option>
+                    <option value="classic">Classic (blue/red)</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+              </div>
+              <div id="rowSurfacePosColor" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="posColor">Positive color</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="posColor">
+                    <input type="color" id="posColor" class="vm-color-swatch__input" value="#f2a900" aria-label="Positive surface color" data-tooltip="Pick the positive surface color" style="">
+                    <span class="vm-color-swatch__preview" id="posColorSwatch" aria-hidden="true" style="background-color: rgb(242, 169, 0);"></span>
+                  </label>
+                </div>
+              </div>
+              <div id="rowSurfaceNegColor" class="vm-field-row vm-appearance-hidden">
+                <label class="vm-field-label" for="negColor">Negative color</label>
+                <div class="vm-field-control vm-field-control--swatch">
+                  <label class="vm-color-swatch" for="negColor">
+                    <input type="color" id="negColor" class="vm-color-swatch__input" value="#0033a0" aria-label="Negative surface color" data-tooltip="Pick the negative surface color" style="">
+                    <span class="vm-color-swatch__preview" id="negColorSwatch" aria-hidden="true" style="background-color: rgb(0, 51, 160);"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="appearanceRenderModeSurfaceBtn">Render mode</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceRenderModeGroup" class="vm-button-group" role="radiogroup" aria-label="Surface render mode">
+                    <button id="appearanceRenderModeSurfaceBtn" class="vm-button-group__item active" type="button" role="radio" data-value="surface" aria-checked="true" data-tooltip="Render filled iso-surfaces" aria-disabled="false">Surfaces</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="cloud" aria-checked="false" data-tooltip="Render point or cube clouds" aria-disabled="false">Cloud</button>
+                  </div>
+                </div>
+              </div>
+              <div id="rowStyle" class="vm-field-row">
+                <label class="vm-field-label" for="appearanceSurfaceStyleEmissiveBtn">Surface style</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceSurfaceStyleGroup" class="vm-button-group" role="radiogroup" aria-label="Surface material style">
+                    <button id="appearanceSurfaceStyleEmissiveBtn" class="vm-button-group__item active" type="button" role="radio" data-value="emissive" aria-checked="true" data-tooltip="Emissive iso-surface style" aria-disabled="false">Emissive</button>
+                    <button class="vm-button-group__item" type="button" role="radio" data-value="glass" aria-checked="false" data-tooltip="Glass iso-surface style" aria-disabled="false">Glass</button>
+                  </div>
+                </div>
+              </div>
+              <div id="rowIso" class="vm-field-row" data-disabled="false">
+                <label class="vm-field-label" for="iso">Iso</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div id="isoSlider" class="vm-slider" data-vm-slider="" data-scale="log" data-format="sigfig" data-min="0.0001" data-max="1" data-precision="4" data-value-width="84" style="--vm-slider-value-width: 84px; --vm-slider-fill-percent: 57.49999999999999%;" data-disabled="false">
+                    <input id="isoRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Iso value" style="">
+                    <input id="iso" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.0200" aria-label="Iso value" data-tooltip="Iso value" style="">
+                  </div>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="autoIsoBtn">Auto-iso</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="autoIsoBtn">
+                    <input type="checkbox" id="autoIsoBtn" class="vm-toggle__input" role="switch" data-tooltip="Autoiso OFF: load/select a .cube/.2ccube/.molden file to apply." aria-checked="false" style="">
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="opacity">Opacity</label>
+                <div class="vm-field-control vm-field-control--slider">
+                  <div class="vm-slider" data-vm-slider="" data-min="0.05" data-max="1" data-precision="2" style="--vm-slider-fill-percent: 100%;">
+                    <input id="opacityRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Surface opacity" style="">
+                    <input id="opacity" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" data-tooltip="Surface opacity" style="">
+                  </div>
+                </div>
+              </div>
+              <div id="appearanceTwoComponentSection" class="vm-appearance-section vm-appearance-section--nested" hidden="">
+                <h3 class="vm-section-label">2C</h3>
+                <div id="twoComponentModeRow" class="vm-field-row vm-appearance-hidden" style="display: none;">
+                  <label class="vm-field-label" for="twoComponentModeSelect">2C mode</label>
+                  <div class="vm-field-control">
+                    <select id="twoComponentModeSelect" class="vm-select" data-tooltip="Select 2C cube component or phase surface">
+                      <option value="alphaRe">alphaRe</option>
+                      <option value="alphaIm">alphaIm</option>
+                      <option value="betaRe">betaRe</option>
+                      <option value="betaIm">betaIm</option>
+                      <option value="alphaPhase">Alpha (phase hue)</option>
+                      <option value="betaPhase">Beta (phase hue)</option>
+                      <option value="alphaBetaPhase">Alpha/Beta phase</option>
+                      <option value="totalBloch">Total (Bloch color)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div id="appearanceCloudSection" class="vm-appearance-section vm-appearance-section--nested" hidden="">
+                <h3 class="vm-section-label">Cloud</h3>
+                <div id="rowCloudType" class="vm-field-row vm-appearance-hidden" style="display: none;">
+                  <label class="vm-field-label" for="appearanceCloudTypeCubesBtn">Cloud type</label>
+                  <div class="vm-field-control vm-field-control--group">
+                    <div id="appearanceCloudTypeGroup" class="vm-button-group" role="radiogroup" aria-label="Cloud type">
+                      <button id="appearanceCloudTypeCubesBtn" class="vm-button-group__item active" type="button" role="radio" data-value="cubes" aria-checked="true" data-tooltip="Cube cloud renderer" disabled="" aria-disabled="true">Cubes</button>
+                      <button class="vm-button-group__item" type="button" role="radio" data-value="points" aria-checked="false" data-tooltip="Point cloud renderer" disabled="" aria-disabled="true">Points</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="rowCloudStride" class="vm-field-row vm-appearance-hidden" style="display: none;">
+                  <label class="vm-field-label" for="cloudStride">Sample stride</label>
+                  <div class="vm-field-control vm-field-control--slider">
+                    <div class="vm-slider" data-vm-slider="" data-min="1" data-max="8" data-precision="0" style="--vm-slider-fill-percent: 0%;">
+                      <input id="cloudStrideRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Sample every N voxels per axis" style="">
+                      <input id="cloudStride" class="vm-slider__value vm-mono" type="text" inputmode="numeric" value="1" data-tooltip="Sample every N voxels per axis" style="">
+                    </div>
+                  </div>
+                </div>
+                <div id="rowCloudAlpha" class="vm-field-row vm-appearance-hidden" style="display: none;">
+                  <label class="vm-field-label" for="cloudAlpha">Max alpha</label>
+                  <div class="vm-field-control vm-field-control--slider">
+                    <div class="vm-slider" data-vm-slider="" data-min="0.025" data-max="1" data-precision="3" style="--vm-slider-fill-percent: 7.7%;">
+                      <input id="cloudAlphaRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Maximum cloud alpha" style="">
+                      <input id="cloudAlpha" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.100" data-tooltip="Maximum cloud alpha" style="">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="vm-appearance-section" id="appearancePreferencesSection">
+              <h3 class="vm-section-label">Preferences</h3>
+              <div class="vm-field-row" id="appearanceTypefaceRow">
+                <label class="vm-field-label" for="appearanceFontPairGeistBtn">Typeface</label>
+                <div class="vm-field-control vm-field-control--group">
+                  <div id="appearanceFontPairGroup" class="vm-button-group" role="radiogroup" aria-label="Typeface">
+                    <button id="appearanceFontPairGeistBtn" class="vm-button-group__item active" type="button" role="radio" data-value="geist" aria-checked="true" data-tooltip="Use Geist and Geist Mono" aria-disabled="false">Geist</button>
+                    <button id="appearanceFontPairInterBtn" class="vm-button-group__item" type="button" role="radio" data-value="inter" aria-checked="false" data-tooltip="Use Inter and JetBrains Mono" aria-disabled="false">Inter</button>
+                    <button id="appearanceFontPairPlexBtn" class="vm-button-group__item" type="button" role="radio" data-value="plex" aria-checked="false" data-tooltip="Use IBM Plex Sans and IBM Plex Mono" aria-disabled="false">IBM Plex</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tb-section tb-actions">
+      <button id="helpBtn" class="vm-btn vm-btn--ghost vm-btn--sm vm-help-btn" type="button" data-tooltip="Keyboard shortcuts (?)" aria-label="Open keyboard shortcuts">
+        <svg class="vm-btn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span>Help</span>
+      </button>
+    </div>
+  </div>
+  <button id="toolbarShowBtn" class="secondary ms-icon-button" type="button" data-tooltip="Show sidebar">menu</button>
+
+  <div id="drop">
+    <canvas id="canvas" data-engine="three.js r160" width="1120" height="1000" style="touch-action: none; width: 1120px; height: 1000px;"></canvas>
+  </div>
+  <button id="helpFab" class="vm-btn vm-btn--icon vm-btn--ghost" type="button" aria-label="Keyboard shortcuts (?)" data-tooltip="Keyboard shortcuts (?)">?</button>
+  <div id="displayWindowAdaptiveMenu" class="adaptiveMenu" data-mode="edit" aria-hidden="false" style="left: 353px; top: 56px; right: auto;">
+    <button id="moldenInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="Orbitals (O)" data-static="false" tabindex="0" aria-label="Orbitals (O)" title="Orbitals (O)" aria-hidden="true" data-tooltip-placement="right" aria-expanded="false" hidden="">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">blur_on</span>
+          <span class="adaptiveEditItemLabel">Orbitals</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">O</span>
+      </span>
+    </button>
+    <button id="viewInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="View actions (Q)" data-static="false" tabindex="0" aria-label="View actions (Q)" title="View actions (Q)" aria-hidden="true" data-tooltip-placement="right" hidden="">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">tune</span>
+          <span class="adaptiveEditItemLabel">View actions</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">Q</span>
+      </span>
+    </button>
+    <button id="viewPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="View window (V)" data-static="false" tabindex="0" aria-label="View window (V)" title="View window (V)" aria-hidden="true" data-tooltip-placement="right" hidden="">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">view_in_ar</span>
+          <span class="adaptiveEditItemLabel">View</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">V</span>
+      </span>
+    </button>
+    <button id="coordsPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="Coordinates (C)" data-static="false" tabindex="0" aria-label="Coordinates (C)" title="Coordinates (C)" aria-hidden="true" data-tooltip-placement="right" hidden="">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">table_rows</span>
+          <span class="adaptiveEditItemLabel">Coordinates</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">C</span>
+      </span>
+    </button>
+    <button id="trajectoryPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="No trajectory data in active file" hidden="" data-static="false" tabindex="0" aria-label="Trajectory (T)" title="Trajectory (T)" aria-hidden="true" data-tooltip-placement="right" style="display: none;">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">timeline</span>
+          <span class="adaptiveEditItemLabel">Trajectory</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">T</span>
+      </span>
+    </button>
+    <button id="vibrationPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="No vibrational mode data in active file" hidden="" data-static="false" tabindex="0" aria-label="Frequencies (F)" title="Frequencies (F)" aria-hidden="true" data-tooltip-placement="right">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">graphic_eq</span>
+          <span class="adaptiveEditItemLabel">Frequencies</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">F</span>
+      </span>
+    </button>
+    <button id="editAdaptiveAddAtomBtn" class="adaptiveEditItem active" type="button" data-tooltip="Build palette (/)" aria-hidden="false" data-tooltip-placement="right" data-static="false" tabindex="0" aria-label="Build palette (/)" title="Build palette (/)">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">add</span>
+          <span class="adaptiveEditItemLabel">Elements</span>
+        </span>
+        <span id="editAdaptiveAddAtomMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">/</span>
+      </span>
+    </button>
+    <button id="editAdaptiveSymmetryBtn" class="adaptiveEditItem" type="button" data-tooltip="Bond order keys 1-4" aria-hidden="false" data-tooltip-placement="right" data-static="true" tabindex="-1" aria-label="Bond order keys 1-4" title="Bond order keys 1-4" aria-disabled="true">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">linear_scale</span>
+          <span class="adaptiveEditItemLabel">Bond order</span>
+        </span>
+        <span id="editAdaptiveSymmetryMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">1-4</span>
+      </span>
+    </button>
+    <button id="editAdaptiveCleanStructureBtn" class="adaptiveEditItem" type="button" data-tooltip="Preview or apply missing hydrogens (Space)" aria-hidden="false" data-tooltip-placement="right" data-static="false" tabindex="0" aria-label="Preview or apply missing hydrogens (Space)" title="Preview or apply missing hydrogens (Space)">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">auto_fix_high</span>
+          <span class="adaptiveEditItemLabel">Toggle H</span>
+        </span>
+        <span id="editAdaptiveCleanStructureMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">Space</span>
+      </span>
+    </button>
+    <button id="editAdaptiveShiftComBtn" class="adaptiveEditItem" type="button" data-tooltip="Shift COM to origin (R)" aria-hidden="true" data-tooltip-placement="right" data-static="false" tabindex="0" aria-label="Shift COM to origin (R)" title="Shift COM to origin (R)" hidden="">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">center_focus_strong</span>
+          <span class="adaptiveEditItemLabel">COM → Origin</span>
+        </span>
+        <span id="editAdaptiveShiftComMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">R</span>
+      </span>
+    </button>
+    <button id="editAdaptiveAlignPrincipalBtn" class="adaptiveEditItem" type="button" data-tooltip="Align principal axes (P)" aria-hidden="true" data-tooltip-placement="right" data-static="false" tabindex="0" aria-label="Align principal axes (P)" title="Align principal axes (P)" hidden="">
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">3d_rotation</span>
+          <span class="adaptiveEditItemLabel">Align</span>
+        </span>
+        <span id="editAdaptiveAlignPrincipalMeta" class="adaptiveEditItemMeta"></span>
+      </span>
+      <span class="adaptiveShortcutGroup" aria-hidden="true">
+        <span class="adaptiveShortcutKey">P</span>
+      </span>
+    </button>
+  </div>
+  <div id="moldenInspector" class="motionPanel vm-list-popover" aria-hidden="true">
+    <div class="motionPanelHeader vm-list-popover__header">
+      <div class="title vm-list-popover__title" id="moldenInspectorTitle">Orbitals</div>
+      <div class="actions vm-list-popover__actions">
+        <label class="vm-list-popover__filter" for="moldenEnergyFilter">
+          <span class="vm-list-popover__filter-prefix">|E| ≥</span>
+          <input id="moldenEnergyFilter" class="vm-list-popover__filter-input" type="text" inputmode="decimal" placeholder="…" aria-label="Filter orbitals by absolute energy threshold" data-tooltip="Hide orbitals whose absolute energy is below this Hartree threshold" style="">
+          <span class="vm-list-popover__filter-suffix">Eh</span>
+        </label>
+        <button id="moldenInspectorClose" class="motionPanelClose" data-tooltip="Close orbitals" data-tooltip-placement="top"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
+      </div>
+    </div>
+    <div id="moldenInspectorSubheader" class="vm-list-popover__subheader" hidden=""></div>
+    <div id="moldenInspectorControls" class="vm-list-popover__controls" hidden="">
+      <label class="vm-list-popover__toolbar-control" for="moldenGridStep">
+        <span>Grid step</span>
+        <input type="number" id="moldenGridStep" min="0.12" max="1.20" step="0.01" value="0.35" data-tooltip="Grid spacing in angstrom" style="">
+      </label>
+      <label class="vm-list-popover__toolbar-control" for="moldenGridPadding">
+        <span>Grid pad</span>
+        <input type="number" id="moldenGridPadding" min="0.5" max="8" step="0.1" value="3.0" data-tooltip="Padding added around the molecule in angstrom" style="">
+      </label>
+      <div id="moldenGridSummary" class="vm-list-popover__toolbar-status"></div>
+    </div>
+    <div id="moldenInspectorBody" class="motionPanelBody vm-list-popover__body" style="padding:0;" tabindex="0"><div class="vm-list-popover__empty">No orbitals</div></div>
+    <div id="moldenInspectorFooter" class="vm-list-popover__footer" hidden=""></div>
+  </div>
+  <div id="viewInspector" class="floatingAuxInspector floatingAuxInspectorView" aria-hidden="true">
+    <div class="viewInspectorGroup">
+      <h2 class="viewInspectorTitle">Quick actions</h2>
+      <button id="centerMassBtn" class="secondary tb-quickActionBtn" data-tooltip="COM → Origin: shift the active molecule center of mass to (0,0,0). Shortcut: R." aria-label="Translate center of mass to origin" title="Translate center of mass to origin">
+        <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">center_focus_strong</span>
+        <span class="tb-quickActionText">COM → Origin</span>
+      </button>
+      <button id="pointCameraComBtn" class="secondary tb-quickActionBtn" data-tooltip="Point Camera to COM: keep the current camera pose but retarget the view to the active molecule center of mass." aria-label="Point camera at center of mass" title="Point camera at center of mass">
+        <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">my_location</span>
+        <span class="tb-quickActionText">Point Camera to COM</span>
+      </button>
+      <button id="alignInertiaBtn" class="secondary tb-quickActionBtn" data-tooltip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z." aria-label="Align camera to principal axes of inertia" title="Align camera to principal axes of inertia">
+        <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">3d_rotation</span>
+        <span class="tb-quickActionText">Align Principal Axes</span>
+      </button>
+      <div class="viewPresetRow">
+        <button id="viewAxisXBtn" class="secondary tb-quickActionBtn" data-tooltip="View +X: place the camera on +X looking at the current target." aria-label="View along positive X axis" title="View along positive X axis">
+          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">east</span>
+          <span class="tb-quickActionText">+X</span>
+        </button>
+        <button id="viewAxisYBtn" class="secondary tb-quickActionBtn" data-tooltip="View +Y: place the camera on +Y looking at the current target." aria-label="View along positive Y axis" title="View along positive Y axis">
+          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north</span>
+          <span class="tb-quickActionText">+Y</span>
+        </button>
+        <button id="viewAxisZBtn" class="secondary tb-quickActionBtn" data-tooltip="View +Z: place the camera on +Z looking at the current target." aria-label="View along positive Z axis" title="View along positive Z axis">
+          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north_east</span>
+          <span class="tb-quickActionText">+Z</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="emptyState" class="hidden">
+    <div id="emptyStateCard">
+      <div id="emptyStateLead">
+        <img id="emptyStateLeadLogo" class="themeLogoLight" src="assets/app/img/logo_600px.png" alt="VibeMol">
+        <img id="emptyStateLeadLogoDark" class="themeLogoDark" src="assets/app/img/logo_dark_600px.png" alt="VibeMol">
+        <span id="emptyStateVersion" class="vm-versionBadge">v0.8.2</span>
+      </div>
+      <div id="emptyStateDropZone">
+        <span id="emptyStateDropIcon" class="material-symbols-outlined">upload_file</span>
+        Drag and drop <code>.xyz</code>, <code>.molden</code>, <code>.cube</code>, <code>.vib.json</code>,
+        <code>.hess</code>, or Psi4 <code>.dat/.out</code> files here
+      </div>
+      <div id="emptyStatePrimaryAction">
+        <button id="emptyStateOpenBtn" type="button">Choose files</button>
+      </div>
+      <div id="emptyStateSecondary">
+        <button id="emptyStateSampleBtn" type="button">Open sample file</button>
+        <button id="emptyStateMethaneBtn" type="button">Open methane valence orbitals</button>
+        <button id="emptyState2cBtn" type="button">Open 2-component cube set</button>
+      </div>
+      <details id="emptyStateWhatsNew">
+        <summary id="emptyStateWhatsNewSummary" class="vm-heroHeading">What's new since v0.7.0</summary>
+        <div id="emptyStateWhatsNewPanel">
+          <div class="emptyStateWhatsNewLead vm-heroHeading">Since v0.7.0, VibeMol adds:</div>
+          <ul id="emptyStateWhatsNewList">
+            <li>gesture-first edit mode with scope-aware right click, bond cues, and unified tool popups</li>
+            <li>a slash-open Build palette for atoms, fragments, and molecules with smarter attach behavior</li>
+            <li>a Symmetry tool with point-group detection, symmetrization, and 3D symmetry-element previews</li>
+            <li>richer builder chemistry including fragment attach, terminal-H replacement, direct atom replacement, and post-delete hydrogen repair</li>
+            <li>smarter chemistry import and editing including headerless XYZ support, imported multi-bond inference, and metal-aware bond styles</li>
+            <li>refined display controls with a quick-style Appearance panel and canvas-side Orbitals, View, Coordinates, Trajectory, and Frequencies launchers</li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div id="hint" class="">Build element: Carbon (C)</div>
+  <!-- Phase wheel legend (shown in phase-hue modes) -->
+  <div id="phaseWheel" aria-hidden="true" style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
+    <canvas id="phaseWheelCanvas" width="96" height="120" style="width:100%; height:100%;"></canvas>
+  </div>
+  <div id="editAdaptiveAddAtomPopover" aria-hidden="false" style="left: 553px; top: 12px;">
+    <div id="editBuildPalette">
+      <label id="editBuildSearchLabel" class="vm-field-label" for="editBuildSearch">Search</label>
+      <div id="editBuildSearchRow">
+        <input id="editBuildSearch" type="text" autocomplete="off" placeholder="Type to filter..." style="">
+        <span id="editBuildSearchShortcut" aria-hidden="true">/</span>
+      </div>
+      <div class="editBuildPaletteSection">
+        <div class="editBuildPaletteSectionTitle vm-section-label">Atoms</div>
+        <div id="editBuildAtomsHost"><div id="editAddAtomPane" class="active">
+        <label class="vm-field-label" for="editAddSearch">Element to add (symbol, name, or atomic number)</label>
+        <input id="editAddSearch" type="text" list="editAddSuggestions" autocomplete="off" placeholder="e.g. C, Carbon, 6" style="">
+        <datalist id="editAddSuggestions"><option value="H — Hydrogen (1)"></option><option value="He — Helium (2)"></option><option value="Li — Lithium (3)"></option><option value="Be — Beryllium (4)"></option><option value="B — Boron (5)"></option><option value="C — Carbon (6)"></option><option value="N — Nitrogen (7)"></option><option value="O — Oxygen (8)"></option><option value="F — Fluorine (9)"></option><option value="Ne — Neon (10)"></option><option value="Na — Sodium (11)"></option><option value="Mg — Magnesium (12)"></option><option value="Al — Aluminium (13)"></option><option value="Si — Silicon (14)"></option><option value="P — Phosphorus (15)"></option><option value="S — Sulfur (16)"></option><option value="Cl — Chlorine (17)"></option><option value="Ar — Argon (18)"></option><option value="K — Potassium (19)"></option><option value="Ca — Calcium (20)"></option><option value="Sc — Scandium (21)"></option><option value="Ti — Titanium (22)"></option><option value="V — Vanadium (23)"></option><option value="Cr — Chromium (24)"></option><option value="Mn — Manganese (25)"></option><option value="Fe — Iron (26)"></option><option value="Co — Cobalt (27)"></option><option value="Ni — Nickel (28)"></option><option value="Cu — Copper (29)"></option><option value="Zn — Zinc (30)"></option><option value="Ga — Gallium (31)"></option><option value="Ge — Germanium (32)"></option><option value="As — Arsenic (33)"></option><option value="Se — Selenium (34)"></option><option value="Br — Bromine (35)"></option><option value="Kr — Krypton (36)"></option><option value="Rb — Rubidium (37)"></option><option value="Sr — Strontium (38)"></option><option value="Y — Yttrium (39)"></option><option value="Zr — Zirconium (40)"></option><option value="Nb — Niobium (41)"></option><option value="Mo — Molybdenum (42)"></option><option value="Tc — Technetium (43)"></option><option value="Ru — Ruthenium (44)"></option><option value="Rh — Rhodium (45)"></option><option value="Pd — Palladium (46)"></option><option value="Ag — Silver (47)"></option><option value="Cd — Cadmium (48)"></option><option value="In — Indium (49)"></option><option value="Sn — Tin (50)"></option><option value="Sb — Antimony (51)"></option><option value="Te — Tellurium (52)"></option><option value="I — Iodine (53)"></option><option value="Xe — Xenon (54)"></option><option value="Cs — Caesium (55)"></option><option value="Ba — Barium (56)"></option><option value="La — Lanthanum (57)"></option><option value="Ce — Cerium (58)"></option><option value="Pr — Praseodymium (59)"></option><option value="Nd — Neodymium (60)"></option><option value="Pm — Promethium (61)"></option><option value="Sm — Samarium (62)"></option><option value="Eu — Europium (63)"></option><option value="Gd — Gadolinium (64)"></option><option value="Tb — Terbium (65)"></option><option value="Dy — Dysprosium (66)"></option><option value="Ho — Holmium (67)"></option><option value="Er — Erbium (68)"></option><option value="Tm — Thulium (69)"></option><option value="Yb — Ytterbium (70)"></option><option value="Lu — Lutetium (71)"></option><option value="Hf — Hafnium (72)"></option><option value="Ta — Tantalum (73)"></option><option value="W — Tungsten (74)"></option><option value="Re — Rhenium (75)"></option><option value="Os — Osmium (76)"></option><option value="Ir — Iridium (77)"></option><option value="Pt — Platinum (78)"></option><option value="Au — Gold (79)"></option><option value="Hg — Mercury (80)"></option><option value="Tl — Thallium (81)"></option><option value="Pb — Lead (82)"></option><option value="Bi — Bismuth (83)"></option><option value="Po — Polonium (84)"></option><option value="At — Astatine (85)"></option><option value="Rn — Radon (86)"></option><option value="Fr — Francium (87)"></option><option value="Ra — Radium (88)"></option><option value="Ac — Actinium (89)"></option><option value="Th — Thorium (90)"></option><option value="Pa — Protactinium (91)"></option><option value="U — Uranium (92)"></option><option value="Np — Neptunium (93)"></option><option value="Pu — Plutonium (94)"></option><option value="Am — Americium (95)"></option><option value="Cm — Curium (96)"></option><option value="Bk — Berkelium (97)"></option><option value="Cf — Californium (98)"></option><option value="Es — Einsteinium (99)"></option><option value="Fm — Fermium (100)"></option></datalist>
+        <div id="editAddQuick" data-build-atom-query="quick"><button type="button" data-z="1" data-build-search-key="atom:1" data-search-terms="h hydrogen 1" data-tooltip="Hydrogen (H)" aria-selected="false" style="background: rgb(255, 255, 255); color: rgb(11, 18, 32);">H</button><button type="button" data-z="6" data-build-search-key="atom:6" data-search-terms="c carbon 6" data-tooltip="Carbon (C)" class="active" aria-selected="false" style="background: rgb(127, 127, 127); color: rgb(244, 248, 255);">C</button><button type="button" data-z="7" data-build-search-key="atom:7" data-search-terms="n nitrogen 7" data-tooltip="Nitrogen (N)" aria-selected="false" class="" style="background: rgb(48, 80, 255); color: rgb(244, 248, 255);">N</button><button type="button" data-z="8" data-build-search-key="atom:8" data-search-terms="o oxygen 8" data-tooltip="Oxygen (O)" aria-selected="false" style="background: rgb(200, 13, 13); color: rgb(244, 248, 255);">O</button><button type="button" data-z="9" data-build-search-key="atom:9" data-search-terms="f fluorine 9" data-tooltip="Fluorine (F)" aria-selected="false" style="background: rgb(178, 255, 255); color: rgb(11, 18, 32);">F</button><button type="button" data-z="15" data-build-search-key="atom:15" data-search-terms="p phosphorus 15" data-tooltip="Phosphorus (P)" aria-selected="false" style="background: rgb(255, 128, 0); color: rgb(244, 248, 255);">P</button><button type="button" data-z="16" data-build-search-key="atom:16" data-search-terms="s sulfur 16" data-tooltip="Sulfur (S)" aria-selected="false" style="background: rgb(255, 255, 48); color: rgb(11, 18, 32);">S</button><button type="button" data-z="17" data-build-search-key="atom:17" data-search-terms="cl chlorine 17" data-tooltip="Chlorine (Cl)" aria-selected="false" style="background: rgb(31, 240, 31); color: rgb(11, 18, 32);">Cl</button><button type="button" data-z="26" data-build-search-key="atom:26" data-search-terms="fe iron 26" data-tooltip="Iron (Fe)" aria-selected="false" style="background: rgb(224, 102, 51); color: rgb(244, 248, 255);">Fe</button><button type="button" data-z="35" data-build-search-key="atom:35" data-search-terms="br bromine 35" data-tooltip="Bromine (Br)" aria-selected="false" style="background: rgb(166, 41, 41); color: rgb(244, 248, 255);">Br</button></div>
+        <label class="vm-field-label" for="editAddCoordination">Coordination</label>
+        <select id="editAddCoordination" class="editPopupSelect vm-select" data-choices-signature="linear:Linear (2)|trigonalPlanar:Trigonal planar (3)|tetrahedral:Tetrahedral (4)"><option value="linear">Linear (2)</option><option value="trigonalPlanar">Trigonal planar (3)</option><option value="tetrahedral">Tetrahedral (4)</option></select>
+        <label class="editAddToggleRow vm-field-label" for="editAddAdjustHydrogens">
+          <input id="editAddAdjustHydrogens" type="checkbox" checked="" style="">
+          <span>Adjust hydrogens</span>
+        </label>
+      </div></div>
+      </div>
+      <div class="editBuildPaletteSection">
+        <div class="editBuildPaletteSectionTitle vm-section-label">Fragments</div>
+        <div id="editBuildFragmentsHost"><div id="editAddFragmentPane">
+        <label class="vm-field-label" for="editFragmentSearch">Fragment to add (name, id, or formula)</label>
+        <input id="editFragmentSearch" type="text" list="editFragmentSuggestions" autocomplete="off" placeholder="e.g. phenyl, hydroxyl, C6H5" style="">
+        <datalist id="editFragmentSuggestions"><option value="Amide (CONH2) [amide]"></option><option value="Amino (NH2) [amino]"></option><option value="Append-only methyl (CH3) [appendmethyl]"></option><option value="Carbonyl (CO) [carbonyl]"></option><option value="Fusion phenyl (C6H5) [fusionphenyl]"></option><option value="Hydroxyl (OH) [hydroxyl]"></option><option value="Methyl (CH3) [methyl]"></option><option value="Methylene (CH2) [methylene]"></option><option value="Phenyl (C6H5) [phenyl]"></option></datalist>
+        <label class="vm-field-label" for="editFragmentAttachPolicy">Attach policy</label>
+        <select id="editFragmentAttachPolicy" class="editPopupSelect vm-select" data-tooltip="Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.">
+          <option value="smart" selected="">Smart</option>
+          <option value="append">Append</option>
+          <option value="replace_h">Replace H</option>
+        </select>
+        <div id="editFragmentQuick"><button type="button" data-fragment-id="methyl" data-build-search-key="fragment:methyl" data-search-terms="methyl ch3 methyl alkyl organic starter" data-tooltip="Methyl (CH3)" aria-selected="false">Methyl</button><button type="button" data-fragment-id="methylene" data-build-search-key="fragment:methylene" data-search-terms="methylene ch2 methylene alkyl organic starter" data-tooltip="Methylene (CH2)" aria-selected="false">Methylene</button><button type="button" data-fragment-id="hydroxyl" data-build-search-key="fragment:hydroxyl" data-search-terms="hydroxyl oh hydroxyl oxygen organic starter" data-tooltip="Hydroxyl (OH)" aria-selected="false">Hydroxyl</button><button type="button" data-fragment-id="amino" data-build-search-key="fragment:amino" data-search-terms="amino nh2 amino nitrogen organic starter" data-tooltip="Amino (NH2)" aria-selected="false">Amino</button><button type="button" data-fragment-id="carbonyl" data-build-search-key="fragment:carbonyl" data-search-terms="carbonyl co carbonyl oxygen double-bond organic starter" data-tooltip="Carbonyl (CO)" aria-selected="false">Carbonyl</button><button type="button" data-fragment-id="amide" data-build-search-key="fragment:amide" data-search-terms="amide conh2 amide amide organic starter" data-tooltip="Amide (CONH2)" aria-selected="false">Amide</button><button type="button" data-fragment-id="phenyl" data-build-search-key="fragment:phenyl" data-search-terms="phenyl c6h5 phenyl aryl ring organic starter" data-tooltip="Phenyl (C6H5)" aria-selected="false">Phenyl</button></div>
+      </div></div>
+      </div>
+      <div class="editBuildPaletteSection">
+        <div class="editBuildPaletteSectionTitle vm-section-label">Molecules</div>
+        <div id="editBuildMoleculesHost"><div id="editAddMoleculePane">
+        <label class="vm-field-label" for="editMoleculeSearch">Molecule to add (name, id, or formula)</label>
+        <input id="editMoleculeSearch" type="text" list="editMoleculeSuggestions" autocomplete="off" placeholder="e.g. benzene, pyridine, C6H6" style="">
+        <datalist id="editMoleculeSuggestions"><option value="Benzene (C6H6) [benzene]"></option><option value="Cyclohexane (C6H12) [cyclohexane]"></option><option value="Pyridine (C5H5N) [pyridine]"></option></datalist>
+        <div id="editMoleculeQuick"><button type="button" data-molecule-id="benzene" data-build-search-key="molecule:benzene" data-search-terms="benzene c6h6 benzene aromatic ring organic starter" data-tooltip="Benzene (C6H6)" aria-selected="false">Benzene</button><button type="button" data-molecule-id="pyridine" data-build-search-key="molecule:pyridine" data-search-terms="pyridine c5h5n pyridine heteroaromatic ring organic starter" data-tooltip="Pyridine (C5H5N)" aria-selected="false">Pyridine</button><button type="button" data-molecule-id="cyclohexane" data-build-search-key="molecule:cyclohexane" data-search-terms="cyclohexane c6h12 cyclohexane ring alkane organic starter" data-tooltip="Cyclohexane (C6H12)" aria-selected="false">Cyclohexane</button></div>
+        <div id="editMoleculeAlign">
+          <button id="editMoleculeAlignXBtn" type="button" data-tooltip="Align molecule principal axis to +X during placement">Align X</button>
+          <button id="editMoleculeAlignYBtn" type="button" data-tooltip="Align molecule principal axis to +Y during placement">Align Y</button>
+          <button id="editMoleculeAlignZBtn" type="button" data-tooltip="Align molecule principal axis to +Z during placement">Align Z</button>
+        </div>
+      </div></div>
+      </div>
+    </div>
+  </div>
+  <div id="editAdaptiveSymmetryPopover" aria-hidden="true" style="left: 553px; top: 12px;">
+    <div id="editSymmetryPanel" class="symmetry-panel">
+      <div id="editSymmetryHeader">
+        <div id="editSymmetryTitleRow">
+          <span class="material-symbols-rounded editSymmetryTitleIcon" aria-hidden="true">hub</span>
+          <div id="editSymmetryHeaderText">
+            <div id="editSymmetryTitle">Symmetry</div>
+            <div id="editSymmetryTargetSummary">Whole structure (5 atoms)</div>
+          </div>
+        </div>
+        <div id="editSymmetryExactResultCard" class="">
+          <span class="material-symbols-rounded editSymmetryInlineIcon" aria-hidden="true">diamond</span>
+          <span id="editSymmetryExactResult">Current point group: Td</span>
+        </div>
+      </div>
+      <div id="editSymmetryToleranceSection">
+        <label id="editSymmetryToleranceLabel" for="editSymmetryToleranceSelect">RMS TOLERANCE (Å)</label>
+        <div id="editSymmetryToleranceControls">
+          <select id="editSymmetryToleranceSelect" class="editPopupSelect vm-select">
+            <option value="0.050">0.05</option>
+            <option value="0.100">0.10</option>
+            <option value="0.250">0.25</option>
+            <option value="0.500">0.50</option>
+            <option value="1.000">1.00</option>
+          </select>
+        </div>
+      </div>
+      <div id="editSymmetryElementSection">
+        <label id="editSymmetryElementLabel" for="editSymmetryElementSelect">Symmetry element</label>
+        <select id="editSymmetryElementSelect" class="editPopupSelect vm-select"><option value="">None</option><option value="element-1">C3 axis 1</option><option value="element-2">C3 axis 2</option><option value="element-3">C3 axis 3</option><option value="element-4">C3 axis 4</option><option value="element-5">C2 axis 1</option><option value="element-6">C2 axis 2</option><option value="element-7">σd plane 1</option><option value="element-8">σd plane 2</option><option value="element-9">σd plane 3</option><option value="element-10">σd plane 4</option><option value="element-11">σd plane 5</option><option value="element-12">σd plane 6</option></select>
+      </div>
+      <div class="editSymmetryCandidateSection">
+        <div class="editSymmetryCandidateSectionTitle">Approximate Fits</div>
+        <div id="editSymmetryCandidates"><button class="editSymmetryCandidateBtn is-current" type="button" data-symmetry-group-id="Td"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">Td</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.000 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="D2d"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">D2d</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.073 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="C3v"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">C3v</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.000 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="S4"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">S4</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.052 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="C2v"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">C2v</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.058 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="D2"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">D2</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.073 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="C3"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">C3</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.000 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="Cs"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">Cs</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.000 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="C2"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">C2</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.052 Å</span></span></span></button><button class="editSymmetryCandidateBtn" type="button" data-symmetry-group-id="C1"><span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span><span class="editSymmetryCandidateBody"><span class="editSymmetryCandidateLabel">C1</span><span class="editSymmetryCandidateMetrics"><span class="editSymmetryCandidateMeta rms-value">rms 0.000 Å</span></span></span></button></div>
+      </div>
+      <div id="editSymmetryFooter">
+        <button id="editSymmetryApplyBtn" class="editSymmetryActionBtn is-primary" type="button" data-tooltip="Apply the current symmetry preview" disabled="">
+          <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
+          <span>Apply</span>
+        </button>
+        <div id="editSymmetryFooterSecondary">
+          <button id="editSymmetryCancelBtn" class="editSymmetryActionBtn" type="button" data-tooltip="Cancel the current symmetry preview" disabled="">
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+            <span>Cancel</span>
+          </button>
+          <button id="editSymmetryAutoBtn" class="editSymmetryActionBtn" type="button" data-tooltip="Detect and apply the highest valid point group">
+            <span class="material-symbols-rounded" aria-hidden="true">auto_fix_high</span>
+            <span>Auto</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="editSelectionTranslateCue" aria-hidden="true" data-tooltip="Rotate selection" style="left: 0px; top: 0px;">
+    <button id="editSelectionTranslateCueButton" class="editSelectionCueButton" type="button" aria-label="Translate selection" data-tooltip="Translate selection" aria-pressed="false">
+      <span class="material-symbols-rounded" aria-hidden="true">open_with</span>
+    </button>
+    <button id="editSelectionRotateCueButton" class="editSelectionCueButton is-active" type="button" aria-label="Rotate selection" data-tooltip="Rotate selection" aria-pressed="true">
+      <span class="material-symbols-rounded" aria-hidden="true">rotate_right</span>
+    </button>
+    <button id="editSelectionCoordinationCueButton" class="editSelectionCueButton" type="button" aria-label="Choose coordination" data-tooltip="Choose coordination" aria-pressed="false" hidden="">
+      <span class="material-symbols-rounded" aria-hidden="true">hub</span>
+    </button>
+    <button id="editSelectionMetalBondingCueButton" class="editSelectionCueButton" type="button" aria-label="Metal bond mode" data-tooltip="Metal bond mode" hidden="" aria-pressed="false">
+      <span class="material-symbols-rounded" aria-hidden="true">settings_input_component</span>
+    </button>
+    <button id="editSelectionBondOrbitCueButton" class="editSelectionCueButton" type="button" aria-label="Rotate fragment in 3D" data-tooltip="Rotate fragment in 3D" hidden="" aria-pressed="false">
+      <span class="material-symbols-rounded" aria-hidden="true">3d_rotation</span>
+    </button>
+    <button id="editSelectionBondDistanceCueButton" class="editSelectionCueButton" type="button" aria-label="Adjust bond distance" data-tooltip="Adjust bond distance" hidden="" aria-pressed="false">
+      <span class="material-symbols-rounded" aria-hidden="true">swap_horiz</span>
+    </button>
+    <button id="editSelectionBondOrderCueButton" class="editSelectionCueButton" type="button" aria-label="Adjust bond order" data-tooltip="Adjust bond order" hidden="" data-bond-order="" aria-pressed="false">
+      <span class="material-symbols-rounded" aria-hidden="true">linear_scale</span>
+    </button>
+    <button id="editSelectionAddFragmentCueButton" class="editSelectionCueButton is-muted" type="button" aria-label="Build N at open site" data-tooltip="Build N at open site" aria-pressed="false">
+      <span class="material-symbols-rounded" aria-hidden="true">add</span>
+    </button>
+    <button id="editSelectionDeleteCueButton" class="editSelectionCueButton is-delete" type="button" aria-label="Delete selection" data-tooltip="Delete selection" aria-pressed="false">
+      <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+    </button>
+  </div>
+  <div id="editSelectionCoordinationCuePopover" aria-hidden="true" style="left: 733px; top: 286px;"><div class="editCoordinationCueHeader">Coordination</div><div class="editCoordinationCueGrid"><button class="editCoordinationCueOption" type="button" data-coordination-choice="linear" data-atom-index="0"><span class="editCoordinationCuePreview" data-preview-geometry="linear" data-preview-active="false" aria-hidden="true"></span><span class="editCoordinationCueMeta"><span class="editCoordinationCueLabel">Linear (2)</span><span class="editCoordinationCueSubtext">Coordination 2</span></span></button><button class="editCoordinationCueOption" type="button" data-coordination-choice="trigonalPlanar" data-atom-index="0"><span class="editCoordinationCuePreview" data-preview-geometry="trigonalPlanar" data-preview-active="false" aria-hidden="true"></span><span class="editCoordinationCueMeta"><span class="editCoordinationCueLabel">Trigonal planar (3)</span><span class="editCoordinationCueSubtext">Coordination 3</span></span></button><button class="editCoordinationCueOption is-active" type="button" data-coordination-choice="tetrahedral" data-atom-index="0"><span class="editCoordinationCuePreview" data-preview-geometry="tetrahedral" data-preview-active="true" aria-hidden="true"></span><span class="editCoordinationCueMeta"><span class="editCoordinationCueLabel">Tetrahedral (4)</span><span class="editCoordinationCueSubtext">Coordination 4</span></span></button></div></div>
+  <div id="editSelectionMetalBondingCuePopover" aria-hidden="true"></div>
+  <div id="editSelectionMarquee" aria-hidden="true" style="left: 0px; top: 0px; width: 0px; height: 0px;"></div>
+  <div id="bondOrderPopup" aria-hidden="true">
+    <div id="bondOrderPopupTitle">Bond order</div>
+    <div id="bondOrderPopupButtons">
+      <button type="button" data-bond-order-popup="1">1</button>
+      <button type="button" data-bond-order-popup="2">2</button>
+      <button type="button" data-bond-order-popup="3">3</button>
+      <button type="button" data-bond-order-popup="4">4</button>
+      <button type="button" data-bond-order-popup="0">0</button>
+    </div>
+  </div>
+  <div id="editAddAtomOperatorPanel" aria-hidden="true" data-collapsed="true" style="left: auto; right: 16px; bottom: 24px;">
+    <button id="editAddAtomOperatorHeader" type="button" aria-expanded="false">
+      <span class="editAddAtomOperatorTitle">
+        <span id="editAddAtomOperatorChevron" class="editAddAtomOperatorChevron">▸</span>
+        <span id="editAddAtomOperatorLabel" class="editAddAtomOperatorLabel">Build C</span>
+      </span>
+    </button>
+    <div id="editAddAtomOperatorBody">
+      <span class="editAddAtomOperatorRowLabel">X</span>
+      <input id="editAddAtomOperatorX" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+      <span class="editAddAtomOperatorRowLabel">Y</span>
+      <input id="editAddAtomOperatorY" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+        <span class="editAddAtomOperatorRowLabel">Z</span>
+        <input id="editAddAtomOperatorZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+    </div>
+  </div>
+  <div id="editAddMoleculeOperatorPanel" aria-hidden="true" data-collapsed="true">
+    <button id="editAddMoleculeOperatorHeader" type="button" aria-expanded="false">
+      <span class="editAddMoleculeOperatorTitle">
+        <span id="editAddMoleculeOperatorChevron" class="editAddMoleculeOperatorChevron">▸</span>
+        <span id="editAddMoleculeOperatorLabel" class="editAddMoleculeOperatorLabel">Build</span>
+      </span>
+    </button>
+    <div id="editAddMoleculeOperatorBody">
+      <span class="editAddAtomOperatorRowLabel">Location X</span>
+      <input id="editAddMoleculeOperatorX" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+      <span class="editAddAtomOperatorRowLabel">Y</span>
+      <input id="editAddMoleculeOperatorY" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+      <span class="editAddAtomOperatorRowLabel">Z</span>
+      <input id="editAddMoleculeOperatorZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+      <span class="editAddAtomOperatorRowLabel">Rotation X</span>
+      <input id="editAddMoleculeOperatorRotX" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+      <span class="editAddAtomOperatorRowLabel">Y</span>
+      <input id="editAddMoleculeOperatorRotY" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+      <span class="editAddAtomOperatorRowLabel">Z</span>
+      <input id="editAddMoleculeOperatorRotZ" class="editAddAtomOperatorCoord" type="text" inputmode="decimal" autocomplete="off" style="">
+      <div class="editAddMoleculeOperatorButtonRow">
+        <span class="editAddMoleculeOperatorButtonLabel">Align to</span>
+        <button id="editAddMoleculeOperatorAlignX" type="button">X</button>
+        <button id="editAddMoleculeOperatorAlignY" type="button">Y</button>
+        <button id="editAddMoleculeOperatorAlignZ" type="button">Z</button>
+      </div>
+    </div>
+  </div>
+  <div id="editToolbox" aria-hidden="true">
+    <div id="editAddPane" class="active">
+      <div id="editAddModeToggle">
+        <button id="editAddModeAtomBtn" type="button" class="active" data-tooltip="Add single atoms">Atom</button>
+        <button id="editAddModeMoleculeBtn" type="button" data-tooltip="Place standalone molecules">Molecule</button>
+      </div>
+      
+      
+      
+    </div>
+    <div id="editSnapPane">
+      <span class="title">Angle snapping</span>
+      <div id="editSnapHint">In Add mode, cursor direction around the anchor atom drives placement. Snapping picks the
+        nearest valid angle (180°, 120°, 109.5°, 90°, 60°).</div>
+    </div>
+  </div>
+  <!-- View floating panel -->
+  <div id="sidePanel" class="vm-popover vm-view-panel" aria-hidden="true">
+    <header class="vm-popover__header">
+      <h2>View</h2>
+      <div class="vm-popover__actions">
+        <button id="viewReset" class="vm-btn vm-btn--ghost" type="button" data-tooltip="Reset the view to the initial state">Reset View</button>
+        <button id="sideClose" class="vm-btn vm-btn--icon" type="button" aria-label="Close" data-tooltip="Close">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M4 4L12 12"></path>
+            <path d="M12 4L4 12"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="viewControls" class="vm-view-controls">
+      <section class="vm-view-section">
+        <h3 class="vm-section-label">Camera</h3>
+        <div class="vm-vec-row" data-vector-kind="shift">
+          <label>Shift</label>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Shift X" tabindex="0" role="spinbutton" aria-label="Shift X" aria-disabled="false" aria-valuenow="0.000">
+            <span class="vm-num__prefix" aria-hidden="true">X</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="shiftX" class="vm-num__input" step="0.1" data-tooltip="Shift the molecule in the X-direction" tabindex="-1" style="">
+          </div>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Shift Y" tabindex="0" role="spinbutton" aria-label="Shift Y" aria-disabled="false" aria-valuenow="0.000">
+            <span class="vm-num__prefix" aria-hidden="true">Y</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="shiftY" class="vm-num__input" step="0.1" data-tooltip="Shift the molecule in the Y-direction" tabindex="-1" style="">
+          </div>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Shift Z" tabindex="0" role="spinbutton" aria-label="Shift Z" aria-disabled="false" aria-valuenow="0.000">
+            <span class="vm-num__prefix" aria-hidden="true">Z</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="shiftZ" class="vm-num__input" step="0.1" data-tooltip="Shift the molecule in the Z-direction" tabindex="-1" style="">
+          </div>
+          <button id="viewCopyShiftBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Shift vector" data-tooltip="Copy Shift vector" data-copy-vector="shift">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
+              <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="vm-vec-row" data-vector-kind="cam">
+          <label>Cam</label>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Camera X" tabindex="0" role="spinbutton" aria-label="Camera X" aria-disabled="false" aria-valuenow="2.025">
+            <span class="vm-num__prefix" aria-hidden="true">X</span>
+            <span class="vm-num__value">2.025</span>
+            <input type="number" id="camX" class="vm-num__input" step="0.1" data-tooltip="Camera position in the X-direction" tabindex="-1" style="">
+          </div>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Camera Y" tabindex="0" role="spinbutton" aria-label="Camera Y" aria-disabled="false" aria-valuenow="2.025">
+            <span class="vm-num__prefix" aria-hidden="true">Y</span>
+            <span class="vm-num__value">2.025</span>
+            <input type="number" id="camY" class="vm-num__input" step="0.1" data-tooltip="Camera position in the Y-direction" tabindex="-1" style="">
+          </div>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Camera Z" tabindex="0" role="spinbutton" aria-label="Camera Z" aria-disabled="false" aria-valuenow="2.025">
+            <span class="vm-num__prefix" aria-hidden="true">Z</span>
+            <span class="vm-num__value">2.025</span>
+            <input type="number" id="camZ" class="vm-num__input" step="0.1" data-tooltip="Camera position in the Z-direction" tabindex="-1" style="">
+          </div>
+          <button id="viewCopyCamBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Camera vector" data-tooltip="Copy Camera vector" data-copy-vector="cam">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
+              <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="vm-vec-row" data-vector-kind="target">
+          <label>Target</label>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Target X" tabindex="0" role="spinbutton" aria-label="Target X" aria-disabled="false" aria-valuenow="0.000">
+            <span class="vm-num__prefix" aria-hidden="true">X</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="tgtX" class="vm-num__input" step="0.1" data-tooltip="Target position in the X-direction" tabindex="-1" style="">
+          </div>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Target Y" tabindex="0" role="spinbutton" aria-label="Target Y" aria-disabled="false" aria-valuenow="0.000">
+            <span class="vm-num__prefix" aria-hidden="true">Y</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="tgtY" class="vm-num__input" step="0.1" data-tooltip="Target position in the Y-direction" tabindex="-1" style="">
+          </div>
+          <div class="vm-num" data-vm-num="" data-precision="3" data-label="Target Z" tabindex="0" role="spinbutton" aria-label="Target Z" aria-disabled="false" aria-valuenow="0.000">
+            <span class="vm-num__prefix" aria-hidden="true">Z</span>
+            <span class="vm-num__value">0.000</span>
+            <input type="number" id="tgtZ" class="vm-num__input" step="0.1" data-tooltip="Target position in the Z-direction" tabindex="-1" style="">
+          </div>
+          <button id="viewCopyTargetBtn" class="vm-btn vm-btn--icon vm-copy" type="button" aria-label="Copy Target vector" data-tooltip="Copy Target vector" data-copy-vector="target">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect x="5" y="3" width="8" height="8" rx="1.5"></rect>
+              <path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="vm-view-section">
+        <h3 class="vm-section-label">Motion</h3>
+        <div class="vm-field-row">
+          <label for="rotSpeedRange">Rotate speed</label>
+          <div class="vm-slider" data-vm-slider="" data-min="0" data-max="1" style="--vm-slider-fill-percent: 100%;">
+            <input id="rotSpeedRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="1.00" data-tooltip="Speed at which the view rotates" style="">
+            <input type="text" id="rotSpeed" class="vm-slider__value vm-mono" inputmode="decimal" value="1.00" data-tooltip="Speed at which the view rotates" style="">
+          </div>
+        </div>
+        <div class="vm-field-row">
+          <label for="dampRange">Damping</label>
+          <div class="vm-slider" data-vm-slider="" data-min="0" data-max="1" style="--vm-slider-fill-percent: 5%;">
+            <input id="dampRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0.05" data-tooltip="Damping factor for the view rotation" style="">
+            <input type="text" id="damp" class="vm-slider__value vm-mono" inputmode="decimal" value="0.05" data-tooltip="Damping factor for the view rotation" style="">
+          </div>
+        </div>
+        <div class="vm-field-row">
+          <label for="autoRot">Auto-rotate</label>
+          <div class="vm-field-control">
+            <label class="vm-toggle" for="autoRot">
+              <input type="checkbox" id="autoRot" class="vm-toggle__input" role="switch" data-tooltip="Toggle auto rotation of the camera" style="">
+              <span class="vm-toggle__thumb" aria-hidden="true"></span>
+            </label>
+          </div>
+        </div>
+        <div id="viewAutoRotateSpeedRow" class="vm-field-row" data-disabled="true">
+          <label for="autoRotSpeedRange">↳ Speed</label>
+          <div class="vm-slider" data-vm-slider="" data-min="0" data-max="1" data-disabled="true" style="--vm-slider-fill-percent: 100%;">
+            <input id="autoRotSpeedRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="2.0" data-tooltip="Speed of auto-rotation" disabled="" style="">
+            <input type="text" id="autoRotSpeed" class="vm-slider__value vm-mono" inputmode="decimal" value="2.00" data-tooltip="Speed of auto-rotation" disabled="" style="">
+          </div>
+        </div>
+      </section>
+
+      <section class="vm-view-section vm-view-section--diagnostics">
+        <h3 class="vm-section-label">Diagnostics</h3>
+        <div class="vm-stat-row">
+          <span class="vm-stat-label">FPS</span>
+          <span id="fpsValue" class="vm-stat-value vm-nums">25.3</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="coordsPanel" class="motionPanel vm-list-popover" aria-hidden="true">
+    <div class="motionPanelHeader vm-list-popover__header">
+      <div class="title vm-list-popover__title" id="coordsPanelTitle">Coordinates (Å)</div>
+      <div class="actions vm-list-popover__actions">
+        <button id="coordsUnitsBtn" class="secondary" data-tooltip="Show coordinates in bohr" aria-label="Switch coordinates to bohr">Bohr</button>
+        <button id="copyXYZ" class="secondary" data-tooltip="Copy XYZ">Copy</button>
+        <button id="downloadXYZ" class="secondary" data-tooltip="Download XYZ">Download</button>
+        <button id="coordsPanelClose" class="motionPanelClose" data-tooltip="Close coordinates" data-tooltip-placement="top"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
+      </div>
+    </div>
+    <div id="coordsSubheader" class="vm-list-popover__subheader">Active: bond-fixture.structure (3).json</div>
+    <div id="coordsControls" class="vm-list-popover__controls" hidden=""></div>
+    <div id="coordsContent" class="coord-readout motionPanelBody vm-list-popover__body" style="padding:0;" tabindex="0"><table class="vm-list-popover__table coordsTable"><thead><tr><th class="vm-list-popover__head vm-list-popover__head--right vm-list-popover__head--mono" style="width: 42px; min-width: 42px;">#</th><th class="vm-list-popover__head" style="width: 56px; min-width: 56px;">Sym</th><th class="vm-list-popover__head vm-list-popover__head--right vm-list-popover__head--mono" style="width: 44px; min-width: 44px;">Z</th><th class="vm-list-popover__head vm-list-popover__head--right vm-list-popover__head--mono">x</th><th class="vm-list-popover__head vm-list-popover__head--right vm-list-popover__head--mono">y</th><th class="vm-list-popover__head vm-list-popover__head--right vm-list-popover__head--mono">z</th></tr></thead><tbody><tr class="vm-list-popover__row" data-row-index="0" data-atom-index="0"><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono" style="width: 42px; min-width: 42px;"><button type="button" class="coordsCellButton" data-row-index="0" data-edit-field="order">1</button></td><td class="vm-list-popover__cell" style="width: 56px; min-width: 56px;"><button type="button" class="coordsCellButton" data-row-index="0" data-edit-field="sym">C</button></td><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono" style="width: 44px; min-width: 44px;"><button type="button" class="coordsCellButton" data-row-index="0" data-edit-field="z">6</button></td><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono"><button type="button" class="coordsCellButton" data-row-index="0" data-edit-field="x">-0.700</button></td><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono"><button type="button" class="coordsCellButton" data-row-index="0" data-edit-field="y">0.000</button></td><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono"><button type="button" class="coordsCellButton" data-row-index="0" data-edit-field="zCoord">0.000</button></td></tr><tr class="vm-list-popover__row" data-row-index="1" data-atom-index="1"><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono" style="width: 42px; min-width: 42px;"><button type="button" class="coordsCellButton" data-row-index="1" data-edit-field="order">2</button></td><td class="vm-list-popover__cell" style="width: 56px; min-width: 56px;"><button type="button" class="coordsCellButton" data-row-index="1" data-edit-field="sym">C</button></td><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono" style="width: 44px; min-width: 44px;"><button type="button" class="coordsCellButton" data-row-index="1" data-edit-field="z">6</button></td><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono"><button type="button" class="coordsCellButton" data-row-index="1" data-edit-field="x">0.700</button></td><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono"><button type="button" class="coordsCellButton" data-row-index="1" data-edit-field="y">0.000</button></td><td class="vm-list-popover__cell vm-list-popover__cell--right vm-list-popover__cell--mono"><button type="button" class="coordsCellButton" data-row-index="1" data-edit-field="zCoord">0.000</button></td></tr></tbody></table></div>
+    <div id="coordsFooter" class="vm-list-popover__footer" hidden=""></div>
+  </div>
+
+  <div id="trajectoryPanel" class="motionPanel vm-list-popover" aria-hidden="true">
+    <div class="motionPanelHeader vm-list-popover__header">
+      <div class="title vm-list-popover__title">Trajectory</div>
+      <div class="actions vm-list-popover__actions">
+        <button id="trajectoryPlayBtn" class="motionPanelIconBtn vm-list-popover__header-action" data-tooltip="Play or pause trajectory playback" aria-label="Play or pause trajectory playback" title="Play or pause trajectory playback" data-tooltip-placement="top"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
+        <button id="trajectoryResetBtn" class="motionPanelIconBtn vm-list-popover__header-action" data-tooltip="Reset trajectory to first frame" aria-label="Reset trajectory to first frame" title="Reset trajectory to first frame" data-tooltip-placement="top"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
+        <button id="trajectoryPanelClose" class="motionPanelClose vm-list-popover__close" data-tooltip="Close trajectory panel" aria-label="Close trajectory panel" title="Close trajectory panel" data-tooltip-placement="top"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
+      </div>
+    </div>
+    <div class="motionPanelBody vm-list-popover__body">
+      <div id="trajectoryNowPlaying">No trajectory selected</div>
+      <div id="trajectoryBondModeNote" style="display:none;">Trajectory bonds are dynamic</div>
+      <div class="row" id="trajectoryRow" style="display:none; grid-template-columns:1fr auto;">
+        <input type="range" id="trajectoryFrame" min="0" max="0" step="1" value="0" data-tooltip="Trajectory frame index" style="">
+        <div id="trajectoryFrameLabel" style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:right;">1/1</div>
+      </div>
+      <div class="row" id="trajectoryRow2" style="display:none; grid-template-columns:50px 96px auto 1fr;">
+        <label style="width:auto;">FPS</label>
+        <input type="number" id="trajectoryFps" min="1" max="120" step="1" value="12" data-tooltip="Trajectory playback speed (frames per second)" style="">
+        <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked="" style=""> Loop</label>
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="vibrationPanel" class="motionPanel" aria-hidden="true">
+    <div class="motionPanelHeader">
+      <div class="title">Vibrational Frequencies</div>
+      <div class="actions">
+        <button id="vibrationPlayBtn" class="motionPanelIconBtn" data-tooltip="Play/Pause vibrational mode" data-tooltip-placement="top"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
+        <button id="vibrationResetBtn" class="motionPanelIconBtn" data-tooltip="Reset to equilibrium geometry" data-tooltip-placement="top"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
+        <button id="vibrationPanelClose" class="motionPanelClose" data-tooltip="Close vibration controls" data-tooltip-placement="top"><span class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
+      </div>
+    </div>
+    <div class="motionPanelBody">
+      <div class="row" id="vibrationFilterRow" style="grid-template-columns:1fr;">
+        <label style="width:auto;"><input type="checkbox" id="vibrationHideLowFreq" checked="" style=""> Hide small
+          frequencies</label>
+      </div>
+      <div id="vibrationNowPlaying">No mode selected</div>
+      <div class="row" id="vibrationRow" style="display:none; grid-template-columns:1fr;">
+        <div id="vibrationModeLabel" style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:left;">
+          No mode selected</div>
+      </div>
+      <div class="row" id="vibrationRow2" style="display:none;">
+        <label style="width:auto;">Vib Amp</label>
+        <input type="number" id="vibrationAmplitude" min="0" max="8" step="0.05" value="0.50" data-tooltip="Mode displacement scale factor" style="">
+        <label style="width:auto;">Speed</label>
+        <input type="number" id="vibrationSpeed" min="0.1" max="30" step="0.05" value="0.75" data-tooltip="Oscillation speed in cycles per second" style="">
+        <div id="vibrationFreqLabel" style="font-variant-numeric: tabular-nums; color: var(--vm-color-text-secondary); text-align:right;">
+          -- cm<sup>−1</sup></div>
+      </div>
+      <div id="vibrationSpectrumWrap" aria-label="IR spectrum" style="display: none;">
+        <canvas id="vibrationSpectrumCanvas" width="420" height="128"></canvas>
+        <div id="vibrationSpectrumMeta">IR spectrum preview</div>
+      </div>
+      <div id="vibrationModeTableWrap" style="display: none;">
+        <table id="vibrationModeTable" data-has-intensity="false" aria-label="Vibrational mode frequencies">
+          <thead>
+            <tr>
+              <th>Play</th>
+              <th>#</th>
+              <th>Mode</th>
+              <th>Freq (cm<sup>−1</sup>)</th>
+              <th class="vibrationIntensityCol">Intensity (km/mol)</th>
+            </tr>
+          </thead>
+          <tbody id="vibrationModeTableBody"></tbody>
+        </table>
+      </div>
+      <div id="vibrationModeEmpty" style="display: none;">No vibrational modes available for the active file.</div>
+    </div>
+  </div>
+
+  <div id="helpOverlay" aria-hidden="true">
+    <div id="helpModal" class="vm-popover vm-helpOverlayModal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="helpTitle" aria-describedby="helpSubtitle">
+      <header class="vm-popover__header vm-helpOverlayHeader">
+        <div>
+          <h2 id="helpTitle">Keyboard shortcuts</h2>
+          <div id="helpSubtitle" class="vm-popover__subtitle">Press <kbd class="vm-key-pill">?</kbd> anytime to toggle this overlay <span id="versionText" class="vm-helpOverlayVersion">0.8.2</span></div>
+        </div>
+        <div class="vm-popover__actions">
+          <button id="helpClose" class="vm-btn vm-btn--icon" type="button" aria-label="Close keyboard shortcuts" data-tooltip="Close keyboard shortcuts">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4 4L12 12"></path>
+              <path d="M12 4L4 12"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+      <div class="vm-helpOverlayContent">
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Navigation</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Drag</kbd></div><div class="vm-helpDescription">Orbit the scene</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Wheel</kbd></div><div class="vm-helpDescription">Zoom in or out</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Right-drag</kbd></div><div class="vm-helpDescription">Pan the view</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Reset View</kbd></div><div class="vm-helpDescription">Restore the default camera pose</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Modes</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">M</kbd></div><div class="vm-helpDescription">Switch to Measure from View</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">E</kbd></div><div class="vm-helpDescription">Switch to Edit from View or Measure</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Selection</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Click</kbd></div><div class="vm-helpDescription">Select one atom or target</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Shift+Click</kbd></div><div class="vm-helpDescription">Add or remove from the current selection</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+A</kbd></div><div class="vm-helpDescription">Select all editable atoms</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Esc</kbd></div><div class="vm-helpDescription">Clear selection or close the topmost popup</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">File</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+O</kbd></div><div class="vm-helpDescription">Open files</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+S</kbd></div><div class="vm-helpDescription">Save PNG</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+C</kbd></div><div class="vm-helpDescription">Copy selected atoms in Edit</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Cmd/Ctrl+V</kbd></div><div class="vm-helpDescription">Paste copied atoms or pasted XYZ</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Build</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">1</kbd><kbd class="vm-key-pill">2</kbd><kbd class="vm-key-pill">3</kbd><kbd class="vm-key-pill">4</kbd></div><div class="vm-helpDescription">Set grow or bond order during build gestures</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Space</kbd></div><div class="vm-helpDescription">Preview or apply missing hydrogens</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Enter</kbd></div><div class="vm-helpDescription">Confirm the active add-atom or placement operator</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">/</kbd></div><div class="vm-helpDescription">Open Build palette, search atoms, fragments, and molecules</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">View</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Q</kbd></div><div class="vm-helpDescription">Open View actions</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">V</kbd></div><div class="vm-helpDescription">Open View panel</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">O</kbd></div><div class="vm-helpDescription">Open Orbitals panel (molden files only)</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">C</kbd></div><div class="vm-helpDescription">Open Coordinates panel</div></div>
+          </div>
+        </section>
+        <section class="vm-helpSection">
+          <h3 class="vm-section-label">Preferences</h3>
+          <div class="vm-helpGrid">
+            <div class="vm-helpRow">
+              <div class="vm-helpPreferenceLabel">Typeface</div>
+              <div class="vm-helpDescription">Set in Appearance panel</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="elementColorOverlay" aria-hidden="true">
+    <div id="elementColorModal" role="dialog" aria-modal="true" aria-label="Element Color Editor">
+      <div id="elementColorHead">
+        <div class="title">Element Colors</div>
+        <button id="elementColorClose" class="secondary ms-icon-button" data-tooltip="Close">close</button>
+      </div>
+      <div id="elementColorPickerRow">
+        <span id="elementColorName">Select an element</span>
+        <input type="color" id="elementColorPicker" value="#ffffff" style="">
+        <button id="elementColorResetOne" class="secondary" data-tooltip="Reset selected element color">Reset Selected</button>
+        <button id="elementColorResetAll" class="secondary" data-tooltip="Reset all element colors to defaults">Reset
+          All</button>
+      </div>
+      <div id="periodicTableViewport" aria-label="Periodic table color editor">
+        <canvas id="periodicTableCanvas"></canvas>
+      </div>
+      <div class="pt-legend">Click a sphere to select an element.</div>
+    </div>
+  </div>
+
+  <!-- three.js core and controls (local copies) -->
+  <script src="./assets/vendor/js/three.min.js"></script>
+  <script src="./assets/vendor/js/orbit-controls.global.js"></script>
+  <!-- isosurface (global) -->
+  <script src="./assets/vendor/js/isosurface.bundle.js"></script>
+  <!-- atomic data (global) -->
+  <script src="./assets/vendor/js/atomic-data.js"></script>
+  <!-- parsing helpers -->
+  <script src="./assets/app/js/parsers.js"></script>
+  <!-- rendering helpers -->
+  <script src="./assets/app/js/rendering.js"></script>
+  <!-- interaction helpers -->
+  <script src="./assets/app/js/interaction.js"></script>
+  <!-- ui helpers -->
+  <script src="./assets/app/js/ui.js"></script>
+  <!-- view/camera helpers -->
+  <script src="./assets/app/js/view-utils.js"></script>
+  <!-- edit math helpers -->
+  <script src="./assets/app/js/edit-utils.js"></script>
+  <!-- edit command objects -->
+  <script src="./assets/app/js/edit-commands.js"></script>
+  <!-- edit state/history helpers -->
+  <script src="./assets/app/js/edit-state.js"></script>
+  <!-- io helpers -->
+  <script src="./assets/app/js/io-utils.js"></script>
+  <!-- fragment library helpers -->
+  <script src="./assets/app/js/fragments.js"></script>
+  <!-- structure/schema helpers -->
+  <script src="./assets/app/js/structure.js"></script>
+  <!-- volume geometry helpers -->
+  <script src="./assets/app/js/volume-geometry.js"></script>
+  <!-- two-component volume helpers -->
+  <script src="./assets/app/js/volume-2c.js"></script>
+  <!-- bond inference helpers -->
+  <script src="./assets/app/js/bond-inference.js"></script>
+  <!-- auto-hydrogen helpers -->
+  <script src="./assets/app/js/auto-hydrogen.js"></script>
+  <!-- auto-iso helpers -->
+  <script src="./assets/app/js/autoiso.js"></script>
+  <!-- cloud rendering helpers -->
+  <script src="./assets/app/js/cloud-rendering.js"></script>
+  <!-- bond editing helpers -->
+  <script src="./assets/app/js/bond-editing.js"></script>
+  <!-- edit ui helpers -->
+  <script src="./assets/app/js/edit-ui.js"></script>
+  <!-- non-edit display window helpers -->
+  <script src="./assets/app/js/display-windows.js"></script>
+  <!-- appearance inspector helpers -->
+  <script src="./assets/app/js/appearance-ui.js"></script>
+  <!-- edit placement helpers -->
+  <script src="./assets/app/js/edit-placement.js"></script>
+  <!-- edit tool/selection helpers -->
+  <script src="./assets/app/js/edit-tools.js"></script>
+  <!-- edit gizmo helpers -->
+  <script src="./assets/app/js/edit-gizmos.js"></script>
+  <!-- edit transform helpers -->
+  <script src="./assets/app/js/edit-transform.js"></script>
+  <!-- gesture editing controller -->
+  <script src="./assets/app/js/edit-gestures.js"></script>
+  <!-- coordination geometry helpers -->
+  <script src="./assets/app/js/coordination.js"></script>
+  <!-- bond-order-driven geometry inference helpers -->
+  <script src="./assets/app/js/geometry-inference.js"></script>
+  <!-- UFF force-field helpers -->
+  <script src="./assets/app/js/uff.js"></script>
+  <!-- UFF adapter helpers -->
+  <script src="./assets/app/js/uff-adapter.js"></script>
+  <!-- context halo controller -->
+  <script src="./assets/app/js/edit-halo.js"></script>
+  <!-- preset helpers -->
+  <script src="./assets/app/js/preset.js"></script>
+  <!-- structure transport helpers -->
+  <script src="./assets/app/js/structure-transport.js"></script>
+  <!-- file loading helpers -->
+  <script src="./assets/app/js/file-loader.js"></script>
+  <!-- symmetry helpers -->
+  <script src="./assets/app/js/symmetry.js"></script>
+  <!-- persistent UI preferences -->
+  <script src="./src/prefs.js"></script>
+  <!-- shared list popover component -->
+  <script src="./src/components/VmListPopover.js"></script>
+  <!-- root tooltip portal -->
+  <script src="./src/components/VmTooltip.js"></script>
+
+  <script src="./assets/app/js/app.js"></script><div id="surfaceHoverLabel" aria-hidden="true" style="position: fixed; left: -9999px; top: -9999px; max-width: 240px; padding: 7px 10px; border-radius: 10px; background: rgba(16, 22, 34, 0.92); color: rgb(237, 244, 255); border: 1px solid rgba(134, 158, 194, 0.28); box-shadow: rgba(4, 8, 16, 0.28) 0px 8px 22px; font: 600 13px / 1.35 Geist, system-ui, -apple-system, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif; pointer-events: none; z-index: 1700; white-space: nowrap; opacity: 0; transition: opacity 80ms;"></div><div class="vm-tooltip" role="tooltip" aria-hidden="true" style="visibility: hidden; left: 0px; top: 0px;"></div>
+
+
+
+</body></html>

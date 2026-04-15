@@ -1,0 +1,10 @@
+Need to clairify ghost atom hovering approach. Currently not working as intended.
+
+There are a few small details that we need to fix. When I place a Fe atom (Which has by default open sites) I can hover over the atom and the open vacancies show up and are highlighted and accept clicks that add the current selection (atom/fragment).
+
+
+Make a plan for adding a new feature to the edit mode: Symmetry. This will be a window that opens when the user clicks on the symmetry button in the edit mode toolbar. The window will show the user if the molecule has point group symmetry and what the point group is. The window will also show possible point groups that the molecule approximately satisfies, and allow the user to select one of those point groups to symmetrize the molecule. The window will also have an option to automatically detect and apply the highest possible point group symmetry to the molecule. For this, I want you to create a new js file called symmetry.js that will contain the code for this feature. Draw a plan for the implementation of the symmetry feature in the edit mode.
+
+Waht is this?
+  if (currentMode === MODES.EDIT) {
+      if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && !__contextMoved) {c
