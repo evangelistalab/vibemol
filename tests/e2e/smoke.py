@@ -433,6 +433,86 @@ def sample_canvas_region_rgb(page, fx: float = 0.5, fy: float = 0.5, size: int =
     return sample
 
 
+def install_trajectory_video_export_stubs(page, *, media_recorder_supported: bool = True) -> None:
+    page.evaluate(
+        """(supported) => {
+            const state = {
+              downloads: [],
+              createdUrls: [],
+              recorderStarts: 0,
+              recorderStops: 0,
+              captureCalls: [],
+            };
+            window.__trajectoryVideoExportTest = state;
+            URL.createObjectURL = (blob) => {
+              const href = `blob:trajectory-test-${state.createdUrls.length + 1}`;
+              state.createdUrls.push({
+                href,
+                size: Number(blob && blob.size) || 0,
+                type: String(blob && blob.type || ''),
+              });
+              return href;
+            };
+            URL.revokeObjectURL = () => {};
+            HTMLAnchorElement.prototype.click = function clickStub() {
+              state.downloads.push({
+                href: String(this.href || ''),
+                download: String(this.download || ''),
+              });
+            };
+            HTMLCanvasElement.prototype.captureStream = function captureStreamStub(fps) {
+              state.captureCalls.push({
+                width: Number(this.width) || 0,
+                height: Number(this.height) || 0,
+                fps: Number(fps) || 0,
+              });
+              return { fps: Number(fps) || 0, canvas: this };
+            };
+            if (!supported) {
+              window.MediaRecorder = undefined;
+              return;
+            }
+            class FakeMediaRecorder {
+              constructor(stream, options = {}) {
+                this.stream = stream;
+                this.mimeType = String(options && options.mimeType || 'video/webm');
+                this.state = 'inactive';
+                this.ondataavailable = null;
+                this.onstop = null;
+                this.onerror = null;
+              }
+
+              start() {
+                this.state = 'recording';
+                state.recorderStarts += 1;
+              }
+
+              stop() {
+                if (this.state === 'inactive') return;
+                this.state = 'inactive';
+                state.recorderStops += 1;
+                const blob = new Blob([`trajectory-${state.recorderStops}`], { type: this.mimeType || 'video/webm' });
+                if (typeof this.ondataavailable === 'function') this.ondataavailable({ data: blob });
+                if (typeof this.onstop === 'function') this.onstop();
+              }
+
+              static isTypeSupported(type) {
+                return /^video\\/webm/.test(String(type || ''));
+              }
+            }
+            window.MediaRecorder = FakeMediaRecorder;
+        }""",
+        media_recorder_supported,
+    )
+
+
+def get_trajectory_video_export_stub_state(page) -> dict[str, Any]:
+    result = page.evaluate("""() => window.__trajectoryVideoExportTest || null""")
+    if not isinstance(result, dict):
+        raise AssertionError(f'Could not read trajectory-video stub state: {result!r}')
+    return result
+
+
 def canvas_point(page, fx: float = 0.62, fy: float = 0.56) -> tuple[float, float]:
     box = page.locator('#canvas').bounding_box()
     if not box:
@@ -2958,6 +3038,224 @@ def main() -> int:
             stored_after_traj = active_structure_summary(page)
             if stored_after_traj['bondCount'] != 1 or stored_after_traj['bondOrigins'] != ['perceived']:
                 raise AssertionError(f'Trajectory rendering mutated stored topology: {stored_after_traj}')
+            install_trajectory_video_export_stubs(page, media_recorder_supported=True)
+            page.locator('#trajectorySaveVideoBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('trajectoryVideoCropOverlay');
+                    const frame = document.getElementById('trajectoryVideoCropFrame');
+                    const dims = document.getElementById('trajectoryVideoCropDimensions');
+                    const actions = document.getElementById('trajectoryVideoCropActions');
+                    return !!overlay
+                      && overlay.getAttribute('aria-hidden') === 'false'
+                      && overlay.dataset.state === 'selecting'
+                      && !!frame
+                      && frame.getBoundingClientRect().width >= 320
+                      && frame.getBoundingClientRect().height >= 180
+                      && !!dims
+                      && /\\d+ × \\d+/.test(dims.textContent || '')
+                      && !!actions
+                      && getComputedStyle(actions).display === 'flex';
+                }"""
+            )
+            crop_initial = page.evaluate(
+                """() => {
+                    const frame = document.getElementById('trajectoryVideoCropFrame')?.getBoundingClientRect();
+                    const dims = document.getElementById('trajectoryVideoCropDimensions')?.textContent || '';
+                    const canvas = document.getElementById('canvas')?.getBoundingClientRect();
+                    if (!frame || !canvas) return null;
+                    return {
+                      left: frame.left,
+                      top: frame.top,
+                      right: frame.right,
+                      bottom: frame.bottom,
+                      width: frame.width,
+                      height: frame.height,
+                      centerX: frame.left + frame.width * 0.5,
+                      centerY: frame.top + frame.height * 0.5,
+                      dims,
+                      canvasLeft: canvas.left,
+                      canvasTop: canvas.top,
+                      canvasRight: canvas.right,
+                      canvasBottom: canvas.bottom,
+                    };
+                }"""
+            )
+            if not isinstance(crop_initial, dict):
+                raise AssertionError(f'Could not read initial trajectory crop rect: {crop_initial!r}')
+            page.mouse.move(crop_initial['centerX'], crop_initial['centerY'])
+            page.mouse.down()
+            page.mouse.move(crop_initial['canvasRight'] + 220, crop_initial['canvasTop'] - 220, steps=8)
+            page.mouse.up()
+            crop_moved = page.evaluate(
+                """() => {
+                    const frame = document.getElementById('trajectoryVideoCropFrame')?.getBoundingClientRect();
+                    const canvas = document.getElementById('canvas')?.getBoundingClientRect();
+                    if (!frame || !canvas) return null;
+                    return {
+                      left: frame.left,
+                      top: frame.top,
+                      right: frame.right,
+                      bottom: frame.bottom,
+                      width: frame.width,
+                      height: frame.height,
+                      canvasLeft: canvas.left,
+                      canvasTop: canvas.top,
+                      canvasRight: canvas.right,
+                      canvasBottom: canvas.bottom,
+                    };
+                }"""
+            )
+            if not isinstance(crop_moved, dict):
+                raise AssertionError(f'Could not read moved trajectory crop rect: {crop_moved!r}')
+            if crop_moved['left'] < crop_moved['canvasLeft'] - 1 or crop_moved['top'] < crop_moved['canvasTop'] - 1:
+                raise AssertionError(f'Trajectory crop move escaped the canvas bounds: {crop_moved}')
+            se_box = page.locator("#trajectoryVideoCropFrame .trajectoryVideoCropHandle[data-corner='se']").bounding_box()
+            if not se_box:
+                raise AssertionError('Could not locate SE crop resize handle.')
+            page.mouse.move(se_box['x'] + se_box['width'] * 0.5, se_box['y'] + se_box['height'] * 0.5)
+            page.mouse.down()
+            page.mouse.move(crop_moved['canvasRight'] + 180, crop_moved['canvasBottom'] + 180, steps=8)
+            page.mouse.up()
+            crop_resized = page.evaluate(
+                """() => {
+                    const frame = document.getElementById('trajectoryVideoCropFrame')?.getBoundingClientRect();
+                    const dims = document.getElementById('trajectoryVideoCropDimensions')?.textContent || '';
+                    const canvas = document.getElementById('canvas')?.getBoundingClientRect();
+                    if (!frame || !canvas) return null;
+                    return {
+                      right: frame.right,
+                      bottom: frame.bottom,
+                      width: frame.width,
+                      height: frame.height,
+                      dims,
+                      canvasRight: canvas.right,
+                      canvasBottom: canvas.bottom,
+                    };
+                }"""
+            )
+            if not isinstance(crop_resized, dict):
+                raise AssertionError(f'Could not read resized trajectory crop rect: {crop_resized!r}')
+            if crop_resized['right'] > crop_resized['canvasRight'] + 1 or crop_resized['bottom'] > crop_resized['canvasBottom'] + 1:
+                raise AssertionError(f'Trajectory crop resize escaped the canvas bounds: {crop_resized}')
+            if crop_resized['dims'] == crop_initial['dims']:
+                raise AssertionError(f'Trajectory crop dimension pill did not update after resize: {crop_initial} -> {crop_resized}')
+            nw_box = page.locator("#trajectoryVideoCropFrame .trajectoryVideoCropHandle[data-corner='nw']").bounding_box()
+            if not nw_box:
+                raise AssertionError('Could not locate NW crop resize handle.')
+            shrink_target = page.evaluate(
+                """() => {
+                    const frame = document.getElementById('trajectoryVideoCropFrame')?.getBoundingClientRect();
+                    if (!frame) return null;
+                    return {
+                      x: frame.right - 12,
+                      y: frame.bottom - 12,
+                    };
+                }"""
+            )
+            if not isinstance(shrink_target, dict):
+                raise AssertionError(f'Could not compute crop shrink target: {shrink_target!r}')
+            page.mouse.move(nw_box['x'] + nw_box['width'] * 0.5, nw_box['y'] + nw_box['height'] * 0.5)
+            page.mouse.down()
+            page.mouse.move(shrink_target['x'], shrink_target['y'], steps=8)
+            page.mouse.up()
+            crop_min = page.evaluate(
+                """() => {
+                    const frame = document.getElementById('trajectoryVideoCropFrame')?.getBoundingClientRect();
+                    if (!frame) return null;
+                    return { width: frame.width, height: frame.height };
+                }"""
+            )
+            if not isinstance(crop_min, dict):
+                raise AssertionError(f'Could not read shrunken trajectory crop rect: {crop_min!r}')
+            if crop_min['width'] < 159 or crop_min['height'] < 89:
+                raise AssertionError(f'Trajectory crop rectangle shrank below the minimum size: {crop_min}')
+            page.locator('#trajectoryVideoCropStartBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('trajectoryVideoCropOverlay');
+                    const saveBtn = document.getElementById('trajectorySaveVideoBtn');
+                    const saveGlyph = saveBtn?.querySelector('.motionPanelIconGlyph')?.textContent || '';
+                    const playBtn = document.getElementById('trajectoryPlayBtn');
+                    const resetBtn = document.getElementById('trajectoryResetBtn');
+                    const frame = document.getElementById('trajectoryVideoCropFrame');
+                    return !!overlay
+                      && overlay.dataset.state === 'recording'
+                      && saveGlyph.trim() === 'stop_circle'
+                      && !!playBtn
+                      && !!resetBtn
+                      && playBtn.disabled
+                      && resetBtn.disabled
+                      && !!frame
+                      && getComputedStyle(frame).visibility === 'hidden';
+                }"""
+            )
+            page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 1""")
+            export_state = get_trajectory_video_export_stub_state(page)
+            if export_state['downloads'][0]['download'] != 'trajectory.webm':
+                raise AssertionError(f'Trajectory export used the wrong filename: {export_state}')
+            if export_state['recorderStarts'] != 1 or export_state['recorderStops'] != 1:
+                raise AssertionError(f'Trajectory export did not start/stop exactly once: {export_state}')
+            if not export_state['captureCalls'] or export_state['captureCalls'][0]['width'] <= 0 or export_state['captureCalls'][0]['height'] <= 0:
+                raise AssertionError(f'Trajectory export did not request a cropped capture canvas: {export_state}')
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('trajectoryVideoCropOverlay');
+                    const saveBtn = document.getElementById('trajectorySaveVideoBtn');
+                    const playBtn = document.getElementById('trajectoryPlayBtn');
+                    const resetBtn = document.getElementById('trajectoryResetBtn');
+                    const frameLabel = document.getElementById('trajectoryFrameLabel');
+                    const saveGlyph = saveBtn?.querySelector('.motionPanelIconGlyph')?.textContent || '';
+                    return !!overlay
+                      && overlay.getAttribute('aria-hidden') === 'true'
+                      && saveGlyph.trim() === 'videocam'
+                      && !!playBtn
+                      && !!resetBtn
+                      && !playBtn.disabled
+                      && !resetBtn.disabled
+                      && /2\\/2/.test(frameLabel?.textContent || '');
+                }"""
+            )
+            page.locator('#trajectorySaveVideoBtn').click()
+            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.getAttribute('aria-hidden') === 'false'""")
+            page.locator('#trajectoryVideoCropCancelBtn').click()
+            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.getAttribute('aria-hidden') === 'true'""")
+            export_state = get_trajectory_video_export_stub_state(page)
+            if len(export_state['downloads']) != 1:
+                raise AssertionError(f'Trajectory crop cancel unexpectedly downloaded a file: {export_state}')
+            page.locator('#trajectorySaveVideoBtn').click()
+            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'selecting'""")
+            page.locator('#trajectoryVideoCropStartBtn').click()
+            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'recording'""")
+            page.locator('#trajectorySaveVideoBtn').click()
+            page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 2""")
+            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.getAttribute('aria-hidden') === 'true'""")
+            page.locator('#trajectorySaveVideoBtn').click()
+            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'selecting'""")
+            page.locator('#trajectoryVideoCropStartBtn').click()
+            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'recording'""")
+            page.locator('#trajectoryPanelClose').click()
+            page.wait_for_function("""() => document.getElementById('trajectoryPanel')?.getAttribute('aria-hidden') === 'true'""")
+            page.wait_for_timeout(100)
+            export_state = get_trajectory_video_export_stub_state(page)
+            if len(export_state['downloads']) != 2:
+                raise AssertionError(f'Trajectory close-during-record unexpectedly downloaded a file: {export_state}')
+            page.keyboard.press('t')
+            page.wait_for_function("""() => document.getElementById('trajectoryPanel')?.getAttribute('aria-hidden') === 'false'""")
+            install_trajectory_video_export_stubs(page, media_recorder_supported=False)
+            page.locator('#trajectoryPanelClose').click()
+            page.keyboard.press('t')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('trajectoryPanel');
+                    const btn = document.getElementById('trajectorySaveVideoBtn');
+                    return !!panel
+                      && panel.getAttribute('aria-hidden') === 'false'
+                      && !!btn
+                      && btn.disabled
+                      && btn.getAttribute('data-tooltip') === 'Video export not supported in this browser';
+                }"""
+            )
             page.locator('#modeMeasureBtn').click()
             page.wait_for_function(
                 """() => {

@@ -2854,6 +2854,19 @@
 
   <div id="drop">
     <canvas id="canvas"></canvas>
+    <div id="trajectoryVideoCropOverlay" aria-hidden="true" data-state="idle">
+      <div id="trajectoryVideoCropFrame">
+        <div class="trajectoryVideoCropHandle" data-corner="nw" aria-hidden="true"></div>
+        <div class="trajectoryVideoCropHandle" data-corner="ne" aria-hidden="true"></div>
+        <div class="trajectoryVideoCropHandle" data-corner="se" aria-hidden="true"></div>
+        <div class="trajectoryVideoCropHandle" data-corner="sw" aria-hidden="true"></div>
+      </div>
+      <div id="trajectoryVideoCropDimensions" aria-live="polite">0 × 0</div>
+      <div id="trajectoryVideoCropActions">
+        <button id="trajectoryVideoCropStartBtn" class="vm-btn trajectoryVideoCropAction trajectoryVideoCropAction--primary" type="button">Start recording</button>
+        <button id="trajectoryVideoCropCancelBtn" class="vm-btn trajectoryVideoCropAction" type="button">Cancel</button>
+      </div>
+    </div>
   </div>
   <button id="helpFab" class="vm-btn vm-btn--icon vm-btn--ghost" type="button" aria-label="Keyboard shortcuts (?)" data-tooltip="Keyboard shortcuts (?)">?</button>
   <div id="displayWindowAdaptiveMenu" class="adaptiveMenu" data-mode="display" aria-hidden="true">
@@ -3516,6 +3529,10 @@
           data-tooltip="Reset trajectory to first frame" aria-label="Reset trajectory to first frame"
           title="Reset trajectory to first frame"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
+        <button id="trajectorySaveVideoBtn" class="motionPanelIconBtn vm-list-popover__header-action"
+          data-tooltip="Save trajectory as video" aria-label="Save trajectory as video"
+          title="Save trajectory as video"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">videocam</span></button>
         <button id="trajectoryPanelClose" class="motionPanelClose vm-list-popover__close"
           data-tooltip="Close trajectory panel" aria-label="Close trajectory panel"
           title="Close trajectory panel"><span

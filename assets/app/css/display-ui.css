@@ -228,6 +228,209 @@ kbd,
   border-color: color-mix(in srgb, var(--vm-brand-negative) 68%, rgba(15, 20, 30, 0.18));
 }
 
+#trajectoryPanel .motionPanelIconBtn:disabled,
+#trajectoryPanel .motionPanelClose:disabled,
+#trajectoryPanel input:disabled,
+#trajectoryPanel input:disabled + label {
+  opacity: 0.5;
+  cursor: default;
+}
+
+#trajectorySaveVideoBtn.is-active {
+  background: color-mix(in srgb, var(--vm-brand-negative) 16%, var(--vm-color-surface-control));
+  border-color: color-mix(in srgb, var(--vm-brand-negative) 48%, var(--vm-color-border-control));
+}
+
+#trajectorySaveVideoBtn.is-recording {
+  animation: trajectoryVideoRecordPulse 2s ease-in-out infinite;
+}
+
+@keyframes trajectoryVideoRecordPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+#trajectoryVideoCropOverlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  z-index: 23;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#trajectoryVideoCropOverlay[aria-hidden="false"] {
+  display: block;
+}
+
+#trajectoryVideoCropOverlay[data-state="recording"] {
+  cursor: default;
+}
+
+#trajectoryVideoCropOverlay[data-state="recording"] #trajectoryVideoCropFrame,
+#trajectoryVideoCropOverlay[data-state="recording"] #trajectoryVideoCropDimensions,
+#trajectoryVideoCropOverlay[data-state="recording"] #trajectoryVideoCropActions {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#trajectoryVideoCropFrame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  box-sizing: border-box;
+  border: 1px dashed color-mix(in srgb, var(--vm-brand-negative) 50%, transparent);
+  cursor: grab;
+}
+
+#trajectoryVideoCropFrame.is-dragging {
+  cursor: grabbing;
+}
+
+.trajectoryVideoCropHandle {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  color: var(--vm-brand-negative);
+}
+
+.trajectoryVideoCropHandle::before,
+.trajectoryVideoCropHandle::after {
+  content: '';
+  position: absolute;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.trajectoryVideoCropHandle[data-corner="nw"] {
+  left: -2px;
+  top: -2px;
+  cursor: nwse-resize;
+}
+
+.trajectoryVideoCropHandle[data-corner="nw"]::before {
+  left: 0;
+  top: 0;
+  width: 24px;
+  height: 3px;
+}
+
+.trajectoryVideoCropHandle[data-corner="nw"]::after {
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 24px;
+}
+
+.trajectoryVideoCropHandle[data-corner="ne"] {
+  right: -2px;
+  top: -2px;
+  cursor: nesw-resize;
+}
+
+.trajectoryVideoCropHandle[data-corner="ne"]::before {
+  right: 0;
+  top: 0;
+  width: 24px;
+  height: 3px;
+}
+
+.trajectoryVideoCropHandle[data-corner="ne"]::after {
+  right: 0;
+  top: 0;
+  width: 3px;
+  height: 24px;
+}
+
+.trajectoryVideoCropHandle[data-corner="se"] {
+  right: -2px;
+  bottom: -2px;
+  cursor: nwse-resize;
+}
+
+.trajectoryVideoCropHandle[data-corner="se"]::before {
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  height: 3px;
+}
+
+.trajectoryVideoCropHandle[data-corner="se"]::after {
+  right: 0;
+  bottom: 0;
+  width: 3px;
+  height: 24px;
+}
+
+.trajectoryVideoCropHandle[data-corner="sw"] {
+  left: -2px;
+  bottom: -2px;
+  cursor: nesw-resize;
+}
+
+.trajectoryVideoCropHandle[data-corner="sw"]::before {
+  left: 0;
+  bottom: 0;
+  width: 24px;
+  height: 3px;
+}
+
+.trajectoryVideoCropHandle[data-corner="sw"]::after {
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  height: 24px;
+}
+
+#trajectoryVideoCropDimensions {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(15, 20, 30, 0.85);
+  color: #ffffff;
+  font-family: var(--vm-font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#trajectoryVideoCropActions {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+.trajectoryVideoCropAction {
+  min-height: 30px;
+  padding: 0 12px;
+}
+
+.trajectoryVideoCropAction--primary {
+  border-color: color-mix(in srgb, #1f8f4e 72%, rgba(15, 20, 30, 0.25));
+  background: #1f8f4e;
+  color: #ffffff;
+}
+
+.trajectoryVideoCropAction--primary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #1f8f4e 80%, rgba(15, 20, 30, 0.28));
+  background: color-mix(in srgb, #1f8f4e 88%, white);
+}
+
 #helpFab {
   position: fixed;
   left: calc(var(--workspace-left-offset) + 16px);
