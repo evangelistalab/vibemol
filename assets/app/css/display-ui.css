@@ -231,17 +231,21 @@ kbd,
 #trajectoryPanel .motionPanelIconBtn:disabled,
 #trajectoryPanel .motionPanelClose:disabled,
 #trajectoryPanel input:disabled,
-#trajectoryPanel input:disabled + label {
+#trajectoryPanel input:disabled + label,
+#vibrationPanel .motionPanelIconBtn:disabled,
+#vibrationPanel .motionPanelClose:disabled,
+#vibrationPanel input:disabled,
+#vibrationPanel input:disabled + label {
   opacity: 0.5;
   cursor: default;
 }
 
-#trajectorySaveVideoBtn.is-active {
+.vm-canvas-video-export__button.is-active {
   background: color-mix(in srgb, var(--vm-brand-negative) 16%, var(--vm-color-surface-control));
   border-color: color-mix(in srgb, var(--vm-brand-negative) 48%, var(--vm-color-border-control));
 }
 
-#trajectorySaveVideoBtn.is-recording {
+.vm-canvas-video-export__button.is-recording {
   animation: trajectoryVideoRecordPulse 2s ease-in-out infinite;
 }
 
@@ -254,7 +258,7 @@ kbd,
   }
 }
 
-#trajectoryVideoCropOverlay {
+.vm-canvas-video-export__overlay {
   position: absolute;
   inset: 0;
   display: none;
@@ -263,23 +267,23 @@ kbd,
   touch-action: none;
 }
 
-#trajectoryVideoCropOverlay[aria-hidden="false"] {
+.vm-canvas-video-export__overlay[aria-hidden="false"] {
   display: block;
 }
 
-#trajectoryVideoCropOverlay[data-state="recording"] {
+.vm-canvas-video-export__overlay[data-state="recording"] {
   cursor: default;
 }
 
-#trajectoryVideoCropOverlay[data-state="recording"] #trajectoryVideoCropFrame,
-#trajectoryVideoCropOverlay[data-state="recording"] #trajectoryVideoCropDimensions,
-#trajectoryVideoCropOverlay[data-state="recording"] #trajectoryVideoCropActions {
+.vm-canvas-video-export__overlay[data-state="recording"] .vm-canvas-video-export__frame,
+.vm-canvas-video-export__overlay[data-state="recording"] .vm-canvas-video-export__dimensions,
+.vm-canvas-video-export__overlay[data-state="recording"] .vm-canvas-video-export__actions {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
 
-#trajectoryVideoCropFrame {
+.vm-canvas-video-export__frame {
   position: absolute;
   left: 0;
   top: 0;
@@ -290,106 +294,106 @@ kbd,
   cursor: grab;
 }
 
-#trajectoryVideoCropFrame.is-dragging {
+.vm-canvas-video-export__frame.is-dragging {
   cursor: grabbing;
 }
 
-.trajectoryVideoCropHandle {
+.vm-canvas-video-export__handle {
   position: absolute;
   width: 24px;
   height: 24px;
   color: var(--vm-brand-negative);
 }
 
-.trajectoryVideoCropHandle::before,
-.trajectoryVideoCropHandle::after {
+.vm-canvas-video-export__handle::before,
+.vm-canvas-video-export__handle::after {
   content: '';
   position: absolute;
   background: currentColor;
   border-radius: 999px;
 }
 
-.trajectoryVideoCropHandle[data-corner="nw"] {
+.vm-canvas-video-export__handle[data-corner="nw"] {
   left: -2px;
   top: -2px;
   cursor: nwse-resize;
 }
 
-.trajectoryVideoCropHandle[data-corner="nw"]::before {
+.vm-canvas-video-export__handle[data-corner="nw"]::before {
   left: 0;
   top: 0;
   width: 24px;
   height: 3px;
 }
 
-.trajectoryVideoCropHandle[data-corner="nw"]::after {
+.vm-canvas-video-export__handle[data-corner="nw"]::after {
   left: 0;
   top: 0;
   width: 3px;
   height: 24px;
 }
 
-.trajectoryVideoCropHandle[data-corner="ne"] {
+.vm-canvas-video-export__handle[data-corner="ne"] {
   right: -2px;
   top: -2px;
   cursor: nesw-resize;
 }
 
-.trajectoryVideoCropHandle[data-corner="ne"]::before {
+.vm-canvas-video-export__handle[data-corner="ne"]::before {
   right: 0;
   top: 0;
   width: 24px;
   height: 3px;
 }
 
-.trajectoryVideoCropHandle[data-corner="ne"]::after {
+.vm-canvas-video-export__handle[data-corner="ne"]::after {
   right: 0;
   top: 0;
   width: 3px;
   height: 24px;
 }
 
-.trajectoryVideoCropHandle[data-corner="se"] {
+.vm-canvas-video-export__handle[data-corner="se"] {
   right: -2px;
   bottom: -2px;
   cursor: nwse-resize;
 }
 
-.trajectoryVideoCropHandle[data-corner="se"]::before {
+.vm-canvas-video-export__handle[data-corner="se"]::before {
   right: 0;
   bottom: 0;
   width: 24px;
   height: 3px;
 }
 
-.trajectoryVideoCropHandle[data-corner="se"]::after {
+.vm-canvas-video-export__handle[data-corner="se"]::after {
   right: 0;
   bottom: 0;
   width: 3px;
   height: 24px;
 }
 
-.trajectoryVideoCropHandle[data-corner="sw"] {
+.vm-canvas-video-export__handle[data-corner="sw"] {
   left: -2px;
   bottom: -2px;
   cursor: nesw-resize;
 }
 
-.trajectoryVideoCropHandle[data-corner="sw"]::before {
+.vm-canvas-video-export__handle[data-corner="sw"]::before {
   left: 0;
   bottom: 0;
   width: 24px;
   height: 3px;
 }
 
-.trajectoryVideoCropHandle[data-corner="sw"]::after {
+.vm-canvas-video-export__handle[data-corner="sw"]::after {
   left: 0;
   bottom: 0;
   width: 3px;
   height: 24px;
 }
 
-#trajectoryVideoCropDimensions {
+.vm-canvas-video-export__dimensions {
   position: absolute;
   left: 0;
   top: 0;
@@ -405,7 +409,7 @@ kbd,
   pointer-events: none;
 }
 
-#trajectoryVideoCropActions {
+.vm-canvas-video-export__actions {
   position: absolute;
   left: 0;
   top: 0;
@@ -415,18 +419,18 @@ kbd,
   transform: translateX(-50%);
 }
 
-.trajectoryVideoCropAction {
+.vm-canvas-video-export__action {
   min-height: 30px;
   padding: 0 12px;
 }
 
-.trajectoryVideoCropAction--primary {
+.vm-canvas-video-export__action--primary {
   border-color: color-mix(in srgb, #1f8f4e 72%, rgba(15, 20, 30, 0.25));
   background: #1f8f4e;
   color: #ffffff;
 }
 
-.trajectoryVideoCropAction--primary:hover:not(:disabled) {
+.vm-canvas-video-export__action--primary:hover:not(:disabled) {
   border-color: color-mix(in srgb, #1f8f4e 80%, rgba(15, 20, 30, 0.28));
   background: color-mix(in srgb, #1f8f4e 88%, white);
 }

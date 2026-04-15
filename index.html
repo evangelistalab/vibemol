@@ -2854,17 +2854,30 @@
 
   <div id="drop">
     <canvas id="canvas"></canvas>
-    <div id="trajectoryVideoCropOverlay" aria-hidden="true" data-state="idle">
-      <div id="trajectoryVideoCropFrame">
-        <div class="trajectoryVideoCropHandle" data-corner="nw" aria-hidden="true"></div>
-        <div class="trajectoryVideoCropHandle" data-corner="ne" aria-hidden="true"></div>
-        <div class="trajectoryVideoCropHandle" data-corner="se" aria-hidden="true"></div>
-        <div class="trajectoryVideoCropHandle" data-corner="sw" aria-hidden="true"></div>
+    <div id="trajectoryVideoCropOverlay" class="vm-canvas-video-export__overlay" aria-hidden="true" data-state="idle">
+      <div id="trajectoryVideoCropFrame" class="vm-canvas-video-export__frame">
+        <div class="vm-canvas-video-export__handle" data-corner="nw" aria-hidden="true"></div>
+        <div class="vm-canvas-video-export__handle" data-corner="ne" aria-hidden="true"></div>
+        <div class="vm-canvas-video-export__handle" data-corner="se" aria-hidden="true"></div>
+        <div class="vm-canvas-video-export__handle" data-corner="sw" aria-hidden="true"></div>
       </div>
-      <div id="trajectoryVideoCropDimensions" aria-live="polite">0 × 0</div>
-      <div id="trajectoryVideoCropActions">
-        <button id="trajectoryVideoCropStartBtn" class="vm-btn trajectoryVideoCropAction trajectoryVideoCropAction--primary" type="button">Start recording</button>
-        <button id="trajectoryVideoCropCancelBtn" class="vm-btn trajectoryVideoCropAction" type="button">Cancel</button>
+      <div id="trajectoryVideoCropDimensions" class="vm-canvas-video-export__dimensions" aria-live="polite">0 × 0</div>
+      <div id="trajectoryVideoCropActions" class="vm-canvas-video-export__actions">
+        <button id="trajectoryVideoCropStartBtn" class="vm-btn vm-canvas-video-export__action vm-canvas-video-export__action--primary" type="button">Start recording</button>
+        <button id="trajectoryVideoCropCancelBtn" class="vm-btn vm-canvas-video-export__action" type="button">Cancel</button>
+      </div>
+    </div>
+    <div id="vibrationVideoCropOverlay" class="vm-canvas-video-export__overlay" aria-hidden="true" data-state="idle">
+      <div id="vibrationVideoCropFrame" class="vm-canvas-video-export__frame">
+        <div class="vm-canvas-video-export__handle" data-corner="nw" aria-hidden="true"></div>
+        <div class="vm-canvas-video-export__handle" data-corner="ne" aria-hidden="true"></div>
+        <div class="vm-canvas-video-export__handle" data-corner="se" aria-hidden="true"></div>
+        <div class="vm-canvas-video-export__handle" data-corner="sw" aria-hidden="true"></div>
+      </div>
+      <div id="vibrationVideoCropDimensions" class="vm-canvas-video-export__dimensions" aria-live="polite">0 × 0</div>
+      <div id="vibrationVideoCropActions" class="vm-canvas-video-export__actions">
+        <button id="vibrationVideoCropStartBtn" class="vm-btn vm-canvas-video-export__action vm-canvas-video-export__action--primary" type="button">Start recording</button>
+        <button id="vibrationVideoCropCancelBtn" class="vm-btn vm-canvas-video-export__action" type="button">Cancel</button>
       </div>
     </div>
   </div>
@@ -3529,7 +3542,7 @@
           data-tooltip="Reset trajectory to first frame" aria-label="Reset trajectory to first frame"
           title="Reset trajectory to first frame"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
-        <button id="trajectorySaveVideoBtn" class="motionPanelIconBtn vm-list-popover__header-action"
+        <button id="trajectorySaveVideoBtn" class="motionPanelIconBtn vm-list-popover__header-action vm-canvas-video-export__button"
           data-tooltip="Save trajectory as video" aria-label="Save trajectory as video"
           title="Save trajectory as video"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">videocam</span></button>
@@ -3561,11 +3574,18 @@
     <div class="motionPanelHeader">
       <div class="title">Vibrational Frequencies</div>
       <div class="actions">
-        <button id="vibrationPlayBtn" class="motionPanelIconBtn" data-tooltip="Play/Pause vibrational mode"><span
+        <button id="vibrationPlayBtn" class="motionPanelIconBtn" data-tooltip="Play or pause vibrational mode"
+          aria-label="Play or pause vibrational mode" title="Play or pause vibrational mode"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">play_arrow</span></button>
-        <button id="vibrationResetBtn" class="motionPanelIconBtn" data-tooltip="Reset to equilibrium geometry"><span
+        <button id="vibrationResetBtn" class="motionPanelIconBtn" data-tooltip="Reset to equilibrium geometry"
+          aria-label="Reset to equilibrium geometry" title="Reset to equilibrium geometry"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">replay</span></button>
-        <button id="vibrationPanelClose" class="motionPanelClose" data-tooltip="Close vibration controls"><span
+        <button id="vibrationSaveVideoBtn" class="motionPanelIconBtn vm-canvas-video-export__button"
+          data-tooltip="Save vibration as video" aria-label="Save vibration as video"
+          title="Save vibration as video"><span
+            class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">videocam</span></button>
+        <button id="vibrationPanelClose" class="motionPanelClose" data-tooltip="Close vibration controls"
+          aria-label="Close vibration controls" title="Close vibration controls"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
@@ -3799,6 +3819,8 @@
   <script src="./src/components/VmListPopover.js"></script>
   <!-- root tooltip portal -->
   <script src="./src/components/VmTooltip.js"></script>
+  <!-- trajectory video export controller -->
+  <script src="./assets/app/js/trajectory-video.js"></script>
 
   <script src="./assets/app/js/app.js"></script>
 </body>

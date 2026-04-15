@@ -317,6 +317,27 @@ def build_fixture_trajectory_xyz() -> str:
     ])
 
 
+def build_fixture_vibration_payload() -> str:
+    payload = {
+        'kind': 'vibemol.vibrations',
+        'version': 1,
+        'units': 'angstrom',
+        'atomCount': 2,
+        'atomSymbols': ['C', 'C'],
+        'modes': [
+            {
+                'label': 'Symmetric stretch',
+                'frequencyCm1': 245.0,
+                'displacements': [
+                    -0.18, 0.0, 0.0,
+                    0.18, 0.0, 0.0,
+                ],
+            },
+        ],
+    }
+    return json.dumps(payload)
+
+
 def build_fixture_molden() -> str:
     return '\n'.join([
         '[Molden Format]',
@@ -2521,7 +2542,13 @@ def main() -> int:
             )
             page.keyboard.press('/')
             page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
+                """() => {
+                    const popover = document.getElementById('editAdaptiveAddAtomPopover');
+                    const search = document.getElementById('editBuildSearch');
+                    return !!popover
+                      && popover.getAttribute('aria-hidden') === 'false'
+                      && document.activeElement === search;
+                }"""
             )
             before_add_atom = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)
@@ -2619,9 +2646,14 @@ def main() -> int:
             )
             page.keyboard.press('/')
             page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
+                """() => {
+                    const popover = document.getElementById('editAdaptiveAddAtomPopover');
+                    const search = document.getElementById('editBuildSearch');
+                    return !!popover
+                      && popover.getAttribute('aria-hidden') === 'false'
+                      && document.activeElement === search;
+                }"""
             )
-            ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('Pr')
             page.wait_for_function(
                 """() => {
@@ -2668,11 +2700,6 @@ def main() -> int:
             )
 
             # Build search / standalone molecule placement smoke.
-            page.keyboard.press('/')
-            page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
-            )
-            ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('benzene')
             page.keyboard.press('Enter')
             page.wait_for_function(
@@ -2987,6 +3014,26 @@ def main() -> int:
                     return !!note && getComputedStyle(note).display !== 'none' && /dynamic/i.test(note.textContent || '');
                 }"""
             )
+            page.locator('#trajectoryLoop').evaluate(
+                """(el) => {
+                    el.checked = false;
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.locator('#trajectoryPlayBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const frameLabel = document.getElementById('trajectoryFrameLabel');
+                    const playGlyph = document.getElementById('trajectoryPlayBtn')?.querySelector('.motionPanelIconGlyph')?.textContent || '';
+                    return /2\\/2/.test(frameLabel?.textContent || '') && playGlyph.trim() === 'play_arrow';
+                }"""
+            )
+            page.locator('#trajectoryLoop').evaluate(
+                """(el) => {
+                    el.checked = true;
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
             page.keyboard.press('v')
             page.wait_for_function(
                 """() => {
@@ -3021,6 +3068,16 @@ def main() -> int:
             stored_before_traj = active_structure_summary(page)
             if stored_before_traj['bondCount'] != 1 or stored_before_traj['bondOrigins'] != ['perceived']:
                 raise AssertionError(f'Trajectory import stored graph is unexpected: {stored_before_traj}')
+            page.locator('#trajectoryFrame').evaluate(
+                """(el) => {
+                    el.value = '0';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => /1\\/2/.test(document.getElementById('trajectoryFrameLabel')?.textContent || '')"""
+            )
             frame1_sample = sample_canvas_region_rgb(page, 0.5, 0.5, 11)
             page.locator('#trajectoryFrame').evaluate(
                 """(el) => {
@@ -3110,7 +3167,7 @@ def main() -> int:
                 raise AssertionError(f'Could not read moved trajectory crop rect: {crop_moved!r}')
             if crop_moved['left'] < crop_moved['canvasLeft'] - 1 or crop_moved['top'] < crop_moved['canvasTop'] - 1:
                 raise AssertionError(f'Trajectory crop move escaped the canvas bounds: {crop_moved}')
-            se_box = page.locator("#trajectoryVideoCropFrame .trajectoryVideoCropHandle[data-corner='se']").bounding_box()
+            se_box = page.locator("#trajectoryVideoCropFrame .vm-canvas-video-export__handle[data-corner='se']").bounding_box()
             if not se_box:
                 raise AssertionError('Could not locate SE crop resize handle.')
             page.mouse.move(se_box['x'] + se_box['width'] * 0.5, se_box['y'] + se_box['height'] * 0.5)
@@ -3140,7 +3197,7 @@ def main() -> int:
                 raise AssertionError(f'Trajectory crop resize escaped the canvas bounds: {crop_resized}')
             if crop_resized['dims'] == crop_initial['dims']:
                 raise AssertionError(f'Trajectory crop dimension pill did not update after resize: {crop_initial} -> {crop_resized}')
-            nw_box = page.locator("#trajectoryVideoCropFrame .trajectoryVideoCropHandle[data-corner='nw']").bounding_box()
+            nw_box = page.locator("#trajectoryVideoCropFrame .vm-canvas-video-export__handle[data-corner='nw']").bounding_box()
             if not nw_box:
                 raise AssertionError('Could not locate NW crop resize handle.')
             shrink_target = page.evaluate(
@@ -3223,6 +3280,12 @@ def main() -> int:
             export_state = get_trajectory_video_export_stub_state(page)
             if len(export_state['downloads']) != 1:
                 raise AssertionError(f'Trajectory crop cancel unexpectedly downloaded a file: {export_state}')
+            page.locator('#trajectoryFps').evaluate(
+                """(el) => {
+                    el.value = '1';
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
             page.locator('#trajectorySaveVideoBtn').click()
             page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'selecting'""")
             page.locator('#trajectoryVideoCropStartBtn').click()
@@ -3255,6 +3318,178 @@ def main() -> int:
                       && btn.disabled
                       && btn.getAttribute('data-tooltip') === 'Video export not supported in this browser';
                 }"""
+            )
+            log_step('vibration video export smoke')
+            install_trajectory_video_export_stubs(page, media_recorder_supported=True)
+            vibration_xyz_text = build_fixture_inferred_xyz()
+            vibration_payload_text = build_fixture_vibration_payload()
+            page.evaluate(
+                """async ({ xyzText, payloadText }) => {
+                    await window.VibeMolEmbed.loadFiles([
+                      { name: 'vibration-export.xyz', text: xyzText },
+                      { name: 'vibration-export.vib.json', text: payloadText },
+                    ]);
+                }""",
+                {'xyzText': vibration_xyz_text, 'payloadText': vibration_payload_text},
+            )
+            page.wait_for_function(
+                """() => {
+                    const btn = document.getElementById('vibrationPanelBtn');
+                    const saveBtn = document.getElementById('vibrationSaveVideoBtn');
+                    const rows = document.querySelectorAll('#vibrationModeTableBody tr[data-mode-index]');
+                    return !!btn
+                      && getComputedStyle(btn).display !== 'none'
+                      && !btn.hidden
+                      && !!saveBtn
+                      && rows.length === 1;
+                }"""
+            )
+            vibration_panel_hidden = page.evaluate(
+                """() => document.getElementById('vibrationPanel')?.getAttribute('aria-hidden') !== 'false'"""
+            )
+            if vibration_panel_hidden:
+                page.keyboard.press('f')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('vibrationPanel');
+                    const saveBtn = document.getElementById('vibrationSaveVideoBtn');
+                    const rows = document.querySelectorAll('#vibrationModeTableBody tr[data-mode-index]');
+                    return !!panel
+                      && panel.getAttribute('aria-hidden') === 'false'
+                      && !!saveBtn
+                      && !saveBtn.disabled
+                      && rows.length === 1;
+                }"""
+            )
+            page.locator('#vibrationSpeed').evaluate(
+                """(el) => {
+                    el.value = '8.00';
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.locator('#vibrationSaveVideoBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('vibrationVideoCropOverlay');
+                    const frame = document.getElementById('vibrationVideoCropFrame');
+                    const dims = document.getElementById('vibrationVideoCropDimensions');
+                    const actions = document.getElementById('vibrationVideoCropActions');
+                    return !!overlay
+                      && overlay.getAttribute('aria-hidden') === 'false'
+                      && overlay.dataset.state === 'selecting'
+                      && !!frame
+                      && frame.getBoundingClientRect().width >= 320
+                      && frame.getBoundingClientRect().height >= 180
+                      && !!dims
+                      && /\\d+ × \\d+/.test(dims.textContent || '')
+                      && !!actions
+                      && getComputedStyle(actions).display === 'flex';
+                }"""
+            )
+            page.locator('#vibrationVideoCropStartBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('vibrationVideoCropOverlay');
+                    const saveBtn = document.getElementById('vibrationSaveVideoBtn');
+                    const saveGlyph = saveBtn?.querySelector('.motionPanelIconGlyph')?.textContent || '';
+                    const playBtn = document.getElementById('vibrationPlayBtn');
+                    const resetBtn = document.getElementById('vibrationResetBtn');
+                    const frame = document.getElementById('vibrationVideoCropFrame');
+                    return !!overlay
+                      && overlay.dataset.state === 'recording'
+                      && saveGlyph.trim() === 'stop_circle'
+                      && !!playBtn
+                      && !!resetBtn
+                      && playBtn.disabled
+                      && resetBtn.disabled
+                      && !!frame
+                      && getComputedStyle(frame).visibility === 'hidden';
+                }"""
+            )
+            page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 1""")
+            export_state = get_trajectory_video_export_stub_state(page)
+            if export_state['downloads'][0]['download'] != 'vibration.webm':
+                raise AssertionError(f'Vibration export used the wrong filename: {export_state}')
+            if export_state['recorderStarts'] != 1 or export_state['recorderStops'] != 1:
+                raise AssertionError(f'Vibration export did not start/stop exactly once: {export_state}')
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('vibrationVideoCropOverlay');
+                    const saveBtn = document.getElementById('vibrationSaveVideoBtn');
+                    const playBtn = document.getElementById('vibrationPlayBtn');
+                    const resetBtn = document.getElementById('vibrationResetBtn');
+                    const saveGlyph = saveBtn?.querySelector('.motionPanelIconGlyph')?.textContent || '';
+                    return !!overlay
+                      && overlay.getAttribute('aria-hidden') === 'true'
+                      && saveGlyph.trim() === 'videocam'
+                      && !!playBtn
+                      && !!resetBtn
+                      && !playBtn.disabled
+                      && !resetBtn.disabled;
+                }"""
+            )
+            page.locator('#vibrationSaveVideoBtn').click()
+            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.getAttribute('aria-hidden') === 'false'""")
+            page.locator('#vibrationVideoCropCancelBtn').click()
+            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.getAttribute('aria-hidden') === 'true'""")
+            export_state = get_trajectory_video_export_stub_state(page)
+            if len(export_state['downloads']) != 1:
+                raise AssertionError(f'Vibration crop cancel unexpectedly downloaded a file: {export_state}')
+            page.locator('#vibrationSpeed').evaluate(
+                """(el) => {
+                    el.value = '1.00';
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.locator('#vibrationSaveVideoBtn').click()
+            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'selecting'""")
+            page.locator('#vibrationVideoCropStartBtn').click()
+            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'recording'""")
+            page.locator('#vibrationSaveVideoBtn').click()
+            page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 2""")
+            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.getAttribute('aria-hidden') === 'true'""")
+            page.locator('#vibrationSaveVideoBtn').click()
+            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'selecting'""")
+            page.locator('#vibrationVideoCropStartBtn').click()
+            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'recording'""")
+            page.locator('#vibrationPanelClose').click()
+            page.wait_for_function("""() => document.getElementById('vibrationPanel')?.getAttribute('aria-hidden') === 'true'""")
+            page.wait_for_timeout(100)
+            export_state = get_trajectory_video_export_stub_state(page)
+            if len(export_state['downloads']) != 2:
+                raise AssertionError(f'Vibration close-during-record unexpectedly downloaded a file: {export_state}')
+            install_trajectory_video_export_stubs(page, media_recorder_supported=False)
+            page.keyboard.press('f')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('vibrationPanel');
+                    const btn = document.getElementById('vibrationSaveVideoBtn');
+                    return !!panel
+                      && panel.getAttribute('aria-hidden') === 'false'
+                      && !!btn
+                      && btn.disabled
+                      && btn.getAttribute('data-tooltip') === 'Video export not supported in this browser';
+                }"""
+            )
+            page.evaluate(
+                """async (text) => {
+                    await window.VibeMolEmbed.loadFiles([{ name: 'dynamic-traj.xyz', text }]);
+                }""",
+                trajectory_xyz_text,
+            )
+            page.wait_for_function(
+                """() => {
+                    const btn = document.getElementById('trajectoryPanelBtn');
+                    return !!btn && !btn.hidden && getComputedStyle(btn).display !== 'none';
+                }"""
+            )
+            trajectory_panel_hidden = page.evaluate(
+                """() => document.getElementById('trajectoryPanel')?.getAttribute('aria-hidden') !== 'false'"""
+            )
+            if trajectory_panel_hidden:
+                page.keyboard.press('t')
+            page.wait_for_function(
+                """() => document.getElementById('trajectoryPanel')?.getAttribute('aria-hidden') === 'false'"""
             )
             page.locator('#modeMeasureBtn').click()
             page.wait_for_function(
@@ -3377,10 +3612,7 @@ def main() -> int:
             page.wait_for_function(
                 """() => document.querySelector('#editFragmentQuick button[data-fragment-id="hydroxyl"]')?.classList.contains('active') === true"""
             )
-            page.keyboard.press('/')
-            page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
-            )
+            ensure_build_popover_closed(page)
             metal_anchor_x, metal_anchor_y = find_atom_click_point(page, 0)
             right_click_atom(page, metal_anchor_x, metal_anchor_y)
             page.wait_for_function(

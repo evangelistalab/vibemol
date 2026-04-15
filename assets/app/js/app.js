@@ -29,38 +29,8 @@
   const DARK_THEME_SCENE_BG_BLEND = 0.975;
   const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
   const DEFAULT_ISO_VALUE = 0.02;
-  const TRAJECTORY_VIDEO_EXPORT_MODES = Object.freeze({
-    IDLE: 'idle',
-    SELECTING: 'selecting',
-    RECORDING: 'recording',
-  });
-  const TRAJECTORY_VIDEO_MIN_WIDTH = 160;
-  const TRAJECTORY_VIDEO_MIN_HEIGHT = 90;
-  const TRAJECTORY_VIDEO_DEFAULT_MIN_WIDTH = 320;
-  const TRAJECTORY_VIDEO_DEFAULT_MIN_HEIGHT = 180;
-  const TRAJECTORY_VIDEO_DEFAULT_WIDTH_RATIO = 0.7;
-  const TRAJECTORY_VIDEO_DIMENSION_OFFSET = 6;
-  const TRAJECTORY_VIDEO_ACTIONS_OFFSET = 8;
-  const trajectoryVideoExport = {
-    mode: TRAJECTORY_VIDEO_EXPORT_MODES.IDLE,
-    targetRecord: null,
-    cropRectCss: null,
-    drag: null,
-    recorder: null,
-    chunks: [],
-    mimeType: '',
-    captureCanvas: null,
-    captureCtx: null,
-    cropBufferRect: null,
-    pendingStopAfterRender: false,
-    stopRequested: false,
-    shouldDownloadOnStop: false,
-    restoreOnStop: true,
-    stopReason: '',
-    savedFrameIndex: 0,
-    savedWasPlaying: false,
-    savedLoop: true,
-  };
+  let trajectoryVideoController = null;
+  let vibrationVideoController = null;
   /**
    * Centralized app color palette used by canvas drawing and inline style snippets.
    * Keep color edits here so visual tuning stays coherent.
@@ -144,6 +114,11 @@
   } = window.VibeMolListPopover || {};
   if (![createListPopoverController, formatOrbitalSpinGlyph, getOrbitalBoundary, formatOrbitalRelativeLabel, passesOrbitalEnergyThreshold].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolListPopover is not loaded. Ensure src/components/VmListPopover.js is included before assets/app/js/app.js.');
+  }
+
+  const { createCanvasVideoExportController } = window.VibeMolTrajectoryVideo || {};
+  if (![createCanvasVideoExportController].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolTrajectoryVideo is not loaded. Ensure assets/app/js/trajectory-video.js is included before assets/app/js/app.js.');
   }
 
   const {
@@ -993,9 +968,8 @@
     if (currentBondOrderPopupEl && currentBondOrderPopupEl.getAttribute('aria-hidden') === 'false') {
       if (bondEditing) bondEditing.positionPopup();
     }
-    if (trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.IDLE) {
-      syncTrajectoryVideoCropOverlayLayout();
-    }
+    if (trajectoryVideoController) trajectoryVideoController.onResize();
+    if (vibrationVideoController) vibrationVideoController.onResize();
   }
   window.addEventListener('resize', resize);
   if (typeof ResizeObserver !== 'undefined' && dropViewportEl) {
@@ -4939,563 +4913,18 @@
   }
 
   /**
-   * Clamp one number for trajectory-video UI geometry.
-   * @param {number} value
-   * @param {number} min
-   * @param {number} max
-   * @returns {number}
-   */
-  function clampTrajectoryVideoNumber(value, min, max) {
-    const lo = Number.isFinite(min) ? min : 0;
-    const hi = Number.isFinite(max) ? max : lo;
-    if (hi <= lo) return lo;
-    const n = Number(value);
-    if (!Number.isFinite(n)) return lo;
-    return Math.max(lo, Math.min(hi, n));
-  }
-
-  /**
-   * Return one even integer for trajectory-video dimensions.
-   * @param {number} value
-   * @param {number=} minimum
-   * @returns {number}
-   */
-  function roundTrajectoryVideoEven(value, minimum = 2) {
-    const floor = Math.max(2, Number.isFinite(Number(minimum)) ? Math.round(Number(minimum)) : 2);
-    let out = Math.max(floor, Math.round(Number(value) || 0));
-    if ((out % 2) !== 0) out += 1;
-    return out;
-  }
-
-  /**
-   * Update one button's tooltip, title, and aria-label together.
-   * @param {HTMLElement|null} btn
-   * @param {string} text
-   */
-  function setTrajectoryVideoButtonText(btn, text) {
-    if (!btn) return;
-    const next = String(text || '').trim();
-    setTooltipText(btn, next);
-    if (next) {
-      btn.setAttribute('title', next);
-      btn.setAttribute('aria-label', next);
-    } else {
-      btn.removeAttribute('title');
-      btn.removeAttribute('aria-label');
-    }
-  }
-
-  /**
-   * Return the current crop-overlay bounds in CSS pixels.
-   * @returns {{width:number,height:number}}
-   */
-  function getTrajectoryVideoOverlayBounds() {
-    const size = readViewportCssSize();
-    return {
-      width: Math.max(1, Math.round(Number(size && size.width) || 1)),
-      height: Math.max(1, Math.round(Number(size && size.height) || 1)),
-    };
-  }
-
-  /**
-   * Normalize one CSS crop rectangle into the visible canvas bounds.
-   * @param {{x:number,y:number,width:number,height:number}|null} rect
-   * @param {{width:number,height:number}=} bounds
-   * @returns {{x:number,y:number,width:number,height:number}}
-   */
-  function normalizeTrajectoryVideoCropRect(rect, bounds = null) {
-    const nextBounds = bounds || getTrajectoryVideoOverlayBounds();
-    const maxWidth = Math.max(1, Number(nextBounds && nextBounds.width) || 1);
-    const maxHeight = Math.max(1, Number(nextBounds && nextBounds.height) || 1);
-    const minWidth = Math.min(TRAJECTORY_VIDEO_MIN_WIDTH, maxWidth);
-    const minHeight = Math.min(TRAJECTORY_VIDEO_MIN_HEIGHT, maxHeight);
-    const width = clampTrajectoryVideoNumber(rect && rect.width, minWidth, maxWidth);
-    const height = clampTrajectoryVideoNumber(rect && rect.height, minHeight, maxHeight);
-    const x = clampTrajectoryVideoNumber(rect && rect.x, 0, Math.max(0, maxWidth - width));
-    const y = clampTrajectoryVideoNumber(rect && rect.y, 0, Math.max(0, maxHeight - height));
-    return { x, y, width, height };
-  }
-
-  /**
-   * Build the default centered crop rectangle.
-   * @returns {{x:number,y:number,width:number,height:number}}
-   */
-  function createDefaultTrajectoryVideoCropRect() {
-    const bounds = getTrajectoryVideoOverlayBounds();
-    let width = Math.round(bounds.width * TRAJECTORY_VIDEO_DEFAULT_WIDTH_RATIO);
-    width = Math.max(TRAJECTORY_VIDEO_DEFAULT_MIN_WIDTH, width);
-    width = Math.min(bounds.width, width);
-    let height = Math.round((bounds.width * TRAJECTORY_VIDEO_DEFAULT_WIDTH_RATIO * 9) / 16);
-    height = Math.max(TRAJECTORY_VIDEO_DEFAULT_MIN_HEIGHT, height);
-    height = Math.min(bounds.height, height);
-    return normalizeTrajectoryVideoCropRect({
-      x: Math.round((bounds.width - width) * 0.5),
-      y: Math.round((bounds.height - height) * 0.5),
-      width,
-      height,
-    }, bounds);
-  }
-
-  /**
-   * Return true when browser capture and recording APIs are available.
-   * @returns {boolean}
-   */
-  function isTrajectoryVideoExportSupported() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return false;
-    if (typeof window.MediaRecorder === 'undefined') return false;
-    if (typeof HTMLCanvasElement === 'undefined' || !HTMLCanvasElement.prototype) return false;
-    if (typeof HTMLCanvasElement.prototype.captureStream !== 'function') return false;
-    const probeCanvas = document.createElement('canvas');
-    return !!(probeCanvas && typeof probeCanvas.getContext === 'function' && probeCanvas.getContext('2d'));
-  }
-
-  /**
-   * Return one ordered list of preferred MediaRecorder MIME types.
-   * @returns {string[]}
-   */
-  function getTrajectoryVideoMimeCandidates() {
-    return [
-      'video/webm;codecs=vp9',
-      'video/webm;codecs=vp8',
-      'video/webm',
-    ];
-  }
-
-  /**
-   * Create one MediaRecorder instance with supported MIME fallback.
-   * @param {*} stream
-   * @returns {{recorder:MediaRecorder,mimeType:string}|null}
-   */
-  function createTrajectoryVideoRecorder(stream) {
-    const RecorderCtor = window.MediaRecorder;
-    if (!RecorderCtor) return null;
-    const candidates = getTrajectoryVideoMimeCandidates();
-    const supported = typeof RecorderCtor.isTypeSupported === 'function'
-      ? candidates.filter((candidate) => RecorderCtor.isTypeSupported(candidate))
-      : candidates.slice();
-    const attempts = supported.length ? supported : candidates.slice(-1);
-    for (const mimeType of attempts) {
-      try {
-        const recorder = mimeType ? new RecorderCtor(stream, { mimeType }) : new RecorderCtor(stream);
-        return { recorder, mimeType };
-      } catch { }
-    }
-    try {
-      return { recorder: new RecorderCtor(stream), mimeType: 'video/webm' };
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Return one clamped/even crop rectangle in canvas buffer pixels.
-   * @param {{x:number,y:number,width:number,height:number}} rectCss
-   * @returns {{x:number,y:number,width:number,height:number}|null}
-   */
-  function getTrajectoryVideoCropBufferRect(rectCss) {
-    const metrics = readRendererViewportMetrics();
-    const raw = cssRectToBufferRect(metrics, rectCss.x, rectCss.y, rectCss.width, rectCss.height);
-    let width = Math.max(2, Math.min(metrics.bufferWidth - raw.x, raw.width));
-    let height = Math.max(2, Math.min(metrics.bufferHeight - raw.y, raw.height));
-    if ((width % 2) !== 0) width = Math.max(2, width - 1);
-    if ((height % 2) !== 0) height = Math.max(2, height - 1);
-    if (!(width > 1 && height > 1)) return null;
-    const x = clampTrajectoryVideoNumber(raw.x, 0, Math.max(0, metrics.bufferWidth - width));
-    const y = clampTrajectoryVideoNumber(raw.y, 0, Math.max(0, metrics.bufferHeight - height));
-    return { x, y, width, height };
-  }
-
-  /**
-   * Position the crop frame and its floating chrome.
-   */
-  function syncTrajectoryVideoCropOverlayLayout() {
-    if (!trajectoryVideoCropOverlay || !trajectoryVideoCropFrame || !trajectoryVideoCropDimensions || !trajectoryVideoCropActions) return;
-    const isVisible = trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.IDLE;
-    trajectoryVideoCropOverlay.setAttribute('aria-hidden', isVisible ? 'false' : 'true');
-    trajectoryVideoCropOverlay.dataset.state = trajectoryVideoExport.mode;
-    trajectoryVideoCropFrame.classList.toggle('is-dragging', !!(trajectoryVideoExport.drag && trajectoryVideoExport.drag.kind === 'move'));
-    if (!isVisible) {
-      trajectoryVideoCropFrame.style.left = '0px';
-      trajectoryVideoCropFrame.style.top = '0px';
-      trajectoryVideoCropFrame.style.width = '0px';
-      trajectoryVideoCropFrame.style.height = '0px';
-      return;
-    }
-    if (trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING) return;
-    const bounds = getTrajectoryVideoOverlayBounds();
-    trajectoryVideoExport.cropRectCss = normalizeTrajectoryVideoCropRect(
-      trajectoryVideoExport.cropRectCss || createDefaultTrajectoryVideoCropRect(),
-      bounds
-    );
-    const rect = trajectoryVideoExport.cropRectCss;
-    trajectoryVideoCropFrame.style.left = `${rect.x}px`;
-    trajectoryVideoCropFrame.style.top = `${rect.y}px`;
-    trajectoryVideoCropFrame.style.width = `${rect.width}px`;
-    trajectoryVideoCropFrame.style.height = `${rect.height}px`;
-    trajectoryVideoCropDimensions.textContent = `${roundTrajectoryVideoEven(rect.width)} × ${roundTrajectoryVideoEven(rect.height)}`;
-
-    const dimBox = trajectoryVideoCropDimensions.getBoundingClientRect();
-    let dimLeft = rect.x + rect.width + TRAJECTORY_VIDEO_DIMENSION_OFFSET;
-    let dimTop = rect.y - dimBox.height - TRAJECTORY_VIDEO_DIMENSION_OFFSET;
-    if ((dimLeft + dimBox.width) > bounds.width || dimTop < 0) {
-      dimLeft = rect.x + rect.width - dimBox.width - TRAJECTORY_VIDEO_DIMENSION_OFFSET;
-      dimTop = rect.y + TRAJECTORY_VIDEO_DIMENSION_OFFSET;
-    }
-    trajectoryVideoCropDimensions.style.left = `${clampTrajectoryVideoNumber(dimLeft, 0, Math.max(0, bounds.width - dimBox.width))}px`;
-    trajectoryVideoCropDimensions.style.top = `${clampTrajectoryVideoNumber(dimTop, 0, Math.max(0, bounds.height - dimBox.height))}px`;
-
-    const actionsBox = trajectoryVideoCropActions.getBoundingClientRect();
-    const halfActionsWidth = actionsBox.width * 0.5;
-    const actionsLeft = clampTrajectoryVideoNumber(rect.x + rect.width * 0.5, halfActionsWidth, Math.max(halfActionsWidth, bounds.width - halfActionsWidth));
-    let actionsTop = rect.y + rect.height + TRAJECTORY_VIDEO_ACTIONS_OFFSET;
-    if ((actionsTop + actionsBox.height) > bounds.height) {
-      actionsTop = rect.y - actionsBox.height - TRAJECTORY_VIDEO_ACTIONS_OFFSET;
-    }
-    trajectoryVideoCropActions.style.left = `${actionsLeft}px`;
-    trajectoryVideoCropActions.style.top = `${clampTrajectoryVideoNumber(actionsTop, 0, Math.max(0, bounds.height - actionsBox.height))}px`;
-  }
-
-  /**
-   * Hide the crop overlay without touching any recorder state.
-   */
-  function clearTrajectoryVideoSelectionUi() {
-    trajectoryVideoExport.mode = TRAJECTORY_VIDEO_EXPORT_MODES.IDLE;
-    trajectoryVideoExport.targetRecord = null;
-    trajectoryVideoExport.cropRectCss = null;
-    trajectoryVideoExport.drag = null;
-    syncTrajectoryVideoCropOverlayLayout();
-  }
-
-  /**
-   * Update Save video button state and trajectory-control disablement.
-   * @param {{enabled:boolean}=} info
-   */
-  function syncTrajectoryVideoUi(info = null) {
-    const nextInfo = info || getActiveTrajectoryInfo();
-    const supported = isTrajectoryVideoExportSupported();
-    const isSelecting = trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING;
-    const isRecording = trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.RECORDING;
-    if (trajectorySaveVideoBtn) {
-      let label = 'Save trajectory as video';
-      let glyph = 'videocam';
-      let disabled = false;
-      if (!supported) {
-        label = 'Video export not supported in this browser';
-        disabled = true;
-      } else if (!(nextInfo && nextInfo.enabled)) {
-        label = 'No trajectory data in active file';
-        disabled = true;
-      } else if (isRecording) {
-        label = 'Recording… click to stop early';
-        glyph = 'stop_circle';
-      } else if (isSelecting) {
-        label = 'Hide video crop overlay';
-        glyph = 'videocam_off';
-      }
-      trajectorySaveVideoBtn.disabled = !!disabled;
-      trajectorySaveVideoBtn.classList.toggle('is-active', isSelecting);
-      trajectorySaveVideoBtn.classList.toggle('is-recording', isRecording);
-      trajectorySaveVideoBtn.setAttribute('aria-pressed', (isSelecting || isRecording) ? 'true' : 'false');
-      setMotionPanelButtonGlyph(trajectorySaveVideoBtn, glyph);
-      setTrajectoryVideoButtonText(trajectorySaveVideoBtn, label);
-    }
-    const controlsDisabled = isRecording;
-    if (trajectoryPlayBtn) trajectoryPlayBtn.disabled = controlsDisabled;
-    if (trajectoryResetBtn) trajectoryResetBtn.disabled = controlsDisabled;
-    if (trajectoryFrameEl) trajectoryFrameEl.disabled = controlsDisabled;
-    if (trajectoryFpsEl) trajectoryFpsEl.disabled = controlsDisabled;
-    if (trajectoryLoopEl) trajectoryLoopEl.disabled = controlsDisabled;
-    syncTrajectoryVideoCropOverlayLayout();
-  }
-
-  /**
-   * Parse and commit the current FPS field.
-   * @param {{enabled:boolean,traj?:*}} info
-   * @returns {number}
-   */
-  function commitTrajectoryFpsInputValue(info) {
-    const fallback = Math.max(1, Math.min(120, Math.round(Number(info && info.traj && info.traj.fps) || 12)));
-    const next = Math.max(1, Math.min(120, Math.round(Number(trajectoryFpsEl && trajectoryFpsEl.value) || fallback)));
-    if (info && info.enabled && info.traj) info.traj.fps = next;
-    if (trajectoryFpsEl) trajectoryFpsEl.value = String(next);
-    return next;
-  }
-
-  /**
-   * Restore saved trajectory playback state after export completes.
-   * @param {{targetRecord:*,frameIndex:number,wasPlaying:boolean,loop:boolean}|null} snapshot
-   */
-  function restoreTrajectoryVideoState(snapshot) {
-    if (!(snapshot && snapshot.targetRecord)) return;
-    const info = getActiveTrajectoryInfo();
-    if (!(info && info.enabled && info.record === snapshot.targetRecord && info.traj)) return;
-    info.traj.loop = snapshot.loop !== false;
-    applyTrajectoryFrame(snapshot.frameIndex, { syncUi: false });
-    if (currentMode !== MODES.EDIT && snapshot.wasPlaying) {
-      trajectoryPlaying = true;
-      trajectoryLastStepMs = 0;
-    } else {
-      trajectoryPlaying = false;
-      trajectoryLastStepMs = 0;
-    }
-  }
-
-  /**
-   * Download one recorded trajectory blob.
-   * @param {BlobPart[]} chunks
-   * @param {string} mimeType
-   */
-  function downloadTrajectoryVideoBlob(chunks, mimeType) {
-    const blob = new Blob(Array.isArray(chunks) ? chunks : [], { type: mimeType || 'video/webm' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'trajectory.webm';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  /**
-   * Reset recorder/crop state after export end.
-   * @param {{download:boolean,restore:boolean,reason:string}=} options
-   */
-  function finalizeTrajectoryVideoExport(options = {}) {
-    const shouldDownload = options.download !== false;
-    const shouldRestore = options.restore !== false;
-    const stopReason = String(options.reason || '');
-    const snapshot = trajectoryVideoExport.targetRecord
-      ? {
-        targetRecord: trajectoryVideoExport.targetRecord,
-        frameIndex: trajectoryVideoExport.savedFrameIndex,
-        wasPlaying: trajectoryVideoExport.savedWasPlaying,
-        loop: trajectoryVideoExport.savedLoop,
-      }
-      : null;
-    const chunks = trajectoryVideoExport.chunks.slice();
-    const mimeType = trajectoryVideoExport.mimeType || 'video/webm';
-    if (trajectoryVideoExport.recorder) {
-      trajectoryVideoExport.recorder.ondataavailable = null;
-      trajectoryVideoExport.recorder.onstop = null;
-      trajectoryVideoExport.recorder.onerror = null;
-    }
-    trajectoryVideoExport.mode = TRAJECTORY_VIDEO_EXPORT_MODES.IDLE;
-    trajectoryVideoExport.targetRecord = null;
-    trajectoryVideoExport.cropRectCss = null;
-    trajectoryVideoExport.drag = null;
-    trajectoryVideoExport.recorder = null;
-    trajectoryVideoExport.chunks = [];
-    trajectoryVideoExport.mimeType = '';
-    trajectoryVideoExport.captureCanvas = null;
-    trajectoryVideoExport.captureCtx = null;
-    trajectoryVideoExport.cropBufferRect = null;
-    trajectoryVideoExport.pendingStopAfterRender = false;
-    trajectoryVideoExport.stopRequested = false;
-    trajectoryVideoExport.shouldDownloadOnStop = false;
-    trajectoryVideoExport.restoreOnStop = true;
-    trajectoryVideoExport.stopReason = '';
-    trajectoryVideoExport.savedFrameIndex = 0;
-    trajectoryVideoExport.savedWasPlaying = false;
-    trajectoryVideoExport.savedLoop = true;
-    if (shouldRestore) restoreTrajectoryVideoState(snapshot);
-    if (shouldDownload) {
-      downloadTrajectoryVideoBlob(chunks, mimeType);
-    } else if (stopReason) {
-      console.info(`[trajectory-video] ${stopReason}`);
-    }
-    syncTrajectoryControls();
-    syncVibrationControls();
-  }
-
-  /**
-   * Stop an active recording and optionally download the partial capture.
-   * @param {{download?:boolean,restoreState?:boolean,reason?:string}=} options
-   */
-  function stopTrajectoryVideoRecording(options = {}) {
-    if (trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.RECORDING) return;
-    if (trajectoryVideoExport.stopRequested) return;
-    trajectoryVideoExport.stopRequested = true;
-    trajectoryVideoExport.pendingStopAfterRender = false;
-    trajectoryVideoExport.shouldDownloadOnStop = options.download !== false;
-    trajectoryVideoExport.restoreOnStop = options.restoreState !== false;
-    trajectoryVideoExport.stopReason = String(options.reason || '');
-    trajectoryPlaying = false;
-    trajectoryLastStepMs = 0;
-    const recorder = trajectoryVideoExport.recorder;
-    if (!recorder || recorder.state === 'inactive') {
-      finalizeTrajectoryVideoExport({
-        download: trajectoryVideoExport.shouldDownloadOnStop,
-        restore: trajectoryVideoExport.restoreOnStop,
-        reason: trajectoryVideoExport.stopReason,
-      });
-      return;
-    }
-    try {
-      recorder.stop();
-    } catch (error) {
-      console.error('[trajectory-video] Failed to stop recorder', error);
-      finalizeTrajectoryVideoExport({
-        download: trajectoryVideoExport.shouldDownloadOnStop,
-        restore: trajectoryVideoExport.restoreOnStop,
-        reason: trajectoryVideoExport.stopReason || 'Trajectory video recording stopped after recorder error',
-      });
-    }
-  }
-
-  /**
-   * Copy the current cropped canvas region into the recording canvas.
-   */
-  function copyTrajectoryVideoFrameToRecorderCanvas() {
-    if (trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.RECORDING) return;
-    const ctx = trajectoryVideoExport.captureCtx;
-    const rect = trajectoryVideoExport.cropBufferRect;
-    if (!ctx || !rect || !canvasEl) return;
-    try {
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.drawImage(canvasEl, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
-    } catch (error) {
-      console.error('[trajectory-video] Failed to copy cropped canvas frame', error);
-      stopTrajectoryVideoRecording({ download: false, restoreState: true, reason: 'Trajectory video export failed while copying frames' });
-      return;
-    }
-    if (trajectoryVideoExport.pendingStopAfterRender) {
-      stopTrajectoryVideoRecording({ download: true, restoreState: true, reason: 'Trajectory video export completed' });
-    }
-  }
-
-  /**
-   * Open the crop overlay for the active trajectory.
-   */
-  function openTrajectoryVideoCropOverlay() {
-    const info = getActiveTrajectoryInfo();
-    if (!(info && info.enabled) || !isTrajectoryVideoExportSupported()) return;
-    hideActiveTooltip();
-    trajectoryVideoExport.mode = TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING;
-    trajectoryVideoExport.targetRecord = info.record;
-    trajectoryVideoExport.cropRectCss = createDefaultTrajectoryVideoCropRect();
-    trajectoryVideoExport.drag = null;
-    syncTrajectoryControls();
-  }
-
-  /**
-   * Close the crop overlay when not recording.
-   */
-  function closeTrajectoryVideoCropOverlay() {
-    if (trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING) return;
-    clearTrajectoryVideoSelectionUi();
-    syncTrajectoryControls();
-  }
-
-  /**
-   * Start one cropped trajectory WebM export.
-   */
-  function startTrajectoryVideoRecording() {
-    const info = getActiveTrajectoryInfo();
-    if (!(info && info.enabled && trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING)) return;
-    if (!isTrajectoryVideoExportSupported()) {
-      syncTrajectoryControls();
-      return;
-    }
-    const cropRectCss = normalizeTrajectoryVideoCropRect(
-      trajectoryVideoExport.cropRectCss || createDefaultTrajectoryVideoCropRect()
-    );
-    const cropBufferRect = getTrajectoryVideoCropBufferRect(cropRectCss);
-    if (!cropBufferRect) return;
-    const captureCanvas = document.createElement('canvas');
-    captureCanvas.width = cropBufferRect.width;
-    captureCanvas.height = cropBufferRect.height;
-    const captureCtx = captureCanvas.getContext('2d');
-    if (!captureCtx) {
-      console.error('[trajectory-video] 2D context unavailable for cropped recording canvas');
-      closeTrajectoryVideoCropOverlay();
-      return;
-    }
-    const fps = commitTrajectoryFpsInputValue(info);
-    let stream = null;
-    try {
-      stream = captureCanvas.captureStream(fps);
-    } catch (error) {
-      console.error('[trajectory-video] canvas.captureStream() failed', error);
-      closeTrajectoryVideoCropOverlay();
-      return;
-    }
-    const recorderInfo = createTrajectoryVideoRecorder(stream);
-    if (!(recorderInfo && recorderInfo.recorder)) {
-      console.error('[trajectory-video] MediaRecorder could not be constructed for WebM export');
-      closeTrajectoryVideoCropOverlay();
-      return;
-    }
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
-    restoreActiveVibrationEquilibrium({ syncUi: false });
-    hideActiveTooltip();
-    trajectoryVideoExport.mode = TRAJECTORY_VIDEO_EXPORT_MODES.RECORDING;
-    trajectoryVideoExport.targetRecord = info.record;
-    trajectoryVideoExport.cropRectCss = cropRectCss;
-    trajectoryVideoExport.drag = null;
-    trajectoryVideoExport.recorder = recorderInfo.recorder;
-    trajectoryVideoExport.chunks = [];
-    trajectoryVideoExport.mimeType = recorderInfo.mimeType;
-    trajectoryVideoExport.captureCanvas = captureCanvas;
-    trajectoryVideoExport.captureCtx = captureCtx;
-    trajectoryVideoExport.cropBufferRect = cropBufferRect;
-    trajectoryVideoExport.pendingStopAfterRender = false;
-    trajectoryVideoExport.stopRequested = false;
-    trajectoryVideoExport.shouldDownloadOnStop = true;
-    trajectoryVideoExport.restoreOnStop = true;
-    trajectoryVideoExport.stopReason = '';
-    trajectoryVideoExport.savedFrameIndex = info.traj.frameIndex | 0;
-    trajectoryVideoExport.savedWasPlaying = !!trajectoryPlaying;
-    trajectoryVideoExport.savedLoop = info.traj.loop !== false;
-    recorderInfo.recorder.ondataavailable = (event) => {
-      if (event && event.data && (typeof event.data.size !== 'number' || event.data.size > 0)) {
-        trajectoryVideoExport.chunks.push(event.data);
-      }
-    };
-    recorderInfo.recorder.onerror = (event) => {
-      console.error('[trajectory-video] MediaRecorder error', event && event.error ? event.error : event);
-      stopTrajectoryVideoRecording({ download: false, restoreState: true, reason: 'Trajectory video export stopped after MediaRecorder error' });
-    };
-    recorderInfo.recorder.onstop = () => {
-      finalizeTrajectoryVideoExport({
-        download: trajectoryVideoExport.shouldDownloadOnStop,
-        restore: trajectoryVideoExport.restoreOnStop,
-        reason: trajectoryVideoExport.stopReason,
-      });
-    };
-    info.traj.loop = false;
-    applyTrajectoryFrame(0, { syncUi: false });
-    trajectoryPlaying = true;
-    trajectoryLastStepMs = 0;
-    try {
-      recorderInfo.recorder.start();
-    } catch (error) {
-      console.error('[trajectory-video] Failed to start MediaRecorder', error);
-      finalizeTrajectoryVideoExport({ download: false, restore: true, reason: 'Trajectory video export failed to start' });
-      return;
-    }
-    syncTrajectoryControls();
-    syncVibrationControls();
-  }
-  /**
    * Update trajectory controls visibility and values for the active file.
    */
   function syncTrajectoryControls() {
     const info = getActiveTrajectoryInfo();
     if (
-      trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.IDLE
-      && trajectoryVideoExport.targetRecord
+      trajectoryVideoController
+      && trajectoryVideoController.isActive()
+      && trajectoryVideoController.getTargetRecord()
       && info.enabled
-      && info.record !== trajectoryVideoExport.targetRecord
+      && info.record !== trajectoryVideoController.getTargetRecord()
     ) {
-      if (trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.RECORDING) {
-        stopTrajectoryVideoRecording({
-          download: false,
-          restoreState: false,
-          reason: 'Trajectory video export discarded after active file change',
-        });
-      } else {
-        clearTrajectoryVideoSelectionUi();
-      }
+      trajectoryVideoController.discardForTargetRecordChange();
     }
     if (trajectoryPanelBtn) {
       trajectoryPanelBtn.style.display = info.enabled ? '' : 'none';
@@ -5507,9 +4936,6 @@
     if (trajectoryRow2) trajectoryRow2.style.display = info.enabled ? 'grid' : 'none';
     if (trajectoryBondModeNote) trajectoryBondModeNote.style.display = info.enabled ? 'block' : 'none';
     if (!info.enabled) {
-      if (trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING) {
-        clearTrajectoryVideoSelectionUi();
-      }
       setTrajectoryPanelOpen(false, {
         syncUi: false,
         restoreTrajectoryVideoState: false,
@@ -5517,7 +4943,7 @@
       });
       stopTrajectoryPlayback({ syncUi: false });
       if (trajectoryNowPlaying) trajectoryNowPlaying.textContent = 'No trajectory selected';
-      syncTrajectoryVideoUi(info);
+      if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
       updateDisplayWindowAdaptiveMenuUi();
       return;
     }
@@ -5538,7 +4964,7 @@
     setMotionPanelButtonGlyph(trajectoryPlayBtn, trajectoryPlaying ? 'pause' : 'play_arrow');
     if (trajectoryLoopEl) trajectoryLoopEl.checked = !!traj.loop;
     if (trajectoryFpsEl && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
-    syncTrajectoryVideoUi(info);
+    if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
     updateDisplayWindowAdaptiveMenuUi();
   }
   /**
@@ -5915,6 +5341,15 @@
    */
   function syncVibrationControls() {
     const info = getActiveVibrationInfo();
+    if (
+      vibrationVideoController
+      && vibrationVideoController.isActive()
+      && vibrationVideoController.getTargetRecord()
+      && info.enabled
+      && info.record !== vibrationVideoController.getTargetRecord()
+    ) {
+      vibrationVideoController.discardForTargetRecordChange();
+    }
     if (vibrationPanelBtn) {
       setTooltipText(vibrationPanelBtn, info.enabled
         ? 'Vibrational mode controls (F)'
@@ -5926,10 +5361,15 @@
     if (!info.enabled) {
       renderVibrationModeTable(info);
       renderVibrationSpectrum(info);
-      setVibrationPanelOpen(false);
+      setVibrationPanelOpen(false, {
+        syncUi: false,
+        restoreVibrationVideoState: false,
+        vibrationVideoReason: 'Vibration video export discarded because vibrational data is unavailable',
+      });
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       if (vibrationNowPlaying) vibrationNowPlaying.textContent = 'No mode selected';
+      if (vibrationVideoController) vibrationVideoController.syncUi(info);
       updateDisplayWindowAdaptiveMenuUi();
       return;
     }
@@ -5959,6 +5399,7 @@
       setMotionPanelButtonGlyph(vibrationPlayBtn, 'play_arrow');
       if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = `-- ${CM_INV_HTML}`;
       renderVibrationSpectrum(info, tableState);
+      if (vibrationVideoController) vibrationVideoController.syncUi(info);
       updateDisplayWindowAdaptiveMenuUi();
       return;
     }
@@ -5986,6 +5427,7 @@
       ? `${freq.toFixed(1)} ${CM_INV_HTML}`
       : `-- ${CM_INV_HTML}`;
     renderVibrationSpectrum(info, tableState);
+    if (vibrationVideoController) vibrationVideoController.syncUi(info);
     updateDisplayWindowAdaptiveMenuUi();
   }
 
@@ -6082,7 +5524,17 @@
     }
     const dtSec = Math.max(0, Math.min(0.2, (nowMs - vibrationLastStepMs) / 1000));
     vibrationLastStepMs = nowMs;
-    const nextPhase = (Number(vib.phase) || 0) + dtSec * speed * Math.PI * 2;
+    let nextPhase = (Number(vib.phase) || 0) + dtSec * speed * Math.PI * 2;
+    const exportAdvance = vibrationVideoController
+      ? vibrationVideoController.resolveAdvance(nextPhase, Math.PI * 2)
+      : null;
+    if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'phase')) {
+      nextPhase = Number(exportAdvance.phase) || 0;
+    }
+    if (exportAdvance && exportAdvance.stopPlayback) {
+      vibrationPlaying = false;
+      vibrationLastStepMs = 0;
+    }
     applyActiveVibrationPhase(nextPhase, { syncUi: false });
   }
   /**
@@ -6136,12 +5588,15 @@
 
     let next = (traj.frameIndex | 0) + steps;
     const lastFrameIndex = info.frameCount - 1;
-    const exportRecording = trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.RECORDING;
-    if (exportRecording && next >= lastFrameIndex) {
-      next = lastFrameIndex;
+    const exportAdvance = trajectoryVideoController
+      ? trajectoryVideoController.resolveAdvance(next, lastFrameIndex)
+      : null;
+    if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'nextFrameIndex')) {
+      next = Number(exportAdvance.nextFrameIndex) | 0;
+    }
+    if (exportAdvance && exportAdvance.stopPlayback) {
       trajectoryPlaying = false;
       trajectoryLastStepMs = 0;
-      trajectoryVideoExport.pendingStopAfterRender = true;
     } else if (next >= info.frameCount) {
       if (traj.loop) next = next % info.frameCount;
       else {
@@ -6298,7 +5753,8 @@
     }
 
     renderAxisOverlayPass(metrics);
-    copyTrajectoryVideoFrameToRecorderCanvas();
+    if (trajectoryVideoController) trajectoryVideoController.copyFrameAfterRender();
+    if (vibrationVideoController) vibrationVideoController.copyFrameAfterRender();
 
     requestAnimationFrame(render);
   }
@@ -6387,6 +5843,7 @@
   const trajectoryPanelClose = document.getElementById('trajectoryPanelClose');
   const vibrationPanel = document.getElementById('vibrationPanel');
   const vibrationResetBtn = document.getElementById('vibrationResetBtn');
+  const vibrationSaveVideoBtn = document.getElementById('vibrationSaveVideoBtn');
   const vibrationPanelClose = document.getElementById('vibrationPanelClose');
   const helpFab = document.getElementById('helpFab');
   const helpOverlay = document.getElementById('helpOverlay');
@@ -6450,6 +5907,12 @@
   const trajectoryVideoCropActions = document.getElementById('trajectoryVideoCropActions');
   const trajectoryVideoCropStartBtn = document.getElementById('trajectoryVideoCropStartBtn');
   const trajectoryVideoCropCancelBtn = document.getElementById('trajectoryVideoCropCancelBtn');
+  const vibrationVideoCropOverlay = document.getElementById('vibrationVideoCropOverlay');
+  const vibrationVideoCropFrame = document.getElementById('vibrationVideoCropFrame');
+  const vibrationVideoCropDimensions = document.getElementById('vibrationVideoCropDimensions');
+  const vibrationVideoCropActions = document.getElementById('vibrationVideoCropActions');
+  const vibrationVideoCropStartBtn = document.getElementById('vibrationVideoCropStartBtn');
+  const vibrationVideoCropCancelBtn = document.getElementById('vibrationVideoCropCancelBtn');
   const vibrationRow = document.getElementById('vibrationRow');
   const vibrationRow2 = document.getElementById('vibrationRow2');
   const vibrationHideLowFreqEl = document.getElementById('vibrationHideLowFreq');
@@ -6466,6 +5929,191 @@
   const vibrationModeTableWrap = document.getElementById('vibrationModeTableWrap');
   const vibrationModeTableBody = document.getElementById('vibrationModeTableBody');
   const vibrationModeEmpty = document.getElementById('vibrationModeEmpty');
+
+  const getCanvasExportOverlayBounds = () => {
+    const size = readViewportCssSize();
+    return {
+      width: Math.max(1, Math.round(Number(size && size.width) || 1)),
+      height: Math.max(1, Math.round(Number(size && size.height) || 1)),
+    };
+  };
+
+  trajectoryVideoController = createCanvasVideoExportController({
+    elements: {
+      saveBtn: trajectorySaveVideoBtn,
+      cropOverlayEl: trajectoryVideoCropOverlay,
+      cropFrameEl: trajectoryVideoCropFrame,
+      cropDimensionsEl: trajectoryVideoCropDimensions,
+      cropActionsEl: trajectoryVideoCropActions,
+      cropStartBtnEl: trajectoryVideoCropStartBtn,
+      cropCancelBtnEl: trajectoryVideoCropCancelBtn,
+      sourceCanvasEl: canvasEl,
+    },
+    getDisabledElements: () => [trajectoryPlayBtn, trajectoryResetBtn, trajectoryFrameEl, trajectoryFpsEl, trajectoryLoopEl],
+    getOverlayBounds: getCanvasExportOverlayBounds,
+    getActiveInfo: getActiveTrajectoryInfo,
+    readRendererViewportMetrics,
+    cssRectToBufferRect,
+    hideActiveTooltip,
+    setButtonGlyph: setMotionPanelButtonGlyph,
+    setTooltipText,
+    syncPrimaryControls: syncTrajectoryControls,
+    syncSecondaryControls: syncVibrationControls,
+    getPlaybackState: () => ({
+      playing: trajectoryPlaying,
+      lastStepMs: trajectoryLastStepMs,
+    }),
+    setPlaybackState: (nextState = {}) => {
+      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) trajectoryPlaying = !!nextState.playing;
+      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) trajectoryLastStepMs = Number(nextState.lastStepMs) || 0;
+    },
+    canResumePlayback: () => currentMode !== MODES.EDIT,
+    getCaptureFps: (info) => {
+      const fallback = Math.max(1, Math.min(120, Math.round(Number(info && info.traj && info.traj.fps) || 12)));
+      const next = Math.max(1, Math.min(120, Math.round(Number(trajectoryFpsEl && trajectoryFpsEl.value) || fallback)));
+      if (info && info.enabled && info.traj) info.traj.fps = next;
+      if (trajectoryFpsEl) trajectoryFpsEl.value = String(next);
+      return next;
+    },
+    prepareSceneForRecording: () => {
+      vibrationPlaying = false;
+      vibrationLastStepMs = 0;
+      restoreActiveVibrationEquilibrium({ syncUi: false });
+    },
+    captureSessionState: (info) => ({
+      targetRecord: info && info.record ? info.record : null,
+      frameIndex: info && info.traj ? (info.traj.frameIndex | 0) : 0,
+      wasPlaying: !!trajectoryPlaying,
+      loop: !!(info && info.traj && info.traj.loop !== false),
+    }),
+    restoreSessionState: (snapshot) => {
+      if (!(snapshot && snapshot.targetRecord)) return;
+      const info = getActiveTrajectoryInfo();
+      if (!(info && info.enabled && info.record === snapshot.targetRecord && info.traj)) return;
+      info.traj.loop = snapshot.loop !== false;
+      applyTrajectoryFrame(snapshot.frameIndex, { syncUi: false });
+      if (currentMode !== MODES.EDIT && snapshot.wasPlaying) {
+        trajectoryPlaying = true;
+        trajectoryLastStepMs = 0;
+      } else {
+        trajectoryPlaying = false;
+        trajectoryLastStepMs = 0;
+      }
+    },
+    startRecordingSequence: (info) => {
+      info.traj.loop = false;
+      applyTrajectoryFrame(0, { syncUi: false });
+      trajectoryPlaying = true;
+      trajectoryLastStepMs = 0;
+    },
+    resolveRecordingAdvance: (nextFrameIndex, lastFrameIndex) => {
+      const next = Number(nextFrameIndex) | 0;
+      const last = Math.max(0, Number(lastFrameIndex) | 0);
+      if (next < last) return { nextFrameIndex: next, stopPlayback: false };
+      return { nextFrameIndex: last, stopPlayback: true };
+    },
+    labels: {
+      save: 'Save trajectory as video',
+      hideOverlay: 'Hide trajectory video crop overlay',
+      recording: 'Recording… click to stop early',
+      unavailable: 'No trajectory data in active file',
+      panelClosedReason: 'Trajectory video export discarded because the panel was closed',
+      sourceChangeReason: 'Trajectory video export discarded after active file change',
+      completedReason: 'Trajectory video export completed',
+      stoppedEarlyReason: 'Trajectory video export stopped early by the user',
+      copyFailureReason: 'Trajectory video export failed while copying frames',
+      recorderErrorReason: 'Trajectory video export stopped after MediaRecorder error',
+      startFailureReason: 'Trajectory video export failed to start',
+    },
+    filename: 'trajectory.webm',
+    logPrefix: 'trajectory-video',
+  });
+  vibrationVideoController = createCanvasVideoExportController({
+    elements: {
+      saveBtn: vibrationSaveVideoBtn,
+      cropOverlayEl: vibrationVideoCropOverlay,
+      cropFrameEl: vibrationVideoCropFrame,
+      cropDimensionsEl: vibrationVideoCropDimensions,
+      cropActionsEl: vibrationVideoCropActions,
+      cropStartBtnEl: vibrationVideoCropStartBtn,
+      cropCancelBtnEl: vibrationVideoCropCancelBtn,
+      sourceCanvasEl: canvasEl,
+    },
+    getDisabledElements: () => [vibrationPlayBtn, vibrationResetBtn, vibrationAmplitudeEl, vibrationSpeedEl, vibrationHideLowFreqEl],
+    getOverlayBounds: getCanvasExportOverlayBounds,
+    getActiveInfo: getActiveVibrationInfo,
+    readRendererViewportMetrics,
+    cssRectToBufferRect,
+    hideActiveTooltip,
+    setButtonGlyph: setMotionPanelButtonGlyph,
+    setTooltipText,
+    syncPrimaryControls: syncVibrationControls,
+    syncSecondaryControls: syncTrajectoryControls,
+    getPlaybackState: () => ({
+      playing: vibrationPlaying,
+      lastStepMs: vibrationLastStepMs,
+    }),
+    setPlaybackState: (nextState = {}) => {
+      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) vibrationPlaying = !!nextState.playing;
+      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) vibrationLastStepMs = Number(nextState.lastStepMs) || 0;
+    },
+    canResumePlayback: () => currentMode !== MODES.EDIT,
+    getCaptureFps: (info) => {
+      const speed = Math.max(0.1, Math.min(30, Number(info && info.vib && info.vib.speed) || VIBRATION_DEFAULT_SPEED));
+      if (info && info.enabled && info.vib) info.vib.speed = speed;
+      return Math.max(24, Math.min(120, Math.round(speed * 24)));
+    },
+    prepareSceneForRecording: () => {
+      stopTrajectoryPlayback({ syncUi: false });
+    },
+    captureSessionState: (info) => ({
+      targetRecord: info && info.record ? info.record : null,
+      modeIndex: info && info.vib ? (info.vib.modeIndex | 0) : 0,
+      phase: info && info.vib ? (Number(info.vib.phase) || 0) : 0,
+      wasPlaying: !!vibrationPlaying,
+    }),
+    restoreSessionState: (snapshot) => {
+      if (!(snapshot && snapshot.targetRecord)) return;
+      const info = getActiveVibrationInfo();
+      if (!(info && info.enabled && info.record === snapshot.targetRecord && info.vib)) return;
+      info.vib.modeIndex = Math.max(0, Math.min(info.modeCount - 1, Number(snapshot.modeIndex) | 0));
+      applyActiveVibrationPhase(snapshot.phase, { syncUi: false });
+      if (currentMode !== MODES.EDIT && snapshot.wasPlaying) {
+        vibrationPlaying = true;
+        vibrationLastStepMs = 0;
+      } else {
+        vibrationPlaying = false;
+        vibrationLastStepMs = 0;
+      }
+    },
+    startRecordingSequence: (info) => {
+      info.vib.phase = 0;
+      applyActiveVibrationPhase(0, { syncUi: false });
+      vibrationPlaying = true;
+      vibrationLastStepMs = 0;
+    },
+    resolveRecordingAdvance: (nextPhase, cycleEndPhase) => {
+      const next = Number(nextPhase) || 0;
+      const cycleEnd = Number.isFinite(Number(cycleEndPhase)) ? Number(cycleEndPhase) : (Math.PI * 2);
+      if (next < cycleEnd) return { phase: next, stopPlayback: false };
+      return { phase: cycleEnd, stopPlayback: true };
+    },
+    labels: {
+      save: 'Save vibration as video',
+      hideOverlay: 'Hide vibration video crop overlay',
+      recording: 'Recording… click to stop early',
+      unavailable: 'No vibrational mode data in active file',
+      panelClosedReason: 'Vibration video export discarded because the panel was closed',
+      sourceChangeReason: 'Vibration video export discarded after active file change',
+      completedReason: 'Vibration video export completed',
+      stoppedEarlyReason: 'Vibration video export stopped early by the user',
+      copyFailureReason: 'Vibration video export failed while copying frames',
+      recorderErrorReason: 'Vibration video export stopped after MediaRecorder error',
+      startFailureReason: 'Vibration video export failed to start',
+    },
+    filename: 'vibration.webm',
+    logPrefix: 'vibration-video',
+  });
   if (toggleMultiBonds) showMultiBonds = !!toggleMultiBonds.checked;
   if (toggleAtomLabels) showAtomLabels = !!toggleAtomLabels.checked;
   if (toggleAtomLabelNumbers) showAtomLabelNumbers = !!toggleAtomLabelNumbers.checked;
@@ -9761,14 +9409,11 @@
     const shouldOpen = !!open;
     if (shouldOpen && options.exclusive !== false) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL);
     if (!shouldOpen) {
-      if (trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.RECORDING) {
-        stopTrajectoryVideoRecording({
-          download: false,
+      if (trajectoryVideoController) {
+        trajectoryVideoController.handlePanelClosed({
           restoreState: options.restoreTrajectoryVideoState !== false,
           reason: String(options.trajectoryVideoReason || 'Trajectory video export discarded because the panel was closed'),
         });
-      } else if (trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING) {
-        clearTrajectoryVideoSelectionUi();
       }
       stopTrajectoryPlayback({ syncUi: false });
     }
@@ -9781,10 +9426,16 @@
    * Open/close vibration controls panel.
    * @param {boolean} open
    */
-  function setVibrationPanelOpen(open) {
+  function setVibrationPanelOpen(open, options = {}) {
     const shouldOpen = !!open;
-    if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIBRATION_PANEL);
+    if (shouldOpen && options.exclusive !== false) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIBRATION_PANEL);
     if (!shouldOpen) {
+      if (vibrationVideoController) {
+        vibrationVideoController.handlePanelClosed({
+          restoreState: options.restoreVibrationVideoState !== false,
+          reason: String(options.vibrationVideoReason || 'Vibration video export discarded because the panel was closed'),
+        });
+      }
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       restoreActiveVibrationEquilibrium({ syncUi: false });
@@ -9795,6 +9446,7 @@
     }
     setFloatingPanelOpen(vibrationPanel, shouldOpen);
     if (shouldOpen) scheduleVibrationPanelLayoutSync(2);
+    if (options.syncUi !== false) syncVibrationControls();
     updateDisplayWindowAdaptiveMenuUi();
   }
 
@@ -25313,29 +24965,6 @@
       syncVibrationControls();
     };
   }
-  if (trajectorySaveVideoBtn) {
-    trajectorySaveVideoBtn.addEventListener('pointerdown', (evt) => {
-      if (evt && evt.preventDefault) evt.preventDefault();
-      if (evt && evt.stopPropagation) evt.stopPropagation();
-    });
-    trajectorySaveVideoBtn.onclick = (evt) => {
-      if (evt && evt.preventDefault) evt.preventDefault();
-      if (evt && evt.stopPropagation) evt.stopPropagation();
-      if (trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.RECORDING) {
-        stopTrajectoryVideoRecording({
-          download: true,
-          restoreState: true,
-          reason: 'Trajectory video export stopped early by the user',
-        });
-        return;
-      }
-      if (trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING) {
-        closeTrajectoryVideoCropOverlay();
-        return;
-      }
-      openTrajectoryVideoCropOverlay();
-    };
-  }
   if (trajectoryFrameEl) {
     trajectoryFrameEl.oninput = () => {
       vibrationPlaying = false;
@@ -25351,7 +24980,7 @@
     trajectoryFpsEl.onchange = () => {
       const info = getActiveTrajectoryInfo();
       if (!info.enabled) return;
-      commitTrajectoryFpsInputValue(info);
+      if (trajectoryVideoController) trajectoryVideoController.commitCaptureRate(info);
       syncTrajectoryControls();
     };
   }
@@ -25362,101 +24991,6 @@
       info.traj.loop = !!trajectoryLoopEl.checked;
       syncTrajectoryControls();
     };
-  }
-  if (trajectoryVideoCropStartBtn) trajectoryVideoCropStartBtn.onclick = () => startTrajectoryVideoRecording();
-  if (trajectoryVideoCropCancelBtn) trajectoryVideoCropCancelBtn.onclick = () => closeTrajectoryVideoCropOverlay();
-  if (trajectoryVideoCropOverlay) {
-    trajectoryVideoCropOverlay.addEventListener('contextmenu', (event) => {
-      if (trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.IDLE) return;
-      event.preventDefault();
-    });
-    trajectoryVideoCropOverlay.addEventListener('wheel', (event) => {
-      if (trajectoryVideoExport.mode === TRAJECTORY_VIDEO_EXPORT_MODES.IDLE) return;
-      event.preventDefault();
-    }, { passive: false });
-    trajectoryVideoCropOverlay.addEventListener('pointerdown', (event) => {
-      if (trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING) return;
-      if (!event || event.button !== 0) return;
-      if (trajectoryVideoCropActions && trajectoryVideoCropActions.contains(event.target)) return;
-      if (!(trajectoryVideoCropFrame && trajectoryVideoCropFrame.contains(event.target))) return;
-      const handleEl = event.target && event.target.closest ? event.target.closest('.trajectoryVideoCropHandle') : null;
-      const corner = handleEl ? String(handleEl.dataset.corner || '') : '';
-      trajectoryVideoExport.drag = {
-        pointerId: event.pointerId,
-        kind: corner ? 'resize' : 'move',
-        corner,
-        startX: event.clientX,
-        startY: event.clientY,
-        rect: normalizeTrajectoryVideoCropRect(trajectoryVideoExport.cropRectCss || createDefaultTrajectoryVideoCropRect()),
-      };
-      if (trajectoryVideoCropFrame) trajectoryVideoCropFrame.classList.toggle('is-dragging', !corner);
-      if (typeof trajectoryVideoCropOverlay.setPointerCapture === 'function') {
-        try { trajectoryVideoCropOverlay.setPointerCapture(event.pointerId); } catch { }
-      }
-      event.preventDefault();
-      event.stopPropagation();
-    });
-    trajectoryVideoCropOverlay.addEventListener('pointermove', (event) => {
-      if (trajectoryVideoExport.mode !== TRAJECTORY_VIDEO_EXPORT_MODES.SELECTING || !trajectoryVideoExport.drag) return;
-      if ((trajectoryVideoExport.drag.pointerId | 0) !== (event.pointerId | 0)) return;
-      const bounds = getTrajectoryVideoOverlayBounds();
-      const origin = trajectoryVideoExport.drag.rect;
-      const dx = event.clientX - trajectoryVideoExport.drag.startX;
-      const dy = event.clientY - trajectoryVideoExport.drag.startY;
-      if (trajectoryVideoExport.drag.kind === 'move') {
-        trajectoryVideoExport.cropRectCss = normalizeTrajectoryVideoCropRect({
-          x: origin.x + dx,
-          y: origin.y + dy,
-          width: origin.width,
-          height: origin.height,
-        }, bounds);
-      } else {
-        let left = origin.x;
-        let top = origin.y;
-        let right = origin.x + origin.width;
-        let bottom = origin.y + origin.height;
-        const minWidth = Math.min(TRAJECTORY_VIDEO_MIN_WIDTH, bounds.width);
-        const minHeight = Math.min(TRAJECTORY_VIDEO_MIN_HEIGHT, bounds.height);
-        if (trajectoryVideoExport.drag.corner.includes('n')) {
-          top = clampTrajectoryVideoNumber(origin.y + dy, 0, bottom - minHeight);
-        }
-        if (trajectoryVideoExport.drag.corner.includes('s')) {
-          bottom = clampTrajectoryVideoNumber(origin.y + origin.height + dy, top + minHeight, bounds.height);
-        }
-        if (trajectoryVideoExport.drag.corner.includes('w')) {
-          left = clampTrajectoryVideoNumber(origin.x + dx, 0, right - minWidth);
-        }
-        if (trajectoryVideoExport.drag.corner.includes('e')) {
-          right = clampTrajectoryVideoNumber(origin.x + origin.width + dx, left + minWidth, bounds.width);
-        }
-        trajectoryVideoExport.cropRectCss = normalizeTrajectoryVideoCropRect({
-          x: left,
-          y: top,
-          width: right - left,
-          height: bottom - top,
-        }, bounds);
-      }
-      syncTrajectoryVideoCropOverlayLayout();
-      event.preventDefault();
-      event.stopPropagation();
-    });
-    const releaseTrajectoryCropPointer = (event) => {
-      if (!trajectoryVideoExport.drag) return;
-      if (event && Number.isInteger(trajectoryVideoExport.drag.pointerId) && typeof trajectoryVideoCropOverlay.releasePointerCapture === 'function') {
-        try { trajectoryVideoCropOverlay.releasePointerCapture(trajectoryVideoExport.drag.pointerId); } catch { }
-      }
-      trajectoryVideoExport.drag = null;
-      if (trajectoryVideoCropFrame) trajectoryVideoCropFrame.classList.remove('is-dragging');
-      syncTrajectoryVideoCropOverlayLayout();
-    };
-    trajectoryVideoCropOverlay.addEventListener('pointerup', (event) => {
-      if (!trajectoryVideoExport.drag) return;
-      if ((trajectoryVideoExport.drag.pointerId | 0) !== (event.pointerId | 0)) return;
-      releaseTrajectoryCropPointer(event);
-      event.preventDefault();
-      event.stopPropagation();
-    });
-    trajectoryVideoCropOverlay.addEventListener('pointercancel', releaseTrajectoryCropPointer);
   }
   if (vibrationPlayBtn) {
     vibrationPlayBtn.onclick = () => {
@@ -25482,6 +25016,7 @@
   }
   if (vibrationModeTableBody) {
     vibrationModeTableBody.onclick = (e) => {
+      if (vibrationVideoController && vibrationVideoController.isRecording()) return;
       const row = e.target && e.target.closest ? e.target.closest('tr[data-mode-index]') : null;
       if (!row) return;
       const info = getActiveVibrationInfo();
