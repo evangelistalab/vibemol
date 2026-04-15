@@ -237,9 +237,11 @@
   --vm-font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --vm-font-icon: 'Material Symbols Rounded';
   --vm-angle-tetrahedral: 109.47deg;
+  /* UI accent and positive-isosurface blue are intentionally separate tokens. */
   --vm-brand-positive: #3b5bd9;
   --vm-brand-negative: #ffc53a;
-  --vm-brand-accent: var(--vm-brand-positive);
+  --vm-brand-accent: #0c3575;
+  --vm-color-text-on-gold: #0f172a;
   --vm-color-warning: var(--vm-brand-negative);
   --vm-color-warning-soft: color-mix(in srgb, var(--vm-brand-negative) 22%, transparent);
   --vm-color-unsaved: var(--vm-brand-negative);
@@ -304,9 +306,9 @@
   --vm-color-text-inverse: #ffffff;
   --vm-color-text-on-accent: #ffffff;
 
-  --vm-color-accent-primary: var(--vm-brand-accent);
-  --vm-color-accent-primary-soft: color-mix(in srgb, var(--vm-brand-accent) 18%, transparent);
-  --vm-color-accent-outline: color-mix(in srgb, var(--vm-brand-accent) 22%, transparent);
+  --vm-color-accent-primary: var(--vm-color-accent);
+  --vm-color-accent-primary-soft: color-mix(in srgb, var(--vm-color-accent) 18%, transparent);
+  --vm-color-accent-outline: color-mix(in srgb, var(--vm-color-accent) 22%, transparent);
 
   --vm-shadow-sm: 0 1px 2px rgba(15, 20, 30, 0.05);
   --vm-shadow-md: 0 1px 2px rgba(15, 20, 30, 0.05), 0 4px 12px rgba(15, 20, 30, 0.07);
@@ -350,9 +352,9 @@
   --vm-color-text-inverse: #ffffff;
   --vm-color-text-on-accent: #f6fbff;
 
-  --vm-color-accent-primary: var(--vm-brand-accent);
-  --vm-color-accent-primary-soft: color-mix(in srgb, var(--vm-brand-accent) 22%, transparent);
-  --vm-color-accent-outline: color-mix(in srgb, var(--vm-brand-accent) 28%, transparent);
+  --vm-color-accent-primary: var(--vm-color-accent);
+  --vm-color-accent-primary-soft: color-mix(in srgb, var(--vm-color-accent) 22%, transparent);
+  --vm-color-accent-outline: color-mix(in srgb, var(--vm-color-accent) 30%, transparent);
 
   --vm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --vm-shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5);

@@ -43,7 +43,7 @@
   <link rel="stylesheet" href="src/styles/vm-list-popover.css" />
   <style>
     :root {
-      --vm-color-accent: var(--vm-brand-accent);
+      --vm-color-accent: #0c3575;
       --vm-font-weight-body: 400;
       --vm-font-weight-emphasis: 500;
       --vm-font-weight-strong: 600;
@@ -65,6 +65,10 @@
       --shortcut-key-font-family: var(--vm-font-mono);
       --vm-tetrahedral-spinner-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M8 8.5V3.25' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M8 8.5L3.55 10.05' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M8 8.5L12.45 10.05' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3Ccircle cx='8' cy='8.5' r='1.1' fill='white'/%3E%3C/svg%3E");
       --vm-tetrahedral-heading-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8' fill='none'%3E%3Cpath d='M5 6L1.74 3.69' stroke='white' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M5 6L8.26 3.69' stroke='white' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+
+    :root[data-theme='dark'] {
+      --vm-color-accent: #6b9bff;
     }
 
     html,
@@ -1702,7 +1706,7 @@
       right: 12px;
       bottom: -1px;
       height: 0;
-      border-bottom: 2px solid var(--vm-color-accent);
+      border-bottom: 3px solid var(--toolbar-mode-tab-accent);
       transform: scaleX(0);
       transform-origin: center;
       opacity: 0;
@@ -1838,6 +1842,21 @@
     #toolbar button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
+    }
+
+    :root[data-theme='dark'] #toolbar #toolbarModeRow .tb-modeBtn {
+      background: transparent !important;
+      color: #a3b1c4 !important;
+    }
+
+    :root[data-theme='dark'] #toolbar #toolbarModeRow .tb-modeBtn:hover {
+      background: color-mix(in srgb, var(--vm-color-surface-panel) 72%, transparent) !important;
+      color: #d6deea !important;
+    }
+
+    :root[data-theme='dark'] #toolbar #toolbarModeRow .tb-modeBtn.active {
+      background: var(--vm-color-surface-panel) !important;
+      color: #6b9bff !important;
     }
 
     #toolbar button:focus,

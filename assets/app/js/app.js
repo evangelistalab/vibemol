@@ -6758,6 +6758,26 @@
   }
 
   /**
+   * Keep the active mode tab readable in dark theme, including when the root
+   * data-theme attribute is mutated directly outside the normal toggle flow.
+   */
+  function syncToolbarModeButtonThemeState() {
+    const isDark = getUiTheme() === 'dark';
+    const buttons = [modeDisplayBtn, modeMeasureBtn, modeEditBtn];
+    for (const btn of buttons) {
+      if (!btn) continue;
+      const active = btn.classList.contains('active');
+      if (!isDark || !active) {
+        btn.style.removeProperty('color');
+        btn.style.removeProperty('background-color');
+        continue;
+      }
+      btn.style.setProperty('color', '#6b9bff');
+      btn.style.setProperty('background-color', '#0f141c');
+    }
+  }
+
+  /**
    * Set one element's tooltip text using the shared portal tooltip contract.
    * @param {Element|null} el
    * @param {*} text
@@ -6838,6 +6858,7 @@
       themeToggleShellEl.setAttribute('aria-label', `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`);
       setTooltipText(themeToggleShellEl, `Theme: ${next === 'dark' ? 'Dark' : 'Light'}`);
     }
+    syncToolbarModeButtonThemeState();
     applyMoleculeStyleLighting();
   }
 
@@ -6858,6 +6879,17 @@
         applyUiTheme(next);
         persistUiTheme(next);
       });
+    }
+    if (typeof MutationObserver === 'function') {
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+            syncToolbarModeButtonThemeState();
+            break;
+          }
+        }
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     }
   }
 
@@ -8339,6 +8371,7 @@
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
+    syncToolbarModeButtonThemeState();
   }
   /**
    * Transition between display/edit/measurement modes and apply side effects.
@@ -17861,6 +17894,14 @@
         title: 'Optimize structure (O)',
         static: false,
       });
+      setAdaptiveItemPresentation(editAdaptiveShiftComBtn, {
+        icon: 'center_focus_strong',
+        label: 'COM → Origin',
+        meta: '',
+        key: 'R',
+        title: 'Shift COM to origin (R)',
+        static: false,
+      });
       setAdaptiveItemPresentation(editAdaptiveAlignPrincipalBtn, {
         icon: '3d_rotation',
         label: 'Align',
@@ -17879,7 +17920,7 @@
         { el: editAdaptiveAddAtomBtn, visible: isVisible },
         { el: editAdaptiveSymmetryBtn, visible: buildModeActive || hasEditableAtoms },
         { el: editAdaptiveCleanStructureBtn, visible: buildModeActive || hasEditableAtoms },
-        { el: editAdaptiveShiftComBtn, visible: false },
+        { el: editAdaptiveShiftComBtn, visible: hasEditableAtoms && !buildModeActive },
         { el: editAdaptiveAlignPrincipalBtn, visible: hasEditableAtoms && !buildModeActive },
       ],
       activeItems: [

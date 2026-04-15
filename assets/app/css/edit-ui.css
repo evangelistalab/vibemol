@@ -269,6 +269,21 @@
   background: var(--vm-color-surface-control);
 }
 
+:root[data-theme='dark'] .adaptiveEditItem {
+  background: rgb(22, 29, 42);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme='dark'] .adaptiveEditItem:hover {
+  border-color: color-mix(in srgb, var(--vm-color-accent) 26%, rgba(255, 255, 255, 0.12));
+  background: color-mix(in srgb, var(--vm-color-accent) 8%, rgb(22, 29, 42));
+}
+
+:root[data-theme='dark'] .adaptiveEditItem.active {
+  border-color: var(--vm-color-accent);
+  background: color-mix(in srgb, var(--vm-color-accent) 18%, rgb(22, 29, 42));
+}
+
 #editAdaptiveAddAtomPopover,
 #editAdaptiveSymmetryPopover,
 #editSelectionFragmentCuePopover {
@@ -964,9 +979,6 @@
 
 .adaptiveShortcutKey {
   height: 24px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--vm-color-on-control-dim);
-  border-color: var(--vm-color-border-control);
 }
 
 #editAddModeToggle {

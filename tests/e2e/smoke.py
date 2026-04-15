@@ -1453,12 +1453,13 @@ def main() -> int:
                     };
                     return isShown('editAdaptiveSymmetryBtn')
                       && isShown('editAdaptiveCleanStructureBtn')
+                      && isShown('editAdaptiveShiftComBtn')
                       && isShown('editAdaptiveAlignPrincipalBtn')
                       && isShown('editAdaptiveAddAtomBtn')
-                      && !isShown('editAdaptiveShiftComBtn')
                       && labelOf('editAdaptiveAddAtomBtn') === 'Build'
                       && labelOf('editAdaptiveSymmetryBtn') === 'Symmetry'
                       && labelOf('editAdaptiveCleanStructureBtn') === 'Optimize'
+                      && labelOf('editAdaptiveShiftComBtn') === 'COM → Origin'
                       && labelOf('editAdaptiveAlignPrincipalBtn') === 'Align';
                 }"""
             )
@@ -2957,6 +2958,34 @@ def main() -> int:
             stored_after_traj = active_structure_summary(page)
             if stored_after_traj['bondCount'] != 1 or stored_after_traj['bondOrigins'] != ['perceived']:
                 raise AssertionError(f'Trajectory rendering mutated stored topology: {stored_after_traj}')
+            page.locator('#modeMeasureBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const measureBtn = document.getElementById('modeMeasureBtn');
+                    const menu = document.getElementById('displayWindowAdaptiveMenu');
+                    const trajectoryBtn = document.getElementById('trajectoryPanelBtn');
+                    const trajectory = document.getElementById('trajectoryPanel');
+                    return !!measureBtn
+                      && measureBtn.classList.contains('active')
+                      && !!menu
+                      && menu.getAttribute('aria-hidden') === 'false'
+                      && !!trajectoryBtn
+                      && !trajectoryBtn.hidden
+                      && getComputedStyle(trajectoryBtn).display !== 'none'
+                      && !!trajectory
+                      && trajectory.getAttribute('aria-hidden') === 'false';
+                }"""
+            )
+            page.locator('#trajectoryFrame').evaluate(
+                """(el) => {
+                    el.value = '0';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => /1\\/2/.test(document.getElementById('trajectoryFrameLabel')?.textContent || '')"""
+            )
             xyz_export = page.evaluate(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();

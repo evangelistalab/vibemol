@@ -59,7 +59,7 @@
   --vm-color-toolbar-tab-fg: var(--vm-color-text-secondary);
   --vm-color-toolbar-tab-fg-hover: var(--vm-color-text-primary);
   --vm-color-toolbar-tab-fg-active: var(--vm-brand-accent);
-  --vm-color-toolbar-tab-accent: var(--vm-accent);
+  --vm-color-toolbar-tab-accent: #0c3575;
 
   /* Onboarding / splash card */
   --vm-color-splash-card-fg: #0d1728;
@@ -74,9 +74,9 @@
   --vm-color-splash-drop-code-border: var(--vm-color-border-subtle);
   --vm-color-splash-drop-code-fg: #274363;
   --vm-color-splash-drop-icon: #4a6d9b;
-  --vm-color-splash-cta-bg: var(--vm-accent);
+  --vm-color-splash-cta-bg: #0c3575;
   --vm-color-splash-cta-fg: var(--vm-color-white);
-  --vm-color-splash-link: var(--vm-brand-accent);
+  --vm-color-splash-link: var(--vm-color-accent);
   --vm-color-splash-meta: #516986;
 
   /* Top-right utility overlay */
@@ -140,7 +140,7 @@
   --vm-color-toolbar-tab-fg: #a3b1c4;
   --vm-color-toolbar-tab-fg-hover: #d6deea;
   --vm-color-toolbar-tab-fg-active: #edf3fc;
-  --vm-color-toolbar-tab-accent: var(--vm-accent);
+  --vm-color-toolbar-tab-accent: #6b9bff;
 
   --vm-color-splash-card-fg: #eaf1fb;
   --vm-color-splash-card-bg: var(--vm-color-surface-panel);
@@ -154,9 +154,8 @@
   --vm-color-splash-drop-code-border: var(--vm-color-border-subtle);
   --vm-color-splash-drop-code-fg: #d8e7fb;
   --vm-color-splash-drop-icon: #83a7d9;
-  --vm-color-splash-cta-bg: var(--vm-accent);
-  --vm-color-splash-cta-fg: #08131f;
-  --vm-color-splash-link: var(--vm-brand-accent);
+  --vm-color-splash-cta-bg: #6b9bff;
+  --vm-color-splash-link: var(--vm-color-accent);
   --vm-color-splash-meta: #aab9cc;
 
   --vm-color-utility-overlay-fg: rgba(228, 234, 242, 0.9);

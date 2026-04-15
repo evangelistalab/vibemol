@@ -248,6 +248,12 @@ kbd,
   box-sizing: border-box;
 }
 
+.adaptiveShortcutKey {
+  background: var(--vm-brand-negative);
+  color: var(--vm-color-text-on-gold);
+  border-color: color-mix(in srgb, var(--vm-brand-negative) 68%, rgba(15, 20, 30, 0.18));
+}
+
 #helpFab {
   position: fixed;
   left: calc(var(--workspace-left-offset) + 16px);

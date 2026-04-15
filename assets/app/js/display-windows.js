@@ -165,8 +165,11 @@
       const showTrajectory = !!getTrajectoryEnabled();
       const showVibration = !!getVibrationEnabled();
       const currentMode = getCurrentMode();
+      const isNonEditMode = typeof getEditModeValue === 'function'
+        ? currentMode !== getEditModeValue()
+        : (typeof getDisplayModeValue === 'function' ? currentMode === getDisplayModeValue() : true);
       const isVisible = (
-        (typeof getDisplayModeValue === 'function' ? currentMode === getDisplayModeValue() : currentMode !== getEditModeValue())
+        isNonEditMode
         && (showMolden || showViewActions || showView || showCoords || showTrajectory || showVibration)
       );
       return {
