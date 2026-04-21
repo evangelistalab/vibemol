@@ -1,8 +1,16 @@
 (function (global) {
   'use strict';
 
-  const { voxelToWorld } = global.VibeMolVolumeGeometry || {};
-  if (typeof voxelToWorld !== 'function') {
+  const {
+    voxelToWorld,
+    sampleTrilinearGrid,
+    computeGradientNormalsForVoxelPositions,
+  } = global.VibeMolVolumeGeometry || {};
+  if (
+    typeof voxelToWorld !== 'function'
+    || typeof sampleTrilinearGrid !== 'function'
+    || typeof computeGradientNormalsForVoxelPositions !== 'function'
+  ) {
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/volume-2c.js.');
   }
 
@@ -46,13 +54,17 @@
     const im = isAlpha ? vol.alphaIm : vol.betaIm;
     const idx = vol.idx;
     const clampi = (x, n) => Math.max(0, Math.min(n - 1, x | 0));
+    const magnitudeAt = (i, j, k) => {
+      const t = idx(i, j, k);
+      const rr = re[t];
+      const ii = im[t];
+      return Math.hypot(rr, ii);
+    };
     const magSampler = (x, y, z) => {
       const i = clampi(Math.floor(x), nx);
       const j = clampi(Math.floor(y), ny);
       const k = clampi(Math.floor(z), nz);
-      const t = idx(i, j, k);
-      const rr = re[t], ii = im[t];
-      return Math.hypot(rr, ii);
+      return magnitudeAt(i, j, k);
     };
     const res = global.isosurface.marchingCubes([nx, ny, nz], (x, y, z) => magSampler(x, y, z) - level);
     const voxPos = res.positions;
@@ -95,7 +107,15 @@
     geom.setIndex(new global.THREE.BufferAttribute(indices, 1));
     geom.setAttribute('position', new global.THREE.BufferAttribute(positions, 3));
     geom.setAttribute('color', new global.THREE.BufferAttribute(colors, 3));
-    try { geom.computeVertexNormals(); } catch { }
+    geom.setAttribute('normal', new global.THREE.BufferAttribute(
+      computeGradientNormalsForVoxelPositions(
+        vol,
+        unique,
+        (gx, gy, gz) => sampleTrilinearGrid(vol.nxyz, magnitudeAt, gx, gy, gz),
+        { orientation: 1, sampleStep: 0.5 }
+      ),
+      3
+    ));
     return geom;
   }
 
@@ -110,14 +130,17 @@
     const reA = vol.alphaRe, imA = vol.alphaIm, reB = vol.betaRe, imB = vol.betaIm;
     const idx = vol.idx;
     const clampi = (x, n) => Math.max(0, Math.min(n - 1, x | 0));
-    const densSampler = (x, y, z) => {
-      const i = clampi(Math.floor(x), nx);
-      const j = clampi(Math.floor(y), ny);
-      const k = clampi(Math.floor(z), nz);
+    const densityAt = (i, j, k) => {
       const t = idx(i, j, k);
       const a2 = reA[t] * reA[t] + imA[t] * imA[t];
       const b2 = reB[t] * reB[t] + imB[t] * imB[t];
       return Math.sqrt(a2 + b2);
+    };
+    const densSampler = (x, y, z) => {
+      const i = clampi(Math.floor(x), nx);
+      const j = clampi(Math.floor(y), ny);
+      const k = clampi(Math.floor(z), nz);
+      return densityAt(i, j, k);
     };
     const res = global.isosurface.marchingCubes([nx, ny, nz], (x, y, z) => densSampler(x, y, z) - level);
     const voxPos = res.positions;
@@ -174,7 +197,15 @@
     geom.setIndex(new global.THREE.BufferAttribute(indices, 1));
     geom.setAttribute('position', new global.THREE.BufferAttribute(positions, 3));
     geom.setAttribute('color', new global.THREE.BufferAttribute(colors, 3));
-    try { geom.computeVertexNormals(); } catch { }
+    geom.setAttribute('normal', new global.THREE.BufferAttribute(
+      computeGradientNormalsForVoxelPositions(
+        vol,
+        unique,
+        (gx, gy, gz) => sampleTrilinearGrid(vol.nxyz, densityAt, gx, gy, gz),
+        { orientation: 1, sampleStep: 0.5 }
+      ),
+      3
+    ));
     return geom;
   }
 

@@ -1179,6 +1179,35 @@ def wait_for_ready(page) -> None:
     page.wait_for_function("() => !!window.VibeMolStructure && !!window.VibeMolPreset")
 
 
+def load_text_asset(page, asset_path: str) -> str:
+    return page.evaluate(
+        """async (path) => {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`Failed to fetch ${path}: ${response.status}`);
+            return await response.text();
+        }""",
+        asset_path,
+    )
+
+
+def load_volume_asset(page, asset_path: str) -> None:
+    text = load_text_asset(page, asset_path)
+    name = pathlib.Path(asset_path).name
+    page.evaluate(
+        """async (payload) => {
+            await window.VibeMolEmbed.loadFiles([{ name: payload.name, text: payload.text }]);
+        }""",
+        {'name': name, 'text': text},
+    )
+    page.wait_for_function(
+        """(expectedName) => {
+            const select = document.getElementById('fileSelect');
+            return !!select && Array.from(select.options).some((opt) => (opt.textContent || '').trim() === expectedName);
+        }""",
+        arg=name,
+    )
+
+
 def assert_no_runtime_errors(page_errors: list[str], console_errors: list[str]) -> None:
     if page_errors or console_errors:
         raise AssertionError(
@@ -3936,6 +3965,121 @@ def main() -> int:
                     return carbonHeavyNeighborCounts.length === 2
                       && carbonHeavyNeighborCounts[0] === 1
                       && carbonHeavyNeighborCounts[1] === 1;
+                }"""
+            )
+
+            log_step('wboit surface transparency')
+            page.locator('#modeDisplayBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const btn = document.getElementById('modeDisplayBtn');
+                    return !!btn && btn.classList.contains('active');
+                }"""
+            )
+            load_volume_asset(page, '/assets/data/sample.cube')
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    return !!snap && snap.transparentMeshCount >= 2;
+                }"""
+            )
+            set_select_value(page, '#styleSelect', 'emissive')
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('opacity');
+                    if (!el) return;
+                    el.value = '1.0';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    return !!snap && snap.surfaceStyle === 'emissive' && snap.active === false;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('opacity');
+                    if (!el) return;
+                    el.value = '0.5';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    return !!snap
+                      && snap.surfaceStyle === 'emissive'
+                      && snap.surfaceOpacity < 0.999
+                      && (snap.supported ? snap.active === true : snap.fallback === true);
+                }"""
+            )
+            set_select_value(page, '#styleSelect', 'glass')
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    return !!snap
+                      && snap.surfaceStyle === 'glass'
+                      && snap.surfaceOpacity < 0.999
+                      && (snap.supported ? snap.active === true : snap.fallback === true);
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('opacity');
+                    if (!el) return;
+                    el.value = '1.0';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    return !!snap && snap.surfaceOpacity >= 0.999 && snap.active === false;
+                }"""
+            )
+
+            log_step('wboit 2c alpha/beta split view')
+            load_volume_asset(page, '/assets/data/2ccubes/orbital_0.2ccube')
+            page.wait_for_function("() => !!document.getElementById('twoComponentModeSelect')")
+            set_select_value(page, '#styleSelect', 'emissive')
+            set_select_value(page, '#twoComponentModeSelect', 'alphaBetaPhase')
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('opacity');
+                    if (!el) return;
+                    el.value = '0.5';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const mode = document.getElementById('twoComponentModeSelect');
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    return mode?.value === 'alphaBetaPhase'
+                      && !!snap
+                      && snap.surfaceOpacity < 0.999
+                      && (snap.supported ? snap.active === true : snap.fallback === true);
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('opacity');
+                    if (!el) return;
+                    el.value = '1.0';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    return !!snap && snap.surfaceOpacity >= 0.999 && snap.active === false;
                 }"""
             )
 

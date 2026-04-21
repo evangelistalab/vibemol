@@ -1,12 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateInContext, loadGlobalModule } from './load-global-module.mjs';
+import { evaluateInContext, loadGlobalModules } from './load-global-module.mjs';
 
 function createThreeStub() {
+  class Vector3 {
+    constructor(x = 0, y = 0, z = 0) {
+      this.x = x;
+      this.y = y;
+      this.z = z;
+    }
+  }
   class BufferAttribute {
     constructor(array, itemSize) {
       this.array = array;
       this.itemSize = itemSize;
+      this.count = array.length / itemSize;
+      this.normalized = false;
     }
   }
   class BufferGeometry {
@@ -17,20 +26,19 @@ function createThreeStub() {
     }
     setIndex(attr) { this.index = attr; }
     setAttribute(name, attr) { this.attributes[name] = attr; }
+    getAttribute(name) { return this.attributes[name] || null; }
     computeVertexNormals() { this.normalsComputed = true; }
   }
-  return { BufferAttribute, BufferGeometry };
+  return { Vector3, BufferAttribute, BufferGeometry };
 }
 
 function createContext() {
-  return loadGlobalModule('assets/app/js/volume-2c.js', {
+  return loadGlobalModules([
+    'assets/app/js/volume-geometry.js',
+    'assets/app/js/volume-2c.js',
+  ], {
     globals: {
       THREE: createThreeStub(),
-      VibeMolVolumeGeometry: {
-        voxelToWorld(_vol, p) {
-          return [p[0] + 10, p[1] + 20, p[2] + 30];
-        },
-      },
       isosurface: {
         marchingCubes: () => ({
           positions: [
@@ -68,6 +76,8 @@ test('volume-2c phase isosurface produces welded geometry with colors', () => {
       alphaIm: new Float32Array([0, 1, 0, 0, 0, 0, 0, 0]),
       betaRe: new Float32Array([0, 0, 1, 0, 0, 0, 0, 0]),
       betaIm: new Float32Array([0, 0, 0, 1, 0, 0, 0, 0]),
+      origin: [0, 0, 0],
+      axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
       idx(i, j, k) { return i + 2 * (j + 2 * k); },
     };
     const geom = window.VibeMolVolume2C.make2CPhaseIsosurface(vol, 'alpha', 0.1);
@@ -75,14 +85,16 @@ test('volume-2c phase isosurface produces welded geometry with colors', () => {
       index: Array.from(geom.index.array),
       positions: Array.from(geom.attributes.position.array),
       colors: Array.from(geom.attributes.color.array),
+      normals: Array.from(geom.attributes.normal.array),
       normalsComputed: geom.normalsComputed,
     };
   })())`));
   assert.deepEqual(result.index, [0, 1, 2, 1, 2, 0]);
   assert.equal(result.positions.length, 9);
   assert.equal(result.colors.length, 9);
-  assert.equal(result.normalsComputed, true);
-  assert.deepEqual(result.positions.slice(0, 3), [10, 20, 30]);
+  assert.equal(result.normals.length, 9);
+  assert.equal(result.normalsComputed, false);
+  assert.deepEqual(result.positions.slice(0, 3).map((v) => Number(v.toFixed(6))), [0, 0, 0]);
 });
 
 test('volume-2c total-colored isosurface produces vertex colors', () => {
@@ -94,6 +106,8 @@ test('volume-2c total-colored isosurface produces vertex colors', () => {
       alphaIm: new Float32Array([0, 1, 0, 0, 0, 0, 0, 0]),
       betaRe: new Float32Array([0, 0, 1, 0, 0, 0, 0, 0]),
       betaIm: new Float32Array([0, 0, 0, 1, 0, 0, 0, 0]),
+      origin: [0, 0, 0],
+      axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
       idx(i, j, k) { return i + 2 * (j + 2 * k); },
     };
     const geom = window.VibeMolVolume2C.make2CTotalColoredIsosurface(vol, 0.1);
@@ -101,11 +115,13 @@ test('volume-2c total-colored isosurface produces vertex colors', () => {
       index: Array.from(geom.index.array),
       positions: Array.from(geom.attributes.position.array),
       colors: Array.from(geom.attributes.color.array),
+      normals: Array.from(geom.attributes.normal.array),
       normalsComputed: geom.normalsComputed,
     };
   })())`));
   assert.deepEqual(result.index, [0, 1, 2, 1, 2, 0]);
   assert.equal(result.positions.length, 9);
   assert.equal(result.colors.length, 9);
-  assert.equal(result.normalsComputed, true);
+  assert.equal(result.normals.length, 9);
+  assert.equal(result.normalsComputed, false);
 });

@@ -15,6 +15,8 @@ function createThreeStub() {
     constructor(array, itemSize) {
       this.array = array;
       this.itemSize = itemSize;
+      this.count = array.length / itemSize;
+      this.normalized = false;
     }
   }
 
@@ -29,6 +31,9 @@ function createThreeStub() {
     }
     setAttribute(name, attr) {
       this.attributes[name] = attr;
+    }
+    getAttribute(name) {
+      return this.attributes[name] || null;
     }
     computeVertexNormals() {
       this.normalsComputed = true;
@@ -103,5 +108,103 @@ test('volume geometry maps voxel coordinates and welds marching-cubes vertices',
   assert.deepEqual(result.world.map((v) => Number(v.toFixed(6))), [0.529177, 1.058354, 1.587532]);
   assert.deepEqual(result.index, [0, 1, 2, 1, 2, 0]);
   assert.equal(result.positions.length, 9);
-  assert.equal(result.normalsComputed, true);
+  assert.equal(result.normalsComputed, false);
+});
+
+test('volume geometry applies gradient-based normals to welded isosurface vertices', () => {
+  const context = loadGlobalModule('assets/app/js/volume-geometry.js', {
+    globals: {
+      THREE: createThreeStub(),
+      isosurface: {
+        marchingCubes: () => ({
+          positions: [
+            [1.5, 1, 1],
+            [1.5, 2, 1],
+            [1.5, 1, 2],
+            [1.5, 1, 2],
+          ],
+          cells: [
+            [0, 1, 2],
+            [0, 1, 3],
+          ],
+        }),
+      },
+    },
+  });
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const data = new Float32Array(4 * 4 * 4);
+    for (let k = 0; k < 4; k++) {
+      for (let j = 0; j < 4; j++) {
+        for (let i = 0; i < 4; i++) {
+          data[i + 4 * (j + 4 * k)] = i;
+        }
+      }
+    }
+    const vol = {
+      nxyz: [4, 4, 4],
+      data,
+      idx(i, j, k) { return i + 4 * (j + 4 * k); },
+      origin: [0, 0, 0],
+      axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+    };
+    const geom = window.VibeMolVolumeGeometry.makeIsosurface(vol, 1.5);
+    return {
+      uniqueVertexCount: geom.attributes.position.count,
+      normals: Array.from(geom.attributes.normal.array),
+      indices: Array.from(geom.index.array),
+    };
+  })())`));
+
+  assert.equal(result.uniqueVertexCount, 3);
+  assert.deepEqual(result.indices, [0, 1, 2, 0, 1, 2]);
+  for (let i = 0; i < result.normals.length; i += 3) {
+    assert.ok(result.normals[i + 0] > 0.99, `expected strong +X normal, got ${result.normals.slice(i, i + 3)}`);
+    assert.ok(Math.abs(result.normals[i + 1]) < 1e-6, `expected near-zero Y normal, got ${result.normals.slice(i, i + 3)}`);
+    assert.ok(Math.abs(result.normals[i + 2]) < 1e-6, `expected near-zero Z normal, got ${result.normals.slice(i, i + 3)}`);
+  }
+});
+
+test('volume geometry keeps gradient normals consistent for negative lobes', () => {
+  const context = loadGlobalModule('assets/app/js/volume-geometry.js', {
+    globals: {
+      THREE: createThreeStub(),
+      isosurface: {
+        marchingCubes: () => ({
+          positions: [
+            [1.5, 1, 1],
+            [1.5, 2, 1],
+            [1.5, 1, 2],
+          ],
+          cells: [
+            [0, 1, 2],
+          ],
+        }),
+      },
+    },
+  });
+  const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {
+    const data = new Float32Array(4 * 4 * 4);
+    for (let k = 0; k < 4; k++) {
+      for (let j = 0; j < 4; j++) {
+        for (let i = 0; i < 4; i++) {
+          data[i + 4 * (j + 4 * k)] = i;
+        }
+      }
+    }
+    const vol = {
+      nxyz: [4, 4, 4],
+      data,
+      idx(i, j, k) { return i + 4 * (j + 4 * k); },
+      origin: [0, 0, 0],
+      axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+    };
+    const geom = window.VibeMolVolumeGeometry.makeIsosurface(vol, -1.5);
+    return Array.from(geom.attributes.normal.array);
+  })())`));
+
+  for (let i = 0; i < result.length; i += 3) {
+    assert.ok(result[i + 0] > 0.99, `expected strong +X normal, got ${result.slice(i, i + 3)}`);
+    assert.ok(Math.abs(result[i + 1]) < 1e-6, `expected near-zero Y normal, got ${result.slice(i, i + 3)}`);
+    assert.ok(Math.abs(result[i + 2]) < 1e-6, `expected near-zero Z normal, got ${result.slice(i, i + 3)}`);
+  }
 });

@@ -1021,7 +1021,18 @@
 
   const dofPostScene = new THREE.Scene();
   const dofPostCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  let dofRenderTarget = null;
+  const sceneBlitScene = new THREE.Scene();
+  const wboitCompositeScene = new THREE.Scene();
+  let sceneRenderTarget = null;
+  let sceneDepthTexture = null;
+  let wboitAccumTarget = null;
+  let wboitRevealTarget = null;
+  let wboitSupportChecked = false;
+  let wboitSupported = false;
+  let wboitFallbackActive = false;
+  let wboitFailureReason = '';
+  let wboitWarningLogged = false;
+  let wboitActiveFrame = false;
   const dofUniforms = {
     tColor: { value: null },
     tDepth: { value: null },
@@ -1116,6 +1127,81 @@
   const dofPostMaterial = createDofPostMaterial(dofUniforms);
   const dofPostQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), dofPostMaterial);
   dofPostScene.add(dofPostQuad);
+  const sceneBlitUniforms = {
+    tColor: { value: null },
+  };
+
+  /**
+   * Create the fullscreen scene blit material used when presenting one offscreen target.
+   * @param {Record<string, {value:any}>} uniforms
+   * @returns {THREE.ShaderMaterial}
+   */
+  function createSceneBlitMaterial(uniforms) {
+    return new THREE.ShaderMaterial({
+      uniforms,
+      depthTest: false,
+      depthWrite: false,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tColor;
+        varying vec2 vUv;
+        void main() {
+          gl_FragColor = texture2D(tColor, vUv);
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+        }
+      `,
+    });
+  }
+  const sceneBlitMaterial = createSceneBlitMaterial(sceneBlitUniforms);
+  const sceneBlitQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), sceneBlitMaterial);
+  sceneBlitScene.add(sceneBlitQuad);
+  const wboitCompositeUniforms = {
+    tAccum: { value: null },
+    tReveal: { value: null },
+  };
+
+  /**
+   * Create the fullscreen WBOIT composite material.
+   * @param {Record<string, {value:any}>} uniforms
+   * @returns {THREE.ShaderMaterial}
+   */
+  function createWboitCompositeMaterial(uniforms) {
+    return new THREE.ShaderMaterial({
+      uniforms,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tAccum;
+        uniform sampler2D tReveal;
+        varying vec2 vUv;
+        void main() {
+          vec4 accum = texture2D(tAccum, vUv);
+          float revealage = texture2D(tReveal, vUv).r;
+          if (revealage >= 0.999) discard;
+          vec3 averageColor = accum.rgb / max(accum.a, 1e-5);
+          gl_FragColor = vec4(averageColor, clamp(1.0 - revealage, 0.0, 1.0));
+        }
+      `,
+    });
+  }
+  const wboitCompositeMaterial = createWboitCompositeMaterial(wboitCompositeUniforms);
+  const wboitCompositeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), wboitCompositeMaterial);
+  wboitCompositeScene.add(wboitCompositeQuad);
 
   // State
   let volumes = []; // {name, vol}
@@ -1239,38 +1325,104 @@
   }
 
   /**
-   * Dispose the current DOF render target.
+   * Dispose the shared scene and WBOIT render targets.
    */
-  function disposeDofRenderTarget() {
-    if (!dofRenderTarget) return;
-    try { if (dofRenderTarget.depthTexture) dofRenderTarget.depthTexture.dispose(); } catch { }
-    try { dofRenderTarget.dispose(); } catch { }
-    dofRenderTarget = null;
+  function disposeSceneRenderTargets() {
+    const disposeTarget = (target) => {
+      if (!target) return;
+      try { target.depthTexture = null; } catch { }
+      try { target.dispose(); } catch { }
+    };
+    disposeTarget(sceneRenderTarget);
+    disposeTarget(wboitAccumTarget);
+    disposeTarget(wboitRevealTarget);
+    sceneRenderTarget = null;
+    wboitAccumTarget = null;
+    wboitRevealTarget = null;
+    if (sceneDepthTexture) {
+      try { sceneDepthTexture.dispose(); } catch { }
+      sceneDepthTexture = null;
+    }
   }
 
   /**
    * Dispose all DOF postprocess resources.
    */
   function disposeDofPostprocessResources() {
-    disposeDofRenderTarget();
+    disposeSceneRenderTargets();
     try {
       if (dofPostQuad.geometry && dofPostQuad.geometry.dispose) dofPostQuad.geometry.dispose();
     } catch { }
     try {
       if (dofPostMaterial && dofPostMaterial.dispose) dofPostMaterial.dispose();
     } catch { }
+    try {
+      if (sceneBlitQuad.geometry && sceneBlitQuad.geometry.dispose) sceneBlitQuad.geometry.dispose();
+    } catch { }
+    try {
+      if (sceneBlitMaterial && sceneBlitMaterial.dispose) sceneBlitMaterial.dispose();
+    } catch { }
+    try {
+      if (wboitCompositeQuad.geometry && wboitCompositeQuad.geometry.dispose) wboitCompositeQuad.geometry.dispose();
+    } catch { }
+    try {
+      if (wboitCompositeMaterial && wboitCompositeMaterial.dispose) wboitCompositeMaterial.dispose();
+    } catch { }
   }
 
   /**
-   * Ensure one DOF render target exists for the current viewport size.
+   * Check whether the current renderer supports WBOIT render targets.
+   * @returns {boolean}
+   */
+  function ensureWboitSupport() {
+    if (wboitSupportChecked) return wboitSupported;
+    wboitSupportChecked = true;
+    try {
+      const gl = renderer && renderer.getContext ? renderer.getContext() : null;
+      const hasColorBufferFloat = !!(gl && (
+        gl.getExtension('EXT_color_buffer_float')
+        || gl.getExtension('EXT_color_buffer_half_float')
+      ));
+      wboitSupported = !!(renderer && renderer.capabilities && renderer.capabilities.isWebGL2 && hasColorBufferFloat);
+      wboitFailureReason = wboitSupported ? '' : 'unsupported';
+    } catch (err) {
+      wboitSupported = false;
+      wboitFailureReason = err && err.message ? String(err.message) : 'capability-check-failed';
+    }
+    return wboitSupported;
+  }
+
+  /**
+   * Create one shared depth texture for scene and WBOIT render targets.
+   * @param {number} width
+   * @param {number} height
+   * @returns {THREE.DepthTexture}
+   */
+  function createSharedSceneDepthTexture(width, height) {
+    const depthTexture = new THREE.DepthTexture(width, height, THREE.UnsignedIntType);
+    depthTexture.minFilter = THREE.NearestFilter;
+    depthTexture.magFilter = THREE.NearestFilter;
+    depthTexture.generateMipmaps = false;
+    return depthTexture;
+  }
+
+  /**
+   * Ensure the offscreen scene and WBOIT render targets match the current viewport size.
    * @param {{bufferWidth:number,bufferHeight:number}} metrics
    * @returns {THREE.WebGLRenderTarget}
    */
-  function ensureDofRenderTarget(metrics) {
+  function ensureSceneRenderTargets(metrics) {
     const width = Math.max(1, Number(metrics && metrics.bufferWidth) || 1);
     const height = Math.max(1, Number(metrics && metrics.bufferHeight) || 1);
-    if (!dofRenderTarget || dofRenderTarget.width !== width || dofRenderTarget.height !== height) {
-      disposeDofRenderTarget();
+    const needsWboitTargets = ensureWboitSupport();
+    const needsResize = !sceneRenderTarget
+      || sceneRenderTarget.width !== width
+      || sceneRenderTarget.height !== height
+      || !sceneDepthTexture
+      || (needsWboitTargets && (!wboitAccumTarget || !wboitRevealTarget));
+    if (needsResize) {
+      disposeSceneRenderTargets();
+      sceneDepthTexture = createSharedSceneDepthTexture(width, height);
       const target = new THREE.WebGLRenderTarget(width, height, {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
@@ -1279,12 +1431,34 @@
         stencilBuffer: false,
       });
       target.texture.generateMipmaps = false;
-      target.depthTexture = new THREE.DepthTexture(width, height, THREE.UnsignedIntType);
-      target.depthTexture.minFilter = THREE.NearestFilter;
-      target.depthTexture.magFilter = THREE.NearestFilter;
-      dofRenderTarget = target;
+      target.depthTexture = sceneDepthTexture;
+      sceneRenderTarget = target;
+      if (needsWboitTargets) {
+        const accumTarget = new THREE.WebGLRenderTarget(width, height, {
+          type: THREE.HalfFloatType,
+          format: THREE.RGBAFormat,
+          minFilter: THREE.NearestFilter,
+          magFilter: THREE.NearestFilter,
+          depthBuffer: true,
+          stencilBuffer: false,
+        });
+        accumTarget.texture.generateMipmaps = false;
+        accumTarget.depthTexture = sceneDepthTexture;
+        const revealTarget = new THREE.WebGLRenderTarget(width, height, {
+          type: THREE.HalfFloatType,
+          format: THREE.RedFormat,
+          minFilter: THREE.NearestFilter,
+          magFilter: THREE.NearestFilter,
+          depthBuffer: true,
+          stencilBuffer: false,
+        });
+        revealTarget.texture.generateMipmaps = false;
+        revealTarget.depthTexture = sceneDepthTexture;
+        wboitAccumTarget = accumTarget;
+        wboitRevealTarget = revealTarget;
+      }
     }
-    return dofRenderTarget;
+    return sceneRenderTarget;
   }
 
   /**
@@ -1322,24 +1496,56 @@
   }
 
   /**
-   * Prepare the postprocess target for this frame.
+   * Present one rendered scene target directly to the default framebuffer.
+   * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   * @param {THREE.WebGLRenderTarget} target
+   */
+  function renderSceneTargetBlit(metrics, target) {
+    sceneBlitUniforms.tColor.value = target ? target.texture : null;
+    renderer.setRenderTarget(null);
+    renderer.setViewport(0, 0, metrics.bufferWidth, metrics.bufferHeight);
+    renderer.setScissorTest(false);
+    renderer.clear();
+    renderer.render(sceneBlitScene, dofPostCamera);
+  }
+
+  /**
+   * Decide whether one offscreen scene target is required this frame.
+   * @returns {boolean}
+   */
+  function needsOffscreenSceneRender() {
+    return isDepthOfFieldActive() || shouldUseWboitForCurrentFrame();
+  }
+
+  /**
+   * Prepare the offscreen scene target for this frame when needed.
    * @param {{bufferWidth:number,bufferHeight:number}} metrics
    * @returns {THREE.WebGLRenderTarget|null}
    */
-  function beginPostprocessFrame(metrics) {
-    if (!isDepthOfFieldActive()) {
+  function beginSceneFrameTarget(metrics) {
+    if (!needsOffscreenSceneRender()) {
+      wboitFallbackActive = false;
+      wboitFailureReason = '';
       renderer.setRenderTarget(null);
       return null;
     }
     try {
-      const target = ensureDofRenderTarget(metrics);
+      const target = ensureSceneRenderTargets(metrics);
       renderer.setRenderTarget(target);
+      wboitFallbackActive = false;
+      wboitFailureReason = '';
       return target;
     } catch (err) {
-      console.warn('[DOF] Postprocess disabled:', err);
-      dofState.enabled = false;
-      syncDofControlState();
-      disposeDofRenderTarget();
+      if (isDepthOfFieldActive()) {
+        console.warn('[DOF] Postprocess disabled:', err);
+        dofState.enabled = false;
+        syncDofControlState();
+      }
+      if (shouldUseWboitForCurrentFrame()) {
+        wboitFallbackActive = true;
+        wboitFailureReason = err && err.message ? String(err.message) : 'target-init-failed';
+      }
+      disposeSceneRenderTargets();
       renderer.setRenderTarget(null);
       return null;
     }
@@ -1348,10 +1554,41 @@
   /**
    * Render the main scene into the currently bound render target.
    * @param {{bufferWidth:number,bufferHeight:number}} metrics
+   * @param {THREE.WebGLRenderTarget|null} sceneTarget
    */
-  function renderSceneFrame(metrics) {
+  function renderSceneFrame(metrics, sceneTarget) {
     updateSceneLightRigOrientation();
     let didSplit = false;
+    wboitActiveFrame = false;
+    if (sceneTarget && shouldUseWboitForCurrentFrame()) {
+      try {
+        didSplit = renderAlphaBetaSplitWboitPass(metrics, sceneTarget);
+      } catch (err) {
+        wboitFallbackActive = true;
+        wboitFailureReason = err && err.message ? String(err.message) : 'split-render-failed';
+        if (!wboitWarningLogged) {
+          console.warn('[WBOIT] Falling back to standard transparency:', err);
+          wboitWarningLogged = true;
+        }
+      }
+      if (!didSplit && !wboitFallbackActive) {
+        try {
+          renderMainWboitPass(metrics, sceneTarget);
+          wboitActiveFrame = true;
+          return;
+        } catch (err) {
+          wboitFallbackActive = true;
+          wboitFailureReason = err && err.message ? String(err.message) : 'render-failed';
+          if (!wboitWarningLogged) {
+            console.warn('[WBOIT] Falling back to standard transparency:', err);
+            wboitWarningLogged = true;
+          }
+        }
+      } else if (didSplit) {
+        wboitActiveFrame = true;
+        return;
+      }
+    }
     try {
       didSplit = renderAlphaBetaSplitPass(metrics);
     } catch { }
@@ -1359,13 +1596,17 @@
   }
 
   /**
-   * Finish the postprocess frame and restore the default framebuffer.
+   * Finish the scene frame and restore the default framebuffer.
    * @param {{bufferWidth:number,bufferHeight:number}} metrics
    * @param {THREE.WebGLRenderTarget|null} target
    */
-  function endPostprocessFrame(metrics, target) {
+  function endSceneFramePresentation(metrics, target) {
     if (target) {
-      renderDepthOfFieldComposite(metrics, target);
+      if (isDepthOfFieldActive()) {
+        renderDepthOfFieldComposite(metrics, target);
+      } else {
+        renderSceneTargetBlit(metrics, target);
+      }
       return;
     }
     renderer.setRenderTarget(null);
@@ -1653,6 +1894,7 @@
     setSurfaceHover(null);
     clearGroup(autoHydrogenPreviewGroup);
     for (const m of meshes) {
+      disposeWboitSurfaceMaterialsForMesh(m);
       try { contentGroup.remove(m); } catch { }
       disposeDeep(m, state);
     }
@@ -4552,6 +4794,25 @@
   }
 
   /**
+   * Keep isosurface blend flags aligned with the active opacity/transmission control.
+   * Standard emissive/toon surfaces use opacity directly; glass uses the slider as
+   * transmission strength and therefore remains transparent whenever transmission is non-zero.
+   * @param {THREE.Material} material
+   * @param {number} value
+   * @param {{mode?:'standard'|'glass'}=} options
+   * @returns {THREE.Material}
+   */
+  function applySurfaceBlendFlags(material, value, options = {}) {
+    if (!material || typeof material !== 'object') return material;
+    const clamped = Math.max(0, Math.min(1, Number.isFinite(Number(value)) ? Number(value) : 1));
+    const isGlassMode = options.mode === 'glass';
+    const isTransparent = isGlassMode ? clamped > 0.001 : clamped < 0.999;
+    if ('transparent' in material) material.transparent = isTransparent;
+    if ('depthWrite' in material) material.depthWrite = !isTransparent;
+    return material;
+  }
+
+  /**
    * Create a material for positive/negative standard isosurfaces.
    * Style behavior depends on the current `surfaceStyle` selection.
    * @param {'pos'|'neg'} sign
@@ -4561,22 +4822,20 @@
   function createIsoMaterial(sign, opacity) {
     const col = new THREE.Color(sign === 'neg' ? negColor.value : posColor.value);
     if (useToonSurfaceStyle()) {
-      return new THREE.MeshToonMaterial({
+      return applySurfaceBlendFlags(new THREE.MeshToonMaterial({
         color: col,
         gradientMap: getToonGradientTexture('surface'),
         emissive: getToonSurfaceEmissive(col),
         emissiveIntensity: 0.4,
         side: THREE.DoubleSide,
-        transparent: true,
         opacity,
-        depthWrite: opacity >= 0.999,
-      });
+      }), opacity);
     }
     if (surfaceStyle === 'glass') {
       col.multiplyScalar(2);
-      return new THREE.MeshPhysicalMaterial({
+      return applySurfaceBlendFlags(new THREE.MeshPhysicalMaterial({
         color: col,
-        transmission: 1.0,
+        transmission: Math.max(0, Math.min(1, Number.isFinite(opacity) ? opacity : 1)),
         roughness: 0.1,
         metalness: 0.0,
         clearcoat: 0.8,
@@ -4585,22 +4844,29 @@
         ior: 1.2,
         thickness: 1.0,
         side: THREE.DoubleSide,
-      });
+        transparent: true,
+        opacity: 1.0,
+      }), opacity, { mode: 'glass' });
     }
     if (surfaceStyle === 'emissive') {
-      return new THREE.MeshPhysicalMaterial({
+      return applySurfaceBlendFlags(new THREE.MeshPhysicalMaterial({
         color: col,
         clearcoat: 1.0,
         clearcoatRoughness: 0.1,
         emissive: col.clone(),
         emissiveIntensity: 0.8,
         side: THREE.DoubleSide,
-        transparent: true,
         opacity
-      });
+      }), opacity);
     }
     // Fallback standard
-    return new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
+    return applySurfaceBlendFlags(new THREE.MeshStandardMaterial({
+      color: col,
+      roughness: 0.4,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+      opacity,
+    }), opacity);
   }
 
   // Material for 2C colored surfaces (vertex colors), matching style selection
@@ -4612,24 +4878,22 @@
    */
   function createIsoMaterial2C(opacity) {
     if (useToonSurfaceStyle()) {
-      return new THREE.MeshToonMaterial({
+      return applySurfaceBlendFlags(new THREE.MeshToonMaterial({
         color: 0xffffff,
         vertexColors: true,
         gradientMap: getToonGradientTexture('surface'),
         emissive: new THREE.Color(0x5f7392),
         emissiveIntensity: 0.2,
         side: THREE.DoubleSide,
-        transparent: true,
         opacity,
-        depthWrite: opacity >= 0.999,
-      });
+      }), opacity);
     }
     if (surfaceStyle === 'glass') {
       // Glassy, tinted by vertex colors; drive transmission with slider
-      return new THREE.MeshPhysicalMaterial({
+      return applySurfaceBlendFlags(new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         vertexColors: true,
-        transmission: 1.0,
+        transmission: Math.max(0, Math.min(1, Number.isFinite(opacity) ? opacity : 1)),
         roughness: 0.1,
         metalness: 0.0,
         clearcoat: 0.8,
@@ -4640,23 +4904,207 @@
         side: THREE.DoubleSide,
         transparent: true,
         opacity: 1.0,
-      });
+      }), opacity, { mode: 'glass' });
     }
     if (surfaceStyle === 'emissive') {
       // Emissive physical with vertex color tint
-      return new THREE.MeshPhysicalMaterial({
+      return applySurfaceBlendFlags(new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         vertexColors: true,
         clearcoat: 1.0,
         clearcoatRoughness: 0.1,
         emissiveIntensity: 0.0,
         side: THREE.DoubleSide,
-        transparent: true,
         opacity,
-      });
+      }), opacity);
     }
     // Fallback standard
-    return new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide, transparent: true, opacity });
+    return applySurfaceBlendFlags(new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.4,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+      opacity,
+    }), opacity);
+  }
+
+  /**
+   * Read the current surface opacity slider as one clamped numeric value.
+   * @returns {number}
+   */
+  function getSurfaceOpacityValue() {
+    const value = parseFloat(opInput && opInput.value || '1');
+    return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 1));
+  }
+
+  /**
+   * Check whether WBOIT should run for the current frame.
+   * @returns {boolean}
+   */
+  function shouldUseWboitForCurrentFrame() {
+    return renderMode === 'surface'
+      && !!showSurfaces
+      && Array.isArray(meshes)
+      && meshes.length > 0
+      && getSurfaceOpacityValue() < 0.999;
+  }
+
+  /**
+   * Dispose cached WBOIT pass materials for one mesh.
+   * @param {THREE.Mesh} mesh
+   */
+  function disposeWboitSurfaceMaterialsForMesh(mesh) {
+    const cache = mesh && mesh.userData ? mesh.userData.vmWboit : null;
+    if (!cache) return;
+    try { if (cache.accumMaterial && cache.accumMaterial.dispose) cache.accumMaterial.dispose(); } catch { }
+    try { if (cache.revealMaterial && cache.revealMaterial.dispose) cache.revealMaterial.dispose(); } catch { }
+    if (mesh && mesh.userData) delete mesh.userData.vmWboit;
+  }
+
+  /**
+   * Clone one visible surface material for WBOIT patching.
+   * @param {THREE.Material} sourceMaterial
+   * @returns {THREE.Material|null}
+   */
+  function cloneSurfaceMaterialForWboit(sourceMaterial) {
+    if (!(sourceMaterial && typeof sourceMaterial.clone === 'function')) return null;
+    const material = sourceMaterial.clone();
+    material.userData = Object.assign({}, material.userData || {});
+    delete material.userData.vmWboitPass;
+    return material;
+  }
+
+  /**
+   * Patch one surface material clone so it outputs WBOIT accumulation or revealage.
+   * @param {THREE.Material} material
+   * @param {{pass:'accum'|'reveal'}} options
+   * @returns {THREE.Material}
+   */
+  function applyWboitSurfacePassPatch(material, options = {}) {
+    if (!(material && typeof material === 'object')) return material;
+    const pass = options.pass === 'reveal' ? 'reveal' : 'accum';
+    const previousOnBeforeCompile = typeof material.onBeforeCompile === 'function'
+      ? material.onBeforeCompile.bind(material)
+      : null;
+    const previousProgramCacheKey = typeof material.customProgramCacheKey === 'function'
+      ? material.customProgramCacheKey.bind(material)
+      : null;
+    material.userData = material.userData || {};
+    const passState = {
+      pass,
+      uniforms: null,
+    };
+    material.userData.vmWboitPass = passState;
+    material.onBeforeCompile = (shader, rendererRef) => {
+      if (previousOnBeforeCompile) previousOnBeforeCompile(shader, rendererRef);
+      shader.uniforms.uWboitAlpha = { value: 1.0 };
+      passState.uniforms = {
+        uWboitAlpha: shader.uniforms.uWboitAlpha,
+      };
+      if (shader.vertexShader.indexOf('varying vec3 vmWboitViewPosition;') === -1) {
+        shader.vertexShader = shader.vertexShader.replace(
+          'void main() {',
+          'varying vec3 vmWboitViewPosition;\nvoid main() {'
+        );
+      }
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\n\tvmWboitViewPosition = -mvPosition.xyz;'
+      );
+      if (shader.fragmentShader.indexOf('uniform float uWboitAlpha;') === -1) {
+        shader.fragmentShader = `uniform float uWboitAlpha;\nvarying vec3 vmWboitViewPosition;\nfloat vmWboitWeight(float z, float alpha) {\n  return alpha * clamp(0.03 / (1e-5 + pow(z / 200.0, 4.0)), 1e-2, 3e3);\n}\n${shader.fragmentShader}`;
+      }
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <tonemapping_fragment>', '')
+        .replace('#include <colorspace_fragment>', '');
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <opaque_fragment>',
+        pass === 'accum'
+          ? `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tfloat vmViewZ = max(1e-5, abs(vmWboitViewPosition.z));\n\tfloat vmWeight = vmWboitWeight(vmViewZ, vmAlpha);\n\tgl_FragColor = vec4(outgoingLight * vmAlpha * vmWeight, vmAlpha * vmWeight);`
+          : `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, vmAlpha);`
+      );
+    };
+    material.customProgramCacheKey = () => {
+      const baseKey = previousProgramCacheKey ? previousProgramCacheKey() : (material.type || 'material');
+      return `${baseKey}:vm-wboit:${pass}:${material.vertexColors ? 1 : 0}`;
+    };
+    material.transparent = true;
+    material.depthTest = true;
+    material.depthWrite = false;
+    material.toneMapped = false;
+    material.blending = THREE.CustomBlending;
+    material.blendEquation = THREE.AddEquation;
+    material.blendEquationAlpha = THREE.AddEquation;
+    if (pass === 'accum') {
+      material.blendSrc = THREE.OneFactor;
+      material.blendDst = THREE.OneFactor;
+      material.blendSrcAlpha = THREE.OneFactor;
+      material.blendDstAlpha = THREE.OneFactor;
+    } else {
+      material.blendSrc = THREE.ZeroFactor;
+      material.blendDst = THREE.OneMinusSrcAlphaFactor;
+      material.blendSrcAlpha = THREE.ZeroFactor;
+      material.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
+    }
+    material.needsUpdate = true;
+    return material;
+  }
+
+  /**
+   * Synchronize one WBOIT pass material with its visible source material.
+   * @param {THREE.Material} sourceMaterial
+   * @param {THREE.Material} passMaterial
+   * @param {number} alpha
+   */
+  function syncWboitSurfacePassMaterial(sourceMaterial, passMaterial, alpha) {
+    if (!(sourceMaterial && passMaterial)) return;
+    let needsMaterialUpdate = false;
+    if (sourceMaterial.color && passMaterial.color) passMaterial.color.copy(sourceMaterial.color);
+    if (sourceMaterial.emissive && passMaterial.emissive) passMaterial.emissive.copy(sourceMaterial.emissive);
+    if ('roughness' in sourceMaterial && 'roughness' in passMaterial) passMaterial.roughness = sourceMaterial.roughness;
+    if ('metalness' in sourceMaterial && 'metalness' in passMaterial) passMaterial.metalness = sourceMaterial.metalness;
+    if ('clearcoat' in sourceMaterial && 'clearcoat' in passMaterial) passMaterial.clearcoat = sourceMaterial.clearcoat;
+    if ('clearcoatRoughness' in sourceMaterial && 'clearcoatRoughness' in passMaterial) {
+      passMaterial.clearcoatRoughness = sourceMaterial.clearcoatRoughness;
+    }
+    if ('reflectivity' in sourceMaterial && 'reflectivity' in passMaterial) passMaterial.reflectivity = sourceMaterial.reflectivity;
+    if ('ior' in sourceMaterial && 'ior' in passMaterial) passMaterial.ior = sourceMaterial.ior;
+    if ('thickness' in sourceMaterial && 'thickness' in passMaterial) passMaterial.thickness = sourceMaterial.thickness;
+    if ('transmission' in sourceMaterial && 'transmission' in passMaterial) passMaterial.transmission = sourceMaterial.transmission;
+    if (passMaterial.side !== sourceMaterial.side) {
+      passMaterial.side = sourceMaterial.side;
+      needsMaterialUpdate = true;
+    }
+    if ('opacity' in passMaterial) passMaterial.opacity = sourceMaterial.opacity;
+    const passState = passMaterial.userData && passMaterial.userData.vmWboitPass;
+    if (passState && passState.uniforms && passState.uniforms.uWboitAlpha) {
+      passState.uniforms.uWboitAlpha.value = Math.max(0, Math.min(1, Number.isFinite(Number(alpha)) ? Number(alpha) : 1));
+    }
+    if (needsMaterialUpdate) passMaterial.needsUpdate = true;
+  }
+
+  /**
+   * Ensure cached WBOIT pass materials exist for one surface mesh.
+   * @param {THREE.Mesh} mesh
+   * @returns {{sourceMaterial:THREE.Material,accumMaterial:THREE.Material,revealMaterial:THREE.Material}|null}
+   */
+  function ensureWboitSurfacePassMaterials(mesh) {
+    if (!(mesh && mesh.material)) return null;
+    const sourceMaterial = mesh.material;
+    const existing = mesh.userData && mesh.userData.vmWboit;
+    if (existing && existing.sourceMaterial === sourceMaterial && existing.accumMaterial && existing.revealMaterial) {
+      return existing;
+    }
+    disposeWboitSurfaceMaterialsForMesh(mesh);
+    const accumMaterial = cloneSurfaceMaterialForWboit(sourceMaterial);
+    const revealMaterial = cloneSurfaceMaterialForWboit(sourceMaterial);
+    if (!(accumMaterial && revealMaterial)) return null;
+    applyWboitSurfacePassPatch(accumMaterial, { pass: 'accum' });
+    applyWboitSurfacePassPatch(revealMaterial, { pass: 'reveal' });
+    const cache = { sourceMaterial, accumMaterial, revealMaterial };
+    mesh.userData = mesh.userData || {};
+    mesh.userData.vmWboit = cache;
+    return cache;
   }
 
   const autoIsoController = createAutoIsoController({
@@ -5646,39 +6094,252 @@
   }
 
   /**
+   * Read split-view render state for alpha/beta two-component rendering.
+   * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
+   * @returns {{renderObjects:{alphaObject:THREE.Object3D,betaObject:THREE.Object3D},leftRect:{x:number,y:number,width:number,height:number},rightRect:{x:number,y:number,width:number,height:number},cssHalfWidth:number}|null}
+   */
+  function getAlphaBetaSplitState(metrics) {
+    if (currentMode !== MODES.DISPLAY) return null;
+    const record = volumes[currentIndex];
+    const vol = record && record.vol;
+    const mode = record && record.component;
+    if (!(vol && vol.isTwoComponent && mode === 'alphaBetaPhase')) return null;
+    const renderObjects = findAlphaBetaRenderObjects();
+    if (!renderObjects) return null;
+    const leftWidth = Math.max(1, Math.floor(metrics.bufferWidth / 2));
+    const rightWidth = Math.max(1, metrics.bufferWidth - leftWidth);
+    const cssHalfWidth = Math.max(1, metrics.cssWidth / 2);
+    return {
+      renderObjects,
+      leftRect: { x: 0, y: 0, width: leftWidth, height: metrics.bufferHeight },
+      rightRect: { x: leftWidth, y: 0, width: rightWidth, height: metrics.bufferHeight },
+      cssHalfWidth,
+    };
+  }
+
+  /**
+   * Apply one viewport/scissor rectangle to the renderer.
+   * @param {{x:number,y:number,width:number,height:number}} rect
+   */
+  function applyRendererRect(rect) {
+    renderer.setScissor(rect.x, rect.y, rect.width, rect.height);
+    renderer.setViewport(rect.x, rect.y, rect.width, rect.height);
+  }
+
+  /**
+   * Clear one render target rectangle with optional depth clearing.
+   * @param {THREE.WebGLRenderTarget|null} target
+   * @param {{x:number,y:number,width:number,height:number}} rect
+   * @param {THREE.Color|number|string} color
+   * @param {number} alpha
+   * @param {{clearDepth?:boolean}=} options
+   */
+  function clearRenderTargetRect(target, rect, color, alpha, options = {}) {
+    const prevColor = renderer.getClearColor(new THREE.Color());
+    const prevAlpha = renderer.getClearAlpha();
+    renderer.setRenderTarget(target);
+    renderer.setScissorTest(true);
+    applyRendererRect(rect);
+    renderer.setClearColor(color, alpha);
+    renderer.clear(true, options.clearDepth !== false, false);
+    renderer.setClearColor(prevColor, prevAlpha);
+  }
+
+  /**
+   * Run one callback with the scene background disabled.
+   * @param {() => any} callback
+   * @returns {any}
+   */
+  function withSceneBackgroundDisabled(callback) {
+    const prevBackground = scene.background;
+    scene.background = null;
+    try {
+      return callback();
+    } finally {
+      scene.background = prevBackground;
+    }
+  }
+
+  /**
+   * Run one render callback with only selected surface meshes and optional non-surface content visible.
+   * @param {THREE.Mesh[]} visibleSurfaceMeshes
+   * @param {{hideNonSurfaces?:boolean}=} options
+   * @param {() => any} callback
+   * @returns {any}
+   */
+  function withContentGroupVisibility(visibleSurfaceMeshes, options = {}, callback) {
+    const prev = [];
+    const allSurfaceMeshes = new Set(Array.isArray(meshes) ? meshes : []);
+    const visibleSet = new Set(Array.isArray(visibleSurfaceMeshes) ? visibleSurfaceMeshes : []);
+    const hideNonSurfaces = !!options.hideNonSurfaces;
+    const children = contentGroup && Array.isArray(contentGroup.children) ? contentGroup.children : [];
+    for (const child of children) {
+      prev.push([child, child.visible]);
+      if (allSurfaceMeshes.has(child)) child.visible = visibleSet.has(child);
+      else if (hideNonSurfaces) child.visible = false;
+    }
+    try {
+      return callback();
+    } finally {
+      for (const entry of prev) entry[0].visible = entry[1];
+    }
+  }
+
+  /**
+   * Collect the currently rendered isosurface meshes for one optional filter.
+   * @param {(mesh:THREE.Mesh) => boolean=} filterFn
+   * @returns {THREE.Mesh[]}
+   */
+  function getRenderableSurfaceMeshes(filterFn) {
+    if (!Array.isArray(meshes) || !meshes.length) return [];
+    return meshes.filter((mesh) => (
+      !!mesh
+      && !!mesh.material
+      && mesh.parent === contentGroup
+      && (!filterFn || filterFn(mesh))
+    ));
+  }
+
+  /**
+   * Render one scene rectangle with the provided visible surface subset.
+   * @param {THREE.WebGLRenderTarget|null} target
+   * @param {{x:number,y:number,width:number,height:number}} rect
+   * @param {THREE.Mesh[]} visibleSurfaceMeshes
+   * @param {{hideNonSurfaces?:boolean,disableBackground?:boolean,clearDepth?:boolean,clearColor?:boolean}=} options
+   */
+  function renderSceneRect(target, rect, visibleSurfaceMeshes, options = {}) {
+    renderer.setRenderTarget(target);
+    renderer.setScissorTest(true);
+    applyRendererRect(rect);
+    const runRender = () => withContentGroupVisibility(visibleSurfaceMeshes, {
+      hideNonSurfaces: !!options.hideNonSurfaces,
+    }, () => {
+      renderer.clear(options.clearColor !== false, options.clearDepth !== false, false);
+      renderer.render(scene, camera);
+    });
+    if (options.disableBackground) {
+      withSceneBackgroundDisabled(runRender);
+      return;
+    }
+    runRender();
+  }
+
+  /**
+   * Render one WBOIT transparent pass into the provided target rectangle.
+   * @param {THREE.WebGLRenderTarget} target
+   * @param {{x:number,y:number,width:number,height:number}} rect
+   * @param {THREE.Mesh[]} surfaceMeshes
+   * @param {'accum'|'reveal'} pass
+   */
+  function renderWboitTransparentPass(target, rect, surfaceMeshes, pass) {
+    const alpha = getSurfaceOpacityValue();
+    const restore = [];
+    renderer.setRenderTarget(target);
+    renderer.setScissorTest(true);
+    applyRendererRect(rect);
+    withSceneBackgroundDisabled(() => withContentGroupVisibility(surfaceMeshes, { hideNonSurfaces: true }, () => {
+      for (const mesh of surfaceMeshes) {
+        const cache = ensureWboitSurfacePassMaterials(mesh);
+        if (!cache) continue;
+        const passMaterial = pass === 'reveal' ? cache.revealMaterial : cache.accumMaterial;
+        syncWboitSurfacePassMaterial(mesh.material, passMaterial, alpha);
+        restore.push([mesh, mesh.material]);
+        mesh.material = passMaterial;
+      }
+      try {
+        renderer.render(scene, camera);
+      } finally {
+        for (const entry of restore) entry[0].material = entry[1];
+      }
+    }));
+  }
+
+  /**
+   * Composite the current WBOIT accumulation and revealage buffers into the scene target.
+   * @param {THREE.WebGLRenderTarget} target
+   * @param {{x:number,y:number,width:number,height:number}} rect
+   */
+  function compositeWboitRect(target, rect) {
+    wboitCompositeUniforms.tAccum.value = wboitAccumTarget ? wboitAccumTarget.texture : null;
+    wboitCompositeUniforms.tReveal.value = wboitRevealTarget ? wboitRevealTarget.texture : null;
+    renderer.setRenderTarget(target);
+    renderer.setScissorTest(true);
+    applyRendererRect(rect);
+    renderer.render(wboitCompositeScene, dofPostCamera);
+  }
+
+  /**
+   * Render one viewport rectangle through the opaque scene + WBOIT transparent pipeline.
+   * @param {{cssHeight:number}} metrics
+   * @param {THREE.WebGLRenderTarget} sceneTarget
+   * @param {{x:number,y:number,width:number,height:number}} rect
+   * @param {number} cssWidth
+   * @param {(mesh:THREE.Mesh) => boolean=} surfaceFilter
+   */
+  function renderWboitViewportRect(metrics, sceneTarget, rect, cssWidth, surfaceFilter) {
+    if (!(ensureWboitSupport() && sceneTarget && wboitAccumTarget && wboitRevealTarget)) {
+      throw new Error(wboitFailureReason || 'wboit-unavailable');
+    }
+    updateActiveCameraProjection(cssWidth, metrics.cssHeight);
+    renderSceneRect(sceneTarget, rect, [], { hideNonSurfaces: false, clearDepth: true, clearColor: true });
+    const surfaceMeshes = getRenderableSurfaceMeshes(surfaceFilter);
+    if (!surfaceMeshes.length) return;
+    clearRenderTargetRect(wboitAccumTarget, rect, 0x000000, 0.0, { clearDepth: false });
+    clearRenderTargetRect(wboitRevealTarget, rect, 0xffffff, 1.0, { clearDepth: false });
+    renderWboitTransparentPass(wboitAccumTarget, rect, surfaceMeshes, 'accum');
+    renderWboitTransparentPass(wboitRevealTarget, rect, surfaceMeshes, 'reveal');
+    compositeWboitRect(sceneTarget, rect);
+  }
+
+  /**
+   * Render the active 2C alpha/beta phase split view through the WBOIT pipeline.
+   * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
+   * @param {THREE.WebGLRenderTarget} sceneTarget
+   * @returns {boolean}
+   */
+  function renderAlphaBetaSplitWboitPass(metrics, sceneTarget) {
+    const split = getAlphaBetaSplitState(metrics);
+    if (!split) return false;
+    const { leftRect, rightRect, cssHalfWidth } = split;
+    try {
+      renderWboitViewportRect(metrics, sceneTarget, leftRect, cssHalfWidth, (mesh) => (
+        !!(mesh && mesh.userData && mesh.userData.phaseHue && mesh.userData.which === 'alpha')
+      ));
+      renderWboitViewportRect(metrics, sceneTarget, rightRect, cssHalfWidth, (mesh) => (
+        !!(mesh && mesh.userData && mesh.userData.phaseHue && mesh.userData.which === 'beta')
+      ));
+      return true;
+    } finally {
+      renderer.setScissorTest(false);
+      updateActiveCameraProjection(metrics.cssWidth, metrics.cssHeight);
+    }
+  }
+
+  /**
    * Render the active 2C alpha/beta phase split view when available.
    * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
    * @returns {boolean}
    */
   function renderAlphaBetaSplitPass(metrics) {
-    if (currentMode !== MODES.DISPLAY) return false;
-    const record = volumes[currentIndex];
-    const vol = record && record.vol;
-    const mode = record && record.component;
-    if (!(vol && vol.isTwoComponent && mode === 'alphaBetaPhase')) return false;
-    const renderObjects = findAlphaBetaRenderObjects();
-    if (!renderObjects) return false;
-    const leftWidth = Math.max(1, Math.floor(metrics.bufferWidth / 2));
-    const rightWidth = Math.max(1, metrics.bufferWidth - leftWidth);
-    const cssHalfWidth = Math.max(1, metrics.cssWidth / 2);
-    const { alphaObject, betaObject } = renderObjects;
+    const split = getAlphaBetaSplitState(metrics);
+    if (!split) return false;
+    const { alphaObject, betaObject } = split.renderObjects;
     const prevAlphaVisible = alphaObject.visible;
     const prevBetaVisible = betaObject.visible;
+    const { leftRect, rightRect, cssHalfWidth } = split;
     renderer.clear();
     renderer.setScissorTest(true);
     try {
       betaObject.visible = false;
       alphaObject.visible = true;
-      renderer.setScissor(0, 0, leftWidth, metrics.bufferHeight);
-      renderer.setViewport(0, 0, leftWidth, metrics.bufferHeight);
+      applyRendererRect(leftRect);
       updateActiveCameraProjection(cssHalfWidth, metrics.cssHeight);
       renderer.render(scene, camera);
 
       renderer.clearDepth();
       alphaObject.visible = false;
       betaObject.visible = true;
-      renderer.setScissor(leftWidth, 0, rightWidth, metrics.bufferHeight);
-      renderer.setViewport(leftWidth, 0, rightWidth, metrics.bufferHeight);
+      applyRendererRect(rightRect);
       updateActiveCameraProjection(cssHalfWidth, metrics.cssHeight);
       renderer.render(scene, camera);
       return true;
@@ -5688,6 +6349,21 @@
       renderer.setScissorTest(false);
       updateActiveCameraProjection(metrics.cssWidth, metrics.cssHeight);
     }
+  }
+
+  /**
+   * Render the full scene through the WBOIT pipeline.
+   * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
+   * @param {THREE.WebGLRenderTarget} sceneTarget
+   */
+  function renderMainWboitPass(metrics, sceneTarget) {
+    const rect = {
+      x: 0,
+      y: 0,
+      width: Math.max(1, metrics.bufferWidth),
+      height: Math.max(1, metrics.bufferHeight),
+    };
+    renderWboitViewportRect(metrics, sceneTarget, rect, metrics.cssWidth, () => true);
   }
 
   /**
@@ -5737,9 +6413,9 @@
     }
     renderEditSelectionTranslateCue();
     const metrics = readRendererViewportMetrics();
-    const dofTarget = beginPostprocessFrame(metrics);
-    renderSceneFrame(metrics);
-    endPostprocessFrame(metrics, dofTarget);
+    const sceneTarget = beginSceneFrameTarget(metrics);
+    renderSceneFrame(metrics, sceneTarget);
+    endSceneFramePresentation(metrics, sceneTarget);
 
     // FPS update
     const dt = now - __fpsLast; __fpsLast = now;
@@ -24482,6 +25158,20 @@
       },
       controlsEnabled: !!(controls && controls.enabled !== false),
     }),
+    getWboitSnapshot: () => ({
+      supported: !!ensureWboitSupport(),
+      active: !!wboitActiveFrame,
+      fallback: !!wboitFallbackActive,
+      surfaceOpacity: getSurfaceOpacityValue(),
+      surfaceStyle: String(surfaceStyle || ''),
+      targetSize: sceneRenderTarget
+        ? {
+          width: Number(sceneRenderTarget.width) || 0,
+          height: Number(sceneRenderTarget.height) || 0,
+        }
+        : { width: 0, height: 0 },
+      transparentMeshCount: getRenderableSurfaceMeshes(() => true).length,
+    }),
     getBondCarrierSnapshots: () => {
       if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
       const out = [];
@@ -27618,6 +28308,7 @@
    * @param {THREE.Mesh} mesh
    */
   function addSurfaceMesh(mesh) {
+    if (mesh) mesh.renderOrder = 10;
     contentGroup.add(mesh);
     meshes.push(mesh);
   }
@@ -28142,12 +28833,13 @@
           // Glass style: drive transmission instead of opacity
           mat.transmission = Math.max(0, Math.min(1, op));
           mat.opacity = 1.0;
+          applySurfaceBlendFlags(mat, op, { mode: 'glass' });
         } else if (mat.isShaderMaterial && mat.uniforms && mat.uniforms.uAlpha) {
           // Custom shader materials (e.g., 2C cloud cubes)
           mat.uniforms.uAlpha.value = Math.max(0, Math.min(1, op));
         } else {
           mat.opacity = op;
-          mat.transparent = true;
+          applySurfaceBlendFlags(mat, op);
         }
         mat.needsUpdate = true;
         continue;
@@ -28163,17 +28855,18 @@
           col.multiplyScalar(2);
           mat.transmission = Math.max(0, Math.min(1, op));
           mat.color.copy(col);
+          applySurfaceBlendFlags(mat, op, { mode: 'glass' });
         } else {
           // Emissive physical (default): use opacity, keep emissiveIntensity intact
           mat.opacity = op;
-          mat.transparent = true;
+          applySurfaceBlendFlags(mat, op);
           mat.color.copy(col);
           if (mat.emissive) mat.emissive.copy(col);
         }
       } else {
         // Fallback materials (standard/toon)
         mat.opacity = op;
-        mat.transparent = true;
+        applySurfaceBlendFlags(mat, op);
         mat.color.copy(col);
         // Keep toon surface glow synchronized with sign color updates.
         if (mat.isMeshToonMaterial && mat.emissive) {
