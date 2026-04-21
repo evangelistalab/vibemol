@@ -1266,6 +1266,8 @@
   let moleculeInkEnabled = false;
   let moleculeAtomOpacity = 1.0;
   let moleculeBondOpacity = 1.0;
+  const GLASS_SURFACE_FIXED_TRANSMISSION = 1.0;
+  const GLASS_SURFACE_COLOR_SCALE = 2.0;
   const dofState = {
     enabled: false,
     focusMode: 'auto',
@@ -4794,19 +4796,17 @@
   }
 
   /**
-   * Keep isosurface blend flags aligned with the active opacity/transmission control.
-   * Standard emissive/toon surfaces use opacity directly; glass uses the slider as
-   * transmission strength and therefore remains transparent whenever transmission is non-zero.
+   * Keep isosurface blend flags aligned with the active opacity control.
+   * Transparent surfaces never write depth; opaque surfaces do.
    * @param {THREE.Material} material
    * @param {number} value
-   * @param {{mode?:'standard'|'glass'}=} options
+   * @param {{forceTransparent?:boolean}=} options
    * @returns {THREE.Material}
    */
   function applySurfaceBlendFlags(material, value, options = {}) {
     if (!material || typeof material !== 'object') return material;
     const clamped = Math.max(0, Math.min(1, Number.isFinite(Number(value)) ? Number(value) : 1));
-    const isGlassMode = options.mode === 'glass';
-    const isTransparent = isGlassMode ? clamped > 0.001 : clamped < 0.999;
+    const isTransparent = options.forceTransparent === true ? true : clamped < 0.999;
     if ('transparent' in material) material.transparent = isTransparent;
     if ('depthWrite' in material) material.depthWrite = !isTransparent;
     return material;
@@ -4832,24 +4832,26 @@
       }), opacity);
     }
     if (surfaceStyle === 'glass') {
-      col.multiplyScalar(2);
-      return applySurfaceBlendFlags(new THREE.MeshPhysicalMaterial({
+      col.multiplyScalar(GLASS_SURFACE_COLOR_SCALE);
+      const mat = new THREE.MeshPhysicalMaterial({
         color: col,
-        transmission: Math.max(0, Math.min(1, Number.isFinite(opacity) ? opacity : 1)),
-        roughness: 0.1,
+        transmission: GLASS_SURFACE_FIXED_TRANSMISSION,
+        roughness: 0.08,
         metalness: 0.0,
-        clearcoat: 0.8,
-        clearcoatRoughness: 0.025,
-        reflectivity: 0.1,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.02,
+        reflectivity: 0.18,
         ior: 1.2,
         thickness: 1.0,
         side: THREE.DoubleSide,
         transparent: true,
         opacity: 1.0,
-      }), opacity, { mode: 'glass' });
+      });
+      mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: 'glass' });
+      return applySurfaceBlendFlags(mat, 1.0, { forceTransparent: true });
     }
     if (surfaceStyle === 'emissive') {
-      return applySurfaceBlendFlags(new THREE.MeshPhysicalMaterial({
+      const mat = new THREE.MeshPhysicalMaterial({
         color: col,
         clearcoat: 1.0,
         clearcoatRoughness: 0.1,
@@ -4857,16 +4859,20 @@
         emissiveIntensity: 0.8,
         side: THREE.DoubleSide,
         opacity
-      }), opacity);
+      });
+      mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: 'emissive' });
+      return applySurfaceBlendFlags(mat, opacity);
     }
     // Fallback standard
-    return applySurfaceBlendFlags(new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({
       color: col,
       roughness: 0.4,
       metalness: 0.05,
       side: THREE.DoubleSide,
       opacity,
-    }), opacity);
+    });
+    mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: 'standard' });
+    return applySurfaceBlendFlags(mat, opacity);
   }
 
   // Material for 2C colored surfaces (vertex colors), matching style selection
@@ -4889,26 +4895,28 @@
       }), opacity);
     }
     if (surfaceStyle === 'glass') {
-      // Glassy, tinted by vertex colors; drive transmission with slider
-      return applySurfaceBlendFlags(new THREE.MeshPhysicalMaterial({
+      // Glassy, tinted by vertex colors. The shared opacity slider is ignored for this style.
+      const mat = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         vertexColors: true,
-        transmission: Math.max(0, Math.min(1, Number.isFinite(opacity) ? opacity : 1)),
-        roughness: 0.1,
+        transmission: GLASS_SURFACE_FIXED_TRANSMISSION,
+        roughness: 0.08,
         metalness: 0.0,
-        clearcoat: 0.8,
-        clearcoatRoughness: 0.025,
-        reflectivity: 0.1,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.02,
+        reflectivity: 0.18,
         ior: 1.2,
         thickness: 1.0,
         side: THREE.DoubleSide,
         transparent: true,
         opacity: 1.0,
-      }), opacity, { mode: 'glass' });
+      });
+      mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: 'glass' });
+      return applySurfaceBlendFlags(mat, 1.0, { forceTransparent: true });
     }
     if (surfaceStyle === 'emissive') {
       // Emissive physical with vertex color tint
-      return applySurfaceBlendFlags(new THREE.MeshPhysicalMaterial({
+      const mat = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         vertexColors: true,
         clearcoat: 1.0,
@@ -4916,16 +4924,20 @@
         emissiveIntensity: 0.0,
         side: THREE.DoubleSide,
         opacity,
-      }), opacity);
+      });
+      mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: 'emissive' });
+      return applySurfaceBlendFlags(mat, opacity);
     }
     // Fallback standard
-    return applySurfaceBlendFlags(new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({
       vertexColors: true,
       roughness: 0.4,
       metalness: 0.05,
       side: THREE.DoubleSide,
       opacity,
-    }), opacity);
+    });
+    mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: 'standard' });
+    return applySurfaceBlendFlags(mat, opacity);
   }
 
   /**
@@ -4944,6 +4956,7 @@
   function shouldUseWboitForCurrentFrame() {
     return renderMode === 'surface'
       && !!showSurfaces
+      && surfaceStyle !== 'glass'
       && Array.isArray(meshes)
       && meshes.length > 0
       && getSurfaceOpacityValue() < 0.999;
@@ -4968,8 +4981,28 @@
    */
   function cloneSurfaceMaterialForWboit(sourceMaterial) {
     if (!(sourceMaterial && typeof sourceMaterial.clone === 'function')) return null;
-    const material = sourceMaterial.clone();
-    material.userData = Object.assign({}, material.userData || {});
+    const sourceSurfaceStyle = String(sourceMaterial.userData && sourceMaterial.userData.vmSurfaceStyle || '');
+    let material = null;
+    if (sourceSurfaceStyle === 'glass' && sourceMaterial.isMeshPhysicalMaterial) {
+      material = new THREE.MeshPhysicalMaterial({
+        color: sourceMaterial.color ? sourceMaterial.color.clone() : new THREE.Color(0xffffff),
+        vertexColors: !!sourceMaterial.vertexColors,
+        roughness: Number(sourceMaterial.roughness) || 0,
+        metalness: Number(sourceMaterial.metalness) || 0,
+        clearcoat: Number(sourceMaterial.clearcoat) || 0,
+        clearcoatRoughness: Number(sourceMaterial.clearcoatRoughness) || 0,
+        reflectivity: Number(sourceMaterial.reflectivity) || 0,
+        ior: Number(sourceMaterial.ior) || 1.2,
+        thickness: Number(sourceMaterial.thickness) || 1.0,
+        side: sourceMaterial.side,
+        transparent: true,
+        opacity: 1.0,
+        transmission: 0.0,
+      });
+    } else {
+      material = sourceMaterial.clone();
+    }
+    material.userData = Object.assign({}, sourceMaterial.userData || {}, material.userData || {});
     delete material.userData.vmWboitPass;
     return material;
   }
@@ -4998,8 +5031,10 @@
     material.onBeforeCompile = (shader, rendererRef) => {
       if (previousOnBeforeCompile) previousOnBeforeCompile(shader, rendererRef);
       shader.uniforms.uWboitAlpha = { value: 1.0 };
+      shader.uniforms.uWboitGlassMode = { value: 0.0 };
       passState.uniforms = {
         uWboitAlpha: shader.uniforms.uWboitAlpha,
+        uWboitGlassMode: shader.uniforms.uWboitGlassMode,
       };
       if (shader.vertexShader.indexOf('varying vec3 vmWboitViewPosition;') === -1) {
         shader.vertexShader = shader.vertexShader.replace(
@@ -5012,7 +5047,7 @@
         '#include <project_vertex>\n\tvmWboitViewPosition = -mvPosition.xyz;'
       );
       if (shader.fragmentShader.indexOf('uniform float uWboitAlpha;') === -1) {
-        shader.fragmentShader = `uniform float uWboitAlpha;\nvarying vec3 vmWboitViewPosition;\nfloat vmWboitWeight(float z, float alpha) {\n  return alpha * clamp(0.03 / (1e-5 + pow(z / 200.0, 4.0)), 1e-2, 3e3);\n}\n${shader.fragmentShader}`;
+        shader.fragmentShader = `uniform float uWboitAlpha;\nuniform float uWboitGlassMode;\nvarying vec3 vmWboitViewPosition;\nfloat vmWboitWeight(float z, float alpha) {\n  return alpha * clamp(0.03 / (1e-5 + pow(z / 200.0, 4.0)), 1e-2, 3e3);\n}\n${shader.fragmentShader}`;
       }
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <tonemapping_fragment>', '')
@@ -5020,8 +5055,8 @@
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <opaque_fragment>',
         pass === 'accum'
-          ? `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tfloat vmViewZ = max(1e-5, abs(vmWboitViewPosition.z));\n\tfloat vmWeight = vmWboitWeight(vmViewZ, vmAlpha);\n\tgl_FragColor = vec4(outgoingLight * vmAlpha * vmWeight, vmAlpha * vmWeight);`
-          : `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, vmAlpha);`
+          ? `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tvec3 vmFinalLight = outgoingLight;\n\tif (uWboitGlassMode > 0.5) {\n\t\tvec3 vmViewDir = normalize(vViewPosition);\n\t\tfloat vmNdotV = max(dot(normalize(normal), vmViewDir), 0.0);\n\t\tfloat vmGlassFresnel = pow(max(1.0 - vmNdotV, 0.0), 3.4);\n\t\tvec3 vmGlassEdgeColor = mix(diffuseColor.rgb, vec3(1.0), 0.35);\n\t\tvmFinalLight = mix(outgoingLight, vmGlassEdgeColor, clamp(vmGlassFresnel * 0.32, 0.0, 1.0));\n\t\tvmAlpha = mix(vmAlpha, min(0.56, vmAlpha * 1.3), vmGlassFresnel * 0.55);\n\t}\n\tfloat vmViewZ = max(1e-5, abs(vmWboitViewPosition.z));\n\tfloat vmWeight = vmWboitWeight(vmViewZ, vmAlpha);\n\tgl_FragColor = vec4(vmFinalLight * vmAlpha * vmWeight, vmAlpha * vmWeight);`
+          : `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tif (uWboitGlassMode > 0.5) {\n\t\tvec3 vmViewDir = normalize(vViewPosition);\n\t\tfloat vmNdotV = max(dot(normalize(normal), vmViewDir), 0.0);\n\t\tfloat vmGlassFresnel = pow(max(1.0 - vmNdotV, 0.0), 3.4);\n\t\tvmAlpha = mix(vmAlpha, min(0.56, vmAlpha * 1.3), vmGlassFresnel * 0.55);\n\t}\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, vmAlpha);`
       );
     };
     material.customProgramCacheKey = () => {
@@ -5059,6 +5094,7 @@
   function syncWboitSurfacePassMaterial(sourceMaterial, passMaterial, alpha) {
     if (!(sourceMaterial && passMaterial)) return;
     let needsMaterialUpdate = false;
+    const sourceSurfaceStyle = String(sourceMaterial.userData && sourceMaterial.userData.vmSurfaceStyle || '');
     if (sourceMaterial.color && passMaterial.color) passMaterial.color.copy(sourceMaterial.color);
     if (sourceMaterial.emissive && passMaterial.emissive) passMaterial.emissive.copy(sourceMaterial.emissive);
     if ('roughness' in sourceMaterial && 'roughness' in passMaterial) passMaterial.roughness = sourceMaterial.roughness;
@@ -5070,7 +5106,9 @@
     if ('reflectivity' in sourceMaterial && 'reflectivity' in passMaterial) passMaterial.reflectivity = sourceMaterial.reflectivity;
     if ('ior' in sourceMaterial && 'ior' in passMaterial) passMaterial.ior = sourceMaterial.ior;
     if ('thickness' in sourceMaterial && 'thickness' in passMaterial) passMaterial.thickness = sourceMaterial.thickness;
-    if ('transmission' in sourceMaterial && 'transmission' in passMaterial) passMaterial.transmission = sourceMaterial.transmission;
+    if ('transmission' in sourceMaterial && 'transmission' in passMaterial) {
+      passMaterial.transmission = sourceSurfaceStyle === 'glass' ? 0.0 : sourceMaterial.transmission;
+    }
     if (passMaterial.side !== sourceMaterial.side) {
       passMaterial.side = sourceMaterial.side;
       needsMaterialUpdate = true;
@@ -5079,6 +5117,9 @@
     const passState = passMaterial.userData && passMaterial.userData.vmWboitPass;
     if (passState && passState.uniforms && passState.uniforms.uWboitAlpha) {
       passState.uniforms.uWboitAlpha.value = Math.max(0, Math.min(1, Number.isFinite(Number(alpha)) ? Number(alpha) : 1));
+    }
+    if (passState && passState.uniforms && passState.uniforms.uWboitGlassMode) {
+      passState.uniforms.uWboitGlassMode.value = sourceSurfaceStyle === 'glass' ? 1.0 : 0.0;
     }
     if (needsMaterialUpdate) passMaterial.needsUpdate = true;
   }
@@ -23896,6 +23937,23 @@
     setTooltipText(styleSelect, toonSurfaces
       ? 'Disabled: Toon molecule style enforces toon surfaces'
       : 'Choose iso-surface material style');
+    const glassSurfaceStyle = !toonSurfaces && surfaceStyle === 'glass';
+    const opacityRangeEl = document.getElementById('opacityRange');
+    const opacitySliderRoot = opInput ? opInput.closest('[data-vm-slider]') : null;
+    const opacityRow = opInput ? opInput.closest('.vm-field-row') : null;
+    const opacityTooltip = glassSurfaceStyle
+      ? 'Glass uses a fixed transparency profile; opacity is disabled for this surface style'
+      : 'Surface opacity';
+    if (opInput) {
+      opInput.disabled = glassSurfaceStyle;
+      setTooltipText(opInput, opacityTooltip);
+    }
+    if (opacityRangeEl) {
+      opacityRangeEl.disabled = glassSurfaceStyle;
+      setTooltipText(opacityRangeEl, opacityTooltip);
+    }
+    if (opacitySliderRoot) setTooltipText(opacitySliderRoot, opacityTooltip);
+    if (opacityRow) setTooltipText(opacityRow, opacityTooltip);
     syncAllAppearanceActionToggleButtons();
   }
 
@@ -24234,6 +24292,7 @@
     styleSelect.onchange = () => {
       surfaceStyle = styleSelect.value;
       if (appearanceInspectorController) appearanceInspectorController.syncActionToggles();
+      syncSurfaceStyleControlState();
       rebuildScene({ preserveView: true });
     };
   }
@@ -25163,6 +25222,9 @@
       active: !!wboitActiveFrame,
       fallback: !!wboitFallbackActive,
       surfaceOpacity: getSurfaceOpacityValue(),
+      surfaceOpacityInput: Math.max(0, Math.min(1, Number.isFinite(parseFloat(opInput && opInput.value || '1'))
+        ? parseFloat(opInput && opInput.value || '1')
+        : 1)),
       surfaceStyle: String(surfaceStyle || ''),
       targetSize: sceneRenderTarget
         ? {
@@ -25171,6 +25233,26 @@
         }
         : { width: 0, height: 0 },
       transparentMeshCount: getRenderableSurfaceMeshes(() => true).length,
+    }),
+    getSurfaceMaterialSnapshot: () => getRenderableSurfaceMeshes(() => true).map((mesh) => {
+      const material = mesh && mesh.material ? mesh.material : null;
+      const color = material && material.color ? material.color : null;
+      return {
+        sign: String(mesh && mesh.userData && mesh.userData.sign || ''),
+        phaseHue: !!(mesh && mesh.userData && mesh.userData.phaseHue),
+        type: String(material && material.type || ''),
+        opacity: Number(material && material.opacity) || 0,
+        transparent: !!(material && material.transparent),
+        depthWrite: !!(material && material.depthWrite),
+        transmission: Number(material && material.transmission) || 0,
+        color: color
+          ? {
+            r: Number(color.r) || 0,
+            g: Number(color.g) || 0,
+            b: Number(color.b) || 0,
+          }
+          : null,
+      };
     }),
     getBondCarrierSnapshots: () => {
       if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
@@ -28829,17 +28911,18 @@
       if (m.userData && m.userData.phaseHue) {
         // For phase‑hued meshes, keep vertex colors, update style‑specific transparency/glassness
         const mat = m.material;
-        if (mat.isMeshPhysicalMaterial && 'transmission' in mat && surfaceStyle === 'glass') {
-          // Glass style: drive transmission instead of opacity
-          mat.transmission = Math.max(0, Math.min(1, op));
-          mat.opacity = 1.0;
-          applySurfaceBlendFlags(mat, op, { mode: 'glass' });
-        } else if (mat.isShaderMaterial && mat.uniforms && mat.uniforms.uAlpha) {
+        if (mat.isShaderMaterial && mat.uniforms && mat.uniforms.uAlpha) {
           // Custom shader materials (e.g., 2C cloud cubes)
           mat.uniforms.uAlpha.value = Math.max(0, Math.min(1, op));
         } else {
-          mat.opacity = op;
-          applySurfaceBlendFlags(mat, op);
+          if (surfaceStyle === 'glass' && mat.isMeshPhysicalMaterial && 'transmission' in mat) {
+            mat.opacity = 1.0;
+            mat.transmission = GLASS_SURFACE_FIXED_TRANSMISSION;
+            applySurfaceBlendFlags(mat, 1.0, { forceTransparent: true });
+          } else {
+            mat.opacity = op;
+            applySurfaceBlendFlags(mat, op);
+          }
         }
         mat.needsUpdate = true;
         continue;
@@ -28850,14 +28933,14 @@
       const mat = m.material;
       // Adapt behavior to glossy physical materials
       if (mat.isMeshPhysicalMaterial) {
-        if (surfaceStyle === 'glass' && 'transmission' in mat) {
-          // For glass: drive transmission with slider, keep alpha at 1
-          col.multiplyScalar(2);
-          mat.transmission = Math.max(0, Math.min(1, op));
+        if (surfaceStyle === 'glass') {
+          mat.opacity = 1.0;
+          applySurfaceBlendFlags(mat, 1.0, { forceTransparent: true });
+          col.multiplyScalar(GLASS_SURFACE_COLOR_SCALE);
           mat.color.copy(col);
-          applySurfaceBlendFlags(mat, op, { mode: 'glass' });
+          if ('transmission' in mat) mat.transmission = GLASS_SURFACE_FIXED_TRANSMISSION;
         } else {
-          // Emissive physical (default): use opacity, keep emissiveIntensity intact
+          // Physical surface styles use the shared opacity slider directly.
           mat.opacity = op;
           applySurfaceBlendFlags(mat, op);
           mat.color.copy(col);

@@ -4023,8 +4023,16 @@ def main() -> int:
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap
                       && snap.surfaceStyle === 'glass'
-                      && snap.surfaceOpacity < 0.999
-                      && (snap.supported ? snap.active === true : snap.fallback === true);
+                      && snap.active === false;
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
+                    return materials.length >= 2
+                      && materials.every((mat) => Math.abs(Number(mat.opacity || 0) - 1.0) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.transmission || 0) - 1.0) < 1e-3)
+                      && materials.every((mat) => mat.transparent === true && mat.depthWrite === false);
                 }"""
             )
             page.evaluate(
@@ -4039,7 +4047,25 @@ def main() -> int:
             page.wait_for_function(
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
-                    return !!snap && snap.surfaceOpacity >= 0.999 && snap.active === false;
+                    return !!snap
+                      && snap.surfaceStyle === 'glass'
+                      && snap.active === false;
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
+                    return materials.length >= 2
+                      && materials.every((mat) => Math.abs(Number(mat.opacity || 0) - 1.0) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.transmission || 0) - 1.0) < 1e-3)
+                      && materials.every((mat) => mat.transparent === true && mat.depthWrite === false);
+                }"""
+            )
+            set_select_value(page, '#styleSelect', 'emissive')
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    return !!snap && snap.surfaceStyle === 'emissive' && snap.surfaceOpacity >= 0.999 && snap.active === false;
                 }"""
             )
 
