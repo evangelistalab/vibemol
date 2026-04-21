@@ -238,6 +238,8 @@ Preset automation contract exposed globally:
 - Multi-frame `.xyz` files are parsed as trajectories and can be animated from the Trajectory panel controls.
 - Autoiso caches per file/component/orbital and falls back to synchronous estimation when the worker path is unavailable.
 - Surface hover metrics are shown only for normalized orbital-like grids (`∫q² dV ≈ 1`) and are cached per surface.
+- Standard and 2C isosurface normals are derived from scalar-field gradients rather than triangle-averaged face normals, which keeps shading stable across browsers and material styles.
+- Transparent isosurfaces use weighted blended order-independent transparency (WBOIT) when supported; unsupported renderers fall back to the simpler transparent path without changing the UI contract.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Preset `extensions.builder.fragmentOpsByFile` stores fragment-builder operation logs and restores them on load; replay is not implemented yet.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
@@ -315,7 +317,7 @@ Implemented:
 - `vol.annotations.metalBonding.byAtomId[atomId].mode` stores per-metal override mode (`auto`, `force_covalent`, `force_dative`, `no_bonds`) for coordination-bond inference.
 - The `Symmetry` tool is available in edit mode, supports point-group analysis, RMS-based candidate filtering, preview/apply/auto-apply symmetrization, and 3D symmetry-element rendering.
 - `Save Structure` exports the active editable record as a reproducible `vibemol.structure` JSON document.
-- `tests/e2e/smoke.py` is the required automated regression check for edit-mode flow changes (adaptive menu, Build-search hotkeys, selection, move/rotate gizmos, add-atom/add-molecule operators, structure round-trip, bond popup editing, cleanup preview/apply, UFF structure optimization, trajectory playback, and trajectory/vibration video export behavior).
+- `tests/e2e/smoke.py` is the required automated regression check for edit-mode flow changes (adaptive menu, Build-search hotkeys, selection, move/rotate gizmos, add-atom/add-molecule operators, structure round-trip, bond popup editing, cleanup preview/apply, UFF structure optimization, trajectory playback, trajectory/vibration video export behavior, and WBOIT surface-transparency activation/fallback behavior).
 - Atom labels and atom numbers can be toggled independently.
 - New untitled editable files can be created from the toolbar and duplicated/removed from the active-file control area.
 - Coordinates-window rows mirror atom hover, and the table supports inline editing of atom order, element symbol/atomic number, and Cartesian coordinates with validation.

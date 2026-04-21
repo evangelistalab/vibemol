@@ -29,6 +29,8 @@ This is a living roadmap. It tracks what is shipped, what still needs hardening,
 - [x] Explicit Build palette and selection `+` build cue for gated open-site placement.
 - [x] Post-delete frontier hydrogen repair and lower-valence replacement pruning in edit mode.
 - [x] Optional molecule self-shadowing in appearance controls.
+- [x] Gradient-based isosurface normals for standard and 2C surfaces (replacing triangle-averaged marching-cubes normals).
+- [x] Weighted blended order-independent transparency (WBOIT) for transparent isosurfaces, with fallback on unsupported renderers.
 - [x] Ongoing performance/refactor passes (resource disposal, modular helpers, autoiso worker).
 
 ### Partially completed / needs hardening
@@ -96,6 +98,7 @@ This is a living roadmap. It tracks what is shipped, what still needs hardening,
   - builder flows (atom/fragment/molecule placement, transform, undo/redo)
   - symmetry workflows
   - metal-bond workflows
+  - transparent-surface rendering (WBOIT activation/fallback and split 2C coverage)
   - trajectory/vibration playback
   - preset round-trip and compatibility aliases
 - [ ] Performance budgets + telemetry hooks:
