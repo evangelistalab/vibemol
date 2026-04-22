@@ -460,7 +460,17 @@
         return false;
       }
       state.press = null;
-      if (press.kind === 'void-clear') {
+      if (press.kind === 'bond-inert') {
+        const bondCenterHit = press.bondHit && press.bondHit.object && press.bondHit.section === 'center'
+          ? press.bondHit
+          : resolveBondCenterClickHit(e);
+        if (bondCenterHit && applyBondCenterClick(bondCenterHit, e)) {
+          if (activePointerId != null) releasePointer(activePointerId);
+          state.activePointerId = null;
+          updateIdleHover(e);
+          return true;
+        }
+      } else if (press.kind === 'void-clear') {
         if (clearSelection()) setHintMessage('Selection cleared.');
       } else if (press.kind === 'void-place') {
         const result = placeVoidAtom(e) || null;

@@ -975,6 +975,7 @@
   let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
   let bondCenterSelectionState = null;
+  const bondCenterClickDirectionByKey = new Map();
   let buildSearchKeyboardSelectionKey = '';
   let buildPaletteFilterQuery = '';
   let symmetryController = null;
@@ -19341,6 +19342,16 @@
     }
     if (intent === EDIT_INTENT.ATOM_MANIPULATION) {
       const clickPress = controllerState && controllerState.press ? controllerState.press : null;
+      if (clickPress && !__editMoved && clickPress.kind === 'bond-inert') {
+        const bondHit = clickPress.bondHit && clickPress.bondHit.object && clickPress.bondHit.section === 'center'
+          ? clickPress.bondHit
+          : resolveGestureBondCenterClickHit(e);
+        if (bondHit && stepGestureBondCenterOrder(bondHit, 1, e)) {
+          clearExternalGestureControllerState(controllerState, e && e.pointerId);
+          __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+          return true;
+        }
+      }
       const payload = getCurrentBuildPayload();
       if (
         clickPress
@@ -21489,8 +21500,48 @@
   }
 
   function stepGestureBondCenterOrder(bondHit, delta, pointerLike = null) {
-    if (getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || !bondEditing || !bondHit || !bondHit.object || bondHit.section !== 'center') return false;
-    const changed = !!bondEditing.stepCarrierOrder(bondHit.object, delta);
+    if (
+      getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION
+      || isFragmentPayloadLoaded()
+      || !!addFusePreviewState
+      || !bondEditing
+      || !bondHit
+      || !bondHit.object
+      || bondHit.section !== 'center'
+    ) return false;
+    const record = ensureEditableVolumeRecord();
+    const vol = record && record.vol;
+    const carrier = bondHit.object;
+    const i = carrier && carrier.userData ? (carrier.userData.i | 0) : -1;
+    const j = carrier && carrier.userData ? (carrier.userData.j | 0) : -1;
+    let changed = false;
+    if (
+      vol
+      && Array.isArray(vol.atoms)
+      && i >= 0
+      && j >= 0
+      && i < vol.atoms.length
+      && j < vol.atoms.length
+      && i !== j
+    ) {
+      const atomA = vol.atoms[i];
+      const atomB = vol.atoms[j];
+      const atomIdA = ensureAtomId(atomA);
+      const atomIdB = ensureAtomId(atomB);
+      const normalizedIds = normalizeBondCenterSelectionIds(atomIdA, atomIdB);
+      const metalPair = !!(isMetalAtomZ((atomA && atomA.Z) | 0) || isMetalAtomZ((atomB && atomB.Z) | 0));
+      if (!metalPair && normalizedIds) {
+        const currentOrder = clampBondCenterInteractiveOrder(getBondCarrierDisplayedOrder(carrier));
+        const nextOrder = getNextBondCenterClickOrder(normalizedIds.atomIdA, normalizedIds.atomIdB, currentOrder);
+        changed = nextOrder > 0
+          ? !!bondEditing.applyToAtomPair(i, j, { orderOverride: nextOrder })
+          : false;
+      } else {
+        changed = !!bondEditing.stepCarrierOrder(carrier, delta);
+      }
+    } else {
+      changed = !!bondEditing.stepCarrierOrder(carrier, delta);
+    }
     if (changed) queuePointerHoverRefresh(pointerLike);
     return changed;
   }
@@ -21499,6 +21550,33 @@
     const value = Number(order);
     if (!Number.isFinite(value)) return 0;
     return Math.max(0, Math.min(4, Math.round(value)));
+  }
+
+  function getBondCenterClickDirectionKey(atomIdA, atomIdB) {
+    const normalizedIds = normalizeBondCenterSelectionIds(atomIdA, atomIdB);
+    if (!normalizedIds) return '';
+    return `${currentIndex}|${normalizedIds.atomIdA}|${normalizedIds.atomIdB}`;
+  }
+
+  function getNextBondCenterClickOrder(atomIdA, atomIdB, currentOrder) {
+    const clampedCurrent = Math.max(1, Math.min(4, clampBondCenterInteractiveOrder(currentOrder || 1) || 1));
+    const directionKey = getBondCenterClickDirectionKey(atomIdA, atomIdB);
+    let direction = bondCenterClickDirectionByKey.get(directionKey);
+    if (direction !== -1 && direction !== 1) direction = clampedCurrent >= 4 ? -1 : 1;
+    if (clampedCurrent >= 4) direction = -1;
+    if (clampedCurrent <= 1) direction = 1;
+    let nextOrder = clampedCurrent + direction;
+    if (nextOrder > 4) {
+      direction = -1;
+      nextOrder = Math.max(1, clampedCurrent - 1);
+    } else if (nextOrder < 1) {
+      direction = 1;
+      nextOrder = Math.min(4, clampedCurrent + 1);
+    }
+    if (nextOrder >= 4) direction = -1;
+    else if (nextOrder <= 1) direction = 1;
+    if (directionKey) bondCenterClickDirectionByKey.set(directionKey, direction);
+    return nextOrder;
   }
 
   function normalizeBondCenterSelectionIds(atomIdA, atomIdB) {
@@ -23921,6 +23999,20 @@
       return;
     }
     if (currentMode === MODES.EDIT) {
+      if (e.button === 0 && !__editMoved) {
+        const bondCenterHit = resolveGestureBondCenterClickHit(e);
+        if (bondCenterHit && bondCenterHit.object && bondCenterHit.section === 'center') {
+          const changed = stepGestureBondCenterOrder(bondCenterHit, 1, e);
+          if (editGestureController && typeof editGestureController.clearState === 'function') {
+            editGestureController.clearState();
+          }
+          if (changed) {
+            updateAxisGuideLine();
+            __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+            return;
+          }
+        }
+      }
       if (editGestureController && editGestureController.handlePointerUp(e)) {
         updateAxisGuideLine();
         __editDownPt = null; __editClickIdx = -1; __editMoved = false;

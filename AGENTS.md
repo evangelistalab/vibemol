@@ -232,6 +232,8 @@ Preset automation contract exposed globally:
 - The `Symmetry` tool supports point-group analysis, RMS-based approximate fits, preview/apply/auto-apply symmetrization, and 3D symmetry-element visualization.
 - Appearance is a compact accordion inspector with an always-visible `Quick style` strip and collapsed `Molecule`, `Lighting & atmosphere`, `Camera`, `Surfaces`, and `Visibility` sections; `Surfaces` and its 2C/cloud subsections appear only when relevant.
 - Appearance controls include an optional `Shadows` toggle for molecule self-shadowing.
+- Loaded `.2ccube` files expose the 2C quantity selector in Appearance with math-aware labels (`Re(ψ^α)`, `Im(ψ^β)`, and so on).
+- In `alphaBetaPhase` split view, the canvas overlays centered `α` / `β` labels and exposes a `Spinor info` popover whose copy follows the active 2C quantity; the phase wheel sits at the lower-right above the hint bar.
 - View actions include `COM → Origin`, principal-axis alignment, and `+X/+Y/+Z` camera presets; shortcut `R` shifts active molecule center of mass to origin.
 - `View` and `Coordinates` are separate floating windows launched from the adaptive non-edit menu; the coordinates window can toggle between angstrom and bohr display and supports inline atom editing.
 - Malformed file imports (`.xyz`, `.cube`, `.2ccube`) are surfaced via popup errors.
@@ -309,6 +311,7 @@ Implemented:
 - Transform mode is the advanced bond-aware rotation tool: it supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
 - Replacing an atom with a lower-valence element prunes excess bonds, preferring terminal hydrogens/terminal one-valence neighbors first, then runs local hydrogen repair on the surviving center.
 - Deleting atoms cascades to dangling one-valence neighbors and then repairs hydrogens on surviving frontier atoms in the same undo unit.
+- Left-clicking the center of a normal bond in edit mode cycles its order `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`; bond-center context/right-click still selects the bond for cue-driven edits.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Direct delete via current selection or hovered atom (`Backspace`/`Delete`) is active.
 - Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`) for ordinary bonds, edits metal bonds through a style popup (`1 = covalent`, `2 = coordination`, `3 = dative`, `0 = none`), supports right-click delete, includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds, and offers `Optimize Structure` for one whole-structure UFF coordinate cleanup pass.
@@ -493,14 +496,15 @@ After non-trivial changes:
 11. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels plus undo/redo and `Esc` cancel for molecule placement.
 12. In edit mode, press `Space` once on a simple unsaturated structure and verify ghost hydrogens appear without mutating the structure; press `Space` again and verify the hydrogens are added with one undoable history entry.
 13. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, right-click void rotate, `Shift+right-click` void pan, and undo behavior on a selected atom set.
-14. In edit mode, test the bond tool: atom-to-atom create, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.
-15. In edit mode, test the `Symmetry` tool: open with button or `S`, preview one candidate, inspect a symmetry element in 3D, cancel/apply, and confirm the popover closes on file/mode changes.
-16. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders and metal bond styles survive round-trip.
-17. Open `View`, `Coordinates`, `Trajectory`, and `Frequencies`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, inline coordinate edits, trajectory play/reset/frame/FPS/loop, and vibration mode/amplitude/speed/hide-small-frequencies behavior.
-18. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
-19. Load standard XYZ, coordinates-only XYZ, and pasted XYZ text; verify import succeeds for all supported XYZ forms.
-20. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
-21. Save PNG, export XYZ, and export cropped WebM from both Trajectory and Frequencies; check browser console for errors.
+14. In edit mode, test bond interactions: atom-to-atom create, left-click bond-center order cycling `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.
+15. Load a `.2ccube` and verify the Appearance `2C mode` selector, centered `α` / `β` overlay labels, `Spinor info` popover, and phase wheel placement all react correctly when switching quantities and returning to `.cube`.
+16. In edit mode, test the `Symmetry` tool: open with button or `S`, preview one candidate, inspect a symmetry element in 3D, cancel/apply, and confirm the popover closes on file/mode changes.
+17. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders and metal bond styles survive round-trip.
+18. Open `View`, `Coordinates`, `Trajectory`, and `Frequencies`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, inline coordinate edits, trajectory play/reset/frame/FPS/loop, and vibration mode/amplitude/speed/hide-small-frequencies behavior.
+19. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.
+20. Load standard XYZ, coordinates-only XYZ, and pasted XYZ text; verify import succeeds for all supported XYZ forms.
+21. Run CLI with `--preset` and with `.vibemolrc` auto-discovery.
+22. Save PNG, export XYZ, and export cropped WebM from both Trajectory and Frequencies; check browser console for errors.
 
 ## Deployment Notes
 - Main deployment target is static hosting from repository root (`index.html`).

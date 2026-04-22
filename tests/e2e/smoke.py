@@ -2927,6 +2927,24 @@ def main() -> int:
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture")', fixture_text)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
+            for expected_order in (2, 3, 4, 3, 2, 1):
+                midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
+                page.mouse.click(midpoint_x, midpoint_y)
+                page.wait_for_function(
+                    """(expectedOrder) => {
+                        const bond = (window.VibeMolStructure.exportActive().volume.bonds || [])[0] || null;
+                        return !!bond
+                          && bond.order === expectedOrder
+                          && bond.kind === 'normal'
+                          && bond.origin === 'explicit'
+                          && Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0;
+                    }""",
+                    arg=expected_order,
+                )
+
+            page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture-selection")', fixture_text)
+            page.locator('#modeDisplayBtn').click()
+            page.locator('#modeEditBtn').click()
             side_x, side_y = find_bond_side_canvas_point(page)
             page.mouse.click(side_x, side_y, button='right')
             page.wait_for_function(
