@@ -26,13 +26,12 @@
     return (len(ax) + len(ay) + len(az)) / 3;
   }
 
-  function absPercentile(vol, p, stride) {
+  function absPercentile(vol, p) {
     const [nx, ny, nz] = vol.nxyz;
-    const step = Math.max(1, stride | 0);
     const arr = [];
-    for (let i = 0; i < nx; i += step) {
-      for (let j = 0; j < ny; j += step) {
-        for (let k = 0; k < nz; k += step) {
+    for (let i = 0; i < nx; i += 1) {
+      for (let j = 0; j < ny; j += 1) {
+        for (let k = 0; k < nz; k += 1) {
           const v = Math.abs(vol.data[vol.idx(i, j, k)]);
           arr.push(v);
         }
@@ -44,8 +43,69 @@
     return arr[idx];
   }
 
-  function computeCloudPointBaseSize(vol, stride) {
-    return estimateCellSize(vol) * Math.max(1, stride | 0) * CLOUD_POINT_SIZE_SCALE;
+  function computeCloudPointBaseSize(vol) {
+    return estimateCellSize(vol) * CLOUD_POINT_SIZE_SCALE;
+  }
+
+  function forEachCloudVoxel(vol, visit) {
+    const [nx, ny, nz] = vol.nxyz;
+    for (let i = 0; i < nx; i += 1) {
+      for (let j = 0; j < ny; j += 1) {
+        for (let k = 0; k < nz; k += 1) {
+          visit(i, j, k, vol.idx(i, j, k));
+        }
+      }
+    }
+  }
+
+  function createCloudCubeScaleVector(vol) {
+    const ax = vol.axes[0].map((v) => v * BOHR_TO_ANG);
+    const ay = vol.axes[1].map((v) => v * BOHR_TO_ANG);
+    const az = vol.axes[2].map((v) => v * BOHR_TO_ANG);
+    const len = (v) => Math.hypot(v[0], v[1], v[2]);
+    return new global.THREE.Vector3(len(ax), len(ay), len(az));
+  }
+
+  function createVertexColoredCubeGeometry() {
+    const geom = new global.THREE.BoxGeometry(1, 1, 1);
+    try {
+      const n = geom.getAttribute('position').count;
+      const carr = new Float32Array(n * 3);
+      for (let i = 0; i < carr.length; i += 1) carr[i] = 1.0;
+      geom.setAttribute('color', new global.THREE.BufferAttribute(carr, 3));
+    } catch {}
+    return geom;
+  }
+
+  function createCloudCubeMaterial(options = {}) {
+    const alpha = Math.min(1, Number(options.alpha) || 0);
+    if (options.vertexColors) {
+      return new global.THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        vertexColors: true,
+        transparent: alpha < 1.0,
+        opacity: alpha,
+        depthWrite: alpha >= 1.0,
+        depthTest: true,
+        dithering: true,
+        polygonOffset: true,
+        polygonOffsetFactor: -0.5,
+        polygonOffsetUnits: -1.0,
+        side: global.THREE.DoubleSide,
+        toneMapped: false,
+      });
+    }
+    return new global.THREE.MeshStandardMaterial({
+      color: new global.THREE.Color(options.color || '#ffffff'),
+      transparent: alpha < 1.0,
+      opacity: alpha,
+      depthWrite: alpha >= 1.0,
+      depthTest: true,
+      dithering: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -0.5,
+      polygonOffsetUnits: -1.0,
+    });
   }
 
   function createPointCloudGeometry(positions, strengths, colors) {
@@ -135,41 +195,20 @@
 
   function buildCloudCubes(vol, opts) {
     const g = new global.THREE.Group();
-    const [nx, ny, nz] = vol.nxyz;
-    const stride = Math.max(1, opts.stride | 0);
-    const ax = vol.axes[0].map((v) => v * BOHR_TO_ANG);
-    const ay = vol.axes[1].map((v) => v * BOHR_TO_ANG);
-    const az = vol.axes[2].map((v) => v * BOHR_TO_ANG);
-    const len = (v) => Math.hypot(v[0], v[1], v[2]);
-    const scaleVec = new global.THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
+    const scaleVec = createCloudCubeScaleVector(vol);
     const tLow = opts.tLow;
     let nPos = 0;
     let nNeg = 0;
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const v = vol.data[vol.idx(i, j, k)];
-          const av = Math.abs(v);
-          if (av < tLow) continue;
-          if (v >= 0) nPos += 1;
-          else nNeg += 1;
-        }
-      }
-    }
+    forEachCloudVoxel(vol, (i, j, k, t) => {
+      const v = vol.data[t];
+      const av = Math.abs(v);
+      if (av < tLow) return;
+      if (v >= 0) nPos += 1;
+      else nNeg += 1;
+    });
     const makeInst = (count, color) => {
       const geom = new global.THREE.BoxGeometry(1, 1, 1);
-      const alpha = Math.min(1, opts.alphaMax * stride);
-      const mat = new global.THREE.MeshStandardMaterial({
-        color: new global.THREE.Color(color),
-        transparent: alpha < 1.0,
-        opacity: alpha,
-        depthWrite: alpha >= 1.0,
-        depthTest: true,
-        dithering: true,
-        polygonOffset: true,
-        polygonOffsetFactor: -0.5,
-        polygonOffsetUnits: -1.0,
-      });
+      const mat = createCloudCubeMaterial({ alpha: opts.alphaMax, color });
       return new global.THREE.InstancedMesh(geom, mat, Math.max(1, count));
     };
     const instPos = makeInst(nPos, opts.posColorHex);
@@ -183,23 +222,19 @@
     const m4 = new global.THREE.Matrix4();
     const q = new global.THREE.Quaternion();
     const s = new global.THREE.Vector3();
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const v = vol.data[vol.idx(i, j, k)];
-          const av = Math.abs(v);
-          if (av < tLow) continue;
-          const pos = voxelCenterToWorld(vol, i, j, k);
-          m4.compose(
-            new global.THREE.Vector3(pos[0], pos[1], pos[2]),
-            q.identity(),
-            s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE)
-          );
-          if (v >= 0) instPos.setMatrixAt(ip++, m4);
-          else instNeg.setMatrixAt(ineg++, m4);
-        }
-      }
-    }
+    forEachCloudVoxel(vol, (i, j, k, t) => {
+      const v = vol.data[t];
+      const av = Math.abs(v);
+      if (av < tLow) return;
+      const pos = voxelCenterToWorld(vol, i, j, k);
+      m4.compose(
+        new global.THREE.Vector3(pos[0], pos[1], pos[2]),
+        q.identity(),
+        s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE)
+      );
+      if (v >= 0) instPos.setMatrixAt(ip++, m4);
+      else instNeg.setMatrixAt(ineg++, m4);
+    });
     instPos.instanceMatrix.needsUpdate = true;
     instNeg.instanceMatrix.needsUpdate = true;
     g.add(instPos, instNeg);
@@ -208,49 +243,18 @@
 
   function buildCloudCubes2CPhase(vol, which, opts) {
     const g = new global.THREE.Group();
-    const [nx, ny, nz] = vol.nxyz;
-    const stride = Math.max(1, opts.stride | 0);
     const re = which === 'alpha' ? vol.alphaRe : vol.betaRe;
     const im = which === 'alpha' ? vol.alphaIm : vol.betaIm;
-    const ax = vol.axes[0].map((v) => v * BOHR_TO_ANG);
-    const ay = vol.axes[1].map((v) => v * BOHR_TO_ANG);
-    const az = vol.axes[2].map((v) => v * BOHR_TO_ANG);
-    const len = (v) => Math.hypot(v[0], v[1], v[2]);
-    const scaleVec = new global.THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
+    const scaleVec = createCloudCubeScaleVector(vol);
     let count = 0;
     const tLow = opts.tLow;
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const t = vol.idx(i, j, k);
-          const mag = Math.hypot(re[t], im[t]);
-          if (mag >= tLow) count += 1;
-        }
-      }
-    }
-    if (count === 0) return g;
-    const geom = new global.THREE.BoxGeometry(1, 1, 1);
-    try {
-      const n = geom.getAttribute('position').count;
-      const carr = new Float32Array(n * 3);
-      for (let i = 0; i < carr.length; i += 1) carr[i] = 1.0;
-      geom.setAttribute('color', new global.THREE.BufferAttribute(carr, 3));
-    } catch {}
-    const alpha = Math.min(1, opts.alphaMax * stride);
-    const mat = new global.THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      vertexColors: true,
-      transparent: alpha < 1.0,
-      opacity: alpha,
-      depthWrite: alpha >= 1.0,
-      depthTest: true,
-      dithering: true,
-      polygonOffset: true,
-      polygonOffsetFactor: -0.5,
-      polygonOffsetUnits: -1.0,
-      side: global.THREE.DoubleSide,
-      toneMapped: false,
+    forEachCloudVoxel(vol, (_i, _j, _k, t) => {
+      const mag = Math.hypot(re[t], im[t]);
+      if (mag >= tLow) count += 1;
     });
+    if (count === 0) return g;
+    const geom = createVertexColoredCubeGeometry();
+    const mat = createCloudCubeMaterial({ alpha: opts.alphaMax, vertexColors: true });
     const inst = new global.THREE.InstancedMesh(geom, mat, count);
     inst.userData = { phaseHue: true, which, vmCloudKind: 'phase-cubes' };
     inst.instanceColor = new global.THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
@@ -258,25 +262,20 @@
     const q = new global.THREE.Quaternion();
     const s = new global.THREE.Vector3();
     let idx = 0;
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const t = vol.idx(i, j, k);
-          const rr = re[t];
-          const ii = im[t];
-          const mag = Math.hypot(rr, ii);
-          if (mag < tLow) continue;
-          const pos = voxelCenterToWorld(vol, i, j, k);
-          m4.compose(new global.THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE));
-          inst.setMatrixAt(idx, m4);
-          const phase = Math.atan2(ii, rr);
-          const hue = (phase + Math.PI) / (2 * Math.PI);
-          const rgb = hsvToRgb(hue, 1.0, 1.0);
-          inst.instanceColor.setXYZ(idx, rgb[0], rgb[1], rgb[2]);
-          idx += 1;
-        }
-      }
-    }
+    forEachCloudVoxel(vol, (i, j, k, t) => {
+      const rr = re[t];
+      const ii = im[t];
+      const mag = Math.hypot(rr, ii);
+      if (mag < tLow) return;
+      const pos = voxelCenterToWorld(vol, i, j, k);
+      m4.compose(new global.THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE));
+      inst.setMatrixAt(idx, m4);
+      const phase = Math.atan2(ii, rr);
+      const hue = (phase + Math.PI) / (2 * Math.PI);
+      const rgb = hsvToRgb(hue, 1.0, 1.0);
+      inst.instanceColor.setXYZ(idx, rgb[0], rgb[1], rgb[2]);
+      idx += 1;
+    });
     if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
     inst.instanceMatrix.needsUpdate = true;
     g.add(inst);
@@ -285,20 +284,13 @@
 
   function buildCloudPoints2CPhase(vol, which, opts) {
     const g = new global.THREE.Group();
-    const [nx, ny, nz] = vol.nxyz;
-    const stride = Math.max(1, opts.stride | 0);
     const re = which === 'alpha' ? vol.alphaRe : vol.betaRe;
     const im = which === 'alpha' ? vol.alphaIm : vol.betaIm;
     const tLow = opts.tLow;
     const arr = [];
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const t = vol.idx(i, j, k);
-          arr.push(Math.hypot(re[t], im[t]));
-        }
-      }
-    }
+    forEachCloudVoxel(vol, (_i, _j, _k, t) => {
+      arr.push(Math.hypot(re[t], im[t]));
+    });
     if (!arr.length) return g;
     arr.sort((a, b) => a - b);
     const hi = arr[Math.floor(0.99 * (arr.length - 1))] || 0.0;
@@ -306,29 +298,24 @@
     const pos = [];
     const str = [];
     const col = [];
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const t = vol.idx(i, j, k);
-          const rr = re[t];
-          const ii = im[t];
-          const mag = Math.hypot(rr, ii);
-          if (mag < tLow) continue;
-          const strength = clamp01((mag - tLow) / Math.max(1e-12, hi - tLow));
-          const p = voxelCenterToWorld(vol, i, j, k);
-          pos.push(p[0], p[1], p[2]);
-          str.push(strength);
-          const phase = Math.atan2(ii, rr);
-          const hue = (phase + Math.PI) / (2 * Math.PI);
-          const [r, g1, b] = hsvToRgb(hue, 1.0, 1.0);
-          col.push(r, g1, b);
-        }
-      }
-    }
+    forEachCloudVoxel(vol, (i, j, k, t) => {
+      const rr = re[t];
+      const ii = im[t];
+      const mag = Math.hypot(rr, ii);
+      if (mag < tLow) return;
+      const strength = clamp01((mag - tLow) / Math.max(1e-12, hi - tLow));
+      const p = voxelCenterToWorld(vol, i, j, k);
+      pos.push(p[0], p[1], p[2]);
+      str.push(strength);
+      const phase = Math.atan2(ii, rr);
+      const hue = (phase + Math.PI) / (2 * Math.PI);
+      const [r, g1, b] = hsvToRgb(hue, 1.0, 1.0);
+      col.push(r, g1, b);
+    });
     if (!pos.length) return g;
-    const baseSize = computeCloudPointBaseSize(vol, stride);
+    const baseSize = computeCloudPointBaseSize(vol);
     const mat = createPointCloudMaterial({
-      alpha: opts.alphaMax * stride,
+      alpha: opts.alphaMax,
       size: baseSize,
       vertexColors: true,
     });
@@ -341,53 +328,22 @@
 
   function buildCloudCubes2CTotal(vol, opts) {
     const g = new global.THREE.Group();
-    const [nx, ny, nz] = vol.nxyz;
-    const stride = Math.max(1, opts.stride | 0);
     const reA = vol.alphaRe;
     const imA = vol.alphaIm;
     const reB = vol.betaRe;
     const imB = vol.betaIm;
     const tLow = opts.tLow;
-    const ax = vol.axes[0].map((v) => v * BOHR_TO_ANG);
-    const ay = vol.axes[1].map((v) => v * BOHR_TO_ANG);
-    const az = vol.axes[2].map((v) => v * BOHR_TO_ANG);
-    const len = (v) => Math.hypot(v[0], v[1], v[2]);
-    const scaleVec = new global.THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
+    const scaleVec = createCloudCubeScaleVector(vol);
     let count = 0;
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const t = vol.idx(i, j, k);
-          const a2 = reA[t] * reA[t] + imA[t] * imA[t];
-          const b2 = reB[t] * reB[t] + imB[t] * imB[t];
-          const rho = Math.sqrt(a2 + b2);
-          if (rho >= tLow) count += 1;
-        }
-      }
-    }
-    if (count === 0) return g;
-    const geom = new global.THREE.BoxGeometry(1, 1, 1);
-    try {
-      const n = geom.getAttribute('position').count;
-      const carr = new Float32Array(n * 3);
-      for (let i = 0; i < carr.length; i += 1) carr[i] = 1.0;
-      geom.setAttribute('color', new global.THREE.BufferAttribute(carr, 3));
-    } catch {}
-    const alpha = Math.min(1, opts.alphaMax * stride);
-    const mat = new global.THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      vertexColors: true,
-      transparent: alpha < 1.0,
-      opacity: alpha,
-      depthWrite: alpha >= 1.0,
-      depthTest: true,
-      dithering: true,
-      polygonOffset: true,
-      polygonOffsetFactor: -0.5,
-      polygonOffsetUnits: -1.0,
-      side: global.THREE.DoubleSide,
-      toneMapped: false,
+    forEachCloudVoxel(vol, (_i, _j, _k, t) => {
+      const a2 = reA[t] * reA[t] + imA[t] * imA[t];
+      const b2 = reB[t] * reB[t] + imB[t] * imB[t];
+      const rho = Math.sqrt(a2 + b2);
+      if (rho >= tLow) count += 1;
     });
+    if (count === 0) return g;
+    const geom = createVertexColoredCubeGeometry();
+    const mat = createCloudCubeMaterial({ alpha: opts.alphaMax, vertexColors: true });
     const inst = new global.THREE.InstancedMesh(geom, mat, count);
     inst.userData = { phaseHue: true, totalBloch: true, vmCloudKind: 'bloch-cubes' };
     inst.instanceColor = new global.THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
@@ -395,34 +351,29 @@
     const q = new global.THREE.Quaternion();
     const s = new global.THREE.Vector3();
     let idx = 0;
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const t = vol.idx(i, j, k);
-          const ar = reA[t];
-          const ai = imA[t];
-          const br = reB[t];
-          const bi = imB[t];
-          const a2 = ar * ar + ai * ai;
-          const b2 = br * br + bi * bi;
-          const rho = a2 + b2;
-          if (Math.sqrt(rho) < tLow) continue;
-          const pos = voxelCenterToWorld(vol, i, j, k);
-          m4.compose(new global.THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE));
-          inst.setMatrixAt(idx, m4);
-          const re_ab = ar * br + ai * bi;
-          const im_ab = -ar * bi + ai * br;
-          const nxv = 2 * re_ab / rho;
-          const nyv = 2 * im_ab / rho;
-          const nzv = (a2 - b2) / rho;
-          const hue = (Math.atan2(nyv, nxv) + Math.PI) / (2 * Math.PI);
-          const value = 0.6 + 0.4 * (1 - Math.abs(nzv));
-          const rgb = hsvToRgb(hue, 1.0, value);
-          inst.instanceColor.setXYZ(idx, rgb[0], rgb[1], rgb[2]);
-          idx += 1;
-        }
-      }
-    }
+    forEachCloudVoxel(vol, (i, j, k, t) => {
+      const ar = reA[t];
+      const ai = imA[t];
+      const br = reB[t];
+      const bi = imB[t];
+      const a2 = ar * ar + ai * ai;
+      const b2 = br * br + bi * bi;
+      const rho = a2 + b2;
+      if (Math.sqrt(rho) < tLow) return;
+      const pos = voxelCenterToWorld(vol, i, j, k);
+      m4.compose(new global.THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE));
+      inst.setMatrixAt(idx, m4);
+      const re_ab = ar * br + ai * bi;
+      const im_ab = -ar * bi + ai * br;
+      const nxv = 2 * re_ab / rho;
+      const nyv = 2 * im_ab / rho;
+      const nzv = (a2 - b2) / rho;
+      const hue = (Math.atan2(nyv, nxv) + Math.PI) / (2 * Math.PI);
+      const value = 0.6 + 0.4 * (1 - Math.abs(nzv));
+      const rgb = hsvToRgb(hue, 1.0, value);
+      inst.instanceColor.setXYZ(idx, rgb[0], rgb[1], rgb[2]);
+      idx += 1;
+    });
     if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
     inst.instanceMatrix.needsUpdate = true;
     g.add(inst);
@@ -431,24 +382,17 @@
 
   function buildCloudPoints2CTotal(vol, opts) {
     const g = new global.THREE.Group();
-    const [nx, ny, nz] = vol.nxyz;
-    const stride = Math.max(1, opts.stride | 0);
     const reA = vol.alphaRe;
     const imA = vol.alphaIm;
     const reB = vol.betaRe;
     const imB = vol.betaIm;
     const tLow = opts.tLow;
     const vals = [];
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const t = vol.idx(i, j, k);
-          const a2 = reA[t] * reA[t] + imA[t] * imA[t];
-          const b2 = reB[t] * reB[t] + imB[t] * imB[t];
-          vals.push(Math.sqrt(a2 + b2));
-        }
-      }
-    }
+    forEachCloudVoxel(vol, (_i, _j, _k, t) => {
+      const a2 = reA[t] * reA[t] + imA[t] * imA[t];
+      const b2 = reB[t] * reB[t] + imB[t] * imB[t];
+      vals.push(Math.sqrt(a2 + b2));
+    });
     if (!vals.length) return g;
     vals.sort((a, b) => a - b);
     const hi = vals[Math.floor(0.99 * (vals.length - 1))] || 0.0;
@@ -456,38 +400,33 @@
     const pos = [];
     const str = [];
     const col = [];
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const t = vol.idx(i, j, k);
-          const ar = reA[t];
-          const ai = imA[t];
-          const br = reB[t];
-          const bi = imB[t];
-          const a2 = ar * ar + ai * ai;
-          const b2 = br * br + bi * bi;
-          const rho = a2 + b2;
-          if (Math.sqrt(rho) < tLow) continue;
-          const strength = clamp01((Math.sqrt(rho) - tLow) / Math.max(1e-12, hi - tLow));
-          const p = voxelCenterToWorld(vol, i, j, k);
-          pos.push(p[0], p[1], p[2]);
-          str.push(strength);
-          const re_ab = ar * br + ai * bi;
-          const im_ab = -ar * bi + ai * br;
-          const nxv = 2 * re_ab / rho;
-          const nyv = 2 * im_ab / rho;
-          const nzv = (a2 - b2) / rho;
-          const hue = (Math.atan2(nyv, nxv) + Math.PI) / (2 * Math.PI);
-          const value = 0.6 + 0.4 * (1 - Math.abs(nzv));
-          const [r, g1, b] = hsvToRgb(hue, 1.0, value);
-          col.push(r, g1, b);
-        }
-      }
-    }
+    forEachCloudVoxel(vol, (i, j, k, t) => {
+      const ar = reA[t];
+      const ai = imA[t];
+      const br = reB[t];
+      const bi = imB[t];
+      const a2 = ar * ar + ai * ai;
+      const b2 = br * br + bi * bi;
+      const rho = a2 + b2;
+      if (Math.sqrt(rho) < tLow) return;
+      const strength = clamp01((Math.sqrt(rho) - tLow) / Math.max(1e-12, hi - tLow));
+      const p = voxelCenterToWorld(vol, i, j, k);
+      pos.push(p[0], p[1], p[2]);
+      str.push(strength);
+      const re_ab = ar * br + ai * bi;
+      const im_ab = -ar * bi + ai * br;
+      const nxv = 2 * re_ab / rho;
+      const nyv = 2 * im_ab / rho;
+      const nzv = (a2 - b2) / rho;
+      const hue = (Math.atan2(nyv, nxv) + Math.PI) / (2 * Math.PI);
+      const value = 0.6 + 0.4 * (1 - Math.abs(nzv));
+      const [r, g1, b] = hsvToRgb(hue, 1.0, value);
+      col.push(r, g1, b);
+    });
     if (!pos.length) return g;
-    const baseSize = computeCloudPointBaseSize(vol, stride);
+    const baseSize = computeCloudPointBaseSize(vol);
     const mat = createPointCloudMaterial({
-      alpha: opts.alphaMax * stride,
+      alpha: opts.alphaMax,
       size: baseSize,
       vertexColors: true,
     });
@@ -500,38 +439,32 @@
 
   function buildCloudPoints(vol, opts) {
     const g = new global.THREE.Group();
-    const [nx, ny, nz] = vol.nxyz;
-    const stride = Math.max(1, opts.stride | 0);
     const tLow = opts.tLow;
-    const hi = absPercentile(vol, 0.99, Math.max(1, stride));
+    const hi = absPercentile(vol, 0.99);
     const clamp01 = (x) => Math.max(0, Math.min(1, x));
     const posPos = [];
     const posNeg = [];
     const strPos = [];
     const strNeg = [];
-    for (let i = 0; i < nx; i += stride) {
-      for (let j = 0; j < ny; j += stride) {
-        for (let k = 0; k < nz; k += stride) {
-          const v = vol.data[vol.idx(i, j, k)];
-          const av = Math.abs(v);
-          if (av < tLow) continue;
-          const strength = clamp01((av - tLow) / Math.max(1e-12, hi - tLow));
-          const p = voxelCenterToWorld(vol, i, j, k);
-          if (v >= 0) {
-            posPos.push(p[0], p[1], p[2]);
-            strPos.push(strength);
-          } else {
-            posNeg.push(p[0], p[1], p[2]);
-            strNeg.push(strength);
-          }
-        }
+    forEachCloudVoxel(vol, (i, j, k, t) => {
+      const v = vol.data[t];
+      const av = Math.abs(v);
+      if (av < tLow) return;
+      const strength = clamp01((av - tLow) / Math.max(1e-12, hi - tLow));
+      const p = voxelCenterToWorld(vol, i, j, k);
+      if (v >= 0) {
+        posPos.push(p[0], p[1], p[2]);
+        strPos.push(strength);
+      } else {
+        posNeg.push(p[0], p[1], p[2]);
+        strNeg.push(strength);
       }
-    }
-    const baseSize = computeCloudPointBaseSize(vol, stride);
+    });
+    const baseSize = computeCloudPointBaseSize(vol);
     const makePoints = (posArr, strArr, color, sign) => {
       const geo = createPointCloudGeometry(posArr, strArr);
       const mat = createPointCloudMaterial({
-        alpha: opts.alphaMax * stride,
+        alpha: opts.alphaMax,
         size: baseSize,
         colorHex: color,
       });

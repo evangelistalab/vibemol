@@ -21,6 +21,7 @@ from typing import Any
 
 DEFAULT_URL = "https://evangelistalab.org/vibemol/"
 DEFAULT_RC_CANDIDATES = (".vibemolrc", ".vibemolrc.json")
+LEGACY_SURFACE_STYLE = "emissive"
 RenderJob = tuple[pathlib.Path, pathlib.Path]
 IMPORT_ERROR_MARKERS = (
     "could not load",
@@ -579,7 +580,7 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
                 opacity: str('opacity', '1.0'),
                 surfaceMaterialPreset: str('surfaceMaterialPreset', 'emissive'),
                 style: str('moleculeStyle', 'basic'),
-                surfaceStyle: 'emissive',
+                surfaceStyle: %r,
                 colorScheme: str('schemeSelect', 'custom'),
                 autoIsoEnabled: pressed('autoIsoBtn', false),
                 posColor: str('posColor', '#f2a900'),
@@ -596,7 +597,7 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
                 vibrationHideSmallFrequencies: bool('vibrationHideLowFreq', true),
                 renderMode: str('renderMode', 'surface'),
             };
-        }"""
+        }""" % (LEGACY_SURFACE_STYLE,)
     )
     style = _normalize_style(values.get("style", "basic"))
     preset = {
@@ -608,7 +609,7 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
             "surface.opacity": float(values.get("opacity", 1.0)),
             "surface.materialPreset": values.get("surfaceMaterialPreset", "emissive"),
             "surface.enabled": bool(values.get("surfaceEnabled", True)),
-            "surface.style": values.get("surfaceStyle", "emissive"),
+            "surface.style": values.get("surfaceStyle", LEGACY_SURFACE_STYLE),
             "surface.autoIsoEnabled": bool(values.get("autoIsoEnabled", False)),
             "surface.posColor": values.get("posColor", "#f2a900"),
             "surface.negColor": values.get("negColor", "#0033a0"),

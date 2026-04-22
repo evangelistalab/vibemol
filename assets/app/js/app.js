@@ -1322,6 +1322,7 @@
   // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
   let __savedShowSurfaces = null;
   const DEFAULT_SURFACE_MATERIAL_PRESET = 'emissive';
+  const LEGACY_SURFACE_STYLE_KEY = 'emissive';
   const SURFACE_MATERIAL_PRESETS = Object.freeze({
     emissive: Object.freeze({
       roughness: 1.0,
@@ -2020,7 +2021,7 @@
     setSurfaceHover(null);
     clearGroup(autoHydrogenPreviewGroup);
     for (const m of meshes) {
-      disposeWboitSurfaceMaterialsForMesh(m);
+      disposeWboitMaterialsForRenderable(m);
       try { contentGroup.remove(m); } catch { }
       disposeDeep(m, state);
     }
@@ -4964,20 +4965,12 @@
       }), opacity);
     }
     const preset = getSurfaceMaterialPreset();
-    const mat = new THREE.MeshPhysicalMaterial({
+    const mat = applySurfacePresetToMaterial(new THREE.MeshPhysicalMaterial({
       color: col,
-      roughness: preset.roughness,
-      metalness: preset.metalness,
-      clearcoat: preset.clearcoat,
-      clearcoatRoughness: preset.clearcoatRoughness,
-      reflectivity: preset.reflectivity,
       emissive: col.clone(),
-      emissiveIntensity: preset.emissiveIntensity,
-      envMapIntensity: preset.envMapIntensity,
       side: THREE.DoubleSide,
       opacity,
-    });
-    mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: getSurfaceMaterialPresetKey() });
+    }), preset, { color: col, emissiveColor: col });
     return applySurfaceBlendFlags(mat, opacity);
   }
 
@@ -5001,20 +4994,12 @@
       }), opacity);
     }
     const preset = getSurfaceMaterialPreset();
-    const mat = new THREE.MeshPhysicalMaterial({
+    const mat = applySurfacePresetToMaterial(new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       vertexColors: true,
-      roughness: preset.roughness,
-      metalness: preset.metalness,
-      clearcoat: preset.clearcoat,
-      clearcoatRoughness: preset.clearcoatRoughness,
-      reflectivity: preset.reflectivity,
-      emissiveIntensity: preset.emissiveIntensity,
-      envMapIntensity: preset.envMapIntensity,
       side: THREE.DoubleSide,
       opacity,
-    });
-    mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: getSurfaceMaterialPresetKey() });
+    }), preset);
     return applySurfaceBlendFlags(mat, opacity);
   }
 
@@ -5047,11 +5032,66 @@
   }
 
   /**
+   * Keep one compatibility surface-style key for preset/export paths that still expect it.
+   * Rendering no longer branches on this value.
+   * @returns {'emissive'}
+   */
+  function getLegacySurfaceStyleKey() {
+    return LEGACY_SURFACE_STYLE_KEY;
+  }
+
+  /**
+   * Tag one material with the current surface preset key for debug/export snapshots.
+   * @param {THREE.Material|null} material
+   * @returns {THREE.Material|null}
+   */
+  function setSurfaceMaterialPresetTag(material) {
+    if (!(material && typeof material === 'object')) return material;
+    material.userData = Object.assign({}, material.userData || {}, {
+      vmSurfaceStyle: getSurfaceMaterialPresetKey(),
+    });
+    return material;
+  }
+
+  /**
+   * Apply the active surface preset values to one physical material.
+   * @param {THREE.Material|null} material
+   * @param {{roughness:number,metalness:number,clearcoat:number,clearcoatRoughness:number,reflectivity:number,emissiveIntensity:number,envMapIntensity:number}=} preset
+   * @param {{color?:THREE.Color,emissiveColor?:THREE.Color}=} options
+   * @returns {THREE.Material|null}
+   */
+  function applySurfacePresetToMaterial(material, preset = getSurfaceMaterialPreset(), options = {}) {
+    if (!(material && typeof material === 'object')) return material;
+    const nextPreset = preset || getSurfaceMaterialPreset();
+    if ('roughness' in material) material.roughness = Number(nextPreset.roughness) || 0;
+    if ('metalness' in material) material.metalness = Number(nextPreset.metalness) || 0;
+    if ('clearcoat' in material) material.clearcoat = Number(nextPreset.clearcoat) || 0;
+    if ('clearcoatRoughness' in material) material.clearcoatRoughness = Number(nextPreset.clearcoatRoughness) || 0;
+    if ('reflectivity' in material) material.reflectivity = Number(nextPreset.reflectivity) || 0;
+    if ('emissiveIntensity' in material) material.emissiveIntensity = Number(nextPreset.emissiveIntensity) || 0;
+    if ('envMapIntensity' in material) material.envMapIntensity = Number(nextPreset.envMapIntensity) || 0;
+    if (options.color && material.color) material.color.copy(options.color);
+    if (options.emissiveColor && material.emissive) material.emissive.copy(options.emissiveColor);
+    return setSurfaceMaterialPresetTag(material);
+  }
+
+  /**
+   * Read one numeric field from the current surface preset with clamping.
+   * @param {'roughness'|'metalness'|'reflectivity'|'emissiveIntensity'} key
+   * @param {number} min
+   * @param {number} max
+   * @returns {number}
+   */
+  function getSurfacePresetValue(key, min, max) {
+    return Math.max(min, Math.min(max, Number(getSurfaceMaterialPreset()[key]) || 0));
+  }
+
+  /**
    * Read the current surface roughness value derived from the active preset.
    * @returns {number}
    */
   function getSurfaceRoughnessValue() {
-    return Math.max(0, Math.min(1, Number(getSurfaceMaterialPreset().roughness) || 0));
+    return getSurfacePresetValue('roughness', 0, 1);
   }
 
   /**
@@ -5059,7 +5099,7 @@
    * @returns {number}
    */
   function getSurfaceMetalnessValue() {
-    return Math.max(0, Math.min(1, Number(getSurfaceMaterialPreset().metalness) || 0));
+    return getSurfacePresetValue('metalness', 0, 1);
   }
 
   /**
@@ -5067,7 +5107,7 @@
    * @returns {number}
    */
   function getSurfaceReflectivityValue() {
-    return Math.max(0, Math.min(1, Number(getSurfaceMaterialPreset().reflectivity) || 0));
+    return getSurfacePresetValue('reflectivity', 0, 1);
   }
 
   /**
@@ -5075,7 +5115,7 @@
    * @returns {number}
    */
   function getSurfaceEmissiveIntensityValue() {
-    return Math.max(0, Math.min(2, Number(getSurfaceMaterialPreset().emissiveIntensity) || 0));
+    return getSurfacePresetValue('emissiveIntensity', 0, 2);
   }
 
   /**
@@ -5090,7 +5130,7 @@
         && getSurfaceOpacityValue() < 0.999;
     }
     if (renderMode === 'cloud') {
-      const cloudObjects = getRenderableCloudObjects(() => true);
+      const cloudObjects = getRenderedCloudObjects(() => true);
       if (!cloudObjects.length) return false;
       const effectiveAlpha = getSurfaceOpacityValue();
       if (effectiveAlpha <= 0.001) return false;
@@ -5112,19 +5152,11 @@
   }
 
   /**
-   * Dispose cached WBOIT pass materials for one mesh.
-   * @param {THREE.Mesh} mesh
-   */
-  function disposeWboitSurfaceMaterialsForMesh(mesh) {
-    disposeWboitMaterialsForRenderable(mesh);
-  }
-
-  /**
-   * Clone one visible surface material for WBOIT patching.
+   * Clone one visible mesh material for WBOIT patching.
    * @param {THREE.Material} sourceMaterial
    * @returns {THREE.Material|null}
    */
-  function cloneSurfaceMaterialForWboit(sourceMaterial) {
+  function cloneMeshMaterialForWboit(sourceMaterial) {
     if (!(sourceMaterial && typeof sourceMaterial.clone === 'function')) return null;
     const material = sourceMaterial.clone();
     material.userData = Object.assign({}, sourceMaterial.userData || {}, material.userData || {});
@@ -5150,12 +5182,12 @@
   }
 
   /**
-   * Patch one surface material clone so it outputs WBOIT accumulation or revealage.
+   * Patch one mesh material clone so it outputs WBOIT accumulation or revealage.
    * @param {THREE.Material} material
    * @param {{pass:'accum'|'reveal'}} options
    * @returns {THREE.Material}
    */
-  function applyWboitSurfacePassPatch(material, options = {}) {
+  function applyWboitMeshPassPatch(material, options = {}) {
     if (!(material && typeof material === 'object')) return material;
     const pass = options.pass === 'reveal' ? 'reveal' : 'accum';
     const previousOnBeforeCompile = typeof material.onBeforeCompile === 'function'
@@ -5351,29 +5383,25 @@
   }
 
   /**
-   * Synchronize one WBOIT pass material with its visible source material.
+   * Synchronize one WBOIT mesh pass material with its visible source material.
    * @param {THREE.Material} sourceMaterial
    * @param {THREE.Material} passMaterial
    * @param {number} alpha
    */
-  function syncWboitSurfacePassMaterial(sourceMaterial, passMaterial, alpha) {
+  function syncWboitMeshPassMaterial(sourceMaterial, passMaterial, alpha) {
     if (!(sourceMaterial && passMaterial)) return;
     let needsMaterialUpdate = false;
     if (sourceMaterial.color && passMaterial.color) passMaterial.color.copy(sourceMaterial.color);
     if (sourceMaterial.emissive && passMaterial.emissive) passMaterial.emissive.copy(sourceMaterial.emissive);
-    if ('roughness' in sourceMaterial && 'roughness' in passMaterial) passMaterial.roughness = sourceMaterial.roughness;
-    if ('metalness' in sourceMaterial && 'metalness' in passMaterial) passMaterial.metalness = sourceMaterial.metalness;
-    if ('clearcoat' in sourceMaterial && 'clearcoat' in passMaterial) passMaterial.clearcoat = sourceMaterial.clearcoat;
-    if ('clearcoatRoughness' in sourceMaterial && 'clearcoatRoughness' in passMaterial) {
-      passMaterial.clearcoatRoughness = sourceMaterial.clearcoatRoughness;
-    }
-    if ('reflectivity' in sourceMaterial && 'reflectivity' in passMaterial) passMaterial.reflectivity = sourceMaterial.reflectivity;
-    if ('envMapIntensity' in sourceMaterial && 'envMapIntensity' in passMaterial) {
-      passMaterial.envMapIntensity = sourceMaterial.envMapIntensity;
-    }
-    if ('emissiveIntensity' in sourceMaterial && 'emissiveIntensity' in passMaterial) {
-      passMaterial.emissiveIntensity = sourceMaterial.emissiveIntensity;
-    }
+    applySurfacePresetToMaterial(passMaterial, {
+      roughness: sourceMaterial.roughness,
+      metalness: sourceMaterial.metalness,
+      clearcoat: sourceMaterial.clearcoat,
+      clearcoatRoughness: sourceMaterial.clearcoatRoughness,
+      reflectivity: sourceMaterial.reflectivity,
+      emissiveIntensity: sourceMaterial.emissiveIntensity,
+      envMapIntensity: sourceMaterial.envMapIntensity,
+    });
     if ('ior' in sourceMaterial && 'ior' in passMaterial) passMaterial.ior = sourceMaterial.ior;
     if ('thickness' in sourceMaterial && 'thickness' in passMaterial) passMaterial.thickness = sourceMaterial.thickness;
     if ('transmission' in sourceMaterial && 'transmission' in passMaterial) {
@@ -5406,14 +5434,14 @@
     disposeWboitMaterialsForRenderable(renderable);
     const accumMaterial = renderable.isPoints
       ? createCloudPointWboitMaterial(renderable, { pass: 'accum' })
-      : cloneSurfaceMaterialForWboit(sourceMaterial);
+      : cloneMeshMaterialForWboit(sourceMaterial);
     const revealMaterial = renderable.isPoints
       ? createCloudPointWboitMaterial(renderable, { pass: 'reveal' })
-      : cloneSurfaceMaterialForWboit(sourceMaterial);
+      : cloneMeshMaterialForWboit(sourceMaterial);
     if (!(accumMaterial && revealMaterial)) return null;
     if (!renderable.isPoints) {
-      applyWboitSurfacePassPatch(accumMaterial, { pass: 'accum' });
-      applyWboitSurfacePassPatch(revealMaterial, { pass: 'reveal' });
+      applyWboitMeshPassPatch(accumMaterial, { pass: 'accum' });
+      applyWboitMeshPassPatch(revealMaterial, { pass: 'reveal' });
     }
     const cache = { sourceMaterial, accumMaterial, revealMaterial };
     renderable.userData = renderable.userData || {};
@@ -6479,18 +6507,18 @@
   }
 
   /**
-   * Run one render callback with only selected surface meshes and optional non-surface content visible.
-   * @param {THREE.Mesh[]} visibleSurfaceMeshes
+   * Run one render callback with only selected transparent renderables and optional non-surface content visible.
+   * @param {THREE.Object3D[]} visibleRenderables
    * @param {{hideNonSurfaces?:boolean}=} options
    * @param {() => any} callback
    * @returns {any}
    */
-  function withContentGroupVisibility(visibleSurfaceMeshes, options = {}, callback) {
+  function withContentGroupVisibility(visibleRenderables, options = {}, callback) {
     const prev = [];
     const prevTopLevel = [];
-    const allRenderables = getRenderableTransparentObjects(() => true);
+    const allRenderables = getTransparentRenderables(() => true);
     const allRenderableSet = new Set(allRenderables);
-    const visibleSet = new Set(Array.isArray(visibleSurfaceMeshes) ? visibleSurfaceMeshes : []);
+    const visibleSet = new Set(Array.isArray(visibleRenderables) ? visibleRenderables : []);
     const hideNonSurfaces = !!options.hideNonSurfaces;
     const children = contentGroup && Array.isArray(contentGroup.children) ? contentGroup.children : [];
     const visibleTopLevel = new Set();
@@ -6525,7 +6553,7 @@
    * @param {(mesh:THREE.Mesh) => boolean=} filterFn
    * @returns {THREE.Mesh[]}
    */
-  function getRenderableSurfaceMeshes(filterFn) {
+  function getRenderedSurfaceMeshes(filterFn) {
     if (!Array.isArray(meshes) || !meshes.length) return [];
     return meshes.filter((mesh) => (
       !!mesh
@@ -6540,7 +6568,7 @@
    * @param {(obj:THREE.Object3D) => boolean=} filterFn
    * @returns {THREE.Object3D[]}
    */
-  function getRenderableCloudObjects(filterFn) {
+  function getRenderedCloudObjects(filterFn) {
     if (!(cloudGroup && typeof cloudGroup.traverse === 'function')) return [];
     const out = [];
     cloudGroup.traverse((obj) => {
@@ -6556,10 +6584,10 @@
    * @param {(obj:THREE.Object3D) => boolean=} filterFn
    * @returns {THREE.Object3D[]}
    */
-  function getRenderableTransparentObjects(filterFn) {
+  function getTransparentRenderables(filterFn) {
     return [
-      ...getRenderableSurfaceMeshes(filterFn),
-      ...getRenderableCloudObjects(filterFn),
+      ...getRenderedSurfaceMeshes(filterFn),
+      ...getRenderedCloudObjects(filterFn),
     ];
   }
 
@@ -6591,23 +6619,23 @@
    * Render one WBOIT transparent pass into the provided target rectangle.
    * @param {THREE.WebGLRenderTarget} target
    * @param {{x:number,y:number,width:number,height:number}} rect
-   * @param {THREE.Object3D[]} surfaceMeshes
+   * @param {THREE.Object3D[]} visibleRenderables
    * @param {'accum'|'reveal'} pass
    */
-  function renderWboitTransparentPass(target, rect, surfaceMeshes, pass) {
+  function renderTransparentWboitPass(target, rect, visibleRenderables, pass) {
     const restore = [];
     renderer.setRenderTarget(target);
     renderer.setScissorTest(true);
     applyRendererRect(rect);
-    withSceneBackgroundDisabled(() => withContentGroupVisibility(surfaceMeshes, { hideNonSurfaces: true }, () => {
-      for (const mesh of surfaceMeshes) {
-        const cache = ensureWboitRenderablePassMaterials(mesh);
+    withSceneBackgroundDisabled(() => withContentGroupVisibility(visibleRenderables, { hideNonSurfaces: true }, () => {
+      for (const renderable of visibleRenderables) {
+        const cache = ensureWboitRenderablePassMaterials(renderable);
         if (!cache) continue;
         const passMaterial = pass === 'reveal' ? cache.revealMaterial : cache.accumMaterial;
-        if (mesh.isPoints) syncCloudPointWboitMaterial(mesh, mesh.material, passMaterial);
-        else syncWboitSurfacePassMaterial(mesh.material, passMaterial, getRenderableAlphaValue(mesh));
-        restore.push([mesh, mesh.material]);
-        mesh.material = passMaterial;
+        if (renderable.isPoints) syncCloudPointWboitMaterial(renderable, renderable.material, passMaterial);
+        else syncWboitMeshPassMaterial(renderable.material, passMaterial, getRenderableAlphaValue(renderable));
+        restore.push([renderable, renderable.material]);
+        renderable.material = passMaterial;
       }
       try {
         renderer.render(scene, camera);
@@ -6637,20 +6665,20 @@
    * @param {THREE.WebGLRenderTarget} sceneTarget
    * @param {{x:number,y:number,width:number,height:number}} rect
    * @param {number} cssWidth
-   * @param {(mesh:THREE.Object3D) => boolean=} surfaceFilter
+   * @param {(renderable:THREE.Object3D) => boolean=} renderableFilter
    */
-  function renderWboitViewportRect(metrics, sceneTarget, rect, cssWidth, surfaceFilter) {
+  function renderWboitViewportRect(metrics, sceneTarget, rect, cssWidth, renderableFilter) {
     if (!(ensureWboitSupport() && sceneTarget && wboitAccumTarget && wboitRevealTarget)) {
       throw new Error(wboitFailureReason || 'wboit-unavailable');
     }
     updateActiveCameraProjection(cssWidth, metrics.cssHeight);
     renderSceneRect(sceneTarget, rect, [], { hideNonSurfaces: false, clearDepth: true, clearColor: true });
-    const surfaceMeshes = getRenderableTransparentObjects(surfaceFilter);
-    if (!surfaceMeshes.length) return;
+    const renderables = getTransparentRenderables(renderableFilter);
+    if (!renderables.length) return;
     clearRenderTargetRect(wboitAccumTarget, rect, 0x000000, 0.0, { clearDepth: false });
     clearRenderTargetRect(wboitRevealTarget, rect, 0xffffff, 1.0, { clearDepth: false });
-    renderWboitTransparentPass(wboitAccumTarget, rect, surfaceMeshes, 'accum');
-    renderWboitTransparentPass(wboitRevealTarget, rect, surfaceMeshes, 'reveal');
+    renderTransparentWboitPass(wboitAccumTarget, rect, renderables, 'accum');
+    renderTransparentWboitPass(wboitRevealTarget, rect, renderables, 'reveal');
     compositeWboitRect(sceneTarget, rect);
   }
 
@@ -24249,7 +24277,7 @@
    * Keep surface-specific UI state aligned with the active molecule style.
    * Toon mode drives surfaces through toon shading.
    */
-  function syncSurfaceStyleControlState() {
+  function syncSurfaceMaterialControlState() {
     const opacityRangeEl = document.getElementById('opacityRange');
     const opacitySliderRoot = opInput ? opInput.closest('[data-vm-slider]') : null;
     const opacityRow = opInput ? opInput.closest('.vm-field-row') : null;
@@ -24600,7 +24628,7 @@
     applyShadowParticipation(atomGroup);
     applyShadowParticipation(bondGroup);
     syncMoleculeStyleChipState();
-    syncSurfaceStyleControlState();
+    syncSurfaceMaterialControlState();
     syncGlossyStyleControlsState();
     syncMoleculeFeatureControlsState();
     syncDofControlState();
@@ -24904,18 +24932,17 @@
       rowCloudType.classList.toggle('vm-appearance-hidden', !isCloud);
       rowCloudType.style.display = isCloud ? '' : 'none';
     }
-    syncSurfaceStyleControlState();
+    syncSurfaceMaterialControlState();
     syncAppearanceInspectorSectionState();
   }
   /**
    * Read and normalize cloud-rendering options from UI controls.
-   * @returns {{type:string,stride:number,tLow:number,alphaMax:number,posColorHex:string,negColorHex:string}}
+   * @returns {{type:string,tLow:number,alphaMax:number,posColorHex:string,negColorHex:string}}
    */
   function readCloudOpts() {
     const iso = Math.abs(parseFloat((isoInput && isoInput.value) || '0')) || 0;
     return {
       type: cloudType,
-      stride: 1,
       tLow: iso > 0 ? iso : 1e-6, // threshold tied to iso value
       alphaMax: getSurfaceOpacityValue(),
       posColorHex: posColor && posColor.value ? posColor.value : DEFAULT_POS_SURFACE_COLOR,
@@ -25521,18 +25548,18 @@
       surfaceOpacityInput: Math.max(0, Math.min(1, Number.isFinite(parseFloat(opInput && opInput.value || '1'))
         ? parseFloat(opInput && opInput.value || '1')
         : 1)),
-      surfaceStyle: 'emissive',
+      surfaceStyle: getLegacySurfaceStyleKey(),
       targetSize: sceneRenderTarget
         ? {
           width: Number(sceneRenderTarget.width) || 0,
           height: Number(sceneRenderTarget.height) || 0,
         }
         : { width: 0, height: 0 },
-      transparentMeshCount: getRenderableTransparentObjects(() => true).length,
-      transparentSurfaceCount: getRenderableSurfaceMeshes(() => true).length,
-      cloudRenderableCount: getRenderableCloudObjects(() => true).length,
+      transparentMeshCount: getTransparentRenderables(() => true).length,
+      transparentSurfaceCount: getRenderedSurfaceMeshes(() => true).length,
+      cloudRenderableCount: getRenderedCloudObjects(() => true).length,
     }),
-    getSurfaceMaterialSnapshot: () => getRenderableSurfaceMeshes(() => true).map((mesh) => {
+    getSurfaceMaterialSnapshot: () => getRenderedSurfaceMeshes(() => true).map((mesh) => {
       const material = mesh && mesh.material ? mesh.material : null;
       const color = material && material.color ? material.color : null;
       return {
@@ -25560,7 +25587,7 @@
           : null,
       };
     }),
-    getCloudMaterialSnapshot: () => getRenderableCloudObjects(() => true).map((obj) => {
+    getCloudMaterialSnapshot: () => getRenderedCloudObjects(() => true).map((obj) => {
       const material = obj && obj.material ? obj.material : null;
       const color = material && material.color ? material.color : null;
       const shaderColor = material && material.uniforms && material.uniforms.uColor && material.uniforms.uColor.value
@@ -29267,14 +29294,7 @@
         } else {
           mat.opacity = op;
           applySurfaceBlendFlags(mat, op);
-          if ('roughness' in mat) mat.roughness = preset.roughness;
-          if ('metalness' in mat) mat.metalness = preset.metalness;
-          if ('clearcoat' in mat) mat.clearcoat = preset.clearcoat;
-          if ('clearcoatRoughness' in mat) mat.clearcoatRoughness = preset.clearcoatRoughness;
-          if ('reflectivity' in mat) mat.reflectivity = preset.reflectivity;
-          if ('emissiveIntensity' in mat) mat.emissiveIntensity = preset.emissiveIntensity;
-          if ('envMapIntensity' in mat) mat.envMapIntensity = preset.envMapIntensity;
-          if (mat.userData) mat.userData.vmSurfaceStyle = getSurfaceMaterialPresetKey();
+          applySurfacePresetToMaterial(mat, preset);
         }
         mat.needsUpdate = true;
         continue;
@@ -29287,16 +29307,7 @@
       if (mat.isMeshPhysicalMaterial) {
         mat.opacity = op;
         applySurfaceBlendFlags(mat, op);
-        if ('roughness' in mat) mat.roughness = preset.roughness;
-        if ('metalness' in mat) mat.metalness = preset.metalness;
-        if ('clearcoat' in mat) mat.clearcoat = preset.clearcoat;
-        if ('clearcoatRoughness' in mat) mat.clearcoatRoughness = preset.clearcoatRoughness;
-        if ('reflectivity' in mat) mat.reflectivity = preset.reflectivity;
-        if ('emissiveIntensity' in mat) mat.emissiveIntensity = preset.emissiveIntensity;
-        if ('envMapIntensity' in mat) mat.envMapIntensity = preset.envMapIntensity;
-        mat.color.copy(col);
-        if (mat.emissive) mat.emissive.copy(col);
-        if (mat.userData) mat.userData.vmSurfaceStyle = getSurfaceMaterialPresetKey();
+        applySurfacePresetToMaterial(mat, preset, { color: col, emissiveColor: col });
       } else {
         // Fallback materials (standard/toon)
         mat.opacity = op;
@@ -29311,7 +29322,7 @@
     }
     // Update cloud colors and alpha as well
     const cloudAlpha = getSurfaceOpacityValue();
-    const cloudObjects = getRenderableCloudObjects(() => true);
+    const cloudObjects = getRenderedCloudObjects(() => true);
     if (cloudObjects.length) {
       for (const obj of cloudObjects) {
         if (!obj || !obj.material) continue;
