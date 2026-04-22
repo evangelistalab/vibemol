@@ -2773,14 +2773,14 @@
                   <label class="vm-field-label" for="twoComponentModeSelect">2C mode</label>
                   <div class="vm-field-control">
                     <select id="twoComponentModeSelect" class="vm-select" data-tooltip="Select 2C cube component or phase surface">
-                      <option value="alphaRe">alphaRe</option>
-                      <option value="alphaIm">alphaIm</option>
-                      <option value="betaRe">betaRe</option>
-                      <option value="betaIm">betaIm</option>
-                      <option value="alphaPhase">Alpha (phase hue)</option>
-                      <option value="betaPhase">Beta (phase hue)</option>
-                      <option value="alphaBetaPhase">Alpha/Beta phase</option>
-                      <option value="totalBloch">Total (Bloch color)</option>
+                      <option value="alphaRe">Re(ψ^α)</option>
+                      <option value="alphaIm">Im(ψ^α)</option>
+                      <option value="betaRe">Re(ψ^β)</option>
+                      <option value="betaIm">Im(ψ^β)</option>
+                      <option value="alphaPhase">ψ^α (phase)</option>
+                      <option value="betaPhase">ψ^β (phase)</option>
+                      <option value="alphaBetaPhase">ψ^α ‖ ψ^β</option>
+                      <option value="totalBloch">Ψ (Bloch)</option>
                     </select>
                   </div>
                 </div>
@@ -2835,6 +2835,14 @@
 
   <div id="drop">
     <canvas id="canvas"></canvas>
+    <div id="twoComponentSplitOverlay" class="vm-two-component-overlay" aria-hidden="true" hidden>
+      <div id="twoComponentAlphaRegion" class="vm-two-component-overlay__region vm-two-component-overlay__region--alpha" role="img" aria-label="Alpha spin component">
+        <span id="twoComponentAlphaLabel" class="vm-two-component-overlay__label" aria-hidden="true">α</span>
+      </div>
+      <div id="twoComponentBetaRegion" class="vm-two-component-overlay__region vm-two-component-overlay__region--beta" role="img" aria-label="Beta spin component">
+        <span id="twoComponentBetaLabel" class="vm-two-component-overlay__label" aria-hidden="true">β</span>
+      </div>
+    </div>
     <div id="trajectoryVideoCropOverlay" class="vm-canvas-video-export__overlay" aria-hidden="true" data-state="idle">
       <div id="trajectoryVideoCropFrame" class="vm-canvas-video-export__frame">
         <div class="vm-canvas-video-export__handle" data-corner="nw" aria-hidden="true"></div>
@@ -2910,6 +2918,15 @@
       </span>
       <span class="adaptiveShortcutGroup" aria-hidden="true">
         <span class="adaptiveShortcutKey">C</span>
+      </span>
+    </button>
+    <button id="spinorInfoBtn" class="adaptiveEditItem" type="button" data-tooltip="Spinor info" hidden>
+      <span class="adaptiveEditItemBody">
+        <span class="adaptiveEditItemTitleRow">
+          <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">info</span>
+          <span class="adaptiveEditItemLabel">Spinor info</span>
+        </span>
+        <span class="adaptiveEditItemMeta"></span>
       </span>
     </button>
     <button id="trajectoryPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="Trajectory (T)" hidden>
@@ -3078,6 +3095,20 @@
       </div>
     </div>
   </div>
+  <div id="spinorInfoPanel" class="floatingAuxInspector floatingAuxInspectorSpinor" aria-hidden="true">
+    <div class="spinorInfoPanelHead">
+      <h2 id="spinorInfoPanelTitle" class="spinorInfoPanelTitle">Two-component spinor</h2>
+      <button id="spinorInfoPanelClose" class="secondary spinorInfoPanelClose" type="button" aria-label="Close spinor info" title="Close spinor info">
+        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <div class="spinorInfoPanelBody">
+      <div id="spinorInfoPhaseWheel" class="spinorInfoPhaseWheel" aria-hidden="true"></div>
+      <p id="spinorInfoLine1">α (left) and β (right) are the two spin components of the wavefunction.</p>
+      <p id="spinorInfoLine2">Color encodes phase.</p>
+      <p id="spinorInfoLine3">Isosurface encloses |ψ|² regions above the iso level.</p>
+    </div>
+  </div>
   <div id="emptyState">
     <div id="emptyStateCard">
       <div id="emptyStateLead">
@@ -3117,7 +3148,7 @@
   <div id="hint">Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Basic 2=Toon 3=Kit 4=Glossy</div>
   <!-- Phase wheel legend (shown in phase-hue modes) -->
   <div id="phaseWheel" aria-hidden="true"
-    style="position:fixed; top:100px; left:10px; width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
+    style="position:fixed; right:12px; bottom:calc(var(--status-ribbon-height) + 34px); width:96px; height:120px; z-index:31; pointer-events:none; display:none;">
     <canvas id="phaseWheelCanvas" width="96" height="120" style="width:100%; height:100%;"></canvas>
   </div>
   <div id="editAdaptiveAddAtomPopover" aria-hidden="true">

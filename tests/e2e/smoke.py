@@ -4195,6 +4195,147 @@ def main() -> int:
                 }"""
             )
 
+            log_step('2c spinor labels and info')
+            load_volume_asset(page, '/assets/data/sample.cube')
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('twoComponentSplitOverlay');
+                    const btn = document.getElementById('spinorInfoBtn');
+                    const panel = document.getElementById('spinorInfoPanel');
+                    const overlayHidden = !overlay || overlay.hidden || overlay.getAttribute('aria-hidden') === 'true';
+                    const btnHidden = !btn || btn.hidden || btn.offsetParent === null;
+                    const panelHidden = !panel || panel.getAttribute('aria-hidden') !== 'false';
+                    return overlayHidden && btnHidden && panelHidden;
+                }"""
+            )
+            load_volume_asset(page, '/assets/data/2ccubes/orbital_0.2ccube')
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('twoComponentSplitOverlay');
+                    const alpha = document.getElementById('twoComponentAlphaRegion');
+                    const beta = document.getElementById('twoComponentBetaRegion');
+                    const modeRow = document.getElementById('twoComponentModeRow');
+                    const modeSelect = document.getElementById('twoComponentModeSelect');
+                    const btn = document.getElementById('spinorInfoBtn');
+                    const optionValues = modeSelect ? Array.from(modeSelect.options || []).map((opt) => String(opt.value || '').trim()) : [];
+                    const optionLabels = modeSelect ? Array.from(modeSelect.options || []).map((opt) => String(opt.textContent || '').trim()) : [];
+                    return !!overlay
+                      && overlay.hidden === false
+                      && overlay.getAttribute('aria-hidden') === 'false'
+                      && !!alpha
+                      && !!beta
+                      && !!modeRow
+                      && !modeRow.classList.contains('vm-appearance-hidden')
+                      && !!modeSelect
+                      && optionValues.join('|') === 'alphaRe|alphaIm|betaRe|betaIm|alphaPhase|betaPhase|alphaBetaPhase|totalBloch'
+                      && optionLabels.join('|') === 'Re(ψ^α)|Im(ψ^α)|Re(ψ^β)|Im(ψ^β)|ψ^α (phase)|ψ^β (phase)|ψ^α ‖ ψ^β|Ψ (Bloch)'
+                      && alpha.getAttribute('aria-label') === 'Alpha spin component'
+                      && beta.getAttribute('aria-label') === 'Beta spin component'
+                      && String(alpha.textContent || '').includes('α')
+                      && String(beta.textContent || '').includes('β')
+                      && !!btn
+                      && btn.hidden === false
+                      && btn.offsetParent !== null;
+                }"""
+            )
+            page.click('#spinorInfoBtn')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('spinorInfoPanel');
+                    const wheel = document.getElementById('spinorInfoPhaseWheel');
+                    const text = String(panel?.textContent || '');
+                    return !!panel
+                      && panel.getAttribute('aria-hidden') === 'false'
+                      && !!wheel
+                      && wheel.hidden === false
+                      && text.includes('Two-component spinor')
+                      && text.includes('Alpha (left) and beta (right) are the two spin components of the wavefunction.')
+                      && text.includes('Color encodes phase for each component.')
+                      && text.includes('Isosurface encloses regions where each component exceeds the iso level.');
+                }"""
+            )
+            set_select_value(page, '#twoComponentModeSelect', 'alphaRe')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('spinorInfoPanel');
+                    const wheel = document.getElementById('spinorInfoPhaseWheel');
+                    const text = String(panel?.textContent || '');
+                    return !!panel
+                      && panel.getAttribute('aria-hidden') === 'false'
+                      && !!wheel
+                      && wheel.hidden === true
+                      && text.includes('Real part of the spin alpha wavefunction.')
+                      && text.includes('Positive and negative lobes show the sign of that component.')
+                      && text.includes('Isosurface encloses regions where the real alpha component exceeds the iso level.');
+                }"""
+            )
+            set_select_value(page, '#twoComponentModeSelect', 'alphaBetaPhase')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('spinorInfoPanel');
+                    const wheel = document.getElementById('spinorInfoPhaseWheel');
+                    const text = String(panel?.textContent || '');
+                    return !!panel
+                      && panel.getAttribute('aria-hidden') === 'false'
+                      && !!wheel
+                      && wheel.hidden === false
+                      && text.includes('Alpha (left) and beta (right) are the two spin components of the wavefunction.');
+                }"""
+            )
+            page.click('#spinorInfoBtn')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('spinorInfoPanel');
+                    return !!panel && panel.getAttribute('aria-hidden') === 'true';
+                }"""
+            )
+            page.click('#spinorInfoBtn')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('spinorInfoPanel');
+                    return !!panel && panel.getAttribute('aria-hidden') === 'false';
+                }"""
+            )
+            page.keyboard.press('Escape')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('spinorInfoPanel');
+                    return !!panel && panel.getAttribute('aria-hidden') === 'true';
+                }"""
+            )
+            page.click('#spinorInfoBtn')
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('spinorInfoPanel');
+                    return !!panel && panel.getAttribute('aria-hidden') === 'false';
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const drop = document.getElementById('drop');
+                    if (!drop) return;
+                    drop.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const panel = document.getElementById('spinorInfoPanel');
+                    return !!panel && panel.getAttribute('aria-hidden') === 'true';
+                }"""
+            )
+            load_volume_asset(page, '/assets/data/sample.cube')
+            page.wait_for_function(
+                """() => {
+                    const overlay = document.getElementById('twoComponentSplitOverlay');
+                    const btn = document.getElementById('spinorInfoBtn');
+                    const panel = document.getElementById('spinorInfoPanel');
+                    const overlayHidden = !overlay || overlay.hidden || overlay.getAttribute('aria-hidden') === 'true';
+                    const btnHidden = !btn || btn.hidden || btn.offsetParent === null;
+                    const panelHidden = !panel || panel.getAttribute('aria-hidden') !== 'false';
+                    return overlayHidden && btnHidden && panelHidden;
+                }"""
+            )
+
             log_step('wboit 2c alpha/beta split view')
             load_volume_asset(page, '/assets/data/2ccubes/orbital_0.2ccube')
             page.wait_for_function("() => !!document.getElementById('twoComponentModeSelect')")

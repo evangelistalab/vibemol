@@ -6893,6 +6893,14 @@
   canvasAdaptiveMenuEl = displayWindowAdaptiveMenuEl;
   const viewInspectorBtn = document.getElementById('viewInspectorBtn');
   const viewInspector = document.getElementById('viewInspector');
+  const spinorInfoBtn = document.getElementById('spinorInfoBtn');
+  const spinorInfoPanel = document.getElementById('spinorInfoPanel');
+  const spinorInfoPanelClose = document.getElementById('spinorInfoPanelClose');
+  const spinorInfoPanelTitle = document.getElementById('spinorInfoPanelTitle');
+  const spinorInfoPhaseWheel = document.getElementById('spinorInfoPhaseWheel');
+  const spinorInfoLine1 = document.getElementById('spinorInfoLine1');
+  const spinorInfoLine2 = document.getElementById('spinorInfoLine2');
+  const spinorInfoLine3 = document.getElementById('spinorInfoLine3');
   const viewPanelBtn = document.getElementById('viewPanelBtn');
   const coordsPanelBtn = document.getElementById('coordsPanelBtn');
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
@@ -6931,6 +6939,11 @@
   const helpOverlay = document.getElementById('helpOverlay');
   const helpModal = document.getElementById('helpModal');
   const helpClose = document.getElementById('helpClose');
+  const twoComponentSplitOverlay = document.getElementById('twoComponentSplitOverlay');
+  const twoComponentAlphaRegion = document.getElementById('twoComponentAlphaRegion');
+  const twoComponentBetaRegion = document.getElementById('twoComponentBetaRegion');
+  const twoComponentAlphaLabel = document.getElementById('twoComponentAlphaLabel');
+  const twoComponentBetaLabel = document.getElementById('twoComponentBetaLabel');
   const versionText = document.getElementById('versionText');
   applyFontPair(getFontPair());
   if (versionText) versionText.textContent = APP_VERSION;
@@ -10216,6 +10229,7 @@
     const showViewActions = hasAtoms;
     const showView = hasRecord;
     const showCoords = hasAtoms;
+    const showSpinorInfo = !!(vol && vol.isTwoComponent);
     const showTrajectory = !!getActiveTrajectoryInfo().enabled;
     const showVibration = !!getActiveVibrationInfo().enabled;
     const itemDefs = [
@@ -10242,6 +10256,12 @@
         buttonEl: coordsPanelBtn,
         visible: showCoords,
         presentation: { icon: 'table_rows', label: 'Coordinates', meta: '', key: 'C', title: 'Coordinates (C)', static: false },
+      },
+      {
+        windowId: NON_EDIT_WINDOW_ID.SPINOR_INFO,
+        buttonEl: spinorInfoBtn,
+        visible: showSpinorInfo,
+        presentation: { icon: 'info', label: 'Spinor info', meta: '', key: '', title: 'Spinor info', static: false },
       },
       {
         windowId: NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL,
@@ -10291,6 +10311,7 @@
       viewInspectorBtn,
       viewPanelBtn,
       coordsPanelBtn,
+      spinorInfoBtn,
       trajectoryPanelBtn,
       vibrationPanelBtn,
     ];
@@ -10339,6 +10360,7 @@
     if (displayAdaptiveMenuAutoHideController) {
       displayAdaptiveMenuAutoHideController.setEnabled(canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
     }
+    syncTwoComponentOverlayLabelOffsets();
   }
 
   /**
@@ -10432,7 +10454,24 @@
     updateDisplayWindowAdaptiveMenuUi();
   }
 
+  /**
+   * Open/close the 2C spinor info popover.
+   * @param {boolean} open
+   */
+  function setSpinorInfoPanelOpen(open) {
+    const shouldOpen = !!open;
+    if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.SPINOR_INFO);
+    setFloatingPanelOpen(spinorInfoPanel, shouldOpen);
+    if (spinorInfoBtn) {
+      spinorInfoBtn.classList.toggle('active', shouldOpen);
+      spinorInfoBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    }
+    updateDisplayWindowAdaptiveMenuUi();
+  }
+
   if (viewInspectorBtn) viewInspectorBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR);
+  if (spinorInfoBtn) spinorInfoBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.SPINOR_INFO);
+  if (spinorInfoPanelClose) spinorInfoPanelClose.onclick = () => setSpinorInfoPanelOpen(false);
   if (viewPanelBtn) viewPanelBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL);
   if (coordsPanelBtn) coordsPanelBtn.onclick = () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL);
   if (sideClose) sideClose.onclick = () => setViewPanelOpen(false);
@@ -10557,6 +10596,12 @@
     });
     helpOverlay.addEventListener('keydown', handleHelpOverlayKeydown);
   }
+  document.addEventListener('pointerdown', (event) => {
+    if (!isFloatingPanelCurrentlyOpen(spinorInfoPanel)) return;
+    const target = event && event.target ? event.target : null;
+    if ((spinorInfoPanel && spinorInfoPanel.contains(target)) || (spinorInfoBtn && spinorInfoBtn.contains(target))) return;
+    setSpinorInfoPanelOpen(false);
+  });
   displayWindowsController = createDisplayWindowsController({
     positionFloatingPopover: positionFloatingPopoverUi,
     entries: {
@@ -10573,6 +10618,14 @@
         panelEl: moldenInspector,
         isOpen: () => isFloatingPanelCurrentlyOpen(moldenInspector),
         setOpen: (open) => setMoldenInspectorOpen(open),
+      },
+      [NON_EDIT_WINDOW_ID.SPINOR_INFO]: {
+        id: NON_EDIT_WINDOW_ID.SPINOR_INFO,
+        label: 'Spinor info',
+        buttonEl: spinorInfoBtn,
+        panelEl: spinorInfoPanel,
+        isOpen: () => isFloatingPanelCurrentlyOpen(spinorInfoPanel),
+        setOpen: (open) => setSpinorInfoPanelOpen(open),
       },
       [NON_EDIT_WINDOW_ID.VIEW_INSPECTOR]: {
         id: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
@@ -10635,12 +10688,12 @@
     getPinned: () => (
       currentMode === MODES.EDIT
         ? (isBuildPopoverOpen() || isSymmetryPopoverOpen())
-        : (isFloatingPanelCurrentlyOpen(moldenInspector) || isToolbarInspectorOpen(viewInspectorRefs))
+        : (isFloatingPanelCurrentlyOpen(moldenInspector) || isFloatingPanelCurrentlyOpen(spinorInfoPanel) || isToolbarInspectorOpen(viewInspectorRefs))
     ),
     getRelatedElements: () => (
       currentMode === MODES.EDIT
         ? [editAdaptiveAddAtomPopoverEl, editAdaptiveSymmetryPopoverEl]
-        : [moldenInspector, viewInspector]
+        : [moldenInspector, spinorInfoPanel, viewInspector]
     ),
   });
 
@@ -28765,6 +28818,160 @@
   }
 
   /**
+   * Return whether the active 2C rendering is using the split alpha/beta view.
+   * @param {{isTwoComponent?:boolean}=} vol
+   * @param {string=} compMode
+   * @returns {boolean}
+   */
+  function isAlphaBetaSplitViewActive(vol, compMode = '') {
+    return !!(vol && vol.isTwoComponent && String(compMode || getComponentMode(vol) || '') === 'alphaBetaPhase');
+  }
+
+  /**
+   * Build the descriptive copy for the active 2C quantity.
+   * @param {string=} compMode
+   * @returns {{title:string,lines:[string,string,string],showPhaseWheel:boolean}}
+   */
+  function getTwoComponentInfoContent(compMode = '') {
+    const mode = String(compMode || '').trim();
+    switch (mode) {
+      case 'alphaRe':
+        return {
+          title: 'Two-component spinor',
+          lines: [
+            'Real part of the spin alpha wavefunction.',
+            'Positive and negative lobes show the sign of that component.',
+            'Isosurface encloses regions where the real alpha component exceeds the iso level.',
+          ],
+          showPhaseWheel: false,
+        };
+      case 'alphaIm':
+        return {
+          title: 'Two-component spinor',
+          lines: [
+            'Imaginary part of the spin alpha wavefunction.',
+            'Positive and negative lobes show the sign of that component.',
+            'Isosurface encloses regions where the imaginary alpha component exceeds the iso level.',
+          ],
+          showPhaseWheel: false,
+        };
+      case 'betaRe':
+        return {
+          title: 'Two-component spinor',
+          lines: [
+            'Real part of the spin beta wavefunction.',
+            'Positive and negative lobes show the sign of that component.',
+            'Isosurface encloses regions where the real beta component exceeds the iso level.',
+          ],
+          showPhaseWheel: false,
+        };
+      case 'betaIm':
+        return {
+          title: 'Two-component spinor',
+          lines: [
+            'Imaginary part of the spin beta wavefunction.',
+            'Positive and negative lobes show the sign of that component.',
+            'Isosurface encloses regions where the imaginary beta component exceeds the iso level.',
+          ],
+          showPhaseWheel: false,
+        };
+      case 'alphaPhase':
+        return {
+          title: 'Two-component spinor',
+          lines: [
+            'Spin alpha component with phase encoded by color.',
+            'Hue tracks phase while surface shape follows component magnitude.',
+            'Isosurface encloses regions where the alpha component exceeds the iso level.',
+          ],
+          showPhaseWheel: true,
+        };
+      case 'betaPhase':
+        return {
+          title: 'Two-component spinor',
+          lines: [
+            'Spin beta component with phase encoded by color.',
+            'Hue tracks phase while surface shape follows component magnitude.',
+            'Isosurface encloses regions where the beta component exceeds the iso level.',
+          ],
+          showPhaseWheel: true,
+        };
+      case 'totalBloch':
+        return {
+          title: 'Two-component spinor',
+          lines: [
+            'Total two-component spinor with Bloch color encoding.',
+            'Hue combines local phase and spin character across the full spinor.',
+            'Isosurface encloses regions where the total spinor density exceeds the iso level.',
+          ],
+          showPhaseWheel: true,
+        };
+      case 'alphaBetaPhase':
+      default:
+        return {
+          title: 'Two-component spinor',
+          lines: [
+            'Alpha (left) and beta (right) are the two spin components of the wavefunction.',
+            'Color encodes phase for each component.',
+            'Isosurface encloses regions where each component exceeds the iso level.',
+          ],
+          showPhaseWheel: true,
+        };
+    }
+  }
+
+  /**
+   * Keep the spinor info popover copy aligned with the active 2C quantity.
+   * @param {{isTwoComponent?:boolean}=} vol
+   * @param {string=} compMode
+   */
+  function syncSpinorInfoContent(vol, compMode = '') {
+    const is2c = !!(vol && vol.isTwoComponent);
+    const content = getTwoComponentInfoContent(is2c ? compMode : DEFAULT_2C_COMPONENT_MODE);
+    if (spinorInfoPanelTitle) spinorInfoPanelTitle.textContent = content.title;
+    if (spinorInfoLine1) spinorInfoLine1.textContent = content.lines[0] || '';
+    if (spinorInfoLine2) spinorInfoLine2.textContent = content.lines[1] || '';
+    if (spinorInfoLine3) spinorInfoLine3.textContent = content.lines[2] || '';
+    if (spinorInfoPhaseWheel) spinorInfoPhaseWheel.hidden = !is2c || !content.showPhaseWheel;
+  }
+
+  /**
+   * Clear any legacy inline positioning so the 2C overlay labels stay centered
+   * within each half-view.
+   */
+  function syncTwoComponentOverlayLabelOffsets() {
+    if (twoComponentAlphaLabel) {
+      twoComponentAlphaLabel.style.left = '';
+      twoComponentAlphaLabel.style.transform = '';
+    }
+    if (twoComponentBetaLabel) {
+      twoComponentBetaLabel.style.left = '';
+      twoComponentBetaLabel.style.transform = '';
+    }
+  }
+
+  /**
+   * Keep the 2C split-view overlay labels in sync with the active record.
+   * @param {{isTwoComponent?:boolean}=} vol
+   * @param {string=} compMode
+   */
+  function syncTwoComponentOverlayUi(vol, compMode = '') {
+    const show = isAlphaBetaSplitViewActive(vol, compMode);
+    if (twoComponentSplitOverlay) {
+      twoComponentSplitOverlay.hidden = !show;
+      twoComponentSplitOverlay.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+    if (twoComponentAlphaRegion) {
+      twoComponentAlphaRegion.hidden = !show;
+      twoComponentAlphaRegion.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+    if (twoComponentBetaRegion) {
+      twoComponentBetaRegion.hidden = !show;
+      twoComponentBetaRegion.setAttribute('aria-hidden', show ? 'false' : 'true');
+    }
+    syncTwoComponentOverlayLabelOffsets();
+  }
+
+  /**
    * Point `vol.data` to the active raw component when a raw mode is selected.
    * @param {{isTwoComponent?:boolean,data?:Float32Array,alphaRe?:Float32Array}} vol
    * @param {string} compMode
@@ -29138,10 +29345,14 @@
       : DEFAULT_2C_COMPONENT_MODE;
 
     if (twoComponentModeRow) {
+      twoComponentModeRow.classList.toggle('vm-appearance-hidden', !is2c);
       twoComponentModeRow.style.display = is2c ? 'grid' : 'none';
     }
     if (twoComponentModeSelect) {
       twoComponentModeSelect.value = effectiveMode;
+    }
+    if (!is2c && isFloatingPanelCurrentlyOpen(spinorInfoPanel)) {
+      setSpinorInfoPanelOpen(false);
     }
     syncAppearanceInspectorSectionState(vol);
 
@@ -29154,6 +29365,8 @@
       }
     } catch { }
 
+    syncTwoComponentOverlayUi(vol, effectiveMode);
+    syncSpinorInfoContent(vol, effectiveMode);
     if (!phaseWheelEl) return;
     const showPhaseWheel = is2c && isPhaseLikeComponent(effectiveMode);
     phaseWheelEl.style.display = showPhaseWheel ? 'block' : 'none';
