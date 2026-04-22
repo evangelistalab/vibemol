@@ -445,9 +445,6 @@
   }
 
   const {
-    voxelCenterToWorld,
-    estimateCellSize,
-    absPercentile,
     buildCloudCubes,
     buildCloudPoints,
     buildCloudCubes2CPhase,
@@ -456,9 +453,6 @@
     buildCloudPoints2CTotal,
   } = window.VibeMolCloudRendering || {};
   if (![
-    voxelCenterToWorld,
-    estimateCellSize,
-    absPercentile,
     buildCloudCubes,
     buildCloudPoints,
     buildCloudCubes2CPhase,

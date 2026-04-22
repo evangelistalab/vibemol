@@ -6,10 +6,6 @@
   if (typeof voxelToWorld !== 'function') {
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/cloud-rendering.js.');
   }
-  const renderingApi = global.VibeMolRendering || {};
-  if (!renderingApi || typeof renderingApi !== 'object') {
-    throw new Error('VibeMolRendering is not loaded. Ensure assets/app/js/rendering.js is included before assets/app/js/cloud-rendering.js.');
-  }
   const { hsvToRgb } = global.VibeMolVolume2C || {};
   if (typeof hsvToRgb !== 'function') {
     throw new Error('VibeMolVolume2C is not loaded. Ensure assets/app/js/volume-2c.js is included before assets/app/js/cloud-rendering.js.');
@@ -46,6 +42,95 @@
     arr.sort((a, b) => a - b);
     const idx = Math.min(arr.length - 1, Math.max(0, Math.floor(p * (arr.length - 1))));
     return arr[idx];
+  }
+
+  function computeCloudPointBaseSize(vol, stride) {
+    return estimateCellSize(vol) * Math.max(1, stride | 0) * CLOUD_POINT_SIZE_SCALE;
+  }
+
+  function createPointCloudGeometry(positions, strengths, colors) {
+    const geo = new global.THREE.BufferGeometry();
+    geo.setAttribute('position', new global.THREE.BufferAttribute(new Float32Array(positions), 3));
+    geo.setAttribute('aStrength', new global.THREE.BufferAttribute(new Float32Array(strengths), 1));
+    if (Array.isArray(colors) || colors instanceof Float32Array) {
+      geo.setAttribute('aColor', new global.THREE.BufferAttribute(new Float32Array(colors), 3));
+    }
+    return geo;
+  }
+
+  function createPointCloudMaterial(opts) {
+    const alpha = Math.min(1.0, Number(opts && opts.alpha) || 0);
+    const size = Math.max(1e-6, Number(opts && opts.size) || 1);
+    const vertexColors = !!(opts && opts.vertexColors);
+    const uniforms = {
+      uAlpha: { value: alpha },
+      uSize: { value: size },
+    };
+    if (!vertexColors) {
+      uniforms.uColor = { value: new global.THREE.Color(opts && opts.colorHex ? opts.colorHex : '#ffffff') };
+    }
+    return new global.THREE.ShaderMaterial({
+      uniforms,
+      vertexShader: vertexColors
+        ? `
+          uniform float uSize;
+          attribute float aStrength;
+          attribute vec3 aColor;
+          varying float vStrength;
+          varying vec3 vColor;
+          void main() {
+            vStrength = aStrength;
+            vColor = aColor;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            float dist = -mvPosition.z;
+            gl_PointSize = uSize * (300.0 / max(1.0, dist));
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `
+        : `
+          uniform float uSize;
+          attribute float aStrength;
+          varying float vStrength;
+          void main() {
+            vStrength = aStrength;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            float dist = -mvPosition.z;
+            gl_PointSize = uSize * (300.0 / max(1.0, dist));
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+      fragmentShader: vertexColors
+        ? `
+          uniform float uAlpha;
+          varying float vStrength;
+          varying vec3 vColor;
+          void main() {
+            vec2 uv = gl_PointCoord - vec2(0.5);
+            float d = length(uv);
+            if (d > 0.5) discard;
+            float fall = smoothstep(0.5, 0.0, d);
+            float a = uAlpha * vStrength * fall;
+            gl_FragColor = vec4(vColor, a);
+          }
+        `
+        : `
+          uniform vec3 uColor;
+          uniform float uAlpha;
+          varying float vStrength;
+          void main() {
+            vec2 uv = gl_PointCoord - vec2(0.5);
+            float d = length(uv);
+            if (d > 0.5) discard;
+            float fall = smoothstep(0.5, 0.0, d);
+            float a = uAlpha * vStrength * fall;
+            gl_FragColor = vec4(uColor, a);
+          }
+        `,
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      blending: global.THREE.NormalBlending,
+    });
   }
 
   function buildCloudCubes(vol, opts) {
@@ -241,46 +326,13 @@
       }
     }
     if (!pos.length) return g;
-    const baseSize = estimateCellSize(vol) * Math.max(1, stride) * CLOUD_POINT_SIZE_SCALE;
-    const mat = new global.THREE.ShaderMaterial({
-      uniforms: { uAlpha: { value: Math.min(1.0, opts.alphaMax * stride) }, uSize: { value: baseSize } },
-      vertexShader: `
-        uniform float uSize;
-        attribute float aStrength;
-        attribute vec3 aColor;
-        varying float vStrength;
-        varying vec3 vColor;
-        void main() {
-          vStrength = aStrength;
-          vColor = aColor;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          float dist = -mvPosition.z;
-          gl_PointSize = uSize * (300.0 / max(1.0, dist));
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        uniform float uAlpha;
-        varying float vStrength;
-        varying vec3 vColor;
-        void main() {
-          vec2 uv = gl_PointCoord - vec2(0.5);
-          float d = length(uv);
-          if (d > 0.5) discard;
-          float fall = smoothstep(0.5, 0.0, d);
-          float a = uAlpha * vStrength * fall;
-          gl_FragColor = vec4(vColor, a);
-        }
-      `,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: global.THREE.NormalBlending,
+    const baseSize = computeCloudPointBaseSize(vol, stride);
+    const mat = createPointCloudMaterial({
+      alpha: opts.alphaMax * stride,
+      size: baseSize,
+      vertexColors: true,
     });
-    const geo = new global.THREE.BufferGeometry();
-    geo.setAttribute('position', new global.THREE.BufferAttribute(new Float32Array(pos), 3));
-    geo.setAttribute('aStrength', new global.THREE.BufferAttribute(new Float32Array(str), 1));
-    geo.setAttribute('aColor', new global.THREE.BufferAttribute(new Float32Array(col), 3));
+    const geo = createPointCloudGeometry(pos, str, col);
     const pts = new global.THREE.Points(geo, mat);
     pts.userData = { phaseHue: true, which, vmCloudKind: 'phase-points' };
     g.add(pts);
@@ -433,46 +485,13 @@
       }
     }
     if (!pos.length) return g;
-    const baseSize = estimateCellSize(vol) * Math.max(1, stride) * CLOUD_POINT_SIZE_SCALE;
-    const mat = new global.THREE.ShaderMaterial({
-      uniforms: { uAlpha: { value: Math.min(1.0, opts.alphaMax * stride) }, uSize: { value: baseSize } },
-      vertexShader: `
-        uniform float uSize;
-        attribute float aStrength;
-        attribute vec3 aColor;
-        varying float vStrength;
-        varying vec3 vColor;
-        void main() {
-          vStrength = aStrength;
-          vColor = aColor;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          float dist = -mvPosition.z;
-          gl_PointSize = uSize * (300.0 / max(1.0, dist));
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        uniform float uAlpha;
-        varying float vStrength;
-        varying vec3 vColor;
-        void main() {
-          vec2 uv = gl_PointCoord - vec2(0.5);
-          float d = length(uv);
-          if (d > 0.5) discard;
-          float fall = smoothstep(0.5, 0.0, d);
-          float a = uAlpha * vStrength * fall;
-          gl_FragColor = vec4(vColor, a);
-        }
-      `,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: global.THREE.NormalBlending,
+    const baseSize = computeCloudPointBaseSize(vol, stride);
+    const mat = createPointCloudMaterial({
+      alpha: opts.alphaMax * stride,
+      size: baseSize,
+      vertexColors: true,
     });
-    const geo = new global.THREE.BufferGeometry();
-    geo.setAttribute('position', new global.THREE.BufferAttribute(new Float32Array(pos), 3));
-    geo.setAttribute('aStrength', new global.THREE.BufferAttribute(new Float32Array(str), 1));
-    geo.setAttribute('aColor', new global.THREE.BufferAttribute(new Float32Array(col), 3));
+    const geo = createPointCloudGeometry(pos, str, col);
     const pts = new global.THREE.Points(geo, mat);
     pts.userData = { phaseHue: true, totalBloch: true, vmCloudKind: 'bloch-points' };
     g.add(pts);
@@ -508,48 +527,14 @@
         }
       }
     }
-    const baseSize = estimateCellSize(vol) * Math.max(1, stride) * CLOUD_POINT_SIZE_SCALE;
-    const makeSpriteMat = (colorHex) => new global.THREE.ShaderMaterial({
-      uniforms: {
-        uColor: { value: new global.THREE.Color(colorHex) },
-        uAlpha: { value: Math.min(1.0, opts.alphaMax * stride) },
-        uSize: { value: baseSize },
-      },
-      vertexShader: `
-        uniform float uSize;
-        attribute float aStrength;
-        varying float vStrength;
-        void main() {
-          vStrength = aStrength;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          float dist = -mvPosition.z;
-          gl_PointSize = uSize * (300.0 / max(1.0, dist));
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uColor;
-        uniform float uAlpha;
-        varying float vStrength;
-        void main() {
-          vec2 uv = gl_PointCoord - vec2(0.5);
-          float d = length(uv);
-          if (d > 0.5) discard;
-          float fall = smoothstep(0.5, 0.0, d);
-          float a = uAlpha * vStrength * fall;
-          gl_FragColor = vec4(uColor, a);
-        }
-      `,
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: global.THREE.NormalBlending,
-    });
+    const baseSize = computeCloudPointBaseSize(vol, stride);
     const makePoints = (posArr, strArr, color, sign) => {
-      const geo = new global.THREE.BufferGeometry();
-      geo.setAttribute('position', new global.THREE.BufferAttribute(new Float32Array(posArr), 3));
-      geo.setAttribute('aStrength', new global.THREE.BufferAttribute(new Float32Array(strArr), 1));
-      const mat = makeSpriteMat(color);
+      const geo = createPointCloudGeometry(posArr, strArr);
+      const mat = createPointCloudMaterial({
+        alpha: opts.alphaMax * stride,
+        size: baseSize,
+        colorHex: color,
+      });
       const pts = new global.THREE.Points(geo, mat);
       pts.userData.sign = sign;
       pts.userData.vmCloudKind = 'scalar-points';
