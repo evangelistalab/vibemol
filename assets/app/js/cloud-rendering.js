@@ -6,14 +6,17 @@
   if (typeof voxelToWorld !== 'function') {
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/cloud-rendering.js.');
   }
-  const { maxAbs } = global.VibeMolRendering || {};
-  if (typeof maxAbs !== 'function') {
+  const renderingApi = global.VibeMolRendering || {};
+  if (!renderingApi || typeof renderingApi !== 'object') {
     throw new Error('VibeMolRendering is not loaded. Ensure assets/app/js/rendering.js is included before assets/app/js/cloud-rendering.js.');
   }
   const { hsvToRgb } = global.VibeMolVolume2C || {};
   if (typeof hsvToRgb !== 'function') {
     throw new Error('VibeMolVolume2C is not loaded. Ensure assets/app/js/volume-2c.js is included before assets/app/js/cloud-rendering.js.');
   }
+
+  const CLOUD_CUBE_FILL_SCALE = 1.0;
+  const CLOUD_POINT_SIZE_SCALE = 28.0;
 
   function voxelCenterToWorld(vol, i, j, k) {
     return voxelToWorld(vol, [i + 0.5, j + 0.5, k + 0.5]);
@@ -54,9 +57,7 @@
     const az = vol.axes[2].map((v) => v * BOHR_TO_ANG);
     const len = (v) => Math.hypot(v[0], v[1], v[2]);
     const scaleVec = new global.THREE.Vector3(len(ax) * stride, len(ay) * stride, len(az) * stride);
-    const hi = opts.hiMode === 'max' ? maxAbs(vol.data) : absPercentile(vol, 0.99, Math.max(1, stride));
     const tLow = opts.tLow;
-    const clamp01 = (x) => Math.max(0, Math.min(1, x));
     let nPos = 0;
     let nNeg = 0;
     for (let i = 0; i < nx; i += stride) {
@@ -104,11 +105,10 @@
           const av = Math.abs(v);
           if (av < tLow) continue;
           const pos = voxelCenterToWorld(vol, i, j, k);
-          const strength = clamp01((av - tLow) / Math.max(1e-12, hi - tLow));
           m4.compose(
             new global.THREE.Vector3(pos[0], pos[1], pos[2]),
             q.identity(),
-            s.copy(scaleVec).multiplyScalar(0.85 + 0.14 * strength)
+            s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE)
           );
           if (v >= 0) instPos.setMatrixAt(ip++, m4);
           else instNeg.setMatrixAt(ineg++, m4);
@@ -182,7 +182,7 @@
           const mag = Math.hypot(rr, ii);
           if (mag < tLow) continue;
           const pos = voxelCenterToWorld(vol, i, j, k);
-          m4.compose(new global.THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(0.99));
+          m4.compose(new global.THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE));
           inst.setMatrixAt(idx, m4);
           const phase = Math.atan2(ii, rr);
           const hue = (phase + Math.PI) / (2 * Math.PI);
@@ -241,7 +241,7 @@
       }
     }
     if (!pos.length) return g;
-    const baseSize = estimateCellSize(vol) * 12.0;
+    const baseSize = estimateCellSize(vol) * Math.max(1, stride) * CLOUD_POINT_SIZE_SCALE;
     const mat = new global.THREE.ShaderMaterial({
       uniforms: { uAlpha: { value: Math.min(1.0, opts.alphaMax * stride) }, uSize: { value: baseSize } },
       vertexShader: `
@@ -356,7 +356,7 @@
           const rho = a2 + b2;
           if (Math.sqrt(rho) < tLow) continue;
           const pos = voxelCenterToWorld(vol, i, j, k);
-          m4.compose(new global.THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(0.99));
+          m4.compose(new global.THREE.Vector3(pos[0], pos[1], pos[2]), q.identity(), s.copy(scaleVec).multiplyScalar(CLOUD_CUBE_FILL_SCALE));
           inst.setMatrixAt(idx, m4);
           const re_ab = ar * br + ai * bi;
           const im_ab = -ar * bi + ai * br;
@@ -433,7 +433,7 @@
       }
     }
     if (!pos.length) return g;
-    const baseSize = estimateCellSize(vol) * 12.0;
+    const baseSize = estimateCellSize(vol) * Math.max(1, stride) * CLOUD_POINT_SIZE_SCALE;
     const mat = new global.THREE.ShaderMaterial({
       uniforms: { uAlpha: { value: Math.min(1.0, opts.alphaMax * stride) }, uSize: { value: baseSize } },
       vertexShader: `
@@ -508,7 +508,7 @@
         }
       }
     }
-    const baseSize = estimateCellSize(vol) * 12.0;
+    const baseSize = estimateCellSize(vol) * Math.max(1, stride) * CLOUD_POINT_SIZE_SCALE;
     const makeSpriteMat = (colorHex) => new global.THREE.ShaderMaterial({
       uniforms: {
         uColor: { value: new global.THREE.Color(colorHex) },
