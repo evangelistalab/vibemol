@@ -1234,6 +1234,8 @@
   const wboitCompositeUniforms = {
     tAccum: { value: null },
     tReveal: { value: null },
+    uUvOffset: { value: new THREE.Vector2(0, 0) },
+    uUvScale: { value: new THREE.Vector2(1, 1) },
   };
 
   /**
@@ -1257,10 +1259,13 @@
       fragmentShader: `
         uniform sampler2D tAccum;
         uniform sampler2D tReveal;
+        uniform vec2 uUvOffset;
+        uniform vec2 uUvScale;
         varying vec2 vUv;
         void main() {
-          vec4 accum = texture2D(tAccum, vUv);
-          float revealage = texture2D(tReveal, vUv).r;
+          vec2 sampleUv = uUvOffset + (vUv * uUvScale);
+          vec4 accum = texture2D(tAccum, sampleUv);
+          float revealage = texture2D(tReveal, sampleUv).r;
           if (revealage >= 0.999) discard;
           vec3 averageColor = accum.rgb / max(accum.a, 1e-5);
           gl_FragColor = vec4(averageColor, clamp(1.0 - revealage, 0.0, 1.0));
@@ -6651,8 +6656,18 @@
    * @param {{x:number,y:number,width:number,height:number}} rect
    */
   function compositeWboitRect(target, rect) {
+    const targetWidth = Math.max(1, Number(target && target.width) || 0);
+    const targetHeight = Math.max(1, Number(target && target.height) || 0);
     wboitCompositeUniforms.tAccum.value = wboitAccumTarget ? wboitAccumTarget.texture : null;
     wboitCompositeUniforms.tReveal.value = wboitRevealTarget ? wboitRevealTarget.texture : null;
+    wboitCompositeUniforms.uUvOffset.value.set(
+      rect.x / targetWidth,
+      rect.y / targetHeight
+    );
+    wboitCompositeUniforms.uUvScale.value.set(
+      rect.width / targetWidth,
+      rect.height / targetHeight
+    );
     renderer.setRenderTarget(target);
     renderer.setScissorTest(true);
     applyRendererRect(rect);
