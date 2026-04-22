@@ -3993,7 +3993,7 @@ def main() -> int:
                     const select = document.getElementById('surfaceMaterialPreset');
                     if (!(row && select)) return false;
                     const options = Array.from(select.options || []).map((opt) => String(opt.textContent || '').trim());
-                    return options.join('|') === 'Emissive|Satin|Lacquer|Metal|Gel|Glow'
+                    return options.join('|') === 'Emissive|Satin|Lacquer|Metal|Gel|Ceramic'
                       && String(select.value || '') === 'emissive';
                 }"""
             )
@@ -4024,7 +4024,7 @@ def main() -> int:
                 """() => {
                     const el = document.getElementById('surfaceMaterialPreset');
                     if (!el) return;
-                    el.value = 'glow';
+                    el.value = 'ceramic';
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
@@ -4035,20 +4035,20 @@ def main() -> int:
                     return !!snap
                       && snap.sceneEnvironmentPresent === true
                       && snap.sceneEnvironmentLoaded === true
-                      && snap.surfaceMaterialPreset === 'glow'
-                      && Math.abs(Number(snap.surfaceRoughness || 0) - 0.7) < 1e-3
+                      && snap.surfaceMaterialPreset === 'ceramic'
+                      && Math.abs(Number(snap.surfaceRoughness || 0) - 0.35) < 1e-3
                       && Math.abs(Number(snap.surfaceMetalness || 0) - 0.0) < 1e-3
-                      && Math.abs(Number(snap.surfaceReflectivity || 0) - 0.3) < 1e-3
-                      && Math.abs(Number(snap.surfaceEmissiveIntensity || 0) - 0.6) < 1e-3
+                      && Math.abs(Number(snap.surfaceReflectivity || 0) - 0.5) < 1e-3
+                      && Math.abs(Number(snap.surfaceEmissiveIntensity || 0) - 0.2) < 1e-3
                       && materials.length >= 2
-                      && materials.every((mat) => String(mat.surfaceStyle || '') === 'glow')
-                      && materials.every((mat) => Math.abs(Number(mat.roughness || 0) - 0.7) < 1e-3)
+                      && materials.every((mat) => String(mat.surfaceStyle || '') === 'ceramic')
+                      && materials.every((mat) => Math.abs(Number(mat.roughness || 0) - 0.35) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.metalness || 0) - 0.0) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.clearcoat || 0) - 0.0) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.clearcoat || 0) - 0.8) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.clearcoatRoughness || 0) - 0.1) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.reflectivity || 0) - 0.3) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.emissiveIntensity || 0) - 0.6) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.envMapIntensity || 0) - 0.2) < 1e-3);
+                      && materials.every((mat) => Math.abs(Number(mat.reflectivity || 0) - 0.5) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.emissiveIntensity || 0) - 0.2) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.envMapIntensity || 0) - 0.65) < 1e-3);
                 }"""
             )
             page.evaluate(

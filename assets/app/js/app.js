@@ -1376,16 +1376,14 @@
       emissiveIntensity: 0.15,
       envMapIntensity: 1.5,
     }),
-    glow: Object.freeze({
-      roughness: 0.7,
+    ceramic: Object.freeze({
+      roughness: 0.35,
       metalness: 0.0,
-      clearcoat: 0.0,
+      clearcoat: 0.80,
       clearcoatRoughness: 0.1,
-      reflectivity: 0.3,
-      emissiveIntensity: 0.6,
-      envMapIntensity: 0.2,
-      rimIntensity: 2.0,
-      rimPower: 3.0,
+      reflectivity: 0.50,
+      emissiveIntensity: 0.20,
+      envMapIntensity: 0.65,
     }),
   });
   // Current atom/bond material style
@@ -4979,9 +4977,6 @@
       side: THREE.DoubleSide,
       opacity,
     });
-    if (getSurfaceMaterialPresetKey() === 'glow') {
-      applyGlowSurfacePresetPatch(mat, col, preset);
-    }
     mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: getSurfaceMaterialPresetKey() });
     return applySurfaceBlendFlags(mat, opacity);
   }
@@ -5019,9 +5014,6 @@
       side: THREE.DoubleSide,
       opacity,
     });
-    if (getSurfaceMaterialPresetKey() === 'glow') {
-      applyGlowSurfacePresetPatch(mat, new THREE.Color(0xffffff), preset);
-    }
     mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: getSurfaceMaterialPresetKey() });
     return applySurfaceBlendFlags(mat, opacity);
   }
@@ -5037,7 +5029,7 @@
 
   /**
    * Normalize the selected surface material preset key.
-   * @returns {'emissive'|'satin'|'lacquer'|'metal'|'gel'|'glow'}
+   * @returns {'emissive'|'satin'|'lacquer'|'metal'|'gel'|'ceramic'}
    */
   function getSurfaceMaterialPresetKey() {
     const key = String(surfaceMaterialPreset || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
@@ -5048,62 +5040,10 @@
 
   /**
    * Read the active surface material preset.
-   * @returns {{roughness:number,metalness:number,clearcoat:number,clearcoatRoughness:number,reflectivity:number,emissiveIntensity:number,envMapIntensity:number,rimIntensity?:number,rimPower?:number}}
+   * @returns {{roughness:number,metalness:number,clearcoat:number,clearcoatRoughness:number,reflectivity:number,emissiveIntensity:number,envMapIntensity:number}}
    */
   function getSurfaceMaterialPreset() {
     return SURFACE_MATERIAL_PRESETS[getSurfaceMaterialPresetKey()] || SURFACE_MATERIAL_PRESETS[DEFAULT_SURFACE_MATERIAL_PRESET];
-  }
-
-  /**
-   * Patch one physical surface material with the Glow preset Fresnel rim boost.
-   * @param {THREE.Material} material
-   * @param {THREE.Color} rimColor
-   * @param {{rimIntensity?:number,rimPower?:number}=} [preset]
-   * @returns {THREE.Material}
-   */
-  function applyGlowSurfacePresetPatch(material, rimColor, preset = {}) {
-    if (!(material && typeof material === 'object')) return material;
-    const rimState = {
-      rimIntensity: Math.max(0, Number(preset.rimIntensity) || 0),
-      rimPower: Math.max(0.01, Number(preset.rimPower) || 1),
-      rimColor: rimColor && rimColor.isColor ? rimColor.clone() : new THREE.Color(0xffffff),
-      uniforms: null,
-    };
-    material.userData = Object.assign({}, material.userData || {}, { vmGlowPreset: rimState });
-    material.onBeforeCompile = (shader) => {
-      const glowState = material.userData && material.userData.vmGlowPreset ? material.userData.vmGlowPreset : rimState;
-      shader.uniforms.uRimIntensity = { value: glowState.rimIntensity };
-      shader.uniforms.uRimPower = { value: glowState.rimPower };
-      shader.uniforms.uRimColor = { value: glowState.rimColor.clone() };
-      glowState.uniforms = {
-        uRimIntensity: shader.uniforms.uRimIntensity,
-        uRimPower: shader.uniforms.uRimPower,
-        uRimColor: shader.uniforms.uRimColor,
-      };
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
-          '#include <common>',
-          `#include <common>
-uniform float uRimIntensity;
-uniform float uRimPower;
-uniform vec3 uRimColor;`
-        )
-        .replace(
-          '#include <dithering_fragment>',
-          `#include <dithering_fragment>
-vec3 vmGlowViewDir = normalize(vViewPosition);
-float vmGlowRim = 1.0 - abs(dot(normalize(vNormal), vmGlowViewDir));
-vmGlowRim = pow(vmGlowRim, uRimPower) * uRimIntensity;
-gl_FragColor.rgb += uRimColor * vmGlowRim;`
-        );
-    };
-    material.customProgramCacheKey = () => {
-      const state = material.userData && material.userData.vmGlowPreset ? material.userData.vmGlowPreset : rimState;
-      const rimHex = state.rimColor && state.rimColor.isColor ? state.rimColor.getHexString() : 'ffffff';
-      return `${material.type || 'material'}:vm-glow:${state.rimIntensity.toFixed(3)}:${state.rimPower.toFixed(3)}:${rimHex}:${material.vertexColors ? 1 : 0}`;
-    };
-    material.needsUpdate = true;
-    return material;
   }
 
   /**
@@ -5171,17 +5111,6 @@ gl_FragColor.rgb += uRimColor * vmGlowRim;`
     if (!(sourceMaterial && typeof sourceMaterial.clone === 'function')) return null;
     const material = sourceMaterial.clone();
     material.userData = Object.assign({}, sourceMaterial.userData || {}, material.userData || {});
-    const glowState = sourceMaterial.userData && sourceMaterial.userData.vmGlowPreset;
-    if (glowState) {
-      applyGlowSurfacePresetPatch(
-        material,
-        glowState.rimColor && glowState.rimColor.isColor ? glowState.rimColor : new THREE.Color(0xffffff),
-        {
-          rimIntensity: glowState.rimIntensity,
-          rimPower: glowState.rimPower,
-        }
-      );
-    }
     delete material.userData.vmWboitPass;
     return material;
   }
@@ -29117,18 +29046,6 @@ gl_FragColor.rgb += uRimColor * vmGlowRim;`
           if ('emissiveIntensity' in mat) mat.emissiveIntensity = preset.emissiveIntensity;
           if ('envMapIntensity' in mat) mat.envMapIntensity = preset.envMapIntensity;
           if (mat.userData) mat.userData.vmSurfaceStyle = getSurfaceMaterialPresetKey();
-          const glowState = mat.userData && mat.userData.vmGlowPreset;
-          if (glowState) {
-            glowState.rimIntensity = Math.max(0, Number(preset.rimIntensity) || 0);
-            glowState.rimPower = Math.max(0.01, Number(preset.rimPower) || 1);
-            if (glowState.uniforms) {
-              if (glowState.uniforms.uRimIntensity) glowState.uniforms.uRimIntensity.value = glowState.rimIntensity;
-              if (glowState.uniforms.uRimPower) glowState.uniforms.uRimPower.value = glowState.rimPower;
-              if (glowState.uniforms.uRimColor && glowState.rimColor && glowState.rimColor.isColor) {
-                glowState.uniforms.uRimColor.value.copy(glowState.rimColor);
-              }
-            }
-          }
         }
         mat.needsUpdate = true;
         continue;
@@ -29151,17 +29068,6 @@ gl_FragColor.rgb += uRimColor * vmGlowRim;`
         mat.color.copy(col);
         if (mat.emissive) mat.emissive.copy(col);
         if (mat.userData) mat.userData.vmSurfaceStyle = getSurfaceMaterialPresetKey();
-        const glowState = mat.userData && mat.userData.vmGlowPreset;
-        if (glowState) {
-          glowState.rimIntensity = Math.max(0, Number(preset.rimIntensity) || 0);
-          glowState.rimPower = Math.max(0.01, Number(preset.rimPower) || 1);
-          glowState.rimColor = col.clone();
-          if (glowState.uniforms) {
-            if (glowState.uniforms.uRimIntensity) glowState.uniforms.uRimIntensity.value = glowState.rimIntensity;
-            if (glowState.uniforms.uRimPower) glowState.uniforms.uRimPower.value = glowState.rimPower;
-            if (glowState.uniforms.uRimColor) glowState.uniforms.uRimColor.value.copy(glowState.rimColor);
-          }
-        }
       } else {
         // Fallback materials (standard/toon)
         mat.opacity = op;
