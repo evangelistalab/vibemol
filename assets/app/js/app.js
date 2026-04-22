@@ -1327,8 +1327,6 @@
   const elementColorOverrides = new Map();
   // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
   let __savedShowSurfaces = null;
-  // Current iso-surface material style
-  let surfaceStyle = 'emissive';
   const DEFAULT_SURFACE_MATERIAL_PRESET = 'emissive';
   const SURFACE_MATERIAL_PRESETS = Object.freeze({
     emissive: Object.freeze({
@@ -4946,7 +4944,7 @@
 
   /**
    * Create a material for positive/negative standard isosurfaces.
-   * Style behavior depends on the current `surfaceStyle` selection.
+   * Uses the active Solid preset unless toon shading is enforced by molecule style.
    * @param {'pos'|'neg'} sign
    * @param {number} opacity
    * @returns {THREE.Material}
@@ -4984,7 +4982,7 @@
   // Material for 2C colored surfaces (vertex colors), matching style selection
   /**
    * Create a material for two-component vertex-colored surfaces.
-   * Style behavior depends on the current `surfaceStyle` selection.
+   * Uses the active Solid preset unless toon shading is enforced by molecule style.
    * @param {number} opacity
    * @returns {THREE.Material}
    */
@@ -24980,9 +24978,7 @@
     if (surfaceMaterialPresetSelect) surfaceMaterialPresetSelect.value = surfaceMaterialPreset;
   });
   registerPresetSetting('surface.enabled', () => !!showSurfaces, (value) => { showSurfaces = asBoolean(value); });
-  registerPresetSetting('surface.style', () => surfaceStyle, (value) => {
-    surfaceStyle = 'emissive';
-  });
+  registerPresetSetting('surface.style', () => 'emissive', () => { });
   registerPresetSetting('surface.autoIsoEnabled', () => !!autoIsoEnabled, (value) => {
     autoIsoEnabled = asBoolean(value);
     updateAutoIsoButtonState();
@@ -25326,7 +25322,7 @@
       surfaceOpacityInput: Math.max(0, Math.min(1, Number.isFinite(parseFloat(opInput && opInput.value || '1'))
         ? parseFloat(opInput && opInput.value || '1')
         : 1)),
-      surfaceStyle: String(surfaceStyle || ''),
+      surfaceStyle: 'emissive',
       targetSize: sceneRenderTarget
         ? {
           width: Number(sceneRenderTarget.width) || 0,
