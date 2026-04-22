@@ -88,8 +88,10 @@
     };
     const instPos = makeInst(nPos, opts.posColorHex);
     instPos.userData.sign = 'pos';
+    instPos.userData.vmCloudKind = 'scalar-cubes';
     const instNeg = makeInst(nNeg, opts.negColorHex);
     instNeg.userData.sign = 'neg';
+    instNeg.userData.vmCloudKind = 'scalar-cubes';
     let ip = 0;
     let ineg = 0;
     const m4 = new global.THREE.Matrix4();
@@ -150,23 +152,11 @@
       geom.setAttribute('color', new global.THREE.BufferAttribute(carr, 3));
     } catch {}
     const alpha = Math.min(1, opts.alphaMax * stride);
-    const mat = new global.THREE.ShaderMaterial({
-      uniforms: { uAlpha: { value: alpha } },
-      vertexShader: `
-        varying vec3 vColor;
-        void main() {
-          vColor = instanceColor;
-          gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float uAlpha;
-        varying vec3 vColor;
-        void main() {
-          gl_FragColor = vec4(vColor, uAlpha);
-        }
-      `,
+    const mat = new global.THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      vertexColors: true,
       transparent: alpha < 1.0,
+      opacity: alpha,
       depthWrite: alpha >= 1.0,
       depthTest: true,
       dithering: true,
@@ -174,9 +164,10 @@
       polygonOffsetFactor: -0.5,
       polygonOffsetUnits: -1.0,
       side: global.THREE.DoubleSide,
+      toneMapped: false,
     });
     const inst = new global.THREE.InstancedMesh(geom, mat, count);
-    inst.userData = { phaseHue: true, which };
+    inst.userData = { phaseHue: true, which, vmCloudKind: 'phase-cubes' };
     inst.instanceColor = new global.THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
     const m4 = new global.THREE.Matrix4();
     const q = new global.THREE.Quaternion();
@@ -283,7 +274,7 @@
       `,
       transparent: true,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       blending: global.THREE.NormalBlending,
     });
     const geo = new global.THREE.BufferGeometry();
@@ -291,7 +282,7 @@
     geo.setAttribute('aStrength', new global.THREE.BufferAttribute(new Float32Array(str), 1));
     geo.setAttribute('aColor', new global.THREE.BufferAttribute(new Float32Array(col), 3));
     const pts = new global.THREE.Points(geo, mat);
-    pts.userData = { phaseHue: true, which };
+    pts.userData = { phaseHue: true, which, vmCloudKind: 'phase-points' };
     g.add(pts);
     return g;
   }
@@ -331,23 +322,11 @@
       geom.setAttribute('color', new global.THREE.BufferAttribute(carr, 3));
     } catch {}
     const alpha = Math.min(1, opts.alphaMax * stride);
-    const mat = new global.THREE.ShaderMaterial({
-      uniforms: { uAlpha: { value: alpha } },
-      vertexShader: `
-        varying vec3 vColor;
-        void main() {
-          vColor = instanceColor;
-          gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float uAlpha;
-        varying vec3 vColor;
-        void main() {
-          gl_FragColor = vec4(vColor, uAlpha);
-        }
-      `,
+    const mat = new global.THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      vertexColors: true,
       transparent: alpha < 1.0,
+      opacity: alpha,
       depthWrite: alpha >= 1.0,
       depthTest: true,
       dithering: true,
@@ -355,9 +334,10 @@
       polygonOffsetFactor: -0.5,
       polygonOffsetUnits: -1.0,
       side: global.THREE.DoubleSide,
+      toneMapped: false,
     });
     const inst = new global.THREE.InstancedMesh(geom, mat, count);
-    inst.userData = { phaseHue: true, totalBloch: true };
+    inst.userData = { phaseHue: true, totalBloch: true, vmCloudKind: 'bloch-cubes' };
     inst.instanceColor = new global.THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
     const m4 = new global.THREE.Matrix4();
     const q = new global.THREE.Quaternion();
@@ -486,7 +466,7 @@
       `,
       transparent: true,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       blending: global.THREE.NormalBlending,
     });
     const geo = new global.THREE.BufferGeometry();
@@ -494,7 +474,7 @@
     geo.setAttribute('aStrength', new global.THREE.BufferAttribute(new Float32Array(str), 1));
     geo.setAttribute('aColor', new global.THREE.BufferAttribute(new Float32Array(col), 3));
     const pts = new global.THREE.Points(geo, mat);
-    pts.userData = { phaseHue: true, totalBloch: true };
+    pts.userData = { phaseHue: true, totalBloch: true, vmCloudKind: 'bloch-points' };
     g.add(pts);
     return g;
   }
@@ -562,7 +542,7 @@
       `,
       transparent: true,
       depthWrite: false,
-      depthTest: false,
+      depthTest: true,
       blending: global.THREE.NormalBlending,
     });
     const makePoints = (posArr, strArr, color, sign) => {
@@ -572,6 +552,7 @@
       const mat = makeSpriteMat(color);
       const pts = new global.THREE.Points(geo, mat);
       pts.userData.sign = sign;
+      pts.userData.vmCloudKind = 'scalar-points';
       return pts;
     };
     if (posPos.length) g.add(makePoints(posPos, strPos, opts.posColorHex, 'pos'));

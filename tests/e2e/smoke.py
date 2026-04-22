@@ -4113,9 +4113,80 @@ def main() -> int:
                 }"""
             )
 
+            log_step('wboit cloud transparency')
+            load_volume_asset(page, '/assets/data/sample.cube')
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('renderMode');
+                    if (!el) return;
+                    el.value = 'cloud';
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const row = document.getElementById('rowCloudType');
+                    const alphaRow = document.getElementById('rowCloudAlpha');
+                    const select = document.getElementById('cloudType');
+                    const alpha = document.getElementById('cloudAlpha');
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    const clouds = window.VibeMolTesting?.getCloudMaterialSnapshot?.() || [];
+                    const alphaLabel = alphaRow ? alphaRow.querySelector('.vm-field-label') : null;
+                    return !!select
+                      && !!row
+                      && !row.classList.contains('vm-appearance-hidden')
+                      && getComputedStyle(row).display !== 'none'
+                      && !!alpha
+                      && !!alphaRow
+                      && !alphaRow.classList.contains('vm-appearance-hidden')
+                      && getComputedStyle(alphaRow).display !== 'none'
+                      && String(alphaLabel?.textContent || '').trim() === 'Material alpha'
+                      && Array.from(select.options || []).map((opt) => String(opt.value || '')).join('|') === 'cubes|points'
+                      && !!snap
+                      && snap.renderMode === 'cloud'
+                      && snap.cloudType === 'cubes'
+                      && snap.cloudRenderableCount >= 2
+                      && clouds.length >= 2
+                      && clouds.every((entry) => entry.objectType === 'instanced-mesh')
+                      && clouds.every((entry) => entry.cloudKind === 'scalar-cubes')
+                      && (snap.supported ? snap.active === true : snap.fallback === true);
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('cloudType');
+                    if (!el) return;
+                    el.value = 'points';
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    const clouds = window.VibeMolTesting?.getCloudMaterialSnapshot?.() || [];
+                    return !!snap
+                      && snap.renderMode === 'cloud'
+                      && snap.cloudType === 'points'
+                      && snap.cloudRenderableCount >= 2
+                      && clouds.length >= 2
+                      && clouds.every((entry) => entry.objectType === 'points')
+                      && clouds.every((entry) => entry.cloudKind === 'scalar-points')
+                      && clouds.every((entry) => entry.depthTest === true)
+                      && (snap.supported ? snap.active === true : snap.fallback === true);
+                }"""
+            )
+
             log_step('wboit 2c alpha/beta split view')
             load_volume_asset(page, '/assets/data/2ccubes/orbital_0.2ccube')
             page.wait_for_function("() => !!document.getElementById('twoComponentModeSelect')")
+            page.evaluate(
+                """() => {
+                    const mode = document.getElementById('renderMode');
+                    if (!mode) return;
+                    mode.value = 'surface';
+                    mode.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
             set_select_value(page, '#twoComponentModeSelect', 'alphaBetaPhase')
             page.evaluate(
                 """() => {
@@ -4149,6 +4220,48 @@ def main() -> int:
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap && snap.surfaceOpacity >= 0.999 && snap.active === false;
+                }"""
+            )
+
+            log_step('wboit cloud 2c alpha/beta split view')
+            load_volume_asset(page, '/assets/data/2ccubes/orbital_0.2ccube')
+            page.wait_for_function("() => !!document.getElementById('twoComponentModeSelect')")
+            page.evaluate(
+                """() => {
+                    const mode = document.getElementById('renderMode');
+                    if (!mode) return;
+                    mode.value = 'cloud';
+                    mode.dispatchEvent(new Event('change', { bubbles: true }));
+                    const type = document.getElementById('cloudType');
+                    if (!type) return;
+                    type.value = 'points';
+                    type.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            set_select_value(page, '#twoComponentModeSelect', 'alphaBetaPhase')
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('opacity');
+                    if (!el) return;
+                    el.value = '0.5';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const mode = document.getElementById('twoComponentModeSelect');
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    const clouds = window.VibeMolTesting?.getCloudMaterialSnapshot?.() || [];
+                    return mode?.value === 'alphaBetaPhase'
+                      && !!snap
+                      && snap.renderMode === 'cloud'
+                      && snap.cloudType === 'points'
+                      && snap.surfaceOpacity < 0.999
+                      && snap.cloudRenderableCount >= 2
+                      && clouds.length >= 2
+                      && clouds.every((entry) => entry.objectType === 'points')
+                      && (snap.supported ? snap.active === true : snap.fallback === true);
                 }"""
             )
 

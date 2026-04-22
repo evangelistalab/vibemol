@@ -2032,6 +2032,14 @@
     }
     meshes = [];
 
+    if (cloudGroup && typeof cloudGroup.traverse === 'function') {
+      cloudGroup.traverse((obj) => {
+        if (obj && obj !== cloudGroup && obj.userData && obj.userData.vmWboit) {
+          disposeWboitMaterialsForRenderable(obj);
+        }
+      });
+    }
+
     // Reset atom/bond/cloud groups with deep disposal.
     atomGroup = disposeAndReplaceGroup(atomGroup);
     bondGroup = disposeAndReplaceGroup(bondGroup);
@@ -5077,15 +5085,52 @@
   }
 
   /**
+   * Read the current cloud alpha input value.
+   * @returns {number}
+   */
+  function getCloudAlphaInputValue() {
+    return Math.max(0.025, Math.min(1, parseFloat((cloudAlphaEl && cloudAlphaEl.value) || '0.05') || 0.05));
+  }
+
+  /**
+   * Read the effective cloud alpha after applying the shared opacity control.
+   * @returns {number}
+   */
+  function getEffectiveCloudAlphaValue() {
+    return Math.max(0, Math.min(1, getSurfaceOpacityValue() * getCloudAlphaInputValue()));
+  }
+
+  /**
    * Check whether WBOIT should run for the current frame.
    * @returns {boolean}
    */
   function shouldUseWboitForCurrentFrame() {
-    return renderMode === 'surface'
-      && !!showSurfaces
-      && Array.isArray(meshes)
-      && meshes.length > 0
-      && getSurfaceOpacityValue() < 0.999;
+    if (!showSurfaces) return false;
+    if (renderMode === 'surface') {
+      return Array.isArray(meshes)
+        && meshes.length > 0
+        && getSurfaceOpacityValue() < 0.999;
+    }
+    if (renderMode === 'cloud') {
+      const cloudObjects = getRenderableCloudObjects(() => true);
+      if (!cloudObjects.length) return false;
+      const effectiveAlpha = getEffectiveCloudAlphaValue();
+      if (effectiveAlpha <= 0.001) return false;
+      return cloudObjects.some((obj) => !!(obj && obj.isPoints)) || effectiveAlpha < 0.999;
+    }
+    return false;
+  }
+
+  /**
+   * Dispose cached WBOIT pass materials for one renderable object.
+   * @param {THREE.Object3D} renderable
+   */
+  function disposeWboitMaterialsForRenderable(renderable) {
+    const cache = renderable && renderable.userData ? renderable.userData.vmWboit : null;
+    if (!cache) return;
+    try { if (cache.accumMaterial && cache.accumMaterial.dispose) cache.accumMaterial.dispose(); } catch { }
+    try { if (cache.revealMaterial && cache.revealMaterial.dispose) cache.revealMaterial.dispose(); } catch { }
+    if (renderable && renderable.userData) delete renderable.userData.vmWboit;
   }
 
   /**
@@ -5093,11 +5138,7 @@
    * @param {THREE.Mesh} mesh
    */
   function disposeWboitSurfaceMaterialsForMesh(mesh) {
-    const cache = mesh && mesh.userData ? mesh.userData.vmWboit : null;
-    if (!cache) return;
-    try { if (cache.accumMaterial && cache.accumMaterial.dispose) cache.accumMaterial.dispose(); } catch { }
-    try { if (cache.revealMaterial && cache.revealMaterial.dispose) cache.revealMaterial.dispose(); } catch { }
-    if (mesh && mesh.userData) delete mesh.userData.vmWboit;
+    disposeWboitMaterialsForRenderable(mesh);
   }
 
   /**
@@ -5111,6 +5152,23 @@
     material.userData = Object.assign({}, sourceMaterial.userData || {}, material.userData || {});
     delete material.userData.vmWboitPass;
     return material;
+  }
+
+  /**
+   * Read the effective alpha from one visible renderable material.
+   * @param {THREE.Object3D} renderable
+   * @param {THREE.Material=} materialOverride
+   * @returns {number}
+   */
+  function getRenderableAlphaValue(renderable, materialOverride) {
+    const material = materialOverride || (renderable && renderable.material) || null;
+    if (material && material.isShaderMaterial && material.uniforms && material.uniforms.uAlpha) {
+      return Math.max(0, Math.min(1, Number(material.uniforms.uAlpha.value) || 0));
+    }
+    if (material && Object.prototype.hasOwnProperty.call(material, 'opacity')) {
+      return Math.max(0, Math.min(1, Number(material.opacity) || 0));
+    }
+    return 1;
   }
 
   /**
@@ -5190,6 +5248,131 @@
   }
 
   /**
+   * Build a dedicated WBOIT pass material for one cloud point object.
+   * @param {THREE.Points} renderable
+   * @param {{pass:'accum'|'reveal'}} options
+   * @returns {THREE.ShaderMaterial|null}
+   */
+  function createCloudPointWboitMaterial(renderable, options = {}) {
+    if (!(renderable && renderable.isPoints)) return null;
+    const pass = options.pass === 'reveal' ? 'reveal' : 'accum';
+    const kind = String(renderable.userData && renderable.userData.vmCloudKind || '');
+    const usesVertexColor = kind === 'phase-points' || kind === 'bloch-points';
+    const uniforms = {
+      uAlpha: { value: 1.0 },
+      uSize: { value: 1.0 },
+    };
+    if (!usesVertexColor) uniforms.uColor = { value: new THREE.Color(0xffffff) };
+    return new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader: usesVertexColor
+        ? `
+          uniform float uSize;
+          attribute float aStrength;
+          attribute vec3 aColor;
+          varying float vStrength;
+          varying vec3 vColor;
+          varying float vmViewZ;
+          void main() {
+            vStrength = aStrength;
+            vColor = aColor;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            vmViewZ = max(1e-5, -mvPosition.z);
+            gl_PointSize = uSize * (300.0 / max(1.0, vmViewZ));
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `
+        : `
+          uniform float uSize;
+          attribute float aStrength;
+          varying float vStrength;
+          varying float vmViewZ;
+          void main() {
+            vStrength = aStrength;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            vmViewZ = max(1e-5, -mvPosition.z);
+            gl_PointSize = uSize * (300.0 / max(1.0, vmViewZ));
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+      fragmentShader: usesVertexColor
+        ? `
+          uniform float uAlpha;
+          varying float vStrength;
+          varying vec3 vColor;
+          varying float vmViewZ;
+          float vmWboitWeight(float z, float alpha) {
+            return alpha * clamp(0.03 / (1e-5 + pow(z / 200.0, 4.0)), 1e-2, 3e3);
+          }
+          void main() {
+            vec2 uv = gl_PointCoord - vec2(0.5);
+            float d = length(uv);
+            if (d > 0.5) discard;
+            float fall = smoothstep(0.5, 0.0, d);
+            float vmAlpha = clamp(uAlpha * vStrength * fall, 0.0, 1.0);
+            ${pass === 'accum'
+              ? 'float vmWeight = vmWboitWeight(vmViewZ, vmAlpha);\n            gl_FragColor = vec4(vColor * vmAlpha * vmWeight, vmAlpha * vmWeight);'
+              : 'gl_FragColor = vec4(0.0, 0.0, 0.0, vmAlpha);'}
+          }
+        `
+        : `
+          uniform vec3 uColor;
+          uniform float uAlpha;
+          varying float vStrength;
+          varying float vmViewZ;
+          float vmWboitWeight(float z, float alpha) {
+            return alpha * clamp(0.03 / (1e-5 + pow(z / 200.0, 4.0)), 1e-2, 3e3);
+          }
+          void main() {
+            vec2 uv = gl_PointCoord - vec2(0.5);
+            float d = length(uv);
+            if (d > 0.5) discard;
+            float fall = smoothstep(0.5, 0.0, d);
+            float vmAlpha = clamp(uAlpha * vStrength * fall, 0.0, 1.0);
+            ${pass === 'accum'
+              ? 'float vmWeight = vmWboitWeight(vmViewZ, vmAlpha);\n            gl_FragColor = vec4(uColor * vmAlpha * vmWeight, vmAlpha * vmWeight);'
+              : 'gl_FragColor = vec4(0.0, 0.0, 0.0, vmAlpha);'}
+          }
+        `,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+      toneMapped: false,
+      blending: THREE.CustomBlending,
+      blendEquation: THREE.AddEquation,
+      blendEquationAlpha: THREE.AddEquation,
+      blendSrc: pass === 'accum' ? THREE.OneFactor : THREE.ZeroFactor,
+      blendDst: pass === 'accum' ? THREE.OneFactor : THREE.OneMinusSrcAlphaFactor,
+      blendSrcAlpha: pass === 'accum' ? THREE.OneFactor : THREE.ZeroFactor,
+      blendDstAlpha: pass === 'accum' ? THREE.OneFactor : THREE.OneMinusSrcAlphaFactor,
+    });
+  }
+
+  /**
+   * Synchronize a cloud point WBOIT pass material with its visible source material.
+   * @param {THREE.Points} renderable
+   * @param {THREE.Material} sourceMaterial
+   * @param {THREE.ShaderMaterial} passMaterial
+   */
+  function syncCloudPointWboitMaterial(renderable, sourceMaterial, passMaterial) {
+    if (!(renderable && sourceMaterial && passMaterial && passMaterial.uniforms)) return;
+    if (passMaterial.uniforms.uAlpha) {
+      passMaterial.uniforms.uAlpha.value = getRenderableAlphaValue(renderable, sourceMaterial);
+    }
+    if (passMaterial.uniforms.uSize && sourceMaterial.uniforms && sourceMaterial.uniforms.uSize) {
+      passMaterial.uniforms.uSize.value = Number(sourceMaterial.uniforms.uSize.value) || 1;
+    }
+    if (
+      passMaterial.uniforms.uColor
+      && sourceMaterial.uniforms
+      && sourceMaterial.uniforms.uColor
+      && sourceMaterial.uniforms.uColor.value
+    ) {
+      passMaterial.uniforms.uColor.value.copy(sourceMaterial.uniforms.uColor.value);
+    }
+  }
+
+  /**
    * Synchronize one WBOIT pass material with its visible source material.
    * @param {THREE.Material} sourceMaterial
    * @param {THREE.Material} passMaterial
@@ -5231,26 +5414,32 @@
   }
 
   /**
-   * Ensure cached WBOIT pass materials exist for one surface mesh.
-   * @param {THREE.Mesh} mesh
+   * Ensure cached WBOIT pass materials exist for one transparent renderable.
+   * @param {THREE.Object3D} renderable
    * @returns {{sourceMaterial:THREE.Material,accumMaterial:THREE.Material,revealMaterial:THREE.Material}|null}
    */
-  function ensureWboitSurfacePassMaterials(mesh) {
-    if (!(mesh && mesh.material)) return null;
-    const sourceMaterial = mesh.material;
-    const existing = mesh.userData && mesh.userData.vmWboit;
+  function ensureWboitRenderablePassMaterials(renderable) {
+    if (!(renderable && renderable.material)) return null;
+    const sourceMaterial = renderable.material;
+    const existing = renderable.userData && renderable.userData.vmWboit;
     if (existing && existing.sourceMaterial === sourceMaterial && existing.accumMaterial && existing.revealMaterial) {
       return existing;
     }
-    disposeWboitSurfaceMaterialsForMesh(mesh);
-    const accumMaterial = cloneSurfaceMaterialForWboit(sourceMaterial);
-    const revealMaterial = cloneSurfaceMaterialForWboit(sourceMaterial);
+    disposeWboitMaterialsForRenderable(renderable);
+    const accumMaterial = renderable.isPoints
+      ? createCloudPointWboitMaterial(renderable, { pass: 'accum' })
+      : cloneSurfaceMaterialForWboit(sourceMaterial);
+    const revealMaterial = renderable.isPoints
+      ? createCloudPointWboitMaterial(renderable, { pass: 'reveal' })
+      : cloneSurfaceMaterialForWboit(sourceMaterial);
     if (!(accumMaterial && revealMaterial)) return null;
-    applyWboitSurfacePassPatch(accumMaterial, { pass: 'accum' });
-    applyWboitSurfacePassPatch(revealMaterial, { pass: 'reveal' });
+    if (!renderable.isPoints) {
+      applyWboitSurfacePassPatch(accumMaterial, { pass: 'accum' });
+      applyWboitSurfacePassPatch(revealMaterial, { pass: 'reveal' });
+    }
     const cache = { sourceMaterial, accumMaterial, revealMaterial };
-    mesh.userData = mesh.userData || {};
-    mesh.userData.vmWboit = cache;
+    renderable.userData = renderable.userData || {};
+    renderable.userData.vmWboit = cache;
     return cache;
   }
 
@@ -5302,6 +5491,10 @@
     }
     if (bondGroup.children.length) {
       contentBox.expandByObject(bondGroup);
+      hasContent = true;
+    }
+    if (cloudGroup.children.length) {
+      contentBox.expandByObject(cloudGroup);
       hasContent = true;
     }
     if (boxHelper) {
@@ -6316,19 +6509,36 @@
    */
   function withContentGroupVisibility(visibleSurfaceMeshes, options = {}, callback) {
     const prev = [];
-    const allSurfaceMeshes = new Set(Array.isArray(meshes) ? meshes : []);
+    const prevTopLevel = [];
+    const allRenderables = getRenderableTransparentObjects(() => true);
+    const allRenderableSet = new Set(allRenderables);
     const visibleSet = new Set(Array.isArray(visibleSurfaceMeshes) ? visibleSurfaceMeshes : []);
     const hideNonSurfaces = !!options.hideNonSurfaces;
     const children = contentGroup && Array.isArray(contentGroup.children) ? contentGroup.children : [];
+    const visibleTopLevel = new Set();
+    for (const renderable of visibleSet) {
+      let root = renderable;
+      while (root && root.parent && root.parent !== contentGroup) root = root.parent;
+      if (root && root.parent === contentGroup) visibleTopLevel.add(root);
+    }
     for (const child of children) {
-      prev.push([child, child.visible]);
-      if (allSurfaceMeshes.has(child)) child.visible = visibleSet.has(child);
-      else if (hideNonSurfaces) child.visible = false;
+      prevTopLevel.push([child, child.visible]);
+      if (hideNonSurfaces) {
+        child.visible = visibleTopLevel.has(child);
+      }
+    }
+    if (hideNonSurfaces && cloudGroup && cloudGroup.parent === contentGroup) {
+      cloudGroup.visible = visibleTopLevel.has(cloudGroup);
+    }
+    for (const renderable of allRenderables) {
+      prev.push([renderable, renderable.visible]);
+      renderable.visible = visibleSet.has(renderable);
     }
     try {
       return callback();
     } finally {
       for (const entry of prev) entry[0].visible = entry[1];
+      for (const entry of prevTopLevel) entry[0].visible = entry[1];
     }
   }
 
@@ -6348,10 +6558,38 @@
   }
 
   /**
+   * Collect the currently rendered cloud objects for one optional filter.
+   * @param {(obj:THREE.Object3D) => boolean=} filterFn
+   * @returns {THREE.Object3D[]}
+   */
+  function getRenderableCloudObjects(filterFn) {
+    if (!(cloudGroup && typeof cloudGroup.traverse === 'function')) return [];
+    const out = [];
+    cloudGroup.traverse((obj) => {
+      if (!obj || obj === cloudGroup || !(obj.isMesh || obj.isPoints) || !obj.material) return;
+      if (filterFn && !filterFn(obj)) return;
+      out.push(obj);
+    });
+    return out;
+  }
+
+  /**
+   * Collect all transparent renderables that can participate in WBOIT.
+   * @param {(obj:THREE.Object3D) => boolean=} filterFn
+   * @returns {THREE.Object3D[]}
+   */
+  function getRenderableTransparentObjects(filterFn) {
+    return [
+      ...getRenderableSurfaceMeshes(filterFn),
+      ...getRenderableCloudObjects(filterFn),
+    ];
+  }
+
+  /**
    * Render one scene rectangle with the provided visible surface subset.
    * @param {THREE.WebGLRenderTarget|null} target
    * @param {{x:number,y:number,width:number,height:number}} rect
-   * @param {THREE.Mesh[]} visibleSurfaceMeshes
+   * @param {THREE.Object3D[]} visibleSurfaceMeshes
    * @param {{hideNonSurfaces?:boolean,disableBackground?:boolean,clearDepth?:boolean,clearColor?:boolean}=} options
    */
   function renderSceneRect(target, rect, visibleSurfaceMeshes, options = {}) {
@@ -6375,21 +6613,21 @@
    * Render one WBOIT transparent pass into the provided target rectangle.
    * @param {THREE.WebGLRenderTarget} target
    * @param {{x:number,y:number,width:number,height:number}} rect
-   * @param {THREE.Mesh[]} surfaceMeshes
+   * @param {THREE.Object3D[]} surfaceMeshes
    * @param {'accum'|'reveal'} pass
    */
   function renderWboitTransparentPass(target, rect, surfaceMeshes, pass) {
-    const alpha = getSurfaceOpacityValue();
     const restore = [];
     renderer.setRenderTarget(target);
     renderer.setScissorTest(true);
     applyRendererRect(rect);
     withSceneBackgroundDisabled(() => withContentGroupVisibility(surfaceMeshes, { hideNonSurfaces: true }, () => {
       for (const mesh of surfaceMeshes) {
-        const cache = ensureWboitSurfacePassMaterials(mesh);
+        const cache = ensureWboitRenderablePassMaterials(mesh);
         if (!cache) continue;
         const passMaterial = pass === 'reveal' ? cache.revealMaterial : cache.accumMaterial;
-        syncWboitSurfacePassMaterial(mesh.material, passMaterial, alpha);
+        if (mesh.isPoints) syncCloudPointWboitMaterial(mesh, mesh.material, passMaterial);
+        else syncWboitSurfacePassMaterial(mesh.material, passMaterial, getRenderableAlphaValue(mesh));
         restore.push([mesh, mesh.material]);
         mesh.material = passMaterial;
       }
@@ -6421,7 +6659,7 @@
    * @param {THREE.WebGLRenderTarget} sceneTarget
    * @param {{x:number,y:number,width:number,height:number}} rect
    * @param {number} cssWidth
-   * @param {(mesh:THREE.Mesh) => boolean=} surfaceFilter
+   * @param {(mesh:THREE.Object3D) => boolean=} surfaceFilter
    */
   function renderWboitViewportRect(metrics, sceneTarget, rect, cssWidth, surfaceFilter) {
     if (!(ensureWboitSupport() && sceneTarget && wboitAccumTarget && wboitRevealTarget)) {
@@ -6429,7 +6667,7 @@
     }
     updateActiveCameraProjection(cssWidth, metrics.cssHeight);
     renderSceneRect(sceneTarget, rect, [], { hideNonSurfaces: false, clearDepth: true, clearColor: true });
-    const surfaceMeshes = getRenderableSurfaceMeshes(surfaceFilter);
+    const surfaceMeshes = getRenderableTransparentObjects(surfaceFilter);
     if (!surfaceMeshes.length) return;
     clearRenderTargetRect(wboitAccumTarget, rect, 0x000000, 0.0, { clearDepth: false });
     clearRenderTargetRect(wboitRevealTarget, rect, 0xffffff, 1.0, { clearDepth: false });
@@ -24688,9 +24926,18 @@
     const rowCloudType = document.getElementById('rowCloudType');
     const rowCloudStrideEl = document.getElementById('rowCloudStride');
     const rowCloudAlphaEl = document.getElementById('rowCloudAlpha');
-    if (rowCloudType) rowCloudType.style.display = isCloud ? '' : 'none';
-    if (rowCloudStrideEl) rowCloudStrideEl.style.display = isCloud ? '' : 'none';
-    if (rowCloudAlphaEl) rowCloudAlphaEl.style.display = isCloud ? '' : 'none';
+    if (rowCloudType) {
+      rowCloudType.classList.toggle('vm-appearance-hidden', !isCloud);
+      rowCloudType.style.display = isCloud ? '' : 'none';
+    }
+    if (rowCloudStrideEl) {
+      rowCloudStrideEl.classList.toggle('vm-appearance-hidden', !isCloud);
+      rowCloudStrideEl.style.display = isCloud ? '' : 'none';
+    }
+    if (rowCloudAlphaEl) {
+      rowCloudAlphaEl.classList.toggle('vm-appearance-hidden', !isCloud);
+      rowCloudAlphaEl.style.display = isCloud ? '' : 'none';
+    }
     syncSurfaceStyleControlState();
     syncAppearanceInspectorSectionState();
   }
@@ -24704,7 +24951,7 @@
       type: cloudType,
       stride: Math.max(1, parseInt((cloudStrideEl && cloudStrideEl.value) || '2', 10)),
       tLow: iso > 0 ? iso : 1e-6, // threshold tied to iso value
-      alphaMax: Math.min(1, Math.max(0.05, parseFloat((cloudAlphaEl && cloudAlphaEl.value) || '0.05'))),
+      alphaMax: getEffectiveCloudAlphaValue(),
       posColorHex: posColor && posColor.value ? posColor.value : DEFAULT_POS_SURFACE_COLOR,
       negColorHex: negColor && negColor.value ? negColor.value : DEFAULT_NEG_SURFACE_COLOR,
     };
@@ -25314,6 +25561,10 @@
       sceneEnvironmentPath: SCENE_ENVIRONMENT_MAP_PATH,
       sceneEnvironmentLoadError: String(sceneEnvironmentLoadError || ''),
       surfaceMaterialPreset: getSurfaceMaterialPresetKey(),
+      renderMode: String(renderMode || ''),
+      cloudType: String(cloudType || ''),
+      cloudAlphaInput: getCloudAlphaInputValue(),
+      cloudEffectiveAlpha: getEffectiveCloudAlphaValue(),
       surfaceOpacity: getSurfaceOpacityValue(),
       surfaceRoughness: getSurfaceRoughnessValue(),
       surfaceMetalness: getSurfaceMetalnessValue(),
@@ -25329,7 +25580,9 @@
           height: Number(sceneRenderTarget.height) || 0,
         }
         : { width: 0, height: 0 },
-      transparentMeshCount: getRenderableSurfaceMeshes(() => true).length,
+      transparentMeshCount: getRenderableTransparentObjects(() => true).length,
+      transparentSurfaceCount: getRenderableSurfaceMeshes(() => true).length,
+      cloudRenderableCount: getRenderableCloudObjects(() => true).length,
     }),
     getSurfaceMaterialSnapshot: () => getRenderableSurfaceMeshes(() => true).map((mesh) => {
       const material = mesh && mesh.material ? mesh.material : null;
@@ -25357,6 +25610,38 @@
             b: Number(color.b) || 0,
           }
           : null,
+      };
+    }),
+    getCloudMaterialSnapshot: () => getRenderableCloudObjects(() => true).map((obj) => {
+      const material = obj && obj.material ? obj.material : null;
+      const color = material && material.color ? material.color : null;
+      const shaderColor = material && material.uniforms && material.uniforms.uColor && material.uniforms.uColor.value
+        ? material.uniforms.uColor.value
+        : null;
+      return {
+        sign: String(obj && obj.userData && obj.userData.sign || ''),
+        phaseHue: !!(obj && obj.userData && obj.userData.phaseHue),
+        which: String(obj && obj.userData && obj.userData.which || ''),
+        cloudKind: String(obj && obj.userData && obj.userData.vmCloudKind || ''),
+        objectType: obj && obj.isPoints ? 'points' : (obj && obj.isInstancedMesh ? 'instanced-mesh' : 'mesh'),
+        type: String(material && material.type || ''),
+        opacity: getRenderableAlphaValue(obj, material),
+        transparent: !!(material && material.transparent),
+        depthWrite: !!(material && material.depthWrite),
+        depthTest: !!(material && material.depthTest),
+        color: color
+          ? {
+            r: Number(color.r) || 0,
+            g: Number(color.g) || 0,
+            b: Number(color.b) || 0,
+          }
+          : (shaderColor
+            ? {
+              r: Number(shaderColor.r) || 0,
+              g: Number(shaderColor.g) || 0,
+              b: Number(shaderColor.b) || 0,
+            }
+            : null),
       };
     }),
     getBondCarrierSnapshots: () => {
@@ -29077,16 +29362,21 @@
       mat.needsUpdate = true;
     }
     // Update cloud colors and alpha as well
-    if (cloudGroup && cloudGroup.children && cloudGroup.children.length) {
-      for (const obj of cloudGroup.children) {
+    const cloudAlpha = getEffectiveCloudAlphaValue();
+    const cloudObjects = getRenderableCloudObjects(() => true);
+    if (cloudObjects.length) {
+      for (const obj of cloudObjects) {
         if (!obj || !obj.material) continue;
         const mat = obj.material;
-        // Update custom shader alpha if present (points and 2C cubes)
         if (mat.isShaderMaterial && mat.uniforms && mat.uniforms.uAlpha) {
-          mat.uniforms.uAlpha.value = Math.max(0, Math.min(1, op));
+          mat.uniforms.uAlpha.value = cloudAlpha;
+          mat.needsUpdate = true;
+        } else if (Object.prototype.hasOwnProperty.call(mat, 'opacity')) {
+          mat.opacity = cloudAlpha;
+          mat.transparent = cloudAlpha < 0.999;
+          mat.depthWrite = cloudAlpha >= 0.999;
           mat.needsUpdate = true;
         }
-        // Update signed color for standard scalar clouds that use uColor
         const sign = obj.userData && obj.userData.sign;
         const colStr = sign === 'neg' ? negColor.value : posColor.value;
         if (colStr) {
