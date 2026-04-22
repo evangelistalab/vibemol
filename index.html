@@ -2755,9 +2755,9 @@
                 </div>
               </div>
               <div id="rowSurfaceMaterialPreset" class="vm-field-row">
-                <label class="vm-field-label" for="surfaceMaterialPreset">Preset</label>
+                <label class="vm-field-label" for="surfaceMaterialPreset">Material</label>
                 <div class="vm-field-control">
-                  <select id="surfaceMaterialPreset" class="vm-select" data-tooltip="Surface material preset">
+                  <select id="surfaceMaterialPreset" class="vm-select" data-tooltip="Surface material">
                     <option value="emissive">Emissive</option>
                     <option value="satin">Satin</option>
                     <option value="lacquer">Lacquer</option>
@@ -2786,31 +2786,12 @@
                 </div>
               </div>
               <div id="appearanceCloudSection" class="vm-appearance-section vm-appearance-section--nested" hidden>
-                <h3 class="vm-section-label">Cloud</h3>
                 <div id="rowCloudType" class="vm-field-row vm-appearance-hidden">
                   <label class="vm-field-label" for="appearanceCloudTypeCubesBtn">Cloud type</label>
                   <div class="vm-field-control vm-field-control--group">
                     <div id="appearanceCloudTypeGroup" class="vm-button-group" role="radiogroup" aria-label="Cloud type">
                       <button id="appearanceCloudTypeCubesBtn" class="vm-button-group__item" type="button" role="radio" data-value="cubes" aria-checked="true" data-tooltip="Cube cloud renderer">Cubes</button>
                       <button class="vm-button-group__item" type="button" role="radio" data-value="points" aria-checked="false" data-tooltip="Point cloud renderer">Points</button>
-                    </div>
-                  </div>
-                </div>
-                <div id="rowCloudStride" class="vm-field-row vm-appearance-hidden">
-                  <label class="vm-field-label" for="cloudStride">Sample stride</label>
-                  <div class="vm-field-control vm-field-control--slider">
-                    <div class="vm-slider" data-vm-slider data-min="1" data-max="8" data-precision="0">
-                      <input id="cloudStrideRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Sample every N voxels per axis" />
-                      <input id="cloudStride" class="vm-slider__value vm-mono" type="text" inputmode="numeric" value="1" data-tooltip="Sample every N voxels per axis" />
-                    </div>
-                  </div>
-                </div>
-                <div id="rowCloudAlpha" class="vm-field-row vm-appearance-hidden">
-                  <label class="vm-field-label" for="cloudAlpha">Material alpha</label>
-                  <div class="vm-field-control vm-field-control--slider">
-                    <div class="vm-slider" data-vm-slider data-min="0.025" data-max="1.0" data-precision="3">
-                      <input id="cloudAlphaRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Cloud material alpha" />
-                      <input id="cloudAlpha" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.100" data-tooltip="Cloud material alpha" />
                     </div>
                   </div>
                 </div>

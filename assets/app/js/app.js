@@ -5079,22 +5079,6 @@
   }
 
   /**
-   * Read the current cloud alpha input value.
-   * @returns {number}
-   */
-  function getCloudAlphaInputValue() {
-    return Math.max(0.025, Math.min(1, parseFloat((cloudAlphaEl && cloudAlphaEl.value) || '0.05') || 0.05));
-  }
-
-  /**
-   * Read the effective cloud alpha after applying the shared opacity control.
-   * @returns {number}
-   */
-  function getEffectiveCloudAlphaValue() {
-    return Math.max(0, Math.min(1, getSurfaceOpacityValue() * getCloudAlphaInputValue()));
-  }
-
-  /**
    * Check whether WBOIT should run for the current frame.
    * @returns {boolean}
    */
@@ -5108,7 +5092,7 @@
     if (renderMode === 'cloud') {
       const cloudObjects = getRenderableCloudObjects(() => true);
       if (!cloudObjects.length) return false;
-      const effectiveAlpha = getEffectiveCloudAlphaValue();
+      const effectiveAlpha = getSurfaceOpacityValue();
       if (effectiveAlpha <= 0.001) return false;
       return cloudObjects.some((obj) => !!(obj && obj.isPoints)) || effectiveAlpha < 0.999;
     }
@@ -7741,8 +7725,6 @@
   const moldenGridPaddingEl = document.getElementById('moldenGridPadding');
   const moldenGridSummary = document.getElementById('moldenGridSummary');
   const cloudTypeSel = document.getElementById('cloudType');
-  const cloudStrideEl = document.getElementById('cloudStride');
-  const cloudAlphaEl = document.getElementById('cloudAlpha');
   editAtomsMenuEl = document.getElementById('editAtomsMenu');
   editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
   editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
@@ -24276,7 +24258,7 @@
     const presetRow = document.getElementById('rowSurfaceMaterialPreset');
     const physicalSurfacesActive = renderMode === 'surface' && !useToonSurfaceStyle();
     const presetTooltip = physicalSurfacesActive
-      ? 'Surface material preset'
+      ? 'Surface material'
       : 'Available when surfaces use physical shading';
     if (opInput) {
       setTooltipText(opInput, opacityTooltip);
@@ -24918,19 +24900,9 @@
   function updateRenderModeUI() {
     const isCloud = renderMode === 'cloud';
     const rowCloudType = document.getElementById('rowCloudType');
-    const rowCloudStrideEl = document.getElementById('rowCloudStride');
-    const rowCloudAlphaEl = document.getElementById('rowCloudAlpha');
     if (rowCloudType) {
       rowCloudType.classList.toggle('vm-appearance-hidden', !isCloud);
       rowCloudType.style.display = isCloud ? '' : 'none';
-    }
-    if (rowCloudStrideEl) {
-      rowCloudStrideEl.classList.toggle('vm-appearance-hidden', !isCloud);
-      rowCloudStrideEl.style.display = isCloud ? '' : 'none';
-    }
-    if (rowCloudAlphaEl) {
-      rowCloudAlphaEl.classList.toggle('vm-appearance-hidden', !isCloud);
-      rowCloudAlphaEl.style.display = isCloud ? '' : 'none';
     }
     syncSurfaceStyleControlState();
     syncAppearanceInspectorSectionState();
@@ -24943,23 +24915,15 @@
     const iso = Math.abs(parseFloat((isoInput && isoInput.value) || '0')) || 0;
     return {
       type: cloudType,
-      stride: Math.max(1, parseInt((cloudStrideEl && cloudStrideEl.value) || '2', 10)),
+      stride: 1,
       tLow: iso > 0 ? iso : 1e-6, // threshold tied to iso value
-      alphaMax: getEffectiveCloudAlphaValue(),
+      alphaMax: getSurfaceOpacityValue(),
       posColorHex: posColor && posColor.value ? posColor.value : DEFAULT_POS_SURFACE_COLOR,
       negColorHex: negColor && negColor.value ? negColor.value : DEFAULT_NEG_SURFACE_COLOR,
     };
   }
   if (renderModeSel) renderModeSel.onchange = () => { renderMode = renderModeSel.value; updateRenderModeUI(); rebuildScene({ preserveView: true }); };
   if (cloudTypeSel) cloudTypeSel.onchange = () => { cloudType = cloudTypeSel.value; rebuildScene({ preserveView: true }); };
-  if (cloudStrideEl) {
-    cloudStrideEl.oninput = () => rebuildScene({ preserveView: true });
-    cloudStrideEl.onchange = () => rebuildScene({ preserveView: true });
-  }
-  if (cloudAlphaEl) {
-    cloudAlphaEl.oninput = () => rebuildScene({ preserveView: true });
-    cloudAlphaEl.onchange = () => rebuildScene({ preserveView: true });
-  }
   // Initialize UI visibility based on current mode
   updateRenderModeUI();
   syncAppearanceInspectorSectionState();
@@ -25361,14 +25325,6 @@
     cloudType = next;
     if (cloudTypeSel) cloudTypeSel.value = next;
   });
-  registerPresetSetting('render.cloudStride', () => asFiniteNumber(cloudStrideEl && cloudStrideEl.value, 1), (value) => {
-    const n = Math.max(1, Math.min(8, Math.round(asFiniteNumber(value, 1))));
-    setViewControlValue(cloudStrideEl, n);
-  });
-  registerPresetSetting('render.cloudAlpha', () => asFiniteNumber(cloudAlphaEl && cloudAlphaEl.value, 0.1), (value) => {
-    const n = Math.max(0.025, Math.min(1, asFiniteNumber(value, 0.1)));
-    setViewControlValue(cloudAlphaEl, n);
-  });
   registerPresetSetting('render.dof.enabled', () => !!dofState.enabled, (value) => {
     dofState.enabled = asBoolean(value);
     if (!dofState.enabled) disposeDofRenderTarget();
@@ -25557,8 +25513,6 @@
       surfaceMaterialPreset: getSurfaceMaterialPresetKey(),
       renderMode: String(renderMode || ''),
       cloudType: String(cloudType || ''),
-      cloudAlphaInput: getCloudAlphaInputValue(),
-      cloudEffectiveAlpha: getEffectiveCloudAlphaValue(),
       surfaceOpacity: getSurfaceOpacityValue(),
       surfaceRoughness: getSurfaceRoughnessValue(),
       surfaceMetalness: getSurfaceMetalnessValue(),
@@ -29356,7 +29310,7 @@
       mat.needsUpdate = true;
     }
     // Update cloud colors and alpha as well
-    const cloudAlpha = getEffectiveCloudAlphaValue();
+    const cloudAlpha = getSurfaceOpacityValue();
     const cloudObjects = getRenderableCloudObjects(() => true);
     if (cloudObjects.length) {
       for (const obj of cloudObjects) {
@@ -29471,5 +29425,3 @@
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 
 })();
-  const rowCloudStride = document.getElementById('rowCloudStride');
-  const rowCloudAlpha = document.getElementById('rowCloudAlpha');

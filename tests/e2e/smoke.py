@@ -4126,21 +4126,17 @@ def main() -> int:
             page.wait_for_function(
                 """() => {
                     const row = document.getElementById('rowCloudType');
-                    const alphaRow = document.getElementById('rowCloudAlpha');
                     const select = document.getElementById('cloudType');
-                    const alpha = document.getElementById('cloudAlpha');
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     const clouds = window.VibeMolTesting?.getCloudMaterialSnapshot?.() || [];
-                    const alphaLabel = alphaRow ? alphaRow.querySelector('.vm-field-label') : null;
                     return !!select
                       && !!row
                       && !row.classList.contains('vm-appearance-hidden')
                       && getComputedStyle(row).display !== 'none'
-                      && !!alpha
-                      && !!alphaRow
-                      && !alphaRow.classList.contains('vm-appearance-hidden')
-                      && getComputedStyle(alphaRow).display !== 'none'
-                      && String(alphaLabel?.textContent || '').trim() === 'Material alpha'
+                      && !document.getElementById('rowCloudStride')
+                      && !document.getElementById('cloudStride')
+                      && !document.getElementById('rowCloudAlpha')
+                      && !document.getElementById('cloudAlpha')
                       && Array.from(select.options || []).map((opt) => String(opt.value || '')).join('|') === 'cubes|points'
                       && !!snap
                       && snap.renderMode === 'cloud'
@@ -4149,6 +4145,29 @@ def main() -> int:
                       && clouds.length >= 2
                       && clouds.every((entry) => entry.objectType === 'instanced-mesh')
                       && clouds.every((entry) => entry.cloudKind === 'scalar-cubes')
+                      && snap.surfaceOpacity >= 0.999
+                      && snap.active === false;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('opacity');
+                    if (!el) return;
+                    el.value = '0.5';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    const clouds = window.VibeMolTesting?.getCloudMaterialSnapshot?.() || [];
+                    return !!snap
+                      && snap.renderMode === 'cloud'
+                      && snap.cloudType === 'cubes'
+                      && snap.surfaceOpacity < 0.999
+                      && clouds.length >= 2
+                      && clouds.every((entry) => entry.objectType === 'instanced-mesh')
                       && (snap.supported ? snap.active === true : snap.fallback === true);
                 }"""
             )

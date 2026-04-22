@@ -503,8 +503,6 @@ def _import_preset_dom_fallback(page: Any, preset: dict[str, Any], mode: str) ->
     _apply_input("global.backgroundColor", "#bgColor", "input")
     _apply_input("render.mode", "#renderMode", "change")
     _apply_input("render.cloudType", "#cloudType", "change")
-    _apply_input("render.cloudStride", "#cloudStride", "change")
-    _apply_input("render.cloudAlpha", "#cloudAlpha", "change")
     _apply_input("twoComponent.mode", "#componentSelect", "change")
     _apply_input("molecule.glossyBondRadius", "#glossyBondRadius", "change")
     _apply_checkbox("surface.enabled", "#surfBtn")
