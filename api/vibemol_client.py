@@ -496,10 +496,7 @@ def _import_preset_dom_fallback(page: Any, preset: dict[str, Any], mode: str) ->
 
     _apply_input("surface.iso", "#iso", "change")
     _apply_input("surface.opacity", "#opacity", "input")
-    _apply_input("surface.roughness", "#surfaceRoughness", "input")
-    _apply_input("surface.metalness", "#surfaceMetalness", "input")
-    _apply_input("surface.reflectivity", "#surfaceReflectivity", "input")
-    _apply_input("surface.emissiveIntensity", "#surfaceEmissiveIntensity", "input")
+    _apply_input("surface.materialPreset", "#surfaceMaterialPreset", "change")
     _apply_input("surface.colorScheme", "#schemeSelect", "change")
     _apply_input("surface.posColor", "#posColor", "input")
     _apply_input("surface.negColor", "#negColor", "input")
@@ -582,10 +579,7 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
                 appVersion,
                 iso: str('iso', '0.02'),
                 opacity: str('opacity', '1.0'),
-                surfaceRoughness: str('surfaceRoughness', '1.0'),
-                surfaceMetalness: str('surfaceMetalness', '0.0'),
-                surfaceReflectivity: str('surfaceReflectivity', '0.5'),
-                surfaceEmissiveIntensity: str('surfaceEmissiveIntensity', '0.8'),
+                surfaceMaterialPreset: str('surfaceMaterialPreset', 'emissive'),
                 style: str('moleculeStyle', 'basic'),
                 surfaceStyle: 'emissive',
                 colorScheme: str('schemeSelect', 'custom'),
@@ -614,10 +608,7 @@ def _export_preset_dom_fallback(page: Any, preset_name: str | None) -> dict[str,
         "settings": {
             "surface.iso": float(values.get("iso", 0.02)),
             "surface.opacity": float(values.get("opacity", 1.0)),
-            "surface.roughness": float(values.get("surfaceRoughness", 1.0)),
-            "surface.metalness": float(values.get("surfaceMetalness", 0.0)),
-            "surface.reflectivity": float(values.get("surfaceReflectivity", 0.5)),
-            "surface.emissiveIntensity": float(values.get("surfaceEmissiveIntensity", 0.8)),
+            "surface.materialPreset": values.get("surfaceMaterialPreset", "emissive"),
             "surface.enabled": bool(values.get("surfaceEnabled", True)),
             "surface.style": values.get("surfaceStyle", "emissive"),
             "surface.autoIsoEnabled": bool(values.get("autoIsoEnabled", False)),

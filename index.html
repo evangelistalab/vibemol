@@ -2754,40 +2754,17 @@
                   </div>
                 </div>
               </div>
-              <div id="rowSurfaceRoughness" class="vm-field-row">
-                <label class="vm-field-label" for="surfaceRoughness">Roughness</label>
-                <div class="vm-field-control vm-field-control--slider">
-                  <div class="vm-slider" data-vm-slider data-min="0.00" data-max="1.0" data-precision="2">
-                    <input id="surfaceRoughnessRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="1000" data-tooltip="Surface roughness" />
-                    <input id="surfaceRoughness" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" data-tooltip="Surface roughness" />
-                  </div>
-                </div>
-              </div>
-              <div id="rowSurfaceMetalness" class="vm-field-row">
-                <label class="vm-field-label" for="surfaceMetalness">Metalness</label>
-                <div class="vm-field-control vm-field-control--slider">
-                  <div class="vm-slider" data-vm-slider data-min="0.00" data-max="1.0" data-precision="2">
-                    <input id="surfaceMetalnessRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Surface metalness" />
-                    <input id="surfaceMetalness" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.00" data-tooltip="Surface metalness" />
-                  </div>
-                </div>
-              </div>
-              <div id="rowSurfaceReflectivity" class="vm-field-row">
-                <label class="vm-field-label" for="surfaceReflectivity">Reflectivity</label>
-                <div class="vm-field-control vm-field-control--slider">
-                  <div class="vm-slider" data-vm-slider data-min="0.00" data-max="1.0" data-precision="2">
-                    <input id="surfaceReflectivityRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="500" data-tooltip="Surface reflectivity" />
-                    <input id="surfaceReflectivity" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.50" data-tooltip="Surface reflectivity" />
-                  </div>
-                </div>
-              </div>
-              <div id="rowSurfaceEmissiveIntensity" class="vm-field-row">
-                <label class="vm-field-label" for="surfaceEmissiveIntensity">Emissive</label>
-                <div class="vm-field-control vm-field-control--slider">
-                  <div class="vm-slider" data-vm-slider data-min="0.00" data-max="2.0" data-precision="2">
-                    <input id="surfaceEmissiveIntensityRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="400" data-tooltip="Surface emissive intensity" />
-                    <input id="surfaceEmissiveIntensity" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.80" data-tooltip="Surface emissive intensity" />
-                  </div>
+              <div id="rowSurfaceMaterialPreset" class="vm-field-row">
+                <label class="vm-field-label" for="surfaceMaterialPreset">Preset</label>
+                <div class="vm-field-control">
+                  <select id="surfaceMaterialPreset" class="vm-select" data-tooltip="Surface material preset">
+                    <option value="emissive">Emissive</option>
+                    <option value="satin">Satin</option>
+                    <option value="lacquer">Lacquer</option>
+                    <option value="metal">Metal</option>
+                    <option value="gel">Gel</option>
+                    <option value="glow">Glow</option>
+                  </select>
                 </div>
               </div>
               <div id="appearanceTwoComponentSection" class="vm-appearance-section vm-appearance-section--nested" hidden>

@@ -3989,32 +3989,12 @@ def main() -> int:
             )
             page.wait_for_function(
                 """() => {
-                    const row = document.getElementById('rowSurfaceRoughness');
-                    const input = document.getElementById('surfaceRoughness');
-                    const metalnessRow = document.getElementById('rowSurfaceMetalness');
-                    const metalnessInput = document.getElementById('surfaceMetalness');
-                    const reflectivityRow = document.getElementById('rowSurfaceReflectivity');
-                    const reflectivityInput = document.getElementById('surfaceReflectivity');
-                    const emissiveRow = document.getElementById('rowSurfaceEmissiveIntensity');
-                    const emissiveInput = document.getElementById('surfaceEmissiveIntensity');
-                    return !!row && !!input && !!metalnessRow && !!metalnessInput
-                      && !!reflectivityRow && !!reflectivityInput
-                      && !!emissiveRow && !!emissiveInput;
-                }"""
-            )
-            page.evaluate(
-                """() => {
-                    const apply = (id, value) => {
-                        const el = document.getElementById(id);
-                        if (!el) return;
-                        el.value = value;
-                        el.dispatchEvent(new Event('input', { bubbles: true }));
-                        el.dispatchEvent(new Event('change', { bubbles: true }));
-                    };
-                    apply('surfaceRoughness', '0.37');
-                    apply('surfaceMetalness', '0.21');
-                    apply('surfaceReflectivity', '0.63');
-                    apply('surfaceEmissiveIntensity', '1.14');
+                    const row = document.getElementById('rowSurfaceMaterialPreset');
+                    const select = document.getElementById('surfaceMaterialPreset');
+                    if (!(row && select)) return false;
+                    const options = Array.from(select.options || []).map((opt) => String(opt.textContent || '').trim());
+                    return options.join('|') === 'Emissive|Satin|Lacquer|Metal|Gel|Glow'
+                      && String(select.value || '') === 'emissive';
                 }"""
             )
             page.wait_for_function(
@@ -4022,15 +4002,61 @@ def main() -> int:
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
                     return !!snap
-                      && Math.abs(Number(snap.surfaceRoughness || 0) - 0.37) < 1e-3
-                      && Math.abs(Number(snap.surfaceMetalness || 0) - 0.21) < 1e-3
-                      && Math.abs(Number(snap.surfaceReflectivity || 0) - 0.63) < 1e-3
-                      && Math.abs(Number(snap.surfaceEmissiveIntensity || 0) - 1.14) < 1e-3
+                      && snap.sceneEnvironmentPresent === true
+                      && snap.sceneEnvironmentLoaded === true
+                      && snap.surfaceMaterialPreset === 'emissive'
+                      && Math.abs(Number(snap.surfaceRoughness || 0) - 1.0) < 1e-3
+                      && Math.abs(Number(snap.surfaceMetalness || 0) - 0.0) < 1e-3
+                      && Math.abs(Number(snap.surfaceReflectivity || 0) - 0.5) < 1e-3
+                      && Math.abs(Number(snap.surfaceEmissiveIntensity || 0) - 0.8) < 1e-3
                       && materials.length >= 2
-                      && materials.every((mat) => Math.abs(Number(mat.roughness || 0) - 0.37) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.metalness || 0) - 0.21) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.reflectivity || 0) - 0.63) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.emissiveIntensity || 0) - 1.14) < 1e-3);
+                      && materials.every((mat) => String(mat.surfaceStyle || '') === 'emissive')
+                      && materials.every((mat) => Math.abs(Number(mat.roughness || 0) - 1.0) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.metalness || 0) - 0.0) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.clearcoat || 0) - 1.0) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.clearcoatRoughness || 0) - 0.1) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.reflectivity || 0) - 0.5) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.emissiveIntensity || 0) - 0.8) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.envMapIntensity || 0) - 0.0) < 1e-3);
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('surfaceMaterialPreset');
+                    if (!el) return;
+                    el.value = 'glow';
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
+                    return !!snap
+                      && snap.sceneEnvironmentPresent === true
+                      && snap.sceneEnvironmentLoaded === true
+                      && snap.surfaceMaterialPreset === 'glow'
+                      && Math.abs(Number(snap.surfaceRoughness || 0) - 0.7) < 1e-3
+                      && Math.abs(Number(snap.surfaceMetalness || 0) - 0.0) < 1e-3
+                      && Math.abs(Number(snap.surfaceReflectivity || 0) - 0.3) < 1e-3
+                      && Math.abs(Number(snap.surfaceEmissiveIntensity || 0) - 0.6) < 1e-3
+                      && materials.length >= 2
+                      && materials.every((mat) => String(mat.surfaceStyle || '') === 'glow')
+                      && materials.every((mat) => Math.abs(Number(mat.roughness || 0) - 0.7) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.metalness || 0) - 0.0) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.clearcoat || 0) - 0.0) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.clearcoatRoughness || 0) - 0.1) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.reflectivity || 0) - 0.3) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.emissiveIntensity || 0) - 0.6) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.envMapIntensity || 0) - 0.2) < 1e-3);
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const el = document.getElementById('surfaceMaterialPreset');
+                    if (!el) return;
+                    el.value = 'emissive';
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
             page.evaluate(
@@ -4045,7 +4071,7 @@ def main() -> int:
             page.wait_for_function(
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
-                    return !!snap && snap.surfaceStyle === 'emissive' && snap.active === false;
+                    return !!snap && snap.surfaceMaterialPreset === 'emissive' && snap.surfaceStyle === 'emissive' && snap.active === false;
                 }"""
             )
             page.evaluate(
@@ -4061,6 +4087,7 @@ def main() -> int:
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap
+                      && snap.surfaceMaterialPreset === 'emissive'
                       && snap.surfaceStyle === 'emissive'
                       && snap.surfaceOpacity < 0.999
                       && (snap.supported ? snap.active === true : snap.fallback === true);
@@ -4079,6 +4106,7 @@ def main() -> int:
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap
+                      && snap.surfaceMaterialPreset === 'emissive'
                       && snap.surfaceStyle === 'emissive'
                       && snap.surfaceOpacity >= 0.999
                       && snap.active === false;
