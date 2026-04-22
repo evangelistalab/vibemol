@@ -3983,7 +3983,56 @@ def main() -> int:
                     return !!snap && snap.transparentMeshCount >= 2;
                 }"""
             )
-            set_select_value(page, '#styleSelect', 'emissive')
+            page.wait_for_function(
+                """() => !document.getElementById('styleSelect')
+                  && !document.getElementById('appearanceSurfaceStyleGroup')"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const row = document.getElementById('rowSurfaceRoughness');
+                    const input = document.getElementById('surfaceRoughness');
+                    const metalnessRow = document.getElementById('rowSurfaceMetalness');
+                    const metalnessInput = document.getElementById('surfaceMetalness');
+                    const reflectivityRow = document.getElementById('rowSurfaceReflectivity');
+                    const reflectivityInput = document.getElementById('surfaceReflectivity');
+                    const emissiveRow = document.getElementById('rowSurfaceEmissiveIntensity');
+                    const emissiveInput = document.getElementById('surfaceEmissiveIntensity');
+                    return !!row && !!input && !!metalnessRow && !!metalnessInput
+                      && !!reflectivityRow && !!reflectivityInput
+                      && !!emissiveRow && !!emissiveInput;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const apply = (id, value) => {
+                        const el = document.getElementById(id);
+                        if (!el) return;
+                        el.value = value;
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    };
+                    apply('surfaceRoughness', '0.37');
+                    apply('surfaceMetalness', '0.21');
+                    apply('surfaceReflectivity', '0.63');
+                    apply('surfaceEmissiveIntensity', '1.14');
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
+                    const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
+                    return !!snap
+                      && Math.abs(Number(snap.surfaceRoughness || 0) - 0.37) < 1e-3
+                      && Math.abs(Number(snap.surfaceMetalness || 0) - 0.21) < 1e-3
+                      && Math.abs(Number(snap.surfaceReflectivity || 0) - 0.63) < 1e-3
+                      && Math.abs(Number(snap.surfaceEmissiveIntensity || 0) - 1.14) < 1e-3
+                      && materials.length >= 2
+                      && materials.every((mat) => Math.abs(Number(mat.roughness || 0) - 0.37) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.metalness || 0) - 0.21) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.reflectivity || 0) - 0.63) < 1e-3)
+                      && materials.every((mat) => Math.abs(Number(mat.emissiveIntensity || 0) - 1.14) < 1e-3);
+                }"""
+            )
             page.evaluate(
                 """() => {
                     const el = document.getElementById('opacity');
@@ -4017,24 +4066,6 @@ def main() -> int:
                       && (snap.supported ? snap.active === true : snap.fallback === true);
                 }"""
             )
-            set_select_value(page, '#styleSelect', 'glass')
-            page.wait_for_function(
-                """() => {
-                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
-                    return !!snap
-                      && snap.surfaceStyle === 'glass'
-                      && snap.active === false;
-                }"""
-            )
-            page.wait_for_function(
-                """() => {
-                    const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
-                    return materials.length >= 2
-                      && materials.every((mat) => Math.abs(Number(mat.opacity || 0) - 1.0) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.transmission || 0) - 1.0) < 1e-3)
-                      && materials.every((mat) => mat.transparent === true && mat.depthWrite === false);
-                }"""
-            )
             page.evaluate(
                 """() => {
                     const el = document.getElementById('opacity');
@@ -4048,31 +4079,15 @@ def main() -> int:
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap
-                      && snap.surfaceStyle === 'glass'
+                      && snap.surfaceStyle === 'emissive'
+                      && snap.surfaceOpacity >= 0.999
                       && snap.active === false;
-                }"""
-            )
-            page.wait_for_function(
-                """() => {
-                    const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
-                    return materials.length >= 2
-                      && materials.every((mat) => Math.abs(Number(mat.opacity || 0) - 1.0) < 1e-3)
-                      && materials.every((mat) => Math.abs(Number(mat.transmission || 0) - 1.0) < 1e-3)
-                      && materials.every((mat) => mat.transparent === true && mat.depthWrite === false);
-                }"""
-            )
-            set_select_value(page, '#styleSelect', 'emissive')
-            page.wait_for_function(
-                """() => {
-                    const snap = window.VibeMolTesting?.getWboitSnapshot?.();
-                    return !!snap && snap.surfaceStyle === 'emissive' && snap.surfaceOpacity >= 0.999 && snap.active === false;
                 }"""
             )
 
             log_step('wboit 2c alpha/beta split view')
             load_volume_asset(page, '/assets/data/2ccubes/orbital_0.2ccube')
             page.wait_for_function("() => !!document.getElementById('twoComponentModeSelect')")
-            set_select_value(page, '#styleSelect', 'emissive')
             set_select_value(page, '#twoComponentModeSelect', 'alphaBetaPhase')
             page.evaluate(
                 """() => {

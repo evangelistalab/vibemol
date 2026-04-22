@@ -1266,8 +1266,10 @@
   let moleculeInkEnabled = false;
   let moleculeAtomOpacity = 1.0;
   let moleculeBondOpacity = 1.0;
-  const GLASS_SURFACE_FIXED_TRANSMISSION = 1.0;
-  const GLASS_SURFACE_COLOR_SCALE = 2.0;
+  let surfaceRoughness = 1.0;
+  let surfaceMetalness = 0.0;
+  let surfaceReflectivity = 0.5;
+  let surfaceEmissiveIntensity = 0.8;
   const dofState = {
     enabled: false,
     focusMode: 'auto',
@@ -4831,32 +4833,16 @@
         opacity,
       }), opacity);
     }
-    if (surfaceStyle === 'glass') {
-      col.multiplyScalar(GLASS_SURFACE_COLOR_SCALE);
-      const mat = new THREE.MeshPhysicalMaterial({
-        color: col,
-        transmission: GLASS_SURFACE_FIXED_TRANSMISSION,
-        roughness: 0.08,
-        metalness: 0.0,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.02,
-        reflectivity: 0.18,
-        ior: 1.2,
-        thickness: 1.0,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 1.0,
-      });
-      mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: 'glass' });
-      return applySurfaceBlendFlags(mat, 1.0, { forceTransparent: true });
-    }
     if (surfaceStyle === 'emissive') {
       const mat = new THREE.MeshPhysicalMaterial({
         color: col,
+        roughness: getSurfaceRoughnessValue(),
+        metalness: getSurfaceMetalnessValue(),
         clearcoat: 1.0,
         clearcoatRoughness: 0.1,
+        reflectivity: getSurfaceReflectivityValue(),
         emissive: col.clone(),
-        emissiveIntensity: 0.8,
+        emissiveIntensity: getSurfaceEmissiveIntensityValue(),
         side: THREE.DoubleSide,
         opacity
       });
@@ -4866,8 +4852,8 @@
     // Fallback standard
     const mat = new THREE.MeshStandardMaterial({
       color: col,
-      roughness: 0.4,
-      metalness: 0.05,
+      roughness: getSurfaceRoughnessValue(),
+      metalness: getSurfaceMetalnessValue(),
       side: THREE.DoubleSide,
       opacity,
     });
@@ -4894,34 +4880,17 @@
         opacity,
       }), opacity);
     }
-    if (surfaceStyle === 'glass') {
-      // Glassy, tinted by vertex colors. The shared opacity slider is ignored for this style.
-      const mat = new THREE.MeshPhysicalMaterial({
-        color: 0xffffff,
-        vertexColors: true,
-        transmission: GLASS_SURFACE_FIXED_TRANSMISSION,
-        roughness: 0.08,
-        metalness: 0.0,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.02,
-        reflectivity: 0.18,
-        ior: 1.2,
-        thickness: 1.0,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 1.0,
-      });
-      mat.userData = Object.assign({}, mat.userData || {}, { vmSurfaceStyle: 'glass' });
-      return applySurfaceBlendFlags(mat, 1.0, { forceTransparent: true });
-    }
     if (surfaceStyle === 'emissive') {
       // Emissive physical with vertex color tint
       const mat = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         vertexColors: true,
+        roughness: getSurfaceRoughnessValue(),
+        metalness: getSurfaceMetalnessValue(),
         clearcoat: 1.0,
         clearcoatRoughness: 0.1,
-        emissiveIntensity: 0.0,
+        reflectivity: getSurfaceReflectivityValue(),
+        emissiveIntensity: getSurfaceEmissiveIntensityValue(),
         side: THREE.DoubleSide,
         opacity,
       });
@@ -4931,8 +4900,8 @@
     // Fallback standard
     const mat = new THREE.MeshStandardMaterial({
       vertexColors: true,
-      roughness: 0.4,
-      metalness: 0.05,
+      roughness: getSurfaceRoughnessValue(),
+      metalness: getSurfaceMetalnessValue(),
       side: THREE.DoubleSide,
       opacity,
     });
@@ -4950,13 +4919,44 @@
   }
 
   /**
+   * Read the current surface roughness control as one clamped numeric value.
+   * @returns {number}
+   */
+  function getSurfaceRoughnessValue() {
+    return Math.max(0, Math.min(1, Number.isFinite(surfaceRoughness) ? surfaceRoughness : 1));
+  }
+
+  /**
+   * Read the current surface metalness control as one clamped numeric value.
+   * @returns {number}
+   */
+  function getSurfaceMetalnessValue() {
+    return Math.max(0, Math.min(1, Number.isFinite(surfaceMetalness) ? surfaceMetalness : 0));
+  }
+
+  /**
+   * Read the current surface reflectivity control as one clamped numeric value.
+   * @returns {number}
+   */
+  function getSurfaceReflectivityValue() {
+    return Math.max(0, Math.min(1, Number.isFinite(surfaceReflectivity) ? surfaceReflectivity : 0.5));
+  }
+
+  /**
+   * Read the current surface emissive-intensity control as one clamped numeric value.
+   * @returns {number}
+   */
+  function getSurfaceEmissiveIntensityValue() {
+    return Math.max(0, Math.min(2, Number.isFinite(surfaceEmissiveIntensity) ? surfaceEmissiveIntensity : 0.8));
+  }
+
+  /**
    * Check whether WBOIT should run for the current frame.
    * @returns {boolean}
    */
   function shouldUseWboitForCurrentFrame() {
     return renderMode === 'surface'
       && !!showSurfaces
-      && surfaceStyle !== 'glass'
       && Array.isArray(meshes)
       && meshes.length > 0
       && getSurfaceOpacityValue() < 0.999;
@@ -4981,27 +4981,7 @@
    */
   function cloneSurfaceMaterialForWboit(sourceMaterial) {
     if (!(sourceMaterial && typeof sourceMaterial.clone === 'function')) return null;
-    const sourceSurfaceStyle = String(sourceMaterial.userData && sourceMaterial.userData.vmSurfaceStyle || '');
-    let material = null;
-    if (sourceSurfaceStyle === 'glass' && sourceMaterial.isMeshPhysicalMaterial) {
-      material = new THREE.MeshPhysicalMaterial({
-        color: sourceMaterial.color ? sourceMaterial.color.clone() : new THREE.Color(0xffffff),
-        vertexColors: !!sourceMaterial.vertexColors,
-        roughness: Number(sourceMaterial.roughness) || 0,
-        metalness: Number(sourceMaterial.metalness) || 0,
-        clearcoat: Number(sourceMaterial.clearcoat) || 0,
-        clearcoatRoughness: Number(sourceMaterial.clearcoatRoughness) || 0,
-        reflectivity: Number(sourceMaterial.reflectivity) || 0,
-        ior: Number(sourceMaterial.ior) || 1.2,
-        thickness: Number(sourceMaterial.thickness) || 1.0,
-        side: sourceMaterial.side,
-        transparent: true,
-        opacity: 1.0,
-        transmission: 0.0,
-      });
-    } else {
-      material = sourceMaterial.clone();
-    }
+    const material = sourceMaterial.clone();
     material.userData = Object.assign({}, sourceMaterial.userData || {}, material.userData || {});
     delete material.userData.vmWboitPass;
     return material;
@@ -5031,10 +5011,8 @@
     material.onBeforeCompile = (shader, rendererRef) => {
       if (previousOnBeforeCompile) previousOnBeforeCompile(shader, rendererRef);
       shader.uniforms.uWboitAlpha = { value: 1.0 };
-      shader.uniforms.uWboitGlassMode = { value: 0.0 };
       passState.uniforms = {
         uWboitAlpha: shader.uniforms.uWboitAlpha,
-        uWboitGlassMode: shader.uniforms.uWboitGlassMode,
       };
       if (shader.vertexShader.indexOf('varying vec3 vmWboitViewPosition;') === -1) {
         shader.vertexShader = shader.vertexShader.replace(
@@ -5047,7 +5025,7 @@
         '#include <project_vertex>\n\tvmWboitViewPosition = -mvPosition.xyz;'
       );
       if (shader.fragmentShader.indexOf('uniform float uWboitAlpha;') === -1) {
-        shader.fragmentShader = `uniform float uWboitAlpha;\nuniform float uWboitGlassMode;\nvarying vec3 vmWboitViewPosition;\nfloat vmWboitWeight(float z, float alpha) {\n  return alpha * clamp(0.03 / (1e-5 + pow(z / 200.0, 4.0)), 1e-2, 3e3);\n}\n${shader.fragmentShader}`;
+        shader.fragmentShader = `uniform float uWboitAlpha;\nvarying vec3 vmWboitViewPosition;\nfloat vmWboitWeight(float z, float alpha) {\n  return alpha * clamp(0.03 / (1e-5 + pow(z / 200.0, 4.0)), 1e-2, 3e3);\n}\n${shader.fragmentShader}`;
       }
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <tonemapping_fragment>', '')
@@ -5055,8 +5033,8 @@
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <opaque_fragment>',
         pass === 'accum'
-          ? `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tvec3 vmFinalLight = outgoingLight;\n\tif (uWboitGlassMode > 0.5) {\n\t\tvec3 vmViewDir = normalize(vViewPosition);\n\t\tfloat vmNdotV = max(dot(normalize(normal), vmViewDir), 0.0);\n\t\tfloat vmGlassFresnel = pow(max(1.0 - vmNdotV, 0.0), 3.4);\n\t\tvec3 vmGlassEdgeColor = mix(diffuseColor.rgb, vec3(1.0), 0.35);\n\t\tvmFinalLight = mix(outgoingLight, vmGlassEdgeColor, clamp(vmGlassFresnel * 0.32, 0.0, 1.0));\n\t\tvmAlpha = mix(vmAlpha, min(0.56, vmAlpha * 1.3), vmGlassFresnel * 0.55);\n\t}\n\tfloat vmViewZ = max(1e-5, abs(vmWboitViewPosition.z));\n\tfloat vmWeight = vmWboitWeight(vmViewZ, vmAlpha);\n\tgl_FragColor = vec4(vmFinalLight * vmAlpha * vmWeight, vmAlpha * vmWeight);`
-          : `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tif (uWboitGlassMode > 0.5) {\n\t\tvec3 vmViewDir = normalize(vViewPosition);\n\t\tfloat vmNdotV = max(dot(normalize(normal), vmViewDir), 0.0);\n\t\tfloat vmGlassFresnel = pow(max(1.0 - vmNdotV, 0.0), 3.4);\n\t\tvmAlpha = mix(vmAlpha, min(0.56, vmAlpha * 1.3), vmGlassFresnel * 0.55);\n\t}\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, vmAlpha);`
+          ? `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tvec3 vmFinalLight = outgoingLight;\n\tfloat vmViewZ = max(1e-5, abs(vmWboitViewPosition.z));\n\tfloat vmWeight = vmWboitWeight(vmViewZ, vmAlpha);\n\tgl_FragColor = vec4(vmFinalLight * vmAlpha * vmWeight, vmAlpha * vmWeight);`
+          : `float vmAlpha = clamp(uWboitAlpha, 0.0, 1.0);\n\tgl_FragColor = vec4(0.0, 0.0, 0.0, vmAlpha);`
       );
     };
     material.customProgramCacheKey = () => {
@@ -5094,7 +5072,6 @@
   function syncWboitSurfacePassMaterial(sourceMaterial, passMaterial, alpha) {
     if (!(sourceMaterial && passMaterial)) return;
     let needsMaterialUpdate = false;
-    const sourceSurfaceStyle = String(sourceMaterial.userData && sourceMaterial.userData.vmSurfaceStyle || '');
     if (sourceMaterial.color && passMaterial.color) passMaterial.color.copy(sourceMaterial.color);
     if (sourceMaterial.emissive && passMaterial.emissive) passMaterial.emissive.copy(sourceMaterial.emissive);
     if ('roughness' in sourceMaterial && 'roughness' in passMaterial) passMaterial.roughness = sourceMaterial.roughness;
@@ -5107,7 +5084,7 @@
     if ('ior' in sourceMaterial && 'ior' in passMaterial) passMaterial.ior = sourceMaterial.ior;
     if ('thickness' in sourceMaterial && 'thickness' in passMaterial) passMaterial.thickness = sourceMaterial.thickness;
     if ('transmission' in sourceMaterial && 'transmission' in passMaterial) {
-      passMaterial.transmission = sourceSurfaceStyle === 'glass' ? 0.0 : sourceMaterial.transmission;
+      passMaterial.transmission = sourceMaterial.transmission;
     }
     if (passMaterial.side !== sourceMaterial.side) {
       passMaterial.side = sourceMaterial.side;
@@ -5117,9 +5094,6 @@
     const passState = passMaterial.userData && passMaterial.userData.vmWboitPass;
     if (passState && passState.uniforms && passState.uniforms.uWboitAlpha) {
       passState.uniforms.uWboitAlpha.value = Math.max(0, Math.min(1, Number.isFinite(Number(alpha)) ? Number(alpha) : 1));
-    }
-    if (passState && passState.uniforms && passState.uniforms.uWboitGlassMode) {
-      passState.uniforms.uWboitGlassMode.value = sourceSurfaceStyle === 'glass' ? 1.0 : 0.0;
     }
     if (needsMaterialUpdate) passMaterial.needsUpdate = true;
   }
@@ -6488,6 +6462,10 @@
   const isoInput = document.getElementById('iso');
   const autoIsoBtn = document.getElementById('autoIsoBtn');
   const opInput = document.getElementById('opacity');
+  const surfaceRoughnessInput = document.getElementById('surfaceRoughness');
+  const surfaceMetalnessInput = document.getElementById('surfaceMetalness');
+  const surfaceReflectivityInput = document.getElementById('surfaceReflectivity');
+  const surfaceEmissiveIntensityInput = document.getElementById('surfaceEmissiveIntensity');
   const posColor = document.getElementById('posColor');
   const posColorHexEl = document.getElementById('posColorHex');
   const posColorSwatchEl = document.getElementById('posColorSwatch');
@@ -6537,7 +6515,6 @@
   const projectionModeGroupEl = document.getElementById('projectionModeGroup');
   const appearanceDofFocusModeGroupEl = document.getElementById('appearanceDofFocusModeGroup');
   const appearanceRenderModeGroupEl = document.getElementById('appearanceRenderModeGroup');
-  const appearanceSurfaceStyleGroupEl = document.getElementById('appearanceSurfaceStyleGroup');
   const appearanceCloudTypeGroupEl = document.getElementById('appearanceCloudTypeGroup');
   const appearanceSimpleBondsToggleEl = document.getElementById('appearanceSimpleBondsToggle');
   const appearanceSurfacesSectionEl = document.getElementById('appearanceSurfacesSection');
@@ -6836,7 +6813,6 @@
   if (toggleAtomLabelNumbers) showAtomLabelNumbers = !!toggleAtomLabelNumbers.checked;
   syncAtomLabelNumberToggleState();
   const viewReset = document.getElementById('viewReset');
-  const styleSelect = document.getElementById('styleSelect');
   const pointCameraComBtn = document.getElementById('pointCameraComBtn');
   const moleculeStyleSel = document.getElementById('moleculeStyle');
   const moleculeAtomRadiusScaleEl = document.getElementById('moleculeAtomRadiusScale');
@@ -23927,33 +23903,95 @@
   window.addEventListener('keyup', (e) => { dispatchShortcut(e, 'up', currentMode); });
 
   /**
-   * Keep the surface-style control aligned with the active molecule style.
+   * Keep surface-specific UI state aligned with the active molecule style.
    * Toon mode drives surfaces through toon shading.
    */
   function syncSurfaceStyleControlState() {
-    if (!styleSelect) return;
-    const toonSurfaces = useToonSurfaceStyle();
-    styleSelect.disabled = toonSurfaces;
-    setTooltipText(styleSelect, toonSurfaces
-      ? 'Disabled: Toon molecule style enforces toon surfaces'
-      : 'Choose iso-surface material style');
-    const glassSurfaceStyle = !toonSurfaces && surfaceStyle === 'glass';
     const opacityRangeEl = document.getElementById('opacityRange');
     const opacitySliderRoot = opInput ? opInput.closest('[data-vm-slider]') : null;
     const opacityRow = opInput ? opInput.closest('.vm-field-row') : null;
-    const opacityTooltip = glassSurfaceStyle
-      ? 'Glass uses a fixed transparency profile; opacity is disabled for this surface style'
-      : 'Surface opacity';
+    const opacityTooltip = 'Surface opacity';
+    const roughnessInputEl = document.getElementById('surfaceRoughness');
+    const roughnessRangeEl = document.getElementById('surfaceRoughnessRange');
+    const roughnessSliderRoot = roughnessInputEl ? roughnessInputEl.closest('[data-vm-slider]') : null;
+    const roughnessRow = document.getElementById('rowSurfaceRoughness');
+    const metalnessInputEl = document.getElementById('surfaceMetalness');
+    const metalnessRangeEl = document.getElementById('surfaceMetalnessRange');
+    const metalnessSliderRoot = metalnessInputEl ? metalnessInputEl.closest('[data-vm-slider]') : null;
+    const metalnessRow = document.getElementById('rowSurfaceMetalness');
+    const reflectivityInputEl = document.getElementById('surfaceReflectivity');
+    const reflectivityRangeEl = document.getElementById('surfaceReflectivityRange');
+    const reflectivitySliderRoot = reflectivityInputEl ? reflectivityInputEl.closest('[data-vm-slider]') : null;
+    const reflectivityRow = document.getElementById('rowSurfaceReflectivity');
+    const emissiveIntensityInputEl = document.getElementById('surfaceEmissiveIntensity');
+    const emissiveIntensityRangeEl = document.getElementById('surfaceEmissiveIntensityRange');
+    const emissiveIntensitySliderRoot = emissiveIntensityInputEl ? emissiveIntensityInputEl.closest('[data-vm-slider]') : null;
+    const emissiveIntensityRow = document.getElementById('rowSurfaceEmissiveIntensity');
+    const physicalSurfacesActive = renderMode === 'surface' && !useToonSurfaceStyle();
+    const roughnessTooltip = physicalSurfacesActive
+      ? 'Surface roughness'
+      : 'Available when surfaces use physical shading';
+    const metalnessTooltip = physicalSurfacesActive
+      ? 'Surface metalness'
+      : 'Available when surfaces use physical shading';
+    const reflectivityTooltip = physicalSurfacesActive
+      ? 'Surface reflectivity'
+      : 'Available when surfaces use physical shading';
+    const emissiveIntensityTooltip = physicalSurfacesActive
+      ? 'Surface emissive intensity'
+      : 'Available when surfaces use physical shading';
     if (opInput) {
-      opInput.disabled = glassSurfaceStyle;
       setTooltipText(opInput, opacityTooltip);
     }
     if (opacityRangeEl) {
-      opacityRangeEl.disabled = glassSurfaceStyle;
       setTooltipText(opacityRangeEl, opacityTooltip);
     }
     if (opacitySliderRoot) setTooltipText(opacitySliderRoot, opacityTooltip);
     if (opacityRow) setTooltipText(opacityRow, opacityTooltip);
+    if (roughnessRow) roughnessRow.style.display = renderMode === 'surface' ? '' : 'none';
+    if (roughnessInputEl) {
+      roughnessInputEl.disabled = !physicalSurfacesActive;
+      setTooltipText(roughnessInputEl, roughnessTooltip);
+    }
+    if (roughnessRangeEl) {
+      roughnessRangeEl.disabled = !physicalSurfacesActive;
+      setTooltipText(roughnessRangeEl, roughnessTooltip);
+    }
+    if (roughnessSliderRoot) setTooltipText(roughnessSliderRoot, roughnessTooltip);
+    if (roughnessRow) setTooltipText(roughnessRow, roughnessTooltip);
+    if (metalnessRow) metalnessRow.style.display = renderMode === 'surface' ? '' : 'none';
+    if (metalnessInputEl) {
+      metalnessInputEl.disabled = !physicalSurfacesActive;
+      setTooltipText(metalnessInputEl, metalnessTooltip);
+    }
+    if (metalnessRangeEl) {
+      metalnessRangeEl.disabled = !physicalSurfacesActive;
+      setTooltipText(metalnessRangeEl, metalnessTooltip);
+    }
+    if (metalnessSliderRoot) setTooltipText(metalnessSliderRoot, metalnessTooltip);
+    if (metalnessRow) setTooltipText(metalnessRow, metalnessTooltip);
+    if (reflectivityRow) reflectivityRow.style.display = renderMode === 'surface' ? '' : 'none';
+    if (reflectivityInputEl) {
+      reflectivityInputEl.disabled = !physicalSurfacesActive;
+      setTooltipText(reflectivityInputEl, reflectivityTooltip);
+    }
+    if (reflectivityRangeEl) {
+      reflectivityRangeEl.disabled = !physicalSurfacesActive;
+      setTooltipText(reflectivityRangeEl, reflectivityTooltip);
+    }
+    if (reflectivitySliderRoot) setTooltipText(reflectivitySliderRoot, reflectivityTooltip);
+    if (reflectivityRow) setTooltipText(reflectivityRow, reflectivityTooltip);
+    if (emissiveIntensityRow) emissiveIntensityRow.style.display = renderMode === 'surface' ? '' : 'none';
+    if (emissiveIntensityInputEl) {
+      emissiveIntensityInputEl.disabled = !physicalSurfacesActive;
+      setTooltipText(emissiveIntensityInputEl, emissiveIntensityTooltip);
+    }
+    if (emissiveIntensityRangeEl) {
+      emissiveIntensityRangeEl.disabled = !physicalSurfacesActive;
+      setTooltipText(emissiveIntensityRangeEl, emissiveIntensityTooltip);
+    }
+    if (emissiveIntensitySliderRoot) setTooltipText(emissiveIntensitySliderRoot, emissiveIntensityTooltip);
+    if (emissiveIntensityRow) setTooltipText(emissiveIntensityRow, emissiveIntensityTooltip);
     syncAllAppearanceActionToggleButtons();
   }
 
@@ -24286,16 +24324,6 @@
     syncDofControlState();
   }
 
-  // Surface style selector
-  if (styleSelect) {
-    styleSelect.value = surfaceStyle;
-    styleSelect.onchange = () => {
-      surfaceStyle = styleSelect.value;
-      if (appearanceInspectorController) appearanceInspectorController.syncActionToggles();
-      syncSurfaceStyleControlState();
-      rebuildScene({ preserveView: true });
-    };
-  }
   bindClampedNumericInput(
     glossyBondRadiusEl,
     getConfiguredGlossyBondCenterRadius,
@@ -24364,16 +24392,6 @@
           renderModeSel.value = nextValue === 'cloud' ? 'cloud' : 'surface';
           if (typeof renderModeSel.onchange === 'function') renderModeSel.onchange();
         },
-      },
-      {
-        rootEl: appearanceSurfaceStyleGroupEl,
-        getValue: () => surfaceStyle,
-        setValue: (nextValue) => {
-          if (!styleSelect) return;
-          styleSelect.value = nextValue === 'glass' ? 'glass' : 'emissive';
-          if (typeof styleSelect.onchange === 'function') styleSelect.onchange();
-        },
-        isDisabled: () => useToonSurfaceStyle(),
       },
       {
         rootEl: appearanceCloudTypeGroupEl,
@@ -24599,14 +24617,13 @@
    */
   function updateRenderModeUI() {
     const isCloud = renderMode === 'cloud';
-    const rowStyle = document.getElementById('rowStyle');
     const rowCloudType = document.getElementById('rowCloudType');
     const rowCloudStrideEl = document.getElementById('rowCloudStride');
     const rowCloudAlphaEl = document.getElementById('rowCloudAlpha');
-    if (rowStyle) rowStyle.style.display = isCloud ? 'none' : '';
     if (rowCloudType) rowCloudType.style.display = isCloud ? '' : 'none';
     if (rowCloudStrideEl) rowCloudStrideEl.style.display = isCloud ? '' : 'none';
     if (rowCloudAlphaEl) rowCloudAlphaEl.style.display = isCloud ? '' : 'none';
+    syncSurfaceStyleControlState();
     syncAppearanceInspectorSectionState();
   }
   /**
@@ -24885,11 +24902,25 @@
     const snapped = Math.round(n / 0.05) * 0.05;
     setViewControlValue(opInput, snapped);
   });
+  registerPresetSetting('surface.roughness', () => getSurfaceRoughnessValue(), (value) => {
+    const n = Math.max(0, Math.min(1, asFiniteNumber(value, getSurfaceRoughnessValue())));
+    setViewControlValue(surfaceRoughnessInput, n);
+  });
+  registerPresetSetting('surface.metalness', () => getSurfaceMetalnessValue(), (value) => {
+    const n = Math.max(0, Math.min(1, asFiniteNumber(value, getSurfaceMetalnessValue())));
+    setViewControlValue(surfaceMetalnessInput, n);
+  });
+  registerPresetSetting('surface.reflectivity', () => getSurfaceReflectivityValue(), (value) => {
+    const n = Math.max(0, Math.min(1, asFiniteNumber(value, getSurfaceReflectivityValue())));
+    setViewControlValue(surfaceReflectivityInput, n);
+  });
+  registerPresetSetting('surface.emissiveIntensity', () => getSurfaceEmissiveIntensityValue(), (value) => {
+    const n = Math.max(0, Math.min(2, asFiniteNumber(value, getSurfaceEmissiveIntensityValue())));
+    setViewControlValue(surfaceEmissiveIntensityInput, n);
+  });
   registerPresetSetting('surface.enabled', () => !!showSurfaces, (value) => { showSurfaces = asBoolean(value); });
   registerPresetSetting('surface.style', () => surfaceStyle, (value) => {
-    const next = (value === 'glass' || value === 'emissive') ? value : 'emissive';
-    surfaceStyle = next;
-    if (styleSelect) styleSelect.value = next;
+    surfaceStyle = 'emissive';
   });
   registerPresetSetting('surface.autoIsoEnabled', () => !!autoIsoEnabled, (value) => {
     autoIsoEnabled = asBoolean(value);
@@ -25222,6 +25253,10 @@
       active: !!wboitActiveFrame,
       fallback: !!wboitFallbackActive,
       surfaceOpacity: getSurfaceOpacityValue(),
+      surfaceRoughness: getSurfaceRoughnessValue(),
+      surfaceMetalness: getSurfaceMetalnessValue(),
+      surfaceReflectivity: getSurfaceReflectivityValue(),
+      surfaceEmissiveIntensity: getSurfaceEmissiveIntensityValue(),
       surfaceOpacityInput: Math.max(0, Math.min(1, Number.isFinite(parseFloat(opInput && opInput.value || '1'))
         ? parseFloat(opInput && opInput.value || '1')
         : 1)),
@@ -25242,6 +25277,10 @@
         phaseHue: !!(mesh && mesh.userData && mesh.userData.phaseHue),
         type: String(material && material.type || ''),
         opacity: Number(material && material.opacity) || 0,
+        roughness: Number(material && material.roughness),
+        metalness: Number(material && material.metalness),
+        reflectivity: Number(material && material.reflectivity),
+        emissiveIntensity: Number(material && material.emissiveIntensity),
         transparent: !!(material && material.transparent),
         depthWrite: !!(material && material.depthWrite),
         transmission: Number(material && material.transmission) || 0,
@@ -28231,6 +28270,42 @@
     };
   }
   opInput.oninput = updateOpacityAndColors;
+  bindClampedNumericInput(
+    surfaceRoughnessInput,
+    getSurfaceRoughnessValue,
+    (n) => {
+      surfaceRoughness = n;
+      updateOpacityAndColors();
+    },
+    () => false
+  );
+  bindClampedNumericInput(
+    surfaceMetalnessInput,
+    getSurfaceMetalnessValue,
+    (n) => {
+      surfaceMetalness = n;
+      updateOpacityAndColors();
+    },
+    () => false
+  );
+  bindClampedNumericInput(
+    surfaceReflectivityInput,
+    getSurfaceReflectivityValue,
+    (n) => {
+      surfaceReflectivity = n;
+      updateOpacityAndColors();
+    },
+    () => false
+  );
+  bindClampedNumericInput(
+    surfaceEmissiveIntensityInput,
+    getSurfaceEmissiveIntensityValue,
+    (n) => {
+      surfaceEmissiveIntensity = n;
+      updateOpacityAndColors();
+    },
+    () => false
+  );
   posColor.oninput = () => {
     if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
@@ -28902,27 +28977,29 @@
   }
 
   /**
-   * Update material opacity/color state in-place for already-built meshes/clouds.
+   * Update surface material opacity/color/roughness state in-place.
    */
   function updateOpacityAndColors() {
     const op = parseFloat(opInput.value || "1.00");
+    const roughness = getSurfaceRoughnessValue();
+    const metalness = getSurfaceMetalnessValue();
+    const reflectivity = getSurfaceReflectivityValue();
+    const emissiveIntensity = getSurfaceEmissiveIntensityValue();
     for (const m of meshes) {
       if (!m || !m.material) continue;
       if (m.userData && m.userData.phaseHue) {
-        // For phase‑hued meshes, keep vertex colors, update style‑specific transparency/glassness
+        // For phase-hued meshes, keep vertex colors and shared opacity in sync.
         const mat = m.material;
         if (mat.isShaderMaterial && mat.uniforms && mat.uniforms.uAlpha) {
           // Custom shader materials (e.g., 2C cloud cubes)
           mat.uniforms.uAlpha.value = Math.max(0, Math.min(1, op));
         } else {
-          if (surfaceStyle === 'glass' && mat.isMeshPhysicalMaterial && 'transmission' in mat) {
-            mat.opacity = 1.0;
-            mat.transmission = GLASS_SURFACE_FIXED_TRANSMISSION;
-            applySurfaceBlendFlags(mat, 1.0, { forceTransparent: true });
-          } else {
-            mat.opacity = op;
-            applySurfaceBlendFlags(mat, op);
-          }
+          mat.opacity = op;
+          applySurfaceBlendFlags(mat, op);
+          if ('roughness' in mat) mat.roughness = roughness;
+          if ('metalness' in mat) mat.metalness = metalness;
+          if ('reflectivity' in mat) mat.reflectivity = reflectivity;
+          if ('emissiveIntensity' in mat) mat.emissiveIntensity = emissiveIntensity;
         }
         mat.needsUpdate = true;
         continue;
@@ -28931,25 +29008,22 @@
       const colStr = sign === 'neg' ? negColor.value : posColor.value;
       const col = new THREE.Color(colStr);
       const mat = m.material;
-      // Adapt behavior to glossy physical materials
+      // Adapt behavior to physical materials
       if (mat.isMeshPhysicalMaterial) {
-        if (surfaceStyle === 'glass') {
-          mat.opacity = 1.0;
-          applySurfaceBlendFlags(mat, 1.0, { forceTransparent: true });
-          col.multiplyScalar(GLASS_SURFACE_COLOR_SCALE);
-          mat.color.copy(col);
-          if ('transmission' in mat) mat.transmission = GLASS_SURFACE_FIXED_TRANSMISSION;
-        } else {
-          // Physical surface styles use the shared opacity slider directly.
-          mat.opacity = op;
-          applySurfaceBlendFlags(mat, op);
-          mat.color.copy(col);
-          if (mat.emissive) mat.emissive.copy(col);
-        }
+        mat.opacity = op;
+        applySurfaceBlendFlags(mat, op);
+        if ('roughness' in mat) mat.roughness = roughness;
+        if ('metalness' in mat) mat.metalness = metalness;
+        if ('reflectivity' in mat) mat.reflectivity = reflectivity;
+        if ('emissiveIntensity' in mat) mat.emissiveIntensity = emissiveIntensity;
+        mat.color.copy(col);
+        if (mat.emissive) mat.emissive.copy(col);
       } else {
         // Fallback materials (standard/toon)
         mat.opacity = op;
         applySurfaceBlendFlags(mat, op);
+        if ('roughness' in mat) mat.roughness = roughness;
+        if ('metalness' in mat) mat.metalness = metalness;
         mat.color.copy(col);
         // Keep toon surface glow synchronized with sign color updates.
         if (mat.isMeshToonMaterial && mat.emissive) {
