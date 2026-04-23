@@ -68,6 +68,32 @@ test('preset controller exports registered settings into a preset envelope', () 
   assert.equal(preset.settings['view.autoRotateSpeed'], 2);
 });
 
+test('preset controller exports scoped appearance settings only', () => {
+  const state = { style: 'toon', atomScale: 1.12, iso: 0.03 };
+  const { controller } = createController();
+  controller.registerSetting(
+    'molecule.style',
+    () => state.style,
+    (value) => { state.style = value; },
+    { persistScope: 'appearanceAutosave' }
+  );
+  controller.registerSetting(
+    'molecule.atomRadiusScale',
+    () => state.atomScale,
+    (value) => { state.atomScale = value; },
+    { section: 'molecule', type: 'number', persistScope: 'appearanceAutosave' }
+  );
+  controller.registerSetting('surface.iso', () => state.iso, (value) => { state.iso = value; });
+
+  const schema = controller.listSchema();
+  assert.equal(schema.find((entry) => entry.key === 'molecule.style').persistScope, 'appearanceAutosave');
+  assert.equal(schema.find((entry) => entry.key === 'surface.iso').persistScope, '');
+
+  const preset = controller.exportEnvelope({ name: 'Autosave', persistScope: 'appearanceAutosave' });
+  assert.deepEqual(Object.keys(preset.settings).sort(), ['molecule.atomRadiusScale', 'molecule.style']);
+  assert.equal('extensions' in preset, false);
+});
+
 test('preset controller imports in relaxed mode and preserves unknown keys', () => {
   const state = { style: 'basic' };
   const afterApplyCalls = [];

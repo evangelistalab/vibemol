@@ -256,12 +256,17 @@
       return out;
     }
 
+    function normalizePersistScope(scope) {
+      return (typeof scope === 'string' && scope.trim()) ? scope.trim() : '';
+    }
+
     function registerSetting(key, getter, setter, options = {}) {
       const section = (typeof options.section === 'string' && options.section.trim()) ? options.section.trim() : String(key).split('.')[0];
       const type = (typeof options.type === 'string' && options.type.trim()) ? options.type.trim() : 'any';
       const description = (typeof options.description === 'string') ? options.description : '';
-      presetSettingRegistry.set(key, { get: getter, set: setter });
-      presetSettingSchema.set(key, Object.freeze({ key, section, type, description }));
+      const persistScope = normalizePersistScope(options.persistScope);
+      presetSettingRegistry.set(key, { get: getter, set: setter, persistScope });
+      presetSettingSchema.set(key, Object.freeze({ key, section, type, description, persistScope }));
     }
 
     function listSchema() {
@@ -269,9 +274,13 @@
     }
 
     function exportEnvelope(options = {}) {
-      syncBuilderExtensionFromVolumes();
-      const settings = deps.cloneJsonLike(presetUnknownSettings) || {};
-      for (const [key, def] of presetSettingRegistry.entries()) settings[key] = def.get();
+      const persistScope = normalizePersistScope(options.persistScope);
+      if (!persistScope) syncBuilderExtensionFromVolumes();
+      const settings = persistScope ? {} : (deps.cloneJsonLike(presetUnknownSettings) || {});
+      for (const [key, def] of presetSettingRegistry.entries()) {
+        if (persistScope && def.persistScope !== persistScope) continue;
+        settings[key] = def.get();
+      }
       const name = (typeof options.name === 'string' && options.name.trim()) ? options.name.trim() : presetName;
       const now = new Date().toISOString();
       const mergedMeta = Object.assign({}, deps.cloneJsonLike(presetMeta) || {}, {
@@ -279,13 +288,16 @@
         updatedAt: now,
       });
       if (!mergedMeta.createdAt) mergedMeta.createdAt = now;
-      return Object.assign({}, deps.cloneJsonLike(presetUnknownTop) || {}, {
+      const envelope = {
         kind: PRESET_KIND,
         presetVersion: PRESET_VERSION,
         appVersion: deps.appVersion,
         name,
         settings,
         meta: mergedMeta,
+      };
+      if (persistScope) return envelope;
+      return Object.assign({}, deps.cloneJsonLike(presetUnknownTop) || {}, envelope, {
         extensions: deps.cloneJsonLike(presetExtensions) || {},
       });
     }

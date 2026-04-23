@@ -1796,6 +1796,36 @@
       text-align: left;
     }
 
+    #toolbar .vm-sidebar-accordionRow {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+    }
+
+    #toolbar .vm-sidebar-accordionRow .vm-sidebar-accordion {
+      flex: 1 1 auto;
+      width: auto;
+      min-width: 0;
+    }
+
+    #toolbar .vm-sidebar-accordion__action {
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      margin-top: 8px;
+      padding: 0;
+      justify-content: center;
+      color: var(--tb-text-color-subtle);
+    }
+
+    #toolbar .vm-sidebar-accordion__action:hover,
+    #toolbar .vm-sidebar-accordion__action[aria-expanded='true'] {
+      background: color-mix(in srgb, var(--vm-color-text-primary) 6%, transparent);
+      color: var(--tb-text-color-primary);
+    }
+
     #toolbar .vm-sidebar-accordion:hover {
       background: color-mix(in srgb, var(--vm-color-text-primary) 4%, transparent);
     }
@@ -1817,6 +1847,73 @@
 
     #toolbar .vm-sidebar-accordion:hover .vm-sidebar-accordion__chevron {
       color: var(--vm-color-text-primary);
+    }
+
+    #toolbar .vm-sidebar-reset-popover {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      width: min(280px, calc(100vw - 28px));
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--tb-border-input);
+      background: color-mix(in srgb, var(--tb-surface-base) 92%, black 8%);
+      box-shadow: 0 18px 32px rgba(4, 8, 16, 0.22);
+      display: grid;
+      gap: 10px;
+      z-index: 40;
+    }
+
+    #toolbar .vm-sidebar-reset-popover[aria-hidden='true'] {
+      display: none;
+    }
+
+    #toolbar .vm-sidebar-reset-popover__title {
+      color: var(--tb-text-color-strong);
+      font-size: var(--tb-text-size-ui);
+      font-weight: var(--tb-text-weight-bold);
+      line-height: 1.2;
+    }
+
+    #toolbar .vm-sidebar-reset-popover__body {
+      color: var(--tb-text-color-subtle);
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-regular);
+      line-height: 1.45;
+    }
+
+    #toolbar .vm-sidebar-reset-popover__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    #toolbar .vm-sidebar-reset-popover__action {
+      min-width: 76px;
+      height: 30px;
+      padding: 0 12px;
+      border-radius: 8px;
+      justify-content: center;
+      font-size: var(--tb-text-size-label);
+      font-weight: var(--tb-text-weight-semibold);
+    }
+
+    #toolbar .vm-sidebar-reset-popover__action.is-secondary {
+      background: var(--tb-surface-emphasis);
+      color: var(--tb-text-color-primary);
+    }
+
+    #toolbar .vm-sidebar-reset-popover__action.is-secondary:hover {
+      background: var(--tb-surface-emphasis-hover);
+    }
+
+    #toolbar .vm-sidebar-reset-popover__action.is-primary {
+      background: var(--tb-color-accent);
+      color: var(--tb-text-color-inverse);
+    }
+
+    #toolbar .vm-sidebar-reset-popover__action.is-primary:hover {
+      background: color-mix(in srgb, var(--tb-color-accent) 88%, white 12%);
     }
 
     #toolbar .tb-fileActionRow {
@@ -2380,14 +2477,29 @@
     </div>
 
     <div class="tb-section tb-main tb-appearance tb-framed">
-      <button id="displayInspectorBtn" class="vm-sidebar-accordion" type="button" aria-expanded="false"
-        aria-controls="displayInspector" data-tooltip="Show/hide compact display inspector">
-        <span class="vm-sidebar-section-label">Appearance</span>
-        <svg id="displayInspectorToggleIcon" class="vm-sidebar-accordion__chevron" width="12" height="12" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
+      <div class="vm-sidebar-accordionRow">
+        <button id="displayInspectorBtn" class="vm-sidebar-accordion" type="button" aria-expanded="false"
+          aria-controls="displayInspector" data-tooltip="Show/hide compact display inspector">
+          <span class="vm-sidebar-section-label">Appearance</span>
+          <svg id="displayInspectorToggleIcon" class="vm-sidebar-accordion__chevron" width="12" height="12" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        <button id="appearanceResetBtn" class="vm-sidebar-accordion__action" type="button"
+          aria-label="Reset appearance to defaults" aria-haspopup="dialog" aria-expanded="false"
+          data-tooltip="Reset appearance to defaults">
+          <span class="material-symbols-rounded" aria-hidden="true">restart_alt</span>
+        </button>
+        <div id="appearanceResetPopover" class="vm-sidebar-reset-popover" aria-hidden="true" hidden>
+          <div class="vm-sidebar-reset-popover__title">Reset appearance?</div>
+          <div class="vm-sidebar-reset-popover__body">All appearance settings will return to their defaults. Your loaded file stays unchanged.</div>
+          <div class="vm-sidebar-reset-popover__actions">
+            <button id="appearanceResetCancelBtn" class="vm-sidebar-reset-popover__action is-secondary" type="button">Cancel</button>
+            <button id="appearanceResetConfirmBtn" class="vm-sidebar-reset-popover__action is-primary" type="button">Reset</button>
+          </div>
+        </div>
+      </div>
       <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields vm-sidebar-accordion__panel" aria-hidden="true">
         <div class="appearanceHiddenControl" aria-hidden="true">
           <select id="moleculeStyle" class="vm-select"

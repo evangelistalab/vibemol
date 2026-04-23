@@ -26,11 +26,17 @@
   const MOLDEN_GRID_MIN_AXIS = 36;
   const MOLDEN_GRID_MAX_TOTAL_POINTS = 360000;
   const UI_THEME_STORAGE_KEY = 'vibemol.uiTheme';
+  const AUTOSAVE_STORAGE_KEY = 'vibemol.autosavePreset';
+  const APPEARANCE_AUTOSAVE_PERSIST_SCOPE = 'appearanceAutosave';
+  const AUTOSAVE_PRESET_OBJECT_VALUE_KEYS = new Set(['global.elementColorOverrides']);
   const DARK_THEME_SCENE_BG_BLEND = 0.975;
   const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
   const DEFAULT_ISO_VALUE = 0.02;
   let trajectoryVideoController = null;
   let vibrationVideoController = null;
+  let appearancePresetAutosaveTimer = 0;
+  let appearancePresetAutosaveSuppressDepth = 0;
+  let defaultAppearancePresetEnvelope = null;
   /**
    * Centralized app color palette used by canvas drawing and inline style snippets.
    * Keep color edits here so visual tuning stays coherent.
@@ -6906,6 +6912,10 @@
   const coordsPanelBtn = document.getElementById('coordsPanelBtn');
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
   const displayInspectorToggleIcon = document.getElementById('displayInspectorToggleIcon');
+  const appearanceResetBtn = document.getElementById('appearanceResetBtn');
+  const appearanceResetPopoverEl = document.getElementById('appearanceResetPopover');
+  const appearanceResetCancelBtn = document.getElementById('appearanceResetCancelBtn');
+  const appearanceResetConfirmBtn = document.getElementById('appearanceResetConfirmBtn');
   const displayInspector = document.getElementById('displayInspector');
   const appearanceMoleculeStyleGroupEl = document.getElementById('appearanceMoleculeStyleGroup');
   const appearanceFontPairGroupEl = document.getElementById('appearanceFontPairGroup');
@@ -9990,9 +10000,15 @@
       showSurfaces = !!surfBtn.checked;
       updateSurfBtn();
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   } else if (surfBtn) {
-    surfBtn.onclick = () => { showSurfaces = !showSurfaces; updateSurfBtn(); rebuildScene({ preserveView: true }); };
+    surfBtn.onclick = () => {
+      showSurfaces = !showSurfaces;
+      updateSurfBtn();
+      rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
+    };
   }
   /**
    * Open/close the dedicated View floating panel.
@@ -10064,6 +10080,23 @@
   function bindToolbarInspectorToggle(refs) {
     if (!refs || !refs.button || !refs.panel) return;
     refs.button.onclick = () => setToolbarInspectorOpen(refs, !refs.panel.classList.contains('open'));
+  }
+
+  function isAppearanceResetPopoverOpen() {
+    return !!(appearanceResetPopoverEl && appearanceResetPopoverEl.getAttribute('aria-hidden') === 'false');
+  }
+
+  function setAppearanceResetPopoverOpen(open) {
+    if (!appearanceResetPopoverEl || !appearanceResetBtn) return;
+    const shouldOpen = !!open;
+    appearanceResetPopoverEl.hidden = !shouldOpen;
+    appearanceResetPopoverEl.setAttribute('aria-hidden', shouldOpen ? 'false' : 'true');
+    appearanceResetBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    if (!shouldOpen) return;
+    hideActiveTooltip();
+    window.setTimeout(() => {
+      if (appearanceResetCancelBtn && isAppearanceResetPopoverOpen()) appearanceResetCancelBtn.focus();
+    }, 0);
   }
 
   /**
@@ -10482,8 +10515,30 @@
    * Open/close the compact display inspector panel.
    * @param {boolean} open
    */
-  function setDisplayInspectorOpen(open) { setToolbarInspectorOpen(displayInspectorRefs, open); }
+  function setDisplayInspectorOpen(open) {
+    setToolbarInspectorOpen(displayInspectorRefs, open);
+    if (!open) setAppearanceResetPopoverOpen(false);
+  }
   bindToolbarInspectorToggle(displayInspectorRefs);
+  if (appearanceResetBtn) {
+    setTooltipPlacement(appearanceResetBtn, 'top');
+    appearanceResetBtn.onclick = (event) => {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
+      if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+      setAppearanceResetPopoverOpen(!isAppearanceResetPopoverOpen());
+    };
+  }
+  if (appearanceResetCancelBtn) appearanceResetCancelBtn.onclick = () => setAppearanceResetPopoverOpen(false);
+  if (appearanceResetConfirmBtn) appearanceResetConfirmBtn.onclick = () => resetAppearanceToFactoryDefaults();
+  document.addEventListener('pointerdown', (event) => {
+    if (!isAppearanceResetPopoverOpen()) return;
+    const target = event && event.target;
+    if ((appearanceResetBtn && appearanceResetBtn.contains(target))
+      || (appearanceResetPopoverEl && appearanceResetPopoverEl.contains(target))) {
+      return;
+    }
+    setAppearanceResetPopoverOpen(false);
+  });
 
   /**
    * Open/close the dedicated Molden orbitals panel.
@@ -10715,6 +10770,7 @@
     refreshActiveAddGrowPreview();
     if (moleculePlaceActive) rebuildMoleculePlacementPreviewMeshes();
     if (addFusePreviewState) rebuildFuseRingPreviewMeshes();
+    scheduleAppearancePresetAutosave();
   }
 
   /**
@@ -10771,6 +10827,7 @@
     controls.update();
     updateProjectionModeUI();
     if (options.refreshUi !== false) refreshViewUI();
+    scheduleAppearancePresetAutosave();
   }
 
   /**
@@ -24126,11 +24183,17 @@
   // Global: save, batch, toggle surfaces/axes
   bind('down', 'global', 's', () => saveBtn && saveBtn.click());
   bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
-  bind('down', 'global', 'i', () => { showSurfaces = !showSurfaces; if (typeof updateSurfBtn === 'function') updateSurfBtn(); rebuildScene({ preserveView: true }); });
+  bind('down', 'global', 'i', () => {
+    showSurfaces = !showSurfaces;
+    if (typeof updateSurfBtn === 'function') updateSurfBtn();
+    rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
+  });
   bind('down', 'global', 'a', () => {
     window.__showAxes__ = !window.__showAxes__;
     if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
     syncAllAppearanceActionToggleButtons();
+    scheduleAppearancePresetAutosave();
   });
   bind('down', 'global', 'r', () => centerActiveMoleculeMassAtOrigin());
   // Global: molecule style presets (1=Basic, 2=Toon, 3=Kit, 4=Glossy)
@@ -24348,6 +24411,11 @@
         if (e.defaultPrevented) return;
       }
     }
+    if (e.key === 'Escape' && isAppearanceResetPopoverOpen()) {
+      e.preventDefault();
+      setAppearanceResetPopoverOpen(false);
+      return;
+    }
     if (e.key === 'Escape' && elementColorOverlay && elementColorOverlay.style.display === 'flex') {
       e.preventDefault();
       setElementColorOverlayOpen(false);
@@ -24533,6 +24601,7 @@
    */
   function syncAllAppearanceActionToggleButtons() {
     if (!appearanceInspectorController) return;
+    if (visibilityElementColorsToggleEl) visibilityElementColorsToggleEl.checked = !!(elementColors && elementColors.checked);
     appearanceInspectorController.syncActionToggles();
   }
 
@@ -24614,8 +24683,9 @@
    * @param {() => number} getClampedValue
    * @param {(n:number) => void} setValue
    * @param {(() => boolean)=} shouldRebuild
+   * @param {(() => void)=} afterApply
    */
-  function bindClampedNumericInput(inputEl, getClampedValue, setValue, shouldRebuild) {
+  function bindClampedNumericInput(inputEl, getClampedValue, setValue, shouldRebuild, afterApply = null) {
     if (!inputEl) return;
     const slider = getViewSliderComponent(inputEl);
     const syncFromState = () => {
@@ -24632,6 +24702,7 @@
       if (typeof shouldRebuild === 'function' && shouldRebuild()) {
         rebuildScene({ preserveView: true });
       }
+      if (typeof afterApply === 'function') afterApply();
     };
     syncFromState();
     inputEl.onchange = applyInput;
@@ -24644,13 +24715,15 @@
    * @param {HTMLInputElement|null} inputEl
    * @param {() => number} getValue
    * @param {(n:number) => void} setValue
+   * @param {(() => void)=} afterApply
    */
-  function bindDofNumericControl(inputEl, getValue, setValue) {
+  function bindDofNumericControl(inputEl, getValue, setValue, afterApply = null) {
     bindClampedNumericInput(
       inputEl,
       getValue,
       setValue,
-      () => false
+      () => false,
+      afterApply
     );
   }
 
@@ -24798,31 +24871,36 @@
     glossyBondRadiusEl,
     getConfiguredGlossyBondCenterRadius,
     (n) => { glossyBondRadius = n; },
-    useGlossyMoleculeStyle
+    useGlossyMoleculeStyle,
+    scheduleAppearancePresetAutosave
   );
   bindClampedNumericInput(
     moleculeAtomRadiusScaleEl,
     getMoleculeAtomRadiusScale,
     (n) => { moleculeAtomRadiusScale = n; },
-    () => true
+    () => true,
+    scheduleAppearancePresetAutosave
   );
   bindClampedNumericInput(
     moleculeBondRadiusScaleEl,
     getMoleculeBondRadiusScale,
     (n) => { moleculeBondRadiusScale = n; },
-    () => true
+    () => true,
+    scheduleAppearancePresetAutosave
   );
   bindClampedNumericInput(
     moleculeAtomOpacityEl,
     () => Math.max(0.05, Math.min(1, Number.isFinite(moleculeAtomOpacity) ? moleculeAtomOpacity : 1)),
     (n) => { moleculeAtomOpacity = n; },
-    () => true
+    () => true,
+    scheduleAppearancePresetAutosave
   );
   bindClampedNumericInput(
     moleculeBondOpacityEl,
     () => Math.max(0.05, Math.min(1, Number.isFinite(moleculeBondOpacity) ? moleculeBondOpacity : 1)),
     (n) => { moleculeBondOpacity = n; },
-    () => true
+    () => true,
+    scheduleAppearancePresetAutosave
   );
   appearanceInspectorController = createAppearanceInspectorController({
     styleGroupEl: appearanceMoleculeStyleGroupEl,
@@ -24837,7 +24915,10 @@
     getRenderMode: () => renderMode,
     hasSurfaceControls: hasVolumetricGrid,
     getFontPair,
-    onFontPairSelected: (nextFontPair) => setFontPair(nextFontPair),
+    onFontPairSelected: (nextFontPair) => {
+      setFontPair(nextFontPair);
+      scheduleAppearancePresetAutosave();
+    },
     buttonGroups: [
       {
         rootEl: projectionModeGroupEl,
@@ -24902,12 +24983,14 @@
       moleculeShadowsEnabled = !!moleculeShadowsToggleEl.checked;
       applyMoleculeStyleUiState();
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
   if (moleculeFogToggleEl) {
     moleculeFogToggleEl.onchange = () => {
       moleculeFogEnabled = !!moleculeFogToggleEl.checked;
       applyMoleculeStyleUiState();
+      scheduleAppearancePresetAutosave();
     };
   }
   if (moleculeFogDepthEl) {
@@ -24917,6 +25000,7 @@
       moleculeFogDepth = getMoleculeFogDepth();
       setViewControlValue(moleculeFogDepthEl, moleculeFogDepth);
       applyMoleculeStyleLighting();
+      scheduleAppearancePresetAutosave();
     };
     applyFogDepth();
     moleculeFogDepthEl.oninput = applyFogDepth;
@@ -24927,6 +25011,7 @@
       moleculeInkEnabled = !!moleculeInkToggleEl.checked;
       applyMoleculeStyleUiState();
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
   if (moleculeBlackbodyToggleEl) {
@@ -24934,6 +25019,7 @@
       moleculeBlackbodyEnabled = !!moleculeBlackbodyToggleEl.checked;
       applyMoleculeStyleUiState();
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
   if (blackbodyColdColorEl) {
@@ -24942,6 +25028,7 @@
       blackbodyColdColorEl.value = moleculeBlackbodyColdColor;
       syncColorPickerFields();
       if (moleculeBlackbodyEnabled) rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
     blackbodyColdColorEl.oninput = applyCold;
     blackbodyColdColorEl.onchange = applyCold;
@@ -24952,6 +25039,7 @@
       blackbodyHotColorEl.value = moleculeBlackbodyHotColor;
       syncColorPickerFields();
       if (moleculeBlackbodyEnabled) rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
     blackbodyHotColorEl.oninput = applyHot;
     blackbodyHotColorEl.onchange = applyHot;
@@ -24961,6 +25049,7 @@
       const comp = twoComponentModeSelect.value;
       applyGlobal2CComponent(comp);
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
   if (moldenEnergyFilter) {
@@ -25038,23 +25127,25 @@
       dofState.enabled = !!dofToggleEl.checked;
       if (!dofState.enabled) disposeDofRenderTarget();
       syncDofControlState();
+      scheduleAppearancePresetAutosave();
     };
   }
   if (dofFocusModeEl) {
     dofFocusModeEl.onchange = () => {
       dofState.focusMode = dofFocusModeEl.value === 'manual' ? 'manual' : 'auto';
       syncDofControlState();
+      scheduleAppearancePresetAutosave();
     };
   }
   bindDofNumericControl(dofFocusDistanceEl, getDofFocusDistance, (n) => {
     dofState.focusDistance = Math.max(0.5, Math.min(80, Number.isFinite(n) ? n : getDofFocusDistance()));
-  });
+  }, scheduleAppearancePresetAutosave);
   bindDofNumericControl(dofFocusRangeEl, getDofFocusRange, (n) => {
     dofState.focusRange = Math.max(0.1, Math.min(20, Number.isFinite(n) ? n : getDofFocusRange()));
-  });
+  }, scheduleAppearancePresetAutosave);
   bindDofNumericControl(dofBlurAmountEl, getDofBlurAmount, (n) => {
     dofState.blurAmount = Math.max(0, Math.min(12, Number.isFinite(n) ? n : getDofBlurAmount()));
-  });
+  }, scheduleAppearancePresetAutosave);
   syncDofControlState();
 
   // Default color schemes for +/- surfaces
@@ -25075,6 +25166,7 @@
         updateOpacityAndColors();
       }
       syncSurfaceColorSchemeUi();
+      scheduleAppearancePresetAutosave();
     };
   }
   syncSurfaceColorSchemeUi();
@@ -25109,8 +25201,17 @@
       negColorHex: negColor && negColor.value ? negColor.value : DEFAULT_NEG_SURFACE_COLOR,
     };
   }
-  if (renderModeSel) renderModeSel.onchange = () => { renderMode = renderModeSel.value; updateRenderModeUI(); rebuildScene({ preserveView: true }); };
-  if (cloudTypeSel) cloudTypeSel.onchange = () => { cloudType = cloudTypeSel.value; rebuildScene({ preserveView: true }); };
+  if (renderModeSel) renderModeSel.onchange = () => {
+    renderMode = renderModeSel.value;
+    updateRenderModeUI();
+    rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
+  };
+  if (cloudTypeSel) cloudTypeSel.onchange = () => {
+    cloudType = cloudTypeSel.value;
+    rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
+  };
   // Initialize UI visibility based on current mode
   updateRenderModeUI();
   syncAppearanceInspectorSectionState();
@@ -25157,6 +25258,7 @@
       rebuildScene({ preserveView: true });
       updateSidePanel();
       updateOpacityAndColors();
+      syncAppearancePersistenceUi();
     },
     beforeSavePreset: () => {
       if (elementColorPicker) {
@@ -25189,7 +25291,7 @@
   const exportPresetEnvelope = presetController.exportEnvelope;
   const importPresetEnvelope = presetController.importEnvelope;
   const saveCurrentPresetToFile = presetController.saveCurrentPresetToFile;
-  const importPresetFromText = presetController.importFromText;
+  const importPresetFromTextRaw = presetController.importFromText;
   const getPresetPublicApi = presetController.getPublicApi;
 
   /**
@@ -25211,6 +25313,12 @@
     const n = Number(value);
     if (Number.isFinite(n)) return n;
     return Number.isFinite(fallback) ? Number(fallback) : 0;
+  }
+
+  function registerAppearancePresetSetting(key, getter, setter, options = {}) {
+    registerPresetSetting(key, getter, setter, Object.assign({}, options, {
+      persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE,
+    }));
   }
 
   /**
@@ -25357,44 +25465,44 @@
     const n = Math.max(0, asFiniteNumber(value, 0.02));
     setViewControlValue(isoInput, n);
   });
-  registerPresetSetting('surface.opacity', () => asFiniteNumber(opInput && opInput.value, 1), (value) => {
+  registerAppearancePresetSetting('surface.opacity', () => asFiniteNumber(opInput && opInput.value, 1), (value) => {
     const n = Math.min(1, Math.max(0.05, asFiniteNumber(value, 1)));
     const snapped = Math.round(n / 0.05) * 0.05;
     setViewControlValue(opInput, snapped);
   });
-  registerPresetSetting('surface.materialPreset', () => getSurfaceMaterialPresetKey(), (value) => {
+  registerAppearancePresetSetting('surface.materialPreset', () => getSurfaceMaterialPresetKey(), (value) => {
     const key = String(value || '').toLowerCase();
     surfaceMaterialPreset = Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, key)
       ? key
       : DEFAULT_SURFACE_MATERIAL_PRESET;
     if (surfaceMaterialPresetSelect) surfaceMaterialPresetSelect.value = surfaceMaterialPreset;
   });
-  registerPresetSetting('surface.enabled', () => !!showSurfaces, (value) => { showSurfaces = asBoolean(value); });
+  registerAppearancePresetSetting('surface.enabled', () => !!showSurfaces, (value) => { showSurfaces = asBoolean(value); });
   registerPresetSetting('surface.style', () => 'emissive', () => { });
-  registerPresetSetting('surface.autoIsoEnabled', () => !!autoIsoEnabled, (value) => {
+  registerAppearancePresetSetting('surface.autoIsoEnabled', () => !!autoIsoEnabled, (value) => {
     autoIsoEnabled = asBoolean(value);
     updateAutoIsoButtonState();
   });
-  registerPresetSetting('surface.posColor', () => (posColor && posColor.value) || DEFAULT_POS_SURFACE_COLOR, (value) => {
+  registerAppearancePresetSetting('surface.posColor', () => (posColor && posColor.value) || DEFAULT_POS_SURFACE_COLOR, (value) => {
     if (posColor) posColor.value = asHexColor(value, posColor.value || DEFAULT_POS_SURFACE_COLOR);
     if (schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
     syncSurfaceColorSchemeUi();
   });
-  registerPresetSetting('surface.negColor', () => (negColor && negColor.value) || DEFAULT_NEG_SURFACE_COLOR, (value) => {
+  registerAppearancePresetSetting('surface.negColor', () => (negColor && negColor.value) || DEFAULT_NEG_SURFACE_COLOR, (value) => {
     if (negColor) negColor.value = asHexColor(value, negColor.value || DEFAULT_NEG_SURFACE_COLOR);
     if (schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
     syncSurfaceColorSchemeUi();
   });
-  registerPresetSetting('surface.colorScheme', () => (schemeSelect && schemeSelect.value) || 'custom', (value) => {
+  registerAppearancePresetSetting('surface.colorScheme', () => (schemeSelect && schemeSelect.value) || 'custom', (value) => {
     if (!schemeSelect) return;
     const options = new Set(Array.from(schemeSelect.options).map((o) => o.value));
     const next = (typeof value === 'string' && options.has(value)) ? value : 'custom';
     schemeSelect.value = next;
     if (typeof schemeSelect.onchange === 'function') schemeSelect.onchange();
   });
-  registerPresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || UI_PALETTE.white, (value) => {
+  registerAppearancePresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || UI_PALETTE.white, (value) => {
     if (!bgColor) return;
     bgColor.value = asHexColor(value, bgColor.value || UI_PALETTE.white);
     syncColorPickerFields();
@@ -25406,94 +25514,94 @@
     (value) => { applyAccentPaletteFromHex(value); },
     { section: 'global', type: 'color', description: 'Primary UI accent color.' }
   );
-  registerPresetSetting('global.showAtoms', () => !!(toggleAtoms && toggleAtoms.checked), (value) => {
+  registerAppearancePresetSetting('global.showAtoms', () => !!(toggleAtoms && toggleAtoms.checked), (value) => {
     if (toggleAtoms) toggleAtoms.checked = asBoolean(value);
   });
-  registerPresetSetting('global.showAtomLabels', () => !!showAtomLabels, (value) => {
+  registerAppearancePresetSetting('global.showAtomLabels', () => !!showAtomLabels, (value) => {
     showAtomLabels = asBoolean(value);
     syncAtomLabelNumberToggleState();
   });
-  registerPresetSetting('global.showAtomLabelNumbers', () => !!showAtomLabelNumbers, (value) => {
+  registerAppearancePresetSetting('global.showAtomLabelNumbers', () => !!showAtomLabelNumbers, (value) => {
     showAtomLabelNumbers = asBoolean(value);
     syncAtomLabelNumberToggleState();
   });
-  registerPresetSetting('global.showBonds', () => !!(toggleBonds && toggleBonds.checked), (value) => {
+  registerAppearancePresetSetting('global.showBonds', () => !!(toggleBonds && toggleBonds.checked), (value) => {
     if (toggleBonds) toggleBonds.checked = asBoolean(value);
   });
-  registerPresetSetting('global.showMultiBonds', () => !!showMultiBonds, (value) => {
+  registerAppearancePresetSetting('global.showMultiBonds', () => !!showMultiBonds, (value) => {
     showMultiBonds = asBoolean(value);
     if (toggleMultiBonds) toggleMultiBonds.checked = showMultiBonds;
   });
-  registerPresetSetting('global.elementColors', () => !!(elementColors && elementColors.checked), (value) => {
+  registerAppearancePresetSetting('global.elementColors', () => !!(elementColors && elementColors.checked), (value) => {
     if (elementColors) elementColors.checked = asBoolean(value);
   });
-  registerPresetSetting('global.elementColorOverrides', () => exportElementColorOverrides(), (value) => {
+  registerAppearancePresetSetting('global.elementColorOverrides', () => exportElementColorOverrides(), (value) => {
     importElementColorOverrides(value);
     refreshPeriodicCells();
     if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
   });
-  registerPresetSetting('global.showBox', () => !!(toggleBox && toggleBox.checked), (value) => {
+  registerAppearancePresetSetting('global.showBox', () => !!(toggleBox && toggleBox.checked), (value) => {
     if (toggleBox) toggleBox.checked = asBoolean(value);
   });
-  registerPresetSetting('global.showAxes', () => !!window.__showAxes__, (value) => {
+  registerAppearancePresetSetting('global.showAxes', () => !!window.__showAxes__, (value) => {
     window.__showAxes__ = asBoolean(value);
     if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
   });
-  registerPresetSetting('molecule.style', () => moleculeStyle, (value) => {
+  registerAppearancePresetSetting('molecule.style', () => moleculeStyle, (value) => {
     const normalized = normalizeMoleculeStyleKey(value);
     setMoleculeStyle(normalized, { rebuild: false });
   });
-  registerPresetSetting('molecule.atomRadiusScale', () => getMoleculeAtomRadiusScale(), (value) => {
+  registerAppearancePresetSetting('molecule.atomRadiusScale', () => getMoleculeAtomRadiusScale(), (value) => {
     moleculeAtomRadiusScale = asFiniteNumber(value, getMoleculeAtomRadiusScale());
     moleculeAtomRadiusScale = getMoleculeAtomRadiusScale();
     setViewControlValue(moleculeAtomRadiusScaleEl, moleculeAtomRadiusScale);
   });
-  registerPresetSetting('molecule.bondRadiusScale', () => getMoleculeBondRadiusScale(), (value) => {
+  registerAppearancePresetSetting('molecule.bondRadiusScale', () => getMoleculeBondRadiusScale(), (value) => {
     moleculeBondRadiusScale = asFiniteNumber(value, getMoleculeBondRadiusScale());
     moleculeBondRadiusScale = getMoleculeBondRadiusScale();
     setViewControlValue(moleculeBondRadiusScaleEl, moleculeBondRadiusScale);
   });
-  registerPresetSetting('molecule.glossyBondRadius', () => getConfiguredGlossyBondCenterRadius(), (value) => {
+  registerAppearancePresetSetting('molecule.glossyBondRadius', () => getConfiguredGlossyBondCenterRadius(), (value) => {
     glossyBondRadius = asFiniteNumber(value, getConfiguredGlossyBondCenterRadius());
     glossyBondRadius = getConfiguredGlossyBondCenterRadius();
     setViewControlValue(glossyBondRadiusEl, glossyBondRadius);
   });
-  registerPresetSetting('molecule.feature.shadows', () => !!moleculeShadowsEnabled, (value) => {
+  registerAppearancePresetSetting('molecule.feature.shadows', () => !!moleculeShadowsEnabled, (value) => {
     moleculeShadowsEnabled = asBoolean(value);
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('molecule.feature.fog', () => !!moleculeFogEnabled, (value) => {
+  registerAppearancePresetSetting('molecule.feature.fog', () => !!moleculeFogEnabled, (value) => {
     moleculeFogEnabled = asBoolean(value);
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('molecule.feature.fog.depth', () => getMoleculeFogDepth(), (value) => {
+  registerAppearancePresetSetting('molecule.feature.fog.depth', () => getMoleculeFogDepth(), (value) => {
     moleculeFogDepth = Math.max(6.0, Math.min(40.0, asFiniteNumber(value, getMoleculeFogDepth())));
     setViewControlValue(moleculeFogDepthEl, moleculeFogDepth);
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('molecule.feature.blackbody.enabled', () => !!moleculeBlackbodyEnabled, (value) => {
+  registerAppearancePresetSetting('molecule.feature.blackbody.enabled', () => !!moleculeBlackbodyEnabled, (value) => {
     moleculeBlackbodyEnabled = asBoolean(value);
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('molecule.feature.blackbody.coldColor', () => moleculeBlackbodyColdColor, (value) => {
+  registerAppearancePresetSetting('molecule.feature.blackbody.coldColor', () => moleculeBlackbodyColdColor, (value) => {
     moleculeBlackbodyColdColor = asHexColor(value, moleculeBlackbodyColdColor || '#2f0202');
     if (blackbodyColdColorEl) blackbodyColdColorEl.value = moleculeBlackbodyColdColor;
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('molecule.feature.blackbody.hotColor', () => moleculeBlackbodyHotColor, (value) => {
+  registerAppearancePresetSetting('molecule.feature.blackbody.hotColor', () => moleculeBlackbodyHotColor, (value) => {
     moleculeBlackbodyHotColor = asHexColor(value, moleculeBlackbodyHotColor || '#eaf6ff');
     if (blackbodyHotColorEl) blackbodyHotColorEl.value = moleculeBlackbodyHotColor;
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('molecule.feature.ink', () => !!moleculeInkEnabled, (value) => {
+  registerAppearancePresetSetting('molecule.feature.ink', () => !!moleculeInkEnabled, (value) => {
     moleculeInkEnabled = asBoolean(value);
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('molecule.opacity.atom', () => moleculeAtomOpacity, (value) => {
+  registerAppearancePresetSetting('molecule.opacity.atom', () => moleculeAtomOpacity, (value) => {
     moleculeAtomOpacity = Math.max(0.05, Math.min(1, asFiniteNumber(value, moleculeAtomOpacity)));
     applyMoleculeStyleUiState();
   });
-  registerPresetSetting('molecule.opacity.bond', () => moleculeBondOpacity, (value) => {
+  registerAppearancePresetSetting('molecule.opacity.bond', () => moleculeBondOpacity, (value) => {
     moleculeBondOpacity = Math.max(0.05, Math.min(1, asFiniteNumber(value, moleculeBondOpacity)));
     applyMoleculeStyleUiState();
   });
@@ -25501,39 +25609,39 @@
     editTransformAutoCleanupEnabled = asBoolean(value);
     updateEditToolboxUi({ syncSearch: false });
   }, { section: 'builder', type: 'boolean', description: 'Apply lightweight cleanup automatically after transform gestures.' });
-  registerPresetSetting('render.mode', () => renderMode, (value) => {
+  registerAppearancePresetSetting('render.mode', () => renderMode, (value) => {
     const next = value === 'cloud' ? 'cloud' : 'surface';
     renderMode = next;
     if (renderModeSel) renderModeSel.value = next;
     updateRenderModeUI();
   });
-  registerPresetSetting('render.cloudType', () => cloudType, (value) => {
+  registerAppearancePresetSetting('render.cloudType', () => cloudType, (value) => {
     const next = value === 'points' ? 'points' : 'cubes';
     cloudType = next;
     if (cloudTypeSel) cloudTypeSel.value = next;
   });
-  registerPresetSetting('render.dof.enabled', () => !!dofState.enabled, (value) => {
+  registerAppearancePresetSetting('render.dof.enabled', () => !!dofState.enabled, (value) => {
     dofState.enabled = asBoolean(value);
     if (!dofState.enabled) disposeDofRenderTarget();
     syncDofControlState();
   });
-  registerPresetSetting('render.dof.focusMode', () => getDofFocusMode(), (value) => {
+  registerAppearancePresetSetting('render.dof.focusMode', () => getDofFocusMode(), (value) => {
     dofState.focusMode = value === 'manual' ? 'manual' : 'auto';
     syncDofControlState();
   });
-  registerPresetSetting('render.dof.focusDistance', () => getDofFocusDistance(), (value) => {
+  registerAppearancePresetSetting('render.dof.focusDistance', () => getDofFocusDistance(), (value) => {
     dofState.focusDistance = Math.max(0.5, Math.min(80, asFiniteNumber(value, getDofFocusDistance())));
     syncDofControlState();
   });
-  registerPresetSetting('render.dof.focusRange', () => getDofFocusRange(), (value) => {
+  registerAppearancePresetSetting('render.dof.focusRange', () => getDofFocusRange(), (value) => {
     dofState.focusRange = Math.max(0.1, Math.min(20, asFiniteNumber(value, getDofFocusRange())));
     syncDofControlState();
   });
-  registerPresetSetting('render.dof.blurAmount', () => getDofBlurAmount(), (value) => {
+  registerAppearancePresetSetting('render.dof.blurAmount', () => getDofBlurAmount(), (value) => {
     dofState.blurAmount = Math.max(0, Math.min(12, asFiniteNumber(value, getDofBlurAmount())));
     syncDofControlState();
   });
-  registerPresetSetting('twoComponent.mode', () => global2CComponentMode, (value) => {
+  registerAppearancePresetSetting('twoComponent.mode', () => global2CComponentMode, (value) => {
     const next = (typeof value === 'string' && value) ? value : DEFAULT_2C_COMPONENT_MODE;
     applyGlobal2CComponent(next);
     if (twoComponentModeSelect) twoComponentModeSelect.value = next;
@@ -25559,7 +25667,7 @@
       controls.target[axis] = asFiniteNumber(value, controls.target[axis]);
     }, { section: 'view', type: 'number' });
   }
-  registerPresetSetting('view.projection', () => viewState.mode, (value) => {
+  registerAppearancePresetSetting('view.projection', () => viewState.mode, (value) => {
     const next = value === 'orthographic' ? 'orthographic' : 'perspective';
     setProjectionMode(next, { refreshUi: false });
   });
@@ -25621,6 +25729,164 @@
   });
 
   window.VibeMolPreset = getPresetPublicApi();
+
+  function flattenAutosavePresetSettings(node, prefix = '', out = {}) {
+    if (!isPlainObject(node)) return out;
+    for (const [key, value] of Object.entries(node)) {
+      const nextKey = prefix ? `${prefix}.${key}` : key;
+      if (isPlainObject(value) && !AUTOSAVE_PRESET_OBJECT_VALUE_KEYS.has(nextKey)) {
+        flattenAutosavePresetSettings(value, nextKey, out);
+      } else {
+        out[nextKey] = cloneJsonLike(value);
+      }
+    }
+    return out;
+  }
+
+  function assignAutosavePresetSetting(target, dottedKey, value) {
+    const parts = String(dottedKey || '').split('.').filter(Boolean);
+    if (!parts.length) return;
+    let cursor = target;
+    for (let i = 0; i < parts.length - 1; i += 1) {
+      const part = parts[i];
+      if (!isPlainObject(cursor[part])) cursor[part] = {};
+      cursor = cursor[part];
+    }
+    cursor[parts[parts.length - 1]] = cloneJsonLike(value);
+  }
+
+  function getAutosaveScopedSettingKeys() {
+    const presetApi = window.VibeMolPreset;
+    if (!presetApi || typeof presetApi.listSchema !== 'function') return new Set();
+    return new Set(
+      presetApi.listSchema()
+        .filter((entry) => entry && entry.persistScope === APPEARANCE_AUTOSAVE_PERSIST_SCOPE)
+        .map((entry) => String(entry && entry.key || '').trim())
+        .filter(Boolean)
+    );
+  }
+
+  function buildAppearanceAutosaveImportEnvelope(raw) {
+    if (!isPlainObject(raw)) throw new Error('Autosaved preset must be an object.');
+    const allowedKeys = getAutosaveScopedSettingKeys();
+    const filteredSettings = {};
+    const flatSettings = flattenAutosavePresetSettings(raw.settings || {});
+    for (const [key, value] of Object.entries(flatSettings)) {
+      if (!allowedKeys.has(key)) continue;
+      assignAutosavePresetSetting(filteredSettings, key, value);
+    }
+    return {
+      kind: Object.prototype.hasOwnProperty.call(raw, 'kind') ? raw.kind : PRESET_KIND,
+      presetVersion: Object.prototype.hasOwnProperty.call(raw, 'presetVersion') ? raw.presetVersion : PRESET_VERSION,
+      settings: filteredSettings,
+    };
+  }
+
+  function cancelAppearancePresetAutosave() {
+    if (!appearancePresetAutosaveTimer) return;
+    clearTimeout(appearancePresetAutosaveTimer);
+    appearancePresetAutosaveTimer = 0;
+  }
+
+  function runWithAppearancePresetAutosaveSuppressed(fn) {
+    cancelAppearancePresetAutosave();
+    appearancePresetAutosaveSuppressDepth += 1;
+    try {
+      return typeof fn === 'function' ? fn() : undefined;
+    } finally {
+      appearancePresetAutosaveSuppressDepth = Math.max(0, appearancePresetAutosaveSuppressDepth - 1);
+    }
+  }
+
+  function exportAppearancePresetEnvelope(name = 'Autosave') {
+    const presetApi = window.VibeMolPreset;
+    if (!presetApi || typeof presetApi.export !== 'function') return null;
+    return presetApi.export({
+      name,
+      persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE,
+    });
+  }
+
+  function importAppearancePresetEnvelope(presetLike) {
+    const presetApi = window.VibeMolPreset;
+    if (!presetApi || typeof presetApi.import !== 'function') return null;
+    return runWithAppearancePresetAutosaveSuppressed(() => (
+      presetApi.import(buildAppearanceAutosaveImportEnvelope(presetLike), { mode: PRESET_MODE.RELAXED })
+    ));
+  }
+
+  function scheduleAppearancePresetAutosave() {
+    if (appearancePresetAutosaveSuppressDepth > 0) return;
+    const presetApi = window.VibeMolPreset;
+    if (!presetApi || typeof presetApi.export !== 'function') return;
+    cancelAppearancePresetAutosave();
+    appearancePresetAutosaveTimer = window.setTimeout(() => {
+      appearancePresetAutosaveTimer = 0;
+      if (appearancePresetAutosaveSuppressDepth > 0) return;
+      try {
+        const preset = exportAppearancePresetEnvelope('Autosave');
+        if (!preset) return;
+        window.localStorage.setItem(AUTOSAVE_STORAGE_KEY, JSON.stringify(preset));
+      } catch (err) {
+        console.warn('VibeMol: autosave failed', err);
+      }
+    }, 500);
+  }
+
+  function syncAppearancePersistenceUi() {
+    if (appearanceInspectorController) appearanceInspectorController.syncAll();
+    syncAllAppearanceActionToggleButtons();
+  }
+
+  function restoreAppearancePresetAutosave() {
+    try {
+      const raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      importAppearancePresetEnvelope(parsed);
+      syncAppearancePersistenceUi();
+      console.info('VibeMol: restored autosaved appearance preset');
+      return true;
+    } catch (err) {
+      console.warn('VibeMol: autosave restore failed', err);
+      return false;
+    }
+  }
+
+  function clearAppearancePresetAutosaveStorage() {
+    cancelAppearancePresetAutosave();
+    try {
+      window.localStorage.removeItem(AUTOSAVE_STORAGE_KEY);
+    } catch (err) {
+      console.warn('VibeMol: autosave reset failed', err);
+    }
+  }
+
+  function resetAppearanceToFactoryDefaults() {
+    clearAppearancePresetAutosaveStorage();
+    runWithAppearancePresetAutosaveSuppressed(() => {
+      setFontPair('geist');
+      const presetApi = window.VibeMolPreset;
+      if (defaultAppearancePresetEnvelope && presetApi && typeof presetApi.import === 'function') {
+        presetApi.import(
+          buildAppearanceAutosaveImportEnvelope(defaultAppearancePresetEnvelope),
+          { mode: PRESET_MODE.RELAXED }
+        );
+      }
+    });
+    syncAppearancePersistenceUi();
+    setAppearanceResetPopoverOpen(false);
+  }
+
+  const importPresetFromText = (text, sourceLabel = 'preset') => {
+    const result = importPresetFromTextRaw(text, sourceLabel);
+    scheduleAppearancePresetAutosave();
+    return result;
+  };
+
+  defaultAppearancePresetEnvelope = cloneJsonLike(exportAppearancePresetEnvelope('Defaults'));
+  restoreAppearancePresetAutosave();
+
   const structureTransportController = createStructureTransportController({
     getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
     getAppVersion: () => APP_VERSION,
@@ -28742,6 +29008,7 @@
     autoIsoBtn.onchange = () => {
       autoIsoEnabled = !!autoIsoBtn.checked;
       updateAutoIsoButtonState();
+      scheduleAppearancePresetAutosave();
       if (!autoIsoEnabled) {
         setHintMessage('Autoiso OFF');
         return;
@@ -28755,7 +29022,12 @@
       setHintMessage(`Autoiso ON (${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% target): cached per orbital/component.`);
     };
   }
-  opInput.oninput = updateOpacityAndColors;
+  const handleOpacityInput = () => {
+    updateOpacityAndColors();
+    scheduleAppearancePresetAutosave();
+  };
+  opInput.oninput = handleOpacityInput;
+  opInput.onchange = handleOpacityInput;
   if (surfaceMaterialPresetSelect) {
     surfaceMaterialPresetSelect.value = getSurfaceMaterialPresetKey();
     surfaceMaterialPresetSelect.onchange = () => {
@@ -28765,29 +29037,46 @@
       }
       surfaceMaterialPresetSelect.value = surfaceMaterialPreset;
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
-  posColor.oninput = () => {
+  const handlePositiveSurfaceColorInput = () => {
     if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
     updateOpacityAndColors();
+    scheduleAppearancePresetAutosave();
   };
-  negColor.oninput = () => {
+  posColor.oninput = handlePositiveSurfaceColorInput;
+  posColor.onchange = handlePositiveSurfaceColorInput;
+  const handleNegativeSurfaceColorInput = () => {
     if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
     updateOpacityAndColors();
+    scheduleAppearancePresetAutosave();
   };
-  bgColor.oninput = () => {
+  negColor.oninput = handleNegativeSurfaceColorInput;
+  negColor.onchange = handleNegativeSurfaceColorInput;
+  const handleBackgroundColorInput = () => {
     syncColorPickerFields();
     applyMoleculeStyleLighting();
+    scheduleAppearancePresetAutosave();
   };
-  toggleAtoms.onchange = () => rebuildScene({ preserveView: true });
-  toggleBonds.onchange = () => rebuildScene({ preserveView: true });
+  bgColor.oninput = handleBackgroundColorInput;
+  bgColor.onchange = handleBackgroundColorInput;
+  toggleAtoms.onchange = () => {
+    rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
+  };
+  toggleBonds.onchange = () => {
+    rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
+  };
   if (toggleMultiBonds) {
     toggleMultiBonds.onchange = () => {
       showMultiBonds = !!toggleMultiBonds.checked;
       syncAllAppearanceActionToggleButtons();
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
   if (toggleAtomLabels) {
@@ -28795,6 +29084,7 @@
       showAtomLabels = !!toggleAtomLabels.checked;
       syncAtomLabelNumberToggleState();
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
   if (toggleAtomLabelNumbers) {
@@ -28807,6 +29097,7 @@
       showAtomLabelNumbers = !!toggleAtomLabelNumbers.checked;
       syncAtomLabelNumberToggleState();
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
   elementColors.onchange = () => {
@@ -28814,6 +29105,7 @@
     if (visibilityElementColorsToggleEl) visibilityElementColorsToggleEl.checked = !!elementColors.checked;
     syncAllAppearanceActionToggleButtons();
     rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
   };
   if (visibilityElementColorsToggleEl) {
     visibilityElementColorsToggleEl.onchange = () => {
@@ -28841,6 +29133,7 @@
     setElementColorOverride(selectedElementForEditor, elementColorPicker.value);
     refreshPeriodicCell(selectedElementForEditor);
     rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
   }
   if (elementColorPicker) {
     // Some browsers commit `<input type="color">` on `change` only.
@@ -28853,6 +29146,7 @@
       refreshPeriodicCell(selectedElementForEditor);
       if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
   if (elementColorResetAll) {
@@ -28861,10 +29155,17 @@
       refreshPeriodicCells();
       if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
       rebuildScene({ preserveView: true });
+      scheduleAppearancePresetAutosave();
     };
   }
-  toggleBox.onchange = () => rebuildScene({ preserveView: true });
-  if (toggleAxes) toggleAxes.onchange = () => { window.__showAxes__ = !!toggleAxes.checked; };
+  toggleBox.onchange = () => {
+    rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
+  };
+  if (toggleAxes) toggleAxes.onchange = () => {
+    window.__showAxes__ = !!toggleAxes.checked;
+    scheduleAppearancePresetAutosave();
+  };
 
   /**
    * Check whether a 2C component mode maps directly to one raw data channel.
