@@ -1327,6 +1327,18 @@ def main() -> int:
             page.locator('#modeEditBtn').click()
             page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
             ensure_build_popover_open(page)
+            page.locator('#modeDisplayBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const popover = document.getElementById('editAdaptiveAddAtomPopover');
+                    const displayBtn = document.getElementById('modeDisplayBtn');
+                    return popover?.getAttribute('aria-hidden') === 'true'
+                      && displayBtn?.getAttribute('aria-pressed') === 'true';
+                }"""
+            )
+            page.locator('#modeEditBtn').click()
+            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+            ensure_build_popover_open(page)
             page.wait_for_function(
                 """() => {
                     const toggle = document.getElementById('editAddAdjustHydrogens');

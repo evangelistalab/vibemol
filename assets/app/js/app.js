@@ -9863,6 +9863,9 @@
       return;
     }
     const prevMode = currentMode;
+    if (prevMode === MODES.EDIT && newMode !== MODES.EDIT) {
+      closeEditModeTransientPopovers();
+    }
     if (autoHydrogenController && prevMode === MODES.EDIT && newMode !== MODES.EDIT) {
       autoHydrogenController.clearPreview({ quiet: true });
     }
@@ -15067,6 +15070,14 @@
   function hideAllAdaptiveToolPopovers(exceptKind = '') {
     if (exceptKind !== 'build') hideBuildPopover({ quiet: true });
     if (exceptKind !== 'symmetry') hideSymmetryPopover({ restore: true, quiet: true });
+  }
+
+  function closeEditModeTransientPopovers() {
+    hideAllAdaptiveToolPopovers();
+    hideSelectionCoordinationCuePopover();
+    hideSelectionMetalBondingCuePopover();
+    hideSelectionFragmentCuePopover();
+    if (bondEditing && typeof bondEditing.hidePopup === 'function') bondEditing.hidePopup();
   }
 
   /**
