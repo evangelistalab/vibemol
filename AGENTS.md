@@ -242,6 +242,7 @@ Preset automation contract exposed globally:
 - Surface hover metrics are shown only for normalized orbital-like grids (`∫q² dV ≈ 1`) and are cached per surface.
 - Standard and 2C isosurface normals are derived from scalar-field gradients rather than triangle-averaged face normals, which keeps shading stable across browsers and material styles.
 - Transparent isosurfaces use weighted blended order-independent transparency (WBOIT) when supported; unsupported renderers fall back to the simpler transparent path without changing the UI contract.
+- Cloud rendering supports both `Cubes` and `Points`; cloud transparency uses the same WBOIT pipeline as surfaces when supported and falls back transparently when it is not.
 - Preset import supports `strict` and `relaxed` modes and preserves unknown keys for round-trip safety.
 - Preset `extensions.builder.fragmentOpsByFile` stores fragment-builder operation logs and restores them on load; replay is not implemented yet.
 - Scene teardown performs deep, deduplicated GPU resource disposal.
@@ -272,6 +273,7 @@ Implemented:
 - The old gesture HUD has been removed; current edit state is conveyed through the floating cue row, popovers, and transient previews instead.
 - The `Build` palette is the source of truth for the currently loaded atom/fragment/molecule payload; it is opened by the toolbar button or `/`, and `/` focuses the Build search field when the palette is already visible.
 - The Build palette exposes atoms, fragments, and molecules plus element-specific coordination and `Adjust hydrogens` behavior for single-atom placement.
+- Leaving edit mode closes the `Build` palette and other edit-only floating popovers immediately; they do not persist into Display or Measure mode.
 - Layer 2 context halo is active in gesture mode:
   - selecting one atom shows a chemistry-aware halo immediately
   - hovering one atom while idle for ~300 ms shows the same halo
@@ -282,6 +284,7 @@ Implemented:
   - clicking a ghost or replaceable-H target places the currently loaded Build payload at that exact site
 - The selection cue row supports translate/rotate, coordination, metal-bond mode, bond order/style, build (`+`), and delete actions.
 - The `+` selection cue arms build targets for the currently loaded atom or fragment and is the normal way to expose open sites on a selected atom.
+- Edit-mode ghost atoms and placement previews reuse the active molecule style shading, but render as semi-transparent previews (about `0.6` opacity) instead of using a separate ghost-only shading model.
 - Gesture-first editing currently supports:
   - click void to place the loaded element when nothing is selected, or clear selection when atoms are selected
   - click atom to select it
@@ -493,7 +496,7 @@ After non-trivial changes:
 8. In edit mode, verify the adaptive edit menu appears and the onboarding splash hides.
 9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, and repeated right-click on a selected atom to upgrade to whole-molecule selection.
 10. In edit mode, test the `Build` tool via button and `/`; confirm `/` opens or focuses the Build search field and that the `+` selection cue gates open-site build targets for selected atoms.
-11. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels plus undo/redo and `Esc` cancel for molecule placement.
+11. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels, Build-palette open/close behavior across mode switches, ghost-preview readability under the active molecule style, plus undo/redo and `Esc` cancel for molecule placement.
 12. In edit mode, press `Space` once on a simple unsaturated structure and verify ghost hydrogens appear without mutating the structure; press `Space` again and verify the hydrogens are added with one undoable history entry.
 13. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, right-click void rotate, `Shift+right-click` void pan, and undo behavior on a selected atom set.
 14. In edit mode, test bond interactions: atom-to-atom create, left-click bond-center order cycling `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.

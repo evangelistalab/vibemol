@@ -28,6 +28,8 @@ This is a living roadmap. It tracks what is shipped, what still needs hardening,
 - [x] Coordinates-only XYZ import/paste normalization (symbol or atomic-number first column).
 - [x] Explicit Build palette and selection `+` build cue for gated open-site placement.
 - [x] Post-delete frontier hydrogen repair and lower-valence replacement pruning in edit mode.
+- [x] Cloud rendering with both `Cubes` and `Points`, plus WBOIT-backed cloud transparency where supported.
+- [x] Two-component split-view polish: math-aware quantity labels, centered `α/β` overlays, and quantity-aware spinor info popover.
 - [x] Optional molecule self-shadowing in appearance controls.
 - [x] Gradient-based isosurface normals for standard and 2C surfaces (replacing triangle-averaged marching-cubes normals).
 - [x] Weighted blended order-independent transparency (WBOIT) for transparent isosurfaces, with fallback on unsupported renderers.
@@ -42,6 +44,7 @@ This is a living roadmap. It tracks what is shipped, what still needs hardening,
   - fragment attach workflow for starter groups
   - standalone molecule placement with click/drag rotate and axis alignment
   - selection-driven build cue for open-site and replaceable-H targets
+  - style-consistent preview/ghost rendering across edit/build workflows
   - still missing stronger first-class fragment/molecule identity, replay/session persistence, and more advanced fuse-ring workflows
 - [~] Symmetry is shipped, but still needs deeper chemistry validation on larger and lower-symmetry systems.
 - [~] Metal-aware bonding is shipped, but the heuristics and rendering should be hardened on a wider set of coordination complexes.
