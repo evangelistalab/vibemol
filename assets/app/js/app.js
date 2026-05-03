@@ -2828,12 +2828,14 @@
   }
 
   /**
-   * Create an atom material that matches the active molecule style.
+   * Build the base atom material for the active molecule style.
+   * Opacity policy is applied by higher-level callers so previews can reuse
+   * the same style without inheriting the live molecule-opacity controls.
    * @param {THREE.Color} color
    * @param {number} z
    * @returns {THREE.Material}
    */
-  function createAtomMaterial(color, z) {
+  function buildAtomMaterialForCurrentStyle(color, z) {
     const styleKey = getMoleculeStyleProfile().key;
     let mat = null;
     if (styleKey === 'kit') {
@@ -2877,7 +2879,70 @@
       if ('shininess' in mat) mat.shininess = 10;
       if ('color' in mat && mat.color) mat.color.lerp(new THREE.Color(0xffffff), 0.15);
     }
-    return applyGlobalMaterialOpacity(applyStructureMaterialEnvBaseline(mat), moleculeAtomOpacity);
+    return applyStructureMaterialEnvBaseline(mat);
+  }
+
+  /**
+   * Create an atom material that matches the active molecule style.
+   * @param {THREE.Color} color
+   * @param {number} z
+   * @returns {THREE.Material}
+   */
+  function createAtomMaterial(color, z) {
+    return applyGlobalMaterialOpacity(buildAtomMaterialForCurrentStyle(color, z), moleculeAtomOpacity);
+  }
+
+  const DEFAULT_GHOST_ATOM_PREVIEW_OPACITY = 0.6;
+
+  function applyGhostPreviewMaterialOpacity(material, opacity = DEFAULT_GHOST_ATOM_PREVIEW_OPACITY, options = {}) {
+    if (!material || typeof material !== 'object') return material;
+    const alpha = Math.max(0.05, Math.min(1, Number.isFinite(opacity) ? opacity : DEFAULT_GHOST_ATOM_PREVIEW_OPACITY));
+    const scaleExisting = !!options.scaleExistingOpacity;
+    if ('opacity' in material) {
+      const baseOpacity = Number.isFinite(material.opacity) ? material.opacity : 1;
+      material.opacity = scaleExisting
+        ? Math.max(0.05, Math.min(1, baseOpacity * alpha))
+        : alpha;
+    }
+    if ('transparent' in material) material.transparent = true;
+    if ('depthWrite' in material) material.depthWrite = false;
+    material.needsUpdate = true;
+    return material;
+  }
+
+  function createGhostAtomPreviewMaterial(color, z, opacity = DEFAULT_GHOST_ATOM_PREVIEW_OPACITY) {
+    const atomColor = color && color.isColor ? color.clone() : new THREE.Color(color || 0xffffff);
+    const material = buildAtomMaterialForCurrentStyle(atomColor, z);
+    return applyGhostPreviewMaterialOpacity(material, opacity);
+  }
+
+  function syncGhostAtomPreviewMeshMaterial(mesh, color, z, opacity = DEFAULT_GHOST_ATOM_PREVIEW_OPACITY) {
+    if (!mesh) return null;
+    const atomColor = color && color.isColor ? color.clone() : new THREE.Color(color || 0xffffff);
+    const signature = [
+      getMoleculeStyleProfile().key,
+      moleculeInkEnabled ? 1 : 0,
+      moleculeBlackbodyEnabled ? 1 : 0,
+      z | 0,
+      atomColor.getHexString(),
+      Number(opacity).toFixed(3),
+    ].join('|');
+    if (mesh.userData && mesh.userData.ghostAtomMaterialSignature === signature && mesh.material) {
+      return mesh.material;
+    }
+    const oldMaterial = mesh.material;
+    if (Array.isArray(oldMaterial)) {
+      oldMaterial.forEach((mat) => {
+        try { mat && mat.dispose && mat.dispose(); } catch { }
+      });
+    } else {
+      try { oldMaterial && oldMaterial.dispose && oldMaterial.dispose(); } catch { }
+    }
+    mesh.material = createGhostAtomPreviewMaterial(atomColor, z, opacity);
+    mesh.userData = Object.assign({}, mesh.userData, {
+      ghostAtomMaterialSignature: signature,
+    });
+    return mesh.material;
   }
 
   /**
@@ -14131,16 +14196,7 @@
       );
 
       const atomGeom = new THREE.SphereGeometry(1.0, 18, 12);
-      const atomMat = new THREE.MeshPhysicalMaterial({
-        color: getAtomRenderColor(1),
-        transparent: true,
-        opacity: 0.42,
-        roughness: 0.22,
-        metalness: 0.04,
-        clearcoat: 0.38,
-        clearcoatRoughness: 0.18,
-        depthWrite: false,
-      });
+      const atomMat = createGhostAtomPreviewMaterial(getAtomRenderColor(1), 1, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY);
       const atomMesh = new THREE.Mesh(atomGeom, atomMat);
       atomMesh.position.copy(hydrogenWorld);
       atomMesh.scale.setScalar(getRenderedAtomDisplayRadius(1));
@@ -14179,18 +14235,13 @@
     }
   }
 
-  function ensureGestureVoidPreviewMesh() {
-    if (gestureVoidPreviewMesh) return gestureVoidPreviewMesh;
+  function ensureGestureVoidPreviewMesh(z = editAddElementZ | 0) {
+    if (gestureVoidPreviewMesh) {
+      syncGhostAtomPreviewMeshMaterial(gestureVoidPreviewMesh, getAtomRenderColor(z), z, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY);
+      return gestureVoidPreviewMesh;
+    }
     const geom = new THREE.SphereGeometry(1.0, 20, 14);
-    const mat = new THREE.MeshPhysicalMaterial({
-      transparent: true,
-      opacity: 0.58,
-      roughness: 0.22,
-      metalness: 0.08,
-      clearcoat: 0.42,
-      clearcoatRoughness: 0.14,
-      depthWrite: false,
-    });
+    const mat = createGhostAtomPreviewMaterial(getAtomRenderColor(z), z, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY);
     gestureVoidPreviewMesh = new THREE.Mesh(geom, mat);
     gestureVoidPreviewMesh.renderOrder = 62;
     gestureVoidPreviewGroup.add(gestureVoidPreviewMesh);
@@ -14208,11 +14259,10 @@
       return false;
     }
     const z = editAddElementZ | 0;
-    const mesh = ensureGestureVoidPreviewMesh();
+    const mesh = ensureGestureVoidPreviewMesh(z);
     gestureVoidPreviewWorld = world.clone();
     mesh.position.copy(world);
     mesh.scale.setScalar(getRenderedAtomDisplayRadius(z));
-    if (mesh.material && mesh.material.color) mesh.material.color.copy(getAtomRenderColor(z));
     return true;
   }
 
@@ -14300,14 +14350,7 @@
   function ensureAddGrowPreviewMeshes(z) {
     if (!addPreviewAtomMesh) {
       const g = new THREE.SphereGeometry(1.0, 20, 14);
-      const m = new THREE.MeshPhysicalMaterial({
-        transparent: true,
-        opacity: 0.72,
-        roughness: 0.2,
-        metalness: 0.1,
-        clearcoat: 0.45,
-        clearcoatRoughness: 0.15,
-      });
+      const m = createGhostAtomPreviewMaterial(getAtomRenderColor(z), z, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY);
       addPreviewAtomMesh = new THREE.Mesh(g, m);
       addPreviewAtomMesh.renderOrder = 60;
       addPreviewGroup.add(addPreviewAtomMesh);
@@ -14326,9 +14369,7 @@
       addPreviewGroup.add(addPreviewBondMesh);
     }
     const atomColor = getAtomRenderColor(z);
-    if (addPreviewAtomMesh && addPreviewAtomMesh.material && addPreviewAtomMesh.material.color) {
-      addPreviewAtomMesh.material.color.copy(atomColor);
-    }
+    syncGhostAtomPreviewMeshMaterial(addPreviewAtomMesh, atomColor, z, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY);
   }
 
   /**
@@ -14860,15 +14901,10 @@
         sphere = new THREE.SphereGeometry(radius, sphereWidthSegments, sphereHeightSegments);
         sphereGeomCache.set(key, sphere);
       }
-      const mesh = new THREE.Mesh(sphere, new THREE.MeshPhysicalMaterial({
-        color: getAtomRenderColor(atom.Z | 0),
-        transparent: true,
-        opacity: 0.72,
-        roughness: 0.2,
-        metalness: 0.08,
-        clearcoat: 0.45,
-        clearcoatRoughness: 0.15,
-      }));
+      const mesh = new THREE.Mesh(
+        sphere,
+        createGhostAtomPreviewMaterial(getAtomRenderColor(atom.Z | 0), atom.Z | 0, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY)
+      );
       mesh.position.copy(atom.world);
       mesh.renderOrder = 60;
       addFusePreviewGroup.add(mesh);
@@ -17741,11 +17777,12 @@
     const group = new THREE.Group();
     const atomGeom = new THREE.SphereGeometry(Math.max(0.18, Number(radius) || 0.42), 24, 18);
     const atomColor = getAtomRenderColor(atomZ | 0);
-    const atomMat = createAtomMaterial(atomColor.clone(), atomZ | 0);
+    const atomMat = createGhostAtomPreviewMaterial(atomColor.clone(), atomZ | 0, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY);
     const atomMesh = new THREE.Mesh(atomGeom, atomMat);
     group.add(atomMesh);
     const highlightGeom = new THREE.SphereGeometry(Math.max(0.19, Number(radius) || 0.42) * 1.045, 24, 18);
     const highlightMat = createAtomHighlightMaterial(atomZ | 0);
+    applyGhostPreviewMaterialOpacity(highlightMat, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY, { scaleExistingOpacity: true });
     const highlightMesh = new THREE.Mesh(highlightGeom, highlightMat);
     group.add(highlightMesh);
     return group;
@@ -18748,16 +18785,11 @@
         ghostGroup.add(markerGroup);
       } else {
         const atomGeom = new THREE.SphereGeometry(atomRadius, sphereWidthSegments, sphereHeightSegments);
-        const atomMat = new THREE.MeshPhysicalMaterial({
-          color: ghostColor,
-          transparent: true,
-          opacity: hovered ? 0.86 : 0.46,
-          roughness: 0.2,
-          metalness: 0.08,
-          clearcoat: 0.42,
-          clearcoatRoughness: 0.16,
-          depthWrite: false,
-        });
+        const atomMat = createGhostAtomPreviewMaterial(
+          ghostColor,
+          previewZ,
+          hovered ? 0.72 : DEFAULT_GHOST_ATOM_PREVIEW_OPACITY
+        );
         const atomMesh = new THREE.Mesh(atomGeom, atomMat);
         atomMesh.position.copy(ghostWorld);
         atomMesh.renderOrder = 68;
