@@ -1,0 +1,62 @@
+{
+  "name": "vibemol",
+  "displayName": "VibeMol",
+  "description": "Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files, with a companion Python automation client. It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes.json`, ORCA `.hess`, and Psi4 `.dat/.out` frequency outputs).",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.116.0"
+  },
+  "publisher": "evangelistalab",
+  "categories": [
+    "Education",
+    "Visualization",
+    "Other"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vibemol.vmWebview",
+        "title": "Launch VibeMol Webview",
+        "icon": {
+          "light": "../../../assets/app/img/favicon-tetra.svg",
+          "dark": "../../../assets/app/img/favicon-tetra.svg"
+        }
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "vibemol.vmWebview",
+          "group": "navigation@0"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "vibemol.undo",
+        "key": "cmd+z",
+        "when": "activeWebviewPanelId == 'vibemol_viewer'"
+      },
+      {
+        "command": "vibemol.redo",
+        "key": "cmd+shift+z",
+        "when": "activeWebviewPanelId == 'vibemol_viewer'"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.118.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.3.9"
+  }
+}
