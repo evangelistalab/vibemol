@@ -52,7 +52,7 @@ class VibeMolEditorProvider {
   }
 
   async resolveCustomTextEditor(document, webviewPanel, _token) {
-    const projectRoot = vscode.Uri.joinPath(this._extensionUri, '..', '..', '..');
+    const projectRoot = vscode.Uri.joinPath(this._extensionUri, 'app');
     webviewPanel.webview.options = { enableScripts: true, localResourceRoots: [projectRoot] };
     webviewPanel.iconPath = vscode.Uri.joinPath(projectRoot, 'assets', 'app', 'img', 'favicon-tetra.svg');
 
@@ -116,7 +116,7 @@ class VibeMolEditorProvider {
 // Used by the "Launch VibeMol" command that opens a blank viewer.
 
 function vmWebview(extensionUri, fileUri, provider) {
-  const projectRoot = vscode.Uri.joinPath(extensionUri, '..', '..', '..');
+  const projectRoot = vscode.Uri.joinPath(extensionUri, 'app');
 
   const panel = vscode.window.createWebviewPanel(
     'vibemol_viewer', 'VibeMol',
@@ -190,7 +190,7 @@ function getWebviewContent(scriptUri, assetUri) {
   const path = require('path');
 
   // Read index.html from the project root (3 levels up from the extension src dir)
-  const indexPath = path.join(__dirname, '..', '..', '..', '..', 'index.html');
+  const indexPath = path.join(__dirname, '..', 'app', 'index.html');
   let html = fs.readFileSync(indexPath, 'utf8');
 
   // ── 1. Rewrite local src= and href= to use the VSCode webview URI ────────

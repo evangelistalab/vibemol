@@ -4,7 +4,7 @@
   "description": "Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files, with a companion Python automation client. It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes.json`, ORCA `.hess`, and Psi4 `.dat/.out` frequency outputs).",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.116.0"
+    "vscode": "^1.118.0"
   },
   "publisher": "evangelistalab",
   "categories": [
@@ -13,14 +13,18 @@
     "Other"
   ],
   "main": "./src/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/evangelistalab/vibemol.git"
+  },
   "contributes": {
     "commands": [
       {
         "command": "vibemol.vmWebview",
         "title": "Launch VibeMol Webview",
         "icon": {
-          "light": "../../../assets/app/img/favicon-tetra.svg",
-          "dark": "../../../assets/app/img/favicon-tetra.svg"
+          "light": "./app/assets/app/img/favicon-tetra.svg",
+          "dark": "./app/assets/app/img/favicon-tetra.svg"
         }
       },
       {
@@ -100,6 +104,10 @@
     ]
   },
   "scripts": {
+    "copy-app": "node scripts/copy-app.js",
+    "prepackage": "npm run copy-app",
+    "package": "vsce package",
+    "publish": "vsce publish",
     "lint": "eslint .",
     "pretest": "npm run lint",
     "test": "vscode-test"
