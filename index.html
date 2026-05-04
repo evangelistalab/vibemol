@@ -1238,7 +1238,7 @@
     #hint {
       position: fixed;
       left: 160px;
-      bottom: 12px;
+      bottom: 24px;
       right: 12px;
       max-width: calc(100vw - 24px);
       box-sizing: border-box;
@@ -1256,8 +1256,21 @@
       font-variant-numeric: tabular-nums;
       backdrop-filter: blur(8px) saturate(140%);
       -webkit-backdrop-filter: blur(8px) saturate(140%);
-      transition: background-color 180ms ease, border-left-color 180ms ease, box-shadow 180ms ease;
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      transition:
+        opacity 260ms ease,
+        transform 260ms ease,
+        background-color 180ms ease,
+        border-left-color 180ms ease,
+        box-shadow 180ms ease;
       z-index: 31;
+    }
+
+    #hint.is-visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     #hint.is-accented {
@@ -2316,7 +2329,7 @@
     body:not(.sidebar-collapsed) #hint {
       left: calc(var(--workspace-left-offset) + 24px);
       right: 12px;
-      bottom: 8px;
+      bottom: 16px;
       max-width: calc(100vw - var(--workspace-left-offset) - 36px);
     }
 
@@ -3259,7 +3272,7 @@
       </details>
     </div>
   </div>
-  <div id="hint">Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Basic 2=Toon 3=Kit 4=Glossy</div>
+  <div id="hint" class="is-visible" aria-hidden="false">Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Basic 2=Toon 3=Kit 4=Glossy</div>
   <!-- Phase wheel legend (shown in phase-hue modes) -->
   <div id="phaseWheel" aria-hidden="true"
     style="position:fixed; right:12px; bottom:calc(var(--status-ribbon-height) + 34px); width:96px; height:120px; z-index:31; pointer-events:none; display:none;">

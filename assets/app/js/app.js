@@ -10097,7 +10097,9 @@
     fn(e);
     return true;
   };
+  const HINT_AUTO_HIDE_MS = 4200;
   let hintAccentTimer = 0;
+  let hintVisibilityTimer = 0;
   /**
    * Legacy shortcut-ribbon render hook retained as a no-op for controllers
    * that still expect the dependency.
@@ -28550,6 +28552,48 @@
   const pubchemHas3DByNameCache = new Map();
   const pubchemHas3DByCidCache = new Map();
 
+  function clearHintVisibilityTimer() {
+    if (!hintVisibilityTimer) return;
+    clearTimeout(hintVisibilityTimer);
+    hintVisibilityTimer = 0;
+  }
+
+  /**
+   * Show or hide the persistent hint shell without removing its text.
+   * @param {boolean} visible
+   */
+  function setHintVisible(visible) {
+    if (!hintEl) return;
+    const shouldShow = !!visible && String(hintEl.textContent || '').trim().length > 0;
+    hintEl.classList.toggle('is-visible', shouldShow);
+    hintEl.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  }
+
+  /**
+   * Reveal the hint temporarily, then let it fade out.
+   * @param {number=} delayMs
+   */
+  function revealHintTemporarily(delayMs = HINT_AUTO_HIDE_MS) {
+    if (!hintEl || String(hintEl.textContent || '').trim().length === 0) return;
+    setHintVisible(true);
+    clearHintVisibilityTimer();
+    hintVisibilityTimer = window.setTimeout(() => {
+      hintVisibilityTimer = 0;
+      setHintVisible(false);
+    }, Math.max(0, Number(delayMs) || HINT_AUTO_HIDE_MS));
+  }
+
+  /**
+   * Bottom-quarter hover reveal for the global hint.
+   * @param {MouseEvent} event
+   */
+  function handleHintRevealPointerMove(event) {
+    if (!hintEl || !window.innerHeight) return;
+    const y = Number(event && event.clientY);
+    if (!Number.isFinite(y) || y < window.innerHeight * 0.75) return;
+    revealHintTemporarily();
+  }
+
   /**
    * Update the hint message if the hint UI element exists.
    * @param {string} message
@@ -28558,6 +28602,12 @@
   function setHintMessage(message, options = {}) {
     if (!hintEl) return;
     hintEl.textContent = message;
+    if (String(message || '').trim().length > 0) {
+      revealHintTemporarily();
+    } else {
+      clearHintVisibilityTimer();
+      setHintVisible(false);
+    }
     const shouldAccent = options.accent !== false && String(message || '').trim().length > 0;
     if (hintAccentTimer) {
       clearTimeout(hintAccentTimer);
@@ -28583,6 +28633,11 @@
     const parts = [String(prefix || '').trim(), HINT_NAVIGATION];
     if (includeStyles) parts.push(HINT_STYLE_KEYS);
     setHintMessage(parts.filter(Boolean).join(' • '), { accent: false });
+  }
+
+  if (hintEl) {
+    revealHintTemporarily();
+    window.addEventListener('mousemove', handleHintRevealPointerMove, { passive: true });
   }
 
   /**
