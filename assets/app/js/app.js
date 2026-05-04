@@ -6489,6 +6489,46 @@
     if (options.syncUi !== false) syncTrajectoryControls();
   }
 
+  /**
+   * Toggle active trajectory playback, keeping vibration playback mutually exclusive.
+   * @returns {boolean}
+   */
+  function toggleActiveTrajectoryPlayback() {
+    const info = getActiveTrajectoryInfo();
+    if (!info.enabled) return false;
+    const nextPlaying = !trajectoryPlaying;
+    if (nextPlaying) {
+      vibrationPlaying = false;
+      vibrationLastStepMs = 0;
+      restoreActiveVibrationEquilibrium({ syncUi: false });
+    }
+    trajectoryPlaying = nextPlaying;
+    trajectoryLastStepMs = 0;
+    syncTrajectoryControls();
+    syncVibrationControls();
+    return true;
+  }
+
+  /**
+   * Step the active trajectory by one or more frames from keyboard shortcuts.
+   * @param {number} delta
+   * @returns {boolean}
+   */
+  function stepActiveTrajectoryFrame(delta) {
+    const info = getActiveTrajectoryInfo();
+    if (!info.enabled) return false;
+    const current = Math.max(0, Math.min(info.frameCount - 1, Number(info.traj.frameIndex) | 0));
+    const step = Number(delta) || 0;
+    const next = Math.max(0, Math.min(info.frameCount - 1, current + step));
+    vibrationPlaying = false;
+    vibrationLastStepMs = 0;
+    restoreActiveVibrationEquilibrium({ syncUi: false });
+    stopTrajectoryPlayback({ syncUi: false });
+    applyTrajectoryFrame(next, { syncUi: true });
+    syncVibrationControls();
+    return true;
+  }
+
   // Simple FPS meter (EMA smoothed)
   let __fpsLast = performance.now();
   let __fpsAccMs = 0;
@@ -24245,7 +24285,7 @@
   bind('down', 'global', '3', () => setMoleculeStyle('kit'));
   bind('down', 'global', '4', () => setMoleculeStyle('glossy'));
 
-  // Global: arrows switch files
+  // Global: Up/Down arrows switch files in every mode.
   /**
    * Move to the next/previous loaded file.
    * @param {number} delta
@@ -24256,9 +24296,7 @@
     const n = volumes.length;
     activateVolumeIndex(((currentIndex + delta) % n + n) % n, { preserveView: true });
   };
-  bind('down', 'global', 'ArrowRight', () => nextPrev(1));
   bind('down', 'global', 'ArrowDown', () => nextPrev(1));
-  bind('down', 'global', 'ArrowLeft', () => nextPrev(-1));
   bind('down', 'global', 'ArrowUp', () => nextPrev(-1));
 
   // Note: Esc handling removed per request. Use on-screen UI to close dialogs.
@@ -24274,6 +24312,22 @@
   bind('down', MODES.DISPLAY, 'o', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR); });
   bind('down', MODES.DISPLAY, 't', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL); });
   bind('down', MODES.DISPLAY, 'f', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIBRATION_PANEL); });
+  bind('down', MODES.DISPLAY, ' ', (e) => {
+    if (!getActiveTrajectoryInfo().enabled) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && e.repeat) return;
+    toggleActiveTrajectoryPlayback();
+  });
+  bind('down', MODES.DISPLAY, 'ArrowLeft', (e) => {
+    if (!getActiveTrajectoryInfo().enabled) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    stepActiveTrajectoryFrame(-1);
+  });
+  bind('down', MODES.DISPLAY, 'ArrowRight', (e) => {
+    if (!getActiveTrajectoryInfo().enabled) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    stepActiveTrajectoryFrame(1);
+  });
 
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
@@ -26534,18 +26588,7 @@
     const toggleTrajectoryFromControl = (evt) => {
       if (evt && evt.preventDefault) evt.preventDefault();
       if (evt && evt.stopPropagation) evt.stopPropagation();
-      const info = getActiveTrajectoryInfo();
-      if (!info.enabled) return;
-      const nextPlaying = !trajectoryPlaying;
-      if (nextPlaying) {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
-        restoreActiveVibrationEquilibrium({ syncUi: false });
-      }
-      trajectoryPlaying = nextPlaying;
-      trajectoryLastStepMs = 0;
-      syncTrajectoryControls();
-      syncVibrationControls();
+      toggleActiveTrajectoryPlayback();
     };
     trajectoryPlayBtn.addEventListener('pointerdown', (evt) => {
       suppressNextTrajectoryClick = true;

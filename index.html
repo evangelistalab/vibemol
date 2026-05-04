@@ -3641,10 +3641,13 @@
     <div class="motionPanelHeader vm-list-popover__header">
       <div class="title vm-list-popover__title" id="coordsPanelTitle">Coordinates (Å)</div>
       <div class="actions vm-list-popover__actions">
-        <button id="coordsUnitsBtn" class="secondary" data-tooltip="Toggle coordinate units">Bohr</button>
-        <button id="copyXYZ" class="secondary" data-tooltip="Copy XYZ">Copy</button>
-        <button id="downloadXYZ" class="secondary" data-tooltip="Download XYZ">Download</button>
-        <button id="coordsPanelClose" class="motionPanelClose" data-tooltip="Close coordinates"><span
+        <button id="coordsUnitsBtn" class="secondary" data-tooltip="Toggle coordinate units"
+          aria-label="Switch coordinates to bohr">Bohr</button>
+        <button id="copyXYZ" class="secondary" data-tooltip="Copy XYZ" aria-label="Copy coordinates as XYZ">Copy</button>
+        <button id="downloadXYZ" class="secondary" data-tooltip="Download XYZ"
+          aria-label="Download coordinates as XYZ">Download</button>
+        <button id="coordsPanelClose" class="motionPanelClose" data-tooltip="Close coordinates"
+          aria-label="Close coordinates"><span
             class="material-symbols-rounded motionPanelIconGlyph" aria-hidden="true">close</span></button>
       </div>
     </div>
