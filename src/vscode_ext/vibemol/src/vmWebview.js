@@ -1,6 +1,98 @@
 const vscode = require('vscode');
 
-function vmWebview(extensionUri) {
+// ─── Custom Editor Provider ───────────────────────────────────────────────────
+
+class VibeMolEditorProvider {
+  static viewType = 'vibemol.xyzEditor';
+
+  static register(context) {
+    const provider = new VibeMolEditorProvider(context.extensionUri);
+
+    // Register undo/redo once globally — they forward to whichever panel is active
+    context.subscriptions.push(
+      vscode.commands.registerCommand('vibemol.undo', () => {
+        provider._activePanel?.webview.postMessage({ command: 'keydown', key: 'z', metaKey: true });
+      }),
+      vscode.commands.registerCommand('vibemol.redo', () => {
+        provider._activePanel?.webview.postMessage({ command: 'keydown', key: 'z', metaKey: true, shiftKey: true });
+      })
+    );
+
+    const disposable = vscode.window.registerCustomEditorProvider(
+      VibeMolEditorProvider.viewType,
+      provider,
+      { webviewOptions: { retainContextWhenHidden: true }, supportsMultipleEditorsPerDocument: false }
+    );
+    context.subscriptions.push(disposable);
+    return provider; // return provider so callers can pass it to vmWebview
+  }
+
+  constructor(extensionUri) {
+    this._extensionUri = extensionUri;
+    this._activePanel = null;
+  }
+
+  async resolveCustomTextEditor(document, webviewPanel, _token) {
+    const projectRoot = vscode.Uri.joinPath(this._extensionUri, '..', '..', '..');
+    webviewPanel.webview.options = { enableScripts: true, localResourceRoots: [projectRoot] };
+    webviewPanel.iconPath = vscode.Uri.joinPath(projectRoot, 'assets', 'app', 'img', 'favicon-tetra.svg');
+
+    const scriptUri = webviewPanel.webview.asWebviewUri(projectRoot);
+    const assetUri = webviewPanel.webview.asWebviewUri(projectRoot);
+    webviewPanel.webview.html = getWebviewContent(scriptUri, assetUri);
+
+    // Track which panel is active so the global undo/redo commands know where to send
+    this._activePanel = webviewPanel;
+    webviewPanel.onDidChangeViewState((e) => {
+      if (e.webviewPanel.active) this._activePanel = webviewPanel;
+    });
+
+    webviewPanel.onDidDispose(() => {
+      if (this._activePanel === webviewPanel) this._activePanel = null;
+      vscode.commands.executeCommand('setContext', 'vibemolWebviewFocused', false);
+    });
+
+    const fileName = document.uri.path.split('/').pop();
+    const loadInitialFile = async () => {
+      const contents = document.getText();
+      webviewPanel.webview.postMessage({
+        command: 'droppedFileContents',
+        files: [{ fileName, contents }]
+      });
+    };
+
+    let initialLoaded = false;
+    webviewPanel.webview.onDidReceiveMessage(async (msg) => {
+      if (msg.command === 'ready' && !initialLoaded) {
+        initialLoaded = true;
+        await loadInitialFile();
+      }
+
+      if (msg.command === 'readDroppedFiles') {
+        try {
+          const files = await Promise.all(msg.uris.map(async (uriStr) => {
+            const uri = vscode.Uri.parse(uriStr);
+            const bytes = await vscode.workspace.fs.readFile(uri);
+            const contents = Buffer.from(bytes).toString('utf8');
+            const fileName = uri.path.split('/').pop();
+            return { fileName, contents };
+          }));
+          webviewPanel.webview.postMessage({ command: 'droppedFileContents', files });
+        } catch (err) {
+          console.error('[vmWebview] failed to read dropped file:', err);
+        }
+      }
+    });
+
+    // Fallback: load after 2s if no ready signal received
+    setTimeout(() => { if (!initialLoaded) { initialLoaded = true; loadInitialFile(); } }, 2000);
+  }
+}
+
+// ─── Plain webview launcher (no file association) ────────────────────────────
+// Used by the "Launch VibeMol" command that opens a blank viewer.
+
+function vmWebview(extensionUri, fileUri, provider) {
   const projectRoot = vscode.Uri.joinPath(extensionUri, '..', '..', '..');
 
   const panel = vscode.window.createWebviewPanel(
@@ -10,35 +102,33 @@ function vmWebview(extensionUri) {
   );
 
   panel.iconPath = vscode.Uri.joinPath(projectRoot, 'assets', 'app', 'img', 'favicon-tetra.svg');
+  const scriptUri = panel.webview.asWebviewUri(projectRoot);
+  const assetUri = panel.webview.asWebviewUri(projectRoot);
 
-  // Register Cmd+Z to forward to webview
-  const undoKeybinding = vscode.commands.registerCommand('vibemol.undo', () => {
-    panel.webview.postMessage({ command: 'keydown', key: 'z', metaKey: true });
-  });
-
-  const redoKeybinding = vscode.commands.registerCommand('vibemol.redo', () => {
-    panel.webview.postMessage({ command: 'keydown', key: 'z', metaKey: true, shiftKey: true });
-  });
+  // Reuse the globally registered undo/redo commands by registering this
+  // panel as the active target on the provider
+  if (provider) {
+    provider._activePanel = panel;
+    panel.onDidChangeViewState((e) => {
+      if (e.webviewPanel.active) provider._activePanel = panel;
+    });
+  }
 
   panel.onDidDispose(() => {
-    undoKeybinding.dispose();
-    redoKeybinding.dispose();
+    if (provider && provider._activePanel === panel) provider._activePanel = null;
     vscode.commands.executeCommand('setContext', 'vibemolWebviewFocused', false);
   });
 
-  // Handle file drop — webview can't read files directly so the extension
-  // host reads from disk and sends contents back to the webview
   panel.webview.onDidReceiveMessage(async (msg) => {
     console.log('[vmWebview] received message:', msg.command);
+
     if (msg.command === 'readDroppedFiles') {
-      console.log('[vmWebview] reading files:', msg.uris);
       try {
         const files = await Promise.all(msg.uris.map(async (uriStr) => {
           const uri = vscode.Uri.parse(uriStr);
           const bytes = await vscode.workspace.fs.readFile(uri);
           const contents = Buffer.from(bytes).toString('utf8');
           const fileName = uri.path.split('/').pop();
-          console.log('[vmWebview] read file:', fileName, 'length:', contents.length);
           return { fileName, contents };
         }));
         panel.webview.postMessage({ command: 'droppedFileContents', files });
@@ -48,12 +138,22 @@ function vmWebview(extensionUri) {
     }
   });
 
-  const scriptUri = panel.webview.asWebviewUri(projectRoot);
-  const assetUri = panel.webview.asWebviewUri(projectRoot);
-
-  // Log these so we can see exactly what VSCode generates
-  console.log('[debug] scriptUri:', scriptUri.toString());
-  console.log('[debug] assetUri:', assetUri.toString());
+  if (fileUri) {
+    const loadFile = async () => {
+      try {
+        const bytes = await vscode.workspace.fs.readFile(fileUri);
+        const contents = Buffer.from(bytes).toString('utf8');
+        const fileName = fileUri.path.split('/').pop();
+        panel.webview.postMessage({ command: 'droppedFileContents', files: [{ fileName, contents }] });
+      } catch (err) {
+        console.error('[vmWebview] failed to load file on open:', err);
+      }
+    };
+    const readyListener = panel.webview.onDidReceiveMessage((msg) => {
+      if (msg.command === 'ready') { readyListener.dispose(); loadFile(); }
+    });
+    setTimeout(() => { readyListener.dispose(); loadFile(); }, 2000);
+  }
 
   panel.webview.html = getWebviewContent(scriptUri, assetUri);
 }
@@ -134,7 +234,7 @@ function getWebviewContent(scriptUri, assetUri) {
                 console.log('[vscode-drop] calling VibeMolEmbed.loadFiles');
                 window.VibeMolEmbed.loadFiles(
                     msg.files.map(f => ({ name: f.fileName, text: f.contents })),
-                    { clearFirst: false }  // append instead of replace, matching normal drag-drop behaviour
+                    { clearFirst: false }
                 )
                     .then(r => console.log('[vscode-drop] loadFiles result:', r))
                     .catch(e => console.error('[vscode-drop] loadFiles error:', e));
@@ -155,6 +255,9 @@ function getWebviewContent(scriptUri, assetUri) {
         : null;
     window._vscodeApiInstance = _vscodeApi;
     console.log('[vscode-drop] script loaded, _vscodeApi:', _vscodeApi);
+
+    // Signal to the extension host that the webview JS is ready
+    if (_vscodeApi) _vscodeApi.postMessage({ command: 'ready' });
 
     window.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -4125,4 +4228,4 @@ function getWebviewContent(scriptUri, assetUri) {
     `;
 }
 
-module.exports = vmWebview;
+module.exports = { vmWebview, VibeMolEditorProvider };

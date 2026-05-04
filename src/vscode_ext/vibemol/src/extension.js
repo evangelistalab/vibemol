@@ -1,13 +1,18 @@
 const vscode = require('vscode');
-const vmWebview = require('./vmWebview');
+const { vmWebview, VibeMolEditorProvider } = require('./vmWebview');
 
 function activate(context) {
-    const extensionUri = context.extensionUri;
-    let vmWebviewDisposable = vscode.commands.registerCommand('vibemol.vmWebview', function () {
-        vmWebview(extensionUri);
-    });
+    const provider = VibeMolEditorProvider.register(context);
 
-    context.subscriptions.push(vmWebviewDisposable);
+    context.subscriptions.push(
+        vscode.commands.registerCommand('vibemol.vmWebview', () => {
+            vmWebview(context.extensionUri, null, provider);
+        }),
+        vscode.commands.registerCommand('vibemol.openFile', (uri) => {
+            const fileUri = uri || vscode.window.activeTextEditor?.document.uri;
+            vmWebview(context.extensionUri, fileUri, provider);
+        })
+    );
 }
 
 function deactivate() { }

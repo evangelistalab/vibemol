@@ -22,6 +22,47 @@
           "light": "../../../assets/app/img/favicon-tetra.svg",
           "dark": "../../../assets/app/img/favicon-tetra.svg"
         }
+      },
+      {
+        "command": "vibemol.openFile",
+        "title": "Open in VibeMol"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "vibemol.xyzEditor",
+        "displayName": "VibeMol",
+        "selector": [
+          {
+            "filenamePattern": "*.xyz"
+          },
+          {
+            "filenamePattern": "*.molden"
+          },
+          {
+            "filenamePattern": "*.cube"
+          },
+          {
+            "filenamePattern": "*.vib.json"
+          },
+          {
+            "filenamePattern": "*.hess"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "vibemol.xyzEditor",
+        "displayName": "VibeMol",
+        "selector": [
+          {
+            "filenamePattern": "*.dat"
+          },
+          {
+            "filenamePattern": "*.out"
+          }
+        ],
+        "priority": "option"
       }
     ],
     "menus": {
@@ -29,6 +70,19 @@
         {
           "command": "vibemol.vmWebview",
           "group": "navigation@0"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "vibemol.openFile",
+          "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceFilename =~ /\\.vib\\.json$/",
+          "group": "navigation"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "vibemol.openFile",
+          "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceFilename =~ /\\.vib\\.json$/"
         }
       ]
     },
