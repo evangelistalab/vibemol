@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.6';
+  const APP_VERSION = '0.8.7';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -10337,11 +10337,10 @@
     setTooltipText(buttonEl, resolvedTitle);
     if (resolvedTitle) {
       buttonEl.setAttribute('aria-label', resolvedTitle);
-      buttonEl.setAttribute('title', resolvedTitle);
     } else {
       buttonEl.removeAttribute('aria-label');
-      buttonEl.removeAttribute('title');
     }
+    buttonEl.removeAttribute('title');
   }
 
   function getEditAdaptiveButtonEls() {
