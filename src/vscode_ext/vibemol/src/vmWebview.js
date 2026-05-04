@@ -26,6 +26,28 @@ function vmWebview(extensionUri) {
     vscode.commands.executeCommand('setContext', 'vibemolWebviewFocused', false);
   });
 
+  // Handle file drop — webview can't read files directly so the extension
+  // host reads from disk and sends contents back to the webview
+  panel.webview.onDidReceiveMessage(async (msg) => {
+    console.log('[vmWebview] received message:', msg.command);
+    if (msg.command === 'readDroppedFiles') {
+      console.log('[vmWebview] reading files:', msg.uris);
+      try {
+        const files = await Promise.all(msg.uris.map(async (uriStr) => {
+          const uri = vscode.Uri.parse(uriStr);
+          const bytes = await vscode.workspace.fs.readFile(uri);
+          const contents = Buffer.from(bytes).toString('utf8');
+          const fileName = uri.path.split('/').pop();
+          console.log('[vmWebview] read file:', fileName, 'length:', contents.length);
+          return { fileName, contents };
+        }));
+        panel.webview.postMessage({ command: 'droppedFileContents', files });
+      } catch (err) {
+        console.error('[vmWebview] failed to read dropped file:', err);
+      }
+    }
+  });
+
   const scriptUri = panel.webview.asWebviewUri(projectRoot);
   const assetUri = panel.webview.asWebviewUri(projectRoot);
 
@@ -106,7 +128,59 @@ function getWebviewContent(scriptUri, assetUri) {
             });
             document.dispatchEvent(ke);
         }
+        if (msg.command === 'droppedFileContents') {
+            console.log('[vscode-drop] got files back:', msg.files.map(f => f.fileName));
+            if (window.VibeMolEmbed && typeof window.VibeMolEmbed.loadFiles === 'function') {
+                console.log('[vscode-drop] calling VibeMolEmbed.loadFiles');
+                window.VibeMolEmbed.loadFiles(
+                    msg.files.map(f => ({ name: f.fileName, text: f.contents })),
+                    { clearFirst: false }  // append instead of replace, matching normal drag-drop behaviour
+                )
+                    .then(r => console.log('[vscode-drop] loadFiles result:', r))
+                    .catch(e => console.error('[vscode-drop] loadFiles error:', e));
+            } else {
+                console.warn('[vscode-drop] VibeMolEmbed not available:', window.VibeMolEmbed);
+            }
+        }
     });
+</script>
+<script>
+    // VSCode intercepts drag-and-drop at the Electron level and opens dropped
+    // files in a new editor tab. Holding Shift while dropping bypasses that,
+    // but VSCode still requires a capture-phase dragover preventDefault inside
+    // the webview to allow the drop event through. This does NOT interfere with
+    // the project's own drop handlers — it just unlocks the Shift+drop path.
+    const _vscodeApi = (typeof acquireVsCodeApi === 'function')
+        ? (() => { try { return acquireVsCodeApi(); } catch(e) { return window._vscodeApiInstance; } })()
+        : null;
+    window._vscodeApiInstance = _vscodeApi;
+    console.log('[vscode-drop] script loaded, _vscodeApi:', _vscodeApi);
+
+    window.addEventListener('dragover', (e) => {
+        e.preventDefault();
+    }, true);
+    window.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        console.log('[vscode-drop] drop fired');
+        console.log('[vscode-drop] _vscodeApi:', _vscodeApi);
+
+        const uriList = e.dataTransfer.getData('application/vnd.code.uri-list')
+                     || e.dataTransfer.getData('text/uri-list');
+        console.log('[vscode-drop] uriList:', uriList);
+
+        if (!uriList) { console.log('[vscode-drop] no uriList, returning'); return; }
+
+        const uris = uriList.split(/\\r?\\n/).filter(l => l && !l.startsWith('#'));
+        console.log('[vscode-drop] uris:', uris);
+
+        if (uris.length === 0) { console.log('[vscode-drop] no uris, returning'); return; }
+
+        // Send all URIs at once — extension host will read each and reply with all contents
+        console.log('[vscode-drop] posting readDroppedFiles for:', uris);
+        _vscodeApi.postMessage({ command: 'readDroppedFiles', uris });
+    }, true);
 </script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-WSP0EFW68E"></script>
