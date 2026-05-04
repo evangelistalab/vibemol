@@ -1,5 +1,24 @@
 const vscode = require('vscode');
 
+// ─── Shared download handler ─────────────────────────────────────────────────
+// Called from any panel's onDidReceiveMessage when the webview intercepts a
+// blob download and posts the file bytes here instead.
+
+async function handleDownload(msg) {
+  try {
+    const saveUri = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.file(msg.fileName),
+      filters: { 'All Files': ['*'] }
+    });
+    if (!saveUri) return; // user cancelled
+    await vscode.workspace.fs.writeFile(saveUri, Uint8Array.from(msg.bytes));
+    console.log('[vmWebview] downloaded:', saveUri.path);
+  } catch (err) {
+    console.error('[vmWebview] download failed:', err);
+    vscode.window.showErrorMessage(`VibeMol: failed to save ${msg.fileName}: ${err.message}`);
+  }
+}
+
 // ─── Custom Editor Provider ───────────────────────────────────────────────────
 
 class VibeMolEditorProvider {
@@ -82,6 +101,10 @@ class VibeMolEditorProvider {
           console.error('[vmWebview] failed to read dropped file:', err);
         }
       }
+
+      if (msg.command === 'downloadFile') {
+        await handleDownload(msg);
+      }
     });
 
     // Fallback: load after 2s if no ready signal received
@@ -135,6 +158,10 @@ function vmWebview(extensionUri, fileUri, provider) {
       } catch (err) {
         console.error('[vmWebview] failed to read dropped file:', err);
       }
+    }
+
+    if (msg.command === 'downloadFile') {
+      await handleDownload(msg);
     }
   });
 
@@ -258,6 +285,34 @@ function getWebviewContent(scriptUri, assetUri) {
 
     // Signal to the extension host that the webview JS is ready
     if (_vscodeApi) _vscodeApi.postMessage({ command: 'ready' });
+
+    // Patch document.createElement to intercept <a download> clicks.
+    // VSCode webviews silently swallow blob-URL anchor downloads, so we
+    // read the blob content here and post it to the extension host instead.
+    const _origCreateElement = document.createElement.bind(document);
+    document.createElement = function(tag, ...args) {
+        const el = _origCreateElement(tag, ...args);
+        if (tag.toLowerCase() !== 'a') return el;
+        const _origClick = el.click.bind(el);
+        el.click = function() {
+            if (el.download && el.href && el.href.startsWith('blob:')) {
+                fetch(el.href)
+                    .then(r => r.arrayBuffer())
+                    .then(buf => {
+                        const bytes = Array.from(new Uint8Array(buf));
+                        _vscodeApi.postMessage({
+                            command: 'downloadFile',
+                            fileName: el.download,
+                            bytes
+                        });
+                    })
+                    .catch(e => console.error('[vscode-download] failed to read blob:', e));
+                return;
+            }
+            _origClick();
+        };
+        return el;
+    };
 
     window.addEventListener('dragover', (e) => {
         e.preventDefault();
