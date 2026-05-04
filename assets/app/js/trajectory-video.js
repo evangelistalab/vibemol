@@ -301,14 +301,13 @@
       const next = String(text || '').trim();
       options.setTooltipText(btn, next);
       if (next) {
-        btn.setAttribute('title', next);
         btn.setAttribute('aria-label', next);
         btn.setAttribute('data-tooltip', next);
       } else {
-        btn.removeAttribute('title');
         btn.removeAttribute('aria-label');
         btn.removeAttribute('data-tooltip');
       }
+      btn.removeAttribute('title');
     }
 
     function listDisabledElements() {

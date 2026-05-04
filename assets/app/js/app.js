@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.6';
+  const APP_VERSION = '0.8.7';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -6489,6 +6489,46 @@
     if (options.syncUi !== false) syncTrajectoryControls();
   }
 
+  /**
+   * Toggle active trajectory playback, keeping vibration playback mutually exclusive.
+   * @returns {boolean}
+   */
+  function toggleActiveTrajectoryPlayback() {
+    const info = getActiveTrajectoryInfo();
+    if (!info.enabled) return false;
+    const nextPlaying = !trajectoryPlaying;
+    if (nextPlaying) {
+      vibrationPlaying = false;
+      vibrationLastStepMs = 0;
+      restoreActiveVibrationEquilibrium({ syncUi: false });
+    }
+    trajectoryPlaying = nextPlaying;
+    trajectoryLastStepMs = 0;
+    syncTrajectoryControls();
+    syncVibrationControls();
+    return true;
+  }
+
+  /**
+   * Step the active trajectory by one or more frames from keyboard shortcuts.
+   * @param {number} delta
+   * @returns {boolean}
+   */
+  function stepActiveTrajectoryFrame(delta) {
+    const info = getActiveTrajectoryInfo();
+    if (!info.enabled) return false;
+    const current = Math.max(0, Math.min(info.frameCount - 1, Number(info.traj.frameIndex) | 0));
+    const step = Number(delta) || 0;
+    const next = Math.max(0, Math.min(info.frameCount - 1, current + step));
+    vibrationPlaying = false;
+    vibrationLastStepMs = 0;
+    restoreActiveVibrationEquilibrium({ syncUi: false });
+    stopTrajectoryPlayback({ syncUi: false });
+    applyTrajectoryFrame(next, { syncUi: true });
+    syncVibrationControls();
+    return true;
+  }
+
   // Simple FPS meter (EMA smoothed)
   let __fpsLast = performance.now();
   let __fpsAccMs = 0;
@@ -10057,7 +10097,9 @@
     fn(e);
     return true;
   };
+  const HINT_AUTO_HIDE_MS = 4200;
   let hintAccentTimer = 0;
+  let hintVisibilityTimer = 0;
   /**
    * Legacy shortcut-ribbon render hook retained as a no-op for controllers
    * that still expect the dependency.
@@ -10295,11 +10337,10 @@
     setTooltipText(buttonEl, resolvedTitle);
     if (resolvedTitle) {
       buttonEl.setAttribute('aria-label', resolvedTitle);
-      buttonEl.setAttribute('title', resolvedTitle);
     } else {
       buttonEl.removeAttribute('aria-label');
-      buttonEl.removeAttribute('title');
     }
+    buttonEl.removeAttribute('title');
   }
 
   function getEditAdaptiveButtonEls() {
@@ -24245,7 +24286,7 @@
   bind('down', 'global', '3', () => setMoleculeStyle('kit'));
   bind('down', 'global', '4', () => setMoleculeStyle('glossy'));
 
-  // Global: arrows switch files
+  // Global: Up/Down arrows switch files in every mode.
   /**
    * Move to the next/previous loaded file.
    * @param {number} delta
@@ -24256,9 +24297,7 @@
     const n = volumes.length;
     activateVolumeIndex(((currentIndex + delta) % n + n) % n, { preserveView: true });
   };
-  bind('down', 'global', 'ArrowRight', () => nextPrev(1));
   bind('down', 'global', 'ArrowDown', () => nextPrev(1));
-  bind('down', 'global', 'ArrowLeft', () => nextPrev(-1));
   bind('down', 'global', 'ArrowUp', () => nextPrev(-1));
 
   // Note: Esc handling removed per request. Use on-screen UI to close dialogs.
@@ -24274,6 +24313,22 @@
   bind('down', MODES.DISPLAY, 'o', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR); });
   bind('down', MODES.DISPLAY, 't', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL); });
   bind('down', MODES.DISPLAY, 'f', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIBRATION_PANEL); });
+  bind('down', MODES.DISPLAY, ' ', (e) => {
+    if (!getActiveTrajectoryInfo().enabled) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && e.repeat) return;
+    toggleActiveTrajectoryPlayback();
+  });
+  bind('down', MODES.DISPLAY, 'ArrowLeft', (e) => {
+    if (!getActiveTrajectoryInfo().enabled) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    stepActiveTrajectoryFrame(-1);
+  });
+  bind('down', MODES.DISPLAY, 'ArrowRight', (e) => {
+    if (!getActiveTrajectoryInfo().enabled) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    stepActiveTrajectoryFrame(1);
+  });
 
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
@@ -26534,18 +26589,7 @@
     const toggleTrajectoryFromControl = (evt) => {
       if (evt && evt.preventDefault) evt.preventDefault();
       if (evt && evt.stopPropagation) evt.stopPropagation();
-      const info = getActiveTrajectoryInfo();
-      if (!info.enabled) return;
-      const nextPlaying = !trajectoryPlaying;
-      if (nextPlaying) {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
-        restoreActiveVibrationEquilibrium({ syncUi: false });
-      }
-      trajectoryPlaying = nextPlaying;
-      trajectoryLastStepMs = 0;
-      syncTrajectoryControls();
-      syncVibrationControls();
+      toggleActiveTrajectoryPlayback();
     };
     trajectoryPlayBtn.addEventListener('pointerdown', (evt) => {
       suppressNextTrajectoryClick = true;
@@ -28507,6 +28551,48 @@
   const pubchemHas3DByNameCache = new Map();
   const pubchemHas3DByCidCache = new Map();
 
+  function clearHintVisibilityTimer() {
+    if (!hintVisibilityTimer) return;
+    clearTimeout(hintVisibilityTimer);
+    hintVisibilityTimer = 0;
+  }
+
+  /**
+   * Show or hide the persistent hint shell without removing its text.
+   * @param {boolean} visible
+   */
+  function setHintVisible(visible) {
+    if (!hintEl) return;
+    const shouldShow = !!visible && String(hintEl.textContent || '').trim().length > 0;
+    hintEl.classList.toggle('is-visible', shouldShow);
+    hintEl.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  }
+
+  /**
+   * Reveal the hint temporarily, then let it fade out.
+   * @param {number=} delayMs
+   */
+  function revealHintTemporarily(delayMs = HINT_AUTO_HIDE_MS) {
+    if (!hintEl || String(hintEl.textContent || '').trim().length === 0) return;
+    setHintVisible(true);
+    clearHintVisibilityTimer();
+    hintVisibilityTimer = window.setTimeout(() => {
+      hintVisibilityTimer = 0;
+      setHintVisible(false);
+    }, Math.max(0, Number(delayMs) || HINT_AUTO_HIDE_MS));
+  }
+
+  /**
+   * Bottom-quarter hover reveal for the global hint.
+   * @param {MouseEvent} event
+   */
+  function handleHintRevealPointerMove(event) {
+    if (!hintEl || !window.innerHeight) return;
+    const y = Number(event && event.clientY);
+    if (!Number.isFinite(y) || y < window.innerHeight * 0.75) return;
+    revealHintTemporarily();
+  }
+
   /**
    * Update the hint message if the hint UI element exists.
    * @param {string} message
@@ -28515,6 +28601,12 @@
   function setHintMessage(message, options = {}) {
     if (!hintEl) return;
     hintEl.textContent = message;
+    if (String(message || '').trim().length > 0) {
+      revealHintTemporarily();
+    } else {
+      clearHintVisibilityTimer();
+      setHintVisible(false);
+    }
     const shouldAccent = options.accent !== false && String(message || '').trim().length > 0;
     if (hintAccentTimer) {
       clearTimeout(hintAccentTimer);
@@ -28540,6 +28632,11 @@
     const parts = [String(prefix || '').trim(), HINT_NAVIGATION];
     if (includeStyles) parts.push(HINT_STYLE_KEYS);
     setHintMessage(parts.filter(Boolean).join(' • '), { accent: false });
+  }
+
+  if (hintEl) {
+    revealHintTemporarily();
+    window.addEventListener('mousemove', handleHintRevealPointerMove, { passive: true });
   }
 
   /**
