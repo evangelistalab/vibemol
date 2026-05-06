@@ -350,94 +350,6 @@
       padding: 0 8px;
     }
 
-    #toolbar .vm-active-file {
-      width: 100%;
-    }
-
-    #toolbar .vm-active-file__chip {
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 6px 6px 10px;
-      background: var(--vm-color-surface-base);
-      border-radius: 6px;
-      min-height: 28px;
-    }
-
-    #toolbar .vm-active-file__icon {
-      color: var(--vm-color-text-secondary);
-      flex: 0 0 auto;
-      pointer-events: none;
-      position: relative;
-      z-index: 1;
-    }
-
-    #toolbar .vm-active-file__name {
-      flex: 1 1 auto;
-      min-width: 0;
-      color: var(--vm-color-text-primary);
-      font-family: var(--vm-font-mono);
-      font-size: 12px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.3;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      pointer-events: none;
-      position: relative;
-      z-index: 1;
-    }
-
-    #toolbar .vm-active-file__actions {
-      display: flex;
-      gap: 2px;
-      flex: 0 0 auto;
-      opacity: 1;
-      transition: color 120ms ease;
-      position: relative;
-      z-index: 2;
-    }
-
-    #toolbar #fileSelect {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      min-width: 0;
-      max-width: none;
-      height: 100%;
-      padding: 0;
-      margin: 0;
-      border: none;
-      border-radius: 0;
-      background: transparent;
-      background-image: none;
-      box-shadow: none;
-      color: transparent;
-      appearance: none;
-      -webkit-appearance: none;
-      opacity: 0;
-      z-index: 0;
-      padding: 0;
-      border: none;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-      cursor: default;
-    }
-
-    #toolbar #fileSelect[data-interactive='true'] {
-      cursor: pointer;
-    }
-
-    #toolbar #fileSelect option {
-      font-family: var(--vm-font-mono);
-      font-size: 12px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-    }
-
     #toolbar .vm-search-field {
       display: flex;
       align-items: center;
@@ -2138,7 +2050,6 @@
       padding: 0 9px;
     }
 
-    #toolbar #fileSelect,
     #toolbar input.pubchem-query {
       min-width: 0;
       max-width: none;
@@ -2193,30 +2104,252 @@
       color: var(--vm-color-text-primary) !important;
     }
 
-    #toolbar .vm-active-file__actions .vm-btn {
+    #toolbar .vm-outliner {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      background: transparent;
+    }
+
+    #toolbar .vm-outliner__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 4px 6px;
+    }
+
+    #toolbar .vm-outliner__title {
+      margin: 0;
+      color: var(--vm-color-text-label);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    #toolbar .vm-outliner__add {
       width: 22px;
       min-width: 22px;
       height: 22px;
-      min-height: 22px;
       padding: 0;
       border-radius: 4px;
       justify-content: center !important;
       background: transparent !important;
-      border-color: transparent;
+      color: var(--vm-color-text-secondary) !important;
+      opacity: 0.45;
+    }
+
+    #toolbar .vm-outliner__body {
+      display: grid;
+      gap: 1px;
+      padding: 0;
+    }
+
+    #toolbar .vm-outliner__empty {
+      padding: 10px 4px 12px;
       color: var(--vm-color-text-secondary);
-      font-size: 12px;
-      line-height: 1;
-      flex: 0 0 auto;
+      font-size: var(--vm-text-sm);
     }
 
-    #toolbar .vm-active-file__actions .vm-btn svg {
-      width: 12px;
-      height: 12px;
-      flex: 0 0 auto;
+    #toolbar .vm-outliner-row {
+      display: grid;
+      grid-template-columns: 14px 20px 20px minmax(0, 1fr) max-content;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      width: 100%;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--vm-color-text-secondary);
+      padding: 3px 6px 3px calc(4px + var(--vm-outliner-indent, 0px));
+      text-align: left;
+      cursor: pointer;
     }
 
-    #toolbar .vm-active-file__chip:hover .vm-active-file__actions .vm-btn {
+    #toolbar .vm-outliner-row:hover {
+      background: color-mix(in srgb, var(--vm-color-text-primary) 5%, transparent);
       color: var(--vm-color-text-primary);
+    }
+
+    #toolbar .vm-outliner-row.is-active {
+      background: var(--accent-row, var(--vm-accent-soft, rgba(59, 91, 217, 0.18)));
+      color: var(--vm-color-text-primary);
+    }
+
+    #toolbar .vm-outliner-row.is-flashing {
+      animation: vm-outliner-row-flash 900ms ease-out;
+    }
+
+    @keyframes vm-outliner-row-flash {
+      0% {
+        background: color-mix(in srgb, var(--vm-color-accent) 30%, transparent);
+      }
+      100% {
+        background: var(--accent-row, var(--vm-accent-soft, rgba(59, 91, 217, 0.18)));
+      }
+    }
+
+    #toolbar .vm-outliner-row.is-hidden .vm-outliner-row__icon,
+    #toolbar .vm-outliner-row.is-hidden .vm-outliner-row__label,
+    #toolbar .vm-outliner-row.is-hidden .vm-outliner-row__meta {
+      opacity: 0.45;
+    }
+
+    #toolbar .vm-outliner-row__twisty,
+    #toolbar .vm-outliner-row__eye,
+    #toolbar .vm-outliner-row__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      color: currentColor;
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    #toolbar .vm-outliner-row__twisty.is-leaf {
+      visibility: hidden;
+    }
+
+    #toolbar .vm-outliner-row__eye {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+    }
+
+    #toolbar .vm-outliner-row__eye.is-off {
+      font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 20;
+    }
+
+    #toolbar .vm-outliner-row__cube-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--vm-cube-dot, #f2a900);
+      box-shadow: inset -4px 0 0 var(--vm-cube-dot-neg, #0033a0);
+    }
+
+    #toolbar .vm-outliner-row__label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    #toolbar .vm-outliner-row.is-group .vm-outliner-row__label {
+      color: var(--vm-color-text-primary);
+      font-weight: 600;
+    }
+
+    #toolbar .vm-outliner-row__prefix {
+      margin-right: 4px;
+      color: var(--vm-color-text-secondary);
+      font-family: var(--vm-font-mono);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    #toolbar .vm-outliner-row__meta {
+      min-width: 0;
+      color: var(--vm-color-text-secondary);
+      font-family: var(--vm-font-mono);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    :root[data-vm-scene-empty='true'] #toolbar .tb-appearance {
+      opacity: 0.55;
+    }
+
+    #toolbar .vm-surface-scope-label {
+      margin: -2px 0 8px;
+      color: var(--vm-color-text-secondary);
+      font-family: var(--vm-font-mono);
+      font-size: 11px;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .vm-outliner-context-menu {
+      position: fixed;
+      z-index: 10050;
+      min-width: 174px;
+      padding: 5px;
+      border: 1px solid var(--vm-color-border);
+      border-radius: 6px;
+      background: var(--vm-color-surface-panel);
+      box-shadow: var(--vm-shadow-sm), 0 14px 32px rgba(0, 0, 0, 0.14);
+      color: var(--vm-color-text-primary);
+      font-size: 12px;
+    }
+
+    .vm-outliner-context-menu[hidden] {
+      display: none !important;
+    }
+
+    .vm-outliner-context-menu__item,
+    .vm-outliner-context-menu__button {
+      width: 100%;
+      min-height: 28px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .vm-outliner-context-menu__item {
+      padding: 5px 8px;
+    }
+
+    .vm-outliner-context-menu__item:hover,
+    .vm-outliner-context-menu__button:hover {
+      background: color-mix(in srgb, var(--vm-color-text-primary) 7%, transparent);
+    }
+
+    .vm-outliner-context-menu__item.is-danger,
+    .vm-outliner-context-menu__button.is-danger {
+      color: var(--vm-color-danger, #b42318);
+    }
+
+    .vm-outliner-context-menu__divider {
+      height: 1px;
+      margin: 4px 2px;
+      background: var(--vm-color-border);
+    }
+
+    .vm-outliner-context-menu__title {
+      padding: 4px 6px 2px;
+      font-weight: 700;
+    }
+
+    .vm-outliner-context-menu__body {
+      padding: 0 6px 8px;
+      color: var(--vm-color-text-secondary);
+      line-height: 1.35;
+    }
+
+    .vm-outliner-context-menu__actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .vm-outliner-context-menu__button {
+      text-align: center;
+      background: color-mix(in srgb, var(--vm-color-text-primary) 5%, transparent);
     }
 
     #toolbar .tb-toolbarInspector {
@@ -2424,33 +2557,14 @@
           data-tooltip="Download structure">file_download</button>
       </div>
       <div class="tb-field">
-        <div class="vm-sidebar-section-label">Active file</div>
-        <div class="vm-active-file">
-          <div class="vm-active-file__chip" role="group" aria-label="Active file">
-            <svg class="vm-active-file__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-            <span id="fileSelectDisplay" class="vm-active-file__name">No file loaded</span>
-            <select id="fileSelect" class="vm-select" aria-label="Active file"></select>
-            <div class="vm-active-file__actions" aria-label="Active file actions">
-              <button id="duplicateFileBtn" class="vm-btn vm-btn--icon vm-btn--ghost vm-btn--xs"
-                type="button" aria-label="Duplicate active file" data-tooltip="Duplicate file">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
-              <button id="removeFileBtn" class="vm-btn vm-btn--icon vm-btn--ghost vm-btn--xs vm-btn--danger"
-                type="button" aria-label="Delete active file" data-tooltip="Delete file">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                </svg>
-              </button>
-            </div>
+        <div id="sceneOutliner" class="vm-outliner" aria-label="Scenes outliner">
+          <div class="vm-outliner__header">
+            <h2 class="vm-outliner__title">Scenes</h2>
+            <button id="sceneOutlinerAddBtn" class="secondary vm-outliner__add material-symbols-rounded" type="button"
+              aria-label="Add scene" disabled hidden data-tooltip="Add scene (coming soon)">add</button>
+          </div>
+          <div id="sceneOutlinerBody" class="vm-outliner__body" role="tree" aria-label="Loaded scenes">
+            <div class="vm-outliner__empty">No file loaded. Drag and drop a .cube, .molden, or .xyz file, or click the open icon above to begin.</div>
           </div>
         </div>
       </div>
@@ -2803,6 +2917,7 @@
 
             <section class="vm-appearance-section" id="appearanceSurfacesSection" hidden>
               <h3 class="vm-section-label">Surfaces</h3>
+              <div id="surfaceScopeLabel" class="vm-surface-scope-label" hidden></div>
               <div class="vm-field-row">
                 <label class="vm-field-label" for="surfBtn">Show surfaces</label>
                 <div class="vm-field-control">
@@ -2823,6 +2938,15 @@
                     <option value="classic">Classic (blue/red)</option>
                     <option value="custom">Custom</option>
                   </select>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="surfaceSignFlipBtn">Flip phase</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="surfaceSignFlipBtn">
+                    <input type="checkbox" id="surfaceSignFlipBtn" class="vm-toggle__input" role="switch" data-tooltip="Reverse positive/negative phase" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
                 </div>
               </div>
               <div id="rowSurfacePosColor" class="vm-field-row vm-appearance-hidden">
@@ -2884,6 +3008,7 @@
                 <div class="vm-field-control">
                   <select id="surfaceMaterialPreset" class="vm-select" data-tooltip="Surface material">
                     <option value="emissive">Emissive</option>
+                    <option value="matte">Matte</option>
                     <option value="satin">Satin</option>
                     <option value="lacquer">Lacquer</option>
                     <option value="metal">Metal</option>
@@ -3940,6 +4065,8 @@
   <script src="./assets/app/js/preset.js"></script>
   <!-- structure transport helpers -->
   <script src="./assets/app/js/structure-transport.js"></script>
+  <!-- scene graph helpers -->
+  <script src="./assets/app/js/scene-graph.js"></script>
   <!-- file loading helpers -->
   <script src="./assets/app/js/file-loader.js"></script>
   <!-- symmetry helpers -->

@@ -43,6 +43,19 @@
       return deps.parseCube(text);
     }
 
+    function isPrimaryFileKind(kind, parsedJson = null) {
+      if (kind === 'xyz' || kind === 'molden' || kind === 'two_component_cube' || kind === 'cube' || kind === 'psi4_output') return true;
+      if (kind === 'json') {
+        return !!(
+          parsedJson
+          && typeof parsedJson === 'object'
+          && !Array.isArray(parsedJson)
+          && parsedJson.kind === deps.STRUCTURE_KIND
+        );
+      }
+      return false;
+    }
+
     function appendParsedVolumeRecord(name, vol, extras = null) {
       const meta = Object.assign({ name, vol }, extras || {});
       if (vol && vol.isTwoComponent) deps.setVolume2CComponent(meta, deps.getGlobal2CComponentMode());
@@ -102,10 +115,153 @@
       }
     }
 
-    async function handleFiles(fileList) {
-      const arr = Array.from(fileList || []);
+    function preparePrimaryLoadTarget() {
+      if (typeof deps.setVolumes === 'function') deps.setVolumes([]);
+      if (typeof deps.setCurrentIndex === 'function') deps.setCurrentIndex(-1);
+      if (typeof deps.clearSceneMeshes === 'function') deps.clearSceneMeshes();
+      if (typeof deps.clearEditHistory === 'function') deps.clearEditHistory();
+      return 0;
+    }
+
+    async function handleFiles(fileList, options = {}) {
+      let arr = Array.from(fileList || []);
       if (arr.length === 0) return;
+      const textCache = new Map();
+      async function readFileText(file) {
+        if (!textCache.has(file)) textCache.set(file, await file.text());
+        return textCache.get(file);
+      }
+      async function tryHandleSceneDropDispatch() {
+        const useSceneDispatch = !!(options.sceneDispatch || options.appendDroppedCubes);
+        if (!useSceneDispatch || typeof deps.handleSceneDropRecords !== 'function') return false;
+        const parsedItems = [];
+        for (const f of arr) {
+          const text = await readFileText(f);
+          const name = f && f.name ? f.name : '';
+          const fileKind = deps.detectInputFileKind(name, text);
+          if (fileKind === 'cube' || fileKind === 'two_component_cube' || fileKind === 'molden' || fileKind === 'xyz') {
+            const vol = parseVolumeByName(name, text);
+            parsedItems.push({ file: f, name, text, fileKind, vol });
+            continue;
+          }
+          if (fileKind === 'psi4_output' || deps.looksLikePsi4OutputText(text)) {
+            const bundle = deps.parsePsi4OutputVibrationBundle(text, name || 'Psi4 output');
+            parsedItems.push({
+              file: f,
+              name: name || 'Psi4 output',
+              text,
+              fileKind: 'psi4_output',
+              vol: bundle.vol,
+              vibrationPayload: bundle.payload,
+              sourceStem: normalizeFileStem(name || 'Psi4 output'),
+              forceNewScene: true,
+            });
+            continue;
+          }
+          return false;
+        }
+        if (!parsedItems.length) return false;
+        return !!deps.handleSceneDropRecords(parsedItems, {
+          resetIsoToDefault: parsedItems.some((item) => deps.hasVolumetricGrid(item.vol)),
+          skipAutoIsoOnInitialRebuild: parsedItems.some((item) => deps.hasVolumetricGrid(item.vol)),
+        });
+      }
+      async function tryHandleDroppedCubeAppend() {
+        if (!options.appendDroppedCubes) return false;
+        const cubeFiles = [];
+        for (const f of arr) {
+          const text = await readFileText(f);
+          const name = f && f.name ? f.name : '';
+          const fileKind = deps.detectInputFileKind(name, text);
+          if (fileKind === 'cube' || fileKind === 'two_component_cube') {
+            cubeFiles.push({ file: f, name, text, fileKind });
+            continue;
+          }
+          let parsedJsonForPrimaryCheck = null;
+          if (fileKind === 'json') {
+            try { parsedJsonForPrimaryCheck = JSON.parse(text); } catch { }
+          }
+          if (isPrimaryFileKind(fileKind, parsedJsonForPrimaryCheck) || fileKind === 'psi4_output' || deps.looksLikePsi4OutputText(text)) {
+            return false;
+          }
+        }
+        if (!cubeFiles.length) return false;
+        const existingVolumes = deps.getVolumes();
+        const startIndex = existingVolumes.length;
+        if (startIndex === 0) {
+          preparePrimaryLoadTarget();
+        } else {
+          for (const record of existingVolumes) {
+            if (!record || !deps.hasVolumetricGrid(record.vol)) continue;
+            record._sceneGraphLayerState = Object.assign({}, record._sceneGraphLayerState || {}, { visible: false });
+          }
+        }
+        let loadedVolumetricCount = 0;
+        const failures = [];
+        let appendedCubeCount = 0;
+        for (let i = 0; i < cubeFiles.length; i += 1) {
+          const item = cubeFiles[i];
+          try {
+            const vol = parseVolumeByName(item.name, item.text);
+            appendParsedVolumeRecord(item.name, vol, {
+              inferBondOrders: true,
+              _sceneGraphLayerState: { visible: appendedCubeCount === 0 },
+            });
+            appendedCubeCount++;
+            if (deps.hasVolumetricGrid(vol)) loadedVolumetricCount++;
+          } catch (err) {
+            const msg = err && err.message ? err.message : String(err);
+            console.error('[File import] Failed to parse', item.name || '(unnamed file)', err);
+            failures.push(`${item.name || 'Unknown file'}: ${msg}`);
+          }
+        }
+        if (deps.getVolumes().length > startIndex) {
+          finalizeLoadedVolumes(startIndex, {
+            resetIsoToDefault: loadedVolumetricCount > 0,
+            skipAutoIsoOnInitialRebuild: loadedVolumetricCount > 0,
+          });
+          const loadedNames = cubeFiles.slice(0, deps.getVolumes().length - startIndex).map((item) => item.name || 'cube');
+          deps.setNavigationHint(`Added ${loadedNames.length} cube layer${loadedNames.length === 1 ? '' : 's'}: ${loadedNames.join(', ')}`);
+        } else {
+          deps.updateEmptyStateVisibility();
+        }
+        if (failures.length > 0) {
+          const header = failures.length === 1
+            ? 'Could not load one cube file due to invalid format:'
+            : `Could not load ${failures.length} cube files due to invalid format:`;
+          const popup = `${header}\n\n${failures.map((f, i) => `${i + 1}. ${f}`).join('\n')}`;
+          deps.setHintMessage(failures[0]);
+          deps.alertUser(popup);
+        }
+        return true;
+      }
+      if (await tryHandleSceneDropDispatch()) return;
+      if (await tryHandleDroppedCubeAppend()) return;
+      if (options.appendDroppedCubes) {
+        const withKind = [];
+        for (let i = 0; i < arr.length; i += 1) {
+          const f = arr[i];
+          const text = await readFileText(f);
+          const name = f && f.name ? f.name : '';
+          const kind = deps.detectInputFileKind(name, text);
+          let parsedJsonForPrimaryCheck = null;
+          if (kind === 'json') {
+            try { parsedJsonForPrimaryCheck = JSON.parse(text); } catch { }
+          }
+          const displaces = kind === 'xyz' || kind === 'molden' || kind === 'psi4_output'
+            || deps.looksLikePsi4OutputText(text)
+            || (kind === 'json' && isPrimaryFileKind(kind, parsedJsonForPrimaryCheck));
+          withKind.push({ file: f, index: i, displaces });
+        }
+        if (withKind.some((item) => item.displaces)) {
+          arr = withKind
+            .slice()
+            .sort((a, b) => (Number(b.displaces) - Number(a.displaces)) || (a.index - b.index))
+            .map((item) => item.file);
+        }
+      }
       const failures = [];
+      const skippedPrimaryNames = [];
       const pendingVibrationPayloads = [];
       const importedPresetNames = [];
       const batchXyzStems = new Set();
@@ -133,19 +289,28 @@
       let startIndex = -1;
       let loadedCount = 0;
       let loadedVolumetricCount = 0;
+      let loadedPrimaryCount = 0;
       for (const f of arr) {
         try {
-          const text = await f.text();
+          const text = await readFileText(f);
           const name = f && f.name ? f.name : '';
           const fileKind = deps.detectInputFileKind(name, text);
+          let parsedJsonForPrimaryCheck = null;
+          if (fileKind === 'json') {
+            try { parsedJsonForPrimaryCheck = JSON.parse(text); } catch { }
+          }
           if (fileKind === 'psi4_output' || deps.looksLikePsi4OutputText(text)) {
+            if (loadedPrimaryCount > 0) {
+              skippedPrimaryNames.push(name || 'Psi4 output');
+              continue;
+            }
             const bundle = deps.parsePsi4OutputVibrationBundle(text, name || 'Psi4 output');
             if (!hasPreparedTarget) {
-              deps.clearPlaceholderVolumesForUserLoad();
-              startIndex = deps.getVolumes().length;
+              startIndex = preparePrimaryLoadTarget();
               hasPreparedTarget = true;
             }
             appendParsedVolumeRecord(name || 'Psi4 output', bundle.vol, { inferBondOrders: true });
+            loadedPrimaryCount++;
             loadedCount++;
             pendingVibrationPayloads.push({
               name: name || 'Psi4 output',
@@ -180,8 +345,7 @@
             continue;
           }
           if (fileKind === 'json') {
-            let parsedJson = null;
-            try { parsedJson = JSON.parse(text); } catch { }
+            let parsedJson = parsedJsonForPrimaryCheck;
             const looksLikeVibration = !!(
               parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson)
               && (parsedJson.kind === deps.VIBRATION_KIND || Array.isArray(parsedJson.modes) || Array.isArray(parsedJson.vibrations))
@@ -207,25 +371,33 @@
               parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson) && parsedJson.kind === deps.STRUCTURE_KIND
             );
             if (looksLikeStructure) {
+              if (loadedPrimaryCount > 0) {
+                skippedPrimaryNames.push(name || 'structure');
+                continue;
+              }
               const imported = deps.parseStructureEnvelopeText(text, f.name || 'structure');
               if (!hasPreparedTarget) {
-                deps.clearPlaceholderVolumesForUserLoad();
-                startIndex = deps.getVolumes().length;
+                startIndex = preparePrimaryLoadTarget();
                 hasPreparedTarget = true;
               }
               appendParsedVolumeRecord(deps.getUniqueVolumeName(imported.name), imported.vol, Object.assign({}, imported.extras || {}, { skipBuilderExtensionMerge: true }));
+              loadedPrimaryCount++;
               if (deps.hasVolumetricGrid(imported.vol)) loadedVolumetricCount++;
               loadedCount++;
               continue;
             }
           }
+          if (isPrimaryFileKind(fileKind, parsedJsonForPrimaryCheck) && loadedPrimaryCount > 0) {
+            skippedPrimaryNames.push(name || 'primary file');
+            continue;
+          }
           const vol = parseVolumeByName(f.name, text);
           if (!hasPreparedTarget) {
-            deps.clearPlaceholderVolumesForUserLoad();
-            startIndex = deps.getVolumes().length;
+            startIndex = preparePrimaryLoadTarget();
             hasPreparedTarget = true;
           }
           appendParsedVolumeRecord(f.name, vol, { inferBondOrders: true });
+          loadedPrimaryCount++;
           if (deps.hasVolumetricGrid(vol)) loadedVolumetricCount++;
           loadedCount++;
         } catch (err) {
@@ -264,6 +436,11 @@
           ? `Loaded preset: ${importedPresetNames[0]}`
           : `Loaded ${importedPresetNames.length} preset files`;
         deps.setNavigationHint(label);
+      }
+      if (skippedPrimaryNames.length > 0) {
+        const message = `Loaded the first primary file only. Skipped ${skippedPrimaryNames.length} additional primary file${skippedPrimaryNames.length === 1 ? '' : 's'}: ${skippedPrimaryNames.join(', ')}`;
+        deps.setHintMessage(message);
+        deps.alertUser(message);
       }
       if (failures.length > 0) {
         const header = failures.length === 1
@@ -350,7 +527,7 @@
 
     function installFileInput(inputEl) {
       if (!inputEl || typeof inputEl.addEventListener !== 'function') return;
-      inputEl.addEventListener('change', (e) => handleFiles(e && e.target ? e.target.files : []));
+      inputEl.addEventListener('change', (e) => handleFiles(e && e.target ? e.target.files : [], { sceneDispatch: true }));
     }
 
     function handleFileDragOver(e) {
@@ -364,7 +541,7 @@
       e.preventDefault();
       if (typeof e.stopPropagation === 'function') e.stopPropagation();
       const files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files.length > 0) void handleFiles(files);
+      if (files && files.length > 0) void handleFiles(files, { appendDroppedCubes: true, sceneDispatch: true });
     }
 
     function installDragDrop(targets) {
@@ -387,6 +564,21 @@
       try {
         const text = await fetchText('./assets/data/sample.cube');
         const vol = deps.parseCube(text);
+        if (typeof deps.handleSceneDropRecords === 'function') {
+          const handled = deps.handleSceneDropRecords([{
+            name: 'sample.cube',
+            fileKind: 'cube',
+            vol,
+            extras: { isSample: true },
+          }], {
+            resetIsoToDefault: true,
+            skipAutoIsoOnInitialRebuild: true,
+          });
+          if (handled) {
+            deps.setNavigationHint('Loaded sample.cube', { includeStyles: true });
+            return true;
+          }
+        }
         deps.setVolumes([]);
         deps.clearEditHistory();
         deps.getVolumes().push({ name: 'sample.cube', vol, isSample: true });
@@ -419,11 +611,33 @@
           const vol = parseVolumeByName(name, text);
           records.push({ name, vol });
         }
+        if (typeof deps.handleSceneDropRecords === 'function') {
+          const handled = deps.handleSceneDropRecords(records.map((item) => ({
+            name: item.name,
+            fileKind: item.vol && item.vol.isTwoComponent ? 'two_component_cube' : 'cube',
+            vol: item.vol,
+            extras: { isSample: true },
+          })), {
+            resetIsoToDefault: records.some((item) => deps.hasVolumetricGrid(item.vol)),
+            skipAutoIsoOnInitialRebuild: records.some((item) => deps.hasVolumetricGrid(item.vol)),
+          });
+          if (handled) {
+            deps.setNavigationHint(`Loaded ${label}`, { includeStyles: true });
+            return true;
+          }
+        }
         deps.setVolumes([]);
         deps.setCurrentIndex(-1);
         deps.clearSceneMeshes();
         deps.clearEditHistory();
-        for (const item of records) appendParsedVolumeRecord(item.name, item.vol, { isSample: true, inferBondOrders: true });
+        for (let i = 0; i < records.length; i += 1) {
+          const item = records[i];
+          appendParsedVolumeRecord(item.name, item.vol, {
+            isSample: true,
+            inferBondOrders: true,
+            _sceneGraphLayerState: { visible: i === 0 },
+          });
+        }
         finalizeLoadedVolumes(0, { resetIsoToDefault: true, skipAutoIsoOnInitialRebuild: true });
         deps.setNavigationHint(`Loaded ${label}`, { includeStyles: true });
         return true;
