@@ -3662,7 +3662,7 @@ def main() -> int:
             page.wait_for_function(
                 """() => {
                     const btn = document.getElementById('trajectoryPanelBtn');
-                    return !!btn && getComputedStyle(btn).display === 'none';
+                    return !!btn && getComputedStyle(btn).display !== 'none';
                 }"""
             )
             page.evaluate(

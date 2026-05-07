@@ -916,6 +916,99 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .trajectorySceneList {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .trajectorySceneRow,
+    .trajectorySyncMaster {
+      border: 1px solid var(--vm-color-border-strong);
+      border-radius: 8px;
+      background: var(--vm-color-surface-chip-muted);
+      padding: 8px;
+    }
+
+    .trajectorySceneRow.is-focused {
+      border-color: color-mix(in srgb, var(--vm-brand-accent) 46%, var(--vm-color-border-strong));
+      background: color-mix(in srgb, var(--vm-brand-accent) 10%, var(--vm-color-surface-chip-muted));
+    }
+
+    .trajectorySceneTitle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+      color: var(--vm-color-text-primary);
+      font-size: var(--vm-text-sm);
+      font-weight: var(--vm-font-weight-strong);
+    }
+
+    .trajectorySceneControls,
+    .trajectoryMasterControls {
+      display: grid;
+      grid-template-columns: 30px 30px minmax(70px, auto) minmax(96px, 1fr) minmax(72px, 84px) auto auto;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .trajectoryMasterControls {
+      grid-template-columns: 30px minmax(64px, auto) minmax(88px, 1fr) minmax(72px, 84px);
+    }
+
+    .trajectorySceneControls input[type="range"],
+    .trajectoryMasterControls input[type="range"] {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .trajectorySceneControls input[type="number"],
+    .trajectoryMasterControls input[type="number"] {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .trajectoryMiniButton {
+      width: 30px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid var(--vm-color-border-control);
+      border-radius: 6px;
+      background: var(--vm-color-surface-control);
+      color: var(--vm-color-on-control);
+      cursor: pointer;
+      font-family: var(--vm-font-icon);
+      font-size: 19px;
+      line-height: 1;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+
+    .trajectoryMiniButton:disabled,
+    .trajectorySceneControls input:disabled {
+      cursor: default;
+      opacity: 0.45;
+    }
+
+    .trajectoryFrameReadout,
+    .trajectoryMasterReadout,
+    .trajectorySyncedBadge {
+      color: var(--vm-color-text-secondary);
+      font-size: var(--vm-text-xs);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .trajectorySyncedBadge {
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    #trajectorySyncMaster {
+      margin-top: 10px;
+    }
+
     #vibrationModeEmpty {
       display: none;
       color: var(--vm-color-text-secondary);
@@ -4014,6 +4107,8 @@
         <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked /> Loop</label>
         <span></span>
       </div>
+      <div id="trajectorySceneList" class="trajectorySceneList"></div>
+      <div id="trajectorySyncMaster" class="trajectorySyncMaster" hidden></div>
     </div>
   </div>
 

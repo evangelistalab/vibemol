@@ -284,3 +284,36 @@ test('legacy cube appearance values normalize to solid-only schema', () => {
   assert.equal(appearance.iso, 0);
   assert.equal(appearance.opacity, 1);
 });
+
+test('trajectory scenes carry trajectory state and graph has a resettable sync master', () => {
+  const api = loadApi();
+  const graph = api.createSceneGraphController();
+  const trajectory = {
+    frames: [new Float32Array([0, 0, 0]), new Float32Array([1, 0, 0])],
+    currentFrame: 1,
+    playing: true,
+    fps: 24,
+    loop: false,
+    syncEnabled: true,
+  };
+  const scene = graph.createScene({ name: 'movie.xyz', kind: 'trajectory', trajectory });
+  graph.addMoleculeLayer(scene, { atomCount: 1 });
+  graph.addScene(scene);
+
+  assert.equal(scene.kind, 'trajectory');
+  assert.equal(scene.trajectory, trajectory);
+  assert.equal(graph.getState().syncMaster.playing, false);
+  assert.equal(graph.getState().syncMaster.frame, 0);
+  assert.equal(graph.getState().syncMaster.fps, 12);
+  assert.equal(graph.getState().syncMaster.lastStepMs, 0);
+
+  graph.getState().syncMaster.playing = true;
+  graph.getState().syncMaster.frame = 42;
+  graph.getState().syncMaster.fps = 30;
+  graph.clearScenes();
+
+  assert.equal(graph.getState().syncMaster.playing, false);
+  assert.equal(graph.getState().syncMaster.frame, 0);
+  assert.equal(graph.getState().syncMaster.fps, 12);
+  assert.equal(graph.getState().syncMaster.lastStepMs, 0);
+});

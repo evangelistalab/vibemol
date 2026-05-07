@@ -105,6 +105,12 @@
       activeLayerId: null,
       focusedSceneId: null,
       selectedLayerIds: [],
+      syncMaster: {
+        playing: false,
+        frame: 0,
+        fps: 12,
+        lastStepMs: 0,
+      },
     };
     const counters = {
       scene: 1,
@@ -355,6 +361,7 @@
         activeLayerId: props.activeLayerId || null,
         sourceFile: cloneShallowObject(props.sourceFile),
         kind: props.kind || null,
+        trajectory: props.trajectory || null,
         layers: [],
         meta: cloneShallowObject(props.meta),
       };
@@ -599,6 +606,12 @@
       state.activeLayerId = null;
       state.focusedSceneId = null;
       state.selectedLayerIds = [];
+      state.syncMaster = {
+        playing: false,
+        frame: 0,
+        fps: 12,
+        lastStepMs: 0,
+      };
     }
 
     function reset(nextScenes = []) {

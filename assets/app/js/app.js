@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7k';
+  const APP_VERSION = '0.8.7l';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -5788,7 +5788,7 @@
     applySceneCameraFit(center, fit.distance, fit.fitDiameter);
   }
 
-  let trajectoryPlaying = false;
+  let trajectoryPlaying = false; // Legacy video-export compatibility mirror for the focused trajectory.
   let trajectoryLastStepMs = 0;
   let vibrationPlaying = false;
   let vibrationLastStepMs = 0;
@@ -5849,22 +5849,85 @@
       updateEditSelectionVisuals();
     }
   }
-  /**
-   * Resolve trajectory metadata for the active volume.
-   * @returns {{enabled:boolean,record:*,vol:*,traj:*,atomCount:number,frameCount:number}}
-   */
-  function getActiveTrajectoryInfo() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+  function getTrajectorySyncMaster() {
+    const state = sceneGraphController && sceneGraphController.getState ? sceneGraphController.getState() : null;
+    if (!state) return { playing: false, frame: 0, fps: 12, lastStepMs: 0 };
+    if (!state.syncMaster) state.syncMaster = {};
+    const master = state.syncMaster;
+    master.playing = !!master.playing;
+    master.frame = Math.max(0, Math.floor(Number(master.frame) || 0));
+    master.fps = Math.max(1, Math.min(120, Math.round(Number(master.fps) || 12)));
+    master.lastStepMs = Math.max(0, Number(master.lastStepMs) || 0);
+    return master;
+  }
+
+  function normalizeTrajectoryClock(traj, frameCount) {
+    if (!traj) return null;
+    const count = Math.max(0, Number(frameCount) | 0);
+    const rawFrame = Number.isFinite(Number(traj.currentFrame)) ? Number(traj.currentFrame) : Number(traj.frameIndex);
+    const frame = count > 0 ? Math.max(0, Math.min(count - 1, Number(rawFrame) | 0)) : 0;
+    traj.frameIndex = frame;
+    traj.currentFrame = frame;
+    traj.fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
+    traj.loop = traj.loop !== false;
+    traj.playing = !!traj.playing;
+    traj.syncEnabled = !!traj.syncEnabled;
+    traj._lastStepMs = Math.max(0, Number(traj._lastStepMs) || 0);
+    return traj;
+  }
+
+  function getTrajectoryInfoForRecord(record, scene = null) {
     const vol = record && record.vol;
     const atomCount = (vol && Array.isArray(vol.atoms)) ? vol.atoms.length : 0;
     const traj = vol && vol.trajectory;
     if (!traj || !Array.isArray(traj.frames) || traj.frames.length <= 1 || atomCount <= 0) {
-      return { enabled: false, record, vol, traj: null, atomCount, frameCount: 0 };
+      return { enabled: false, scene, record, vol, traj: null, atomCount, frameCount: 0 };
     }
     const frameSize = atomCount * 3;
     const valid = traj.frames.every((frame) => frame && frame.length === frameSize);
-    if (!valid) return { enabled: false, record, vol, traj: null, atomCount, frameCount: 0 };
-    return { enabled: true, record, vol, traj, atomCount, frameCount: traj.frames.length };
+    if (!valid) return { enabled: false, scene, record, vol, traj: null, atomCount, frameCount: 0 };
+    normalizeTrajectoryClock(traj, traj.frames.length);
+    if (scene && scene.kind === 'trajectory') {
+      scene.trajectory = traj;
+      scene.meta = Object.assign({}, scene.meta || {}, { frameCount: traj.frames.length });
+    }
+    return { enabled: true, scene, record, vol, traj, atomCount, frameCount: traj.frames.length };
+  }
+
+  function getTrajectoryRecordForScene(scene) {
+    if (!scene) return null;
+    const layers = sceneGraphController.listLayers(scene);
+    const trajectoryLayer = layers.find((layer) => layer && layer.record && getActiveTrajectoryInfoForRecord(layer.record).enabled);
+    if (trajectoryLayer) return trajectoryLayer.record;
+    if (scene.moleculeRecord && getActiveTrajectoryInfoForRecord(scene.moleculeRecord).enabled) return scene.moleculeRecord;
+    return null;
+  }
+
+  function getTrajectoryInfoForScene(scene) {
+    return getTrajectoryInfoForRecord(getTrajectoryRecordForScene(scene), scene);
+  }
+
+  function getAllTrajectoryInfos() {
+    const out = [];
+    for (const scene of sceneGraphController.getScenes()) {
+      const info = getTrajectoryInfoForScene(scene);
+      if (info.enabled) out.push(info);
+    }
+    return out;
+  }
+
+  /**
+   * Resolve trajectory metadata for the focused trajectory scene.
+   * @returns {{enabled:boolean,scene:*,record:*,vol:*,traj:*,atomCount:number,frameCount:number}}
+   */
+  function getActiveTrajectoryInfo() {
+    const focused = sceneGraphController.getFocusedScene ? sceneGraphController.getFocusedScene() : null;
+    const focusedInfo = focused ? getTrajectoryInfoForScene(focused) : null;
+    if (focusedInfo && focusedInfo.enabled) return focusedInfo;
+    const activeRecord = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const activeInfo = getTrajectoryInfoForRecord(activeRecord, null);
+    if (activeInfo.enabled) return activeInfo;
+    return getAllTrajectoryInfos()[0] || { enabled: false, scene: focused || null, record: activeRecord, vol: activeRecord && activeRecord.vol, traj: null, atomCount: 0, frameCount: 0 };
   }
 
   /**
@@ -5875,8 +5938,7 @@
    */
   function shouldUseDynamicTrajectoryBondsForVolume(vol) {
     if (currentMode === MODES.EDIT) return false;
-    const info = getActiveTrajectoryInfo();
-    return !!(info && info.enabled && info.vol === vol);
+    return isTrajectoryVolumeRecord(vol);
   }
 
   /**
@@ -5891,58 +5953,290 @@
     else btn.textContent = String(glyph || '');
   }
 
+  function setTrajectoryMiniButtonGlyph(btn, glyph) {
+    if (!btn) return;
+    const symbol = glyph === 'play_arrow'
+      ? '▶'
+      : glyph === 'pause'
+        ? '⏸'
+        : glyph === 'replay'
+          ? '⟲'
+          : String(glyph || '');
+    btn.textContent = symbol;
+  }
+
+  function getTrajectoryInfoKey(info) {
+    return String(info && info.scene && info.scene.id || info && info.record && info.record.name || '');
+  }
+
+  function createTrajectoryControlLabel(text, inputEl) {
+    const label = document.createElement('label');
+    label.style.width = 'auto';
+    label.style.display = 'inline-flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '4px';
+    const span = document.createElement('span');
+    span.textContent = text;
+    label.appendChild(span);
+    if (inputEl) label.appendChild(inputEl);
+    return label;
+  }
+
+  function focusTrajectoryInfoScene(info) {
+    if (info && info.scene) {
+      focusScene(info.scene);
+      activateSceneFocusRecord(info.scene);
+    }
+  }
+
+  function renderTrajectorySceneRow(info, activeInfo) {
+    const row = document.createElement('div');
+    row.className = 'trajectorySceneRow';
+    row.dataset.sceneId = String(info && info.scene && info.scene.id || '');
+    const isFocused = !!(activeInfo && activeInfo.enabled && getTrajectoryInfoKey(activeInfo) === getTrajectoryInfoKey(info));
+    row.classList.toggle('is-focused', isFocused);
+
+    const title = document.createElement('div');
+    title.className = 'trajectorySceneTitle';
+    const name = document.createElement('span');
+    name.textContent = String(info && info.scene && info.scene.name || info && info.record && info.record.name || 'Trajectory');
+    title.appendChild(name);
+    if (info.traj.syncEnabled) {
+      const badge = document.createElement('span');
+      badge.className = 'trajectorySyncedBadge';
+      badge.textContent = 'synced';
+      title.appendChild(badge);
+    }
+    row.appendChild(title);
+
+    const controls = document.createElement('div');
+    controls.className = 'trajectorySceneControls';
+
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'trajectoryMiniButton';
+    play.disabled = !!info.traj.syncEnabled;
+    setTrajectoryMiniButtonGlyph(play, info.traj.playing ? 'pause' : 'play_arrow');
+    play.setAttribute('aria-label', info.traj.playing ? 'Pause trajectory' : 'Play trajectory');
+    play.addEventListener('click', () => {
+      focusTrajectoryInfoScene(info);
+      setTrajectoryPlayingForInfo(info, !info.traj.playing);
+    });
+    controls.appendChild(play);
+
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'trajectoryMiniButton';
+    reset.disabled = !!info.traj.syncEnabled;
+    setTrajectoryMiniButtonGlyph(reset, 'replay');
+    reset.setAttribute('aria-label', 'Reset trajectory');
+    reset.addEventListener('click', () => {
+      focusTrajectoryInfoScene(info);
+      if (info.traj.syncEnabled) return;
+      applyTrajectoryFrameForInfo(info, 0, { syncUi: true });
+    });
+    controls.appendChild(reset);
+
+    const readout = document.createElement('span');
+    readout.className = 'trajectoryFrameReadout';
+    readout.textContent = `${(info.traj.frameIndex | 0) + 1}/${info.frameCount}`;
+    controls.appendChild(readout);
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = String(Math.max(0, info.frameCount - 1));
+    slider.step = '1';
+    slider.value = String(info.traj.frameIndex | 0);
+    slider.disabled = !!info.traj.syncEnabled;
+    slider.addEventListener('input', () => {
+      focusTrajectoryInfoScene(info);
+      if (info.traj.syncEnabled) return;
+      setTrajectoryPlayingForInfo(info, false);
+      applyTrajectoryFrameForInfo(info, Number(slider.value), { syncUi: true });
+    });
+    controls.appendChild(slider);
+
+    const fps = document.createElement('input');
+    fps.type = 'number';
+    fps.min = '1';
+    fps.max = '120';
+    fps.step = '1';
+    fps.value = String(info.traj.fps);
+    fps.disabled = !!info.traj.syncEnabled;
+    fps.addEventListener('change', () => {
+      focusTrajectoryInfoScene(info);
+      if (info.traj.syncEnabled) return;
+      info.traj.fps = Math.max(1, Math.min(120, Math.round(Number(fps.value) || 12)));
+      syncTrajectoryControls();
+    });
+    controls.appendChild(createTrajectoryControlLabel('FPS', fps));
+
+    const loop = document.createElement('input');
+    loop.type = 'checkbox';
+    loop.checked = info.traj.loop !== false;
+    loop.addEventListener('change', () => {
+      focusTrajectoryInfoScene(info);
+      info.traj.loop = !!loop.checked;
+      syncTrajectoryControls();
+    });
+    controls.appendChild(createTrajectoryControlLabel('Loop', loop));
+
+    const sync = document.createElement('input');
+    sync.type = 'checkbox';
+    sync.checked = !!info.traj.syncEnabled;
+    sync.addEventListener('change', () => {
+      focusTrajectoryInfoScene(info);
+      setTrajectorySyncEnabled(info, !!sync.checked);
+    });
+    controls.appendChild(createTrajectoryControlLabel('Sync', sync));
+
+    row.appendChild(controls);
+    row.addEventListener('click', (event) => {
+      if (event.target && /^(input|button|select|textarea)$/i.test(event.target.tagName || '')) return;
+      focusTrajectoryInfoScene(info);
+      syncTrajectoryControls();
+    });
+    return row;
+  }
+
+  function renderTrajectorySyncMaster(infos) {
+    if (!trajectorySyncMasterEl) return;
+    const master = getTrajectorySyncMaster();
+    const hasSync = anyTrajectorySyncEnabled(infos);
+    trajectorySyncMasterEl.hidden = !hasSync;
+    trajectorySyncMasterEl.textContent = '';
+    if (!hasSync) return;
+
+    const title = document.createElement('div');
+    title.className = 'trajectorySceneTitle';
+    title.textContent = 'Sync master';
+    trajectorySyncMasterEl.appendChild(title);
+
+    const controls = document.createElement('div');
+    controls.className = 'trajectoryMasterControls';
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'trajectoryMiniButton';
+    setTrajectoryMiniButtonGlyph(play, master.playing ? 'pause' : 'play_arrow');
+    play.setAttribute('aria-label', master.playing ? 'Pause synchronized trajectories' : 'Play synchronized trajectories');
+    play.addEventListener('click', () => {
+      master.playing = !master.playing;
+      master.lastStepMs = 0;
+      syncTrajectoryControls();
+    });
+    controls.appendChild(play);
+
+    const readout = document.createElement('span');
+    readout.className = 'trajectoryMasterReadout';
+    readout.textContent = `frame ${master.frame}`;
+    controls.appendChild(readout);
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    const syncInfos = infos.filter((info) => info.traj && info.traj.syncEnabled);
+    const maxFrameCount = Math.max(1, ...syncInfos.map((info) => info.frameCount || 1));
+    slider.max = String(Math.max(master.frame, (maxFrameCount * 3) - 1));
+    slider.step = '1';
+    slider.value = String(Math.min(Number(slider.max) || 0, master.frame));
+    slider.addEventListener('input', () => {
+      master.frame = Math.max(0, Number(slider.value) | 0);
+      master.lastStepMs = 0;
+      for (const info of infos) {
+        if (info.traj && info.traj.syncEnabled) applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info, master.frame), { syncUi: false });
+      }
+      syncTrajectoryControls();
+    });
+    controls.appendChild(slider);
+
+    const fps = document.createElement('input');
+    fps.type = 'number';
+    fps.min = '1';
+    fps.max = '120';
+    fps.step = '1';
+    fps.value = String(master.fps);
+    fps.addEventListener('change', () => {
+      master.fps = Math.max(1, Math.min(120, Math.round(Number(fps.value) || 12)));
+      master.lastStepMs = 0;
+      syncTrajectoryControls();
+    });
+    controls.appendChild(createTrajectoryControlLabel('FPS', fps));
+    trajectorySyncMasterEl.appendChild(controls);
+  }
+
   /**
    * Update trajectory controls visibility and values for the active file.
    */
   function syncTrajectoryControls() {
+    const infos = getAllTrajectoryInfos();
     const info = getActiveTrajectoryInfo();
+    const hasAnyTrajectory = infos.length > 0;
     if (
       trajectoryVideoController
       && trajectoryVideoController.isActive()
       && trajectoryVideoController.getTargetRecord()
-      && info.enabled
+      && hasAnyTrajectory
       && info.record !== trajectoryVideoController.getTargetRecord()
     ) {
       trajectoryVideoController.discardForTargetRecordChange();
     }
     if (trajectoryPanelBtn) {
-      trajectoryPanelBtn.style.display = info.enabled ? '' : 'none';
-      setTooltipText(trajectoryPanelBtn, info.enabled
+      trajectoryPanelBtn.style.display = hasAnyTrajectory ? '' : 'none';
+      setTooltipText(trajectoryPanelBtn, hasAnyTrajectory
         ? 'Trajectory controls (T)'
         : 'No trajectory data in active file');
     }
-    if (trajectoryRow) trajectoryRow.style.display = info.enabled ? 'grid' : 'none';
-    if (trajectoryRow2) trajectoryRow2.style.display = info.enabled ? 'grid' : 'none';
-    if (trajectoryBondModeNote) trajectoryBondModeNote.style.display = info.enabled ? 'block' : 'none';
-    if (!info.enabled) {
+    if (trajectoryRow) trajectoryRow.style.display = 'none';
+    if (trajectoryRow2) trajectoryRow2.style.display = 'none';
+    if (trajectoryBondModeNote) trajectoryBondModeNote.style.display = hasAnyTrajectory ? 'block' : 'none';
+    if (!hasAnyTrajectory) {
       setTrajectoryPanelOpen(false, {
         syncUi: false,
         restoreTrajectoryVideoState: false,
         trajectoryVideoReason: 'Trajectory video export discarded because trajectory data is unavailable',
       });
-      stopTrajectoryPlayback({ syncUi: false });
+      stopAllTrajectoryPlayback({ syncUi: false });
       if (trajectoryNowPlaying) trajectoryNowPlaying.textContent = 'No trajectory selected';
       if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
+      if (trajectorySceneListEl) trajectorySceneListEl.textContent = '';
+      if (trajectorySyncMasterEl) {
+        trajectorySyncMasterEl.hidden = true;
+        trajectorySyncMasterEl.textContent = '';
+      }
       updateDisplayWindowAdaptiveMenuUi();
       return;
     }
+    const traj = info.enabled ? info.traj : null;
+    if (traj) normalizeTrajectoryClock(traj, info.frameCount);
 
-    const traj = info.traj;
-    traj.frameIndex = Math.max(0, Math.min(info.frameCount - 1, Number(traj.frameIndex) | 0));
-    traj.fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
-    traj.loop = traj.loop !== false;
-
-    if (trajectoryFrameEl) {
+    if (trajectoryFrameEl && info.enabled) {
       trajectoryFrameEl.max = String(Math.max(0, info.frameCount - 1));
       trajectoryFrameEl.value = String(traj.frameIndex);
+      trajectoryFrameEl.disabled = !!traj.syncEnabled;
     }
-    if (trajectoryFrameLabel) trajectoryFrameLabel.textContent = `${traj.frameIndex + 1}/${info.frameCount}`;
+    if (trajectoryFrameLabel && info.enabled) trajectoryFrameLabel.textContent = `${traj.frameIndex + 1}/${info.frameCount}`;
     if (trajectoryNowPlaying) {
-      trajectoryNowPlaying.textContent = `Frame ${traj.frameIndex + 1}/${info.frameCount} • ${traj.fps} fps${traj.loop ? ' • loop' : ''}`;
+      trajectoryNowPlaying.textContent = info.enabled
+        ? `Frame ${traj.frameIndex + 1}/${info.frameCount} • ${traj.syncEnabled ? 'synced' : `${traj.fps} fps`}${traj.loop ? ' • loop' : ''}`
+        : `${infos.length} trajectory scenes loaded`;
     }
-    setMotionPanelButtonGlyph(trajectoryPlayBtn, trajectoryPlaying ? 'pause' : 'play_arrow');
-    if (trajectoryLoopEl) trajectoryLoopEl.checked = !!traj.loop;
-    if (trajectoryFpsEl && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
+    const master = getTrajectorySyncMaster();
+    const focusedPlaying = !!(info.enabled && traj && (traj.syncEnabled ? master.playing : traj.playing));
+    trajectoryPlaying = focusedPlaying;
+    trajectoryLastStepMs = traj ? Number(traj._lastStepMs) || 0 : 0;
+    setMotionPanelButtonGlyph(trajectoryPlayBtn, focusedPlaying ? 'pause' : 'play_arrow');
+    if (trajectoryPlayBtn) trajectoryPlayBtn.disabled = !info.enabled;
+    if (trajectoryResetBtn) trajectoryResetBtn.disabled = !info.enabled || !!(traj && traj.syncEnabled);
+    if (trajectoryLoopEl && info.enabled) trajectoryLoopEl.checked = !!traj.loop;
+    if (trajectoryFpsEl && info.enabled && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
+    if (trajectoryFpsEl) trajectoryFpsEl.disabled = !info.enabled || !!(traj && traj.syncEnabled);
+    if (trajectoryLoopEl) trajectoryLoopEl.disabled = !info.enabled;
+    if (trajectorySceneListEl) {
+      trajectorySceneListEl.textContent = '';
+      for (const item of infos) trajectorySceneListEl.appendChild(renderTrajectorySceneRow(item, info));
+    }
+    renderTrajectorySyncMaster(infos);
     if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
     updateDisplayWindowAdaptiveMenuUi();
   }
@@ -6522,8 +6816,7 @@
    * @param {{syncUi?:boolean}=} options
    * @returns {boolean}
    */
-  function applyTrajectoryFrame(frameIndex, options = {}) {
-    const info = getActiveTrajectoryInfo();
+  function applyTrajectoryFrameForInfo(info, frameIndex, options = {}) {
     if (!info.enabled) return false;
     const syncUi = options.syncUi !== false;
     const traj = info.traj;
@@ -6531,8 +6824,76 @@
     if (!frame) return false;
     const nextIndex = Math.max(0, Math.min(info.frameCount - 1, Number(frameIndex) | 0));
     traj.frameIndex = nextIndex;
+    traj.currentFrame = nextIndex;
     applyAtomCoordinateFrame(info.vol, frame, info.atomCount, { record: info.record });
     if (syncUi) syncTrajectoryControls();
+    return true;
+  }
+
+  function applyTrajectoryFrame(frameIndex, options = {}) {
+    return applyTrajectoryFrameForInfo(getActiveTrajectoryInfo(), frameIndex, options);
+  }
+
+  function mapMasterFrameToTrajectory(info, masterFrame = getTrajectorySyncMaster().frame) {
+    if (!(info && info.enabled && info.frameCount > 0)) return 0;
+    const frame = Math.max(0, Math.floor(Number(masterFrame) || 0));
+    if (info.traj && info.traj.loop === false) return Math.min(frame, info.frameCount - 1);
+    return frame % info.frameCount;
+  }
+
+  function anyTrajectorySyncEnabled(infos = getAllTrajectoryInfos()) {
+    return infos.some((info) => info && info.enabled && info.traj && info.traj.syncEnabled);
+  }
+
+  function stopAllTrajectoryPlayback(options = {}) {
+    for (const info of getAllTrajectoryInfos()) {
+      if (info.traj) {
+        info.traj.playing = false;
+        info.traj._lastStepMs = 0;
+      }
+    }
+    const master = getTrajectorySyncMaster();
+    master.playing = false;
+    master.lastStepMs = 0;
+    trajectoryPlaying = false;
+    trajectoryLastStepMs = 0;
+    if (options.syncUi !== false) syncTrajectoryControls();
+  }
+
+  function isAnyTrajectoryPlaybackActive() {
+    if (getTrajectorySyncMaster().playing && anyTrajectorySyncEnabled()) return true;
+    return getAllTrajectoryInfos().some((info) => !!(info && info.traj && info.traj.playing));
+  }
+
+  function setTrajectorySyncEnabled(info, enabled) {
+    if (!(info && info.enabled && info.traj)) return false;
+    const infos = getAllTrajectoryInfos();
+    const master = getTrajectorySyncMaster();
+    const wasFirstSync = !infos.some((item) => item !== info && item.traj && item.traj.syncEnabled);
+    const nextEnabled = !!enabled;
+    if (nextEnabled) {
+      if (!info.traj.syncEnabled && wasFirstSync) {
+        master.frame = Math.max(0, Number(info.traj.frameIndex) | 0);
+        master.fps = Math.max(1, Math.min(120, Math.round(Number(info.traj.fps) || master.fps || 12)));
+        master.lastStepMs = 0;
+      }
+      info.traj._preSyncPlaying = !!info.traj.playing;
+      info.traj.playing = false;
+      info.traj._lastStepMs = 0;
+      info.traj.syncEnabled = true;
+      applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info, master.frame), { syncUi: false });
+    } else {
+      const mapped = mapMasterFrameToTrajectory(info, master.frame);
+      info.traj.syncEnabled = false;
+      info.traj.playing = false;
+      info.traj._lastStepMs = 0;
+      applyTrajectoryFrameForInfo(info, mapped, { syncUi: false });
+      if (!anyTrajectorySyncEnabled()) {
+        master.playing = false;
+        master.lastStepMs = 0;
+      }
+    }
+    syncTrajectoryControls();
     return true;
   }
   /**
@@ -6540,51 +6901,110 @@
    * @param {number} nowMs
    */
   function updateTrajectoryPlayback(nowMs) {
-    const info = getActiveTrajectoryInfo();
-    if (!info.enabled) {
-      if (trajectoryPlaying) {
-        trajectoryPlaying = false;
-        trajectoryLastStepMs = 0;
-        syncTrajectoryControls();
-      }
+    const infos = getAllTrajectoryInfos();
+    if (!infos.length) {
+      if (trajectoryPlaying || getTrajectorySyncMaster().playing) stopAllTrajectoryPlayback({ syncUi: true });
       return;
     }
-    if (!trajectoryPlaying) return;
     if (currentMode === MODES.EDIT) return;
 
-    const traj = info.traj;
-    const fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
-    traj.fps = fps;
-    const stepMs = 1000 / fps;
-    if (trajectoryLastStepMs <= 0) {
-      trajectoryLastStepMs = nowMs;
-      return;
-    }
-    const elapsed = nowMs - trajectoryLastStepMs;
-    if (elapsed < stepMs) return;
-    const steps = Math.max(1, Math.floor(elapsed / stepMs));
-    trajectoryLastStepMs += steps * stepMs;
-
-    let next = (traj.frameIndex | 0) + steps;
-    const lastFrameIndex = info.frameCount - 1;
-    const exportAdvance = trajectoryVideoController
-      ? trajectoryVideoController.resolveAdvance(next, lastFrameIndex)
-      : null;
-    if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'nextFrameIndex')) {
-      next = Number(exportAdvance.nextFrameIndex) | 0;
-    }
-    if (exportAdvance && exportAdvance.stopPlayback) {
-      trajectoryPlaying = false;
-      trajectoryLastStepMs = 0;
-    } else if (next >= info.frameCount) {
-      if (traj.loop) next = next % info.frameCount;
-      else {
-        next = lastFrameIndex;
-        trajectoryPlaying = false;
-        trajectoryLastStepMs = 0;
+    let advanced = false;
+    const master = getTrajectorySyncMaster();
+    if (master.playing && anyTrajectorySyncEnabled(infos)) {
+      const stepMs = 1000 / master.fps;
+      if (master.lastStepMs <= 0) {
+        master.lastStepMs = nowMs;
+      } else {
+        const elapsed = nowMs - master.lastStepMs;
+        if (elapsed >= stepMs) {
+          const steps = Math.max(1, Math.floor(elapsed / stepMs));
+          master.lastStepMs += steps * stepMs;
+          master.frame += steps;
+          advanced = true;
+        }
       }
+    } else {
+      master.lastStepMs = 0;
     }
-    applyTrajectoryFrame(next, { syncUi: true });
+
+    for (const info of infos) {
+      const traj = info.traj;
+      if (!traj) continue;
+      if (traj.syncEnabled) {
+        const mapped = mapMasterFrameToTrajectory(info, master.frame);
+        const lastFrameIndex = info.frameCount - 1;
+        const exportAdvance = (trajectoryVideoController && trajectoryVideoController.getTargetRecord && trajectoryVideoController.getTargetRecord() === info.record)
+          ? trajectoryVideoController.resolveAdvance(mapped, lastFrameIndex)
+          : null;
+        if (exportAdvance && exportAdvance.stopPlayback) {
+          master.playing = false;
+          master.lastStepMs = 0;
+        }
+        if ((traj.frameIndex | 0) !== mapped || advanced) {
+          applyTrajectoryFrameForInfo(info, mapped, { syncUi: false });
+          advanced = true;
+        }
+        continue;
+      }
+      if (!traj.playing) {
+        traj._lastStepMs = 0;
+        continue;
+      }
+      const fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
+      traj.fps = fps;
+      const stepMs = 1000 / fps;
+      if (traj._lastStepMs <= 0) {
+        traj._lastStepMs = nowMs;
+        continue;
+      }
+      const elapsed = nowMs - traj._lastStepMs;
+      if (elapsed < stepMs) continue;
+      const steps = Math.max(1, Math.floor(elapsed / stepMs));
+      traj._lastStepMs += steps * stepMs;
+
+      let next = (traj.frameIndex | 0) + steps;
+      const lastFrameIndex = info.frameCount - 1;
+      const exportAdvance = (trajectoryVideoController && trajectoryVideoController.getTargetRecord && trajectoryVideoController.getTargetRecord() === info.record)
+        ? trajectoryVideoController.resolveAdvance(next, lastFrameIndex)
+        : null;
+      if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'nextFrameIndex')) {
+        next = Number(exportAdvance.nextFrameIndex) | 0;
+      }
+      if (exportAdvance && exportAdvance.stopPlayback) {
+        traj.playing = false;
+        traj._lastStepMs = 0;
+      } else if (next >= info.frameCount) {
+        if (traj.loop) next = next % info.frameCount;
+        else {
+          next = lastFrameIndex;
+          traj.playing = false;
+          traj._lastStepMs = 0;
+        }
+      }
+      applyTrajectoryFrameForInfo(info, next, { syncUi: false });
+      advanced = true;
+    }
+    const active = getActiveTrajectoryInfo();
+    trajectoryPlaying = !!(active.enabled && active.traj && (active.traj.syncEnabled ? master.playing : active.traj.playing));
+    trajectoryLastStepMs = active.traj ? Number(active.traj._lastStepMs) || 0 : 0;
+    if (advanced) syncTrajectoryControls();
+  }
+
+  function setTrajectoryPlayingForInfo(info, playing) {
+    if (!(info && info.enabled && info.traj)) return false;
+    if (info.traj.syncEnabled) {
+      const master = getTrajectorySyncMaster();
+      master.playing = !!playing;
+      master.lastStepMs = 0;
+    } else {
+      info.traj.playing = !!playing;
+      info.traj._lastStepMs = 0;
+    }
+    const active = getActiveTrajectoryInfo();
+    trajectoryPlaying = !!(active.enabled && active.traj && (active.traj.syncEnabled ? getTrajectorySyncMaster().playing : active.traj.playing));
+    trajectoryLastStepMs = active.traj ? Number(active.traj._lastStepMs) || 0 : 0;
+    syncTrajectoryControls();
+    return true;
   }
 
   /**
@@ -6592,6 +7012,17 @@
    * @param {{syncUi?:boolean}=} options
    */
   function stopTrajectoryPlayback(options = {}) {
+    const info = getActiveTrajectoryInfo();
+    if (info.enabled && info.traj) {
+      if (info.traj.syncEnabled) {
+        const master = getTrajectorySyncMaster();
+        master.playing = false;
+        master.lastStepMs = 0;
+      } else {
+        info.traj.playing = false;
+        info.traj._lastStepMs = 0;
+      }
+    }
     trajectoryPlaying = false;
     trajectoryLastStepMs = 0;
     if (options.syncUi !== false) syncTrajectoryControls();
@@ -6604,15 +7035,14 @@
   function toggleActiveTrajectoryPlayback() {
     const info = getActiveTrajectoryInfo();
     if (!info.enabled) return false;
-    const nextPlaying = !trajectoryPlaying;
+    const currentPlaying = info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing;
+    const nextPlaying = !currentPlaying;
     if (nextPlaying) {
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       restoreActiveVibrationEquilibrium({ syncUi: false });
     }
-    trajectoryPlaying = nextPlaying;
-    trajectoryLastStepMs = 0;
-    syncTrajectoryControls();
+    setTrajectoryPlayingForInfo(info, nextPlaying);
     syncVibrationControls();
     return true;
   }
@@ -6631,8 +7061,16 @@
     vibrationPlaying = false;
     vibrationLastStepMs = 0;
     restoreActiveVibrationEquilibrium({ syncUi: false });
-    stopTrajectoryPlayback({ syncUi: false });
-    applyTrajectoryFrame(next, { syncUi: true });
+    if (info.traj.syncEnabled) {
+      const master = getTrajectorySyncMaster();
+      master.frame = next;
+      master.lastStepMs = 0;
+      applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info, master.frame), { syncUi: false });
+    } else {
+      stopAllTrajectoryPlayback({ syncUi: false });
+      applyTrajectoryFrameForInfo(info, next, { syncUi: false });
+    }
+    syncTrajectoryControls();
     syncVibrationControls();
     return true;
   }
@@ -7220,6 +7658,8 @@
   const trajectoryFrameLabel = document.getElementById('trajectoryFrameLabel');
   const trajectoryFpsEl = document.getElementById('trajectoryFps');
   const trajectoryLoopEl = document.getElementById('trajectoryLoop');
+  const trajectorySceneListEl = document.getElementById('trajectorySceneList');
+  const trajectorySyncMasterEl = document.getElementById('trajectorySyncMaster');
   const trajectoryVideoCropOverlay = document.getElementById('trajectoryVideoCropOverlay');
   const trajectoryVideoCropFrame = document.getElementById('trajectoryVideoCropFrame');
   const trajectoryVideoCropDimensions = document.getElementById('trajectoryVideoCropDimensions');
@@ -7268,7 +7708,15 @@
       cropCancelBtnEl: trajectoryVideoCropCancelBtn,
       sourceCanvasEl: canvasEl,
     },
-    getDisabledElements: () => [trajectoryPlayBtn, trajectoryResetBtn, trajectoryFrameEl, trajectoryFpsEl, trajectoryLoopEl],
+    getDisabledElements: () => [
+      trajectoryPlayBtn,
+      trajectoryResetBtn,
+      trajectoryFrameEl,
+      trajectoryFpsEl,
+      trajectoryLoopEl,
+      ...(trajectorySceneListEl ? Array.from(trajectorySceneListEl.querySelectorAll('button,input,select,textarea')) : []),
+      ...(trajectorySyncMasterEl ? Array.from(trajectorySyncMasterEl.querySelectorAll('button,input,select,textarea')) : []),
+    ],
     getOverlayBounds: getCanvasExportOverlayBounds,
     getActiveInfo: getActiveTrajectoryInfo,
     readRendererViewportMetrics,
@@ -7278,13 +7726,31 @@
     setTooltipText,
     syncPrimaryControls: syncTrajectoryControls,
     syncSecondaryControls: syncVibrationControls,
-    getPlaybackState: () => ({
-      playing: trajectoryPlaying,
-      lastStepMs: trajectoryLastStepMs,
-    }),
+    getPlaybackState: () => {
+      const info = getActiveTrajectoryInfo();
+      const master = getTrajectorySyncMaster();
+      const syncEnabled = !!(info && info.enabled && info.traj && info.traj.syncEnabled);
+      return {
+        playing: !!(syncEnabled ? master.playing : info && info.enabled && info.traj && info.traj.playing),
+        lastStepMs: syncEnabled
+          ? Math.max(0, Number(master.lastStepMs) || 0)
+          : Math.max(0, Number(info && info.traj && info.traj._lastStepMs) || 0),
+      };
+    },
     setPlaybackState: (nextState = {}) => {
-      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) trajectoryPlaying = !!nextState.playing;
-      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) trajectoryLastStepMs = Number(nextState.lastStepMs) || 0;
+      const info = getActiveTrajectoryInfo();
+      const master = getTrajectorySyncMaster();
+      const syncEnabled = !!(info && info.enabled && info.traj && info.traj.syncEnabled);
+      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) {
+        if (syncEnabled) master.playing = !!nextState.playing;
+        else if (info && info.enabled && info.traj) info.traj.playing = !!nextState.playing;
+      }
+      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) {
+        if (syncEnabled) master.lastStepMs = Math.max(0, Number(nextState.lastStepMs) || 0);
+        else if (info && info.enabled && info.traj) info.traj._lastStepMs = Math.max(0, Number(nextState.lastStepMs) || 0);
+      }
+      trajectoryPlaying = !!(info && info.enabled && info.traj && (info.traj.syncEnabled ? master.playing : info.traj.playing));
+      trajectoryLastStepMs = info && info.traj ? Math.max(0, Number(info.traj._lastStepMs) || 0) : 0;
     },
     canResumePlayback: () => currentMode !== MODES.EDIT,
     getCaptureFps: (info) => {
@@ -7302,26 +7768,42 @@
     captureSessionState: (info) => ({
       targetRecord: info && info.record ? info.record : null,
       frameIndex: info && info.traj ? (info.traj.frameIndex | 0) : 0,
-      wasPlaying: !!trajectoryPlaying,
+      wasPlaying: !!(info && info.traj && (info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing)),
       loop: !!(info && info.traj && info.traj.loop !== false),
+      fps: info && info.traj ? Math.max(1, Math.min(120, Math.round(Number(info.traj.fps) || 12))) : 12,
+      syncEnabled: !!(info && info.traj && info.traj.syncEnabled),
+      master: Object.assign({}, getTrajectorySyncMaster()),
     }),
     restoreSessionState: (snapshot) => {
       if (!(snapshot && snapshot.targetRecord)) return;
-      const info = getActiveTrajectoryInfo();
+      const info = getAllTrajectoryInfos().find((item) => item.record === snapshot.targetRecord) || getActiveTrajectoryInfo();
       if (!(info && info.enabled && info.record === snapshot.targetRecord && info.traj)) return;
       info.traj.loop = snapshot.loop !== false;
-      applyTrajectoryFrame(snapshot.frameIndex, { syncUi: false });
-      if (currentMode !== MODES.EDIT && snapshot.wasPlaying) {
-        trajectoryPlaying = true;
-        trajectoryLastStepMs = 0;
-      } else {
-        trajectoryPlaying = false;
-        trajectoryLastStepMs = 0;
+      info.traj.fps = Math.max(1, Math.min(120, Math.round(Number(snapshot.fps) || info.traj.fps || 12)));
+      info.traj.syncEnabled = !!snapshot.syncEnabled;
+      if (snapshot.master) {
+        const master = getTrajectorySyncMaster();
+        master.playing = currentMode !== MODES.EDIT && snapshot.wasPlaying && info.traj.syncEnabled;
+        master.frame = Math.max(0, Math.floor(Number(snapshot.master.frame) || 0));
+        master.fps = Math.max(1, Math.min(120, Math.round(Number(snapshot.master.fps) || 12)));
+        master.lastStepMs = 0;
       }
+      if (info.traj.syncEnabled) {
+        applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info), { syncUi: false });
+      } else {
+        applyTrajectoryFrameForInfo(info, snapshot.frameIndex, { syncUi: false });
+        info.traj.playing = currentMode !== MODES.EDIT && !!snapshot.wasPlaying;
+        info.traj._lastStepMs = 0;
+      }
+      trajectoryPlaying = !!(info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing);
+      trajectoryLastStepMs = 0;
     },
     startRecordingSequence: (info) => {
+      info.traj.syncEnabled = false;
       info.traj.loop = false;
-      applyTrajectoryFrame(0, { syncUi: false });
+      info.traj.playing = true;
+      info.traj._lastStepMs = 0;
+      applyTrajectoryFrameForInfo(info, 0, { syncUi: false });
       trajectoryPlaying = true;
       trajectoryLastStepMs = 0;
     },
@@ -7383,7 +7865,7 @@
       return Math.max(24, Math.min(120, Math.round(speed * 24)));
     },
     prepareSceneForRecording: () => {
-      stopTrajectoryPlayback({ syncUi: false });
+      stopAllTrajectoryPlayback({ syncUi: false });
     },
     captureSessionState: (info) => ({
       targetRecord: info && info.record ? info.record : null,
@@ -9218,6 +9700,7 @@
     let hidden = 0;
     for (const scene of sceneGraphController.getScenes()) {
       if (!scene || scene.visible === false) continue;
+      if (scene.kind === 'trajectory') continue;
       const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
       const sceneVol = moleculeLayer && moleculeLayer.record
         ? moleculeLayer.record.vol
@@ -9240,10 +9723,18 @@
       byMoldenMo: new Map(),
       scenesByKey: new Map(),
       focusedSceneKey: null,
+      syncMaster: null,
       scene: null,
       molecule: null,
       groups: new Map(),
       active: null,
+    };
+    const master = getTrajectorySyncMaster();
+    out.syncMaster = {
+      playing: !!master.playing,
+      frame: Math.max(0, Math.floor(Number(master.frame) || 0)),
+      fps: Math.max(1, Math.min(120, Math.round(Number(master.fps) || 12))),
+      lastStepMs: Math.max(0, Number(master.lastStepMs) || 0),
     };
     const focusedScene = sceneGraphController.getFocusedScene ? sceneGraphController.getFocusedScene() : sceneGraphController.getActiveScene();
     if (focusedScene) out.focusedSceneKey = focusedScene.sceneKey || null;
@@ -9409,8 +9900,15 @@
     const preferActiveRecord = !!options.preferActiveRecord;
     const graphState = preserveLayerState
       ? getSceneGraphLayerStateSnapshot()
-      : { byRecord: new Map(), byMoldenMo: new Map(), scenesByKey: new Map(), focusedSceneKey: null, scene: null, molecule: null, groups: new Map(), active: null };
+      : { byRecord: new Map(), byMoldenMo: new Map(), scenesByKey: new Map(), focusedSceneKey: null, syncMaster: null, scene: null, molecule: null, groups: new Map(), active: null };
     sceneGraphController.clearScenes();
+    if (preserveLayerState && graphState.syncMaster && Array.isArray(volumes) && volumes.length > 0) {
+      const master = getTrajectorySyncMaster();
+      master.playing = !!graphState.syncMaster.playing;
+      master.frame = Math.max(0, Math.floor(Number(graphState.syncMaster.frame) || 0));
+      master.fps = Math.max(1, Math.min(120, Math.round(Number(graphState.syncMaster.fps) || 12)));
+      master.lastStepMs = Math.max(0, Number(graphState.syncMaster.lastStepMs) || 0);
+    }
     if (!Array.isArray(volumes) || volumes.length === 0) {
       renderSceneOutliner();
       return null;
@@ -9453,6 +9951,7 @@
           kind: getVolumeSourceKind(moleculeRecord || baseRecord),
         },
         kind: trajectoryInfo.enabled ? 'trajectory' : null,
+        trajectory: trajectoryInfo.enabled ? trajectoryInfo.traj : null,
         visible: sceneState.visible == null ? true : sceneState.visible,
         expanded: sceneState.expanded == null ? true : sceneState.expanded,
         meta: {
@@ -12400,8 +12899,8 @@
     endQuaternionViewRotate();
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
-    if (currentMode === MODES.EDIT && trajectoryPlaying) {
-      stopTrajectoryPlayback({ syncUi: true });
+    if (currentMode === MODES.EDIT && isAnyTrajectoryPlaybackActive()) {
+      stopAllTrajectoryPlayback({ syncUi: true });
     }
     if (currentMode === MODES.EDIT) {
       const vibInfo = getActiveVibrationInfo();
@@ -12789,7 +13288,7 @@
     const showView = hasRecord;
     const showCoords = hasAtoms;
     const showSpinorInfo = !!(vol && vol.isTwoComponent);
-    const showTrajectory = !!getActiveTrajectoryInfo().enabled;
+    const showTrajectory = getAllTrajectoryInfos().length > 0;
     const showVibration = !!getActiveVibrationInfo().enabled;
     const itemDefs = [
       {
@@ -13114,7 +13613,7 @@
           reason: String(options.trajectoryVideoReason || 'Trajectory video export discarded because the panel was closed'),
         });
       }
-      stopTrajectoryPlayback({ syncUi: false });
+      stopAllTrajectoryPlayback({ syncUi: false });
     }
     setFloatingPanelOpen(trajectoryPanel, shouldOpen);
     if (options.syncUi !== false) syncTrajectoryControls();
@@ -29446,7 +29945,7 @@
       if (!info.enabled) return;
       const nextPlaying = !vibrationPlaying;
       if (nextPlaying) {
-        stopTrajectoryPlayback({ syncUi: false });
+        stopAllTrajectoryPlayback({ syncUi: false });
       }
       vibrationPlaying = nextPlaying;
       vibrationLastStepMs = 0;
@@ -29477,7 +29976,7 @@
 
       info.vib.modeIndex = modeIndex;
       info.vib.phase = 0;
-      stopTrajectoryPlayback({ syncUi: false });
+      stopAllTrajectoryPlayback({ syncUi: false });
       if (shouldTogglePlayback) {
         vibrationPlaying = !vibrationPlaying;
       } else {
@@ -29571,8 +30070,11 @@
       frames: traj.frames.map((frame) => new Float32Array(frame)),
       comments: Array.isArray(traj.comments) ? traj.comments.slice() : [],
       frameIndex: Number.isFinite(Number(traj.frameIndex)) ? Number(traj.frameIndex) | 0 : 0,
+      currentFrame: Number.isFinite(Number(traj.currentFrame)) ? Number(traj.currentFrame) | 0 : (Number.isFinite(Number(traj.frameIndex)) ? Number(traj.frameIndex) | 0 : 0),
+      playing: !!traj.playing,
       fps: Number.isFinite(Number(traj.fps)) ? Number(traj.fps) : 12,
       loop: traj.loop !== false,
+      syncEnabled: !!traj.syncEnabled,
     };
   }
 
@@ -29674,8 +30176,7 @@
     else delete vol.molden;
     vol.natoms = vol.atoms.length;
     ensureVolumeSchema(vol, { inferMissingBonds: false });
-    trajectoryPlaying = false;
-    trajectoryLastStepMs = 0;
+    stopAllTrajectoryPlayback({ syncUi: false });
     vibrationPlaying = false;
     vibrationLastStepMs = 0;
     syncBuilderExtensionFromVolumes();
@@ -29722,8 +30223,7 @@
     vol.natoms = Array.isArray(vol.atoms) ? vol.atoms.length : 0;
     const afterState = cloneCoordsPanelEditState(vol);
     pushCoordsPanelEditHistoryEntry(record, beforeState, afterState, actionLabel);
-    trajectoryPlaying = false;
-    trajectoryLastStepMs = 0;
+    stopAllTrajectoryPlayback({ syncUi: false });
     vibrationPlaying = false;
     vibrationLastStepMs = 0;
     clearTransientInteractionState();
