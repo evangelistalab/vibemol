@@ -2454,12 +2454,21 @@
       width: 100%;
       min-width: 0;
       min-height: 30px;
-      border: 1px solid var(--vm-color-border);
+      border: 1px solid var(--tb-border-input, var(--vm-color-border-input, var(--vm-color-border)));
       border-radius: 6px;
-      background: var(--vm-color-surface-control, var(--vm-color-surface-panel));
-      color: var(--vm-color-text-primary);
+      background: var(--tb-surface-input, var(--vm-color-surface-input, var(--vm-color-surface-panel)));
+      color: var(--tb-text-color-primary, var(--vm-color-text-primary));
       font: inherit;
       padding: 4px 8px;
+      box-shadow: none;
+      outline: none;
+    }
+
+    .vm-combine-popover__input:focus,
+    .vm-combine-popover__select:focus,
+    .vm-combine-popover__coefficient:focus {
+      border-color: var(--vm-brand-accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--vm-brand-accent) 20%, transparent);
     }
 
     .vm-combine-popover__times,
