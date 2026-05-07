@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7i';
+  const APP_VERSION = '0.8.7j';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -9298,6 +9298,7 @@
           isSceneGraphDuplicate: !!layer.isSceneGraphDuplicate,
           operation: layer.operation || null,
           inputs: Array.isArray(layer.inputs) ? layer.inputs.map((input) => Object.assign({}, input)) : [],
+          nameUserEdited: getArithmeticNameUserEdited(layer),
           cubeDataValid: layer.cubeDataValid !== false,
         };
         if (isCubeLikeLayer(layer)) {
@@ -9558,6 +9559,9 @@
           labelId: preserved.labelId,
           operation: normalizeArithmeticOperation(preserved.operation),
           inputs: normalizeArithmeticInputsForOperation(preserved.operation, preserved.inputs),
+          nameUserEdited: preserved.nameUserEdited == null
+            ? String(preserved.name || '') !== String(generateArithmeticName(preserved.operation, preserved.inputs) || '')
+            : !!preserved.nameUserEdited,
           cubeData: preserved.cubeData || null,
           cubeDataValid: preserved.cubeDataValid !== false,
           record: null,
@@ -10013,6 +10017,61 @@
     return out;
   }
 
+  function getArithmeticNameUserEdited(layer) {
+    if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) return false;
+    if (typeof layer.nameUserEdited === 'boolean') return layer.nameUserEdited;
+    const generated = generateArithmeticName(layer.operation, layer.inputs);
+    return String(layer.name || '') !== String(generated || '');
+  }
+
+  function normalizeArithmeticConfig(operation, inputs) {
+    const op = normalizeArithmeticOperation(operation);
+    return {
+      operation: op,
+      inputs: normalizeArithmeticInputsForOperation(op, inputs).map((input) => ({
+        layerId: String(input.layerId || ''),
+        coefficient: Number.isFinite(Number(input.coefficient)) ? Number(input.coefficient) : 1,
+      })),
+    };
+  }
+
+  function arithmeticConfigsEqual(aOperation, aInputs, bOperation, bInputs) {
+    const a = normalizeArithmeticConfig(aOperation, aInputs);
+    const b = normalizeArithmeticConfig(bOperation, bInputs);
+    if (a.operation !== b.operation || a.inputs.length !== b.inputs.length) return false;
+    for (let i = 0; i < a.inputs.length; i += 1) {
+      if (a.inputs[i].layerId !== b.inputs[i].layerId) return false;
+      if (Number(a.inputs[i].coefficient) !== Number(b.inputs[i].coefficient)) return false;
+    }
+    return true;
+  }
+
+  function arithmeticLayerDependsOn(layerOrId, targetLayerId, visited = new Set()) {
+    const layer = typeof layerOrId === 'string' ? sceneGraphController.getLayerById(layerOrId) : layerOrId;
+    const targetId = String(targetLayerId || '');
+    if (!(layer && targetId) || visited.has(layer.id)) return false;
+    if (layer.id === targetId) return true;
+    visited.add(layer.id);
+    if (layer.kind !== SCENE_LAYER_KIND.ARITHMETIC) return false;
+    for (const input of Array.isArray(layer.inputs) ? layer.inputs : []) {
+      const inputId = String(input && input.layerId || '');
+      if (inputId === targetId) return true;
+      const inputLayer = sceneGraphController.getLayerById(inputId);
+      if (arithmeticLayerDependsOn(inputLayer, targetId, visited)) return true;
+    }
+    return false;
+  }
+
+  function getCircularOperandIdsForEdit(scene, editedLayerId) {
+    const out = new Set();
+    if (!scene || !editedLayerId) return out;
+    for (const layer of getCubeLayersInScene(scene)) {
+      if (!isCubeLikeLayer(layer)) continue;
+      if (layer.id === editedLayerId || arithmeticLayerDependsOn(layer, editedLayerId)) out.add(layer.id);
+    }
+    return out;
+  }
+
   function buildArithmeticDependencyDepthMap(scene) {
     const layers = getCubeLayersInScene(scene);
     const byId = new Map(layers.map((layer) => [layer.id, layer]));
@@ -10068,6 +10127,60 @@
     };
   }
 
+  function getArithmeticDependentsInRecomputeOrder(scene, rootLayerId) {
+    const rootId = String(rootLayerId || '');
+    if (!scene || !rootId) return [];
+    const arithmeticLayers = getCubeLayersInScene(scene).filter((layer) => layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC);
+    const directDependents = new Map();
+    for (const layer of arithmeticLayers) {
+      for (const input of Array.isArray(layer.inputs) ? layer.inputs : []) {
+        const inputId = String(input && input.layerId || '');
+        if (!inputId) continue;
+        if (!directDependents.has(inputId)) directDependents.set(inputId, []);
+        directDependents.get(inputId).push(layer);
+      }
+    }
+    const affected = new Map();
+    const collect = (layerId) => {
+      for (const dependent of directDependents.get(layerId) || []) {
+        if (dependent.id === rootId || affected.has(dependent.id)) continue;
+        affected.set(dependent.id, dependent);
+        collect(dependent.id);
+      }
+    };
+    collect(rootId);
+    const remaining = new Map(affected);
+    const ordered = [];
+    while (remaining.size) {
+      let progressed = false;
+      for (const [id, layer] of Array.from(remaining.entries())) {
+        const waitsForAffectedInput = (Array.isArray(layer.inputs) ? layer.inputs : [])
+          .some((input) => remaining.has(String(input && input.layerId || '')));
+        if (waitsForAffectedInput) continue;
+        ordered.push(layer);
+        remaining.delete(id);
+        progressed = true;
+      }
+      if (!progressed) {
+        ordered.push(...remaining.values());
+        break;
+      }
+    }
+    return ordered;
+  }
+
+  function recomputeArithmeticLayerData(layer) {
+    if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) return { ok: false, error: 'Layer is not arithmetic.' };
+    const computed = computeArithmeticCubeData(layer.operation, layer.inputs, layer.name);
+    if (!computed.ok) {
+      layer.cubeDataValid = false;
+      return computed;
+    }
+    layer.cubeData = computed.cubeData;
+    layer.cubeDataValid = true;
+    return { ok: true };
+  }
+
   function insertLayerAfter(scene, layer, afterLayer) {
     if (!(scene && layer && afterLayer && Array.isArray(scene.layers))) return;
     const from = scene.layers.indexOf(layer);
@@ -10119,6 +10232,7 @@
       layerProps.operation = normalizeArithmeticOperation(sourceLayer.operation);
       layerProps.inputs = normalizeArithmeticInputsForOperation(layerProps.operation, sourceLayer.inputs);
       layerProps.cubeDataValid = sourceLayer.cubeDataValid !== false;
+      layerProps.nameUserEdited = getArithmeticNameUserEdited(sourceLayer);
     }
     const newLayer = sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC
       ? sceneGraphController.addArithmeticLayer(scene, layerProps, getSurfaceDefaultsForNewLayer())
@@ -10776,14 +10890,146 @@
     return combinePopoverEl;
   }
 
-  function getCombineOperandOptions(scene) {
+  function getCombineOperandOptions(scene, state = combinePopoverState) {
+    const circularIds = state && state.mode === 'edit'
+      ? getCircularOperandIdsForEdit(scene, state.editingLayerId)
+      : new Set();
     return getCubeLayersInScene(scene).filter((layer) => {
       const vol = getLayerCubeData(layer);
       return isCubeLikeLayer(layer)
         && layer.cubeDataValid !== false
         && hasVolumetricGrid(vol)
         && !!(vol && vol.data && vol.data.length);
-    });
+    }).map((layer) => ({
+      layer,
+      disabled: circularIds.has(layer.id),
+      reason: circularIds.has(layer.id) ? 'circular' : '',
+    }));
+  }
+
+  function getEligibleCombineOperandLayers(scene, state = combinePopoverState) {
+    return getCombineOperandOptions(scene, state).filter((option) => !option.disabled).map((option) => option.layer);
+  }
+
+  function getDisabledCombineOperandIdSet(scene, state = combinePopoverState) {
+    return new Set(getCombineOperandOptions(scene, state).filter((option) => option.disabled).map((option) => option.layer.id));
+  }
+
+  function getLayerLabelWithName(layer) {
+    if (!layer) return 'Layer';
+    return `${layer.labelId || 'L?'} — ${layer.name || 'Layer'}`;
+  }
+
+  function hasEligibleCombineOperands(scene, state = combinePopoverState) {
+    return getEligibleCombineOperandLayers(scene, state).length > 0;
+  }
+
+  function getNoEligibleOperandsError(state = combinePopoverState) {
+    return state && state.mode === 'edit'
+      ? 'No eligible operands available - all other layers depend on this one.'
+      : 'Choose at least one operand.';
+  }
+
+  function chooseDefaultCombineOperand(scene, state = combinePopoverState, usedIds = new Set()) {
+    const eligible = getEligibleCombineOperandLayers(scene, state);
+    return eligible.find((layer) => !usedIds.has(layer.id)) || eligible[0] || null;
+  }
+
+  function ensureCombineOperandRowsHaveChoices(state = combinePopoverState) {
+    if (!state) return;
+    const scene = sceneGraphController.findScene(state.sceneId);
+    if (!scene) return;
+    const eligible = getEligibleCombineOperandLayers(scene, state);
+    if (!eligible.length) return;
+    const validIds = new Set(getCombineOperandOptions(scene, state).map((option) => option.layer.id));
+    for (const input of Array.isArray(state.operands) ? state.operands : []) {
+      if (!input.layerId || !validIds.has(input.layerId)) input.layerId = eligible[0].id;
+    }
+  }
+
+  function getCombineSaveButtonLabel(state = combinePopoverState) {
+    return state && state.mode === 'edit' ? 'Save' : 'Create';
+  }
+
+  function getCombineTitle(state = combinePopoverState) {
+    if (!(state && state.mode === 'edit')) return 'Combine';
+    const layer = sceneGraphController.getLayerById(state.editingLayerId);
+    return `Edit combination - ${layer && layer.labelId ? layer.labelId : 'layer'}`;
+  }
+
+  function getCombineNameTouched(state = combinePopoverState) {
+    return !!(state && (state.nameTouched || state.nameUserEdited));
+  }
+
+  function getCombineOutputName(state = combinePopoverState, operands = null) {
+    const autoName = generateArithmeticName(state && state.operation, operands || (state && state.operands) || []);
+    const raw = getCombineNameTouched(state) ? String(state && state.name || '').trim() : autoName;
+    return raw || autoName || 'Combination';
+  }
+
+  function updateCombineStateNameUserEdited(value) {
+    if (!combinePopoverState) return;
+    combinePopoverState.nameTouched = !!value;
+    combinePopoverState.nameUserEdited = !!value;
+  }
+
+  function normalizeCombinePopoverStateOperands() {
+    if (!combinePopoverState) return [];
+    const op = normalizeArithmeticOperation(combinePopoverState.operation);
+    combinePopoverState.operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
+    ensureCombineOperandRowsHaveChoices(combinePopoverState);
+    return combinePopoverState.operands;
+  }
+
+  function getCombineValidation(state) {
+    if (!state) return { ok: false, error: 'No combination is configured.' };
+    const scene = sceneGraphController.findScene(state.sceneId);
+    if (!scene) return { ok: false, error: 'No scene is focused.' };
+    if (!hasEligibleCombineOperands(scene, state)) return { ok: false, error: getNoEligibleOperandsError(state) };
+    const op = normalizeArithmeticOperation(state.operation);
+    const operands = normalizeArithmeticInputsForOperation(op, state.operands);
+    if (op === 'abs' && operands.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
+    if (op === 'product' && operands.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
+    if (op === 'linear_combination' && operands.length < 1) return { ok: false, error: 'Choose at least one operand.' };
+    if (operands.some((input) => !input.layerId)) return { ok: false, error: 'Choose an operand for every row.' };
+    const disabledIds = getDisabledCombineOperandIdSet(scene, state);
+    if (operands.some((input) => disabledIds.has(input.layerId))) {
+      return { ok: false, error: 'Choose a non-circular operand.' };
+    }
+    const resolved = resolveArithmeticInputs(operands);
+    if (resolved.length !== operands.length) return { ok: false, error: 'Choose a valid operand for every row.' };
+    const grid = validateArithmeticInputGrids(resolved);
+    return grid.ok ? { ok: true, operands } : grid;
+  }
+
+  function syncCombineAutoName() {
+    if (!combinePopoverState || getCombineNameTouched(combinePopoverState)) return;
+    combinePopoverState.name = generateArithmeticName(combinePopoverState.operation, combinePopoverState.operands);
+  }
+
+  function addCombineOperandTerm() {
+    if (!combinePopoverState) return;
+    const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
+    if (!scene) return;
+    const used = new Set((combinePopoverState.operands || []).map((input) => input.layerId));
+    const candidate = chooseDefaultCombineOperand(scene, combinePopoverState, used);
+    if (!candidate) return;
+    combinePopoverState.operands.push({ layerId: candidate.id, coefficient: 1 });
+    syncCombineAutoName();
+    renderCombinePopover();
+  }
+
+  function updateCombineOperation(nextOperation) {
+    if (!combinePopoverState) return;
+    const previous = combinePopoverState.operation;
+    const op = normalizeArithmeticOperation(nextOperation);
+    const hadMultipleOperands = Array.isArray(combinePopoverState.operands) && combinePopoverState.operands.length > 1;
+    combinePopoverState.operation = op;
+    combinePopoverState.operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
+    ensureCombineOperandRowsHaveChoices(combinePopoverState);
+    combinePopoverState.absTrimmed = previous !== 'abs' && op === 'abs' && hadMultipleOperands;
+    syncCombineAutoName();
+    renderCombinePopover();
   }
 
   function buildCombineInitialOperands(layers, operation) {
@@ -10799,52 +11045,57 @@
     return operands;
   }
 
-  function getCombineValidation(state) {
-    if (!state) return { ok: false, error: 'No combination is configured.' };
-    const op = normalizeArithmeticOperation(state.operation);
-    const operands = normalizeArithmeticInputsForOperation(op, state.operands);
-    if (op === 'abs' && operands.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
-    if (op === 'product' && operands.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
-    if (op === 'linear_combination' && operands.length < 1) return { ok: false, error: 'Choose at least one operand.' };
-    if (operands.some((input) => !input.layerId)) return { ok: false, error: 'Choose an operand for every row.' };
-    const resolved = resolveArithmeticInputs(operands);
-    if (resolved.length !== operands.length) return { ok: false, error: 'Choose a valid operand for every row.' };
-    const grid = validateArithmeticInputGrids(resolved);
-    return grid.ok ? { ok: true, operands } : grid;
+  function saveEditedArithmeticLayerFromPopover() {
+    if (!combinePopoverState) return false;
+    const layer = sceneGraphController.getLayerById(combinePopoverState.editingLayerId);
+    const scene = layer ? sceneGraphController.getSceneForLayer(layer) : null;
+    if (!(scene && layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) return false;
+    const validation = getCombineValidation(combinePopoverState);
+    combinePopoverState.triedCreate = true;
+    if (!validation.ok) {
+      renderCombinePopover();
+      return false;
+    }
+    const nextOperation = normalizeArithmeticOperation(combinePopoverState.operation);
+    const nextInputs = normalizeArithmeticInputsForOperation(nextOperation, validation.operands);
+    const unchanged = arithmeticConfigsEqual(layer.operation, layer.inputs, nextOperation, nextInputs);
+    if (unchanged) {
+      closeCombinePopover();
+      return true;
+    }
+    const nextNameUserEdited = getCombineNameTouched(combinePopoverState);
+    const nextName = getCombineOutputName(combinePopoverState, nextInputs);
+    const computed = computeArithmeticCubeData(nextOperation, nextInputs, nextName);
+    if (!computed.ok) {
+      combinePopoverState.error = computed.error || 'Could not compute combination.';
+      renderCombinePopover();
+      return false;
+    }
+
+    layer.operation = nextOperation;
+    layer.inputs = nextInputs;
+    layer.nameUserEdited = nextNameUserEdited;
+    layer.name = nextName;
+    layer.cubeData = computed.cubeData;
+    layer.cubeDataValid = true;
+
+    for (const dependent of getArithmeticDependentsInRecomputeOrder(scene, layer.id)) {
+      const result = recomputeArithmeticLayerData(dependent);
+      if (!result.ok) {
+        console.warn('[ARITHMETIC] Failed to recompute dependent layer', dependent.labelId || dependent.id, result.error || result);
+      }
+    }
+
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    closeCombinePopover();
+    setHintMessage(`Updated ${layer.labelId || 'layer'} = ${layer.name || nextName}`);
+    return true;
   }
 
-  function syncCombineAutoName() {
-    if (!combinePopoverState || combinePopoverState.nameTouched) return;
-    combinePopoverState.name = generateArithmeticName(combinePopoverState.operation, combinePopoverState.operands);
-  }
-
-  function addCombineOperandTerm() {
-    if (!combinePopoverState) return;
-    const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
-    if (!scene) return;
-    const used = new Set((combinePopoverState.operands || []).map((input) => input.layerId));
-    const candidate = getCombineOperandOptions(scene).find((layer) => !used.has(layer.id))
-      || getCombineOperandOptions(scene)[0]
-      || null;
-    if (!candidate) return;
-    combinePopoverState.operands.push({ layerId: candidate.id, coefficient: 1 });
-    syncCombineAutoName();
-    renderCombinePopover();
-  }
-
-  function updateCombineOperation(nextOperation) {
-    if (!combinePopoverState) return;
-    const previous = combinePopoverState.operation;
-    const op = normalizeArithmeticOperation(nextOperation);
-    const hadMultipleOperands = Array.isArray(combinePopoverState.operands) && combinePopoverState.operands.length > 1;
-    combinePopoverState.operation = op;
-    combinePopoverState.operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
-    combinePopoverState.absTrimmed = previous !== 'abs' && op === 'abs' && hadMultipleOperands;
-    syncCombineAutoName();
-    renderCombinePopover();
-  }
-
-  function createCombinedLayerFromPopover() {
+  function saveCombinedLayerFromPopover() {
+    if (combinePopoverState && combinePopoverState.mode === 'edit') return saveEditedArithmeticLayerFromPopover();
     if (!combinePopoverState) return false;
     const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
     if (!scene) return false;
@@ -10854,7 +11105,7 @@
       renderCombinePopover();
       return false;
     }
-    const name = String(combinePopoverState.name || generateArithmeticName(combinePopoverState.operation, validation.operands) || 'Combination').trim();
+    const name = getCombineOutputName(combinePopoverState, validation.operands);
     const computed = computeArithmeticCubeData(combinePopoverState.operation, validation.operands, name);
     if (!computed.ok) {
       combinePopoverState.error = computed.error || 'Could not compute combination.';
@@ -10872,6 +11123,7 @@
         visible: true,
         operation: normalizeArithmeticOperation(combinePopoverState.operation),
         inputs: validation.operands,
+        nameUserEdited: getCombineNameTouched(combinePopoverState),
         cubeData: computed.cubeData,
         cubeDataValid: true,
       }
@@ -10900,13 +11152,14 @@
     const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
     const options = scene ? getCombineOperandOptions(scene) : [];
     const op = normalizeArithmeticOperation(combinePopoverState.operation);
+    const operands = normalizeCombinePopoverStateOperands();
     const validation = getCombineValidation(combinePopoverState);
     const errorText = combinePopoverState.error || validation.error || '';
     popover.textContent = '';
 
     const title = document.createElement('div');
     title.className = 'vm-combine-popover__title';
-    title.textContent = 'Combine';
+    title.textContent = getCombineTitle(combinePopoverState);
     popover.appendChild(title);
 
     const opRow = document.createElement('label');
@@ -10940,8 +11193,6 @@
     operandsTitle.textContent = 'Operands';
     popover.appendChild(operandsTitle);
 
-    const operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
-    combinePopoverState.operands = operands;
     operands.forEach((input, index) => {
       const row = document.createElement('div');
       row.className = 'vm-combine-popover__operand';
@@ -10965,10 +11216,12 @@
       }
       const select = document.createElement('select');
       select.className = 'vm-combine-popover__select';
-      options.forEach((layer) => {
+      options.forEach((entry) => {
+        const layer = entry.layer;
         const option = document.createElement('option');
         option.value = layer.id;
-        option.textContent = `${layer.labelId || 'L?'} — ${layer.name || 'Layer'}`;
+        option.textContent = `${getLayerLabelWithName(layer)}${entry.disabled ? ' (circular)' : ''}`;
+        option.disabled = !!entry.disabled;
         option.selected = layer.id === input.layerId;
         select.appendChild(option);
       });
@@ -11009,12 +11262,16 @@
       add.className = 'vm-combine-popover__add';
       add.textContent = '+ Add term';
       const used = new Set(operands.map((input) => input.layerId));
-      add.disabled = !options.length || options.every((layer) => used.has(layer.id));
+      const eligibleOptions = options.filter((entry) => !entry.disabled);
+      add.disabled = !eligibleOptions.length || eligibleOptions.every((entry) => used.has(entry.layer.id));
       add.addEventListener('click', addCombineOperandTerm);
       popover.appendChild(add);
     }
 
-    if ((combinePopoverState.triedCreate || errorText === 'Selected cubes have different grids and cannot be combined.') && !validation.ok && errorText) {
+    const showValidationError = combinePopoverState.triedCreate
+      || errorText === 'Selected cubes have different grids and cannot be combined.'
+      || errorText === getNoEligibleOperandsError(combinePopoverState);
+    if (showValidationError && !validation.ok && errorText) {
       const error = document.createElement('div');
       error.className = 'vm-combine-popover__error';
       error.textContent = errorText;
@@ -11034,7 +11291,7 @@
     nameInput.type = 'text';
     nameInput.value = combinePopoverState.name || '';
     nameInput.addEventListener('input', () => {
-      combinePopoverState.nameTouched = true;
+      updateCombineStateNameUserEdited(true);
       combinePopoverState.name = nameInput.value;
     });
     nameRow.appendChild(nameLabel);
@@ -11051,9 +11308,9 @@
     const create = document.createElement('button');
     create.type = 'button';
     create.className = 'vm-combine-popover__button is-primary';
-    create.textContent = 'Create';
+    create.textContent = getCombineSaveButtonLabel(combinePopoverState);
     create.disabled = !validation.ok;
-    create.addEventListener('click', createCombinedLayerFromPopover);
+    create.addEventListener('click', saveCombinedLayerFromPopover);
     actions.appendChild(cancel);
     actions.appendChild(create);
     popover.appendChild(actions);
@@ -11070,11 +11327,41 @@
     if (!scene) return false;
     const defaultOperation = selection.length <= 1 ? 'abs' : 'linear_combination';
     combinePopoverState = {
+      mode: 'create',
       sceneId: scene.id,
       operation: defaultOperation,
       operands: buildCombineInitialOperands(selection, defaultOperation),
       name: '',
       nameTouched: false,
+      nameUserEdited: false,
+      triedCreate: false,
+      error: '',
+      absTrimmed: false,
+      anchorPoint: {
+        clientX: Number(event && event.clientX) || (window.innerWidth || 360) / 2,
+        clientY: Number(event && event.clientY) || (window.innerHeight || 360) / 2,
+      },
+    };
+    syncCombineAutoName();
+    renderCombinePopover();
+    return true;
+  }
+
+  function showEditCombinationPopover(layer, event = null) {
+    if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) return false;
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (!scene) return false;
+    const operation = normalizeArithmeticOperation(layer.operation);
+    const nameUserEdited = getArithmeticNameUserEdited(layer);
+    combinePopoverState = {
+      mode: 'edit',
+      sceneId: scene.id,
+      editingLayerId: layer.id,
+      operation,
+      operands: normalizeArithmeticInputsForOperation(operation, layer.inputs),
+      name: String(layer.name || generateArithmeticName(operation, layer.inputs) || 'Combination'),
+      nameTouched: nameUserEdited,
+      nameUserEdited,
       triedCreate: false,
       error: '',
       absTrimmed: false,
@@ -11147,10 +11434,25 @@
       else duplicateCubeLayer(target || layer);
     });
     menu.appendChild(duplicate);
+    const singleArithmeticLayer = count === 1 && actionLayers[0] && actionLayers[0].kind === SCENE_LAYER_KIND.ARITHMETIC
+      ? actionLayers[0]
+      : null;
+    if (singleArithmeticLayer) {
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'vm-outliner-context-menu__item';
+      edit.textContent = 'Edit combination...';
+      edit.addEventListener('click', () => {
+        const point = cubeLayerContextMenuPoint || { clientX: 0, clientY: 0 };
+        closeCubeLayerContextMenu();
+        showEditCombinationPopover(singleArithmeticLayer, point);
+      });
+      menu.appendChild(edit);
+    }
     const combine = document.createElement('button');
     combine.type = 'button';
     combine.className = 'vm-outliner-context-menu__item';
-    combine.textContent = 'Combine...';
+    combine.textContent = count > 1 ? `Combine (${count})...` : 'Combine...';
     combine.addEventListener('click', () => {
       const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
       const layers = getSelectedCubeLayers();
@@ -28507,6 +28809,7 @@
           isSceneGraphDuplicate: !!layer.isSceneGraphDuplicate,
           operation: layer.operation || null,
           inputs: Array.isArray(layer.inputs) ? layer.inputs.map((input) => Object.assign({}, input)) : [],
+          nameUserEdited: getArithmeticNameUserEdited(layer),
           cubeDataValid: layer.cubeDataValid !== false,
         })),
       })),

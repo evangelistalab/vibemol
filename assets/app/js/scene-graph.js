@@ -466,6 +466,7 @@
         labelId,
         operation: props.operation || 'linear_combination',
         inputs,
+        nameUserEdited: !!props.nameUserEdited,
         cubeData: props.cubeData || null,
         cubeDataValid: props.cubeDataValid !== false,
         record: null,
@@ -477,7 +478,7 @@
         group: null,
         cloudGroup: null,
         surfaceMetricCache: new Map(),
-      }, appearance, props, { inputs }));
+      }, appearance, props, { inputs, nameUserEdited: !!props.nameUserEdited }));
     }
 
     function ensureMeasurementsGroup(sceneOrId, props = {}) {

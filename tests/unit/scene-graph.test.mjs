@@ -78,11 +78,28 @@ test('arithmetic layers share cube labels and behave as selectable renderable la
   assert.equal(combo.kind, api.LAYER_KIND.ARITHMETIC);
   assert.equal(combo.labelId, 'L2');
   assert.equal(combo.parentId, scene.orbitalsGroupId);
+  assert.equal(combo.nameUserEdited, false);
   assert.equal(api.isCubeLikeLayer(combo), true);
   graph.setActiveLayer(combo.id);
   graph.setSelection([combo.id]);
   assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), combo.id);
   assert.equal(graph.listRenderableLayers(scene).some((layer) => layer.id === combo.id), true);
+});
+
+test('arithmetic layer name override flag is explicit and preserved', () => {
+  const api = loadApi();
+  const graph = api.createSceneGraphController();
+  const scene = graph.createScene({ name: 'combo' });
+  const l0 = graph.addCubeLayer(scene, { name: 'a.cube' });
+  const custom = graph.addArithmeticLayer(scene, {
+    name: 'MyDifference',
+    nameUserEdited: true,
+    operation: 'abs',
+    inputs: [{ layerId: l0.id, coefficient: 1 }],
+  });
+
+  assert.equal(custom.nameUserEdited, true);
+  assert.equal(custom.labelId, 'L1');
 });
 
 test('cube appearance owns Phase 2a per-layer surface and cloud properties', () => {
