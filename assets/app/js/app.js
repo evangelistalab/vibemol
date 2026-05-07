@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7j';
+  const APP_VERSION = '0.8.7k';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -370,6 +370,11 @@
   const { createSceneGraphController, createCubeAppearance, LAYER_KIND: SCENE_LAYER_KIND } = window.VibeMolSceneGraph || {};
   if (![createSceneGraphController, createCubeAppearance].every(fn => typeof fn === 'function') || !SCENE_LAYER_KIND) {
     throw new Error('VibeMolSceneGraph is not loaded. Ensure assets/app/js/scene-graph.js is included before assets/app/js/app.js.');
+  }
+
+  const ArithmeticGrid = window.VibeMolArithmeticGrid || {};
+  if (![ArithmeticGrid.compute, ArithmeticGrid.validateInputGrids, ArithmeticGrid.formatResampleNotice].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolArithmeticGrid is not loaded. Ensure assets/app/js/arithmetic-grid.js is included before assets/app/js/app.js.');
   }
 
   const { createFileLoader } = window.VibeMolFileLoader || {};
@@ -9875,34 +9880,17 @@
     return cloneScalarVolumeForArithmetic(vol, data, name || vol.title || 'Arithmetic layer');
   }
 
-  function sameArithmeticGrid(a, b) {
-    if (!(a && b)) return false;
-    const dimsA = Array.isArray(a.nxyz) ? a.nxyz : [];
-    const dimsB = Array.isArray(b.nxyz) ? b.nxyz : [];
-    if (dimsA.length !== dimsB.length) return false;
-    for (let i = 0; i < dimsA.length; i += 1) {
-      if (Number(dimsA[i]) !== Number(dimsB[i])) return false;
-    }
-    const originA = Array.isArray(a.origin) ? a.origin : [];
-    const originB = Array.isArray(b.origin) ? b.origin : [];
-    if (originA.length !== originB.length) return false;
-    for (let i = 0; i < originA.length; i += 1) {
-      if (Number(originA[i]) !== Number(originB[i])) return false;
-    }
-    const axesA = Array.isArray(a.axes) ? a.axes : [];
-    const axesB = Array.isArray(b.axes) ? b.axes : [];
-    if (axesA.length !== axesB.length) return false;
-    for (let i = 0; i < axesA.length; i += 1) {
-      const axisA = Array.isArray(axesA[i]) ? axesA[i] : [];
-      const axisB = Array.isArray(axesB[i]) ? axesB[i] : [];
-      if (axisA.length !== axisB.length) return false;
-      for (let j = 0; j < axisA.length; j += 1) {
-        if (Number(axisA[j]) !== Number(axisB[j])) return false;
-      }
-    }
-    const dataA = a.data;
-    const dataB = b.data;
-    return !!(dataA && dataB && dataA.length === dataB.length);
+  function getArithmeticLayerLabel(layer) {
+    return String(layer && (layer.labelId || layer.name) || 'Operand');
+  }
+
+  function toArithmeticGridOperands(resolvedInputs) {
+    return (Array.isArray(resolvedInputs) ? resolvedInputs : []).map((entry) => ({
+      layer: entry.layer,
+      label: getArithmeticLayerLabel(entry.layer),
+      coefficient: Number.isFinite(Number(entry && entry.coefficient)) ? Number(entry.coefficient) : 1,
+      vol: getLayerCubeData(entry && entry.layer),
+    }));
   }
 
   function resolveArithmeticInputs(inputs) {
@@ -9916,21 +9904,7 @@
   }
 
   function validateArithmeticInputGrids(resolvedInputs) {
-    if (!resolvedInputs.length) return { ok: false, error: 'Choose at least one operand.' };
-    const firstVol = getLayerCubeData(resolvedInputs[0].layer);
-    if (!hasVolumetricGrid(firstVol) || !(firstVol.data && firstVol.data.length)) {
-      return { ok: false, error: 'Selected operand has no grid data.' };
-    }
-    for (const entry of resolvedInputs.slice(1)) {
-      const vol = getLayerCubeData(entry.layer);
-      if (!hasVolumetricGrid(vol) || !(vol.data && vol.data.length)) {
-        return { ok: false, error: 'Selected operand has no grid data.' };
-      }
-      if (!sameArithmeticGrid(firstVol, vol)) {
-        return { ok: false, error: 'Selected cubes have different grids and cannot be combined.' };
-      }
-    }
-    return { ok: true, baseVol: firstVol };
+    return ArithmeticGrid.validateInputGrids(toArithmeticGridOperands(resolvedInputs));
   }
 
   function normalizeArithmeticOperation(value) {
@@ -9945,30 +9919,12 @@
     if (op === 'abs' && resolved.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
     if (op === 'product' && resolved.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
     if (op === 'linear_combination' && resolved.length < 1) return { ok: false, error: 'Choose at least one operand.' };
-    const grid = validateArithmeticInputGrids(resolved);
-    if (!grid.ok) return grid;
-    const baseVol = grid.baseVol;
-    const length = baseVol.data.length;
-    const out = new Float32Array(length);
-    if (op === 'abs') {
-      const data = getLayerCubeData(resolved[0].layer).data;
-      for (let i = 0; i < length; i += 1) out[i] = Math.abs(Number(data[i]) || 0);
-    } else if (op === 'product') {
-      out.fill(1);
-      for (const entry of resolved) {
-        const data = getLayerCubeData(entry.layer).data;
-        for (let i = 0; i < length; i += 1) out[i] *= Number(data[i]) || 0;
-      }
-    } else {
-      for (const entry of resolved) {
-        const data = getLayerCubeData(entry.layer).data;
-        const coefficient = Number.isFinite(entry.coefficient) ? entry.coefficient : 1;
-        for (let i = 0; i < length; i += 1) out[i] += coefficient * (Number(data[i]) || 0);
-      }
-    }
+    const computed = ArithmeticGrid.compute(op, toArithmeticGridOperands(resolved), outputName);
+    if (!computed.ok) return computed;
     return {
       ok: true,
-      cubeData: cloneScalarVolumeForArithmetic(baseVol, out, outputName),
+      cubeData: cloneScalarVolumeForArithmetic(computed.baseVol, computed.data, outputName),
+      resamplePlan: computed.resamplePlan || null,
     };
   }
 
@@ -10999,7 +10955,9 @@
     const resolved = resolveArithmeticInputs(operands);
     if (resolved.length !== operands.length) return { ok: false, error: 'Choose a valid operand for every row.' };
     const grid = validateArithmeticInputGrids(resolved);
-    return grid.ok ? { ok: true, operands } : grid;
+    return grid.ok
+      ? { ok: true, operands, resamplePlan: grid.resamplePlan || null }
+      : grid;
   }
 
   function syncCombineAutoName() {
@@ -11268,8 +11226,15 @@
       popover.appendChild(add);
     }
 
+    if (validation.ok && validation.resamplePlan) {
+      const notice = document.createElement('div');
+      notice.className = 'vm-combine-popover__note vm-combine-popover__note--resample';
+      notice.textContent = ArithmeticGrid.formatResampleNotice(validation.resamplePlan);
+      popover.appendChild(notice);
+    }
+
     const showValidationError = combinePopoverState.triedCreate
-      || errorText === 'Selected cubes have different grids and cannot be combined.'
+      || !!validation.immediate
       || errorText === getNoEligibleOperandsError(combinePopoverState);
     if (showValidationError && !validation.ok && errorText) {
       const error = document.createElement('div');

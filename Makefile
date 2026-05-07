@@ -27,6 +27,7 @@ JS_CHECK_FILES = \
 	assets/app/js/preset.js \
 	assets/app/js/structure-transport.js \
 	assets/app/js/scene-graph.js \
+	assets/app/js/arithmetic-grid.js \
 	assets/app/js/file-loader.js \
 	assets/app/js/app.js
 
