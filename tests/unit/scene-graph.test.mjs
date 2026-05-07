@@ -58,6 +58,33 @@ test('cube layers share one orbitals group before scene is registered', () => {
   assert.deepEqual(Array.from(cubes, (cube) => cube.labelId), ['L0', 'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7']);
 });
 
+test('arithmetic layers share cube labels and behave as selectable renderable layers', () => {
+  const api = loadApi();
+  const graph = api.createSceneGraphController();
+  const scene = graph.createScene({ name: 'combo' });
+  const l0 = graph.addCubeLayer(scene, { name: 'a.cube' });
+  const l1 = graph.addCubeLayer(scene, { name: 'b.cube' });
+  const combo = graph.addArithmeticLayer(scene, {
+    name: 'L0 - L1',
+    operation: 'linear_combination',
+    inputs: [
+      { layerId: l0.id, coefficient: 1 },
+      { layerId: l1.id, coefficient: -1 },
+    ],
+    cubeData: { data: [0], nxyz: [1, 1, 1], idx: () => 0 },
+  });
+  graph.addScene(scene);
+
+  assert.equal(combo.kind, api.LAYER_KIND.ARITHMETIC);
+  assert.equal(combo.labelId, 'L2');
+  assert.equal(combo.parentId, scene.orbitalsGroupId);
+  assert.equal(api.isCubeLikeLayer(combo), true);
+  graph.setActiveLayer(combo.id);
+  graph.setSelection([combo.id]);
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), combo.id);
+  assert.equal(graph.listRenderableLayers(scene).some((layer) => layer.id === combo.id), true);
+});
+
 test('cube appearance owns Phase 2a per-layer surface and cloud properties', () => {
   const api = loadApi();
   const appearance = api.createCubeAppearance({

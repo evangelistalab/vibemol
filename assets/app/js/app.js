@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7g';
+  const APP_VERSION = '0.8.7h';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -1300,6 +1300,9 @@
   let outlinerFlashTimer = 0;
   let cubeLayerContextMenuEl = null;
   let cubeLayerContextMenuLayerId = null;
+  let cubeLayerContextMenuPoint = null;
+  let combinePopoverEl = null;
+  let combinePopoverState = null;
   let meshes = []; // active meshes (pos/neg)
   let hoverSurfaceMesh = null;
   let atomGroup = new THREE.Group();
@@ -9269,6 +9272,8 @@
       for (const layer of sceneGraphController.listLayers(scene)) {
         if (!layer) continue;
         const state = {
+          id: layer.id,
+          kind: layer.kind,
           visible: layer.visible !== false,
           expanded: layer.expanded !== false,
           iso: layer.iso,
@@ -9291,13 +9296,18 @@
           cubeData: layer.cubeData || null,
           moldenMoIndex: Number.isInteger(layer.moldenMoIndex) ? layer.moldenMoIndex : null,
           isSceneGraphDuplicate: !!layer.isSceneGraphDuplicate,
+          operation: layer.operation || null,
+          inputs: Array.isArray(layer.inputs) ? layer.inputs.map((input) => Object.assign({}, input)) : [],
+          cubeDataValid: layer.cubeDataValid !== false,
         };
-        if (layer.kind === SCENE_LAYER_KIND.CUBE && layer.record) {
+        if (isCubeLikeLayer(layer)) {
           sceneState.cubeLayers.push(state);
-          if (Number.isInteger(layer.moldenMoIndex)) {
-            out.byMoldenMo.set(`${getRecordIndex(layer.record)}:${layer.moldenMoIndex}`, state);
-          } else {
-            out.byRecord.set(layer.record, state);
+          if (layer.kind === SCENE_LAYER_KIND.CUBE && layer.record) {
+            if (Number.isInteger(layer.moldenMoIndex)) {
+              out.byMoldenMo.set(`${getRecordIndex(layer.record)}:${layer.moldenMoIndex}`, state);
+            } else {
+              out.byRecord.set(layer.record, state);
+            }
           }
         } else if (layer.kind === SCENE_LAYER_KIND.MOLECULE) {
           sceneState.molecule = state;
@@ -9311,6 +9321,7 @@
         const sceneActiveLayer = sceneGraphController.getLayerById(scene.activeLayerId);
         if (sceneActiveLayer) {
           sceneState.active = {
+            id: sceneActiveLayer.id,
             kind: sceneActiveLayer.kind,
             record: sceneActiveLayer.record || null,
             moldenMoIndex: Number.isInteger(sceneActiveLayer.moldenMoIndex) ? sceneActiveLayer.moldenMoIndex : null,
@@ -9539,12 +9550,36 @@
         }), defaults);
         if (duplicate) usedPreservedCubeStates.add(preserved);
       }
+      for (const preserved of preservedCubeStates) {
+        if (!preserved || usedPreservedCubeStates.has(preserved) || preserved.kind !== SCENE_LAYER_KIND.ARITHMETIC) continue;
+        const arithmetic = sceneGraphController.addArithmeticLayer(scene, Object.assign({}, defaults, preserved, {
+          id: preserved.id,
+          name: preserved.name || 'Combination',
+          labelId: preserved.labelId,
+          operation: normalizeArithmeticOperation(preserved.operation),
+          inputs: normalizeArithmeticInputsForOperation(preserved.operation, preserved.inputs),
+          cubeData: preserved.cubeData || null,
+          cubeDataValid: preserved.cubeDataValid !== false,
+          record: null,
+          visible: preserved.visible == null ? false : preserved.visible,
+          expanded: preserved.expanded == null ? true : preserved.expanded,
+          geometry: null,
+          posMaterial: null,
+          negMaterial: null,
+          posMesh: null,
+          negMesh: null,
+          group: null,
+          cloudGroup: null,
+          surfaceMetricCache: new Map(),
+        }), defaults);
+        if (arithmetic) usedPreservedCubeStates.add(preserved);
+      }
 
       sceneGraphController.addScene(scene);
       createdScenes.push(scene);
       if (sceneRecords.includes(activeRecord)) activeRecordScene = scene;
 
-      const hasCubeLayers = sceneGraphController.listLayers(scene).some((layer) => layer.kind === SCENE_LAYER_KIND.CUBE);
+      const hasCubeLayers = sceneGraphController.listLayers(scene).some(isCubeLikeLayer);
       const activeCube = cubeRecords.find((record) => record === activeRecord);
       const activeCubeLayer = activeCube
         ? sceneGraphController.listLayers(scene).find((layer) => layer.record === activeCube && layer.kind === SCENE_LAYER_KIND.CUBE)
@@ -9557,16 +9592,22 @@
           && layer.moldenMoIndex === activeMoldenRecord.moldenMoIndex
         ))
         : null;
-      const firstVisibleCubeLayer = sceneGraphController.listLayers(scene).find((layer) => layer.kind === SCENE_LAYER_KIND.CUBE && layer.visible !== false);
-      const firstCubeLayer = sceneGraphController.listLayers(scene).find((layer) => layer.kind === SCENE_LAYER_KIND.CUBE);
+      const firstVisibleCubeLayer = sceneGraphController.listLayers(scene).find((layer) => isCubeLikeLayer(layer) && layer.visible !== false);
+      const firstCubeLayer = sceneGraphController.listLayers(scene).find(isCubeLikeLayer);
       const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
       const preservedActiveState = sceneState.active || (group.key === graphState.focusedSceneKey ? graphState.active : null);
       let preservedActiveLayer = null;
       if (preservedActiveState) {
-        if (preservedActiveState.kind === SCENE_LAYER_KIND.CUBE) {
+        if (preservedActiveState.kind === SCENE_LAYER_KIND.CUBE || preservedActiveState.kind === SCENE_LAYER_KIND.ARITHMETIC) {
           preservedActiveLayer = sceneGraphController.listLayers(scene).find((layer) => (
-            layer.kind === SCENE_LAYER_KIND.CUBE
-            && layer.record === preservedActiveState.record
+            isCubeLikeLayer(layer)
+            && (
+              (preservedActiveState.id && layer.id === preservedActiveState.id)
+              || (
+                layer.kind === preservedActiveState.kind
+                && layer.record === preservedActiveState.record
+              )
+            )
             && (
               !Number.isInteger(preservedActiveState.moldenMoIndex)
               || layer.moldenMoIndex === preservedActiveState.moldenMoIndex
@@ -9607,9 +9648,16 @@
     return focused || activeRecordScene || createdScenes[0] || null;
   }
 
+  function isCubeLikeLayer(layer) {
+    return !!(layer && (
+      layer.kind === SCENE_LAYER_KIND.CUBE
+      || layer.kind === SCENE_LAYER_KIND.ARITHMETIC
+    ));
+  }
+
   function getActiveCubeLayer() {
     const layer = sceneGraphController.getActiveLayer();
-    return layer && layer.kind === SCENE_LAYER_KIND.CUBE ? layer : null;
+    return isCubeLikeLayer(layer) ? layer : null;
   }
 
   function getSelectedCubeLayers() {
@@ -9618,7 +9666,7 @@
       : [];
     const active = getActiveCubeLayer();
     if (active && !selected.some((layer) => layer && layer.id === active.id)) return [active];
-    return selected.filter((layer) => layer && layer.kind === SCENE_LAYER_KIND.CUBE);
+    return selected.filter(isCubeLikeLayer);
   }
 
   function getSelectedCubeLayerIds() {
@@ -9663,7 +9711,11 @@
 
   function getCubeLayersInScene(scene) {
     if (!scene) return [];
-    return sceneGraphController.listLayers(scene).filter((layer) => layer && layer.kind === SCENE_LAYER_KIND.CUBE);
+    const orbitalsGroupId = scene.orbitalsGroupId || '';
+    return sceneGraphController.listLayers(scene).filter((layer) => (
+      isCubeLikeLayer(layer)
+      && (!orbitalsGroupId || layer.parentId === orbitalsGroupId)
+    ));
   }
 
   function getVisibleCubeLayerCount(scene) {
@@ -9673,24 +9725,24 @@
   function getSceneActiveCubeLayer(scene) {
     if (!scene) return null;
     const active = scene.activeLayerId ? sceneGraphController.getLayerById(scene.activeLayerId) : null;
-    if (active && active.kind === SCENE_LAYER_KIND.CUBE) return active;
+    if (isCubeLikeLayer(active)) return active;
     return getCubeLayersInScene(scene).find((layer) => layer.visible !== false)
       || getCubeLayersInScene(scene)[0]
       || null;
   }
 
   function selectOnlyCubeLayer(layer) {
-    if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return;
+    if (!isCubeLikeLayer(layer)) return;
     if (sceneGraphController.setSelection) sceneGraphController.setSelection([layer.id]);
   }
 
   function toggleCubeLayerSelection(layer) {
-    if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return;
+    if (!isCubeLikeLayer(layer)) return;
     const scene = sceneGraphController.getSceneForLayer(layer);
     if (scene) focusScene(scene);
     if (sceneGraphController.extendSelection) sceneGraphController.extendSelection(layer.id);
     const active = sceneGraphController.getActiveLayer();
-    if (active && active.kind === SCENE_LAYER_KIND.CUBE && active.record) {
+    if (isCubeLikeLayer(active) && active.record) {
       const recordIndex = getRecordIndex(active.record);
       if (recordIndex >= 0 && currentIndex !== recordIndex) {
         currentIndex = recordIndex;
@@ -9702,13 +9754,13 @@
   }
 
   function rangeSelectCubeLayer(anchorId, layer) {
-    if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return;
+    if (!isCubeLikeLayer(layer)) return;
     const scene = sceneGraphController.getSceneForLayer(layer);
     if (scene) focusScene(scene);
     const fromId = anchorId || (scene && scene.activeLayerId) || layer.id;
     if (sceneGraphController.extendSelectionRange) sceneGraphController.extendSelectionRange(fromId, layer.id);
     const active = sceneGraphController.getActiveLayer();
-    if (active && active.kind === SCENE_LAYER_KIND.CUBE) {
+    if (isCubeLikeLayer(active)) {
       const singleCubeMode = scene ? getVisibleCubeLayerCount(scene) <= 1 : false;
       if (scene && singleCubeMode) setOnlyCubeVisibleInScene(scene, active);
       const recordIndex = active.record ? getRecordIndex(active.record) : -1;
@@ -9723,7 +9775,7 @@
   }
 
   function setOnlyCubeVisibleInScene(scene, activeCube) {
-    if (!scene || !activeCube || activeCube.kind !== SCENE_LAYER_KIND.CUBE) return false;
+    if (!scene || !isCubeLikeLayer(activeCube)) return false;
     let changed = false;
     for (const cube of getCubeLayersInScene(scene)) {
       const nextVisible = cube.id === activeCube.id;
@@ -9778,6 +9830,244 @@
     };
   }
 
+  function getLayerCubeData(layer) {
+    if (!layer) return null;
+    return layer.cubeData || (layer.record && layer.record.vol) || null;
+  }
+
+  function createVolumeIndexFunction(nxyz) {
+    const ny = Number(nxyz && nxyz[1]) || 0;
+    const nz = Number(nxyz && nxyz[2]) || 0;
+    return (i, j, k) => (i * ny + j) * nz + k;
+  }
+
+  function cloneScalarVolumeForArithmetic(baseVol, data, name) {
+    const nxyz = Array.isArray(baseVol && baseVol.nxyz) ? baseVol.nxyz.slice() : [0, 0, 0];
+    return Object.assign({}, baseVol, {
+      title: String(name || 'Arithmetic layer'),
+      comment: 'VibeMol arithmetic layer',
+      nxyz,
+      origin: Array.isArray(baseVol && baseVol.origin) ? baseVol.origin.slice() : [0, 0, 0],
+      axes: Array.isArray(baseVol && baseVol.axes) ? baseVol.axes.map((axis) => Array.isArray(axis) ? axis.slice() : [0, 0, 0]) : [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+      atoms: Array.isArray(baseVol && baseVol.atoms) ? baseVol.atoms.map((atom) => Object.assign({}, atom)) : [],
+      data,
+      idx: createVolumeIndexFunction(nxyz),
+      kind: 'arithmetic',
+      isTwoComponent: false,
+      alphaRe: undefined,
+      alphaIm: undefined,
+      betaRe: undefined,
+      betaIm: undefined,
+      activeRaw: null,
+    });
+  }
+
+  function cloneArithmeticCubeData(vol, name) {
+    if (!vol) return null;
+    const sourceData = vol.data;
+    const data = sourceData && typeof sourceData.length === 'number'
+      ? new Float32Array(sourceData)
+      : new Float32Array(0);
+    return cloneScalarVolumeForArithmetic(vol, data, name || vol.title || 'Arithmetic layer');
+  }
+
+  function sameArithmeticGrid(a, b) {
+    if (!(a && b)) return false;
+    const dimsA = Array.isArray(a.nxyz) ? a.nxyz : [];
+    const dimsB = Array.isArray(b.nxyz) ? b.nxyz : [];
+    if (dimsA.length !== dimsB.length) return false;
+    for (let i = 0; i < dimsA.length; i += 1) {
+      if (Number(dimsA[i]) !== Number(dimsB[i])) return false;
+    }
+    const originA = Array.isArray(a.origin) ? a.origin : [];
+    const originB = Array.isArray(b.origin) ? b.origin : [];
+    if (originA.length !== originB.length) return false;
+    for (let i = 0; i < originA.length; i += 1) {
+      if (Number(originA[i]) !== Number(originB[i])) return false;
+    }
+    const axesA = Array.isArray(a.axes) ? a.axes : [];
+    const axesB = Array.isArray(b.axes) ? b.axes : [];
+    if (axesA.length !== axesB.length) return false;
+    for (let i = 0; i < axesA.length; i += 1) {
+      const axisA = Array.isArray(axesA[i]) ? axesA[i] : [];
+      const axisB = Array.isArray(axesB[i]) ? axesB[i] : [];
+      if (axisA.length !== axisB.length) return false;
+      for (let j = 0; j < axisA.length; j += 1) {
+        if (Number(axisA[j]) !== Number(axisB[j])) return false;
+      }
+    }
+    const dataA = a.data;
+    const dataB = b.data;
+    return !!(dataA && dataB && dataA.length === dataB.length);
+  }
+
+  function resolveArithmeticInputs(inputs) {
+    return (Array.isArray(inputs) ? inputs : []).map((input) => {
+      const layer = sceneGraphController.getLayerById(input && input.layerId);
+      return {
+        layer,
+        coefficient: Number.isFinite(Number(input && input.coefficient)) ? Number(input.coefficient) : 1,
+      };
+    }).filter((entry) => isCubeLikeLayer(entry.layer) && entry.layer.cubeDataValid !== false);
+  }
+
+  function validateArithmeticInputGrids(resolvedInputs) {
+    if (!resolvedInputs.length) return { ok: false, error: 'Choose at least one operand.' };
+    const firstVol = getLayerCubeData(resolvedInputs[0].layer);
+    if (!hasVolumetricGrid(firstVol) || !(firstVol.data && firstVol.data.length)) {
+      return { ok: false, error: 'Selected operand has no grid data.' };
+    }
+    for (const entry of resolvedInputs.slice(1)) {
+      const vol = getLayerCubeData(entry.layer);
+      if (!hasVolumetricGrid(vol) || !(vol.data && vol.data.length)) {
+        return { ok: false, error: 'Selected operand has no grid data.' };
+      }
+      if (!sameArithmeticGrid(firstVol, vol)) {
+        return { ok: false, error: 'Selected cubes have different grids and cannot be combined.' };
+      }
+    }
+    return { ok: true, baseVol: firstVol };
+  }
+
+  function normalizeArithmeticOperation(value) {
+    const key = String(value || '').trim();
+    if (key === 'product' || key === 'abs') return key;
+    return 'linear_combination';
+  }
+
+  function computeArithmeticCubeData(operation, inputs, outputName) {
+    const op = normalizeArithmeticOperation(operation);
+    const resolved = resolveArithmeticInputs(inputs);
+    if (op === 'abs' && resolved.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
+    if (op === 'product' && resolved.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
+    if (op === 'linear_combination' && resolved.length < 1) return { ok: false, error: 'Choose at least one operand.' };
+    const grid = validateArithmeticInputGrids(resolved);
+    if (!grid.ok) return grid;
+    const baseVol = grid.baseVol;
+    const length = baseVol.data.length;
+    const out = new Float32Array(length);
+    if (op === 'abs') {
+      const data = getLayerCubeData(resolved[0].layer).data;
+      for (let i = 0; i < length; i += 1) out[i] = Math.abs(Number(data[i]) || 0);
+    } else if (op === 'product') {
+      out.fill(1);
+      for (const entry of resolved) {
+        const data = getLayerCubeData(entry.layer).data;
+        for (let i = 0; i < length; i += 1) out[i] *= Number(data[i]) || 0;
+      }
+    } else {
+      for (const entry of resolved) {
+        const data = getLayerCubeData(entry.layer).data;
+        const coefficient = Number.isFinite(entry.coefficient) ? entry.coefficient : 1;
+        for (let i = 0; i < length; i += 1) out[i] += coefficient * (Number(data[i]) || 0);
+      }
+    }
+    return {
+      ok: true,
+      cubeData: cloneScalarVolumeForArithmetic(baseVol, out, outputName),
+    };
+  }
+
+  function formatArithmeticCoefficient(value, options = {}) {
+    const coefficient = Number(value);
+    if (!Number.isFinite(coefficient)) return '1';
+    const abs = Math.abs(coefficient);
+    const rounded = Math.abs(abs - Math.round(abs)) < 1e-10
+      ? String(Math.round(abs))
+      : String(Number(abs.toFixed(4))).replace(/\.0+$/, '');
+    if (options.omitOne && Math.abs(abs - 1) < 1e-10) return '';
+    return rounded;
+  }
+
+  function getArithmeticOperandLabel(input) {
+    const layer = sceneGraphController.getLayerById(input && input.layerId);
+    return String(layer && layer.labelId || layer && layer.name || 'Layer');
+  }
+
+  function generateArithmeticName(operation, inputs) {
+    const op = normalizeArithmeticOperation(operation);
+    const terms = Array.isArray(inputs) ? inputs : [];
+    if (op === 'abs') return `|${getArithmeticOperandLabel(terms[0])}|`;
+    if (op === 'product') return terms.map(getArithmeticOperandLabel).join(' · ');
+    const parts = [];
+    terms.forEach((input, index) => {
+      const coefficient = Number.isFinite(Number(input && input.coefficient)) ? Number(input.coefficient) : 1;
+      const negative = coefficient < 0;
+      const coeffText = formatArithmeticCoefficient(coefficient, { omitOne: true });
+      const label = getArithmeticOperandLabel(input);
+      const term = coeffText ? `${coeffText}·${label}` : label;
+      if (index === 0) parts.push(negative ? `−${term}` : term);
+      else parts.push(`${negative ? '−' : '+'} ${term}`);
+    });
+    return parts.join(' ') || 'Combination';
+  }
+
+  function normalizeArithmeticInputsForOperation(operation, inputs) {
+    const op = normalizeArithmeticOperation(operation);
+    let out = (Array.isArray(inputs) ? inputs : []).map((input) => ({
+      layerId: String(input && input.layerId || ''),
+      coefficient: Number.isFinite(Number(input && input.coefficient)) ? Number(input.coefficient) : 1,
+    })).filter((input) => input.layerId);
+    if (op === 'abs') out = out.slice(0, 1).map((input) => Object.assign({}, input, { coefficient: 1 }));
+    if (op === 'product') out = out.map((input) => Object.assign({}, input, { coefficient: 1 }));
+    return out;
+  }
+
+  function buildArithmeticDependencyDepthMap(scene) {
+    const layers = getCubeLayersInScene(scene);
+    const byId = new Map(layers.map((layer) => [layer.id, layer]));
+    const memo = new Map();
+    const depthFor = (layerId, stack = new Set()) => {
+      if (memo.has(layerId)) return memo.get(layerId);
+      const layer = byId.get(layerId);
+      if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC) || stack.has(layerId)) {
+        memo.set(layerId, 0);
+        return 0;
+      }
+      stack.add(layerId);
+      let depth = 0;
+      for (const input of Array.isArray(layer.inputs) ? layer.inputs : []) {
+        depth = Math.max(depth, 1 + depthFor(input.layerId, stack));
+      }
+      stack.delete(layerId);
+      memo.set(layerId, depth);
+      return depth;
+    };
+    for (const layer of layers) depthFor(layer.id);
+    return memo;
+  }
+
+  function getArithmeticCascadeDeletePlan(seedLayers) {
+    const seeds = (Array.isArray(seedLayers) ? seedLayers : []).filter(isCubeLikeLayer);
+    const scene = seeds.length ? sceneGraphController.getSceneForLayer(seeds[0]) : null;
+    if (!scene) return { scene: null, seedLayers: [], layers: [], dependents: [] };
+    const seedIds = new Set(seeds.map((layer) => layer.id));
+    const deleteIds = new Set(seedIds);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const layer of getCubeLayersInScene(scene)) {
+        if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC) || deleteIds.has(layer.id)) continue;
+        const inputs = Array.isArray(layer.inputs) ? layer.inputs : [];
+        if (inputs.some((input) => deleteIds.has(input && input.layerId))) {
+          deleteIds.add(layer.id);
+          changed = true;
+        }
+      }
+    }
+    const depth = buildArithmeticDependencyDepthMap(scene);
+    const layers = getCubeLayersInScene(scene)
+      .filter((layer) => deleteIds.has(layer.id))
+      .sort((a, b) => (Number(depth.get(b.id)) || 0) - (Number(depth.get(a.id)) || 0));
+    return {
+      scene,
+      seedLayers: seeds,
+      seedIds,
+      layers,
+      dependents: layers.filter((layer) => !seedIds.has(layer.id)),
+    };
+  }
+
   function insertLayerAfter(scene, layer, afterLayer) {
     if (!(scene && layer && afterLayer && Array.isArray(scene.layers))) return;
     const from = scene.layers.indexOf(layer);
@@ -9801,15 +10091,17 @@
   }
 
   function duplicateCubeLayer(sourceLayer, options = {}) {
-    if (!(sourceLayer && sourceLayer.kind === SCENE_LAYER_KIND.CUBE)) return null;
+    if (!isCubeLikeLayer(sourceLayer)) return null;
     const scene = sceneGraphController.getSceneForLayer(sourceLayer);
     if (!scene) return null;
     const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
-    const newLayer = sceneGraphController.addCubeLayer(scene, Object.assign({}, copyCubeLayerAppearance(sourceLayer), {
+    const layerProps = Object.assign({}, copyCubeLayerAppearance(sourceLayer), {
       name: getNextCubeCopyName(scene, sourceLayer),
       labelId: getNextCubeLabelId(scene),
       record: sourceLayer.record || null,
-      cubeData: sourceLayer.cubeData || (sourceLayer.record && sourceLayer.record.vol) || null,
+      cubeData: sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC
+        ? cloneArithmeticCubeData(getLayerCubeData(sourceLayer), getNextCubeCopyName(scene, sourceLayer))
+        : getLayerCubeData(sourceLayer),
       moldenMoIndex: Number.isInteger(sourceLayer.moldenMoIndex) ? sourceLayer.moldenMoIndex : null,
       visible: true,
       expanded: sourceLayer.expanded !== false,
@@ -9822,7 +10114,15 @@
       group: null,
       cloudGroup: null,
       surfaceMetricCache: new Map(),
-    }), getSurfaceDefaultsForNewLayer());
+    });
+    if (sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC) {
+      layerProps.operation = normalizeArithmeticOperation(sourceLayer.operation);
+      layerProps.inputs = normalizeArithmeticInputsForOperation(layerProps.operation, sourceLayer.inputs);
+      layerProps.cubeDataValid = sourceLayer.cubeDataValid !== false;
+    }
+    const newLayer = sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC
+      ? sceneGraphController.addArithmeticLayer(scene, layerProps, getSurfaceDefaultsForNewLayer())
+      : sceneGraphController.addCubeLayer(scene, layerProps, getSurfaceDefaultsForNewLayer());
     if (!newLayer) return null;
     insertLayerAfter(scene, newLayer, sourceLayer);
     focusScene(scene);
@@ -9838,7 +10138,7 @@
     if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
     if (options.rebind !== false) syncAppearanceControlsToActiveLayer();
     if (options.render !== false) renderSceneOutliner();
-    if (options.announce !== false) setHintMessage(`Duplicated ${sourceLayer.labelId || 'cube'} as ${newLayer.labelId || 'new layer'}.`);
+    if (options.announce !== false) setHintMessage(`Duplicated ${sourceLayer.labelId || 'layer'} as ${newLayer.labelId || 'new layer'}.`);
     return newLayer;
   }
 
@@ -9875,12 +10175,12 @@
     rebuildScene({ preserveView: true, syncGraph: false });
     syncAppearanceControlsToActiveLayer();
     renderSceneOutliner();
-    setHintMessage(`Duplicated ${duplicates.length} cube layers.`);
+    setHintMessage(`Duplicated ${duplicates.length} layers.`);
     return active;
   }
 
   function deleteCubeLayer(layer, options = {}) {
-    if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return false;
+    if (!isCubeLikeLayer(layer)) return false;
     const scene = sceneGraphController.getSceneForLayer(layer);
     if (!scene) return false;
     const cubes = getCubeLayersInScene(scene);
@@ -9889,7 +10189,7 @@
     const wasActive = scene.activeLayerId === layer.id;
     const wasVisible = layer.visible !== false;
     const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
-    const removedLabel = layer.labelId || layer.name || 'cube';
+    const removedLabel = layer.labelId || layer.name || 'layer';
     sceneGraphController.removeLayer(layer.id);
     if (replacement) {
       if (wasActive) sceneGraphController.setActiveLayer(replacement.id);
@@ -9909,21 +10209,24 @@
 
   function deleteSelectedCubeLayers() {
     const selected = getSelectedCubeLayers();
-    if (selected.length <= 1) return deleteCubeLayer(selected[0] || getActiveCubeLayer());
-    const scene = sceneGraphController.getSceneForLayer(selected[0]);
+    const actionLayers = selected.length ? selected : [getActiveCubeLayer()].filter(Boolean);
+    if (!actionLayers.length) return false;
+    const scene = sceneGraphController.getSceneForLayer(actionLayers[0]);
     if (!scene) return false;
-    const selectedIds = new Set(selected.map((layer) => layer.id));
+    const plan = getArithmeticCascadeDeletePlan(actionLayers);
+    if (!plan.layers.length) return false;
+    const deleteIds = new Set(plan.layers.map((layer) => layer.id));
     const cubes = getCubeLayersInScene(scene);
-    const firstIndex = cubes.findIndex((layer) => selectedIds.has(layer.id));
+    const firstIndex = cubes.findIndex((layer) => deleteIds.has(layer.id));
     const replacement = cubes
       .slice(0, Math.max(0, firstIndex))
       .reverse()
-      .find((layer) => !selectedIds.has(layer.id))
-      || cubes.slice(firstIndex + 1).find((layer) => !selectedIds.has(layer.id))
+      .find((layer) => !deleteIds.has(layer.id))
+      || cubes.slice(firstIndex + 1).find((layer) => !deleteIds.has(layer.id))
       || null;
     const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
-    const deletedVisible = selected.some((layer) => layer.visible !== false);
-    for (const layer of selected) sceneGraphController.removeLayer(layer.id);
+    const deletedVisible = plan.layers.some((layer) => layer.visible !== false);
+    for (const layer of plan.layers) sceneGraphController.removeLayer(layer.id);
     if (replacement) {
       sceneGraphController.setActiveLayer(replacement.id);
       if (sceneGraphController.setSelection) sceneGraphController.setSelection([replacement.id]);
@@ -9938,7 +10241,7 @@
     syncLoadedSceneControls();
     syncAppearanceControlsToActiveLayer();
     renderSceneOutliner();
-    setHintMessage(`Deleted ${selected.length} cube layers.`);
+    setHintMessage(`Deleted ${plan.layers.length} layers.`);
     return true;
   }
 
@@ -10007,10 +10310,10 @@
     const layer = sceneGraphController.setActiveLayer(layerId);
     if (!layer) return null;
     if (scene) focusScene(scene);
-    if (layer.kind === SCENE_LAYER_KIND.CUBE && (singleCubeMode || options.forceSingleCubeVisibility)) {
+    if (isCubeLikeLayer(layer) && (singleCubeMode || options.forceSingleCubeVisibility)) {
       setOnlyCubeVisibleInScene(scene, layer);
     }
-    if (layer.kind === SCENE_LAYER_KIND.CUBE) {
+    if (isCubeLikeLayer(layer)) {
       const selectionMode = options.selection || 'replace';
       if (selectionMode === 'range') {
         if (sceneGraphController.extendSelectionRange) {
@@ -10035,7 +10338,7 @@
       if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
     } else {
       syncLoadedSceneControls();
-      const switchedCubeLayer = !!(previousLayer && previousLayer.id !== layer.id && layer.kind === SCENE_LAYER_KIND.CUBE);
+      const switchedCubeLayer = !!(previousLayer && previousLayer.id !== layer.id && isCubeLikeLayer(layer));
       if (switchedCubeLayer && options.rebuild !== false) {
         rebuildScene({ preserveView: true, syncGraph: false });
       } else if (options.rebind !== false) {
@@ -10068,7 +10371,10 @@
       const count = sceneGraphController.listLayers(scene).filter((item) => item.parentId === layer.id).length;
       return `${count} layer${count === 1 ? '' : 's'}`;
     }
-    if (layer.kind === SCENE_LAYER_KIND.CUBE) return `iso ${formatIsoInputValue(layer.iso || DEFAULT_ISO_VALUE)}`;
+    if (isCubeLikeLayer(layer)) {
+      if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC && layer.cubeDataValid === false) return '(invalid)';
+      return `iso ${formatIsoInputValue(layer.iso || DEFAULT_ISO_VALUE)}`;
+    }
     if (layer.kind === SCENE_LAYER_KIND.MEASUREMENTS_GROUP) {
       const count = sceneGraphController.listLayers(scene).filter((item) => item.parentId === layer.id).length;
       return `${count} item${count === 1 ? '' : 's'}`;
@@ -10147,6 +10453,7 @@
     if (!layer) return 'layers';
     if (layer.kind === SCENE_LAYER_KIND.MOLECULE) return 'hub';
     if (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP) return 'blur_on';
+    if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC) return 'add';
     if (layer.kind === SCENE_LAYER_KIND.MEASUREMENTS_GROUP) return 'straighten';
     if (layer.kind === SCENE_LAYER_KIND.MEASUREMENT) return 'linear_scale';
     return '';
@@ -10166,6 +10473,7 @@
     row.classList.toggle('is-hidden', !options.effectiveVisible);
     row.classList.toggle('is-group', !!options.expandable);
     row.classList.toggle('is-flashing', !!(options.layer && options.layer.id === outlinerFlashLayerId));
+    row.classList.toggle('is-invalid', !!(options.layer && options.layer.kind === SCENE_LAYER_KIND.ARITHMETIC && options.layer.cubeDataValid === false));
 
     const twisty = document.createElement('span');
     twisty.className = 'vm-outliner-row__twisty material-symbols-rounded';
@@ -10223,7 +10531,7 @@
 
     const label = document.createElement('span');
     label.className = 'vm-outliner-row__label';
-    if (options.layer && options.layer.kind === SCENE_LAYER_KIND.CUBE) {
+    if (options.layer && isCubeLikeLayer(options.layer)) {
       const prefix = document.createElement('span');
       prefix.className = 'vm-outliner-row__prefix';
       prefix.textContent = options.layer.labelId || '';
@@ -10244,13 +10552,13 @@
         return;
       }
       if (!options.layer) return;
-      if (options.layer.kind !== SCENE_LAYER_KIND.CUBE) {
+      if (!isCubeLikeLayer(options.layer)) {
         setActiveSceneGraphLayer(options.layer.id);
         return;
       }
       if (event.shiftKey) {
         const active = sceneGraphController.getActiveLayer();
-        rangeSelectCubeLayer(active && active.kind === SCENE_LAYER_KIND.CUBE ? active.id : null, options.layer);
+        rangeSelectCubeLayer(isCubeLikeLayer(active) ? active.id : null, options.layer);
         return;
       }
       if (event.metaKey || event.ctrlKey) {
@@ -10259,7 +10567,7 @@
       }
       setActiveSceneGraphLayer(options.layer.id, { selection: 'replace' });
     });
-    if (options.layer && options.layer.kind === SCENE_LAYER_KIND.CUBE) {
+    if (options.layer && isCubeLikeLayer(options.layer)) {
       row.addEventListener('contextmenu', (event) => showCubeLayerContextMenu(options.layer, event));
     }
     return row;
@@ -10317,7 +10625,7 @@
       expandable: children.length > 0,
       expanded: layer.expanded !== false,
       active: !!(activeLayer && activeLayer.id === layer.id),
-      selected: layer.kind === SCENE_LAYER_KIND.CUBE && isCubeLayerSelected(layer),
+      selected: isCubeLikeLayer(layer) && isCubeLayerSelected(layer),
     });
     sceneOutlinerBodyEl.appendChild(row);
     if (children.length && layer.expanded !== false) {
@@ -10339,6 +10647,7 @@
     if (!target || (typeof target.closest !== 'function')) return;
     if (target.closest('#toolbar')) return;
     if (cubeLayerContextMenuEl && target.closest('.vm-outliner-context-menu')) return;
+    if (combinePopoverEl && target.closest('.vm-combine-popover')) return;
     if (target.closest('button, input, select, textarea, a, [role="button"], [role="menu"], [role="dialog"]')) return;
     clearOutlinerSelectionToActive({ rebind: true, render: true });
   }, true);
@@ -10348,6 +10657,7 @@
     cubeLayerContextMenuEl.hidden = true;
     cubeLayerContextMenuEl.setAttribute('aria-hidden', 'true');
     cubeLayerContextMenuLayerId = null;
+    cubeLayerContextMenuPoint = null;
   }
 
   function isFocusInsideOutliner() {
@@ -10418,6 +10728,366 @@
     return cubeLayerContextMenuEl;
   }
 
+  function closeCombinePopover() {
+    if (!combinePopoverEl) return;
+    combinePopoverEl.hidden = true;
+    combinePopoverEl.setAttribute('aria-hidden', 'true');
+    combinePopoverState = null;
+  }
+
+  function positionCombinePopover(point) {
+    if (!combinePopoverEl) return;
+    const gap = 10;
+    const rect = combinePopoverEl.getBoundingClientRect();
+    const width = Math.max(1, rect.width || 360);
+    const height = Math.max(1, rect.height || 360);
+    const left = Math.min(
+      Math.max(gap, Number(point && point.clientX) || gap),
+      Math.max(gap, (window.innerWidth || 0) - width - gap)
+    );
+    const top = Math.min(
+      Math.max(gap, Number(point && point.clientY) || gap),
+      Math.max(gap, (window.innerHeight || 0) - height - gap)
+    );
+    combinePopoverEl.style.left = `${Math.round(left)}px`;
+    combinePopoverEl.style.top = `${Math.round(top)}px`;
+  }
+
+  function ensureCombinePopover() {
+    if (combinePopoverEl) return combinePopoverEl;
+    const popover = document.createElement('div');
+    popover.className = 'vm-combine-popover';
+    popover.hidden = true;
+    popover.setAttribute('aria-hidden', 'true');
+    popover.setAttribute('role', 'dialog');
+    popover.setAttribute('aria-label', 'Combine cube layers');
+    document.body.appendChild(popover);
+    combinePopoverEl = popover;
+    document.addEventListener('pointerdown', (event) => {
+      if (!combinePopoverEl || combinePopoverEl.hidden) return;
+      if (event.target && combinePopoverEl.contains(event.target)) return;
+      closeCombinePopover();
+    });
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && combinePopoverEl && !combinePopoverEl.hidden) closeCombinePopover();
+    });
+    window.addEventListener('resize', closeCombinePopover);
+    window.addEventListener('scroll', closeCombinePopover, true);
+    return combinePopoverEl;
+  }
+
+  function getCombineOperandOptions(scene) {
+    return getCubeLayersInScene(scene).filter((layer) => {
+      const vol = getLayerCubeData(layer);
+      return isCubeLikeLayer(layer)
+        && layer.cubeDataValid !== false
+        && hasVolumetricGrid(vol)
+        && !!(vol && vol.data && vol.data.length);
+    });
+  }
+
+  function buildCombineInitialOperands(layers, operation) {
+    const op = normalizeArithmeticOperation(operation);
+    const selected = (Array.isArray(layers) ? layers : []).filter(isCubeLikeLayer);
+    const source = selected.length ? selected : [getActiveCubeLayer()].filter(Boolean);
+    let operands = source.map((layer, index) => ({
+      layerId: layer.id,
+      coefficient: index === 1 ? -1 : 1,
+    }));
+    if (op === 'abs') operands = operands.slice(0, 1).map((input) => Object.assign({}, input, { coefficient: 1 }));
+    if (op === 'product') operands = operands.map((input) => Object.assign({}, input, { coefficient: 1 }));
+    return operands;
+  }
+
+  function getCombineValidation(state) {
+    if (!state) return { ok: false, error: 'No combination is configured.' };
+    const op = normalizeArithmeticOperation(state.operation);
+    const operands = normalizeArithmeticInputsForOperation(op, state.operands);
+    if (op === 'abs' && operands.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
+    if (op === 'product' && operands.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
+    if (op === 'linear_combination' && operands.length < 1) return { ok: false, error: 'Choose at least one operand.' };
+    if (operands.some((input) => !input.layerId)) return { ok: false, error: 'Choose an operand for every row.' };
+    const resolved = resolveArithmeticInputs(operands);
+    if (resolved.length !== operands.length) return { ok: false, error: 'Choose a valid operand for every row.' };
+    const grid = validateArithmeticInputGrids(resolved);
+    return grid.ok ? { ok: true, operands } : grid;
+  }
+
+  function syncCombineAutoName() {
+    if (!combinePopoverState || combinePopoverState.nameTouched) return;
+    combinePopoverState.name = generateArithmeticName(combinePopoverState.operation, combinePopoverState.operands);
+  }
+
+  function addCombineOperandTerm() {
+    if (!combinePopoverState) return;
+    const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
+    if (!scene) return;
+    const used = new Set((combinePopoverState.operands || []).map((input) => input.layerId));
+    const candidate = getCombineOperandOptions(scene).find((layer) => !used.has(layer.id))
+      || getCombineOperandOptions(scene)[0]
+      || null;
+    if (!candidate) return;
+    combinePopoverState.operands.push({ layerId: candidate.id, coefficient: 1 });
+    syncCombineAutoName();
+    renderCombinePopover();
+  }
+
+  function updateCombineOperation(nextOperation) {
+    if (!combinePopoverState) return;
+    const previous = combinePopoverState.operation;
+    const op = normalizeArithmeticOperation(nextOperation);
+    const hadMultipleOperands = Array.isArray(combinePopoverState.operands) && combinePopoverState.operands.length > 1;
+    combinePopoverState.operation = op;
+    combinePopoverState.operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
+    combinePopoverState.absTrimmed = previous !== 'abs' && op === 'abs' && hadMultipleOperands;
+    syncCombineAutoName();
+    renderCombinePopover();
+  }
+
+  function createCombinedLayerFromPopover() {
+    if (!combinePopoverState) return false;
+    const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
+    if (!scene) return false;
+    const validation = getCombineValidation(combinePopoverState);
+    combinePopoverState.triedCreate = true;
+    if (!validation.ok) {
+      renderCombinePopover();
+      return false;
+    }
+    const name = String(combinePopoverState.name || generateArithmeticName(combinePopoverState.operation, validation.operands) || 'Combination').trim();
+    const computed = computeArithmeticCubeData(combinePopoverState.operation, validation.operands, name);
+    if (!computed.ok) {
+      combinePopoverState.error = computed.error || 'Could not compute combination.';
+      renderCombinePopover();
+      return false;
+    }
+    const firstOperand = sceneGraphController.getLayerById(validation.operands[0] && validation.operands[0].layerId);
+    const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
+    const newLayer = sceneGraphController.addArithmeticLayer(scene, Object.assign(
+      {},
+      firstOperand ? copyCubeLayerAppearance(firstOperand) : getSurfaceDefaultsForNewLayer(),
+      {
+        name,
+        labelId: getNextCubeLabelId(scene),
+        visible: true,
+        operation: normalizeArithmeticOperation(combinePopoverState.operation),
+        inputs: validation.operands,
+        cubeData: computed.cubeData,
+        cubeDataValid: true,
+      }
+    ), getSurfaceDefaultsForNewLayer());
+    if (!newLayer) return false;
+    focusScene(scene);
+    flashOutlinerLayer(newLayer.id);
+    setActiveSceneGraphLayer(newLayer.id, {
+      forceSingleCubeVisibility: wasSingleCubeMode,
+      rebuild: false,
+      rebind: false,
+      selection: 'replace',
+    });
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    closeCombinePopover();
+    setHintMessage(`Created ${newLayer.labelId || 'layer'} = ${newLayer.name || name}`);
+    return true;
+  }
+
+  function renderCombinePopover() {
+    const popover = ensureCombinePopover();
+    if (!popover || !combinePopoverState) return null;
+    syncCombineAutoName();
+    const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
+    const options = scene ? getCombineOperandOptions(scene) : [];
+    const op = normalizeArithmeticOperation(combinePopoverState.operation);
+    const validation = getCombineValidation(combinePopoverState);
+    const errorText = combinePopoverState.error || validation.error || '';
+    popover.textContent = '';
+
+    const title = document.createElement('div');
+    title.className = 'vm-combine-popover__title';
+    title.textContent = 'Combine';
+    popover.appendChild(title);
+
+    const opRow = document.createElement('label');
+    opRow.className = 'vm-combine-popover__field';
+    const opLabel = document.createElement('span');
+    opLabel.textContent = 'Operation';
+    const opSelect = document.createElement('select');
+    opSelect.className = 'vm-combine-popover__select';
+    [
+      ['linear_combination', 'Linear combination'],
+      ['product', 'Product'],
+      ['abs', 'Abs'],
+    ].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      option.selected = value === op;
+      opSelect.appendChild(option);
+    });
+    opSelect.addEventListener('change', () => updateCombineOperation(opSelect.value));
+    opRow.appendChild(opLabel);
+    opRow.appendChild(opSelect);
+    popover.appendChild(opRow);
+
+    const dividerA = document.createElement('div');
+    dividerA.className = 'vm-combine-popover__divider';
+    popover.appendChild(dividerA);
+
+    const operandsTitle = document.createElement('div');
+    operandsTitle.className = 'vm-combine-popover__section-title';
+    operandsTitle.textContent = 'Operands';
+    popover.appendChild(operandsTitle);
+
+    const operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
+    combinePopoverState.operands = operands;
+    operands.forEach((input, index) => {
+      const row = document.createElement('div');
+      row.className = 'vm-combine-popover__operand';
+      if (op === 'linear_combination') {
+        const coef = document.createElement('input');
+        coef.className = 'vm-combine-popover__coefficient';
+        coef.type = 'number';
+        coef.step = '0.1';
+        coef.value = String(Number.isFinite(Number(input.coefficient)) ? Number(input.coefficient).toFixed(2) : '1.00');
+        coef.addEventListener('change', () => {
+          combinePopoverState.error = '';
+          combinePopoverState.operands[index].coefficient = Number(coef.value);
+          syncCombineAutoName();
+          renderCombinePopover();
+        });
+        row.appendChild(coef);
+        const times = document.createElement('span');
+        times.className = 'vm-combine-popover__times';
+        times.textContent = '×';
+        row.appendChild(times);
+      }
+      const select = document.createElement('select');
+      select.className = 'vm-combine-popover__select';
+      options.forEach((layer) => {
+        const option = document.createElement('option');
+        option.value = layer.id;
+        option.textContent = `${layer.labelId || 'L?'} — ${layer.name || 'Layer'}`;
+        option.selected = layer.id === input.layerId;
+        select.appendChild(option);
+      });
+      select.addEventListener('change', () => {
+        combinePopoverState.error = '';
+        combinePopoverState.operands[index].layerId = select.value;
+        syncCombineAutoName();
+        renderCombinePopover();
+      });
+      row.appendChild(select);
+      if (op !== 'abs') {
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'vm-combine-popover__icon-button';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', 'Remove operand');
+        remove.addEventListener('click', () => {
+          combinePopoverState.error = '';
+          combinePopoverState.operands.splice(index, 1);
+          syncCombineAutoName();
+          renderCombinePopover();
+        });
+        row.appendChild(remove);
+      }
+      popover.appendChild(row);
+    });
+
+    if (op === 'abs' && combinePopoverState.absTrimmed) {
+      const note = document.createElement('div');
+      note.className = 'vm-combine-popover__note';
+      note.textContent = 'Abs takes a single operand.';
+      popover.appendChild(note);
+    }
+
+    if (op !== 'abs') {
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'vm-combine-popover__add';
+      add.textContent = '+ Add term';
+      const used = new Set(operands.map((input) => input.layerId));
+      add.disabled = !options.length || options.every((layer) => used.has(layer.id));
+      add.addEventListener('click', addCombineOperandTerm);
+      popover.appendChild(add);
+    }
+
+    if ((combinePopoverState.triedCreate || errorText === 'Selected cubes have different grids and cannot be combined.') && !validation.ok && errorText) {
+      const error = document.createElement('div');
+      error.className = 'vm-combine-popover__error';
+      error.textContent = errorText;
+      popover.appendChild(error);
+    }
+
+    const dividerB = document.createElement('div');
+    dividerB.className = 'vm-combine-popover__divider';
+    popover.appendChild(dividerB);
+
+    const nameRow = document.createElement('label');
+    nameRow.className = 'vm-combine-popover__field';
+    const nameLabel = document.createElement('span');
+    nameLabel.textContent = 'Output name';
+    const nameInput = document.createElement('input');
+    nameInput.className = 'vm-combine-popover__input';
+    nameInput.type = 'text';
+    nameInput.value = combinePopoverState.name || '';
+    nameInput.addEventListener('input', () => {
+      combinePopoverState.nameTouched = true;
+      combinePopoverState.name = nameInput.value;
+    });
+    nameRow.appendChild(nameLabel);
+    nameRow.appendChild(nameInput);
+    popover.appendChild(nameRow);
+
+    const actions = document.createElement('div');
+    actions.className = 'vm-combine-popover__actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'vm-combine-popover__button is-secondary';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', closeCombinePopover);
+    const create = document.createElement('button');
+    create.type = 'button';
+    create.className = 'vm-combine-popover__button is-primary';
+    create.textContent = 'Create';
+    create.disabled = !validation.ok;
+    create.addEventListener('click', createCombinedLayerFromPopover);
+    actions.appendChild(cancel);
+    actions.appendChild(create);
+    popover.appendChild(actions);
+
+    popover.hidden = false;
+    popover.setAttribute('aria-hidden', 'false');
+    positionCombinePopover(combinePopoverState.anchorPoint);
+    return popover;
+  }
+
+  function showCombinePopover(layers, event = null) {
+    const selection = (Array.isArray(layers) ? layers : []).filter(isCubeLikeLayer);
+    const scene = selection.length ? sceneGraphController.getSceneForLayer(selection[0]) : getFocusedScene();
+    if (!scene) return false;
+    const defaultOperation = selection.length <= 1 ? 'abs' : 'linear_combination';
+    combinePopoverState = {
+      sceneId: scene.id,
+      operation: defaultOperation,
+      operands: buildCombineInitialOperands(selection, defaultOperation),
+      name: '',
+      nameTouched: false,
+      triedCreate: false,
+      error: '',
+      absTrimmed: false,
+      anchorPoint: {
+        clientX: Number(event && event.clientX) || (window.innerWidth || 360) / 2,
+        clientY: Number(event && event.clientY) || (window.innerHeight || 360) / 2,
+      },
+    };
+    syncCombineAutoName();
+    renderCombinePopover();
+    return true;
+  }
+
   function renderCubeLayerContextMenu(layer, mode = 'menu') {
     const menu = ensureCubeLayerContextMenu();
     if (!menu || !layer) return null;
@@ -10425,18 +11095,25 @@
     const selection = getSelectedCubeLayers();
     const actionLayers = selection.length ? selection : [layer];
     const count = actionLayers.length;
+    const deletePlan = getArithmeticCascadeDeletePlan(actionLayers);
     if (mode === 'confirm-delete') {
       const title = document.createElement('div');
       title.className = 'vm-outliner-context-menu__title';
-      title.textContent = count > 1
-        ? `Delete ${count} layers?`
+      const deleteCount = deletePlan.layers.length || count;
+      title.textContent = deleteCount > 1
+        ? `Delete ${deleteCount} layers?`
         : `Delete ${layer.labelId || layer.name || 'cube'}?`;
       menu.appendChild(title);
       const body = document.createElement('div');
       body.className = 'vm-outliner-context-menu__body';
-      body.textContent = count > 1
-        ? 'This cannot be undone.'
-        : 'This action cannot be undone in Phase 2a-1.';
+      if (deletePlan.dependents.length) {
+        const lines = deletePlan.dependents.map((dependent) => `• ${dependent.labelId || ''} ${dependent.name || 'Layer'}`.trim());
+        body.textContent = `This will also delete:\n${lines.join('\n')}\n\nThis action cannot be undone.`;
+      } else {
+        body.textContent = deleteCount > 1
+          ? 'This cannot be undone.'
+          : 'This action cannot be undone in Phase 2a-1.';
+      }
       menu.appendChild(body);
       const actions = document.createElement('div');
       actions.className = 'vm-outliner-context-menu__actions';
@@ -10450,10 +11127,8 @@
       confirm.className = 'vm-outliner-context-menu__button is-danger';
       confirm.textContent = 'Delete';
       confirm.addEventListener('click', () => {
-        const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
         closeCubeLayerContextMenu();
-        if (count > 1) deleteSelectedCubeLayers();
-        else deleteCubeLayer(target || layer);
+        deleteSelectedCubeLayers();
       });
       actions.appendChild(cancel);
       actions.appendChild(confirm);
@@ -10472,6 +11147,19 @@
       else duplicateCubeLayer(target || layer);
     });
     menu.appendChild(duplicate);
+    const combine = document.createElement('button');
+    combine.type = 'button';
+    combine.className = 'vm-outliner-context-menu__item';
+    combine.textContent = 'Combine...';
+    combine.addEventListener('click', () => {
+      const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
+      const layers = getSelectedCubeLayers();
+      const combineLayers = layers.length ? layers : [target || layer].filter(Boolean);
+      const point = cubeLayerContextMenuPoint || { clientX: 0, clientY: 0 };
+      closeCubeLayerContextMenu();
+      showCombinePopover(combineLayers, point);
+    });
+    menu.appendChild(combine);
     const divider = document.createElement('div');
     divider.className = 'vm-outliner-context-menu__divider';
     menu.appendChild(divider);
@@ -10488,7 +11176,7 @@
   }
 
   function showCubeLayerContextMenu(layer, event) {
-    if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return;
+    if (!isCubeLikeLayer(layer)) return;
     if (event) {
       event.preventDefault();
       event.stopPropagation();
@@ -10501,6 +11189,9 @@
     }
     syncAppearanceControlsToActiveLayer();
     cubeLayerContextMenuLayerId = layer.id;
+    cubeLayerContextMenuPoint = event
+      ? { clientX: event.clientX, clientY: event.clientY }
+      : null;
     const menu = renderCubeLayerContextMenu(layer, 'menu');
     if (!menu) return;
     menu.hidden = false;
@@ -27814,6 +28505,9 @@
           cloudAlpha: normalizeLayerCloudAlpha(layer.cloudAlpha),
           signFlip: !!layer.signFlip,
           isSceneGraphDuplicate: !!layer.isSceneGraphDuplicate,
+          operation: layer.operation || null,
+          inputs: Array.isArray(layer.inputs) ? layer.inputs.map((input) => Object.assign({}, input)) : [],
+          cubeDataValid: layer.cubeDataValid !== false,
         })),
       })),
     }),
@@ -32115,8 +32809,9 @@
 
     for (const scene of sceneGraphController.getScenes()) {
       if (!scene || scene.visible === false) continue;
-      const cubeLayers = sceneGraphController.listRenderableLayers(scene).filter((layer) => layer.kind === SCENE_LAYER_KIND.CUBE);
+      const cubeLayers = sceneGraphController.listRenderableLayers(scene).filter(isCubeLikeLayer);
       for (const layer of cubeLayers) {
+        if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC && layer.cubeDataValid === false) continue;
         const record = layer.record || null;
         const vol = (layer.cubeData || (record && record.vol)) || null;
         if (record && vol && vol.kind === 'molden' && Number.isInteger(layer.moldenMoIndex)) {

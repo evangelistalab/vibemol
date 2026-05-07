@@ -2193,6 +2193,12 @@
       animation: vm-outliner-row-flash 900ms ease-out;
     }
 
+    #toolbar .vm-outliner-row.is-invalid .vm-outliner-row__label,
+    #toolbar .vm-outliner-row.is-invalid .vm-outliner-row__meta {
+      color: var(--vm-color-danger, #b42318);
+      font-style: italic;
+    }
+
     @keyframes vm-outliner-row-flash {
       0% {
         background: color-mix(in srgb, var(--vm-color-accent) 30%, transparent);
@@ -2374,6 +2380,7 @@
       padding: 0 6px 8px;
       color: var(--vm-color-text-secondary);
       line-height: 1.35;
+      white-space: pre-line;
     }
 
     .vm-outliner-context-menu__actions {
@@ -2385,6 +2392,141 @@
     .vm-outliner-context-menu__button {
       text-align: center;
       background: color-mix(in srgb, var(--vm-color-text-primary) 5%, transparent);
+    }
+
+    .vm-combine-popover {
+      position: fixed;
+      z-index: 10060;
+      width: min(360px, calc(100vw - 20px));
+      padding: 12px;
+      border: 1px solid var(--vm-color-border);
+      border-radius: 8px;
+      background: var(--vm-color-surface-panel);
+      box-shadow: var(--vm-shadow-sm), 0 18px 42px rgba(0, 0, 0, 0.16);
+      color: var(--vm-color-text-primary);
+      font-size: 12px;
+    }
+
+    .vm-combine-popover[hidden] {
+      display: none !important;
+    }
+
+    .vm-combine-popover__title {
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .vm-combine-popover__field {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      color: var(--vm-color-text-secondary);
+    }
+
+    .vm-combine-popover__field > span,
+    .vm-combine-popover__section-title {
+      font-weight: 600;
+    }
+
+    .vm-combine-popover__divider {
+      height: 1px;
+      margin: 10px 0;
+      background: var(--vm-color-border);
+    }
+
+    .vm-combine-popover__operand {
+      display: grid;
+      grid-template-columns: 68px 14px minmax(0, 1fr) 24px;
+      align-items: center;
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .vm-combine-popover__operand:has(.vm-combine-popover__select:first-child) {
+      grid-template-columns: minmax(0, 1fr) 24px;
+    }
+
+    .vm-combine-popover__input,
+    .vm-combine-popover__select,
+    .vm-combine-popover__coefficient {
+      width: 100%;
+      min-width: 0;
+      min-height: 30px;
+      border: 1px solid var(--vm-color-border);
+      border-radius: 6px;
+      background: var(--vm-color-surface-control, var(--vm-color-surface-panel));
+      color: var(--vm-color-text-primary);
+      font: inherit;
+      padding: 4px 8px;
+    }
+
+    .vm-combine-popover__times,
+    .vm-combine-popover__note,
+    .vm-combine-popover__add {
+      color: var(--vm-color-text-secondary);
+    }
+
+    .vm-combine-popover__icon-button,
+    .vm-combine-popover__add,
+    .vm-combine-popover__button {
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .vm-combine-popover__icon-button {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      color: var(--vm-color-text-secondary);
+    }
+
+    .vm-combine-popover__add {
+      margin-top: 7px;
+      padding: 4px 0;
+      text-align: left;
+    }
+
+    .vm-combine-popover__add:disabled,
+    .vm-combine-popover__button:disabled {
+      cursor: default;
+      opacity: 0.45;
+    }
+
+    .vm-combine-popover__error {
+      margin-top: 8px;
+      color: var(--vm-color-danger, #b42318);
+      line-height: 1.35;
+    }
+
+    .vm-combine-popover__note {
+      margin-top: 7px;
+      font-style: italic;
+    }
+
+    .vm-combine-popover__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .vm-combine-popover__button {
+      min-width: 72px;
+      min-height: 30px;
+      padding: 5px 10px;
+      background: color-mix(in srgb, var(--vm-color-text-primary) 5%, transparent);
+      text-align: center;
+    }
+
+    .vm-combine-popover__button.is-primary {
+      background: var(--vm-color-accent);
+      color: var(--vm-color-on-accent, #fff);
     }
 
     #toolbar .tb-toolbarInspector {

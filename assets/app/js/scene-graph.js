@@ -5,6 +5,7 @@
     MOLECULE: 'molecule',
     ORBITALS_GROUP: 'orbitals_group',
     CUBE: 'cube',
+    ARITHMETIC: 'arithmetic',
     MEASUREMENTS_GROUP: 'measurements_group',
     MEASUREMENT: 'measurement',
   });
@@ -92,6 +93,10 @@
     };
   }
 
+  function isCubeLikeLayer(layer) {
+    return !!(layer && (layer.kind === LAYER_KIND.CUBE || layer.kind === LAYER_KIND.ARITHMETIC));
+  }
+
   function createSceneGraphController(options = {}) {
     const disposeLayer = typeof options.disposeLayer === 'function' ? options.disposeLayer : null;
     const state = {
@@ -106,6 +111,7 @@
       molecule: 1,
       orbitals: 1,
       cube: 1,
+      arith: 1,
       measurements: 1,
       measurement: 1,
     };
@@ -176,7 +182,7 @@
       const orbitalsGroupId = scene.orbitalsGroupId || '';
       return listLayers(scene).filter((layer) => (
         layer
-        && layer.kind === LAYER_KIND.CUBE
+        && isCubeLikeLayer(layer)
         && (!orbitalsGroupId || layer.parentId === orbitalsGroupId)
       ));
     }
@@ -189,7 +195,7 @@
       const scene = getFocusedScene();
       if (!scene || !scene.activeLayerId) return null;
       const active = getLayerById(scene.activeLayerId);
-      if (!(active && active.kind === LAYER_KIND.CUBE && active.sceneId === scene.id)) return null;
+      if (!(active && isCubeLikeLayer(active) && active.sceneId === scene.id)) return null;
       const validIds = focusedCubeIdSet();
       return validIds.has(active.id) ? active : null;
     }
@@ -230,7 +236,7 @@
     function extendSelection(id) {
       const layer = getLayerById(id);
       const validIds = focusedCubeIdSet();
-      if (!(layer && layer.kind === LAYER_KIND.CUBE && validIds.has(layer.id))) return getSelection();
+      if (!(layer && isCubeLikeLayer(layer) && validIds.has(layer.id))) return getSelection();
       const selected = normalizeSelectionIds(state.selectedLayerIds, { ensureActive: false });
       const index = selected.indexOf(layer.id);
       if (index >= 0) selected.splice(index, 1);
@@ -299,7 +305,7 @@
       state.focusedSceneId = scene.id;
       const current = scene.activeLayerId ? getLayerById(scene.activeLayerId) : null;
       if (!current || current.sceneId !== scene.id) {
-        const firstCube = listLayers(scene).find((layer) => layer.kind === LAYER_KIND.CUBE);
+        const firstCube = listLayers(scene).find(isCubeLikeLayer);
         scene.activeLayerId = (firstCube || listLayers(scene).find((layer) => layer.kind === LAYER_KIND.MOLECULE) || scene).id || null;
       }
       state.activeLayerId = scene.activeLayerId || null;
@@ -319,11 +325,13 @@
           ? 'orbitals'
           : kind === LAYER_KIND.CUBE
             ? 'cube'
-            : kind === LAYER_KIND.MEASUREMENTS_GROUP
-              ? 'measurements'
-              : kind === LAYER_KIND.MEASUREMENT
-                ? 'measurement'
-                : 'layer';
+            : kind === LAYER_KIND.ARITHMETIC
+              ? 'arith'
+              : kind === LAYER_KIND.MEASUREMENTS_GROUP
+                ? 'measurements'
+                : kind === LAYER_KIND.MEASUREMENT
+                  ? 'measurement'
+                  : 'layer';
       return Object.assign({
         id: normalizeId(props.id) || allocateId(prefix),
         sceneId: scene.id,
@@ -359,7 +367,7 @@
       state.scenes.push(scene);
       state.activeSceneId = scene.id;
       state.focusedSceneId = scene.id;
-      const firstCube = scene.layers.find((layer) => layer.kind === LAYER_KIND.CUBE);
+      const firstCube = scene.layers.find(isCubeLikeLayer);
       const firstMolecule = scene.layers.find((layer) => layer.kind === LAYER_KIND.MOLECULE);
       if (!scene.activeLayerId) scene.activeLayerId = (firstCube || firstMolecule || null) ? (firstCube || firstMolecule).id : null;
       state.activeLayerId = scene.activeLayerId || null;
@@ -407,8 +415,13 @@
     }
 
     function nextCubeLabelId(scene) {
-      const count = listLayers(scene).filter((layer) => layer.kind === LAYER_KIND.CUBE).length;
-      return `L${count}`;
+      let maxIndex = -1;
+      for (const layer of listLayers(scene)) {
+        if (!isCubeLikeLayer(layer)) continue;
+        const match = /^L(\d+)$/i.exec(String(layer.labelId || '').trim());
+        if (match) maxIndex = Math.max(maxIndex, Number(match[1]) || 0);
+      }
+      return `L${maxIndex + 1}`;
     }
 
     function addCubeLayer(sceneOrId, props = {}, defaults = {}) {
@@ -433,6 +446,38 @@
         cloudGroup: null,
         surfaceMetricCache: new Map(),
       }, appearance, props));
+    }
+
+    function addArithmeticLayer(sceneOrId, props = {}, defaults = {}) {
+      const scene = typeof sceneOrId === 'string' ? findScene(sceneOrId) : sceneOrId;
+      if (!scene) return null;
+      const group = ensureOrbitalsGroup(scene);
+      const labelId = String(props.labelId || nextCubeLabelId(scene));
+      const appearance = createCubeAppearance(Object.assign({}, defaults, props));
+      const rawInputs = Array.isArray(props.inputs) ? props.inputs : [];
+      const inputs = rawInputs.map((input) => ({
+        layerId: normalizeId(input && input.layerId),
+        coefficient: normalizeNumber(input && input.coefficient, 1),
+      })).filter((input) => input.layerId);
+      return addLayer(scene, Object.assign({
+        kind: LAYER_KIND.ARITHMETIC,
+        parentId: group ? group.id : null,
+        name: props.name || labelId,
+        labelId,
+        operation: props.operation || 'linear_combination',
+        inputs,
+        cubeData: props.cubeData || null,
+        cubeDataValid: props.cubeDataValid !== false,
+        record: null,
+        geometry: null,
+        posMaterial: null,
+        negMaterial: null,
+        posMesh: null,
+        negMesh: null,
+        group: null,
+        cloudGroup: null,
+        surfaceMetricCache: new Map(),
+      }, appearance, props, { inputs }));
     }
 
     function ensureMeasurementsGroup(sceneOrId, props = {}) {
@@ -471,7 +516,7 @@
         if (!scene || !scene.visible) continue;
         for (const layer of listLayers(scene)) {
           if (!isLayerEffectivelyVisible(layer)) continue;
-          if (layer.kind === LAYER_KIND.MOLECULE || layer.kind === LAYER_KIND.CUBE || layer.kind === LAYER_KIND.MEASUREMENT) out.push(layer);
+          if (layer.kind === LAYER_KIND.MOLECULE || isCubeLikeLayer(layer) || layer.kind === LAYER_KIND.MEASUREMENT) out.push(layer);
         }
       }
       return out;
@@ -504,7 +549,7 @@
       if (state.focusedSceneId === scene.id) state.focusedSceneId = state.activeSceneId;
       if (state.activeLayerId && !getLayerById(state.activeLayerId)) {
         const active = getActiveScene();
-        const firstCube = active && listLayers(active).find((layer) => layer.kind === LAYER_KIND.CUBE);
+        const firstCube = active && listLayers(active).find(isCubeLikeLayer);
         const firstMolecule = active && listLayers(active).find((layer) => layer.kind === LAYER_KIND.MOLECULE);
         if (active) active.activeLayerId = (firstCube || firstMolecule || {}).id || null;
         state.activeLayerId = active ? active.activeLayerId : null;
@@ -534,7 +579,7 @@
       if (removeIds.has(scene.orbitalsGroupId)) scene.orbitalsGroupId = null;
       if (removeIds.has(scene.measurementsGroupId)) scene.measurementsGroupId = null;
       if (removeIds.has(scene.activeLayerId)) {
-        const firstCube = listLayers(scene).find((item) => item.kind === LAYER_KIND.CUBE);
+        const firstCube = listLayers(scene).find(isCubeLikeLayer);
         const firstMolecule = listLayers(scene).find((item) => item.kind === LAYER_KIND.MOLECULE);
         scene.activeLayerId = (firstCube || firstMolecule || {}).id || null;
       }
@@ -565,12 +610,14 @@
       surfaceStyles: SURFACE_STYLE,
       defaultCubeAppearance: DEFAULT_CUBE_APPEARANCE,
       createCubeAppearance,
+      isCubeLikeLayer,
       createScene,
       addScene,
       addLayer,
       addMoleculeLayer,
       ensureOrbitalsGroup,
       addCubeLayer,
+      addArithmeticLayer,
       ensureMeasurementsGroup,
       allocateId,
       getState,
@@ -605,6 +652,7 @@
     SURFACE_STYLE,
     DEFAULT_CUBE_APPEARANCE,
     createCubeAppearance,
+    isCubeLikeLayer,
     createSceneGraphController,
   });
 })(typeof window !== 'undefined' ? window : globalThis);
