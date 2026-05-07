@@ -99,6 +99,7 @@
       activeSceneId: null,
       activeLayerId: null,
       focusedSceneId: null,
+      selectedLayerIds: [],
     };
     const counters = {
       scene: 1,
@@ -169,6 +170,116 @@
       return getLayerById(state.activeLayerId);
     }
 
+    function listFocusedSceneCubeLayers() {
+      const scene = getFocusedScene();
+      if (!scene) return [];
+      const orbitalsGroupId = scene.orbitalsGroupId || '';
+      return listLayers(scene).filter((layer) => (
+        layer
+        && layer.kind === LAYER_KIND.CUBE
+        && (!orbitalsGroupId || layer.parentId === orbitalsGroupId)
+      ));
+    }
+
+    function focusedCubeIdSet() {
+      return new Set(listFocusedSceneCubeLayers().map((layer) => layer.id));
+    }
+
+    function getFocusedActiveCube() {
+      const scene = getFocusedScene();
+      if (!scene || !scene.activeLayerId) return null;
+      const active = getLayerById(scene.activeLayerId);
+      if (!(active && active.kind === LAYER_KIND.CUBE && active.sceneId === scene.id)) return null;
+      const validIds = focusedCubeIdSet();
+      return validIds.has(active.id) ? active : null;
+    }
+
+    function normalizeSelectionIds(ids, options = {}) {
+      const validIds = focusedCubeIdSet();
+      const activeCube = getFocusedActiveCube();
+      if (!activeCube) return [];
+      const out = [];
+      const seen = new Set();
+      for (const raw of Array.isArray(ids) ? ids : []) {
+        const id = normalizeId(raw);
+        if (!id || seen.has(id) || !validIds.has(id)) continue;
+        seen.add(id);
+        out.push(id);
+      }
+      if (options.ensureActive !== false) {
+        if (activeCube && !seen.has(activeCube.id)) out.push(activeCube.id);
+      }
+      return out;
+    }
+
+    function pruneSelection(options = {}) {
+      state.selectedLayerIds = normalizeSelectionIds(state.selectedLayerIds, options);
+      return state.selectedLayerIds.slice();
+    }
+
+    function getSelection() {
+      pruneSelection();
+      return state.selectedLayerIds.map((id) => getLayerById(id)).filter(Boolean);
+    }
+
+    function setSelection(ids) {
+      state.selectedLayerIds = normalizeSelectionIds(ids);
+      return getSelection();
+    }
+
+    function extendSelection(id) {
+      const layer = getLayerById(id);
+      const validIds = focusedCubeIdSet();
+      if (!(layer && layer.kind === LAYER_KIND.CUBE && validIds.has(layer.id))) return getSelection();
+      const selected = normalizeSelectionIds(state.selectedLayerIds, { ensureActive: false });
+      const index = selected.indexOf(layer.id);
+      if (index >= 0) selected.splice(index, 1);
+      else selected.push(layer.id);
+      const activeCube = getFocusedActiveCube();
+      if (activeCube && !selected.includes(activeCube.id)) {
+        const nextActiveId = selected[selected.length - 1] || null;
+        if (nextActiveId) {
+          const scene = getFocusedScene();
+          if (scene) scene.activeLayerId = nextActiveId;
+          state.activeLayerId = nextActiveId;
+          state.activeSceneId = layer.sceneId;
+        }
+      }
+      state.selectedLayerIds = normalizeSelectionIds(selected);
+      return getSelection();
+    }
+
+    function extendSelectionRange(fromId, toId) {
+      const cubes = listFocusedSceneCubeLayers();
+      const fromIndex = cubes.findIndex((layer) => layer.id === normalizeId(fromId));
+      const toIndex = cubes.findIndex((layer) => layer.id === normalizeId(toId));
+      if (fromIndex < 0 || toIndex < 0) return getSelection();
+      const lo = Math.min(fromIndex, toIndex);
+      const hi = Math.max(fromIndex, toIndex);
+      const selected = normalizeSelectionIds(state.selectedLayerIds, { ensureActive: false });
+      const seen = new Set(selected);
+      for (let i = lo; i <= hi; i += 1) {
+        if (cubes[i] && !seen.has(cubes[i].id)) {
+          selected.push(cubes[i].id);
+          seen.add(cubes[i].id);
+        }
+      }
+      const target = cubes[toIndex];
+      if (target) {
+        const scene = getFocusedScene();
+        if (scene) scene.activeLayerId = target.id;
+        state.activeLayerId = target.id;
+        state.activeSceneId = target.sceneId;
+      }
+      state.selectedLayerIds = normalizeSelectionIds(selected);
+      return getSelection();
+    }
+
+    function clearSelection() {
+      state.selectedLayerIds = [];
+      return setSelection([]);
+    }
+
     function setActiveLayer(layerId) {
       const layer = getLayerById(layerId);
       if (!layer) return null;
@@ -177,6 +288,7 @@
       state.activeLayerId = layer.id;
       state.activeSceneId = layer.sceneId;
       state.focusedSceneId = layer.sceneId;
+      pruneSelection();
       return layer;
     }
 
@@ -191,6 +303,7 @@
         scene.activeLayerId = (firstCube || listLayers(scene).find((layer) => layer.kind === LAYER_KIND.MOLECULE) || scene).id || null;
       }
       state.activeLayerId = scene.activeLayerId || null;
+      pruneSelection();
       return scene;
     }
 
@@ -250,6 +363,7 @@
       const firstMolecule = scene.layers.find((layer) => layer.kind === LAYER_KIND.MOLECULE);
       if (!scene.activeLayerId) scene.activeLayerId = (firstCube || firstMolecule || null) ? (firstCube || firstMolecule).id : null;
       state.activeLayerId = scene.activeLayerId || null;
+      pruneSelection();
       return scene;
     }
 
@@ -427,6 +541,7 @@
       if (removeIds.has(state.activeLayerId)) {
         state.activeLayerId = scene.activeLayerId || null;
       }
+      pruneSelection();
       return true;
     }
 
@@ -437,6 +552,7 @@
       state.activeSceneId = null;
       state.activeLayerId = null;
       state.focusedSceneId = null;
+      state.selectedLayerIds = [];
     }
 
     function reset(nextScenes = []) {
@@ -469,6 +585,11 @@
       getSceneForLayer,
       getActiveLayer,
       setActiveLayer,
+      getSelection,
+      setSelection,
+      extendSelection,
+      extendSelectionRange,
+      clearSelection,
       isLayerEffectivelyVisible,
       listRenderableLayers,
       toggleVisibility,

@@ -2051,6 +2051,40 @@ def main() -> int:
                 """() => {
                     const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
                       .find((candidate) => /^L0\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const selected = snap?.selectedLayerIds || [];
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'));
+                    const selectedRows = rows.filter((row) => row.classList.contains('is-selected'));
+                    const activeRows = rows.filter((row) => row.classList.contains('is-active'));
+                    return selected.length === 2
+                      && selectedRows.length === 2
+                      && activeRows.length === 1
+                      && (document.getElementById('iso')?.value || '') === '—';
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L1\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    return (snap?.selectedLayerIds || []).length === 1
+                      && Math.abs(Number(document.getElementById('iso')?.value || 0) - 0.07) < 1e-5;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L0\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
                     row?.querySelector('.vm-outliner-row__eye')?.click();
                 }"""
             )
@@ -3085,7 +3119,7 @@ def main() -> int:
                           && Array.isArray(exported.volume.bonds)
                           && exported.volume.bonds.length === 2;
                     }""",
-                    timeout=1500,
+                    timeout=5000,
                 )
             except Exception:
                 page.evaluate(

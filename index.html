@@ -2173,9 +2173,20 @@
       color: var(--vm-color-text-primary);
     }
 
+    #toolbar .vm-outliner-row.is-selected {
+      background: color-mix(in srgb, var(--vm-color-accent) 9%, transparent);
+      box-shadow: inset 2px 0 0 color-mix(in srgb, var(--vm-color-accent) 38%, transparent);
+      color: var(--vm-color-text-primary);
+    }
+
     #toolbar .vm-outliner-row.is-active {
       background: var(--accent-row, var(--vm-accent-soft, rgba(59, 91, 217, 0.18)));
+      box-shadow: inset 2px 0 0 var(--vm-color-accent);
       color: var(--vm-color-text-primary);
+    }
+
+    #toolbar .vm-outliner-row.is-active .vm-outliner-row__label {
+      font-weight: 700;
     }
 
     #toolbar .vm-outliner-row.is-flashing {
@@ -2278,6 +2289,30 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    #toolbar .vm-mixed-indicator {
+      align-self: center;
+      margin-left: 6px;
+      color: var(--vm-color-text-secondary);
+      font-size: 10px;
+      font-style: italic;
+      white-space: nowrap;
+    }
+
+    #toolbar .vm-mixed-indicator[hidden] {
+      display: none !important;
+    }
+
+    #toolbar .vm-slider__value.is-mixed-value {
+      text-align: center;
+      color: var(--vm-color-text-secondary);
+    }
+
+    #toolbar .vm-button-group.is-mixed .vm-button-group__item[aria-checked='true'],
+    #toolbar .vm-button-group.is-mixed .vm-button-group__item.active {
+      background: transparent;
+      color: inherit;
     }
 
     .vm-outliner-context-menu {

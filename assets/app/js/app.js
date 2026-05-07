@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7f';
+  const APP_VERSION = '0.8.7g';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -9612,6 +9612,49 @@
     return layer && layer.kind === SCENE_LAYER_KIND.CUBE ? layer : null;
   }
 
+  function getSelectedCubeLayers() {
+    const selected = sceneGraphController && typeof sceneGraphController.getSelection === 'function'
+      ? sceneGraphController.getSelection()
+      : [];
+    const active = getActiveCubeLayer();
+    if (active && !selected.some((layer) => layer && layer.id === active.id)) return [active];
+    return selected.filter((layer) => layer && layer.kind === SCENE_LAYER_KIND.CUBE);
+  }
+
+  function getSelectedCubeLayerIds() {
+    return getSelectedCubeLayers().map((layer) => layer.id);
+  }
+
+  function isCubeLayerSelected(layer) {
+    return !!(layer && getSelectedCubeLayerIds().includes(layer.id));
+  }
+
+  function clearOutlinerSelectionToActive(options = {}) {
+    if (sceneGraphController && typeof sceneGraphController.clearSelection === 'function') {
+      sceneGraphController.clearSelection();
+    }
+    if (options.rebind !== false) syncAppearanceControlsToActiveLayer();
+    if (options.render !== false) renderSceneOutliner();
+  }
+
+  function setSceneHeaderActive(scene) {
+    if (!scene) return;
+    focusScene(scene);
+    scene.activeLayerId = null;
+    if (sceneGraphController.getState) {
+      const state = sceneGraphController.getState();
+      state.activeLayerId = null;
+      state.activeSceneId = scene.id;
+      state.focusedSceneId = scene.id;
+    }
+    if (sceneGraphController.clearSelection) sceneGraphController.clearSelection();
+    activateSceneFocusRecord(scene);
+    syncLoadedSceneControls();
+    updateSidePanel();
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+  }
+
   function getFocusedScene() {
     return sceneGraphController.getFocusedScene
       ? sceneGraphController.getFocusedScene()
@@ -9634,6 +9677,49 @@
     return getCubeLayersInScene(scene).find((layer) => layer.visible !== false)
       || getCubeLayersInScene(scene)[0]
       || null;
+  }
+
+  function selectOnlyCubeLayer(layer) {
+    if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return;
+    if (sceneGraphController.setSelection) sceneGraphController.setSelection([layer.id]);
+  }
+
+  function toggleCubeLayerSelection(layer) {
+    if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return;
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (scene) focusScene(scene);
+    if (sceneGraphController.extendSelection) sceneGraphController.extendSelection(layer.id);
+    const active = sceneGraphController.getActiveLayer();
+    if (active && active.kind === SCENE_LAYER_KIND.CUBE && active.record) {
+      const recordIndex = getRecordIndex(active.record);
+      if (recordIndex >= 0 && currentIndex !== recordIndex) {
+        currentIndex = recordIndex;
+        syncLoadedSceneControls();
+      }
+    }
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+  }
+
+  function rangeSelectCubeLayer(anchorId, layer) {
+    if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return;
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (scene) focusScene(scene);
+    const fromId = anchorId || (scene && scene.activeLayerId) || layer.id;
+    if (sceneGraphController.extendSelectionRange) sceneGraphController.extendSelectionRange(fromId, layer.id);
+    const active = sceneGraphController.getActiveLayer();
+    if (active && active.kind === SCENE_LAYER_KIND.CUBE) {
+      const singleCubeMode = scene ? getVisibleCubeLayerCount(scene) <= 1 : false;
+      if (scene && singleCubeMode) setOnlyCubeVisibleInScene(scene, active);
+      const recordIndex = active.record ? getRecordIndex(active.record) : -1;
+      if (recordIndex >= 0 && currentIndex !== recordIndex) {
+        currentIndex = recordIndex;
+        syncLoadedSceneControls();
+      }
+      rebuildScene({ preserveView: true, syncGraph: false });
+    }
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
   }
 
   function setOnlyCubeVisibleInScene(scene, activeCube) {
@@ -9714,7 +9800,7 @@
     }, 900);
   }
 
-  function duplicateCubeLayer(sourceLayer) {
+  function duplicateCubeLayer(sourceLayer, options = {}) {
     if (!(sourceLayer && sourceLayer.kind === SCENE_LAYER_KIND.CUBE)) return null;
     const scene = sceneGraphController.getSceneForLayer(sourceLayer);
     if (!scene) return null;
@@ -9740,20 +9826,60 @@
     if (!newLayer) return null;
     insertLayerAfter(scene, newLayer, sourceLayer);
     focusScene(scene);
-    flashOutlinerLayer(newLayer.id);
-    setActiveSceneGraphLayer(newLayer.id, {
-      forceSingleCubeVisibility: wasSingleCubeMode,
-      rebuild: false,
-      rebind: false,
-    });
-    rebuildScene({ preserveView: true, syncGraph: false });
-    syncAppearanceControlsToActiveLayer();
-    renderSceneOutliner();
-    setHintMessage(`Duplicated ${sourceLayer.labelId || 'cube'} as ${newLayer.labelId || 'new layer'}.`);
+    if (options.activate !== false) {
+      if (options.flash !== false) flashOutlinerLayer(newLayer.id);
+      setActiveSceneGraphLayer(newLayer.id, {
+        forceSingleCubeVisibility: wasSingleCubeMode,
+        rebuild: false,
+        rebind: false,
+        selection: options.selection || 'replace',
+      });
+    }
+    if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
+    if (options.rebind !== false) syncAppearanceControlsToActiveLayer();
+    if (options.render !== false) renderSceneOutliner();
+    if (options.announce !== false) setHintMessage(`Duplicated ${sourceLayer.labelId || 'cube'} as ${newLayer.labelId || 'new layer'}.`);
     return newLayer;
   }
 
-  function deleteCubeLayer(layer) {
+  function duplicateSelectedCubeLayers() {
+    const selected = getSelectedCubeLayers();
+    if (selected.length <= 1) return duplicateCubeLayer(selected[0] || getActiveCubeLayer());
+    const scene = sceneGraphController.getSceneForLayer(selected[0]);
+    if (!scene) return null;
+    const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
+    const selectedSet = new Set(selected.map((layer) => layer.id));
+    const ordered = getCubeLayersInScene(scene).filter((layer) => selectedSet.has(layer.id));
+    const duplicates = [];
+    for (const source of ordered) {
+      const duplicate = duplicateCubeLayer(source, {
+        activate: false,
+        rebuild: false,
+        rebind: false,
+        render: false,
+        announce: false,
+        flash: false,
+      });
+      if (duplicate) duplicates.push(duplicate);
+    }
+    if (!duplicates.length) return null;
+    const active = duplicates[duplicates.length - 1];
+    flashOutlinerLayer(active.id);
+    setActiveSceneGraphLayer(active.id, {
+      forceSingleCubeVisibility: wasSingleCubeMode,
+      rebuild: false,
+      rebind: false,
+      selection: 'preserve',
+    });
+    if (sceneGraphController.setSelection) sceneGraphController.setSelection(duplicates.map((layer) => layer.id));
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    setHintMessage(`Duplicated ${duplicates.length} cube layers.`);
+    return active;
+  }
+
+  function deleteCubeLayer(layer, options = {}) {
     if (!(layer && layer.kind === SCENE_LAYER_KIND.CUBE)) return false;
     const scene = sceneGraphController.getSceneForLayer(layer);
     if (!scene) return false;
@@ -9767,17 +9893,52 @@
     sceneGraphController.removeLayer(layer.id);
     if (replacement) {
       if (wasActive) sceneGraphController.setActiveLayer(replacement.id);
-      if (wasSingleCubeMode || wasVisible) setOnlyCubeVisibleInScene(scene, replacement);
+      if (wasSingleCubeMode && wasVisible) setOnlyCubeVisibleInScene(scene, replacement);
     } else {
       const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
       if (wasActive && moleculeLayer) sceneGraphController.setActiveLayer(moleculeLayer.id);
+    }
+    focusScene(scene);
+    if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
+    if (options.sync !== false) syncLoadedSceneControls();
+    if (options.rebind !== false) syncAppearanceControlsToActiveLayer();
+    if (options.render !== false) renderSceneOutliner();
+    if (options.announce !== false) setHintMessage(`Deleted ${removedLabel}.`);
+    return true;
+  }
+
+  function deleteSelectedCubeLayers() {
+    const selected = getSelectedCubeLayers();
+    if (selected.length <= 1) return deleteCubeLayer(selected[0] || getActiveCubeLayer());
+    const scene = sceneGraphController.getSceneForLayer(selected[0]);
+    if (!scene) return false;
+    const selectedIds = new Set(selected.map((layer) => layer.id));
+    const cubes = getCubeLayersInScene(scene);
+    const firstIndex = cubes.findIndex((layer) => selectedIds.has(layer.id));
+    const replacement = cubes
+      .slice(0, Math.max(0, firstIndex))
+      .reverse()
+      .find((layer) => !selectedIds.has(layer.id))
+      || cubes.slice(firstIndex + 1).find((layer) => !selectedIds.has(layer.id))
+      || null;
+    const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
+    const deletedVisible = selected.some((layer) => layer.visible !== false);
+    for (const layer of selected) sceneGraphController.removeLayer(layer.id);
+    if (replacement) {
+      sceneGraphController.setActiveLayer(replacement.id);
+      if (sceneGraphController.setSelection) sceneGraphController.setSelection([replacement.id]);
+      if (wasSingleCubeMode && deletedVisible) setOnlyCubeVisibleInScene(scene, replacement);
+    } else {
+      const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+      if (moleculeLayer) sceneGraphController.setActiveLayer(moleculeLayer.id);
+      if (sceneGraphController.clearSelection) sceneGraphController.clearSelection();
     }
     focusScene(scene);
     rebuildScene({ preserveView: true, syncGraph: false });
     syncLoadedSceneControls();
     syncAppearanceControlsToActiveLayer();
     renderSceneOutliner();
-    setHintMessage(`Deleted ${removedLabel}.`);
+    setHintMessage(`Deleted ${selected.length} cube layers.`);
     return true;
   }
 
@@ -9842,11 +10003,30 @@
     const scene = nextLayer ? sceneGraphController.getSceneForLayer(nextLayer) : null;
     const singleCubeMode = scene ? getVisibleCubeLayerCount(scene) <= 1 : false;
     const previousLayer = sceneGraphController.getActiveLayer();
+    const previousActiveId = previousLayer && previousLayer.id;
     const layer = sceneGraphController.setActiveLayer(layerId);
     if (!layer) return null;
     if (scene) focusScene(scene);
     if (layer.kind === SCENE_LAYER_KIND.CUBE && (singleCubeMode || options.forceSingleCubeVisibility)) {
       setOnlyCubeVisibleInScene(scene, layer);
+    }
+    if (layer.kind === SCENE_LAYER_KIND.CUBE) {
+      const selectionMode = options.selection || 'replace';
+      if (selectionMode === 'range') {
+        if (sceneGraphController.extendSelectionRange) {
+          sceneGraphController.extendSelectionRange(options.rangeFromId || previousActiveId || layer.id, layer.id);
+        }
+      } else if (selectionMode === 'add') {
+        if (sceneGraphController.setSelection) {
+          const ids = getSelectedCubeLayerIds();
+          if (!ids.includes(layer.id)) ids.push(layer.id);
+          sceneGraphController.setSelection(ids);
+        }
+      } else if (selectionMode !== 'preserve') {
+        selectOnlyCubeLayer(layer);
+      }
+    } else if (sceneGraphController.clearSelection) {
+      sceneGraphController.clearSelection();
     }
     const recordIndex = layer.record ? getRecordIndex(layer.record) : -1;
     if (recordIndex >= 0 && currentIndex !== recordIndex) {
@@ -9980,8 +10160,9 @@
     row.dataset.depth = String(options.depth || 0);
     row.style.setProperty('--vm-outliner-indent', `${Math.max(0, Number(options.depth) || 0) * 16}px`);
     row.setAttribute('role', 'treeitem');
-    row.setAttribute('aria-selected', options.active ? 'true' : 'false');
+    row.setAttribute('aria-selected', (options.active || options.selected) ? 'true' : 'false');
     row.classList.toggle('is-active', !!options.active);
+    row.classList.toggle('is-selected', !!options.selected);
     row.classList.toggle('is-hidden', !options.effectiveVisible);
     row.classList.toggle('is-group', !!options.expandable);
     row.classList.toggle('is-flashing', !!(options.layer && options.layer.id === outlinerFlashLayerId));
@@ -10011,7 +10192,6 @@
       event.preventDefault();
       event.stopPropagation();
       const scene = options.scene || (options.layer ? sceneGraphController.getSceneForLayer(options.layer) : null);
-      if (scene) focusScene(scene);
       const wasVisible = !!options.visible;
       sceneGraphController.toggleVisibility(options.id);
       if (options.layer && options.layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP && wasVisible === false) {
@@ -10058,17 +10238,26 @@
     meta.textContent = options.meta || '';
     row.appendChild(meta);
 
-    row.addEventListener('click', () => {
+    row.addEventListener('click', (event) => {
       if (options.scene) {
-        focusScene(options.scene);
-        activateSceneFocusRecord(options.scene);
-        syncLoadedSceneControls();
-        updateSidePanel();
-        syncAppearanceControlsToActiveLayer();
-        renderSceneOutliner();
+        setSceneHeaderActive(options.scene);
         return;
       }
-      if (options.layer) setActiveSceneGraphLayer(options.layer.id);
+      if (!options.layer) return;
+      if (options.layer.kind !== SCENE_LAYER_KIND.CUBE) {
+        setActiveSceneGraphLayer(options.layer.id);
+        return;
+      }
+      if (event.shiftKey) {
+        const active = sceneGraphController.getActiveLayer();
+        rangeSelectCubeLayer(active && active.kind === SCENE_LAYER_KIND.CUBE ? active.id : null, options.layer);
+        return;
+      }
+      if (event.metaKey || event.ctrlKey) {
+        toggleCubeLayerSelection(options.layer);
+        return;
+      }
+      setActiveSceneGraphLayer(options.layer.id, { selection: 'replace' });
     });
     if (options.layer && options.layer.kind === SCENE_LAYER_KIND.CUBE) {
       row.addEventListener('contextmenu', (event) => showCubeLayerContextMenu(options.layer, event));
@@ -10089,6 +10278,7 @@
       return;
     }
     const activeLayer = sceneGraphController.getActiveLayer();
+    const focusedScene = getFocusedScene();
     for (const scene of scenes) {
       const sceneRow = buildOutlinerRow({
         id: scene.id,
@@ -10100,7 +10290,7 @@
         effectiveVisible: scene.visible !== false,
         expandable: true,
         expanded: scene.expanded !== false,
-        active: false,
+        active: !!(focusedScene && focusedScene.id === scene.id && !activeLayer),
       });
       sceneOutlinerBodyEl.appendChild(sceneRow);
       if (scene.expanded === false) continue;
@@ -10127,6 +10317,7 @@
       expandable: children.length > 0,
       expanded: layer.expanded !== false,
       active: !!(activeLayer && activeLayer.id === layer.id),
+      selected: layer.kind === SCENE_LAYER_KIND.CUBE && isCubeLayerSelected(layer),
     });
     sceneOutlinerBodyEl.appendChild(row);
     if (children.length && layer.expanded !== false) {
@@ -10134,11 +10325,57 @@
     }
   }
 
+  if (sceneOutlinerBodyEl) {
+    sceneOutlinerBodyEl.addEventListener('click', (event) => {
+      const target = event.target;
+      if (target && typeof target.closest === 'function' && target.closest('.vm-outliner-row')) return;
+      clearOutlinerSelectionToActive();
+    });
+  }
+
+  document.addEventListener('pointerdown', (event) => {
+    if (currentMode !== MODES.DISPLAY) return;
+    const target = event.target;
+    if (!target || (typeof target.closest !== 'function')) return;
+    if (target.closest('#toolbar')) return;
+    if (cubeLayerContextMenuEl && target.closest('.vm-outliner-context-menu')) return;
+    if (target.closest('button, input, select, textarea, a, [role="button"], [role="menu"], [role="dialog"]')) return;
+    clearOutlinerSelectionToActive({ rebind: true, render: true });
+  }, true);
+
   function closeCubeLayerContextMenu() {
     if (!cubeLayerContextMenuEl) return;
     cubeLayerContextMenuEl.hidden = true;
     cubeLayerContextMenuEl.setAttribute('aria-hidden', 'true');
     cubeLayerContextMenuLayerId = null;
+  }
+
+  function isFocusInsideOutliner() {
+    const active = document.activeElement;
+    return !!(active && typeof active.closest === 'function' && active.closest('#sceneOutliner'));
+  }
+
+  function showDeleteSelectedCubeLayersConfirmation(event = null) {
+    const selection = getSelectedCubeLayers();
+    const layer = (selection.length ? selection[selection.length - 1] : null) || getActiveCubeLayer();
+    if (!layer) return false;
+    cubeLayerContextMenuLayerId = layer.id;
+    const menu = renderCubeLayerContextMenu(layer, 'confirm-delete');
+    if (!menu) return false;
+    menu.hidden = false;
+    menu.setAttribute('aria-hidden', 'false');
+    if (event && Number.isFinite(Number(event.clientX)) && Number.isFinite(Number(event.clientY))) {
+      positionCubeLayerContextMenu(event);
+    } else {
+      const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+        .find((candidate) => candidate && candidate.dataset && candidate.dataset.id === layer.id);
+      const rect = row ? row.getBoundingClientRect() : null;
+      positionCubeLayerContextMenu({
+        clientX: rect ? rect.left + Math.min(120, rect.width) : (window.innerWidth || 240) / 2,
+        clientY: rect ? rect.top + Math.min(18, rect.height) : (window.innerHeight || 160) / 2,
+      });
+    }
+    return true;
   }
 
   function positionCubeLayerContextMenu(event) {
@@ -10185,14 +10422,21 @@
     const menu = ensureCubeLayerContextMenu();
     if (!menu || !layer) return null;
     menu.textContent = '';
+    const selection = getSelectedCubeLayers();
+    const actionLayers = selection.length ? selection : [layer];
+    const count = actionLayers.length;
     if (mode === 'confirm-delete') {
       const title = document.createElement('div');
       title.className = 'vm-outliner-context-menu__title';
-      title.textContent = `Delete ${layer.labelId || layer.name || 'cube'}?`;
+      title.textContent = count > 1
+        ? `Delete ${count} layers?`
+        : `Delete ${layer.labelId || layer.name || 'cube'}?`;
       menu.appendChild(title);
       const body = document.createElement('div');
       body.className = 'vm-outliner-context-menu__body';
-      body.textContent = 'This action cannot be undone in Phase 2a-1.';
+      body.textContent = count > 1
+        ? 'This cannot be undone.'
+        : 'This action cannot be undone in Phase 2a-1.';
       menu.appendChild(body);
       const actions = document.createElement('div');
       actions.className = 'vm-outliner-context-menu__actions';
@@ -10208,7 +10452,8 @@
       confirm.addEventListener('click', () => {
         const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
         closeCubeLayerContextMenu();
-        deleteCubeLayer(target || layer);
+        if (count > 1) deleteSelectedCubeLayers();
+        else deleteCubeLayer(target || layer);
       });
       actions.appendChild(cancel);
       actions.appendChild(confirm);
@@ -10219,11 +10464,12 @@
     const duplicate = document.createElement('button');
     duplicate.type = 'button';
     duplicate.className = 'vm-outliner-context-menu__item';
-    duplicate.textContent = 'Duplicate';
+    duplicate.textContent = count > 1 ? `Duplicate (${count})` : 'Duplicate';
     duplicate.addEventListener('click', () => {
       const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
       closeCubeLayerContextMenu();
-      duplicateCubeLayer(target || layer);
+      if (count > 1) duplicateSelectedCubeLayers();
+      else duplicateCubeLayer(target || layer);
     });
     menu.appendChild(duplicate);
     const divider = document.createElement('div');
@@ -10232,7 +10478,7 @@
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'vm-outliner-context-menu__item is-danger';
-    del.textContent = 'Delete';
+    del.textContent = count > 1 ? `Delete (${count})` : 'Delete';
     del.addEventListener('click', () => {
       const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
       renderCubeLayerContextMenu(target || layer, 'confirm-delete');
@@ -10247,7 +10493,12 @@
       event.preventDefault();
       event.stopPropagation();
     }
-    setActiveSceneGraphLayer(layer.id, { rebuild: false });
+    if (!isCubeLayerSelected(layer)) {
+      setActiveSceneGraphLayer(layer.id, { rebuild: false, selection: 'replace' });
+    } else {
+      const scene = sceneGraphController.getSceneForLayer(layer);
+      if (scene) focusScene(scene);
+    }
     syncAppearanceControlsToActiveLayer();
     cubeLayerContextMenuLayerId = layer.id;
     const menu = renderCubeLayerContextMenu(layer, 'menu');
@@ -25524,7 +25775,10 @@
     const nextCube = cubes[nextIndex];
     if (!nextCube) return;
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    setActiveSceneGraphLayer(nextCube.id, { rebuild: true });
+    setActiveSceneGraphLayer(nextCube.id, {
+      rebuild: true,
+      selection: event && event.shiftKey ? 'add' : 'replace',
+    });
   };
   bind('down', 'global', 'ArrowDown', (event) => nextPrev(1, event));
   bind('down', 'global', 'ArrowUp', (event) => nextPrev(-1, event));
@@ -25718,6 +25972,24 @@
     return false;
   }
 
+  function handleOutlinerSelectionHotkey(e) {
+    const key = String(e && e.key || '');
+    const focusInsideOutliner = isFocusInsideOutliner();
+    if (key === 'Escape' && focusInsideOutliner) {
+      e.preventDefault();
+      clearOutlinerSelectionToActive();
+      return true;
+    }
+    if (key !== 'Delete' && key !== 'Backspace') return false;
+    if (isTypingInInput()) return false;
+    const canHandleDelete = focusInsideOutliner || currentMode === MODES.DISPLAY;
+    if (!canHandleDelete) return false;
+    if (!getSelectedCubeLayers().length) return false;
+    e.preventDefault();
+    showDeleteSelectedCubeLayersConfirmation(e);
+    return true;
+  }
+
   // Global key listeners delegate to router
   window.addEventListener('keydown', (e) => {
     if (e.defaultPrevented) return;
@@ -25808,6 +26080,7 @@
     if (handleEditCopyPasteHotkey(e)) return;
     if (handleGlobalFileHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
+    if (handleOutlinerSelectionHotkey(e)) return;
     dispatchShortcut(e, 'down', currentMode);
   });
   window.addEventListener('paste', (e) => {
@@ -25933,6 +26206,116 @@
     appearanceInspectorController.syncActionToggles();
   }
 
+  function valuesStrictlyEqual(a, b) {
+    return a === b || (a == null && b == null);
+  }
+
+  function getSelectedLayerDisplayValue(getter) {
+    const active = getActiveCubeLayer();
+    if (!active || typeof getter !== 'function') return { value: null, mixed: false, selection: [] };
+    const selection = getSelectedCubeLayers();
+    const layers = selection.length ? selection : [active];
+    const activeValue = getter(active);
+    const first = getter(layers[0]);
+    const mixed = layers.length > 1 && layers.some((layer) => !valuesStrictlyEqual(getter(layer), first));
+    return { value: activeValue, mixed, selection: layers };
+  }
+
+  function setSurfaceMixedIndicator(anchorEl, key, mixed) {
+    if (!anchorEl) return;
+    const row = anchorEl.closest ? anchorEl.closest('.vm-field-row') : null;
+    const control = row ? row.querySelector('.vm-field-control') : null;
+    if (!row || !control) return;
+    row.classList.toggle('is-mixed', !!mixed);
+    let indicator = control.querySelector(`.vm-mixed-indicator[data-mixed-key="${key}"]`);
+    if (!indicator) {
+      indicator = document.createElement('span');
+      indicator.className = 'vm-mixed-indicator';
+      indicator.dataset.mixedKey = key;
+      indicator.textContent = '(mixed)';
+      control.appendChild(indicator);
+    }
+    indicator.hidden = !mixed;
+  }
+
+  function setSliderMixedDisplay(inputEl, mixed) {
+    if (!inputEl) return;
+    inputEl.classList.toggle('is-mixed-value', !!mixed);
+    if (mixed && document.activeElement !== inputEl) inputEl.value = '\u2014';
+  }
+
+  function setButtonGroupMixed(rootEl, mixed) {
+    if (!rootEl) return;
+    rootEl.classList.toggle('is-mixed', !!mixed);
+    if (!mixed) return;
+    for (const buttonEl of Array.from(rootEl.querySelectorAll('.vm-button-group__item[data-value]'))) {
+      buttonEl.classList.remove('active');
+      buttonEl.setAttribute('aria-checked', 'false');
+    }
+  }
+
+  function syncSurfaceMixedIndicators() {
+    const active = getActiveCubeLayer();
+    if (!active) {
+      const anchors = [
+        isoInput,
+        opInput,
+        surfaceMaterialPresetSelect,
+        schemeSelect,
+        autoIsoBtn,
+        surfaceSignFlipToggleEl,
+        appearanceRenderModeGroupEl,
+        appearanceCloudTypeGroupEl,
+        posColor,
+        negColor,
+      ];
+      for (const anchor of anchors) setSurfaceMixedIndicator(anchor, String(anchor && anchor.id || 'surface'), false);
+      setButtonGroupMixed(appearanceRenderModeGroupEl, false);
+      setButtonGroupMixed(appearanceCloudTypeGroupEl, false);
+      return;
+    }
+    const isoState = getSelectedLayerDisplayValue((layer) => Math.max(0, Number(layer.iso) || DEFAULT_ISO_VALUE));
+    const opacityState = getSelectedLayerDisplayValue((layer) => Math.max(0.05, Math.min(1, Number(layer.opacity) || 1)));
+    const autoIsoState = getSelectedLayerDisplayValue((layer) => !!getLayerAutoIsoEnabled(layer));
+    const presetState = getSelectedLayerDisplayValue((layer) => getSurfaceMaterialPresetKey(layer));
+    const schemeState = getSelectedLayerDisplayValue((layer) => String(layer.colorScheme || 'emory'));
+    const renderModeState = getSelectedLayerDisplayValue((layer) => getLayerRenderMode(layer));
+    const cloudTypeState = getSelectedLayerDisplayValue((layer) => getLayerCloudType(layer));
+    const signFlipState = getSelectedLayerDisplayValue((layer) => !!layer.signFlip);
+    const posColorState = getSelectedLayerDisplayValue((layer) => getLayerSurfaceColors(layer).pos);
+    const negColorState = getSelectedLayerDisplayValue((layer) => getLayerSurfaceColors(layer).neg);
+    setSurfaceMixedIndicator(isoInput, 'iso', isoState.mixed);
+    setSliderMixedDisplay(isoInput, isoState.mixed);
+    setSurfaceMixedIndicator(opInput, 'opacity', opacityState.mixed);
+    setSliderMixedDisplay(opInput, opacityState.mixed);
+    setSurfaceMixedIndicator(autoIsoBtn, 'autoIso', autoIsoState.mixed);
+    setSurfaceMixedIndicator(surfaceMaterialPresetSelect, 'solidPreset', presetState.mixed);
+    setSurfaceMixedIndicator(schemeSelect, 'colorScheme', schemeState.mixed);
+    setSurfaceMixedIndicator(appearanceRenderModeGroupEl, 'renderMode', renderModeState.mixed);
+    setButtonGroupMixed(appearanceRenderModeGroupEl, renderModeState.mixed);
+    setSurfaceMixedIndicator(appearanceCloudTypeGroupEl, 'cloudType', cloudTypeState.mixed);
+    setButtonGroupMixed(appearanceCloudTypeGroupEl, cloudTypeState.mixed);
+    setSurfaceMixedIndicator(surfaceSignFlipToggleEl, 'signFlip', signFlipState.mixed);
+    setSurfaceMixedIndicator(posColor, 'posColor', posColorState.mixed);
+    setSurfaceMixedIndicator(negColor, 'negColor', negColorState.mixed);
+  }
+
+  function applyToSelectedCubeLayers(mutator, options = {}) {
+    const active = getActiveCubeLayer();
+    if (!active || typeof mutator !== 'function') return false;
+    const targets = getSelectedCubeLayers();
+    const layers = targets.length ? targets : [active];
+    for (const layer of layers) {
+      mutator(layer);
+      persistActiveCubeLayerState(layer, { render: false });
+    }
+    if (options.updateRenderModeUi) updateRenderModeUI();
+    if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    return true;
+  }
+
   /**
    * Keep Appearance sections aligned with the active file and render mode.
    * @param {*=} vol
@@ -25952,6 +26335,7 @@
       syncAppearanceInspectorSectionState(null);
       updateAutoIsoButtonState();
       updateSurfBtn();
+      syncSurfaceMixedIndicators();
       return;
     }
     if (surfaceScopeLabelEl) {
@@ -25992,6 +26376,7 @@
     updateAutoIsoButtonState();
     updateSurfBtn();
     syncAppearanceInspectorSectionState(layer.cubeData || (layer.record && layer.record.vol) || null);
+    syncSurfaceMixedIndicators();
   }
 
   function applySurfaceControlsToActiveCubeLayerFromUi() {
@@ -26569,17 +26954,19 @@
       const s = SURFACE_COLOR_SCHEMES[v];
       const layer = getActiveCubeLayer();
       if (layer) {
-        layer.colorScheme = v;
+        const nextPos = s ? s.pos : normalizeHexColor(posColor && posColor.value, DEFAULT_POS_SURFACE_COLOR);
+        const nextNeg = s ? s.neg : normalizeHexColor(negColor && negColor.value, DEFAULT_NEG_SURFACE_COLOR);
         if (s) {
-          layer.posColor = s.pos;
-          layer.negColor = s.neg;
-          posColor.value = s.pos;
-          negColor.value = s.neg;
+          posColor.value = nextPos;
+          negColor.value = nextNeg;
         }
         syncColorPickerFields();
         syncSurfaceColorSchemeUi();
-        persistActiveCubeLayerState(layer);
-        rebuildScene({ preserveView: true, syncGraph: false });
+        applyToSelectedCubeLayers((target) => {
+          target.colorScheme = v;
+          target.posColor = nextPos;
+          target.negColor = nextNeg;
+        });
         return;
       }
       if (s) {
@@ -26631,10 +27018,10 @@
   if (renderModeSel) renderModeSel.onchange = () => {
     const layer = getActiveCubeLayer();
     if (layer) {
-      setLayerRenderMode(layer, renderModeSel.value);
-      persistActiveCubeLayerState(layer);
-      updateRenderModeUI();
-      rebuildScene({ preserveView: true, syncGraph: false });
+      const nextMode = renderModeSel.value;
+      applyToSelectedCubeLayers((target) => {
+        setLayerRenderMode(target, nextMode);
+      }, { updateRenderModeUi: true });
       return;
     }
     renderMode = renderModeSel.value === 'cloud' ? 'cloud' : 'surface';
@@ -26645,10 +27032,10 @@
   if (cloudTypeSel) cloudTypeSel.onchange = () => {
     const layer = getActiveCubeLayer();
     if (layer) {
-      setLayerCloudType(layer, cloudTypeSel.value);
-      persistActiveCubeLayerState(layer);
-      updateRenderModeUI();
-      rebuildScene({ preserveView: true, syncGraph: false });
+      const nextCloudType = cloudTypeSel.value;
+      applyToSelectedCubeLayers((target) => {
+        setLayerCloudType(target, nextCloudType);
+      }, { updateRenderModeUi: true });
       return;
     }
     cloudType = cloudTypeSel.value === 'points' ? 'points' : 'cubes';
@@ -27401,6 +27788,7 @@
     getSceneGraphSnapshot: () => ({
       focusedSceneId: String(sceneGraphController.getState().focusedSceneId || ''),
       activeLayerId: String(sceneGraphController.getState().activeLayerId || ''),
+      selectedLayerIds: getSelectedCubeLayerIds(),
       scenes: sceneGraphController.getScenes().map((scene) => ({
         id: String(scene.id || ''),
         name: String(scene.name || ''),
@@ -30746,9 +31134,10 @@
   isoInput.oninput = () => {
     const layer = getActiveCubeLayer();
     if (layer) {
-      layer.iso = Math.max(0, Number(isoInput.value) || DEFAULT_ISO_VALUE);
-      persistActiveCubeLayerState(layer);
-      rebuildScene({ preserveView: true, syncGraph: false });
+      const nextIso = Math.max(0, Number(isoInput.value) || DEFAULT_ISO_VALUE);
+      applyToSelectedCubeLayers((target) => {
+        target.iso = nextIso;
+      });
       return;
     }
     surfaceIsoDefault = Math.max(0, Number(isoInput.value) || DEFAULT_ISO_VALUE);
@@ -30760,11 +31149,12 @@
     autoIsoBtn.onchange = () => {
       const layer = getActiveCubeLayer();
       if (layer) {
-        setLayerAutoIsoEnabled(layer, !!autoIsoBtn.checked);
-        persistActiveCubeLayerState(layer);
+        const nextAutoIso = !!autoIsoBtn.checked;
+        applyToSelectedCubeLayers((target) => {
+          setLayerAutoIsoEnabled(target, nextAutoIso);
+        }, { rebuild: true });
         updateAutoIsoButtonState();
-        rebuildScene({ preserveView: true, syncGraph: false });
-        setHintMessage(`Autoiso ${getLayerAutoIsoEnabled(layer) ? 'ON' : 'OFF'}`);
+        setHintMessage(`Autoiso ${nextAutoIso ? 'ON' : 'OFF'}`);
         return;
       }
       autoIsoEnabled = !!autoIsoBtn.checked;
@@ -30786,9 +31176,10 @@
   const handleOpacityInput = () => {
     const layer = getActiveCubeLayer();
     if (layer) {
-      layer.opacity = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
-      persistActiveCubeLayerState(layer);
-      rebuildScene({ preserveView: true, syncGraph: false });
+      const nextOpacity = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
+      applyToSelectedCubeLayers((target) => {
+        target.opacity = nextOpacity;
+      });
       return;
     }
     surfaceOpacityDefault = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
@@ -30802,13 +31193,14 @@
     surfaceMaterialPresetSelect.onchange = () => {
       const layer = getActiveCubeLayer();
       if (layer) {
-        layer.solidPreset = String(surfaceMaterialPresetSelect.value || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
-        if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, layer.solidPreset)) {
-          layer.solidPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
+        let nextPreset = String(surfaceMaterialPresetSelect.value || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
+        if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, nextPreset)) {
+          nextPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
         }
-        surfaceMaterialPresetSelect.value = layer.solidPreset;
-        persistActiveCubeLayerState(layer);
-        rebuildScene({ preserveView: true, syncGraph: false });
+        surfaceMaterialPresetSelect.value = nextPreset;
+        applyToSelectedCubeLayers((target) => {
+          target.solidPreset = nextPreset;
+        });
         return;
       }
       surfaceMaterialPreset = String(surfaceMaterialPresetSelect.value || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
@@ -30824,21 +31216,23 @@
     surfaceSignFlipToggleEl.onchange = () => {
       const layer = getActiveCubeLayer();
       if (!layer) return;
-      layer.signFlip = !!surfaceSignFlipToggleEl.checked;
-      surfaceSignFlipToggleEl.setAttribute('aria-checked', layer.signFlip ? 'true' : 'false');
-      persistActiveCubeLayerState(layer);
-      rebuildScene({ preserveView: true, syncGraph: false });
+      const nextSignFlip = !!surfaceSignFlipToggleEl.checked;
+      surfaceSignFlipToggleEl.setAttribute('aria-checked', nextSignFlip ? 'true' : 'false');
+      applyToSelectedCubeLayers((target) => {
+        target.signFlip = nextSignFlip;
+      });
     };
   }
   const handlePositiveSurfaceColorInput = () => {
     const layer = getActiveCubeLayer();
     if (layer) {
-      layer.colorScheme = 'custom';
-      layer.posColor = normalizeHexColor(posColor.value, DEFAULT_POS_SURFACE_COLOR);
+      const nextColor = normalizeHexColor(posColor.value, DEFAULT_POS_SURFACE_COLOR);
       if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
       syncColorPickerFields();
-      persistActiveCubeLayerState(layer);
-      rebuildScene({ preserveView: true, syncGraph: false });
+      applyToSelectedCubeLayers((target) => {
+        target.colorScheme = 'custom';
+        target.posColor = nextColor;
+      });
       return;
     }
     if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
@@ -30853,12 +31247,13 @@
   const handleNegativeSurfaceColorInput = () => {
     const layer = getActiveCubeLayer();
     if (layer) {
-      layer.colorScheme = 'custom';
-      layer.negColor = normalizeHexColor(negColor.value, DEFAULT_NEG_SURFACE_COLOR);
+      const nextColor = normalizeHexColor(negColor.value, DEFAULT_NEG_SURFACE_COLOR);
       if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
       syncColorPickerFields();
-      persistActiveCubeLayerState(layer);
-      rebuildScene({ preserveView: true, syncGraph: false });
+      applyToSelectedCubeLayers((target) => {
+        target.colorScheme = 'custom';
+        target.negColor = nextColor;
+      });
       return;
     }
     if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';

@@ -22,6 +22,7 @@ test('scene graph creates scene layers and activates first cube', () => {
   assert.equal(cube.opacity, 0.7);
   assert.equal(scene.moleculeLayerId.startsWith('molecule-'), true);
   assert.equal(scene.orbitalsGroupId.startsWith('orbitals-'), true);
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), cube.id);
 });
 
 test('cube label ids are scene-scoped', () => {
@@ -172,6 +173,56 @@ test('removeLayer disposes one cube and preserves stable labels on siblings', ()
   assert.equal(disposed.join('|'), b.id);
   assert.equal(graph.getLayerById(b.id), null);
   assert.equal(graph.getActiveLayer(), a);
+});
+
+test('cube selection is scoped to the focused scene and keeps active included', () => {
+  const api = loadApi();
+  const graph = api.createSceneGraphController();
+  const a = graph.createScene({ name: 'a.cube' });
+  const a0 = graph.addCubeLayer(a, { name: 'a0' });
+  const a1 = graph.addCubeLayer(a, { name: 'a1' });
+  const b = graph.createScene({ name: 'b.cube' });
+  const b0 = graph.addCubeLayer(b, { name: 'b0' });
+  graph.addScene(a);
+  graph.addScene(b);
+
+  graph.setActiveLayer(a0.id);
+  graph.setSelection([a1.id, b0.id]);
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), `${a1.id}|${a0.id}`);
+
+  graph.setActiveLayer(b0.id);
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), b0.id);
+
+  graph.setActiveLayer(graph.ensureOrbitalsGroup(b).id);
+  assert.equal(graph.getSelection().length, 0);
+});
+
+test('selection toggle and range helpers follow orbitals-group order', () => {
+  const api = loadApi();
+  const graph = api.createSceneGraphController();
+  const scene = graph.createScene({ name: 'methane' });
+  const l0 = graph.addCubeLayer(scene, { name: 'L0' });
+  const l1 = graph.addCubeLayer(scene, { name: 'L1' });
+  const l2 = graph.addCubeLayer(scene, { name: 'L2' });
+  const l3 = graph.addCubeLayer(scene, { name: 'L3' });
+  graph.addScene(scene);
+
+  graph.setActiveLayer(l0.id);
+  graph.extendSelection(l2.id);
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), `${l0.id}|${l2.id}`);
+
+  graph.extendSelection(l0.id);
+  assert.equal(graph.getActiveLayer(), l2);
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), l2.id);
+
+  graph.extendSelectionRange(l2.id, l0.id);
+  assert.equal(graph.getActiveLayer(), l0);
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), `${l2.id}|${l0.id}|${l1.id}`);
+
+  graph.clearSelection();
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), l0.id);
+  graph.extendSelectionRange(l0.id, l3.id);
+  assert.equal(graph.getSelection().map((layer) => layer.id).join('|'), `${l0.id}|${l1.id}|${l2.id}|${l3.id}`);
 });
 
 test('legacy cube appearance values normalize to solid-only schema', () => {
