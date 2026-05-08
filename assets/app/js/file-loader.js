@@ -164,6 +164,7 @@
         return !!deps.handleSceneDropRecords(parsedItems, {
           resetIsoToDefault: parsedItems.some((item) => deps.hasVolumetricGrid(item.vol)),
           skipAutoIsoOnInitialRebuild: parsedItems.some((item) => deps.hasVolumetricGrid(item.vol)),
+          targetSceneKey: options.targetSceneKey || '',
         });
       }
       async function tryHandleDroppedCubeAppend() {

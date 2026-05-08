@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7l';
+  const APP_VERSION = '0.8.7m';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -1303,6 +1303,9 @@
   let sceneGraphSceneKeyCounter = 1;
   let outlinerFlashLayerId = null;
   let outlinerFlashTimer = 0;
+  let outlinerRenameState = null;
+  let outlinerAddFileInputEl = null;
+  let outlinerAddTargetSceneKey = '';
   let cubeLayerContextMenuEl = null;
   let cubeLayerContextMenuLayerId = null;
   let cubeLayerContextMenuPoint = null;
@@ -7515,6 +7518,7 @@
   const openBtn = document.getElementById('openBtn');
   const newFileBtn = document.getElementById('newFileBtn');
   const sceneOutlinerBodyEl = document.getElementById('sceneOutlinerBody');
+  const sceneOutlinerAddBtn = document.getElementById('sceneOutlinerAddBtn');
   const isoInput = document.getElementById('iso');
   const autoIsoBtn = document.getElementById('autoIsoBtn');
   const opInput = document.getElementById('opacity');
@@ -9686,12 +9690,26 @@
     return record ? record.vol : null;
   }
 
+  function findSceneBySceneKey(sceneKey) {
+    const key = String(sceneKey || '').trim();
+    if (!key) return null;
+    return sceneGraphController.getScenes().find((scene) => scene && scene.sceneKey === key) || null;
+  }
+
+  function getSceneMoleculeVolume(sceneOrKey) {
+    const scene = typeof sceneOrKey === 'string' ? findSceneBySceneKey(sceneOrKey) : sceneOrKey;
+    if (!scene) return null;
+    const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+    if (moleculeLayer && moleculeLayer.record && moleculeLayer.record.vol) return moleculeLayer.record.vol;
+    if (scene.moleculeRecord && scene.moleculeRecord.vol) return scene.moleculeRecord.vol;
+    return getSceneMoleculeVolumeFromRecords(scene.sceneKey);
+  }
+
   function findMatchingSceneKeyForVolume(vol) {
     if (!vol || !Array.isArray(vol.atoms) || !vol.atoms.length) return '';
     ensureLegacyRecordSceneKeys();
     for (const scene of sceneGraphController.getScenes()) {
-      const moleculeLayer = sceneGraphController.getLayerById(scene && scene.moleculeLayerId);
-      const sceneVol = moleculeLayer && moleculeLayer.record ? moleculeLayer.record.vol : getSceneMoleculeVolumeFromRecords(scene && scene.sceneKey);
+      const sceneVol = getSceneMoleculeVolume(scene);
       if (moleculeMatchesVolume(vol, sceneVol)) return scene.sceneKey || '';
     }
     const seen = new Set();
@@ -11037,14 +11055,130 @@
     return '';
   }
 
+  function getOutlinerRowTarget(options = {}) {
+    if (options.scene) return { type: 'scene', id: options.scene.id, scene: options.scene, layer: null };
+    if (options.layer) {
+      const scene = sceneGraphController.getSceneForLayer(options.layer);
+      return { type: 'layer', id: options.layer.id, scene, layer: options.layer };
+    }
+    return { type: '', id: '', scene: null, layer: null };
+  }
+
+  function isOutlinerTargetRenameable(target) {
+    if (!target) return false;
+    if (target.type === 'scene') return true;
+    const layer = target.layer;
+    return !!(layer && (
+      isCubeLikeLayer(layer)
+      || layer.kind === SCENE_LAYER_KIND.MOLECULE
+    ));
+  }
+
+  function isOutlinerTargetBeingRenamed(target) {
+    return !!(outlinerRenameState && target && target.id && outlinerRenameState.id === target.id);
+  }
+
+  function focusOutlinerRenameInput() {
+    if (!sceneOutlinerBodyEl) return;
+    const input = sceneOutlinerBodyEl.querySelector('.vm-outliner-row__rename-input');
+    if (!input) return;
+    input.focus();
+    input.select();
+  }
+
+  function startOutlinerRename(target) {
+    if (!isOutlinerTargetRenameable(target)) return false;
+    closeCubeLayerContextMenu();
+    const name = target.type === 'scene'
+      ? target.scene && target.scene.name
+      : target.layer && target.layer.name;
+    outlinerRenameState = {
+      id: target.id,
+      type: target.type,
+      originalName: String(name || 'Untitled'),
+    };
+    renderSceneOutliner();
+    window.requestAnimationFrame(focusOutlinerRenameInput);
+    return true;
+  }
+
+  function finishOutlinerRename(options = {}) {
+    if (!outlinerRenameState) return false;
+    const state = outlinerRenameState;
+    const input = sceneOutlinerBodyEl
+      ? sceneOutlinerBodyEl.querySelector('.vm-outliner-row__rename-input')
+      : null;
+    const raw = input ? input.value : state.originalName;
+    const nextName = String(raw || '').trim();
+    outlinerRenameState = null;
+    if (options.commit !== false && nextName) {
+      if (state.type === 'scene') {
+        const scene = sceneGraphController.findScene(state.id);
+        if (scene) scene.name = nextName;
+      } else if (state.type === 'layer') {
+        const layer = sceneGraphController.getLayerById(state.id);
+        if (layer) {
+          layer.name = nextName;
+          if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC) layer.nameUserEdited = true;
+        }
+      }
+      syncLoadedSceneControls();
+      syncTrajectoryControls();
+      updateSidePanel();
+      syncAppearanceControlsToActiveLayer();
+    }
+    renderSceneOutliner();
+    return true;
+  }
+
+  function cancelOutlinerRename() {
+    return finishOutlinerRename({ commit: false });
+  }
+
+  function getOutlinerAddSceneKey(scene = getFocusedScene()) {
+    return scene && scene.sceneKey ? String(scene.sceneKey) : '';
+  }
+
+  function ensureOutlinerAddFileInput() {
+    if (outlinerAddFileInputEl) return outlinerAddFileInputEl;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.cube,.cub';
+    input.multiple = true;
+    input.hidden = true;
+    input.setAttribute('aria-hidden', 'true');
+    input.addEventListener('change', () => {
+      const files = input.files ? Array.from(input.files) : [];
+      const targetSceneKey = outlinerAddTargetSceneKey;
+      input.value = '';
+      outlinerAddTargetSceneKey = '';
+      if (!files.length) return;
+      void fileLoaderController.handleFiles(files, {
+        sceneDispatch: true,
+        targetSceneKey,
+      });
+    });
+    document.body.appendChild(input);
+    outlinerAddFileInputEl = input;
+    return outlinerAddFileInputEl;
+  }
+
+  function openOutlinerAddCubeFilePicker(scene = getFocusedScene()) {
+    closeCubeLayerContextMenu();
+    outlinerAddTargetSceneKey = getOutlinerAddSceneKey(scene);
+    ensureOutlinerAddFileInput().click();
+  }
+
   function buildOutlinerRow(options = {}) {
-    const row = document.createElement('button');
-    row.type = 'button';
+    const target = getOutlinerRowTarget(options);
+    const renaming = isOutlinerTargetBeingRenamed(target);
+    const row = document.createElement('div');
     row.className = 'vm-outliner-row';
     row.dataset.id = options.id || '';
     row.dataset.depth = String(options.depth || 0);
     row.style.setProperty('--vm-outliner-indent', `${Math.max(0, Number(options.depth) || 0) * 16}px`);
     row.setAttribute('role', 'treeitem');
+    row.tabIndex = 0;
     row.setAttribute('aria-selected', (options.active || options.selected) ? 'true' : 'false');
     row.classList.toggle('is-active', !!options.active);
     row.classList.toggle('is-selected', !!options.selected);
@@ -11116,7 +11250,42 @@
       label.appendChild(prefix);
       label.appendChild(document.createTextNode(' '));
     }
-    label.appendChild(document.createTextNode(options.label || 'Untitled'));
+    if (renaming) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'vm-outliner-row__rename-input';
+      input.value = outlinerRenameState ? outlinerRenameState.originalName : (options.label || 'Untitled');
+      input.setAttribute('aria-label', 'Rename');
+      input.addEventListener('click', (event) => event.stopPropagation());
+      input.addEventListener('dblclick', (event) => event.stopPropagation());
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          cancelOutlinerRename();
+          return;
+        }
+        if (event.key === 'Enter' || event.key === 'Tab') {
+          event.preventDefault();
+          event.stopPropagation();
+          finishOutlinerRename({ commit: true });
+        }
+      });
+      input.addEventListener('blur', () => {
+        finishOutlinerRename({ commit: true });
+      });
+      label.appendChild(input);
+    } else {
+      label.appendChild(document.createTextNode(options.label || 'Untitled'));
+      if (isOutlinerTargetRenameable(target)) {
+        label.addEventListener('dblclick', (event) => {
+          if (event.target && event.target.closest && event.target.closest('.vm-outliner-row__prefix')) return;
+          event.preventDefault();
+          event.stopPropagation();
+          startOutlinerRename(target);
+        });
+      }
+    }
     row.appendChild(label);
 
     const meta = document.createElement('span');
@@ -11125,6 +11294,7 @@
     row.appendChild(meta);
 
     row.addEventListener('click', (event) => {
+      if (outlinerRenameState) return;
       if (options.scene) {
         setSceneHeaderActive(options.scene);
         return;
@@ -11145,9 +11315,7 @@
       }
       setActiveSceneGraphLayer(options.layer.id, { selection: 'replace' });
     });
-    if (options.layer && isCubeLikeLayer(options.layer)) {
-      row.addEventListener('contextmenu', (event) => showCubeLayerContextMenu(options.layer, event));
-    }
+    row.addEventListener('contextmenu', (event) => showOutlinerContextMenu(target, event));
     return row;
   }
 
@@ -11217,6 +11385,12 @@
       if (target && typeof target.closest === 'function' && target.closest('.vm-outliner-row')) return;
       clearOutlinerSelectionToActive();
     });
+  }
+
+  if (sceneOutlinerAddBtn) {
+    sceneOutlinerAddBtn.hidden = false;
+    sceneOutlinerAddBtn.disabled = false;
+    sceneOutlinerAddBtn.addEventListener('click', showOutlinerAddMenu);
   }
 
   document.addEventListener('pointerdown', (event) => {
@@ -11848,6 +12022,159 @@
     return true;
   }
 
+  function appendOutlinerContextMenuItem(menu, label, onClick, options = {}) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'vm-outliner-context-menu__item';
+    item.textContent = label;
+    item.setAttribute('role', 'menuitem');
+    if (options.danger) item.classList.add('is-danger');
+    if (options.disabled) item.disabled = true;
+    item.addEventListener('click', () => {
+      if (options.keepOpen) {
+        onClick();
+        return;
+      }
+      closeCubeLayerContextMenu();
+      onClick();
+    });
+    menu.appendChild(item);
+    return item;
+  }
+
+  function appendOutlinerContextMenuDivider(menu) {
+    const divider = document.createElement('div');
+    divider.className = 'vm-outliner-context-menu__divider';
+    menu.appendChild(divider);
+    return divider;
+  }
+
+  function getSceneOrbitalLayerCount(scene) {
+    return getCubeLayersInScene(scene).length;
+  }
+
+  function deleteSceneFromOutliner(scene) {
+    if (!scene) return false;
+    const sceneId = scene.id;
+    const sceneKey = String(scene.sceneKey || '').trim();
+    const removedRecords = new Set(sceneGraphController.listLayers(scene).map((layer) => layer && layer.record).filter(Boolean));
+    const removedCurrent = currentIndex >= 0 && volumes[currentIndex] && (
+      (sceneKey && volumes[currentIndex]._sceneGraphSceneKey === sceneKey)
+      || removedRecords.has(volumes[currentIndex])
+    );
+    if (sceneKey) {
+      volumes = volumes.filter((record) => !(record && record._sceneGraphSceneKey === sceneKey));
+    } else if (removedRecords.size) {
+      volumes = volumes.filter((record) => !removedRecords.has(record));
+    }
+    if (removedCurrent) clearEditHistory();
+    sceneGraphController.removeScene(sceneId);
+    if (!volumes.length) {
+      currentIndex = -1;
+      clearSceneMeshes();
+      if (sceneGraphController.clearScenes) sceneGraphController.clearScenes();
+      renderSceneOutliner();
+      syncLoadedSceneControls();
+      syncTrajectoryControls();
+      syncAppearanceControlsToActiveLayer();
+      updateSidePanel();
+      updateEmptyStateVisibility();
+      setHintMessage(`Deleted scene "${scene.name || 'Untitled scene'}".`);
+      return true;
+    }
+    const focused = getFocusedScene();
+    const focusedRecord = getSceneFocusRecord(focused);
+    const focusedRecordIndex = getRecordIndex(focusedRecord);
+    currentIndex = focusedRecordIndex >= 0
+      ? focusedRecordIndex
+      : Math.max(0, Math.min(currentIndex, volumes.length - 1));
+    syncSceneGraphFromVolumes({ preserveLayerState: true, preferActiveRecord: true });
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncLoadedSceneControls();
+    syncTrajectoryControls();
+    syncAppearanceControlsToActiveLayer();
+    updateSidePanel();
+    updateEmptyStateVisibility();
+    renderSceneOutliner();
+    setHintMessage(`Deleted scene "${scene.name || 'Untitled scene'}".`);
+    return true;
+  }
+
+  function renderSceneDeleteConfirmation(scene) {
+    const menu = ensureCubeLayerContextMenu();
+    if (!menu || !scene) return null;
+    menu.textContent = '';
+    const title = document.createElement('div');
+    title.className = 'vm-outliner-context-menu__title';
+    title.textContent = `Delete scene "${scene.name || 'Untitled scene'}"?`;
+    menu.appendChild(title);
+    const body = document.createElement('div');
+    body.className = 'vm-outliner-context-menu__body';
+    const count = getSceneOrbitalLayerCount(scene);
+    body.textContent = `This will remove the molecule and ${count} orbital layer${count === 1 ? '' : 's'}.\n\nThis action cannot be undone.`;
+    menu.appendChild(body);
+    const actions = document.createElement('div');
+    actions.className = 'vm-outliner-context-menu__actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'vm-outliner-context-menu__button is-secondary';
+    cancel.textContent = 'Cancel';
+    cancel.addEventListener('click', closeCubeLayerContextMenu);
+    const confirm = document.createElement('button');
+    confirm.type = 'button';
+    confirm.className = 'vm-outliner-context-menu__button is-danger';
+    confirm.textContent = 'Delete';
+    confirm.addEventListener('click', () => {
+      closeCubeLayerContextMenu();
+      deleteSceneFromOutliner(scene);
+    });
+    actions.appendChild(cancel);
+    actions.appendChild(confirm);
+    menu.appendChild(actions);
+    return menu;
+  }
+
+  function renderOutlinerAddMenu(scene = getFocusedScene()) {
+    const menu = ensureCubeLayerContextMenu();
+    if (!menu) return null;
+    menu.textContent = '';
+    appendOutlinerContextMenuItem(menu, 'Add cube file...', () => openOutlinerAddCubeFilePicker(scene));
+    return menu;
+  }
+
+  function renderNonCubeOutlinerContextMenu(target, mode = 'menu') {
+    const menu = ensureCubeLayerContextMenu();
+    if (!menu || !target) return null;
+    if (target.type === 'scene') {
+      if (mode === 'confirm-delete-scene') return renderSceneDeleteConfirmation(target.scene);
+      menu.textContent = '';
+      appendOutlinerContextMenuItem(menu, 'Rename', () => startOutlinerRename(target));
+      appendOutlinerContextMenuDivider(menu);
+      appendOutlinerContextMenuItem(menu, 'Delete scene', () => {
+        const confirmMenu = renderSceneDeleteConfirmation(target.scene);
+        if (confirmMenu) {
+          confirmMenu.hidden = false;
+          confirmMenu.setAttribute('aria-hidden', 'false');
+          positionCubeLayerContextMenu(cubeLayerContextMenuPoint || { clientX: 0, clientY: 0 });
+        }
+      }, { danger: true, keepOpen: true });
+      return menu;
+    }
+    const layer = target.layer;
+    if (!layer) return null;
+    if (layer.kind === SCENE_LAYER_KIND.MOLECULE) {
+      menu.textContent = '';
+      appendOutlinerContextMenuItem(menu, 'Rename', () => startOutlinerRename(target));
+      return menu;
+    }
+    if (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP) {
+      menu.textContent = '';
+      appendOutlinerContextMenuItem(menu, 'Add cube file...', () => openOutlinerAddCubeFilePicker(target.scene));
+      return menu;
+    }
+    return null;
+  }
+
   function renderCubeLayerContextMenu(layer, mode = 'menu') {
     const menu = ensureCubeLayerContextMenu();
     if (!menu || !layer) return null;
@@ -11938,6 +12265,19 @@
     const divider = document.createElement('div');
     divider.className = 'vm-outliner-context-menu__divider';
     menu.appendChild(divider);
+    if (count === 1) {
+      const rename = document.createElement('button');
+      rename.type = 'button';
+      rename.className = 'vm-outliner-context-menu__item';
+      rename.textContent = 'Rename';
+      rename.addEventListener('click', () => {
+        const targetLayer = actionLayers[0] || layer;
+        const targetScene = targetLayer ? sceneGraphController.getSceneForLayer(targetLayer) : null;
+        closeCubeLayerContextMenu();
+        startOutlinerRename({ type: 'layer', id: targetLayer.id, layer: targetLayer, scene: targetScene });
+      });
+      menu.appendChild(rename);
+    }
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'vm-outliner-context-menu__item is-danger';
@@ -11950,28 +12290,83 @@
     return menu;
   }
 
-  function showCubeLayerContextMenu(layer, event) {
-    if (!isCubeLikeLayer(layer)) return;
+  function focusOutlinerContextTarget(target) {
+    if (!target) return;
+    const scene = target.scene || (target.layer ? sceneGraphController.getSceneForLayer(target.layer) : null);
+    if (!scene) return;
+    focusScene(scene);
+    activateSceneFocusRecord(scene);
+    syncLoadedSceneControls();
+    syncTrajectoryControls();
+    syncAppearanceControlsToActiveLayer();
+  }
+
+  function showOutlinerContextMenu(target, event) {
+    if (!(target && (target.scene || target.layer))) return;
     if (event) {
       event.preventDefault();
       event.stopPropagation();
     }
-    if (!isCubeLayerSelected(layer)) {
-      setActiveSceneGraphLayer(layer.id, { rebuild: false, selection: 'replace' });
-    } else {
-      const scene = sceneGraphController.getSceneForLayer(layer);
-      if (scene) focusScene(scene);
+    if (outlinerRenameState) finishOutlinerRename({ commit: true });
+    const layer = target.layer;
+    if (isCubeLikeLayer(layer)) {
+      if (!isCubeLayerSelected(layer)) {
+        setActiveSceneGraphLayer(layer.id, { rebuild: false, selection: 'replace' });
+      } else {
+        const scene = sceneGraphController.getSceneForLayer(layer);
+        if (scene) focusScene(scene);
+      }
+      syncAppearanceControlsToActiveLayer();
+      cubeLayerContextMenuLayerId = layer.id;
+      cubeLayerContextMenuPoint = event
+        ? { clientX: event.clientX, clientY: event.clientY }
+        : null;
+      const menu = renderCubeLayerContextMenu(layer, 'menu');
+      if (!menu) return;
+      menu.hidden = false;
+      menu.setAttribute('aria-hidden', 'false');
+      positionCubeLayerContextMenu(event);
+      return;
     }
-    syncAppearanceControlsToActiveLayer();
-    cubeLayerContextMenuLayerId = layer.id;
+    focusOutlinerContextTarget(target);
+    cubeLayerContextMenuLayerId = layer && layer.id;
     cubeLayerContextMenuPoint = event
       ? { clientX: event.clientX, clientY: event.clientY }
       : null;
-    const menu = renderCubeLayerContextMenu(layer, 'menu');
+    const menu = renderNonCubeOutlinerContextMenu(target, 'menu');
     if (!menu) return;
     menu.hidden = false;
     menu.setAttribute('aria-hidden', 'false');
     positionCubeLayerContextMenu(event);
+  }
+
+  function showCubeLayerContextMenu(layer, event) {
+    if (!isCubeLikeLayer(layer)) return;
+    showOutlinerContextMenu({
+      type: 'layer',
+      id: layer.id,
+      layer,
+      scene: sceneGraphController.getSceneForLayer(layer),
+    }, event);
+  }
+
+  function showOutlinerAddMenu(event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (outlinerRenameState) finishOutlinerRename({ commit: true });
+    const scene = getFocusedScene();
+    cubeLayerContextMenuLayerId = null;
+    const rect = sceneOutlinerAddBtn ? sceneOutlinerAddBtn.getBoundingClientRect() : null;
+    cubeLayerContextMenuPoint = rect
+      ? { clientX: rect.left, clientY: rect.bottom + 4 }
+      : { clientX: Number(event && event.clientX) || 0, clientY: Number(event && event.clientY) || 0 };
+    const menu = renderOutlinerAddMenu(scene);
+    if (!menu) return;
+    menu.hidden = false;
+    menu.setAttribute('aria-hidden', 'false');
+    positionCubeLayerContextMenu(cubeLayerContextMenuPoint);
   }
 
   /**
@@ -31724,6 +32119,15 @@
     const items = Array.isArray(parsedItems) ? parsedItems.filter((item) => item && item.vol) : [];
     if (!items.length) return false;
     ensureLegacyRecordSceneKeys();
+    const targetSceneKey = String(options.targetSceneKey || '').trim();
+    const targetSceneVol = targetSceneKey ? getSceneMoleculeVolume(targetSceneKey) : null;
+    const resolveSceneKeyForItem = (item, forceNewScene) => {
+      if (forceNewScene) return '';
+      if (targetSceneKey) {
+        return moleculeMatchesVolume(item && item.vol, targetSceneVol) ? targetSceneKey : '';
+      }
+      return findMatchingSceneKeyForVolume(item && item.vol);
+    };
     const groups = [];
     for (const item of items) {
       const forceNewScene = !!(item.forceNewScene || isTrajectoryVolumeRecord(item.vol));
@@ -31732,7 +32136,7 @@
         group = groups.find((candidate) => !candidate.forceNewScene && moleculeMatchesVolume(item.vol, candidate.representativeVol)) || null;
       }
       if (!group) {
-        group = makeDropSceneGroup(item, forceNewScene ? '' : findMatchingSceneKeyForVolume(item.vol));
+        group = makeDropSceneGroup(item, resolveSceneKeyForItem(item, forceNewScene));
         if (forceNewScene) group.forceNewScene = true;
         groups.push(group);
       }

@@ -2240,6 +2240,10 @@
       justify-content: center !important;
       background: transparent !important;
       color: var(--vm-color-text-secondary) !important;
+      opacity: 1;
+    }
+
+    #toolbar .vm-outliner__add:disabled {
       opacity: 0.45;
     }
 
@@ -2361,6 +2365,27 @@
       white-space: nowrap;
       font-size: 12px;
       font-weight: 500;
+    }
+
+    #toolbar .vm-outliner-row__rename-input {
+      width: 100%;
+      min-width: 0;
+      height: 24px;
+      box-sizing: border-box;
+      border: 1px solid var(--vm-color-border-control, var(--vm-color-border));
+      border-radius: 4px;
+      background: var(--vm-color-surface-control, var(--vm-color-surface-panel));
+      color: var(--vm-color-text-primary);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 2px 5px;
+      outline: none;
+    }
+
+    #toolbar .vm-outliner-row__rename-input:focus {
+      border-color: var(--vm-color-accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--vm-color-accent) 18%, transparent);
     }
 
     #toolbar .vm-outliner-row.is-group .vm-outliner-row__label {
@@ -2854,7 +2879,7 @@
           <div class="vm-outliner__header">
             <h2 class="vm-outliner__title">Scenes</h2>
             <button id="sceneOutlinerAddBtn" class="secondary vm-outliner__add material-symbols-rounded" type="button"
-              aria-label="Add scene" disabled hidden data-tooltip="Add scene (coming soon)">add</button>
+              aria-label="Add file to scenes" data-tooltip="Add file to scenes">add</button>
           </div>
           <div id="sceneOutlinerBody" class="vm-outliner__body" role="tree" aria-label="Loaded scenes">
             <div class="vm-outliner__empty">No file loaded. Drag and drop a .cube, .molden, or .xyz file, or click the open icon above to begin.</div>

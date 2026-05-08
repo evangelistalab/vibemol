@@ -217,6 +217,24 @@ test('file input uses scene-aware dispatch for primary files', async () => {
   assert.equal(dispatched[0].options.resetIsoToDefault, false);
 });
 
+test('scene-aware file loading forwards a target scene key for outliner add actions', async () => {
+  const dispatched = [];
+  const { controller, getVolumes } = createController({
+    handleSceneDropRecords: (items, options) => {
+      dispatched.push({ names: items.map((item) => item.name), options });
+      return true;
+    },
+  });
+  await controller.handleFiles([
+    new File(['cube a'], 'a.cube', { type: 'text/plain' }),
+  ], { sceneDispatch: true, targetSceneKey: 'scene-target' });
+
+  assert.equal(getVolumes().length, 0);
+  assert.equal(dispatched.length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(dispatched[0].names)), ['a.cube']);
+  assert.equal(dispatched[0].options.targetSceneKey, 'scene-target');
+});
+
 test('bundled sample loaders use scene-aware dispatch without clearing existing scenes', async () => {
   const dispatched = [];
   const fetched = {
