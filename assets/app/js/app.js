@@ -5994,7 +5994,11 @@
     row.className = 'trajectorySceneRow';
     row.dataset.sceneId = String(info && info.scene && info.scene.id || '');
     const isFocused = !!(activeInfo && activeInfo.enabled && getTrajectoryInfoKey(activeInfo) === getTrajectoryInfoKey(info));
+    const syncLocked = !!(info && info.traj && info.traj.syncEnabled);
+    const recordingLocked = !!(trajectoryVideoController && trajectoryVideoController.isRecording && trajectoryVideoController.isRecording());
+    const controlsLocked = syncLocked || recordingLocked;
     row.classList.toggle('is-focused', isFocused);
+    row.classList.toggle('is-sync-disabled', syncLocked);
 
     const title = document.createElement('div');
     title.className = 'trajectorySceneTitle';
@@ -6011,11 +6015,13 @@
 
     const controls = document.createElement('div');
     controls.className = 'trajectorySceneControls';
+    controls.classList.toggle('is-sync-disabled', syncLocked);
 
     const play = document.createElement('button');
     play.type = 'button';
     play.className = 'trajectoryMiniButton';
-    play.disabled = !!info.traj.syncEnabled;
+    play.disabled = controlsLocked;
+    play.classList.toggle('is-sync-disabled', syncLocked);
     setTrajectoryMiniButtonGlyph(play, info.traj.playing ? 'pause' : 'play_arrow');
     play.setAttribute('aria-label', info.traj.playing ? 'Pause trajectory' : 'Play trajectory');
     play.addEventListener('click', () => {
@@ -6027,7 +6033,8 @@
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.className = 'trajectoryMiniButton';
-    reset.disabled = !!info.traj.syncEnabled;
+    reset.disabled = controlsLocked;
+    reset.classList.toggle('is-sync-disabled', syncLocked);
     setTrajectoryMiniButtonGlyph(reset, 'replay');
     reset.setAttribute('aria-label', 'Reset trajectory');
     reset.addEventListener('click', () => {
@@ -6048,7 +6055,8 @@
     slider.max = String(Math.max(0, info.frameCount - 1));
     slider.step = '1';
     slider.value = String(info.traj.frameIndex | 0);
-    slider.disabled = !!info.traj.syncEnabled;
+    slider.disabled = controlsLocked;
+    slider.classList.toggle('is-sync-disabled', syncLocked);
     slider.addEventListener('input', () => {
       focusTrajectoryInfoScene(info);
       if (info.traj.syncEnabled) return;
@@ -6063,7 +6071,8 @@
     fps.max = '120';
     fps.step = '1';
     fps.value = String(info.traj.fps);
-    fps.disabled = !!info.traj.syncEnabled;
+    fps.disabled = controlsLocked;
+    fps.classList.toggle('is-sync-disabled', syncLocked);
     fps.addEventListener('change', () => {
       focusTrajectoryInfoScene(info);
       if (info.traj.syncEnabled) return;
@@ -6232,12 +6241,12 @@
     if (trajectoryFpsEl && info.enabled && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
     if (trajectoryFpsEl) trajectoryFpsEl.disabled = !info.enabled || !!(traj && traj.syncEnabled);
     if (trajectoryLoopEl) trajectoryLoopEl.disabled = !info.enabled;
+    if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
     if (trajectorySceneListEl) {
       trajectorySceneListEl.textContent = '';
       for (const item of infos) trajectorySceneListEl.appendChild(renderTrajectorySceneRow(item, info));
     }
     renderTrajectorySyncMaster(infos);
-    if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
     updateDisplayWindowAdaptiveMenuUi();
   }
   /**

@@ -632,6 +632,10 @@
       overflow: hidden;
     }
 
+    #trajectoryPanel {
+      width: min(460px, calc(100vw - 24px));
+    }
+
     .motionPanelHeader {
       display: flex;
       align-items: center;
@@ -989,6 +993,12 @@
     .trajectorySceneControls input:disabled {
       cursor: default;
       opacity: 0.45;
+    }
+
+    .trajectoryMiniButton.is-sync-disabled,
+    .trajectorySceneControls input.is-sync-disabled {
+      opacity: 0.45;
+      filter: grayscale(0.35);
     }
 
     .trajectoryFrameReadout,
