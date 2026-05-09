@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7n';
+  const APP_VERSION = '0.8.7o';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -1309,6 +1309,10 @@
   let outlinerRenameState = null;
   let outlinerAddFileInputEl = null;
   let outlinerAddTargetSceneKey = '';
+  let outlinerDragState = null;
+  let outlinerDropIndicatorEl = null;
+  let outlinerDragImageEl = null;
+  let outlinerDragHighlightedRow = null;
   let cubeLayerContextMenuEl = null;
   let cubeLayerContextMenuLayerId = null;
   let cubeLayerContextMenuPoint = null;
@@ -10086,12 +10090,12 @@
       for (const preserved of preservedCubeStates) {
         if (!preserved || usedPreservedCubeStates.has(preserved) || !preserved.isSceneGraphDuplicate) continue;
         const record = preserved.record || null;
-        if (!record || !sceneRecords.includes(record)) continue;
+        if ((!record || !sceneRecords.includes(record)) && !preserved.cubeData) continue;
         const duplicate = sceneGraphController.addCubeLayer(scene, Object.assign({}, defaults, preserved, {
-          name: preserved.name || String(record.name || 'Cube'),
+          name: preserved.name || String(record && record.name || 'Cube'),
           labelId: preserved.labelId,
           record,
-          cubeData: preserved.cubeData || record.vol,
+          cubeData: preserved.cubeData || (record && record.vol),
           visible: preserved.visible == null ? false : preserved.visible,
           expanded: preserved.expanded == null ? true : preserved.expanded,
           isSceneGraphDuplicate: true,
@@ -10697,6 +10701,460 @@
     scene.layers.splice(adjustedAfter + 1, 0, layer);
   }
 
+  function getLayerDisplayName(layer) {
+    return String(layer && (layer.labelId || layer.name) || 'layer');
+  }
+
+  function getLayerFullDisplayName(layer) {
+    const label = String(layer && layer.labelId || '').trim();
+    const name = String(layer && layer.name || '').trim();
+    return `${label} ${name}`.trim() || 'layer';
+  }
+
+  function renumberCubeLayerLabels(scene) {
+    if (!scene) return;
+    const layers = getCubeLayersInScene(scene);
+    const arithmeticNameEdited = new Map();
+    for (const layer of layers) {
+      if (layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC) {
+        arithmeticNameEdited.set(layer.id, getArithmeticNameUserEdited(layer));
+      }
+    }
+    layers.forEach((layer, index) => {
+      layer.labelId = `L${index}`;
+    });
+    for (const layer of layers) {
+      if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) continue;
+      if (arithmeticNameEdited.get(layer.id)) {
+        layer.nameUserEdited = true;
+        continue;
+      }
+      layer.nameUserEdited = false;
+      layer.name = generateArithmeticName(layer.operation, layer.inputs);
+    }
+  }
+
+  function reorderCubeLayersInScene(scene, orderedCubeLayers) {
+    if (!(scene && Array.isArray(scene.layers) && Array.isArray(orderedCubeLayers))) return false;
+    const orbitalsGroupId = scene.orbitalsGroupId || (sceneGraphController.ensureOrbitalsGroup(scene) || {}).id || null;
+    const orderedIds = new Set(orderedCubeLayers.map((layer) => layer && layer.id).filter(Boolean));
+    const nextLayers = [];
+    let inserted = false;
+    for (const layer of scene.layers) {
+      if (isCubeLikeLayer(layer) && layer.parentId === orbitalsGroupId) {
+        if (!inserted) {
+          nextLayers.push(...orderedCubeLayers);
+          inserted = true;
+        }
+        if (orderedIds.has(layer.id)) continue;
+      }
+      nextLayers.push(layer);
+    }
+    if (!inserted) nextLayers.push(...orderedCubeLayers);
+    scene.layers = nextLayers;
+    renumberCubeLayerLabels(scene);
+    return true;
+  }
+
+  function insertCubeLayerBlock(scene, layersToInsert, insertIndex) {
+    const existing = getCubeLayersInScene(scene).filter((layer) => !layersToInsert.includes(layer));
+    const index = Math.max(0, Math.min(Number(insertIndex) || 0, existing.length));
+    const next = existing.slice(0, index).concat(layersToInsert, existing.slice(index));
+    return reorderCubeLayersInScene(scene, next);
+  }
+
+  function disposeLayerRenderArtifacts(layer) {
+    if (!(layer && sceneGraphController && typeof sceneGraphController.removeLayer === 'function')) return;
+    disposeSceneGraphLayer(layer);
+    layer.surfaceMetricCache = new Map();
+  }
+
+  function makeCopiedCubeLayerProps(sourceLayer, destinationScene, options = {}) {
+    const copyName = options.name || getNextCubeCopyName(destinationScene, sourceLayer);
+    const props = Object.assign({}, copyCubeLayerAppearance(sourceLayer), {
+      name: copyName,
+      labelId: getNextCubeLabelId(destinationScene),
+      record: sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC ? null : (sourceLayer.record || null),
+      cubeData: sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC
+        ? cloneArithmeticCubeData(getLayerCubeData(sourceLayer), copyName)
+        : getLayerCubeData(sourceLayer),
+      moldenMoIndex: Number.isInteger(sourceLayer.moldenMoIndex) ? sourceLayer.moldenMoIndex : null,
+      visible: options.visible == null ? sourceLayer.visible !== false : !!options.visible,
+      expanded: sourceLayer.expanded !== false,
+      isSceneGraphDuplicate: true,
+      geometry: null,
+      posMaterial: null,
+      negMaterial: null,
+      posMesh: null,
+      negMesh: null,
+      group: null,
+      cloudGroup: null,
+      surfaceMetricCache: new Map(),
+    });
+    if (sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC) {
+      props.operation = normalizeArithmeticOperation(sourceLayer.operation);
+      props.inputs = normalizeArithmeticInputsForOperation(props.operation, sourceLayer.inputs);
+      props.cubeDataValid = sourceLayer.cubeDataValid !== false;
+      props.nameUserEdited = true;
+    }
+    return props;
+  }
+
+  function duplicateLayerBlockToScene(sourceLayers, destinationScene, insertIndex) {
+    const orderedSources = (Array.isArray(sourceLayers) ? sourceLayers : []).filter(isCubeLikeLayer);
+    if (!(orderedSources.length && destinationScene)) return [];
+    const idMap = new Map();
+    const copies = [];
+    for (const source of orderedSources) {
+      const props = makeCopiedCubeLayerProps(source, destinationScene, { visible: source.visible !== false });
+      const copy = source.kind === SCENE_LAYER_KIND.ARITHMETIC
+        ? sceneGraphController.addArithmeticLayer(destinationScene, props, getSurfaceDefaultsForNewLayer())
+        : sceneGraphController.addCubeLayer(destinationScene, props, getSurfaceDefaultsForNewLayer());
+      if (!copy) continue;
+      idMap.set(source.id, copy.id);
+      copies.push(copy);
+    }
+    for (const copy of copies) {
+      if (!(copy && copy.kind === SCENE_LAYER_KIND.ARITHMETIC)) continue;
+      copy.inputs = normalizeArithmeticInputsForOperation(copy.operation, copy.inputs).map((input) => Object.assign({}, input, {
+        layerId: idMap.get(input.layerId) || input.layerId,
+      }));
+      const computed = computeArithmeticCubeData(copy.operation, copy.inputs, copy.name);
+      if (computed.ok) {
+        copy.cubeData = computed.cubeData;
+        copy.cubeDataValid = true;
+      } else {
+        copy.cubeDataValid = false;
+      }
+    }
+    insertCubeLayerBlock(destinationScene, copies, insertIndex);
+    return copies;
+  }
+
+  function moveLayerBlockToScene(sourceLayers, sourceScene, destinationScene, insertIndex) {
+    const moving = (Array.isArray(sourceLayers) ? sourceLayers : []).filter(isCubeLikeLayer);
+    if (!(moving.length && sourceScene && destinationScene)) return [];
+    const movingIds = new Set(moving.map((layer) => layer.id));
+    const destGroup = sceneGraphController.ensureOrbitalsGroup(destinationScene);
+    if (!destGroup) return [];
+    for (const layer of moving) {
+      if (layer.sceneId !== destinationScene.id) {
+        layer.sceneId = destinationScene.id;
+        layer.parentId = destGroup.id;
+        if (layer.record && destinationScene.sceneKey) {
+          layer.record._sceneGraphLayerState = Object.assign({}, layer.record._sceneGraphLayerState || {}, {
+            visible: layer.visible !== false,
+          });
+        }
+      }
+      disposeLayerRenderArtifacts(layer);
+    }
+    if (sourceScene !== destinationScene) {
+      sourceScene.layers = sourceScene.layers.filter((layer) => !movingIds.has(layer.id));
+      destinationScene.layers.push(...moving);
+      if (sourceScene.activeLayerId && movingIds.has(sourceScene.activeLayerId)) {
+        const replacement = getCubeLayersInScene(sourceScene).find((layer) => !movingIds.has(layer.id))
+          || sceneGraphController.getLayerById(sourceScene.moleculeLayerId)
+          || null;
+        sourceScene.activeLayerId = replacement ? replacement.id : null;
+      }
+      renumberCubeLayerLabels(sourceScene);
+    }
+    insertCubeLayerBlock(destinationScene, moving, insertIndex);
+    return moving;
+  }
+
+  function validateCrossSceneLayerMove(layers, sourceScene, options = {}) {
+    const selectedIds = new Set((Array.isArray(layers) ? layers : []).map((layer) => layer && layer.id).filter(Boolean));
+    for (const layer of Array.isArray(layers) ? layers : []) {
+      if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) continue;
+      for (const input of Array.isArray(layer.inputs) ? layer.inputs : []) {
+        const inputLayer = sceneGraphController.getLayerById(input && input.layerId);
+        if (inputLayer && !selectedIds.has(inputLayer.id)) {
+          return {
+            ok: false,
+            error: `Cannot move ${getLayerDisplayName(layer)}: its input ${getLayerDisplayName(inputLayer)} is not in the selection.`,
+          };
+        }
+      }
+    }
+    if (!options.copyMode && sourceScene) {
+      for (const dependent of getCubeLayersInScene(sourceScene)) {
+        if (!(dependent && dependent.kind === SCENE_LAYER_KIND.ARITHMETIC) || selectedIds.has(dependent.id)) continue;
+        for (const input of Array.isArray(dependent.inputs) ? dependent.inputs : []) {
+          const inputId = String(input && input.layerId || '');
+          if (!selectedIds.has(inputId)) continue;
+          const inputLayer = sceneGraphController.getLayerById(inputId);
+          return {
+            ok: false,
+            error: `Cannot move ${getLayerDisplayName(inputLayer)}: ${getLayerDisplayName(dependent)} depends on it.`,
+          };
+        }
+      }
+    }
+    return { ok: true, error: '' };
+  }
+
+  function getOutlinerDragLayers() {
+    if (!(outlinerDragState && Array.isArray(outlinerDragState.layerIds))) return [];
+    return outlinerDragState.layerIds
+      .map((id) => sceneGraphController.getLayerById(id))
+      .filter(isCubeLikeLayer);
+  }
+
+  function getOrderedDragLayersForStart(layer) {
+    if (!isCubeLikeLayer(layer)) return [];
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (!scene) return [layer];
+    if (!isCubeLayerSelected(layer)) return [layer];
+    const selected = new Set(getSelectedCubeLayerIds());
+    return getCubeLayersInScene(scene).filter((candidate) => selected.has(candidate.id));
+  }
+
+  function isOutlinerDragInteractiveTarget(event) {
+    const target = event && event.target;
+    return !!(target && typeof target.closest === 'function' && target.closest(
+      '.vm-outliner-row__eye, .vm-outliner-row__twisty, .vm-outliner-row__rename-input, button, input, select, textarea, a, [role="button"]'
+    ));
+  }
+
+  function ensureOutlinerDropIndicator() {
+    if (outlinerDropIndicatorEl) return outlinerDropIndicatorEl;
+    const indicator = document.createElement('div');
+    indicator.className = 'vm-outliner-drop-indicator';
+    indicator.hidden = true;
+    document.body.appendChild(indicator);
+    outlinerDropIndicatorEl = indicator;
+    return indicator;
+  }
+
+  function hideOutlinerDropIndicator() {
+    if (outlinerDropIndicatorEl) outlinerDropIndicatorEl.hidden = true;
+  }
+
+  function setOutlinerMergeHighlight(row, copyMode) {
+    if (outlinerDragHighlightedRow && outlinerDragHighlightedRow !== row) {
+      outlinerDragHighlightedRow.classList.remove('is-drag-merge-target', 'is-copy-target');
+    }
+    outlinerDragHighlightedRow = row || null;
+    if (row) {
+      row.classList.add('is-drag-merge-target');
+      row.classList.toggle('is-copy-target', !!copyMode);
+    }
+  }
+
+  function clearOutlinerDropFeedback() {
+    hideOutlinerDropIndicator();
+    setOutlinerMergeHighlight(null, false);
+  }
+
+  function clearOutlinerDragVisuals() {
+    clearOutlinerDropFeedback();
+    if (sceneOutlinerBodyEl) {
+      for (const row of sceneOutlinerBodyEl.querySelectorAll('.vm-outliner-row.is-dragging')) {
+        row.classList.remove('is-dragging');
+      }
+    }
+    if (outlinerDragImageEl && outlinerDragImageEl.parentNode) {
+      outlinerDragImageEl.parentNode.removeChild(outlinerDragImageEl);
+    }
+    outlinerDragImageEl = null;
+  }
+
+  function showOutlinerDropIndicator(row, before, copyMode) {
+    if (!row) return;
+    const indicator = ensureOutlinerDropIndicator();
+    const rect = row.getBoundingClientRect();
+    indicator.hidden = false;
+    indicator.classList.toggle('is-copy', !!copyMode);
+    indicator.style.left = `${Math.max(0, rect.left + 4)}px`;
+    indicator.style.top = `${Math.max(0, before ? rect.top : rect.bottom)}px`;
+    indicator.style.width = `${Math.max(12, rect.width - 8)}px`;
+  }
+
+  function createOutlinerDragImage(layers) {
+    const ghost = document.createElement('div');
+    ghost.className = 'vm-outliner-drag-ghost';
+    const first = layers && layers[0];
+    ghost.textContent = first ? getLayerFullDisplayName(first) : 'Layer';
+    if (layers.length > 1) {
+      const badge = document.createElement('span');
+      badge.className = 'vm-outliner-drag-ghost__badge';
+      badge.textContent = `+${layers.length - 1}`;
+      ghost.appendChild(badge);
+    }
+    document.body.appendChild(ghost);
+    outlinerDragImageEl = ghost;
+    return ghost;
+  }
+
+  function getOutlinerDropCandidate(target, row, event) {
+    if (!outlinerDragState) return { kind: 'invalid', valid: false };
+    const sourceScene = sceneGraphController.findScene(outlinerDragState.sourceSceneId);
+    const layers = getOutlinerDragLayers();
+    if (!(sourceScene && layers.length && target)) return { kind: 'invalid', valid: false };
+    if (target.type === 'scene') {
+      const destinationScene = target.scene;
+      if (!destinationScene || destinationScene.id === sourceScene.id) {
+        return { kind: 'noop', valid: false, scene: destinationScene || null };
+      }
+      const sourceVol = getSceneMoleculeVolume(sourceScene);
+      const destinationVol = getSceneMoleculeVolume(destinationScene);
+      if (!moleculeMatchesVolume(sourceVol, destinationVol)) {
+        return {
+          kind: 'merge',
+          valid: false,
+          scene: destinationScene,
+          error: 'Cannot merge: molecules don\'t match',
+        };
+      }
+      const arithmeticCheck = validateCrossSceneLayerMove(layers, sourceScene, { copyMode: !!(event && event.shiftKey) });
+      if (!arithmeticCheck.ok) {
+        return {
+          kind: 'merge',
+          valid: false,
+          scene: destinationScene,
+          error: arithmeticCheck.error,
+        };
+      }
+      return {
+        kind: 'merge',
+        valid: true,
+        scene: destinationScene,
+        index: getCubeLayersInScene(destinationScene).length,
+      };
+    }
+    if (target.layer && isCubeLikeLayer(target.layer)) {
+      const destinationScene = target.scene || sceneGraphController.getSceneForLayer(target.layer);
+      if (!(destinationScene && destinationScene.id === sourceScene.id)) return { kind: 'invalid', valid: false };
+      const cubeLayers = getCubeLayersInScene(destinationScene);
+      const rowIndex = cubeLayers.findIndex((layer) => layer.id === target.layer.id);
+      if (rowIndex < 0) return { kind: 'invalid', valid: false };
+      const rect = row && row.getBoundingClientRect ? row.getBoundingClientRect() : { top: 0, height: 1 };
+      const before = Number(event && event.clientY) < rect.top + rect.height / 2;
+      return {
+        kind: 'reorder',
+        valid: true,
+        scene: destinationScene,
+        index: before ? rowIndex : rowIndex + 1,
+        before,
+      };
+    }
+    return { kind: 'invalid', valid: false };
+  }
+
+  function adjustReorderIndexForMove(scene, layers, index) {
+    const movingIds = new Set((Array.isArray(layers) ? layers : []).map((layer) => layer.id));
+    let adjusted = Math.max(0, Number(index) || 0);
+    getCubeLayersInScene(scene).forEach((layer, layerIndex) => {
+      if (movingIds.has(layer.id) && layerIndex < index) adjusted -= 1;
+    });
+    return Math.max(0, adjusted);
+  }
+
+  function finishOutlinerDragDrop(candidate, event) {
+    const sourceScene = sceneGraphController.findScene(outlinerDragState && outlinerDragState.sourceSceneId);
+    const layers = getOutlinerDragLayers();
+    if (!(sourceScene && layers.length && candidate && candidate.valid)) return false;
+    const copyMode = !!(event && event.shiftKey);
+    const destinationScene = candidate.scene || sourceScene;
+    const destinationWasSingle = getVisibleCubeLayerCount(destinationScene) <= 1;
+    let nextLayers = [];
+    if (copyMode) {
+      nextLayers = duplicateLayerBlockToScene(layers, destinationScene, candidate.index);
+    } else if (candidate.kind === 'reorder') {
+      nextLayers = moveLayerBlockToScene(layers, sourceScene, destinationScene, adjustReorderIndexForMove(destinationScene, layers, candidate.index));
+    } else if (candidate.kind === 'merge') {
+      nextLayers = moveLayerBlockToScene(layers, sourceScene, destinationScene, candidate.index);
+    }
+    if (!nextLayers.length) return false;
+    const active = nextLayers[0];
+    focusScene(destinationScene);
+    setActiveSceneGraphLayer(active.id, {
+      forceSingleCubeVisibility: destinationWasSingle,
+      rebuild: false,
+      rebind: false,
+      selection: 'replace',
+    });
+    flashOutlinerLayer(active.id);
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncLoadedSceneControls();
+    syncTrajectoryControls();
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    const verb = copyMode ? 'Copied' : (candidate.kind === 'merge' ? 'Moved' : 'Reordered');
+    setHintMessage(`${verb} ${nextLayers.length === 1 ? getLayerDisplayName(active) : `${nextLayers.length} layers`}.`);
+    return true;
+  }
+
+  function handleOutlinerDragStart(target, row, event) {
+    if (outlinerRenameState || !(target && isCubeLikeLayer(target.layer)) || isOutlinerDragInteractiveTarget(event)) {
+      event.preventDefault();
+      return;
+    }
+    const scene = sceneGraphController.getSceneForLayer(target.layer);
+    if (!scene) {
+      event.preventDefault();
+      return;
+    }
+    closeCubeLayerContextMenu();
+    const layers = getOrderedDragLayersForStart(target.layer);
+    if (!layers.length) {
+      event.preventDefault();
+      return;
+    }
+    outlinerDragState = {
+      sourceSceneId: scene.id,
+      layerIds: layers.map((layer) => layer.id),
+      primaryLayerId: target.layer.id,
+    };
+    row.classList.add('is-dragging');
+    event.dataTransfer.effectAllowed = 'copyMove';
+    event.dataTransfer.setData('text/plain', layers.map(getLayerFullDisplayName).join(', '));
+    const ghost = createOutlinerDragImage(layers);
+    if (event.dataTransfer.setDragImage) event.dataTransfer.setDragImage(ghost, 12, 12);
+  }
+
+  function handleOutlinerDragOver(target, row, event) {
+    if (!outlinerDragState) return;
+    event.stopPropagation();
+    const candidate = getOutlinerDropCandidate(target, row, event);
+    const copyMode = !!event.shiftKey;
+    clearOutlinerDropFeedback();
+    if (candidate.kind === 'reorder' && candidate.valid) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = copyMode ? 'copy' : 'move';
+      showOutlinerDropIndicator(row, candidate.before, copyMode);
+      return;
+    }
+    if (candidate.kind === 'merge') {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = candidate.valid ? (copyMode ? 'copy' : 'move') : 'none';
+      if (candidate.valid) setOutlinerMergeHighlight(row, copyMode);
+      return;
+    }
+    event.dataTransfer.dropEffect = 'none';
+  }
+
+  function handleOutlinerDrop(target, row, event) {
+    if (!outlinerDragState) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const candidate = getOutlinerDropCandidate(target, row, event);
+    if (candidate.valid) {
+      finishOutlinerDragDrop(candidate, event);
+    } else if (candidate.error) {
+      setHintMessage(candidate.error);
+    }
+    outlinerDragState = null;
+    clearOutlinerDragVisuals();
+  }
+
+  function handleOutlinerDragEnd() {
+    outlinerDragState = null;
+    clearOutlinerDragVisuals();
+  }
+
   function flashOutlinerLayer(layerId) {
     outlinerFlashLayerId = layerId || null;
     if (outlinerFlashTimer) window.clearTimeout(outlinerFlashTimer);
@@ -11215,9 +11673,18 @@
     row.classList.toggle('is-group', !!options.expandable);
     row.classList.toggle('is-flashing', !!(options.layer && options.layer.id === outlinerFlashLayerId));
     row.classList.toggle('is-invalid', !!(options.layer && options.layer.kind === SCENE_LAYER_KIND.ARITHMETIC && options.layer.cubeDataValid === false));
+    if (!renaming && options.layer && isCubeLikeLayer(options.layer)) {
+      row.draggable = true;
+      row.setAttribute('aria-grabbed', 'false');
+      row.addEventListener('dragstart', (event) => handleOutlinerDragStart(target, row, event));
+      row.addEventListener('dragend', handleOutlinerDragEnd);
+    }
+    row.addEventListener('dragover', (event) => handleOutlinerDragOver(target, row, event));
+    row.addEventListener('drop', (event) => handleOutlinerDrop(target, row, event));
 
     const twisty = document.createElement('span');
     twisty.className = 'vm-outliner-row__twisty material-symbols-rounded';
+    twisty.draggable = false;
     twisty.textContent = options.expandable ? (options.expanded ? 'expand_more' : 'chevron_right') : '';
     twisty.classList.toggle('is-leaf', !options.expandable);
     if (options.expandable) {
@@ -11233,6 +11700,7 @@
 
     const eye = document.createElement('span');
     eye.className = 'vm-outliner-row__eye material-symbols-rounded';
+    eye.draggable = false;
     eye.classList.toggle('is-off', !options.visible);
     eye.textContent = options.visible ? 'visibility' : 'visibility_off';
     eye.setAttribute('role', 'button');
@@ -11259,6 +11727,7 @@
 
     const icon = document.createElement('span');
     icon.className = 'vm-outliner-row__icon';
+    icon.draggable = false;
     if (options.layer && options.layer.kind === SCENE_LAYER_KIND.CUBE) {
       icon.classList.add('vm-outliner-row__cube-dot');
       const colors = getLayerSurfaceColors(options.layer);
@@ -11283,6 +11752,7 @@
       const input = document.createElement('input');
       input.type = 'text';
       input.className = 'vm-outliner-row__rename-input';
+      input.draggable = false;
       input.value = outlinerRenameState ? outlinerRenameState.originalName : (options.label || 'Untitled');
       input.setAttribute('aria-label', 'Rename');
       input.addEventListener('click', (event) => event.stopPropagation());
@@ -11413,6 +11883,18 @@
       const target = event.target;
       if (target && typeof target.closest === 'function' && target.closest('.vm-outliner-row')) return;
       clearOutlinerSelectionToActive();
+    });
+    sceneOutlinerBodyEl.addEventListener('dragover', (event) => {
+      if (!outlinerDragState) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'none';
+      clearOutlinerDropFeedback();
+    });
+    sceneOutlinerBodyEl.addEventListener('drop', (event) => {
+      if (!outlinerDragState) return;
+      event.preventDefault();
+      outlinerDragState = null;
+      clearOutlinerDragVisuals();
     });
   }
 

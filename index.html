@@ -2280,6 +2280,24 @@
       color: var(--vm-color-text-primary);
     }
 
+    #toolbar .vm-outliner-row[draggable="true"] {
+      cursor: grab;
+    }
+
+    #toolbar .vm-outliner-row.is-dragging {
+      opacity: 0.55;
+    }
+
+    #toolbar .vm-outliner-row.is-drag-merge-target {
+      background: color-mix(in srgb, var(--vm-color-accent) 16%, transparent);
+      outline: 1px solid color-mix(in srgb, var(--vm-color-accent) 60%, transparent);
+      outline-offset: -1px;
+    }
+
+    #toolbar .vm-outliner-row.is-drag-merge-target.is-copy-target {
+      outline-style: dashed;
+    }
+
     #toolbar .vm-outliner-row.is-selected {
       background: color-mix(in srgb, var(--vm-color-accent) 9%, transparent);
       box-shadow: inset 2px 0 0 color-mix(in srgb, var(--vm-color-accent) 38%, transparent);
@@ -2408,6 +2426,58 @@
       font-size: 10px;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
+    }
+
+    .vm-outliner-drop-indicator {
+      position: fixed;
+      z-index: 10080;
+      height: 2px;
+      border-radius: 999px;
+      background: var(--vm-color-accent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--vm-color-accent) 18%, transparent);
+      pointer-events: none;
+    }
+
+    .vm-outliner-drop-indicator.is-copy {
+      height: 0;
+      border-top: 2px dashed var(--vm-color-accent);
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .vm-outliner-drag-ghost {
+      position: fixed;
+      left: -10000px;
+      top: -10000px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 260px;
+      padding: 6px 9px;
+      border: 1px solid color-mix(in srgb, var(--vm-color-accent) 40%, var(--vm-color-border));
+      border-radius: 6px;
+      background: var(--vm-color-surface-panel);
+      color: var(--vm-color-text-primary);
+      box-shadow: var(--vm-shadow-popover, 0 8px 24px rgba(15, 23, 42, 0.16));
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0.92;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .vm-outliner-drag-ghost__badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: var(--vm-color-accent);
+      color: var(--vm-color-accent-contrast, #fff);
+      font-size: 10px;
+      font-weight: 700;
     }
 
     :root[data-vm-scene-empty='true'] #toolbar .tb-appearance {
