@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7p';
+  const APP_VERSION = '0.8.7q';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -5979,14 +5979,7 @@
 
   function setTrajectoryMiniButtonGlyph(btn, glyph) {
     if (!btn) return;
-    const symbol = glyph === 'play_arrow'
-      ? '▶'
-      : glyph === 'pause'
-        ? '⏸'
-        : glyph === 'replay'
-          ? '⟲'
-          : String(glyph || '');
-    setElementTextPreservingNode(btn, symbol);
+    setElementTextPreservingNode(btn, String(glyph || ''));
   }
 
   function getTrajectoryInfoKey(info) {
