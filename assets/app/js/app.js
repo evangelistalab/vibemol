@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7q';
+  const APP_VERSION = '0.8.7r';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -9965,6 +9965,36 @@
     return hidden;
   }
 
+  function sanitizeRecordLayerSessionState(state) {
+    const source = state && typeof state === 'object' ? state : {};
+    const out = {};
+    const keys = [
+      'visible',
+      'expanded',
+      'iso',
+      'autoIso',
+      'autoIsoEnabled',
+      'opacity',
+      'surfaceStyle',
+      'solidPreset',
+      'colorScheme',
+      'posColor',
+      'negColor',
+      'renderMode',
+      'cloudType',
+      'cloudStride',
+      'cloudAlpha',
+      'signFlip',
+      'labelId',
+      'name',
+      'moldenMoIndex',
+    ];
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) out[key] = source[key];
+    }
+    return out;
+  }
+
   function isTrajectoryVolumeRecord(vol) {
     const frames = vol && vol.trajectory && vol.trajectory.frames;
     return Array.isArray(frames) && frames.length > 1;
@@ -10043,7 +10073,9 @@
           labelId: layer.labelId,
           name: layer.name,
           record: layer.record || null,
-          cubeData: layer.cubeData || null,
+          cubeData: (layer.kind === SCENE_LAYER_KIND.ARITHMETIC || layer.isSceneGraphDuplicate)
+            ? (layer.cubeData || null)
+            : null,
           moldenMoIndex: Number.isInteger(layer.moldenMoIndex) ? layer.moldenMoIndex : null,
           isSceneGraphDuplicate: !!layer.isSceneGraphDuplicate,
           operation: layer.operation || null,
@@ -10281,7 +10313,7 @@
           visible: preserved.visible == null ? defaultVisible : preserved.visible,
           expanded: preserved.expanded == null ? true : preserved.expanded,
         }), defaults);
-        record._sceneGraphLayerState = preserved;
+        record._sceneGraphLayerState = sanitizeRecordLayerSessionState(preserved);
       }
       for (const moldenRecord of moldenRecords) {
         const materializedIndices = getMoldenMaterializedOrbitalIndices(moldenRecord);
@@ -10614,7 +10646,23 @@
 
   function getLayerCubeData(layer) {
     if (!layer) return null;
+    if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC) return layer.cubeData || null;
+    if (layer.kind === SCENE_LAYER_KIND.CUBE) {
+      if (layer.isSceneGraphDuplicate && layer.cubeData) return layer.cubeData;
+      return (layer.record && layer.record.vol) || layer.cubeData || null;
+    }
     return layer.cubeData || (layer.record && layer.record.vol) || null;
+  }
+
+  function clearLayerRenderRefs(layer) {
+    if (!layer || typeof layer !== 'object') return;
+    layer.group = null;
+    layer.posMesh = null;
+    layer.negMesh = null;
+    layer.cloudGroup = null;
+    layer.geometry = null;
+    layer.posMaterial = null;
+    layer.negMaterial = null;
   }
 
   function createVolumeIndexFunction(nxyz) {
@@ -28966,7 +29014,7 @@
     syncColorPickerFields();
     updateAutoIsoButtonState();
     updateSurfBtn();
-    syncAppearanceInspectorSectionState(layer.cubeData || (layer.record && layer.record.vol) || null);
+    syncAppearanceInspectorSectionState(getLayerCubeData(layer));
     syncSurfaceMixedIndicators();
   }
 
@@ -29294,7 +29342,7 @@
     getActiveStyle: () => moleculeStyle,
     getCurrentVolume: () => {
       const layer = getActiveCubeLayer();
-      return layer ? (layer.cubeData || (layer.record && layer.record.vol) || null) : null;
+      return getLayerCubeData(layer);
     },
     getRenderMode: () => getLayerRenderMode(),
     hasSurfaceControls: (vol) => !!(getActiveCubeLayer() && hasVolumetricGrid(vol)),
@@ -34194,8 +34242,8 @@
         sceneId: layer.sceneId,
       });
       if (Number.isInteger(layer.moldenMoIndex)) mesh.userData.moldenMoIndex = layer.moldenMoIndex;
-      if (!layer.posMesh && mesh.userData.sign === 'pos') layer.posMesh = mesh;
-      if (!layer.negMesh && mesh.userData.sign === 'neg') layer.negMesh = mesh;
+      if (mesh.userData.sign === 'pos') layer.posMesh = mesh;
+      if (mesh.userData.sign === 'neg') layer.negMesh = mesh;
     }
     contentGroup.add(mesh);
     meshes.push(mesh);
@@ -34716,7 +34764,8 @@
       for (const layer of cubeLayers) {
         if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC && layer.cubeDataValid === false) continue;
         const record = layer.record || null;
-        const vol = (layer.cubeData || (record && record.vol)) || null;
+        clearLayerRenderRefs(layer);
+        const vol = getLayerCubeData(layer);
         if (record && vol && vol.kind === 'molden' && Number.isInteger(layer.moldenMoIndex)) {
           record.moldenMoIndex = layer.moldenMoIndex;
         }
