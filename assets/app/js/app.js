@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7r';
+  const APP_VERSION = '0.8.7s';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -1306,6 +1306,8 @@
   let sceneGraphSceneKeyCounter = 1;
   let outlinerFlashLayerId = null;
   let outlinerFlashTimer = 0;
+  let outlinerScrollTargetId = null;
+  let outlinerScrollRaf = 0;
   let outlinerRenameState = null;
   let outlinerAddFileInputEl = null;
   let outlinerAddTargetSceneKey = '';
@@ -1313,6 +1315,7 @@
   let outlinerDropIndicatorEl = null;
   let outlinerDragImageEl = null;
   let outlinerDragHighlightedRow = null;
+  let userDismissedTrajectoryPopover = false;
   let cubeLayerContextMenuEl = null;
   let cubeLayerContextMenuLayerId = null;
   let cubeLayerContextMenuPoint = null;
@@ -6376,6 +6379,7 @@
     if (trajectoryRow2) trajectoryRow2.style.display = 'none';
     if (trajectoryBondModeNote) trajectoryBondModeNote.style.display = hasAnyTrajectory ? 'block' : 'none';
     if (!hasAnyTrajectory) {
+      userDismissedTrajectoryPopover = false;
       setTrajectoryPanelOpen(false, {
         syncUi: false,
         restoreTrajectoryVideoState: false,
@@ -11228,6 +11232,50 @@
     outlinerDragImageEl = null;
   }
 
+  function findOutlinerRowById(id) {
+    const targetId = String(id || '');
+    if (!sceneOutlinerBodyEl || !targetId) return null;
+    return Array.from(sceneOutlinerBodyEl.querySelectorAll('.vm-outliner-row'))
+      .find((row) => row && row.dataset && row.dataset.id === targetId) || null;
+  }
+
+  function scrollOutlinerTargetIntoView(id) {
+    const row = findOutlinerRowById(id);
+    if (!row) return false;
+    row.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest',
+    });
+    return true;
+  }
+
+  function scheduleOutlinerScrollToTarget(id) {
+    outlinerScrollTargetId = id || null;
+    if (!outlinerScrollTargetId || outlinerScrollRaf) return;
+    outlinerScrollRaf = window.requestAnimationFrame(() => {
+      outlinerScrollRaf = window.requestAnimationFrame(() => {
+        const targetId = outlinerScrollTargetId;
+        outlinerScrollRaf = 0;
+        outlinerScrollTargetId = null;
+        if (targetId) scrollOutlinerTargetIntoView(targetId);
+      });
+    });
+  }
+
+  function expandOutlinerPathForLayer(layer) {
+    if (!layer) return;
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (scene) scene.expanded = true;
+    let parentId = layer.parentId || '';
+    while (parentId) {
+      const parent = sceneGraphController.getLayerById(parentId);
+      if (!parent) break;
+      parent.expanded = true;
+      parentId = parent.parentId || '';
+    }
+  }
+
   function showOutlinerDropIndicator(row, before, copyMode) {
     if (!row) return;
     const indicator = ensureOutlinerDropIndicator();
@@ -11339,6 +11387,9 @@
     focusScene(destinationScene);
     setActiveSceneGraphLayer(active.id, {
       forceSingleCubeVisibility: destinationWasSingle,
+      ensureSceneVisible: true,
+      ensureLayerVisible: true,
+      expandPath: true,
       rebuild: false,
       rebind: false,
       selection: 'replace',
@@ -11422,8 +11473,9 @@
     clearOutlinerDragVisuals();
   }
 
-  function flashOutlinerLayer(layerId) {
+  function flashOutlinerLayer(layerId, options = {}) {
     outlinerFlashLayerId = layerId || null;
+    if (options.scroll !== false) scheduleOutlinerScrollToTarget(layerId);
     if (outlinerFlashTimer) window.clearTimeout(outlinerFlashTimer);
     outlinerFlashTimer = window.setTimeout(() => {
       outlinerFlashTimer = 0;
@@ -11475,6 +11527,9 @@
       if (options.flash !== false) flashOutlinerLayer(newLayer.id);
       setActiveSceneGraphLayer(newLayer.id, {
         forceSingleCubeVisibility: wasSingleCubeMode,
+        ensureSceneVisible: true,
+        ensureLayerVisible: true,
+        expandPath: true,
         rebuild: false,
         rebind: false,
         selection: options.selection || 'replace',
@@ -11508,10 +11563,13 @@
       if (duplicate) duplicates.push(duplicate);
     }
     if (!duplicates.length) return null;
-    const active = duplicates[duplicates.length - 1];
+    const active = duplicates[0];
     flashOutlinerLayer(active.id);
     setActiveSceneGraphLayer(active.id, {
       forceSingleCubeVisibility: wasSingleCubeMode,
+      ensureSceneVisible: true,
+      ensureLayerVisible: true,
+      expandPath: true,
       rebuild: false,
       rebind: false,
       selection: 'preserve',
@@ -11654,7 +11712,13 @@
     const previousActiveId = previousLayer && previousLayer.id;
     const layer = sceneGraphController.setActiveLayer(layerId);
     if (!layer) return null;
+    if (scene && options.ensureSceneVisible) scene.visible = true;
+    if (options.expandPath) expandOutlinerPathForLayer(layer);
     if (scene) focusScene(scene);
+    if (isCubeLikeLayer(layer) && options.ensureLayerVisible) {
+      layer.visible = true;
+      persistActiveCubeLayerState(layer, { render: false });
+    }
     if (isCubeLikeLayer(layer) && (singleCubeMode || options.forceSingleCubeVisibility)) {
       setOnlyCubeVisibleInScene(scene, layer);
     }
@@ -11691,7 +11755,26 @@
       }
     }
     renderSceneOutliner();
+    if (options.scroll) scheduleOutlinerScrollToTarget(layer.id);
     return layer;
+  }
+
+  function revealFocusedOutlinerTarget(options = {}) {
+    const activeLayer = sceneGraphController.getActiveLayer();
+    if (activeLayer) {
+      expandOutlinerPathForLayer(activeLayer);
+      if (options.render !== false) renderSceneOutliner();
+      scheduleOutlinerScrollToTarget(activeLayer.id);
+      return activeLayer.id;
+    }
+    const focusedScene = getFocusedScene();
+    if (focusedScene) {
+      focusedScene.expanded = true;
+      if (options.render !== false) renderSceneOutliner();
+      scheduleOutlinerScrollToTarget(focusedScene.id);
+      return focusedScene.id;
+    }
+    return '';
   }
 
   function formatOutlinerAtomCount(vol) {
@@ -12551,6 +12634,9 @@
     flashOutlinerLayer(newLayer.id);
     setActiveSceneGraphLayer(newLayer.id, {
       forceSingleCubeVisibility: wasSingleCubeMode,
+      ensureSceneVisible: true,
+      ensureLayerVisible: true,
+      expandPath: true,
       rebuild: false,
       rebind: false,
       selection: 'replace',
@@ -14787,6 +14873,12 @@
    */
   function setTrajectoryPanelOpen(open, options = {}) {
     const shouldOpen = !!open;
+    if (shouldOpen && options.auto && userDismissedTrajectoryPopover && !isFloatingPanelCurrentlyOpen(trajectoryPanel)) {
+      if (options.syncUi !== false) syncTrajectoryControls();
+      updateDisplayWindowAdaptiveMenuUi();
+      return;
+    }
+    if (shouldOpen && !options.auto) userDismissedTrajectoryPopover = false;
     if (shouldOpen && options.exclusive !== false) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL);
     if (!shouldOpen) {
       if (trajectoryVideoController) {
@@ -14844,6 +14936,7 @@
     trajectoryPanelClose.onclick = (e) => {
       if (e && e.preventDefault) e.preventDefault();
       if (e && e.stopPropagation) e.stopPropagation();
+      userDismissedTrajectoryPopover = true;
       setTrajectoryPanelOpen(false);
     };
   }
@@ -32916,6 +33009,7 @@
     let activeIndex = -1;
     let loadedCount = 0;
     let loadedVolumetricCount = 0;
+    const loadedTrajectoryCount = items.filter((item) => isTrajectoryVolumeRecord(item.vol)).length;
     let lastSceneKey = '';
     const attachedPayloads = [];
     for (const group of groups) {
@@ -32927,7 +33021,16 @@
       if (!sceneKey) sceneKey = allocateVolumeSceneKey(group.items[0] && group.items[0].name ? group.items[0].name : 'scene');
       lastSceneKey = sceneKey;
       const groupHasCube = group.items.some((item) => hasVolumetricGrid(item.vol));
-      if (groupHasCube) {
+      const existingScene = findSceneBySceneKey(sceneKey);
+      const sceneWasSingleCubeMode = !existingScene || getVisibleCubeLayerCount(existingScene) <= 1;
+      if (existingScene) existingScene.visible = true;
+      if (groupHasCube && sceneWasSingleCubeMode) {
+        if (existingScene) {
+          for (const cube of getCubeLayersInScene(existingScene)) {
+            cube.visible = false;
+            persistActiveCubeLayerState(cube, { render: false });
+          }
+        }
         for (const record of volumes) {
           if (!record || record._sceneGraphSceneKey !== sceneKey || !hasVolumetricGrid(record.vol)) continue;
           record._sceneGraphLayerState = Object.assign({}, record._sceneGraphLayerState || {}, { visible: false });
@@ -32961,23 +33064,21 @@
         }
         loadedCount += 1;
         appendedAny = true;
+        if (groupActiveIndex < 0) groupActiveIndex = recordIndex;
         if (isCube) {
           loadedVolumetricCount += 1;
-          if (firstCubeInGroup) groupActiveIndex = recordIndex;
           firstCubeInGroup = false;
-        } else if (groupActiveIndex < 0) {
-          groupActiveIndex = recordIndex;
         }
       }
       if (!appendedAny && matchedExisting) {
         const existingIndex = volumes.findIndex((record) => record && record._sceneGraphSceneKey === sceneKey);
         if (existingIndex >= 0) groupActiveIndex = existingIndex;
       }
-      if (groupActiveIndex >= 0) activeIndex = groupActiveIndex;
+      if (groupActiveIndex >= 0 && activeIndex < 0) activeIndex = groupActiveIndex;
     }
 
     if (activeIndex < 0 && lastSceneKey) {
-      for (let i = volumes.length - 1; i >= 0; i -= 1) {
+      for (let i = 0; i < volumes.length; i += 1) {
         const record = volumes[i];
         if (!record || record._sceneGraphSceneKey !== lastSceneKey) continue;
         if (hasVolumetricGrid(record.vol)) {
@@ -32995,6 +33096,7 @@
         skipAutoIso: !!options.skipAutoIsoOnInitialRebuild,
         preserveView: volumes.length > loadedCount,
       });
+      revealFocusedOutlinerTarget();
     } else {
       syncSceneGraphFromVolumes({ preserveLayerState: true });
       const focused = lastSceneKey
@@ -33002,6 +33104,7 @@
         : null;
       if (focused) focusScene(focused);
       rebuildScene({ preserveView: true, syncGraph: false });
+      revealFocusedOutlinerTarget();
     }
     for (const payload of attachedPayloads) {
       const result = attachVibrationPayloadToBestVolume(payload.name, payload.payload, {
@@ -33009,6 +33112,9 @@
         sourceStem: payload.sourceStem,
       });
       if (!result.ok) setHintMessage(result.error || `Could not attach ${payload.name}.`);
+    }
+    if (loadedTrajectoryCount > 0) {
+      setTrajectoryPanelOpen(true, { auto: true });
     }
     if (loadedCount > 0) {
       setNavigationHint(loadedCount === 1 ? 'Loaded 1 file into scenes' : `Loaded ${loadedCount} files into scenes`);

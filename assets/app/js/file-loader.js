@@ -416,7 +416,7 @@
           resetIsoToDefault: loadedVolumetricCount > 0,
           skipAutoIsoOnInitialRebuild: loadedVolumetricCount > 0,
         });
-        if (deps.getActiveTrajectoryInfo().enabled) deps.setTrajectoryPanelOpen(true);
+        if (deps.getActiveTrajectoryInfo().enabled) deps.setTrajectoryPanelOpen(true, { auto: true });
       } else {
         deps.updateEmptyStateVisibility();
       }
