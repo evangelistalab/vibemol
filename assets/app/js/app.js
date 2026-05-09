@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7m';
+  const APP_VERSION = '0.8.7n';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -18,6 +18,9 @@
   const AUTO_ISO_TARGET_FRACTION = 0.85;
   const AUTO_ISO_HISTOGRAM_BINS = 512;
   const AUTO_ISO_MAX_SAMPLES = 650000;
+  function isCubeDebugLoggingEnabled() {
+    return !!(typeof window !== 'undefined' && window.VIBEMOL_DEBUG_CUBE);
+  }
   const AUTO_ISO_WORKER_THRESHOLD_SAMPLES = 250000;
   const AUTO_ISO_WORKER_TIMEOUT_MS = 15000;
   const MOLDEN_GRID_PADDING_ANG = 3.0;
@@ -6238,7 +6241,7 @@
     trajectoryPlaying = focusedPlaying;
     trajectoryLastStepMs = traj ? Number(traj._lastStepMs) || 0 : 0;
     setMotionPanelButtonGlyph(trajectoryPlayBtn, focusedPlaying ? 'pause' : 'play_arrow');
-    if (trajectoryPlayBtn) trajectoryPlayBtn.disabled = !info.enabled;
+    if (trajectoryPlayBtn) trajectoryPlayBtn.disabled = !info.enabled || !!(traj && traj.syncEnabled);
     if (trajectoryResetBtn) trajectoryResetBtn.disabled = !info.enabled || !!(traj && traj.syncEnabled);
     if (trajectoryLoopEl && info.enabled) trajectoryLoopEl.checked = !!traj.loop;
     if (trajectoryFpsEl && info.enabled && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
@@ -9779,6 +9782,7 @@
     for (const scene of sceneGraphController.getScenes()) {
       const sceneKey = scene && scene.sceneKey ? scene.sceneKey : scene && scene.id ? scene.id : '';
       const sceneState = {
+        name: String(scene.name || ''),
         visible: scene.visible !== false,
         expanded: scene.expanded !== false,
         molecule: null,
@@ -9916,6 +9920,21 @@
     return 'molecule';
   }
 
+  function getInitialSceneDisplayName(sceneRecords, options = {}) {
+    const trajectoryRecord = options.trajectoryRecord || null;
+    if (trajectoryRecord && trajectoryRecord.name) return String(trajectoryRecord.name);
+    const cubeRecords = (Array.isArray(sceneRecords) ? sceneRecords : []).filter((record) => record && hasVolumetricGrid(record.vol));
+    if (cubeRecords.length > 1) {
+      const firstCubeName = cubeRecords
+        .map((record) => String(record && record.name || '').trim())
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))[0];
+      if (firstCubeName) return firstCubeName;
+    }
+    const primary = options.moleculeRecord || options.baseRecord || sceneRecords && sceneRecords[0] || null;
+    return String(primary && primary.name || 'Untitled scene');
+  }
+
   function getActiveTrajectoryInfoForRecord(record) {
     if (!record || !record.vol) return { enabled: false };
     const frames = record.vol.trajectory && record.vol.trajectory.frames;
@@ -9968,11 +9987,18 @@
         ? baseRecord
         : (sceneRecords.find((record) => record && record.vol && Array.isArray(record.vol.atoms) && record.vol.atoms.length) || baseRecord);
       const baseVol = moleculeRecord && moleculeRecord.vol;
+      const cubeRecords = sceneRecords.filter((record) => record && hasVolumetricGrid(record.vol));
+      const moldenRecords = sceneRecords.filter((record) => record && record.vol && record.vol.kind === 'molden');
       const trajectoryRecord = sceneRecords.find((record) => getActiveTrajectoryInfoForRecord(record).enabled) || null;
       const trajectoryInfo = getActiveTrajectoryInfoForRecord(trajectoryRecord || moleculeRecord);
       const sceneState = (graphState.scenesByKey && graphState.scenesByKey.get(group.key)) || {};
+      const displayName = String(sceneState.name || getInitialSceneDisplayName(sceneRecords, {
+        moleculeRecord,
+        baseRecord,
+        trajectoryRecord,
+      }));
       const scene = sceneGraphController.createScene({
-        name: String(moleculeRecord && moleculeRecord.name || baseRecord && baseRecord.name || 'Untitled scene'),
+        name: displayName,
         sourceFile: {
           name: String(moleculeRecord && moleculeRecord.name || baseRecord && baseRecord.name || 'Untitled scene'),
           kind: getVolumeSourceKind(moleculeRecord || baseRecord),
@@ -9995,8 +10021,6 @@
         expanded: sceneState.molecule && sceneState.molecule.expanded != null ? sceneState.molecule.expanded : true,
       });
 
-      const cubeRecords = sceneRecords.filter((record) => record && hasVolumetricGrid(record.vol));
-      const moldenRecords = sceneRecords.filter((record) => record && record.vol && record.vol.kind === 'molden');
       if (cubeRecords.length || moldenRecords.length) {
         const groupState = (sceneState.groups && sceneState.groups.get(SCENE_LAYER_KIND.ORBITALS_GROUP)) || {};
         sceneGraphController.ensureOrbitalsGroup(scene, {
@@ -10952,8 +10976,13 @@
 
   function formatOutlinerMetaForScene(scene) {
     if (!scene) return '';
-    if (scene.kind === 'trajectory' && scene.meta && scene.meta.frameCount) {
-      return `${scene.meta.frameCount} frames`;
+    if (scene.kind === 'trajectory') {
+      const info = getTrajectoryInfoForScene(scene);
+      const frameCount = Number(info && info.frameCount)
+        || Number(scene.meta && scene.meta.frameCount)
+        || Number(scene.trajectory && scene.trajectory.frames && scene.trajectory.frames.length)
+        || 0;
+      if (frameCount > 0) return `${frameCount} frames`;
     }
     const molecule = sceneGraphController.getLayerById(scene.moleculeLayerId);
     if (molecule && molecule.record) return formatOutlinerAtomCount(molecule.record.vol);
@@ -30988,14 +31017,14 @@
   function clearPlaceholderVolumesForUserLoad() {
     let changed = false;
     if (volumes.length === 1 && volumes[0].name === 'Demo Water') {
-      console.log('[CUBE] Replacing demo with loaded data.');
+      if (isCubeDebugLoggingEnabled()) console.log('[CUBE] Replacing demo with loaded data.');
       volumes = [];
       currentIndex = -1;
       clearSceneMeshes();
       changed = true;
     }
     if (volumes.some(v => v.isSample)) {
-      console.log('[CUBE] Removing sample.cube from list before adding user data.');
+      if (isCubeDebugLoggingEnabled()) console.log('[CUBE] Removing sample.cube from list before adding user data.');
       volumes = volumes.filter(v => !v.isSample);
       currentIndex = -1;
       clearSceneMeshes();
@@ -33934,7 +33963,7 @@
       contentGroup.add(nextBoxHelper);
       if (asActive) boxHelper = nextBoxHelper;
       else extraBoxHelpers.push(nextBoxHelper);
-      console.log('[CUBE] Box helper added');
+      if (isCubeDebugLoggingEnabled()) console.log('[CUBE] Box helper added');
     }
   }
 

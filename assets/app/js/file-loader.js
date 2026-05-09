@@ -3,6 +3,9 @@
 
   function createFileLoader(deps) {
     const fetchImpl = deps.fetchImpl || (typeof fetch === 'function' ? fetch.bind(global) : null);
+    function isCubeDebugLoggingEnabled() {
+      return !!(global && global.VIBEMOL_DEBUG_CUBE);
+    }
 
     function normalizeFileStem(name) {
       const raw = String(name || '').trim();
@@ -73,6 +76,7 @@
       }
       deps.getVolumes().push(meta);
       if (vol && vol.isoHint != null && deps.getIsoInputValue() === '') deps.setIsoInputValue(String(vol.isoHint));
+      if (!isCubeDebugLoggingEnabled()) return;
       if (vol && vol.kind === 'molden') {
         console.log('[MOLDEN] Loaded', name, {
           title: vol.title,
@@ -586,11 +590,13 @@
         if (vol.isoHint != null && (deps.getIsoInputValue() === '' || deps.getVolumes().length === 1)) {
           deps.setIsoInputValue(String(vol.isoHint));
         }
-        try {
-          const stats = deps.arrayMinMax(vol.data);
-          console.log('[CUBE] Loaded sample.cube', { title: vol.title, nxyz: vol.nxyz, origin: vol.origin, axes: vol.axes, natoms: vol.natoms, isoHint: vol.isoHint, min: stats.min, max: stats.max });
-        } catch (err) {
-          console.warn('[CUBE] Stats failed for sample.cube', err);
+        if (isCubeDebugLoggingEnabled()) {
+          try {
+            const stats = deps.arrayMinMax(vol.data);
+            console.log('[CUBE] Loaded sample.cube', { title: vol.title, nxyz: vol.nxyz, origin: vol.origin, axes: vol.axes, natoms: vol.natoms, isoHint: vol.isoHint, min: stats.min, max: stats.max });
+          } catch (err) {
+            console.warn('[CUBE] Stats failed for sample.cube', err);
+          }
         }
         deps.activateVolumeIndex(0);
         deps.setNavigationHint('Loaded sample.cube', { includeStyles: true });
