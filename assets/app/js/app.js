@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7s';
+  const APP_VERSION = '0.8.7t';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -11276,6 +11276,22 @@
     }
   }
 
+  function showOnlySceneGraphScene(sceneOrId) {
+    const focusedScene = typeof sceneOrId === 'string'
+      ? sceneGraphController.findScene(sceneOrId)
+      : sceneOrId;
+    if (!focusedScene) return false;
+    let changed = false;
+    for (const scene of sceneGraphController.getScenes()) {
+      const nextVisible = scene && scene.id === focusedScene.id;
+      if ((scene.visible !== false) !== nextVisible) {
+        scene.visible = nextVisible;
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
   function showOutlinerDropIndicator(row, before, copyMode) {
     if (!row) return;
     const indicator = ensureOutlinerDropIndicator();
@@ -11384,12 +11400,14 @@
     }
     if (!nextLayers.length) return false;
     const active = nextLayers[0];
+    const shouldSoloDestination = copyMode || candidate.kind === 'merge';
     focusScene(destinationScene);
     setActiveSceneGraphLayer(active.id, {
       forceSingleCubeVisibility: destinationWasSingle,
       ensureSceneVisible: true,
       ensureLayerVisible: true,
       expandPath: true,
+      soloScene: shouldSoloDestination,
       rebuild: false,
       rebind: false,
       selection: 'replace',
@@ -11530,6 +11548,7 @@
         ensureSceneVisible: true,
         ensureLayerVisible: true,
         expandPath: true,
+        soloScene: true,
         rebuild: false,
         rebind: false,
         selection: options.selection || 'replace',
@@ -11570,6 +11589,7 @@
       ensureSceneVisible: true,
       ensureLayerVisible: true,
       expandPath: true,
+      soloScene: true,
       rebuild: false,
       rebind: false,
       selection: 'preserve',
@@ -11715,6 +11735,7 @@
     if (scene && options.ensureSceneVisible) scene.visible = true;
     if (options.expandPath) expandOutlinerPathForLayer(layer);
     if (scene) focusScene(scene);
+    if (scene && options.soloScene) showOnlySceneGraphScene(scene);
     if (isCubeLikeLayer(layer) && options.ensureLayerVisible) {
       layer.visible = true;
       persistActiveCubeLayerState(layer, { render: false });
@@ -11760,9 +11781,13 @@
   }
 
   function revealFocusedOutlinerTarget(options = {}) {
+    let visibilityChanged = false;
     const activeLayer = sceneGraphController.getActiveLayer();
     if (activeLayer) {
       expandOutlinerPathForLayer(activeLayer);
+      const scene = sceneGraphController.getSceneForLayer(activeLayer);
+      if (options.soloScene && scene) visibilityChanged = showOnlySceneGraphScene(scene);
+      if (visibilityChanged && options.rebuild) rebuildScene({ preserveView: true, syncGraph: false });
       if (options.render !== false) renderSceneOutliner();
       scheduleOutlinerScrollToTarget(activeLayer.id);
       return activeLayer.id;
@@ -11770,6 +11795,8 @@
     const focusedScene = getFocusedScene();
     if (focusedScene) {
       focusedScene.expanded = true;
+      if (options.soloScene) visibilityChanged = showOnlySceneGraphScene(focusedScene);
+      if (visibilityChanged && options.rebuild) rebuildScene({ preserveView: true, syncGraph: false });
       if (options.render !== false) renderSceneOutliner();
       scheduleOutlinerScrollToTarget(focusedScene.id);
       return focusedScene.id;
@@ -12637,6 +12664,7 @@
       ensureSceneVisible: true,
       ensureLayerVisible: true,
       expandPath: true,
+      soloScene: true,
       rebuild: false,
       rebind: false,
       selection: 'replace',
@@ -33096,7 +33124,7 @@
         skipAutoIso: !!options.skipAutoIsoOnInitialRebuild,
         preserveView: volumes.length > loadedCount,
       });
-      revealFocusedOutlinerTarget();
+      revealFocusedOutlinerTarget({ soloScene: true, rebuild: true });
     } else {
       syncSceneGraphFromVolumes({ preserveLayerState: true });
       const focused = lastSceneKey
@@ -33104,7 +33132,7 @@
         : null;
       if (focused) focusScene(focused);
       rebuildScene({ preserveView: true, syncGraph: false });
-      revealFocusedOutlinerTarget();
+      revealFocusedOutlinerTarget({ soloScene: true, rebuild: true });
     }
     for (const payload of attachedPayloads) {
       const result = attachVibrationPayloadToBestVolume(payload.name, payload.payload, {

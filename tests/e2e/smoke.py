@@ -2175,10 +2175,12 @@ def main() -> int:
                     const methaneCubes = cubes.filter((row) => /canonical_|localized_/.test(row.label));
                     return scenes.length === 2
                       && scenes[0].label === 'sample.cube'
+                      && scenes[0].hidden === true
                       && scenes[1].label === 'canonical_1.cube'
+                      && scenes[1].hidden === false
                       && cubes.length === 9
                       && cubes[0].label === 'L0sample.cube'
-                      && cubes[0].hidden === false
+                      && cubes[0].hidden === true
                       && methaneCubes.length === 8
                       && methaneCubes[0].label === 'L0canonical_1.cube'
                       && methaneCubes[0].active === true
@@ -2221,11 +2223,13 @@ def main() -> int:
                     const cubes = rows.filter((row) => /^L\\d+/.test(row.label));
                     return scenes.length === 2
                       && scenes[0].label === 'sample.cube'
+                      && scenes[0].hidden === true
                       && scenes[1].label === 'canonical_1.cube'
+                      && scenes[1].hidden === false
                       && cubes.length === 2
                       && cubes[0].label === 'L0sample.cube'
                       && cubes[1].label === 'L0canonical_1.cube'
-                      && cubes[0].hidden === false
+                      && cubes[0].hidden === true
                       && cubes[1].active === true
                       && cubes[1].hidden === false;
                 }"""
