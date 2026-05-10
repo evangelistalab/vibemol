@@ -1049,12 +1049,11 @@ def start_new_edit_file(page) -> None:
             return menu?.getAttribute('aria-hidden') === 'false'
               && menu?.dataset.mode === 'edit'
               && !!scene
-              && scene.visible === false
+              && scene.visible === true
               && layers.some((layer) => layer.kind === 'molecule' && layer.name === 'Molecule')
               && layers.some((layer) => layer.kind === 'orbitals_group');
         }"""
     )
-    set_focused_scene_visible(page, True)
 
 
 def build_bare_carbon(page) -> None:

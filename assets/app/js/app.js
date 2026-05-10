@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7u';
+  const APP_VERSION = '0.8.7v';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -16292,10 +16292,9 @@
     const scene = findSceneBySceneKey(record._sceneGraphSceneKey) || getFocusedScene();
     if (!scene) return null;
     scene.name = name;
-    scene.visible = false;
     scene.expanded = true;
     for (const otherScene of sceneGraphController.getScenes()) {
-      otherScene.visible = false;
+      otherScene.visible = otherScene && otherScene.id === scene.id;
     }
     const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
     if (moleculeLayer) {
