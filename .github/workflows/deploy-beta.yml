@@ -14,9 +14,18 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Verify secret is set
+        run: |
+          if [ -z "${{ secrets.BETA_DEPLOY_TOKEN }}" ]; then
+            echo "BETA_DEPLOY_TOKEN is empty"
+            exit 1
+          fi
+          echo "BETA_DEPLOY_TOKEN is set (length: ${#BETA}, starts with: ${BETA:0:7})"
+        env:
+          BETA: ${{ secrets.BETA_DEPLOY_TOKEN }}
       - name: Push to vibemol-beta
         run: |
           git config user.name "vibemol-bot"
           git config user.email "bot@users.noreply.github.com"
-          git remote add beta-target https://x-access-token:${{ secrets.BETA_DEPLOY_TOKEN }}@github.com/fevangelista/vibemol-beta.git
+          git remote add beta-target https://x-access-token:${{ secrets.BETA_DEPLOY_TOKEN }}@github.com/evangelistalab/vibemol-beta.git
           git push beta-target HEAD:main --force
