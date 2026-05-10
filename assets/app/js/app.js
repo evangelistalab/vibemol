@@ -3,6 +3,8 @@
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
   const APP_VERSION = '0.8.7';
+  const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
+  window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -7064,7 +7066,10 @@
   applyFontPair(getFontPair());
   if (versionText) versionText.textContent = APP_VERSION;
   const toolbarVersion = document.getElementById('toolbarVersion');
-  if (toolbarVersion) toolbarVersion.textContent = `v${APP_VERSION}`;
+  const toolbarDisplayVersion = VIBEMOL_CHANNEL === 'beta' ? `v${APP_VERSION}-beta` : `v${APP_VERSION}`;
+  if (toolbarVersion) toolbarVersion.textContent = toolbarDisplayVersion;
+  const toolbarChannelBadge = document.getElementById('toolbarChannelBadge');
+  if (toolbarChannelBadge && VIBEMOL_CHANNEL === 'beta') toolbarChannelBadge.classList.add('is-visible');
   const emptyStateVersion = document.getElementById('emptyStateVersion');
   if (emptyStateVersion) emptyStateVersion.textContent = `v${APP_VERSION}`;
   const coordsContent = document.getElementById('coordsContent');
