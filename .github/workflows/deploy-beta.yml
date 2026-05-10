@@ -14,18 +14,21 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify secret is set
+
+      - name: Push to vibemol-beta (without workflows)
         run: |
-          if [ -z "${{ secrets.BETA_DEPLOY_TOKEN }}" ]; then
-            echo "BETA_DEPLOY_TOKEN is empty"
-            exit 1
-          fi
-          echo "BETA_DEPLOY_TOKEN is set (length: ${#BETA}, starts with: ${BETA:0:7})"
-        env:
-          BETA: ${{ secrets.BETA_DEPLOY_TOKEN }}
-      - name: Push to vibemol-beta
-        run: |
+          # Stage a clean tree without .github/workflows
+          rm -rf .github/workflows
+          # If .github is now empty, remove it too (cosmetic)
+          rmdir .github 2>/dev/null || true
+
           git config user.name "vibemol-bot"
           git config user.email "bot@users.noreply.github.com"
+
+          # Build a fresh single-commit history so the mirror stays small
+          git checkout --orphan deploy
+          git add -A
+          git commit -m "Deploy from beta @ ${GITHUB_SHA::7}"
+
           git remote add beta-target https://x-access-token:${{ secrets.BETA_DEPLOY_TOKEN }}@github.com/evangelistalab/vibemol-beta.git
-          git push beta-target HEAD:main --force
+          git push beta-target deploy:main --force
