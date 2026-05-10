@@ -1,0 +1,22 @@
+name: Deploy beta
+
+on:
+  push:
+    branches: [beta]
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to vibemol-beta
+        run: |
+          git config user.name "vibemol-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git remote add beta-target https://x-access-token:${{ secrets.BETA_DEPLOY_TOKEN }}@github.com/evangelistalab/vibemol-beta.git
+          git push beta-target HEAD:main --force
