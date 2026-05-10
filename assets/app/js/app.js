@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7t';
+  const APP_VERSION = '0.8.7u';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -9798,9 +9798,8 @@
   openBtn.onclick = triggerOpenFiles;
   if (newFileBtn) {
     newFileBtn.onclick = () => {
-      const record = createNewEditableVolumeRecord();
-      rebuildScene({ preserveView: true });
-      setHintMessage(`Created ${record.name}.`);
+      const scene = createNewMoleculeScene();
+      if (scene) setHintMessage(`Created ${scene.name || 'New molecule'}.`);
     };
   }
 
@@ -10280,7 +10279,11 @@
         expanded: sceneState.molecule && sceneState.molecule.expanded != null ? sceneState.molecule.expanded : true,
       });
 
-      if (cubeRecords.length || moldenRecords.length) {
+      const wantsOrbitalsGroup = cubeRecords.length
+        || moldenRecords.length
+        || sceneRecords.some((record) => record && record._sceneGraphHasOrbitalsGroup)
+        || !!(sceneState.groups && sceneState.groups.has(SCENE_LAYER_KIND.ORBITALS_GROUP));
+      if (wantsOrbitalsGroup) {
         const groupState = (sceneState.groups && sceneState.groups.get(SCENE_LAYER_KIND.ORBITALS_GROUP)) || {};
         sceneGraphController.ensureOrbitalsGroup(scene, {
           visible: groupState.visible == null ? true : groupState.visible,
@@ -14177,7 +14180,7 @@
    * This keeps surface visibility and interaction state consistent across mode changes.
    * @param {string} newMode
    */
-  function setMode(newMode) {
+  function setMode(newMode, options = {}) {
     if (currentMode === newMode) {
       updateModeButtons();
       return;
@@ -14195,7 +14198,7 @@
     endQuaternionViewRotate();
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
-    if (currentMode === MODES.EDIT && isAnyTrajectoryPlaybackActive()) {
+    if (currentMode === MODES.EDIT && !options.preserveTrajectoryPlayback && isAnyTrajectoryPlaybackActive()) {
       stopAllTrajectoryPlayback({ syncUi: true });
     }
     if (currentMode === MODES.EDIT) {
@@ -16253,9 +16256,63 @@
     const record = editState.createNewEditableVolumeRecord(options);
     if (record) {
       record._sceneGraphSceneKey = allocateVolumeSceneKey(record.name || 'untitled');
+      if (options.ensureOrbitalsGroup) record._sceneGraphHasOrbitalsGroup = true;
       syncSceneGraphFromVolumes({ preserveLayerState: true, preferActiveRecord: true });
     }
     return record;
+  }
+
+  function getNextNewMoleculeName() {
+    const used = new Set();
+    for (const scene of sceneGraphController.getScenes()) {
+      const name = String(scene && scene.name || '').trim().toLowerCase();
+      if (name) used.add(name);
+    }
+    for (const record of Array.isArray(volumes) ? volumes : []) {
+      const name = String(record && record.name || '').trim().toLowerCase();
+      if (name) used.add(name);
+    }
+    const base = 'New molecule';
+    if (!used.has(base.toLowerCase())) return base;
+    let index = 2;
+    while (used.has(`${base} (${index})`.toLowerCase())) index += 1;
+    return `${base} (${index})`;
+  }
+
+  function createNewMoleculeScene() {
+    if (outlinerRenameState) finishOutlinerRename({ commit: true });
+    closeCubeLayerContextMenu();
+    closeCombinePopover();
+    const name = getNextNewMoleculeName();
+    const record = createNewEditableVolumeRecord({
+      name,
+      ensureOrbitalsGroup: true,
+    });
+    if (!record) return null;
+    const scene = findSceneBySceneKey(record._sceneGraphSceneKey) || getFocusedScene();
+    if (!scene) return null;
+    scene.name = name;
+    scene.visible = false;
+    scene.expanded = true;
+    for (const otherScene of sceneGraphController.getScenes()) {
+      otherScene.visible = false;
+    }
+    const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+    if (moleculeLayer) {
+      sceneGraphController.setActiveLayer(moleculeLayer.id);
+      sceneGraphController.clearSelection();
+    } else {
+      focusScene(scene);
+    }
+    sceneGraphController.ensureOrbitalsGroup(scene, { visible: true, expanded: true });
+    focusScene(scene);
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncLoadedSceneControls();
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    scheduleOutlinerScrollToTarget(scene.id);
+    setMode(MODES.EDIT, { preserveTrajectoryPlayback: true });
+    return scene;
   }
 
   /**

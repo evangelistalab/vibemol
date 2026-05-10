@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import pathlib
 import sys
@@ -541,7 +542,77 @@ def canvas_point(page, fx: float = 0.62, fy: float = 0.56) -> tuple[float, float
     return (box['x'] + box['width'] * fx, box['y'] + box['height'] * fy)
 
 
+def get_projected_active_bond(page) -> dict[str, Any] | None:
+    result = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.projectActiveAtomToClient !== 'function') return null;
+            const exported = window.VibeMolStructure?.exportActive?.();
+            const atoms = Array.isArray(exported?.volume?.atoms) ? exported.volume.atoms : [];
+            const bonds = Array.isArray(exported?.volume?.bonds) ? exported.volume.bonds : [];
+            const idToIndex = new Map();
+            atoms.forEach((atom, index) => {
+                const id = String(atom?.id || '');
+                if (id) idToIndex.set(id, index);
+            });
+            function resolveAtomIndex(value) {
+                if (Number.isInteger(value) && value >= 0 && value < atoms.length) return value;
+                const numeric = Number(value);
+                if (Number.isInteger(numeric) && numeric >= 0 && numeric < atoms.length) return numeric;
+                return idToIndex.has(String(value || '')) ? idToIndex.get(String(value || '')) : -1;
+            }
+            const bond = bonds.find((candidate) => candidate && String(candidate.kind || 'normal') !== 'blocked') || null;
+            if (!bond) return null;
+            const aIndex = resolveAtomIndex(bond.a ?? bond.i ?? bond.atomA ?? bond.from);
+            const bIndex = resolveAtomIndex(bond.b ?? bond.j ?? bond.atomB ?? bond.to);
+            if (aIndex < 0 || bIndex < 0) return null;
+            const a = window.VibeMolTesting.projectActiveAtomToClient(aIndex);
+            const b = window.VibeMolTesting.projectActiveAtomToClient(bIndex);
+            if (!a || !b || !a.visible || !b.visible) return null;
+            return {
+                a: { x: Number(a.x) || 0, y: Number(a.y) || 0 },
+                b: { x: Number(b.x) || 0, y: Number(b.y) || 0 },
+            };
+        }"""
+    )
+    return result if isinstance(result, dict) else None
+
+
+def build_projected_bond_candidates(page, fractions: list[float]) -> list[tuple[float, float]]:
+    projected = get_projected_active_bond(page)
+    candidates: list[tuple[float, float]] = []
+    if isinstance(projected, dict) and isinstance(projected.get('a'), dict) and isinstance(projected.get('b'), dict):
+        ax = float(projected['a']['x'])
+        ay = float(projected['a']['y'])
+        bx = float(projected['b']['x'])
+        by = float(projected['b']['y'])
+        dx = bx - ax
+        dy = by - ay
+        length = max(1.0, math.hypot(dx, dy))
+        nx = -dy / length
+        ny = dx / length
+        offsets = (0.0, 6.0, -6.0, 12.0, -12.0, 20.0, -20.0, 30.0, -30.0, 42.0, -42.0, 56.0, -56.0)
+        for t in fractions:
+            px = ax + dx * t
+            py = ay + dy * t
+            for off in offsets:
+                candidates.append((px + nx * off, py + ny * off))
+    return candidates
+
+
 def find_bond_midpoint_canvas_point(page) -> tuple[float, float]:
+    direct_candidates = build_projected_bond_candidates(page, [0.50, 0.44, 0.56, 0.38, 0.62, 0.34, 0.66])
+    for x, y in direct_candidates:
+        page.mouse.move(x, y)
+        page.wait_for_timeout(60)
+        hit = page.evaluate(
+            """(payload) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+                return window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+            }""",
+            {'x': x, 'y': y},
+        )
+        if isinstance(hit, dict) and str(hit.get('bondSection', '')).strip().lower() == 'center':
+            return x, y
     candidates = [
         (0.50, 0.50),
         (0.48, 0.50), (0.52, 0.50),
@@ -570,6 +641,24 @@ def find_bond_midpoint_canvas_point(page) -> tuple[float, float]:
 
 def find_bond_side_canvas_point(page, side: str | None = None) -> tuple[float, float]:
     desired = str(side or '').strip().lower()
+    direct_candidates = build_projected_bond_candidates(page, [0.18, 0.82, 0.24, 0.76, 0.30, 0.70])
+    for x, y in direct_candidates:
+        page.mouse.move(x, y)
+        page.wait_for_timeout(60)
+        probe = page.evaluate(
+            """(payload) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+                const hit = window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+                return hit && hit.bondSection ? String(hit.bondSection) : '';
+            }""",
+            {'x': x, 'y': y},
+        )
+        section = str(probe or '').strip().lower()
+        if not section or section == 'center':
+            continue
+        if desired and section != desired:
+            continue
+        return x, y
     candidates = [
         (0.44, 0.50), (0.56, 0.50),
         (0.46, 0.50), (0.54, 0.50),
@@ -913,10 +1002,59 @@ def click_when_ready(page, selector: str, timeout: int = 30000) -> None:
     page.locator(selector).click()
 
 
+def set_focused_scene_visible(page, visible: bool) -> None:
+    ok = page.evaluate(
+        """(visible) => {
+            const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+            const sceneId = String(snap?.focusedSceneId || '');
+            const scene = (snap?.scenes || []).find((item) => String(item.id || '') === sceneId);
+            if (!scene) return false;
+            if (!!scene.visible === !!visible) return true;
+            const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+              .find((candidate) => String(candidate.dataset.id || '') === sceneId);
+            const eye = row?.querySelector('.vm-outliner-row__eye');
+            if (!eye) return false;
+            eye.click();
+            return true;
+        }""",
+        visible,
+    )
+    if not ok:
+        raise AssertionError(f'Could not set focused scene visibility to {visible!r}')
+    page.wait_for_function(
+        """(visible) => {
+            const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+            const scene = (snap?.scenes || []).find((item) => String(item.id || '') === String(snap?.focusedSceneId || ''));
+            return !!scene && !!scene.visible === !!visible;
+        }""",
+        arg=visible,
+    )
+
+
 def start_new_edit_file(page) -> None:
+    page.wait_for_function(
+        """() => {
+            const button = document.getElementById('newFileBtn');
+            return button?.getAttribute('aria-label') === 'Create new molecule'
+              && button?.dataset.tooltip === 'Create new molecule';
+        }"""
+    )
     page.locator('#newFileBtn').click()
-    page.locator('#modeEditBtn').click()
-    page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+    page.wait_for_function(
+        """() => {
+            const menu = document.getElementById('displayWindowAdaptiveMenu');
+            const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+            const scene = (snap?.scenes || []).find((item) => String(item.id || '') === String(snap?.focusedSceneId || ''));
+            const layers = Array.isArray(scene?.layers) ? scene.layers : [];
+            return menu?.getAttribute('aria-hidden') === 'false'
+              && menu?.dataset.mode === 'edit'
+              && !!scene
+              && scene.visible === false
+              && layers.some((layer) => layer.kind === 'molecule' && layer.name === 'Molecule')
+              && layers.some((layer) => layer.kind === 'orbitals_group');
+        }"""
+    )
+    set_focused_scene_visible(page, True)
 
 
 def build_bare_carbon(page) -> None:
@@ -928,6 +1066,7 @@ def build_bare_carbon(page) -> None:
             return atoms.length === 1 && Number(atoms[0]?.Z) === 6;
         }"""
     )
+    set_focused_scene_visible(page, True)
 
 
 def build_methane(page) -> None:
@@ -941,6 +1080,7 @@ def build_methane(page) -> None:
             return atoms.length === 5 && hydrogens === 4 && carbons === 1;
         }"""
     )
+    set_focused_scene_visible(page, True)
 
 
 def arm_fragment_attach_cue(page, atom_index: int = 0) -> None:
@@ -3200,9 +3340,7 @@ def main() -> int:
                 raise AssertionError(f'Esc unexpectedly changed the placed atom identity: {after_add_atom} -> {after_add_escape}')
 
             log_step('grow-add can be followed immediately by atom selection')
-            page.locator('#newFileBtn').click()
-            page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+            start_new_edit_file(page)
             load_build_query(page, 'Carbon')
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             grow_x, grow_y = canvas_point(page, 0.56, 0.55)
@@ -3399,6 +3537,7 @@ def main() -> int:
             log_step('bond gesture smoke')
             dihedral_fixture_text = build_fixture_dihedral_structure()
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture")', dihedral_fixture_text)
+            set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
             side_x, side_y = find_bond_side_canvas_point(page)
@@ -3460,6 +3599,7 @@ def main() -> int:
             )
 
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture-distance")', dihedral_fixture_text)
+            set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
             side_x, side_y = find_bond_side_canvas_point(page)
@@ -3520,6 +3660,7 @@ def main() -> int:
             )
 
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture")', fixture_text)
+            set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
             for expected_order in (2, 3, 4, 3, 2, 1):
@@ -3538,6 +3679,7 @@ def main() -> int:
                 )
 
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture-selection")', fixture_text)
+            set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
             side_x, side_y = find_bond_side_canvas_point(page)
@@ -4268,9 +4410,7 @@ def main() -> int:
 
             # The Atoms menu drives automatic local hydrogen adjustment for isolated single-atom adds.
             log_step('new file edit smoke')
-            page.locator('#newFileBtn').click()
-            page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+            start_new_edit_file(page)
             load_build_query(page, 'Carbon')
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             set_select_value(page, '#editAddCoordination', 'linear')
@@ -4328,9 +4468,7 @@ def main() -> int:
                 raise AssertionError(f'Auto hydrogen adjustment did not follow the Atoms menu settings: {auto_adjust_summary}')
 
             log_step('fragment cue shows fragment ghost on undercoordinated atom')
-            page.locator('#newFileBtn').click()
-            page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+            start_new_edit_file(page)
             load_build_query(page, 'Fe')
             metal_x, metal_y = canvas_point(page, 0.52, 0.48)
             page.mouse.click(metal_x, metal_y)
@@ -4588,6 +4726,7 @@ def main() -> int:
             log_step('clicking a bond with a fusion-capable fragment enters fuse preview regardless of policy')
             start_new_edit_file(page)
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "fusion-bond-fixture")', build_fixture_structure())
+            set_focused_scene_visible(page, True)
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
