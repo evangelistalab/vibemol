@@ -2263,6 +2263,8 @@
       display: grid;
       gap: 1px;
       padding: 0;
+      min-width: 0;
+      overflow-x: hidden;
     }
 
     #toolbar .vm-outliner__empty {
@@ -2273,11 +2275,14 @@
 
     #toolbar .vm-outliner-row {
       display: grid;
-      grid-template-columns: 14px 20px 20px minmax(0, 1fr) max-content;
+      grid-template-columns: 14px 20px 20px minmax(0, 1fr) minmax(36px, max-content);
       align-items: center;
       gap: 6px;
       min-height: 30px;
       width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
       border: 0;
       border-radius: 5px;
       background: transparent;
@@ -2380,6 +2385,10 @@
       font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 20;
     }
 
+    #toolbar .vm-outliner-row__eye.is-inherited-hidden {
+      color: color-mix(in srgb, currentColor 72%, transparent);
+    }
+
     #toolbar .vm-outliner-row__cube-dot {
       width: 10px;
       height: 10px;
@@ -2433,6 +2442,9 @@
 
     #toolbar .vm-outliner-row__meta {
       min-width: 0;
+      max-width: 72px;
+      overflow: hidden;
+      text-overflow: ellipsis;
       color: var(--vm-color-text-secondary);
       font-family: var(--vm-font-mono);
       font-size: 10px;

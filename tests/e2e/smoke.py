@@ -1814,11 +1814,21 @@ def main() -> int:
                 }"""
             )
             page.locator('#clearBtn').click()
-            page.locator('#modeDisplayBtn').click()
             page.wait_for_function(
                 """() => {
                     const splash = document.getElementById('emptyState');
-                    return !!splash && !splash.classList.contains('hidden');
+                    const displayBtn = document.getElementById('modeDisplayBtn');
+                    const build = document.getElementById('editAdaptiveAddAtomPopover');
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const empty = document.querySelector('#sceneOutlinerBody .vm-outliner__empty');
+                    return !!splash
+                      && !splash.classList.contains('hidden')
+                      && displayBtn?.getAttribute('aria-pressed') === 'true'
+                      && build?.getAttribute('aria-hidden') === 'true'
+                      && Array.isArray(snap?.scenes)
+                      && snap.scenes.length === 0
+                      && !!empty
+                      && /No file loaded\\./.test(empty.textContent || '');
                 }"""
             )
 
@@ -2044,6 +2054,106 @@ def main() -> int:
                       }))
                       .filter((row) => /^L\\d+/.test(row.label));
                     return cubes[1].active === true && cubes[1].hidden === false && cubes.filter((row) => !row.hidden).length === 1;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L3\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    const rect = row?.getBoundingClientRect();
+                    if (!row || !rect) return;
+                    row.dispatchEvent(new MouseEvent('contextmenu', {
+                      bubbles: true,
+                      cancelable: true,
+                      button: 2,
+                      clientX: rect.left + 24,
+                      clientY: rect.top + 12,
+                    }));
+                }"""
+            )
+            page.wait_for_function("() => document.querySelector('.vm-outliner-context-menu[aria-hidden=\"false\"]')")
+            page.evaluate(
+                """() => {
+                    Array.from(document.querySelectorAll('.vm-outliner-context-menu__item'))
+                      .find((button) => (button.textContent || '').trim() === 'Duplicate')
+                      ?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const cubes = (snap?.scenes?.[0]?.layers || []).filter((layer) => layer.kind === 'cube');
+                    return cubes.length === 9 && cubes.some((cube) => cube.labelId === 'L8' && /copy/.test(cube.name || ''));
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L8\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.querySelector('.vm-outliner-row__label')?.dispatchEvent(new MouseEvent('dblclick', {
+                      bubbles: true,
+                      cancelable: true,
+                    }));
+                }"""
+            )
+            page.wait_for_selector('.vm-outliner-row__rename-input')
+            page.locator('.vm-outliner-row__rename-input').fill('canonical_4_duplicate_with_a_deliberately_long_name_for_outliner_overflow_testing.cube')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => {
+                    const body = document.getElementById('sceneOutlinerBody');
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L8\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    if (!body || !row) return false;
+                    const label = row.querySelector('.vm-outliner-row__label');
+                    return /overflow_testing\\.cube$/.test(label?.textContent || '')
+                      && body.scrollWidth <= body.clientWidth + 1;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const sceneRow = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => candidate.dataset.depth === '0');
+                    sceneRow?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const scene = snap?.scenes?.[0];
+                    const visibleCube = (scene?.layers || []).find((layer) => layer.kind === 'cube' && layer.visible === true);
+                    if (!scene || scene.visible !== false || !visibleCube || visibleCube.effectiveVisible !== false) return false;
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => String(candidate.dataset.id || '') === String(visibleCube.id || ''));
+                    const eye = row?.querySelector('.vm-outliner-row__eye');
+                    return !!row
+                      && row.classList.contains('is-hidden-inherited')
+                      && row.classList.contains('is-hidden')
+                      && eye?.classList.contains('is-inherited-hidden')
+                      && eye?.textContent === 'visibility_off'
+                      && eye?.getAttribute('aria-label') === 'Hidden by parent';
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const sceneRow = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => candidate.dataset.depth === '0');
+                    sceneRow?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const scene = snap?.scenes?.[0];
+                    const visibleCube = (scene?.layers || []).find((layer) => layer.kind === 'cube' && layer.visible === true);
+                    if (!scene || scene.visible !== true || !visibleCube || visibleCube.effectiveVisible !== true) return false;
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => String(candidate.dataset.id || '') === String(visibleCube.id || ''));
+                    const eye = row?.querySelector('.vm-outliner-row__eye');
+                    return !!row
+                      && !row.classList.contains('is-hidden-inherited')
+                      && eye?.textContent === 'visibility'
+                      && eye?.getAttribute('aria-label') === 'Hide';
                 }"""
             )
             page.locator('#clearBtn').click()

@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7v';
+  const APP_VERSION = '0.8.7w';
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit 4=Glossy';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
@@ -12039,6 +12039,7 @@
   function buildOutlinerRow(options = {}) {
     const target = getOutlinerRowTarget(options);
     const renaming = isOutlinerTargetBeingRenamed(target);
+    const inheritedHidden = !!(options.visible && options.effectiveVisible === false);
     const row = document.createElement('div');
     row.className = 'vm-outliner-row';
     row.dataset.id = options.id || '';
@@ -12050,6 +12051,7 @@
     row.classList.toggle('is-active', !!options.active);
     row.classList.toggle('is-selected', !!options.selected);
     row.classList.toggle('is-hidden', !options.effectiveVisible);
+    row.classList.toggle('is-hidden-inherited', inheritedHidden);
     row.classList.toggle('is-group', !!options.expandable);
     row.classList.toggle('is-flashing', !!(options.layer && options.layer.id === outlinerFlashLayerId));
     row.classList.toggle('is-invalid', !!(options.layer && options.layer.kind === SCENE_LAYER_KIND.ARITHMETIC && options.layer.cubeDataValid === false));
@@ -12081,10 +12083,13 @@
     const eye = document.createElement('span');
     eye.className = 'vm-outliner-row__eye material-symbols-rounded';
     eye.draggable = false;
-    eye.classList.toggle('is-off', !options.visible);
-    eye.textContent = options.visible ? 'visibility' : 'visibility_off';
+    eye.classList.toggle('is-off', !options.visible || inheritedHidden);
+    eye.classList.toggle('is-inherited-hidden', inheritedHidden);
+    eye.textContent = options.visible && !inheritedHidden ? 'visibility' : 'visibility_off';
     eye.setAttribute('role', 'button');
-    eye.setAttribute('aria-label', options.visible ? 'Hide' : 'Show');
+    const eyeLabel = inheritedHidden ? 'Hidden by parent' : (options.visible ? 'Hide' : 'Show');
+    eye.setAttribute('aria-label', eyeLabel);
+    eye.setAttribute('data-tooltip', eyeLabel);
     eye.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -30617,6 +30622,7 @@
           labelId: String(layer.labelId || ''),
           name: String(layer.name || ''),
           visible: layer.visible !== false,
+          effectiveVisible: sceneGraphController.isLayerEffectivelyVisible(layer),
           iso: Number(layer.iso),
           autoIso: getLayerAutoIsoEnabled(layer),
           opacity: Number(layer.opacity),
@@ -33885,6 +33891,16 @@
     return fileLoaderController.clearAllLoadedFiles(options);
   }
 
+  function handleClearAllLoadedFilesClick() {
+    if (outlinerRenameState) finishOutlinerRename({ commit: true });
+    closeCubeLayerContextMenu();
+    closeCombinePopover();
+    closeEditModeTransientPopovers();
+    clearAllLoadedFiles();
+    if (currentMode !== MODES.DISPLAY) setMode(MODES.DISPLAY);
+    else updateEmptyStateVisibility();
+  }
+
   /**
    * Load files passed from embedded/iframe integrations.
    * @param {Array<{name:string,text?:string,base64?:string,mimeType?:string}>} files
@@ -33927,7 +33943,7 @@
   });
 
   // Clear all loaded files and return to startup state.
-  clearBtn.onclick = () => clearAllLoadedFiles();
+  clearBtn.onclick = () => handleClearAllLoadedFilesClick();
 
   // (subsample controls removed)
 
