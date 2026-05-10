@@ -18,5 +18,5 @@ jobs:
         run: |
           git config user.name "vibemol-bot"
           git config user.email "bot@users.noreply.github.com"
-          git remote add beta-target https://x-access-token:${{ secrets.BETA_DEPLOY_TOKEN }}@github.com/evangelistalab/vibemol-beta.git
+          git remote add beta-target https://x-access-token:${{ secrets.BETA_DEPLOY_TOKEN }}@github.com/fevangelista/vibemol-beta.git
           git push beta-target HEAD:main --force
