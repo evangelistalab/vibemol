@@ -9,6 +9,8 @@ function createEditToolsHarness() {
   const editToolsApi = context.window.VibeMolEditTools;
   const EDIT_INTENT = {
     ATOM_MANIPULATION: 'atom_manipulation',
+    ADD_ATOM: 'add_atom',
+    ADD_FRAGMENT: 'add_fragment',
     ADD_MOLECULE: 'add_molecule',
   };
   const EDIT_ADD_MODE = { ATOM: 'atom', FRAGMENT: 'fragment', MOLECULE: 'molecule' };
@@ -170,16 +172,22 @@ test('edit-tools intent transitions finalize atom sessions and derive add mode',
   assert.equal(calls.updateEditToolboxUi, 1);
   assert.match(calls.hintMessages.at(-1), /Build/);
 
+  controller.setEditAddMode(EDIT_ADD_MODE.ATOM);
+  assert.equal(state.editIntent, EDIT_INTENT.ADD_ATOM);
+  assert.equal(state.editAddMode, EDIT_ADD_MODE.ATOM);
+  assert.equal(calls.finalizeAddAtomOperatorSession, 1);
+  assert.match(calls.hintMessages.at(-1), /Build element/);
+
   state.addAtomOperatorSession = { id: 'session-2' };
   controller.setEditAddMode(EDIT_ADD_MODE.MOLECULE);
   assert.equal(state.editIntent, EDIT_INTENT.ADD_MOLECULE);
   assert.equal(state.editAddMode, EDIT_ADD_MODE.MOLECULE);
-  assert.equal(calls.finalizeAddAtomOperatorSession, 1);
+  assert.equal(calls.finalizeAddAtomOperatorSession, 2);
   assert.equal(calls.clearAddGrowPreview >= 1, true);
   assert.equal(calls.refreshActiveAddGrowPreview >= 1, true);
 });
 
-test('edit-tools fragment attach stays in atom manipulation and emits a dedicated hint', () => {
+test('edit-tools fragment add mode owns fragment intent and emits a dedicated hint', () => {
   const { controller, state, calls, EDIT_INTENT, EDIT_ADD_MODE } = createEditToolsHarness();
 
   controller.setEditIntent(EDIT_INTENT.ATOM_MANIPULATION);
@@ -187,9 +195,10 @@ test('edit-tools fragment attach stays in atom manipulation and emits a dedicate
   assert.match(calls.hintMessages.at(-1), /Build/);
 
   controller.setEditAddMode(EDIT_ADD_MODE.FRAGMENT);
-  assert.equal(state.editIntent, EDIT_INTENT.ATOM_MANIPULATION);
+  assert.equal(state.editIntent, EDIT_INTENT.ADD_FRAGMENT);
   assert.equal(state.editAddMode, EDIT_ADD_MODE.FRAGMENT);
-  assert.match(calls.hintMessages.at(-1), /Fragment attach/);
+  assert.match(calls.hintMessages.at(-1), /Build fragment/);
+  assert.equal(calls.clearAddGrowPreview, 0);
 });
 
 test('edit-tools leaving atom manipulation clears transform transient state', () => {
@@ -206,7 +215,7 @@ test('edit-tools leaving atom manipulation clears current atom, transform, and b
   calls.transformSelectionActive = true;
   calls.pendingBondIndex = 1;
 
-  controller.setEditIntent(EDIT_INTENT.ADD_MOLECULE);
+  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
 
   assert.deepEqual(plain(controller.getEditAtomSelection()), []);
   assert.equal(calls.clearTransformSelection, 1);
@@ -221,7 +230,7 @@ test('edit-tools can preserve atom selection when leaving atom manipulation inte
   calls.transformSelectionActive = true;
   calls.pendingBondIndex = 1;
 
-  controller.setEditIntent(EDIT_INTENT.ADD_MOLECULE, { preserveSelection: true });
+  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT, { preserveSelection: true });
 
   assert.deepEqual(plain(controller.getEditAtomSelection()), [0, 2]);
   assert.equal(calls.clearTransformSelection, 1);

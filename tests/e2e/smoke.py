@@ -3500,22 +3500,15 @@ def main() -> int:
             )
             page.locator('#editAddQuick button[data-z="11"]').click()
             page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
-            )
-            page.wait_for_function(
                 """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const sodium = document.querySelector('#editAddQuick button[data-z="11"]');
-                    const carbon = document.querySelector('#editAddQuick button[data-z="6"]');
-                    return search
-                      && search.value === 'N'
-                      && sodium
-                      && sodium.hidden === false
-                      && sodium.classList.contains('active')
-                      && (!carbon || carbon.hidden === true);
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_atom'
+                      && state.elementZ === 11
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
-            page.keyboard.press('/')
+            ensure_build_popover_open(page, focus_search=True)
             page.wait_for_function(
                 """() => {
                     const popover = document.getElementById('editAdaptiveAddAtomPopover');
@@ -3543,22 +3536,14 @@ def main() -> int:
             page.locator('#editAddQuick button[data-z="59"]').click()
             page.wait_for_function(
                 """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const pr = document.querySelector('#editAddQuick button[data-z="59"]');
-                    const pm = document.querySelector('#editAddQuick button[data-z="61"]');
-                    const pa = document.querySelector('#editAddQuick button[data-z="91"]');
-                    return search
-                      && search.value === 'Pr'
-                      && pr
-                      && pr.hidden === false
-                      && pr.classList.contains('active')
-                      && pm
-                      && pm.hidden === false
-                      && pa
-                      && pa.hidden === false
-                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false';
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_atom'
+                      && state.elementZ === 59
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
+            ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('ph')
             page.wait_for_function(
                 """() => {
@@ -3570,24 +3555,71 @@ def main() -> int:
                 }"""
             )
 
+            # Build kind transition regression: atom -> fragment updates intent, hint, and cursor ghost.
+            page.evaluate(
+                """() => {
+                    if (typeof window.VibeMolTesting?.setEditSelectionIndices === 'function') {
+                        window.VibeMolTesting.setEditSelectionIndices([]);
+                    }
+                }"""
+            )
+            page.wait_for_function("""() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0""")
+            page.locator('#editBuildSearch').fill('F')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_atom'
+                      && state.elementZ === 9
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'
+                      && /Build element: Fluorine \\(F\\)/.test(state.hint || '');
+                }"""
+            )
+            x, y = find_empty_edit_canvas_point(page)
+            page.mouse.move(x + 6, y + 6)
+            page.mouse.move(x, y)
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_atom'
+                      && state.ghostKind === 'atom'
+                      && state.gestureVoidPreviewVisible === true;
+                }"""
+            )
+            ensure_build_popover_open(page, focus_search=True)
+            page.locator('#editBuildSearch').fill('methylene')
+            page.keyboard.press('Enter')
+            page.mouse.move(x + 6, y + 6)
+            page.mouse.move(x, y)
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_fragment'
+                      && state.fragmentId === 'methylene'
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'
+                      && state.ghostKind === 'fragment'
+                      && state.catalogVoidPreviewVisible === true
+                      && /Build fragment: Methylene/.test(state.hint || '');
+                }"""
+            )
+
             # Build search / standalone molecule placement smoke.
+            ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('benzene')
             page.keyboard.press('Enter')
             page.wait_for_function(
                 """() => document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]')?.classList.contains('active') === true"""
             )
             page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
-            )
-            page.wait_for_function(
                 """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const benzene = document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]');
-                    return search
-                      && search.value === 'benzene'
-                      && benzene
-                      && benzene.hidden === false
-                      && benzene.classList.contains('active');
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_molecule'
+                      && state.moleculeId === 'benzene'
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
             before_add_molecule = active_structure_summary(page)

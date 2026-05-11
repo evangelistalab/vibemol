@@ -323,7 +323,7 @@
       state.press = null;
       state.activePointerId = e.pointerId;
       if (handleExternalPointerDown(intent, e, state)) return true;
-      if (intent === EDIT_INTENT.ADD_MOLECULE) return false;
+      if (intent === EDIT_INTENT.ADD_MOLECULE || intent === EDIT_INTENT.ADD_FRAGMENT) return false;
       const selection = Array.isArray(getSelection()) ? getSelection() : [];
       const atomObj = pickAtomObject(e);
       const atomIndex = atomObj && atomObj.userData ? (atomObj.userData.index | 0) : -1;

@@ -153,31 +153,47 @@
     }
 
     function normalizeEditIntent(nextIntent) {
+      if (nextIntent === EDIT_INTENT.ADD_ATOM) return EDIT_INTENT.ADD_ATOM;
+      if (nextIntent === EDIT_INTENT.ADD_FRAGMENT) return EDIT_INTENT.ADD_FRAGMENT;
       if (nextIntent === EDIT_INTENT.ADD_MOLECULE) return EDIT_INTENT.ADD_MOLECULE;
       return EDIT_INTENT.ATOM_MANIPULATION;
     }
 
+    function isFragmentIntent(intent) {
+      return intent === EDIT_INTENT.ADD_FRAGMENT
+        || (intent === EDIT_INTENT.ATOM_MANIPULATION && state.editAddMode === EDIT_ADD_MODE.FRAGMENT);
+    }
+
+    function isGrowPreviewIntent(intent) {
+      return intent === EDIT_INTENT.ATOM_MANIPULATION
+        || intent === EDIT_INTENT.ADD_ATOM
+        || intent === EDIT_INTENT.ADD_FRAGMENT;
+    }
+
     function syncDerivedAddMode() {
-      if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) state.editAddMode = EDIT_ADD_MODE.MOLECULE;
+      if (state.editIntent === EDIT_INTENT.ADD_ATOM) state.editAddMode = EDIT_ADD_MODE.ATOM;
+      else if (state.editIntent === EDIT_INTENT.ADD_FRAGMENT) state.editAddMode = EDIT_ADD_MODE.FRAGMENT;
+      else if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) state.editAddMode = EDIT_ADD_MODE.MOLECULE;
       else if (state.editAddMode !== EDIT_ADD_MODE.FRAGMENT) state.editAddMode = EDIT_ADD_MODE.ATOM;
     }
 
     function buildIntentHint() {
-      if (state.editIntent === EDIT_INTENT.ATOM_MANIPULATION && state.editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+      if (isFragmentIntent(state.editIntent)) {
         const fragment = getCurrentFragmentDefinition();
         const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
-        const parts = [`Fragment attach: ${label}`, `Policy ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)}`];
+        const parts = [`Build fragment: ${label}`, `Policy ${getEditFragmentAttachPolicyLabel(state.editAddFragmentAttachPolicy)}`];
         if (fragment && Array.isArray(fragment.attachModes) && fragment.attachModes.includes('fuse_ring')) {
           parts.push('Click bond to fuse ring');
         }
+        parts.push('Click atom to attach or void to place');
         return parts.join(' • ');
       }
       if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) {
         const molecule = getCurrentMoleculeDefinition();
         const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
-        return `Build standalone: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`;
+        return `Build molecule: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`;
       }
-      return `Build: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Right-click atom to select • Click void to add • Space previews/applies missing H`;
+      return `Build element: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Right-click atom to select • Click void to add • Space previews/applies missing H`;
     }
 
     function getEditIntent() {
@@ -194,13 +210,15 @@
       const leavingAtomManipulation = !!state.addAtomOperatorSession && normalized !== EDIT_INTENT.ATOM_MANIPULATION;
       if (leavingAtomManipulation) finalizeAddAtomOperatorSession({ announce: false });
       state.editIntent = normalized;
-      if (normalized === EDIT_INTENT.ADD_MOLECULE) state.editAddMode = EDIT_ADD_MODE.MOLECULE;
+      if (normalized === EDIT_INTENT.ADD_ATOM) state.editAddMode = EDIT_ADD_MODE.ATOM;
+      else if (normalized === EDIT_INTENT.ADD_FRAGMENT) state.editAddMode = EDIT_ADD_MODE.FRAGMENT;
+      else if (normalized === EDIT_INTENT.ADD_MOLECULE) state.editAddMode = EDIT_ADD_MODE.MOLECULE;
       else if (!preserveAddMode) state.editAddMode = EDIT_ADD_MODE.ATOM;
       syncDerivedAddMode();
 
       if (normalized !== EDIT_INTENT.ADD_MOLECULE) clearMoleculePlacementPreview();
-      if (!(normalized === EDIT_INTENT.ATOM_MANIPULATION && state.editAddMode === EDIT_ADD_MODE.FRAGMENT)) clearFuseRingPreview();
-      if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) clearAddGrowPreview();
+      if (!isFragmentIntent(normalized)) clearFuseRingPreview();
+      if (!isGrowPreviewIntent(normalized)) clearAddGrowPreview();
       if (normalized !== EDIT_INTENT.ATOM_MANIPULATION && prevIntent === EDIT_INTENT.ATOM_MANIPULATION) {
         clearEditSelectionsOnEmptyClick({ selection: !preserveSelection, transform: true, bondEdit: true });
       }
@@ -219,11 +237,15 @@
         ? EDIT_ADD_MODE.MOLECULE
         : (nextMode === EDIT_ADD_MODE.FRAGMENT ? EDIT_ADD_MODE.FRAGMENT : EDIT_ADD_MODE.ATOM);
       if (normalizedMode === EDIT_ADD_MODE.MOLECULE) setEditIntent(EDIT_INTENT.ADD_MOLECULE, Object.assign({}, options, { preserveAddMode: true }));
+      else if (normalizedMode === EDIT_ADD_MODE.FRAGMENT) {
+        state.editAddMode = normalizedMode;
+        setEditIntent(EDIT_INTENT.ADD_FRAGMENT, Object.assign({}, options, { preserveAddMode: true }));
+      }
       else {
         state.editAddMode = normalizedMode;
-        setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, Object.assign({}, options, { preserveAddMode: true }));
+        setEditIntent(EDIT_INTENT.ADD_ATOM, Object.assign({}, options, { preserveAddMode: true }));
       }
-      if (state.editIntent === EDIT_INTENT.ATOM_MANIPULATION && state.editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+      if (state.editIntent === EDIT_INTENT.ADD_FRAGMENT || (state.editIntent === EDIT_INTENT.ATOM_MANIPULATION && state.editAddMode === EDIT_ADD_MODE.FRAGMENT)) {
         const fragment = getCurrentFragmentDefinition();
         if (fragment) state.editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || state.editAddBondOrder);
       } else if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) {
