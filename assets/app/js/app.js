@@ -19174,13 +19174,39 @@
     catalogVoidPreviewGroup.visible = false;
   }
 
+  function hideCatalogVoidPreview() {
+    if (catalogVoidPreviewGroup) catalogVoidPreviewGroup.visible = false;
+  }
+
+  function isCatalogVoidPreviewCurrentForIntent() {
+    if (!catalogVoidPreviewKind || !catalogVoidPreviewKey) return false;
+    if (catalogVoidPreviewKind === CATALOG_KIND.FRAGMENT) {
+      return isFragmentAddIntentValue(getEditIntent())
+        && catalogVoidPreviewKey.startsWith(`${CATALOG_KIND.FRAGMENT}:${editAddFragmentId}:`);
+    }
+    if (catalogVoidPreviewKind === CATALOG_KIND.MOLECULE) {
+      return isMoleculeAddIntentValue(getEditIntent())
+        && catalogVoidPreviewKey.startsWith(`${CATALOG_KIND.MOLECULE}:${editAddMoleculeId}:`);
+    }
+    return false;
+  }
+
+  function restoreCatalogVoidPreview() {
+    if (moleculePlaceActive) return false;
+    if (!catalogVoidPreviewGroup || !catalogVoidPreviewGroup.children.length) return false;
+    if (!catalogVoidPreviewWorld || !catalogVoidPreviewWorld.isVector3) return false;
+    if (!isCatalogVoidPreviewCurrentForIntent()) return false;
+    catalogVoidPreviewGroup.visible = true;
+    return true;
+  }
+
   function clearActiveVoidPlacementPreview() {
     clearGestureVoidPreview();
     clearCatalogVoidPreview();
   }
 
   function getCatalogVoidPreviewStateKind() {
-    if (catalogVoidPreviewKind) return catalogVoidPreviewKind;
+    if (catalogVoidPreviewKind && catalogVoidPreviewGroup && catalogVoidPreviewGroup.visible) return catalogVoidPreviewKind;
     if (gestureVoidPreviewMesh && gestureVoidPreviewMesh.visible) return 'atom';
     return '';
   }
@@ -19198,6 +19224,10 @@
   function showCatalogVoidPlacementPreview(e, requestedKind) {
     if (currentMode !== MODES.EDIT || shouldBlockEditVoidPlacement()) {
       clearCatalogVoidPreview();
+      return false;
+    }
+    if (moleculePlaceActive) {
+      hideCatalogVoidPreview();
       return false;
     }
     const kind = String(requestedKind || '').trim().toLowerCase() === CATALOG_KIND.FRAGMENT
@@ -19243,8 +19273,10 @@
   /**
    * Clear molecule-placement preview state/meshes.
    */
-  function clearMoleculePlacementPreview() {
+  function clearMoleculePlacementPreview(options = {}) {
+    const wasActive = !!moleculePlaceActive;
     editPlacement.clearMoleculePlacementPreview();
+    if (wasActive && options.restoreCatalogPreview !== false) restoreCatalogVoidPreview();
   }
 
   /**
@@ -19253,8 +19285,10 @@
    * @returns {boolean}
    */
   function startMoleculePlacementAtWorld(worldPos, options = {}) {
-    clearCatalogVoidPreview();
-    return editPlacement.startMoleculePlacementAtWorld(worldPos, options);
+    hideCatalogVoidPreview();
+    const started = editPlacement.startMoleculePlacementAtWorld(worldPos, options);
+    if (!started) restoreCatalogVoidPreview();
+    return started;
   }
 
   /**
@@ -19280,7 +19314,10 @@
    * @returns {boolean}
    */
   function commitMoleculePlacement() {
-    return editPlacement.commitMoleculePlacement();
+    const wasActive = !!moleculePlaceActive;
+    const committed = editPlacement.commitMoleculePlacement();
+    if (wasActive && committed) restoreCatalogVoidPreview();
+    return committed;
   }
 
   /**
@@ -23795,9 +23832,12 @@
   }
 
   function handleMoleculeIntentControllerPointerMove(e) {
-    if (moleculePlaceActive && moleculePlaceRotating) {
-      __editMoved = true;
-      updateMoleculePlacementRotationFromEvent(e);
+    if (moleculePlaceActive) {
+      hideCatalogVoidPreview();
+      if (moleculePlaceRotating) {
+        __editMoved = true;
+        updateMoleculePlacementRotationFromEvent(e);
+      }
       return true;
     }
     return false;

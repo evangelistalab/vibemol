@@ -3624,9 +3624,40 @@ def main() -> int:
             )
             before_add_molecule = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)
+            page.mouse.move(x + 6, y + 6)
+            page.mouse.move(x, y)
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_molecule'
+                      && state.ghostKind === 'molecule'
+                      && state.catalogVoidPreviewVisible === true
+                      && state.moleculePlacementActive === false;
+                }"""
+            )
             page.mouse.click(x, y)
-            page.wait_for_function("() => document.getElementById('editAddMoleculeOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return document.getElementById('editAddMoleculeOperatorPanel')?.getAttribute('aria-hidden') === 'false'
+                      && state
+                      && state.moleculePlacementActive === true
+                      && state.catalogVoidPreviewVisible === false
+                      && state.ghostKind !== 'molecule';
+                }"""
+            )
             page.mouse.click(x, y)
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_molecule'
+                      && state.moleculePlacementActive === false
+                      && state.catalogVoidPreviewVisible === true
+                      && state.ghostKind === 'molecule';
+                }"""
+            )
             page.wait_for_timeout(250)
             after_add_molecule = active_structure_summary(page)
             if after_add_molecule['atomCount'] <= before_add_molecule['atomCount']:
