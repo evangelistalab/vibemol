@@ -201,6 +201,18 @@ test('edit-tools fragment add mode owns fragment intent and emits a dedicated hi
   assert.equal(calls.clearAddGrowPreview, 0);
 });
 
+test('edit-tools intent transitions can leave popover closing to the caller', () => {
+  const { controller, calls, EDIT_INTENT } = createEditToolsHarness();
+
+  controller.setEditIntent(EDIT_INTENT.ADD_ATOM, { closePopovers: false });
+  assert.equal(calls.hideAllAdaptiveToolPopovers, 0);
+  assert.equal(calls.updateEditToolboxUi, 1);
+
+  controller.setEditIntent(EDIT_INTENT.ADD_FRAGMENT);
+  assert.equal(calls.hideAllAdaptiveToolPopovers, 1);
+  assert.equal(calls.updateEditToolboxUi, 2);
+});
+
 test('edit-tools leaving atom manipulation clears transform transient state', () => {
   const { controller, calls, EDIT_INTENT } = createEditToolsHarness();
 

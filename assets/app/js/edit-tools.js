@@ -203,6 +203,7 @@
     function setEditIntent(nextIntent, options = {}) {
       const announce = options.announce !== false;
       const syncSearch = options.syncSearch !== false;
+      const closePopovers = options.closePopovers !== false;
       const preserveSelection = !!options.preserveSelection;
       const preserveAddMode = !!options.preserveAddMode;
       const prevIntent = getEditIntent();
@@ -226,7 +227,7 @@
         clearTransformState();
       }
       clearHover();
-      hideAllAdaptiveToolPopovers();
+      if (closePopovers) hideAllAdaptiveToolPopovers();
       updateEditToolboxUi({ syncSearch });
       if (!announce || !isEditMode()) return;
       setHintMessage(buildIntentHint());
