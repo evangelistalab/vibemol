@@ -969,6 +969,22 @@ def load_build_query(page, query: str) -> None:
     ensure_build_popover_open(page, focus_search=True)
     page.locator('#editBuildSearch').fill(query)
     page.keyboard.press('Enter')
+    page.wait_for_function(
+        """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
+    )
+
+
+def assert_loaded_build_payload(page, *, kind: str, payload_id: str | None = None, symbol: str | None = None) -> dict[str, Any]:
+    payload = page.evaluate("""() => window.VibeMolTesting?.getLoadedBuildPayload?.() || null""")
+    if not isinstance(payload, dict):
+        raise AssertionError(f'Could not read loaded build payload: {payload!r}')
+    if str(payload.get('kind', '')) != kind:
+        raise AssertionError(f'Unexpected loaded build payload kind: {payload!r}')
+    if payload_id is not None and str(payload.get('id', '')) != str(payload_id):
+        raise AssertionError(f'Unexpected loaded build payload id: {payload!r}')
+    if symbol is not None and str(payload.get('symbol', '')) != str(symbol):
+        raise AssertionError(f'Unexpected loaded build payload symbol: {payload!r}')
+    return payload
 
 
 def get_hint_text(page) -> str:
@@ -3411,18 +3427,12 @@ def main() -> int:
             ensure_build_popover_open(page)
             page.locator('#editAddQuick button[data-z="6"]').click()
             page.wait_for_function(
-                """() => document.querySelector('#editAddQuick button[data-z="6"]')?.classList.contains('active') === true"""
-            )
-            page.keyboard.press('/')
-            page.wait_for_function(
                 """() => {
-                    const popover = document.getElementById('editAdaptiveAddAtomPopover');
-                    const search = document.getElementById('editBuildSearch');
-                    return !!popover
-                      && popover.getAttribute('aria-hidden') === 'false'
-                      && document.activeElement === search;
+                    return document.querySelector('#editAddQuick button[data-z="6"]')?.classList.contains('active') === true
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
+            assert_loaded_build_payload(page, kind='atom', payload_id='6', symbol='C')
             before_add_atom = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)
             page.mouse.click(x, y)
@@ -3486,7 +3496,15 @@ def main() -> int:
             )
 
             log_step('add molecule smoke')
-            # Build search keyboard navigation regression.
+            # Build palette close-on-selection and keyboard navigation regressions.
+            ensure_build_popover_open(page, focus_search=True)
+            page.locator('#editBuildSearch').fill('Fe')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+            assert_loaded_build_payload(page, kind='atom', payload_id='26', symbol='Fe')
+
             ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('N')
             page.wait_for_function(
@@ -3500,31 +3518,11 @@ def main() -> int:
             )
             page.locator('#editAddQuick button[data-z="11"]').click()
             page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
-            page.wait_for_function(
-                """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const sodium = document.querySelector('#editAddQuick button[data-z="11"]');
-                    const carbon = document.querySelector('#editAddQuick button[data-z="6"]');
-                    return search
-                      && search.value === 'N'
-                      && sodium
-                      && sodium.hidden === false
-                      && sodium.classList.contains('active')
-                      && (!carbon || carbon.hidden === true);
-                }"""
-            )
-            page.keyboard.press('/')
-            page.wait_for_function(
-                """() => {
-                    const popover = document.getElementById('editAdaptiveAddAtomPopover');
-                    const search = document.getElementById('editBuildSearch');
-                    return !!popover
-                      && popover.getAttribute('aria-hidden') === 'false'
-                      && document.activeElement === search;
-                }"""
-            )
+            assert_loaded_build_payload(page, kind='atom', payload_id='11', symbol='Na')
+
+            ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('Pr')
             page.wait_for_function(
                 """() => {
@@ -3539,27 +3537,32 @@ def main() -> int:
                       && pa.hidden === false;
                 }"""
             )
-            page.hover('#editAdaptiveAddAtomPopover')
-            page.locator('#editAddQuick button[data-z="59"]').click()
+            page.keyboard.press('ArrowDown')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+            assert_loaded_build_payload(page, kind='atom', payload_id='61', symbol='Pm')
+
+            ensure_build_popover_open(page, focus_search=True)
+            page.locator('#editBuildSearch').fill('hy')
             page.wait_for_function(
                 """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const pr = document.querySelector('#editAddQuick button[data-z="59"]');
-                    const pm = document.querySelector('#editAddQuick button[data-z="61"]');
-                    const pa = document.querySelector('#editAddQuick button[data-z="91"]');
-                    return search
-                      && search.value === 'Pr'
-                      && pr
-                      && pr.hidden === false
-                      && pr.classList.contains('active')
-                      && pm
-                      && pm.hidden === false
-                      && pa
-                      && pa.hidden === false
-                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false';
+                    const hydroxyl = document.querySelector('#editFragmentQuick button[data-fragment-id="hydroxyl"]');
+                    const phenyl = document.querySelector('#editFragmentQuick button[data-fragment-id="phenyl"]');
+                    return !!hydroxyl
+                      && hydroxyl.hidden === false
+                      && (!phenyl || phenyl.hidden === true);
                 }"""
             )
-            page.locator('#editBuildSearch').fill('ph')
+            page.locator('#editFragmentQuick button[data-fragment-id="hydroxyl"]').click()
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+            assert_loaded_build_payload(page, kind='fragment', payload_id='hydroxyl')
+
+            ensure_build_popover_open(page, focus_search=True)
+            page.locator('#editBuildSearch').fill('phenyl')
             page.wait_for_function(
                 """() => {
                     const phenyl = document.querySelector('#editFragmentQuick button[data-fragment-id="phenyl"]');
@@ -3569,27 +3572,20 @@ def main() -> int:
                       && (!hydroxyl || hydroxyl.hidden === true);
                 }"""
             )
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
+            )
+            assert_loaded_build_payload(page, kind='fragment', payload_id='phenyl')
 
             # Build search / standalone molecule placement smoke.
+            ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('benzene')
             page.keyboard.press('Enter')
             page.wait_for_function(
-                """() => document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]')?.classList.contains('active') === true"""
+                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
-            page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
-            )
-            page.wait_for_function(
-                """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const benzene = document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]');
-                    return search
-                      && search.value === 'benzene'
-                      && benzene
-                      && benzene.hidden === false
-                      && benzene.classList.contains('active');
-                }"""
-            )
+            assert_loaded_build_payload(page, kind='molecule', payload_id='benzene')
             before_add_molecule = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)
             page.mouse.click(x, y)

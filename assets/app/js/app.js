@@ -19766,10 +19766,12 @@
       setTooltipText(btn, `${info.name} (${info.symbol})`);
       btn.textContent = info.symbol;
       btn.onclick = () => {
-        const preservedQuery = getBuildPaletteFilterQuery();
-        setEditAddElement(z, { announce: true });
-        setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
-        keepBuildPopoverOpen({ query: preservedQuery });
+        commitBuildPaletteSelection({
+          kind: 'atom',
+          id: String(z),
+          z,
+          label: `${info.name} (${info.symbol})`,
+        }, { announce: true, syncSearch: true });
       };
       editAddQuickEl.appendChild(btn);
     }
@@ -19795,6 +19797,12 @@
       return changed;
     }
     return false;
+  }
+
+  function commitBuildPaletteSelection(selection, options = {}) {
+    if (!applyBuildPaletteSelection(selection, options)) return false;
+    hideBuildPopover();
+    return true;
   }
 
   /**
@@ -19867,10 +19875,11 @@
         setTooltipText(btn, `${fragment.name} (${fragment.formula})`);
         btn.textContent = fragment.name;
         btn.onclick = () => {
-          const preservedQuery = getBuildPaletteFilterQuery();
-          setEditAddFragment(fragment.id, { announce: true, syncSearch: true });
-          setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch: true });
-          keepBuildPopoverOpen({ query: preservedQuery });
+          commitBuildPaletteSelection({
+            kind: 'fragment',
+            id: fragment.id,
+            label: `${fragment.name} (${fragment.formula})`,
+          }, { announce: true, syncSearch: true });
         };
         editFragmentQuickEl.appendChild(btn);
       }
@@ -19908,10 +19917,11 @@
         setTooltipText(btn, `${molecule.name} (${molecule.formula})`);
         btn.textContent = molecule.name;
         btn.onclick = () => {
-          const preservedQuery = getBuildPaletteFilterQuery();
-          setEditAddMolecule(molecule.id, { announce: true, syncSearch: true });
-          setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: false, syncSearch: true });
-          keepBuildPopoverOpen({ query: preservedQuery });
+          commitBuildPaletteSelection({
+            kind: 'molecule',
+            id: molecule.id,
+            label: `${molecule.name} (${molecule.formula})`,
+          }, { announce: true, syncSearch: true });
         };
         editMoleculeQuickEl.appendChild(btn);
       }
@@ -20012,12 +20022,11 @@
         }
         const selectedCandidate = getSelectedBuildSearchCandidate();
         const selection = selectedCandidate ? selectedCandidate.selection : resolveBuildPaletteQuery(rawValue);
-        if (!applyBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
+        if (!commitBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Build item not recognized: "${rawValue}"`);
           return;
         }
-        keepBuildPopoverOpen({ query: rawValue });
       };
       editBuildSearchEl.addEventListener('focus', () => {
         const query = String(editBuildSearchEl.value || '');
@@ -30608,6 +30617,7 @@
   });
   window.VibeMolTesting = Object.freeze({
     getHintMessage: () => String(hintEl && hintEl.textContent || ''),
+    getLoadedBuildPayload: () => Object.assign({}, getCurrentBuildPayload()),
     isFuseRingPreviewActive: () => !!addFusePreviewState,
     listNonEditWindows: () => Object.values(NON_EDIT_WINDOW_ID),
     getOpenNonEditWindows: () => listOpenNonEditWindowIds(),
