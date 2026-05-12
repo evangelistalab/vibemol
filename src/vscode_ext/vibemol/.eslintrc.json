@@ -2,12 +2,15 @@
 	"env": {
 		"browser": false,
 		"commonjs": true,
-		"es6": true,
+		"es2022": true,
 		"node": true,
 		"mocha": true
 	},
+	"ignorePatterns": [
+		"app/**"
+	],
 	"parserOptions": {
-		"ecmaVersion": 2018,
+		"ecmaVersion": 2022,
 		"ecmaFeatures": {
 			"jsx": true
 		},

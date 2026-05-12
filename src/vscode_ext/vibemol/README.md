@@ -1,6 +1,6 @@
 # VibeMol for VSCode
 
-A VSCode extension that brings [VibeMol](https://github.com/evangelistalab/vibemol) — the molecular visualization and editing tool — directly into the editor. View and interact with `.xyz`, `.cube`, `.molden`, `.hess`, `.vib.json`, and Psi4 output files without leaving VSCode.
+A VSCode extension that brings [VibeMol](https://github.com/evangelistalab/vibemol) — the molecular visualization and editing tool — directly into the editor. View and interact with `.xyz`, `.cube`, `.2ccube`, `.molden`, `.hess`, vibrational sidecar JSON, and Psi4 output files without leaving VSCode.
 
 ## Installation
 
@@ -8,7 +8,7 @@ A VSCode extension that brings [VibeMol](https://github.com/evangelistalab/vibem
 Search for **VibeMol** in the Extensions panel (`Cmd+Shift+X`) and click **Install**.
 
 ### From source (local build)
-Prerequisites: [Node.js](https://nodejs.org) and `vsce` (`npm install -g @vscode/vsce`)
+Prerequisite: [Node.js](https://nodejs.org) 20 or newer
 
 ```bash
 # From the vibemol repo root
@@ -53,11 +53,11 @@ Open the Command Palette (`Cmd+Shift+P`) and run **Launch VibeMol Webview**, or 
 | Format | Extensions | Priority |
 |--------|-----------|---------|
 | XYZ coordinates | `.xyz` | Default |
-| CUBE / electron density | `.cube`, `.cub` | Default |
+| CUBE / electron density | `.cube`, `.cub`, `.2ccube` | Default |
 | Molden | `.molden` | Default |
 | ORCA Hessian | `.hess` | Default |
-| Vibrational sidecar | `.vib.json` | Default |
-| Psi4 frequency output | `.dat`, `.out` | Open With |
+| Vibrational sidecar | `.vib.json`, `.vmodes.json`, `.modes.json` | Default |
+| Psi4 frequency output | `.dat`, `.out`, `.output` | Open With |
 
 ## Keyboard Shortcuts
 

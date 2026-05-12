@@ -40,6 +40,26 @@ function copyFile(relPath) {
     console.log(`  copied ${relPath}`);
 }
 
+function stripVsCodeUnsafeHtml(html) {
+    return html.replace(
+        /\s*<!-- Google tag \(gtag\.js\) -->\s*<script\s+async\s+src="https:\/\/www\.googletagmanager\.com\/gtag\/js\?id=[^"]+"><\/script>\s*<script>\s*window\.dataLayer[\s\S]*?gtag\('config',\s*'[^']+'\);\s*<\/script>/,
+        '\n  <!-- VS Code extension bundle: analytics scripts stripped by copy-app.js. -->'
+    );
+}
+
+function copyVsCodeIndex() {
+    const relPath = 'index.html';
+    const src = path.join(projectRoot, relPath);
+    const dst = path.join(destRoot, relPath);
+    if (!fs.existsSync(src)) {
+        console.warn(`  WARN: missing ${relPath}`);
+        return;
+    }
+    fs.mkdirSync(path.dirname(dst), { recursive: true });
+    fs.writeFileSync(dst, stripVsCodeUnsafeHtml(fs.readFileSync(src, 'utf8')));
+    console.log(`  copied ${relPath} (VS Code webview variant)`);
+}
+
 // Recursively copies a directory, preserving subdirectory structure
 function copyDirRecursive(relDir) {
     const src = path.join(projectRoot, relDir);
@@ -67,8 +87,8 @@ fs.mkdirSync(destRoot, { recursive: true });
 
 console.log('Copying VibeMol web app files...');
 
-// index.html
-copyFile('index.html');
+// index.html - VS Code webviews must not load third-party scripts.
+copyVsCodeIndex();
 
 // LICENSE — copied to extension root so vsce picks it up automatically
 const licenseSrc = path.join(projectRoot, 'LICENSE');

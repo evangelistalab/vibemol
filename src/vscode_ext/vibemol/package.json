@@ -47,7 +47,19 @@
             "filenamePattern": "*.cube"
           },
           {
+            "filenamePattern": "*.cub"
+          },
+          {
+            "filenamePattern": "*.2ccube"
+          },
+          {
             "filenamePattern": "*.vib.json"
+          },
+          {
+            "filenamePattern": "*.vmodes.json"
+          },
+          {
+            "filenamePattern": "*.modes.json"
           },
           {
             "filenamePattern": "*.hess"
@@ -64,6 +76,9 @@
           },
           {
             "filenamePattern": "*.out"
+          },
+          {
+            "filenamePattern": "*.output"
           }
         ],
         "priority": "option"
@@ -79,14 +94,14 @@
       "explorer/context": [
         {
           "command": "vibemol.openFile",
-          "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceFilename =~ /\\.vib\\.json$/",
+          "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .cub || resourceExtname == .2ccube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceExtname == .output || resourceFilename =~ /\\.(vib|vmodes|modes)\\.json$/",
           "group": "navigation"
         }
       ],
       "editor/title/context": [
         {
           "command": "vibemol.openFile",
-          "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceFilename =~ /\\.vib\\.json$/"
+          "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .cub || resourceExtname == .2ccube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceExtname == .output || resourceFilename =~ /\\.(vib|vmodes|modes)\\.json$/"
         }
       ]
     },
@@ -94,17 +109,18 @@
       {
         "command": "vibemol.undo",
         "key": "cmd+z",
-        "when": "activeWebviewPanelId == 'vibemol_viewer'"
+        "when": "activeWebviewPanelId == 'vibemol_viewer' || activeWebviewPanelId == 'vibemol.xyzEditor'"
       },
       {
         "command": "vibemol.redo",
         "key": "cmd+shift+z",
-        "when": "activeWebviewPanelId == 'vibemol_viewer'"
+        "when": "activeWebviewPanelId == 'vibemol_viewer' || activeWebviewPanelId == 'vibemol.xyzEditor'"
       }
     ]
   },
   "scripts": {
     "copy-app": "node scripts/copy-app.js",
+    "vscode:prepublish": "npm run copy-app",
     "prepackage": "npm run copy-app",
     "package": "vsce package",
     "publish": "vsce publish",
@@ -113,12 +129,13 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.118.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
-    "eslint": "^8.57.0",
-    "typescript": "^5.4.5",
+    "@types/vscode": "^1.118.0",
     "@vscode/test-cli": "^0.0.9",
-    "@vscode/test-electron": "^2.3.9"
+    "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^3.9.1",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5"
   }
 }
