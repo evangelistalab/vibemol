@@ -1,0 +1,28 @@
+{
+	"env": {
+		"browser": false,
+		"commonjs": true,
+		"es2022": true,
+		"node": true,
+		"mocha": true
+	},
+	"ignorePatterns": [
+		"app/**"
+	],
+	"parserOptions": {
+		"ecmaVersion": 2022,
+		"ecmaFeatures": {
+			"jsx": true
+		},
+		"sourceType": "module"
+	},
+	"rules": {
+		"no-const-assign": "warn",
+		"no-this-before-super": "warn",
+		"no-undef": "warn",
+		"no-unreachable": "warn",
+		"no-unused-vars": "warn",
+		"constructor-super": "warn",
+		"valid-typeof": "warn"
+	}
+}

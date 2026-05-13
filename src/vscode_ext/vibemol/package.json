@@ -1,0 +1,141 @@
+{
+  "name": "vibemol",
+  "displayName": "VibeMol",
+  "description": "Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files, with a companion Python automation client. It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes.json`, ORCA `.hess`, and Psi4 `.dat/.out` frequency outputs).",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.118.0"
+  },
+  "publisher": "evangelistalab",
+  "categories": [
+    "Education",
+    "Visualization",
+    "Other"
+  ],
+  "main": "./src/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/evangelistalab/vibemol.git"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "vibemol.vmWebview",
+        "title": "Launch VibeMol Webview",
+        "icon": {
+          "light": "./app/assets/app/img/favicon-tetra.svg",
+          "dark": "./app/assets/app/img/favicon-tetra.svg"
+        }
+      },
+      {
+        "command": "vibemol.openFile",
+        "title": "Open in VibeMol"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "vibemol.xyzEditor",
+        "displayName": "VibeMol",
+        "selector": [
+          {
+            "filenamePattern": "*.xyz"
+          },
+          {
+            "filenamePattern": "*.molden"
+          },
+          {
+            "filenamePattern": "*.cube"
+          },
+          {
+            "filenamePattern": "*.cub"
+          },
+          {
+            "filenamePattern": "*.2ccube"
+          },
+          {
+            "filenamePattern": "*.vib.json"
+          },
+          {
+            "filenamePattern": "*.vmodes.json"
+          },
+          {
+            "filenamePattern": "*.modes.json"
+          },
+          {
+            "filenamePattern": "*.hess"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "vibemol.xyzEditor",
+        "displayName": "VibeMol",
+        "selector": [
+          {
+            "filenamePattern": "*.dat"
+          },
+          {
+            "filenamePattern": "*.out"
+          },
+          {
+            "filenamePattern": "*.output"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "vibemol.vmWebview",
+          "group": "navigation@0"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "vibemol.openFile",
+          "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .cub || resourceExtname == .2ccube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceExtname == .output || resourceFilename =~ /\\.(vib|vmodes|modes)\\.json$/",
+          "group": "navigation"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "vibemol.openFile",
+          "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .cub || resourceExtname == .2ccube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceExtname == .output || resourceFilename =~ /\\.(vib|vmodes|modes)\\.json$/"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "vibemol.undo",
+        "key": "cmd+z",
+        "when": "activeWebviewPanelId == 'vibemol_viewer' || activeWebviewPanelId == 'vibemol.xyzEditor'"
+      },
+      {
+        "command": "vibemol.redo",
+        "key": "cmd+shift+z",
+        "when": "activeWebviewPanelId == 'vibemol_viewer' || activeWebviewPanelId == 'vibemol.xyzEditor'"
+      }
+    ]
+  },
+  "scripts": {
+    "copy-app": "node scripts/copy-app.js",
+    "vscode:prepublish": "npm run copy-app",
+    "prepackage": "npm run copy-app",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.118.0",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^3.9.1",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5"
+  }
+}

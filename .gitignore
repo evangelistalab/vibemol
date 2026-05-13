@@ -3,3 +3,11 @@ docs/latex/
 
 __pycache__/
 *.pyc
+
+# VSCode extension generated files to ignore
+src/vscode_ext/vibemol/app/
+src/vscode_ext/vibemol/node_modules/
+src/vscode_ext/vibemol/LICENSE
+src/vscode_ext/vibemol/vibemol-*.vsix
+src/vscode_ext/vibemol/.DS_Store
+src/vscode_ext/vibemol/test/
