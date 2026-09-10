@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VibeMol — Visual Style Lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style-lab.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="../../../index.html">VibeMol<span> / Visual Style Lab</span></a>
+    <span class="study-label">DESIGN STUDY · 01</span>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">SAME SCIENCE. A DIFFERENT EXPRESSION.</p><h1>Find your molecular look.</h1></div>
+      <p>Start with a look. Make it yours.<br>Keep it for the next molecule.</p>
+    </section>
+    <div class="workspace">
+      <section class="stage-wrap" aria-label="Interactive molecular preview">
+        <div class="stage-top"><span id="previewName">Porcelain</span><span id="modified" hidden>Modified</span></div>
+        <canvas id="preview" aria-label="3D molecule. Drag to rotate and scroll to zoom. Arrow buttons below also rotate the view."></canvas>
+        <div class="stage-bottom"><span id="moleculeCaption">Pyridine · C₅H₅N</span><span>Drag to rotate · Scroll to zoom</span></div>
+        <div id="phaseLegend" hidden><span><i id="positiveSwatch"></i>ψ &gt; 0</span><span><i id="negativeSwatch"></i>ψ &lt; 0</span></div>
+      </section>
+      <aside aria-label="Customize appearance">
+        <div class="panel-heading"><h2>Make it yours</h2><button id="revert" class="quiet">Revert</button></div>
+        <label class="field">Preview subject<select id="subject"><option value="pyridine">Pyridine · palette &amp; bonds</option><option value="methane">Methane · reference comparison</option><option value="orbital">Hydrogen 2p · orbital surface</option></select></label>
+        <div class="view-actions"><button id="turnLeft" aria-label="Rotate left">↶</button><button id="turnRight" aria-label="Rotate right">↷</button><button id="resetView">Reset view</button><button id="savePng">Save PNG</button></div>
+        <div id="controls"></div>
+        <details><summary>Palette &amp; finish</summary><div id="advanced"></div></details>
+        <section class="save-section" aria-label="Save and reuse looks">
+          <label class="field">Name your look<input id="lookName" maxlength="60" value="My Porcelain" autocomplete="off"></label>
+          <div class="save-actions"><button id="saveLook" class="primary">Save as new</button><button id="updateLook" disabled>Update saved</button></div>
+          <div class="save-actions"><button id="exportLook">Export look</button><button id="importLook">Import look</button></div>
+          <input id="lookFile" type="file" accept=".json,application/json" hidden>
+          <p id="status" role="status" aria-live="polite">Edits and named looks stay in this browser.</p>
+        </section>
+      </aside>
+    </div>
+    <section class="collection" aria-labelledby="collectionTitle">
+      <div class="collection-heading"><div><p class="eyebrow">THE COLLECTION</p><h2 id="collectionTitle">Six directions. One molecule.</h2></div><p>Click a look to explore it above.</p></div>
+      <div id="looks" class="look-grid"></div>
+    </section>
+    <section id="savedSection" hidden aria-label="Your saved looks"><div class="collection-heading"><h2>Your looks</h2><p>Saved copies keep every appearance value.</p></div><div id="savedLooks" class="saved-list"></div></section>
+    <footer><span>Experimental preview. Look files currently reopen in this lab.</span><a href="README.md">Design &amp; integration notes ↗</a></footer>
+  </main>
+  <script src="../../../assets/vendor/js/three.min.js"></script>
+  <script src="../../../assets/vendor/js/orbit-controls.global.js"></script>
+  <script src="../../../assets/vendor/js/isosurface.bundle.js"></script>
+  <script src="../../../assets/vendor/js/atomic-data.js"></script>
+  <script src="../../../assets/app/js/parsers.js"></script>
+  <script src="../../../assets/app/js/volume-geometry.js"></script>
+  <script src="looks.js"></script>
+  <script src="style-lab.js"></script>
+</body>
+</html>
