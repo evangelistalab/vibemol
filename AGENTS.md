@@ -362,12 +362,13 @@ Implemented:
 - New untitled editable files can be created from the toolbar and duplicated/removed from the active-file control area.
 - Coordinates-window rows mirror atom hover, and the table supports inline editing of atom order, element symbol/atomic number, and Cartesian coordinates with validation.
 
-Discussed but not implemented yet (carry-forward backlog):
-- Clean first-class split between `atoms`, `fragments`, and `molecules` in the builder catalog/UX.
-- Richer attach policies (`append`, `replace-H`, `fuse-ring`) and chemistry-aware guardrails.
-- Local cleanup/relax after fragment attachment.
-- Better transform semantics for moving/rotating disconnected molecules vs attached fragments.
-- Onboarding “recent files” quick action (sample action exists; recent list not implemented).
+Remaining work and priorities are tracked in [the product roadmap](docs/roadmap.md).
+
+- Next priority: portable save/open of the complete scene/source/layer workspace, followed by autosave/recovery using the same format. Appearance autosave, preset builder logs, and single-record structure export already exist.
+- Catalog fragment/molecule kinds, atom/fragment/molecule placement, append/replace-H attachment, supported ring fusion, builder group metadata, and group-aware transforms are implemented. Remaining builder work is chemistry validation, clearer scope/pivot/placement feedback, and broader fusion cases.
+- Local heavy-atom relaxation after attachment/substitution remains open. Reviewed bond cleanup, hydrogen repair/local hydrogen-only UFF relaxation, and whole-structure UFF optimization are implemented.
+- Complete workspace restoration and replay of builder operations are separate tasks; restoring stored operation logs does not replay them.
+- Recent-session access, broader analysis/export workflows, and integration/performance hardening follow the roadmap order.
 
 ## Bond Order Inference Algorithm
 Bond perception lives in `assets/app/js/bond-inference.js`.

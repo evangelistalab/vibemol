@@ -65,7 +65,7 @@ Open the Command Palette (`Cmd+Shift+P`) and run **Launch VibeMol Webview**, or 
 |----------|--------|
 | `Cmd+Z` | Undo (within VibeMol panel) |
 | `Cmd+Shift+Z` | Redo (within VibeMol panel) |
-| `1` / `2` / `3` / `4` | Switch molecule style |
+| `1` / `2` / `3` | Switch molecule style (Basic / Toon / Kit) |
 | `S` | Save PNG |
 | `V` | Open view / coordinates panel |
 | `M` | Measurement mode |

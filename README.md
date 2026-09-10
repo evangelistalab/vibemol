@@ -108,7 +108,7 @@ make test
 
 `make test-e2e` runs the full smoke suite and the focused scene/arithmetic regressions, each with its own temporary local server. Set `VIBEMOL_TEST_ARTIFACT_DIR` to keep browser artifacts outside the checkout.
 
-See [Scene architecture](docs/scene-architecture.md) for data ownership, the shared import pipeline, and arithmetic execution limits.
+See the [Product roadmap](docs/roadmap.md) for implemented features, remaining work, and priorities. See [Scene architecture](docs/scene-architecture.md) for data ownership, the shared import pipeline, and arithmetic execution limits.
 
 Relevant browserless syntax checks include:
 
