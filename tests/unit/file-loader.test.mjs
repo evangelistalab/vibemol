@@ -402,3 +402,18 @@ test('sidecars in a primary batch are attached after every primary is committed'
   assert.equal(result.loadedCount, 3);
   assert.equal(result.ok, true);
 });
+
+test('the session file size guard does not restrict ordinary molecular imports', async () => {
+  const { controller } = createController();
+  let sessionRead = false;
+  const plan = await controller.parseFiles([
+    { name: 'large.cube', size: 600 * 1024 * 1024, text: async () => 'cube data' },
+    { name: 'large.vibemol-session', size: 600 * 1024 * 1024,
+      text: async () => { sessionRead = true; return '{}'; } },
+  ]);
+  assert.equal(plan.primaries.length, 1);
+  assert.equal(plan.primaries[0].name, 'large.cube');
+  assert.equal(plan.failures.length, 1);
+  assert.match(plan.failures[0], /Session file exceeds/);
+  assert.equal(sessionRead, false);
+});

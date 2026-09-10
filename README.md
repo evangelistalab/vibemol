@@ -13,6 +13,7 @@ It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes
 - Edit mode and measurement mode
 - Save PNG, batch export, and XYZ export
 - Portable preset save/load in the web UI
+- Complete session save/open, with browser autosave and recovery
 - Shared preset model with CLI (`window.VibeMolPreset` + Python client)
 - Vibrational mode playback from sidecar JSON (`.vib.json`), ORCA Hessian files (`.hess`), and Psi4 vibration outputs (`.dat`, `.out`)
 
@@ -34,6 +35,12 @@ Startup now shows the empty onboarding card. Use `Choose files` or `Open sample 
 - `M`: measurement mode
 - `E`: edit mode
 - `Arrow keys`: previous/next file
+
+## Sessions and recovery
+
+Use **Save session** to download the entire workspace, including source data, edited structures, layers, arithmetic dependencies, appearance, and playback settings. **Open session** restores it with playback paused; the original molecular files are not required.
+
+Browser autosave retains two snapshots and offers **Recover session** after reopening the app. See [Sessions and recovery](docs/sessions.md) for format details, storage limits, and the automation API.
 
 ## Presets
 Use `Save Preset` / `Load Preset` in the web toolbar.
@@ -85,6 +92,7 @@ The CLI supports:
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders
 - `assets/app/js/preset.js`: preset registry, import/export controller, and builder-extension preset state helpers
 - `assets/app/js/structure-transport.js`: reproducible structure envelope export/import controller and `window.VibeMolStructure` public API
+- `assets/app/js/session-format.js`, `session.js`, and `session-recovery.js`: portable workspace format, save/open, and browser autosave/recovery
 - `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, and embed file-loading controller
 - `assets/app/js/edit-state.js`: edit-history and editable-record controller
 - `assets/app/js/edit-placement.js`: add/placement workflows for atoms, fragments, and molecules
@@ -106,7 +114,7 @@ make test-e2e
 make test
 ```
 
-`make test-e2e` runs the full smoke suite and the focused scene/arithmetic regressions, each with its own temporary local server. Set `VIBEMOL_TEST_ARTIFACT_DIR` to keep browser artifacts outside the checkout.
+`make test-e2e` runs the full smoke suite, focused scene/arithmetic regressions, and session/recovery regressions, each with its own temporary local server. Set `VIBEMOL_TEST_ARTIFACT_DIR` to keep browser artifacts outside the checkout.
 
 See the [Product roadmap](docs/roadmap.md) for implemented features, remaining work, and priorities. See [Scene architecture](docs/scene-architecture.md) for data ownership, the shared import pipeline, and arithmetic execution limits.
 

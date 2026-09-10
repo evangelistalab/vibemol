@@ -1766,6 +1766,7 @@
       showDeleteSelectedCubeLayersConfirmation,
       closeCombinePopover,
       isRenaming: () => !!outlinerRenameState,
+      isComputing: () => !!(combinePopoverState && combinePopoverState.busy),
     });
   }
 

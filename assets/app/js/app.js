@@ -1304,6 +1304,9 @@
   // State
   let volumes = []; // {name, vol}
   let currentIndex = -1;
+  let sessionController = null;
+  let sessionRecovery = null;
+  let applyingSession = false;
   const sceneGraphController = createSceneGraphController({
     disposeLayer: disposeSceneGraphLayer,
   });
@@ -1391,7 +1394,14 @@
   function scheduleOutlinerScrollToTarget(...args) { return getSceneOutliner().scheduleOutlinerScrollToTarget(...args); }
   function flashOutlinerLayer(...args) { return getSceneOutliner().flashOutlinerLayer(...args); }
   function finishOutlinerRename(...args) { return getSceneOutliner().finishOutlinerRename(...args); }
-  function renderSceneOutliner(...args) { return getSceneOutliner().renderSceneOutliner(...args); }
+  function markSessionChanged() {
+    if (sessionRecovery && !applyingSession && !(sessionController && sessionController.isOpening())) sessionRecovery.markDirty();
+  }
+  function renderSceneOutliner(...args) {
+    const result = getSceneOutliner().renderSceneOutliner(...args);
+    markSessionChanged();
+    return result;
+  }
   function closeCubeLayerContextMenu(...args) { return getSceneOutliner().closeCubeLayerContextMenu(...args); }
   function isFocusInsideOutliner(...args) { return getSceneOutliner().isFocusInsideOutliner(...args); }
   function showDeleteSelectedCubeLayersConfirmation(...args) { return getSceneOutliner().showDeleteSelectedCubeLayersConfirmation(...args); }
@@ -6497,6 +6507,7 @@
       vibrationLastStepMs = 0;
     }
     applyActiveVibrationPhase(nextPhase, { syncUi: false });
+    markSessionChanged();
   }
   /**
    * Apply one trajectory frame to active atom positions and refresh geometry transforms.
@@ -6514,6 +6525,7 @@
     traj.frameIndex = nextIndex;
     traj.currentFrame = nextIndex;
     applyAtomCoordinateFrame(info.vol, frame, info.atomCount, { record: info.record });
+    markSessionChanged();
     if (syncUi) syncTrajectoryControls();
     return true;
   }
@@ -9317,8 +9329,9 @@
       .replace(/[^a-z0-9]+/gu, '-')
       .replace(/^-+|-+$/gu, '')
       .slice(0, 40) || 'scene';
-    const key = `scene-${sceneGraphSceneKeyCounter}-${clean}`;
-    sceneGraphSceneKeyCounter += 1;
+    let key;
+    do { key = `scene-${sceneGraphSceneKeyCounter++}-${clean}`; }
+    while (sceneGraphController.getScenes().some(scene => scene.sceneKey === key));
     return key;
   }
 
@@ -12400,6 +12413,7 @@
   // Initialize view UI
   refreshViewUI();
   controls.addEventListener('change', refreshViewUI);
+  controls.addEventListener('change', markSessionChanged);
 
   // --- Edit mode: toggle with 'E', hover highlight, drag to move ---
   let editMode = false; // mirrors currentMode === MODES.EDIT
@@ -27882,6 +27896,7 @@
 
   function scheduleAppearancePresetAutosave() {
     if (appearancePresetAutosaveSuppressDepth > 0) return;
+    markSessionChanged();
     const presetApi = window.VibeMolPreset;
     if (!presetApi || typeof presetApi.export !== 'function') return;
     cancelAppearancePresetAutosave();
@@ -30632,6 +30647,7 @@
     parseTwoComponentCube,
     parseXYZ,
     parseMolden,
+    importSessionText: text => sessionController.importText(text),
     ensureVolumeSchema,
     setVolume2CComponent,
     getGlobal2CComponentMode: () => global2CComponentMode,
@@ -32352,6 +32368,7 @@
    * @param {{preserveView?:boolean, skipAutoIso?:boolean}} options
    */
   function rebuildScene(options = {}) {
+    if (applyingSession) return;
     const preserveView = !!options.preserveView;
     const skipAutoIso = !!options.skipAutoIso;
     const savedCam = preserveView ? camera.clone() : null;
@@ -32647,6 +32664,203 @@
     volumes.push({ name: 'Demo Water', vol });
     activateVolumeIndex(0);
   }
+
+  // Complete-session persistence owns its schema and staging separately from the renderer.
+  function captureSessionView() {
+    return {
+      projection: viewState.mode, position: camera.position.toArray(), up: camera.up.toArray(),
+      quaternion: camera.quaternion.toArray(), target: controls.target.toArray(), zoom: camera.zoom,
+      fov: perspectiveCamera.fov, contentPosition: contentGroup.position.toArray(),
+    };
+  }
+
+  function restoreSessionView(view) {
+    controls.autoRotate = false;
+    setProjectionMode(view.projection, { refreshUi: false });
+    perspectiveCamera.fov = view.fov;
+    camera.position.fromArray(view.position);
+    camera.up.fromArray(view.up);
+    controls.target.fromArray(view.target);
+    camera.zoom = view.zoom;
+    contentGroup.position.fromArray(view.contentPosition);
+    controls.update();
+    camera.quaternion.fromArray(view.quaternion);
+    updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight);
+    refreshViewUI();
+  }
+
+  function getSessionState() {
+    return { graph: sceneGraphController, sources: sceneSources, records: volumes, activeRecord: volumes[currentIndex],
+      preset: exportPresetEnvelope(), view: captureSessionView(), appVersion: APP_VERSION };
+  }
+
+  function applySessionState(staged) {
+    const state = sceneGraphController.getState();
+    const previous = { graph: Object.assign({}, state, { scenes: state.scenes.slice(), selectedLayerIds: state.selectedLayerIds.slice(),
+      syncMaster: Object.assign({}, state.syncMaster) }), sources: sceneSources.getSources(), records: volumes,
+      activeRecord: volumes[currentIndex], preset: exportPresetEnvelope(), view: captureSessionView() };
+    const install = saved => {
+      // Preset setters operate on global defaults while the graph is detached.
+      // Builder logs are restored per source, never matched by filename.
+      clearSceneMeshes();
+      sceneGraphController.restoreState({ scenes: [], activeSceneId: null, focusedSceneId: null, activeLayerId: null,
+        selectedLayerIds: [], syncMaster: { frame: 0, fps: 12, playing: false, lastStepMs: 0 } });
+      volumes = [];
+      currentIndex = -1;
+      importPresetEnvelope(saved.preset, { mode: PRESET_MODE.RELAXED, applyBuilder: false, afterApply: false });
+      volumes = saved.records;
+      currentIndex = saved.activeRecord ? volumes.indexOf(saved.activeRecord) : (volumes.length ? 0 : -1);
+      sceneGraphController.restoreState(saved.graph);
+      sceneSources.restore(saved.sources);
+      for (const record of volumes) if (record.vol.isTwoComponent) setVolume2CComponent(record, global2CComponentMode);
+      trajectoryPlaying = false;
+      vibrationPlaying = false;
+      vibrationLastStepMs = 0;
+      restoreSessionView(saved.view);
+    };
+    applyingSession = true;
+    appearancePresetAutosaveSuppressDepth++;
+    cancelAppearancePresetAutosave();
+    try {
+      if (currentMode !== MODES.DISPLAY) setMode(MODES.DISPLAY);
+      clearTransientInteractionState();
+      closeCubeLayerContextMenu();
+      closeCombinePopover();
+      setMoldenInspectorOpen(false);
+      install(staged);
+      applyingSession = false;
+      rebuildScene({ preserveView: true, skipAutoIso: true });
+      clearEditHistory();
+      syncLoadedSceneControls();
+      syncTrajectoryControls();
+      syncVibrationControls();
+      updateSidePanel();
+      updateEmptyStateVisibility();
+    } catch (error) {
+      applyingSession = true;
+      install(previous);
+      applyingSession = false;
+      rebuildScene({ preserveView: true, skipAutoIso: true });
+      syncLoadedSceneControls();
+      updateEmptyStateVisibility();
+      throw error;
+    } finally {
+      applyingSession = false;
+      appearancePresetAutosaveSuppressDepth--;
+    }
+  }
+
+  function getSessionBusyReason() {
+    if (batchExportRunning || (trajectoryVideoController && trajectoryVideoController.isActive())
+      || (vibrationVideoController && vibrationVideoController.isActive())) return 'Finish the current export before saving or opening a session.';
+    if (moldenRenderFrameId || moldenGridCommitDebounceTimer || getSceneOutliner().isComputing()) return 'Wait for the current calculation to finish.';
+    if (addGrowActive || moleculePlaceActive || addFusePreviewState || transformActive) return 'Finish or cancel the current placement before saving or opening a session.';
+    return '';
+  }
+
+  const sessionStatusEl = document.getElementById('sessionStatus');
+  const saveSessionBtn = document.getElementById('saveSessionBtn');
+  const sessionFileInput = document.getElementById('sessionFileInput');
+  const sessionBusyOverlay = document.getElementById('sessionBusyOverlay');
+  let sessionInertElements = [];
+  sessionController = window.VibeMolSessionModule.createSessionController({
+    getState: getSessionState, getBusyReason: getSessionBusyReason,
+    prepareVolume: vol => ensureVolumeSchema(vol, { inferMissingBonds: false }),
+    applyState: applySessionState,
+    setOpening: opening => {
+      sessionBusyOverlay.hidden = !opening;
+      if (opening) {
+        sessionInertElements = Array.from(document.body.children).filter(el => el !== sessionBusyOverlay && !el.inert);
+        sessionInertElements.forEach(el => { el.inert = true; });
+      } else {
+        sessionInertElements.forEach(el => { el.inert = false; });
+        sessionInertElements = [];
+      }
+    },
+    onOpened: staged => {
+      if (sessionStatusEl) sessionStatusEl.textContent = `Opened ${staged.name || 'session'}`;
+      if (sessionRecovery) { sessionRecovery.startFresh(); sessionRecovery.markDirty(); }
+      setHintMessage('Session opened. Playback is paused.');
+    },
+  });
+  window.VibeMolSession = Object.freeze({
+    kind: sessionController.kind, version: sessionController.version,
+    exportText: async options => { await fileLoaderController.whenIdle(); return sessionController.exportText(options); },
+    export: async options => { await fileLoaderController.whenIdle(); return sessionController.export(options); },
+    importText: text => fileLoaderController.runExclusive(() => sessionController.importText(text)),
+    import: envelope => fileLoaderController.runExclusive(() => sessionController.import(envelope)),
+    validateText: sessionController.validateText,
+  });
+  if (saveSessionBtn) saveSessionBtn.onclick = async () => {
+    saveSessionBtn.disabled = true;
+    sessionStatusEl.textContent = 'Saving session…';
+    try {
+      if (getSceneOutliner().isRenaming()) finishOutlinerRename({ commit: true });
+      const text = await window.VibeMolSession.exportText();
+      const stamp = new Date().toISOString().replace(/[:]/g, '-').replace(/\..+/, '');
+      const link = document.createElement('a');
+      link.download = `vibemol-${stamp}.vibemol-session`;
+      link.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      try { link.click(); } finally { setTimeout(() => URL.revokeObjectURL(link.href), 1000); }
+      sessionStatusEl.textContent = 'Session downloaded';
+    } catch (error) {
+      sessionStatusEl.textContent = `Save failed: ${error.message}`;
+    } finally { saveSessionBtn.disabled = false; }
+  };
+  const openSessionBtn = document.getElementById('openSessionBtn');
+  if (openSessionBtn) openSessionBtn.onclick = () => sessionFileInput.click();
+  if (sessionFileInput) fileLoaderController.installFileInput(sessionFileInput);
+
+  const recoveryPrompt = document.getElementById('sessionRecoveryPrompt');
+  const recoveryMessage = document.getElementById('sessionRecoveryMessage');
+  const recoverSessionBtn = document.getElementById('recoverSessionBtn');
+  const skipRecoveryBtn = document.getElementById('skipRecoveryBtn');
+  const retryAutosaveBtn = document.getElementById('retryAutosaveBtn');
+  sessionRecovery = window.VibeMolSessionRecovery.createRecoveryController({
+    exportText: options => sessionController.exportText(options),
+    importText: text => window.VibeMolSession.importText(text),
+    hasWork: () => sceneGraphController.getScenes().length > 0,
+    isBusy: () => !!(applyingSession || sessionController.isOpening() || fileLoaderController.isLoading() || getSessionBusyReason()),
+    getName: () => sceneGraphController.getScenes()[0]?.name || 'VibeMol session',
+    onStatus: ({state, message}) => {
+      sessionStatusEl.textContent = message;
+      sessionStatusEl.dataset.state = state;
+      retryAutosaveBtn.hidden = state !== 'error';
+    },
+    onRecovery: candidates => {
+      recoveryPrompt.hidden = !candidates.length;
+      if (candidates.length) {
+        const candidate = candidates[0];
+        const date = new Date(candidate.savedAt);
+        const when = Number.isFinite(date.getTime()) ? ` (${date.toLocaleString()})` : '';
+        recoveryMessage.textContent = `Recover ${candidate.name || 'your previous session'}${when}?`;
+      }
+    },
+  });
+  window.VibeMolRecovery = Object.freeze({
+    getState: sessionRecovery.getState,
+    flush: sessionRecovery.flush,
+    recover: sessionRecovery.recover,
+    startFresh: sessionRecovery.startFresh,
+  });
+  recoverSessionBtn.onclick = async () => {
+    recoverSessionBtn.disabled = true;
+    try { await sessionRecovery.recover(); } finally { recoverSessionBtn.disabled = false; }
+  };
+  skipRecoveryBtn.onclick = () => sessionRecovery.startFresh();
+  retryAutosaveBtn.onclick = async () => {
+    if (!sessionRecovery.getState().ready) await sessionRecovery.initialize();
+    else await sessionRecovery.flush({force:true});
+  };
+  for (const eventName of ['input', 'change', 'click', 'pointerup', 'keyup']) {
+    document.addEventListener(eventName, event => {
+      if (event.target && event.target.closest && event.target.closest('#sessionRecoveryPrompt, #retryAutosaveBtn, #saveSessionBtn, #openSessionBtn')) return;
+      markSessionChanged();
+    });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) void sessionRecovery.flush(); });
+  window.addEventListener('pagehide', () => { void sessionRecovery.flush(); });
+  void sessionRecovery.initialize();
 
   // Startup: begin with an empty scene and onboarding text.
   updateEmptyStateVisibility();

@@ -1,0 +1,43 @@
+#toolbar .vm-session-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+#toolbar .vm-session-actions button {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+#toolbar .vm-session-status {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--vm-color-text-muted, #687180);
+  overflow-wrap: anywhere;
+}
+
+#toolbar .vm-session-status:empty { display: none; }
+#sessionFileInput[hidden], #sessionRecoveryPrompt[hidden], #sessionBusyOverlay[hidden], #retryAutosaveBtn[hidden] { display: none; }
+
+#toolbar .vm-session-recovery {
+  border: 1px solid var(--vm-accent-outline, #8796af);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#toolbar .vm-session-recovery p { margin: 0 0 8px; }
+
+#sessionBusyOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 28, 40, 0.65);
+  color: white;
+  font-size: 18px;
+}

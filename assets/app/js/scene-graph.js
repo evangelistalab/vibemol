@@ -130,6 +130,11 @@
       return id;
     }
 
+    function reserveId(id) {
+      const match = /^([a-z]+)-(\d+)$/.exec(String(id || ''));
+      if (match) counters[match[1]] = Math.max(counters[match[1]] || 1, Number(match[2]) + 1);
+    }
+
     function getState() {
       return state;
     }
@@ -370,7 +375,9 @@
 
     function addScene(scene) {
       if (!scene || !scene.id) return null;
+      reserveId(scene.id);
       if (!Array.isArray(scene.layers)) scene.layers = [];
+      scene.layers.forEach(layer => reserveId(layer.id));
       state.scenes.push(scene);
       state.activeSceneId = scene.id;
       state.focusedSceneId = scene.id;
@@ -386,6 +393,7 @@
       const scene = typeof sceneOrId === 'string' ? findScene(sceneOrId) : sceneOrId;
       if (!scene) return null;
       const layer = createLayer(scene, props);
+      reserveId(layer.id);
       scene.layers.push(layer);
       if (layer.kind === LAYER_KIND.MOLECULE && !scene.moleculeLayerId) scene.moleculeLayerId = layer.id;
       if (layer.kind === LAYER_KIND.ORBITALS_GROUP && !scene.orbitalsGroupId) scene.orbitalsGroupId = layer.id;
@@ -673,6 +681,13 @@
       for (const scene of nextScenes) addScene(scene);
     }
 
+    function restoreState(saved) {
+      clearScenes();
+      for (const scene of saved.scenes) addScene(scene);
+      Object.assign(state, saved, { scenes: saved.scenes.slice(), selectedLayerIds: saved.selectedLayerIds.slice(),
+        syncMaster: Object.assign({}, saved.syncMaster) });
+    }
+
     return Object.freeze({
       kinds: LAYER_KIND,
       surfaceStyles: SURFACE_STYLE,
@@ -716,6 +731,7 @@
       removeScene,
       clearScenes,
       reset,
+      restoreState,
     });
   }
 

@@ -34,8 +34,14 @@ Interactive loads append scenes/layers. `VibeMolEmbed.loadFiles()` defaults to r
 
 `scene-export.js` enumerates live cube/arithmetic layers, plus molecule-only scenes, as explicit batch targets. Each target is activated before rendering and capture. A `finally` path restores focus, selection, visibility, camera, active record, and playback state, including when a download fails.
 
+## Sessions and recovery
+
+`session-format.js` owns the versioned portable format, bounded numeric-buffer encoding, checksums, and validation of sources, grids, scene membership, and arithmetic dependencies. `session.js` captures durable fields and stages records and a graph without changing the current workspace. `app.js` installs that staged model and binds the existing renderer, camera, and preset controls. The graph reserves restored IDs; the source registry marks imported orbitals/cubes as already registered so ordinary reconciliation cannot undo saved deletion or ordering.
+
+`session-recovery.js` uses the same serializer with a smaller size limit and a debounced IndexedDB writer. Two snapshots rotate in one transaction, a revision check prevents cross-tab overwrites, and startup recovery requires an explicit user action. Empty startup state never replaces recovery data. See [Sessions and recovery](sessions.md) for the public API, exact coverage, and persistence limits.
+
 ## Trajectories and checks
 
 `trajectory-clock.js` computes frame advances without DOM or renderer dependencies. It retains fractional elapsed time, wraps looping tracks, and clamps non-looping tracks. The shared clock maps onto each synchronized trajectory's own frame count. `trajectory-ui.js` owns row identity and values, keeping active controls mounted while playback updates the display.
 
-Run `make check`, `make test-unit`, and `make test-e2e`. The browser target runs `smoke.py` and `premerge.py`; the latter covers the merge regressions and synchronized trajectories. `VIBEMOL_TEST_ARTIFACT_DIR` can redirect failure artifacts to a temporary directory.
+Run `make check`, `make test-unit`, and `make test-e2e`. The browser target runs `smoke.py`, `premerge.py`, and `sessions.py`, covering the editor, scene/arithmetic regressions, and portable session/recovery behavior. `VIBEMOL_TEST_ARTIFACT_DIR` can redirect failure artifacts to a temporary directory.

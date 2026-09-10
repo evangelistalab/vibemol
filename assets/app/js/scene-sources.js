@@ -7,6 +7,23 @@
     let sources = new Map();
     let nextSourceId = 1;
 
+    function register(record) {
+      if (!sources.has(record)) sources.set(record, { id: `source-${nextSourceId++}`, record, cubeImported: false, orbitals: new Set() });
+      return sources.get(record);
+    }
+
+    // A restored graph is authoritative, including sources whose original layers
+    // were deleted. Mark all imported entries as seen so reconciliation stays incremental.
+    function restore(entries) {
+      sources = new Map();
+      for (const { id, record } of entries) {
+        const mos = record.vol.molden && record.vol.molden.mos || [];
+        sources.set(record, { id, record, cubeImported: true, orbitals: new Set(mos.map((_, index) => index)) });
+        const match = /^source-(\d+)$/.exec(id);
+        if (match) nextSourceId = Math.max(nextSourceId, Number(match[1]) + 1);
+      }
+    }
+
     function reset() {
       graph.clearScenes();
       sources = new Map();
@@ -67,11 +84,7 @@
           graph.addScene(scene);
         }
         for (const record of group) {
-          let source = sources.get(record);
-          if (!source) {
-            source = { id: `source-${nextSourceId++}`, record, cubeImported: false, orbitals: new Set() };
-            sources.set(record, source);
-          }
+          const source = register(record);
           const molden = record.vol && record.vol.kind === 'molden';
           if (record._sceneGraphHasOrbitalsGroup || molden || hasGrid(record.vol)) graph.ensureOrbitalsGroup(scene);
           if (!molden && hasGrid(record.vol) && !source.cubeImported) {
@@ -115,7 +128,7 @@
       return graph.getFocusedScene();
     }
 
-    return Object.freeze({ reconcile, reset, addOrbital, getSources: () => Array.from(sources.values()) });
+    return Object.freeze({ reconcile, reset, register, restore, addOrbital, getSources: () => Array.from(sources.values()) });
   }
 
   global.VibeMolSceneSources = Object.freeze({ createSceneSources });

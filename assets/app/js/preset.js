@@ -339,7 +339,7 @@
         deps.setPresetRebuildSuspended(false);
       }
 
-      if (typeof deps.afterApplySettings === 'function') deps.afterApplySettings();
+      if (options.afterApply !== false && typeof deps.afterApplySettings === 'function') deps.afterApplySettings();
       presetUnknownSettings = deps.cloneJsonLike(unknownSettings) || {};
       return {
         ok: true,
@@ -378,8 +378,8 @@
       if (deps.isPlainObject(preset.meta)) presetMeta = deps.cloneJsonLike(preset.meta) || {};
       if (deps.isPlainObject(preset.extensions)) presetExtensions = deps.cloneJsonLike(preset.extensions) || {};
 
-      const applyResult = applyPresetSettings(preset.settings || {}, { mode });
-      applyBuilderExtensionToLoadedVolumes();
+      const applyResult = applyPresetSettings(preset.settings || {}, { mode, afterApply: options.afterApply });
+      if (options.applyBuilder !== false) applyBuilderExtensionToLoadedVolumes();
       return {
         ok: true,
         mode,

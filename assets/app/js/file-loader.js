@@ -109,15 +109,21 @@
     // All entrypoints share the same parse -> plan -> commit pipeline. Parsing is
     // side-effect free so a rejected replacement cannot erase a working scene.
     async function parseFiles(fileList, options = {}) {
-      const plan = { primaries: [], sidecars: [], presets: [], failures: [] };
+      const plan = { primaries: [], sidecars: [], presets: [], sessions: [], failures: [] };
       for (const file of Array.from(fileList || [])) {
         const inputName = String(file && file.name || 'Unknown file');
         try {
+          if (/\.vibemol-session$/i.test(inputName) && file.size > 512 * 1024 * 1024) {
+            throw new Error('Session file exceeds the 512 MiB import limit.');
+          }
           const text = await file.text();
           const fileKind = deps.detectInputFileKind(inputName, text);
           const item = { name: inputName, inputName, fileKind, sourceStem: normalizeFileStem(inputName) };
           const json = fileKind === 'json' ? JSON.parse(text) : null;
-          if (fileKind === 'psi4_output' || deps.looksLikePsi4OutputText(text)) {
+          if (fileKind === 'session' || (json && json.kind === 'vibemol.session')) {
+            plan.sessions.push(Object.assign(item, { text }));
+            continue;
+          } else if (fileKind === 'psi4_output' || deps.looksLikePsi4OutputText(text)) {
             const bundle = deps.parsePsi4OutputVibrationBundle(text, inputName);
             Object.assign(item, { vol: bundle.vol, vibrationPayload: bundle.payload, forceNewScene: true });
           } else if (fileKind === 'orca_hess') {
@@ -155,12 +161,22 @@
     }
 
     async function commitFilePlan(plan, options = {}) {
-      const { primaries, sidecars, presets, failures } = plan;
+      const { primaries, sidecars, presets, sessions = [], failures } = plan;
       const successful = new Set();
       const attempt = async (item, callback) => {
         try { await callback(); successful.add(item); }
         catch (err) { failures.push(`${item.inputName}: ${err && err.message || err}`); }
       };
+      if (sessions.length) {
+        if (sessions.length !== 1 || primaries.length || sidecars.length || presets.length || failures.length) {
+          failures.push('Open one session file at a time. Add other files after the session opens.');
+          primaries.length = 0;
+          sidecars.length = 0;
+          presets.length = 0;
+        } else {
+          await attempt(sessions[0], () => deps.importSessionText(sessions[0].text));
+        }
+      }
       if (primaries.length) {
         if (options.clearFirst === true) clearAllLoadedFiles({ includeHint: false });
         const hasGrid = primaries.some(item => deps.hasVolumetricGrid(item.vol));
@@ -222,11 +238,16 @@
     }
 
     let loadQueue = Promise.resolve();
-    function handleFiles(fileList, options = {}) {
-      const files = Array.from(fileList || []);
-      const next = loadQueue.then(async () => commitFilePlan(await parseFiles(files, options), options));
+    let pendingLoads = 0;
+    function runExclusive(callback) {
+      pendingLoads++;
+      const next = loadQueue.then(callback).finally(() => { pendingLoads--; });
       loadQueue = next.catch(() => {});
       return next;
+    }
+    function handleFiles(fileList, options = {}) {
+      const files = Array.from(fileList || []);
+      return runExclusive(async () => commitFilePlan(await parseFiles(files, options), options));
     }
 
     function decodeBase64Bytes(raw) {
@@ -361,6 +382,9 @@
       parseFiles,
       commitFilePlan,
       handleFiles,
+      runExclusive,
+      whenIdle: () => loadQueue,
+      isLoading: () => pendingLoads > 0,
       buildEmbeddedFile,
       clearAllLoadedFiles,
       loadEmbeddedFiles,

@@ -803,7 +803,7 @@
       }
       if (Array.isArray(vol.vibration.modes)) {
         vol.vibration.modes = vol.vibration.modes.map((mode) => {
-          const next = cloneJsonLike(mode) || {};
+          const next = cloneStructuredData(mode) || {};
           if (Array.isArray(next.displacements) && !(next.displacements instanceof Float32Array)) {
             next.displacements = Float32Array.from(next.displacements);
           }
@@ -813,7 +813,7 @@
     }
     if (vol.molden && Array.isArray(vol.molden.mos)) {
       vol.molden.mos = vol.molden.mos.map((mo) => {
-        const next = cloneJsonLike(mo) || {};
+        const next = cloneStructuredData(mo) || {};
         if (Array.isArray(next.coefficients) && !(next.coefficients instanceof Float32Array)) {
           next.coefficients = Float32Array.from(next.coefficients);
         }

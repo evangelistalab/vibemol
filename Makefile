@@ -35,6 +35,9 @@ JS_CHECK_FILES = \
 	assets/app/js/arithmetic-runner.js \
 	assets/app/js/arithmetic-layers.js \
 	assets/app/js/grid-store.js \
+	assets/app/js/session-format.js \
+	assets/app/js/session.js \
+	assets/app/js/session-recovery.js \
 	assets/app/js/file-loader.js \
 	assets/app/js/trajectory-clock.js \
 	assets/app/js/trajectory-ui.js \
@@ -47,7 +50,7 @@ check:
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
 	done
-	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py
+	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py
 	git diff --check
 
 test-unit:
@@ -56,5 +59,6 @@ test-unit:
 test-e2e:
 	python3 tests/e2e/smoke.py
 	python3 tests/e2e/premerge.py
+	python3 tests/e2e/sessions.py
 
 test: check test-unit test-e2e

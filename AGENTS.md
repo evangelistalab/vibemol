@@ -11,6 +11,7 @@ Supported molecular file types:
 - `.vib.json` / `.vmodes.json` / `.modes.json` (vibrational mode sidecar data)
 - `.hess` (ORCA Hessian vibrational mode source)
 - `.dat` / `.out` / `.output` (Psi4 text output with harmonic analysis)
+- `.vibemol-session` (complete saved workspace)
 
 Primary capabilities:
 - Iso-surface rendering and cloud rendering
@@ -21,6 +22,7 @@ Primary capabilities:
 - Vibrational mode playback (mode table, amplitude, speed, hide-small-frequencies filter)
 - PNG export, XYZ export, and cropped WebM export for trajectories and vibrational modes
 - Portable preset save/load (web and CLI compatible)
+- Complete portable session save/open, browser autosave, and explicit recovery
 - Molden molecular-orbital parsing, grid generation, and rendering
 
 ## Project Layout
@@ -71,6 +73,10 @@ Primary capabilities:
 - `assets/app/js/cloud-rendering.js`: standard and two-component cloud geometry builders.
 - `assets/app/js/preset.js`: preset registry, import/export controller, and builder-extension preset state helpers.
 - `assets/app/js/structure-transport.js`: reproducible structure envelope export/import controller and `window.VibeMolStructure` API.
+- `assets/app/js/session-format.js`: versioned portable session schema, bounded buffer codec, checksums, and dependency/shape validation.
+- `assets/app/js/session.js`: durable workspace capture, staged graph/source hydration, and `window.VibeMolSession` controller.
+- `assets/app/js/session-recovery.js`: debounced IndexedDB autosave, atomic two-snapshot retention, explicit recovery, and cross-tab revision checks.
+- `assets/app/css/session-ui.css` and `docs/sessions.md`: session/recovery controls and persistence/API documentation.
 - `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, embed file-loading controller, and XYZ text detection/normalization helpers.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
@@ -99,6 +105,7 @@ Primary capabilities:
 - `tests/unit/load-global-module.mjs`: VM-based loader for global/IIFE modules under Node.
 - `tests/e2e/smoke.py`: Playwright smoke/E2E test that starts a temporary local static server.
 - `tests/e2e/premerge.py`: focused browser regressions for molecule styles and preset fallback, append/replace imports, layer persistence, batch export, Molden orbital browsing/arithmetic dependencies, and synchronized trajectories.
+- `tests/e2e/sessions.py`: fresh-page session round-trips, retained sources, typed arrays, derived dependencies, downloads, quota/corruption recovery, and cross-tab protection.
 - `tests/e2e/helpers.py`: shared server/artifact helpers for browser smoke tests.
 - `.github/workflows/ci.yml`: CI workflow for checks, unit tests, and browser smoke tests.
 - `notebooks/vibemol_notebook_demo.ipynb`: notebook demo (PNG render + iframe auto-load via postMessage).
@@ -113,8 +120,9 @@ Required stylesheet order in `index.html`:
 4. `assets/app/css/edit-ui.css`
 5. `assets/app/css/display-ui.css`
 6. `src/styles/vm-list-popover.css`
-7. `assets/app/css/scene-outliner.css` (after the inline shell styles)
-8. `assets/app/css/trajectory-ui.css`
+7. `assets/app/css/session-ui.css`
+8. `assets/app/css/scene-outliner.css` (after the inline shell styles)
+9. `assets/app/css/trajectory-ui.css`
 
 Required script order in `index.html`:
 1. `assets/vendor/js/three.min.js`
@@ -162,15 +170,18 @@ Required script order in `index.html`:
 43. `assets/app/js/arithmetic-runner.js`
 44. `assets/app/js/arithmetic-layers.js`
 45. `assets/app/js/grid-store.js`
-46. `assets/app/js/file-loader.js`
-47. `assets/app/js/symmetry.js`
-48. `src/prefs.js`
-49. `src/components/VmListPopover.js`
-50. `src/components/VmTooltip.js`
-51. `assets/app/js/trajectory-clock.js`
-52. `assets/app/js/trajectory-ui.js`
-53. `assets/app/js/trajectory-video.js`
-54. `assets/app/js/app.js`
+46. `assets/app/js/session-format.js`
+47. `assets/app/js/session.js`
+48. `assets/app/js/session-recovery.js`
+49. `assets/app/js/file-loader.js`
+50. `assets/app/js/symmetry.js`
+51. `src/prefs.js`
+52. `src/components/VmListPopover.js`
+53. `src/components/VmTooltip.js`
+54. `assets/app/js/trajectory-clock.js`
+55. `assets/app/js/trajectory-ui.js`
+56. `assets/app/js/trajectory-video.js`
+57. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -207,6 +218,9 @@ Required script order in `index.html`:
 - `window.VibeMolEditHalo`
 - `window.VibeMolPresetModule`
 - `window.VibeMolStructureTransport`
+- `window.VibeMolSessionFormat`
+- `window.VibeMolSessionModule`
+- `window.VibeMolSessionRecovery`
 - `window.VibeMolFileLoader`
 - `window.VibeMolSymmetry`
 - `window.VibeMolTrajectoryVideo`
@@ -243,6 +257,8 @@ Preset automation contract exposed globally:
 - `.xyz` file imports and pasted XYZ text accept either standard XYZ (`natoms`, comment, coordinates) or coordinates-only rows; the first token on each row may be an element symbol or an atomic number.
 - Preset JSON files can be drag-dropped directly into the app and are imported through the normal preset path.
 - Reproducible structure JSON files (`kind: "vibemol.structure"`) can be drag-dropped directly into the app and preserve explicit bonds plus builder annotations.
+- Save session downloads a `.vibemol-session` JSON bundle. Open session, ordinary picker/drop, and embedded loads validate one bundle before replacing the workspace. Sessions preserve source identity/data, edited structures, graph/layer state, arithmetic recipes/results, camera, and playback controls; playback reopens paused in View mode. Undo history, unfinished interactions, and floating-window layout are excluded.
+- Session autosave uses IndexedDB and the same serializer, retains two completed snapshots, and offers explicit recovery on startup. Empty startup and failed writes do not erase prior snapshots. Concurrent tabs cannot overwrite a newer recovery revision silently. Portable numeric data is capped at 256 MiB; autosave at 64 MiB per snapshot. See `docs/sessions.md` for the asynchronous `VibeMolSession`/`VibeMolRecovery` APIs and browser-local persistence limits.
 - Edit Add mode has three submodes: `Atom`, `Fragment`, and `Molecule`.
 - Standalone molecule placement is interactive: click to place, drag to rotate around COM, click again to confirm, `Esc` to cancel, `X/Y/Z` to align preview axes.
 - Fragment/molecule catalog data loads from `assets/fragments/library.json` when available and falls back to built-in starter definitions.
@@ -366,7 +382,7 @@ Implemented:
 
 Remaining work and priorities are tracked in [the product roadmap](docs/roadmap.md).
 
-- Next priority: portable save/open of the complete scene/source/layer workspace, followed by autosave/recovery using the same format. Appearance autosave, preset builder logs, and single-record structure export already exist.
+- Complete session save/open and browser autosave/recovery are implemented on `codex/session-save-recovery`, pending merge review. The next product improvement after that merge is bounded local heavy-atom relaxation and builder reliability. Appearance autosave, preset builder logs, and single-record structure export remain complementary tools.
 - Catalog fragment/molecule kinds, atom/fragment/molecule placement, append/replace-H attachment, supported ring fusion, builder group metadata, and group-aware transforms are implemented. Remaining builder work is chemistry validation, clearer scope/pivot/placement feedback, and broader fusion cases.
 - Local heavy-atom relaxation after attachment/substitution remains open. Reviewed bond cleanup, hydrogen repair/local hydrogen-only UFF relaxation, and whole-structure UFF optimization are implemented.
 - Complete workspace restoration and replay of builder operations are separate tasks; restoring stored operation logs does not replay them.

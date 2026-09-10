@@ -41,6 +41,7 @@
   <link rel="stylesheet" href="assets/app/css/edit-ui.css" />
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
   <link rel="stylesheet" href="src/styles/vm-list-popover.css" />
+  <link rel="stylesheet" href="assets/app/css/session-ui.css" />
   <style>
     :root {
       --vm-color-accent: #0c3575;
@@ -2322,8 +2323,9 @@
   </div>
   <div id="toolbar" aria-expanded="true">
     <input type="file" id="fileInput"
-      accept=".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,application/json,text/plain"
+      accept=".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,.vibemol-session,application/json,text/plain"
       multiple />
+    <input type="file" id="sessionFileInput" accept=".vibemol-session,.json,application/json" hidden />
     <datalist id="pubchemSuggestions"></datalist>
 
     <div id="toolbarHead">
@@ -2372,6 +2374,19 @@
         <button id="saveStructureBtn" class="secondary tb-iconBtn ms-icon-button"
           aria-label="Download structure"
           data-tooltip="Download structure">file_download</button>
+      </div>
+      <div class="vm-session-actions" aria-label="Session files">
+        <button id="saveSessionBtn" class="secondary" type="button" data-tooltip="Download the complete workspace, including source data and layers">Save session</button>
+        <button id="openSessionBtn" class="secondary" type="button" data-tooltip="Replace the workspace with a saved session">Open session</button>
+      </div>
+      <div id="sessionStatus" class="vm-session-status" role="status" aria-live="polite"></div>
+      <button id="retryAutosaveBtn" class="secondary" type="button" hidden>Retry autosave</button>
+      <div id="sessionRecoveryPrompt" class="vm-session-recovery" hidden>
+        <p id="sessionRecoveryMessage"></p>
+        <div class="vm-session-actions">
+          <button id="recoverSessionBtn" class="secondary" type="button">Recover session</button>
+          <button id="skipRecoveryBtn" class="secondary" type="button">Start fresh</button>
+        </div>
       </div>
       <div class="tb-field">
         <div id="sceneOutliner" class="vm-outliner" aria-label="Scenes outliner">
@@ -3883,6 +3898,10 @@
   <script src="./assets/app/js/arithmetic-runner.js"></script>
   <script src="./assets/app/js/arithmetic-layers.js"></script>
   <script src="./assets/app/js/grid-store.js"></script>
+  <!-- portable sessions and browser recovery -->
+  <script src="./assets/app/js/session-format.js"></script>
+  <script src="./assets/app/js/session.js"></script>
+  <script src="./assets/app/js/session-recovery.js"></script>
   <!-- file loading helpers -->
   <script src="./assets/app/js/file-loader.js"></script>
   <!-- symmetry helpers -->
@@ -3898,6 +3917,7 @@
   <script src="./assets/app/js/trajectory-ui.js"></script>
   <script src="./assets/app/js/trajectory-video.js"></script>
 
+  <div id="sessionBusyOverlay" role="status" aria-live="polite" hidden>Opening session…</div>
   <script src="./assets/app/js/app.js"></script>
 </body>
 
