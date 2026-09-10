@@ -7,7 +7,9 @@ import json
 import os
 import pathlib
 import re
+import subprocess
 import sys
+import tempfile
 
 from playwright.sync_api import sync_playwright
 from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
@@ -131,6 +133,84 @@ def copy_coordinates(page):
     text = page.evaluate('() => navigator.clipboard.readText()')
     assert page.evaluate('() => VibeMolTesting.getOpenNonEditWindows()') == before_windows, 'Cmd/Ctrl+C must not toggle Coordinates'
     return text
+
+
+def xyz_units(page, dialogs):
+    factor = 0.529177210903
+    # Bond visibility is a display setting, not an input-unit heuristic.
+    page.evaluate("() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,settings:{'global.showBonds':false}})")
+    assert load(page, [
+        {'name': 'bonded.xyz', 'text': '2\nAngstrom\nC 0 0 0\nH 1.09 0 0\n'},
+        {'name': 'single.xyz', 'text': '1\nSingle atom\nH 8 -2 4\n'},
+        {'name': 'metal.xyz', 'text': '2\nMetal bond\nFe 0 0 0\nN 2.2 0 0\n'},
+    ])['ok']
+    assert not dialogs, dialogs
+    page.evaluate("() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,settings:{'global.showBonds':true}})")
+
+    # Picker import converts before inference and retains every trajectory frame.
+    page._accept_xyz_conversion = True
+    trajectory = '2\nBohr frame 1\nC 2 -3 4\nH 4 -3 4\n2\nBohr frame 2\nC 3 -2 5\nH 5 -2 5\n'
+    page.locator('#fileInput').set_input_files({
+        'name': 'bohr-trajectory.xyz', 'mimeType': 'chemical/x-xyz', 'buffer': trajectory.encode(),
+    })
+    page.wait_for_function("() => VibeMolStructure.exportActive().name === 'bohr-trajectory.xyz'")
+    assert len(dialogs) == 1 and 'bohr-trajectory.xyz' in dialogs[-1] and 'every trajectory frame' in dialogs[-1], dialogs
+    converted = page.evaluate('() => VibeMolStructure.exportActive().volume')
+    assert converted['units'] == 'angstrom'
+    assert len(converted['bonds']) == 1, converted['bonds']
+    for actual, original in zip(converted['trajectory']['frames'], ([2, -3, 4, 4, -3, 4], [3, -2, 5, 5, -2, 5])):
+        assert all(abs(a - b * factor) < 1e-6 for a, b in zip(actual, original)), actual
+    slider = page.locator('.trajectorySceneRow input[type=range]')
+    slider.focus()
+    slider.press('End')
+    atoms = page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')
+    assert abs(atoms[1]['x'] - 5 * factor) < 1e-6, atoms
+
+    # Declining a dropped file still imports it, with its original coordinates.
+    page._accept_xyz_conversion = False
+    page.evaluate(r"""() => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(['C 0 0 0\nH 2 0 0\n'], 'keep-angstrom.xyz', {type:'chemical/x-xyz'}));
+      document.getElementById('canvas').dispatchEvent(new DragEvent('drop', {dataTransfer:transfer,bubbles:true,cancelable:true}));
+    }""")
+    page.wait_for_function("() => VibeMolStructure.exportActive().name === 'keep-angstrom.xyz'")
+    kept = page.evaluate('() => VibeMolStructure.exportActive().volume')
+    assert kept['atoms'][1]['x'] == 2 and kept['units'] == 'angstrom'
+    assert len(dialogs) == 2 and 'keep-angstrom.xyz' in dialogs[-1], dialogs
+
+    # Native paste uses the same warning, including coordinate-only atomic-number rows.
+    page.context.grant_permissions(['clipboard-read', 'clipboard-write'])
+    page._accept_xyz_conversion = True
+    for text in ('6 2 -3 4\n1 4 -3 4\n', '2\nStandard pasted XYZ\nC 2 -3 4\nH 4.2 -3 4\n'):
+        before = len(snapshot(page)['scenes'])
+        page.evaluate('text => navigator.clipboard.writeText(text)', text)
+        focus_clipboard_page(page)
+        page.keyboard.press(CLIPBOARD_MODIFIER + '+v')
+        page.wait_for_function('count => VibeMolTesting.getSceneGraphSnapshot().scenes.length === count + 1', arg=before)
+        pasted = page.evaluate('() => VibeMolStructure.exportActive().volume')
+        assert abs(pasted['atoms'][0]['x'] - 2 * factor) < 1e-6, pasted['atoms']
+        assert abs(pasted['atoms'][1]['y'] + 3 * factor) < 1e-6, pasted['atoms']
+        assert len(pasted['bonds']) == 1
+    assert len(dialogs) == 4 and 'pasted-xyz' in dialogs[-1], dialogs
+
+    # Converted geometry copies back in angstroms and does not convert a second time.
+    text = copy_coordinates(page)
+    assert load(page, [{'name': 'roundtrip.xyz', 'text': text}])['ok']
+    assert len(dialogs) == 4, dialogs
+    assert copy_coordinates(page) == text
+
+    # The render client's dialog handler must not silently opt into conversion.
+    with tempfile.TemporaryDirectory(prefix='vibemol-xyz-units-') as directory:
+        source = pathlib.Path(directory) / 'unbonded.xyz'
+        target = pathlib.Path(directory) / 'render.png'
+        source.write_text('2\nUnbonded coordinates\nC 0 0 0\nH 2 0 0\n', encoding='utf-8')
+        rendered = subprocess.run([
+            sys.executable, str(ROOT / 'api' / 'vibemol_client.py'), str(source), str(target),
+            '--url', page.url, '--wait-ms', '100',
+        ], capture_output=True, text=True, timeout=60)
+        assert rendered.returncode == 0, rendered.stderr
+        assert 'Kept the original coordinates.' in rendered.stderr, rendered.stderr
+        assert target.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
 
 
 def clipboard_roundtrip(page, dialogs):
@@ -514,14 +594,16 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (molecule_styles, imports, clipboard_roundtrip, clipboard_edit_selection,
+            for run in (molecule_styles, imports, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
                         persistence, batch_export, molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})
                 page = context.new_page()
                 errors, console_errors, dialogs = [], [], []
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
-                page.on('dialog', lambda dialog: (dialogs.append(dialog.message), dialog.dismiss()))
+                page.on('dialog', lambda dialog: (dialogs.append(dialog.message),
+                    dialog.accept() if dialog.type == 'confirm' and getattr(page, '_accept_xyz_conversion', False)
+                    else dialog.dismiss()))
                 try:
                     page.goto(url, wait_until='domcontentloaded')
                     page.wait_for_function('() => window.VibeMolEmbed && window.VibeMolTesting')

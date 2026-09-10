@@ -16,7 +16,10 @@ function createController(options = {}) {
   const controller = context.VibeMolFileLoader.createFileLoader({
     detectInputFileKind: options.detectInputFileKind || ((name) => name.endsWith('.xyz') ? 'xyz' : 'cube'),
     detectAndNormalizeXyzText: options.detectAndNormalizeXyzText || (() => null),
-    parseXYZ: (text) => ({ kind: 'xyz', text }),
+    parseXYZ: options.parseXYZ || ((text) => ({ kind: 'xyz', text })),
+    BOHR_TO_ANG: 0.529177210903,
+    hasXyzBondCandidates: options.hasXyzBondCandidates || (() => true),
+    confirmUser: options.confirmUser || (() => { throw new Error('Unexpected unit confirmation'); }),
     parseMolden: (text) => ({ kind: 'molden', text }),
     parseTwoComponentCube: (text) => ({ kind: 'two_component_cube', text }),
     parseCube: options.parseCube || ((text) => ({ kind: 'cube', text })),
@@ -416,4 +419,117 @@ test('the session file size guard does not restrict ordinary molecular imports',
   assert.equal(plan.failures.length, 1);
   assert.match(plan.failures[0], /Session file exceeds/);
   assert.equal(sessionRead, false);
+});
+
+const parseXyz = loadGlobalModule('assets/app/js/parsers.js', {
+  globals: { ATOM_SYMBOL_TO_Z: { C: 6, H: 1 } },
+}).VibeMolParsers.parseXYZ;
+const bohrTrajectory = '2\nFirst frame\nC 2 -3 4\nH 4 -3 4\n2\nSecond frame\nC 3 -2 5\nH 5 -2 5\n';
+
+test('XYZ conversion waits for confirmation before replacing a scene and scales every trajectory frame', async () => {
+  let resolveConfirmation;
+  let confirmationShown;
+  const shown = new Promise(resolve => { confirmationShown = resolve; });
+  const oldRecord = { name: 'existing.xyz', vol: parseXyz('1\nExisting atom\nC 0 0 0\n') };
+  const { controller, getVolumes, events } = createController({
+    volumes: [oldRecord],
+    parseXYZ: parseXyz,
+    hasXyzBondCandidates: () => false,
+    confirmUser: message => {
+      assert.match(message, /trajectory.xyz/);
+      assert.match(message, /bohr/);
+      assert.match(message, /every trajectory frame/);
+      confirmationShown();
+      return new Promise(resolve => { resolveConfirmation = resolve; });
+    },
+  });
+  const plan = await controller.parseFiles([new File([bohrTrajectory], 'trajectory.xyz')]);
+  assert.equal(plan.primaries[0].vol.atoms[0].x, 2, 'Parsing does not convert or prompt');
+  const loading = controller.commitFilePlan(plan, { clearFirst: true });
+  await shown;
+  assert.equal(getVolumes()[0], oldRecord);
+  assert.equal(events.some(event => event[0] === 'clearEditHistory'), false);
+  resolveConfirmation(true);
+  assert.equal((await loading).ok, true);
+  const converted = getVolumes()[0].vol;
+  const original = parseXyz(bohrTrajectory);
+  assert.equal(getVolumes().length, 1);
+  assert.equal(converted.units, 'angstrom');
+  for (let i = 0; i < original.atoms.length; i++) {
+    for (const axis of ['x', 'y', 'z']) {
+      assert.equal(converted.atoms[i][axis], original.atoms[i][axis] * 0.529177210903);
+    }
+  }
+  for (let f = 0; f < original.trajectory.frames.length; f++) {
+    const actualFrame = converted.trajectory.frames[f];
+    assert.equal(actualFrame.constructor.name, 'Float32Array');
+    assert.equal(actualFrame.length, 6);
+    for (let i = 0; i < actualFrame.length; i++) {
+      assert.ok(Math.abs(actualFrame[i] - original.trajectory.frames[f][i] * 0.529177210903) < 1e-6);
+    }
+  }
+  assert.deepEqual(Array.from(converted.trajectory.comments), ['First frame', 'Second frame']);
+});
+
+test('XYZ unit decisions apply per input and precede scene registration and sidecars', async () => {
+  const prompts = [];
+  const registered = [];
+  const { controller } = createController({
+    parseXYZ: parseXyz,
+    detectInputFileKind: name => name.endsWith('.vib.json') ? 'vibration_payload' : 'xyz',
+    parseVibrationPayload: () => ({ atomCount: 2, modes: [] }),
+    hasXyzBondCandidates: () => false,
+    confirmUser: message => { prompts.push(message); return message.includes('convert.xyz'); },
+    handleSceneDropRecords: items => { registered.push(...items); return true; },
+    attachVibrationPayloadToBestVolume: () => {
+      assert.equal(registered.length, 2);
+      assert.equal(registered[0].vol.atoms[0].x, 2 * 0.529177210903);
+      return { ok: true };
+    },
+  });
+  const result = await controller.loadEmbeddedFiles([
+    { name: 'convert.vib.json', text: '{}' },
+    { name: 'convert.xyz', text: bohrTrajectory },
+    { name: 'keep.xyz', text: bohrTrajectory },
+  ]);
+  assert.equal(result.ok, true);
+  assert.equal(result.loadedCount, 3);
+  assert.equal(prompts.length, 2);
+  const kept = registered[1].vol;
+  const original = parseXyz(bohrTrajectory);
+  assert.deepEqual(kept.atoms, original.atoms);
+  assert.deepEqual(kept.trajectory.frames, original.trajectory.frames);
+});
+
+test('bonded XYZ, single atoms, empty XYZ, and other formats do not ask about units', async () => {
+  let checks = 0;
+  const { controller } = createController({
+    parseXYZ: parseXyz,
+    parseCube: () => ({ kind: 'cube', units: 'bohr', atoms: parseXyz(bohrTrajectory).atoms }),
+    hasXyzBondCandidates: vol => { checks++; assert.equal(vol.atoms.length, 2); return true; },
+  });
+  const result = await controller.handleFiles([
+    new File(['2\nBonded\nC 0 0 0\nH 1 0 0\n'], 'bonded.xyz'),
+    new File(['1\nSingle\nC 8 0 0\n'], 'single.xyz'),
+    new File(['0\nEmpty\n'], 'empty.xyz'),
+    new File(['cube data'], 'known-bohr.cube'),
+  ]);
+  assert.equal(result.loadedCount, 4);
+  assert.equal(checks, 1);
+});
+
+test('rejected mixed session imports do not prompt about XYZ units or clear the scene', async () => {
+  const { controller, getVolumes } = createController({
+    volumes: [{ name: 'existing.cube', vol: {} }],
+    parseXYZ: parseXyz,
+    hasXyzBondCandidates: () => { throw new Error('Rejected XYZ must not be inspected'); },
+    detectInputFileKind: name => name.endsWith('.vibemol-session') ? 'session' : 'xyz',
+  });
+  const result = await controller.loadEmbeddedFiles([
+    { name: 'workspace.vibemol-session', text: '{}' },
+    { name: 'bohr.xyz', text: bohrTrajectory },
+  ]);
+  assert.equal(result.ok, false);
+  assert.match(result.error, /Open one session file at a time/);
+  assert.equal(getVolumes()[0].name, 'existing.cube');
 });

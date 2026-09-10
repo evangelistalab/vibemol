@@ -933,7 +933,12 @@ def render_to_png(
         def _on_dialog(dialog: Any) -> None:
             import_dialog_messages.append(str(getattr(dialog, "message", "") or ""))
             try:
-                dialog.accept()
+                if dialog.type == "confirm":
+                    # Headless imports must not silently rescale coordinates.
+                    dialog.dismiss()
+                    print(f"[import] {dialog.message}\n[import] Kept the original coordinates.", file=sys.stderr)
+                else:
+                    dialog.accept()
             except Exception:
                 pass
 

@@ -378,6 +378,45 @@
     }
   }
 
+  function covalentBondCandidate(atomI, atomJ, tolerance, minDistance, skipUnsupported) {
+    if (!atomI || !atomJ || !atomI.pos || !atomJ.pos || typeof atomI.pos.distanceTo !== 'function') return null;
+    if (skipUnsupported && (!isAutoBondSupportedAtomicNumber(atomI.Z) || !isAutoBondSupportedAtomicNumber(atomJ.Z))) return null;
+    const singleRef = getCovalentRadiusAngstrom(atomI.Z) + getCovalentRadiusAngstrom(atomJ.Z);
+    if (!(singleRef > 0)) return null;
+    const cutoff = tolerance * singleRef;
+    const len = atomI.pos.distanceTo(atomJ.pos);
+    if (!Number.isFinite(len) || len < minDistance || len > cutoff) return null;
+    return { len, singleRef, cutoff, ratio: len / Math.max(1e-6, singleRef), order: 1, maxOrder: 1 };
+  }
+
+  /**
+   * Test for any plausible bond without building or sorting a connectivity graph.
+   * Uses the same covalent and metal distance rules as bond perception.
+   * @param {Array<{pos:THREE.Vector3,Z:number}>} atomPositions Positions in angstroms.
+   * @returns {boolean}
+   */
+  function hasBondCandidates(atomPositions) {
+    const count = Array.isArray(atomPositions) ? atomPositions.length : 0;
+    for (let i = 0; i < count; i++) {
+      const atomI = atomPositions[i];
+      if (!atomI || !atomI.pos || typeof atomI.pos.distanceTo !== 'function') continue;
+      const metalI = isMetalAtomicNumber(atomI.Z);
+      for (let j = i + 1; j < count; j++) {
+        const atomJ = atomPositions[j];
+        if (!atomJ || !atomJ.pos) continue;
+        const metalJ = isMetalAtomicNumber(atomJ.Z);
+        if (metalI && metalJ) {
+          if (classifyMetalMetalStyle(atomI.pos.distanceTo(atomJ.pos), atomI, atomJ)) return true;
+        } else if (metalI || metalJ) {
+          if (classifyMetalLigandStyle(atomI.pos.distanceTo(atomJ.pos), metalI ? atomI : atomJ, metalI ? atomJ : atomI)) return true;
+        } else if (covalentBondCandidate(atomI, atomJ, AUTO_BOND_TOLERANCE, AUTO_BOND_MIN_DISTANCE, true)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /**
    * Build raw candidate pairs from atom positions using covalent-radius heuristics.
    * Acceptance here only means "consider for ranking"; final connectivity is capped later.
@@ -393,27 +432,8 @@
     const skipUnsupported = options.skipUnsupported !== false;
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
-        const ai = atomPositions[i];
-        const aj = atomPositions[j];
-        if (!ai || !aj || !ai.pos || !aj.pos || typeof ai.pos.distanceTo !== 'function') continue;
-        if (skipUnsupported && (!isAutoBondSupportedAtomicNumber(ai.Z) || !isAutoBondSupportedAtomicNumber(aj.Z))) continue;
-        const ri = getCovalentRadiusAngstrom(ai.Z);
-        const rj = getCovalentRadiusAngstrom(aj.Z);
-        const singleRef = ri + rj;
-        if (!(singleRef > 0)) continue;
-        const cutoff = tolerance * singleRef;
-        const len = ai.pos.distanceTo(aj.pos);
-        if (!Number.isFinite(len) || len < minDistance || len > cutoff) continue;
-        edges.push({
-          i,
-          j,
-          len,
-          singleRef,
-          cutoff,
-          ratio: len / Math.max(1e-6, singleRef),
-          order: 1,
-          maxOrder: 1,
-        });
+        const candidate = covalentBondCandidate(atomPositions[i], atomPositions[j], tolerance, minDistance, skipUnsupported);
+        if (candidate) edges.push({ i, j, ...candidate });
       }
     }
     return edges;
@@ -946,6 +966,7 @@
     isMetalAtomicNumber,
     countsTowardAtomValence,
     normalizeMetalBondMode,
+    hasBondCandidates,
     collectRawBondCandidates,
     acceptBondCandidatesByDistanceRank,
     perceiveBondConnectivity,

@@ -8,6 +8,7 @@ Minimal automation client for rendering VibeMol images from local molecular file
 - Optionally uploads sidecar files in the same request (`.vib.json`, `.vmodes.json`, `.modes.json`, `.json`)
 - Saves the rendered canvas to a local PNG
 - Can import/export full visualization presets shared with the web UI
+- XYZ coordinates are treated as angstroms. If the app suspects bohr units, the render client keeps the original coordinates and prints a warning; convert bohr input before automated rendering. Interactive web and notebook imports offer a conversion popup.
 
 ## Setup
 ```bash

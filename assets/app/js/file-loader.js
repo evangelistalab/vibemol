@@ -46,6 +46,28 @@
       return deps.parseCube(text);
     }
 
+    async function resolveXyzUnits(item) {
+      const vol = item.vol;
+      if (item.fileKind !== 'xyz' || !vol || !Array.isArray(vol.atoms) || vol.atoms.length < 2) return;
+      if (deps.hasXyzBondCandidates(vol)) return;
+      const frameNote = vol.trajectory ? ' The same conversion will apply to every trajectory frame.' : '';
+      const convert = await deps.confirmUser(
+        `No bonds were detected in "${item.name}" using angstrom coordinates.\n\n` +
+        'These XYZ coordinates might be in bohr. Convert them to angstroms (1 bohr = 0.529177 angstrom)?' + frameNote +
+        '\n\nOK: convert from bohr.\nCancel: keep the original coordinates as angstroms.'
+      );
+      if (!convert) return;
+      for (const atom of vol.atoms) {
+        atom.x *= deps.BOHR_TO_ANG;
+        atom.y *= deps.BOHR_TO_ANG;
+        atom.z *= deps.BOHR_TO_ANG;
+      }
+      for (const frame of (vol.trajectory && vol.trajectory.frames) || []) {
+        for (let i = 0; i < frame.length; i++) frame[i] *= deps.BOHR_TO_ANG;
+      }
+      vol.units = 'angstrom';
+    }
+
     function appendParsedVolumeRecord(name, vol, extras = null) {
       const meta = Object.assign({ name, vol }, extras || {});
       if (vol && vol.isTwoComponent) deps.setVolume2CComponent(meta, deps.getGlobal2CComponentMode());
@@ -178,6 +200,9 @@
         }
       }
       if (primaries.length) {
+        // Resolve units on staged XYZ data before replacement, bond inference,
+        // scene-source registration, or vibration sidecar attachment.
+        for (const item of primaries) await resolveXyzUnits(item);
         if (options.clearFirst === true) clearAllLoadedFiles({ includeHint: false });
         const hasGrid = primaries.some(item => deps.hasVolumetricGrid(item.vol));
         const commitOptions = {

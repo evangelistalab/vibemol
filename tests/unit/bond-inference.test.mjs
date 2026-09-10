@@ -98,6 +98,34 @@ function loadBondInference() {
   });
 }
 
+test('bond presence uses covalent and metal distance rules without inferring bond orders', () => {
+  const context = loadBondInference();
+  const { hasBondCandidates, perceiveBondConnectivity } = context.VibeMolBondInference;
+  const atom = (Z, x) => ({ Z, pos: new context.THREE.Vector3(x, 0, 0) });
+  const cases = [
+    [[], false],
+    [[atom(6, 0)], false],
+    [[atom(6, 0), atom(1, 1.09)], true],
+    [[atom(6, 0), atom(1, 2.06)], false],
+    [[atom(6, 0), atom(6, 1.54)], true],
+    [[atom(6, 0), atom(6, 2.91)], false],
+    [[atom(6, 0), atom(6, 0.2)], false],
+    [[atom(6, 0), atom(6, NaN)], false],
+    [[atom(26, 0), atom(7, 2.2)], true],
+    [[atom(7, 0), atom(26, 2.2)], true],
+    [[atom(26, 0), atom(26, 2.6)], true],
+    [[atom(26, 0), atom(7, 4.2)], false],
+  ];
+  for (const [atoms, expected] of cases) {
+    assert.equal(hasBondCandidates(atoms), expected);
+    assert.equal(perceiveBondConnectivity(atoms).length > 0, expected);
+    assert.equal(atoms.some(a => a.bonds), false);
+  }
+  assert.equal(hasBondCandidates([
+    atom(6, 0), atom(1, 1.09), { get pos() { throw new Error('Should stop at the first plausible bond'); } },
+  ]), true);
+});
+
 test('bond perception accepts shortest candidates first under coordination caps', () => {
   const context = loadBondInference();
   const result = JSON.parse(evaluateInContext(context, `JSON.stringify((() => {

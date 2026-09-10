@@ -25,6 +25,8 @@ Open `http://localhost:8000/`.
 
 Startup now shows the empty onboarding card. Use `Choose files` or `Open sample file` to load content.
 
+XYZ files and pasted coordinates share the same import checks. If a structure has at least two atoms but no plausible bonds at angstrom distances, a popup offers conversion from bohr to angstroms. Choose **OK** to convert or **Cancel** to keep the original coordinates as angstroms. For trajectories, the check uses the first frame and conversion applies to every frame.
+
 ## Controls
 - `1/2/3`: switch molecule style (Basic / Toon / Kit)
 - `S`: save PNG
