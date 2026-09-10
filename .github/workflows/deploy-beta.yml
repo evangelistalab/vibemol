@@ -19,6 +19,8 @@ jobs:
         run: |
           # Stage a clean tree without .github/workflows
           rm -rf .github/workflows
+          # The production domain belongs to main, not the beta mirror.
+          rm -f CNAME
           # If .github is now empty, remove it too (cosmetic)
           rmdir .github 2>/dev/null || true
 

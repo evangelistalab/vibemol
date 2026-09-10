@@ -18,7 +18,7 @@ else:
     from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-ARTIFACT_DIR = ensure_artifact_dir(REPO_ROOT / 'out' / 'test-artifacts')
+ARTIFACT_DIR = ensure_artifact_dir(pathlib.Path(os.environ.get('VIBEMOL_TEST_ARTIFACT_DIR', str(REPO_ROOT / 'out' / 'test-artifacts'))))
 SMOKE_VERBOSE = os.environ.get('VIBEMOL_SMOKE_VERBOSE') == '1'
 
 

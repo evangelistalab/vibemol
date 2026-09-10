@@ -547,6 +547,60 @@
       if (disposeLayer) disposeLayer(layer);
     }
 
+    function rename(id, name) {
+      const target = findScene(id) || getLayerById(id);
+      const value = String(name || '').trim();
+      if (!target || !value) return false;
+      target.name = value;
+      if (target.kind === LAYER_KIND.ARITHMETIC) target.nameUserEdited = true;
+      return true;
+    }
+
+    function setMoleculeRecord(scene, record) {
+      if (!scene || !record) return false;
+      scene.moleculeRecord = record;
+      const molecule = getLayerById(scene.moleculeLayerId);
+      if (molecule) {
+        molecule.record = record;
+        molecule.atomCount = (record.vol && record.vol.atoms || []).length;
+      }
+      return true;
+    }
+
+    function reorderCubeLayers(scene, ordered) {
+      if (!scene || !Array.isArray(ordered)) return false;
+      const cubes = listLayers(scene).filter(isCubeLikeLayer);
+      if (ordered.length !== cubes.length || new Set(ordered).size !== cubes.length || ordered.some(layer => !cubes.includes(layer))) return false;
+      const remaining = listLayers(scene).filter(layer => !isCubeLikeLayer(layer));
+      const groupIndex = remaining.findIndex(layer => layer.id === scene.orbitalsGroupId);
+      remaining.splice(groupIndex + 1, 0, ...ordered);
+      scene.layers = remaining;
+      return true;
+    }
+
+    function moveCubeLayers(layers, destination, insertIndex) {
+      const moving = Array.from(new Set(layers || []));
+      if (!findScene(destination && destination.id) || !moving.length
+        || moving.some(layer => !isCubeLikeLayer(layer) || getLayerById(layer.id) !== layer)) return [];
+      const affectedScenes = new Set(moving.map(getSceneForLayer));
+      const group = ensureOrbitalsGroup(destination);
+      for (const scene of affectedScenes) {
+        scene.layers = scene.layers.filter(layer => !moving.includes(layer));
+        if (moving.some(layer => layer.id === scene.activeLayerId)) {
+          scene.activeLayerId = (scene.layers.find(isCubeLikeLayer) || scene.layers.find(layer => layer.kind === LAYER_KIND.MOLECULE) || {}).id || null;
+        }
+      }
+      const cubes = listLayers(destination).filter(isCubeLikeLayer);
+      const index = Math.max(0, Math.min(Number(insertIndex) || 0, cubes.length));
+      for (const layer of moving) Object.assign(layer, { sceneId: destination.id, parentId: group.id });
+      destination.layers.push(...moving);
+      cubes.splice(index, 0, ...moving);
+      reorderCubeLayers(destination, cubes);
+      setActiveLayer(moving[0].id);
+      setSelection(moving.map(layer => layer.id));
+      return moving;
+    }
+
     function removeScene(sceneId) {
       const scene = findScene(sceneId);
       if (!scene) return false;
@@ -654,6 +708,10 @@
       isLayerEffectivelyVisible,
       listRenderableLayers,
       toggleVisibility,
+      rename,
+      setMoleculeRecord,
+      reorderCubeLayers,
+      moveCubeLayers,
       removeLayer,
       removeScene,
       clearScenes,

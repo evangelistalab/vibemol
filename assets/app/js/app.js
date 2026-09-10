@@ -378,6 +378,8 @@
   }
 
   const ArithmeticGrid = window.VibeMolArithmeticGrid || {};
+  const orbitalGridStore = window.VibeMolGridStore.createGridStore();
+  const arithmeticRunner = window.VibeMolArithmeticRunner.createArithmeticRunner();
   if (![ArithmeticGrid.compute, ArithmeticGrid.validateInputGrids, ArithmeticGrid.formatResampleNotice].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolArithmeticGrid is not loaded. Ensure assets/app/js/arithmetic-grid.js is included before assets/app/js/app.js.');
   }
@@ -1305,24 +1307,100 @@
   const sceneGraphController = createSceneGraphController({
     disposeLayer: disposeSceneGraphLayer,
   });
+  const sceneSources = window.VibeMolSceneSources.createSceneSources({
+    graph: sceneGraphController,
+    hasGrid: hasVolumetricGrid,
+    getDefaults: getSurfaceDefaultsForNewLayer,
+    getSceneKey: getRecordSceneKey,
+    getSceneName: getInitialSceneDisplayName,
+    getSourceKind: getVolumeSourceKind,
+  });
+  const arithmeticLayers = window.VibeMolArithmeticLayers.createArithmeticLayers({
+    graph: sceneGraphController, runner: arithmeticRunner,
+    getGrid: getLayerCubeData, cloneGrid: cloneScalarVolumeForArithmetic,
+  });
+  const { getCircularOperandIdsForEdit, getArithmeticCascadeDeletePlan } = arithmeticLayers;
+
+  let sceneOutlinerController = null;
+  function getSceneOutliner() {
+    if (!sceneOutlinerController) sceneOutlinerController = window.VibeMolSceneOutliner.createSceneOutliner({
+      ArithmeticGrid,
+      DEFAULT_ISO_VALUE,
+      MODES,
+      SCENE_LAYER_KIND,
+      activateSceneFocusRecord,
+      arithmeticConfigsEqual,
+      arithmeticLayers,
+      clearOutlinerSelectionToActive,
+      copyCubeLayerAppearance,
+      deleteSceneFromOutliner,
+      deleteSelectedCubeLayers,
+      duplicateCubeLayer,
+      duplicateLayerBlockToScene,
+      duplicateSelectedCubeLayers,
+      focusScene,
+      formatIsoInputValue,
+      generateArithmeticName,
+      getActiveCubeLayer,
+      getArithmeticCascadeDeletePlan,
+      getArithmeticNameUserEdited,
+      getCircularOperandIdsForEdit,
+      getCubeLayersInScene,
+      getFocusedScene,
+      getLayerCubeData,
+      getLayerDisplayName,
+      getLayerFullDisplayName,
+      getLayerSurfaceColors,
+      getNextCubeLabelId,
+      getSceneActiveCubeLayer,
+      getSceneMoleculeVolume,
+      getSelectedCubeLayerIds,
+      getSelectedCubeLayers,
+      getSurfaceDefaultsForNewLayer,
+      getTrajectoryInfoForScene,
+      getVisibleCubeLayerCount,
+      hasVolumetricGrid,
+      isCubeLayerSelected,
+      isCubeLikeLayer,
+      moleculeMatchesVolume,
+      moveLayerBlockToScene,
+      normalizeArithmeticInputsForOperation,
+      normalizeArithmeticOperation,
+      rangeSelectCubeLayer,
+      rebuildScene,
+      resolveArithmeticInputs,
+      sceneGraphController,
+      sceneOutlinerAddBtn,
+      sceneOutlinerBodyEl,
+      setActiveSceneGraphLayer,
+      setHintMessage,
+      setOnlyCubeVisibleInScene,
+      setSceneHeaderActive,
+      syncAppearanceControlsToActiveLayer,
+      syncLoadedSceneControls,
+      syncTrajectoryControls,
+      toggleCubeLayerSelection,
+      updateSidePanel,
+      validateArithmeticInputGrids,
+      validateCrossSceneLayerMove,
+      getCurrentMode: () => currentMode,
+      loadFiles: (...args) => fileLoaderController.handleFiles(...args),
+    });
+    return sceneOutlinerController;
+  }
+  function scheduleOutlinerScrollToTarget(...args) { return getSceneOutliner().scheduleOutlinerScrollToTarget(...args); }
+  function flashOutlinerLayer(...args) { return getSceneOutliner().flashOutlinerLayer(...args); }
+  function finishOutlinerRename(...args) { return getSceneOutliner().finishOutlinerRename(...args); }
+  function renderSceneOutliner(...args) { return getSceneOutliner().renderSceneOutliner(...args); }
+  function closeCubeLayerContextMenu(...args) { return getSceneOutliner().closeCubeLayerContextMenu(...args); }
+  function isFocusInsideOutliner(...args) { return getSceneOutliner().isFocusInsideOutliner(...args); }
+  function showDeleteSelectedCubeLayersConfirmation(...args) { return getSceneOutliner().showDeleteSelectedCubeLayersConfirmation(...args); }
+  function closeCombinePopover(...args) { return getSceneOutliner().closeCombinePopover(...args); }
+
   let sceneGraphSceneKeyCounter = 1;
-  let outlinerFlashLayerId = null;
-  let outlinerFlashTimer = 0;
-  let outlinerScrollTargetId = null;
-  let outlinerScrollRaf = 0;
-  let outlinerRenameState = null;
-  let outlinerAddFileInputEl = null;
-  let outlinerAddTargetSceneKey = '';
-  let outlinerDragState = null;
-  let outlinerDropIndicatorEl = null;
-  let outlinerDragImageEl = null;
-  let outlinerDragHighlightedRow = null;
+
   let userDismissedTrajectoryPopover = false;
-  let cubeLayerContextMenuEl = null;
-  let cubeLayerContextMenuLayerId = null;
-  let cubeLayerContextMenuPoint = null;
-  let combinePopoverEl = null;
-  let combinePopoverState = null;
+
   let meshes = []; // active meshes (pos/neg)
   let hoverSurfaceMesh = null;
   let atomGroup = new THREE.Group();
@@ -2068,8 +2146,7 @@
    * @param {THREE.Group} group
    * @returns {THREE.Group}
    */
-  function disposeAndReplaceGroup(group) {
-    const state = createDisposeState();
+  function disposeAndReplaceGroup(group, state = createDisposeState()) {
     try { contentGroup.remove(group); } catch { }
     disposeDeep(group, state);
     const next = new THREE.Group();
@@ -2085,6 +2162,9 @@
     hideSurfaceHoverLabel();
     setSurfaceHover(null);
     clearGroup(autoHydrogenPreviewGroup);
+    for (const graphScene of sceneGraphController.getScenes()) {
+      for (const layer of sceneGraphController.listLayers(graphScene)) disposeSceneGraphLayer(layer, state);
+    }
     for (const m of meshes) {
       disposeWboitMaterialsForRenderable(m);
       try { contentGroup.remove(m); } catch { }
@@ -2101,9 +2181,9 @@
     }
 
     // Reset atom/bond/cloud groups with deep disposal.
-    atomGroup = disposeAndReplaceGroup(atomGroup);
-    bondGroup = disposeAndReplaceGroup(bondGroup);
-    cloudGroup = disposeAndReplaceGroup(cloudGroup);
+    atomGroup = disposeAndReplaceGroup(atomGroup, state);
+    bondGroup = disposeAndReplaceGroup(bondGroup, state);
+    cloudGroup = disposeAndReplaceGroup(cloudGroup, state);
     for (const group of extraMoleculeRenderGroups) {
       try { contentGroup.remove(group); } catch { }
       disposeDeep(group, state);
@@ -2133,15 +2213,16 @@
    * `meshes`/groups, so this is intentionally tolerant of unset fields.
    * @param {*} layer
    */
-  function disposeSceneGraphLayer(layer) {
+  function disposeSceneGraphLayer(layer, state = createDisposeState()) {
     if (!layer || typeof layer !== 'object') return;
-    const state = createDisposeState();
     const objects = [
       layer.group,
       layer.posMesh,
       layer.negMesh,
       layer.cloudGroup,
       layer.geometry,
+      layer.renderAtomGroup,
+      layer.renderBondGroup,
     ];
     for (const obj of objects) {
       if (!obj) continue;
@@ -2152,10 +2233,14 @@
         }
         continue;
       }
+      if (obj.parent) obj.parent.remove(obj);
+      if (obj.traverse) obj.traverse(disposeWboitMaterialsForRenderable);
       disposeDeep(obj, state);
     }
     disposeMaterial(layer.posMaterial, state);
     disposeMaterial(layer.negMaterial, state);
+    layer.renderAtomGroup = null;
+    layer.renderBondGroup = null;
     layer.group = null;
     layer.posMesh = null;
     layer.negMesh = null;
@@ -5838,11 +5923,34 @@
     applySceneCameraFit(center, fit.distance, fit.fitDiameter);
   }
 
+  let trajectoryUiController = null;
+  function getTrajectoryUi() {
+    if (!trajectoryUiController) trajectoryUiController = window.VibeMolTrajectoryUi.createTrajectoryUi({
+      anyTrajectorySyncEnabled,
+      applyMasterFrameToSyncedTrajectories,
+      applyTrajectoryFrameForInfo,
+      focusTrajectoryInfoScene,
+      getActiveTrajectoryInfo,
+      getAllTrajectoryInfos,
+      getTrajectoryInfoBySceneId,
+      getTrajectoryMasterMaxFrames,
+      getTrajectorySyncMaster,
+      normalizeTrajectoryMasterFrame,
+      setElementTextPreservingNode,
+      setTrajectoryPlayingForInfo,
+      setTrajectorySyncEnabled,
+      syncTrajectoryControls,
+      trajectorySceneListEl,
+      trajectorySyncMasterEl,
+      isRecording: () => !!(trajectoryVideoController && trajectoryVideoController.isRecording()),
+    });
+    return trajectoryUiController;
+  }
+  function setInputValueIfIdle(...args) { return getTrajectoryUi().setInputValueIfIdle(...args); }
+
   let trajectoryPlaying = false; // Legacy video-export compatibility mirror for the focused trajectory.
   let trajectoryLastStepMs = 0;
-  let trajectoryPopoverStructureKey = '';
-  const trajectorySceneRowRefs = new Map();
-  let trajectoryMasterRefs = null;
+
   let vibrationPlaying = false;
   let vibrationLastStepMs = 0;
   let vibrationHideSmallFrequencies = true;
@@ -5915,18 +6023,7 @@
   }
 
   function normalizeTrajectoryClock(traj, frameCount) {
-    if (!traj) return null;
-    const count = Math.max(0, Number(frameCount) | 0);
-    const rawFrame = Number.isFinite(Number(traj.currentFrame)) ? Number(traj.currentFrame) : Number(traj.frameIndex);
-    const frame = count > 0 ? Math.max(0, Math.min(count - 1, Number(rawFrame) | 0)) : 0;
-    traj.frameIndex = frame;
-    traj.currentFrame = frame;
-    traj.fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
-    traj.loop = traj.loop !== false;
-    traj.playing = !!traj.playing;
-    traj.syncEnabled = !!traj.syncEnabled;
-    traj._lastStepMs = Math.max(0, Number(traj._lastStepMs) || 0);
-    return traj;
+    return traj ? Object.assign(traj, window.VibeMolTrajectoryClock.normalize(traj, frameCount)) : null;
   }
 
   function getTrajectoryInfoForRecord(record, scene = null) {
@@ -6017,15 +6114,6 @@
     el.textContent = value;
   }
 
-  function setTrajectoryMiniButtonGlyph(btn, glyph) {
-    if (!btn) return;
-    setElementTextPreservingNode(btn, String(glyph || ''));
-  }
-
-  function getTrajectoryInfoKey(info) {
-    return String(info && info.scene && info.scene.id || info && info.record && info.record.name || '');
-  }
-
   function getTrajectoryInfoBySceneId(sceneId) {
     const id = String(sceneId || '');
     return getAllTrajectoryInfos().find((info) => String(info && info.scene && info.scene.id || '') === id) || null;
@@ -6041,38 +6129,6 @@
     const maxFrames = getTrajectoryMasterMaxFrames(infos);
     master.frame = maxFrames > 0 ? (Math.max(0, Math.floor(Number(master.frame) || 0)) % maxFrames) : 0;
     return master.frame;
-  }
-
-  function isControlValueInFlight(el) {
-    return !!(el && (
-      document.activeElement === el
-      || (el.dataset && el.dataset.vmInteracting === 'true')
-      || (el.matches && el.matches(':active'))
-    ));
-  }
-
-  function setInputValueIfIdle(input, value) {
-    if (!input || isControlValueInFlight(input)) return;
-    input.value = String(value);
-  }
-
-  function setTrajectorySyncDisabledClass(el, disabled) {
-    if (!el) return;
-    el.disabled = !!disabled;
-    el.classList.toggle('is-sync-disabled', !!disabled);
-  }
-
-  function createTrajectoryControlLabel(text, inputEl) {
-    const label = document.createElement('label');
-    label.style.width = 'auto';
-    label.style.display = 'inline-flex';
-    label.style.alignItems = 'center';
-    label.style.gap = '4px';
-    const span = document.createElement('span');
-    span.textContent = text;
-    label.appendChild(span);
-    if (inputEl) label.appendChild(inputEl);
-    return label;
   }
 
   function focusTrajectoryInfoScene(info) {
@@ -6091,303 +6147,6 @@
       }
     }
     if (options.syncUi !== false) syncTrajectoryControls();
-  }
-
-  function armRangeInputInteractionTracking(input) {
-    if (!input) return;
-    const clear = () => {
-      if (input.dataset) delete input.dataset.vmInteracting;
-    };
-    input.addEventListener('pointerdown', () => {
-      if (input.dataset) input.dataset.vmInteracting = 'true';
-    });
-    input.addEventListener('pointerup', clear);
-    input.addEventListener('pointercancel', clear);
-    input.addEventListener('change', clear);
-    input.addEventListener('blur', clear);
-  }
-
-  function buildTrajectorySceneRow(info) {
-    const sceneId = String(info && info.scene && info.scene.id || '');
-    const row = document.createElement('div');
-    row.className = 'trajectorySceneRow';
-    row.dataset.sceneId = sceneId;
-
-    const title = document.createElement('div');
-    title.className = 'trajectorySceneTitle';
-    const name = document.createElement('span');
-    title.appendChild(name);
-    const syncedLabel = document.createElement('span');
-    syncedLabel.className = 'trajectorySyncedBadge';
-    syncedLabel.textContent = 'synced';
-    syncedLabel.hidden = true;
-    title.appendChild(syncedLabel);
-    row.appendChild(title);
-
-    const controls = document.createElement('div');
-    controls.className = 'trajectorySceneControls';
-
-    const play = document.createElement('button');
-    play.type = 'button';
-    play.className = 'trajectoryMiniButton';
-    play.addEventListener('click', () => {
-      const current = getTrajectoryInfoBySceneId(sceneId);
-      if (!(current && current.enabled && current.traj)) return;
-      focusTrajectoryInfoScene(current);
-      setTrajectoryPlayingForInfo(current, !current.traj.playing);
-    });
-    controls.appendChild(play);
-
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.className = 'trajectoryMiniButton';
-    setTrajectoryMiniButtonGlyph(reset, 'replay');
-    reset.setAttribute('aria-label', 'Reset trajectory');
-    reset.addEventListener('click', () => {
-      const current = getTrajectoryInfoBySceneId(sceneId);
-      if (!(current && current.enabled && current.traj) || current.traj.syncEnabled) return;
-      focusTrajectoryInfoScene(current);
-      current.traj._lastStepMs = 0;
-      applyTrajectoryFrameForInfo(current, 0, { syncUi: true });
-    });
-    controls.appendChild(reset);
-
-    const readout = document.createElement('span');
-    readout.className = 'trajectoryFrameReadout';
-    controls.appendChild(readout);
-
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.min = '0';
-    slider.step = '1';
-    armRangeInputInteractionTracking(slider);
-    slider.addEventListener('input', () => {
-      const current = getTrajectoryInfoBySceneId(sceneId);
-      if (!(current && current.enabled && current.traj) || current.traj.syncEnabled) return;
-      focusTrajectoryInfoScene(current);
-      setTrajectoryPlayingForInfo(current, false);
-      applyTrajectoryFrameForInfo(current, Number(slider.value), { syncUi: true });
-    });
-    controls.appendChild(slider);
-
-    const fps = document.createElement('input');
-    fps.type = 'number';
-    fps.min = '1';
-    fps.max = '120';
-    fps.step = '1';
-    fps.addEventListener('change', () => {
-      const current = getTrajectoryInfoBySceneId(sceneId);
-      if (!(current && current.enabled && current.traj) || current.traj.syncEnabled) return;
-      focusTrajectoryInfoScene(current);
-      current.traj.fps = Math.max(1, Math.min(120, Math.round(Number(fps.value) || 12)));
-      current.traj._lastStepMs = 0;
-      syncTrajectoryControls();
-    });
-    controls.appendChild(createTrajectoryControlLabel('FPS', fps));
-
-    const loop = document.createElement('input');
-    loop.type = 'checkbox';
-    loop.addEventListener('change', () => {
-      const current = getTrajectoryInfoBySceneId(sceneId);
-      if (!(current && current.enabled && current.traj)) return;
-      focusTrajectoryInfoScene(current);
-      current.traj.loop = !!loop.checked;
-      syncTrajectoryControls();
-    });
-    controls.appendChild(createTrajectoryControlLabel('Loop', loop));
-
-    const sync = document.createElement('input');
-    sync.type = 'checkbox';
-    sync.addEventListener('change', () => {
-      const current = getTrajectoryInfoBySceneId(sceneId);
-      if (!(current && current.enabled && current.traj)) return;
-      focusTrajectoryInfoScene(current);
-      setTrajectorySyncEnabled(current, !!sync.checked);
-    });
-    controls.appendChild(createTrajectoryControlLabel('Sync', sync));
-
-    row.appendChild(controls);
-    row.addEventListener('click', (event) => {
-      if (event.target && /^(input|button|select|textarea)$/i.test(event.target.tagName || '')) return;
-      const current = getTrajectoryInfoBySceneId(sceneId);
-      focusTrajectoryInfoScene(current);
-      syncTrajectoryControls();
-    });
-    const refs = {
-      sceneId,
-      row,
-      nameEl: name,
-      controls,
-      playBtn: play,
-      resetBtn: reset,
-      frameReadout: readout,
-      slider,
-      fpsInput: fps,
-      loopCheckbox: loop,
-      syncCheckbox: sync,
-      syncedLabel,
-    };
-    trajectorySceneRowRefs.set(sceneId, refs);
-    updateTrajectorySceneRow(refs, info, getActiveTrajectoryInfo());
-    return row;
-  }
-
-  function updateTrajectorySceneRow(refs, info, activeInfo) {
-    if (!(refs && info && info.enabled && info.traj)) return;
-    const isFocused = !!(activeInfo && activeInfo.enabled && getTrajectoryInfoKey(activeInfo) === getTrajectoryInfoKey(info));
-    const syncLocked = !!info.traj.syncEnabled;
-    const recordingLocked = !!(trajectoryVideoController && trajectoryVideoController.isRecording && trajectoryVideoController.isRecording());
-    const controlsLocked = syncLocked || recordingLocked;
-    refs.row.classList.toggle('is-focused', isFocused);
-    refs.row.classList.toggle('is-sync-disabled', syncLocked);
-    refs.controls.classList.toggle('is-sync-disabled', syncLocked);
-    setElementTextPreservingNode(refs.nameEl, String(info.scene && info.scene.name || info.record && info.record.name || 'Trajectory'));
-    refs.syncedLabel.hidden = !syncLocked;
-    setTrajectoryMiniButtonGlyph(refs.playBtn, info.traj.playing ? 'pause' : 'play_arrow');
-    refs.playBtn.setAttribute('aria-label', info.traj.playing ? 'Pause trajectory' : 'Play trajectory');
-    setTrajectorySyncDisabledClass(refs.playBtn, controlsLocked);
-    setTrajectorySyncDisabledClass(refs.resetBtn, controlsLocked);
-    setElementTextPreservingNode(refs.frameReadout, `${(info.traj.frameIndex | 0) + 1}/${info.frameCount}`);
-    refs.slider.max = String(Math.max(0, info.frameCount - 1));
-    setInputValueIfIdle(refs.slider, info.traj.frameIndex | 0);
-    setTrajectorySyncDisabledClass(refs.slider, controlsLocked);
-    setInputValueIfIdle(refs.fpsInput, info.traj.fps);
-    setTrajectorySyncDisabledClass(refs.fpsInput, controlsLocked);
-    refs.loopCheckbox.checked = info.traj.loop !== false;
-    refs.loopCheckbox.disabled = recordingLocked;
-    refs.syncCheckbox.checked = !!info.traj.syncEnabled;
-    refs.syncCheckbox.disabled = recordingLocked;
-  }
-
-  function buildTrajectorySyncMaster() {
-    if (!trajectorySyncMasterEl) return null;
-    trajectorySyncMasterEl.textContent = '';
-    const title = document.createElement('div');
-    title.className = 'trajectorySceneTitle';
-    title.textContent = 'Sync master';
-    trajectorySyncMasterEl.appendChild(title);
-
-    const controls = document.createElement('div');
-    controls.className = 'trajectoryMasterControls';
-    const play = document.createElement('button');
-    play.type = 'button';
-    play.className = 'trajectoryMiniButton';
-    play.addEventListener('click', () => {
-      const master = getTrajectorySyncMaster();
-      master.playing = !master.playing;
-      master.lastStepMs = 0;
-      syncTrajectoryControls();
-    });
-    controls.appendChild(play);
-
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.className = 'trajectoryMiniButton';
-    setTrajectoryMiniButtonGlyph(reset, 'replay');
-    reset.setAttribute('aria-label', 'Reset master clock to first frame');
-    reset.addEventListener('click', () => {
-      const master = getTrajectorySyncMaster();
-      master.frame = 0;
-      master.lastStepMs = 0;
-      applyMasterFrameToSyncedTrajectories(getAllTrajectoryInfos(), { syncUi: true });
-    });
-    controls.appendChild(reset);
-
-    const readout = document.createElement('span');
-    readout.className = 'trajectoryMasterReadout';
-    controls.appendChild(readout);
-
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.min = '0';
-    slider.step = '1';
-    armRangeInputInteractionTracking(slider);
-    slider.addEventListener('input', () => {
-      const infos = getAllTrajectoryInfos();
-      const master = getTrajectorySyncMaster();
-      const maxFrames = getTrajectoryMasterMaxFrames(infos);
-      master.frame = maxFrames > 0 ? (Math.max(0, Number(slider.value) | 0) % maxFrames) : 0;
-      master.lastStepMs = 0;
-      applyMasterFrameToSyncedTrajectories(infos, { syncUi: true });
-    });
-    controls.appendChild(slider);
-
-    const fps = document.createElement('input');
-    fps.type = 'number';
-    fps.min = '1';
-    fps.max = '120';
-    fps.step = '1';
-    fps.addEventListener('change', () => {
-      const master = getTrajectorySyncMaster();
-      master.fps = Math.max(1, Math.min(120, Math.round(Number(fps.value) || 12)));
-      master.lastStepMs = 0;
-      syncTrajectoryControls();
-    });
-    controls.appendChild(createTrajectoryControlLabel('FPS', fps));
-    trajectorySyncMasterEl.appendChild(controls);
-    trajectoryMasterRefs = {
-      row: trajectorySyncMasterEl,
-      playBtn: play,
-      resetBtn: reset,
-      frameReadout: readout,
-      slider,
-      fpsInput: fps,
-    };
-    return trajectoryMasterRefs;
-  }
-
-  function updateTrajectorySyncMaster(infos) {
-    if (!trajectoryMasterRefs) return;
-    const master = getTrajectorySyncMaster();
-    const maxFrames = getTrajectoryMasterMaxFrames(infos);
-    normalizeTrajectoryMasterFrame(infos);
-    trajectoryMasterRefs.row.hidden = false;
-    setTrajectoryMiniButtonGlyph(trajectoryMasterRefs.playBtn, master.playing ? 'pause' : 'play_arrow');
-    trajectoryMasterRefs.playBtn.setAttribute('aria-label', master.playing ? 'Pause synchronized trajectories' : 'Play synchronized trajectories');
-    trajectoryMasterRefs.playBtn.disabled = false;
-    trajectoryMasterRefs.resetBtn.disabled = false;
-    setElementTextPreservingNode(trajectoryMasterRefs.frameReadout, `frame ${master.frame}`);
-    trajectoryMasterRefs.slider.max = String(maxFrames);
-    setInputValueIfIdle(trajectoryMasterRefs.slider, master.frame);
-    trajectoryMasterRefs.slider.disabled = false;
-    setInputValueIfIdle(trajectoryMasterRefs.fpsInput, master.fps);
-    trajectoryMasterRefs.fpsInput.disabled = false;
-  }
-
-  function getTrajectoryPopoverStructureKey(infos) {
-    return (Array.isArray(infos) ? infos : []).map((info) => getTrajectoryInfoKey(info)).join('|');
-  }
-
-  function rebuildTrajectoryPopoverRows(infos) {
-    trajectorySceneRowRefs.clear();
-    if (trajectorySceneListEl) {
-      trajectorySceneListEl.textContent = '';
-      for (const info of infos) trajectorySceneListEl.appendChild(buildTrajectorySceneRow(info));
-    }
-    trajectoryPopoverStructureKey = getTrajectoryPopoverStructureKey(infos);
-  }
-
-  function syncTrajectoryMasterStructure(hasSync) {
-    if (trajectorySyncMasterEl) {
-      if (hasSync && !trajectoryMasterRefs) {
-        trajectorySyncMasterEl.hidden = false;
-        buildTrajectorySyncMaster();
-      } else if (!hasSync && trajectoryMasterRefs) {
-        trajectoryMasterRefs = null;
-        trajectorySyncMasterEl.hidden = true;
-        trajectorySyncMasterEl.textContent = '';
-      } else {
-        trajectorySyncMasterEl.hidden = !hasSync;
-      }
-    }
-  }
-
-  function updateTrajectoryPopoverValues(infos, activeInfo) {
-    for (const info of infos) {
-      const refs = trajectorySceneRowRefs.get(getTrajectoryInfoKey(info));
-      if (refs) updateTrajectorySceneRow(refs, info, activeInfo);
-    }
-    if (anyTrajectorySyncEnabled(infos)) updateTrajectorySyncMaster(infos);
   }
 
   /**
@@ -6428,14 +6187,7 @@
         trajectoryNowPlaying.hidden = true;
       }
       if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
-      if (trajectorySceneListEl) trajectorySceneListEl.textContent = '';
-      if (trajectorySyncMasterEl) {
-        trajectorySyncMasterEl.hidden = true;
-        trajectorySyncMasterEl.textContent = '';
-      }
-      trajectorySceneRowRefs.clear();
-      trajectoryMasterRefs = null;
-      trajectoryPopoverStructureKey = '';
+      getTrajectoryUi().reset();
       updateDisplayWindowAdaptiveMenuUi();
       return;
     }
@@ -6473,11 +6225,7 @@
     if (trajectoryFpsEl) trajectoryFpsEl.disabled = !info.enabled || !!(traj && traj.syncEnabled);
     if (trajectoryLoopEl) trajectoryLoopEl.disabled = !info.enabled;
     if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
-    const hasSync = anyTrajectorySyncEnabled(infos);
-    const structureKey = getTrajectoryPopoverStructureKey(infos);
-    if (structureKey !== trajectoryPopoverStructureKey) rebuildTrajectoryPopoverRows(infos);
-    syncTrajectoryMasterStructure(hasSync);
-    updateTrajectoryPopoverValues(infos, info);
+    getTrajectoryUi().sync(infos, info);
     updateDisplayWindowAdaptiveMenuUi();
   }
   /**
@@ -7075,10 +6823,9 @@
   }
 
   function mapMasterFrameToTrajectory(info, masterFrame = getTrajectorySyncMaster().frame) {
-    if (!(info && info.enabled && info.frameCount > 0)) return 0;
-    const frame = Math.max(0, Math.floor(Number(masterFrame) || 0));
-    if (info.traj && info.traj.loop === false) return Math.min(frame, info.frameCount - 1);
-    return frame % info.frameCount;
+    return info && info.enabled
+      ? window.VibeMolTrajectoryClock.mapFrame(masterFrame, info.frameCount, info.traj && info.traj.loop !== false)
+      : 0;
   }
 
   function anyTrajectorySyncEnabled(infos = getAllTrajectoryInfos()) {
@@ -7187,24 +6934,13 @@
 
     let advanced = false;
     const master = getTrajectorySyncMaster();
-    if (master.playing && anyTrajectorySyncEnabled(infos)) {
-      const stepMs = 1000 / master.fps;
-      if (master.lastStepMs <= 0) {
-        master.lastStepMs = nowMs;
-      } else {
-        const elapsed = nowMs - master.lastStepMs;
-        if (elapsed >= stepMs) {
-          const steps = Math.max(1, Math.floor(elapsed / stepMs));
-          master.lastStepMs += steps * stepMs;
-          master.frame += steps;
-          const maxFrames = getTrajectoryMasterMaxFrames(infos);
-          if (maxFrames > 0) master.frame %= maxFrames;
-          advanced = true;
-        }
-      }
-    } else {
-      master.lastStepMs = 0;
-    }
+    const masterTick = window.VibeMolTrajectoryClock.advance({
+      frame: master.frame, playing: master.playing && anyTrajectorySyncEnabled(infos),
+      fps: master.fps, loop: true, lastStepMs: master.lastStepMs,
+    }, getTrajectoryMasterMaxFrames(infos), nowMs);
+    master.frame = masterTick.frame;
+    master.lastStepMs = masterTick.lastStepMs;
+    advanced = masterTick.advanced;
 
     for (const info of infos) {
       const traj = info.traj;
@@ -7225,23 +6961,13 @@
         }
         continue;
       }
-      if (!traj.playing) {
-        traj._lastStepMs = 0;
-        continue;
-      }
-      const fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
-      traj.fps = fps;
-      const stepMs = 1000 / fps;
-      if (traj._lastStepMs <= 0) {
-        traj._lastStepMs = nowMs;
-        continue;
-      }
-      const elapsed = nowMs - traj._lastStepMs;
-      if (elapsed < stepMs) continue;
-      const steps = Math.max(1, Math.floor(elapsed / stepMs));
-      traj._lastStepMs += steps * stepMs;
-
-      let next = (traj.frameIndex | 0) + steps;
+      const tick = window.VibeMolTrajectoryClock.advance({
+        frame: traj.frameIndex, playing: traj.playing, fps: traj.fps,
+        loop: traj.loop, lastStepMs: traj._lastStepMs,
+      }, info.frameCount, nowMs);
+      traj._lastStepMs = tick.lastStepMs;
+      if (!tick.advanced) continue;
+      let next = tick.rawFrame;
       const lastFrameIndex = info.frameCount - 1;
       const exportAdvance = (trajectoryVideoController && trajectoryVideoController.getTargetRecord && trajectoryVideoController.getTargetRecord() === info.record)
         ? trajectoryVideoController.resolveAdvance(next, lastFrameIndex)
@@ -9764,10 +9490,14 @@
     if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= items.length) return;
     if (moldenPendingRowIndex >= 0) return;
     const force = !!options.force;
-    const alreadyMaterialized = getMoldenMaterializedOrbitalIndices(record).includes(rowIndex);
+    const alreadyMaterialized = sceneGraphController.getScenes().some(scene => sceneGraphController.listLayers(scene).some(layer =>
+      layer.record === record && layer.moldenMoIndex === rowIndex && !layer.isSceneGraphDuplicate));
     if (!force && alreadyMaterialized && (record.moldenMoIndex | 0) === rowIndex) return false;
     record.moldenMoIndex = rowIndex;
     ensureMoldenOrbitalMaterialized(record, rowIndex);
+    ensureMoldenGridForRecord(record, vol);
+    sceneSources.addOrbital(record, rowIndex);
+    syncSceneGraphFromVolumes({ preferActiveRecord: true });
     moldenPendingRowIndex = rowIndex;
     syncMoldenOrbitalsPanel(record);
     window.requestAnimationFrame(() => {
@@ -9906,24 +9636,11 @@
   }
 
   function ensureLegacyRecordSceneKeys() {
-    if (!Array.isArray(volumes) || volumes.length === 0) return '';
-    for (const record of volumes) {
-      if (record && record._sceneGraphForceNewScene && !record._sceneGraphSceneKey) {
-        getRecordSceneKey(record);
-      }
-    }
-    let sharedKey = '';
-    for (const record of volumes) {
-      if (record && record._sceneGraphSceneKey) {
-        sharedKey = String(record._sceneGraphSceneKey);
-        break;
-      }
-    }
-    if (!sharedKey) sharedKey = allocateVolumeSceneKey(volumes[0] && volumes[0].name ? volumes[0].name : 'scene');
-    for (const record of volumes) {
-      if (record && !record._sceneGraphSceneKey) record._sceneGraphSceneKey = sharedKey;
-    }
-    return sharedKey;
+    // The import plan assigns shared keys only to geometrically matched files.
+    // Records created by other APIs receive their own scene, never the first
+    // existing scene's key merely because it happens to be loaded already.
+    for (const record of volumes) if (record) getRecordSceneKey(record);
+    return volumes.length ? getRecordSceneKey(volumes[0]) : '';
   }
 
   function getAtomPositionInAngstrom(vol, atom) {
@@ -10043,125 +9760,6 @@
     return Array.isArray(frames) && frames.length > 1;
   }
 
-  function getSceneGraphLayerStateSnapshot() {
-    const out = {
-      byRecord: new Map(),
-      byMoldenMo: new Map(),
-      scenesByKey: new Map(),
-      focusedSceneKey: null,
-      syncMaster: null,
-      scene: null,
-      molecule: null,
-      groups: new Map(),
-      active: null,
-    };
-    const master = getTrajectorySyncMaster();
-    out.syncMaster = {
-      playing: !!master.playing,
-      frame: Math.max(0, Math.floor(Number(master.frame) || 0)),
-      fps: Math.max(1, Math.min(120, Math.round(Number(master.fps) || 12))),
-      lastStepMs: Math.max(0, Number(master.lastStepMs) || 0),
-    };
-    const focusedScene = sceneGraphController.getFocusedScene ? sceneGraphController.getFocusedScene() : sceneGraphController.getActiveScene();
-    if (focusedScene) out.focusedSceneKey = focusedScene.sceneKey || null;
-    const activeLayer = sceneGraphController.getActiveLayer();
-    if (activeLayer) {
-      out.active = {
-        kind: activeLayer.kind,
-        record: activeLayer.record || null,
-        moldenMoIndex: Number.isInteger(activeLayer.moldenMoIndex) ? activeLayer.moldenMoIndex : null,
-        labelId: activeLayer.labelId || null,
-        name: activeLayer.name || null,
-        isSceneGraphDuplicate: !!activeLayer.isSceneGraphDuplicate,
-      };
-    }
-    for (const scene of sceneGraphController.getScenes()) {
-      const sceneKey = scene && scene.sceneKey ? scene.sceneKey : scene && scene.id ? scene.id : '';
-      const sceneState = {
-        name: String(scene.name || ''),
-        visible: scene.visible !== false,
-        expanded: scene.expanded !== false,
-        molecule: null,
-        groups: new Map(),
-        cubeLayers: [],
-        active: null,
-      };
-      if (!out.scene) {
-        out.scene = {
-          visible: sceneState.visible,
-          expanded: sceneState.expanded,
-        };
-      }
-      for (const layer of sceneGraphController.listLayers(scene)) {
-        if (!layer) continue;
-        const state = {
-          id: layer.id,
-          kind: layer.kind,
-          visible: layer.visible !== false,
-          expanded: layer.expanded !== false,
-          iso: layer.iso,
-          autoIso: getLayerAutoIsoEnabled(layer),
-          autoIsoEnabled: getLayerAutoIsoEnabled(layer),
-          opacity: layer.opacity,
-          surfaceStyle: layer.surfaceStyle,
-          solidPreset: layer.solidPreset,
-          colorScheme: layer.colorScheme,
-          posColor: layer.posColor,
-          negColor: layer.negColor,
-          renderMode: normalizeLayerRenderModeValue(layer.renderMode),
-          cloudType: normalizeLayerCloudTypeValue(layer.cloudType),
-          cloudStride: normalizeLayerCloudStride(layer.cloudStride),
-          cloudAlpha: normalizeLayerCloudAlpha(layer.cloudAlpha),
-          signFlip: !!layer.signFlip,
-          labelId: layer.labelId,
-          name: layer.name,
-          record: layer.record || null,
-          cubeData: (layer.kind === SCENE_LAYER_KIND.ARITHMETIC || layer.isSceneGraphDuplicate)
-            ? (layer.cubeData || null)
-            : null,
-          moldenMoIndex: Number.isInteger(layer.moldenMoIndex) ? layer.moldenMoIndex : null,
-          isSceneGraphDuplicate: !!layer.isSceneGraphDuplicate,
-          operation: layer.operation || null,
-          inputs: Array.isArray(layer.inputs) ? layer.inputs.map((input) => Object.assign({}, input)) : [],
-          nameUserEdited: getArithmeticNameUserEdited(layer),
-          cubeDataValid: layer.cubeDataValid !== false,
-        };
-        if (isCubeLikeLayer(layer)) {
-          sceneState.cubeLayers.push(state);
-          if (layer.kind === SCENE_LAYER_KIND.CUBE && layer.record) {
-            if (Number.isInteger(layer.moldenMoIndex)) {
-              out.byMoldenMo.set(`${getRecordIndex(layer.record)}:${layer.moldenMoIndex}`, state);
-            } else {
-              out.byRecord.set(layer.record, state);
-            }
-          }
-        } else if (layer.kind === SCENE_LAYER_KIND.MOLECULE) {
-          sceneState.molecule = state;
-          if (!out.molecule) out.molecule = state;
-        } else if (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP || layer.kind === SCENE_LAYER_KIND.MEASUREMENTS_GROUP) {
-          sceneState.groups.set(layer.kind, state);
-          if (!out.groups.has(layer.kind)) out.groups.set(layer.kind, state);
-        }
-      }
-      if (scene && scene.activeLayerId) {
-        const sceneActiveLayer = sceneGraphController.getLayerById(scene.activeLayerId);
-        if (sceneActiveLayer) {
-          sceneState.active = {
-            id: sceneActiveLayer.id,
-            kind: sceneActiveLayer.kind,
-            record: sceneActiveLayer.record || null,
-            moldenMoIndex: Number.isInteger(sceneActiveLayer.moldenMoIndex) ? sceneActiveLayer.moldenMoIndex : null,
-            labelId: sceneActiveLayer.labelId || null,
-            name: sceneActiveLayer.name || null,
-            isSceneGraphDuplicate: !!sceneActiveLayer.isSceneGraphDuplicate,
-          };
-        }
-      }
-      if (sceneKey) out.scenesByKey.set(sceneKey, sceneState);
-    }
-    return out;
-  }
-
   function getSurfaceDefaultsForNewLayer() {
     const scheme = surfaceColorSchemeDefault || 'emory';
     const schemeDefaults = SURFACE_COLOR_SCHEMES[scheme] || null;
@@ -10240,273 +9838,13 @@
   }
 
   function syncSceneGraphFromVolumes(options = {}) {
-    const preserveLayerState = options.preserveLayerState !== false;
-    const preferActiveRecord = !!options.preferActiveRecord;
-    const graphState = preserveLayerState
-      ? getSceneGraphLayerStateSnapshot()
-      : { byRecord: new Map(), byMoldenMo: new Map(), scenesByKey: new Map(), focusedSceneKey: null, syncMaster: null, scene: null, molecule: null, groups: new Map(), active: null };
-    sceneGraphController.clearScenes();
-    if (preserveLayerState && graphState.syncMaster && Array.isArray(volumes) && volumes.length > 0) {
-      const master = getTrajectorySyncMaster();
-      master.playing = !!graphState.syncMaster.playing;
-      master.frame = Math.max(0, Math.floor(Number(graphState.syncMaster.frame) || 0));
-      master.fps = Math.max(1, Math.min(120, Math.round(Number(graphState.syncMaster.fps) || 12)));
-      master.lastStepMs = Math.max(0, Number(graphState.syncMaster.lastStepMs) || 0);
-    }
-    if (!Array.isArray(volumes) || volumes.length === 0) {
-      renderSceneOutliner();
-      return null;
-    }
-
     ensureLegacyRecordSceneKeys();
-    const activeRecord = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : volumes[0];
-    const groups = [];
-    const byKey = new Map();
-    for (const record of volumes) {
-      if (!record) continue;
-      const sceneKey = getRecordSceneKey(record);
-      let group = byKey.get(sceneKey);
-      if (!group) {
-        group = { key: sceneKey, records: [] };
-        byKey.set(sceneKey, group);
-        groups.push(group);
-      }
-      group.records.push(record);
-    }
-
-    const defaults = getSurfaceDefaultsForNewLayer();
-    let activeRecordScene = null;
-    const createdScenes = [];
-    for (const group of groups) {
-      const sceneRecords = group.records;
-      if (!sceneRecords.length) continue;
-      const baseRecord = sceneRecords.find((record) => record === activeRecord) || sceneRecords[0];
-      const moleculeRecord = (baseRecord && baseRecord.vol && Array.isArray(baseRecord.vol.atoms))
-        ? baseRecord
-        : (sceneRecords.find((record) => record && record.vol && Array.isArray(record.vol.atoms) && record.vol.atoms.length) || baseRecord);
-      const baseVol = moleculeRecord && moleculeRecord.vol;
-      const cubeRecords = sceneRecords.filter((record) => record && hasVolumetricGrid(record.vol));
-      const moldenRecords = sceneRecords.filter((record) => record && record.vol && record.vol.kind === 'molden');
-      const trajectoryRecord = sceneRecords.find((record) => getActiveTrajectoryInfoForRecord(record).enabled) || null;
-      const trajectoryInfo = getActiveTrajectoryInfoForRecord(trajectoryRecord || moleculeRecord);
-      const sceneState = (graphState.scenesByKey && graphState.scenesByKey.get(group.key)) || {};
-      const displayName = String(sceneState.name || getInitialSceneDisplayName(sceneRecords, {
-        moleculeRecord,
-        baseRecord,
-        trajectoryRecord,
-      }));
-      const scene = sceneGraphController.createScene({
-        name: displayName,
-        sourceFile: {
-          name: String(moleculeRecord && moleculeRecord.name || baseRecord && baseRecord.name || 'Untitled scene'),
-          kind: getVolumeSourceKind(moleculeRecord || baseRecord),
-        },
-        kind: trajectoryInfo.enabled ? 'trajectory' : null,
-        trajectory: trajectoryInfo.enabled ? trajectoryInfo.traj : null,
-        visible: sceneState.visible == null ? true : sceneState.visible,
-        expanded: sceneState.expanded == null ? true : sceneState.expanded,
-        meta: {
-          frameCount: trajectoryInfo.frameCount || 0,
-        },
-      });
-      scene.sceneKey = group.key;
-      scene.moleculeRecord = moleculeRecord || baseRecord;
-      sceneGraphController.addMoleculeLayer(scene, {
-        name: 'Molecule',
-        record: moleculeRecord || baseRecord,
-        atomCount: Array.isArray(baseVol && baseVol.atoms) ? baseVol.atoms.length : 0,
-        visible: sceneState.molecule && sceneState.molecule.visible != null ? sceneState.molecule.visible : true,
-        expanded: sceneState.molecule && sceneState.molecule.expanded != null ? sceneState.molecule.expanded : true,
-      });
-
-      const wantsOrbitalsGroup = cubeRecords.length
-        || moldenRecords.length
-        || sceneRecords.some((record) => record && record._sceneGraphHasOrbitalsGroup)
-        || !!(sceneState.groups && sceneState.groups.has(SCENE_LAYER_KIND.ORBITALS_GROUP));
-      if (wantsOrbitalsGroup) {
-        const groupState = (sceneState.groups && sceneState.groups.get(SCENE_LAYER_KIND.ORBITALS_GROUP)) || {};
-        sceneGraphController.ensureOrbitalsGroup(scene, {
-          visible: groupState.visible == null ? true : groupState.visible,
-          expanded: groupState.expanded == null ? true : groupState.expanded,
-        });
-      }
-      const preservedCubeStates = Array.isArray(sceneState.cubeLayers) ? sceneState.cubeLayers : [];
-      const usedPreservedCubeStates = new Set();
-      const claimPreservedCubeState = (record, moldenMoIndex = null) => {
-        for (const state of preservedCubeStates) {
-          if (!state || usedPreservedCubeStates.has(state)) continue;
-          if (state.record !== record) continue;
-          const stateMoIndex = Number.isInteger(state.moldenMoIndex) ? state.moldenMoIndex : null;
-          if (stateMoIndex !== moldenMoIndex) continue;
-          usedPreservedCubeStates.add(state);
-          return state;
-        }
-        return null;
-      };
-      for (let i = 0; i < cubeRecords.length; i += 1) {
-        const record = cubeRecords[i];
-        const preservedByLayer = claimPreservedCubeState(record, null);
-        const preserved = Object.assign(
-          {},
-          graphState.byRecord.get(record) || {},
-          record._sceneGraphLayerState || {},
-          preservedByLayer || {}
-        );
-        const defaultVisible = i === 0;
-        sceneGraphController.addCubeLayer(scene, Object.assign({}, defaults, preserved, {
-          name: String(record.name || 'Cube'),
-          record,
-          cubeData: record.vol,
-          visible: preserved.visible == null ? defaultVisible : preserved.visible,
-          expanded: preserved.expanded == null ? true : preserved.expanded,
-        }), defaults);
-        record._sceneGraphLayerState = sanitizeRecordLayerSessionState(preserved);
-      }
-      for (const moldenRecord of moldenRecords) {
-        const materializedIndices = getMoldenMaterializedOrbitalIndices(moldenRecord);
-        for (const moIndex of materializedIndices) {
-          const preservedByLayer = claimPreservedCubeState(moldenRecord, moIndex);
-          const preserved = Object.assign(
-            {},
-            graphState.byMoldenMo.get(`${getRecordIndex(moldenRecord)}:${moIndex}`) || {},
-            (moldenRecord._moldenSceneGraphLayerStateByMo && moldenRecord._moldenSceneGraphLayerStateByMo[moIndex]) || {},
-            preservedByLayer || {}
-          );
-          const defaultVisible = Number.isInteger(moldenRecord.moldenMoIndex)
-            ? moIndex === moldenRecord.moldenMoIndex
-            : materializedIndices.indexOf(moIndex) === 0;
-          sceneGraphController.addCubeLayer(scene, Object.assign({}, defaults, preserved, {
-            name: `MO ${moIndex + 1}`,
-            record: moldenRecord,
-            cubeData: moldenRecord.vol,
-            moldenMoIndex: moIndex,
-            visible: preserved.visible == null ? defaultVisible : preserved.visible,
-            expanded: preserved.expanded == null ? true : preserved.expanded,
-          }), defaults);
-        }
-      }
-      for (const preserved of preservedCubeStates) {
-        if (!preserved || usedPreservedCubeStates.has(preserved) || !preserved.isSceneGraphDuplicate) continue;
-        const record = preserved.record || null;
-        if ((!record || !sceneRecords.includes(record)) && !preserved.cubeData) continue;
-        const duplicate = sceneGraphController.addCubeLayer(scene, Object.assign({}, defaults, preserved, {
-          name: preserved.name || String(record && record.name || 'Cube'),
-          labelId: preserved.labelId,
-          record,
-          cubeData: preserved.cubeData || (record && record.vol),
-          visible: preserved.visible == null ? false : preserved.visible,
-          expanded: preserved.expanded == null ? true : preserved.expanded,
-          isSceneGraphDuplicate: true,
-          geometry: null,
-          posMaterial: null,
-          negMaterial: null,
-          posMesh: null,
-          negMesh: null,
-          group: null,
-          cloudGroup: null,
-          surfaceMetricCache: new Map(),
-        }), defaults);
-        if (duplicate) usedPreservedCubeStates.add(preserved);
-      }
-      for (const preserved of preservedCubeStates) {
-        if (!preserved || usedPreservedCubeStates.has(preserved) || preserved.kind !== SCENE_LAYER_KIND.ARITHMETIC) continue;
-        const arithmetic = sceneGraphController.addArithmeticLayer(scene, Object.assign({}, defaults, preserved, {
-          id: preserved.id,
-          name: preserved.name || 'Combination',
-          labelId: preserved.labelId,
-          operation: normalizeArithmeticOperation(preserved.operation),
-          inputs: normalizeArithmeticInputsForOperation(preserved.operation, preserved.inputs),
-          nameUserEdited: preserved.nameUserEdited == null
-            ? String(preserved.name || '') !== String(generateArithmeticName(preserved.operation, preserved.inputs) || '')
-            : !!preserved.nameUserEdited,
-          cubeData: preserved.cubeData || null,
-          cubeDataValid: preserved.cubeDataValid !== false,
-          record: null,
-          visible: preserved.visible == null ? false : preserved.visible,
-          expanded: preserved.expanded == null ? true : preserved.expanded,
-          geometry: null,
-          posMaterial: null,
-          negMaterial: null,
-          posMesh: null,
-          negMesh: null,
-          group: null,
-          cloudGroup: null,
-          surfaceMetricCache: new Map(),
-        }), defaults);
-        if (arithmetic) usedPreservedCubeStates.add(preserved);
-      }
-
-      sceneGraphController.addScene(scene);
-      createdScenes.push(scene);
-      if (sceneRecords.includes(activeRecord)) activeRecordScene = scene;
-
-      const hasCubeLayers = sceneGraphController.listLayers(scene).some(isCubeLikeLayer);
-      const activeCube = cubeRecords.find((record) => record === activeRecord);
-      const activeCubeLayer = activeCube
-        ? sceneGraphController.listLayers(scene).find((layer) => layer.record === activeCube && layer.kind === SCENE_LAYER_KIND.CUBE)
-        : null;
-      const activeMoldenRecord = moldenRecords.find((record) => record === activeRecord && Number.isInteger(record.moldenMoIndex));
-      const activeMoldenLayer = activeMoldenRecord
-        ? sceneGraphController.listLayers(scene).find((layer) => (
-          layer.kind === SCENE_LAYER_KIND.CUBE
-          && layer.record === activeMoldenRecord
-          && layer.moldenMoIndex === activeMoldenRecord.moldenMoIndex
-        ))
-        : null;
-      const firstVisibleCubeLayer = sceneGraphController.listLayers(scene).find((layer) => isCubeLikeLayer(layer) && layer.visible !== false);
-      const firstCubeLayer = sceneGraphController.listLayers(scene).find(isCubeLikeLayer);
-      const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
-      const preservedActiveState = sceneState.active || (group.key === graphState.focusedSceneKey ? graphState.active : null);
-      let preservedActiveLayer = null;
-      if (preservedActiveState) {
-        if (preservedActiveState.kind === SCENE_LAYER_KIND.CUBE || preservedActiveState.kind === SCENE_LAYER_KIND.ARITHMETIC) {
-          preservedActiveLayer = sceneGraphController.listLayers(scene).find((layer) => (
-            isCubeLikeLayer(layer)
-            && (
-              (preservedActiveState.id && layer.id === preservedActiveState.id)
-              || (
-                layer.kind === preservedActiveState.kind
-                && layer.record === preservedActiveState.record
-              )
-            )
-            && (
-              !Number.isInteger(preservedActiveState.moldenMoIndex)
-              || layer.moldenMoIndex === preservedActiveState.moldenMoIndex
-            )
-            && (
-              !preservedActiveState.labelId
-              || layer.labelId === preservedActiveState.labelId
-            )
-            && (
-              !preservedActiveState.isSceneGraphDuplicate
-              || !!layer.isSceneGraphDuplicate
-            )
-          )) || null;
-        } else if (preservedActiveState.kind === SCENE_LAYER_KIND.MOLECULE) {
-          preservedActiveLayer = moleculeLayer || null;
-        } else if (preservedActiveState.kind === SCENE_LAYER_KIND.ORBITALS_GROUP) {
-          preservedActiveLayer = sceneGraphController.getLayerById(scene.orbitalsGroupId);
-        } else if (preservedActiveState.kind === SCENE_LAYER_KIND.MEASUREMENTS_GROUP) {
-          preservedActiveLayer = sceneGraphController.getLayerById(scene.measurementsGroupId);
-        }
-      }
-      const recordActiveLayer = activeMoldenLayer || activeCubeLayer || firstVisibleCubeLayer || (hasCubeLayers ? firstCubeLayer : moleculeLayer) || null;
-      const desiredActiveLayer = (preferActiveRecord && sceneRecords.includes(activeRecord))
-        ? recordActiveLayer
-        : (preservedActiveLayer || recordActiveLayer);
-      if (desiredActiveLayer) scene.activeLayerId = desiredActiveLayer.id;
-    }
-
-    const focusSceneKey = preferActiveRecord && activeRecordScene
-      ? activeRecordScene.sceneKey
-      : (graphState.focusedSceneKey || (activeRecordScene && activeRecordScene.sceneKey) || (createdScenes[createdScenes.length - 1] && createdScenes[createdScenes.length - 1].sceneKey) || null);
-    const focused = focusSceneKey
-      ? createdScenes.find((scene) => scene.sceneKey === focusSceneKey)
-      : null;
-    if (focused) sceneGraphController.setFocusedScene(focused.id);
-    else if (activeRecordScene) sceneGraphController.setFocusedScene(activeRecordScene.id);
+    const focused = sceneSources.reconcile(volumes, {
+      activeRecord: volumes[currentIndex] || null,
+      preferActiveRecord: !!options.preferActiveRecord,
+    });
     renderSceneOutliner();
-    return focused || activeRecordScene || createdScenes[0] || null;
+    return focused;
   }
 
   function isCubeLikeLayer(layer) {
@@ -10695,6 +10033,9 @@
     if (!layer) return null;
     if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC) return layer.cubeData || null;
     if (layer.kind === SCENE_LAYER_KIND.CUBE) {
+      if (layer.record && layer.record.vol.kind === 'molden' && Number.isInteger(layer.moldenMoIndex)) {
+        return evaluateMoldenGrid(layer.record, layer.moldenMoIndex);
+      }
       if (layer.isSceneGraphDuplicate && layer.cubeData) return layer.cubeData;
       return (layer.record && layer.record.vol) || layer.cubeData || null;
     }
@@ -10703,6 +10044,8 @@
 
   function clearLayerRenderRefs(layer) {
     if (!layer || typeof layer !== 'object') return;
+    layer.renderAtomGroup = null;
+    layer.renderBondGroup = null;
     layer.group = null;
     layer.posMesh = null;
     layer.negMesh = null;
@@ -10781,21 +10124,6 @@
     return 'linear_combination';
   }
 
-  function computeArithmeticCubeData(operation, inputs, outputName) {
-    const op = normalizeArithmeticOperation(operation);
-    const resolved = resolveArithmeticInputs(inputs);
-    if (op === 'abs' && resolved.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
-    if (op === 'product' && resolved.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
-    if (op === 'linear_combination' && resolved.length < 1) return { ok: false, error: 'Choose at least one operand.' };
-    const computed = ArithmeticGrid.compute(op, toArithmeticGridOperands(resolved), outputName);
-    if (!computed.ok) return computed;
-    return {
-      ok: true,
-      cubeData: cloneScalarVolumeForArithmetic(computed.baseVol, computed.data, outputName),
-      resamplePlan: computed.resamplePlan || null,
-    };
-  }
-
   function formatArithmeticCoefficient(value, options = {}) {
     const coefficient = Number(value);
     if (!Number.isFinite(coefficient)) return '1';
@@ -10870,141 +10198,6 @@
     return true;
   }
 
-  function arithmeticLayerDependsOn(layerOrId, targetLayerId, visited = new Set()) {
-    const layer = typeof layerOrId === 'string' ? sceneGraphController.getLayerById(layerOrId) : layerOrId;
-    const targetId = String(targetLayerId || '');
-    if (!(layer && targetId) || visited.has(layer.id)) return false;
-    if (layer.id === targetId) return true;
-    visited.add(layer.id);
-    if (layer.kind !== SCENE_LAYER_KIND.ARITHMETIC) return false;
-    for (const input of Array.isArray(layer.inputs) ? layer.inputs : []) {
-      const inputId = String(input && input.layerId || '');
-      if (inputId === targetId) return true;
-      const inputLayer = sceneGraphController.getLayerById(inputId);
-      if (arithmeticLayerDependsOn(inputLayer, targetId, visited)) return true;
-    }
-    return false;
-  }
-
-  function getCircularOperandIdsForEdit(scene, editedLayerId) {
-    const out = new Set();
-    if (!scene || !editedLayerId) return out;
-    for (const layer of getCubeLayersInScene(scene)) {
-      if (!isCubeLikeLayer(layer)) continue;
-      if (layer.id === editedLayerId || arithmeticLayerDependsOn(layer, editedLayerId)) out.add(layer.id);
-    }
-    return out;
-  }
-
-  function buildArithmeticDependencyDepthMap(scene) {
-    const layers = getCubeLayersInScene(scene);
-    const byId = new Map(layers.map((layer) => [layer.id, layer]));
-    const memo = new Map();
-    const depthFor = (layerId, stack = new Set()) => {
-      if (memo.has(layerId)) return memo.get(layerId);
-      const layer = byId.get(layerId);
-      if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC) || stack.has(layerId)) {
-        memo.set(layerId, 0);
-        return 0;
-      }
-      stack.add(layerId);
-      let depth = 0;
-      for (const input of Array.isArray(layer.inputs) ? layer.inputs : []) {
-        depth = Math.max(depth, 1 + depthFor(input.layerId, stack));
-      }
-      stack.delete(layerId);
-      memo.set(layerId, depth);
-      return depth;
-    };
-    for (const layer of layers) depthFor(layer.id);
-    return memo;
-  }
-
-  function getArithmeticCascadeDeletePlan(seedLayers) {
-    const seeds = (Array.isArray(seedLayers) ? seedLayers : []).filter(isCubeLikeLayer);
-    const scene = seeds.length ? sceneGraphController.getSceneForLayer(seeds[0]) : null;
-    if (!scene) return { scene: null, seedLayers: [], layers: [], dependents: [] };
-    const seedIds = new Set(seeds.map((layer) => layer.id));
-    const deleteIds = new Set(seedIds);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const layer of getCubeLayersInScene(scene)) {
-        if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC) || deleteIds.has(layer.id)) continue;
-        const inputs = Array.isArray(layer.inputs) ? layer.inputs : [];
-        if (inputs.some((input) => deleteIds.has(input && input.layerId))) {
-          deleteIds.add(layer.id);
-          changed = true;
-        }
-      }
-    }
-    const depth = buildArithmeticDependencyDepthMap(scene);
-    const layers = getCubeLayersInScene(scene)
-      .filter((layer) => deleteIds.has(layer.id))
-      .sort((a, b) => (Number(depth.get(b.id)) || 0) - (Number(depth.get(a.id)) || 0));
-    return {
-      scene,
-      seedLayers: seeds,
-      seedIds,
-      layers,
-      dependents: layers.filter((layer) => !seedIds.has(layer.id)),
-    };
-  }
-
-  function getArithmeticDependentsInRecomputeOrder(scene, rootLayerId) {
-    const rootId = String(rootLayerId || '');
-    if (!scene || !rootId) return [];
-    const arithmeticLayers = getCubeLayersInScene(scene).filter((layer) => layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC);
-    const directDependents = new Map();
-    for (const layer of arithmeticLayers) {
-      for (const input of Array.isArray(layer.inputs) ? layer.inputs : []) {
-        const inputId = String(input && input.layerId || '');
-        if (!inputId) continue;
-        if (!directDependents.has(inputId)) directDependents.set(inputId, []);
-        directDependents.get(inputId).push(layer);
-      }
-    }
-    const affected = new Map();
-    const collect = (layerId) => {
-      for (const dependent of directDependents.get(layerId) || []) {
-        if (dependent.id === rootId || affected.has(dependent.id)) continue;
-        affected.set(dependent.id, dependent);
-        collect(dependent.id);
-      }
-    };
-    collect(rootId);
-    const remaining = new Map(affected);
-    const ordered = [];
-    while (remaining.size) {
-      let progressed = false;
-      for (const [id, layer] of Array.from(remaining.entries())) {
-        const waitsForAffectedInput = (Array.isArray(layer.inputs) ? layer.inputs : [])
-          .some((input) => remaining.has(String(input && input.layerId || '')));
-        if (waitsForAffectedInput) continue;
-        ordered.push(layer);
-        remaining.delete(id);
-        progressed = true;
-      }
-      if (!progressed) {
-        ordered.push(...remaining.values());
-        break;
-      }
-    }
-    return ordered;
-  }
-
-  function recomputeArithmeticLayerData(layer) {
-    if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) return { ok: false, error: 'Layer is not arithmetic.' };
-    const computed = computeArithmeticCubeData(layer.operation, layer.inputs, layer.name);
-    if (!computed.ok) {
-      layer.cubeDataValid = false;
-      return computed;
-    }
-    layer.cubeData = computed.cubeData;
-    layer.cubeDataValid = true;
-    return { ok: true };
-  }
-
   function insertLayerAfter(scene, layer, afterLayer) {
     if (!(scene && layer && afterLayer && Array.isArray(scene.layers))) return;
     const from = scene.layers.indexOf(layer);
@@ -11049,23 +10242,7 @@
   }
 
   function reorderCubeLayersInScene(scene, orderedCubeLayers) {
-    if (!(scene && Array.isArray(scene.layers) && Array.isArray(orderedCubeLayers))) return false;
-    const orbitalsGroupId = scene.orbitalsGroupId || (sceneGraphController.ensureOrbitalsGroup(scene) || {}).id || null;
-    const orderedIds = new Set(orderedCubeLayers.map((layer) => layer && layer.id).filter(Boolean));
-    const nextLayers = [];
-    let inserted = false;
-    for (const layer of scene.layers) {
-      if (isCubeLikeLayer(layer) && layer.parentId === orbitalsGroupId) {
-        if (!inserted) {
-          nextLayers.push(...orderedCubeLayers);
-          inserted = true;
-        }
-        if (orderedIds.has(layer.id)) continue;
-      }
-      nextLayers.push(layer);
-    }
-    if (!inserted) nextLayers.push(...orderedCubeLayers);
-    scene.layers = nextLayers;
+    if (!sceneGraphController.reorderCubeLayers(scene, orderedCubeLayers)) return false;
     renumberCubeLayerLabels(scene);
     return true;
   }
@@ -11133,48 +10310,17 @@
       copy.inputs = normalizeArithmeticInputsForOperation(copy.operation, copy.inputs).map((input) => Object.assign({}, input, {
         layerId: idMap.get(input.layerId) || input.layerId,
       }));
-      const computed = computeArithmeticCubeData(copy.operation, copy.inputs, copy.name);
-      if (computed.ok) {
-        copy.cubeData = computed.cubeData;
-        copy.cubeDataValid = true;
-      } else {
-        copy.cubeDataValid = false;
-      }
+      // Copies share immutable input fields; the cloned result is already valid.
     }
     insertCubeLayerBlock(destinationScene, copies, insertIndex);
     return copies;
   }
 
   function moveLayerBlockToScene(sourceLayers, sourceScene, destinationScene, insertIndex) {
-    const moving = (Array.isArray(sourceLayers) ? sourceLayers : []).filter(isCubeLikeLayer);
-    if (!(moving.length && sourceScene && destinationScene)) return [];
-    const movingIds = new Set(moving.map((layer) => layer.id));
-    const destGroup = sceneGraphController.ensureOrbitalsGroup(destinationScene);
-    if (!destGroup) return [];
-    for (const layer of moving) {
-      if (layer.sceneId !== destinationScene.id) {
-        layer.sceneId = destinationScene.id;
-        layer.parentId = destGroup.id;
-        if (layer.record && destinationScene.sceneKey) {
-          layer.record._sceneGraphLayerState = Object.assign({}, layer.record._sceneGraphLayerState || {}, {
-            visible: layer.visible !== false,
-          });
-        }
-      }
-      disposeLayerRenderArtifacts(layer);
-    }
-    if (sourceScene !== destinationScene) {
-      sourceScene.layers = sourceScene.layers.filter((layer) => !movingIds.has(layer.id));
-      destinationScene.layers.push(...moving);
-      if (sourceScene.activeLayerId && movingIds.has(sourceScene.activeLayerId)) {
-        const replacement = getCubeLayersInScene(sourceScene).find((layer) => !movingIds.has(layer.id))
-          || sceneGraphController.getLayerById(sourceScene.moleculeLayerId)
-          || null;
-        sourceScene.activeLayerId = replacement ? replacement.id : null;
-      }
-      renumberCubeLayerLabels(sourceScene);
-    }
-    insertCubeLayerBlock(destinationScene, moving, insertIndex);
+    const moving = sceneGraphController.moveCubeLayers(sourceLayers, destinationScene, insertIndex);
+    for (const layer of moving) disposeLayerRenderArtifacts(layer);
+    renumberCubeLayerLabels(sourceScene);
+    if (destinationScene !== sourceScene) renumberCubeLayerLabels(destinationScene);
     return moving;
   }
 
@@ -11209,103 +10355,6 @@
     return { ok: true, error: '' };
   }
 
-  function getOutlinerDragLayers() {
-    if (!(outlinerDragState && Array.isArray(outlinerDragState.layerIds))) return [];
-    return outlinerDragState.layerIds
-      .map((id) => sceneGraphController.getLayerById(id))
-      .filter(isCubeLikeLayer);
-  }
-
-  function getOrderedDragLayersForStart(layer) {
-    if (!isCubeLikeLayer(layer)) return [];
-    const scene = sceneGraphController.getSceneForLayer(layer);
-    if (!scene) return [layer];
-    if (!isCubeLayerSelected(layer)) return [layer];
-    const selected = new Set(getSelectedCubeLayerIds());
-    return getCubeLayersInScene(scene).filter((candidate) => selected.has(candidate.id));
-  }
-
-  function isOutlinerDragInteractiveTarget(event) {
-    const target = event && event.target;
-    return !!(target && typeof target.closest === 'function' && target.closest(
-      '.vm-outliner-row__eye, .vm-outliner-row__twisty, .vm-outliner-row__rename-input, button, input, select, textarea, a, [role="button"]'
-    ));
-  }
-
-  function ensureOutlinerDropIndicator() {
-    if (outlinerDropIndicatorEl) return outlinerDropIndicatorEl;
-    const indicator = document.createElement('div');
-    indicator.className = 'vm-outliner-drop-indicator';
-    indicator.hidden = true;
-    document.body.appendChild(indicator);
-    outlinerDropIndicatorEl = indicator;
-    return indicator;
-  }
-
-  function hideOutlinerDropIndicator() {
-    if (outlinerDropIndicatorEl) outlinerDropIndicatorEl.hidden = true;
-  }
-
-  function setOutlinerMergeHighlight(row, copyMode) {
-    if (outlinerDragHighlightedRow && outlinerDragHighlightedRow !== row) {
-      outlinerDragHighlightedRow.classList.remove('is-drag-merge-target', 'is-copy-target');
-    }
-    outlinerDragHighlightedRow = row || null;
-    if (row) {
-      row.classList.add('is-drag-merge-target');
-      row.classList.toggle('is-copy-target', !!copyMode);
-    }
-  }
-
-  function clearOutlinerDropFeedback() {
-    hideOutlinerDropIndicator();
-    setOutlinerMergeHighlight(null, false);
-  }
-
-  function clearOutlinerDragVisuals() {
-    clearOutlinerDropFeedback();
-    if (sceneOutlinerBodyEl) {
-      for (const row of sceneOutlinerBodyEl.querySelectorAll('.vm-outliner-row.is-dragging')) {
-        row.classList.remove('is-dragging');
-      }
-    }
-    if (outlinerDragImageEl && outlinerDragImageEl.parentNode) {
-      outlinerDragImageEl.parentNode.removeChild(outlinerDragImageEl);
-    }
-    outlinerDragImageEl = null;
-  }
-
-  function findOutlinerRowById(id) {
-    const targetId = String(id || '');
-    if (!sceneOutlinerBodyEl || !targetId) return null;
-    return Array.from(sceneOutlinerBodyEl.querySelectorAll('.vm-outliner-row'))
-      .find((row) => row && row.dataset && row.dataset.id === targetId) || null;
-  }
-
-  function scrollOutlinerTargetIntoView(id) {
-    const row = findOutlinerRowById(id);
-    if (!row) return false;
-    row.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'nearest',
-    });
-    return true;
-  }
-
-  function scheduleOutlinerScrollToTarget(id) {
-    outlinerScrollTargetId = id || null;
-    if (!outlinerScrollTargetId || outlinerScrollRaf) return;
-    outlinerScrollRaf = window.requestAnimationFrame(() => {
-      outlinerScrollRaf = window.requestAnimationFrame(() => {
-        const targetId = outlinerScrollTargetId;
-        outlinerScrollRaf = 0;
-        outlinerScrollTargetId = null;
-        if (targetId) scrollOutlinerTargetIntoView(targetId);
-      });
-    });
-  }
-
   function expandOutlinerPathForLayer(layer) {
     if (!layer) return;
     const scene = sceneGraphController.getSceneForLayer(layer);
@@ -11333,218 +10382,6 @@
       }
     }
     return changed;
-  }
-
-  function showOutlinerDropIndicator(row, before, copyMode) {
-    if (!row) return;
-    const indicator = ensureOutlinerDropIndicator();
-    const rect = row.getBoundingClientRect();
-    indicator.hidden = false;
-    indicator.classList.toggle('is-copy', !!copyMode);
-    indicator.style.left = `${Math.max(0, rect.left + 4)}px`;
-    indicator.style.top = `${Math.max(0, before ? rect.top : rect.bottom)}px`;
-    indicator.style.width = `${Math.max(12, rect.width - 8)}px`;
-  }
-
-  function createOutlinerDragImage(layers) {
-    const ghost = document.createElement('div');
-    ghost.className = 'vm-outliner-drag-ghost';
-    const first = layers && layers[0];
-    ghost.textContent = first ? getLayerFullDisplayName(first) : 'Layer';
-    if (layers.length > 1) {
-      const badge = document.createElement('span');
-      badge.className = 'vm-outliner-drag-ghost__badge';
-      badge.textContent = `+${layers.length - 1}`;
-      ghost.appendChild(badge);
-    }
-    document.body.appendChild(ghost);
-    outlinerDragImageEl = ghost;
-    return ghost;
-  }
-
-  function getOutlinerDropCandidate(target, row, event) {
-    if (!outlinerDragState) return { kind: 'invalid', valid: false };
-    const sourceScene = sceneGraphController.findScene(outlinerDragState.sourceSceneId);
-    const layers = getOutlinerDragLayers();
-    if (!(sourceScene && layers.length && target)) return { kind: 'invalid', valid: false };
-    if (target.type === 'scene') {
-      const destinationScene = target.scene;
-      if (!destinationScene || destinationScene.id === sourceScene.id) {
-        return { kind: 'noop', valid: false, scene: destinationScene || null };
-      }
-      const sourceVol = getSceneMoleculeVolume(sourceScene);
-      const destinationVol = getSceneMoleculeVolume(destinationScene);
-      if (!moleculeMatchesVolume(sourceVol, destinationVol)) {
-        return {
-          kind: 'merge',
-          valid: false,
-          scene: destinationScene,
-          error: 'Cannot merge: molecules don\'t match',
-        };
-      }
-      const arithmeticCheck = validateCrossSceneLayerMove(layers, sourceScene, { copyMode: !!(event && event.shiftKey) });
-      if (!arithmeticCheck.ok) {
-        return {
-          kind: 'merge',
-          valid: false,
-          scene: destinationScene,
-          error: arithmeticCheck.error,
-        };
-      }
-      return {
-        kind: 'merge',
-        valid: true,
-        scene: destinationScene,
-        index: getCubeLayersInScene(destinationScene).length,
-      };
-    }
-    if (target.layer && isCubeLikeLayer(target.layer)) {
-      const destinationScene = target.scene || sceneGraphController.getSceneForLayer(target.layer);
-      if (!(destinationScene && destinationScene.id === sourceScene.id)) return { kind: 'invalid', valid: false };
-      const cubeLayers = getCubeLayersInScene(destinationScene);
-      const rowIndex = cubeLayers.findIndex((layer) => layer.id === target.layer.id);
-      if (rowIndex < 0) return { kind: 'invalid', valid: false };
-      const rect = row && row.getBoundingClientRect ? row.getBoundingClientRect() : { top: 0, height: 1 };
-      const before = Number(event && event.clientY) < rect.top + rect.height / 2;
-      return {
-        kind: 'reorder',
-        valid: true,
-        scene: destinationScene,
-        index: before ? rowIndex : rowIndex + 1,
-        before,
-      };
-    }
-    return { kind: 'invalid', valid: false };
-  }
-
-  function adjustReorderIndexForMove(scene, layers, index) {
-    const movingIds = new Set((Array.isArray(layers) ? layers : []).map((layer) => layer.id));
-    let adjusted = Math.max(0, Number(index) || 0);
-    getCubeLayersInScene(scene).forEach((layer, layerIndex) => {
-      if (movingIds.has(layer.id) && layerIndex < index) adjusted -= 1;
-    });
-    return Math.max(0, adjusted);
-  }
-
-  function finishOutlinerDragDrop(candidate, event) {
-    const sourceScene = sceneGraphController.findScene(outlinerDragState && outlinerDragState.sourceSceneId);
-    const layers = getOutlinerDragLayers();
-    if (!(sourceScene && layers.length && candidate && candidate.valid)) return false;
-    const copyMode = !!(event && event.shiftKey);
-    const destinationScene = candidate.scene || sourceScene;
-    const destinationWasSingle = getVisibleCubeLayerCount(destinationScene) <= 1;
-    let nextLayers = [];
-    if (copyMode) {
-      nextLayers = duplicateLayerBlockToScene(layers, destinationScene, candidate.index);
-    } else if (candidate.kind === 'reorder') {
-      nextLayers = moveLayerBlockToScene(layers, sourceScene, destinationScene, adjustReorderIndexForMove(destinationScene, layers, candidate.index));
-    } else if (candidate.kind === 'merge') {
-      nextLayers = moveLayerBlockToScene(layers, sourceScene, destinationScene, candidate.index);
-    }
-    if (!nextLayers.length) return false;
-    const active = nextLayers[0];
-    const shouldSoloDestination = copyMode || candidate.kind === 'merge';
-    focusScene(destinationScene);
-    setActiveSceneGraphLayer(active.id, {
-      forceSingleCubeVisibility: destinationWasSingle,
-      ensureSceneVisible: true,
-      ensureLayerVisible: true,
-      expandPath: true,
-      soloScene: shouldSoloDestination,
-      rebuild: false,
-      rebind: false,
-      selection: 'replace',
-    });
-    flashOutlinerLayer(active.id);
-    rebuildScene({ preserveView: true, syncGraph: false });
-    syncLoadedSceneControls();
-    syncTrajectoryControls();
-    syncAppearanceControlsToActiveLayer();
-    renderSceneOutliner();
-    const verb = copyMode ? 'Copied' : (candidate.kind === 'merge' ? 'Moved' : 'Reordered');
-    setHintMessage(`${verb} ${nextLayers.length === 1 ? getLayerDisplayName(active) : `${nextLayers.length} layers`}.`);
-    return true;
-  }
-
-  function handleOutlinerDragStart(target, row, event) {
-    if (outlinerRenameState || !(target && isCubeLikeLayer(target.layer)) || isOutlinerDragInteractiveTarget(event)) {
-      event.preventDefault();
-      return;
-    }
-    const scene = sceneGraphController.getSceneForLayer(target.layer);
-    if (!scene) {
-      event.preventDefault();
-      return;
-    }
-    closeCubeLayerContextMenu();
-    const layers = getOrderedDragLayersForStart(target.layer);
-    if (!layers.length) {
-      event.preventDefault();
-      return;
-    }
-    outlinerDragState = {
-      sourceSceneId: scene.id,
-      layerIds: layers.map((layer) => layer.id),
-      primaryLayerId: target.layer.id,
-    };
-    row.classList.add('is-dragging');
-    event.dataTransfer.effectAllowed = 'copyMove';
-    event.dataTransfer.setData('text/plain', layers.map(getLayerFullDisplayName).join(', '));
-    const ghost = createOutlinerDragImage(layers);
-    if (event.dataTransfer.setDragImage) event.dataTransfer.setDragImage(ghost, 12, 12);
-  }
-
-  function handleOutlinerDragOver(target, row, event) {
-    if (!outlinerDragState) return;
-    event.stopPropagation();
-    const candidate = getOutlinerDropCandidate(target, row, event);
-    const copyMode = !!event.shiftKey;
-    clearOutlinerDropFeedback();
-    if (candidate.kind === 'reorder' && candidate.valid) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = copyMode ? 'copy' : 'move';
-      showOutlinerDropIndicator(row, candidate.before, copyMode);
-      return;
-    }
-    if (candidate.kind === 'merge') {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = candidate.valid ? (copyMode ? 'copy' : 'move') : 'none';
-      if (candidate.valid) setOutlinerMergeHighlight(row, copyMode);
-      return;
-    }
-    event.dataTransfer.dropEffect = 'none';
-  }
-
-  function handleOutlinerDrop(target, row, event) {
-    if (!outlinerDragState) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const candidate = getOutlinerDropCandidate(target, row, event);
-    if (candidate.valid) {
-      finishOutlinerDragDrop(candidate, event);
-    } else if (candidate.error) {
-      setHintMessage(candidate.error);
-    }
-    outlinerDragState = null;
-    clearOutlinerDragVisuals();
-  }
-
-  function handleOutlinerDragEnd() {
-    outlinerDragState = null;
-    clearOutlinerDragVisuals();
-  }
-
-  function flashOutlinerLayer(layerId, options = {}) {
-    outlinerFlashLayerId = layerId || null;
-    if (options.scroll !== false) scheduleOutlinerScrollToTarget(layerId);
-    if (outlinerFlashTimer) window.clearTimeout(outlinerFlashTimer);
-    outlinerFlashTimer = window.setTimeout(() => {
-      outlinerFlashTimer = 0;
-      if (outlinerFlashLayerId === layerId) {
-        outlinerFlashLayerId = null;
-        renderSceneOutliner();
-      }
-    }, 900);
   }
 
   function duplicateCubeLayer(sourceLayer, options = {}) {
@@ -11744,7 +10581,9 @@
   function activateSceneFocusRecord(scene) {
     const record = getSceneFocusRecord(scene);
     const recordIndex = getRecordIndex(record);
-    if (recordIndex < 0 || currentIndex === recordIndex) return false;
+    if (recordIndex < 0) return false;
+    sceneGraphController.setMoleculeRecord(scene, record);
+    if (currentIndex === recordIndex) return false;
     currentIndex = recordIndex;
     return true;
   }
@@ -11775,6 +10614,10 @@
     const previousActiveId = previousLayer && previousLayer.id;
     const layer = sceneGraphController.setActiveLayer(layerId);
     if (!layer) return null;
+    if (layer.record && Number.isInteger(layer.moldenMoIndex)) {
+      layer.record.moldenMoIndex = layer.moldenMoIndex;
+      ensureMoldenGridForRecord(layer.record, layer.record.vol);
+    }
     if (scene && options.ensureSceneVisible) scene.visible = true;
     if (options.expandPath) expandOutlinerPathForLayer(layer);
     if (scene) focusScene(scene);
@@ -11805,6 +10648,7 @@
       sceneGraphController.clearSelection();
     }
     const recordIndex = layer.record ? getRecordIndex(layer.record) : -1;
+    if (recordIndex >= 0) sceneGraphController.setMoleculeRecord(scene, layer.record);
     if (recordIndex >= 0 && currentIndex !== recordIndex) {
       currentIndex = recordIndex;
       syncLoadedSceneControls();
@@ -11843,44 +10687,6 @@
       if (options.render !== false) renderSceneOutliner();
       scheduleOutlinerScrollToTarget(focusedScene.id);
       return focusedScene.id;
-    }
-    return '';
-  }
-
-  function formatOutlinerAtomCount(vol) {
-    const n = Array.isArray(vol && vol.atoms) ? vol.atoms.length : 0;
-    return `${n} atom${n === 1 ? '' : 's'}`;
-  }
-
-  function formatOutlinerMetaForScene(scene) {
-    if (!scene) return '';
-    if (scene.kind === 'trajectory') {
-      const info = getTrajectoryInfoForScene(scene);
-      const frameCount = Number(info && info.frameCount)
-        || Number(scene.meta && scene.meta.frameCount)
-        || Number(scene.trajectory && scene.trajectory.frames && scene.trajectory.frames.length)
-        || 0;
-      if (frameCount > 0) return `${frameCount} frames`;
-    }
-    const molecule = sceneGraphController.getLayerById(scene.moleculeLayerId);
-    if (molecule && molecule.record) return formatOutlinerAtomCount(molecule.record.vol);
-    return '';
-  }
-
-  function formatOutlinerMetaForLayer(scene, layer) {
-    if (!layer) return '';
-    if (layer.kind === SCENE_LAYER_KIND.MOLECULE) return formatOutlinerAtomCount(layer.record && layer.record.vol);
-    if (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP) {
-      const count = sceneGraphController.listLayers(scene).filter((item) => item.parentId === layer.id).length;
-      return `${count} layer${count === 1 ? '' : 's'}`;
-    }
-    if (isCubeLikeLayer(layer)) {
-      if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC && layer.cubeDataValid === false) return '(invalid)';
-      return `iso ${formatIsoInputValue(layer.iso || DEFAULT_ISO_VALUE)}`;
-    }
-    if (layer.kind === SCENE_LAYER_KIND.MEASUREMENTS_GROUP) {
-      const count = sceneGraphController.listLayers(scene).filter((item) => item.parentId === layer.id).length;
-      return `${count} item${count === 1 ? '' : 's'}`;
     }
     return '';
   }
@@ -11952,1047 +10758,6 @@
       : colors;
   }
 
-  function getLayerIconName(layer) {
-    if (!layer) return 'layers';
-    if (layer.kind === SCENE_LAYER_KIND.MOLECULE) return 'hub';
-    if (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP) return 'blur_on';
-    if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC) return 'add';
-    if (layer.kind === SCENE_LAYER_KIND.MEASUREMENTS_GROUP) return 'straighten';
-    if (layer.kind === SCENE_LAYER_KIND.MEASUREMENT) return 'linear_scale';
-    return '';
-  }
-
-  function getOutlinerRowTarget(options = {}) {
-    if (options.scene) return { type: 'scene', id: options.scene.id, scene: options.scene, layer: null };
-    if (options.layer) {
-      const scene = sceneGraphController.getSceneForLayer(options.layer);
-      return { type: 'layer', id: options.layer.id, scene, layer: options.layer };
-    }
-    return { type: '', id: '', scene: null, layer: null };
-  }
-
-  function isOutlinerTargetRenameable(target) {
-    if (!target) return false;
-    if (target.type === 'scene') return true;
-    const layer = target.layer;
-    return !!(layer && (
-      isCubeLikeLayer(layer)
-      || layer.kind === SCENE_LAYER_KIND.MOLECULE
-    ));
-  }
-
-  function isOutlinerTargetBeingRenamed(target) {
-    return !!(outlinerRenameState && target && target.id && outlinerRenameState.id === target.id);
-  }
-
-  function focusOutlinerRenameInput() {
-    if (!sceneOutlinerBodyEl) return;
-    const input = sceneOutlinerBodyEl.querySelector('.vm-outliner-row__rename-input');
-    if (!input) return;
-    input.focus();
-    input.select();
-  }
-
-  function startOutlinerRename(target) {
-    if (!isOutlinerTargetRenameable(target)) return false;
-    closeCubeLayerContextMenu();
-    const name = target.type === 'scene'
-      ? target.scene && target.scene.name
-      : target.layer && target.layer.name;
-    outlinerRenameState = {
-      id: target.id,
-      type: target.type,
-      originalName: String(name || 'Untitled'),
-    };
-    renderSceneOutliner();
-    window.requestAnimationFrame(focusOutlinerRenameInput);
-    return true;
-  }
-
-  function finishOutlinerRename(options = {}) {
-    if (!outlinerRenameState) return false;
-    const state = outlinerRenameState;
-    const input = sceneOutlinerBodyEl
-      ? sceneOutlinerBodyEl.querySelector('.vm-outliner-row__rename-input')
-      : null;
-    const raw = input ? input.value : state.originalName;
-    const nextName = String(raw || '').trim();
-    outlinerRenameState = null;
-    if (options.commit !== false && nextName) {
-      if (state.type === 'scene') {
-        const scene = sceneGraphController.findScene(state.id);
-        if (scene) scene.name = nextName;
-      } else if (state.type === 'layer') {
-        const layer = sceneGraphController.getLayerById(state.id);
-        if (layer) {
-          layer.name = nextName;
-          if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC) layer.nameUserEdited = true;
-        }
-      }
-      syncLoadedSceneControls();
-      syncTrajectoryControls();
-      updateSidePanel();
-      syncAppearanceControlsToActiveLayer();
-    }
-    renderSceneOutliner();
-    return true;
-  }
-
-  function cancelOutlinerRename() {
-    return finishOutlinerRename({ commit: false });
-  }
-
-  function getOutlinerAddSceneKey(scene = getFocusedScene()) {
-    return scene && scene.sceneKey ? String(scene.sceneKey) : '';
-  }
-
-  function ensureOutlinerAddFileInput() {
-    if (outlinerAddFileInputEl) return outlinerAddFileInputEl;
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.cube,.cub';
-    input.multiple = true;
-    input.hidden = true;
-    input.setAttribute('aria-hidden', 'true');
-    input.addEventListener('change', () => {
-      const files = input.files ? Array.from(input.files) : [];
-      const targetSceneKey = outlinerAddTargetSceneKey;
-      input.value = '';
-      outlinerAddTargetSceneKey = '';
-      if (!files.length) return;
-      void fileLoaderController.handleFiles(files, {
-        sceneDispatch: true,
-        targetSceneKey,
-      });
-    });
-    document.body.appendChild(input);
-    outlinerAddFileInputEl = input;
-    return outlinerAddFileInputEl;
-  }
-
-  function openOutlinerAddCubeFilePicker(scene = getFocusedScene()) {
-    closeCubeLayerContextMenu();
-    outlinerAddTargetSceneKey = getOutlinerAddSceneKey(scene);
-    ensureOutlinerAddFileInput().click();
-  }
-
-  function buildOutlinerRow(options = {}) {
-    const target = getOutlinerRowTarget(options);
-    const renaming = isOutlinerTargetBeingRenamed(target);
-    const inheritedHidden = !!(options.visible && options.effectiveVisible === false);
-    const row = document.createElement('div');
-    row.className = 'vm-outliner-row';
-    row.dataset.id = options.id || '';
-    row.dataset.depth = String(options.depth || 0);
-    row.style.setProperty('--vm-outliner-indent', `${Math.max(0, Number(options.depth) || 0) * 16}px`);
-    row.setAttribute('role', 'treeitem');
-    row.tabIndex = 0;
-    row.setAttribute('aria-selected', (options.active || options.selected) ? 'true' : 'false');
-    row.classList.toggle('is-active', !!options.active);
-    row.classList.toggle('is-selected', !!options.selected);
-    row.classList.toggle('is-hidden', !options.effectiveVisible);
-    row.classList.toggle('is-hidden-inherited', inheritedHidden);
-    row.classList.toggle('is-group', !!options.expandable);
-    row.classList.toggle('is-flashing', !!(options.layer && options.layer.id === outlinerFlashLayerId));
-    row.classList.toggle('is-invalid', !!(options.layer && options.layer.kind === SCENE_LAYER_KIND.ARITHMETIC && options.layer.cubeDataValid === false));
-    if (!renaming && options.layer && isCubeLikeLayer(options.layer)) {
-      row.draggable = true;
-      row.setAttribute('aria-grabbed', 'false');
-      row.addEventListener('dragstart', (event) => handleOutlinerDragStart(target, row, event));
-      row.addEventListener('dragend', handleOutlinerDragEnd);
-    }
-    row.addEventListener('dragover', (event) => handleOutlinerDragOver(target, row, event));
-    row.addEventListener('drop', (event) => handleOutlinerDrop(target, row, event));
-
-    const twisty = document.createElement('span');
-    twisty.className = 'vm-outliner-row__twisty material-symbols-rounded';
-    twisty.draggable = false;
-    twisty.textContent = options.expandable ? (options.expanded ? 'expand_more' : 'chevron_right') : '';
-    twisty.classList.toggle('is-leaf', !options.expandable);
-    if (options.expandable) {
-      twisty.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (options.scene) options.scene.expanded = options.scene.expanded === false;
-        else if (options.layer) options.layer.expanded = options.layer.expanded === false;
-        renderSceneOutliner();
-      });
-    }
-    row.appendChild(twisty);
-
-    const eye = document.createElement('span');
-    eye.className = 'vm-outliner-row__eye material-symbols-rounded';
-    eye.draggable = false;
-    eye.classList.toggle('is-off', !options.visible || inheritedHidden);
-    eye.classList.toggle('is-inherited-hidden', inheritedHidden);
-    eye.textContent = options.visible && !inheritedHidden ? 'visibility' : 'visibility_off';
-    eye.setAttribute('role', 'button');
-    const eyeLabel = inheritedHidden ? 'Hidden by parent' : (options.visible ? 'Hide' : 'Show');
-    eye.setAttribute('aria-label', eyeLabel);
-    eye.setAttribute('data-tooltip', eyeLabel);
-    eye.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const scene = options.scene || (options.layer ? sceneGraphController.getSceneForLayer(options.layer) : null);
-      const wasVisible = !!options.visible;
-      sceneGraphController.toggleVisibility(options.id);
-      if (options.layer && options.layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP && wasVisible === false) {
-        const activeCube = getSceneActiveCubeLayer(scene);
-        if (activeCube) setOnlyCubeVisibleInScene(scene, activeCube);
-      }
-      if (options.layer && options.layer.record) {
-        options.layer.record._sceneGraphLayerState = Object.assign({}, options.layer.record._sceneGraphLayerState || {}, {
-          visible: options.layer.visible !== false,
-        });
-      }
-      rebuildScene({ preserveView: true, syncGraph: false });
-      renderSceneOutliner();
-    });
-    row.appendChild(eye);
-
-    const icon = document.createElement('span');
-    icon.className = 'vm-outliner-row__icon';
-    icon.draggable = false;
-    if (options.layer && options.layer.kind === SCENE_LAYER_KIND.CUBE) {
-      icon.classList.add('vm-outliner-row__cube-dot');
-      const colors = getLayerSurfaceColors(options.layer);
-      icon.style.setProperty('--vm-cube-dot', colors.pos);
-      icon.style.setProperty('--vm-cube-dot-neg', colors.neg);
-    } else {
-      icon.classList.add('material-symbols-rounded');
-      icon.textContent = options.scene ? 'draft' : getLayerIconName(options.layer);
-    }
-    row.appendChild(icon);
-
-    const label = document.createElement('span');
-    label.className = 'vm-outliner-row__label';
-    if (options.layer && isCubeLikeLayer(options.layer)) {
-      const prefix = document.createElement('span');
-      prefix.className = 'vm-outliner-row__prefix';
-      prefix.textContent = options.layer.labelId || '';
-      label.appendChild(prefix);
-      label.appendChild(document.createTextNode(' '));
-    }
-    if (renaming) {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'vm-outliner-row__rename-input';
-      input.draggable = false;
-      input.value = outlinerRenameState ? outlinerRenameState.originalName : (options.label || 'Untitled');
-      input.setAttribute('aria-label', 'Rename');
-      input.addEventListener('click', (event) => event.stopPropagation());
-      input.addEventListener('dblclick', (event) => event.stopPropagation());
-      input.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-          cancelOutlinerRename();
-          return;
-        }
-        if (event.key === 'Enter' || event.key === 'Tab') {
-          event.preventDefault();
-          event.stopPropagation();
-          finishOutlinerRename({ commit: true });
-        }
-      });
-      input.addEventListener('blur', () => {
-        finishOutlinerRename({ commit: true });
-      });
-      label.appendChild(input);
-    } else {
-      label.appendChild(document.createTextNode(options.label || 'Untitled'));
-      if (isOutlinerTargetRenameable(target)) {
-        label.addEventListener('dblclick', (event) => {
-          if (event.target && event.target.closest && event.target.closest('.vm-outliner-row__prefix')) return;
-          event.preventDefault();
-          event.stopPropagation();
-          startOutlinerRename(target);
-        });
-      }
-    }
-    row.appendChild(label);
-
-    const meta = document.createElement('span');
-    meta.className = 'vm-outliner-row__meta';
-    meta.textContent = options.meta || '';
-    row.appendChild(meta);
-
-    row.addEventListener('click', (event) => {
-      if (outlinerRenameState) return;
-      if (options.scene) {
-        setSceneHeaderActive(options.scene);
-        return;
-      }
-      if (!options.layer) return;
-      if (!isCubeLikeLayer(options.layer)) {
-        setActiveSceneGraphLayer(options.layer.id);
-        return;
-      }
-      if (event.shiftKey) {
-        const active = sceneGraphController.getActiveLayer();
-        rangeSelectCubeLayer(isCubeLikeLayer(active) ? active.id : null, options.layer);
-        return;
-      }
-      if (event.metaKey || event.ctrlKey) {
-        toggleCubeLayerSelection(options.layer);
-        return;
-      }
-      setActiveSceneGraphLayer(options.layer.id, { selection: 'replace' });
-    });
-    row.addEventListener('contextmenu', (event) => showOutlinerContextMenu(target, event));
-    return row;
-  }
-
-  function renderSceneOutliner() {
-    if (!sceneOutlinerBodyEl) return;
-    sceneOutlinerBodyEl.textContent = '';
-    const scenes = sceneGraphController.getScenes();
-    document.documentElement.setAttribute('data-vm-scene-empty', scenes.length ? 'false' : 'true');
-    if (!scenes.length) {
-      const empty = document.createElement('div');
-      empty.className = 'vm-outliner__empty';
-      empty.textContent = 'No file loaded. Drag and drop a .cube, .molden, or .xyz file, or click the open icon above to begin.';
-      sceneOutlinerBodyEl.appendChild(empty);
-      return;
-    }
-    const activeLayer = sceneGraphController.getActiveLayer();
-    const focusedScene = getFocusedScene();
-    for (const scene of scenes) {
-      const sceneRow = buildOutlinerRow({
-        id: scene.id,
-        scene,
-        label: scene.name,
-        meta: formatOutlinerMetaForScene(scene),
-        depth: 0,
-        visible: scene.visible !== false,
-        effectiveVisible: scene.visible !== false,
-        expandable: true,
-        expanded: scene.expanded !== false,
-        active: !!(focusedScene && focusedScene.id === scene.id && !activeLayer),
-      });
-      sceneOutlinerBodyEl.appendChild(sceneRow);
-      if (scene.expanded === false) continue;
-      const layers = sceneGraphController.listLayers(scene);
-      const roots = layers.filter((layer) => !layer.parentId);
-      for (const layer of roots) {
-        renderOutlinerLayer(scene, layer, 1, activeLayer);
-      }
-    }
-  }
-
-  function renderOutlinerLayer(scene, layer, depth, activeLayer) {
-    if (!sceneOutlinerBodyEl || !layer) return;
-    const children = sceneGraphController.listLayers(scene).filter((item) => item.parentId === layer.id);
-    if (layer.kind === SCENE_LAYER_KIND.MEASUREMENTS_GROUP && children.length === 0) return;
-    const row = buildOutlinerRow({
-      id: layer.id,
-      layer,
-      label: layer.name,
-      meta: formatOutlinerMetaForLayer(scene, layer),
-      depth,
-      visible: layer.visible !== false,
-      effectiveVisible: sceneGraphController.isLayerEffectivelyVisible(layer),
-      expandable: children.length > 0,
-      expanded: layer.expanded !== false,
-      active: !!(activeLayer && activeLayer.id === layer.id),
-      selected: isCubeLikeLayer(layer) && isCubeLayerSelected(layer),
-    });
-    sceneOutlinerBodyEl.appendChild(row);
-    if (children.length && layer.expanded !== false) {
-      for (const child of children) renderOutlinerLayer(scene, child, depth + 1, activeLayer);
-    }
-  }
-
-  if (sceneOutlinerBodyEl) {
-    sceneOutlinerBodyEl.addEventListener('click', (event) => {
-      const target = event.target;
-      if (target && typeof target.closest === 'function' && target.closest('.vm-outliner-row')) return;
-      clearOutlinerSelectionToActive();
-    });
-    sceneOutlinerBodyEl.addEventListener('dragover', (event) => {
-      if (!outlinerDragState) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'none';
-      clearOutlinerDropFeedback();
-    });
-    sceneOutlinerBodyEl.addEventListener('drop', (event) => {
-      if (!outlinerDragState) return;
-      event.preventDefault();
-      outlinerDragState = null;
-      clearOutlinerDragVisuals();
-    });
-  }
-
-  if (sceneOutlinerAddBtn) {
-    sceneOutlinerAddBtn.hidden = false;
-    sceneOutlinerAddBtn.disabled = false;
-    sceneOutlinerAddBtn.addEventListener('click', showOutlinerAddMenu);
-  }
-
-  document.addEventListener('pointerdown', (event) => {
-    if (currentMode !== MODES.DISPLAY) return;
-    const target = event.target;
-    if (!target || (typeof target.closest !== 'function')) return;
-    if (target.closest('#toolbar')) return;
-    if (cubeLayerContextMenuEl && target.closest('.vm-outliner-context-menu')) return;
-    if (combinePopoverEl && target.closest('.vm-combine-popover')) return;
-    if (target.closest('button, input, select, textarea, a, [role="button"], [role="menu"], [role="dialog"]')) return;
-    clearOutlinerSelectionToActive({ rebind: true, render: true });
-  }, true);
-
-  function closeCubeLayerContextMenu() {
-    if (!cubeLayerContextMenuEl) return;
-    cubeLayerContextMenuEl.hidden = true;
-    cubeLayerContextMenuEl.setAttribute('aria-hidden', 'true');
-    cubeLayerContextMenuLayerId = null;
-    cubeLayerContextMenuPoint = null;
-  }
-
-  function isFocusInsideOutliner() {
-    const active = document.activeElement;
-    return !!(active && typeof active.closest === 'function' && active.closest('#sceneOutliner'));
-  }
-
-  function showDeleteSelectedCubeLayersConfirmation(event = null) {
-    const selection = getSelectedCubeLayers();
-    const layer = (selection.length ? selection[selection.length - 1] : null) || getActiveCubeLayer();
-    if (!layer) return false;
-    cubeLayerContextMenuLayerId = layer.id;
-    const menu = renderCubeLayerContextMenu(layer, 'confirm-delete');
-    if (!menu) return false;
-    menu.hidden = false;
-    menu.setAttribute('aria-hidden', 'false');
-    if (event && Number.isFinite(Number(event.clientX)) && Number.isFinite(Number(event.clientY))) {
-      positionCubeLayerContextMenu(event);
-    } else {
-      const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
-        .find((candidate) => candidate && candidate.dataset && candidate.dataset.id === layer.id);
-      const rect = row ? row.getBoundingClientRect() : null;
-      positionCubeLayerContextMenu({
-        clientX: rect ? rect.left + Math.min(120, rect.width) : (window.innerWidth || 240) / 2,
-        clientY: rect ? rect.top + Math.min(18, rect.height) : (window.innerHeight || 160) / 2,
-      });
-    }
-    return true;
-  }
-
-  function positionCubeLayerContextMenu(event) {
-    if (!cubeLayerContextMenuEl) return;
-    const gap = 8;
-    const rect = cubeLayerContextMenuEl.getBoundingClientRect();
-    const width = Math.max(1, rect.width || 180);
-    const height = Math.max(1, rect.height || 110);
-    const left = Math.min(
-      Math.max(gap, Number(event && event.clientX) || gap),
-      Math.max(gap, (window.innerWidth || 0) - width - gap)
-    );
-    const top = Math.min(
-      Math.max(gap, Number(event && event.clientY) || gap),
-      Math.max(gap, (window.innerHeight || 0) - height - gap)
-    );
-    cubeLayerContextMenuEl.style.left = `${Math.round(left)}px`;
-    cubeLayerContextMenuEl.style.top = `${Math.round(top)}px`;
-  }
-
-  function ensureCubeLayerContextMenu() {
-    if (cubeLayerContextMenuEl) return cubeLayerContextMenuEl;
-    const menu = document.createElement('div');
-    menu.className = 'vm-outliner-context-menu';
-    menu.hidden = true;
-    menu.setAttribute('aria-hidden', 'true');
-    menu.setAttribute('role', 'menu');
-    document.body.appendChild(menu);
-    cubeLayerContextMenuEl = menu;
-    document.addEventListener('pointerdown', (event) => {
-      if (!cubeLayerContextMenuEl || cubeLayerContextMenuEl.hidden) return;
-      if (event.target && cubeLayerContextMenuEl.contains(event.target)) return;
-      closeCubeLayerContextMenu();
-    });
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') closeCubeLayerContextMenu();
-    });
-    window.addEventListener('resize', closeCubeLayerContextMenu);
-    window.addEventListener('scroll', closeCubeLayerContextMenu, true);
-    return cubeLayerContextMenuEl;
-  }
-
-  function closeCombinePopover() {
-    if (!combinePopoverEl) return;
-    combinePopoverEl.hidden = true;
-    combinePopoverEl.setAttribute('aria-hidden', 'true');
-    combinePopoverState = null;
-  }
-
-  function positionCombinePopover(point) {
-    if (!combinePopoverEl) return;
-    const gap = 10;
-    const rect = combinePopoverEl.getBoundingClientRect();
-    const width = Math.max(1, rect.width || 360);
-    const height = Math.max(1, rect.height || 360);
-    const left = Math.min(
-      Math.max(gap, Number(point && point.clientX) || gap),
-      Math.max(gap, (window.innerWidth || 0) - width - gap)
-    );
-    const top = Math.min(
-      Math.max(gap, Number(point && point.clientY) || gap),
-      Math.max(gap, (window.innerHeight || 0) - height - gap)
-    );
-    combinePopoverEl.style.left = `${Math.round(left)}px`;
-    combinePopoverEl.style.top = `${Math.round(top)}px`;
-  }
-
-  function ensureCombinePopover() {
-    if (combinePopoverEl) return combinePopoverEl;
-    const popover = document.createElement('div');
-    popover.className = 'vm-combine-popover';
-    popover.hidden = true;
-    popover.setAttribute('aria-hidden', 'true');
-    popover.setAttribute('role', 'dialog');
-    popover.setAttribute('aria-label', 'Combine cube layers');
-    document.body.appendChild(popover);
-    combinePopoverEl = popover;
-    document.addEventListener('pointerdown', (event) => {
-      if (!combinePopoverEl || combinePopoverEl.hidden) return;
-      if (event.target && combinePopoverEl.contains(event.target)) return;
-      closeCombinePopover();
-    });
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && combinePopoverEl && !combinePopoverEl.hidden) closeCombinePopover();
-    });
-    window.addEventListener('resize', closeCombinePopover);
-    window.addEventListener('scroll', closeCombinePopover, true);
-    return combinePopoverEl;
-  }
-
-  function getCombineOperandOptions(scene, state = combinePopoverState) {
-    const circularIds = state && state.mode === 'edit'
-      ? getCircularOperandIdsForEdit(scene, state.editingLayerId)
-      : new Set();
-    return getCubeLayersInScene(scene).filter((layer) => {
-      const vol = getLayerCubeData(layer);
-      return isCubeLikeLayer(layer)
-        && layer.cubeDataValid !== false
-        && hasVolumetricGrid(vol)
-        && !!(vol && vol.data && vol.data.length);
-    }).map((layer) => ({
-      layer,
-      disabled: circularIds.has(layer.id),
-      reason: circularIds.has(layer.id) ? 'circular' : '',
-    }));
-  }
-
-  function getEligibleCombineOperandLayers(scene, state = combinePopoverState) {
-    return getCombineOperandOptions(scene, state).filter((option) => !option.disabled).map((option) => option.layer);
-  }
-
-  function getDisabledCombineOperandIdSet(scene, state = combinePopoverState) {
-    return new Set(getCombineOperandOptions(scene, state).filter((option) => option.disabled).map((option) => option.layer.id));
-  }
-
-  function getLayerLabelWithName(layer) {
-    if (!layer) return 'Layer';
-    return `${layer.labelId || 'L?'} — ${layer.name || 'Layer'}`;
-  }
-
-  function hasEligibleCombineOperands(scene, state = combinePopoverState) {
-    return getEligibleCombineOperandLayers(scene, state).length > 0;
-  }
-
-  function getNoEligibleOperandsError(state = combinePopoverState) {
-    return state && state.mode === 'edit'
-      ? 'No eligible operands available - all other layers depend on this one.'
-      : 'Choose at least one operand.';
-  }
-
-  function chooseDefaultCombineOperand(scene, state = combinePopoverState, usedIds = new Set()) {
-    const eligible = getEligibleCombineOperandLayers(scene, state);
-    return eligible.find((layer) => !usedIds.has(layer.id)) || eligible[0] || null;
-  }
-
-  function ensureCombineOperandRowsHaveChoices(state = combinePopoverState) {
-    if (!state) return;
-    const scene = sceneGraphController.findScene(state.sceneId);
-    if (!scene) return;
-    const eligible = getEligibleCombineOperandLayers(scene, state);
-    if (!eligible.length) return;
-    const validIds = new Set(getCombineOperandOptions(scene, state).map((option) => option.layer.id));
-    for (const input of Array.isArray(state.operands) ? state.operands : []) {
-      if (!input.layerId || !validIds.has(input.layerId)) input.layerId = eligible[0].id;
-    }
-  }
-
-  function getCombineSaveButtonLabel(state = combinePopoverState) {
-    return state && state.mode === 'edit' ? 'Save' : 'Create';
-  }
-
-  function getCombineTitle(state = combinePopoverState) {
-    if (!(state && state.mode === 'edit')) return 'Combine';
-    const layer = sceneGraphController.getLayerById(state.editingLayerId);
-    return `Edit combination - ${layer && layer.labelId ? layer.labelId : 'layer'}`;
-  }
-
-  function getCombineNameTouched(state = combinePopoverState) {
-    return !!(state && (state.nameTouched || state.nameUserEdited));
-  }
-
-  function getCombineOutputName(state = combinePopoverState, operands = null) {
-    const autoName = generateArithmeticName(state && state.operation, operands || (state && state.operands) || []);
-    const raw = getCombineNameTouched(state) ? String(state && state.name || '').trim() : autoName;
-    return raw || autoName || 'Combination';
-  }
-
-  function updateCombineStateNameUserEdited(value) {
-    if (!combinePopoverState) return;
-    combinePopoverState.nameTouched = !!value;
-    combinePopoverState.nameUserEdited = !!value;
-  }
-
-  function normalizeCombinePopoverStateOperands() {
-    if (!combinePopoverState) return [];
-    const op = normalizeArithmeticOperation(combinePopoverState.operation);
-    combinePopoverState.operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
-    ensureCombineOperandRowsHaveChoices(combinePopoverState);
-    return combinePopoverState.operands;
-  }
-
-  function getCombineValidation(state) {
-    if (!state) return { ok: false, error: 'No combination is configured.' };
-    const scene = sceneGraphController.findScene(state.sceneId);
-    if (!scene) return { ok: false, error: 'No scene is focused.' };
-    if (!hasEligibleCombineOperands(scene, state)) return { ok: false, error: getNoEligibleOperandsError(state) };
-    const op = normalizeArithmeticOperation(state.operation);
-    const operands = normalizeArithmeticInputsForOperation(op, state.operands);
-    if (op === 'abs' && operands.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
-    if (op === 'product' && operands.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
-    if (op === 'linear_combination' && operands.length < 1) return { ok: false, error: 'Choose at least one operand.' };
-    if (operands.some((input) => !input.layerId)) return { ok: false, error: 'Choose an operand for every row.' };
-    const disabledIds = getDisabledCombineOperandIdSet(scene, state);
-    if (operands.some((input) => disabledIds.has(input.layerId))) {
-      return { ok: false, error: 'Choose a non-circular operand.' };
-    }
-    const resolved = resolveArithmeticInputs(operands);
-    if (resolved.length !== operands.length) return { ok: false, error: 'Choose a valid operand for every row.' };
-    const grid = validateArithmeticInputGrids(resolved);
-    return grid.ok
-      ? { ok: true, operands, resamplePlan: grid.resamplePlan || null }
-      : grid;
-  }
-
-  function syncCombineAutoName() {
-    if (!combinePopoverState || getCombineNameTouched(combinePopoverState)) return;
-    combinePopoverState.name = generateArithmeticName(combinePopoverState.operation, combinePopoverState.operands);
-  }
-
-  function addCombineOperandTerm() {
-    if (!combinePopoverState) return;
-    const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
-    if (!scene) return;
-    const used = new Set((combinePopoverState.operands || []).map((input) => input.layerId));
-    const candidate = chooseDefaultCombineOperand(scene, combinePopoverState, used);
-    if (!candidate) return;
-    combinePopoverState.operands.push({ layerId: candidate.id, coefficient: 1 });
-    syncCombineAutoName();
-    renderCombinePopover();
-  }
-
-  function updateCombineOperation(nextOperation) {
-    if (!combinePopoverState) return;
-    const previous = combinePopoverState.operation;
-    const op = normalizeArithmeticOperation(nextOperation);
-    const hadMultipleOperands = Array.isArray(combinePopoverState.operands) && combinePopoverState.operands.length > 1;
-    combinePopoverState.operation = op;
-    combinePopoverState.operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
-    ensureCombineOperandRowsHaveChoices(combinePopoverState);
-    combinePopoverState.absTrimmed = previous !== 'abs' && op === 'abs' && hadMultipleOperands;
-    syncCombineAutoName();
-    renderCombinePopover();
-  }
-
-  function buildCombineInitialOperands(layers, operation) {
-    const op = normalizeArithmeticOperation(operation);
-    const selected = (Array.isArray(layers) ? layers : []).filter(isCubeLikeLayer);
-    const source = selected.length ? selected : [getActiveCubeLayer()].filter(Boolean);
-    let operands = source.map((layer, index) => ({
-      layerId: layer.id,
-      coefficient: index === 1 ? -1 : 1,
-    }));
-    if (op === 'abs') operands = operands.slice(0, 1).map((input) => Object.assign({}, input, { coefficient: 1 }));
-    if (op === 'product') operands = operands.map((input) => Object.assign({}, input, { coefficient: 1 }));
-    return operands;
-  }
-
-  function saveEditedArithmeticLayerFromPopover() {
-    if (!combinePopoverState) return false;
-    const layer = sceneGraphController.getLayerById(combinePopoverState.editingLayerId);
-    const scene = layer ? sceneGraphController.getSceneForLayer(layer) : null;
-    if (!(scene && layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) return false;
-    const validation = getCombineValidation(combinePopoverState);
-    combinePopoverState.triedCreate = true;
-    if (!validation.ok) {
-      renderCombinePopover();
-      return false;
-    }
-    const nextOperation = normalizeArithmeticOperation(combinePopoverState.operation);
-    const nextInputs = normalizeArithmeticInputsForOperation(nextOperation, validation.operands);
-    const unchanged = arithmeticConfigsEqual(layer.operation, layer.inputs, nextOperation, nextInputs);
-    if (unchanged) {
-      closeCombinePopover();
-      return true;
-    }
-    const nextNameUserEdited = getCombineNameTouched(combinePopoverState);
-    const nextName = getCombineOutputName(combinePopoverState, nextInputs);
-    const computed = computeArithmeticCubeData(nextOperation, nextInputs, nextName);
-    if (!computed.ok) {
-      combinePopoverState.error = computed.error || 'Could not compute combination.';
-      renderCombinePopover();
-      return false;
-    }
-
-    layer.operation = nextOperation;
-    layer.inputs = nextInputs;
-    layer.nameUserEdited = nextNameUserEdited;
-    layer.name = nextName;
-    layer.cubeData = computed.cubeData;
-    layer.cubeDataValid = true;
-
-    for (const dependent of getArithmeticDependentsInRecomputeOrder(scene, layer.id)) {
-      const result = recomputeArithmeticLayerData(dependent);
-      if (!result.ok) {
-        console.warn('[ARITHMETIC] Failed to recompute dependent layer', dependent.labelId || dependent.id, result.error || result);
-      }
-    }
-
-    rebuildScene({ preserveView: true, syncGraph: false });
-    syncAppearanceControlsToActiveLayer();
-    renderSceneOutliner();
-    closeCombinePopover();
-    setHintMessage(`Updated ${layer.labelId || 'layer'} = ${layer.name || nextName}`);
-    return true;
-  }
-
-  function saveCombinedLayerFromPopover() {
-    if (combinePopoverState && combinePopoverState.mode === 'edit') return saveEditedArithmeticLayerFromPopover();
-    if (!combinePopoverState) return false;
-    const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
-    if (!scene) return false;
-    const validation = getCombineValidation(combinePopoverState);
-    combinePopoverState.triedCreate = true;
-    if (!validation.ok) {
-      renderCombinePopover();
-      return false;
-    }
-    const name = getCombineOutputName(combinePopoverState, validation.operands);
-    const computed = computeArithmeticCubeData(combinePopoverState.operation, validation.operands, name);
-    if (!computed.ok) {
-      combinePopoverState.error = computed.error || 'Could not compute combination.';
-      renderCombinePopover();
-      return false;
-    }
-    const firstOperand = sceneGraphController.getLayerById(validation.operands[0] && validation.operands[0].layerId);
-    const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
-    const newLayer = sceneGraphController.addArithmeticLayer(scene, Object.assign(
-      {},
-      firstOperand ? copyCubeLayerAppearance(firstOperand) : getSurfaceDefaultsForNewLayer(),
-      {
-        name,
-        labelId: getNextCubeLabelId(scene),
-        visible: true,
-        operation: normalizeArithmeticOperation(combinePopoverState.operation),
-        inputs: validation.operands,
-        nameUserEdited: getCombineNameTouched(combinePopoverState),
-        cubeData: computed.cubeData,
-        cubeDataValid: true,
-      }
-    ), getSurfaceDefaultsForNewLayer());
-    if (!newLayer) return false;
-    focusScene(scene);
-    flashOutlinerLayer(newLayer.id);
-    setActiveSceneGraphLayer(newLayer.id, {
-      forceSingleCubeVisibility: wasSingleCubeMode,
-      ensureSceneVisible: true,
-      ensureLayerVisible: true,
-      expandPath: true,
-      soloScene: true,
-      rebuild: false,
-      rebind: false,
-      selection: 'replace',
-    });
-    rebuildScene({ preserveView: true, syncGraph: false });
-    syncAppearanceControlsToActiveLayer();
-    renderSceneOutliner();
-    closeCombinePopover();
-    setHintMessage(`Created ${newLayer.labelId || 'layer'} = ${newLayer.name || name}`);
-    return true;
-  }
-
-  function renderCombinePopover() {
-    const popover = ensureCombinePopover();
-    if (!popover || !combinePopoverState) return null;
-    syncCombineAutoName();
-    const scene = sceneGraphController.findScene(combinePopoverState.sceneId);
-    const options = scene ? getCombineOperandOptions(scene) : [];
-    const op = normalizeArithmeticOperation(combinePopoverState.operation);
-    const operands = normalizeCombinePopoverStateOperands();
-    const validation = getCombineValidation(combinePopoverState);
-    const errorText = combinePopoverState.error || validation.error || '';
-    popover.textContent = '';
-
-    const title = document.createElement('div');
-    title.className = 'vm-combine-popover__title';
-    title.textContent = getCombineTitle(combinePopoverState);
-    popover.appendChild(title);
-
-    const opRow = document.createElement('label');
-    opRow.className = 'vm-combine-popover__field';
-    const opLabel = document.createElement('span');
-    opLabel.textContent = 'Operation';
-    const opSelect = document.createElement('select');
-    opSelect.className = 'vm-combine-popover__select';
-    [
-      ['linear_combination', 'Linear combination'],
-      ['product', 'Product'],
-      ['abs', 'Abs'],
-    ].forEach(([value, label]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      option.selected = value === op;
-      opSelect.appendChild(option);
-    });
-    opSelect.addEventListener('change', () => updateCombineOperation(opSelect.value));
-    opRow.appendChild(opLabel);
-    opRow.appendChild(opSelect);
-    popover.appendChild(opRow);
-
-    const dividerA = document.createElement('div');
-    dividerA.className = 'vm-combine-popover__divider';
-    popover.appendChild(dividerA);
-
-    const operandsTitle = document.createElement('div');
-    operandsTitle.className = 'vm-combine-popover__section-title';
-    operandsTitle.textContent = 'Operands';
-    popover.appendChild(operandsTitle);
-
-    operands.forEach((input, index) => {
-      const row = document.createElement('div');
-      row.className = 'vm-combine-popover__operand';
-      if (op === 'linear_combination') {
-        const coef = document.createElement('input');
-        coef.className = 'vm-combine-popover__coefficient';
-        coef.type = 'number';
-        coef.step = '0.1';
-        coef.value = String(Number.isFinite(Number(input.coefficient)) ? Number(input.coefficient).toFixed(2) : '1.00');
-        coef.addEventListener('change', () => {
-          combinePopoverState.error = '';
-          combinePopoverState.operands[index].coefficient = Number(coef.value);
-          syncCombineAutoName();
-          renderCombinePopover();
-        });
-        row.appendChild(coef);
-        const times = document.createElement('span');
-        times.className = 'vm-combine-popover__times';
-        times.textContent = '×';
-        row.appendChild(times);
-      }
-      const select = document.createElement('select');
-      select.className = 'vm-combine-popover__select';
-      options.forEach((entry) => {
-        const layer = entry.layer;
-        const option = document.createElement('option');
-        option.value = layer.id;
-        option.textContent = `${getLayerLabelWithName(layer)}${entry.disabled ? ' (circular)' : ''}`;
-        option.disabled = !!entry.disabled;
-        option.selected = layer.id === input.layerId;
-        select.appendChild(option);
-      });
-      select.addEventListener('change', () => {
-        combinePopoverState.error = '';
-        combinePopoverState.operands[index].layerId = select.value;
-        syncCombineAutoName();
-        renderCombinePopover();
-      });
-      row.appendChild(select);
-      if (op !== 'abs') {
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'vm-combine-popover__icon-button';
-        remove.textContent = '×';
-        remove.setAttribute('aria-label', 'Remove operand');
-        remove.addEventListener('click', () => {
-          combinePopoverState.error = '';
-          combinePopoverState.operands.splice(index, 1);
-          syncCombineAutoName();
-          renderCombinePopover();
-        });
-        row.appendChild(remove);
-      }
-      popover.appendChild(row);
-    });
-
-    if (op === 'abs' && combinePopoverState.absTrimmed) {
-      const note = document.createElement('div');
-      note.className = 'vm-combine-popover__note';
-      note.textContent = 'Abs takes a single operand.';
-      popover.appendChild(note);
-    }
-
-    if (op !== 'abs') {
-      const add = document.createElement('button');
-      add.type = 'button';
-      add.className = 'vm-combine-popover__add';
-      add.textContent = '+ Add term';
-      const used = new Set(operands.map((input) => input.layerId));
-      const eligibleOptions = options.filter((entry) => !entry.disabled);
-      add.disabled = !eligibleOptions.length || eligibleOptions.every((entry) => used.has(entry.layer.id));
-      add.addEventListener('click', addCombineOperandTerm);
-      popover.appendChild(add);
-    }
-
-    if (validation.ok && validation.resamplePlan) {
-      const notice = document.createElement('div');
-      notice.className = 'vm-combine-popover__note vm-combine-popover__note--resample';
-      notice.textContent = ArithmeticGrid.formatResampleNotice(validation.resamplePlan);
-      popover.appendChild(notice);
-    }
-
-    const showValidationError = combinePopoverState.triedCreate
-      || !!validation.immediate
-      || errorText === getNoEligibleOperandsError(combinePopoverState);
-    if (showValidationError && !validation.ok && errorText) {
-      const error = document.createElement('div');
-      error.className = 'vm-combine-popover__error';
-      error.textContent = errorText;
-      popover.appendChild(error);
-    }
-
-    const dividerB = document.createElement('div');
-    dividerB.className = 'vm-combine-popover__divider';
-    popover.appendChild(dividerB);
-
-    const nameRow = document.createElement('label');
-    nameRow.className = 'vm-combine-popover__field';
-    const nameLabel = document.createElement('span');
-    nameLabel.textContent = 'Output name';
-    const nameInput = document.createElement('input');
-    nameInput.className = 'vm-combine-popover__input';
-    nameInput.type = 'text';
-    nameInput.value = combinePopoverState.name || '';
-    nameInput.addEventListener('input', () => {
-      updateCombineStateNameUserEdited(true);
-      combinePopoverState.name = nameInput.value;
-    });
-    nameRow.appendChild(nameLabel);
-    nameRow.appendChild(nameInput);
-    popover.appendChild(nameRow);
-
-    const actions = document.createElement('div');
-    actions.className = 'vm-combine-popover__actions';
-    const cancel = document.createElement('button');
-    cancel.type = 'button';
-    cancel.className = 'vm-combine-popover__button is-secondary';
-    cancel.textContent = 'Cancel';
-    cancel.addEventListener('click', closeCombinePopover);
-    const create = document.createElement('button');
-    create.type = 'button';
-    create.className = 'vm-combine-popover__button is-primary';
-    create.textContent = getCombineSaveButtonLabel(combinePopoverState);
-    create.disabled = !validation.ok;
-    create.addEventListener('click', saveCombinedLayerFromPopover);
-    actions.appendChild(cancel);
-    actions.appendChild(create);
-    popover.appendChild(actions);
-
-    popover.hidden = false;
-    popover.setAttribute('aria-hidden', 'false');
-    positionCombinePopover(combinePopoverState.anchorPoint);
-    return popover;
-  }
-
-  function showCombinePopover(layers, event = null) {
-    const selection = (Array.isArray(layers) ? layers : []).filter(isCubeLikeLayer);
-    const scene = selection.length ? sceneGraphController.getSceneForLayer(selection[0]) : getFocusedScene();
-    if (!scene) return false;
-    const defaultOperation = selection.length <= 1 ? 'abs' : 'linear_combination';
-    combinePopoverState = {
-      mode: 'create',
-      sceneId: scene.id,
-      operation: defaultOperation,
-      operands: buildCombineInitialOperands(selection, defaultOperation),
-      name: '',
-      nameTouched: false,
-      nameUserEdited: false,
-      triedCreate: false,
-      error: '',
-      absTrimmed: false,
-      anchorPoint: {
-        clientX: Number(event && event.clientX) || (window.innerWidth || 360) / 2,
-        clientY: Number(event && event.clientY) || (window.innerHeight || 360) / 2,
-      },
-    };
-    syncCombineAutoName();
-    renderCombinePopover();
-    return true;
-  }
-
-  function showEditCombinationPopover(layer, event = null) {
-    if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) return false;
-    const scene = sceneGraphController.getSceneForLayer(layer);
-    if (!scene) return false;
-    const operation = normalizeArithmeticOperation(layer.operation);
-    const nameUserEdited = getArithmeticNameUserEdited(layer);
-    combinePopoverState = {
-      mode: 'edit',
-      sceneId: scene.id,
-      editingLayerId: layer.id,
-      operation,
-      operands: normalizeArithmeticInputsForOperation(operation, layer.inputs),
-      name: String(layer.name || generateArithmeticName(operation, layer.inputs) || 'Combination'),
-      nameTouched: nameUserEdited,
-      nameUserEdited,
-      triedCreate: false,
-      error: '',
-      absTrimmed: false,
-      anchorPoint: {
-        clientX: Number(event && event.clientX) || (window.innerWidth || 360) / 2,
-        clientY: Number(event && event.clientY) || (window.innerHeight || 360) / 2,
-      },
-    };
-    syncCombineAutoName();
-    renderCombinePopover();
-    return true;
-  }
-
-  function appendOutlinerContextMenuItem(menu, label, onClick, options = {}) {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'vm-outliner-context-menu__item';
-    item.textContent = label;
-    item.setAttribute('role', 'menuitem');
-    if (options.danger) item.classList.add('is-danger');
-    if (options.disabled) item.disabled = true;
-    item.addEventListener('click', () => {
-      if (options.keepOpen) {
-        onClick();
-        return;
-      }
-      closeCubeLayerContextMenu();
-      onClick();
-    });
-    menu.appendChild(item);
-    return item;
-  }
-
-  function appendOutlinerContextMenuDivider(menu) {
-    const divider = document.createElement('div');
-    divider.className = 'vm-outliner-context-menu__divider';
-    menu.appendChild(divider);
-    return divider;
-  }
-
-  function getSceneOrbitalLayerCount(scene) {
-    return getCubeLayersInScene(scene).length;
-  }
-
   function deleteSceneFromOutliner(scene) {
     if (!scene) return false;
     const sceneId = scene.id;
@@ -13038,275 +10803,6 @@
     renderSceneOutliner();
     setHintMessage(`Deleted scene "${scene.name || 'Untitled scene'}".`);
     return true;
-  }
-
-  function renderSceneDeleteConfirmation(scene) {
-    const menu = ensureCubeLayerContextMenu();
-    if (!menu || !scene) return null;
-    menu.textContent = '';
-    const title = document.createElement('div');
-    title.className = 'vm-outliner-context-menu__title';
-    title.textContent = `Delete scene "${scene.name || 'Untitled scene'}"?`;
-    menu.appendChild(title);
-    const body = document.createElement('div');
-    body.className = 'vm-outliner-context-menu__body';
-    const count = getSceneOrbitalLayerCount(scene);
-    body.textContent = `This will remove the molecule and ${count} orbital layer${count === 1 ? '' : 's'}.\n\nThis action cannot be undone.`;
-    menu.appendChild(body);
-    const actions = document.createElement('div');
-    actions.className = 'vm-outliner-context-menu__actions';
-    const cancel = document.createElement('button');
-    cancel.type = 'button';
-    cancel.className = 'vm-outliner-context-menu__button is-secondary';
-    cancel.textContent = 'Cancel';
-    cancel.addEventListener('click', closeCubeLayerContextMenu);
-    const confirm = document.createElement('button');
-    confirm.type = 'button';
-    confirm.className = 'vm-outliner-context-menu__button is-danger';
-    confirm.textContent = 'Delete';
-    confirm.addEventListener('click', () => {
-      closeCubeLayerContextMenu();
-      deleteSceneFromOutliner(scene);
-    });
-    actions.appendChild(cancel);
-    actions.appendChild(confirm);
-    menu.appendChild(actions);
-    return menu;
-  }
-
-  function renderOutlinerAddMenu(scene = getFocusedScene()) {
-    const menu = ensureCubeLayerContextMenu();
-    if (!menu) return null;
-    menu.textContent = '';
-    appendOutlinerContextMenuItem(menu, 'Add cube file...', () => openOutlinerAddCubeFilePicker(scene));
-    return menu;
-  }
-
-  function renderNonCubeOutlinerContextMenu(target, mode = 'menu') {
-    const menu = ensureCubeLayerContextMenu();
-    if (!menu || !target) return null;
-    if (target.type === 'scene') {
-      if (mode === 'confirm-delete-scene') return renderSceneDeleteConfirmation(target.scene);
-      menu.textContent = '';
-      appendOutlinerContextMenuItem(menu, 'Rename', () => startOutlinerRename(target));
-      appendOutlinerContextMenuDivider(menu);
-      appendOutlinerContextMenuItem(menu, 'Delete scene', () => {
-        const confirmMenu = renderSceneDeleteConfirmation(target.scene);
-        if (confirmMenu) {
-          confirmMenu.hidden = false;
-          confirmMenu.setAttribute('aria-hidden', 'false');
-          positionCubeLayerContextMenu(cubeLayerContextMenuPoint || { clientX: 0, clientY: 0 });
-        }
-      }, { danger: true, keepOpen: true });
-      return menu;
-    }
-    const layer = target.layer;
-    if (!layer) return null;
-    if (layer.kind === SCENE_LAYER_KIND.MOLECULE) {
-      menu.textContent = '';
-      appendOutlinerContextMenuItem(menu, 'Rename', () => startOutlinerRename(target));
-      return menu;
-    }
-    if (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP) {
-      menu.textContent = '';
-      appendOutlinerContextMenuItem(menu, 'Add cube file...', () => openOutlinerAddCubeFilePicker(target.scene));
-      return menu;
-    }
-    return null;
-  }
-
-  function renderCubeLayerContextMenu(layer, mode = 'menu') {
-    const menu = ensureCubeLayerContextMenu();
-    if (!menu || !layer) return null;
-    menu.textContent = '';
-    const selection = getSelectedCubeLayers();
-    const actionLayers = selection.length ? selection : [layer];
-    const count = actionLayers.length;
-    const deletePlan = getArithmeticCascadeDeletePlan(actionLayers);
-    if (mode === 'confirm-delete') {
-      const title = document.createElement('div');
-      title.className = 'vm-outliner-context-menu__title';
-      const deleteCount = deletePlan.layers.length || count;
-      title.textContent = deleteCount > 1
-        ? `Delete ${deleteCount} layers?`
-        : `Delete ${layer.labelId || layer.name || 'cube'}?`;
-      menu.appendChild(title);
-      const body = document.createElement('div');
-      body.className = 'vm-outliner-context-menu__body';
-      if (deletePlan.dependents.length) {
-        const lines = deletePlan.dependents.map((dependent) => `• ${dependent.labelId || ''} ${dependent.name || 'Layer'}`.trim());
-        body.textContent = `This will also delete:\n${lines.join('\n')}\n\nThis action cannot be undone.`;
-      } else {
-        body.textContent = deleteCount > 1
-          ? 'This cannot be undone.'
-          : 'This action cannot be undone in Phase 2a-1.';
-      }
-      menu.appendChild(body);
-      const actions = document.createElement('div');
-      actions.className = 'vm-outliner-context-menu__actions';
-      const cancel = document.createElement('button');
-      cancel.type = 'button';
-      cancel.className = 'vm-outliner-context-menu__button is-secondary';
-      cancel.textContent = 'Cancel';
-      cancel.addEventListener('click', closeCubeLayerContextMenu);
-      const confirm = document.createElement('button');
-      confirm.type = 'button';
-      confirm.className = 'vm-outliner-context-menu__button is-danger';
-      confirm.textContent = 'Delete';
-      confirm.addEventListener('click', () => {
-        closeCubeLayerContextMenu();
-        deleteSelectedCubeLayers();
-      });
-      actions.appendChild(cancel);
-      actions.appendChild(confirm);
-      menu.appendChild(actions);
-      return menu;
-    }
-
-    const duplicate = document.createElement('button');
-    duplicate.type = 'button';
-    duplicate.className = 'vm-outliner-context-menu__item';
-    duplicate.textContent = count > 1 ? `Duplicate (${count})` : 'Duplicate';
-    duplicate.addEventListener('click', () => {
-      const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
-      closeCubeLayerContextMenu();
-      if (count > 1) duplicateSelectedCubeLayers();
-      else duplicateCubeLayer(target || layer);
-    });
-    menu.appendChild(duplicate);
-    const singleArithmeticLayer = count === 1 && actionLayers[0] && actionLayers[0].kind === SCENE_LAYER_KIND.ARITHMETIC
-      ? actionLayers[0]
-      : null;
-    if (singleArithmeticLayer) {
-      const edit = document.createElement('button');
-      edit.type = 'button';
-      edit.className = 'vm-outliner-context-menu__item';
-      edit.textContent = 'Edit combination...';
-      edit.addEventListener('click', () => {
-        const point = cubeLayerContextMenuPoint || { clientX: 0, clientY: 0 };
-        closeCubeLayerContextMenu();
-        showEditCombinationPopover(singleArithmeticLayer, point);
-      });
-      menu.appendChild(edit);
-    }
-    const combine = document.createElement('button');
-    combine.type = 'button';
-    combine.className = 'vm-outliner-context-menu__item';
-    combine.textContent = count > 1 ? `Combine (${count})...` : 'Combine...';
-    combine.addEventListener('click', () => {
-      const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
-      const layers = getSelectedCubeLayers();
-      const combineLayers = layers.length ? layers : [target || layer].filter(Boolean);
-      const point = cubeLayerContextMenuPoint || { clientX: 0, clientY: 0 };
-      closeCubeLayerContextMenu();
-      showCombinePopover(combineLayers, point);
-    });
-    menu.appendChild(combine);
-    const divider = document.createElement('div');
-    divider.className = 'vm-outliner-context-menu__divider';
-    menu.appendChild(divider);
-    if (count === 1) {
-      const rename = document.createElement('button');
-      rename.type = 'button';
-      rename.className = 'vm-outliner-context-menu__item';
-      rename.textContent = 'Rename';
-      rename.addEventListener('click', () => {
-        const targetLayer = actionLayers[0] || layer;
-        const targetScene = targetLayer ? sceneGraphController.getSceneForLayer(targetLayer) : null;
-        closeCubeLayerContextMenu();
-        startOutlinerRename({ type: 'layer', id: targetLayer.id, layer: targetLayer, scene: targetScene });
-      });
-      menu.appendChild(rename);
-    }
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'vm-outliner-context-menu__item is-danger';
-    del.textContent = count > 1 ? `Delete (${count})` : 'Delete';
-    del.addEventListener('click', () => {
-      const target = cubeLayerContextMenuLayerId ? sceneGraphController.getLayerById(cubeLayerContextMenuLayerId) : null;
-      renderCubeLayerContextMenu(target || layer, 'confirm-delete');
-    });
-    menu.appendChild(del);
-    return menu;
-  }
-
-  function focusOutlinerContextTarget(target) {
-    if (!target) return;
-    const scene = target.scene || (target.layer ? sceneGraphController.getSceneForLayer(target.layer) : null);
-    if (!scene) return;
-    focusScene(scene);
-    activateSceneFocusRecord(scene);
-    syncLoadedSceneControls();
-    syncTrajectoryControls();
-    syncAppearanceControlsToActiveLayer();
-  }
-
-  function showOutlinerContextMenu(target, event) {
-    if (!(target && (target.scene || target.layer))) return;
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    if (outlinerRenameState) finishOutlinerRename({ commit: true });
-    const layer = target.layer;
-    if (isCubeLikeLayer(layer)) {
-      if (!isCubeLayerSelected(layer)) {
-        setActiveSceneGraphLayer(layer.id, { rebuild: false, selection: 'replace' });
-      } else {
-        const scene = sceneGraphController.getSceneForLayer(layer);
-        if (scene) focusScene(scene);
-      }
-      syncAppearanceControlsToActiveLayer();
-      cubeLayerContextMenuLayerId = layer.id;
-      cubeLayerContextMenuPoint = event
-        ? { clientX: event.clientX, clientY: event.clientY }
-        : null;
-      const menu = renderCubeLayerContextMenu(layer, 'menu');
-      if (!menu) return;
-      menu.hidden = false;
-      menu.setAttribute('aria-hidden', 'false');
-      positionCubeLayerContextMenu(event);
-      return;
-    }
-    focusOutlinerContextTarget(target);
-    cubeLayerContextMenuLayerId = layer && layer.id;
-    cubeLayerContextMenuPoint = event
-      ? { clientX: event.clientX, clientY: event.clientY }
-      : null;
-    const menu = renderNonCubeOutlinerContextMenu(target, 'menu');
-    if (!menu) return;
-    menu.hidden = false;
-    menu.setAttribute('aria-hidden', 'false');
-    positionCubeLayerContextMenu(event);
-  }
-
-  function showCubeLayerContextMenu(layer, event) {
-    if (!isCubeLikeLayer(layer)) return;
-    showOutlinerContextMenu({
-      type: 'layer',
-      id: layer.id,
-      layer,
-      scene: sceneGraphController.getSceneForLayer(layer),
-    }, event);
-  }
-
-  function showOutlinerAddMenu(event) {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    if (outlinerRenameState) finishOutlinerRename({ commit: true });
-    const scene = getFocusedScene();
-    cubeLayerContextMenuLayerId = null;
-    const rect = sceneOutlinerAddBtn ? sceneOutlinerAddBtn.getBoundingClientRect() : null;
-    cubeLayerContextMenuPoint = rect
-      ? { clientX: rect.left, clientY: rect.bottom + 4 }
-      : { clientX: Number(event && event.clientX) || 0, clientY: Number(event && event.clientY) || 0 };
-    const menu = renderOutlinerAddMenu(scene);
-    if (!menu) return;
-    menu.hidden = false;
-    menu.setAttribute('aria-hidden', 'false');
-    positionCubeLayerContextMenu(cubeLayerContextMenuPoint);
   }
 
   /**
@@ -13746,76 +11242,72 @@
    * @param {*} record
    * @param {*} vol
    */
-  function ensureMoldenGridForRecord(record, vol) {
+  function evaluateMoldenGrid(record, requestedIndex) {
+    const vol = record && record.vol;
     if (!record || !vol || vol.kind !== 'molden' || !vol.molden) return;
     const molden = vol.molden;
     const mos = Array.isArray(molden.mos) ? molden.mos : [];
     const atomBlocks = molden.basis && Array.isArray(molden.basis.atomBlocks) ? molden.basis.atomBlocks : [];
     if (mos.length === 0 || atomBlocks.length === 0) {
-      clearMoldenGrid(vol);
-      return;
+      return null;
     }
-    let moIndex = Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : 0;
+    let moIndex = Number.isInteger(requestedIndex) ? requestedIndex : 0;
     if (moIndex < 0 || moIndex >= mos.length) moIndex = 0;
-    record.moldenMoIndex = moIndex;
     const mo = mos[moIndex];
     if (!mo || !(mo.coefficients instanceof Float32Array) || mo.coefficients.length === 0) {
-      clearMoldenGrid(vol);
-      return;
+      return null;
     }
     const gridSettings = getMoldenGridSettings(record);
     const atomSignature = buildMoldenAtomSignature(vol);
     const cacheKey = `${moIndex}|${gridSettings.stepAng.toFixed(2)}|${gridSettings.paddingAng.toFixed(1)}|${atomSignature}`;
-    if (!(record.moldenGridCache instanceof Map)) record.moldenGridCache = new Map();
-    if (record.moldenGridCache.has(cacheKey)) {
-      const cached = record.moldenGridCache.get(cacheKey);
-      vol.origin = cached.origin.map((v) => v);
-      vol.axes = cached.axes.map((axis) => axis.slice(0, 3));
-      vol.nxyz = cached.nxyz.slice(0, 3);
-      vol.data = cached.data.slice(0);
-      vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
-      vol.isoHint = cached.isoHint;
-      return;
-    }
-
-    const grid = buildMoldenGridSpec(vol, gridSettings);
-    const [nx, ny, nz] = grid.nxyz;
-    const data = new Float32Array(nx * ny * nz);
-    const angularFlags = molden.angularFlags || {};
-    let aoOffset = 0;
-    for (const atomBlock of atomBlocks) {
-      const atomIndex = Number(atomBlock && atomBlock.atomIndex);
-      const atom = Array.isArray(vol.atoms) ? vol.atoms[atomIndex] : null;
-      if (!atom) throw new Error(`Molden MO rendering failed: basis atom index ${atomIndex + 1} is out of range.`);
-      const center = atomUnitsToAng(vol, atom).multiplyScalar(ANG_TO_BOHR);
-      const xAxis = buildMoldenAxisTables(nx, grid.origin[0], grid.stepBohr, center.x);
-      const yAxis = buildMoldenAxisTables(ny, grid.origin[1], grid.stepBohr, center.y);
-      const zAxis = buildMoldenAxisTables(nz, grid.origin[2], grid.stepBohr, center.z);
-      const shells = Array.isArray(atomBlock && atomBlock.shells) ? atomBlock.shells : [];
-      for (const shell of shells) {
-        const count = countMoldenShellFunctionCount(shell && shell.label, angularFlags);
-        if (aoOffset + count > mo.coefficients.length) {
-          throw new Error(`Molden MO rendering failed: MO ${moIndex + 1} is missing coefficients for shell "${shell && shell.label}" on atom ${atomIndex + 1}.`);
+    return orbitalGridStore.get(record, cacheKey, () => {
+      const grid = buildMoldenGridSpec(vol, gridSettings);
+      const [nx, ny, nz] = grid.nxyz;
+      const data = new Float32Array(nx * ny * nz);
+      const angularFlags = molden.angularFlags || {};
+      let aoOffset = 0;
+      for (const atomBlock of atomBlocks) {
+        const atomIndex = Number(atomBlock && atomBlock.atomIndex);
+        const atom = Array.isArray(vol.atoms) ? vol.atoms[atomIndex] : null;
+        if (!atom) throw new Error(`Molden MO rendering failed: basis atom index ${atomIndex + 1} is out of range.`);
+        const center = atomUnitsToAng(vol, atom).multiplyScalar(ANG_TO_BOHR);
+        const xAxis = buildMoldenAxisTables(nx, grid.origin[0], grid.stepBohr, center.x);
+        const yAxis = buildMoldenAxisTables(ny, grid.origin[1], grid.stepBohr, center.y);
+        const zAxis = buildMoldenAxisTables(nz, grid.origin[2], grid.stepBohr, center.z);
+        const shells = Array.isArray(atomBlock && atomBlock.shells) ? atomBlock.shells : [];
+        for (const shell of shells) {
+          const count = countMoldenShellFunctionCount(shell && shell.label, angularFlags);
+          if (aoOffset + count > mo.coefficients.length) {
+            throw new Error(`Molden MO rendering failed: MO ${moIndex + 1} is missing coefficients for shell "${shell && shell.label}" on atom ${atomIndex + 1}.`);
+          }
+          const coeffs = mo.coefficients.subarray(aoOffset, aoOffset + count);
+          accumulateMoldenShellContribution(data, grid.nxyz, xAxis, yAxis, zAxis, shell, coeffs, angularFlags);
+          aoOffset += count;
         }
-        const coeffs = mo.coefficients.subarray(aoOffset, aoOffset + count);
-        accumulateMoldenShellContribution(data, grid.nxyz, xAxis, yAxis, zAxis, shell, coeffs, angularFlags);
-        aoOffset += count;
       }
-    }
-    const cacheEntry = {
-      origin: grid.origin.slice(0, 3),
-      axes: grid.axes.map((axis) => axis.slice(0, 3)),
-      nxyz: grid.nxyz.slice(0, 3),
-      data: data.slice(0),
-      isoHint: DEFAULT_ISO_VALUE,
-    };
-    record.moldenGridCache.set(cacheKey, cacheEntry);
-    vol.origin = cacheEntry.origin.slice(0, 3);
-    vol.axes = cacheEntry.axes.map((axis) => axis.slice(0, 3));
-    vol.nxyz = cacheEntry.nxyz.slice(0, 3);
-    vol.data = cacheEntry.data.slice(0);
-    vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
-    vol.isoHint = cacheEntry.isoHint;
+      return Object.assign({}, vol, {
+        kind: 'molden',
+        moldenMoIndex: moIndex,
+        origin: grid.origin.slice(),
+        axes: grid.axes.map(axis => axis.slice()),
+        nxyz: grid.nxyz.slice(),
+        data,
+        idx: (i, j, k) => (i * ny + j) * nz + k,
+        isoHint: DEFAULT_ISO_VALUE,
+    });
+    });
+  }
+
+  function ensureMoldenGridForRecord(record, vol) {
+    const grid = evaluateMoldenGrid(record, record && record.moldenMoIndex);
+    if (!grid) { clearMoldenGrid(vol); return; }
+    // Compatibility export describes the selected MO; layers retain their own grid.
+    vol.origin = grid.origin.slice();
+    vol.axes = grid.axes.map(axis => axis.slice());
+    vol.nxyz = grid.nxyz.slice();
+    vol.data = grid.data;
+    vol.idx = grid.idx;
+    vol.isoHint = grid.isoHint;
   }
 
   /**
@@ -16330,7 +13822,7 @@
   }
 
   function createNewMoleculeScene() {
-    if (outlinerRenameState) finishOutlinerRename({ commit: true });
+    if (getSceneOutliner().isRenaming()) finishOutlinerRename({ commit: true });
     closeCubeLayerContextMenu();
     closeCombinePopover();
     const name = getNextNewMoleculeName();
@@ -30828,6 +28320,12 @@
     rehydrateClonedVolume,
     ensureVolumeSchema,
     isPlainObject,
+    commitStructureImport: imported => handleSceneDropRecords([{
+      name: getUniqueVolumeName(imported.name),
+      vol: imported.vol,
+      forceNewScene: true,
+      extras: Object.assign({}, imported.extras, { skipBuilderExtensionMerge: true }),
+    }], { skipAutoIsoOnInitialRebuild: hasVolumetricGrid(imported.vol), preserveView: false }),
     getVolumeCount: () => volumes.length,
     clearPlaceholderVolumesForUserLoad,
     appendParsedVolumeRecord,
@@ -33372,7 +30870,6 @@
     let loadedVolumetricCount = 0;
     const loadedTrajectoryCount = items.filter((item) => isTrajectoryVolumeRecord(item.vol)).length;
     let lastSceneKey = '';
-    const attachedPayloads = [];
     for (const group of groups) {
       let sceneKey = group.forceNewScene ? '' : String(group.sceneKey || '').trim();
       const matchedExisting = !!sceneKey;
@@ -33406,8 +30903,12 @@
           && item.vol
           && item.vol.kind === 'xyz'
           && !isTrajectoryVolumeRecord(item.vol);
-        if (isSingleFrameXyzNoop) continue;
+        if (isSingleFrameXyzNoop) {
+          item.recordIndex = volumes.findIndex(record => record._sceneGraphSceneKey === sceneKey);
+          continue;
+        }
         const recordIndex = volumes.length;
+        item.recordIndex = recordIndex;
         appendParsedVolumeRecord(item.name || 'Imported file', item.vol, Object.assign({}, item.extras || {}, {
           inferBondOrders: true,
           _sceneGraphSceneKey: sceneKey,
@@ -33415,14 +30916,6 @@
         }));
         const record = volumes[recordIndex];
         if (record) record._sceneGraphSceneKey = sceneKey;
-        if (item.vibrationPayload) {
-          attachedPayloads.push({
-            name: item.name || 'vibration payload',
-            payload: item.vibrationPayload,
-            preferredIndex: recordIndex,
-            sourceStem: item.sourceStem,
-          });
-        }
         loadedCount += 1;
         appendedAny = true;
         if (groupActiveIndex < 0) groupActiveIndex = recordIndex;
@@ -33455,7 +30948,7 @@
     if (activeIndex >= 0) {
       activateVolumeIndex(activeIndex, {
         skipAutoIso: !!options.skipAutoIsoOnInitialRebuild,
-        preserveView: volumes.length > loadedCount,
+        preserveView: options.preserveView == null ? volumes.length > loadedCount : !!options.preserveView,
       });
       revealFocusedOutlinerTarget({ soloScene: true, rebuild: true });
     } else {
@@ -33466,13 +30959,6 @@
       if (focused) focusScene(focused);
       rebuildScene({ preserveView: true, syncGraph: false });
       revealFocusedOutlinerTarget({ soloScene: true, rebuild: true });
-    }
-    for (const payload of attachedPayloads) {
-      const result = attachVibrationPayloadToBestVolume(payload.name, payload.payload, {
-        preferredIndex: payload.preferredIndex,
-        sourceStem: payload.sourceStem,
-      });
-      if (!result.ok) setHintMessage(result.error || `Could not attach ${payload.name}.`);
     }
     if (loadedTrajectoryCount > 0) {
       setTrajectoryPanelOpen(true, { auto: true });
@@ -34163,7 +31649,7 @@
   }
 
   function handleClearAllLoadedFilesClick() {
-    if (outlinerRenameState) finishOutlinerRename({ commit: true });
+    if (getSceneOutliner().isRenaming()) finishOutlinerRename({ commit: true });
     closeCubeLayerContextMenu();
     closeCombinePopover();
     closeEditModeTransientPopovers();
@@ -34800,7 +32286,7 @@
         compMode,
         side,
         iso.toFixed(6),
-        Number.isInteger(record && record.moldenMoIndex) ? record.moldenMoIndex : 0,
+        Number.isInteger(meta.moldenMoIndex) ? meta.moldenMoIndex : (Number.isInteger(vol.moldenMoIndex) ? vol.moldenMoIndex : 0),
         grid.stepAng.toFixed(2),
         grid.paddingAng.toFixed(1),
         buildMoldenAtomSignature(vol),
@@ -34890,9 +32376,8 @@
   function getSurfaceMetric(record, vol, compMode, iso, mesh) {
     if (!record || !vol || !mesh || !hasVolumetricGrid(vol)) return null;
     if (vol.kind === 'molden' && mesh.userData && Number.isInteger(mesh.userData.moldenMoIndex)) {
-      record.moldenMoIndex = mesh.userData.moldenMoIndex;
       try {
-        ensureMoldenGridForRecord(record, vol);
+        vol = evaluateMoldenGrid(record, mesh.userData.moldenMoIndex);
       } catch {
         return null;
       }
@@ -34922,10 +32407,10 @@
       const occupancy = (vol.kind === 'molden'
         && vol.molden
         && Array.isArray(vol.molden.mos)
-        && Number.isInteger(record.moldenMoIndex)
-        && vol.molden.mos[record.moldenMoIndex]
-        && Number.isFinite(vol.molden.mos[record.moldenMoIndex].occupation))
-        ? Math.max(0, Number(vol.molden.mos[record.moldenMoIndex].occupation) || 0)
+        && Number.isInteger(vol.moldenMoIndex)
+        && vol.molden.mos[vol.moldenMoIndex]
+        && Number.isFinite(vol.molden.mos[vol.moldenMoIndex].occupation))
+        ? Math.max(0, Number(vol.molden.mos[vol.moldenMoIndex].occupation) || 0)
         : null;
       for (let t = 0; t < len; t++) {
         const q = Number(vol.data[t]) || 0;
@@ -35216,7 +32701,6 @@
   function rebuildScene(options = {}) {
     const preserveView = !!options.preserveView;
     const skipAutoIso = !!options.skipAutoIso;
-    if (options.syncGraph !== false) syncSceneGraphFromVolumes({ preserveLayerState: true });
     const savedCam = preserveView ? camera.clone() : null;
     const savedTarget = preserveView ? controls.target.clone() : null;
     if (currentIndex < 0) {
@@ -35243,18 +32727,6 @@
         const record = layer.record || null;
         clearLayerRenderRefs(layer);
         const vol = getLayerCubeData(layer);
-        if (record && vol && vol.kind === 'molden' && Number.isInteger(layer.moldenMoIndex)) {
-          record.moldenMoIndex = layer.moldenMoIndex;
-        }
-        if (vol && vol.kind === 'molden') {
-          try {
-            ensureMoldenGridForRecord(record, vol);
-          } catch (err) {
-            clearMoldenGrid(vol);
-            console.error('[MOLDEN] Grid evaluation failed', err);
-            setHintMessage(`Molden MO rendering failed: ${err && err.message ? err.message : String(err)}`);
-          }
-        }
         const compMode = getComponentMode(vol);
         selectActiveRawComponent(vol, compMode);
         const hasGrid = hasVolumetricGrid(vol);
@@ -35309,9 +32781,6 @@
     if (!activeSurfaceVol) {
       lastIsoCalibrationRecord = null;
       lastIsoCalibrationKey = '';
-    }
-    if (activeLayer && activeLayer.record && Number.isInteger(activeLayer.moldenMoIndex)) {
-      activeLayer.record.moldenMoIndex = activeLayer.moldenMoIndex;
     }
 
     applyCameraStrategy(preserveView, savedCam, savedTarget);
@@ -35407,22 +32876,71 @@
     link.click();
   };
 
+  let batchExportRunning = false;
   batchBtn.onclick = async () => {
-    if (volumes.length === 0) return;
-    const keepCamera = camera.clone(); const keepTarget = controls.target.clone();
-
-    for (let i = 0; i < volumes.length; i++) {
-      currentIndex = i;
-      rebuildScene();
-      await new Promise(r => requestAnimationFrame(() => r()));
-      const link = document.createElement('a');
-      const name = volumes[i].name.replace(/\.[^/.]+$/, '');
-      link.download = `${name}_iso${parseFloat(isoInput.value || "0.02").toFixed(4)}.png`;
-      link.href = renderer.domElement.toDataURL('image/png');
-      link.click();
-      await new Promise(r => setTimeout(r, 120));
+    if (batchExportRunning) return;
+    const exporter = window.VibeMolSceneExport;
+    const targets = exporter.listTargets(sceneGraphController);
+    if (!targets.length) return;
+    batchExportRunning = true;
+    batchBtn.disabled = true;
+    const usedNames = new Map();
+    try {
+      await exporter.exportTargets(targets, {
+        captureState: () => ({
+          graph: exporter.captureGraphState(sceneGraphController),
+          currentIndex,
+          camera: camera.clone(), target: controls.target.clone(),
+          master: Object.assign({}, getTrajectorySyncMaster()),
+          trajectories: getAllTrajectoryInfos().map(info => ({ traj: info.traj, playing: info.traj.playing })),
+          vibrationPlaying,
+          orbitals: volumes.filter(record => record.vol.kind === 'molden').map(record => ({ record, index: record.moldenMoIndex })),
+        }),
+        activate: target => {
+          getTrajectorySyncMaster().playing = false;
+          for (const info of getAllTrajectoryInfos()) info.traj.playing = false;
+          vibrationPlaying = false;
+          exporter.activateTarget(sceneGraphController, target);
+          currentIndex = Math.max(0, getRecordIndex(target.layer.record || target.scene.moleculeRecord));
+          syncLoadedSceneControls();
+        },
+        render: async () => {
+          rebuildScene({ skipAutoIso: true });
+          // Wait until the normal renderer has drawn the newly activated target.
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        },
+        capture: target => {
+          const stem = String(target.name || 'render').replace(/\.[^/.]+$/, '');
+          const count = (usedNames.get(stem) || 0) + 1;
+          usedNames.set(stem, count);
+          const name = count === 1 ? stem : `${stem}_${count}`;
+          const link = document.createElement('a');
+          const iso = Number(target.layer.iso) || DEFAULT_ISO_VALUE;
+          link.download = `${name}_iso${iso.toFixed(4)}.png`;
+          link.href = renderer.domElement.toDataURL('image/png');
+          link.click();
+        },
+        restore: saved => {
+          exporter.restoreGraphState(sceneGraphController, saved.graph);
+          currentIndex = saved.currentIndex;
+          Object.assign(getTrajectorySyncMaster(), saved.master, { lastStepMs: 0 });
+          for (const { traj, playing } of saved.trajectories) Object.assign(traj, { playing, _lastStepMs: 0 });
+          vibrationPlaying = saved.vibrationPlaying;
+          vibrationLastStepMs = 0;
+          for (const { record, index } of saved.orbitals) record.moldenMoIndex = index;
+          camera.copy(saved.camera);
+          controls.target.copy(saved.target);
+          controls.update();
+          syncLoadedSceneControls();
+          rebuildScene({ preserveView: true, skipAutoIso: true });
+        },
+      });
+    } catch (err) {
+      setHintMessage(`Batch export failed: ${err && err.message || err}`);
+    } finally {
+      batchExportRunning = false;
+      batchBtn.disabled = false;
     }
-    camera.copy(keepCamera); controls.target.copy(keepTarget); controls.update();
   };
 
   // Helpers to load the sample cube or demo

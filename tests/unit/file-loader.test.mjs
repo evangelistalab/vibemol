@@ -19,7 +19,7 @@ function createController(options = {}) {
     parseXYZ: (text) => ({ kind: 'xyz', text }),
     parseMolden: (text) => ({ kind: 'molden', text }),
     parseTwoComponentCube: (text) => ({ kind: 'two_component_cube', text }),
-    parseCube: (text) => ({ kind: 'cube', text }),
+    parseCube: options.parseCube || ((text) => ({ kind: 'cube', text })),
     ensureVolumeSchema: (vol, schemaOptions = {}) => {
       ensureVolumeSchemaCalls.push(JSON.parse(JSON.stringify(schemaOptions || {})));
       return vol;
@@ -35,13 +35,13 @@ function createController(options = {}) {
     getIsoInputValue: () => '',
     setIsoInputValue: () => {},
     arrayMinMax: () => ({ min: -1, max: 1 }),
-    activateVolumeIndex: (...args) => events.push(['activateVolumeIndex', ...args]),
+    activateVolumeIndex: (...args) => { currentIndex = args[0]; events.push(['activateVolumeIndex', ...args]); },
     syncActiveVolumeControls: () => events.push(['syncActiveVolumeControls']),
     updateEmptyStateVisibility: () => events.push(['updateEmptyStateVisibility']),
     looksLikePsi4OutputText: () => false,
     parsePsi4OutputVibrationBundle: () => { throw new Error('unexpected'); },
     parseOrcaHessianVibrationBundle: () => { throw new Error('unexpected'); },
-    parseVibrationPayload: () => { throw new Error('unexpected'); },
+    parseVibrationPayload: options.parseVibrationPayload || (() => { throw new Error('unexpected'); }),
     VIBRATION_KIND: 'vibemol.vibration',
     PRESET_KIND: 'vibemol.preset',
     STRUCTURE_KIND: 'vibemol.structure',
@@ -53,7 +53,7 @@ function createController(options = {}) {
     handleSceneDropRecords: options.handleSceneDropRecords,
     getActiveTrajectoryInfo: () => ({ enabled: false }),
     setTrajectoryPanelOpen: () => events.push(['setTrajectoryPanelOpen']),
-    attachVibrationPayloadToBestVolume: () => ({ ok: true }),
+    attachVibrationPayloadToBestVolume: options.attachVibrationPayloadToBestVolume || (() => ({ ok: true })),
     updateSidePanel: () => events.push(['updateSidePanel']),
     getActiveVibrationInfo: () => ({ enabled: false }),
     setVibrationPanelOpen: () => events.push(['setVibrationPanelOpen']),
@@ -152,7 +152,7 @@ test('parsed file imports request inferred bond orders during schema normalizati
   assert.deepEqual(ensureVolumeSchemaCalls, [{ inferBondOrders: true }]);
 });
 
-test('file loader keeps only the first primary file in one user load', async () => {
+test('file loader accepts every primary file in one user load', async () => {
   const { controller, events, getVolumes } = createController({
     detectInputFileKind: (name) => name.endsWith('.xyz') ? 'xyz' : 'cube',
     volumes: [],
@@ -161,12 +161,11 @@ test('file loader keeps only the first primary file in one user load', async () 
     new File(['cube text'], 'first.cube', { type: 'text/plain' }),
     new File(['2\nsecond\nH 0 0 0\nH 0 0 1\n'], 'second.xyz', { type: 'text/plain' }),
   ]);
-  assert.equal(getVolumes().length, 1);
-  assert.equal(getVolumes()[0].name, 'first.cube');
-  assert.equal(events.some((entry) => entry[0] === 'alertUser' && String(entry[1]).includes('Loaded the first primary file only')), true);
+  assert.deepEqual(getVolumes().map(record => record.name), ['first.cube', 'second.xyz']);
+  assert.equal(events.some(entry => entry[0] === 'alertUser'), false);
 });
 
-test('file loader replaces existing primary scene on a new primary load', async () => {
+test('file loader replaces existing scenes only when explicitly requested', async () => {
   const { controller, getVolumes, getCurrentIndex } = createController({
     detectInputFileKind: (name) => name.endsWith('.xyz') ? 'xyz' : 'cube',
     volumes: [{ name: 'old.cube', vol: { kind: 'cube', text: 'old' } }],
@@ -174,10 +173,10 @@ test('file loader replaces existing primary scene on a new primary load', async 
   });
   await controller.handleFiles([
     new File(['2\nnew\nH 0 0 0\nH 0 0 1\n'], 'new.xyz', { type: 'text/plain' }),
-  ]);
+  ], { clearFirst: true });
   assert.equal(getVolumes().length, 1);
   assert.equal(getVolumes()[0].name, 'new.xyz');
-  assert.equal(getCurrentIndex(), -1);
+  assert.equal(getCurrentIndex(), 0);
 });
 
 test('file input uses scene-aware dispatch for primary files', async () => {
@@ -269,9 +268,9 @@ test('bundled sample loaders use scene-aware dispatch without clearing existing 
   assert.deepEqual(Array.from(getVolumes(), (record) => record.name), ['old.cube']);
   assert.equal(dispatched.length, 2);
   assert.deepEqual(JSON.parse(JSON.stringify(dispatched[0].names)), ['sample.cube']);
-  assert.deepEqual(JSON.parse(JSON.stringify(dispatched[0].extras)), [{ isSample: true }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(dispatched[0].extras)), [{ inferBondOrders: true, isSample: true }]);
   assert.deepEqual(JSON.parse(JSON.stringify(dispatched[1].names)), ['canonical_1.cube', 'canonical_2.cube']);
-  assert.deepEqual(JSON.parse(JSON.stringify(dispatched[1].extras)), [{ isSample: true }, { isSample: true }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(dispatched[1].extras)), [{ inferBondOrders: true, isSample: true }, { inferBondOrders: true, isSample: true }]);
   assert.equal(dispatched[1].options.resetIsoToDefault, true);
 });
 
@@ -288,11 +287,9 @@ test('drag-drop appends cube files to the existing scene', async () => {
   ], { appendDroppedCubes: true });
 
   assert.equal(getVolumes().length, 3);
-  assert.equal(getVolumes()[0]._sceneGraphLayerState.visible, false);
+  assert.equal(getVolumes()[0]._sceneGraphLayerState.visible, true);
   assert.equal(getVolumes()[1].name, 'a.cube');
-  assert.equal(getVolumes()[1]._sceneGraphLayerState.visible, true);
   assert.equal(getVolumes()[2].name, 'b.cube');
-  assert.equal(getVolumes()[2]._sceneGraphLayerState.visible, false);
   const activateEvent = events.find((entry) => entry[0] === 'activateVolumeIndex');
   assert.equal(activateEvent[1], 1);
   assert.deepEqual(JSON.parse(JSON.stringify(activateEvent[2])), { skipAutoIso: true });
@@ -310,10 +307,9 @@ test('drag-drop keeps all cube files when starting from empty state', async () =
   ], { appendDroppedCubes: true });
 
   assert.deepEqual(Array.from(getVolumes(), (record) => record.name), ['a.cube', 'b.cube', 'c.cube']);
-  assert.deepEqual(Array.from(getVolumes(), (record) => record._sceneGraphLayerState.visible), [true, false, false]);
 });
 
-test('drag-drop xyz displaces instead of appending cubes', async () => {
+test('drag-drop mixed primary files append consistently', async () => {
   const { controller, getVolumes, getCurrentIndex } = createController({
     detectInputFileKind: (name) => name.endsWith('.xyz') ? 'xyz' : 'cube',
     hasVolumetricGrid: (vol) => vol && vol.kind === 'cube',
@@ -325,9 +321,8 @@ test('drag-drop xyz displaces instead of appending cubes', async () => {
     new File(['2\nnew\nH 0 0 0\nH 0 0 1\n'], 'new.xyz', { type: 'text/plain' }),
   ], { appendDroppedCubes: true });
 
-  assert.equal(getVolumes().length, 1);
-  assert.equal(getVolumes()[0].name, 'new.xyz');
-  assert.equal(getCurrentIndex(), -1);
+  assert.deepEqual(getVolumes().map(record => record.name), ['old.cube', 'a.cube', 'new.xyz']);
+  assert.equal(getCurrentIndex(), 1);
 });
 
 test('drag-drop delegates mixed primary files to scene-aware dispatch hook', async () => {
@@ -354,4 +349,56 @@ test('drag-drop delegates mixed primary files to scene-aware dispatch hook', asy
   assert.deepEqual(JSON.parse(JSON.stringify(dispatched[0].names)), ['a.cube', 'new.xyz']);
   assert.deepEqual(JSON.parse(JSON.stringify(dispatched[0].kinds)), ['cube', 'xyz']);
   assert.deepEqual(JSON.parse(JSON.stringify(dispatched[0].volKinds)), ['cube', 'xyz']);
+});
+
+test('embedded append counts only new successful inputs and keeps existing files', async () => {
+  const { controller, getVolumes } = createController();
+  await controller.loadEmbeddedFiles([{ name: 'a.cube', text: 'a' }]);
+  const result = await controller.loadEmbeddedFiles([{ name: 'b.cube', text: 'b' }], { clearFirst: false });
+  assert.equal(result.ok, true);
+  assert.equal(result.loadedCount, 1);
+  assert.deepEqual(Array.from(result.loadedNames), ['b.cube']);
+  assert.deepEqual(Array.from(getVolumes(), record => record.name), ['a.cube', 'b.cube']);
+});
+
+test('invalid replacements preserve the current scene and report a popup', async () => {
+  const { controller, events, getVolumes } = createController({
+    volumes: [{ name: 'old.cube', vol: {} }],
+    parseCube: () => { throw new Error('Malformed grid'); },
+  });
+  const result = await controller.loadEmbeddedFiles([{ name: 'bad.cube', text: 'bad' }]);
+  assert.equal(result.ok, false);
+  assert.equal(result.loadedCount, 0);
+  assert.deepEqual(Array.from(result.loadedNames), []);
+  assert.equal(getVolumes()[0].name, 'old.cube');
+  assert.equal(events.filter(event => event[0] === 'alertUser').length, 1);
+  assert.match(result.error, /bad.cube: Malformed grid/);
+});
+
+test('mixed scene-dispatch batches retain valid files and report each rejected input', async () => {
+  const dispatched = [];
+  const { controller, events } = createController({
+    parseCube: text => { if (text === 'bad') throw new Error('Malformed grid'); return { kind: 'cube' }; },
+    handleSceneDropRecords: items => { dispatched.push(...items.map(item => item.name)); return true; },
+  });
+  const result = await controller.handleFiles([new File(['bad'], 'bad.cube'), new File(['ok'], 'good.cube')], { sceneDispatch: true });
+  assert.equal(result.ok, false);
+  assert.deepEqual(dispatched, ['good.cube']);
+  assert.equal(result.loadedCount, 1);
+  assert.deepEqual(Array.from(result.loadedNames), ['good.cube']);
+  assert.match(events.find(event => event[0] === 'alertUser')[1], /bad.cube/);
+});
+
+test('sidecars in a primary batch are attached after every primary is committed', async () => {
+  let primaryCount = 0, attachedAfter = 0;
+  const { controller } = createController({
+    detectInputFileKind: name => name.endsWith('.vib.json') ? 'vibration_payload' : 'xyz',
+    parseVibrationPayload: () => ({ atomCount: 2, modes: [] }),
+    handleSceneDropRecords: items => { primaryCount = items.length; return true; },
+    attachVibrationPayloadToBestVolume: () => { attachedAfter = primaryCount; return { ok: true }; },
+  });
+  const result = await controller.handleFiles([new File(['{}'], 'a.vib.json'), new File(['a'], 'a.xyz'), new File(['b'], 'b.xyz')]);
+  assert.equal(attachedAfter, 2);
+  assert.equal(result.loadedCount, 3);
+  assert.equal(result.ok, true);
 });

@@ -63,11 +63,11 @@ test('arithmetic grid resamples mismatched grids onto finest union target', () =
 
   assert.equal(result.ok, true);
   assert.equal(result.sameGrid, false);
-  assert.deepEqual(Array.from(result.baseVol.nxyz), [4, 4, 4]);
-  assert.deepEqual(Array.from(result.resamplePlan.nxyz), [4, 4, 4]);
+  assert.deepEqual(Array.from(result.baseVol.nxyz), [3, 3, 3]);
+  assert.deepEqual(Array.from(result.resamplePlan.nxyz), [3, 3, 3]);
   assert.deepEqual(Array.from(result.baseVol.axes[0]), [0.5, 0, 0]);
   assert.equal(at(result.baseVol, result.data, 1, 1, 1), 11.5);
-  assert.equal(at(result.baseVol, result.data, 3, 3, 3), 0);
+  assert.equal(at(result.baseVol, result.data, 2, 2, 2), 13);
 });
 
 test('arithmetic grid zero-extrapolates outside one operand bounding box', () => {
@@ -104,4 +104,47 @@ test('arithmetic grid formats resample notice with target dimensions and spacing
   const api = loadApi();
   const notice = api.formatResampleNotice({ nxyz: [84, 72, 84], stepAng: [0.1, 0.1, 0.1] });
   assert.equal(notice, '\u24d8 Resampling onto common grid: 84\u00d772\u00d784 voxels (0.1 \u00c5)');
+});
+
+test('resampling includes every upper plane, edge, and corner', () => {
+  const api = loadApi();
+  const short = makeVolume([2, 2, 2], [0, 0, 0], [1, 1, 1], () => 2);
+  const wide = makeVolume([3, 3, 3], [0, 0, 0], [1, 1, 1], () => 5);
+  const result = api.compute('linear_combination', [operand('short', short), operand('wide', wide)], 'sum');
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) {
+    assert.equal(at(result.baseVol, result.data, i, j, k), 7, `endpoint ${i},${j},${k}`);
+  }
+  assert.equal(at(result.baseVol, result.data, 2, 2, 2), 5);
+});
+
+test('singleton axes and decimal endpoints retain their scalar values', () => {
+  const api = loadApi();
+  const plane = makeVolume([1, 2, 2], [0.1, 0.1, 0.1], [0.1, 0.1, 0.1], () => 2);
+  const volume = makeVolume([2, 3, 3], [0.1, 0.1, 0.1], [0.1, 0.05, 0.05], () => 5);
+  const result = api.compute('product', [operand('plane', plane), operand('volume', volume)], 'product');
+  assert.equal(at(result.baseVol, result.data, 0, 2, 2), 10);
+  assert.equal(at(result.baseVol, result.data, 1, 2, 2), 0);
+});
+
+test('validation plans resampling without allocating scalar buffers', () => {
+  const a = makeVolume([2, 2, 2], [0, 0, 0], [1, 1, 1], () => 1);
+  const b = makeVolume([3, 3, 3], [0, 0, 0], [0.5, 0.5, 0.5], () => 2);
+  const context = loadGlobalModule('assets/app/js/arithmetic-grid.js', { globals: {
+    Float32Array: new Proxy(Float32Array, { construct() { throw new Error('Unexpected allocation'); } }),
+  } });
+  for (let i = 0; i < 20; i++) {
+    const plan = context.VibeMolArithmeticGrid.validateInputGrids([operand('a', a), operand('b', b)]);
+    assert.equal(plan.ok, true);
+    assert.equal(plan.baseVol.data, null);
+    assert.equal(plan.voxelCount, 27);
+  }
+});
+
+test('memory and voxel budgets reject a calculation before evaluation', () => {
+  const api = loadApi();
+  const a = makeVolume([2, 2, 2], [0, 0, 0], [1, 1, 1], () => 1);
+  const operands = [operand('a', a)];
+  assert.equal(api.validateInputGrids(operands, { maxVoxels: 7 }).kind, 'too_large');
+  assert.equal(api.validateInputGrids(operands, { maxBytes: 80 }).kind, 'too_large');
+  assert.equal(api.compute('abs', operands, 'abs', { maxVoxels: 7 }).ok, false);
 });

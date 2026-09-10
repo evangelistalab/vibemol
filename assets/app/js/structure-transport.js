@@ -69,6 +69,10 @@
 
     function loadStructureFromText(text, sourceLabel = 'structure') {
       const imported = parseStructureEnvelopeText(text, sourceLabel);
+      if (typeof deps.commitStructureImport === 'function') {
+        deps.commitStructureImport(imported);
+        return imported;
+      }
       deps.clearPlaceholderVolumesForUserLoad();
       const startIndex = deps.getVolumeCount();
       deps.appendParsedVolumeRecord(

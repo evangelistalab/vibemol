@@ -2,7 +2,8 @@
   'use strict';
 
   const BOHR_TO_ANG = 0.529177210903;
-  const MAX_TARGET_VOXELS = Number.MAX_SAFE_INTEGER;
+  const MAX_TARGET_VOXELS = 16 * 1024 * 1024;
+  const MAX_WORKING_BYTES = 256 * 1024 * 1024;
 
   function normalizeOperation(value) {
     const key = String(value || '').trim();
@@ -121,17 +122,17 @@
     for (const spec of specs) {
       for (let axis = 0; axis < 3; axis += 1) {
         min[axis] = Math.min(min[axis], spec.origin[axis]);
-        max[axis] = Math.max(max[axis], spec.origin[axis] + spec.nxyz[axis] * spec.step[axis]);
+        max[axis] = Math.max(max[axis], spec.origin[axis] + (spec.nxyz[axis] - 1) * spec.step[axis]);
         step[axis] = Math.min(step[axis], spec.step[axis]);
       }
     }
     if (![...min, ...max, ...step].every(Number.isFinite) || step.some((value) => value <= 0)) {
       return { ok: false, error: 'Selected operands do not define a valid target grid' };
     }
-    const nxyz = step.map((spacing, axis) => Math.max(1, Math.ceil((max[axis] - min[axis]) / spacing)));
+    const nxyz = step.map((spacing, axis) => Math.max(1, Math.ceil((max[axis] - min[axis]) / spacing - 1e-10) + 1));
     const count = getVoxelCount(nxyz);
-    if (!(Number.isFinite(count) && count > 0 && count <= MAX_TARGET_VOXELS)) {
-      return { ok: false, error: 'Selected operands produce an invalid target grid' };
+    if (!(Number.isSafeInteger(count) && count > 0)) {
+      return { ok: false, kind: 'too_large', error: 'The common grid exceeds the arithmetic memory limit. Use coarser or smaller grids.' };
     }
     const axes = [[step[0], 0, 0], [0, step[1], 0], [0, 0, step[2]]];
     return {
@@ -148,7 +149,7 @@
         axes: axes.map((axis) => axis.slice()),
         nxyz: nxyz.slice(),
         idx: createIndexFunction(nxyz),
-        data: new Float32Array(count),
+        data: null,
       }),
       resamplePlan: {
         origin: min.slice(),
@@ -161,7 +162,7 @@
     };
   }
 
-  function validateInputGrids(operands) {
+  function validateInputGrids(operands, limits = {}) {
     const entries = Array.isArray(operands) ? operands : [];
     if (!entries.length) return { ok: false, error: 'Choose at least one operand.' };
     const firstVol = entries[0] && entries[0].vol;
@@ -178,13 +179,25 @@
       specs.push(spec);
     }
     const same = entries.every((entry) => sameGrid(firstVol, entry.vol));
-    if (same) return { ok: true, baseVol: firstVol, sameGrid: true, resamplePlan: null };
-    const target = buildTargetGrid(specs, firstVol);
+    const target = same
+      ? { ok: true, baseVol: firstVol, resamplePlan: null }
+      : buildTargetGrid(specs, firstVol);
     if (!target.ok) return Object.assign({ immediate: true }, target);
+    const voxelCount = getVoxelCount(target.baseVol.nxyz);
+    const sourceBytes = entries.reduce((sum, entry) => sum + (entry.vol.data.byteLength || entry.vol.data.length * 8), 0);
+    // Account for immutable source buffers, worker copies, and the result.
+    const workingBytes = sourceBytes * 2 + voxelCount * 4;
+    const maxVoxels = Math.min(Number(limits.maxVoxels) || MAX_TARGET_VOXELS, MAX_TARGET_VOXELS);
+    const maxBytes = Math.min(Number(limits.maxBytes) || MAX_WORKING_BYTES, MAX_WORKING_BYTES);
+    if (voxelCount > maxVoxels || workingBytes > maxBytes) {
+      return { ok: false, immediate: true, kind: 'too_large', error: 'The common grid exceeds the arithmetic memory limit. Use coarser or smaller grids.' };
+    }
     return {
       ok: true,
+      voxelCount,
+      workingBytes,
       baseVol: target.baseVol,
-      sameGrid: false,
+      sameGrid: same,
       resamplePlan: target.resamplePlan,
       specs,
     };
@@ -197,19 +210,23 @@
   }
 
   function sampleTrilinear(spec, data, x, y, z) {
-    const u = (x - spec.origin[0]) / spec.step[0];
-    const v = (y - spec.origin[1]) / spec.step[1];
-    const w = (z - spec.origin[2]) / spec.step[2];
+    let u = (x - spec.origin[0]) / spec.step[0];
+    let v = (y - spec.origin[1]) / spec.step[1];
+    let w = (z - spec.origin[2]) / spec.step[2];
     const nx = spec.nxyz[0];
     const ny = spec.nxyz[1];
     const nz = spec.nxyz[2];
-    if (u < 0 || v < 0 || w < 0 || u >= nx - 1 || v >= ny - 1 || w >= nz - 1) return 0;
+    const tolerance = 1e-10;
+    if (u < -tolerance || v < -tolerance || w < -tolerance || u > nx - 1 + tolerance || v > ny - 1 + tolerance || w > nz - 1 + tolerance) return 0;
+    u = Math.max(0, Math.min(nx - 1, u));
+    v = Math.max(0, Math.min(ny - 1, v));
+    w = Math.max(0, Math.min(nz - 1, w));
     const i0 = Math.floor(u);
     const j0 = Math.floor(v);
     const k0 = Math.floor(w);
-    const i1 = i0 + 1;
-    const j1 = j0 + 1;
-    const k1 = k0 + 1;
+    const i1 = Math.min(i0 + 1, nx - 1);
+    const j1 = Math.min(j0 + 1, ny - 1);
+    const k1 = Math.min(k0 + 1, nz - 1);
     const fu = u - i0;
     const fv = v - j0;
     const fw = w - k0;
@@ -232,70 +249,48 @@
     return v0 * (1 - fu) + v1 * fu;
   }
 
-  function resampleOperandToTarget(operand, spec, target) {
-    const [nx, ny, nz] = target.nxyz;
-    const out = new Float32Array(nx * ny * nz);
-    const data = operand && operand.vol && operand.vol.data;
-    let cursor = 0;
-    for (let i = 0; i < nx; i += 1) {
-      const x = target.origin[0] + i * target.step[0];
-      for (let j = 0; j < ny; j += 1) {
-        const y = target.origin[1] + j * target.step[1];
-        for (let k = 0; k < nz; k += 1) {
-          const z = target.origin[2] + k * target.step[2];
-          out[cursor] = sampleTrilinear(spec, data, x, y, z);
-          cursor += 1;
-        }
-      }
-    }
-    return out;
-  }
-
-  function compute(operation, operands, outputName) {
+  function createComputation(operation, operands, outputName, limits = {}) {
     const op = normalizeOperation(operation);
     const entries = Array.isArray(operands) ? operands : [];
     if (op === 'abs' && entries.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
     if (op === 'product' && entries.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
-    if (op === 'linear_combination' && entries.length < 1) return { ok: false, error: 'Choose at least one operand.' };
-    const grid = validateInputGrids(entries);
+    const grid = validateInputGrids(entries, limits);
     if (!grid.ok) return grid;
-    const baseVol = grid.baseVol;
-    const length = getVoxelCount(baseVol.nxyz);
-    const out = new Float32Array(length);
-    let dataByOperand = entries.map((entry) => entry.vol.data);
-    if (!grid.sameGrid) {
-      const target = {
-        origin: grid.resamplePlan.origin,
-        step: grid.resamplePlan.step,
-        nxyz: grid.resamplePlan.nxyz,
-      };
-      dataByOperand = entries.map((entry, index) => resampleOperandToTarget(entry, grid.specs[index], target));
-    }
-    if (op === 'abs') {
-      const data = dataByOperand[0];
-      for (let i = 0; i < length; i += 1) out[i] = Math.abs(Number(data[i]) || 0);
-    } else if (op === 'product') {
-      out.fill(1);
-      for (const data of dataByOperand) {
-        for (let i = 0; i < length; i += 1) out[i] *= Number(data[i]) || 0;
+    const out = new Float32Array(grid.voxelCount);
+    const [, ny, nz] = grid.baseVol.nxyz;
+    let cursor = 0;
+    function step(budget = 32768) {
+      const end = Math.min(out.length, cursor + budget);
+      for (; cursor < end; cursor += 1) {
+        let value = op === 'product' ? 1 : 0;
+        const i = Math.floor(cursor / (ny * nz));
+        const j = Math.floor(cursor / nz) % ny;
+        const k = cursor % nz;
+        for (let n = 0; n < entries.length; n += 1) {
+          const entry = entries[n];
+          const sample = grid.sameGrid ? Number(entry.vol.data[cursor]) || 0 : sampleTrilinear(
+            grid.specs[n], entry.vol.data,
+            grid.baseVol.origin[0] + i * grid.resamplePlan.step[0],
+            grid.baseVol.origin[1] + j * grid.resamplePlan.step[1],
+            grid.baseVol.origin[2] + k * grid.resamplePlan.step[2]
+          );
+          if (op === 'abs') value = Math.abs(sample);
+          else if (op === 'product') value *= sample;
+          else value += (Number.isFinite(Number(entry.coefficient)) ? Number(entry.coefficient) : 1) * sample;
+        }
+        out[cursor] = value;
       }
-    } else {
-      for (let operandIndex = 0; operandIndex < entries.length; operandIndex += 1) {
-        const data = dataByOperand[operandIndex];
-        const coefficient = Number.isFinite(Number(entries[operandIndex].coefficient))
-          ? Number(entries[operandIndex].coefficient)
-          : 1;
-        for (let i = 0; i < length; i += 1) out[i] += coefficient * (Number(data[i]) || 0);
-      }
+      return cursor === out.length;
     }
-    return {
-      ok: true,
-      outputName,
-      baseVol,
-      data: out,
-      sameGrid: !!grid.sameGrid,
-      resamplePlan: grid.resamplePlan || null,
-    };
+    const result = { ok: true, outputName, baseVol: grid.baseVol, data: out, sameGrid: grid.sameGrid, resamplePlan: grid.resamplePlan };
+    return { ok: true, step, result };
+  }
+
+  function compute(operation, operands, outputName, limits) {
+    const computation = createComputation(operation, operands, outputName, limits);
+    if (!computation.ok) return computation;
+    while (!computation.step()) { /* Synchronous entry point for workers and small unit fixtures. */ }
+    return computation.result;
   }
 
   function formatNumber(value, precision = 3) {
@@ -320,7 +315,10 @@
   }
 
   global.VibeMolArithmeticGrid = Object.freeze({
+    MAX_TARGET_VOXELS,
+    MAX_WORKING_BYTES,
     normalizeOperation,
+    createComputation,
     sameGrid,
     inspectAxisAlignedGrid,
     validateInputGrids,
