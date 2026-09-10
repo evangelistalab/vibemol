@@ -35,6 +35,8 @@ Startup now shows the empty onboarding card. Use `Choose files` or `Open sample 
 - `M`: measurement mode
 - `E`: edit mode
 - `Arrow keys`: previous/next file
+- `Cmd/Ctrl+C`: copy element and XYZ coordinate rows in angstroms, without the atom-count/comment header. Copies selected atoms in Edit mode, or the active structure otherwise. Text fields and selected page text keep normal copy behavior.
+- `Cmd/Ctrl+V`: paste XYZ into a new structure, including in a fresh VibeMol window. Selected atoms copied in the same Edit window retain the existing duplicate-selection behavior, including internal bonds.
 
 ## Sessions and recovery
 

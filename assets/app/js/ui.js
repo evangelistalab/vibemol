@@ -99,19 +99,27 @@
    * @param {number} bohrToAng
    * @param {Record<number, {symbol?:string}>} atomData
    * @param {'angstrom'|'bohr'} [displayUnits='angstrom']
+   * @param {{includeHeader?:boolean,atomIndices?:number[]}} [options]
    * @returns {string}
    */
-  function volumeToXYZ(record, bohrToAng, atomData, displayUnits) {
+  function volumeToXYZ(record, bohrToAng, atomData, displayUnits, options = {}) {
     if (!record) return '';
 
     const v = record.vol;
     if (!v || !Array.isArray(v.atoms)) return '';
 
+    const atoms = Array.isArray(options.atomIndices)
+      ? Array.from(new Set(options.atomIndices))
+        .filter(index => Number.isInteger(index) && index >= 0 && index < v.atoms.length)
+        .sort((a, b) => a - b).map(index => v.atoms[index])
+      : v.atoms;
     const lines = [];
-    lines.push(String(v.atoms.length));
-    lines.push((v.title || record.name || '').toString());
+    if (options.includeHeader !== false) {
+      lines.push(String(atoms.length));
+      lines.push((v.title || record.name || '').toString());
+    }
 
-    for (const a of v.atoms) {
+    for (const a of atoms) {
       const z = a.Z | 0;
       const sym = symbolForZ(z, atomData);
       const [x, y, zA] = atomCoordsDisplay(v, a, bohrToAng, displayUnits);

@@ -7,6 +7,7 @@ import json
 import os
 import pathlib
 import re
+import sys
 
 from playwright.sync_api import sync_playwright
 from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
@@ -113,6 +114,147 @@ def imports(page, dialogs):
     assert result['ok'] and result['loadedCount'] == 2, result
     assert len(cubes(page)) == 3
     assert page.evaluate("() => !!window.VibeMolStructure.exportActive().volume.vibration")
+
+
+CLIPBOARD_MODIFIER = 'Meta' if sys.platform == 'darwin' else 'Control'
+
+
+def focus_clipboard_page(page):
+    page.bring_to_front()
+    page.evaluate('() => { document.activeElement?.blur(); window.getSelection()?.removeAllRanges(); }')
+
+
+def copy_coordinates(page):
+    focus_clipboard_page(page)
+    before_windows = page.evaluate('() => VibeMolTesting.getOpenNonEditWindows()')
+    page.keyboard.press(CLIPBOARD_MODIFIER + '+c')
+    text = page.evaluate('() => navigator.clipboard.readText()')
+    assert page.evaluate('() => VibeMolTesting.getOpenNonEditWindows()') == before_windows, 'Cmd/Ctrl+C must not toggle Coordinates'
+    return text
+
+
+def clipboard_roundtrip(page, dialogs):
+    page.context.grant_permissions(['clipboard-read', 'clipboard-write'])
+    page.evaluate("() => navigator.clipboard.writeText('clipboard fixture')")
+    bohr_cube = cube(0).replace('1 1 0 0 0\n', '1 1 2 -3 4\n')
+    assert load(page, [{'name': 'bohr.cube', 'text': bohr_cube}])['ok']
+    expected = 'H 1.058354 -1.587532 2.116709'
+    assert copy_coordinates(page) == expected
+
+    # Copy remains in angstroms even when the coordinate table displays bohr.
+    page.keyboard.press('c')
+    page.locator('#coordsUnitsBtn').click()
+    assert page.locator('#coordsUnitsBtn').get_attribute('aria-label') == 'Switch coordinates to angstrom'
+    assert copy_coordinates(page) == expected
+    page.locator('#copyXYZ').click()
+    assert page.evaluate('() => navigator.clipboard.readText()') == expected
+    # Exercise the clipboard fallback without replacing the native copy event.
+    page.evaluate("""() => { window.__writeText = navigator.clipboard.writeText;
+      navigator.clipboard.writeText = async () => { throw new Error('Clipboard API unavailable'); }; }""")
+    page.locator('#copyXYZ').click()
+    assert page.evaluate('() => navigator.clipboard.readText()') == expected
+    assert page.evaluate("() => document.activeElement.id === 'copyXYZ'")
+    page.evaluate('() => { navigator.clipboard.writeText = window.__writeText; }')
+
+    # A fresh VibeMol window must consume the operating-system clipboard alone.
+    receiver = page.context.new_page()
+    receiver_errors = []
+    receiver.on('pageerror', lambda error: receiver_errors.append(str(error)))
+    try:
+        receiver.goto(page.url, wait_until='domcontentloaded')
+        receiver.wait_for_function('() => window.VibeMolTesting && window.VibeMolEmbed')
+        assert len(snapshot(receiver)['scenes']) == 0
+        focus_clipboard_page(receiver)
+        receiver.keyboard.press(CLIPBOARD_MODIFIER + '+v')
+        receiver.wait_for_function('() => VibeMolTesting.getSceneGraphSnapshot().scenes.length === 1')
+        volume = receiver.evaluate('() => VibeMolStructure.exportActive().volume')
+        assert volume['units'] == 'angstrom'
+        assert [(atom['Z'], atom['x'], atom['y'], atom['z']) for atom in volume['atoms']] == [(1, 1.058354, -1.587532, 2.116709)]
+        assert receiver.evaluate('() => VibeMolTesting.getOpenNonEditWindows()') == [], 'Paste must not toggle View'
+        assert copy_coordinates(receiver) == expected
+        assert not receiver_errors, receiver_errors
+    finally:
+        receiver.close()
+
+    # Copy also works in Measure, while native text copy/paste stays native.
+    page.bring_to_front()
+    page.locator('#modeMeasureBtn').click()
+    assert copy_coordinates(page) == expected
+    context_item(page, cubes(page)[0]['id'], 'Rename')
+    rename = page.locator('.vm-outliner-row__rename-input')
+    rename.fill('Native rename text')
+    rename.press(CLIPBOARD_MODIFIER + '+a')
+    rename.press(CLIPBOARD_MODIFIER + '+c')
+    assert page.evaluate('() => navigator.clipboard.readText()') == 'Native rename text'
+    page.evaluate('text => navigator.clipboard.writeText(text)', expected)
+    rename.press(CLIPBOARD_MODIFIER + '+v')
+    assert rename.input_value() == expected
+    assert len(snapshot(page)['scenes']) == 1, 'Pasting into a text field must not import XYZ'
+    rename.press('Escape')
+    focus_clipboard_page(page)
+    page.evaluate("""() => {
+      const p = document.createElement('p'); p.id = 'clipboard-text-probe'; p.textContent = 'Selected page text';
+      document.body.appendChild(p); const range = document.createRange(); range.selectNodeContents(p);
+      window.getSelection().addRange(range);
+    }""")
+    page.keyboard.press(CLIPBOARD_MODIFIER + '+c')
+    assert page.evaluate('() => navigator.clipboard.readText()') == 'Selected page text'
+    page.evaluate("() => { window.getSelection().removeAllRanges(); document.getElementById('clipboard-text-probe').remove(); }")
+    # Modified clipboard/browser shortcuts must not invoke plain-letter tools.
+    before_windows = page.evaluate('() => VibeMolTesting.getOpenNonEditWindows()')
+    assert page.evaluate("""() => ['c', 'v', 'x'].every(key => {
+      const e = new KeyboardEvent('keydown', {key, ctrlKey:true, shiftKey:true, bubbles:true, cancelable:true});
+      window.dispatchEvent(e); return !e.defaultPrevented;
+    })""")
+    assert page.evaluate('() => VibeMolTesting.getOpenNonEditWindows()') == before_windows
+
+
+def clipboard_edit_selection(page, dialogs):
+    page.context.grant_permissions(['clipboard-read', 'clipboard-write'])
+    assert load(page, [{'name': 'edit-copy.xyz', 'text': '3\nClipboard fixture\nC 2 3 4\nC 3.4 3 4\nH 5 3 4\n'}])['ok']
+    page.evaluate("""() => {
+      const doc = VibeMolStructure.exportActive();
+      doc.volume.bonds = [{id:'copy-bond', a:doc.volume.atoms[0].id, b:doc.volume.atoms[1].id,
+        order:2, kind:'normal', origin:'explicit', style:'covalent'}];
+      VibeMolStructure.importFromText(JSON.stringify(doc), 'edit-copy');
+    }""")
+    page.locator('#modeEditBtn').click()
+    initial_scene_count = len(snapshot(page)['scenes'])
+    assert len(copy_coordinates(page).splitlines()) == 3, 'No atom selection copies the full structure in Edit'
+    page.evaluate('() => VibeMolTesting.setEditSelectionIndices([0, 1])')
+    expected = 'C 2.000000 3.000000 4.000000\nC 3.400000 3.000000 4.000000'
+    assert copy_coordinates(page) == expected, 'Selection copy uses original coordinates, not centered fragment coordinates'
+    receiver = page.context.new_page()
+    receiver_errors = []
+    receiver.on('pageerror', lambda error: receiver_errors.append(str(error)))
+    try:
+        receiver.goto(page.url, wait_until='domcontentloaded')
+        receiver.wait_for_function('() => window.VibeMolTesting && window.VibeMolEmbed')
+        focus_clipboard_page(receiver)
+        receiver.keyboard.press(CLIPBOARD_MODIFIER + '+v')
+        receiver.wait_for_function('() => VibeMolTesting.getSceneGraphSnapshot().scenes.length === 1')
+        assert copy_coordinates(receiver) == expected
+        assert len(receiver.evaluate('() => VibeMolStructure.exportActive().volume.atoms')) == 2
+        assert not receiver_errors, receiver_errors
+    finally:
+        receiver.close()
+    # Recopy in the original window to retain its selection token for duplication.
+    assert copy_coordinates(page) == expected
+    page.keyboard.press(CLIPBOARD_MODIFIER + '+v')
+    page.wait_for_function('() => VibeMolStructure.exportActive().volume.atoms.length === 5')
+    volume = page.evaluate('() => VibeMolStructure.exportActive().volume')
+    assert len(snapshot(page)['scenes']) == initial_scene_count
+    assert len(volume['bonds']) == 2 and all(bond['order'] == 2 and bond['origin'] == 'explicit' for bond in volume['bonds'])
+    assert page.evaluate('() => VibeMolTesting.getEditSelectionIndices().length') == 2
+    # Replacing the clipboard must not resurrect a cached atom selection.
+    page.evaluate("() => navigator.clipboard.writeText('unrelated clipboard text')")
+    focus_clipboard_page(page)
+    page.keyboard.press(CLIPBOARD_MODIFIER + '+v')
+    assert len(page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')) == 5
+    page.evaluate('text => navigator.clipboard.writeText(text)', expected)
+    page.keyboard.press(CLIPBOARD_MODIFIER + '+v')
+    page.wait_for_function('count => VibeMolTesting.getSceneGraphSnapshot().scenes.length === count + 1', arg=initial_scene_count)
+    assert len(page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')) == 2
 
 
 def persistence(page, dialogs):
@@ -372,7 +514,8 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (molecule_styles, imports, persistence, batch_export, molden_browsing, arithmetic, synchronized_trajectories):
+            for run in (molecule_styles, imports, clipboard_roundtrip, clipboard_edit_selection,
+                        persistence, batch_export, molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})
                 page = context.new_page()
                 errors, console_errors, dialogs = [], [], []

@@ -104,7 +104,7 @@ Primary capabilities:
 - `tests/unit/trajectory-video.test.mjs`: browserless unit coverage for the shared crop/layout video-export helpers.
 - `tests/unit/load-global-module.mjs`: VM-based loader for global/IIFE modules under Node.
 - `tests/e2e/smoke.py`: Playwright smoke/E2E test that starts a temporary local static server.
-- `tests/e2e/premerge.py`: focused browser regressions for molecule styles and preset fallback, append/replace imports, layer persistence, batch export, Molden orbital browsing/arithmetic dependencies, and synchronized trajectories.
+- `tests/e2e/premerge.py`: focused browser regressions for molecule styles and preset fallback, append/replace imports, native clipboard round-trips and shortcut conflicts, layer persistence, batch export, Molden orbital browsing/arithmetic dependencies, and synchronized trajectories.
 - `tests/e2e/sessions.py`: fresh-page session round-trips, retained sources, typed arrays, derived dependencies, downloads, quota/corruption recovery, and cross-tab protection.
 - `tests/e2e/helpers.py`: shared server/artifact helpers for browser smoke tests.
 - `.github/workflows/ci.yml`: CI workflow for checks, unit tests, and browser smoke tests.
@@ -255,6 +255,8 @@ Preset automation contract exposed globally:
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
 - `.xyz` file imports and pasted XYZ text accept either standard XYZ (`natoms`, comment, coordinates) or coordinates-only rows; the first token on each row may be an element symbol or an atomic number.
+- `Cmd/Ctrl+C` uses the native copy event to copy headerless element/XYZ rows in angstroms: selected atoms in Edit mode, or the active structure otherwise. Text controls and selected page text retain native copy behavior. The Coordinates Copy button copies the full active structure using the same row format; XYZ downloads keep their header.
+- `Cmd/Ctrl+V` imports coordinate text as a new structure, including in a fresh window. A private clipboard token preserves atom/bond duplication for selections copied in the same Edit window; other clipboard content never falls back to a stale selection. Clipboard shortcuts and their modified browser variants do not trigger the plain C/V panel shortcuts.
 - Preset JSON files can be drag-dropped directly into the app and are imported through the normal preset path.
 - Reproducible structure JSON files (`kind: "vibemol.structure"`) can be drag-dropped directly into the app and preserve explicit bonds plus builder annotations.
 - Save session downloads a `.vibemol-session` JSON bundle. Open session, ordinary picker/drop, and embedded loads validate one bundle before replacing the workspace. Sessions preserve source identity/data, edited structures, graph/layer state, arithmetic recipes/results, camera, and playback controls; playback reopens paused in View mode. Undo history, unfinished interactions, and floating-window layout are excluded.

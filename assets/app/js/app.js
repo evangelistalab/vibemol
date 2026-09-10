@@ -8161,17 +8161,25 @@
       await navigator.clipboard.writeText(text);
       return true;
     } catch (err) {
+      const previousFocus = document.activeElement;
+      const selection = window.getSelection();
+      const ranges = selection ? Array.from({ length: selection.rangeCount }, (_, index) => selection.getRangeAt(index).cloneRange()) : [];
       const ta = document.createElement('textarea');
       ta.value = String(text || '');
+      ta.style.cssText = 'position:fixed;left:-10000px;top:0;';
       document.body.appendChild(ta);
       ta.select();
       try {
-        document.execCommand('copy');
-        return true;
+        return document.execCommand('copy');
       } catch {
         return false;
       } finally {
         document.body.removeChild(ta);
+        if (previousFocus && previousFocus.isConnected) previousFocus.focus({ preventScroll: true });
+        if (selection) {
+          selection.removeAllRanges();
+          ranges.forEach(range => selection.addRange(range));
+        }
       }
     }
   }
@@ -12444,6 +12452,7 @@
   let rotateDragLastClientX = 0;
   let rotateDragLastClientY = 0;
   let editClipboardSelection = null;
+  const EDIT_SELECTION_CLIPBOARD_TYPE = 'application/x-vibemol-selection';
   let editClipboardPasteSerial = 0;
   let pastedTextStructureSerial = 0;
   const EDIT_INTENT = Object.freeze({
@@ -21672,6 +21681,11 @@
     return editTools.applyEditAtomSelectionBox(atomIndices, additive);
   }
 
+  function getStructureClipboardText(record, atomIndices) {
+    // Headerless XYZ has no unit declaration; the paste parser expects angstroms.
+    return volumeToXYZ(record, BOHR_TO_ANG, window.ATOM_Z_TO_DATA, 'angstrom', { includeHeader: false, atomIndices });
+  }
+
   function copyEditSelectionToClipboard() {
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
@@ -21711,10 +21725,33 @@
       payload,
       extentRadius,
       center: center.clone(),
+      text: getStructureClipboardText(record, selection),
+      token: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     };
     editClipboardPasteSerial = 0;
     setHintMessage(`Copied ${selection.length} atom${selection.length === 1 ? '' : 's'}.`);
     return true;
+  }
+
+  function handleStructureCopy(e) {
+    if (e.defaultPrevented || !e.clipboardData || isTypingInInput() || String(window.getSelection() || '').length
+      || (sessionController && sessionController.isOpening())) return;
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const selection = currentMode === MODES.EDIT ? getEditAtomSelection() : [];
+    const text = getStructureClipboardText(record, selection.length ? selection : undefined);
+    if (!text) return;
+    if (selection.length) {
+      if (!copyEditSelectionToClipboard()) return;
+    } else {
+      editClipboardSelection = null;
+    }
+    e.clipboardData.setData('text/plain', text);
+    if (editClipboardSelection) {
+      e.clipboardData.setData(EDIT_SELECTION_CLIPBOARD_TYPE, editClipboardSelection.token);
+    }
+    e.preventDefault();
+    const count = selection.length || record.vol.atoms.length;
+    setHintMessage(`Copied XYZ coordinates for ${count} atom${count === 1 ? '' : 's'} (Å).`);
   }
 
   function getEditClipboardPasteOffset(payload) {
@@ -26201,18 +26238,6 @@
     return true;
   }
 
-  function handleEditCopyPasteHotkey(e) {
-    if (currentMode !== MODES.EDIT) return false;
-    if (isTypingInInput()) return false;
-    if (!(e.ctrlKey || e.metaKey) || e.altKey) return false;
-    const key = String(e.key || '').toLowerCase();
-    if (!e.shiftKey && key === 'c') {
-      e.preventDefault();
-      return copyEditSelectionToClipboard();
-    }
-    return false;
-  }
-
   function handleGlobalFileHotkey(e) {
     if (isTypingInInput()) return false;
     if (!(e.ctrlKey || e.metaKey) || e.altKey) return false;
@@ -26251,6 +26276,9 @@
   // Global key listeners delegate to router
   window.addEventListener('keydown', (e) => {
     if (e.defaultPrevented) return;
+    // Let native clipboard events run without triggering the plain C/V panels.
+    // Modified variants (for example Cmd+Shift+C) also belong to the browser.
+    if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x'].includes(normKey(e))) return;
     const helpTogglePressed = !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === '?' || (e.key === '/' && e.shiftKey));
     if (helpTogglePressed) {
       e.preventDefault();
@@ -26335,26 +26363,32 @@
         return;
       }
     }
-    if (handleEditCopyPasteHotkey(e)) return;
     if (handleGlobalFileHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
     if (handleOutlinerSelectionHotkey(e)) return;
     dispatchShortcut(e, 'down', currentMode);
   });
+  window.addEventListener('copy', handleStructureCopy);
   window.addEventListener('paste', (e) => {
-    if (isTypingInInput()) return;
+    if (e.defaultPrevented || isTypingInInput() || (sessionController && sessionController.isOpening())) return;
     const clipboardData = e && e.clipboardData;
     const text = clipboardData && typeof clipboardData.getData === 'function'
       ? String(clipboardData.getData('text/plain') || '')
       : '';
+    const token = clipboardData && typeof clipboardData.getData === 'function'
+      ? clipboardData.getData(EDIT_SELECTION_CLIPBOARD_TYPE) : '';
+    // Only this window's current selection copy may use its richer atom/bond
+    // payload. External text must never paste an unrelated cached selection.
+    if (currentMode === MODES.EDIT && token && editClipboardSelection && token === editClipboardSelection.token
+      && text.replace(/\r\n?/g, '\n').trim() === editClipboardSelection.text.trim()) {
+      e.preventDefault();
+      pasteEditClipboardSelection();
+      return;
+    }
     if (text && detectAndNormalizeXyzText(text, { comment: 'Pasted XYZ' })) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       void importPastedXyzText(text);
       return;
-    }
-    if (currentMode === MODES.EDIT && editClipboardSelection && editClipboardSelection.payload) {
-      if (e && typeof e.preventDefault === 'function') e.preventDefault();
-      pasteEditClipboardSelection();
     }
   });
   window.addEventListener('keyup', (e) => { dispatchShortcut(e, 'up', currentMode); });
@@ -29335,15 +29369,15 @@
   }
 
   copyXYZBtn.onclick = async () => {
-    const txt = toXYZString();
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const txt = getStructureClipboardText(record);
     if (!txt) return;
-    try {
-      await navigator.clipboard.writeText(txt);
-    } catch (e) {
-      const ta = document.createElement('textarea');
-      ta.value = txt; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); } catch { }
-      document.body.removeChild(ta);
+    const count = record.vol.atoms.length;
+    if (await copyTextToClipboard(txt)) {
+      editClipboardSelection = null;
+      setHintMessage(`Copied XYZ coordinates for ${count} atom${count === 1 ? '' : 's'} (Å).`);
+    } else {
+      setHintMessage('Could not copy coordinates to the clipboard.');
     }
   };
 
