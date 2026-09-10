@@ -852,5 +852,73 @@ function parseMolden(text) {
   };
 }
 
-  global.VibeMolParsers = { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden };
+/**
+ * Read the reference geometry for the last Psi4 harmonic analysis, in native units.
+ * Finite-difference jobs print the reference first, followed by displaced geometries.
+ * Geometry printed after the analysis belongs to later work and must be ignored.
+ * @param {string[]} lines
+ * @param {string} sourceName
+ * @returns {{atomSymbols:string[],coords:number[][],units:'bohr'|'angstrom'}}
+ */
+function parsePsi4Geometry(lines, sourceName) {
+  const geometryHeader = /^\s*Geometry\s*\(in\s+([^)]*)\)/i;
+  let harmonicStart = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (/==>\s*Harmonic Vibrational Analysis\s*<==/i.test(lines[i])) {
+      harmonicStart = i;
+      break;
+    }
+  }
+  if (harmonicStart < 0) {
+    throw new Error(`Psi4 integration: missing "Harmonic Vibrational Analysis" section in "${sourceName}".`);
+  }
+
+  let geometryIndex = -1;
+  let finiteDifferenceDepth = 0;
+  let referenceIndex = -1;
+  for (let i = 0; i < harmonicStart; i++) {
+    const line = lines[i];
+    if (/\bFiniteDifference Computations\b/i.test(line)) {
+      if (finiteDifferenceDepth++ === 0) referenceIndex = -1;
+    } else if (/\bFiniteDifference Results\b/i.test(line) && finiteDifferenceDepth > 0) {
+      if (--finiteDifferenceDepth === 0 && referenceIndex >= 0) geometryIndex = referenceIndex;
+    } else if (geometryHeader.test(line)) {
+      if (finiteDifferenceDepth === 0) geometryIndex = i;
+      else if (referenceIndex < 0) referenceIndex = i;
+    }
+  }
+  if (geometryIndex < 0) {
+    throw new Error(`Psi4 integration: could not find a Geometry (in Angstrom or Bohr) block before the harmonic analysis in "${sourceName}".`);
+  }
+  const unitLabel = lines[geometryIndex].match(geometryHeader)[1].trim().toLowerCase();
+  if (!/^(?:bohr|angstroms?)$/.test(unitLabel)) {
+    throw new Error(`Psi4 integration: unsupported geometry units "${unitLabel}" in "${sourceName}".`);
+  }
+  const atomSymbols = [], coords = [];
+  for (let i = geometryIndex + 1; i < harmonicStart; i++) {
+    const line = lines[i].trim();
+    if (!line) {
+      if (atomSymbols.length) break;
+      continue;
+    }
+    if (/^Center\b/i.test(line) || /^-+/.test(line)) continue;
+    if (/^==>|^Nuclear repulsion\b|^Geometry\b|^\$/i.test(line)) break;
+    const parts = line.split(/\s+/);
+    const offset = /^\d+$/.test(parts[0]) && /^[A-Za-z]{1,3}$/.test(parts[1] || '') ? 1 : 0;
+    const token = String(parts[offset] || '').toUpperCase();
+    const symbols = window.ATOM_SYMBOL_TO_Z || {};
+    const symbol = Number.isInteger(symbols[token]) ? token
+      : (/^\d+$/.test(token) ? Object.keys(symbols).find(key => symbols[key] === Number(token)) : null);
+    const values = parts.slice(offset + 1, offset + 4).map(parseLooseNumber);
+    if (!(symbol && values.length === 3 && values.every(Number.isFinite))) {
+      throw new Error(`Psi4 integration: malformed geometry row at line ${i + 1} in "${sourceName}".`);
+    }
+    atomSymbols.push(symbol);
+    coords.push(values);
+  }
+  if (!atomSymbols.length) throw new Error(`Psi4 integration: empty geometry in "${sourceName}".`);
+  return { atomSymbols, coords, units: unitLabel === 'bohr' ? 'bohr' : 'angstrom' };
+}
+
+  global.VibeMolParsers = { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden, parsePsi4Geometry };
 })(window);

@@ -126,3 +126,17 @@ test('io-utils ignores non-XYZ text', () => {
 
   assert.equal(detected, null);
 });
+
+test('io-utils recognizes Psi4 harmonic output without requiring angstrom geometry', () => {
+  const api = loadIoUtils().window.VibeMolIOUtils;
+  for (const unit of ['Bohr', 'Angstrom']) {
+    const text = `Psi4: An Open-Source Ab Initio Electronic Structure Package\nGeometry (in ${unit})\n==> Harmonic Vibrational Analysis <==`;
+    assert.equal(api.looksLikePsi4OutputText(text), true);
+    for (const name of ['output.dat', 'output.out', 'output.output']) {
+      assert.equal(api.detectInputFileKind(name, text), 'psi4_output');
+    }
+  }
+  // Incomplete geometry belongs to the Psi4 parser, which can give a useful error.
+  assert.equal(api.looksLikePsi4OutputText('Psi4: An Open-Source Ab Initio Electronic Structure Package\n==> Harmonic Vibrational Analysis <=='), true);
+  assert.equal(api.looksLikePsi4OutputText('unrelated output with frequencies'), false);
+});

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { loadGlobalModule } from './load-global-module.mjs';
 
 const plain = (value) => JSON.parse(JSON.stringify(value));
@@ -97,4 +98,39 @@ test('parseMolden handles a compact Molden payload', () => {
   assert.equal(vol.molden.moCount, 1);
   assert.equal(vol.molden.basisCount, 1);
   assert.equal(vol.molden.mos[0].coefficients[0], 1.0);
+});
+
+test('Psi4 geometry uses the bohr reference instead of the last finite-difference displacement', () => {
+  const text = readFileSync(new URL('../fixtures/psi4-bohr-frequencies.dat', import.meta.url), 'utf8');
+  const geometry = loadParsers().parsePsi4Geometry(text.split('\n'), 'output.dat');
+  assert.equal(geometry.units, 'bohr');
+  assert.deepEqual(plain(geometry.atomSymbols), ['C', 'H', 'H', 'H']);
+  assert.equal(geometry.coords[1][2], 1.804854386616);
+  assert.equal(geometry.coords[3][2], 0);
+});
+
+test('Psi4 geometry follows the last analysis, accepts indexed angstrom rows, and ignores later jobs', () => {
+  const lines = [
+    'Geometry (in Bohr), charge = 0, multiplicity = 1:', '', 'H 0 0 8', '',
+    '==> Harmonic Vibrational Analysis <==',
+    'Geometry (in Angstroms), charge = 0, multiplicity = 1:', '',
+    'Center X Y Z Mass', '------------------',
+    '1 H 1.0D-2 0 -2.0E-1 1.0', '2 O 0 0 9.6D-1 16.0', '',
+    '==> Harmonic Vibrational Analysis <==',
+    'Geometry (in Bohr), charge = 0, multiplicity = 1:', '', 'C 9 9 9', '',
+  ];
+  const geometry = loadParsers().parsePsi4Geometry(lines, 'two-jobs.out');
+  assert.equal(geometry.units, 'angstrom');
+  assert.deepEqual(plain(geometry.atomSymbols), ['H', 'O']);
+  assert.deepEqual(plain(geometry.coords), [[0.01, 0, -0.2], [0, 0, 0.96]]);
+});
+
+test('Psi4 geometry rejects missing units, missing analysis, and malformed coordinates', () => {
+  const parse = text => loadParsers().parsePsi4Geometry(text.split('\n'), 'bad.dat');
+  assert.throws(() => parse('==> Harmonic Vibrational Analysis <=='), /could not find a Geometry/);
+  assert.throws(() => parse('Geometry (in Bohr)\nH 0 0 0'), /missing.*Harmonic Vibrational Analysis/);
+  assert.throws(() => parse('Geometry (in nm)\nH 0 0 0\n\n==> Harmonic Vibrational Analysis <=='), /unsupported geometry units/);
+  for (const row of ['H 0 NaN 0', 'H 1 2', 'Zz 0 0 0']) {
+    assert.throws(() => parse(`Geometry (in Bohr)\n${row}\n\n==> Harmonic Vibrational Analysis <==`), /malformed geometry row/);
+  }
 });

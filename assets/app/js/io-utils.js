@@ -113,6 +113,12 @@
     return null;
   }
 
+  function looksLikePsi4OutputText(text) {
+    const body = String(text || '');
+    return /Psi4:\s*An Open-Source Ab Initio Electronic Structure Package/i.test(body)
+      && /==>\s*Harmonic Vibrational Analysis\s*<==/i.test(body);
+  }
+
   /**
    * Detect one high-level file kind by name/content.
    * @param {string} name
@@ -131,7 +137,7 @@
     if (lower.endsWith('.vib.json') || lower.endsWith('.vmodes.json') || lower.endsWith('.modes.json')) return 'vibration_payload';
     if (lower.endsWith('.json')) return 'json';
     if (lower.endsWith('.out') || lower.endsWith('.output') || lower.endsWith('.dat')) {
-      if (/\b==>\s*geometry\s*<==/i.test(body) && /\bharmonic frequencies/i.test(body)) return 'psi4_output';
+      if (looksLikePsi4OutputText(body)) return 'psi4_output';
     }
     return 'unknown';
   }
@@ -139,5 +145,6 @@
   window.VibeMolIOUtils = Object.freeze({
     detectInputFileKind,
     detectAndNormalizeXyzText,
+    looksLikePsi4OutputText,
   });
 })();

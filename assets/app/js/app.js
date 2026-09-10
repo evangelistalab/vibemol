@@ -89,8 +89,8 @@
   const DEFAULT_POS_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.pos;
   const DEFAULT_NEG_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.neg;
 
-  const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden } = window.VibeMolParsers || {};
-  if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden].every(fn => typeof fn === 'function')) {
+  const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden, parsePsi4Geometry } = window.VibeMolParsers || {};
+  if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden, parsePsi4Geometry].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolParsers is not loaded. Ensure assets/app/js/parsers.js is included before assets/app/js/app.js.');
   }
 
@@ -160,8 +160,8 @@
     throw new Error('VibeMolEditState is not loaded. Ensure assets/app/js/edit-state.js is included before assets/app/js/app.js.');
   }
 
-  const { detectInputFileKind, detectAndNormalizeXyzText } = window.VibeMolIOUtils || {};
-  if (![detectInputFileKind, detectAndNormalizeXyzText].every(fn => typeof fn === 'function')) {
+  const { detectInputFileKind, detectAndNormalizeXyzText, looksLikePsi4OutputText } = window.VibeMolIOUtils || {};
+  if (![detectInputFileKind, detectAndNormalizeXyzText, looksLikePsi4OutputText].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolIOUtils is not loaded. Ensure assets/app/js/io-utils.js is included before assets/app/js/app.js.');
   }
 
@@ -29455,18 +29455,6 @@
   }
 
   /**
-   * Detect whether one text payload looks like Psi4 output with vibrational data.
-   * @param {string} text
-   * @returns {boolean}
-   */
-  function looksLikePsi4OutputText(text) {
-    const raw = String(text || '');
-    return /Psi4:\s*An Open-Source Ab Initio Electronic Structure Package/i.test(raw)
-      && /==>\s*Harmonic Vibrational Analysis\s*<==/i.test(raw)
-      && /Geometry\s*\(in Angstrom\)/i.test(raw);
-  }
-
-  /**
    * Parse one ORCA numeric token including Fortran D exponents.
    * @param {*} token
    * @returns {number}
@@ -29934,65 +29922,8 @@
   }
 
   /**
-   * Parse the last Psi4 `Geometry (in Angstrom)` block from output text.
-   * @param {string[]} lines
-   * @param {string} sourceName
-   * @returns {{atomSymbols:string[],coords:number[][]}}
-   */
-  function parseLastPsi4GeometryBlock(lines, sourceName) {
-    let lastAtoms = null;
-    for (let i = 0; i < lines.length; i++) {
-      if (!/Geometry\s*\(in\s*Angstrom\)/i.test(String(lines[i] || ''))) continue;
-      let j = i + 1;
-      const atoms = [];
-      while (j < lines.length) {
-        const raw = String(lines[j] || '');
-        const line = raw.trim();
-        if (!line) { j += 1; continue; }
-        if (/^==>/.test(line) || /^Nuclear repulsion\b/i.test(line) || /^\$/.test(line)) break;
-        if (/^Center\b/i.test(line) || /^-+/.test(line)) { j += 1; continue; }
-        const parts = line.split(/\s+/);
-        if (parts.length < 4) {
-          if (atoms.length > 0) break;
-          j += 1;
-          continue;
-        }
-        let symbol = null;
-        let x = NaN, y = NaN, z = NaN;
-        // Common Psi4 geometry row: `H  x  y  z [mass]`
-        symbol = resolveElementSymbolToken(parts[0], null);
-        x = Number(parts[1]);
-        y = Number(parts[2]);
-        z = Number(parts[3]);
-        if (!(symbol && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z))) {
-          // Fallback row with leading index: `1 H x y z`
-          symbol = resolveElementSymbolToken(parts[1], null);
-          x = Number(parts[2]);
-          y = Number(parts[3]);
-          z = Number(parts[4]);
-        }
-        if (!(symbol && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z))) {
-          if (atoms.length > 0) break;
-          j += 1;
-          continue;
-        }
-        atoms.push({ symbol, x, y, z });
-        j += 1;
-      }
-      if (atoms.length > 0) lastAtoms = atoms;
-    }
-    if (!lastAtoms || !lastAtoms.length) {
-      throw new Error(`Psi4 integration: could not find any Geometry (in Angstrom) block in "${sourceName}".`);
-    }
-    return {
-      atomSymbols: lastAtoms.map((a) => a.symbol),
-      coords: lastAtoms.map((a) => [a.x, a.y, a.z]),
-    };
-  }
-
-  /**
    * Build one XYZ-like volume from parsed geometry.
-   * @param {{atomSymbols:string[],coords:number[][]}} geometry
+   * @param {{atomSymbols:string[],coords:number[][],units?:string}} geometry
    * @param {string} sourceName
    * @returns {*}
    */
@@ -30003,6 +29934,7 @@
       throw new Error(`Psi4 integration: malformed geometry in "${sourceName}".`);
     }
     const atoms = [];
+    const coordinateScale = geometry.units === 'bohr' ? BOHR_TO_ANG : 1;
     for (let i = 0; i < atomSymbols.length; i++) {
       const sym = String(atomSymbols[i] || '').toUpperCase();
       const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[sym];
@@ -30016,7 +29948,7 @@
       if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(zc)) {
         throw new Error(`Psi4 integration: invalid geometry coordinates in "${sourceName}".`);
       }
-      atoms.push({ Z: z, x, y, z: zc, formalCharge: 0 });
+      atoms.push({ Z: z, x: x * coordinateScale, y: y * coordinateScale, z: zc * coordinateScale, formalCharge: 0 });
     }
     const idx = () => 0;
     return {
@@ -30183,7 +30115,7 @@
 
   /**
    * Parse Psi4 output `.dat/.out` into geometry + vibration payload.
-   * Geometry is taken from the LAST `Geometry (in Angstrom)` block.
+   * Geometry is taken from the reference calculation for the last harmonic analysis.
    * @param {string} text
    * @param {string} sourceName
    * @returns {{vol:*,payload:*}}
@@ -30193,7 +30125,7 @@
       throw new Error(`Psi4 integration: "${sourceName}" does not look like a Psi4 frequency output.`);
     }
     const lines = String(text || '').replace(/\r/g, '').split('\n');
-    const geometry = parseLastPsi4GeometryBlock(lines, sourceName);
+    const geometry = parsePsi4Geometry(lines, sourceName);
     const payload = parsePsi4OutputVibrationPayload(lines, geometry, sourceName);
     const vol = buildXyzVolumeFromParsedGeometry(geometry, sourceName);
     return { vol, payload };

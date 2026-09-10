@@ -121,6 +121,47 @@ def imports(page, dialogs):
 CLIPBOARD_MODIFIER = 'Meta' if sys.platform == 'darwin' else 'Control'
 
 
+def psi4_frequencies(page, dialogs):
+    fixture = ROOT / 'tests' / 'fixtures' / 'psi4-bohr-frequencies.dat'
+    page.locator('#fileInput').set_input_files(fixture)
+    page.wait_for_function('() => document.querySelectorAll("#vibrationModeTableBody tr[data-mode-index]").length === 6')
+    volume = page.evaluate('() => VibeMolStructure.exportActive().volume')
+    assert volume['units'] == 'angstrom' and [atom['Z'] for atom in volume['atoms']] == [6, 1, 1, 1]
+    assert abs(volume['atoms'][1]['z'] - 1.804854386616 * 0.529177210903) < 1e-6
+    assert volume['atoms'][3]['z'] == 0, 'Use the reference geometry, not a finite-difference displacement'
+    modes = volume['vibration']['modes']
+    assert [mode['frequencyCm1'] for mode in modes] == [1422.9415, 1425.4028, 1425.5502, 3073.0924, 3289.7818, 3290.0800]
+    assert [mode['irIntensityKmMol'] for mode in modes] == [7.8126, 18.7514, 18.7323, 0.0002, 91.2878, 91.1759]
+    assert all(len(mode['displacements']) == 12 for mode in modes)
+    assert abs(modes[0]['displacements'][0] + 0.08) < 1e-6
+    if page.locator('#vibrationPanel').get_attribute('aria-hidden') != 'false':
+        page.locator('#vibrationPanelBtn').click()
+    # Selecting a mode starts playback automatically.
+    page.locator('#vibrationModeTableBody tr[data-mode-index="1"]').click()
+    page.wait_for_function('''() => {
+        const volume = VibeMolStructure.exportActive().volume;
+        return volume.vibration.modeIndex === 1 && volume.vibration.phase > 0.1
+            && Math.abs(volume.atoms[3].z) > 0.001;
+    }''')
+    page.locator('#vibrationPlayBtn').click()
+    assert page.locator('#vibrationPlayBtn').inner_text() == 'play_arrow'
+
+    # Angstrom logs still import without rescaling, through the shared embedded path.
+    text = fixture.read_text().replace('Geometry (in Bohr)', 'Geometry (in Angstrom)')
+    assert load(page, [{'name':'angstrom.out', 'text':text}])['ok']
+    volume = page.evaluate('() => VibeMolStructure.exportActive().volume')
+    assert abs(volume['atoms'][1]['z'] - 1.804854386616) < 1e-6
+    assert len(volume['vibration']['modes']) == 6
+    assert not dialogs, dialogs
+
+    # Recognized but malformed Psi4 data must not fall through to the CUBE parser.
+    before = snapshot(page)
+    bad = 'Psi4: An Open-Source Ab Initio Electronic Structure Package\n==> Harmonic Vibrational Analysis <=='
+    result = load(page, [{'name':'missing-geometry.dat', 'text':bad}])
+    assert not result['ok'] and 'Psi4 integration' in result['error'] and 'Geometry' in result['error'], result
+    assert 'CUBE' not in result['error'] and snapshot(page) == before
+
+
 def focus_clipboard_page(page):
     page.bring_to_front()
     page.evaluate('() => { document.activeElement?.blur(); window.getSelection()?.removeAllRanges(); }')
@@ -752,7 +793,7 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (molecule_styles, imports, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
+            for run in (molecule_styles, imports, psi4_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
                         persistence, batch_export, orbital_group_appearance, molden_group_appearance,
                         molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})
