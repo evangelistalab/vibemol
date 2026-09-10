@@ -4794,7 +4794,9 @@ def main() -> int:
             hydrogen_x, hydrogen_y = find_atom_click_point(page, 1)
             right_click_atom(page, hydrogen_x, hydrogen_y)
             wait_for_selected_atoms(page, 1)
-            set_checkbox_state(page, '#editAddAdjustHydrogens', False)
+            set_checkbox_state(page, '#editAddAdjustHydrogens', True)
+            before_hydrogen_delete = page.evaluate('() => VibeMolStructure.exportActive().volume')
+            deleted_hydrogen_id = before_hydrogen_delete['atoms'][1]['id']
             page.keyboard.press('Delete')
             page.wait_for_function(
                 """() => {
@@ -4804,6 +4806,26 @@ def main() -> int:
                     return atoms.length === 4 && hydrogens === 3;
                 }"""
             )
+            after_hydrogen_delete = page.evaluate('() => VibeMolStructure.exportActive().volume')
+            expected_atoms = [atom for atom in before_hydrogen_delete['atoms'] if atom['id'] != deleted_hydrogen_id]
+            expected_bonds = [bond for bond in before_hydrogen_delete['bonds']
+                              if deleted_hydrogen_id not in (bond['a'], bond['b'])]
+            assert after_hydrogen_delete['atoms'] == expected_atoms, 'Deleting H must preserve every surviving coordinate'
+            assert after_hydrogen_delete['bonds'] == expected_bonds
+            assert page.locator('#editAddAdjustHydrogens').is_checked(), 'Deleting H must not change the global setting'
+            undo_modifier = 'Meta' if sys.platform == 'darwin' else 'Control'
+            page.keyboard.press(undo_modifier + '+z')
+            page.wait_for_function('() => VibeMolStructure.exportActive().volume.atoms.length === 5')
+            restored_hydrogen_delete = page.evaluate('() => VibeMolStructure.exportActive().volume')
+            assert restored_hydrogen_delete['atoms'] == before_hydrogen_delete['atoms']
+            assert restored_hydrogen_delete['bonds'] == before_hydrogen_delete['bonds']
+            page.keyboard.press(undo_modifier + '+Shift+z')
+            page.wait_for_function('() => VibeMolStructure.exportActive().volume.atoms.length === 4')
+            redone_hydrogen_delete = page.evaluate('() => VibeMolStructure.exportActive().volume')
+            assert redone_hydrogen_delete['atoms'] == expected_atoms
+            assert redone_hydrogen_delete['bonds'] == expected_bonds
+            assert page.locator('#editAddAdjustHydrogens').is_checked()
+            set_checkbox_state(page, '#editAddAdjustHydrogens', False)
             load_build_query(page, 'methyl')
             set_select_value(page, '#editFragmentAttachPolicy', 'smart')
             arm_fragment_attach_cue(page, 0)

@@ -1177,8 +1177,15 @@
         .map((index) => vol.atoms[index])
         .filter(Boolean)
         .map((atom) => String(ensureAtomId(atom)));
-      const allDeleteIds = collectDanglingTerminalDeleteIds(vol, initialDeleteIds);
-      const frontierAtomIds = collectSurvivingFrontierAtomIds(vol, allDeleteIds);
+      // Explicit hydrogen removal leaves an intentional open site. Preserve its
+      // neighbors and skip hydrogen adjustment, including the relaxation pass.
+      const deletingOnlyHydrogens = uniqueIndices.every(index => (vol.atoms[index].Z | 0) === 1);
+      const allDeleteIds = deletingOnlyHydrogens
+        ? new Set(initialDeleteIds)
+        : collectDanglingTerminalDeleteIds(vol, initialDeleteIds);
+      const frontierAtomIds = deletingOnlyHydrogens
+        ? new Set()
+        : collectSurvivingFrontierAtomIds(vol, allDeleteIds);
       const removedAtoms = vol.atoms
         .filter((atom) => atom && allDeleteIds.has(String(ensureAtomId(atom))))
         .map((atom) => cloneJsonLike(atom));

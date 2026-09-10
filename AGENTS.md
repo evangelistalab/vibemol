@@ -365,7 +365,7 @@ Implemented:
 - Standalone molecule placement includes a right-side operator panel with live XYZ/rotation editing and axis-align actions.
 - Transform mode is the advanced bond-aware rotation tool: it supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
 - Replacing an atom with a lower-valence element prunes excess bonds, preferring terminal hydrogens/terminal one-valence neighbors first, then runs local hydrogen repair on the surviving center.
-- Deleting atoms cascades to dangling one-valence neighbors and then repairs hydrogens on surviving frontier atoms in the same undo unit.
+- Deleting atoms cascades to dangling one-valence neighbors and then repairs hydrogens on surviving frontier atoms in the same undo unit. Explicit hydrogen-only deletion removes just the targeted hydrogens, preserves all remaining coordinates, and skips automatic hydrogen repair/relaxation regardless of `Adjust hydrogens`; the setting itself stays unchanged.
 - Left-clicking the center of a normal bond in edit mode cycles its order `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`; bond-center context/right-click still selects the bond for cue-driven edits.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Direct delete via current selection or hovered atom (`Backspace`/`Delete`) is active.

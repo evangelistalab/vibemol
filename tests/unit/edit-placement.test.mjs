@@ -28,6 +28,7 @@ function createPlacementHarness() {
     ensureVolumeSchema: [],
     rebuildScene: 0,
     history: [],
+    hydrogenAdjustment: [],
   };
   const state = {};
   const controller = placementApi.createEditPlacementController({
@@ -62,6 +63,7 @@ function createPlacementHarness() {
     getElementMaxCoordination: (z) => (z === 1 ? 1 : z === 9 ? 1 : z === 17 ? 1 : z === 35 ? 1 : z === 53 ? 1 : 0),
     countsTowardAtomValence: () => true,
     applyAutomaticHydrogenAdjustment: (vol, atomIndices, options = {}) => {
+      calls.hydrogenAdjustment.push({ atomIndices: Array.from(atomIndices), options: plain(options) });
       if (String(options && options.source || '') !== 'delete') return { added: 0, removed: 0 };
       const focusSet = new Set((Array.isArray(atomIndices) ? atomIndices : []).map((value) => Number(value) | 0));
       let added = 0;
@@ -235,6 +237,50 @@ test('edit-placement deleteAtomsByIndex handles empty and invalid index inputs e
   }
   assert.deepEqual(record.vol.atoms.map((atom) => atom.id), ['atom-0', 'atom-1']);
   assert.equal(calls.history.length, 0);
+});
+
+test('hydrogen-only deletion leaves the selected sites open and preserves all remaining coordinates', () => {
+  for (const deleteIndices of [[1], [1, 3]]) {
+    const { structure, controller, record, calls } = createPlacementHarness();
+    seedStandaloneAtoms(record, structure, [6, 1, 1, 1, 1]);
+    record.vol.bonds = record.vol.atoms.slice(1).map(atom => ({
+      id: `bond:atom-0:${atom.id}`, a: 'atom-0', b: atom.id,
+      order: 1, kind: 'normal', origin: 'explicit', style: 'covalent',
+    }));
+    const beforeAtoms = plain(record.vol.atoms);
+    const expectedAtoms = beforeAtoms.filter((_, index) => !deleteIndices.includes(index));
+    const remainingIds = new Set(expectedAtoms.map(atom => atom.id));
+    const expectedBonds = plain(record.vol.bonds.filter(bond => remainingIds.has(bond.b)));
+
+    assert.equal(controller.deleteAtomsByIndex(deleteIndices), true);
+
+    assert.deepEqual(plain(record.vol.atoms), expectedAtoms);
+    assert.deepEqual(plain(record.vol.bonds), expectedBonds);
+    assert.equal(record.vol.natoms, expectedAtoms.length);
+    assert.deepEqual(calls.hydrogenAdjustment, []);
+    assert.equal(calls.history.length, 1);
+    assert.deepEqual(plain(calls.history[0][1]), beforeAtoms);
+    assert.deepEqual(plain(calls.history[0][2]), expectedAtoms);
+  }
+});
+
+test('explicit hydrogen deletion preserves unselected terminal neighbors in H2 and HF', () => {
+  for (const neighborZ of [1, 9]) {
+    const { structure, controller, record, calls } = createPlacementHarness();
+    seedStandaloneAtoms(record, structure, [1, neighborZ]);
+    record.vol.bonds = [{
+      id: 'bond:atom-0:atom-1', a: 'atom-0', b: 'atom-1',
+      order: 1, kind: 'normal', origin: 'explicit', style: 'covalent',
+    }];
+    const remainingAtom = plain(record.vol.atoms[1]);
+
+    assert.equal(controller.deleteAtomAtIndex(0), true);
+
+    assert.deepEqual(plain(record.vol.atoms), [remainingAtom]);
+    assert.deepEqual(plain(record.vol.bonds), []);
+    assert.deepEqual(calls.hydrogenAdjustment, []);
+    assert.equal(calls.history.length, 1);
+  }
 });
 
 test('edit-placement deleteAtomsByIndex removes bonds for deleted atom ids only', () => {
