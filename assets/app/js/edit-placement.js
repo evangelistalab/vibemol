@@ -171,32 +171,40 @@
       const atoms = Array.isArray(vol && vol.atoms) ? vol.atoms : [];
       const deletedAtomIds = new Set((Array.isArray(atomIds) ? atomIds : []).map((value) => String(value || '').trim()).filter(Boolean));
       if (!deletedAtomIds.size) return deletedAtomIds;
-      const removedBondPairKeys = new Set();
-      for (const entry of buildVisibleBondEntries(vol)) {
-        if (deletedAtomIds.has(entry.atomIdA) || deletedAtomIds.has(entry.atomIdB)) {
-          removedBondPairKeys.add(buildBondPairKey(entry.atomIdA, entry.atomIdB));
-        }
-      }
       let changed = true;
       while (changed) {
         changed = false;
-        for (let atomIndex = 0; atomIndex < atoms.length; atomIndex += 1) {
-          const atom = atoms[atomIndex];
-          if (!atom) continue;
-          const atomId = String(ensureAtomId(atom));
-          if (deletedAtomIds.has(atomId) || !isOneValenceAtom(atom)) continue;
-          const remainingNeighbors = getRemainingNeighborCountForAtom(vol, atomIndex, deletedAtomIds, removedBondPairKeys);
+        for (const entry of buildVisibleBondEntries(vol)) {
+          const aDeleted = deletedAtomIds.has(entry.atomIdA);
+          const bDeleted = deletedAtomIds.has(entry.atomIdB);
+          if (aDeleted === bDeleted) continue;
+          const otherIndex = aDeleted ? entry.atomIndexB : entry.atomIndexA;
+          const otherAtomId = aDeleted ? entry.atomIdB : entry.atomIdA;
+          const otherAtom = atoms[otherIndex];
+          if (!otherAtom || deletedAtomIds.has(otherAtomId) || !isOneValenceAtom(otherAtom)) continue;
+          const remainingNeighbors = getRemainingNeighborCountForAtom(vol, otherIndex, deletedAtomIds, new Set());
           if (remainingNeighbors > 0) continue;
-          deletedAtomIds.add(atomId);
+          deletedAtomIds.add(otherAtomId);
           changed = true;
-          for (const entry of buildVisibleBondEntries(vol)) {
-            if (entry.atomIdA === atomId || entry.atomIdB === atomId) {
-              removedBondPairKeys.add(buildBondPairKey(entry.atomIdA, entry.atomIdB));
-            }
-          }
         }
       }
       return deletedAtomIds;
+    }
+
+    function normalizeDeleteAtomIndices(atomIndices, vol) {
+      if (!Array.isArray(atomIndices)) {
+        throw new Error('deleteAtomsByIndex expects an array of positional atom indices.');
+      }
+      const atoms = Array.isArray(vol && vol.atoms) ? vol.atoms : [];
+      const maxIndex = atoms.length - 1;
+      const uniqueIndices = new Set();
+      for (const value of atomIndices) {
+        if (!Number.isInteger(value) || value < 0 || value >= atoms.length) {
+          throw new Error(`deleteAtomsByIndex expects positional atom indices in range 0..${maxIndex}; got ${String(value)}.`);
+        }
+        uniqueIndices.add(value);
+      }
+      return Array.from(uniqueIndices).sort((a, b) => b - a);
     }
 
     function collectSurvivingFrontierAtomIds(vol, deletedAtomIds) {
@@ -1159,16 +1167,13 @@
       const record = ensureEditableVolumeRecord();
       const vol = record && record.vol;
       if (!vol || !Array.isArray(vol.atoms)) return false;
-      const uniqueDesc = Array.from(new Set((Array.isArray(atomIndices) ? atomIndices : [])
-        .map((value) => Number(value) | 0)
-        .filter((value) => value >= 0 && value < vol.atoms.length)))
-        .sort((a, b) => b - a);
-      if (!uniqueDesc.length) return false;
+      const uniqueIndices = normalizeDeleteAtomIndices(atomIndices, vol);
+      if (!uniqueIndices.length) return false;
       const beforeAtoms = cloneAtomsSnapshot(vol);
       const beforeBonds = cloneBondSnapshot(vol);
       const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
       const beforeFragmentOps = cloneJsonLike(Array.isArray(vol.fragmentOps) ? vol.fragmentOps : []);
-      const initialDeleteIds = uniqueDesc
+      const initialDeleteIds = uniqueIndices
         .map((index) => vol.atoms[index])
         .filter(Boolean)
         .map((atom) => String(ensureAtomId(atom)));
@@ -1201,7 +1206,7 @@
         beforeAnnotations,
         afterAnnotations,
       });
-      onDeleteAtomsPostprocess(uniqueDesc.slice(), removedAtoms, vol, builderOpsChanged);
+      onDeleteAtomsPostprocess(uniqueIndices.slice(), removedAtoms, vol, builderOpsChanged);
       clearAddGrowPreview();
       clearHover();
       rebuildScene({ preserveView: true });

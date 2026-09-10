@@ -350,94 +350,6 @@
       padding: 0 8px;
     }
 
-    #toolbar .vm-active-file {
-      width: 100%;
-    }
-
-    #toolbar .vm-active-file__chip {
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 6px 6px 10px;
-      background: var(--vm-color-surface-base);
-      border-radius: 6px;
-      min-height: 28px;
-    }
-
-    #toolbar .vm-active-file__icon {
-      color: var(--vm-color-text-secondary);
-      flex: 0 0 auto;
-      pointer-events: none;
-      position: relative;
-      z-index: 1;
-    }
-
-    #toolbar .vm-active-file__name {
-      flex: 1 1 auto;
-      min-width: 0;
-      color: var(--vm-color-text-primary);
-      font-family: var(--vm-font-mono);
-      font-size: 12px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.3;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      pointer-events: none;
-      position: relative;
-      z-index: 1;
-    }
-
-    #toolbar .vm-active-file__actions {
-      display: flex;
-      gap: 2px;
-      flex: 0 0 auto;
-      opacity: 1;
-      transition: color 120ms ease;
-      position: relative;
-      z-index: 2;
-    }
-
-    #toolbar #fileSelect {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      min-width: 0;
-      max-width: none;
-      height: 100%;
-      padding: 0;
-      margin: 0;
-      border: none;
-      border-radius: 0;
-      background: transparent;
-      background-image: none;
-      box-shadow: none;
-      color: transparent;
-      appearance: none;
-      -webkit-appearance: none;
-      opacity: 0;
-      z-index: 0;
-      padding: 0;
-      border: none;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-      cursor: default;
-    }
-
-    #toolbar #fileSelect[data-interactive='true'] {
-      cursor: pointer;
-    }
-
-    #toolbar #fileSelect option {
-      font-family: var(--vm-font-mono);
-      font-size: 12px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-    }
-
     #toolbar .vm-search-field {
       display: flex;
       align-items: center;
@@ -718,6 +630,10 @@
     #trajectoryPanel,
     #vibrationPanel {
       overflow: hidden;
+    }
+
+    #trajectoryPanel {
+      width: min(520px, calc(100vw - 24px));
     }
 
     .motionPanelHeader {
@@ -2157,7 +2073,6 @@
       padding: 0 9px;
     }
 
-    #toolbar #fileSelect,
     #toolbar input.pubchem-query {
       min-width: 0;
       max-width: none;
@@ -2212,30 +2127,43 @@
       color: var(--vm-color-text-primary) !important;
     }
 
-    #toolbar .vm-active-file__actions .vm-btn {
-      width: 22px;
-      min-width: 22px;
-      height: 22px;
-      min-height: 22px;
-      padding: 0;
-      border-radius: 4px;
-      justify-content: center !important;
-      background: transparent !important;
-      border-color: transparent;
+    :root[data-vm-scene-empty='true'] #toolbar .tb-appearance {
+      opacity: 0.55;
+    }
+
+    #toolbar .vm-surface-scope-label {
+      margin: -2px 0 8px;
       color: var(--vm-color-text-secondary);
-      font-size: 12px;
-      line-height: 1;
-      flex: 0 0 auto;
+      font-family: var(--vm-font-mono);
+      font-size: 11px;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    #toolbar .vm-active-file__actions .vm-btn svg {
-      width: 12px;
-      height: 12px;
-      flex: 0 0 auto;
+    #toolbar .vm-mixed-indicator {
+      align-self: center;
+      margin-left: 6px;
+      color: var(--vm-color-text-secondary);
+      font-size: 10px;
+      font-style: italic;
+      white-space: nowrap;
     }
 
-    #toolbar .vm-active-file__chip:hover .vm-active-file__actions .vm-btn {
-      color: var(--vm-color-text-primary);
+    #toolbar .vm-mixed-indicator[hidden] {
+      display: none !important;
+    }
+
+    #toolbar .vm-slider__value.is-mixed-value {
+      text-align: center;
+      color: var(--vm-color-text-secondary);
+    }
+
+    #toolbar .vm-button-group.is-mixed .vm-button-group__item[aria-checked='true'],
+    #toolbar .vm-button-group.is-mixed .vm-button-group__item.active {
+      background: transparent;
+      color: inherit;
     }
 
     #toolbar .tb-toolbarInspector {
@@ -2366,6 +2294,8 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="./assets/app/css/scene-outliner.css">
+  <link rel="stylesheet" href="./assets/app/css/trajectory-ui.css">
 </head>
 
 <body>
@@ -2426,8 +2356,8 @@
           aria-label="Open file"
           data-tooltip="Open file">upload_file</button>
         <button id="newFileBtn" class="secondary tb-iconBtn ms-icon-button"
-          aria-label="Add file"
-          data-tooltip="Add file">note_add</button>
+          aria-label="Create new molecule"
+          data-tooltip="Create new molecule">note_add</button>
         <span class="vm-toolbar-divider" aria-hidden="true"></span>
         <button id="saveBtn" class="secondary tb-iconBtn ms-icon-button"
           aria-label="Export image"
@@ -2444,33 +2374,14 @@
           data-tooltip="Download structure">file_download</button>
       </div>
       <div class="tb-field">
-        <div class="vm-sidebar-section-label">Active file</div>
-        <div class="vm-active-file">
-          <div class="vm-active-file__chip" role="group" aria-label="Active file">
-            <svg class="vm-active-file__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-            <span id="fileSelectDisplay" class="vm-active-file__name">No file loaded</span>
-            <select id="fileSelect" class="vm-select" aria-label="Active file"></select>
-            <div class="vm-active-file__actions" aria-label="Active file actions">
-              <button id="duplicateFileBtn" class="vm-btn vm-btn--icon vm-btn--ghost vm-btn--xs"
-                type="button" aria-label="Duplicate active file" data-tooltip="Duplicate file">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              </button>
-              <button id="removeFileBtn" class="vm-btn vm-btn--icon vm-btn--ghost vm-btn--xs vm-btn--danger"
-                type="button" aria-label="Delete active file" data-tooltip="Delete file">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                </svg>
-              </button>
-            </div>
+        <div id="sceneOutliner" class="vm-outliner" aria-label="Scenes outliner">
+          <div class="vm-outliner__header">
+            <h2 class="vm-outliner__title">Scenes</h2>
+            <button id="sceneOutlinerAddBtn" class="secondary vm-outliner__add material-symbols-rounded" type="button"
+              aria-label="Add file to scenes" data-tooltip="Add file to scenes">add</button>
+          </div>
+          <div id="sceneOutlinerBody" class="vm-outliner__body" role="tree" aria-label="Loaded scenes">
+            <div class="vm-outliner__empty">No file loaded. Drag and drop a .cube, .molden, or .xyz file, or click the open icon above to begin.</div>
           </div>
         </div>
       </div>
@@ -2823,6 +2734,7 @@
 
             <section class="vm-appearance-section" id="appearanceSurfacesSection" hidden>
               <h3 class="vm-section-label">Surfaces</h3>
+              <div id="surfaceScopeLabel" class="vm-surface-scope-label" hidden></div>
               <div class="vm-field-row">
                 <label class="vm-field-label" for="surfBtn">Show surfaces</label>
                 <div class="vm-field-control">
@@ -2843,6 +2755,15 @@
                     <option value="classic">Classic (blue/red)</option>
                     <option value="custom">Custom</option>
                   </select>
+                </div>
+              </div>
+              <div class="vm-field-row">
+                <label class="vm-field-label" for="surfaceSignFlipBtn">Flip phase</label>
+                <div class="vm-field-control">
+                  <label class="vm-toggle" for="surfaceSignFlipBtn">
+                    <input type="checkbox" id="surfaceSignFlipBtn" class="vm-toggle__input" role="switch" data-tooltip="Reverse positive/negative phase" />
+                    <span class="vm-toggle__thumb" aria-hidden="true"></span>
+                  </label>
                 </div>
               </div>
               <div id="rowSurfacePosColor" class="vm-field-row vm-appearance-hidden">
@@ -2904,6 +2825,7 @@
                 <div class="vm-field-control">
                   <select id="surfaceMaterialPreset" class="vm-select" data-tooltip="Surface material">
                     <option value="emissive">Emissive</option>
+                    <option value="matte">Matte</option>
                     <option value="satin">Satin</option>
                     <option value="lacquer">Lacquer</option>
                     <option value="metal">Metal</option>
@@ -3719,6 +3641,8 @@
         <label style="width:auto;"><input type="checkbox" id="trajectoryLoop" checked /> Loop</label>
         <span></span>
       </div>
+      <div id="trajectorySceneList" class="trajectorySceneList"></div>
+      <div id="trajectorySyncMaster" class="trajectorySyncMaster" hidden></div>
     </div>
   </div>
 
@@ -3960,6 +3884,16 @@
   <script src="./assets/app/js/preset.js"></script>
   <!-- structure transport helpers -->
   <script src="./assets/app/js/structure-transport.js"></script>
+  <!-- scene graph helpers -->
+  <script src="./assets/app/js/scene-graph.js"></script>
+  <script src="./assets/app/js/scene-sources.js"></script>
+  <script src="./assets/app/js/scene-export.js"></script>
+  <script src="./assets/app/js/scene-outliner.js"></script>
+  <!-- arithmetic grid helpers -->
+  <script src="./assets/app/js/arithmetic-grid.js"></script>
+  <script src="./assets/app/js/arithmetic-runner.js"></script>
+  <script src="./assets/app/js/arithmetic-layers.js"></script>
+  <script src="./assets/app/js/grid-store.js"></script>
   <!-- file loading helpers -->
   <script src="./assets/app/js/file-loader.js"></script>
   <!-- symmetry helpers -->
@@ -3971,6 +3905,8 @@
   <!-- root tooltip portal -->
   <script src="./src/components/VmTooltip.js"></script>
   <!-- trajectory video export controller -->
+  <script src="./assets/app/js/trajectory-clock.js"></script>
+  <script src="./assets/app/js/trajectory-ui.js"></script>
   <script src="./assets/app/js/trajectory-video.js"></script>
 
   <script src="./assets/app/js/app.js"></script>

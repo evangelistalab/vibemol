@@ -36,6 +36,17 @@ Primary capabilities:
 - `src/components/VmListPopover.js`: shared schema-driven list-popover controller used by Coordinates and Orbitals.
 - `src/components/VmTooltip.js`: shared root tooltip portal and delegation helpers.
 - `assets/app/js/app.js`: main app orchestration, scene lifecycle, style logic, preset API, file loading.
+- `assets/app/js/scene-graph.js`: authoritative scene/layer model and explicit rename, move, order, focus, and visibility commands.
+- `assets/app/js/scene-sources.js`: incremental source registration and explicit Molden orbital materialization; redraws never reconstruct the graph.
+- `assets/app/js/scene-export.js`: explicit batch targets and restoration of graph state after success or failure.
+- `assets/app/js/scene-outliner.js` and `assets/app/css/scene-outliner.css`: outliner rows, rename sessions, drag feedback, menus, and arithmetic forms.
+- `assets/app/js/grid-store.js`: bounded immutable-grid cache keyed by source, orbital, geometry, and grid settings.
+- `assets/app/js/arithmetic-grid.js`: allocation-free grid validation/planning and chunked scalar arithmetic.
+- `assets/app/js/arithmetic-runner.js` and `assets/app/js/arithmetic-worker.js`: cancellable worker evaluation with a cooperative browser fallback.
+- `assets/app/js/arithmetic-layers.js`: arithmetic dependency traversal and staged updates of affected layers.
+- `assets/app/js/trajectory-clock.js`: pure trajectory timing, frame mapping, and endpoint policy.
+- `assets/app/js/trajectory-ui.js` and `assets/app/css/trajectory-ui.css`: trajectory scene rows and synchronized playback controls.
+- `docs/scene-architecture.md`: scene ownership, loading contracts, arithmetic limits, and module boundaries.
 - `assets/app/js/trajectory-video.js`: shared cropped-canvas WebM export controller for trajectory and vibration panels.
 - `assets/app/js/fragments.js`: fragment/molecule catalog loading, manifest support, and fragment builders.
 - `assets/app/js/parsers.js`: parsers (`parseCube`, `parseTwoComponentCube`, `parseXYZ`) including streaming tokenization.
@@ -87,6 +98,7 @@ Primary capabilities:
 - `tests/unit/trajectory-video.test.mjs`: browserless unit coverage for the shared crop/layout video-export helpers.
 - `tests/unit/load-global-module.mjs`: VM-based loader for global/IIFE modules under Node.
 - `tests/e2e/smoke.py`: Playwright smoke/E2E test that starts a temporary local static server.
+- `tests/e2e/premerge.py`: focused browser regressions for append/replace imports, layer persistence, batch export, Molden arithmetic dependencies, and synchronized trajectories.
 - `tests/e2e/helpers.py`: shared server/artifact helpers for browser smoke tests.
 - `.github/workflows/ci.yml`: CI workflow for checks, unit tests, and browser smoke tests.
 - `notebooks/vibemol_notebook_demo.ipynb`: notebook demo (PNG render + iframe auto-load via postMessage).
@@ -101,6 +113,8 @@ Required stylesheet order in `index.html`:
 4. `assets/app/css/edit-ui.css`
 5. `assets/app/css/display-ui.css`
 6. `src/styles/vm-list-popover.css`
+7. `assets/app/css/scene-outliner.css` (after the inline shell styles)
+8. `assets/app/css/trajectory-ui.css`
 
 Required script order in `index.html`:
 1. `assets/vendor/js/three.min.js`
@@ -140,13 +154,23 @@ Required script order in `index.html`:
 35. `assets/app/js/edit-halo.js`
 36. `assets/app/js/preset.js`
 37. `assets/app/js/structure-transport.js`
-38. `assets/app/js/file-loader.js`
-39. `assets/app/js/symmetry.js`
-40. `src/prefs.js`
-41. `src/components/VmListPopover.js`
-42. `src/components/VmTooltip.js`
-43. `assets/app/js/trajectory-video.js`
-44. `assets/app/js/app.js`
+38. `assets/app/js/scene-graph.js`
+39. `assets/app/js/scene-sources.js`
+40. `assets/app/js/scene-export.js`
+41. `assets/app/js/scene-outliner.js`
+42. `assets/app/js/arithmetic-grid.js`
+43. `assets/app/js/arithmetic-runner.js`
+44. `assets/app/js/arithmetic-layers.js`
+45. `assets/app/js/grid-store.js`
+46. `assets/app/js/file-loader.js`
+47. `assets/app/js/symmetry.js`
+48. `src/prefs.js`
+49. `src/components/VmListPopover.js`
+50. `src/components/VmTooltip.js`
+51. `assets/app/js/trajectory-clock.js`
+52. `assets/app/js/trajectory-ui.js`
+53. `assets/app/js/trajectory-video.js`
+54. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolParsers`
@@ -186,6 +210,16 @@ Required script order in `index.html`:
 - `window.VibeMolFileLoader`
 - `window.VibeMolSymmetry`
 - `window.VibeMolTrajectoryVideo`
+- `window.VibeMolSceneGraph`
+- `window.VibeMolSceneSources`
+- `window.VibeMolSceneExport`
+- `window.VibeMolSceneOutliner`
+- `window.VibeMolArithmeticGrid`
+- `window.VibeMolArithmeticRunner`
+- `window.VibeMolArithmeticLayers`
+- `window.VibeMolGridStore`
+- `window.VibeMolTrajectoryClock`
+- `window.VibeMolTrajectoryUi`
 
 Preset automation contract exposed globally:
 - `window.VibeMolPreset.kind`

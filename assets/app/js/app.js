@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.8.7';
+  const APP_VERSION = '0.9.0b';
   const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
   window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
@@ -20,6 +20,9 @@
   const AUTO_ISO_TARGET_FRACTION = 0.85;
   const AUTO_ISO_HISTOGRAM_BINS = 512;
   const AUTO_ISO_MAX_SAMPLES = 650000;
+  function isCubeDebugLoggingEnabled() {
+    return !!(typeof window !== 'undefined' && window.VIBEMOL_DEBUG_CUBE);
+  }
   const AUTO_ISO_WORKER_THRESHOLD_SAMPLES = 250000;
   const AUTO_ISO_WORKER_TIMEOUT_MS = 15000;
   const MOLDEN_GRID_PADDING_ANG = 3.0;
@@ -367,6 +370,18 @@
   const { createStructureTransportController } = window.VibeMolStructureTransport || {};
   if (![createStructureTransportController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolStructureTransport is not loaded. Ensure assets/app/js/structure-transport.js is included before assets/app/js/app.js.');
+  }
+
+  const { createSceneGraphController, createCubeAppearance, LAYER_KIND: SCENE_LAYER_KIND } = window.VibeMolSceneGraph || {};
+  if (![createSceneGraphController, createCubeAppearance].every(fn => typeof fn === 'function') || !SCENE_LAYER_KIND) {
+    throw new Error('VibeMolSceneGraph is not loaded. Ensure assets/app/js/scene-graph.js is included before assets/app/js/app.js.');
+  }
+
+  const ArithmeticGrid = window.VibeMolArithmeticGrid || {};
+  const orbitalGridStore = window.VibeMolGridStore.createGridStore();
+  const arithmeticRunner = window.VibeMolArithmeticRunner.createArithmeticRunner();
+  if (![ArithmeticGrid.compute, ArithmeticGrid.validateInputGrids, ArithmeticGrid.formatResampleNotice].every(fn => typeof fn === 'function')) {
+    throw new Error('VibeMolArithmeticGrid is not loaded. Ensure assets/app/js/arithmetic-grid.js is included before assets/app/js/app.js.');
   }
 
   const { createFileLoader } = window.VibeMolFileLoader || {};
@@ -1289,11 +1304,110 @@
   // State
   let volumes = []; // {name, vol}
   let currentIndex = -1;
+  const sceneGraphController = createSceneGraphController({
+    disposeLayer: disposeSceneGraphLayer,
+  });
+  const sceneSources = window.VibeMolSceneSources.createSceneSources({
+    graph: sceneGraphController,
+    hasGrid: hasVolumetricGrid,
+    getDefaults: getSurfaceDefaultsForNewLayer,
+    getSceneKey: getRecordSceneKey,
+    getSceneName: getInitialSceneDisplayName,
+    getSourceKind: getVolumeSourceKind,
+  });
+  const arithmeticLayers = window.VibeMolArithmeticLayers.createArithmeticLayers({
+    graph: sceneGraphController, runner: arithmeticRunner,
+    getGrid: getLayerCubeData, cloneGrid: cloneScalarVolumeForArithmetic,
+  });
+  const { getCircularOperandIdsForEdit, getArithmeticCascadeDeletePlan } = arithmeticLayers;
+
+  let sceneOutlinerController = null;
+  function getSceneOutliner() {
+    if (!sceneOutlinerController) sceneOutlinerController = window.VibeMolSceneOutliner.createSceneOutliner({
+      ArithmeticGrid,
+      DEFAULT_ISO_VALUE,
+      MODES,
+      SCENE_LAYER_KIND,
+      activateSceneFocusRecord,
+      arithmeticConfigsEqual,
+      arithmeticLayers,
+      clearOutlinerSelectionToActive,
+      copyCubeLayerAppearance,
+      deleteSceneFromOutliner,
+      deleteSelectedCubeLayers,
+      duplicateCubeLayer,
+      duplicateLayerBlockToScene,
+      duplicateSelectedCubeLayers,
+      focusScene,
+      formatIsoInputValue,
+      generateArithmeticName,
+      getActiveCubeLayer,
+      getArithmeticCascadeDeletePlan,
+      getArithmeticNameUserEdited,
+      getCircularOperandIdsForEdit,
+      getCubeLayersInScene,
+      getFocusedScene,
+      getLayerCubeData,
+      getLayerDisplayName,
+      getLayerFullDisplayName,
+      getLayerSurfaceColors,
+      getNextCubeLabelId,
+      getSceneActiveCubeLayer,
+      getSceneMoleculeVolume,
+      getSelectedCubeLayerIds,
+      getSelectedCubeLayers,
+      getSurfaceDefaultsForNewLayer,
+      getTrajectoryInfoForScene,
+      getVisibleCubeLayerCount,
+      hasVolumetricGrid,
+      isCubeLayerSelected,
+      isCubeLikeLayer,
+      moleculeMatchesVolume,
+      moveLayerBlockToScene,
+      normalizeArithmeticInputsForOperation,
+      normalizeArithmeticOperation,
+      rangeSelectCubeLayer,
+      rebuildScene,
+      resolveArithmeticInputs,
+      sceneGraphController,
+      sceneOutlinerAddBtn,
+      sceneOutlinerBodyEl,
+      setActiveSceneGraphLayer,
+      setHintMessage,
+      setOnlyCubeVisibleInScene,
+      setSceneHeaderActive,
+      syncAppearanceControlsToActiveLayer,
+      syncLoadedSceneControls,
+      syncTrajectoryControls,
+      toggleCubeLayerSelection,
+      updateSidePanel,
+      validateArithmeticInputGrids,
+      validateCrossSceneLayerMove,
+      getCurrentMode: () => currentMode,
+      loadFiles: (...args) => fileLoaderController.handleFiles(...args),
+    });
+    return sceneOutlinerController;
+  }
+  function scheduleOutlinerScrollToTarget(...args) { return getSceneOutliner().scheduleOutlinerScrollToTarget(...args); }
+  function flashOutlinerLayer(...args) { return getSceneOutliner().flashOutlinerLayer(...args); }
+  function finishOutlinerRename(...args) { return getSceneOutliner().finishOutlinerRename(...args); }
+  function renderSceneOutliner(...args) { return getSceneOutliner().renderSceneOutliner(...args); }
+  function closeCubeLayerContextMenu(...args) { return getSceneOutliner().closeCubeLayerContextMenu(...args); }
+  function isFocusInsideOutliner(...args) { return getSceneOutliner().isFocusInsideOutliner(...args); }
+  function showDeleteSelectedCubeLayersConfirmation(...args) { return getSceneOutliner().showDeleteSelectedCubeLayersConfirmation(...args); }
+  function closeCombinePopover(...args) { return getSceneOutliner().closeCombinePopover(...args); }
+
+  let sceneGraphSceneKeyCounter = 1;
+
+  let userDismissedTrajectoryPopover = false;
+
   let meshes = []; // active meshes (pos/neg)
   let hoverSurfaceMesh = null;
   let atomGroup = new THREE.Group();
   let bondGroup = new THREE.Group();
   let cloudGroup = new THREE.Group();
+  let extraMoleculeRenderGroups = [];
+  let extraBoxHelpers = [];
   let boxHelper = null;
   // Coordinate table/export display units in the Coordinates window.
   let coordsDisplayUnits = 'angstrom';
@@ -1306,7 +1420,8 @@
   let moldenFilterDebounceTimer = 0;
   let moldenGridCommitDebounceTimer = 0;
   let moldenGridBlurDefersToRowActivation = false;
-  let showSurfaces = true; // toggle iso-surface visibility
+  let showSurfaces = true; // global default surface visibility
+  let surfaceRenderSuppressed = false; // transient mode-level suppression; does not mutate layer visibility
   let renderMode = 'surface';
   let cloudType = 'cubes';
   // Autoiso mode applies one cached 85%-density isovalue per orbital/component.
@@ -1333,10 +1448,10 @@
   let atomLabelCapGeometry = null;
   // Per-element color overrides (z -> "#rrggbb"), used when element colors are enabled.
   const elementColorOverrides = new Map();
-  // Remember surface visibility when entering a work mode (edit/measure) to restore on exit to display
+  // Retained for old integration paths; edit/measure now suppress rendering without mutating this value.
   let __savedShowSurfaces = null;
   const DEFAULT_SURFACE_MATERIAL_PRESET = 'emissive';
-  const LEGACY_SURFACE_STYLE_KEY = 'emissive';
+  const LEGACY_SURFACE_STYLE_KEY = 'solid';
   const SURFACE_MATERIAL_PRESETS = Object.freeze({
     emissive: Object.freeze({
       roughness: 1.0,
@@ -1346,6 +1461,15 @@
       reflectivity: 0.5,
       emissiveIntensity: 0.8,
       envMapIntensity: 0.0,
+    }),
+    matte: Object.freeze({
+      roughness: 0.85,
+      metalness: 0.0,
+      clearcoat: 0.0,
+      clearcoatRoughness: 0.10,
+      reflectivity: 0.3,
+      emissiveIntensity: 0.0,
+      envMapIntensity: 0.4,
     }),
     satin: Object.freeze({
       roughness: 0.45,
@@ -1405,6 +1529,11 @@
   let moleculeInkEnabled = false;
   let moleculeAtomOpacity = 1.0;
   let moleculeBondOpacity = 1.0;
+  let surfaceIsoDefault = DEFAULT_ISO_VALUE;
+  let surfaceOpacityDefault = 1.0;
+  let surfaceColorSchemeDefault = 'emory';
+  let surfacePosColorDefault = DEFAULT_POS_SURFACE_COLOR;
+  let surfaceNegColorDefault = DEFAULT_NEG_SURFACE_COLOR;
   let surfaceMaterialPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
   const dofState = {
     enabled: false,
@@ -2017,8 +2146,7 @@
    * @param {THREE.Group} group
    * @returns {THREE.Group}
    */
-  function disposeAndReplaceGroup(group) {
-    const state = createDisposeState();
+  function disposeAndReplaceGroup(group, state = createDisposeState()) {
     try { contentGroup.remove(group); } catch { }
     disposeDeep(group, state);
     const next = new THREE.Group();
@@ -2034,6 +2162,9 @@
     hideSurfaceHoverLabel();
     setSurfaceHover(null);
     clearGroup(autoHydrogenPreviewGroup);
+    for (const graphScene of sceneGraphController.getScenes()) {
+      for (const layer of sceneGraphController.listLayers(graphScene)) disposeSceneGraphLayer(layer, state);
+    }
     for (const m of meshes) {
       disposeWboitMaterialsForRenderable(m);
       try { contentGroup.remove(m); } catch { }
@@ -2050,9 +2181,14 @@
     }
 
     // Reset atom/bond/cloud groups with deep disposal.
-    atomGroup = disposeAndReplaceGroup(atomGroup);
-    bondGroup = disposeAndReplaceGroup(bondGroup);
-    cloudGroup = disposeAndReplaceGroup(cloudGroup);
+    atomGroup = disposeAndReplaceGroup(atomGroup, state);
+    bondGroup = disposeAndReplaceGroup(bondGroup, state);
+    cloudGroup = disposeAndReplaceGroup(cloudGroup, state);
+    for (const group of extraMoleculeRenderGroups) {
+      try { contentGroup.remove(group); } catch { }
+      disposeDeep(group, state);
+    }
+    extraMoleculeRenderGroups = [];
     atomLabelTrackTargets.length = 0;
 
     if (boxHelper) {
@@ -2060,10 +2196,58 @@
       disposeDeep(boxHelper, state);
       boxHelper = null;
     }
+    for (const helper of extraBoxHelpers) {
+      try { contentGroup.remove(helper); } catch { }
+      disposeDeep(helper, state);
+    }
+    extraBoxHelpers = [];
 
     // Ensure any cached bond materials not attached to the current graph are released too.
     for (const mat of bondMaterialCache.values()) disposeMaterial(mat, state);
     bondMaterialCache.clear();
+  }
+
+  /**
+   * Release Three.js resources owned by one scene-graph layer.
+   * The current compatibility renderer still mirrors active meshes through
+   * `meshes`/groups, so this is intentionally tolerant of unset fields.
+   * @param {*} layer
+   */
+  function disposeSceneGraphLayer(layer, state = createDisposeState()) {
+    if (!layer || typeof layer !== 'object') return;
+    const objects = [
+      layer.group,
+      layer.posMesh,
+      layer.negMesh,
+      layer.cloudGroup,
+      layer.geometry,
+      layer.renderAtomGroup,
+      layer.renderBondGroup,
+    ];
+    for (const obj of objects) {
+      if (!obj) continue;
+      if (obj.isBufferGeometry || obj.attributes) {
+        if (typeof obj.dispose === 'function' && !state.geometries.has(obj)) {
+          state.geometries.add(obj);
+          try { obj.dispose(); } catch { }
+        }
+        continue;
+      }
+      if (obj.parent) obj.parent.remove(obj);
+      if (obj.traverse) obj.traverse(disposeWboitMaterialsForRenderable);
+      disposeDeep(obj, state);
+    }
+    disposeMaterial(layer.posMaterial, state);
+    disposeMaterial(layer.negMaterial, state);
+    layer.renderAtomGroup = null;
+    layer.renderBondGroup = null;
+    layer.group = null;
+    layer.posMesh = null;
+    layer.negMesh = null;
+    layer.cloudGroup = null;
+    layer.geometry = null;
+    layer.posMaterial = null;
+    layer.negMaterial = null;
   }
 
   /**
@@ -2895,6 +3079,7 @@
   }
 
   const DEFAULT_GHOST_ATOM_PREVIEW_OPACITY = 0.6;
+  const DEFAULT_GHOST_BOND_PREVIEW_OPACITY = 0.62;
 
   function applyGhostPreviewMaterialOpacity(material, opacity = DEFAULT_GHOST_ATOM_PREVIEW_OPACITY, options = {}) {
     if (!material || typeof material !== 'object') return material;
@@ -2915,6 +3100,15 @@
   function createGhostAtomPreviewMaterial(color, z, opacity = DEFAULT_GHOST_ATOM_PREVIEW_OPACITY) {
     const atomColor = color && color.isColor ? color.clone() : new THREE.Color(color || 0xffffff);
     const material = buildAtomMaterialForCurrentStyle(atomColor, z);
+    return applyGhostPreviewMaterialOpacity(material, opacity);
+  }
+
+  function createGhostBondPreviewMaterial(opacity = DEFAULT_GHOST_BOND_PREVIEW_OPACITY) {
+    const source = getBondMaterial();
+    const material = source && typeof source.clone === 'function'
+      ? source.clone()
+      : new THREE.MeshPhysicalMaterial({ color: 0xdbe3ef });
+    if ('vertexColors' in material) material.vertexColors = false;
     return applyGhostPreviewMaterialOpacity(material, opacity);
   }
 
@@ -2943,6 +3137,31 @@
     mesh.material = createGhostAtomPreviewMaterial(atomColor, z, opacity);
     mesh.userData = Object.assign({}, mesh.userData, {
       ghostAtomMaterialSignature: signature,
+    });
+    return mesh.material;
+  }
+
+  function syncGhostBondPreviewMeshMaterial(mesh, opacity = DEFAULT_GHOST_BOND_PREVIEW_OPACITY) {
+    if (!mesh) return null;
+    const signature = [
+      getMoleculeStyleProfile().key,
+      moleculeInkEnabled ? 1 : 0,
+      Number(opacity).toFixed(3),
+    ].join('|');
+    if (mesh.userData && mesh.userData.ghostBondMaterialSignature === signature && mesh.material) {
+      return mesh.material;
+    }
+    const oldMaterial = mesh.material;
+    if (Array.isArray(oldMaterial)) {
+      oldMaterial.forEach((mat) => {
+        try { mat && mat.dispose && mat.dispose(); } catch { }
+      });
+    } else {
+      try { oldMaterial && oldMaterial.dispose && oldMaterial.dispose(); } catch { }
+    }
+    mesh.material = createGhostBondPreviewMaterial(opacity);
+    mesh.userData = Object.assign({}, mesh.userData, {
+      ghostBondMaterialSignature: signature,
     });
     return mesh.material;
   }
@@ -4847,27 +5066,30 @@
   /**
    * Update existing bond meshes after atom positions change.
    */
-  function updateBondsInPlace() {
-    if (!bondGroup || !bondGroup.children || currentIndex < 0 || !volumes[currentIndex]) return;
-    const vol = volumes[currentIndex].vol; if (!vol) return;
-    if (bondGroup.userData && bondGroup.userData.hasMetalStyleBonds) {
-      rebuildBondsFromAtoms();
+  function updateBondsInPlace(record = (currentIndex >= 0 && volumes[currentIndex] ? volumes[currentIndex] : null)) {
+    if (!record) return;
+    const vol = record.vol; if (!vol) return;
+    const targets = getMoleculeRenderTargetsForRecord(record);
+    const targetBondGroup = targets.bondGroup;
+    if (!targetBondGroup || !targetBondGroup.children) return;
+    if (targetBondGroup.userData && targetBondGroup.userData.hasMetalStyleBonds) {
+      rebuildBondsFromAtoms(record);
       return;
     }
     if (shouldUseDynamicTrajectoryBondsForVolume(vol)) {
-      rebuildBondsFromAtoms();
+      rebuildBondsFromAtoms(record);
       return;
     }
-    for (const obj of bondGroup.children) {
+    for (const obj of targetBondGroup.children) {
       if (obj && obj.userData && obj.userData.type === 'aromaticRingDash') {
-        rebuildBondsFromAtoms();
+        rebuildBondsFromAtoms(record);
         return;
       }
     }
     const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false }).map((a) => ({ pos: a.pos }));
     const uniqueEdges = [];
     const seenEdgeKeys = new Set();
-    for (const obj of bondGroup.children) {
+    for (const obj of targetBondGroup.children) {
       if (!obj || !obj.userData) continue;
       const i = obj.userData.i;
       const j = obj.userData.j;
@@ -4882,7 +5104,7 @@
     const bondAdjacency = buildBondAdjacency(uniqueEdges, atomPositions.length);
     const up = new THREE.Vector3(0, 1, 0);
     let needsFullRebuild = false;
-    for (const obj of bondGroup.children) {
+    for (const obj of targetBondGroup.children) {
       if (!obj || !obj.userData) continue;
       const {
         i, j, baseLen, baseGeomLen, trimA = 0, trimB = 0,
@@ -4944,28 +5166,38 @@
       }
       obj.visible = geomLen > 0.04;
     }
-    if (needsFullRebuild) rebuildBondsFromAtoms();
+    if (needsFullRebuild) rebuildBondsFromAtoms(record);
   }
 
   // Rebuild bonds from current atom positions (full rescan, bonds only)
   /**
    * Recompute the bond group from current atom positions.
    */
-  function rebuildBondsFromAtoms() {
-    if (currentIndex < 0 || !volumes[currentIndex]) return;
-    const vol = volumes[currentIndex].vol; if (!vol) return;
+  function rebuildBondsFromAtoms(record = (currentIndex >= 0 && volumes[currentIndex] ? volumes[currentIndex] : null)) {
+    if (!record) return;
+    const vol = record.vol; if (!vol) return;
+    const targets = getMoleculeRenderTargetsForRecord(record);
+    const previousBondGroup = targets.bondGroup || (record === volumes[currentIndex] ? bondGroup : null);
     // Remove and dispose previous cylinders
-    if (bondGroup) {
-      contentGroup.remove(bondGroup);
-      bondGroup.traverse(obj => {
+    if (previousBondGroup) {
+      contentGroup.remove(previousBondGroup);
+      previousBondGroup.traverse(obj => {
         if (obj.isMesh || obj.isLine) {
           obj.geometry?.dispose?.(); // keep shared material caches
         }
       });
-      bondGroup.clear();
+      previousBondGroup.clear();
+      const extraIndex = extraMoleculeRenderGroups.indexOf(previousBondGroup);
+      if (extraIndex >= 0) extraMoleculeRenderGroups.splice(extraIndex, 1);
     }
-    bondGroup = buildBonds(vol);
-    contentGroup.add(bondGroup);
+    const nextBondGroup = buildBonds(vol);
+    contentGroup.add(nextBondGroup);
+    if (targets.layer) targets.layer.renderBondGroup = nextBondGroup;
+    if (previousBondGroup === bondGroup) {
+      bondGroup = nextBondGroup;
+    } else {
+      extraMoleculeRenderGroups.push(nextBondGroup);
+    }
     updateTransformBondSelectionHalos();
     updateTransformSelectionGuides();
   }
@@ -5031,8 +5263,11 @@
    * @param {number} opacity
    * @returns {THREE.Material}
    */
-  function createIsoMaterial(sign, opacity) {
-    const col = new THREE.Color(sign === 'neg' ? negColor.value : posColor.value);
+  function createIsoMaterial(sign, opacity, layer = null) {
+    const layerColors = layer ? getLayerRenderSurfaceColors(layer) : null;
+    const col = new THREE.Color(sign === 'neg'
+      ? (layerColors ? layerColors.neg : negColor.value)
+      : (layerColors ? layerColors.pos : posColor.value));
     if (useToonSurfaceStyle()) {
       return applySurfaceBlendFlags(new THREE.MeshToonMaterial({
         color: col,
@@ -5043,13 +5278,13 @@
         opacity,
       }), opacity);
     }
-    const preset = getSurfaceMaterialPreset();
+    const preset = getSurfaceMaterialPreset(layer);
     const mat = applySurfacePresetToMaterial(new THREE.MeshPhysicalMaterial({
       color: col,
       emissive: col.clone(),
       side: THREE.DoubleSide,
       opacity,
-    }), preset, { color: col, emissiveColor: col });
+    }), preset, { color: col, emissiveColor: col, presetKey: getSurfaceMaterialPresetKey(layer) });
     return applySurfaceBlendFlags(mat, opacity);
   }
 
@@ -5060,7 +5295,7 @@
    * @param {number} opacity
    * @returns {THREE.Material}
    */
-  function createIsoMaterial2C(opacity) {
+  function createIsoMaterial2C(opacity, layer = null) {
     if (useToonSurfaceStyle()) {
       return applySurfaceBlendFlags(new THREE.MeshToonMaterial({
         color: 0xffffff,
@@ -5072,13 +5307,13 @@
         opacity,
       }), opacity);
     }
-    const preset = getSurfaceMaterialPreset();
+    const preset = getSurfaceMaterialPreset(layer);
     const mat = applySurfacePresetToMaterial(new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       vertexColors: true,
       side: THREE.DoubleSide,
       opacity,
-    }), preset);
+    }), preset, { presetKey: getSurfaceMaterialPresetKey(layer) });
     return applySurfaceBlendFlags(mat, opacity);
   }
 
@@ -5095,8 +5330,8 @@
    * Normalize the selected surface material preset key.
    * @returns {'emissive'|'satin'|'lacquer'|'metal'|'gel'|'ceramic'}
    */
-  function getSurfaceMaterialPresetKey() {
-    const key = String(surfaceMaterialPreset || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
+  function getSurfaceMaterialPresetKey(layer = null) {
+    const key = String((layer && layer.solidPreset) || surfaceMaterialPreset || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
     return Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, key)
       ? key
       : DEFAULT_SURFACE_MATERIAL_PRESET;
@@ -5106,8 +5341,8 @@
    * Read the active surface material preset.
    * @returns {{roughness:number,metalness:number,clearcoat:number,clearcoatRoughness:number,reflectivity:number,emissiveIntensity:number,envMapIntensity:number}}
    */
-  function getSurfaceMaterialPreset() {
-    return SURFACE_MATERIAL_PRESETS[getSurfaceMaterialPresetKey()] || SURFACE_MATERIAL_PRESETS[DEFAULT_SURFACE_MATERIAL_PRESET];
+  function getSurfaceMaterialPreset(layer = null) {
+    return SURFACE_MATERIAL_PRESETS[getSurfaceMaterialPresetKey(layer)] || SURFACE_MATERIAL_PRESETS[DEFAULT_SURFACE_MATERIAL_PRESET];
   }
 
   /**
@@ -5124,10 +5359,10 @@
    * @param {THREE.Material|null} material
    * @returns {THREE.Material|null}
    */
-  function setSurfaceMaterialPresetTag(material) {
+  function setSurfaceMaterialPresetTag(material, presetKey = getSurfaceMaterialPresetKey()) {
     if (!(material && typeof material === 'object')) return material;
     material.userData = Object.assign({}, material.userData || {}, {
-      vmSurfaceStyle: getSurfaceMaterialPresetKey(),
+      vmSurfaceStyle: String(presetKey || getSurfaceMaterialPresetKey()),
     });
     return material;
   }
@@ -5151,7 +5386,7 @@
     if ('envMapIntensity' in material) material.envMapIntensity = Number(nextPreset.envMapIntensity) || 0;
     if (options.color && material.color) material.color.copy(options.color);
     if (options.emissiveColor && material.emissive) material.emissive.copy(options.emissiveColor);
-    return setSurfaceMaterialPresetTag(material);
+    return setSurfaceMaterialPresetTag(material, options.presetKey || getSurfaceMaterialPresetKey());
   }
 
   /**
@@ -5161,8 +5396,8 @@
    * @param {number} max
    * @returns {number}
    */
-  function getSurfacePresetValue(key, min, max) {
-    return Math.max(min, Math.min(max, Number(getSurfaceMaterialPreset()[key]) || 0));
+  function getSurfacePresetValue(key, min, max, layer = getActiveCubeLayer()) {
+    return Math.max(min, Math.min(max, Number(getSurfaceMaterialPreset(layer)[key]) || 0));
   }
 
   /**
@@ -5202,20 +5437,22 @@
    * @returns {boolean}
    */
   function shouldUseWboitForCurrentFrame() {
-    if (!showSurfaces) return false;
-    if (renderMode === 'surface') {
-      return Array.isArray(meshes)
-        && meshes.length > 0
-        && getSurfaceOpacityValue() < 0.999;
-    }
-    if (renderMode === 'cloud') {
-      const cloudObjects = getRenderedCloudObjects(() => true);
-      if (!cloudObjects.length) return false;
-      const effectiveAlpha = getSurfaceOpacityValue();
-      if (effectiveAlpha <= 0.001) return false;
-      return cloudObjects.some((obj) => !!(obj && obj.isPoints)) || effectiveAlpha < 0.999;
-    }
-    return false;
+    if (!showSurfaces || surfaceRenderSuppressed) return false;
+    const surfaceMeshes = getRenderedSurfaceMeshes(() => true);
+    if (surfaceMeshes.some((mesh) => {
+      const material = mesh && mesh.material;
+      return !!(material && Number(material.opacity) < 0.999);
+    })) return true;
+    const cloudObjects = getRenderedCloudObjects(() => true);
+    if (!cloudObjects.length) return false;
+    return cloudObjects.some((obj) => {
+      const material = obj && obj.material;
+      const uniformAlpha = material && material.uniforms && material.uniforms.uAlpha
+        ? Number(material.uniforms.uAlpha.value)
+        : NaN;
+      const effectiveAlpha = Number.isFinite(uniformAlpha) ? uniformAlpha : Number(material && material.opacity);
+      return !!(obj && obj.isPoints) || (Number.isFinite(effectiveAlpha) && effectiveAlpha > 0.001 && effectiveAlpha < 0.999);
+    });
   }
 
   /**
@@ -5686,8 +5923,34 @@
     applySceneCameraFit(center, fit.distance, fit.fitDiameter);
   }
 
-  let trajectoryPlaying = false;
+  let trajectoryUiController = null;
+  function getTrajectoryUi() {
+    if (!trajectoryUiController) trajectoryUiController = window.VibeMolTrajectoryUi.createTrajectoryUi({
+      anyTrajectorySyncEnabled,
+      applyMasterFrameToSyncedTrajectories,
+      applyTrajectoryFrameForInfo,
+      focusTrajectoryInfoScene,
+      getActiveTrajectoryInfo,
+      getAllTrajectoryInfos,
+      getTrajectoryInfoBySceneId,
+      getTrajectoryMasterMaxFrames,
+      getTrajectorySyncMaster,
+      normalizeTrajectoryMasterFrame,
+      setElementTextPreservingNode,
+      setTrajectoryPlayingForInfo,
+      setTrajectorySyncEnabled,
+      syncTrajectoryControls,
+      trajectorySceneListEl,
+      trajectorySyncMasterEl,
+      isRecording: () => !!(trajectoryVideoController && trajectoryVideoController.isRecording()),
+    });
+    return trajectoryUiController;
+  }
+  function setInputValueIfIdle(...args) { return getTrajectoryUi().setInputValueIfIdle(...args); }
+
+  let trajectoryPlaying = false; // Legacy video-export compatibility mirror for the focused trajectory.
   let trajectoryLastStepMs = 0;
+
   let vibrationPlaying = false;
   let vibrationLastStepMs = 0;
   let vibrationHideSmallFrequencies = true;
@@ -5717,8 +5980,12 @@
    * @param {Float32Array|number[]} frame
    * @param {number} atomCount
    */
-  function applyAtomCoordinateFrame(vol, frame, atomCount) {
+  function applyAtomCoordinateFrame(vol, frame, atomCount, options = {}) {
     if (!vol || !Array.isArray(vol.atoms) || !frame) return;
+    const record = options.record || (Array.isArray(volumes) ? volumes.find((item) => item && item.vol === vol) : null);
+    const targets = getMoleculeRenderTargetsForRecord(record);
+    const targetAtomGroup = targets.atomGroup || atomGroup;
+    const targetBondGroup = targets.bondGroup || bondGroup;
     const count = Math.max(0, Math.min(atomCount | 0, vol.atoms.length));
     const toAng = vol.units === 'angstrom';
     for (let i = 0; i < count; i++) {
@@ -5728,37 +5995,89 @@
       const a = vol.atoms[i];
       if (!a) continue;
       a.x = x; a.y = y; a.z = z;
-      if (atomGroup && atomGroup.children && atomGroup.children[i]) {
-        const mesh = atomGroup.children[i];
+      if (targetAtomGroup && targetAtomGroup.children && targetAtomGroup.children[i]) {
+        const mesh = targetAtomGroup.children[i];
         if (mesh && mesh.position) {
           if (toAng) mesh.position.set(x, y, z);
           else mesh.position.set(x * BOHR_TO_ANG, y * BOHR_TO_ANG, z * BOHR_TO_ANG);
         }
       }
     }
-    if (shouldUseDynamicTrajectoryBondsForVolume(vol)) rebuildBondsFromAtoms();
-    else if (bondGroup && bondGroup.children && bondGroup.children.length) updateBondsInPlace();
+    if (shouldUseDynamicTrajectoryBondsForVolume(vol)) rebuildBondsFromAtoms(record);
+    else if (targetBondGroup && targetBondGroup.children && targetBondGroup.children.length) updateBondsInPlace(record);
     if (currentMode === MODES.MEASURE) {
       updateSelectedHalos();
       updateEditSelectionVisuals();
     }
   }
-  /**
-   * Resolve trajectory metadata for the active volume.
-   * @returns {{enabled:boolean,record:*,vol:*,traj:*,atomCount:number,frameCount:number}}
-   */
-  function getActiveTrajectoryInfo() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+  function getTrajectorySyncMaster() {
+    const state = sceneGraphController && sceneGraphController.getState ? sceneGraphController.getState() : null;
+    if (!state) return { playing: false, frame: 0, fps: 12, lastStepMs: 0 };
+    if (!state.syncMaster) state.syncMaster = {};
+    const master = state.syncMaster;
+    master.playing = !!master.playing;
+    master.frame = Math.max(0, Math.floor(Number(master.frame) || 0));
+    master.fps = Math.max(1, Math.min(120, Math.round(Number(master.fps) || 12)));
+    master.lastStepMs = Math.max(0, Number(master.lastStepMs) || 0);
+    return master;
+  }
+
+  function normalizeTrajectoryClock(traj, frameCount) {
+    return traj ? Object.assign(traj, window.VibeMolTrajectoryClock.normalize(traj, frameCount)) : null;
+  }
+
+  function getTrajectoryInfoForRecord(record, scene = null) {
     const vol = record && record.vol;
     const atomCount = (vol && Array.isArray(vol.atoms)) ? vol.atoms.length : 0;
     const traj = vol && vol.trajectory;
     if (!traj || !Array.isArray(traj.frames) || traj.frames.length <= 1 || atomCount <= 0) {
-      return { enabled: false, record, vol, traj: null, atomCount, frameCount: 0 };
+      return { enabled: false, scene, record, vol, traj: null, atomCount, frameCount: 0 };
     }
     const frameSize = atomCount * 3;
     const valid = traj.frames.every((frame) => frame && frame.length === frameSize);
-    if (!valid) return { enabled: false, record, vol, traj: null, atomCount, frameCount: 0 };
-    return { enabled: true, record, vol, traj, atomCount, frameCount: traj.frames.length };
+    if (!valid) return { enabled: false, scene, record, vol, traj: null, atomCount, frameCount: 0 };
+    normalizeTrajectoryClock(traj, traj.frames.length);
+    if (scene && scene.kind === 'trajectory') {
+      scene.trajectory = traj;
+      scene.meta = Object.assign({}, scene.meta || {}, { frameCount: traj.frames.length });
+    }
+    return { enabled: true, scene, record, vol, traj, atomCount, frameCount: traj.frames.length };
+  }
+
+  function getTrajectoryRecordForScene(scene) {
+    if (!scene) return null;
+    const layers = sceneGraphController.listLayers(scene);
+    const trajectoryLayer = layers.find((layer) => layer && layer.record && getActiveTrajectoryInfoForRecord(layer.record).enabled);
+    if (trajectoryLayer) return trajectoryLayer.record;
+    if (scene.moleculeRecord && getActiveTrajectoryInfoForRecord(scene.moleculeRecord).enabled) return scene.moleculeRecord;
+    return null;
+  }
+
+  function getTrajectoryInfoForScene(scene) {
+    return getTrajectoryInfoForRecord(getTrajectoryRecordForScene(scene), scene);
+  }
+
+  function getAllTrajectoryInfos() {
+    const out = [];
+    for (const scene of sceneGraphController.getScenes()) {
+      const info = getTrajectoryInfoForScene(scene);
+      if (info.enabled) out.push(info);
+    }
+    return out;
+  }
+
+  /**
+   * Resolve trajectory metadata for the focused trajectory scene.
+   * @returns {{enabled:boolean,scene:*,record:*,vol:*,traj:*,atomCount:number,frameCount:number}}
+   */
+  function getActiveTrajectoryInfo() {
+    const focused = sceneGraphController.getFocusedScene ? sceneGraphController.getFocusedScene() : null;
+    const focusedInfo = focused ? getTrajectoryInfoForScene(focused) : null;
+    if (focusedInfo && focusedInfo.enabled) return focusedInfo;
+    const activeRecord = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const activeInfo = getTrajectoryInfoForRecord(activeRecord, null);
+    if (activeInfo.enabled) return activeInfo;
+    return getAllTrajectoryInfos()[0] || { enabled: false, scene: focused || null, record: activeRecord, vol: activeRecord && activeRecord.vol, traj: null, atomCount: 0, frameCount: 0 };
   }
 
   /**
@@ -5769,8 +6088,7 @@
    */
   function shouldUseDynamicTrajectoryBondsForVolume(vol) {
     if (currentMode === MODES.EDIT) return false;
-    const info = getActiveTrajectoryInfo();
-    return !!(info && info.enabled && info.vol === vol);
+    return isTrajectoryVolumeRecord(vol);
   }
 
   /**
@@ -5781,63 +6099,133 @@
   function setMotionPanelButtonGlyph(btn, glyph) {
     if (!btn) return;
     const iconEl = btn.querySelector ? btn.querySelector('.motionPanelIconGlyph') : null;
-    if (iconEl) iconEl.textContent = String(glyph || '');
-    else btn.textContent = String(glyph || '');
+    if (iconEl) setElementTextPreservingNode(iconEl, String(glyph || ''));
+    else setElementTextPreservingNode(btn, String(glyph || ''));
+  }
+
+  function setElementTextPreservingNode(el, text) {
+    if (!el) return;
+    const value = String(text == null ? '' : text);
+    const first = el.firstChild;
+    if (first && first.nodeType === 3 && el.childNodes.length === 1) {
+      if (first.data !== value) first.data = value;
+      return;
+    }
+    el.textContent = value;
+  }
+
+  function getTrajectoryInfoBySceneId(sceneId) {
+    const id = String(sceneId || '');
+    return getAllTrajectoryInfos().find((info) => String(info && info.scene && info.scene.id || '') === id) || null;
+  }
+
+  function getTrajectoryMasterMaxFrames(infos = getAllTrajectoryInfos()) {
+    const synced = (Array.isArray(infos) ? infos : []).filter((info) => info && info.traj && info.traj.syncEnabled);
+    return Math.max(1, ...synced.map((info) => Math.max(1, Number(info.frameCount) | 0)));
+  }
+
+  function normalizeTrajectoryMasterFrame(infos = getAllTrajectoryInfos()) {
+    const master = getTrajectorySyncMaster();
+    const maxFrames = getTrajectoryMasterMaxFrames(infos);
+    master.frame = maxFrames > 0 ? (Math.max(0, Math.floor(Number(master.frame) || 0)) % maxFrames) : 0;
+    return master.frame;
+  }
+
+  function focusTrajectoryInfoScene(info) {
+    if (info && info.scene) {
+      focusScene(info.scene);
+      activateSceneFocusRecord(info.scene);
+    }
+  }
+
+  function applyMasterFrameToSyncedTrajectories(infos = getAllTrajectoryInfos(), options = {}) {
+    const master = getTrajectorySyncMaster();
+    normalizeTrajectoryMasterFrame(infos);
+    for (const info of infos) {
+      if (info && info.traj && info.traj.syncEnabled) {
+        applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info, master.frame), { syncUi: false });
+      }
+    }
+    if (options.syncUi !== false) syncTrajectoryControls();
   }
 
   /**
    * Update trajectory controls visibility and values for the active file.
    */
   function syncTrajectoryControls() {
+    const infos = getAllTrajectoryInfos();
     const info = getActiveTrajectoryInfo();
+    const hasAnyTrajectory = infos.length > 0;
     if (
       trajectoryVideoController
       && trajectoryVideoController.isActive()
       && trajectoryVideoController.getTargetRecord()
-      && info.enabled
+      && hasAnyTrajectory
       && info.record !== trajectoryVideoController.getTargetRecord()
     ) {
       trajectoryVideoController.discardForTargetRecordChange();
     }
     if (trajectoryPanelBtn) {
-      trajectoryPanelBtn.style.display = info.enabled ? '' : 'none';
-      setTooltipText(trajectoryPanelBtn, info.enabled
+      trajectoryPanelBtn.style.display = hasAnyTrajectory ? '' : 'none';
+      setTooltipText(trajectoryPanelBtn, hasAnyTrajectory
         ? 'Trajectory controls (T)'
         : 'No trajectory data in active file');
     }
-    if (trajectoryRow) trajectoryRow.style.display = info.enabled ? 'grid' : 'none';
-    if (trajectoryRow2) trajectoryRow2.style.display = info.enabled ? 'grid' : 'none';
-    if (trajectoryBondModeNote) trajectoryBondModeNote.style.display = info.enabled ? 'block' : 'none';
-    if (!info.enabled) {
+    if (trajectoryRow) trajectoryRow.style.display = 'none';
+    if (trajectoryRow2) trajectoryRow2.style.display = 'none';
+    if (trajectoryBondModeNote) trajectoryBondModeNote.style.display = hasAnyTrajectory ? 'block' : 'none';
+    if (!hasAnyTrajectory) {
+      userDismissedTrajectoryPopover = false;
       setTrajectoryPanelOpen(false, {
         syncUi: false,
         restoreTrajectoryVideoState: false,
         trajectoryVideoReason: 'Trajectory video export discarded because trajectory data is unavailable',
       });
-      stopTrajectoryPlayback({ syncUi: false });
-      if (trajectoryNowPlaying) trajectoryNowPlaying.textContent = 'No trajectory selected';
+      stopAllTrajectoryPlayback({ syncUi: false });
+      if (trajectoryNowPlaying) {
+        setElementTextPreservingNode(trajectoryNowPlaying, '');
+        trajectoryNowPlaying.hidden = true;
+      }
       if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
+      getTrajectoryUi().reset();
       updateDisplayWindowAdaptiveMenuUi();
       return;
     }
+    const traj = info.enabled ? info.traj : null;
+    if (traj) normalizeTrajectoryClock(traj, info.frameCount);
 
-    const traj = info.traj;
-    traj.frameIndex = Math.max(0, Math.min(info.frameCount - 1, Number(traj.frameIndex) | 0));
-    traj.fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
-    traj.loop = traj.loop !== false;
-
-    if (trajectoryFrameEl) {
+    if (trajectoryFrameEl && info.enabled) {
       trajectoryFrameEl.max = String(Math.max(0, info.frameCount - 1));
-      trajectoryFrameEl.value = String(traj.frameIndex);
+      setInputValueIfIdle(trajectoryFrameEl, traj.frameIndex);
+      trajectoryFrameEl.disabled = !!traj.syncEnabled;
     }
-    if (trajectoryFrameLabel) trajectoryFrameLabel.textContent = `${traj.frameIndex + 1}/${info.frameCount}`;
+    if (trajectoryFrameLabel && info.enabled) setElementTextPreservingNode(trajectoryFrameLabel, `${traj.frameIndex + 1}/${info.frameCount}`);
     if (trajectoryNowPlaying) {
-      trajectoryNowPlaying.textContent = `Frame ${traj.frameIndex + 1}/${info.frameCount} • ${traj.fps} fps${traj.loop ? ' • loop' : ''}`;
+      setElementTextPreservingNode(trajectoryNowPlaying, '');
+      trajectoryNowPlaying.hidden = true;
     }
-    setMotionPanelButtonGlyph(trajectoryPlayBtn, trajectoryPlaying ? 'pause' : 'play_arrow');
-    if (trajectoryLoopEl) trajectoryLoopEl.checked = !!traj.loop;
-    if (trajectoryFpsEl && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
+    const master = getTrajectorySyncMaster();
+    normalizeTrajectoryMasterFrame(infos);
+    const anyPlaying = isAnyTrajectoryPlaybackActive();
+    trajectoryPlaying = !!(info.enabled && traj && (traj.syncEnabled ? master.playing : traj.playing));
+    trajectoryLastStepMs = traj ? Number(traj._lastStepMs) || 0 : 0;
+    setMotionPanelButtonGlyph(trajectoryPlayBtn, anyPlaying ? 'pause' : 'play_arrow');
+    if (trajectoryPlayBtn) {
+      trajectoryPlayBtn.disabled = !hasAnyTrajectory;
+      trajectoryPlayBtn.setAttribute('aria-label', anyPlaying ? 'Pause all trajectories' : 'Play all trajectories');
+      setTooltipText(trajectoryPlayBtn, anyPlaying ? 'Pause all trajectories' : 'Play all trajectories');
+    }
+    if (trajectoryResetBtn) {
+      trajectoryResetBtn.disabled = !hasAnyTrajectory;
+      trajectoryResetBtn.setAttribute('aria-label', 'Reset all trajectories to first frame');
+      setTooltipText(trajectoryResetBtn, 'Reset all trajectories to first frame');
+    }
+    if (trajectoryLoopEl && info.enabled) trajectoryLoopEl.checked = !!traj.loop;
+    if (trajectoryFpsEl && info.enabled && document.activeElement !== trajectoryFpsEl) trajectoryFpsEl.value = String(traj.fps);
+    if (trajectoryFpsEl) trajectoryFpsEl.disabled = !info.enabled || !!(traj && traj.syncEnabled);
+    if (trajectoryLoopEl) trajectoryLoopEl.disabled = !info.enabled;
     if (trajectoryVideoController) trajectoryVideoController.syncUi(info);
+    getTrajectoryUi().sync(infos, info);
     updateDisplayWindowAdaptiveMenuUi();
   }
   /**
@@ -6262,7 +6650,7 @@
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       vib.phase = 0;
-      applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount);
+      applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount, { record: info.record });
       if (vibrationModeLabel) vibrationModeLabel.textContent = 'No visible mode';
       if (vibrationNowPlaying) {
         vibrationNowPlaying.textContent = vibrationHideSmallFrequencies
@@ -6342,7 +6730,7 @@
     const syncUi = options.syncUi !== false;
     const vib = info.vib;
     vib.phase = 0;
-    applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount);
+    applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount, { record: info.record });
     if (syncUi) syncVibrationControls();
     return true;
   }
@@ -6367,7 +6755,7 @@
       frame[i] = eq[i] + (amp * disp[i] * wave);
     }
     vib.phase = Number(phase) || 0;
-    applyAtomCoordinateFrame(info.vol, frame, info.atomCount);
+    applyAtomCoordinateFrame(info.vol, frame, info.atomCount, { record: info.record });
     if (syncUi) syncVibrationControls();
     return true;
   }
@@ -6416,8 +6804,7 @@
    * @param {{syncUi?:boolean}=} options
    * @returns {boolean}
    */
-  function applyTrajectoryFrame(frameIndex, options = {}) {
-    const info = getActiveTrajectoryInfo();
+  function applyTrajectoryFrameForInfo(info, frameIndex, options = {}) {
     if (!info.enabled) return false;
     const syncUi = options.syncUi !== false;
     const traj = info.traj;
@@ -6425,8 +6812,112 @@
     if (!frame) return false;
     const nextIndex = Math.max(0, Math.min(info.frameCount - 1, Number(frameIndex) | 0));
     traj.frameIndex = nextIndex;
-    applyAtomCoordinateFrame(info.vol, frame, info.atomCount);
+    traj.currentFrame = nextIndex;
+    applyAtomCoordinateFrame(info.vol, frame, info.atomCount, { record: info.record });
     if (syncUi) syncTrajectoryControls();
+    return true;
+  }
+
+  function applyTrajectoryFrame(frameIndex, options = {}) {
+    return applyTrajectoryFrameForInfo(getActiveTrajectoryInfo(), frameIndex, options);
+  }
+
+  function mapMasterFrameToTrajectory(info, masterFrame = getTrajectorySyncMaster().frame) {
+    return info && info.enabled
+      ? window.VibeMolTrajectoryClock.mapFrame(masterFrame, info.frameCount, info.traj && info.traj.loop !== false)
+      : 0;
+  }
+
+  function anyTrajectorySyncEnabled(infos = getAllTrajectoryInfos()) {
+    return infos.some((info) => info && info.enabled && info.traj && info.traj.syncEnabled);
+  }
+
+  function stopAllTrajectoryPlayback(options = {}) {
+    for (const info of getAllTrajectoryInfos()) {
+      if (info.traj) {
+        info.traj.playing = false;
+        info.traj._lastStepMs = 0;
+      }
+    }
+    const master = getTrajectorySyncMaster();
+    master.playing = false;
+    master.lastStepMs = 0;
+    trajectoryPlaying = false;
+    trajectoryLastStepMs = 0;
+    if (options.syncUi !== false) syncTrajectoryControls();
+  }
+
+  function setAllTrajectoryPlayback(playing, options = {}) {
+    const infos = getAllTrajectoryInfos();
+    const nextPlaying = !!playing;
+    const master = getTrajectorySyncMaster();
+    let hasSynced = false;
+    for (const info of infos) {
+      if (!(info && info.traj)) continue;
+      if (info.traj.syncEnabled) {
+        hasSynced = true;
+        info.traj.playing = false;
+      } else {
+        info.traj.playing = nextPlaying;
+        info.traj._lastStepMs = 0;
+      }
+    }
+    master.playing = hasSynced ? nextPlaying : false;
+    master.lastStepMs = 0;
+    const active = getActiveTrajectoryInfo();
+    trajectoryPlaying = !!(active.enabled && active.traj && (active.traj.syncEnabled ? master.playing : active.traj.playing));
+    trajectoryLastStepMs = active.traj ? Number(active.traj._lastStepMs) || 0 : 0;
+    if (options.syncUi !== false) syncTrajectoryControls();
+  }
+
+  function resetAllTrajectoryFrames(options = {}) {
+    const infos = getAllTrajectoryInfos();
+    const master = getTrajectorySyncMaster();
+    master.frame = 0;
+    master.lastStepMs = 0;
+    for (const info of infos) {
+      if (!(info && info.traj)) continue;
+      info.traj._lastStepMs = 0;
+      applyTrajectoryFrameForInfo(info, 0, { syncUi: false });
+    }
+    if (options.syncUi !== false) syncTrajectoryControls();
+  }
+
+  function isAnyTrajectoryPlaybackActive() {
+    if (getTrajectorySyncMaster().playing && anyTrajectorySyncEnabled()) return true;
+    return getAllTrajectoryInfos().some((info) => !!(info && info.traj && info.traj.playing));
+  }
+
+  function setTrajectorySyncEnabled(info, enabled) {
+    if (!(info && info.enabled && info.traj)) return false;
+    const infos = getAllTrajectoryInfos();
+    const master = getTrajectorySyncMaster();
+    const wasFirstSync = !infos.some((item) => item !== info && item.traj && item.traj.syncEnabled);
+    const nextEnabled = !!enabled;
+    if (nextEnabled) {
+      if (!info.traj.syncEnabled && wasFirstSync) {
+        master.frame = Math.max(0, Number(info.traj.frameIndex) | 0);
+        master.fps = Math.max(1, Math.min(120, Math.round(Number(info.traj.fps) || master.fps || 12)));
+        master.lastStepMs = 0;
+      }
+      info.traj._preSyncPlaying = !!info.traj.playing;
+      info.traj.playing = false;
+      info.traj._lastStepMs = 0;
+      info.traj.syncEnabled = true;
+      applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info, master.frame), { syncUi: false });
+    } else {
+      const mapped = mapMasterFrameToTrajectory(info, master.frame);
+      info.traj.syncEnabled = false;
+      info.traj.playing = false;
+      info.traj._lastStepMs = 0;
+      applyTrajectoryFrameForInfo(info, mapped, { syncUi: false });
+      if (!anyTrajectorySyncEnabled()) {
+        master.playing = false;
+        master.lastStepMs = 0;
+      }
+    }
+    normalizeTrajectoryMasterFrame(getAllTrajectoryInfos());
+    syncTrajectoryControls();
     return true;
   }
   /**
@@ -6434,51 +6925,91 @@
    * @param {number} nowMs
    */
   function updateTrajectoryPlayback(nowMs) {
-    const info = getActiveTrajectoryInfo();
-    if (!info.enabled) {
-      if (trajectoryPlaying) {
-        trajectoryPlaying = false;
-        trajectoryLastStepMs = 0;
-        syncTrajectoryControls();
-      }
+    const infos = getAllTrajectoryInfos();
+    if (!infos.length) {
+      if (trajectoryPlaying || getTrajectorySyncMaster().playing) stopAllTrajectoryPlayback({ syncUi: true });
       return;
     }
-    if (!trajectoryPlaying) return;
     if (currentMode === MODES.EDIT) return;
 
-    const traj = info.traj;
-    const fps = Math.max(1, Math.min(120, Math.round(Number(traj.fps) || 12)));
-    traj.fps = fps;
-    const stepMs = 1000 / fps;
-    if (trajectoryLastStepMs <= 0) {
-      trajectoryLastStepMs = nowMs;
-      return;
-    }
-    const elapsed = nowMs - trajectoryLastStepMs;
-    if (elapsed < stepMs) return;
-    const steps = Math.max(1, Math.floor(elapsed / stepMs));
-    trajectoryLastStepMs += steps * stepMs;
+    let advanced = false;
+    const master = getTrajectorySyncMaster();
+    const masterTick = window.VibeMolTrajectoryClock.advance({
+      frame: master.frame, playing: master.playing && anyTrajectorySyncEnabled(infos),
+      fps: master.fps, loop: true, lastStepMs: master.lastStepMs,
+    }, getTrajectoryMasterMaxFrames(infos), nowMs);
+    master.frame = masterTick.frame;
+    master.lastStepMs = masterTick.lastStepMs;
+    advanced = masterTick.advanced;
 
-    let next = (traj.frameIndex | 0) + steps;
-    const lastFrameIndex = info.frameCount - 1;
-    const exportAdvance = trajectoryVideoController
-      ? trajectoryVideoController.resolveAdvance(next, lastFrameIndex)
-      : null;
-    if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'nextFrameIndex')) {
-      next = Number(exportAdvance.nextFrameIndex) | 0;
-    }
-    if (exportAdvance && exportAdvance.stopPlayback) {
-      trajectoryPlaying = false;
-      trajectoryLastStepMs = 0;
-    } else if (next >= info.frameCount) {
-      if (traj.loop) next = next % info.frameCount;
-      else {
-        next = lastFrameIndex;
-        trajectoryPlaying = false;
-        trajectoryLastStepMs = 0;
+    for (const info of infos) {
+      const traj = info.traj;
+      if (!traj) continue;
+      if (traj.syncEnabled) {
+        const mapped = mapMasterFrameToTrajectory(info, master.frame);
+        const lastFrameIndex = info.frameCount - 1;
+        const exportAdvance = (trajectoryVideoController && trajectoryVideoController.getTargetRecord && trajectoryVideoController.getTargetRecord() === info.record)
+          ? trajectoryVideoController.resolveAdvance(mapped, lastFrameIndex)
+          : null;
+        if (exportAdvance && exportAdvance.stopPlayback) {
+          master.playing = false;
+          master.lastStepMs = 0;
+        }
+        if ((traj.frameIndex | 0) !== mapped || advanced) {
+          applyTrajectoryFrameForInfo(info, mapped, { syncUi: false });
+          advanced = true;
+        }
+        continue;
       }
+      const tick = window.VibeMolTrajectoryClock.advance({
+        frame: traj.frameIndex, playing: traj.playing, fps: traj.fps,
+        loop: traj.loop, lastStepMs: traj._lastStepMs,
+      }, info.frameCount, nowMs);
+      traj._lastStepMs = tick.lastStepMs;
+      if (!tick.advanced) continue;
+      let next = tick.rawFrame;
+      const lastFrameIndex = info.frameCount - 1;
+      const exportAdvance = (trajectoryVideoController && trajectoryVideoController.getTargetRecord && trajectoryVideoController.getTargetRecord() === info.record)
+        ? trajectoryVideoController.resolveAdvance(next, lastFrameIndex)
+        : null;
+      if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'nextFrameIndex')) {
+        next = Number(exportAdvance.nextFrameIndex) | 0;
+      }
+      if (exportAdvance && exportAdvance.stopPlayback) {
+        traj.playing = false;
+        traj._lastStepMs = 0;
+      } else if (next >= info.frameCount) {
+        if (traj.loop) next = next % info.frameCount;
+        else {
+          next = lastFrameIndex;
+          traj.playing = false;
+          traj._lastStepMs = 0;
+        }
+      }
+      applyTrajectoryFrameForInfo(info, next, { syncUi: false });
+      advanced = true;
     }
-    applyTrajectoryFrame(next, { syncUi: true });
+    const active = getActiveTrajectoryInfo();
+    trajectoryPlaying = !!(active.enabled && active.traj && (active.traj.syncEnabled ? master.playing : active.traj.playing));
+    trajectoryLastStepMs = active.traj ? Number(active.traj._lastStepMs) || 0 : 0;
+    if (advanced) syncTrajectoryControls();
+  }
+
+  function setTrajectoryPlayingForInfo(info, playing) {
+    if (!(info && info.enabled && info.traj)) return false;
+    if (info.traj.syncEnabled) {
+      const master = getTrajectorySyncMaster();
+      master.playing = !!playing;
+      master.lastStepMs = 0;
+    } else {
+      info.traj.playing = !!playing;
+      info.traj._lastStepMs = 0;
+    }
+    const active = getActiveTrajectoryInfo();
+    trajectoryPlaying = !!(active.enabled && active.traj && (active.traj.syncEnabled ? getTrajectorySyncMaster().playing : active.traj.playing));
+    trajectoryLastStepMs = active.traj ? Number(active.traj._lastStepMs) || 0 : 0;
+    syncTrajectoryControls();
+    return true;
   }
 
   /**
@@ -6486,6 +7017,17 @@
    * @param {{syncUi?:boolean}=} options
    */
   function stopTrajectoryPlayback(options = {}) {
+    const info = getActiveTrajectoryInfo();
+    if (info.enabled && info.traj) {
+      if (info.traj.syncEnabled) {
+        const master = getTrajectorySyncMaster();
+        master.playing = false;
+        master.lastStepMs = 0;
+      } else {
+        info.traj.playing = false;
+        info.traj._lastStepMs = 0;
+      }
+    }
     trajectoryPlaying = false;
     trajectoryLastStepMs = 0;
     if (options.syncUi !== false) syncTrajectoryControls();
@@ -6498,15 +7040,14 @@
   function toggleActiveTrajectoryPlayback() {
     const info = getActiveTrajectoryInfo();
     if (!info.enabled) return false;
-    const nextPlaying = !trajectoryPlaying;
+    const currentPlaying = info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing;
+    const nextPlaying = !currentPlaying;
     if (nextPlaying) {
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       restoreActiveVibrationEquilibrium({ syncUi: false });
     }
-    trajectoryPlaying = nextPlaying;
-    trajectoryLastStepMs = 0;
-    syncTrajectoryControls();
+    setTrajectoryPlayingForInfo(info, nextPlaying);
     syncVibrationControls();
     return true;
   }
@@ -6525,8 +7066,16 @@
     vibrationPlaying = false;
     vibrationLastStepMs = 0;
     restoreActiveVibrationEquilibrium({ syncUi: false });
-    stopTrajectoryPlayback({ syncUi: false });
-    applyTrajectoryFrame(next, { syncUi: true });
+    if (info.traj.syncEnabled) {
+      const master = getTrajectorySyncMaster();
+      master.frame = next;
+      master.lastStepMs = 0;
+      applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info, master.frame), { syncUi: false });
+    } else {
+      stopAllTrajectoryPlayback({ syncUi: false });
+      applyTrajectoryFrameForInfo(info, next, { syncUi: false });
+    }
+    syncTrajectoryControls();
     syncVibrationControls();
     return true;
   }
@@ -6688,10 +7237,11 @@
    * @returns {THREE.Object3D[]}
    */
   function getRenderedCloudObjects(filterFn) {
-    if (!(cloudGroup && typeof cloudGroup.traverse === 'function')) return [];
     const out = [];
-    cloudGroup.traverse((obj) => {
-      if (!obj || obj === cloudGroup || !(obj.isMesh || obj.isPoints) || !obj.material) return;
+    if (!(contentGroup && typeof contentGroup.traverse === 'function')) return out;
+    contentGroup.traverse((obj) => {
+      if (!obj || !(obj.isMesh || obj.isPoints) || !obj.material) return;
+      if (!(obj.userData && obj.userData.vmCloudRenderable)) return;
       if (filterFn && !filterFn(obj)) return;
       out.push(obj);
     });
@@ -6960,14 +7510,13 @@
   const fileInput = document.getElementById('fileInput');
   const openBtn = document.getElementById('openBtn');
   const newFileBtn = document.getElementById('newFileBtn');
-  const duplicateFileBtn = document.getElementById('duplicateFileBtn');
-  const removeFileBtn = document.getElementById('removeFileBtn');
-  const fileSelect = document.getElementById('fileSelect');
-  const fileSelectDisplay = document.getElementById('fileSelectDisplay');
+  const sceneOutlinerBodyEl = document.getElementById('sceneOutlinerBody');
+  const sceneOutlinerAddBtn = document.getElementById('sceneOutlinerAddBtn');
   const isoInput = document.getElementById('iso');
   const autoIsoBtn = document.getElementById('autoIsoBtn');
   const opInput = document.getElementById('opacity');
   const surfaceMaterialPresetSelect = document.getElementById('surfaceMaterialPreset');
+  const surfaceSignFlipToggleEl = document.getElementById('surfaceSignFlipBtn');
   const posColor = document.getElementById('posColor');
   const posColorHexEl = document.getElementById('posColorHex');
   const posColorSwatchEl = document.getElementById('posColorSwatch');
@@ -7032,6 +7581,7 @@
   const appearanceCloudTypeGroupEl = document.getElementById('appearanceCloudTypeGroup');
   const appearanceSimpleBondsToggleEl = document.getElementById('appearanceSimpleBondsToggle');
   const appearanceSurfacesSectionEl = document.getElementById('appearanceSurfacesSection');
+  const surfaceScopeLabelEl = document.getElementById('surfaceScopeLabel');
   const appearanceTwoComponentSectionEl = document.getElementById('appearanceTwoComponentSection');
   const appearanceCloudSectionEl = document.getElementById('appearanceCloudSection');
   const rowIso = document.getElementById('rowIso');
@@ -7117,6 +7667,8 @@
   const trajectoryFrameLabel = document.getElementById('trajectoryFrameLabel');
   const trajectoryFpsEl = document.getElementById('trajectoryFps');
   const trajectoryLoopEl = document.getElementById('trajectoryLoop');
+  const trajectorySceneListEl = document.getElementById('trajectorySceneList');
+  const trajectorySyncMasterEl = document.getElementById('trajectorySyncMaster');
   const trajectoryVideoCropOverlay = document.getElementById('trajectoryVideoCropOverlay');
   const trajectoryVideoCropFrame = document.getElementById('trajectoryVideoCropFrame');
   const trajectoryVideoCropDimensions = document.getElementById('trajectoryVideoCropDimensions');
@@ -7165,7 +7717,15 @@
       cropCancelBtnEl: trajectoryVideoCropCancelBtn,
       sourceCanvasEl: canvasEl,
     },
-    getDisabledElements: () => [trajectoryPlayBtn, trajectoryResetBtn, trajectoryFrameEl, trajectoryFpsEl, trajectoryLoopEl],
+    getDisabledElements: () => [
+      trajectoryPlayBtn,
+      trajectoryResetBtn,
+      trajectoryFrameEl,
+      trajectoryFpsEl,
+      trajectoryLoopEl,
+      ...(trajectorySceneListEl ? Array.from(trajectorySceneListEl.querySelectorAll('button,input,select,textarea')) : []),
+      ...(trajectorySyncMasterEl ? Array.from(trajectorySyncMasterEl.querySelectorAll('button,input,select,textarea')) : []),
+    ],
     getOverlayBounds: getCanvasExportOverlayBounds,
     getActiveInfo: getActiveTrajectoryInfo,
     readRendererViewportMetrics,
@@ -7175,13 +7735,31 @@
     setTooltipText,
     syncPrimaryControls: syncTrajectoryControls,
     syncSecondaryControls: syncVibrationControls,
-    getPlaybackState: () => ({
-      playing: trajectoryPlaying,
-      lastStepMs: trajectoryLastStepMs,
-    }),
+    getPlaybackState: () => {
+      const info = getActiveTrajectoryInfo();
+      const master = getTrajectorySyncMaster();
+      const syncEnabled = !!(info && info.enabled && info.traj && info.traj.syncEnabled);
+      return {
+        playing: !!(syncEnabled ? master.playing : info && info.enabled && info.traj && info.traj.playing),
+        lastStepMs: syncEnabled
+          ? Math.max(0, Number(master.lastStepMs) || 0)
+          : Math.max(0, Number(info && info.traj && info.traj._lastStepMs) || 0),
+      };
+    },
     setPlaybackState: (nextState = {}) => {
-      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) trajectoryPlaying = !!nextState.playing;
-      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) trajectoryLastStepMs = Number(nextState.lastStepMs) || 0;
+      const info = getActiveTrajectoryInfo();
+      const master = getTrajectorySyncMaster();
+      const syncEnabled = !!(info && info.enabled && info.traj && info.traj.syncEnabled);
+      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) {
+        if (syncEnabled) master.playing = !!nextState.playing;
+        else if (info && info.enabled && info.traj) info.traj.playing = !!nextState.playing;
+      }
+      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) {
+        if (syncEnabled) master.lastStepMs = Math.max(0, Number(nextState.lastStepMs) || 0);
+        else if (info && info.enabled && info.traj) info.traj._lastStepMs = Math.max(0, Number(nextState.lastStepMs) || 0);
+      }
+      trajectoryPlaying = !!(info && info.enabled && info.traj && (info.traj.syncEnabled ? master.playing : info.traj.playing));
+      trajectoryLastStepMs = info && info.traj ? Math.max(0, Number(info.traj._lastStepMs) || 0) : 0;
     },
     canResumePlayback: () => currentMode !== MODES.EDIT,
     getCaptureFps: (info) => {
@@ -7199,26 +7777,42 @@
     captureSessionState: (info) => ({
       targetRecord: info && info.record ? info.record : null,
       frameIndex: info && info.traj ? (info.traj.frameIndex | 0) : 0,
-      wasPlaying: !!trajectoryPlaying,
+      wasPlaying: !!(info && info.traj && (info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing)),
       loop: !!(info && info.traj && info.traj.loop !== false),
+      fps: info && info.traj ? Math.max(1, Math.min(120, Math.round(Number(info.traj.fps) || 12))) : 12,
+      syncEnabled: !!(info && info.traj && info.traj.syncEnabled),
+      master: Object.assign({}, getTrajectorySyncMaster()),
     }),
     restoreSessionState: (snapshot) => {
       if (!(snapshot && snapshot.targetRecord)) return;
-      const info = getActiveTrajectoryInfo();
+      const info = getAllTrajectoryInfos().find((item) => item.record === snapshot.targetRecord) || getActiveTrajectoryInfo();
       if (!(info && info.enabled && info.record === snapshot.targetRecord && info.traj)) return;
       info.traj.loop = snapshot.loop !== false;
-      applyTrajectoryFrame(snapshot.frameIndex, { syncUi: false });
-      if (currentMode !== MODES.EDIT && snapshot.wasPlaying) {
-        trajectoryPlaying = true;
-        trajectoryLastStepMs = 0;
-      } else {
-        trajectoryPlaying = false;
-        trajectoryLastStepMs = 0;
+      info.traj.fps = Math.max(1, Math.min(120, Math.round(Number(snapshot.fps) || info.traj.fps || 12)));
+      info.traj.syncEnabled = !!snapshot.syncEnabled;
+      if (snapshot.master) {
+        const master = getTrajectorySyncMaster();
+        master.playing = currentMode !== MODES.EDIT && snapshot.wasPlaying && info.traj.syncEnabled;
+        master.frame = Math.max(0, Math.floor(Number(snapshot.master.frame) || 0));
+        master.fps = Math.max(1, Math.min(120, Math.round(Number(snapshot.master.fps) || 12)));
+        master.lastStepMs = 0;
       }
+      if (info.traj.syncEnabled) {
+        applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info), { syncUi: false });
+      } else {
+        applyTrajectoryFrameForInfo(info, snapshot.frameIndex, { syncUi: false });
+        info.traj.playing = currentMode !== MODES.EDIT && !!snapshot.wasPlaying;
+        info.traj._lastStepMs = 0;
+      }
+      trajectoryPlaying = !!(info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing);
+      trajectoryLastStepMs = 0;
     },
     startRecordingSequence: (info) => {
+      info.traj.syncEnabled = false;
       info.traj.loop = false;
-      applyTrajectoryFrame(0, { syncUi: false });
+      info.traj.playing = true;
+      info.traj._lastStepMs = 0;
+      applyTrajectoryFrameForInfo(info, 0, { syncUi: false });
       trajectoryPlaying = true;
       trajectoryLastStepMs = 0;
     },
@@ -7280,7 +7874,7 @@
       return Math.max(24, Math.min(120, Math.round(speed * 24)));
     },
     prepareSceneForRecording: () => {
-      stopTrajectoryPlayback({ syncUi: false });
+      stopAllTrajectoryPlayback({ syncUi: false });
     },
     captureSessionState: (info) => ({
       targetRecord: info && info.record ? info.record : null,
@@ -8896,8 +9490,14 @@
     if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= items.length) return;
     if (moldenPendingRowIndex >= 0) return;
     const force = !!options.force;
-    if (!force && (record.moldenMoIndex | 0) === rowIndex) return false;
+    const alreadyMaterialized = sceneGraphController.getScenes().some(scene => sceneGraphController.listLayers(scene).some(layer =>
+      layer.record === record && layer.moldenMoIndex === rowIndex && !layer.isSceneGraphDuplicate));
+    if (!force && alreadyMaterialized && (record.moldenMoIndex | 0) === rowIndex) return false;
     record.moldenMoIndex = rowIndex;
+    ensureMoldenOrbitalMaterialized(record, rowIndex);
+    ensureMoldenGridForRecord(record, vol);
+    sceneSources.addOrbital(record, rowIndex);
+    syncSceneGraphFromVolumes({ preferActiveRecord: true });
     moldenPendingRowIndex = rowIndex;
     syncMoldenOrbitalsPanel(record);
     window.requestAnimationFrame(() => {
@@ -8968,9 +9568,8 @@
   openBtn.onclick = triggerOpenFiles;
   if (newFileBtn) {
     newFileBtn.onclick = () => {
-      const record = createNewEditableVolumeRecord();
-      rebuildScene({ preserveView: true });
-      setHintMessage(`Created ${record.name}.`);
+      const scene = createNewMoleculeScene();
+      if (scene) setHintMessage(`Created ${scene.name || 'New molecule'}.`);
     };
   }
 
@@ -8984,37 +9583,13 @@
   }
 
   /**
-   * Build a unique duplicate file name preserving the original extension.
-   * @param {string} name
-   * @returns {string}
+   * Sync controls whose enabled state depends on whether a scene is loaded.
    */
-  function buildDuplicateVolumeName(name) {
-    const raw = String(name || '').trim() || 'untitled.xyz';
-    const m = /^(.*?)(\.[^.]*)?$/.exec(raw) || [];
-    const stem = (m[1] && m[1].trim()) || 'untitled';
-    const ext = m[2] || '';
-    return getUniqueVolumeName(`${stem} copy${ext}`);
-  }
-
-  /**
-   * Sync the active-file selector and file action enablement with `currentIndex`.
-   */
-  function syncActiveVolumeControls() {
-    refreshFileSelect();
-    if (!fileSelect) return;
-    if (currentIndex >= 0 && fileSelect.options.length > currentIndex) {
-      fileSelect.value = String(currentIndex);
-    } else if (currentIndex < 0) {
-      fileSelect.value = '';
-    }
-    if (fileSelectDisplay) {
-      const activeName = (currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].name)
-        ? String(volumes[currentIndex].name)
-        : 'No file loaded';
-      fileSelectDisplay.textContent = activeName;
-    }
-    fileSelect.dataset.interactive = fileSelect.options.length > 1 ? 'true' : 'false';
-    fileSelect.disabled = fileSelect.options.length <= 1;
+  function syncLoadedSceneControls() {
+    const hasActive = currentIndex >= 0 && !!volumes[currentIndex];
+    if (saveStructureBtn) saveStructureBtn.disabled = !hasActive;
+    if (clearBtn) clearBtn.disabled = volumes.length === 0;
+    renderSceneOutliner();
   }
 
   /**
@@ -9031,6 +9606,1203 @@
       return Math.max(0, Math.min(fallback, volumes.length - 1));
     }
     return Math.max(0, Math.min(Math.trunc(numeric), volumes.length - 1));
+  }
+
+  function allocateVolumeSceneKey(label = 'scene') {
+    const clean = String(label || 'scene')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gu, '-')
+      .replace(/^-+|-+$/gu, '')
+      .slice(0, 40) || 'scene';
+    const key = `scene-${sceneGraphSceneKeyCounter}-${clean}`;
+    sceneGraphSceneKeyCounter += 1;
+    return key;
+  }
+
+  function getRecordSceneKey(record, fallbackLabel = '') {
+    if (!record || typeof record !== 'object') return '';
+    const existing = String(record._sceneGraphSceneKey || '').trim();
+    if (existing) return existing;
+    if (record._sceneGraphForceNewScene) {
+      const key = allocateVolumeSceneKey(fallbackLabel || record.name || 'scene');
+      record._sceneGraphSceneKey = key;
+      delete record._sceneGraphForceNewScene;
+      return key;
+    }
+    const key = allocateVolumeSceneKey(fallbackLabel || record.name || 'scene');
+    record._sceneGraphSceneKey = key;
+    return key;
+  }
+
+  function ensureLegacyRecordSceneKeys() {
+    // The import plan assigns shared keys only to geometrically matched files.
+    // Records created by other APIs receive their own scene, never the first
+    // existing scene's key merely because it happens to be loaded already.
+    for (const record of volumes) if (record) getRecordSceneKey(record);
+    return volumes.length ? getRecordSceneKey(volumes[0]) : '';
+  }
+
+  function getAtomPositionInAngstrom(vol, atom) {
+    const scale = vol && vol.units === 'bohr' ? BOHR_TO_ANG : 1;
+    return {
+      x: (Number(atom && atom.x) || 0) * scale,
+      y: (Number(atom && atom.y) || 0) * scale,
+      z: (Number(atom && atom.z) || 0) * scale,
+    };
+  }
+
+  function moleculeMatchesVolume(aVol, bVol, toleranceAng = 0.05) {
+    const aAtoms = Array.isArray(aVol && aVol.atoms) ? aVol.atoms : [];
+    const bAtoms = Array.isArray(bVol && bVol.atoms) ? bVol.atoms : [];
+    if (!aAtoms.length || aAtoms.length !== bAtoms.length) return false;
+    const tol2 = toleranceAng * toleranceAng;
+    for (let i = 0; i < aAtoms.length; i += 1) {
+      if ((Number(aAtoms[i] && aAtoms[i].Z) | 0) !== (Number(bAtoms[i] && bAtoms[i].Z) | 0)) return false;
+      const a = getAtomPositionInAngstrom(aVol, aAtoms[i]);
+      const b = getAtomPositionInAngstrom(bVol, bAtoms[i]);
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const dz = a.z - b.z;
+      if ((dx * dx + dy * dy + dz * dz) > tol2) return false;
+    }
+    return true;
+  }
+
+  function getSceneMoleculeVolumeFromRecords(sceneKey) {
+    const key = String(sceneKey || '').trim();
+    if (!key) return null;
+    const record = volumes.find((item) => item && item._sceneGraphSceneKey === key && item.vol && Array.isArray(item.vol.atoms));
+    return record ? record.vol : null;
+  }
+
+  function findSceneBySceneKey(sceneKey) {
+    const key = String(sceneKey || '').trim();
+    if (!key) return null;
+    return sceneGraphController.getScenes().find((scene) => scene && scene.sceneKey === key) || null;
+  }
+
+  function getSceneMoleculeVolume(sceneOrKey) {
+    const scene = typeof sceneOrKey === 'string' ? findSceneBySceneKey(sceneOrKey) : sceneOrKey;
+    if (!scene) return null;
+    const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+    if (moleculeLayer && moleculeLayer.record && moleculeLayer.record.vol) return moleculeLayer.record.vol;
+    if (scene.moleculeRecord && scene.moleculeRecord.vol) return scene.moleculeRecord.vol;
+    return getSceneMoleculeVolumeFromRecords(scene.sceneKey);
+  }
+
+  function findMatchingSceneKeyForVolume(vol) {
+    if (!vol || !Array.isArray(vol.atoms) || !vol.atoms.length) return '';
+    ensureLegacyRecordSceneKeys();
+    for (const scene of sceneGraphController.getScenes()) {
+      const sceneVol = getSceneMoleculeVolume(scene);
+      if (moleculeMatchesVolume(vol, sceneVol)) return scene.sceneKey || '';
+    }
+    const seen = new Set();
+    for (const record of volumes) {
+      if (!record || !record._sceneGraphSceneKey || seen.has(record._sceneGraphSceneKey)) continue;
+      seen.add(record._sceneGraphSceneKey);
+      if (moleculeMatchesVolume(vol, record.vol)) return record._sceneGraphSceneKey;
+    }
+    return '';
+  }
+
+  function hideVisibleSceneGraphScenesMatchingVolume(vol) {
+    if (!vol || !Array.isArray(vol.atoms) || !vol.atoms.length) return 0;
+    ensureLegacyRecordSceneKeys();
+    let hidden = 0;
+    for (const scene of sceneGraphController.getScenes()) {
+      if (!scene || scene.visible === false) continue;
+      if (scene.kind === 'trajectory') continue;
+      const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+      const sceneVol = moleculeLayer && moleculeLayer.record
+        ? moleculeLayer.record.vol
+        : getSceneMoleculeVolumeFromRecords(scene.sceneKey);
+      if (!moleculeMatchesVolume(vol, sceneVol)) continue;
+      scene.visible = false;
+      hidden += 1;
+    }
+    return hidden;
+  }
+
+  function sanitizeRecordLayerSessionState(state) {
+    const source = state && typeof state === 'object' ? state : {};
+    const out = {};
+    const keys = [
+      'visible',
+      'expanded',
+      'iso',
+      'autoIso',
+      'autoIsoEnabled',
+      'opacity',
+      'surfaceStyle',
+      'solidPreset',
+      'colorScheme',
+      'posColor',
+      'negColor',
+      'renderMode',
+      'cloudType',
+      'cloudStride',
+      'cloudAlpha',
+      'signFlip',
+      'labelId',
+      'name',
+      'moldenMoIndex',
+    ];
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) out[key] = source[key];
+    }
+    return out;
+  }
+
+  function isTrajectoryVolumeRecord(vol) {
+    const frames = vol && vol.trajectory && vol.trajectory.frames;
+    return Array.isArray(frames) && frames.length > 1;
+  }
+
+  function getSurfaceDefaultsForNewLayer() {
+    const scheme = surfaceColorSchemeDefault || 'emory';
+    const schemeDefaults = SURFACE_COLOR_SCHEMES[scheme] || null;
+    return {
+      iso: Math.max(0, Number(surfaceIsoDefault) || DEFAULT_ISO_VALUE),
+      autoIsoEnabled: !!autoIsoEnabled,
+      opacity: Math.max(0.05, Math.min(1, Number(surfaceOpacityDefault) || 1)),
+      surfaceStyle: 'solid',
+      solidPreset: getSurfaceMaterialPresetKey(),
+      colorScheme: scheme,
+      posColor: scheme === 'custom' ? surfacePosColorDefault : (schemeDefaults ? schemeDefaults.pos : null),
+      negColor: scheme === 'custom' ? surfaceNegColorDefault : (schemeDefaults ? schemeDefaults.neg : null),
+      renderMode: renderMode === 'cloud' ? 'cloud' : 'surfaces',
+      cloudType: cloudType === 'points' ? 'points' : 'volumetric',
+      cloudStride: 2,
+      cloudAlpha: 0.6,
+      signFlip: false,
+    };
+  }
+
+  function getMoldenMaterializedOrbitalIndices(record) {
+    const raw = record && record.moldenMaterializedOrbitalIndices;
+    if (!Array.isArray(raw)) return [];
+    const seen = new Set();
+    const out = [];
+    for (const value of raw) {
+      const index = Number(value) | 0;
+      if (index < 0 || seen.has(index)) continue;
+      seen.add(index);
+      out.push(index);
+    }
+    out.sort((a, b) => a - b);
+    return out;
+  }
+
+  function ensureMoldenOrbitalMaterialized(record, moIndex) {
+    const vol = record && record.vol;
+    if (!record || !vol || vol.kind !== 'molden') return false;
+    const index = Number(moIndex) | 0;
+    if (index < 0) return false;
+    const mos = vol.molden && Array.isArray(vol.molden.mos) ? vol.molden.mos : [];
+    if (index >= mos.length) return false;
+    if (!Array.isArray(record.moldenMaterializedOrbitalIndices)) record.moldenMaterializedOrbitalIndices = [];
+    if (!record.moldenMaterializedOrbitalIndices.includes(index)) record.moldenMaterializedOrbitalIndices.push(index);
+    return true;
+  }
+
+  function getVolumeSourceKind(record) {
+    const vol = record && record.vol;
+    if (vol && vol.kind === 'molden') return 'molden';
+    if (vol && vol.isTwoComponent) return 'two_component_cube';
+    if (vol && getActiveTrajectoryInfoForRecord(record).enabled) return 'trajectory';
+    if (hasVolumetricGrid(vol)) return 'cube';
+    return 'molecule';
+  }
+
+  function getInitialSceneDisplayName(sceneRecords, options = {}) {
+    const trajectoryRecord = options.trajectoryRecord || null;
+    if (trajectoryRecord && trajectoryRecord.name) return String(trajectoryRecord.name);
+    const cubeRecords = (Array.isArray(sceneRecords) ? sceneRecords : []).filter((record) => record && hasVolumetricGrid(record.vol));
+    if (cubeRecords.length > 1) {
+      const firstCubeName = cubeRecords
+        .map((record) => String(record && record.name || '').trim())
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))[0];
+      if (firstCubeName) return firstCubeName;
+    }
+    const primary = options.moleculeRecord || options.baseRecord || sceneRecords && sceneRecords[0] || null;
+    return String(primary && primary.name || 'Untitled scene');
+  }
+
+  function getActiveTrajectoryInfoForRecord(record) {
+    if (!record || !record.vol) return { enabled: false };
+    const frames = record.vol.trajectory && record.vol.trajectory.frames;
+    return { enabled: Array.isArray(frames) && frames.length > 1, frameCount: Array.isArray(frames) ? frames.length : 0 };
+  }
+
+  function syncSceneGraphFromVolumes(options = {}) {
+    ensureLegacyRecordSceneKeys();
+    const focused = sceneSources.reconcile(volumes, {
+      activeRecord: volumes[currentIndex] || null,
+      preferActiveRecord: !!options.preferActiveRecord,
+    });
+    renderSceneOutliner();
+    return focused;
+  }
+
+  function isCubeLikeLayer(layer) {
+    return !!(layer && (
+      layer.kind === SCENE_LAYER_KIND.CUBE
+      || layer.kind === SCENE_LAYER_KIND.ARITHMETIC
+    ));
+  }
+
+  function getActiveCubeLayer() {
+    const layer = sceneGraphController.getActiveLayer();
+    return isCubeLikeLayer(layer) ? layer : null;
+  }
+
+  function getSelectedCubeLayers() {
+    const selected = sceneGraphController && typeof sceneGraphController.getSelection === 'function'
+      ? sceneGraphController.getSelection()
+      : [];
+    const active = getActiveCubeLayer();
+    if (active && !selected.some((layer) => layer && layer.id === active.id)) return [active];
+    return selected.filter(isCubeLikeLayer);
+  }
+
+  function getSelectedCubeLayerIds() {
+    return getSelectedCubeLayers().map((layer) => layer.id);
+  }
+
+  function isCubeLayerSelected(layer) {
+    return !!(layer && getSelectedCubeLayerIds().includes(layer.id));
+  }
+
+  function clearOutlinerSelectionToActive(options = {}) {
+    if (sceneGraphController && typeof sceneGraphController.clearSelection === 'function') {
+      sceneGraphController.clearSelection();
+    }
+    if (options.rebind !== false) syncAppearanceControlsToActiveLayer();
+    if (options.render !== false) renderSceneOutliner();
+  }
+
+  function setSceneHeaderActive(scene) {
+    if (!scene) return;
+    focusScene(scene);
+    scene.activeLayerId = null;
+    if (sceneGraphController.getState) {
+      const state = sceneGraphController.getState();
+      state.activeLayerId = null;
+      state.activeSceneId = scene.id;
+      state.focusedSceneId = scene.id;
+    }
+    if (sceneGraphController.clearSelection) sceneGraphController.clearSelection();
+    activateSceneFocusRecord(scene);
+    syncLoadedSceneControls();
+    updateSidePanel();
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+  }
+
+  function getFocusedScene() {
+    return sceneGraphController.getFocusedScene
+      ? sceneGraphController.getFocusedScene()
+      : (sceneGraphController.getActiveScene ? sceneGraphController.getActiveScene() : null);
+  }
+
+  function getCubeLayersInScene(scene) {
+    if (!scene) return [];
+    const orbitalsGroupId = scene.orbitalsGroupId || '';
+    return sceneGraphController.listLayers(scene).filter((layer) => (
+      isCubeLikeLayer(layer)
+      && (!orbitalsGroupId || layer.parentId === orbitalsGroupId)
+    ));
+  }
+
+  function getVisibleCubeLayerCount(scene) {
+    return getCubeLayersInScene(scene).filter((layer) => layer.visible !== false).length;
+  }
+
+  function getSceneActiveCubeLayer(scene) {
+    if (!scene) return null;
+    const active = scene.activeLayerId ? sceneGraphController.getLayerById(scene.activeLayerId) : null;
+    if (isCubeLikeLayer(active)) return active;
+    return getCubeLayersInScene(scene).find((layer) => layer.visible !== false)
+      || getCubeLayersInScene(scene)[0]
+      || null;
+  }
+
+  function selectOnlyCubeLayer(layer) {
+    if (!isCubeLikeLayer(layer)) return;
+    if (sceneGraphController.setSelection) sceneGraphController.setSelection([layer.id]);
+  }
+
+  function toggleCubeLayerSelection(layer) {
+    if (!isCubeLikeLayer(layer)) return;
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (scene) focusScene(scene);
+    if (sceneGraphController.extendSelection) sceneGraphController.extendSelection(layer.id);
+    const active = sceneGraphController.getActiveLayer();
+    if (isCubeLikeLayer(active) && active.record) {
+      const recordIndex = getRecordIndex(active.record);
+      if (recordIndex >= 0 && currentIndex !== recordIndex) {
+        currentIndex = recordIndex;
+        syncLoadedSceneControls();
+      }
+    }
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+  }
+
+  function rangeSelectCubeLayer(anchorId, layer) {
+    if (!isCubeLikeLayer(layer)) return;
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (scene) focusScene(scene);
+    const fromId = anchorId || (scene && scene.activeLayerId) || layer.id;
+    if (sceneGraphController.extendSelectionRange) sceneGraphController.extendSelectionRange(fromId, layer.id);
+    const active = sceneGraphController.getActiveLayer();
+    if (isCubeLikeLayer(active)) {
+      const singleCubeMode = scene ? getVisibleCubeLayerCount(scene) <= 1 : false;
+      if (scene && singleCubeMode) setOnlyCubeVisibleInScene(scene, active);
+      const recordIndex = active.record ? getRecordIndex(active.record) : -1;
+      if (recordIndex >= 0 && currentIndex !== recordIndex) {
+        currentIndex = recordIndex;
+        syncLoadedSceneControls();
+      }
+      rebuildScene({ preserveView: true, syncGraph: false });
+    }
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+  }
+
+  function setOnlyCubeVisibleInScene(scene, activeCube) {
+    if (!scene || !isCubeLikeLayer(activeCube)) return false;
+    let changed = false;
+    for (const cube of getCubeLayersInScene(scene)) {
+      const nextVisible = cube.id === activeCube.id;
+      if ((cube.visible !== false) !== nextVisible) {
+        cube.visible = nextVisible;
+        persistActiveCubeLayerState(cube, { render: false });
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  function getNextCubeLabelId(scene) {
+    let maxIndex = -1;
+    for (const cube of getCubeLayersInScene(scene)) {
+      const match = /^L(\d+)$/i.exec(String(cube.labelId || '').trim());
+      if (!match) continue;
+      maxIndex = Math.max(maxIndex, Number(match[1]) || 0);
+    }
+    return `L${maxIndex + 1}`;
+  }
+
+  function getNextCubeCopyName(scene, sourceLayer) {
+    const base = String(sourceLayer && sourceLayer.name || 'Cube').replace(/\s+\(copy(?:\s+\d+)?\)$/i, '');
+    const existing = new Set(getCubeLayersInScene(scene).map((layer) => String(layer.name || '')));
+    const first = `${base} (copy)`;
+    if (!existing.has(first)) return first;
+    for (let i = 2; i < 10000; i += 1) {
+      const candidate = `${base} (copy ${i})`;
+      if (!existing.has(candidate)) return candidate;
+    }
+    return `${base} (copy ${Date.now()})`;
+  }
+
+  function copyCubeLayerAppearance(sourceLayer) {
+    const autoIso = getLayerAutoIsoEnabled(sourceLayer);
+    return {
+      iso: Math.max(0, Number(sourceLayer && sourceLayer.iso) || DEFAULT_ISO_VALUE),
+      autoIso,
+      autoIsoEnabled: autoIso,
+      opacity: Math.max(0.05, Math.min(1, Number(sourceLayer && sourceLayer.opacity) || 1)),
+      surfaceStyle: 'solid',
+      solidPreset: String(sourceLayer && sourceLayer.solidPreset || DEFAULT_SURFACE_MATERIAL_PRESET),
+      colorScheme: String(sourceLayer && sourceLayer.colorScheme || 'emory'),
+      posColor: !sourceLayer || sourceLayer.posColor == null ? null : String(sourceLayer.posColor),
+      negColor: !sourceLayer || sourceLayer.negColor == null ? null : String(sourceLayer.negColor),
+      renderMode: normalizeLayerRenderModeValue(sourceLayer && sourceLayer.renderMode),
+      cloudType: normalizeLayerCloudTypeValue(sourceLayer && sourceLayer.cloudType),
+      cloudStride: normalizeLayerCloudStride(sourceLayer && sourceLayer.cloudStride),
+      cloudAlpha: normalizeLayerCloudAlpha(sourceLayer && sourceLayer.cloudAlpha),
+      signFlip: !!(sourceLayer && sourceLayer.signFlip),
+    };
+  }
+
+  function getLayerCubeData(layer) {
+    if (!layer) return null;
+    if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC) return layer.cubeData || null;
+    if (layer.kind === SCENE_LAYER_KIND.CUBE) {
+      if (layer.record && layer.record.vol.kind === 'molden' && Number.isInteger(layer.moldenMoIndex)) {
+        return evaluateMoldenGrid(layer.record, layer.moldenMoIndex);
+      }
+      if (layer.isSceneGraphDuplicate && layer.cubeData) return layer.cubeData;
+      return (layer.record && layer.record.vol) || layer.cubeData || null;
+    }
+    return layer.cubeData || (layer.record && layer.record.vol) || null;
+  }
+
+  function clearLayerRenderRefs(layer) {
+    if (!layer || typeof layer !== 'object') return;
+    layer.renderAtomGroup = null;
+    layer.renderBondGroup = null;
+    layer.group = null;
+    layer.posMesh = null;
+    layer.negMesh = null;
+    layer.cloudGroup = null;
+    layer.geometry = null;
+    layer.posMaterial = null;
+    layer.negMaterial = null;
+  }
+
+  function createVolumeIndexFunction(nxyz) {
+    const ny = Number(nxyz && nxyz[1]) || 0;
+    const nz = Number(nxyz && nxyz[2]) || 0;
+    return (i, j, k) => (i * ny + j) * nz + k;
+  }
+
+  function cloneScalarVolumeForArithmetic(baseVol, data, name) {
+    const nxyz = Array.isArray(baseVol && baseVol.nxyz) ? baseVol.nxyz.slice() : [0, 0, 0];
+    return Object.assign({}, baseVol, {
+      title: String(name || 'Arithmetic layer'),
+      comment: 'VibeMol arithmetic layer',
+      nxyz,
+      origin: Array.isArray(baseVol && baseVol.origin) ? baseVol.origin.slice() : [0, 0, 0],
+      axes: Array.isArray(baseVol && baseVol.axes) ? baseVol.axes.map((axis) => Array.isArray(axis) ? axis.slice() : [0, 0, 0]) : [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+      atoms: Array.isArray(baseVol && baseVol.atoms) ? baseVol.atoms.map((atom) => Object.assign({}, atom)) : [],
+      data,
+      idx: createVolumeIndexFunction(nxyz),
+      kind: 'arithmetic',
+      isTwoComponent: false,
+      alphaRe: undefined,
+      alphaIm: undefined,
+      betaRe: undefined,
+      betaIm: undefined,
+      activeRaw: null,
+    });
+  }
+
+  function cloneArithmeticCubeData(vol, name) {
+    if (!vol) return null;
+    const sourceData = vol.data;
+    const data = sourceData && typeof sourceData.length === 'number'
+      ? new Float32Array(sourceData)
+      : new Float32Array(0);
+    return cloneScalarVolumeForArithmetic(vol, data, name || vol.title || 'Arithmetic layer');
+  }
+
+  function getArithmeticLayerLabel(layer) {
+    return String(layer && (layer.labelId || layer.name) || 'Operand');
+  }
+
+  function toArithmeticGridOperands(resolvedInputs) {
+    return (Array.isArray(resolvedInputs) ? resolvedInputs : []).map((entry) => ({
+      layer: entry.layer,
+      label: getArithmeticLayerLabel(entry.layer),
+      coefficient: Number.isFinite(Number(entry && entry.coefficient)) ? Number(entry.coefficient) : 1,
+      vol: getLayerCubeData(entry && entry.layer),
+    }));
+  }
+
+  function resolveArithmeticInputs(inputs) {
+    return (Array.isArray(inputs) ? inputs : []).map((input) => {
+      const layer = sceneGraphController.getLayerById(input && input.layerId);
+      return {
+        layer,
+        coefficient: Number.isFinite(Number(input && input.coefficient)) ? Number(input.coefficient) : 1,
+      };
+    }).filter((entry) => isCubeLikeLayer(entry.layer) && entry.layer.cubeDataValid !== false);
+  }
+
+  function validateArithmeticInputGrids(resolvedInputs) {
+    return ArithmeticGrid.validateInputGrids(toArithmeticGridOperands(resolvedInputs));
+  }
+
+  function normalizeArithmeticOperation(value) {
+    const key = String(value || '').trim();
+    if (key === 'product' || key === 'abs') return key;
+    return 'linear_combination';
+  }
+
+  function formatArithmeticCoefficient(value, options = {}) {
+    const coefficient = Number(value);
+    if (!Number.isFinite(coefficient)) return '1';
+    const abs = Math.abs(coefficient);
+    const rounded = Math.abs(abs - Math.round(abs)) < 1e-10
+      ? String(Math.round(abs))
+      : String(Number(abs.toFixed(4))).replace(/\.0+$/, '');
+    if (options.omitOne && Math.abs(abs - 1) < 1e-10) return '';
+    return rounded;
+  }
+
+  function getArithmeticOperandLabel(input) {
+    const layer = sceneGraphController.getLayerById(input && input.layerId);
+    return String(layer && layer.labelId || layer && layer.name || 'Layer');
+  }
+
+  function generateArithmeticName(operation, inputs) {
+    const op = normalizeArithmeticOperation(operation);
+    const terms = Array.isArray(inputs) ? inputs : [];
+    if (op === 'abs') return `|${getArithmeticOperandLabel(terms[0])}|`;
+    if (op === 'product') return terms.map(getArithmeticOperandLabel).join(' · ');
+    const parts = [];
+    terms.forEach((input, index) => {
+      const coefficient = Number.isFinite(Number(input && input.coefficient)) ? Number(input.coefficient) : 1;
+      const negative = coefficient < 0;
+      const coeffText = formatArithmeticCoefficient(coefficient, { omitOne: true });
+      const label = getArithmeticOperandLabel(input);
+      const term = coeffText ? `${coeffText}·${label}` : label;
+      if (index === 0) parts.push(negative ? `−${term}` : term);
+      else parts.push(`${negative ? '−' : '+'} ${term}`);
+    });
+    return parts.join(' ') || 'Combination';
+  }
+
+  function normalizeArithmeticInputsForOperation(operation, inputs) {
+    const op = normalizeArithmeticOperation(operation);
+    let out = (Array.isArray(inputs) ? inputs : []).map((input) => ({
+      layerId: String(input && input.layerId || ''),
+      coefficient: Number.isFinite(Number(input && input.coefficient)) ? Number(input.coefficient) : 1,
+    })).filter((input) => input.layerId);
+    if (op === 'abs') out = out.slice(0, 1).map((input) => Object.assign({}, input, { coefficient: 1 }));
+    if (op === 'product') out = out.map((input) => Object.assign({}, input, { coefficient: 1 }));
+    return out;
+  }
+
+  function getArithmeticNameUserEdited(layer) {
+    if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) return false;
+    if (typeof layer.nameUserEdited === 'boolean') return layer.nameUserEdited;
+    const generated = generateArithmeticName(layer.operation, layer.inputs);
+    return String(layer.name || '') !== String(generated || '');
+  }
+
+  function normalizeArithmeticConfig(operation, inputs) {
+    const op = normalizeArithmeticOperation(operation);
+    return {
+      operation: op,
+      inputs: normalizeArithmeticInputsForOperation(op, inputs).map((input) => ({
+        layerId: String(input.layerId || ''),
+        coefficient: Number.isFinite(Number(input.coefficient)) ? Number(input.coefficient) : 1,
+      })),
+    };
+  }
+
+  function arithmeticConfigsEqual(aOperation, aInputs, bOperation, bInputs) {
+    const a = normalizeArithmeticConfig(aOperation, aInputs);
+    const b = normalizeArithmeticConfig(bOperation, bInputs);
+    if (a.operation !== b.operation || a.inputs.length !== b.inputs.length) return false;
+    for (let i = 0; i < a.inputs.length; i += 1) {
+      if (a.inputs[i].layerId !== b.inputs[i].layerId) return false;
+      if (Number(a.inputs[i].coefficient) !== Number(b.inputs[i].coefficient)) return false;
+    }
+    return true;
+  }
+
+  function insertLayerAfter(scene, layer, afterLayer) {
+    if (!(scene && layer && afterLayer && Array.isArray(scene.layers))) return;
+    const from = scene.layers.indexOf(layer);
+    const after = scene.layers.indexOf(afterLayer);
+    if (from < 0 || after < 0 || from === after + 1) return;
+    scene.layers.splice(from, 1);
+    const adjustedAfter = scene.layers.indexOf(afterLayer);
+    scene.layers.splice(adjustedAfter + 1, 0, layer);
+  }
+
+  function getLayerDisplayName(layer) {
+    return String(layer && (layer.labelId || layer.name) || 'layer');
+  }
+
+  function getLayerFullDisplayName(layer) {
+    const label = String(layer && layer.labelId || '').trim();
+    const name = String(layer && layer.name || '').trim();
+    return `${label} ${name}`.trim() || 'layer';
+  }
+
+  function renumberCubeLayerLabels(scene) {
+    if (!scene) return;
+    const layers = getCubeLayersInScene(scene);
+    const arithmeticNameEdited = new Map();
+    for (const layer of layers) {
+      if (layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC) {
+        arithmeticNameEdited.set(layer.id, getArithmeticNameUserEdited(layer));
+      }
+    }
+    layers.forEach((layer, index) => {
+      layer.labelId = `L${index}`;
+    });
+    for (const layer of layers) {
+      if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) continue;
+      if (arithmeticNameEdited.get(layer.id)) {
+        layer.nameUserEdited = true;
+        continue;
+      }
+      layer.nameUserEdited = false;
+      layer.name = generateArithmeticName(layer.operation, layer.inputs);
+    }
+  }
+
+  function reorderCubeLayersInScene(scene, orderedCubeLayers) {
+    if (!sceneGraphController.reorderCubeLayers(scene, orderedCubeLayers)) return false;
+    renumberCubeLayerLabels(scene);
+    return true;
+  }
+
+  function insertCubeLayerBlock(scene, layersToInsert, insertIndex) {
+    const existing = getCubeLayersInScene(scene).filter((layer) => !layersToInsert.includes(layer));
+    const index = Math.max(0, Math.min(Number(insertIndex) || 0, existing.length));
+    const next = existing.slice(0, index).concat(layersToInsert, existing.slice(index));
+    return reorderCubeLayersInScene(scene, next);
+  }
+
+  function disposeLayerRenderArtifacts(layer) {
+    if (!(layer && sceneGraphController && typeof sceneGraphController.removeLayer === 'function')) return;
+    disposeSceneGraphLayer(layer);
+    layer.surfaceMetricCache = new Map();
+  }
+
+  function makeCopiedCubeLayerProps(sourceLayer, destinationScene, options = {}) {
+    const copyName = options.name || getNextCubeCopyName(destinationScene, sourceLayer);
+    const props = Object.assign({}, copyCubeLayerAppearance(sourceLayer), {
+      name: copyName,
+      labelId: getNextCubeLabelId(destinationScene),
+      record: sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC ? null : (sourceLayer.record || null),
+      cubeData: sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC
+        ? cloneArithmeticCubeData(getLayerCubeData(sourceLayer), copyName)
+        : getLayerCubeData(sourceLayer),
+      moldenMoIndex: Number.isInteger(sourceLayer.moldenMoIndex) ? sourceLayer.moldenMoIndex : null,
+      visible: options.visible == null ? sourceLayer.visible !== false : !!options.visible,
+      expanded: sourceLayer.expanded !== false,
+      isSceneGraphDuplicate: true,
+      geometry: null,
+      posMaterial: null,
+      negMaterial: null,
+      posMesh: null,
+      negMesh: null,
+      group: null,
+      cloudGroup: null,
+      surfaceMetricCache: new Map(),
+    });
+    if (sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC) {
+      props.operation = normalizeArithmeticOperation(sourceLayer.operation);
+      props.inputs = normalizeArithmeticInputsForOperation(props.operation, sourceLayer.inputs);
+      props.cubeDataValid = sourceLayer.cubeDataValid !== false;
+      props.nameUserEdited = true;
+    }
+    return props;
+  }
+
+  function duplicateLayerBlockToScene(sourceLayers, destinationScene, insertIndex) {
+    const orderedSources = (Array.isArray(sourceLayers) ? sourceLayers : []).filter(isCubeLikeLayer);
+    if (!(orderedSources.length && destinationScene)) return [];
+    const idMap = new Map();
+    const copies = [];
+    for (const source of orderedSources) {
+      const props = makeCopiedCubeLayerProps(source, destinationScene, { visible: source.visible !== false });
+      const copy = source.kind === SCENE_LAYER_KIND.ARITHMETIC
+        ? sceneGraphController.addArithmeticLayer(destinationScene, props, getSurfaceDefaultsForNewLayer())
+        : sceneGraphController.addCubeLayer(destinationScene, props, getSurfaceDefaultsForNewLayer());
+      if (!copy) continue;
+      idMap.set(source.id, copy.id);
+      copies.push(copy);
+    }
+    for (const copy of copies) {
+      if (!(copy && copy.kind === SCENE_LAYER_KIND.ARITHMETIC)) continue;
+      copy.inputs = normalizeArithmeticInputsForOperation(copy.operation, copy.inputs).map((input) => Object.assign({}, input, {
+        layerId: idMap.get(input.layerId) || input.layerId,
+      }));
+      // Copies share immutable input fields; the cloned result is already valid.
+    }
+    insertCubeLayerBlock(destinationScene, copies, insertIndex);
+    return copies;
+  }
+
+  function moveLayerBlockToScene(sourceLayers, sourceScene, destinationScene, insertIndex) {
+    const moving = sceneGraphController.moveCubeLayers(sourceLayers, destinationScene, insertIndex);
+    for (const layer of moving) disposeLayerRenderArtifacts(layer);
+    renumberCubeLayerLabels(sourceScene);
+    if (destinationScene !== sourceScene) renumberCubeLayerLabels(destinationScene);
+    return moving;
+  }
+
+  function validateCrossSceneLayerMove(layers, sourceScene, options = {}) {
+    const selectedIds = new Set((Array.isArray(layers) ? layers : []).map((layer) => layer && layer.id).filter(Boolean));
+    for (const layer of Array.isArray(layers) ? layers : []) {
+      if (!(layer && layer.kind === SCENE_LAYER_KIND.ARITHMETIC)) continue;
+      for (const input of Array.isArray(layer.inputs) ? layer.inputs : []) {
+        const inputLayer = sceneGraphController.getLayerById(input && input.layerId);
+        if (inputLayer && !selectedIds.has(inputLayer.id)) {
+          return {
+            ok: false,
+            error: `Cannot move ${getLayerDisplayName(layer)}: its input ${getLayerDisplayName(inputLayer)} is not in the selection.`,
+          };
+        }
+      }
+    }
+    if (!options.copyMode && sourceScene) {
+      for (const dependent of getCubeLayersInScene(sourceScene)) {
+        if (!(dependent && dependent.kind === SCENE_LAYER_KIND.ARITHMETIC) || selectedIds.has(dependent.id)) continue;
+        for (const input of Array.isArray(dependent.inputs) ? dependent.inputs : []) {
+          const inputId = String(input && input.layerId || '');
+          if (!selectedIds.has(inputId)) continue;
+          const inputLayer = sceneGraphController.getLayerById(inputId);
+          return {
+            ok: false,
+            error: `Cannot move ${getLayerDisplayName(inputLayer)}: ${getLayerDisplayName(dependent)} depends on it.`,
+          };
+        }
+      }
+    }
+    return { ok: true, error: '' };
+  }
+
+  function expandOutlinerPathForLayer(layer) {
+    if (!layer) return;
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (scene) scene.expanded = true;
+    let parentId = layer.parentId || '';
+    while (parentId) {
+      const parent = sceneGraphController.getLayerById(parentId);
+      if (!parent) break;
+      parent.expanded = true;
+      parentId = parent.parentId || '';
+    }
+  }
+
+  function showOnlySceneGraphScene(sceneOrId) {
+    const focusedScene = typeof sceneOrId === 'string'
+      ? sceneGraphController.findScene(sceneOrId)
+      : sceneOrId;
+    if (!focusedScene) return false;
+    let changed = false;
+    for (const scene of sceneGraphController.getScenes()) {
+      const nextVisible = scene && scene.id === focusedScene.id;
+      if ((scene.visible !== false) !== nextVisible) {
+        scene.visible = nextVisible;
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  function duplicateCubeLayer(sourceLayer, options = {}) {
+    if (!isCubeLikeLayer(sourceLayer)) return null;
+    const scene = sceneGraphController.getSceneForLayer(sourceLayer);
+    if (!scene) return null;
+    const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
+    const layerProps = Object.assign({}, copyCubeLayerAppearance(sourceLayer), {
+      name: getNextCubeCopyName(scene, sourceLayer),
+      labelId: getNextCubeLabelId(scene),
+      record: sourceLayer.record || null,
+      cubeData: sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC
+        ? cloneArithmeticCubeData(getLayerCubeData(sourceLayer), getNextCubeCopyName(scene, sourceLayer))
+        : getLayerCubeData(sourceLayer),
+      moldenMoIndex: Number.isInteger(sourceLayer.moldenMoIndex) ? sourceLayer.moldenMoIndex : null,
+      visible: true,
+      expanded: sourceLayer.expanded !== false,
+      isSceneGraphDuplicate: true,
+      geometry: null,
+      posMaterial: null,
+      negMaterial: null,
+      posMesh: null,
+      negMesh: null,
+      group: null,
+      cloudGroup: null,
+      surfaceMetricCache: new Map(),
+    });
+    if (sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC) {
+      layerProps.operation = normalizeArithmeticOperation(sourceLayer.operation);
+      layerProps.inputs = normalizeArithmeticInputsForOperation(layerProps.operation, sourceLayer.inputs);
+      layerProps.cubeDataValid = sourceLayer.cubeDataValid !== false;
+      layerProps.nameUserEdited = getArithmeticNameUserEdited(sourceLayer);
+    }
+    const newLayer = sourceLayer.kind === SCENE_LAYER_KIND.ARITHMETIC
+      ? sceneGraphController.addArithmeticLayer(scene, layerProps, getSurfaceDefaultsForNewLayer())
+      : sceneGraphController.addCubeLayer(scene, layerProps, getSurfaceDefaultsForNewLayer());
+    if (!newLayer) return null;
+    insertLayerAfter(scene, newLayer, sourceLayer);
+    focusScene(scene);
+    if (options.activate !== false) {
+      if (options.flash !== false) flashOutlinerLayer(newLayer.id);
+      setActiveSceneGraphLayer(newLayer.id, {
+        forceSingleCubeVisibility: wasSingleCubeMode,
+        ensureSceneVisible: true,
+        ensureLayerVisible: true,
+        expandPath: true,
+        soloScene: true,
+        rebuild: false,
+        rebind: false,
+        selection: options.selection || 'replace',
+      });
+    }
+    if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
+    if (options.rebind !== false) syncAppearanceControlsToActiveLayer();
+    if (options.render !== false) renderSceneOutliner();
+    if (options.announce !== false) setHintMessage(`Duplicated ${sourceLayer.labelId || 'layer'} as ${newLayer.labelId || 'new layer'}.`);
+    return newLayer;
+  }
+
+  function duplicateSelectedCubeLayers() {
+    const selected = getSelectedCubeLayers();
+    if (selected.length <= 1) return duplicateCubeLayer(selected[0] || getActiveCubeLayer());
+    const scene = sceneGraphController.getSceneForLayer(selected[0]);
+    if (!scene) return null;
+    const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
+    const selectedSet = new Set(selected.map((layer) => layer.id));
+    const ordered = getCubeLayersInScene(scene).filter((layer) => selectedSet.has(layer.id));
+    const duplicates = [];
+    for (const source of ordered) {
+      const duplicate = duplicateCubeLayer(source, {
+        activate: false,
+        rebuild: false,
+        rebind: false,
+        render: false,
+        announce: false,
+        flash: false,
+      });
+      if (duplicate) duplicates.push(duplicate);
+    }
+    if (!duplicates.length) return null;
+    const active = duplicates[0];
+    flashOutlinerLayer(active.id);
+    setActiveSceneGraphLayer(active.id, {
+      forceSingleCubeVisibility: wasSingleCubeMode,
+      ensureSceneVisible: true,
+      ensureLayerVisible: true,
+      expandPath: true,
+      soloScene: true,
+      rebuild: false,
+      rebind: false,
+      selection: 'preserve',
+    });
+    if (sceneGraphController.setSelection) sceneGraphController.setSelection(duplicates.map((layer) => layer.id));
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    setHintMessage(`Duplicated ${duplicates.length} layers.`);
+    return active;
+  }
+
+  function deleteCubeLayer(layer, options = {}) {
+    if (!isCubeLikeLayer(layer)) return false;
+    const scene = sceneGraphController.getSceneForLayer(layer);
+    if (!scene) return false;
+    const cubes = getCubeLayersInScene(scene);
+    const index = cubes.indexOf(layer);
+    const replacement = cubes[index - 1] || cubes[index + 1] || null;
+    const wasActive = scene.activeLayerId === layer.id;
+    const wasVisible = layer.visible !== false;
+    const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
+    const removedLabel = layer.labelId || layer.name || 'layer';
+    sceneGraphController.removeLayer(layer.id);
+    if (replacement) {
+      if (wasActive) sceneGraphController.setActiveLayer(replacement.id);
+      if (wasSingleCubeMode && wasVisible) setOnlyCubeVisibleInScene(scene, replacement);
+    } else {
+      const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+      if (wasActive && moleculeLayer) sceneGraphController.setActiveLayer(moleculeLayer.id);
+    }
+    focusScene(scene);
+    if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
+    if (options.sync !== false) syncLoadedSceneControls();
+    if (options.rebind !== false) syncAppearanceControlsToActiveLayer();
+    if (options.render !== false) renderSceneOutliner();
+    if (options.announce !== false) setHintMessage(`Deleted ${removedLabel}.`);
+    return true;
+  }
+
+  function deleteSelectedCubeLayers() {
+    const selected = getSelectedCubeLayers();
+    const actionLayers = selected.length ? selected : [getActiveCubeLayer()].filter(Boolean);
+    if (!actionLayers.length) return false;
+    const scene = sceneGraphController.getSceneForLayer(actionLayers[0]);
+    if (!scene) return false;
+    const plan = getArithmeticCascadeDeletePlan(actionLayers);
+    if (!plan.layers.length) return false;
+    const deleteIds = new Set(plan.layers.map((layer) => layer.id));
+    const cubes = getCubeLayersInScene(scene);
+    const firstIndex = cubes.findIndex((layer) => deleteIds.has(layer.id));
+    const replacement = cubes
+      .slice(0, Math.max(0, firstIndex))
+      .reverse()
+      .find((layer) => !deleteIds.has(layer.id))
+      || cubes.slice(firstIndex + 1).find((layer) => !deleteIds.has(layer.id))
+      || null;
+    const wasSingleCubeMode = getVisibleCubeLayerCount(scene) <= 1;
+    const deletedVisible = plan.layers.some((layer) => layer.visible !== false);
+    for (const layer of plan.layers) sceneGraphController.removeLayer(layer.id);
+    if (replacement) {
+      sceneGraphController.setActiveLayer(replacement.id);
+      if (sceneGraphController.setSelection) sceneGraphController.setSelection([replacement.id]);
+      if (wasSingleCubeMode && deletedVisible) setOnlyCubeVisibleInScene(scene, replacement);
+    } else {
+      const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+      if (moleculeLayer) sceneGraphController.setActiveLayer(moleculeLayer.id);
+      if (sceneGraphController.clearSelection) sceneGraphController.clearSelection();
+    }
+    focusScene(scene);
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncLoadedSceneControls();
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    setHintMessage(`Deleted ${plan.layers.length} layers.`);
+    return true;
+  }
+
+  function focusScene(sceneOrId) {
+    const scene = typeof sceneOrId === 'string'
+      ? sceneGraphController.findScene(sceneOrId)
+      : sceneOrId;
+    if (!scene) return null;
+    if (sceneGraphController.setFocusedScene) sceneGraphController.setFocusedScene(scene.id);
+    else if (sceneGraphController.setActiveScene) sceneGraphController.setActiveScene(scene.id);
+    return scene;
+  }
+
+  function getRecordIndex(record) {
+    return Array.isArray(volumes) ? volumes.indexOf(record) : -1;
+  }
+
+  function getSceneFocusRecord(scene) {
+    if (!scene) return null;
+    const layers = sceneGraphController.listLayers(scene);
+    if (scene.kind === 'trajectory') {
+      const trajectoryLayer = layers.find((layer) => layer && layer.record && getActiveTrajectoryInfoForRecord(layer.record).enabled);
+      if (trajectoryLayer) return trajectoryLayer.record;
+    }
+    const activeLayer = scene.activeLayerId ? sceneGraphController.getLayerById(scene.activeLayerId) : null;
+    if (activeLayer && activeLayer.record) return activeLayer.record;
+    const moleculeLayer = scene.moleculeLayerId ? sceneGraphController.getLayerById(scene.moleculeLayerId) : null;
+    if (moleculeLayer && moleculeLayer.record) return moleculeLayer.record;
+    if (scene.moleculeRecord) return scene.moleculeRecord;
+    const recordLayer = layers.find((layer) => layer && layer.record);
+    return recordLayer ? recordLayer.record : null;
+  }
+
+  function activateSceneFocusRecord(scene) {
+    const record = getSceneFocusRecord(scene);
+    const recordIndex = getRecordIndex(record);
+    if (recordIndex < 0) return false;
+    sceneGraphController.setMoleculeRecord(scene, record);
+    if (currentIndex === recordIndex) return false;
+    currentIndex = recordIndex;
+    return true;
+  }
+
+  function getMoleculeRenderTargetsForRecord(record) {
+    let layer = null;
+    if (record) {
+      for (const scene of sceneGraphController.getScenes()) {
+        const candidate = sceneGraphController.getLayerById(scene && scene.moleculeLayerId);
+        if (candidate && candidate.record === record) {
+          layer = candidate;
+          break;
+        }
+      }
+    }
+    return {
+      layer,
+      atomGroup: (layer && layer.renderAtomGroup) || (!layer && record === volumes[currentIndex] ? atomGroup : null),
+      bondGroup: (layer && layer.renderBondGroup) || (!layer && record === volumes[currentIndex] ? bondGroup : null),
+    };
+  }
+
+  function setActiveSceneGraphLayer(layerId, options = {}) {
+    const nextLayer = sceneGraphController.getLayerById(layerId);
+    const scene = nextLayer ? sceneGraphController.getSceneForLayer(nextLayer) : null;
+    const singleCubeMode = scene ? getVisibleCubeLayerCount(scene) <= 1 : false;
+    const previousLayer = sceneGraphController.getActiveLayer();
+    const previousActiveId = previousLayer && previousLayer.id;
+    const layer = sceneGraphController.setActiveLayer(layerId);
+    if (!layer) return null;
+    if (layer.record && Number.isInteger(layer.moldenMoIndex)) {
+      layer.record.moldenMoIndex = layer.moldenMoIndex;
+      ensureMoldenGridForRecord(layer.record, layer.record.vol);
+    }
+    if (scene && options.ensureSceneVisible) scene.visible = true;
+    if (options.expandPath) expandOutlinerPathForLayer(layer);
+    if (scene) focusScene(scene);
+    if (scene && options.soloScene) showOnlySceneGraphScene(scene);
+    if (isCubeLikeLayer(layer) && options.ensureLayerVisible) {
+      layer.visible = true;
+      persistActiveCubeLayerState(layer, { render: false });
+    }
+    if (isCubeLikeLayer(layer) && (singleCubeMode || options.forceSingleCubeVisibility)) {
+      setOnlyCubeVisibleInScene(scene, layer);
+    }
+    if (isCubeLikeLayer(layer)) {
+      const selectionMode = options.selection || 'replace';
+      if (selectionMode === 'range') {
+        if (sceneGraphController.extendSelectionRange) {
+          sceneGraphController.extendSelectionRange(options.rangeFromId || previousActiveId || layer.id, layer.id);
+        }
+      } else if (selectionMode === 'add') {
+        if (sceneGraphController.setSelection) {
+          const ids = getSelectedCubeLayerIds();
+          if (!ids.includes(layer.id)) ids.push(layer.id);
+          sceneGraphController.setSelection(ids);
+        }
+      } else if (selectionMode !== 'preserve') {
+        selectOnlyCubeLayer(layer);
+      }
+    } else if (sceneGraphController.clearSelection) {
+      sceneGraphController.clearSelection();
+    }
+    const recordIndex = layer.record ? getRecordIndex(layer.record) : -1;
+    if (recordIndex >= 0) sceneGraphController.setMoleculeRecord(scene, layer.record);
+    if (recordIndex >= 0 && currentIndex !== recordIndex) {
+      currentIndex = recordIndex;
+      syncLoadedSceneControls();
+      if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
+    } else {
+      syncLoadedSceneControls();
+      const switchedCubeLayer = !!(previousLayer && previousLayer.id !== layer.id && isCubeLikeLayer(layer));
+      if (switchedCubeLayer && options.rebuild !== false) {
+        rebuildScene({ preserveView: true, syncGraph: false });
+      } else if (options.rebind !== false) {
+        syncAppearanceControlsToActiveLayer();
+      }
+    }
+    renderSceneOutliner();
+    if (options.scroll) scheduleOutlinerScrollToTarget(layer.id);
+    return layer;
+  }
+
+  function revealFocusedOutlinerTarget(options = {}) {
+    let visibilityChanged = false;
+    const activeLayer = sceneGraphController.getActiveLayer();
+    if (activeLayer) {
+      expandOutlinerPathForLayer(activeLayer);
+      const scene = sceneGraphController.getSceneForLayer(activeLayer);
+      if (options.soloScene && scene) visibilityChanged = showOnlySceneGraphScene(scene);
+      if (visibilityChanged && options.rebuild) rebuildScene({ preserveView: true, syncGraph: false });
+      if (options.render !== false) renderSceneOutliner();
+      scheduleOutlinerScrollToTarget(activeLayer.id);
+      return activeLayer.id;
+    }
+    const focusedScene = getFocusedScene();
+    if (focusedScene) {
+      focusedScene.expanded = true;
+      if (options.soloScene) visibilityChanged = showOnlySceneGraphScene(focusedScene);
+      if (visibilityChanged && options.rebuild) rebuildScene({ preserveView: true, syncGraph: false });
+      if (options.render !== false) renderSceneOutliner();
+      scheduleOutlinerScrollToTarget(focusedScene.id);
+      return focusedScene.id;
+    }
+    return '';
+  }
+
+  function normalizeLayerRenderModeValue(value) {
+    const key = String(value || '').trim().toLowerCase();
+    if (key === 'cloud') return 'cloud';
+    return 'surfaces';
+  }
+
+  function getLayerRenderMode(layer = getActiveCubeLayer()) {
+    return normalizeLayerRenderModeValue(layer && layer.renderMode) === 'cloud' ? 'cloud' : 'surface';
+  }
+
+  function setLayerRenderMode(layer, value) {
+    if (!layer) return;
+    layer.renderMode = String(value || '').trim().toLowerCase() === 'cloud' ? 'cloud' : 'surfaces';
+  }
+
+  function normalizeLayerCloudTypeValue(value) {
+    const key = String(value || '').trim().toLowerCase();
+    if (key === 'points') return 'points';
+    return 'volumetric';
+  }
+
+  function getLayerCloudType(layer = getActiveCubeLayer()) {
+    return normalizeLayerCloudTypeValue(layer && layer.cloudType) === 'points' ? 'points' : 'cubes';
+  }
+
+  function setLayerCloudType(layer, value) {
+    if (!layer) return;
+    layer.cloudType = String(value || '').trim().toLowerCase() === 'points' ? 'points' : 'volumetric';
+  }
+
+  function normalizeLayerCloudStride(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(1, Math.trunc(n)) : 2;
+  }
+
+  function normalizeLayerCloudAlpha(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(0.01, Math.min(1, n)) : 0.6;
+  }
+
+  function getLayerAutoIsoEnabled(layer) {
+    if (!layer) return false;
+    return layer.autoIso == null ? !!layer.autoIsoEnabled : !!layer.autoIso;
+  }
+
+  function setLayerAutoIsoEnabled(layer, enabled) {
+    if (!layer) return;
+    const next = !!enabled;
+    layer.autoIso = next;
+    layer.autoIsoEnabled = next;
+  }
+
+  function getLayerSurfaceColors(layer) {
+    const scheme = SURFACE_COLOR_SCHEMES[String(layer && layer.colorScheme || 'emory')] || SURFACE_COLOR_SCHEMES.emory;
+    return {
+      pos: normalizeHexColor(layer && layer.posColor, scheme.pos || DEFAULT_POS_SURFACE_COLOR),
+      neg: normalizeHexColor(layer && layer.negColor, scheme.neg || DEFAULT_NEG_SURFACE_COLOR),
+    };
+  }
+
+  function getLayerRenderSurfaceColors(layer) {
+    const colors = getLayerSurfaceColors(layer);
+    return layer && layer.signFlip
+      ? { pos: colors.neg, neg: colors.pos }
+      : colors;
+  }
+
+  function deleteSceneFromOutliner(scene) {
+    if (!scene) return false;
+    const sceneId = scene.id;
+    const sceneKey = String(scene.sceneKey || '').trim();
+    const removedRecords = new Set(sceneGraphController.listLayers(scene).map((layer) => layer && layer.record).filter(Boolean));
+    const removedCurrent = currentIndex >= 0 && volumes[currentIndex] && (
+      (sceneKey && volumes[currentIndex]._sceneGraphSceneKey === sceneKey)
+      || removedRecords.has(volumes[currentIndex])
+    );
+    if (sceneKey) {
+      volumes = volumes.filter((record) => !(record && record._sceneGraphSceneKey === sceneKey));
+    } else if (removedRecords.size) {
+      volumes = volumes.filter((record) => !removedRecords.has(record));
+    }
+    if (removedCurrent) clearEditHistory();
+    sceneGraphController.removeScene(sceneId);
+    if (!volumes.length) {
+      currentIndex = -1;
+      clearSceneMeshes();
+      if (sceneGraphController.clearScenes) sceneGraphController.clearScenes();
+      renderSceneOutliner();
+      syncLoadedSceneControls();
+      syncTrajectoryControls();
+      syncAppearanceControlsToActiveLayer();
+      updateSidePanel();
+      updateEmptyStateVisibility();
+      setHintMessage(`Deleted scene "${scene.name || 'Untitled scene'}".`);
+      return true;
+    }
+    const focused = getFocusedScene();
+    const focusedRecord = getSceneFocusRecord(focused);
+    const focusedRecordIndex = getRecordIndex(focusedRecord);
+    currentIndex = focusedRecordIndex >= 0
+      ? focusedRecordIndex
+      : Math.max(0, Math.min(currentIndex, volumes.length - 1));
+    syncSceneGraphFromVolumes({ preserveLayerState: true, preferActiveRecord: true });
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncLoadedSceneControls();
+    syncTrajectoryControls();
+    syncAppearanceControlsToActiveLayer();
+    updateSidePanel();
+    updateEmptyStateVisibility();
+    renderSceneOutliner();
+    setHintMessage(`Deleted scene "${scene.name || 'Untitled scene'}".`);
+    return true;
   }
 
   /**
@@ -9054,7 +10826,8 @@
     }
     if (clearTransient) clearTransientInteractionState();
     currentIndex = nextIndex;
-    syncActiveVolumeControls();
+    syncSceneGraphFromVolumes({ preserveLayerState: true, preferActiveRecord: previousRecord !== nextRecord });
+    syncLoadedSceneControls();
     if (currentIndex >= 0 && volumes[currentIndex]) {
       if (shouldRebuild) {
         rebuildScene({ preserveView, skipAutoIso });
@@ -9070,56 +10843,6 @@
     return -1;
   }
 
-  /**
-   * Duplicate the active file record and make the copy active.
-   */
-  function duplicateActiveVolumeRecord() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    if (!record || !record.vol) {
-      setHintMessage('No active file to duplicate.');
-      return;
-    }
-    const duplicate = Object.assign({}, cloneStructuredData(record), {
-      name: buildDuplicateVolumeName(record.name),
-      isSample: false,
-    });
-    duplicate.vol = rehydrateClonedVolume(cloneStructuredData(record.vol));
-    volumes.push(duplicate);
-    activateVolumeIndex(volumes.length - 1, { preserveView: true });
-    setHintMessage(`Duplicated ${record.name} as ${duplicate.name}.`);
-  }
-
-  /**
-   * Remove the active file record.
-   */
-  function removeActiveVolumeRecord() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    if (!record) {
-      setHintMessage('No active file to remove.');
-      return;
-    }
-    const removedName = String(record.name || 'file');
-    if (addAtomOperatorSession && addAtomOperatorSession.record === record) {
-      addAtomOperatorSession = null;
-      updateAddAtomOperatorUi();
-    } else if (addAtomOperatorSession) {
-      finalizeAddAtomOperatorSession({ announce: false });
-    }
-    clearTransientInteractionState();
-    volumes.splice(currentIndex, 1);
-    pruneEditHistory();
-    if (volumes.length === 0) {
-      activateVolumeIndex(-1, { rebuild: false, clearSceneWhenEmpty: true });
-      setNavigationHint(HINT_START, { includeStyles: true });
-      setHintMessage(`Removed ${removedName}.`);
-      return;
-    }
-    activateVolumeIndex(currentIndex, { preserveView: true });
-    setHintMessage(`Removed ${removedName}.`);
-  }
-
-  if (duplicateFileBtn) duplicateFileBtn.onclick = () => duplicateActiveVolumeRecord();
-  if (removeFileBtn) removeFileBtn.onclick = () => removeActiveVolumeRecord();
   if (emptyStateOpenBtn) emptyStateOpenBtn.onclick = triggerOpenFiles;
   if (emptyStateSampleBtn) {
     emptyStateSampleBtn.onclick = async () => {
@@ -9159,19 +10882,48 @@
     };
   }
   // Toggle surface rendering button
+  function getActiveSurfaceToggleState() {
+    const layer = getActiveCubeLayer();
+    return layer ? layer.visible !== false : !!showSurfaces;
+  }
+
+  function setActiveSurfaceToggleState(visible) {
+    const layer = getActiveCubeLayer();
+    if (layer) {
+      layer.visible = !!visible;
+      persistActiveCubeLayerState(layer);
+      renderSceneOutliner();
+      return 'layer';
+    }
+    showSurfaces = !!visible;
+    return 'global';
+  }
+
+  function toggleActiveSurfaceVisibility() {
+    const scope = setActiveSurfaceToggleState(!getActiveSurfaceToggleState());
+    updateSurfBtn();
+    rebuildScene({ preserveView: true, syncGraph: scope === 'layer' ? false : true });
+    if (scope === 'global') scheduleAppearancePresetAutosave();
+  }
+
   /**
    * Synchronize surface toggle UI state.
    */
   const updateSurfBtn = () => {
     if (!surfBtn) return;
+    const activeVisible = getActiveSurfaceToggleState();
+    const layer = getActiveCubeLayer();
+    const tooltip = layer
+      ? `Toggle ${layer.labelId || 'active cube'} visibility`
+      : 'Toggle iso-surface rendering';
     const isCheckbox = typeof surfBtn.type === 'string' && surfBtn.type.toLowerCase() === 'checkbox';
     if (isCheckbox) {
-      surfBtn.checked = !!showSurfaces;
-      setTooltipText(surfBtn, 'Toggle iso-surface rendering');
+      surfBtn.checked = !!activeVisible;
+      setTooltipText(surfBtn, tooltip);
       syncAllAppearanceActionToggleButtons();
       return;
     }
-    surfBtn.textContent = showSurfaces ? 'Hide Surfaces' : 'Show Surfaces';
+    surfBtn.textContent = activeVisible ? 'Hide Surfaces' : 'Show Surfaces';
   };
   updateSurfBtn();
 
@@ -9490,76 +11242,72 @@
    * @param {*} record
    * @param {*} vol
    */
-  function ensureMoldenGridForRecord(record, vol) {
+  function evaluateMoldenGrid(record, requestedIndex) {
+    const vol = record && record.vol;
     if (!record || !vol || vol.kind !== 'molden' || !vol.molden) return;
     const molden = vol.molden;
     const mos = Array.isArray(molden.mos) ? molden.mos : [];
     const atomBlocks = molden.basis && Array.isArray(molden.basis.atomBlocks) ? molden.basis.atomBlocks : [];
     if (mos.length === 0 || atomBlocks.length === 0) {
-      clearMoldenGrid(vol);
-      return;
+      return null;
     }
-    let moIndex = Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : 0;
+    let moIndex = Number.isInteger(requestedIndex) ? requestedIndex : 0;
     if (moIndex < 0 || moIndex >= mos.length) moIndex = 0;
-    record.moldenMoIndex = moIndex;
     const mo = mos[moIndex];
     if (!mo || !(mo.coefficients instanceof Float32Array) || mo.coefficients.length === 0) {
-      clearMoldenGrid(vol);
-      return;
+      return null;
     }
     const gridSettings = getMoldenGridSettings(record);
     const atomSignature = buildMoldenAtomSignature(vol);
     const cacheKey = `${moIndex}|${gridSettings.stepAng.toFixed(2)}|${gridSettings.paddingAng.toFixed(1)}|${atomSignature}`;
-    if (!(record.moldenGridCache instanceof Map)) record.moldenGridCache = new Map();
-    if (record.moldenGridCache.has(cacheKey)) {
-      const cached = record.moldenGridCache.get(cacheKey);
-      vol.origin = cached.origin.map((v) => v);
-      vol.axes = cached.axes.map((axis) => axis.slice(0, 3));
-      vol.nxyz = cached.nxyz.slice(0, 3);
-      vol.data = cached.data.slice(0);
-      vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
-      vol.isoHint = cached.isoHint;
-      return;
-    }
-
-    const grid = buildMoldenGridSpec(vol, gridSettings);
-    const [nx, ny, nz] = grid.nxyz;
-    const data = new Float32Array(nx * ny * nz);
-    const angularFlags = molden.angularFlags || {};
-    let aoOffset = 0;
-    for (const atomBlock of atomBlocks) {
-      const atomIndex = Number(atomBlock && atomBlock.atomIndex);
-      const atom = Array.isArray(vol.atoms) ? vol.atoms[atomIndex] : null;
-      if (!atom) throw new Error(`Molden MO rendering failed: basis atom index ${atomIndex + 1} is out of range.`);
-      const center = atomUnitsToAng(vol, atom).multiplyScalar(ANG_TO_BOHR);
-      const xAxis = buildMoldenAxisTables(nx, grid.origin[0], grid.stepBohr, center.x);
-      const yAxis = buildMoldenAxisTables(ny, grid.origin[1], grid.stepBohr, center.y);
-      const zAxis = buildMoldenAxisTables(nz, grid.origin[2], grid.stepBohr, center.z);
-      const shells = Array.isArray(atomBlock && atomBlock.shells) ? atomBlock.shells : [];
-      for (const shell of shells) {
-        const count = countMoldenShellFunctionCount(shell && shell.label, angularFlags);
-        if (aoOffset + count > mo.coefficients.length) {
-          throw new Error(`Molden MO rendering failed: MO ${moIndex + 1} is missing coefficients for shell "${shell && shell.label}" on atom ${atomIndex + 1}.`);
+    return orbitalGridStore.get(record, cacheKey, () => {
+      const grid = buildMoldenGridSpec(vol, gridSettings);
+      const [nx, ny, nz] = grid.nxyz;
+      const data = new Float32Array(nx * ny * nz);
+      const angularFlags = molden.angularFlags || {};
+      let aoOffset = 0;
+      for (const atomBlock of atomBlocks) {
+        const atomIndex = Number(atomBlock && atomBlock.atomIndex);
+        const atom = Array.isArray(vol.atoms) ? vol.atoms[atomIndex] : null;
+        if (!atom) throw new Error(`Molden MO rendering failed: basis atom index ${atomIndex + 1} is out of range.`);
+        const center = atomUnitsToAng(vol, atom).multiplyScalar(ANG_TO_BOHR);
+        const xAxis = buildMoldenAxisTables(nx, grid.origin[0], grid.stepBohr, center.x);
+        const yAxis = buildMoldenAxisTables(ny, grid.origin[1], grid.stepBohr, center.y);
+        const zAxis = buildMoldenAxisTables(nz, grid.origin[2], grid.stepBohr, center.z);
+        const shells = Array.isArray(atomBlock && atomBlock.shells) ? atomBlock.shells : [];
+        for (const shell of shells) {
+          const count = countMoldenShellFunctionCount(shell && shell.label, angularFlags);
+          if (aoOffset + count > mo.coefficients.length) {
+            throw new Error(`Molden MO rendering failed: MO ${moIndex + 1} is missing coefficients for shell "${shell && shell.label}" on atom ${atomIndex + 1}.`);
+          }
+          const coeffs = mo.coefficients.subarray(aoOffset, aoOffset + count);
+          accumulateMoldenShellContribution(data, grid.nxyz, xAxis, yAxis, zAxis, shell, coeffs, angularFlags);
+          aoOffset += count;
         }
-        const coeffs = mo.coefficients.subarray(aoOffset, aoOffset + count);
-        accumulateMoldenShellContribution(data, grid.nxyz, xAxis, yAxis, zAxis, shell, coeffs, angularFlags);
-        aoOffset += count;
       }
-    }
-    const cacheEntry = {
-      origin: grid.origin.slice(0, 3),
-      axes: grid.axes.map((axis) => axis.slice(0, 3)),
-      nxyz: grid.nxyz.slice(0, 3),
-      data: data.slice(0),
-      isoHint: DEFAULT_ISO_VALUE,
-    };
-    record.moldenGridCache.set(cacheKey, cacheEntry);
-    vol.origin = cacheEntry.origin.slice(0, 3);
-    vol.axes = cacheEntry.axes.map((axis) => axis.slice(0, 3));
-    vol.nxyz = cacheEntry.nxyz.slice(0, 3);
-    vol.data = cacheEntry.data.slice(0);
-    vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
-    vol.isoHint = cacheEntry.isoHint;
+      return Object.assign({}, vol, {
+        kind: 'molden',
+        moldenMoIndex: moIndex,
+        origin: grid.origin.slice(),
+        axes: grid.axes.map(axis => axis.slice()),
+        nxyz: grid.nxyz.slice(),
+        data,
+        idx: (i, j, k) => (i * ny + j) * nz + k,
+        isoHint: DEFAULT_ISO_VALUE,
+    });
+    });
+  }
+
+  function ensureMoldenGridForRecord(record, vol) {
+    const grid = evaluateMoldenGrid(record, record && record.moldenMoIndex);
+    if (!grid) { clearMoldenGrid(vol); return; }
+    // Compatibility export describes the selected MO; layers retain their own grid.
+    vol.origin = grid.origin.slice();
+    vol.axes = grid.axes.map(axis => axis.slice());
+    vol.nxyz = grid.nxyz.slice();
+    vol.data = grid.data;
+    vol.idx = grid.idx;
+    vol.isoHint = grid.isoHint;
   }
 
   /**
@@ -9567,20 +11315,22 @@
    */
   function updateAutoIsoButtonState() {
     if (!autoIsoBtn) return;
-    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
+    const layer = getActiveCubeLayer();
+    const record = layer && layer.record ? layer.record : (currentIndex >= 0 ? volumes[currentIndex] : null);
+    const vol = layer ? (layer.cubeData || (record && record.vol)) : (record && record.vol);
     const hasGrid = hasVolumetricGrid(vol);
     const isoSlider = getViewSliderComponent(isoInput);
-    const manualIsoEnabled = !autoIsoEnabled;
+    const enabled = layer ? getLayerAutoIsoEnabled(layer) : !!autoIsoEnabled;
+    const manualIsoEnabled = !enabled;
     autoIsoBtn.disabled = false;
-    autoIsoBtn.checked = !!autoIsoEnabled;
-    autoIsoBtn.setAttribute('aria-checked', autoIsoEnabled ? 'true' : 'false');
+    autoIsoBtn.checked = enabled;
+    autoIsoBtn.setAttribute('aria-checked', enabled ? 'true' : 'false');
     if (rowIso) rowIso.setAttribute('data-disabled', manualIsoEnabled ? 'false' : 'true');
     if (isoSlider) isoSlider.setDisabled(!manualIsoEnabled);
     else if (isoInput) isoInput.disabled = !manualIsoEnabled;
     setTooltipText(autoIsoBtn, hasGrid
-      ? `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: target ${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% density (cached per orbital/component).`
-      : `Autoiso ${autoIsoEnabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube/.molden file to apply.`);
+      ? `Autoiso ${enabled ? 'ON' : 'OFF'}: target ${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% density (cached per orbital/component).`
+      : `Autoiso ${enabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube/.molden file to apply.`);
   }
   updateAutoIsoButtonState();
 
@@ -9967,7 +11717,7 @@
    * This keeps surface visibility and interaction state consistent across mode changes.
    * @param {string} newMode
    */
-  function setMode(newMode) {
+  function setMode(newMode, options = {}) {
     if (currentMode === newMode) {
       updateModeButtons();
       return;
@@ -9985,8 +11735,8 @@
     endQuaternionViewRotate();
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
-    if (currentMode === MODES.EDIT && trajectoryPlaying) {
-      stopTrajectoryPlayback({ syncUi: true });
+    if (currentMode === MODES.EDIT && !options.preserveTrajectoryPlayback && isAnyTrajectoryPlaybackActive()) {
+      stopAllTrajectoryPlayback({ syncUi: true });
     }
     if (currentMode === MODES.EDIT) {
       const vibInfo = getActiveVibrationInfo();
@@ -10009,23 +11759,21 @@
     } else if (currentMode === MODES.DISPLAY) {
       setNavigationHint(HINT_START, { includeStyles: true });
     }
-    // Entering measurement mode: hide surfaces (preserve view), save prior state (once)
+    // Entering measurement mode: suppress surface rendering without changing layer visibility.
     if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
       setBondHover(null);
       setSurfaceHover(null);
       hideSurfaceHoverLabel();
-      if (__savedShowSurfaces === null) __savedShowSurfaces = showSurfaces;
-      if (showSurfaces) {
-        showSurfaces = false;
+      if (!surfaceRenderSuppressed) {
+        surfaceRenderSuppressed = true;
         if (typeof updateSurfBtn === 'function') updateSurfBtn();
         rebuildScene({ preserveView: true });
       }
     }
-    // Entering edit mode: hide surfaces (preserve view), save prior state (once)
+    // Entering edit mode: suppress surface rendering without changing layer visibility.
     if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
-      if (__savedShowSurfaces === null) __savedShowSurfaces = showSurfaces;
-      if (showSurfaces) {
-        showSurfaces = false;
+      if (!surfaceRenderSuppressed) {
+        surfaceRenderSuppressed = true;
         if (typeof updateSurfBtn === 'function') updateSurfBtn();
         rebuildScene({ preserveView: true });
       }
@@ -10052,10 +11800,10 @@
         hover: false,
       });
     }
-    // Leaving measurement mode to display: restore surfaces and clear selection
+    // Leaving measurement mode to display: restore render suppression and clear selection.
     if (prevMode === MODES.MEASURE && currentMode === MODES.DISPLAY) {
-      if (__savedShowSurfaces != null && showSurfaces !== !!__savedShowSurfaces) {
-        showSurfaces = !!__savedShowSurfaces;
+      if (surfaceRenderSuppressed) {
+        surfaceRenderSuppressed = false;
         if (typeof updateSurfBtn === 'function') updateSurfBtn();
         rebuildScene({ preserveView: true });
       }
@@ -10063,10 +11811,10 @@
       clearEditSelection && clearEditSelection();
       updateSelectedHalos && updateSelectedHalos();
     }
-    // Leaving edit mode to display: restore surfaces
+    // Leaving edit mode to display: restore render suppression.
     if (prevMode === MODES.EDIT && currentMode === MODES.DISPLAY) {
-      if (__savedShowSurfaces != null && showSurfaces !== !!__savedShowSurfaces) {
-        showSurfaces = !!__savedShowSurfaces;
+      if (surfaceRenderSuppressed) {
+        surfaceRenderSuppressed = false;
         if (typeof updateSurfBtn === 'function') updateSurfBtn();
         rebuildScene({ preserveView: true });
       }
@@ -10112,17 +11860,15 @@
   function renderRibbon() {}
   if (surfBtn && typeof surfBtn.type === 'string' && surfBtn.type.toLowerCase() === 'checkbox') {
     surfBtn.onchange = () => {
-      showSurfaces = !!surfBtn.checked;
+      setActiveSurfaceToggleState(!!surfBtn.checked);
+      const scope = getActiveCubeLayer() ? 'layer' : 'global';
       updateSurfBtn();
-      rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
+      rebuildScene({ preserveView: true, syncGraph: scope === 'layer' ? false : true });
+      if (scope === 'global') scheduleAppearancePresetAutosave();
     };
   } else if (surfBtn) {
     surfBtn.onclick = () => {
-      showSurfaces = !showSurfaces;
-      updateSurfBtn();
-      rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
+      toggleActiveSurfaceVisibility();
     };
   }
   /**
@@ -10378,7 +12124,7 @@
     const showView = hasRecord;
     const showCoords = hasAtoms;
     const showSpinorInfo = !!(vol && vol.isTwoComponent);
-    const showTrajectory = !!getActiveTrajectoryInfo().enabled;
+    const showTrajectory = getAllTrajectoryInfos().length > 0;
     const showVibration = !!getActiveVibrationInfo().enabled;
     const itemDefs = [
       {
@@ -10695,6 +12441,12 @@
    */
   function setTrajectoryPanelOpen(open, options = {}) {
     const shouldOpen = !!open;
+    if (shouldOpen && options.auto && userDismissedTrajectoryPopover && !isFloatingPanelCurrentlyOpen(trajectoryPanel)) {
+      if (options.syncUi !== false) syncTrajectoryControls();
+      updateDisplayWindowAdaptiveMenuUi();
+      return;
+    }
+    if (shouldOpen && !options.auto) userDismissedTrajectoryPopover = false;
     if (shouldOpen && options.exclusive !== false) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL);
     if (!shouldOpen) {
       if (trajectoryVideoController) {
@@ -10703,7 +12455,7 @@
           reason: String(options.trajectoryVideoReason || 'Trajectory video export discarded because the panel was closed'),
         });
       }
-      stopTrajectoryPlayback({ syncUi: false });
+      stopAllTrajectoryPlayback({ syncUi: false });
     }
     setFloatingPanelOpen(trajectoryPanel, shouldOpen);
     if (options.syncUi !== false) syncTrajectoryControls();
@@ -10752,6 +12504,7 @@
     trajectoryPanelClose.onclick = (e) => {
       if (e && e.preventDefault) e.preventDefault();
       if (e && e.stopPropagation) e.stopPropagation();
+      userDismissedTrajectoryPopover = true;
       setTrajectoryPanelOpen(false);
     };
   }
@@ -11003,6 +12756,8 @@
   let pastedTextStructureSerial = 0;
   const EDIT_INTENT = Object.freeze({
     ATOM_MANIPULATION: 'atom_manipulation',
+    ADD_ATOM: 'add_atom',
+    ADD_FRAGMENT: 'add_fragment',
     ADD_MOLECULE: 'add_molecule',
   });
   const EDIT_BOND_ACTION = Object.freeze({ SET: 'set', DELETE: 'delete' });
@@ -11143,6 +12898,8 @@
   contentGroup.add(addPreviewGroup);
   const addMoleculePreviewGroup = new THREE.Group();
   addPreviewGroup.add(addMoleculePreviewGroup);
+  const catalogVoidPreviewGroup = new THREE.Group();
+  addPreviewGroup.add(catalogVoidPreviewGroup);
   const addFusePreviewGroup = new THREE.Group();
   addPreviewGroup.add(addFusePreviewGroup);
   const addAngleGuideGroup = new THREE.Group();
@@ -11588,7 +13345,7 @@
     syncBuilderExtensionFromVolumes: (...args) => presetController.syncBuilderExtensionFromVolumes(...args),
     activateVolumeIndex,
     clearTransientInteractionState,
-    syncActiveVolumeControls,
+    syncActiveVolumeControls: syncLoadedSceneControls,
     rebuildScene,
     updateSidePanel,
     setHintMessage,
@@ -11925,8 +13682,9 @@
 
   function buildFragmentAttachUiHint(fragment, policy = editAddFragmentAttachPolicy) {
     const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
-    const parts = [`Fragment attach: ${label}`, `Policy ${getEditFragmentAttachPolicyLabel(policy)}`];
+    const parts = [`Build fragment: ${label}`, `Policy ${getEditFragmentAttachPolicyLabel(policy)}`];
     if (fragmentSupportsFuseRing(fragment)) parts.push('Click bond to fuse ring');
+    parts.push('Click atom to attach or void to place');
     return parts.join(' • ');
   }
 
@@ -12037,7 +13795,65 @@
    * @returns {{name:string,vol:*}|null}
    */
   function createNewEditableVolumeRecord(options = {}) {
-    return editState.createNewEditableVolumeRecord(options);
+    const record = editState.createNewEditableVolumeRecord(options);
+    if (record) {
+      record._sceneGraphSceneKey = allocateVolumeSceneKey(record.name || 'untitled');
+      if (options.ensureOrbitalsGroup) record._sceneGraphHasOrbitalsGroup = true;
+      syncSceneGraphFromVolumes({ preserveLayerState: true, preferActiveRecord: true });
+    }
+    return record;
+  }
+
+  function getNextNewMoleculeName() {
+    const used = new Set();
+    for (const scene of sceneGraphController.getScenes()) {
+      const name = String(scene && scene.name || '').trim().toLowerCase();
+      if (name) used.add(name);
+    }
+    for (const record of Array.isArray(volumes) ? volumes : []) {
+      const name = String(record && record.name || '').trim().toLowerCase();
+      if (name) used.add(name);
+    }
+    const base = 'New molecule';
+    if (!used.has(base.toLowerCase())) return base;
+    let index = 2;
+    while (used.has(`${base} (${index})`.toLowerCase())) index += 1;
+    return `${base} (${index})`;
+  }
+
+  function createNewMoleculeScene() {
+    if (getSceneOutliner().isRenaming()) finishOutlinerRename({ commit: true });
+    closeCubeLayerContextMenu();
+    closeCombinePopover();
+    const name = getNextNewMoleculeName();
+    const record = createNewEditableVolumeRecord({
+      name,
+      ensureOrbitalsGroup: true,
+    });
+    if (!record) return null;
+    const scene = findSceneBySceneKey(record._sceneGraphSceneKey) || getFocusedScene();
+    if (!scene) return null;
+    scene.name = name;
+    scene.expanded = true;
+    for (const otherScene of sceneGraphController.getScenes()) {
+      otherScene.visible = otherScene && otherScene.id === scene.id;
+    }
+    const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+    if (moleculeLayer) {
+      sceneGraphController.setActiveLayer(moleculeLayer.id);
+      sceneGraphController.clearSelection();
+    } else {
+      focusScene(scene);
+    }
+    sceneGraphController.ensureOrbitalsGroup(scene, { visible: true, expanded: true });
+    focusScene(scene);
+    rebuildScene({ preserveView: true, syncGraph: false });
+    syncLoadedSceneControls();
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    scheduleOutlinerScrollToTarget(scene.id);
+    setMode(MODES.EDIT, { preserveTrajectoryPlayback: true });
+    return scene;
   }
 
   /**
@@ -12276,7 +14092,7 @@
     onSelectionChanged: () => {
       clearBondCenterSelection({ updateVisuals: false });
       if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
-      clearGestureVoidPreview();
+      clearActiveVoidPlacementPreview();
       if (symmetryPreviewState) {
         clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
       }
@@ -13926,14 +15742,37 @@
   }
 
   function normalizeEditIntent(nextIntent) {
+    if (nextIntent === EDIT_INTENT.ADD_ATOM) return EDIT_INTENT.ADD_ATOM;
+    if (nextIntent === EDIT_INTENT.ADD_FRAGMENT) return EDIT_INTENT.ADD_FRAGMENT;
     if (nextIntent === EDIT_INTENT.ADD_MOLECULE) return EDIT_INTENT.ADD_MOLECULE;
     return EDIT_INTENT.ATOM_MANIPULATION;
+  }
+
+  function isFragmentAddIntentValue(intent) {
+    return intent === EDIT_INTENT.ADD_FRAGMENT
+      || (intent === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT);
+  }
+
+  function isMoleculeAddIntentValue(intent) {
+    return intent === EDIT_INTENT.ADD_MOLECULE;
+  }
+
+  function isAtomPlacementIntentValue(intent) {
+    return intent === EDIT_INTENT.ATOM_MANIPULATION || intent === EDIT_INTENT.ADD_ATOM;
+  }
+
+  function isBuildBondOrderIntentValue(intent) {
+    return intent === EDIT_INTENT.ATOM_MANIPULATION
+      || intent === EDIT_INTENT.ADD_ATOM
+      || intent === EDIT_INTENT.ADD_FRAGMENT;
   }
 
   function syncEditIntentCompatibilityState() {
     const normalized = normalizeEditIntent(editIntent);
     editIntent = normalized;
-    if (normalized === EDIT_INTENT.ADD_MOLECULE) editAddMode = EDIT_ADD_MODE.MOLECULE;
+    if (normalized === EDIT_INTENT.ADD_ATOM) editAddMode = EDIT_ADD_MODE.ATOM;
+    else if (normalized === EDIT_INTENT.ADD_FRAGMENT) editAddMode = EDIT_ADD_MODE.FRAGMENT;
+    else if (normalized === EDIT_INTENT.ADD_MOLECULE) editAddMode = EDIT_ADD_MODE.MOLECULE;
     else if (editAddMode !== EDIT_ADD_MODE.FRAGMENT) editAddMode = EDIT_ADD_MODE.ATOM;
   }
 
@@ -13941,8 +15780,14 @@
     return editTools ? editTools.getEditIntent() : normalizeEditIntent(editIntent);
   }
 
-  function isAtomManipulationIntent() {
-    return currentMode === MODES.EDIT && getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION;
+  function isEditHaloIntent() {
+    const intent = getEditIntent();
+    return currentMode === MODES.EDIT
+      && (
+        intent === EDIT_INTENT.ATOM_MANIPULATION
+        || intent === EDIT_INTENT.ADD_ATOM
+        || intent === EDIT_INTENT.ADD_FRAGMENT
+      );
   }
 
   function clearFragmentAttachSessionState() {
@@ -13956,11 +15801,12 @@
   }
 
   function isFragmentPayloadLoaded() {
-    return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT;
+    return isFragmentAddIntentValue(getEditIntent());
   }
 
   function isSelectionAtomBuildCueArmed() {
-    return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION
+    const intent = getEditIntent();
+    return (intent === EDIT_INTENT.ATOM_MANIPULATION || intent === EDIT_INTENT.ADD_ATOM)
       && editAddMode === EDIT_ADD_MODE.ATOM
       && !!selectionBuildCueArmed;
   }
@@ -14175,10 +16021,10 @@
   function setEditAddBondOrder(order, options = {}) {
     const announce = options.announce !== false;
     editAddBondOrder = normalizeEditAddBondOrder(order);
-    refreshActiveAddGrowPreview();
+    refreshActiveAddPreview();
     updateEditToolboxUi({ syncSearch: false });
     if (announce && editMode) {
-      if (isSelectionFragmentCueArmed()) setHintMessage(`Fragment attach bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
+      if (isFragmentPayloadLoaded()) setHintMessage(`Fragment attach bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
       else if (getEditIntent() === EDIT_INTENT.ADD_MOLECULE) setHintMessage('Standalone placement ignores bond-order hotkeys.');
       else setHintMessage(`Build bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
     }
@@ -14295,8 +16141,15 @@
   }
 
   function showGestureVoidPlacementPreview(e) {
-    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || shouldBlockEditVoidPlacement()) {
-      clearGestureVoidPreview();
+    const intent = getEditIntent();
+    if (isFragmentAddIntentValue(intent)) {
+      return catalogVoidPreview.showAtEvent(e, CATALOG_KIND.FRAGMENT);
+    }
+    if (isMoleculeAddIntentValue(intent)) {
+      return catalogVoidPreview.showAtEvent(e, CATALOG_KIND.MOLECULE);
+    }
+    if (currentMode !== MODES.EDIT || !isAtomPlacementIntentValue(intent) || shouldBlockEditVoidPlacement()) {
+      clearActiveVoidPlacementPreview();
       return false;
     }
     const world = computeAddAtomPosition(e, null);
@@ -14309,7 +16162,45 @@
     gestureVoidPreviewWorld = world.clone();
     mesh.position.copy(world);
     mesh.scale.setScalar(getRenderedAtomDisplayRadius(z));
+    catalogVoidPreview.clear();
     return true;
+  }
+
+  function refreshGestureVoidPreviewForLoadedElement() {
+    if (!gestureVoidPreviewWorld || !gestureVoidPreviewMesh || getEditIntent() !== EDIT_INTENT.ADD_ATOM) return;
+    const z = editAddElementZ | 0;
+    const mesh = ensureGestureVoidPreviewMesh(z);
+    mesh.position.copy(gestureVoidPreviewWorld);
+    mesh.scale.setScalar(getRenderedAtomDisplayRadius(z));
+  }
+
+  function refreshActiveAddPreview() {
+    const intent = getEditIntent();
+    if (isMoleculeAddIntentValue(intent)) {
+      clearAddGrowPreview();
+      clearFuseRingPreview();
+      clearGestureVoidPreview();
+      catalogVoidPreview.clearUnless(CATALOG_KIND.MOLECULE, editAddMoleculeId);
+      if (moleculePlaceActive) rebuildMoleculePlacementPreviewMeshes();
+      return;
+    }
+    if (isFragmentAddIntentValue(intent)) {
+      clearMoleculePlacementPreview();
+      clearGestureVoidPreview();
+      catalogVoidPreview.clearUnless(CATALOG_KIND.FRAGMENT, editAddFragmentId);
+      if (addGrowActive) {
+        addGrowKind = 'fragment';
+        refreshActiveAddGrowPreview();
+      }
+      return;
+    }
+    clearMoleculePlacementPreview();
+    catalogVoidPreview.clear();
+    if (addGrowActive) {
+      addGrowKind = 'atom';
+      refreshActiveAddGrowPreview();
+    }
+    refreshGestureVoidPreviewForLoadedElement();
   }
 
   function shouldBlockEditVoidPlacement() {
@@ -14403,19 +16294,14 @@
     }
     if (!addPreviewBondMesh) {
       const g = new THREE.CylinderGeometry(1.0, 1.0, 1.0, 16, 1, false);
-      const m = new THREE.MeshPhysicalMaterial({
-        color: 0xdbe3ef,
-        transparent: true,
-        opacity: 0.68,
-        roughness: 0.25,
-        metalness: 0.05,
-      });
+      const m = createGhostBondPreviewMaterial();
       addPreviewBondMesh = new THREE.Mesh(g, m);
       addPreviewBondMesh.renderOrder = 58;
       addPreviewGroup.add(addPreviewBondMesh);
     }
     const atomColor = getAtomRenderColor(z);
     syncGhostAtomPreviewMeshMaterial(addPreviewAtomMesh, atomColor, z, DEFAULT_GHOST_ATOM_PREVIEW_OPACITY);
+    syncGhostBondPreviewMeshMaterial(addPreviewBondMesh, DEFAULT_GHOST_BOND_PREVIEW_OPACITY);
   }
 
   /**
@@ -14711,28 +16597,28 @@
   }
 
   /**
-   * Rebuild molecule preview meshes from current template data.
+   * Rebuild one catalog template preview group from COM-centered template data.
+   * @param {THREE.Group} targetGroup
+   * @param {*} templateData
+   * @param {{atomOpacity?:number,bondOpacity?:number}=} options
    */
-  function rebuildMoleculePlacementPreviewMeshes() {
-    clearGroup(addMoleculePreviewGroup);
-    if (!moleculePlaceTemplateData || !Array.isArray(moleculePlaceTemplateData.atoms)) return;
+  function rebuildCatalogTemplatePreviewMeshes(targetGroup, templateData, options = {}) {
+    if (!targetGroup) return;
+    clearGroup(targetGroup);
+    if (!templateData || !Array.isArray(templateData.atoms)) return;
     const profile = getMoleculeStyleProfile();
     const bondRadius = getPreviewBondRadius();
     const sphereWidthSegments = Math.max(16, profile.sphereWidthSegments | 0);
     const sphereHeightSegments = Math.max(12, profile.sphereHeightSegments | 0);
     const bondRadialSegments = Math.max(12, profile.bondRadialSegments | 0);
-    const bondMat = new THREE.MeshPhysicalMaterial({
-      color: 0xdbe3ef,
-      transparent: true,
-      opacity: 0.62,
-      roughness: 0.25,
-      metalness: 0.04,
-    });
-    for (const bond of moleculePlaceTemplateData.bonds || []) {
+    const atomOpacity = Number.isFinite(Number(options.atomOpacity)) ? Number(options.atomOpacity) : DEFAULT_GHOST_ATOM_PREVIEW_OPACITY;
+    const bondOpacity = Number.isFinite(Number(options.bondOpacity)) ? Number(options.bondOpacity) : DEFAULT_GHOST_BOND_PREVIEW_OPACITY;
+    const bondMat = createGhostBondPreviewMaterial(bondOpacity);
+    for (const bond of templateData.bonds || []) {
       const i = bond.i | 0;
       const j = bond.j | 0;
-      const ai = moleculePlaceTemplateData.atoms[i];
-      const aj = moleculePlaceTemplateData.atoms[j];
+      const ai = templateData.atoms[i];
+      const aj = templateData.atoms[j];
       if (!ai || !aj) continue;
       const placement = getPreviewBondSegmentPlacement(ai.local, aj.local, ai.Z | 0, aj.Z | 0, {
         bondRadius,
@@ -14744,34 +16630,157 @@
       mesh.position.copy(placement.mid);
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), placement.dirNorm);
       mesh.renderOrder = 56;
-      addMoleculePreviewGroup.add(mesh);
+      targetGroup.add(mesh);
     }
-    for (const atom of moleculePlaceTemplateData.atoms) {
+    for (const atom of templateData.atoms) {
       const z = atom.Z | 0;
       const radius = getRenderedAtomDisplayRadius(z);
       const geom = new THREE.SphereGeometry(radius, sphereWidthSegments, sphereHeightSegments);
-      const mat = new THREE.MeshPhysicalMaterial({
-        color: getAtomRenderColor(z),
-        transparent: true,
-        opacity: 0.72,
-        roughness: 0.2,
-        metalness: 0.08,
-        clearcoat: 0.45,
-        clearcoatRoughness: 0.15,
-      });
+      const mat = createGhostAtomPreviewMaterial(getAtomRenderColor(z), z, atomOpacity);
       const mesh = new THREE.Mesh(geom, mat);
       mesh.position.copy(atom.local);
       mesh.renderOrder = 60;
-      addMoleculePreviewGroup.add(mesh);
+      targetGroup.add(mesh);
     }
+  }
+
+  /**
+   * Rebuild molecule preview meshes from current template data.
+   */
+  function rebuildMoleculePlacementPreviewMeshes() {
+    rebuildCatalogTemplatePreviewMeshes(addMoleculePreviewGroup, moleculePlaceTemplateData, {
+      atomOpacity: DEFAULT_GHOST_ATOM_PREVIEW_OPACITY,
+      bondOpacity: DEFAULT_GHOST_BOND_PREVIEW_OPACITY,
+    });
     updateMoleculePlacementPreviewTransform();
+  }
+
+  const catalogVoidPreview = (() => {
+    let key = '';
+    let kind = '';
+    let world = null;
+
+    function isCurrentForIntent() {
+      if (!kind || !key) return false;
+      if (kind === CATALOG_KIND.FRAGMENT) {
+        return isFragmentAddIntentValue(getEditIntent())
+          && key.startsWith(`${CATALOG_KIND.FRAGMENT}:${editAddFragmentId}:`);
+      }
+      if (kind === CATALOG_KIND.MOLECULE) {
+        return isMoleculeAddIntentValue(getEditIntent())
+          && key.startsWith(`${CATALOG_KIND.MOLECULE}:${editAddMoleculeId}:`);
+      }
+      return false;
+    }
+
+    return {
+      clear() {
+        key = '';
+        kind = '';
+        world = null;
+        clearGroup(catalogVoidPreviewGroup);
+        catalogVoidPreviewGroup.visible = false;
+      },
+      suspend() {
+        if (catalogVoidPreviewGroup) catalogVoidPreviewGroup.visible = false;
+      },
+      resumeIfCurrent() {
+        if (moleculePlaceActive) return false;
+        if (!catalogVoidPreviewGroup || !catalogVoidPreviewGroup.children.length) return false;
+        if (!world || !world.isVector3) return false;
+        if (!isCurrentForIntent()) return false;
+        catalogVoidPreviewGroup.visible = true;
+        return true;
+      },
+      clearUnless(expectedKind, id) {
+        if (!kind) return;
+        const normalizedKind = String(expectedKind || '').trim();
+        const expectedId = String(id || '').trim();
+        const expectedPrefix = normalizedKind && expectedId ? `${normalizedKind}:${expectedId}:` : '';
+        if (kind !== normalizedKind || (expectedPrefix && !key.startsWith(expectedPrefix))) {
+          this.clear();
+        }
+      },
+      showAtEvent(e, requestedKind) {
+        if (currentMode !== MODES.EDIT || shouldBlockEditVoidPlacement()) {
+          this.clear();
+          return false;
+        }
+        if (moleculePlaceActive) {
+          this.suspend();
+          return false;
+        }
+        const normalizedKind = String(requestedKind || '').trim().toLowerCase() === CATALOG_KIND.FRAGMENT
+          ? CATALOG_KIND.FRAGMENT
+          : CATALOG_KIND.MOLECULE;
+        const nextWorld = computeAddAtomPosition(e, null);
+        if (!nextWorld || !nextWorld.isVector3) {
+          this.clear();
+          return false;
+        }
+        const entryId = normalizedKind === CATALOG_KIND.FRAGMENT ? editAddFragmentId : editAddMoleculeId;
+        const template = buildCatalogInstance(entryId, normalizedKind);
+        const data = buildMoleculePlacementData(template, normalizedKind);
+        if (!data) {
+          this.clear();
+          return false;
+        }
+        const nextKey = [
+          normalizedKind,
+          data.id,
+          getMoleculeStyleProfile().key,
+          moleculeInkEnabled ? 1 : 0,
+          moleculeBlackbodyEnabled ? 1 : 0,
+          DEFAULT_GHOST_ATOM_PREVIEW_OPACITY.toFixed(3),
+          DEFAULT_GHOST_BOND_PREVIEW_OPACITY.toFixed(3),
+        ].join(':');
+        if (key !== nextKey) {
+          rebuildCatalogTemplatePreviewMeshes(catalogVoidPreviewGroup, data, {
+            atomOpacity: DEFAULT_GHOST_ATOM_PREVIEW_OPACITY,
+            bondOpacity: DEFAULT_GHOST_BOND_PREVIEW_OPACITY,
+          });
+          key = nextKey;
+        }
+        kind = normalizedKind;
+        world = nextWorld.clone();
+        catalogVoidPreviewGroup.position.copy(nextWorld);
+        catalogVoidPreviewGroup.quaternion.identity();
+        catalogVoidPreviewGroup.visible = true;
+        clearGestureVoidPreview();
+        return true;
+      },
+      getVisibleKind() {
+        return kind && catalogVoidPreviewGroup && catalogVoidPreviewGroup.visible ? kind : '';
+      },
+      getKind() {
+        return kind;
+      },
+      isVisible() {
+        return !!(catalogVoidPreviewGroup && catalogVoidPreviewGroup.visible);
+      },
+      getWorldClone() {
+        return world && world.isVector3 ? world.clone() : null;
+      },
+    };
+  })();
+
+  function clearActiveVoidPlacementPreview() {
+    clearGestureVoidPreview();
+    catalogVoidPreview.clear();
+  }
+
+  function getActiveVoidPreviewStateKind() {
+    return catalogVoidPreview.getVisibleKind()
+      || (gestureVoidPreviewMesh && gestureVoidPreviewMesh.visible ? 'atom' : '');
   }
 
   /**
    * Clear molecule-placement preview state/meshes.
    */
-  function clearMoleculePlacementPreview() {
+  function clearMoleculePlacementPreview(options = {}) {
+    const wasActive = !!moleculePlaceActive;
     editPlacement.clearMoleculePlacementPreview();
+    if (wasActive && options.restoreCatalogPreview !== false) catalogVoidPreview.resumeIfCurrent();
   }
 
   /**
@@ -14780,7 +16789,10 @@
    * @returns {boolean}
    */
   function startMoleculePlacementAtWorld(worldPos, options = {}) {
-    return editPlacement.startMoleculePlacementAtWorld(worldPos, options);
+    catalogVoidPreview.suspend();
+    const started = editPlacement.startMoleculePlacementAtWorld(worldPos, options);
+    if (!started) catalogVoidPreview.resumeIfCurrent();
+    return started;
   }
 
   /**
@@ -14806,7 +16818,10 @@
    * @returns {boolean}
    */
   function commitMoleculePlacement() {
-    return editPlacement.commitMoleculePlacement();
+    const wasActive = !!moleculePlaceActive;
+    const committed = editPlacement.commitMoleculePlacement();
+    if (wasActive && committed) catalogVoidPreview.resumeIfCurrent();
+    return committed;
   }
 
   /**
@@ -14991,9 +17006,9 @@
     const isEdit = editMode;
     const intent = getEditIntent();
     const buildPayload = getCurrentBuildPayload();
-    const isFragmentAddMode = intent === EDIT_INTENT.ATOM_MANIPULATION && editAddMode === EDIT_ADD_MODE.FRAGMENT;
-    const isAtomAddMode = intent === EDIT_INTENT.ATOM_MANIPULATION && !isFragmentAddMode;
-    const isMoleculeAddMode = intent === EDIT_INTENT.ADD_MOLECULE;
+    const isFragmentAddMode = isFragmentAddIntentValue(intent);
+    const isMoleculeAddMode = isMoleculeAddIntentValue(intent);
+    const isAtomAddMode = isAtomPlacementIntentValue(intent) && !isFragmentAddMode && !isMoleculeAddMode;
     const showGestureAtomsMenu = isEdit && isAtomAddMode;
 
     if (editToolboxEl) {
@@ -15045,14 +17060,17 @@
     if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
     const prevIntent = getEditIntent();
     const normalized = normalizeEditIntent(nextIntent);
-    if (normalized !== EDIT_INTENT.ATOM_MANIPULATION) {
+    if (normalized !== EDIT_INTENT.ADD_ATOM) {
       selectionBuildCueArmed = false;
+    }
+    if (normalized !== EDIT_INTENT.ADD_FRAGMENT) {
       clearFragmentAttachSessionState();
     }
     editTools.setEditIntent(normalized, options);
     syncEditIntentCompatibilityState();
     if (prevIntent !== normalized && editGestureController) editGestureController.clearState();
     if (prevIntent !== normalized && editTransformController) editTransformController.clearAllTransformState();
+    refreshActiveAddPreview();
   }
 
   /**
@@ -15066,6 +17084,7 @@
     if (nextMode !== EDIT_ADD_MODE.FRAGMENT) clearFragmentAttachSessionState();
     editTools.setEditAddMode(nextMode, options);
     syncEditIntentCompatibilityState();
+    refreshActiveAddPreview();
   }
 
   function getEditAddCoordinationProfile(z = editAddElementZ) {
@@ -15132,13 +17151,18 @@
    * @returns {boolean}
    */
   function setEditAddElement(z, options = {}) {
-    const announce = !!options.announce;
+    const announce = options.announce !== false;
     const syncSearch = options.syncSearch !== false;
     if (!Number.isInteger(z) || z <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
     editAddElementZ = z;
-    refreshActiveAddGrowPreview();
+    setEditIntent(EDIT_INTENT.ADD_ATOM, {
+      announce: false,
+      syncSearch,
+      preserveSelection: true,
+      preserveAddMode: true,
+      closePopovers: false,
+    });
     syncEditAddCoordinationControl();
-    updateEditToolboxUi({ syncSearch });
     if (announce && editMode) {
       setHintMessage(`Build element: ${getElementName(z)} (${getElementSymbol(z)})`);
     }
@@ -15482,10 +17506,7 @@
       setTooltipText(btn, `${info.name} (${info.symbol})`);
       btn.textContent = info.symbol;
       btn.onclick = () => {
-        const preservedQuery = getBuildPaletteFilterQuery();
-        setEditAddElement(z, { announce: true });
-        setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch: true });
-        keepBuildPopoverOpen({ query: preservedQuery });
+        commitBuildPaletteSelection({ kind: 'atom', z }, { announce: true, syncSearch: true });
       };
       editAddQuickEl.appendChild(btn);
     }
@@ -15496,21 +17517,22 @@
     const syncSearch = options.syncSearch !== false;
     if (!selection || typeof selection !== 'object') return false;
     if (selection.kind === 'atom') {
-      const changed = setEditAddElement(selection.z | 0, { announce, syncSearch });
-      if (changed) setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: false, syncSearch });
-      return changed;
+      return setEditAddElement(selection.z | 0, { announce, syncSearch });
     }
     if (selection.kind === 'fragment') {
-      const changed = setEditAddFragment(selection.id, { announce, syncSearch });
-      if (changed) setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch });
-      return changed;
+      return setEditAddFragment(selection.id, { announce, syncSearch });
     }
     if (selection.kind === 'molecule') {
-      const changed = setEditAddMolecule(selection.id, { announce, syncSearch });
-      if (changed) setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: false, syncSearch });
-      return changed;
+      return setEditAddMolecule(selection.id, { announce, syncSearch });
     }
     return false;
+  }
+
+  function commitBuildPaletteSelection(selection, options = {}) {
+    const applied = applyBuildPaletteSelection(selection, options);
+    if (!applied) return false;
+    if (options.closePopover !== false) hideBuildPopover();
+    return true;
   }
 
   /**
@@ -15528,9 +17550,14 @@
     clearFuseRingPreview();
     editAddFragmentId = fragment.id;
     editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
-    refreshActiveAddGrowPreview();
-    updateEditToolboxUi({ syncSearch });
-    if (announce && editMode && isSelectionFragmentCueArmed()) {
+    setEditIntent(EDIT_INTENT.ADD_FRAGMENT, {
+      announce: false,
+      syncSearch,
+      preserveSelection: true,
+      preserveAddMode: true,
+      closePopovers: false,
+    });
+    if (announce && editMode) {
       setHintMessage(buildFragmentAttachUiHint(fragment, editAddFragmentAttachPolicy));
     }
     return true;
@@ -15549,9 +17576,14 @@
     const molecule = getCatalogEntryById(normalizedId, CATALOG_KIND.MOLECULE) || resolveCatalogQuery(moleculeId, CATALOG_KIND.MOLECULE);
     if (!molecule) return false;
     editAddMoleculeId = molecule.id;
-    clearMoleculePlacementPreview();
-    updateEditToolboxUi({ syncSearch });
-    if (announce && editMode && getEditIntent() === EDIT_INTENT.ADD_MOLECULE) {
+    setEditIntent(EDIT_INTENT.ADD_MOLECULE, {
+      announce: false,
+      syncSearch,
+      preserveSelection: true,
+      preserveAddMode: true,
+      closePopovers: false,
+    });
+    if (announce && editMode) {
       setHintMessage(`Build molecule: ${molecule.name} (${molecule.formula})`);
     }
     return true;
@@ -15583,17 +17615,16 @@
         setTooltipText(btn, `${fragment.name} (${fragment.formula})`);
         btn.textContent = fragment.name;
         btn.onclick = () => {
-          const preservedQuery = getBuildPaletteFilterQuery();
-          setEditAddFragment(fragment.id, { announce: true, syncSearch: true });
-          setEditAddMode(EDIT_ADD_MODE.FRAGMENT, { announce: false, syncSearch: true });
-          keepBuildPopoverOpen({ query: preservedQuery });
+          commitBuildPaletteSelection({ kind: 'fragment', id: fragment.id }, { announce: true, syncSearch: true });
         };
         editFragmentQuickEl.appendChild(btn);
       }
     }
-    if (!getCurrentFragmentDefinition() && fragmentEntries[0]) editAddFragmentId = fragmentEntries[0].id;
-    if (!setEditAddFragment(editAddFragmentId, { announce: false, syncSearch: true }) && fragmentEntries[0]) {
-      setEditAddFragment(fragmentEntries[0].id, { announce: false, syncSearch: true });
+    if (!getCatalogEntryById(editAddFragmentId, CATALOG_KIND.FRAGMENT) && fragmentEntries[0]) {
+      editAddFragmentId = fragmentEntries[0].id;
+    }
+    if (getEditIntent() === EDIT_INTENT.ADD_FRAGMENT) {
+      refreshActiveAddPreview();
     }
     updateEditToolboxUi({ syncSearch: true });
   }
@@ -15624,17 +17655,17 @@
         setTooltipText(btn, `${molecule.name} (${molecule.formula})`);
         btn.textContent = molecule.name;
         btn.onclick = () => {
-          const preservedQuery = getBuildPaletteFilterQuery();
-          setEditAddMolecule(molecule.id, { announce: true, syncSearch: true });
-          setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: false, syncSearch: true });
-          keepBuildPopoverOpen({ query: preservedQuery });
+          commitBuildPaletteSelection({ kind: 'molecule', id: molecule.id }, { announce: true, syncSearch: true });
         };
         editMoleculeQuickEl.appendChild(btn);
       }
     }
-    if (!getCurrentMoleculeDefinition() && moleculeEntries[0]) editAddMoleculeId = moleculeEntries[0].id;
-    if (!setEditAddMolecule(editAddMoleculeId, { announce: false, syncSearch: true }) && moleculeEntries[0]) {
-      setEditAddMolecule(moleculeEntries[0].id, { announce: false, syncSearch: true });
+    if (!getCatalogEntryById(editAddMoleculeId, CATALOG_KIND.MOLECULE) && moleculeEntries[0]) {
+      const benzene = getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE);
+      editAddMoleculeId = (benzene || moleculeEntries[0]).id;
+    }
+    if (getEditIntent() === EDIT_INTENT.ADD_MOLECULE) {
+      refreshActiveAddPreview();
     }
     updateEditToolboxUi({ syncSearch: true });
   }
@@ -15685,7 +17716,7 @@
           return;
         }
         const z = resolveElementQueryToZ(rawValue);
-        if (!setEditAddElement(z, { announce: true, syncSearch: true })) {
+        if (!commitBuildPaletteSelection({ kind: 'atom', z }, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Element not recognized: "${rawValue}"`);
         }
@@ -15728,12 +17759,11 @@
         }
         const selectedCandidate = getSelectedBuildSearchCandidate();
         const selection = selectedCandidate ? selectedCandidate.selection : resolveBuildPaletteQuery(rawValue);
-        if (!applyBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
+        if (!commitBuildPaletteSelection(selection, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Build item not recognized: "${rawValue}"`);
           return;
         }
-        keepBuildPopoverOpen({ query: rawValue });
       };
       editBuildSearchEl.addEventListener('focus', () => {
         const query = String(editBuildSearchEl.value || '');
@@ -15800,7 +17830,7 @@
     if (editFragmentSearchEl) {
       const commit = () => {
         const fragment = resolveCatalogQuery(editFragmentSearchEl.value, CATALOG_KIND.FRAGMENT);
-        if (!fragment || !setEditAddFragment(fragment.id, { announce: true, syncSearch: true })) {
+        if (!fragment || !commitBuildPaletteSelection({ kind: 'fragment', id: fragment.id }, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Fragment not recognized: "${String(editFragmentSearchEl.value || '').trim()}"`);
         }
@@ -15818,7 +17848,7 @@
         editAddFragmentAttachPolicy = normalizeEditFragmentAttachPolicy(editFragmentAttachPolicyEl.value);
         clearAddGrowPreview();
         updateEditToolboxUi({ syncSearch: false });
-        if (editMode && isSelectionFragmentCueArmed()) {
+        if (editMode && isFragmentPayloadLoaded()) {
           const fragment = getCurrentFragmentDefinition();
           setHintMessage(fragment
             ? buildFragmentAttachUiHint(fragment, editAddFragmentAttachPolicy)
@@ -15829,7 +17859,7 @@
     if (editMoleculeSearchEl) {
       const commit = () => {
         const molecule = resolveCatalogQuery(editMoleculeSearchEl.value, CATALOG_KIND.MOLECULE);
-        if (!molecule || !setEditAddMolecule(molecule.id, { announce: true, syncSearch: true })) {
+        if (!molecule || !commitBuildPaletteSelection({ kind: 'molecule', id: molecule.id }, { announce: true, syncSearch: true })) {
           updateEditToolboxUi({ syncSearch: true });
           setHintMessage(`Molecule not recognized: "${String(editMoleculeSearchEl.value || '').trim()}"`);
         }
@@ -16125,9 +18155,9 @@
     pickBondHit,
     resolveGrowDragAnchorIndex: resolveGestureGrowDragAnchorIndex,
     showVoidPlacementPreview: showGestureVoidPlacementPreview,
-    hideVoidPlacementPreview: clearGestureVoidPreview,
+    hideVoidPlacementPreview: clearActiveVoidPlacementPreview,
     startBoxSelection: (startX, startY, clientX, clientY) => {
-      clearGestureVoidPreview();
+      clearActiveVoidPlacementPreview();
       hideEditSelectionMarquee();
       updateEditSelectionMarqueeFromPoints(startX, startY, clientX, clientY);
       return true;
@@ -16231,11 +18261,11 @@
   editHaloController = createEditHaloController({
     hoverDelayMs: 300,
     enableHoverActivation: false,
-    isEnabled: isAtomManipulationIntent,
+    isEnabled: isEditHaloIntent,
     isBlocked: () => {
       const gestureState = editGestureController ? String((editGestureController.getUiState() || {}).gestureState || 'idle') : 'idle';
       return editAdvancedDrawerOpen
-        || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION
+        || !isEditHaloIntent()
         || gestureState === 'grow-drag'
         || gestureState === 'move-drag'
         || gestureState === 'rotate-drag'
@@ -16501,7 +18531,7 @@
     if (currentMode === MODES.EDIT && editGestureController) {
       for (const idx of editGestureController.getHighlightIndices()) selectedSet.add(idx);
     }
-    if (currentMode === MODES.EDIT && getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && editHaloController) {
+    if (isEditHaloIntent() && editHaloController) {
       for (const idx of editHaloController.getHighlightIndices()) selectedSet.add(idx);
     }
     for (let i = 0; i < atomGroup.children.length; i++) {
@@ -17003,19 +19033,6 @@
     }
     syncBuildSearchNavigationUi();
     positionBuildPopover();
-  }
-
-  function keepBuildPopoverOpen(options = {}) {
-    const preserveQuery = options.preserveQuery !== false;
-    const hasQueryOverride = Object.prototype.hasOwnProperty.call(options, 'query');
-    const activeQuery = preserveQuery
-      ? (hasQueryOverride ? String(options.query || '') : getBuildPaletteFilterQuery())
-      : '';
-    showBuildPopover({
-      focusSearch: !!options.focusSearch,
-      query: activeQuery,
-      preserveKeyboardSelection: !!options.preserveKeyboardSelection,
-    });
   }
 
   function isBuildPopoverOpen() {
@@ -19167,7 +21184,7 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return true;
     }
-    if (isBuildFragmentLoaded() && getEditAtomSelection().length > 0) {
+    if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && isBuildFragmentLoaded() && getEditAtomSelection().length > 0) {
       return false;
     }
     if (isBuildFragmentLoaded()) {
@@ -19196,9 +21213,9 @@
 
   function handleUnifiedEditControllerPointerDown(intent, e) {
     if (moleculePlaceActive) return handleMoleculeIntentControllerPointerDown(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && isFragmentPayloadLoaded()) return handleFragmentIntentControllerPointerDown(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerDown(e);
-    if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerDown(e);
+    if (isFragmentAddIntentValue(intent)) return handleFragmentIntentControllerPointerDown(e);
+    if (isMoleculeAddIntentValue(intent)) return handleMoleculeIntentControllerPointerDown(e);
+    if (isAtomPlacementIntentValue(intent)) return handleAtomManipulationControllerPointerDown(e);
     return false;
   }
 
@@ -19316,9 +21333,12 @@
   }
 
   function handleMoleculeIntentControllerPointerMove(e) {
-    if (moleculePlaceActive && moleculePlaceRotating) {
-      __editMoved = true;
-      updateMoleculePlacementRotationFromEvent(e);
+    if (moleculePlaceActive) {
+      catalogVoidPreview.suspend();
+      if (moleculePlaceRotating) {
+        __editMoved = true;
+        updateMoleculePlacementRotationFromEvent(e);
+      }
       return true;
     }
     return false;
@@ -19341,9 +21361,9 @@
       return true;
     }
     if (moleculePlaceActive) return handleMoleculeIntentControllerPointerMove(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isFragmentPayloadLoaded() || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) return handleFragmentIntentControllerPointerMove(e);
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION) return handleAtomManipulationControllerPointerMove(e);
-    if (intent === EDIT_INTENT.ADD_MOLECULE) return handleMoleculeIntentControllerPointerMove(e);
+    if (isFragmentAddIntentValue(intent) || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState) return handleFragmentIntentControllerPointerMove(e);
+    if (isMoleculeAddIntentValue(intent)) return handleMoleculeIntentControllerPointerMove(e);
+    if (isAtomPlacementIntentValue(intent)) return handleAtomManipulationControllerPointerMove(e);
     return false;
   }
 
@@ -19400,7 +21420,9 @@
       setHintMessage('Fragment attach: click a ghost or drag from the pinned atom.');
     } else if (!__editMoved && isBuildFragmentLoaded()) {
       const hit = pickAtomHit(e);
-      const addPos = !hit ? computeAddAtomPosition(e, null) : null;
+      const addPos = !hit
+        ? (catalogVoidPreview.getWorldClone() || computeAddAtomPosition(e, null))
+        : null;
       if (shouldBlockEditVoidPlacement() && !hit) {
         setHintMessage('Symmetry panel open: close it before placing a standalone fragment.');
       } else if (addPos && !hit) {
@@ -19428,7 +21450,9 @@
       }
     } else if (!__editMoved) {
       const hit = pickAtomHit(e);
-      const addPos = computeAddAtomPosition(e, hit);
+      const addPos = !hit
+        ? (catalogVoidPreview.getWorldClone() || computeAddAtomPosition(e, hit))
+        : computeAddAtomPosition(e, hit);
       if (shouldBlockEditVoidPlacement() && !hit) {
         setHintMessage('Symmetry panel open: close it before placing a standalone molecule.');
       } else if (addPos) {
@@ -19480,13 +21504,13 @@
       if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
       return handled;
     }
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION && (isFragmentPayloadLoaded() || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState)) {
+    if (isFragmentAddIntentValue(intent) || (addGrowActive && addGrowKind === 'fragment') || !!addFusePreviewState) {
       if (controllerState && controllerState.press) return false;
       const handled = handleFragmentIntentControllerPointerUp(e);
       if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
       return handled;
     }
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION) {
+    if (isAtomPlacementIntentValue(intent)) {
       const clickPress = controllerState && controllerState.press ? controllerState.press : null;
       if (clickPress && !__editMoved && clickPress.kind === 'bond-inert') {
         const bondHit = clickPress.bondHit && clickPress.bondHit.object && clickPress.bondHit.section === 'center'
@@ -19547,7 +21571,7 @@
       if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
       return handled;
     }
-    if (intent === EDIT_INTENT.ADD_MOLECULE) {
+    if (isMoleculeAddIntentValue(intent)) {
       const handled = handleMoleculeIntentControllerPointerUp(e);
       if (handled) clearExternalGestureControllerState(controllerState, e && e.pointerId);
       return handled;
@@ -19590,7 +21614,7 @@
       try { controls.enabled = true; } catch { }
       return true;
     }
-    if (intent === EDIT_INTENT.ATOM_MANIPULATION) {
+    if (isAtomPlacementIntentValue(intent) || isFragmentAddIntentValue(intent)) {
       if (addGrowActive) {
         clearAddGrowPreview();
         try { controls.enabled = true; } catch { }
@@ -19599,7 +21623,7 @@
         clearFuseRingPreview();
         try { controls.enabled = true; } catch { }
       }
-      if (editHaloController) editHaloController.handlePointerCancel();
+      if (intent === EDIT_INTENT.ATOM_MANIPULATION && editHaloController) editHaloController.handlePointerCancel();
       if (gestureBondSidePress && canvasEl && Number.isInteger(gestureBondSidePress.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
         try { canvasEl.releasePointerCapture(gestureBondSidePress.pointerId); } catch { }
       }
@@ -20324,6 +22348,7 @@
     if (options.symmetry !== false) {
       clearSymmetryPreview({ restore: true, keepPopover: false, quiet: true });
     }
+    if (options.addPreview !== false) catalogVoidPreview.clear();
     editTools.clearTransientInteractionState(options);
   }
 
@@ -24037,7 +26062,7 @@
   });
 
   canvasEl.addEventListener('pointerleave', () => {
-    if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) clearGestureVoidPreview();
+    if (currentMode === MODES.EDIT) clearActiveVoidPlacementPreview();
     if (editGestureController) editGestureController.handlePointerCancel();
     if (gestureBondSidePress && canvasEl && Number.isInteger(gestureBondSidePress.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
       try { canvasEl.releasePointerCapture(gestureBondSidePress.pointerId); } catch { }
@@ -24273,10 +26298,7 @@
   bind('down', 'global', 's', () => saveBtn && saveBtn.click());
   bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
   bind('down', 'global', 'i', () => {
-    showSurfaces = !showSurfaces;
-    if (typeof updateSurfBtn === 'function') updateSurfBtn();
-    rebuildScene({ preserveView: true });
-    scheduleAppearancePresetAutosave();
+    toggleActiveSurfaceVisibility();
   });
   bind('down', 'global', 'a', () => {
     window.__showAxes__ = !window.__showAxes__;
@@ -24291,19 +26313,42 @@
   bind('down', 'global', '3', () => setMoleculeStyle('kit'));
   bind('down', 'global', '4', () => setMoleculeStyle('glossy'));
 
-  // Global: Up/Down arrows switch files in every mode.
+  // Global: Up/Down arrows cycle cube layers in the focused scene.
   /**
-   * Move to the next/previous loaded file.
+   * Move to the next/previous cube layer in the focused scene.
    * @param {number} delta
+   * @param {KeyboardEvent=} event
    */
-  const nextPrev = (delta) => {
-    if (isTypingInInput()) return;
-    if (!Array.isArray(volumes) || volumes.length === 0) return;
-    const n = volumes.length;
-    activateVolumeIndex(((currentIndex + delta) % n + n) % n, { preserveView: true });
+  const shouldHandleFocusedSceneCubeArrow = () => {
+    const active = document.activeElement;
+    if (active && typeof active.closest === 'function' && active.closest('#sceneOutliner')) return true;
+    if (isTypingInInput()) return false;
+    const tag = String(active && active.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return false;
+    return true;
   };
-  bind('down', 'global', 'ArrowDown', () => nextPrev(1));
-  bind('down', 'global', 'ArrowUp', () => nextPrev(-1));
+  const nextPrev = (delta, event = null) => {
+    if (!shouldHandleFocusedSceneCubeArrow()) return;
+    const scene = getFocusedScene();
+    const cubes = getCubeLayersInScene(scene);
+    if (cubes.length <= 1) return;
+    const visibleCubes = cubes.filter((layer) => layer.visible !== false);
+    const singleCubeMode = visibleCubes.length <= 1;
+    const baselineCube = singleCubeMode
+      ? (visibleCubes[0] || getSceneActiveCubeLayer(scene) || cubes[0])
+      : (getSceneActiveCubeLayer(scene) || cubes[0]);
+    const activeIndex = Math.max(0, cubes.findIndex((layer) => layer.id === baselineCube.id));
+    const nextIndex = ((activeIndex + delta) % cubes.length + cubes.length) % cubes.length;
+    const nextCube = cubes[nextIndex];
+    if (!nextCube) return;
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    setActiveSceneGraphLayer(nextCube.id, {
+      rebuild: true,
+      selection: event && event.shiftKey ? 'add' : 'replace',
+    });
+  };
+  bind('down', 'global', 'ArrowDown', (event) => nextPrev(1, event));
+  bind('down', 'global', 'ArrowUp', (event) => nextPrev(-1, event));
 
   // Note: Esc handling removed per request. Use on-screen UI to close dialogs.
 
@@ -24367,7 +26412,7 @@
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
     } else if (handleBondCenterSelectionShortcut(1, e)) {
       return;
-    } else if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) setEditAddBondOrder(1);
+    } else if (isBuildBondOrderIntentValue(getEditIntent())) setEditAddBondOrder(1);
     else setMoleculeStyle('basic');
   });
   bind('down', MODES.EDIT, '2', (e) => {
@@ -24375,7 +26420,7 @@
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
     } else if (handleBondCenterSelectionShortcut(2, e)) {
       return;
-    } else if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) setEditAddBondOrder(2);
+    } else if (isBuildBondOrderIntentValue(getEditIntent())) setEditAddBondOrder(2);
     else setMoleculeStyle('toon');
   });
   bind('down', MODES.EDIT, '3', (e) => {
@@ -24383,7 +26428,7 @@
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
     } else if (handleBondCenterSelectionShortcut(3, e)) {
       return;
-    } else if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) setEditAddBondOrder(3);
+    } else if (isBuildBondOrderIntentValue(getEditIntent())) setEditAddBondOrder(3);
     else setMoleculeStyle('kit');
   });
   // In Add mode, "4" selects quadruple bond preview; otherwise keep Glossy shortcut disabled in edit mode.
@@ -24391,7 +26436,7 @@
     if (handleBondCenterSelectionShortcut(4, e)) {
       return;
     }
-    if (getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION) {
+    if (isBuildBondOrderIntentValue(getEditIntent())) {
       setEditAddBondOrder(4);
       return;
     }
@@ -24494,6 +26539,24 @@
     return false;
   }
 
+  function handleOutlinerSelectionHotkey(e) {
+    const key = String(e && e.key || '');
+    const focusInsideOutliner = isFocusInsideOutliner();
+    if (key === 'Escape' && focusInsideOutliner) {
+      e.preventDefault();
+      clearOutlinerSelectionToActive();
+      return true;
+    }
+    if (key !== 'Delete' && key !== 'Backspace') return false;
+    if (isTypingInInput()) return false;
+    const canHandleDelete = focusInsideOutliner || currentMode === MODES.DISPLAY;
+    if (!canHandleDelete) return false;
+    if (!getSelectedCubeLayers().length) return false;
+    e.preventDefault();
+    showDeleteSelectedCubeLayersConfirmation(e);
+    return true;
+  }
+
   // Global key listeners delegate to router
   window.addEventListener('keydown', (e) => {
     if (e.defaultPrevented) return;
@@ -24584,6 +26647,7 @@
     if (handleEditCopyPasteHotkey(e)) return;
     if (handleGlobalFileHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
+    if (handleOutlinerSelectionHotkey(e)) return;
     dispatchShortcut(e, 'down', currentMode);
   });
   window.addEventListener('paste', (e) => {
@@ -24615,7 +26679,8 @@
     const opacityTooltip = 'Surface opacity';
     const presetSelectEl = document.getElementById('surfaceMaterialPreset');
     const presetRow = document.getElementById('rowSurfaceMaterialPreset');
-    const physicalSurfacesActive = renderMode === 'surface' && !useToonSurfaceStyle();
+    const activeRenderMode = getLayerRenderMode();
+    const physicalSurfacesActive = activeRenderMode === 'surface' && !useToonSurfaceStyle();
     const presetTooltip = physicalSurfacesActive
       ? 'Surface material'
       : 'Available when surfaces use physical shading';
@@ -24627,7 +26692,7 @@
     }
     if (opacitySliderRoot) setTooltipText(opacitySliderRoot, opacityTooltip);
     if (opacityRow) setTooltipText(opacityRow, opacityTooltip);
-    if (presetRow) presetRow.style.display = renderMode === 'surface' ? '' : 'none';
+    if (presetRow) presetRow.style.display = activeRenderMode === 'surface' ? '' : 'none';
     if (presetSelectEl) {
       presetSelectEl.disabled = !physicalSurfacesActive;
       setTooltipText(presetSelectEl, presetTooltip);
@@ -24708,13 +26773,202 @@
     appearanceInspectorController.syncActionToggles();
   }
 
+  function valuesStrictlyEqual(a, b) {
+    return a === b || (a == null && b == null);
+  }
+
+  function getSelectedLayerDisplayValue(getter) {
+    const active = getActiveCubeLayer();
+    if (!active || typeof getter !== 'function') return { value: null, mixed: false, selection: [] };
+    const selection = getSelectedCubeLayers();
+    const layers = selection.length ? selection : [active];
+    const activeValue = getter(active);
+    const first = getter(layers[0]);
+    const mixed = layers.length > 1 && layers.some((layer) => !valuesStrictlyEqual(getter(layer), first));
+    return { value: activeValue, mixed, selection: layers };
+  }
+
+  function setSurfaceMixedIndicator(anchorEl, key, mixed) {
+    if (!anchorEl) return;
+    const row = anchorEl.closest ? anchorEl.closest('.vm-field-row') : null;
+    const control = row ? row.querySelector('.vm-field-control') : null;
+    if (!row || !control) return;
+    row.classList.toggle('is-mixed', !!mixed);
+    let indicator = control.querySelector(`.vm-mixed-indicator[data-mixed-key="${key}"]`);
+    if (!indicator) {
+      indicator = document.createElement('span');
+      indicator.className = 'vm-mixed-indicator';
+      indicator.dataset.mixedKey = key;
+      indicator.textContent = '(mixed)';
+      control.appendChild(indicator);
+    }
+    indicator.hidden = !mixed;
+  }
+
+  function setSliderMixedDisplay(inputEl, mixed) {
+    if (!inputEl) return;
+    inputEl.classList.toggle('is-mixed-value', !!mixed);
+    if (mixed && document.activeElement !== inputEl) inputEl.value = '\u2014';
+  }
+
+  function setButtonGroupMixed(rootEl, mixed) {
+    if (!rootEl) return;
+    rootEl.classList.toggle('is-mixed', !!mixed);
+    if (!mixed) return;
+    for (const buttonEl of Array.from(rootEl.querySelectorAll('.vm-button-group__item[data-value]'))) {
+      buttonEl.classList.remove('active');
+      buttonEl.setAttribute('aria-checked', 'false');
+    }
+  }
+
+  function syncSurfaceMixedIndicators() {
+    const active = getActiveCubeLayer();
+    if (!active) {
+      const anchors = [
+        isoInput,
+        opInput,
+        surfaceMaterialPresetSelect,
+        schemeSelect,
+        autoIsoBtn,
+        surfaceSignFlipToggleEl,
+        appearanceRenderModeGroupEl,
+        appearanceCloudTypeGroupEl,
+        posColor,
+        negColor,
+      ];
+      for (const anchor of anchors) setSurfaceMixedIndicator(anchor, String(anchor && anchor.id || 'surface'), false);
+      setButtonGroupMixed(appearanceRenderModeGroupEl, false);
+      setButtonGroupMixed(appearanceCloudTypeGroupEl, false);
+      return;
+    }
+    const isoState = getSelectedLayerDisplayValue((layer) => Math.max(0, Number(layer.iso) || DEFAULT_ISO_VALUE));
+    const opacityState = getSelectedLayerDisplayValue((layer) => Math.max(0.05, Math.min(1, Number(layer.opacity) || 1)));
+    const autoIsoState = getSelectedLayerDisplayValue((layer) => !!getLayerAutoIsoEnabled(layer));
+    const presetState = getSelectedLayerDisplayValue((layer) => getSurfaceMaterialPresetKey(layer));
+    const schemeState = getSelectedLayerDisplayValue((layer) => String(layer.colorScheme || 'emory'));
+    const renderModeState = getSelectedLayerDisplayValue((layer) => getLayerRenderMode(layer));
+    const cloudTypeState = getSelectedLayerDisplayValue((layer) => getLayerCloudType(layer));
+    const signFlipState = getSelectedLayerDisplayValue((layer) => !!layer.signFlip);
+    const posColorState = getSelectedLayerDisplayValue((layer) => getLayerSurfaceColors(layer).pos);
+    const negColorState = getSelectedLayerDisplayValue((layer) => getLayerSurfaceColors(layer).neg);
+    setSurfaceMixedIndicator(isoInput, 'iso', isoState.mixed);
+    setSliderMixedDisplay(isoInput, isoState.mixed);
+    setSurfaceMixedIndicator(opInput, 'opacity', opacityState.mixed);
+    setSliderMixedDisplay(opInput, opacityState.mixed);
+    setSurfaceMixedIndicator(autoIsoBtn, 'autoIso', autoIsoState.mixed);
+    setSurfaceMixedIndicator(surfaceMaterialPresetSelect, 'solidPreset', presetState.mixed);
+    setSurfaceMixedIndicator(schemeSelect, 'colorScheme', schemeState.mixed);
+    setSurfaceMixedIndicator(appearanceRenderModeGroupEl, 'renderMode', renderModeState.mixed);
+    setButtonGroupMixed(appearanceRenderModeGroupEl, renderModeState.mixed);
+    setSurfaceMixedIndicator(appearanceCloudTypeGroupEl, 'cloudType', cloudTypeState.mixed);
+    setButtonGroupMixed(appearanceCloudTypeGroupEl, cloudTypeState.mixed);
+    setSurfaceMixedIndicator(surfaceSignFlipToggleEl, 'signFlip', signFlipState.mixed);
+    setSurfaceMixedIndicator(posColor, 'posColor', posColorState.mixed);
+    setSurfaceMixedIndicator(negColor, 'negColor', negColorState.mixed);
+  }
+
+  function applyToSelectedCubeLayers(mutator, options = {}) {
+    const active = getActiveCubeLayer();
+    if (!active || typeof mutator !== 'function') return false;
+    const targets = getSelectedCubeLayers();
+    const layers = targets.length ? targets : [active];
+    for (const layer of layers) {
+      mutator(layer);
+      persistActiveCubeLayerState(layer, { render: false });
+    }
+    if (options.updateRenderModeUi) updateRenderModeUI();
+    if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    return true;
+  }
+
   /**
    * Keep Appearance sections aligned with the active file and render mode.
    * @param {*=} vol
    */
   function syncAppearanceInspectorSectionState(vol = undefined) {
     if (!appearanceInspectorController) return;
-    appearanceInspectorController.syncSections(vol, renderMode);
+    appearanceInspectorController.syncSections(vol, getLayerRenderMode());
+  }
+
+  function syncAppearanceControlsToActiveLayer() {
+    const layer = getActiveCubeLayer();
+    if (!layer) {
+      if (surfaceScopeLabelEl) {
+        surfaceScopeLabelEl.hidden = true;
+        surfaceScopeLabelEl.textContent = '';
+      }
+      syncAppearanceInspectorSectionState(null);
+      updateAutoIsoButtonState();
+      updateSurfBtn();
+      syncSurfaceMixedIndicators();
+      return;
+    }
+    if (surfaceScopeLabelEl) {
+      surfaceScopeLabelEl.hidden = false;
+      surfaceScopeLabelEl.textContent = `Surface - ${layer.labelId || layer.id}: ${layer.name || 'Cube'}`;
+    }
+    setViewControlValue(isoInput, Math.max(0, Number(layer.iso) || DEFAULT_ISO_VALUE));
+    setViewControlValue(opInput, Math.max(0.05, Math.min(1, Number(layer.opacity) || 1)));
+    if (surfaceMaterialPresetSelect) {
+      surfaceMaterialPresetSelect.value = getSurfaceMaterialPresetKey(layer);
+    }
+    if (autoIsoBtn) {
+      const layerAutoIso = getLayerAutoIsoEnabled(layer);
+      autoIsoBtn.checked = layerAutoIso;
+      autoIsoBtn.setAttribute('aria-checked', layerAutoIso ? 'true' : 'false');
+    }
+    if (renderModeSel) {
+      renderModeSel.value = getLayerRenderMode(layer);
+    }
+    if (cloudTypeSel) {
+      cloudTypeSel.value = getLayerCloudType(layer);
+    }
+    if (surfaceSignFlipToggleEl) {
+      surfaceSignFlipToggleEl.checked = !!layer.signFlip;
+      surfaceSignFlipToggleEl.setAttribute('aria-checked', layer.signFlip ? 'true' : 'false');
+    }
+    if (schemeSelect) {
+      const layerScheme = String(layer.colorScheme || 'emory');
+      const scheme = (SURFACE_COLOR_SCHEMES[layerScheme] || layerScheme === 'custom') ? layerScheme : 'custom';
+      schemeSelect.value = Array.from(schemeSelect.options).some((option) => option.value === scheme) ? scheme : 'custom';
+    }
+    const colors = getLayerSurfaceColors(layer);
+    if (posColor) posColor.value = colors.pos;
+    if (negColor) negColor.value = colors.neg;
+    updateRenderModeUI();
+    syncSurfaceColorSchemeUi();
+    syncColorPickerFields();
+    updateAutoIsoButtonState();
+    updateSurfBtn();
+    syncAppearanceInspectorSectionState(getLayerCubeData(layer));
+    syncSurfaceMixedIndicators();
+  }
+
+  function applySurfaceControlsToActiveCubeLayerFromUi() {
+    const layer = getActiveCubeLayer();
+    if (!layer) return false;
+    layer.iso = Math.max(0, Number(isoInput && isoInput.value) || DEFAULT_ISO_VALUE);
+    setLayerAutoIsoEnabled(layer, autoIsoBtn ? !!autoIsoBtn.checked : !!autoIsoEnabled);
+    layer.opacity = Math.max(0.05, Math.min(1, Number(opInput && opInput.value) || 1));
+    layer.surfaceStyle = 'solid';
+    layer.solidPreset = String(surfaceMaterialPresetSelect && surfaceMaterialPresetSelect.value || getSurfaceMaterialPresetKey(layer)).toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, layer.solidPreset)) layer.solidPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
+    layer.colorScheme = (schemeSelect && schemeSelect.value) || surfaceColorSchemeDefault || 'emory';
+    setLayerRenderMode(layer, renderModeSel ? renderModeSel.value : getLayerRenderMode(layer));
+    setLayerCloudType(layer, cloudTypeSel ? cloudTypeSel.value : getLayerCloudType(layer));
+    if (surfaceSignFlipToggleEl) layer.signFlip = !!surfaceSignFlipToggleEl.checked;
+    if (layer.colorScheme === 'custom') {
+      layer.posColor = normalizeHexColor(posColor && posColor.value, DEFAULT_POS_SURFACE_COLOR);
+      layer.negColor = normalizeHexColor(negColor && negColor.value, DEFAULT_NEG_SURFACE_COLOR);
+    } else {
+      const scheme = SURFACE_COLOR_SCHEMES[layer.colorScheme] || SURFACE_COLOR_SCHEMES.emory;
+      layer.posColor = scheme.pos;
+      layer.negColor = scheme.neg;
+    }
+    persistActiveCubeLayerState(layer);
+    return true;
   }
 
   /**
@@ -25014,9 +27268,12 @@
     normalizeStyleKey: normalizeMoleculeStyleKey,
     onStyleSelected: (nextStyle) => setMoleculeStyle(nextStyle),
     getActiveStyle: () => moleculeStyle,
-    getCurrentVolume: () => (((currentIndex >= 0 ? volumes[currentIndex] : null) || {}).vol || null),
-    getRenderMode: () => renderMode,
-    hasSurfaceControls: hasVolumetricGrid,
+    getCurrentVolume: () => {
+      const layer = getActiveCubeLayer();
+      return getLayerCubeData(layer);
+    },
+    getRenderMode: () => getLayerRenderMode(),
+    hasSurfaceControls: (vol) => !!(getActiveCubeLayer() && hasVolumetricGrid(vol)),
     getFontPair,
     onFontPairSelected: (nextFontPair) => {
       setFontPair(nextFontPair);
@@ -25040,7 +27297,7 @@
       },
       {
         rootEl: appearanceRenderModeGroupEl,
-        getValue: () => renderMode,
+        getValue: () => getLayerRenderMode(),
         setValue: (nextValue) => {
           if (!renderModeSel) return;
           renderModeSel.value = nextValue === 'cloud' ? 'cloud' : 'surface';
@@ -25049,13 +27306,13 @@
       },
       {
         rootEl: appearanceCloudTypeGroupEl,
-        getValue: () => cloudType,
+        getValue: () => getLayerCloudType(),
         setValue: (nextValue) => {
           if (!cloudTypeSel) return;
           cloudTypeSel.value = nextValue === 'points' ? 'points' : 'cubes';
           if (typeof cloudTypeSel.onchange === 'function') cloudTypeSel.onchange();
         },
-        isDisabled: () => renderMode !== 'cloud',
+        isDisabled: () => getLayerRenderMode() !== 'cloud',
       },
     ],
     mirrorToggles: [
@@ -25262,12 +27519,32 @@
     schemeSelect.onchange = () => {
       const v = schemeSelect.value;
       const s = SURFACE_COLOR_SCHEMES[v];
+      const layer = getActiveCubeLayer();
+      if (layer) {
+        const nextPos = s ? s.pos : normalizeHexColor(posColor && posColor.value, DEFAULT_POS_SURFACE_COLOR);
+        const nextNeg = s ? s.neg : normalizeHexColor(negColor && negColor.value, DEFAULT_NEG_SURFACE_COLOR);
+        if (s) {
+          posColor.value = nextPos;
+          negColor.value = nextNeg;
+        }
+        syncColorPickerFields();
+        syncSurfaceColorSchemeUi();
+        applyToSelectedCubeLayers((target) => {
+          target.colorScheme = v;
+          target.posColor = nextPos;
+          target.negColor = nextNeg;
+        });
+        return;
+      }
       if (s) {
         posColor.value = s.pos;
         negColor.value = s.neg;
         syncColorPickerFields();
         updateOpacityAndColors();
       }
+      surfaceColorSchemeDefault = v;
+      surfacePosColorDefault = normalizeHexColor(posColor && posColor.value, DEFAULT_POS_SURFACE_COLOR);
+      surfaceNegColorDefault = normalizeHexColor(negColor && negColor.value, DEFAULT_NEG_SURFACE_COLOR);
       syncSurfaceColorSchemeUi();
       scheduleAppearancePresetAutosave();
     };
@@ -25281,7 +27558,7 @@
    * Show/hide control rows based on whether surface or cloud mode is active.
    */
   function updateRenderModeUI() {
-    const isCloud = renderMode === 'cloud';
+    const isCloud = getLayerRenderMode() === 'cloud';
     const rowCloudType = document.getElementById('rowCloudType');
     if (rowCloudType) {
       rowCloudType.classList.toggle('vm-appearance-hidden', !isCloud);
@@ -25294,24 +27571,41 @@
    * Read and normalize cloud-rendering options from UI controls.
    * @returns {{type:string,tLow:number,alphaMax:number,posColorHex:string,negColorHex:string}}
    */
-  function readCloudOpts() {
-    const iso = Math.abs(parseFloat((isoInput && isoInput.value) || '0')) || 0;
+  function readCloudOpts(layer = null) {
+    const iso = Math.abs(parseFloat(layer ? layer.iso : ((isoInput && isoInput.value) || '0'))) || 0;
+    const colors = layer ? getLayerRenderSurfaceColors(layer) : null;
     return {
-      type: cloudType,
+      type: layer ? getLayerCloudType(layer) : cloudType,
       tLow: iso > 0 ? iso : 1e-6, // threshold tied to iso value
-      alphaMax: getSurfaceOpacityValue(),
-      posColorHex: posColor && posColor.value ? posColor.value : DEFAULT_POS_SURFACE_COLOR,
-      negColorHex: negColor && negColor.value ? negColor.value : DEFAULT_NEG_SURFACE_COLOR,
+      alphaMax: layer ? Math.max(0.05, Math.min(1, Number(layer.opacity) || 1)) : getSurfaceOpacityValue(),
+      posColorHex: colors ? colors.pos : (posColor && posColor.value ? posColor.value : DEFAULT_POS_SURFACE_COLOR),
+      negColorHex: colors ? colors.neg : (negColor && negColor.value ? negColor.value : DEFAULT_NEG_SURFACE_COLOR),
     };
   }
   if (renderModeSel) renderModeSel.onchange = () => {
-    renderMode = renderModeSel.value;
+    const layer = getActiveCubeLayer();
+    if (layer) {
+      const nextMode = renderModeSel.value;
+      applyToSelectedCubeLayers((target) => {
+        setLayerRenderMode(target, nextMode);
+      }, { updateRenderModeUi: true });
+      return;
+    }
+    renderMode = renderModeSel.value === 'cloud' ? 'cloud' : 'surface';
     updateRenderModeUI();
     rebuildScene({ preserveView: true });
     scheduleAppearancePresetAutosave();
   };
   if (cloudTypeSel) cloudTypeSel.onchange = () => {
-    cloudType = cloudTypeSel.value;
+    const layer = getActiveCubeLayer();
+    if (layer) {
+      const nextCloudType = cloudTypeSel.value;
+      applyToSelectedCubeLayers((target) => {
+        setLayerCloudType(target, nextCloudType);
+      }, { updateRenderModeUi: true });
+      return;
+    }
+    cloudType = cloudTypeSel.value === 'points' ? 'points' : 'cubes';
     rebuildScene({ preserveView: true });
     scheduleAppearancePresetAutosave();
   };
@@ -25358,6 +27652,7 @@
       applyMoleculeStyleUiState();
       updateRenderModeUI();
       updateSurfBtn();
+      applySurfaceControlsToActiveCubeLayerFromUi();
       rebuildScene({ preserveView: true });
       updateSidePanel();
       updateOpacityAndColors();
@@ -25564,13 +27859,15 @@
     return normalized;
   }
 
-  registerPresetSetting('surface.iso', () => asFiniteNumber(isoInput && isoInput.value, 0.02), (value) => {
+  registerAppearancePresetSetting('surface.iso', () => surfaceIsoDefault, (value) => {
     const n = Math.max(0, asFiniteNumber(value, 0.02));
+    surfaceIsoDefault = n;
     setViewControlValue(isoInput, n);
   });
-  registerAppearancePresetSetting('surface.opacity', () => asFiniteNumber(opInput && opInput.value, 1), (value) => {
+  registerAppearancePresetSetting('surface.opacity', () => surfaceOpacityDefault, (value) => {
     const n = Math.min(1, Math.max(0.05, asFiniteNumber(value, 1)));
     const snapped = Math.round(n / 0.05) * 0.05;
+    surfaceOpacityDefault = snapped;
     setViewControlValue(opInput, snapped);
   });
   registerAppearancePresetSetting('surface.materialPreset', () => getSurfaceMaterialPresetKey(), (value) => {
@@ -25581,27 +27878,30 @@
     if (surfaceMaterialPresetSelect) surfaceMaterialPresetSelect.value = surfaceMaterialPreset;
   });
   registerAppearancePresetSetting('surface.enabled', () => !!showSurfaces, (value) => { showSurfaces = asBoolean(value); });
-  registerPresetSetting('surface.style', () => 'emissive', () => { });
+  registerPresetSetting('surface.style', () => 'solid', () => { });
   registerAppearancePresetSetting('surface.autoIsoEnabled', () => !!autoIsoEnabled, (value) => {
     autoIsoEnabled = asBoolean(value);
     updateAutoIsoButtonState();
   });
-  registerAppearancePresetSetting('surface.posColor', () => (posColor && posColor.value) || DEFAULT_POS_SURFACE_COLOR, (value) => {
-    if (posColor) posColor.value = asHexColor(value, posColor.value || DEFAULT_POS_SURFACE_COLOR);
+  registerAppearancePresetSetting('surface.posColor', () => surfacePosColorDefault, (value) => {
+    surfacePosColorDefault = asHexColor(value, surfacePosColorDefault || DEFAULT_POS_SURFACE_COLOR);
+    if (posColor) posColor.value = surfacePosColorDefault;
     if (schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
     syncSurfaceColorSchemeUi();
   });
-  registerAppearancePresetSetting('surface.negColor', () => (negColor && negColor.value) || DEFAULT_NEG_SURFACE_COLOR, (value) => {
-    if (negColor) negColor.value = asHexColor(value, negColor.value || DEFAULT_NEG_SURFACE_COLOR);
+  registerAppearancePresetSetting('surface.negColor', () => surfaceNegColorDefault, (value) => {
+    surfaceNegColorDefault = asHexColor(value, surfaceNegColorDefault || DEFAULT_NEG_SURFACE_COLOR);
+    if (negColor) negColor.value = surfaceNegColorDefault;
     if (schemeSelect) schemeSelect.value = 'custom';
     syncColorPickerFields();
     syncSurfaceColorSchemeUi();
   });
-  registerAppearancePresetSetting('surface.colorScheme', () => (schemeSelect && schemeSelect.value) || 'custom', (value) => {
-    if (!schemeSelect) return;
-    const options = new Set(Array.from(schemeSelect.options).map((o) => o.value));
+  registerAppearancePresetSetting('surface.colorScheme', () => surfaceColorSchemeDefault, (value) => {
+    const options = new Set(schemeSelect ? Array.from(schemeSelect.options).map((o) => o.value) : Object.keys(SURFACE_COLOR_SCHEMES).concat(['custom']));
     const next = (typeof value === 'string' && options.has(value)) ? value : 'custom';
+    surfaceColorSchemeDefault = next;
+    if (!schemeSelect) return;
     schemeSelect.value = next;
     if (typeof schemeSelect.onchange === 'function') schemeSelect.onchange();
   });
@@ -25831,7 +28131,19 @@
     syncVibrationControls();
   });
 
-  window.VibeMolPreset = getPresetPublicApi();
+  function getSceneGraphAwarePresetPublicApi() {
+    const baseApi = getPresetPublicApi();
+    return Object.freeze(Object.assign({}, baseApi, {
+      import: (preset, options = {}) => {
+        const result = baseApi.import(preset, options);
+        applySurfaceControlsToActiveCubeLayerFromUi();
+        scheduleAppearancePresetAutosave();
+        return result;
+      },
+    }));
+  }
+
+  window.VibeMolPreset = getSceneGraphAwarePresetPublicApi();
 
   function flattenAutosavePresetSettings(node, prefix = '', out = {}) {
     if (!isPlainObject(node)) return out;
@@ -25966,6 +28278,15 @@
   }
 
   function resetAppearanceToFactoryDefaults() {
+    const layer = getActiveCubeLayer();
+    if (layer) {
+      Object.assign(layer, createCubeAppearance({}));
+      persistActiveCubeLayerState(layer);
+      syncAppearanceControlsToActiveLayer();
+      rebuildScene({ preserveView: true, syncGraph: false });
+      setAppearanceResetPopoverOpen(false);
+      return;
+    }
     clearAppearancePresetAutosaveStorage();
     runWithAppearancePresetAutosaveSuppressed(() => {
       setFontPair('geist');
@@ -25999,6 +28320,12 @@
     rehydrateClonedVolume,
     ensureVolumeSchema,
     isPlainObject,
+    commitStructureImport: imported => handleSceneDropRecords([{
+      name: getUniqueVolumeName(imported.name),
+      vol: imported.vol,
+      forceNewScene: true,
+      extras: Object.assign({}, imported.extras, { skipBuilderExtensionMerge: true }),
+    }], { skipAutoIsoOnInitialRebuild: hasVolumetricGrid(imported.vol), preserveView: false }),
     getVolumeCount: () => volumes.length,
     clearPlaceholderVolumesForUserLoad,
     appendParsedVolumeRecord,
@@ -26031,6 +28358,43 @@
     isFuseRingPreviewActive: () => !!addFusePreviewState,
     listNonEditWindows: () => Object.values(NON_EDIT_WINDOW_ID),
     getOpenNonEditWindows: () => listOpenNonEditWindowIds(),
+    getSceneGraphSnapshot: () => ({
+      focusedSceneId: String(sceneGraphController.getState().focusedSceneId || ''),
+      activeLayerId: String(sceneGraphController.getState().activeLayerId || ''),
+      selectedLayerIds: getSelectedCubeLayerIds(),
+      scenes: sceneGraphController.getScenes().map((scene) => ({
+        id: String(scene.id || ''),
+        name: String(scene.name || ''),
+        visible: scene.visible !== false,
+        activeLayerId: String(scene.activeLayerId || ''),
+        layers: sceneGraphController.listLayers(scene).map((layer) => ({
+          id: String(layer.id || ''),
+          parentId: String(layer.parentId || ''),
+          kind: String(layer.kind || ''),
+          labelId: String(layer.labelId || ''),
+          name: String(layer.name || ''),
+          visible: layer.visible !== false,
+          effectiveVisible: sceneGraphController.isLayerEffectivelyVisible(layer),
+          iso: Number(layer.iso),
+          autoIso: getLayerAutoIsoEnabled(layer),
+          opacity: Number(layer.opacity),
+          solidPreset: String(layer.solidPreset || ''),
+          colorScheme: String(layer.colorScheme || ''),
+          posColor: layer.posColor == null ? null : String(layer.posColor),
+          negColor: layer.negColor == null ? null : String(layer.negColor),
+          renderMode: normalizeLayerRenderModeValue(layer.renderMode),
+          cloudType: normalizeLayerCloudTypeValue(layer.cloudType),
+          cloudStride: normalizeLayerCloudStride(layer.cloudStride),
+          cloudAlpha: normalizeLayerCloudAlpha(layer.cloudAlpha),
+          signFlip: !!layer.signFlip,
+          isSceneGraphDuplicate: !!layer.isSceneGraphDuplicate,
+          operation: layer.operation || null,
+          inputs: Array.isArray(layer.inputs) ? layer.inputs.map((input) => Object.assign({}, input)) : [],
+          nameUserEdited: getArithmeticNameUserEdited(layer),
+          cubeDataValid: layer.cubeDataValid !== false,
+        })),
+      })),
+    }),
     getEditSelectionCount: () => {
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.length : 0;
@@ -26039,6 +28403,23 @@
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.slice() : [];
     },
+    getEditBuildState: () => ({
+      intent: String(getEditIntent() || ''),
+      addMode: String(editAddMode || ''),
+      elementZ: Number(editAddElementZ) | 0,
+      fragmentId: String(editAddFragmentId || ''),
+      moleculeId: String(editAddMoleculeId || ''),
+      payload: Object.assign({}, getCurrentBuildPayload()),
+      hint: String(hintEl && hintEl.textContent || ''),
+      ghostKind: getActiveVoidPreviewStateKind() || (addGrowActive ? String(addGrowKind || '') : ''),
+      catalogVoidPreviewKind: String(catalogVoidPreview.getKind() || ''),
+      catalogVoidPreviewVisible: catalogVoidPreview.isVisible(),
+      gestureVoidPreviewVisible: !!(gestureVoidPreviewMesh && gestureVoidPreviewMesh.visible),
+      addGrowActive: !!addGrowActive,
+      addGrowKind: String(addGrowKind || ''),
+      moleculePlacementActive: !!moleculePlaceActive,
+      moleculePlacementKind: String(moleculePlaceTemplateData && moleculePlaceTemplateData.entryKind || ''),
+    }),
     getCameraSnapshot: () => ({
       mode: String(viewState && viewState.mode || ''),
       camera: {
@@ -26066,9 +28447,9 @@
       sceneEnvironmentPresent: !!scene.environment,
       sceneEnvironmentPath: SCENE_ENVIRONMENT_MAP_PATH,
       sceneEnvironmentLoadError: String(sceneEnvironmentLoadError || ''),
-      surfaceMaterialPreset: getSurfaceMaterialPresetKey(),
-      renderMode: String(renderMode || ''),
-      cloudType: String(cloudType || ''),
+      surfaceMaterialPreset: getSurfaceMaterialPresetKey(getActiveCubeLayer()),
+      renderMode: getLayerRenderMode(),
+      cloudType: getLayerCloudType(),
       surfaceOpacity: getSurfaceOpacityValue(),
       surfaceRoughness: getSurfaceRoughnessValue(),
       surfaceMetalness: getSurfaceMetalnessValue(),
@@ -26106,7 +28487,9 @@
         transparent: !!(material && material.transparent),
         depthWrite: !!(material && material.depthWrite),
         transmission: Number(material && material.transmission) || 0,
-        surfaceStyle: String(material && material.userData && material.userData.vmSurfaceStyle || ''),
+        surfaceStyle: getLegacySurfaceStyleKey(),
+        surfaceMaterialPreset: String(material && material.userData && material.userData.vmSurfaceStyle || ''),
+        sceneLayerId: String(mesh && mesh.userData && mesh.userData.sceneLayerId || ''),
         color: color
           ? {
             r: Number(color.r) || 0,
@@ -26148,6 +28531,49 @@
             : null),
       };
     }),
+    getMoleculeRenderSnapshot: () => {
+      const atoms = [];
+      const bonds = [];
+      const world = new THREE.Vector3();
+      const isVisible = (obj) => {
+        for (let cur = obj; cur; cur = cur.parent) {
+          if (cur.visible === false) return false;
+        }
+        return true;
+      };
+      if (contentGroup && typeof contentGroup.updateMatrixWorld === 'function') contentGroup.updateMatrixWorld(true);
+      if (contentGroup && typeof contentGroup.traverse === 'function') {
+        contentGroup.traverse((obj) => {
+          if (!obj || !obj.userData || !isVisible(obj)) return;
+          if (obj.userData.type === 'atom' && obj.position) {
+            obj.getWorldPosition(world);
+            atoms.push({
+              index: Number(obj.userData.index) | 0,
+              x: Number(world.x) || 0,
+              y: Number(world.y) || 0,
+              z: Number(world.z) || 0,
+            });
+            return;
+          }
+          if (Number.isInteger(obj.userData.i) && Number.isInteger(obj.userData.j)) {
+            obj.getWorldPosition(world);
+            bonds.push({
+              i: obj.userData.i | 0,
+              j: obj.userData.j | 0,
+              x: Number(world.x) || 0,
+              y: Number(world.y) || 0,
+              z: Number(world.z) || 0,
+            });
+          }
+        });
+      }
+      return {
+        atomCount: atoms.length,
+        bondCarrierCount: bonds.length,
+        atoms,
+        bonds,
+      };
+    },
     getBondCarrierSnapshots: () => {
       if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
       const out = [];
@@ -26590,33 +29016,25 @@
   if (viewCopyCamBtn) viewCopyCamBtn.onclick = () => copyViewVector('cam', viewCopyCamBtn);
   if (viewCopyTargetBtn) viewCopyTargetBtn.onclick = () => copyViewVector('target', viewCopyTargetBtn);
   if (trajectoryPlayBtn) {
-    let suppressNextTrajectoryClick = false;
-    const toggleTrajectoryFromControl = (evt) => {
+    trajectoryPlayBtn.addEventListener('click', (evt) => {
       if (evt && evt.preventDefault) evt.preventDefault();
       if (evt && evt.stopPropagation) evt.stopPropagation();
-      toggleActiveTrajectoryPlayback();
-    };
-    trajectoryPlayBtn.addEventListener('pointerdown', (evt) => {
-      suppressNextTrajectoryClick = true;
-      toggleTrajectoryFromControl(evt);
-    });
-    trajectoryPlayBtn.addEventListener('click', (evt) => {
-      if (suppressNextTrajectoryClick) {
-        suppressNextTrajectoryClick = false;
-        return;
+      const shouldPlay = !isAnyTrajectoryPlaybackActive();
+      if (shouldPlay) {
+        vibrationPlaying = false;
+        vibrationLastStepMs = 0;
+        restoreActiveVibrationEquilibrium({ syncUi: false });
       }
-      toggleTrajectoryFromControl(evt);
+      setAllTrajectoryPlayback(shouldPlay, { syncUi: true });
+      syncVibrationControls();
     });
   }
   if (trajectoryResetBtn) {
     trajectoryResetBtn.onclick = () => {
-      const info = getActiveTrajectoryInfo();
-      if (!info.enabled) return;
       vibrationPlaying = false;
       vibrationLastStepMs = 0;
       restoreActiveVibrationEquilibrium({ syncUi: false });
-      stopTrajectoryPlayback({ syncUi: false });
-      applyTrajectoryFrame(0, { syncUi: true });
+      resetAllTrajectoryFrames({ syncUi: true });
       syncVibrationControls();
     };
   }
@@ -26653,7 +29071,7 @@
       if (!info.enabled) return;
       const nextPlaying = !vibrationPlaying;
       if (nextPlaying) {
-        stopTrajectoryPlayback({ syncUi: false });
+        stopAllTrajectoryPlayback({ syncUi: false });
       }
       vibrationPlaying = nextPlaying;
       vibrationLastStepMs = 0;
@@ -26684,7 +29102,7 @@
 
       info.vib.modeIndex = modeIndex;
       info.vib.phase = 0;
-      stopTrajectoryPlayback({ syncUi: false });
+      stopAllTrajectoryPlayback({ syncUi: false });
       if (shouldTogglePlayback) {
         vibrationPlaying = !vibrationPlaying;
       } else {
@@ -26778,8 +29196,11 @@
       frames: traj.frames.map((frame) => new Float32Array(frame)),
       comments: Array.isArray(traj.comments) ? traj.comments.slice() : [],
       frameIndex: Number.isFinite(Number(traj.frameIndex)) ? Number(traj.frameIndex) | 0 : 0,
+      currentFrame: Number.isFinite(Number(traj.currentFrame)) ? Number(traj.currentFrame) | 0 : (Number.isFinite(Number(traj.frameIndex)) ? Number(traj.frameIndex) | 0 : 0),
+      playing: !!traj.playing,
       fps: Number.isFinite(Number(traj.fps)) ? Number(traj.fps) : 12,
       loop: traj.loop !== false,
+      syncEnabled: !!traj.syncEnabled,
     };
   }
 
@@ -26881,14 +29302,13 @@
     else delete vol.molden;
     vol.natoms = vol.atoms.length;
     ensureVolumeSchema(vol, { inferMissingBonds: false });
-    trajectoryPlaying = false;
-    trajectoryLastStepMs = 0;
+    stopAllTrajectoryPlayback({ syncUi: false });
     vibrationPlaying = false;
     vibrationLastStepMs = 0;
     syncBuilderExtensionFromVolumes();
     currentIndex = idx;
     clearTransientInteractionState();
-    syncActiveVolumeControls();
+    syncLoadedSceneControls();
     rebuildScene({ preserveView: true });
     updateSidePanel();
     return true;
@@ -26929,8 +29349,7 @@
     vol.natoms = Array.isArray(vol.atoms) ? vol.atoms.length : 0;
     const afterState = cloneCoordsPanelEditState(vol);
     pushCoordsPanelEditHistoryEntry(record, beforeState, afterState, actionLabel);
-    trajectoryPlaying = false;
-    trajectoryLastStepMs = 0;
+    stopAllTrajectoryPlayback({ syncUi: false });
     vibrationPlaying = false;
     vibrationLastStepMs = 0;
     clearTransientInteractionState();
@@ -27291,14 +29710,14 @@
   function clearPlaceholderVolumesForUserLoad() {
     let changed = false;
     if (volumes.length === 1 && volumes[0].name === 'Demo Water') {
-      console.log('[CUBE] Replacing demo with loaded data.');
+      if (isCubeDebugLoggingEnabled()) console.log('[CUBE] Replacing demo with loaded data.');
       volumes = [];
       currentIndex = -1;
       clearSceneMeshes();
       changed = true;
     }
     if (volumes.some(v => v.isSample)) {
-      console.log('[CUBE] Removing sample.cube from list before adding user data.');
+      if (isCubeDebugLoggingEnabled()) console.log('[CUBE] Removing sample.cube from list before adding user data.');
       volumes = volumes.filter(v => !v.isSample);
       currentIndex = -1;
       clearSceneMeshes();
@@ -28409,6 +30828,147 @@
     return { ok: true, targetName: target.record && target.record.name ? target.record.name : '' };
   }
 
+  function makeDropSceneGroup(item, sceneKey = '') {
+    return {
+      sceneKey,
+      representativeVol: item && item.vol ? item.vol : null,
+      items: [],
+      forceNewScene: !!(item && (item.forceNewScene || isTrajectoryVolumeRecord(item.vol))),
+    };
+  }
+
+  function handleSceneDropRecords(parsedItems, options = {}) {
+    const items = Array.isArray(parsedItems) ? parsedItems.filter((item) => item && item.vol) : [];
+    if (!items.length) return false;
+    ensureLegacyRecordSceneKeys();
+    const targetSceneKey = String(options.targetSceneKey || '').trim();
+    const targetSceneVol = targetSceneKey ? getSceneMoleculeVolume(targetSceneKey) : null;
+    const resolveSceneKeyForItem = (item, forceNewScene) => {
+      if (forceNewScene) return '';
+      if (targetSceneKey) {
+        return moleculeMatchesVolume(item && item.vol, targetSceneVol) ? targetSceneKey : '';
+      }
+      return findMatchingSceneKeyForVolume(item && item.vol);
+    };
+    const groups = [];
+    for (const item of items) {
+      const forceNewScene = !!(item.forceNewScene || isTrajectoryVolumeRecord(item.vol));
+      let group = null;
+      if (!forceNewScene) {
+        group = groups.find((candidate) => !candidate.forceNewScene && moleculeMatchesVolume(item.vol, candidate.representativeVol)) || null;
+      }
+      if (!group) {
+        group = makeDropSceneGroup(item, resolveSceneKeyForItem(item, forceNewScene));
+        if (forceNewScene) group.forceNewScene = true;
+        groups.push(group);
+      }
+      group.items.push(item);
+    }
+
+    let activeIndex = -1;
+    let loadedCount = 0;
+    let loadedVolumetricCount = 0;
+    const loadedTrajectoryCount = items.filter((item) => isTrajectoryVolumeRecord(item.vol)).length;
+    let lastSceneKey = '';
+    for (const group of groups) {
+      let sceneKey = group.forceNewScene ? '' : String(group.sceneKey || '').trim();
+      const matchedExisting = !!sceneKey;
+      if (group.forceNewScene && isTrajectoryVolumeRecord(group.representativeVol)) {
+        hideVisibleSceneGraphScenesMatchingVolume(group.representativeVol);
+      }
+      if (!sceneKey) sceneKey = allocateVolumeSceneKey(group.items[0] && group.items[0].name ? group.items[0].name : 'scene');
+      lastSceneKey = sceneKey;
+      const groupHasCube = group.items.some((item) => hasVolumetricGrid(item.vol));
+      const existingScene = findSceneBySceneKey(sceneKey);
+      const sceneWasSingleCubeMode = !existingScene || getVisibleCubeLayerCount(existingScene) <= 1;
+      if (existingScene) existingScene.visible = true;
+      if (groupHasCube && sceneWasSingleCubeMode) {
+        if (existingScene) {
+          for (const cube of getCubeLayersInScene(existingScene)) {
+            cube.visible = false;
+            persistActiveCubeLayerState(cube, { render: false });
+          }
+        }
+        for (const record of volumes) {
+          if (!record || record._sceneGraphSceneKey !== sceneKey || !hasVolumetricGrid(record.vol)) continue;
+          record._sceneGraphLayerState = Object.assign({}, record._sceneGraphLayerState || {}, { visible: false });
+        }
+      }
+      let firstCubeInGroup = true;
+      let appendedAny = false;
+      let groupActiveIndex = -1;
+      for (const item of group.items) {
+        const isCube = hasVolumetricGrid(item.vol);
+        const isSingleFrameXyzNoop = matchedExisting
+          && item.vol
+          && item.vol.kind === 'xyz'
+          && !isTrajectoryVolumeRecord(item.vol);
+        if (isSingleFrameXyzNoop) {
+          item.recordIndex = volumes.findIndex(record => record._sceneGraphSceneKey === sceneKey);
+          continue;
+        }
+        const recordIndex = volumes.length;
+        item.recordIndex = recordIndex;
+        appendParsedVolumeRecord(item.name || 'Imported file', item.vol, Object.assign({}, item.extras || {}, {
+          inferBondOrders: true,
+          _sceneGraphSceneKey: sceneKey,
+          _sceneGraphLayerState: isCube ? { visible: firstCubeInGroup } : undefined,
+        }));
+        const record = volumes[recordIndex];
+        if (record) record._sceneGraphSceneKey = sceneKey;
+        loadedCount += 1;
+        appendedAny = true;
+        if (groupActiveIndex < 0) groupActiveIndex = recordIndex;
+        if (isCube) {
+          loadedVolumetricCount += 1;
+          firstCubeInGroup = false;
+        }
+      }
+      if (!appendedAny && matchedExisting) {
+        const existingIndex = volumes.findIndex((record) => record && record._sceneGraphSceneKey === sceneKey);
+        if (existingIndex >= 0) groupActiveIndex = existingIndex;
+      }
+      if (groupActiveIndex >= 0 && activeIndex < 0) activeIndex = groupActiveIndex;
+    }
+
+    if (activeIndex < 0 && lastSceneKey) {
+      for (let i = 0; i < volumes.length; i += 1) {
+        const record = volumes[i];
+        if (!record || record._sceneGraphSceneKey !== lastSceneKey) continue;
+        if (hasVolumetricGrid(record.vol)) {
+          activeIndex = i;
+          break;
+        }
+        if (activeIndex < 0) activeIndex = i;
+      }
+    }
+    if (loadedVolumetricCount > 0 && isoInput) {
+      setViewControlValue(isoInput, DEFAULT_ISO_VALUE);
+    }
+    if (activeIndex >= 0) {
+      activateVolumeIndex(activeIndex, {
+        skipAutoIso: !!options.skipAutoIsoOnInitialRebuild,
+        preserveView: options.preserveView == null ? volumes.length > loadedCount : !!options.preserveView,
+      });
+      revealFocusedOutlinerTarget({ soloScene: true, rebuild: true });
+    } else {
+      syncSceneGraphFromVolumes({ preserveLayerState: true });
+      const focused = lastSceneKey
+        ? sceneGraphController.getScenes().find((scene) => scene.sceneKey === lastSceneKey)
+        : null;
+      if (focused) focusScene(focused);
+      rebuildScene({ preserveView: true, syncGraph: false });
+      revealFocusedOutlinerTarget({ soloScene: true, rebuild: true });
+    }
+    if (loadedTrajectoryCount > 0) {
+      setTrajectoryPanelOpen(true, { auto: true });
+    }
+    if (loadedCount > 0) {
+      setNavigationHint(loadedCount === 1 ? 'Loaded 1 file into scenes' : `Loaded ${loadedCount} files into scenes`);
+    }
+    return true;
+  }
+
   const fileLoaderController = createFileLoader({
     getVolumes: () => volumes,
     setVolumes: (next) => { volumes = next; },
@@ -28437,7 +30997,7 @@
     },
     arrayMinMax,
     activateVolumeIndex,
-    syncActiveVolumeControls,
+    syncActiveVolumeControls: syncLoadedSceneControls,
     updateEmptyStateVisibility,
     looksLikePsi4OutputText,
     parsePsi4OutputVibrationBundle,
@@ -28451,6 +31011,7 @@
     clearPlaceholderVolumesForUserLoad,
     getUniqueVolumeName,
     hasVolumetricGrid,
+    handleSceneDropRecords,
     getActiveTrajectoryInfo,
     setTrajectoryPanelOpen,
     attachVibrationPayloadToBestVolume,
@@ -28998,17 +31559,30 @@
       }
       vol.title = `PubChem CID ${cid}`;
       vol.comment = query;
-      clearPlaceholderVolumesForUserLoad();
-      const startIndex = volumes.length;
-      appendParsedVolumeRecord(
-        `${query} [CID ${cid}].xyz`,
+      const handled = handleSceneDropRecords([{
+        name: `${query} [CID ${cid}].xyz`,
+        fileKind: 'xyz',
         vol,
-        {
+        extras: {
           pubchemMeta: pubchemMeta || buildPubChemMetadataFallback(cid, query),
-          inferBondOrders: true,
-        }
-      );
-      finalizeLoadedVolumes(startIndex);
+        },
+      }], { skipAutoIsoOnInitialRebuild: true });
+      if (!handled) {
+        volumes = [];
+        currentIndex = -1;
+        clearSceneMeshes();
+        clearEditHistory();
+        const startIndex = 0;
+        appendParsedVolumeRecord(
+          `${query} [CID ${cid}].xyz`,
+          vol,
+          {
+            pubchemMeta: pubchemMeta || buildPubChemMetadataFallback(cid, query),
+            inferBondOrders: true,
+          }
+        );
+        finalizeLoadedVolumes(startIndex);
+      }
       setNavigationHint(`Loaded PubChem: ${query} (CID ${cid})`);
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
@@ -29074,6 +31648,16 @@
     return fileLoaderController.clearAllLoadedFiles(options);
   }
 
+  function handleClearAllLoadedFilesClick() {
+    if (getSceneOutliner().isRenaming()) finishOutlinerRename({ commit: true });
+    closeCubeLayerContextMenu();
+    closeCombinePopover();
+    closeEditModeTransientPopovers();
+    clearAllLoadedFiles();
+    if (currentMode !== MODES.DISPLAY) setMode(MODES.DISPLAY);
+    else updateEmptyStateVisibility();
+  }
+
   /**
    * Load files passed from embedded/iframe integrations.
    * @param {Array<{name:string,text?:string,base64?:string,mimeType?:string}>} files
@@ -29116,41 +31700,71 @@
   });
 
   // Clear all loaded files and return to startup state.
-  clearBtn.onclick = () => clearAllLoadedFiles();
-
-  /**
-   * Rebuild the file selector options from the current `volumes` list.
-   */
-  function refreshFileSelect() {
-    fileSelect.innerHTML = "";
-    volumes.forEach((v, i) => {
-      const opt = document.createElement('option');
-      opt.value = i; opt.textContent = v.name;
-      fileSelect.appendChild(opt);
-    });
-    if (currentIndex >= 0) fileSelect.value = currentIndex;
-    const hasActive = currentIndex >= 0 && !!volumes[currentIndex];
-    if (duplicateFileBtn) duplicateFileBtn.disabled = !hasActive;
-    if (removeFileBtn) removeFileBtn.disabled = !hasActive;
-    if (saveStructureBtn) saveStructureBtn.disabled = !hasActive;
-    if (clearBtn) clearBtn.disabled = volumes.length === 0;
-    if (fileSelectDisplay) {
-      fileSelectDisplay.textContent = hasActive ? String(volumes[currentIndex] && volumes[currentIndex].name || '') : 'No file loaded';
-    }
-    fileSelect.dataset.interactive = fileSelect.options.length > 1 ? 'true' : 'false';
-    fileSelect.disabled = fileSelect.options.length <= 1;
-  }
-
-  fileSelect.onchange = () => {
-    activateVolumeIndex(parseInt(fileSelect.value, 10), { preserveView: true });
-  };
+  clearBtn.onclick = () => handleClearAllLoadedFilesClick();
 
   // (subsample controls removed)
 
-  isoInput.oninput = () => rebuildScene({ preserveView: true });
-  isoInput.onchange = () => rebuildScene({ preserveView: true });
+  function persistActiveCubeLayerState(layer = getActiveCubeLayer(), options = {}) {
+    if (!layer) return;
+    const state = {
+      visible: layer.visible !== false,
+      expanded: layer.expanded !== false,
+      iso: layer.iso,
+      autoIso: getLayerAutoIsoEnabled(layer),
+      autoIsoEnabled: getLayerAutoIsoEnabled(layer),
+      opacity: layer.opacity,
+      surfaceStyle: layer.surfaceStyle,
+      solidPreset: layer.solidPreset,
+      colorScheme: layer.colorScheme,
+      posColor: layer.posColor,
+      negColor: layer.negColor,
+      renderMode: normalizeLayerRenderModeValue(layer.renderMode),
+      cloudType: normalizeLayerCloudTypeValue(layer.cloudType),
+      cloudStride: normalizeLayerCloudStride(layer.cloudStride),
+      cloudAlpha: normalizeLayerCloudAlpha(layer.cloudAlpha),
+      signFlip: !!layer.signFlip,
+    };
+    if (layer.record && !layer.isSceneGraphDuplicate) {
+      if (Number.isInteger(layer.moldenMoIndex)) {
+        if (!isPlainObject(layer.record._moldenSceneGraphLayerStateByMo)) layer.record._moldenSceneGraphLayerStateByMo = {};
+        layer.record._moldenSceneGraphLayerStateByMo[layer.moldenMoIndex] = Object.assign(
+          {},
+          layer.record._moldenSceneGraphLayerStateByMo[layer.moldenMoIndex] || {},
+          state
+        );
+      } else {
+        layer.record._sceneGraphLayerState = Object.assign({}, layer.record._sceneGraphLayerState || {}, state);
+      }
+    }
+    if (options.render !== false) renderSceneOutliner();
+  }
+
+  isoInput.oninput = () => {
+    const layer = getActiveCubeLayer();
+    if (layer) {
+      const nextIso = Math.max(0, Number(isoInput.value) || DEFAULT_ISO_VALUE);
+      applyToSelectedCubeLayers((target) => {
+        target.iso = nextIso;
+      });
+      return;
+    }
+    surfaceIsoDefault = Math.max(0, Number(isoInput.value) || DEFAULT_ISO_VALUE);
+    rebuildScene({ preserveView: true });
+    scheduleAppearancePresetAutosave();
+  };
+  isoInput.onchange = isoInput.oninput;
   if (autoIsoBtn) {
     autoIsoBtn.onchange = () => {
+      const layer = getActiveCubeLayer();
+      if (layer) {
+        const nextAutoIso = !!autoIsoBtn.checked;
+        applyToSelectedCubeLayers((target) => {
+          setLayerAutoIsoEnabled(target, nextAutoIso);
+        }, { rebuild: true });
+        updateAutoIsoButtonState();
+        setHintMessage(`Autoiso ${nextAutoIso ? 'ON' : 'OFF'}`);
+        return;
+      }
       autoIsoEnabled = !!autoIsoBtn.checked;
       updateAutoIsoButtonState();
       scheduleAppearancePresetAutosave();
@@ -29168,6 +31782,15 @@
     };
   }
   const handleOpacityInput = () => {
+    const layer = getActiveCubeLayer();
+    if (layer) {
+      const nextOpacity = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
+      applyToSelectedCubeLayers((target) => {
+        target.opacity = nextOpacity;
+      });
+      return;
+    }
+    surfaceOpacityDefault = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
     updateOpacityAndColors();
     scheduleAppearancePresetAutosave();
   };
@@ -29176,6 +31799,18 @@
   if (surfaceMaterialPresetSelect) {
     surfaceMaterialPresetSelect.value = getSurfaceMaterialPresetKey();
     surfaceMaterialPresetSelect.onchange = () => {
+      const layer = getActiveCubeLayer();
+      if (layer) {
+        let nextPreset = String(surfaceMaterialPresetSelect.value || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
+        if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, nextPreset)) {
+          nextPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
+        }
+        surfaceMaterialPresetSelect.value = nextPreset;
+        applyToSelectedCubeLayers((target) => {
+          target.solidPreset = nextPreset;
+        });
+        return;
+      }
       surfaceMaterialPreset = String(surfaceMaterialPresetSelect.value || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
       if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, surfaceMaterialPreset)) {
         surfaceMaterialPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
@@ -29185,8 +31820,32 @@
       scheduleAppearancePresetAutosave();
     };
   }
+  if (surfaceSignFlipToggleEl) {
+    surfaceSignFlipToggleEl.onchange = () => {
+      const layer = getActiveCubeLayer();
+      if (!layer) return;
+      const nextSignFlip = !!surfaceSignFlipToggleEl.checked;
+      surfaceSignFlipToggleEl.setAttribute('aria-checked', nextSignFlip ? 'true' : 'false');
+      applyToSelectedCubeLayers((target) => {
+        target.signFlip = nextSignFlip;
+      });
+    };
+  }
   const handlePositiveSurfaceColorInput = () => {
+    const layer = getActiveCubeLayer();
+    if (layer) {
+      const nextColor = normalizeHexColor(posColor.value, DEFAULT_POS_SURFACE_COLOR);
+      if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
+      syncColorPickerFields();
+      applyToSelectedCubeLayers((target) => {
+        target.colorScheme = 'custom';
+        target.posColor = nextColor;
+      });
+      return;
+    }
     if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
+    surfaceColorSchemeDefault = 'custom';
+    surfacePosColorDefault = normalizeHexColor(posColor.value, DEFAULT_POS_SURFACE_COLOR);
     syncColorPickerFields();
     updateOpacityAndColors();
     scheduleAppearancePresetAutosave();
@@ -29194,7 +31853,20 @@
   posColor.oninput = handlePositiveSurfaceColorInput;
   posColor.onchange = handlePositiveSurfaceColorInput;
   const handleNegativeSurfaceColorInput = () => {
+    const layer = getActiveCubeLayer();
+    if (layer) {
+      const nextColor = normalizeHexColor(negColor.value, DEFAULT_NEG_SURFACE_COLOR);
+      if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
+      syncColorPickerFields();
+      applyToSelectedCubeLayers((target) => {
+        target.colorScheme = 'custom';
+        target.negColor = nextColor;
+      });
+      return;
+    }
     if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
+    surfaceColorSchemeDefault = 'custom';
+    surfaceNegColorDefault = normalizeHexColor(negColor.value, DEFAULT_NEG_SURFACE_COLOR);
     syncColorPickerFields();
     updateOpacityAndColors();
     scheduleAppearancePresetAutosave();
@@ -29525,10 +32197,38 @@
    * Register and attach a rendered surface mesh to scene content.
    * @param {THREE.Mesh} mesh
    */
-  function addSurfaceMesh(mesh) {
+  function addSurfaceMesh(mesh, layer = null) {
     if (mesh) mesh.renderOrder = 10;
+    if (mesh && layer) {
+      mesh.userData = Object.assign({}, mesh.userData || {}, {
+        sceneLayerId: layer.id,
+        sceneId: layer.sceneId,
+      });
+      if (Number.isInteger(layer.moldenMoIndex)) mesh.userData.moldenMoIndex = layer.moldenMoIndex;
+      if (mesh.userData.sign === 'pos') layer.posMesh = mesh;
+      if (mesh.userData.sign === 'neg') layer.negMesh = mesh;
+    }
     contentGroup.add(mesh);
     meshes.push(mesh);
+  }
+
+  function tagCloudRenderableGroup(group, layer = null) {
+    if (!(group && typeof group.traverse === 'function')) return group;
+    group.userData = Object.assign({}, group.userData || {}, {
+      vmRenderableKind: 'cloud',
+      sceneLayerId: layer && layer.id ? layer.id : null,
+      sceneId: layer && layer.sceneId ? layer.sceneId : null,
+    });
+    group.traverse((obj) => {
+      if (!obj || obj === group || !(obj.isMesh || obj.isPoints)) return;
+      obj.userData = Object.assign({}, obj.userData || {}, {
+        vmCloudRenderable: true,
+        sceneLayerId: layer && layer.id ? layer.id : null,
+        sceneId: layer && layer.sceneId ? layer.sceneId : null,
+      });
+      if (layer && Number.isInteger(layer.moldenMoIndex)) obj.userData.moldenMoIndex = layer.moldenMoIndex;
+    });
+    return group;
   }
 
   /**
@@ -29586,7 +32286,7 @@
         compMode,
         side,
         iso.toFixed(6),
-        Number.isInteger(record && record.moldenMoIndex) ? record.moldenMoIndex : 0,
+        Number.isInteger(meta.moldenMoIndex) ? meta.moldenMoIndex : (Number.isInteger(vol.moldenMoIndex) ? vol.moldenMoIndex : 0),
         grid.stepAng.toFixed(2),
         grid.paddingAng.toFixed(1),
         buildMoldenAtomSignature(vol),
@@ -29675,6 +32375,13 @@
    */
   function getSurfaceMetric(record, vol, compMode, iso, mesh) {
     if (!record || !vol || !mesh || !hasVolumetricGrid(vol)) return null;
+    if (vol.kind === 'molden' && mesh.userData && Number.isInteger(mesh.userData.moldenMoIndex)) {
+      try {
+        vol = evaluateMoldenGrid(record, mesh.userData.moldenMoIndex);
+      } catch {
+        return null;
+      }
+    }
     if (vol.isTwoComponent) return null;
     const cacheKey = buildSurfaceMetricCacheKey(record, vol, compMode, iso, mesh);
     if (!(record.surfaceMetricCache instanceof Map)) record.surfaceMetricCache = new Map();
@@ -29700,10 +32407,10 @@
       const occupancy = (vol.kind === 'molden'
         && vol.molden
         && Array.isArray(vol.molden.mos)
-        && Number.isInteger(record.moldenMoIndex)
-        && vol.molden.mos[record.moldenMoIndex]
-        && Number.isFinite(vol.molden.mos[record.moldenMoIndex].occupation))
-        ? Math.max(0, Number(vol.molden.mos[record.moldenMoIndex].occupation) || 0)
+        && Number.isInteger(vol.moldenMoIndex)
+        && vol.molden.mos[vol.moldenMoIndex]
+        && Number.isFinite(vol.molden.mos[vol.moldenMoIndex].occupation))
+        ? Math.max(0, Number(vol.molden.mos[vol.moldenMoIndex].occupation) || 0)
         : null;
       for (let t = 0; t < len; t++) {
         const q = Number(vol.data[t]) || 0;
@@ -29752,17 +32459,17 @@
    * @param {number} iso
    * @param {number} opacity
    */
-  function renderTwoComponentSurfaces(vol, compMode, iso, opacity) {
+  function renderTwoComponentSurfaces(vol, compMode, iso, opacity, layer = null) {
     if (compMode === 'alphaPhase' || compMode === 'betaPhase') {
       const which = compMode === 'alphaPhase' ? 'alpha' : 'beta';
       const re = which === 'alpha' ? vol.alphaRe : vol.betaRe;
       const im = which === 'alpha' ? vol.alphaIm : vol.betaIm;
       if (maxMagnitude(re, im) >= iso) {
       const geom = make2CPhaseIsosurface(vol, which, iso);
-      const mat = createIsoMaterial2C(opacity);
+      const mat = createIsoMaterial2C(opacity, layer);
       const mesh = new THREE.Mesh(geom, mat);
       mesh.userData = { phaseHue: true, which, surfaceMetricKind: 'phase' };
-      addSurfaceMesh(mesh);
+      addSurfaceMesh(mesh, layer);
       }
       return;
     }
@@ -29771,25 +32478,25 @@
       const { maxA, maxB } = getAlphaBetaMagnitudeMaxima(vol);
       if (maxA >= iso) {
         const geomA = make2CPhaseIsosurface(vol, 'alpha', iso);
-        const meshA = new THREE.Mesh(geomA, createIsoMaterial2C(opacity));
+        const meshA = new THREE.Mesh(geomA, createIsoMaterial2C(opacity, layer));
         meshA.userData = { phaseHue: true, which: 'alpha', surfaceMetricKind: 'phase' };
-        addSurfaceMesh(meshA);
+        addSurfaceMesh(meshA, layer);
       }
       if (maxB >= iso) {
         const geomB = make2CPhaseIsosurface(vol, 'beta', iso);
-        const meshB = new THREE.Mesh(geomB, createIsoMaterial2C(opacity));
+        const meshB = new THREE.Mesh(geomB, createIsoMaterial2C(opacity, layer));
         meshB.userData = { phaseHue: true, which: 'beta', surfaceMetricKind: 'phase' };
-        addSurfaceMesh(meshB);
+        addSurfaceMesh(meshB, layer);
       }
       return;
     }
 
     if (compMode === 'totalBloch' && maxTotalDensity(vol) >= iso) {
       const geom = make2CTotalColoredIsosurface(vol, iso);
-      const mat = createIsoMaterial2C(opacity);
+      const mat = createIsoMaterial2C(opacity, layer);
       const mesh = new THREE.Mesh(geom, mat);
       mesh.userData = { phaseHue: true, totalBloch: true, surfaceMetricKind: 'phase' };
-      addSurfaceMesh(mesh);
+      addSurfaceMesh(mesh, layer);
     }
   }
 
@@ -29802,13 +32509,13 @@
    * @param {THREE.Material} posMat
    * @param {THREE.Material} negMat
    */
-  function renderStandardSurfaces(vol, iso, min, max, posMat, negMat) {
+  function renderStandardSurfaces(vol, iso, min, max, posMat, negMat, layer = null) {
     if (max >= iso) {
       const geomP = makeIsosurface(vol, iso);
       const meshP = new THREE.Mesh(geomP, posMat);
       meshP.userData.sign = 'pos';
       meshP.userData.surfaceMetricKind = 'scalar';
-      addSurfaceMesh(meshP);
+      addSurfaceMesh(meshP, layer);
       if (geomP.index) console.log('[ISO+] triangles', (geomP.index.count / 3) | 0);
     }
     if (min <= -iso) {
@@ -29816,7 +32523,7 @@
       const meshN = new THREE.Mesh(geomN, negMat);
       meshN.userData.sign = 'neg';
       meshN.userData.surfaceMetricKind = 'scalar';
-      addSurfaceMesh(meshN);
+      addSurfaceMesh(meshN, layer);
       if (geomN.index) console.log('[ISO-] triangles', (geomN.index.count / 3) | 0);
     }
   }
@@ -29828,8 +32535,8 @@
    * @param {number} iso
    * @param {number} max
    */
-  function renderClouds(vol, compMode, iso, max) {
-    const opts = readCloudOpts();
+  function renderClouds(vol, compMode, iso, max, layer = null) {
+    const opts = readCloudOpts(layer);
     if (vol && vol.isTwoComponent && isPhaseLikeComponent(compMode)) {
       if (compMode === 'alphaPhase' || compMode === 'betaPhase') {
         if (max >= iso) {
@@ -29837,6 +32544,8 @@
           cloudGroup = (opts.type === 'points')
             ? buildCloudPoints2CPhase(vol, which, opts)
             : buildCloudCubes2CPhase(vol, which, opts);
+          tagCloudRenderableGroup(cloudGroup, layer);
+          if (layer) layer.cloudGroup = cloudGroup;
           contentGroup.add(cloudGroup);
         }
         return;
@@ -29854,18 +32563,24 @@
           for (const c of beta.children) grp.add(c);
         }
         cloudGroup = grp;
+        tagCloudRenderableGroup(cloudGroup, layer);
+        if (layer) layer.cloudGroup = cloudGroup;
         contentGroup.add(cloudGroup);
         return;
       }
 
       if (compMode === 'totalBloch' && max >= iso) {
         cloudGroup = (opts.type === 'points') ? buildCloudPoints2CTotal(vol, opts) : buildCloudCubes2CTotal(vol, opts);
+        tagCloudRenderableGroup(cloudGroup, layer);
+        if (layer) layer.cloudGroup = cloudGroup;
         contentGroup.add(cloudGroup);
       }
       return;
     }
 
     cloudGroup = (opts.type === 'points') ? buildCloudPoints(vol, opts) : buildCloudCubes(vol, opts);
+    tagCloudRenderableGroup(cloudGroup, layer);
+    if (layer) layer.cloudGroup = cloudGroup;
     contentGroup.add(cloudGroup);
   }
 
@@ -29927,21 +32642,31 @@
    * @param {*} vol
    * @param {boolean} hasGrid
    */
-  function applyPostGeometry(vol, hasGrid) {
+  function applyPostGeometry(vol, hasGrid, options = {}) {
+    const asActive = options.asActive !== false;
+    const moleculeLayer = options.moleculeLayer || null;
     if (toggleAtoms.checked) {
-      atomGroup = buildAtoms(vol);
-      applyShadowParticipation(atomGroup);
-      contentGroup.add(atomGroup);
+      const nextAtomGroup = buildAtoms(vol);
+      applyShadowParticipation(nextAtomGroup);
+      contentGroup.add(nextAtomGroup);
+      if (moleculeLayer) moleculeLayer.renderAtomGroup = nextAtomGroup;
+      if (asActive) atomGroup = nextAtomGroup;
+      else extraMoleculeRenderGroups.push(nextAtomGroup);
     }
     if (toggleBonds.checked) {
-      bondGroup = buildBonds(vol);
-      applyShadowParticipation(bondGroup);
-      contentGroup.add(bondGroup);
+      const nextBondGroup = buildBonds(vol);
+      applyShadowParticipation(nextBondGroup);
+      contentGroup.add(nextBondGroup);
+      if (moleculeLayer) moleculeLayer.renderBondGroup = nextBondGroup;
+      if (asActive) bondGroup = nextBondGroup;
+      else extraMoleculeRenderGroups.push(nextBondGroup);
     }
     if (toggleBox.checked && hasGrid) {
-      boxHelper = buildBox(vol);
-      contentGroup.add(boxHelper);
-      console.log('[CUBE] Box helper added');
+      const nextBoxHelper = buildBox(vol);
+      contentGroup.add(nextBoxHelper);
+      if (asActive) boxHelper = nextBoxHelper;
+      else extraBoxHelpers.push(nextBoxHelper);
+      if (isCubeDebugLoggingEnabled()) console.log('[CUBE] Box helper added');
     }
   }
 
@@ -29987,56 +32712,82 @@
     }
 
     clearSceneMeshes();
-    const record = volumes[currentIndex];
-    const vol = record && record.vol;
-    if (vol && vol.kind === 'molden') {
-      try {
-        ensureMoldenGridForRecord(record, vol);
-      } catch (err) {
-        clearMoldenGrid(vol);
-        console.error('[MOLDEN] Grid evaluation failed', err);
-        setHintMessage(`Molden MO rendering failed: ${err && err.message ? err.message : String(err)}`);
+    const activeScene = getFocusedScene() || sceneGraphController.getActiveScene();
+    const activeLayer = sceneGraphController.getActiveLayer();
+    const moleculeRecord = (activeScene && activeScene.moleculeRecord) || volumes[currentIndex];
+    const moleculeVol = moleculeRecord && moleculeRecord.vol;
+    let activeSurfaceVol = null;
+    let activeSurfaceCompMode = DEFAULT_2C_COMPONENT_MODE;
+
+    for (const scene of sceneGraphController.getScenes()) {
+      if (!scene || scene.visible === false) continue;
+      const cubeLayers = sceneGraphController.listRenderableLayers(scene).filter(isCubeLikeLayer);
+      for (const layer of cubeLayers) {
+        if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC && layer.cubeDataValid === false) continue;
+        const record = layer.record || null;
+        clearLayerRenderRefs(layer);
+        const vol = getLayerCubeData(layer);
+        const compMode = getComponentMode(vol);
+        selectActiveRawComponent(vol, compMode);
+        const hasGrid = hasVolumetricGrid(vol);
+        if (!hasGrid) continue;
+        if (activeLayer && activeLayer.id === layer.id) {
+          activeSurfaceVol = vol;
+          activeSurfaceCompMode = compMode;
+          syncIsoSliderCalibration(record, vol, compMode);
+        }
+
+        if (!skipAutoIso && getLayerAutoIsoEnabled(layer)) {
+          try {
+            const stride = autoIsoController.pickAutoIsoSampleStride(vol);
+            const estimated = autoIsoController.estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
+            if (Number.isFinite(estimated) && estimated > 0) layer.iso = estimated;
+          } catch {
+            // Keep the layer iso value when auto-iso estimation fails.
+          }
+        }
+
+        const { min, max } = computeVolumeStats(vol, compMode, arrayMinMax);
+        const iso = Math.max(0, Number(layer.iso) || DEFAULT_ISO_VALUE);
+        const opacity = Math.max(0.05, Math.min(1, Number(layer.opacity) || 1));
+        const posMat = createIsoMaterial('pos', opacity, layer);
+        const negMat = createIsoMaterial('neg', opacity, layer);
+        layer.posMaterial = posMat;
+        layer.negMaterial = negMat;
+
+        const surfacesEnabled = showSurfaces && !surfaceRenderSuppressed;
+        const layerRenderMode = getLayerRenderMode(layer);
+        if (layerRenderMode === 'surface' && surfacesEnabled) {
+          if (vol && vol.isTwoComponent && isPhaseLikeComponent(compMode)) {
+            renderTwoComponentSurfaces(vol, compMode, iso, opacity, layer);
+          } else {
+            renderStandardSurfaces(vol, iso, min, max, posMat, negMat, layer);
+          }
+        } else if (layerRenderMode === 'cloud' && surfacesEnabled) {
+          renderClouds(vol, compMode, iso, max, layer);
+        }
+      }
+      const moleculeLayer = sceneGraphController.getLayerById(scene.moleculeLayerId);
+      const sceneMoleculeRecord = (scene && scene.moleculeRecord) || null;
+      const sceneMoleculeVol = sceneMoleculeRecord && sceneMoleculeRecord.vol;
+      const moleculeVisible = !moleculeLayer || sceneGraphController.isLayerEffectivelyVisible(moleculeLayer);
+      if (moleculeVisible) {
+        applyPostGeometry(sceneMoleculeVol, hasVolumetricGrid(sceneMoleculeVol), {
+          asActive: scene.id === (activeScene && activeScene.id),
+          moleculeLayer,
+        });
       }
     }
-    const compMode = getComponentMode(vol);
-    selectActiveRawComponent(vol, compMode);
-    const hasGrid = hasVolumetricGrid(vol);
-    if (hasGrid) {
-      syncIsoSliderCalibration(record, vol, compMode);
-    } else {
+    if (!activeSurfaceVol) {
       lastIsoCalibrationRecord = null;
       lastIsoCalibrationKey = '';
     }
 
-    if (!skipAutoIso && autoIsoEnabled && hasGrid) {
-      try {
-        applyAutoIsoToIsoInput(record, vol, compMode);
-      } catch {
-        // Keep manual iso value when auto-iso estimation fails.
-      }
-    }
-
-    const { min, max } = computeVolumeStats(vol, compMode, arrayMinMax);
-    const iso = parseFloat(isoInput.value || "0.02");
-    const opacity = parseFloat(opInput.value || "1.00");
-    const posMat = createIsoMaterial('pos', opacity);
-    const negMat = createIsoMaterial('neg', opacity);
-
-    if (renderMode === 'surface' && showSurfaces && hasGrid) {
-      if (vol && vol.isTwoComponent && isPhaseLikeComponent(compMode)) {
-        renderTwoComponentSurfaces(vol, compMode, iso, opacity);
-      } else {
-        renderStandardSurfaces(vol, iso, min, max, posMat, negMat);
-      }
-    } else if (renderMode === 'cloud' && showSurfaces && hasGrid) {
-      renderClouds(vol, compMode, iso, max);
-    }
-
-    applyPostGeometry(vol, hasGrid);
     applyCameraStrategy(preserveView, savedCam, savedTarget);
-    console.log('[CUBE] Rebuilt scene. iso=', iso, 'opacity=', opacity, 'min/max=', min, max);
     updateSidePanel();
-    updatePostRebuildUI(vol, compMode);
+    updatePostRebuildUI(activeSurfaceVol || moleculeVol, activeSurfaceCompMode);
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
     updateEmptyStateVisibility();
     updateSelectedHalos();
     updateTransformBondSelectionHalos();
@@ -30125,23 +32876,71 @@
     link.click();
   };
 
+  let batchExportRunning = false;
   batchBtn.onclick = async () => {
-    if (volumes.length === 0) return;
-    const keepCamera = camera.clone(); const keepTarget = controls.target.clone();
-
-    for (let i = 0; i < volumes.length; i++) {
-      currentIndex = i;
-      fileSelect.value = i;
-      rebuildScene();
-      await new Promise(r => requestAnimationFrame(() => r()));
-      const link = document.createElement('a');
-      const name = volumes[i].name.replace(/\.[^/.]+$/, '');
-      link.download = `${name}_iso${parseFloat(isoInput.value || "0.02").toFixed(4)}.png`;
-      link.href = renderer.domElement.toDataURL('image/png');
-      link.click();
-      await new Promise(r => setTimeout(r, 120));
+    if (batchExportRunning) return;
+    const exporter = window.VibeMolSceneExport;
+    const targets = exporter.listTargets(sceneGraphController);
+    if (!targets.length) return;
+    batchExportRunning = true;
+    batchBtn.disabled = true;
+    const usedNames = new Map();
+    try {
+      await exporter.exportTargets(targets, {
+        captureState: () => ({
+          graph: exporter.captureGraphState(sceneGraphController),
+          currentIndex,
+          camera: camera.clone(), target: controls.target.clone(),
+          master: Object.assign({}, getTrajectorySyncMaster()),
+          trajectories: getAllTrajectoryInfos().map(info => ({ traj: info.traj, playing: info.traj.playing })),
+          vibrationPlaying,
+          orbitals: volumes.filter(record => record.vol.kind === 'molden').map(record => ({ record, index: record.moldenMoIndex })),
+        }),
+        activate: target => {
+          getTrajectorySyncMaster().playing = false;
+          for (const info of getAllTrajectoryInfos()) info.traj.playing = false;
+          vibrationPlaying = false;
+          exporter.activateTarget(sceneGraphController, target);
+          currentIndex = Math.max(0, getRecordIndex(target.layer.record || target.scene.moleculeRecord));
+          syncLoadedSceneControls();
+        },
+        render: async () => {
+          rebuildScene({ skipAutoIso: true });
+          // Wait until the normal renderer has drawn the newly activated target.
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        },
+        capture: target => {
+          const stem = String(target.name || 'render').replace(/\.[^/.]+$/, '');
+          const count = (usedNames.get(stem) || 0) + 1;
+          usedNames.set(stem, count);
+          const name = count === 1 ? stem : `${stem}_${count}`;
+          const link = document.createElement('a');
+          const iso = Number(target.layer.iso) || DEFAULT_ISO_VALUE;
+          link.download = `${name}_iso${iso.toFixed(4)}.png`;
+          link.href = renderer.domElement.toDataURL('image/png');
+          link.click();
+        },
+        restore: saved => {
+          exporter.restoreGraphState(sceneGraphController, saved.graph);
+          currentIndex = saved.currentIndex;
+          Object.assign(getTrajectorySyncMaster(), saved.master, { lastStepMs: 0 });
+          for (const { traj, playing } of saved.trajectories) Object.assign(traj, { playing, _lastStepMs: 0 });
+          vibrationPlaying = saved.vibrationPlaying;
+          vibrationLastStepMs = 0;
+          for (const { record, index } of saved.orbitals) record.moldenMoIndex = index;
+          camera.copy(saved.camera);
+          controls.target.copy(saved.target);
+          controls.update();
+          syncLoadedSceneControls();
+          rebuildScene({ preserveView: true, skipAutoIso: true });
+        },
+      });
+    } catch (err) {
+      setHintMessage(`Batch export failed: ${err && err.message || err}`);
+    } finally {
+      batchExportRunning = false;
+      batchBtn.disabled = false;
     }
-    camera.copy(keepCamera); controls.target.copy(keepTarget); controls.update();
   };
 
   // Helpers to load the sample cube or demo
@@ -30154,7 +32953,7 @@
   }
 
   /**
-   * Load a bundled set of cube-like files and replace the current scene contents.
+   * Load a bundled set of cube-like files through the scene-aware dispatcher.
    * Used by onboarding quick actions for curated example datasets.
    * @param {string[]} filePaths
    * @param {string} label

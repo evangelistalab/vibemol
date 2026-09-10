@@ -26,7 +26,18 @@ JS_CHECK_FILES = \
 	assets/app/js/edit-halo.js \
 	assets/app/js/preset.js \
 	assets/app/js/structure-transport.js \
+	assets/app/js/scene-graph.js \
+	assets/app/js/scene-sources.js \
+	assets/app/js/scene-export.js \
+	assets/app/js/scene-outliner.js \
+	assets/app/js/arithmetic-grid.js \
+	assets/app/js/arithmetic-worker.js \
+	assets/app/js/arithmetic-runner.js \
+	assets/app/js/arithmetic-layers.js \
+	assets/app/js/grid-store.js \
 	assets/app/js/file-loader.js \
+	assets/app/js/trajectory-clock.js \
+	assets/app/js/trajectory-ui.js \
 	assets/app/js/app.js
 
 .PHONY: check test-unit test-e2e test
@@ -36,7 +47,7 @@ check:
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
 	done
-	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py
+	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py
 	git diff --check
 
 test-unit:
@@ -44,5 +55,6 @@ test-unit:
 
 test-e2e:
 	python3 tests/e2e/smoke.py
+	python3 tests/e2e/premerge.py
 
 test: check test-unit test-e2e

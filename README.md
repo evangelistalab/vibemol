@@ -107,7 +107,9 @@ make test-e2e
 make test
 ```
 
-`make test-e2e` starts its own temporary local server; do not start a second server first.
+`make test-e2e` runs the full smoke suite and the focused scene/arithmetic regressions, each with its own temporary local server. Set `VIBEMOL_TEST_ARTIFACT_DIR` to keep browser artifacts outside the checkout.
+
+See [Scene architecture](docs/scene-architecture.md) for data ownership, the shared import pipeline, and arithmetic execution limits.
 
 Relevant browserless syntax checks include:
 
@@ -136,3 +138,4 @@ python -m playwright install chromium
 ## Deployment
 - Static deployment from repository root (`index.html`)
 - `.nojekyll` is required for GitHub Pages compatibility
+- Keep `CNAME` (`vibemol.org`) in source for production. The beta deployment workflow removes it only from the beta mirror.

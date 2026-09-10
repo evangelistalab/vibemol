@@ -1,0 +1,36 @@
+name: Deploy beta
+
+on:
+  push:
+    branches: [beta]
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push to vibemol-beta (without workflows)
+        run: |
+          # Stage a clean tree without .github/workflows
+          rm -rf .github/workflows
+          # The production domain belongs to main, not the beta mirror.
+          rm -f CNAME
+          # If .github is now empty, remove it too (cosmetic)
+          rmdir .github 2>/dev/null || true
+
+          git config user.name "vibemol-bot"
+          git config user.email "bot@users.noreply.github.com"
+
+          # Build a fresh single-commit history so the mirror stays small
+          git checkout --orphan deploy
+          git add -A
+          git commit -m "Deploy from beta @ ${GITHUB_SHA::7}"
+
+          git remote add beta-target https://x-access-token:${{ secrets.BETA_DEPLOY_TOKEN }}@github.com/evangelistalab/vibemol-beta.git
+          git push beta-target deploy:main --force

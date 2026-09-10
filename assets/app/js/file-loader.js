@@ -3,6 +3,9 @@
 
   function createFileLoader(deps) {
     const fetchImpl = deps.fetchImpl || (typeof fetch === 'function' ? fetch.bind(global) : null);
+    function isCubeDebugLoggingEnabled() {
+      return !!(global && global.VIBEMOL_DEBUG_CUBE);
+    }
 
     function normalizeFileStem(name) {
       const raw = String(name || '').trim();
@@ -60,6 +63,7 @@
       }
       deps.getVolumes().push(meta);
       if (vol && vol.isoHint != null && deps.getIsoInputValue() === '') deps.setIsoInputValue(String(vol.isoHint));
+      if (!isCubeDebugLoggingEnabled()) return;
       if (vol && vol.kind === 'molden') {
         console.log('[MOLDEN] Loaded', name, {
           title: vol.title,
@@ -102,177 +106,127 @@
       }
     }
 
-    async function handleFiles(fileList) {
-      const arr = Array.from(fileList || []);
-      if (arr.length === 0) return;
-      const failures = [];
-      const pendingVibrationPayloads = [];
-      const importedPresetNames = [];
-      const batchXyzStems = new Set();
-      for (const f of arr) {
-        const name = f && f.name ? f.name : '';
-        if (deps.detectInputFileKind(name, '') !== 'xyz') continue;
-        const stem = normalizeFileStem(name);
-        if (stem) batchXyzStems.add(stem);
-      }
-      const missingOrcaHessCompanions = [];
-      for (const f of arr) {
-        const name = f && f.name ? String(f.name) : '';
-        if (!/\.hess$/iu.test(name)) continue;
-        const hessStem = normalizeFileStem(name);
-        if (!hessStem || !batchXyzStems.has(hessStem)) missingOrcaHessCompanions.push(name || 'ORCA Hessian');
-      }
-      if (missingOrcaHessCompanions.length > 0) {
-        const header = missingOrcaHessCompanions.length === 1 ? 'ORCA .hess warning:' : 'ORCA .hess warnings:';
-        const body = missingOrcaHessCompanions
-          .map((name, idx) => `${idx + 1}. ${name}: for ORCA vibrational imports, upload both the .xyz and .hess files together (same base name).`)
-          .join('\n');
-        deps.alertUser(`${header}\n\n${body}`);
-      }
-      let hasPreparedTarget = false;
-      let startIndex = -1;
-      let loadedCount = 0;
-      let loadedVolumetricCount = 0;
-      for (const f of arr) {
+    // All entrypoints share the same parse -> plan -> commit pipeline. Parsing is
+    // side-effect free so a rejected replacement cannot erase a working scene.
+    async function parseFiles(fileList, options = {}) {
+      const plan = { primaries: [], sidecars: [], presets: [], failures: [] };
+      for (const file of Array.from(fileList || [])) {
+        const inputName = String(file && file.name || 'Unknown file');
         try {
-          const text = await f.text();
-          const name = f && f.name ? f.name : '';
-          const fileKind = deps.detectInputFileKind(name, text);
+          const text = await file.text();
+          const fileKind = deps.detectInputFileKind(inputName, text);
+          const item = { name: inputName, inputName, fileKind, sourceStem: normalizeFileStem(inputName) };
+          const json = fileKind === 'json' ? JSON.parse(text) : null;
           if (fileKind === 'psi4_output' || deps.looksLikePsi4OutputText(text)) {
-            const bundle = deps.parsePsi4OutputVibrationBundle(text, name || 'Psi4 output');
-            if (!hasPreparedTarget) {
-              deps.clearPlaceholderVolumesForUserLoad();
-              startIndex = deps.getVolumes().length;
-              hasPreparedTarget = true;
-            }
-            appendParsedVolumeRecord(name || 'Psi4 output', bundle.vol, { inferBondOrders: true });
-            loadedCount++;
-            pendingVibrationPayloads.push({
-              name: name || 'Psi4 output',
-              payload: bundle.payload,
-              preferredIndex: deps.getVolumes().length - 1,
-              sourceStem: normalizeFileStem(name || 'Psi4 output'),
-            });
+            const bundle = deps.parsePsi4OutputVibrationBundle(text, inputName);
+            Object.assign(item, { vol: bundle.vol, vibrationPayload: bundle.payload, forceNewScene: true });
+          } else if (fileKind === 'orca_hess') {
+            const bundle = deps.parseOrcaHessianVibrationBundle(text, inputName);
+            plan.sidecars.push(Object.assign(item, { payload: bundle.payload, requiresXyz: true }));
             continue;
-          }
-          if (fileKind === 'orca_hess') {
-            const hessStem = normalizeFileStem(name || '');
-            if (!hessStem || !batchXyzStems.has(hessStem)) {
-              failures.push(`${name || 'ORCA Hessian'}: ORCA .hess requires both the .xyz and .hess files in the same upload batch (same base name).`);
-              continue;
-            }
-            const bundle = deps.parseOrcaHessianVibrationBundle(text, name || 'ORCA Hessian');
-            pendingVibrationPayloads.push({
-              name: name || 'ORCA Hessian',
-              payload: bundle.payload,
-              sourceStem: hessStem,
-            });
+          } else if (fileKind === 'vibration_payload' || (json && (json.kind === deps.VIBRATION_KIND || Array.isArray(json.modes) || Array.isArray(json.vibrations)))) {
+            plan.sidecars.push(Object.assign(item, { payload: deps.parseVibrationPayload(text, inputName) }));
             continue;
-          }
-          const explicitVibrationFile = fileKind === 'vibration_payload';
-          if (explicitVibrationFile) {
-            const payload = deps.parseVibrationPayload(text, f.name || 'vibration payload');
-            pendingVibrationPayloads.push({
-              name: f.name || 'vibration payload',
-              payload,
-              sourceStem: normalizeFileStem(f.name || 'vibration payload'),
-            });
+          } else if (json && json.kind === deps.PRESET_KIND) {
+            plan.presets.push(Object.assign(item, { text }));
             continue;
+          } else if (json && json.kind === deps.STRUCTURE_KIND) {
+            const imported = deps.parseStructureEnvelopeText(text, inputName);
+            Object.assign(item, {
+              name: imported.name, vol: imported.vol, forceNewScene: true,
+              extras: Object.assign({}, imported.extras, { skipBuilderExtensionMerge: true }),
+            });
+          } else {
+            item.vol = parseVolumeByName(inputName, text);
           }
-          if (fileKind === 'json') {
-            let parsedJson = null;
-            try { parsedJson = JSON.parse(text); } catch { }
-            const looksLikeVibration = !!(
-              parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson)
-              && (parsedJson.kind === deps.VIBRATION_KIND || Array.isArray(parsedJson.modes) || Array.isArray(parsedJson.vibrations))
-            );
-            if (looksLikeVibration) {
-              const payload = deps.parseVibrationPayload(text, f.name || 'vibration payload');
-              pendingVibrationPayloads.push({
-                name: f.name || 'vibration payload',
-                payload,
-                sourceStem: normalizeFileStem(f.name || 'vibration payload'),
-              });
-              continue;
-            }
-            const looksLikePreset = !!(
-              parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson) && parsedJson.kind === deps.PRESET_KIND
-            );
-            if (looksLikePreset) {
-              const result = deps.importPresetFromText(text, f.name || 'preset');
-              importedPresetNames.push(result.name);
-              continue;
-            }
-            const looksLikeStructure = !!(
-              parsedJson && typeof parsedJson === 'object' && !Array.isArray(parsedJson) && parsedJson.kind === deps.STRUCTURE_KIND
-            );
-            if (looksLikeStructure) {
-              const imported = deps.parseStructureEnvelopeText(text, f.name || 'structure');
-              if (!hasPreparedTarget) {
-                deps.clearPlaceholderVolumesForUserLoad();
-                startIndex = deps.getVolumes().length;
-                hasPreparedTarget = true;
-              }
-              appendParsedVolumeRecord(deps.getUniqueVolumeName(imported.name), imported.vol, Object.assign({}, imported.extras || {}, { skipBuilderExtensionMerge: true }));
-              if (deps.hasVolumetricGrid(imported.vol)) loadedVolumetricCount++;
-              loadedCount++;
-              continue;
-            }
-          }
-          const vol = parseVolumeByName(f.name, text);
-          if (!hasPreparedTarget) {
-            deps.clearPlaceholderVolumesForUserLoad();
-            startIndex = deps.getVolumes().length;
-            hasPreparedTarget = true;
-          }
-          appendParsedVolumeRecord(f.name, vol, { inferBondOrders: true });
-          if (deps.hasVolumetricGrid(vol)) loadedVolumetricCount++;
-          loadedCount++;
+          item.extras = Object.assign({ inferBondOrders: true }, options.extras, item.extras);
+          plan.primaries.push(item);
         } catch (err) {
-          const msg = err && err.message ? err.message : String(err);
-          console.error('[File import] Failed to parse', f && f.name ? f.name : '(unnamed file)', err);
-          failures.push(`${f && f.name ? f.name : 'Unknown file'}: ${msg}`);
+          plan.failures.push(`${inputName}: ${err && err.message || err}`);
         }
       }
-      if (loadedCount > 0 && startIndex >= 0) {
-        finalizeLoadedVolumes(startIndex, {
-          resetIsoToDefault: loadedVolumetricCount > 0,
-          skipAutoIsoOnInitialRebuild: loadedVolumetricCount > 0,
-        });
-        if (deps.getActiveTrajectoryInfo().enabled) deps.setTrajectoryPanelOpen(true);
-      } else {
-        deps.updateEmptyStateVisibility();
-      }
-      let attachedVibrationCount = 0;
-      for (const item of pendingVibrationPayloads) {
-        const result = deps.attachVibrationPayloadToBestVolume(item.name, item.payload, {
-          preferredIndex: item.preferredIndex,
-          sourceStem: item.sourceStem,
-        });
-        if (!result.ok) {
-          failures.push(`${item.name}: ${result.error || 'Could not attach vibration payload.'}`);
-          continue;
+      const xyzStems = new Set(plan.primaries.filter(item => item.fileKind === 'xyz').map(item => item.sourceStem));
+      plan.sidecars = plan.sidecars.filter(item => {
+        if (!item.requiresXyz || xyzStems.has(item.sourceStem)) return true;
+        plan.failures.push(`${item.name}: ORCA .hess requires both the .xyz and .hess files in the same upload batch (same base name).`);
+        return false;
+      });
+      return plan;
+    }
+
+    async function commitFilePlan(plan, options = {}) {
+      const { primaries, sidecars, presets, failures } = plan;
+      const successful = new Set();
+      const attempt = async (item, callback) => {
+        try { await callback(); successful.add(item); }
+        catch (err) { failures.push(`${item.inputName}: ${err && err.message || err}`); }
+      };
+      if (primaries.length) {
+        if (options.clearFirst === true) clearAllLoadedFiles({ includeHint: false });
+        const hasGrid = primaries.some(item => deps.hasVolumetricGrid(item.vol));
+        const commitOptions = {
+          resetIsoToDefault: hasGrid,
+          skipAutoIsoOnInitialRebuild: hasGrid,
+          targetSceneKey: options.targetSceneKey || '',
+        };
+        if (typeof deps.handleSceneDropRecords === 'function') {
+          try {
+            const result = await deps.handleSceneDropRecords(primaries, commitOptions);
+            if (!result) throw new Error('Could not add files to the scene.');
+            for (const item of primaries) successful.add(item);
+          } catch (err) {
+            for (const item of primaries) failures.push(`${item.inputName}: ${err && err.message || err}`);
+          }
+        } else {
+          const start = deps.getVolumes().length;
+          for (const item of primaries) await attempt(item, () => {
+            item.recordIndex = deps.getVolumes().length;
+            appendParsedVolumeRecord(item.name, item.vol, item.extras);
+          });
+          if (deps.getVolumes().length > start) finalizeLoadedVolumes(start, commitOptions);
         }
-        attachedVibrationCount++;
+        if (deps.getActiveTrajectoryInfo().enabled) deps.setTrajectoryPanelOpen(true, { auto: true });
       }
-      if (attachedVibrationCount > 0) {
+      for (const item of presets) await attempt(item, () => deps.importPresetFromText(item.text, item.name));
+      const payloads = sidecars.concat(primaries.filter(item => successful.has(item) && item.vibrationPayload));
+      let attached = 0;
+      for (const item of payloads) {
+        // A Psi4 file contributes one successful input, including its modes.
+        successful.delete(item);
+        await attempt(item, () => {
+          const result = deps.attachVibrationPayloadToBestVolume(item.name, item.payload || item.vibrationPayload, {
+            preferredIndex: item.recordIndex,
+            sourceStem: item.sourceStem,
+          });
+          if (!result.ok) throw new Error(result.error || 'Could not attach vibration payload.');
+          attached++;
+        });
+      }
+      if (attached) {
         deps.updateSidePanel();
         if (deps.getActiveVibrationInfo().enabled) deps.setVibrationPanelOpen(true);
-        deps.setNavigationHint(`Loaded ${attachedVibrationCount} vibrational mode file${attachedVibrationCount === 1 ? '' : 's'}`);
-      } else if (importedPresetNames.length > 0) {
-        const label = importedPresetNames.length === 1
-          ? `Loaded preset: ${importedPresetNames[0]}`
-          : `Loaded ${importedPresetNames.length} preset files`;
-        deps.setNavigationHint(label);
       }
-      if (failures.length > 0) {
-        const header = failures.length === 1
-          ? 'Could not load one file due to invalid format:'
-          : `Could not load ${failures.length} files due to invalid format:`;
-        const popup = `${header}\n\n${failures.map((f, i) => `${i + 1}. ${f}`).join('\n')}`;
+      if (!successful.size) deps.updateEmptyStateVisibility();
+      const loadedNames = Array.from(successful, item => item.inputName);
+      if (loadedNames.length) deps.setNavigationHint(`Loaded ${loadedNames.length} file${loadedNames.length === 1 ? '' : 's'}`);
+      if (failures.length) {
         deps.setHintMessage(failures[0]);
-        deps.alertUser(popup);
+        deps.alertUser(`Could not load ${failures.length === 1 ? 'one file' : `${failures.length} files`}:\n\n${failures.map((failure, i) => `${i + 1}. ${failure}`).join('\n')}`);
       }
+      return {
+        ok: loadedNames.length > 0 && !failures.length,
+        loadedCount: loadedNames.length,
+        loadedNames,
+        ...(failures.length ? { error: failures.join('\n'), failures: failures.slice() } : {}),
+      };
+    }
+
+    let loadQueue = Promise.resolve();
+    function handleFiles(fileList, options = {}) {
+      const files = Array.from(fileList || []);
+      const next = loadQueue.then(async () => commitFilePlan(await parseFiles(files, options), options));
+      loadQueue = next.catch(() => {});
+      return next;
     }
 
     function decodeBase64Bytes(raw) {
@@ -309,12 +263,7 @@
       const arr = Array.isArray(files) ? files : [];
       if (arr.length === 0) throw new Error('No files were provided for embedded load.');
       const fileObjects = arr.map((entry, i) => buildEmbeddedFile(entry, i));
-      const clearFirst = options.clearFirst !== false;
-      if (clearFirst) clearAllLoadedFiles({ includeHint: false });
-      const before = deps.getVolumes().length;
-      await handleFiles(fileObjects);
-      const loadedCount = Math.max(0, deps.getVolumes().length - before);
-      return { ok: loadedCount > 0, loadedCount, loadedNames: fileObjects.map((f) => f.name) };
+      return handleFiles(fileObjects, Object.assign({}, options, { clearFirst: options.clearFirst !== false }));
     }
 
     async function handleEmbeddedLoadMessage(event) {
@@ -350,7 +299,7 @@
 
     function installFileInput(inputEl) {
       if (!inputEl || typeof inputEl.addEventListener !== 'function') return;
-      inputEl.addEventListener('change', (e) => handleFiles(e && e.target ? e.target.files : []));
+      inputEl.addEventListener('change', (e) => handleFiles(e && e.target ? e.target.files : [], { sceneDispatch: true }));
     }
 
     function handleFileDragOver(e) {
@@ -364,7 +313,7 @@
       e.preventDefault();
       if (typeof e.stopPropagation === 'function') e.stopPropagation();
       const files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files.length > 0) void handleFiles(files);
+      if (files && files.length > 0) void handleFiles(files, { appendDroppedCubes: true, sceneDispatch: true });
     }
 
     function installDragDrop(targets) {
@@ -384,51 +333,23 @@
     }
 
     async function loadSampleCube() {
-      try {
-        const text = await fetchText('./assets/data/sample.cube');
-        const vol = deps.parseCube(text);
-        deps.setVolumes([]);
-        deps.clearEditHistory();
-        deps.getVolumes().push({ name: 'sample.cube', vol, isSample: true });
-        if (vol.isoHint != null && (deps.getIsoInputValue() === '' || deps.getVolumes().length === 1)) {
-          deps.setIsoInputValue(String(vol.isoHint));
-        }
-        try {
-          const stats = deps.arrayMinMax(vol.data);
-          console.log('[CUBE] Loaded sample.cube', { title: vol.title, nxyz: vol.nxyz, origin: vol.origin, axes: vol.axes, natoms: vol.natoms, isoHint: vol.isoHint, min: stats.min, max: stats.max });
-        } catch (err) {
-          console.warn('[CUBE] Stats failed for sample.cube', err);
-        }
-        deps.activateVolumeIndex(0);
-        deps.setNavigationHint('Loaded sample.cube', { includeStyles: true });
-        return true;
-      } catch (err) {
-        console.warn('[CUBE] Could not auto-load sample.cube:', err);
-        return false;
-      }
+      return loadBundledVolumeSet(['./assets/data/sample.cube'], 'sample.cube');
     }
 
     async function loadBundledVolumeSet(filePaths, label) {
       const paths = Array.isArray(filePaths) ? filePaths.filter(Boolean) : [];
       if (!paths.length) return false;
       try {
-        const records = [];
-        for (const path of paths) {
-          const text = await fetchText(path);
-          const name = String(path.split('/').pop() || path);
-          const vol = parseVolumeByName(name, text);
-          records.push({ name, vol });
-        }
-        deps.setVolumes([]);
-        deps.setCurrentIndex(-1);
-        deps.clearSceneMeshes();
-        deps.clearEditHistory();
-        for (const item of records) appendParsedVolumeRecord(item.name, item.vol, { isSample: true, inferBondOrders: true });
-        finalizeLoadedVolumes(0, { resetIsoToDefault: true, skipAutoIsoOnInitialRebuild: true });
-        deps.setNavigationHint(`Loaded ${label}`, { includeStyles: true });
-        return true;
+        const files = await Promise.all(paths.map(async path => new File(
+          [await fetchText(path)], String(path.split('/').pop() || path), { type: 'text/plain' }
+        )));
+        const result = await handleFiles(files, { extras: { isSample: true } });
+        if (result.ok) deps.setNavigationHint(`Loaded ${label}`, { includeStyles: true });
+        return result.ok;
       } catch (err) {
-        console.warn(`[CUBE] Could not load bundled dataset ${label}:`, err);
+        const message = `Could not load ${label}: ${err && err.message || err}`;
+        deps.setHintMessage(message);
+        deps.alertUser(message);
         return false;
       }
     }
@@ -437,6 +358,8 @@
       parseVolumeByName,
       appendParsedVolumeRecord,
       finalizeLoadedVolumes,
+      parseFiles,
+      commitFilePlan,
       handleFiles,
       buildEmbeddedFile,
       clearAllLoadedFiles,

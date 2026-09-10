@@ -112,6 +112,28 @@ function createPlacementHarness() {
   return { structure, controller, record, calls, state };
 }
 
+function seedStandaloneAtoms(record, structure, atomicNumbers) {
+  record.vol.atoms = atomicNumbers.map((z, index) => structure.normalizeVolumeAtom({
+    id: `atom-${index}`,
+    Z: z,
+    x: index,
+    y: 0,
+    z: 0,
+    formalCharge: 0,
+  }));
+  record.vol.natoms = record.vol.atoms.length;
+  record.vol.bonds = [];
+}
+
+function countAtomsByZ(vol) {
+  const counts = new Map();
+  for (const atom of Array.isArray(vol && vol.atoms) ? vol.atoms : []) {
+    const z = Number(atom && atom.Z) | 0;
+    counts.set(z, (counts.get(z) || 0) + 1);
+  }
+  return Object.fromEntries(Array.from(counts).sort((left, right) => left[0] - right[0]));
+}
+
 test('edit-placement appendAtomAtWorld does not trigger global bond inference', () => {
   const { controller, record, calls, state } = createPlacementHarness();
 
@@ -143,6 +165,97 @@ test('edit-placement void-added atom sessions commit on cancel-style finalize', 
   assert.equal(record.vol.atoms.length, 1);
   assert.equal(calls.history.length, 1);
   assert.equal(state.addAtomOperatorSession, null);
+});
+
+test('edit-placement deleteAtomsByIndex treats same-element standalone atoms as positional indices', () => {
+  const { structure, controller, record, calls } = createPlacementHarness();
+  seedStandaloneAtoms(record, structure, [1, 1, 1, 1, 1]);
+
+  const ok = controller.deleteAtomsByIndex([3, 1, 3]);
+
+  assert.equal(ok, true);
+  assert.deepEqual(record.vol.atoms.map((atom) => atom.id), ['atom-0', 'atom-2', 'atom-4']);
+  assert.equal(record.vol.atoms.filter((atom) => (atom.Z | 0) === 1).length, 3);
+  assert.equal(record.vol.natoms, 3);
+  assert.equal(calls.history.length, 1);
+});
+
+test('edit-placement deleteAtomsByIndex preserves unselected standalone atoms across element mixes', () => {
+  const cases = [
+    {
+      atoms: [1, 1, 1, 1, 1],
+      deleteIndices: [2],
+      expectedCount: 4,
+      expectedByZ: { 1: 4 },
+    },
+    {
+      atoms: [1, 1, 1, 6, 6],
+      deleteIndices: [0, 3],
+      expectedCount: 3,
+      expectedByZ: { 1: 2, 6: 1 },
+    },
+    {
+      atoms: [1, 1, 1, 6, 6],
+      deleteIndices: [0, 1],
+      expectedCount: 3,
+      expectedByZ: { 1: 1, 6: 2 },
+    },
+    {
+      atoms: [1, 1, 1, 6, 6],
+      deleteIndices: [],
+      expectedCount: 5,
+      expectedByZ: { 1: 3, 6: 2 },
+    },
+  ];
+  for (const item of cases) {
+    const { structure, controller, record } = createPlacementHarness();
+    seedStandaloneAtoms(record, structure, item.atoms);
+
+    const ok = controller.deleteAtomsByIndex(item.deleteIndices);
+
+    assert.equal(ok, item.deleteIndices.length > 0);
+    assert.equal(record.vol.atoms.length, item.expectedCount);
+    assert.deepEqual(countAtomsByZ(record.vol), item.expectedByZ);
+  }
+});
+
+test('edit-placement deleteAtomsByIndex handles empty and invalid index inputs explicitly', () => {
+  const { structure, controller, record, calls } = createPlacementHarness();
+  seedStandaloneAtoms(record, structure, [1, 1]);
+
+  assert.equal(controller.deleteAtomsByIndex([]), false);
+  assert.deepEqual(record.vol.atoms.map((atom) => atom.id), ['atom-0', 'atom-1']);
+  assert.equal(calls.history.length, 0);
+
+  for (const badInput of [[2], [-1], [1.2], ['1'], [{ Z: 1 }], null]) {
+    assert.throws(
+      () => controller.deleteAtomsByIndex(badInput),
+      /deleteAtomsByIndex expects .*positional atom indices/
+    );
+  }
+  assert.deepEqual(record.vol.atoms.map((atom) => atom.id), ['atom-0', 'atom-1']);
+  assert.equal(calls.history.length, 0);
+});
+
+test('edit-placement deleteAtomsByIndex removes bonds for deleted atom ids only', () => {
+  const { structure, controller, record } = createPlacementHarness();
+  const atomA = structure.normalizeVolumeAtom({ id: 'ne-a', Z: 10, x: 0, y: 0, z: 0, formalCharge: 0 });
+  const atomB = structure.normalizeVolumeAtom({ id: 'ne-b', Z: 10, x: 1, y: 0, z: 0, formalCharge: 0 });
+  const atomC = structure.normalizeVolumeAtom({ id: 'ne-c', Z: 10, x: 2, y: 0, z: 0, formalCharge: 0 });
+  record.vol.atoms = [atomA, atomB, atomC];
+  record.vol.natoms = 3;
+  record.vol.bonds = [
+    { id: 'bond:ne-a:ne-b', a: 'ne-a', b: 'ne-b', order: 1, kind: 'normal', origin: 'explicit' },
+    { id: 'bond:ne-b:ne-c', a: 'ne-b', b: 'ne-c', order: 1, kind: 'normal', origin: 'explicit' },
+  ];
+
+  const ok = controller.deleteAtomsByIndex([0]);
+
+  assert.equal(ok, true);
+  assert.deepEqual(record.vol.atoms.map((atom) => atom.id), ['ne-b', 'ne-c']);
+  assert.deepEqual(plain(record.vol.bonds), [
+    { id: 'bond:ne-b:ne-c', a: 'ne-b', b: 'ne-c', order: 1, kind: 'normal', origin: 'explicit', style: 'covalent' },
+  ]);
 });
 
 test('edit-placement deleteAtomAtIndex prunes stale bonds and repairs surviving frontier valence', () => {

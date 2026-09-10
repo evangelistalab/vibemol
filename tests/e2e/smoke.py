@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import pathlib
 import sys
@@ -17,7 +18,7 @@ else:
     from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-ARTIFACT_DIR = ensure_artifact_dir(REPO_ROOT / 'out' / 'test-artifacts')
+ARTIFACT_DIR = ensure_artifact_dir(pathlib.Path(os.environ.get('VIBEMOL_TEST_ARTIFACT_DIR', str(REPO_ROOT / 'out' / 'test-artifacts'))))
 SMOKE_VERBOSE = os.environ.get('VIBEMOL_SMOKE_VERBOSE') == '1'
 
 
@@ -541,7 +542,77 @@ def canvas_point(page, fx: float = 0.62, fy: float = 0.56) -> tuple[float, float
     return (box['x'] + box['width'] * fx, box['y'] + box['height'] * fy)
 
 
+def get_projected_active_bond(page) -> dict[str, Any] | None:
+    result = page.evaluate(
+        """() => {
+            if (!window.VibeMolTesting || typeof window.VibeMolTesting.projectActiveAtomToClient !== 'function') return null;
+            const exported = window.VibeMolStructure?.exportActive?.();
+            const atoms = Array.isArray(exported?.volume?.atoms) ? exported.volume.atoms : [];
+            const bonds = Array.isArray(exported?.volume?.bonds) ? exported.volume.bonds : [];
+            const idToIndex = new Map();
+            atoms.forEach((atom, index) => {
+                const id = String(atom?.id || '');
+                if (id) idToIndex.set(id, index);
+            });
+            function resolveAtomIndex(value) {
+                if (Number.isInteger(value) && value >= 0 && value < atoms.length) return value;
+                const numeric = Number(value);
+                if (Number.isInteger(numeric) && numeric >= 0 && numeric < atoms.length) return numeric;
+                return idToIndex.has(String(value || '')) ? idToIndex.get(String(value || '')) : -1;
+            }
+            const bond = bonds.find((candidate) => candidate && String(candidate.kind || 'normal') !== 'blocked') || null;
+            if (!bond) return null;
+            const aIndex = resolveAtomIndex(bond.a ?? bond.i ?? bond.atomA ?? bond.from);
+            const bIndex = resolveAtomIndex(bond.b ?? bond.j ?? bond.atomB ?? bond.to);
+            if (aIndex < 0 || bIndex < 0) return null;
+            const a = window.VibeMolTesting.projectActiveAtomToClient(aIndex);
+            const b = window.VibeMolTesting.projectActiveAtomToClient(bIndex);
+            if (!a || !b || !a.visible || !b.visible) return null;
+            return {
+                a: { x: Number(a.x) || 0, y: Number(a.y) || 0 },
+                b: { x: Number(b.x) || 0, y: Number(b.y) || 0 },
+            };
+        }"""
+    )
+    return result if isinstance(result, dict) else None
+
+
+def build_projected_bond_candidates(page, fractions: list[float]) -> list[tuple[float, float]]:
+    projected = get_projected_active_bond(page)
+    candidates: list[tuple[float, float]] = []
+    if isinstance(projected, dict) and isinstance(projected.get('a'), dict) and isinstance(projected.get('b'), dict):
+        ax = float(projected['a']['x'])
+        ay = float(projected['a']['y'])
+        bx = float(projected['b']['x'])
+        by = float(projected['b']['y'])
+        dx = bx - ax
+        dy = by - ay
+        length = max(1.0, math.hypot(dx, dy))
+        nx = -dy / length
+        ny = dx / length
+        offsets = (0.0, 6.0, -6.0, 12.0, -12.0, 20.0, -20.0, 30.0, -30.0, 42.0, -42.0, 56.0, -56.0)
+        for t in fractions:
+            px = ax + dx * t
+            py = ay + dy * t
+            for off in offsets:
+                candidates.append((px + nx * off, py + ny * off))
+    return candidates
+
+
 def find_bond_midpoint_canvas_point(page) -> tuple[float, float]:
+    direct_candidates = build_projected_bond_candidates(page, [0.50, 0.44, 0.56, 0.38, 0.62, 0.34, 0.66])
+    for x, y in direct_candidates:
+        page.mouse.move(x, y)
+        page.wait_for_timeout(60)
+        hit = page.evaluate(
+            """(payload) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+                return window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+            }""",
+            {'x': x, 'y': y},
+        )
+        if isinstance(hit, dict) and str(hit.get('bondSection', '')).strip().lower() == 'center':
+            return x, y
     candidates = [
         (0.50, 0.50),
         (0.48, 0.50), (0.52, 0.50),
@@ -570,6 +641,24 @@ def find_bond_midpoint_canvas_point(page) -> tuple[float, float]:
 
 def find_bond_side_canvas_point(page, side: str | None = None) -> tuple[float, float]:
     desired = str(side or '').strip().lower()
+    direct_candidates = build_projected_bond_candidates(page, [0.18, 0.82, 0.24, 0.76, 0.30, 0.70])
+    for x, y in direct_candidates:
+        page.mouse.move(x, y)
+        page.wait_for_timeout(60)
+        probe = page.evaluate(
+            """(payload) => {
+                if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
+                const hit = window.VibeMolTesting.pickEditHitAtClient(payload.x, payload.y);
+                return hit && hit.bondSection ? String(hit.bondSection) : '';
+            }""",
+            {'x': x, 'y': y},
+        )
+        section = str(probe or '').strip().lower()
+        if not section or section == 'center':
+            continue
+        if desired and section != desired:
+            continue
+        return x, y
     candidates = [
         (0.44, 0.50), (0.56, 0.50),
         (0.46, 0.50), (0.54, 0.50),
@@ -913,10 +1002,58 @@ def click_when_ready(page, selector: str, timeout: int = 30000) -> None:
     page.locator(selector).click()
 
 
+def set_focused_scene_visible(page, visible: bool) -> None:
+    ok = page.evaluate(
+        """(visible) => {
+            const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+            const sceneId = String(snap?.focusedSceneId || '');
+            const scene = (snap?.scenes || []).find((item) => String(item.id || '') === sceneId);
+            if (!scene) return false;
+            if (!!scene.visible === !!visible) return true;
+            const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+              .find((candidate) => String(candidate.dataset.id || '') === sceneId);
+            const eye = row?.querySelector('.vm-outliner-row__eye');
+            if (!eye) return false;
+            eye.click();
+            return true;
+        }""",
+        visible,
+    )
+    if not ok:
+        raise AssertionError(f'Could not set focused scene visibility to {visible!r}')
+    page.wait_for_function(
+        """(visible) => {
+            const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+            const scene = (snap?.scenes || []).find((item) => String(item.id || '') === String(snap?.focusedSceneId || ''));
+            return !!scene && !!scene.visible === !!visible;
+        }""",
+        arg=visible,
+    )
+
+
 def start_new_edit_file(page) -> None:
+    page.wait_for_function(
+        """() => {
+            const button = document.getElementById('newFileBtn');
+            return button?.getAttribute('aria-label') === 'Create new molecule'
+              && button?.dataset.tooltip === 'Create new molecule';
+        }"""
+    )
     page.locator('#newFileBtn').click()
-    page.locator('#modeEditBtn').click()
-    page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+    page.wait_for_function(
+        """() => {
+            const menu = document.getElementById('displayWindowAdaptiveMenu');
+            const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+            const scene = (snap?.scenes || []).find((item) => String(item.id || '') === String(snap?.focusedSceneId || ''));
+            const layers = Array.isArray(scene?.layers) ? scene.layers : [];
+            return menu?.getAttribute('aria-hidden') === 'false'
+              && menu?.dataset.mode === 'edit'
+              && !!scene
+              && scene.visible === true
+              && layers.some((layer) => layer.kind === 'molecule' && layer.name === 'Molecule')
+              && layers.some((layer) => layer.kind === 'orbitals_group');
+        }"""
+    )
 
 
 def build_bare_carbon(page) -> None:
@@ -928,6 +1065,7 @@ def build_bare_carbon(page) -> None:
             return atoms.length === 1 && Number(atoms[0]?.Z) === 6;
         }"""
     )
+    set_focused_scene_visible(page, True)
 
 
 def build_methane(page) -> None:
@@ -941,6 +1079,7 @@ def build_methane(page) -> None:
             return atoms.length === 5 && hydrogens === 4 && carbons === 1;
         }"""
     )
+    set_focused_scene_visible(page, True)
 
 
 def arm_fragment_attach_cue(page, atom_index: int = 0) -> None:
@@ -1201,10 +1340,37 @@ def load_volume_asset(page, asset_path: str) -> None:
     )
     page.wait_for_function(
         """(expectedName) => {
-            const select = document.getElementById('fileSelect');
-            return !!select && Array.from(select.options).some((opt) => (opt.textContent || '').trim() === expectedName);
+            const labels = Array.from(document.querySelectorAll('.vm-outliner-row__label'))
+              .map((el) => (el.textContent || '').trim());
+            return !document.getElementById('fileSelect')
+              && !document.querySelector('.vm-active-file')
+              && labels.some((label) => label === expectedName || label.endsWith(expectedName));
         }""",
         arg=name,
+    )
+
+
+def drop_volume_assets(page, asset_paths: list[str]) -> None:
+    payloads = [
+        {'name': pathlib.Path(path).name, 'text': load_text_asset(page, path)}
+        for path in asset_paths
+    ]
+    drop_text_files(page, payloads)
+
+
+def drop_text_files(page, payloads: list[dict[str, str]]) -> None:
+    page.evaluate(
+        """async (payloads) => {
+            const target = document.getElementById('drop');
+            if (!target) throw new Error('Drop target missing');
+            const dt = new DataTransfer();
+            for (const payload of payloads) {
+                dt.items.add(new File([payload.text], payload.name, { type: 'text/plain' }));
+            }
+            target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+            target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+        }""",
+        payloads,
     )
 
 
@@ -1228,6 +1394,18 @@ def main() -> int:
             log_step('load app')
             page.goto(base_url, wait_until='networkidle')
             wait_for_ready(page)
+            page.wait_for_function(
+                """() => {
+                    const title = document.querySelector('#sceneOutliner .vm-outliner__title');
+                    const empty = document.querySelector('#sceneOutlinerBody .vm-outliner__empty');
+                    return !!title
+                      && (title.textContent || '').trim() === 'Scenes'
+                      && !!empty
+                      && /No file loaded\\. Drag and drop a \\.cube, \\.molden, or \\.xyz file, or click the open icon above to begin\\./.test(empty.textContent || '')
+                      && !document.querySelector('.vm-active-file')
+                      && !document.getElementById('fileSelect');
+                }"""
+            )
 
             log_step('startup theme controls')
             page.wait_for_function(
@@ -1635,12 +1813,358 @@ def main() -> int:
                     return (exported?.volume?.atoms || []).length === 0;
                 }"""
             )
-            page.locator('#removeFileBtn').click()
-            page.locator('#modeDisplayBtn').click()
+            page.locator('#clearBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const splash = document.getElementById('emptyState');
+                    const displayBtn = document.getElementById('modeDisplayBtn');
+                    const build = document.getElementById('editAdaptiveAddAtomPopover');
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const empty = document.querySelector('#sceneOutlinerBody .vm-outliner__empty');
+                    return !!splash
+                      && !splash.classList.contains('hidden')
+                      && displayBtn?.getAttribute('aria-pressed') === 'true'
+                      && build?.getAttribute('aria-hidden') === 'true'
+                      && Array.isArray(snap?.scenes)
+                      && snap.scenes.length === 0
+                      && !!empty
+                      && /No file loaded\\./.test(empty.textContent || '');
+                }"""
+            )
+
+            # Multi-file drag/drop from empty state should preserve all cubes and show only the first.
+            drop_volume_assets(page, [
+                '/assets/data/methane/canonical_1.cube',
+                '/assets/data/methane/canonical_2.cube',
+                '/assets/data/methane/canonical_3.cube',
+            ])
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row')).map((row) => ({
+                      depth: row.dataset.depth || '',
+                      label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim(),
+                      active: row.classList.contains('is-active'),
+                      hidden: row.classList.contains('is-hidden'),
+                    }));
+                    const cubes = rows.filter((row) => /^L\\d+/.test(row.label));
+                    return cubes.length === 3
+                      && cubes.map((row) => row.label.replace(/\\s+/g, '')).join('|') === 'L0canonical_1.cube|L1canonical_2.cube|L2canonical_3.cube'
+                      && cubes[0].active === true
+                      && cubes[0].hidden === false
+                      && cubes[1].hidden === true
+                      && cubes[2].hidden === true;
+                }"""
+            )
+            page.locator('#clearBtn').click()
             page.wait_for_function(
                 """() => {
                     const splash = document.getElementById('emptyState');
                     return !!splash && !splash.classList.contains('hidden');
+                }"""
+            )
+
+            # Methane bundled cube set should be one scene with one Orbitals group and 8 cube layers.
+            page.locator('#emptyStateMethaneBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row')).map((row) => ({
+                      depth: row.dataset.depth || '',
+                      label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim(),
+                      meta: (row.querySelector('.vm-outliner-row__meta')?.textContent || '').trim(),
+                      active: row.classList.contains('is-active'),
+                      hidden: row.classList.contains('is-hidden'),
+                    }));
+                    const orbitals = rows.filter((row) => row.label === 'Orbitals');
+                    const cubes = rows.filter((row) => /^L\\d+/.test(row.label));
+                    const cubeLabels = cubes.map((row) => row.label.replace(/\\s+/g, ''));
+                    return rows.length === 11
+                      && rows[0].depth === '0'
+                      && /canonical_1\\.cube$/.test(rows[0].label)
+                      && rows[1].depth === '1'
+                      && rows[1].label === 'Molecule'
+                      && orbitals.length === 1
+                      && orbitals[0].depth === '1'
+                      && orbitals[0].meta === '8 layers'
+                      && cubes.length === 8
+                      && cubes.every((row) => row.depth === '2')
+                      && cubeLabels.join('|') === 'L0canonical_1.cube|L1canonical_2.cube|L2canonical_3.cube|L3canonical_4.cube|L4localized_1.cube|L5localized_2.cube|L6localized_3.cube|L7localized_4.cube'
+                      && cubes[0].active === true
+                      && cubes[0].hidden === false
+                      && cubes.slice(1).every((row) => row.hidden === true);
+                }"""
+            )
+            page.keyboard.press('ArrowDown')
+            page.wait_for_function(
+                """() => {
+                    const cubes = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }))
+                      .filter((row) => /^L\\d+/.test(row.label));
+                    return cubes[0].label === 'L0canonical_1.cube'
+                      && cubes[1].label === 'L1canonical_2.cube'
+                      && cubes[0].hidden === true
+                      && cubes[1].active === true
+                      && cubes[1].hidden === false
+                      && cubes.filter((row) => !row.hidden).length === 1;
+                }"""
+            )
+            for _ in range(7):
+                page.keyboard.press('ArrowDown')
+            page.wait_for_function(
+                """() => {
+                    const cubes = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }))
+                      .filter((row) => /^L\\d+/.test(row.label));
+                    return cubes[0].label === 'L0canonical_1.cube'
+                      && cubes[0].active === true
+                      && cubes[0].hidden === false
+                      && cubes.filter((row) => !row.hidden).length === 1;
+                }"""
+            )
+            page.keyboard.press('ArrowUp')
+            page.wait_for_function(
+                """() => {
+                    const cubes = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }))
+                      .filter((row) => /^L\\d+/.test(row.label));
+                    return cubes[7].label === 'L7localized_4.cube'
+                      && cubes[7].active === true
+                      && cubes[7].hidden === false
+                      && cubes.filter((row) => !row.hidden).length === 1;
+                }"""
+            )
+            for _ in range(1):
+                page.keyboard.press('ArrowDown')
+            page.wait_for_function(
+                """() => {
+                    const cubes = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }))
+                      .filter((row) => /^L\\d+/.test(row.label));
+                    return cubes[0].active === true && cubes[0].hidden === false && cubes.filter((row) => !row.hidden).length === 1;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L2\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const cubes = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }))
+                      .filter((row) => /^L\\d+/.test(row.label));
+                    return cubes[0].active === true
+                      && cubes[0].hidden === false
+                      && cubes[2].hidden === false
+                      && cubes.filter((row) => !row.hidden).length === 2;
+                }"""
+            )
+            page.keyboard.press('ArrowDown')
+            page.wait_for_function(
+                """() => {
+                    const cubes = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }))
+                      .filter((row) => /^L\\d+/.test(row.label));
+                    return cubes[1].active === true
+                      && cubes[1].hidden === true
+                      && cubes[0].hidden === false
+                      && cubes[2].hidden === false
+                      && cubes.filter((row) => !row.hidden).length === 2;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L2\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.keyboard.press('ArrowDown')
+            page.wait_for_function(
+                """() => {
+                    const cubes = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }))
+                      .filter((row) => /^L\\d+/.test(row.label));
+                    return cubes[1].active === true
+                      && cubes[1].hidden === false
+                      && cubes.filter((row) => !row.hidden).length === 1;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => (candidate.querySelector('.vm-outliner-row__label')?.textContent || '').trim() === 'Orbitals');
+                    row?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row')).map((row) => ({
+                      label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim(),
+                      hidden: row.classList.contains('is-hidden'),
+                    }));
+                    const molecule = rows.find((row) => row.label === 'Molecule');
+                    const cubes = rows.filter((row) => /^L\\d+/.test(row.label));
+                    return molecule && molecule.hidden === false && cubes.length === 8 && cubes.every((row) => row.hidden === true);
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => (candidate.querySelector('.vm-outliner-row__label')?.textContent || '').trim() === 'Orbitals');
+                    row?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const cubes = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }))
+                      .filter((row) => /^L\\d+/.test(row.label));
+                    return cubes[1].active === true && cubes[1].hidden === false && cubes.filter((row) => !row.hidden).length === 1;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L3\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    const rect = row?.getBoundingClientRect();
+                    if (!row || !rect) return;
+                    row.dispatchEvent(new MouseEvent('contextmenu', {
+                      bubbles: true,
+                      cancelable: true,
+                      button: 2,
+                      clientX: rect.left + 24,
+                      clientY: rect.top + 12,
+                    }));
+                }"""
+            )
+            page.wait_for_function("() => document.querySelector('.vm-outliner-context-menu[aria-hidden=\"false\"]')")
+            page.evaluate(
+                """() => {
+                    Array.from(document.querySelectorAll('.vm-outliner-context-menu__item'))
+                      .find((button) => (button.textContent || '').trim() === 'Duplicate')
+                      ?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const cubes = (snap?.scenes?.[0]?.layers || []).filter((layer) => layer.kind === 'cube');
+                    return cubes.length === 9 && cubes.some((cube) => cube.labelId === 'L8' && /copy/.test(cube.name || ''));
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L8\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.querySelector('.vm-outliner-row__label')?.dispatchEvent(new MouseEvent('dblclick', {
+                      bubbles: true,
+                      cancelable: true,
+                    }));
+                }"""
+            )
+            page.wait_for_selector('.vm-outliner-row__rename-input')
+            page.locator('.vm-outliner-row__rename-input').fill('canonical_4_duplicate_with_a_deliberately_long_name_for_outliner_overflow_testing.cube')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => {
+                    const body = document.getElementById('sceneOutlinerBody');
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L8\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    if (!body || !row) return false;
+                    const label = row.querySelector('.vm-outliner-row__label');
+                    return /overflow_testing\\.cube$/.test(label?.textContent || '')
+                      && body.scrollWidth <= body.clientWidth + 1;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const sceneRow = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => candidate.dataset.depth === '0');
+                    sceneRow?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const scene = snap?.scenes?.[0];
+                    const visibleCube = (scene?.layers || []).find((layer) => layer.kind === 'cube' && layer.visible === true);
+                    if (!scene || scene.visible !== false || !visibleCube || visibleCube.effectiveVisible !== false) return false;
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => String(candidate.dataset.id || '') === String(visibleCube.id || ''));
+                    const eye = row?.querySelector('.vm-outliner-row__eye');
+                    return !!row
+                      && row.classList.contains('is-hidden-inherited')
+                      && row.classList.contains('is-hidden')
+                      && eye?.classList.contains('is-inherited-hidden')
+                      && eye?.textContent === 'visibility_off'
+                      && eye?.getAttribute('aria-label') === 'Hidden by parent';
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const sceneRow = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => candidate.dataset.depth === '0');
+                    sceneRow?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const scene = snap?.scenes?.[0];
+                    const visibleCube = (scene?.layers || []).find((layer) => layer.kind === 'cube' && layer.visible === true);
+                    if (!scene || scene.visible !== true || !visibleCube || visibleCube.effectiveVisible !== true) return false;
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => String(candidate.dataset.id || '') === String(visibleCube.id || ''));
+                    const eye = row?.querySelector('.vm-outliner-row__eye');
+                    return !!row
+                      && !row.classList.contains('is-hidden-inherited')
+                      && eye?.textContent === 'visibility'
+                      && eye?.getAttribute('aria-label') === 'Hide';
+                }"""
+            )
+            page.locator('#clearBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const splash = document.getElementById('emptyState');
+                    const empty = document.querySelector('#sceneOutlinerBody .vm-outliner__empty');
+                    return !!splash
+                      && !splash.classList.contains('hidden')
+                      && !!empty
+                      && /No file loaded\\./.test(empty.textContent || '');
                 }"""
             )
 
@@ -1657,6 +2181,308 @@ def main() -> int:
                 raise AssertionError(f"Unexpected structure kind after sample load: {sample_summary['kind']}")
             if sample_summary['atomCount'] <= 0:
                 raise AssertionError('Sample load did not produce atoms.')
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row')).map((row) => ({
+                      depth: row.dataset.depth || '',
+                      label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim(),
+                      meta: (row.querySelector('.vm-outliner-row__meta')?.textContent || '').trim(),
+                    }));
+                    return rows.length === 4
+                      && rows[0].depth === '0'
+                      && rows[0].label === 'sample.cube'
+                      && rows[1].depth === '1'
+                      && rows[1].label === 'Molecule'
+                      && /^\\d+ atoms?$/.test(rows[1].meta)
+                      && rows[2].depth === '1'
+                      && rows[2].label === 'Orbitals'
+                      && rows[2].meta === '1 layer'
+                      && rows[3].depth === '2'
+                      && rows[3].label.startsWith('L0')
+                      && rows[3].label.endsWith('sample.cube')
+                      && /^iso\\s+/.test(rows[3].meta);
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L0\\s+sample\\.cube$/.test((candidate.querySelector('.vm-outliner-row__label')?.textContent || '').trim()));
+                    const rect = row?.getBoundingClientRect();
+                    if (!row || !rect) return;
+                    row.dispatchEvent(new MouseEvent('contextmenu', {
+                      bubbles: true,
+                      cancelable: true,
+                      button: 2,
+                      clientX: rect.left + 24,
+                      clientY: rect.top + 12,
+                    }));
+                }"""
+            )
+            page.wait_for_function("() => document.querySelector('.vm-outliner-context-menu[aria-hidden=\"false\"]')")
+            page.evaluate(
+                """() => {
+                    Array.from(document.querySelectorAll('.vm-outliner-context-menu__item'))
+                      .find((button) => (button.textContent || '').trim() === 'Duplicate')
+                      ?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const scene = snap?.scenes?.[0];
+                    const cubes = (scene?.layers || []).filter((layer) => layer.kind === 'cube');
+                    return cubes.length === 2
+                      && cubes[0].labelId === 'L0'
+                      && cubes[0].name === 'sample.cube'
+                      && cubes[0].visible === false
+                      && cubes[1].labelId === 'L1'
+                      && cubes[1].name === 'sample.cube (copy)'
+                      && cubes[1].visible === true
+                      && cubes[1].isSceneGraphDuplicate === true
+                      && scene.activeLayerId === cubes[1].id;
+                }"""
+            )
+            page.locator('#iso').evaluate(
+                """(el) => {
+                    el.value = '0.07';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const cubes = (snap?.scenes?.[0]?.layers || []).filter((layer) => layer.kind === 'cube');
+                    return cubes.length === 2
+                      && Math.abs(Number(cubes[0].iso) - 0.02) < 1e-5
+                      && Math.abs(Number(cubes[1].iso) - 0.07) < 1e-5;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L0\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const scene = snap?.scenes?.[0];
+                    const cubes = (scene?.layers || []).filter((layer) => layer.kind === 'cube');
+                    return cubes.length === 2
+                      && scene.activeLayerId === cubes[0].id
+                      && cubes[0].visible === true
+                      && cubes[1].visible === false
+                      && Math.abs(Number(document.getElementById('iso')?.value || 0) - 0.02) < 1e-5;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L1\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const scene = snap?.scenes?.[0];
+                    const cubes = (scene?.layers || []).filter((layer) => layer.kind === 'cube');
+                    return cubes.length === 2
+                      && scene.activeLayerId === cubes[1].id
+                      && cubes[0].visible === false
+                      && cubes[1].visible === true
+                      && Math.abs(Number(document.getElementById('iso')?.value || 0) - 0.07) < 1e-5;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L0\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const selected = snap?.selectedLayerIds || [];
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'));
+                    const selectedRows = rows.filter((row) => row.classList.contains('is-selected'));
+                    const activeRows = rows.filter((row) => row.classList.contains('is-active'));
+                    return selected.length === 2
+                      && selectedRows.length === 2
+                      && activeRows.length === 1
+                      && (document.getElementById('iso')?.value || '') === '—';
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L1\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    return (snap?.selectedLayerIds || []).length === 1
+                      && Math.abs(Number(document.getElementById('iso')?.value || 0) - 0.07) < 1e-5;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L0\\s+/.test(candidate.querySelector('.vm-outliner-row__label')?.textContent || ''));
+                    row?.querySelector('.vm-outliner-row__eye')?.click();
+                }"""
+            )
+            page.locator('#surfaceSignFlipBtn').evaluate(
+                """(el) => {
+                    el.checked = true;
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const scene = snap?.scenes?.[0];
+                    const cubes = (scene?.layers || []).filter((layer) => layer.kind === 'cube');
+                    return cubes.length === 2
+                      && cubes[0].visible === true
+                      && cubes[1].visible === true
+                      && cubes[0].signFlip === false
+                      && cubes[1].signFlip === true;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => /^L0\\s+sample\\.cube$/.test((candidate.querySelector('.vm-outliner-row__label')?.textContent || '').trim()));
+                    const rect = row?.getBoundingClientRect();
+                    if (!row || !rect) return;
+                    row.dispatchEvent(new MouseEvent('contextmenu', {
+                      bubbles: true,
+                      cancelable: true,
+                      button: 2,
+                      clientX: rect.left + 24,
+                      clientY: rect.top + 12,
+                    }));
+                }"""
+            )
+            page.wait_for_function("() => document.querySelector('.vm-outliner-context-menu[aria-hidden=\"false\"]')")
+            page.evaluate(
+                """() => {
+                    Array.from(document.querySelectorAll('.vm-outliner-context-menu__item'))
+                      .find((button) => (button.textContent || '').trim() === 'Delete')
+                      ?.click();
+                    Array.from(document.querySelectorAll('.vm-outliner-context-menu__button'))
+                      .find((button) => (button.textContent || '').trim() === 'Delete')
+                      ?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getSceneGraphSnapshot?.();
+                    const cubes = (snap?.scenes?.[0]?.layers || []).filter((layer) => layer.kind === 'cube');
+                    return cubes.length === 1 && cubes[0].labelId === 'L1' && cubes[0].visible === true;
+                }"""
+            )
+            page.locator('#clearBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const splash = document.getElementById('emptyState');
+                    return !!splash && !splash.classList.contains('hidden');
+                }"""
+            )
+            page.locator('#emptyStateSampleBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row')).map((row) => ({
+                      depth: row.dataset.depth || '',
+                      label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim(),
+                    }));
+                    return rows.length === 4
+                      && rows[0].depth === '0'
+                      && rows[0].label === 'sample.cube'
+                      && rows[3].depth === '2'
+                      && rows[3].label.endsWith('sample.cube');
+                }"""
+            )
+            page.evaluate("() => document.getElementById('emptyStateMethaneBtn')?.click()")
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        depth: row.dataset.depth || '',
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }));
+                    const scenes = rows.filter((row) => row.depth === '0');
+                    const cubes = rows.filter((row) => /^L\\d+/.test(row.label));
+                    const methaneCubes = cubes.filter((row) => /canonical_|localized_/.test(row.label));
+                    return scenes.length === 2
+                      && scenes[0].label === 'sample.cube'
+                      && scenes[0].hidden === true
+                      && scenes[1].label === 'canonical_1.cube'
+                      && scenes[1].hidden === false
+                      && cubes.length === 9
+                      && cubes[0].label === 'L0sample.cube'
+                      && cubes[0].hidden === true
+                      && methaneCubes.length === 8
+                      && methaneCubes[0].label === 'L0canonical_1.cube'
+                      && methaneCubes[0].active === true
+                      && methaneCubes[0].hidden === false
+                      && methaneCubes.slice(1).every((row) => row.hidden === true);
+                }"""
+            )
+            page.locator('#clearBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const splash = document.getElementById('emptyState');
+                    return !!splash && !splash.classList.contains('hidden');
+                }"""
+            )
+            page.locator('#emptyStateSampleBtn').click()
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row')).map((row) => ({
+                      depth: row.dataset.depth || '',
+                      label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim(),
+                    }));
+                    return rows.length === 4
+                      && rows[0].depth === '0'
+                      && rows[0].label === 'sample.cube'
+                      && rows[3].depth === '2'
+                      && rows[3].label.endsWith('sample.cube');
+                }"""
+            )
+            drop_volume_assets(page, ['/assets/data/methane/canonical_1.cube'])
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        depth: row.dataset.depth || '',
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim().replace(/\\s+/g, ''),
+                        active: row.classList.contains('is-active'),
+                        hidden: row.classList.contains('is-hidden'),
+                      }));
+                    const scenes = rows.filter((row) => row.depth === '0');
+                    const cubes = rows.filter((row) => /^L\\d+/.test(row.label));
+                    return scenes.length === 2
+                      && scenes[0].label === 'sample.cube'
+                      && scenes[0].hidden === true
+                      && scenes[1].label === 'canonical_1.cube'
+                      && scenes[1].hidden === false
+                      && cubes.length === 2
+                      && cubes[0].label === 'L0sample.cube'
+                      && cubes[1].label === 'L0canonical_1.cube'
+                      && cubes[0].hidden === true
+                      && cubes[1].active === true
+                      && cubes[1].hidden === false;
+                }"""
+            )
 
             light_bg = sample_scene_canvas_rgb(page)
             assert light_bg['r'] > 0.9 and light_bg['g'] > 0.9 and light_bg['b'] > 0.9, light_bg
@@ -1776,10 +2602,8 @@ def main() -> int:
                 raise AssertionError(f'Unexpected Molden structure summary: {molden_summary}')
             if molden_summary['atomCount'] != 1:
                 raise AssertionError(f'Molden load produced unexpected atom count: {molden_summary}')
-            if len(molden_summary['nxyz']) != 3 or any(int(n) <= 0 for n in molden_summary['nxyz']):
-                raise AssertionError(f'Molden load did not generate a valid grid: {molden_summary}')
-            if molden_summary['dataLength'] <= 0:
-                raise AssertionError(f'Molden render path did not populate grid data: {molden_summary}')
+            if any(int(n) > 0 for n in molden_summary['nxyz']) or molden_summary['dataLength'] > 0:
+                raise AssertionError(f'Molden load should start molecule-first before MO materialization: {molden_summary}')
             if molden_summary['rowCount'] != 3 or molden_summary['visibleRowCount'] != 3:
                 raise AssertionError(f'Molden inspector did not render all orbital rows: {molden_summary}')
             if not molden_summary['gridSummary'] or 'selected: 1 (HOMO)' not in molden_summary['footer']:
@@ -1792,10 +2616,16 @@ def main() -> int:
                 """() => {
                     const row = document.querySelector('#moldenInspectorBody tbody tr[data-row-index="1"]');
                     const footer = document.getElementById('moldenInspectorFooter');
+                    const exported = window.VibeMolStructure.exportActive();
+                    const nxyz = Array.isArray(exported.volume?.nxyz) ? exported.volume.nxyz : [];
+                    const dataLength = Array.isArray(exported.volume?.data) ? exported.volume.data.length : 0;
                     return !!row
                       && row.classList.contains('vm-list-popover__row--selected')
                       && !!footer
-                      && /selected:\\s*2\\s*\\(LUMO\\)/i.test(footer.textContent || '');
+                      && /selected:\\s*2\\s*\\(LUMO\\)/i.test(footer.textContent || '')
+                      && nxyz.length === 3
+                      && nxyz.every((n) => Number(n) > 0)
+                      && dataLength > 0;
                 }"""
             )
             molden_grid_before = page.evaluate(
@@ -1917,7 +2747,9 @@ def main() -> int:
                 }"""
             )
 
-            click_when_ready(page, '#coordsPanelBtn')
+            page.keyboard.press('Escape')
+            page.wait_for_function("() => !document.getElementById('moldenInspector')?.classList.contains('open')")
+            page.evaluate("() => document.getElementById('coordsPanelBtn')?.click()")
             page.wait_for_function("() => document.getElementById('coordsPanel')?.classList.contains('open')")
             page.locator('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]').click()
             page.locator('#coordsContent .coordsCellEditor').fill('abc')
@@ -2540,7 +3372,7 @@ def main() -> int:
                           && Array.isArray(exported.volume.bonds)
                           && exported.volume.bonds.length === 2;
                     }""",
-                    timeout=1500,
+                    timeout=5000,
                 )
             except Exception:
                 page.evaluate(
@@ -2617,9 +3449,7 @@ def main() -> int:
                 raise AssertionError(f'Esc unexpectedly changed the placed atom identity: {after_add_atom} -> {after_add_escape}')
 
             log_step('grow-add can be followed immediately by atom selection')
-            page.locator('#newFileBtn').click()
-            page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+            start_new_edit_file(page)
             load_build_query(page, 'Carbon')
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             grow_x, grow_y = canvas_point(page, 0.56, 0.55)
@@ -2670,22 +3500,15 @@ def main() -> int:
             )
             page.locator('#editAddQuick button[data-z="11"]').click()
             page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
-            )
-            page.wait_for_function(
                 """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const sodium = document.querySelector('#editAddQuick button[data-z="11"]');
-                    const carbon = document.querySelector('#editAddQuick button[data-z="6"]');
-                    return search
-                      && search.value === 'N'
-                      && sodium
-                      && sodium.hidden === false
-                      && sodium.classList.contains('active')
-                      && (!carbon || carbon.hidden === true);
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_atom'
+                      && state.elementZ === 11
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
-            page.keyboard.press('/')
+            ensure_build_popover_open(page, focus_search=True)
             page.wait_for_function(
                 """() => {
                     const popover = document.getElementById('editAdaptiveAddAtomPopover');
@@ -2713,22 +3536,14 @@ def main() -> int:
             page.locator('#editAddQuick button[data-z="59"]').click()
             page.wait_for_function(
                 """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const pr = document.querySelector('#editAddQuick button[data-z="59"]');
-                    const pm = document.querySelector('#editAddQuick button[data-z="61"]');
-                    const pa = document.querySelector('#editAddQuick button[data-z="91"]');
-                    return search
-                      && search.value === 'Pr'
-                      && pr
-                      && pr.hidden === false
-                      && pr.classList.contains('active')
-                      && pm
-                      && pm.hidden === false
-                      && pa
-                      && pa.hidden === false
-                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false';
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_atom'
+                      && state.elementZ === 59
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
+            ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('ph')
             page.wait_for_function(
                 """() => {
@@ -2740,31 +3555,109 @@ def main() -> int:
                 }"""
             )
 
+            # Build kind transition regression: atom -> fragment updates intent, hint, and cursor ghost.
+            page.evaluate(
+                """() => {
+                    if (typeof window.VibeMolTesting?.setEditSelectionIndices === 'function') {
+                        window.VibeMolTesting.setEditSelectionIndices([]);
+                    }
+                }"""
+            )
+            page.wait_for_function("""() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0""")
+            page.locator('#editBuildSearch').fill('F')
+            page.keyboard.press('Enter')
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_atom'
+                      && state.elementZ === 9
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'
+                      && /Build element: Fluorine \\(F\\)/.test(state.hint || '');
+                }"""
+            )
+            x, y = find_empty_edit_canvas_point(page)
+            page.mouse.move(x + 6, y + 6)
+            page.mouse.move(x, y)
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_atom'
+                      && state.ghostKind === 'atom'
+                      && state.gestureVoidPreviewVisible === true;
+                }"""
+            )
+            ensure_build_popover_open(page, focus_search=True)
+            page.locator('#editBuildSearch').fill('methylene')
+            page.keyboard.press('Enter')
+            page.mouse.move(x + 6, y + 6)
+            page.mouse.move(x, y)
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_fragment'
+                      && state.fragmentId === 'methylene'
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'
+                      && state.ghostKind === 'fragment'
+                      && state.catalogVoidPreviewVisible === true
+                      && /Build fragment: Methylene/.test(state.hint || '');
+                }"""
+            )
+
             # Build search / standalone molecule placement smoke.
+            ensure_build_popover_open(page, focus_search=True)
             page.locator('#editBuildSearch').fill('benzene')
             page.keyboard.press('Enter')
             page.wait_for_function(
                 """() => document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]')?.classList.contains('active') === true"""
             )
             page.wait_for_function(
-                """() => document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'false'"""
-            )
-            page.wait_for_function(
                 """() => {
-                    const search = document.getElementById('editBuildSearch');
-                    const benzene = document.querySelector('#editMoleculeQuick button[data-molecule-id="benzene"]');
-                    return search
-                      && search.value === 'benzene'
-                      && benzene
-                      && benzene.hidden === false
-                      && benzene.classList.contains('active');
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_molecule'
+                      && state.moleculeId === 'benzene'
+                      && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true';
                 }"""
             )
             before_add_molecule = active_structure_summary(page)
             x, y = find_empty_edit_canvas_point(page)
+            page.mouse.move(x + 6, y + 6)
+            page.mouse.move(x, y)
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_molecule'
+                      && state.ghostKind === 'molecule'
+                      && state.catalogVoidPreviewVisible === true
+                      && state.moleculePlacementActive === false;
+                }"""
+            )
             page.mouse.click(x, y)
-            page.wait_for_function("() => document.getElementById('editAddMoleculeOperatorPanel')?.getAttribute('aria-hidden') === 'false'")
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return document.getElementById('editAddMoleculeOperatorPanel')?.getAttribute('aria-hidden') === 'false'
+                      && state
+                      && state.moleculePlacementActive === true
+                      && state.catalogVoidPreviewVisible === false
+                      && state.ghostKind !== 'molecule';
+                }"""
+            )
             page.mouse.click(x, y)
+            page.wait_for_function(
+                """() => {
+                    const state = window.VibeMolTesting?.getEditBuildState?.();
+                    return state
+                      && state.intent === 'add_molecule'
+                      && state.moleculePlacementActive === false
+                      && state.catalogVoidPreviewVisible === true
+                      && state.ghostKind === 'molecule';
+                }"""
+            )
             page.wait_for_timeout(250)
             after_add_molecule = active_structure_summary(page)
             if after_add_molecule['atomCount'] <= before_add_molecule['atomCount']:
@@ -2816,6 +3709,7 @@ def main() -> int:
             log_step('bond gesture smoke')
             dihedral_fixture_text = build_fixture_dihedral_structure()
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture")', dihedral_fixture_text)
+            set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
             side_x, side_y = find_bond_side_canvas_point(page)
@@ -2877,6 +3771,7 @@ def main() -> int:
             )
 
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture-distance")', dihedral_fixture_text)
+            set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
             side_x, side_y = find_bond_side_canvas_point(page)
@@ -2937,6 +3832,7 @@ def main() -> int:
             )
 
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture")', fixture_text)
+            set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
             for expected_order in (2, 3, 4, 3, 2, 1):
@@ -2955,6 +3851,7 @@ def main() -> int:
                 )
 
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-gesture-fixture-selection")', fixture_text)
+            set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
             side_x, side_y = find_bond_side_canvas_point(page)
@@ -3034,11 +3931,73 @@ def main() -> int:
             log_step('trajectory smoke')
             trajectory_xyz_text = build_fixture_trajectory_xyz()
             page.locator('#modeDisplayBtn').click()
+            static_xyz_text = '\n'.join([
+                '2',
+                'static reference',
+                'C 0.000000 0.000000 0.000000',
+                'C 1.400000 0.000000 0.000000',
+                '',
+            ])
             page.evaluate(
                 """async (text) => {
-                    await window.VibeMolEmbed.loadFiles([{ name: 'dynamic-traj.xyz', text }]);
+                    await window.VibeMolEmbed.loadFiles([{ name: 'static-reference.xyz', text }]);
                 }""",
-                trajectory_xyz_text,
+                static_xyz_text,
+            )
+            drop_text_files(
+                page,
+                [{'name': 'dynamic-traj.xyz', 'text': trajectory_xyz_text}],
+            )
+            page.wait_for_function(
+                """() => {
+                    const rows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .map((row) => ({
+                        depth: row.dataset.depth || '',
+                        label: (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim(),
+                        hidden: row.classList.contains('is-hidden'),
+                      }));
+                    const scenes = rows.filter((row) => row.depth === '0');
+                    return scenes.length === 2
+                      && scenes[0].label === 'static-reference.xyz'
+                      && scenes[0].hidden === true
+                      && scenes[1].label === 'dynamic-traj.xyz'
+                      && scenes[1].hidden === false;
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const clickSceneHeader = (label) => {
+                      const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                        .find((candidate) => (
+                          candidate.dataset.depth === '0'
+                          && (candidate.querySelector('.vm-outliner-row__label')?.textContent || '').trim() === label
+                        ));
+                      row?.click();
+                    };
+                    clickSceneHeader('static-reference.xyz');
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const btn = document.getElementById('trajectoryPanelBtn');
+                    return !!btn && getComputedStyle(btn).display !== 'none';
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const row = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                      .find((candidate) => (
+                        candidate.dataset.depth === '0'
+                        && (candidate.querySelector('.vm-outliner-row__label')?.textContent || '').trim() === 'dynamic-traj.xyz'
+                      ));
+                    row?.click();
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const btn = document.getElementById('trajectoryPanelBtn');
+                    return !!btn && getComputedStyle(btn).display !== 'none';
+                }"""
             )
             page.locator('#viewInspectorBtn').click()
             page.wait_for_function(
@@ -3071,6 +4030,35 @@ def main() -> int:
                 """() => {
                     const note = document.getElementById('trajectoryBondModeNote');
                     return !!note && getComputedStyle(note).display !== 'none' && /dynamic/i.test(note.textContent || '');
+                }"""
+            )
+            page.evaluate(
+                """() => {
+                    const clickStaticEye = () => {
+                      const sceneRows = Array.from(document.querySelectorAll('#sceneOutlinerBody .vm-outliner-row'))
+                        .filter((row) => row.dataset.depth === '0');
+                      const staticScene = sceneRows.find((row) => (row.querySelector('.vm-outliner-row__label')?.textContent || '').trim() === 'static-reference.xyz');
+                      staticScene?.querySelector('.vm-outliner-row__eye')?.click();
+                    };
+                    clickStaticEye();
+                    clickStaticEye();
+                }"""
+            )
+            page.locator('#trajectoryFrame').evaluate(
+                """(el) => {
+                    el.value = '1';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }"""
+            )
+            page.wait_for_function(
+                """() => {
+                    const snap = window.VibeMolTesting?.getMoleculeRenderSnapshot?.();
+                    if (!snap || snap.atomCount !== 2) return false;
+                    const xs = snap.atoms.map((atom) => Number(atom.x) || 0);
+                    const spanX = Math.max(...xs) - Math.min(...xs);
+                    return /2\\/2/.test(document.getElementById('trajectoryFrameLabel')?.textContent || '')
+                      && spanX > 4.5;
                 }"""
             )
             page.locator('#trajectoryLoop').evaluate(
@@ -3594,9 +4582,7 @@ def main() -> int:
 
             # The Atoms menu drives automatic local hydrogen adjustment for isolated single-atom adds.
             log_step('new file edit smoke')
-            page.locator('#newFileBtn').click()
-            page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+            start_new_edit_file(page)
             load_build_query(page, 'Carbon')
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             set_select_value(page, '#editAddCoordination', 'linear')
@@ -3654,9 +4640,7 @@ def main() -> int:
                 raise AssertionError(f'Auto hydrogen adjustment did not follow the Atoms menu settings: {auto_adjust_summary}')
 
             log_step('fragment cue shows fragment ghost on undercoordinated atom')
-            page.locator('#newFileBtn').click()
-            page.locator('#modeEditBtn').click()
-            page.wait_for_function("() => { const menu = document.getElementById('displayWindowAdaptiveMenu'); return menu?.getAttribute('aria-hidden') === 'false' && menu?.dataset.mode === 'edit'; }")
+            start_new_edit_file(page)
             load_build_query(page, 'Fe')
             metal_x, metal_y = canvas_point(page, 0.52, 0.48)
             page.mouse.click(metal_x, metal_y)
@@ -3914,6 +4898,7 @@ def main() -> int:
             log_step('clicking a bond with a fusion-capable fragment enters fuse preview regardless of policy')
             start_new_edit_file(page)
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "fusion-bond-fixture")', build_fixture_structure())
+            set_focused_scene_visible(page, True)
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
@@ -4023,7 +5008,7 @@ def main() -> int:
                     const select = document.getElementById('surfaceMaterialPreset');
                     if (!(row && select)) return false;
                     const options = Array.from(select.options || []).map((opt) => String(opt.textContent || '').trim());
-                    return options.join('|') === 'Emissive|Satin|Lacquer|Metal|Gel|Ceramic'
+                    return options.join('|') === 'Emissive|Matte|Satin|Lacquer|Metal|Gel|Ceramic'
                       && String(select.value || '') === 'emissive';
                 }"""
             )
@@ -4040,7 +5025,8 @@ def main() -> int:
                       && Math.abs(Number(snap.surfaceReflectivity || 0) - 0.5) < 1e-3
                       && Math.abs(Number(snap.surfaceEmissiveIntensity || 0) - 0.8) < 1e-3
                       && materials.length >= 2
-                      && materials.every((mat) => String(mat.surfaceStyle || '') === 'emissive')
+                      && materials.every((mat) => String(mat.surfaceStyle || '') === 'solid')
+                      && materials.every((mat) => String(mat.surfaceMaterialPreset || '') === 'emissive')
                       && materials.every((mat) => Math.abs(Number(mat.roughness || 0) - 1.0) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.metalness || 0) - 0.0) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.clearcoat || 0) - 1.0) < 1e-3)
@@ -4071,7 +5057,8 @@ def main() -> int:
                       && Math.abs(Number(snap.surfaceReflectivity || 0) - 0.5) < 1e-3
                       && Math.abs(Number(snap.surfaceEmissiveIntensity || 0) - 0.2) < 1e-3
                       && materials.length >= 2
-                      && materials.every((mat) => String(mat.surfaceStyle || '') === 'ceramic')
+                      && materials.every((mat) => String(mat.surfaceStyle || '') === 'solid')
+                      && materials.every((mat) => String(mat.surfaceMaterialPreset || '') === 'ceramic')
                       && materials.every((mat) => Math.abs(Number(mat.roughness || 0) - 0.35) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.metalness || 0) - 0.0) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.clearcoat || 0) - 0.8) < 1e-3)
@@ -4101,7 +5088,7 @@ def main() -> int:
             page.wait_for_function(
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
-                    return !!snap && snap.surfaceMaterialPreset === 'emissive' && snap.surfaceStyle === 'emissive' && snap.active === false;
+                    return !!snap && snap.surfaceMaterialPreset === 'emissive' && snap.surfaceStyle === 'solid' && snap.active === false;
                 }"""
             )
             page.evaluate(
@@ -4118,7 +5105,7 @@ def main() -> int:
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap
                       && snap.surfaceMaterialPreset === 'emissive'
-                      && snap.surfaceStyle === 'emissive'
+                      && snap.surfaceStyle === 'solid'
                       && snap.surfaceOpacity < 0.999
                       && (snap.supported ? snap.active === true : snap.fallback === true);
                 }"""
@@ -4137,7 +5124,7 @@ def main() -> int:
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap
                       && snap.surfaceMaterialPreset === 'emissive'
-                      && snap.surfaceStyle === 'emissive'
+                      && snap.surfaceStyle === 'solid'
                       && snap.surfaceOpacity >= 0.999
                       && snap.active === false;
                 }"""
