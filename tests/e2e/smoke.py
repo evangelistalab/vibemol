@@ -5029,7 +5029,7 @@ def main() -> int:
                     const select = document.getElementById('surfaceMaterialPreset');
                     if (!(row && select)) return false;
                     const options = Array.from(select.options || []).map((opt) => String(opt.textContent || '').trim());
-                    return options.join('|') === 'Emissive|Matte|Satin|Lacquer|Metal|Gel|Ceramic'
+                    return options.join('|') === 'Emissive|Matte|Satin|Enamel|Lacquer|Metal|Gel|Ceramic'
                       && String(select.value || '') === 'emissive';
                 }"""
             )

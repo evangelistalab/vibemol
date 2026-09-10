@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VibeMol — Blue &amp; orange orbitals</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style-lab.css">
+  <link rel="stylesheet" href="orbital-reference.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="index.html">VibeMol<span> / Visual Style Lab</span></a>
+    <span class="study-label">ORBITAL MATERIALS · 02</span>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">BLUE &amp; ORANGE ORBITALS</p><h1>A little polish. A clear shape.</h1></div>
+      <p>Opaque surfaces. Saturated color.<br>Three presets rendered in VibeMol.</p>
+    </section>
+    <div class="reference-palette" aria-label="Shared palette and opacity">
+      <span><i class="orange"></i>Positive · #ff8000</span>
+      <span><i class="blue"></i>Negative · #0066b3</span>
+      <span>White background · 100% opacity</span>
+    </div>
+    <section class="reference-grid" aria-label="Compare orbital presets">
+      <article>
+        <div class="reference-image"><img src="orbital-emissive.png" width="1040" height="1000" alt="Vivid orange and blue hydrogen 2p lobes with nearly uniform color and small highlights."></div>
+        <div class="reference-heading"><h2>Emissive</h2><span>Closest existing material</span></div>
+        <p>Bright, nearly uniform color with a small highlight. The closest existing option for the vivid finish in the reference.</p>
+        <a class="download primary" href="presets/orbital-emissive.preset.json" download>Download Emissive preset ↓</a>
+      </article>
+      <article>
+        <div class="reference-image"><img src="orbital-enamel.png" width="1040" height="1000" alt="Opaque orange and blue hydrogen 2p lobes with compact bright highlights."></div>
+        <div class="reference-heading"><h2>Enamel</h2><span>Stronger depth shading</span></div>
+        <p>A small, bright highlight with smooth shading and a saturated color fill. No room reflections or dark contours.</p>
+        <a class="download" href="presets/orbital-enamel.preset.json" download>Download Enamel preset ↓</a>
+      </article>
+      <article>
+        <div class="reference-image"><img src="orbital-satin.png" width="1040" height="1000" alt="The same orange and blue hydrogen 2p lobes with a softer satin finish."></div>
+        <div class="reference-heading"><h2>Satin</h2><span>Softer alternative</span></div>
+        <p>A broad, gentle highlight with a softer color response. Uses the existing Satin material for a more understated figure.</p>
+        <a class="download" href="presets/orbital-satin.preset.json" download>Download Satin preset ↓</a>
+      </article>
+    </section>
+    <section class="reference-notes" aria-labelledby="useTitle">
+      <div><h2 id="useTitle">Try it on your orbital</h2><ol>
+        <li>Open <a href="../../../index.html">VibeMol</a> on this branch and load a cube or Molden orbital.</li>
+        <li>Select an orbital layer, then drop a downloaded preset into VibeMol.</li>
+        <li>Adjust Appearance → Surfaces. Use <strong>Download preset</strong> to keep your settings, or <strong>Save session</strong> to keep the complete scene.</li>
+      </ol></div>
+      <div><h2>The same science</h2><p>All three images show the same analytic hydrogen 2p orbital, isovalue, and camera. These presets preserve your isovalue, Auto-iso choice, camera, visibility, and phase mapping. They select Basic shading for smooth surfaces.</p><p>The supplied image has no phase labels; orange-positive and blue-negative are the convention used here. Its orbital identity and isovalue cannot be determined from the image.</p></div>
+    </section>
+    <footer><span>Native VibeMol presets. Enamel is available on the visual-style-lab branch.</span><a href="README.md#orbital-reference-presets">Material values &amp; preservation notes ↗</a></footer>
+  </main>
+</body>
+</html>

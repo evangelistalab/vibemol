@@ -1,0 +1,21 @@
+{
+  "kind": "vibemol.preset",
+  "presetVersion": 1,
+  "name": "Blue & orange orbitals — Satin",
+  "meta": {
+    "description": "A softer alternative to the reference: opaque blue/orange orbital surfaces on white with a broad, subdued highlight. Uses the existing Satin material."
+  },
+  "settings": {
+    "molecule.style": "basic",
+    "global.backgroundColor": "#ffffff",
+    "surface.colorScheme": "custom",
+    "surface.posColor": "#ff8000",
+    "surface.negColor": "#0066b3",
+    "surface.opacity": 1,
+    "surface.materialPreset": "satin",
+    "render.mode": "surface",
+    "render.dof.enabled": false,
+    "molecule.feature.fog": false,
+    "molecule.feature.ink": false
+  }
+}

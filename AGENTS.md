@@ -289,6 +289,7 @@ Preset automation contract exposed globally:
 - The `Symmetry` tool supports point-group analysis, RMS-based approximate fits, preview/apply/auto-apply symmetrization, and 3D symmetry-element visualization.
 - Appearance is a compact accordion inspector with an always-visible `Quick style` strip and collapsed `Molecule`, `Lighting & atmosphere`, `Camera`, `Surfaces`, and `Visibility` sections; `Surfaces` and its 2C/cloud subsections appear only when relevant.
 - Appearance controls include an optional `Shadows` toggle for molecule self-shadowing.
+- The experimental `Enamel` surface material gives opaque orbital figures compact highlights, a small colored fill, and no environment reflections. Native blue/orange Emissive, Enamel, and Satin presets and actual renderer previews live in `docs/experiments/style-lab/`; the six-look lab still uses its separate study format.
 - Loaded `.2ccube` files expose the 2C quantity selector in Appearance with math-aware labels (`Re(ψ^α)`, `Im(ψ^β)`, and so on).
 - In `alphaBetaPhase` split view, the canvas overlays centered `α` / `β` labels and exposes a `Spinor info` popover whose copy follows the active 2C quantity; the phase wheel sits at the lower-right above the hint bar.
 - View actions include `COM → Origin`, principal-axis alignment, and `+X/+Y/+Z` camera presets; shortcut `R` shifts active molecule center of mass to origin.

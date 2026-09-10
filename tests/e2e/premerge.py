@@ -25,6 +25,16 @@ def cube(shift: float) -> str:
     return '\n'.join(header + [' '.join(f'{value:.6e}' for value in values)]) + '\n'
 
 
+def hydrogen_2p_cube() -> str:
+    n, step = 41, 0.4
+    header = ['Analytic hydrogen 2p', 'Reference rendering; coordinates in bohr', '1 -8 -8 -8',
+              f'{n} {step} 0 0', f'{n} 0 {step} 0', f'{n} 0 0 {step}', '1 0 0 0 0']
+    axis = [i * step - 8 for i in range(n)]
+    values = [z * math.exp(-math.sqrt(x*x + y*y + z*z) / 2) / (4 * math.sqrt(2 * math.pi))
+              for x in axis for y in axis for z in axis]
+    return '\n'.join(header + [' '.join(f'{value:.7e}' for value in values)]) + '\n'
+
+
 def snapshot(page):
     return page.evaluate('() => JSON.parse(JSON.stringify(window.VibeMolTesting.getSceneGraphSnapshot()))')
 
@@ -90,6 +100,78 @@ def molecule_styles(page, dialogs):
     page.keyboard.press('4')
     assert 'bond order: 4' in page.evaluate('() => window.VibeMolTesting.getHintMessage()')
     assert page.locator('#moleculeStyle').input_value() == 'basic'
+
+
+def orbital_reference_presets(page, dialogs):
+    assert load(page, [{'name': 'hydrogen-2p.cube', 'text': hydrogen_2p_cube()}])['ok']
+    page.evaluate('''() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,settings:{
+        'surface.iso':0.023,'surface.autoIsoEnabled':false,'global.showBonds':false,
+        'render.dof.enabled':true,'molecule.style':'toon',
+        'surface.opacity':0.35,'surface.materialPreset':'lacquer'
+    }}, {mode:'strict'})''')
+    geometry = page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')
+    camera = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+    layer_before = cubes(page)[0]
+    presets = ROOT / 'docs' / 'experiments' / 'style-lab' / 'presets'
+    for material in ['enamel', 'emissive', 'satin']:
+        preset = json.loads((presets / f'orbital-{material}.preset.json').read_text())
+        result = page.evaluate('preset => VibeMolPreset.import(preset, {mode:"strict"})', preset)
+        assert result['ok'] and not result['warnings'], result
+        layer = cubes(page)[0]
+        for key in ['id', 'iso', 'autoIso', 'isoPending', 'visible', 'signFlip']:
+            assert layer[key] == layer_before[key], (key, layer)
+        assert layer['solidPreset'] == material and layer['opacity'] == 1, (material, layer)
+        assert layer['posColor'] == '#ff8000' and layer['negColor'] == '#0066b3'
+        materials = page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')
+        assert len(materials) == 2
+        for mat in materials:
+            assert mat['type'] == 'MeshPhysicalMaterial' and mat['surfaceMaterialPreset'] == material
+            assert mat['opacity'] == 1 and not mat['transparent'] and mat['depthWrite']
+            assert mat['metalness'] == 0 and mat['transmission'] == 0
+            if material == 'enamel':
+                assert mat['envMapIntensity'] == 0 and mat['roughness'] == 0.28 and mat['emissiveIntensity'] == 0.12
+        assert page.evaluate('() => VibeMolStructure.exportActive().volume.atoms') == geometry
+        camera_after = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+        assert camera_after['mode'] == camera['mode']
+        for vector in ['camera', 'target', 'up']:
+            assert all(math.isclose(camera_after[vector][axis], camera[vector][axis], abs_tol=1e-9)
+                       for axis in ['x', 'y', 'z']), (camera, camera_after)
+        exported = page.evaluate('() => VibeMolPreset.export().settings')
+        assert all(exported[key] == value for key, value in preset['settings'].items())
+        assert exported['global.showBonds'] is False and exported['surface.iso'] == 0.023
+
+    # The same material survives a complete session, including ordinary UI changes.
+    set_surface_control(page, '#surfaceMaterialPreset', 'enamel')
+    saved_layer = cubes(page)[0]
+    session = page.evaluate('async () => VibeMolSession.export()')
+    set_surface_control(page, '#surfaceMaterialPreset', 'matte')
+    assert page.evaluate('async session => VibeMolSession.import(session)', session)['ok']
+    assert cubes(page)[0] == saved_layer
+    assert all(mat['surfaceMaterialPreset'] == 'enamel'
+               for mat in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()'))
+
+    # Turning blur off must also recreate the shared targets needed by transparency.
+    set_surface_control(page, '#opacity', '0.5')
+    page.locator('#dofToggle').evaluate("el => { el.checked = true; el.dispatchEvent(new Event('change', {bubbles:true})); }")
+    page.wait_for_function('''() => {
+        const s = VibeMolTesting.getWboitSnapshot();
+        return s.targetSize.width > 0 && s.transparentMeshCount === 2;
+    }''')
+    page.locator('#dofToggle').evaluate("el => { el.checked = false; el.dispatchEvent(new Event('change', {bubbles:true})); }")
+    page.wait_for_function('''() => {
+        const s = VibeMolTesting.getWboitSnapshot();
+        return s.supported ? s.active && s.targetSize.width > 0 : s.fallback;
+    }''')
+    assert not page.evaluate('() => VibeMolPreset.export().settings["render.dof.enabled"]')
+
+    # Named palettes stage their colors too, without losing other imported values.
+    page.evaluate('''() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,settings:{
+        'surface.opacity':0.75,'surface.materialPreset':'enamel','surface.colorScheme':'national'
+    }}, {mode:'strict'})''')
+    layer = cubes(page)[0]
+    assert layer['solidPreset'] == 'enamel' and layer['opacity'] == 0.75
+    assert layer['colorScheme'] == 'national' and layer['posColor'] == '#e60000' and layer['negColor'] == '#0033a0'
+    assert not dialogs, dialogs
 
 
 def imports(page, dialogs):
@@ -793,7 +875,7 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (molecule_styles, imports, psi4_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
+            for run in (molecule_styles, orbital_reference_presets, imports, psi4_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
                         persistence, batch_export, orbital_group_appearance, molden_group_appearance,
                         molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})

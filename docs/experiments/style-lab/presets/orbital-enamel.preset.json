@@ -1,0 +1,21 @@
+{
+  "kind": "vibemol.preset",
+  "presetVersion": 1,
+  "name": "Blue & orange orbitals — Enamel",
+  "meta": {
+    "description": "Opaque blue/orange orbital surfaces on white, with compact highlights and no environment reflections. Requires the Enamel material from the visual-style-lab branch."
+  },
+  "settings": {
+    "molecule.style": "basic",
+    "global.backgroundColor": "#ffffff",
+    "surface.colorScheme": "custom",
+    "surface.posColor": "#ff8000",
+    "surface.negColor": "#0066b3",
+    "surface.opacity": 1,
+    "surface.materialPreset": "enamel",
+    "render.mode": "surface",
+    "render.dof.enabled": false,
+    "molecule.feature.fog": false,
+    "molecule.feature.ink": false
+  }
+}

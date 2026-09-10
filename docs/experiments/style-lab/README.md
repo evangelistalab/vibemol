@@ -1,6 +1,26 @@
 # Visual Style Lab
 
-An interactive rendering and appearance-library study on `codex/visual-style-lab`, based on `main` at `e82dcbd`. Run a static server from the repository root and open `/docs/experiments/style-lab/`. The production app is unchanged.
+An interactive rendering and appearance-library study on `codex/visual-style-lab`, based on `main` at `e82dcbd`. Run a static server from the repository root and open `/docs/experiments/style-lab/`. The six-look study is isolated; this branch also adds the native Enamel surface material and the orbital presets below.
+
+## Orbital reference presets
+
+[Compare the three native VibeMol renders and download the presets](orbital-reference.html).
+
+The second supplied reference shows opaque blue/orange lobes, smooth shading, small bright highlights, and a white background. **Emissive** is the closest existing option for its vivid, nearly uniform color and compact highlight. **Enamel** adds stronger depth shading with restrained clearcoat, a little colored fill, and no studio-environment reflections. **Satin** is a softer alternative. Lacquer's strong room reflections and Ceramic's broad reflective patches are less similar to this reference.
+
+| Native preset | Roughness | Clearcoat | Coat roughness | Emissive fill | Environment |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| [Emissive](presets/orbital-emissive.preset.json) | 1 | 1 | 0.1 | 0.8 | 0 |
+| [Enamel](presets/orbital-enamel.preset.json) | 0.28 | 0.45 | 0.12 | 0.12 | 0 |
+| [Satin](presets/orbital-satin.preset.json) | 0.45 | 0 | 0.1 | 0 | 0.8 |
+
+All three use zero metalness, zero transmission, 100% opacity, positive orange `#ff8000`, negative blue `#0066b3`, and a white background. They choose Basic molecule shading (Toon forces toon surfaces), turn off fog/ink/depth of field, and preserve coordinates, camera, orbital visibility, phase mapping, isovalue, and Auto-iso. The colors approximate the supplied raster; its phase signs, orbital identity, and isovalue are unknown.
+
+Load an orbital in the main app, select its layer, then drag in a preset JSON file. These files use the existing **`vibemol.preset`** format; they are not imported through the six-look lab's **Import look** button. Native preset import updates the active cube layer and appearance defaults; it does not restyle every existing orbital. To edit a group together, select its **Orbitals** header and set the same material, opacity, and colors through Appearance → Surfaces.
+
+Enamel requires this branch. An older app that does not recognize it falls back to its default material. Emissive and Satin are already available, although older preset import code can reset the material/opacity while applying a color scheme. This branch fixes that redraw ordering and an obsolete depth-of-field disposer that interrupted strict imports.
+
+Use **Download preset** after customizing for reuse with another orbital, and **Save session** to preserve the exact scene and per-layer appearance. The previews are native VibeMol canvas exports of the analytic hydrogen `2p_z` function below, sampled on a 41³ grid at 0.4 bohr spacing and contoured at ±0.018. They use identical geometry and camera. No user reference image is copied into the repository.
 
 ## Recommendation
 
@@ -80,4 +100,4 @@ node --test tests/unit/style-lab-looks.test.mjs
 python tests/e2e/style_lab.py
 ```
 
-The browser test checks the collection, all subjects, geometry/camera preservation, saved/modified/reverted appearance, reload persistence, exact exported/imported values, invalid-file rejection, PNG output, and narrow layouts. It is an explicit experiment check; the production smoke suite and production bundle are unchanged.
+The browser test checks the collection, all subjects, geometry/camera preservation, saved/modified/reverted appearance, reload persistence, exact exported/imported values, invalid-file rejection, PNG output, and narrow layouts. It is an explicit experiment check. `tests/e2e/premerge.py` also checks all three native orbital presets, preservation of geometry/camera/isovalues, session restoration, named/custom palette import, and transparent rendering after disabling depth of field. The production smoke suite includes the Enamel material option.

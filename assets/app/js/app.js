@@ -1493,6 +1493,16 @@
       emissiveIntensity: 0.0,
       envMapIntensity: 0.8,
     }),
+    // Opaque orbital figures with a compact highlight and no room reflections.
+    enamel: Object.freeze({
+      roughness: 0.28,
+      metalness: 0.0,
+      clearcoat: 0.45,
+      clearcoatRoughness: 0.12,
+      reflectivity: 0.5,
+      emissiveIntensity: 0.12,
+      envMapIntensity: 0.0,
+    }),
     lacquer: Object.freeze({
       roughness: 0.25,
       metalness: 0.0,
@@ -5040,7 +5050,7 @@
 
   /**
    * Normalize the selected surface material preset key.
-   * @returns {'emissive'|'satin'|'lacquer'|'metal'|'gel'|'ceramic'}
+   * @returns {'emissive'|'matte'|'satin'|'enamel'|'lacquer'|'metal'|'gel'|'ceramic'}
    */
   function getSurfaceMaterialPresetKey(layer = null) {
     const key = String((layer && layer.solidPreset) || surfaceMaterialPreset || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
@@ -27219,7 +27229,7 @@
   if (dofToggleEl) {
     dofToggleEl.onchange = () => {
       dofState.enabled = !!dofToggleEl.checked;
-      if (!dofState.enabled) disposeDofRenderTarget();
+      if (!dofState.enabled) disposeSceneRenderTargets();
       syncDofControlState();
       scheduleAppearancePresetAutosave();
     };
@@ -27635,9 +27645,18 @@
     const options = new Set(schemeSelect ? Array.from(schemeSelect.options).map((o) => o.value) : Object.keys(SURFACE_COLOR_SCHEMES).concat(['custom']));
     const next = (typeof value === 'string' && options.has(value)) ? value : 'custom';
     surfaceColorSchemeDefault = next;
-    if (!schemeSelect) return;
-    schemeSelect.value = next;
-    if (typeof schemeSelect.onchange === 'function') schemeSelect.onchange();
+    if (schemeSelect) schemeSelect.value = next;
+    const scheme = SURFACE_COLOR_SCHEMES[next];
+    if (scheme) {
+      surfacePosColorDefault = scheme.pos;
+      surfaceNegColorDefault = scheme.neg;
+      if (posColor) posColor.value = scheme.pos;
+      if (negColor) negColor.value = scheme.neg;
+    }
+    // Stage controls until afterApplySettings commits the whole preset. The UI
+    // change handler redraws the layer and would restore its old material/opacity.
+    syncColorPickerFields();
+    syncSurfaceColorSchemeUi();
   });
   registerAppearancePresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || UI_PALETTE.white, (value) => {
     if (!bgColor) return;
@@ -27754,7 +27773,7 @@
   });
   registerAppearancePresetSetting('render.dof.enabled', () => !!dofState.enabled, (value) => {
     dofState.enabled = asBoolean(value);
-    if (!dofState.enabled) disposeDofRenderTarget();
+    if (!dofState.enabled) disposeSceneRenderTargets();
     syncDofControlState();
   });
   registerAppearancePresetSetting('render.dof.focusMode', () => getDofFocusMode(), (value) => {
