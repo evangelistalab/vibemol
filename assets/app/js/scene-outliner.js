@@ -438,6 +438,7 @@
       }
       if (isCubeLikeLayer(layer)) {
         if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC && layer.cubeDataValid === false) return '(invalid)';
+        if (layer.isoPending) return '';
         return `iso ${formatIsoInputValue(layer.iso || DEFAULT_ISO_VALUE)}`;
       }
       if (layer.kind === SCENE_LAYER_KIND.MEASUREMENTS_GROUP) {

@@ -12,6 +12,7 @@
 
   const DEFAULT_CUBE_APPEARANCE = Object.freeze({
     iso: 0.02,
+    isoPending: false,
     autoIso: false,
     autoIsoEnabled: false,
     opacity: 1.0,
@@ -77,6 +78,7 @@
     const autoIso = source.autoIso == null ? !!source.autoIsoEnabled : !!source.autoIso;
     return {
       iso: normalizeNumber(source.iso, DEFAULT_CUBE_APPEARANCE.iso, 0),
+      isoPending: !!source.isoPending,
       autoIso,
       autoIsoEnabled: autoIso,
       opacity: normalizeNumber(source.opacity, DEFAULT_CUBE_APPEARANCE.opacity, 0.05, 1),

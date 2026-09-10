@@ -21,6 +21,7 @@ function setup() {
     const [one,two] = graph.getScenes();
     const layer = one.layers.find(graph.isCubeLikeLayer);
     layer.name = 'Edited name'; layer.iso = 0.014; layer.opacity = 0.35;
+    Object.assign(two.layers.find(graph.isCubeLikeLayer), { autoIso:true, autoIsoEnabled:true, isoPending:true });
     layer.geometry = {renderer:true, circular:graph.getState()};
     const derived = graph.addArithmeticLayer(one, { name:'Difference', inputs:[{layerId:layer.id,coefficient:2}],
       cubeData:volume(), operation:'linear_combination' });
@@ -56,6 +57,8 @@ test('session round-trip preserves source identity, topology, graph recipes, app
   assert.equal(cubes[0].name, 'Edited name');
   assert.equal(cubes[0].iso, 0.014);
   assert.equal(cubes[0].opacity, 0.35);
+  assert.equal(cubes[0].isoPending, false);
+  assert.equal(fixture.graph.getScenes()[1].layers.find(fixture.graph.isCubeLikeLayer).isoPending, true);
   assert.equal(cubes[2].inputs[0].layerId, cubes[1].id);
   assert.equal(cubes[0].record, restored.records[0]);
   assert.equal(cubes[0].cubeData, restored.records[0].vol);
@@ -63,6 +66,13 @@ test('session round-trip preserves source identity, topology, graph recipes, app
   const ids = new Set(fixture.graph.getScenes().flatMap(scene => [scene.id,...scene.layers.map(layer => layer.id)]));
   const next = fixture.graph.addCubeLayer(fixture.graph.getScenes()[0], {cubeData:restored.records[0].vol});
   assert.equal(ids.has(next.id), false);
+
+  // Older sessions have assigned values but no pending-state metadata.
+  for (const scene of decoded.graph.scenes) for (const layer of scene.layers) delete layer.isoPending;
+  const legacy = ctx.VibeMolSessionModule.hydrate(decoded);
+  const legacyCube = legacy.graph.scenes[1].layers.find(fixture.graph.isCubeLikeLayer);
+  assert.equal(!!legacyCube.isoPending, false);
+  assert.equal(legacyCube.iso, decoded.graph.scenes[1].layers.find(fixture.graph.isCubeLikeLayer).iso);
 });
 
 test('capture retains moved sources after original scene removal and never recreates deleted layers', async () => {
@@ -111,6 +121,7 @@ test('session import rejects damaged buffers and bad graph references before app
     doc => { doc.buffers.pop(); },
     doc => { doc.sources[1].id = doc.sources[0].id; },
     doc => { doc.graph.scenes[0].layers.find(x=>x.kind==='cube').sourceId = 'missing'; },
+    doc => { doc.graph.scenes[0].layers.find(x=>x.kind==='cube').isoPending = 'pending'; },
     doc => { const l = doc.graph.scenes[0].layers.find(x=>x.kind==='arithmetic'); l.inputs[0].layerId = l.id; },
     doc => { doc.sources[0].volume.nxyz = [999,1,1]; },
     doc => { doc.sources[0].volume.bonds[0].a = 'missing-atom'; },

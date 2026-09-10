@@ -14,6 +14,8 @@ Loading an active Molden file opens the Orbitals inspector outside edit mode, wi
 
 Focusing an Orbitals group opens Appearance for all its cube/arithmetic children, including hidden and deferred MOs. `getSurfaceAppearanceTargets()` resolves this scope separately from the explicit selection used for delete, duplicate, and arithmetic commands. Edits persist on each child through the existing layer/session state; resolving the scope never evaluates grids. Mixed values are indicated in the controls. With the group focused, Show surfaces toggles parent visibility and preserves each child's visibility choice.
 
+`isoPending` distinguishes an unassigned Auto-iso value from the stored numeric rendering fallback. Enabling Auto-iso marks the value pending; a successful estimate or manual iso edit clears it. Pending outliner rows omit the iso label, including after Auto-iso is disabled without assigning a new value. This state is copied and saved per layer. Older sessions without the field retain their existing assigned values.
+
 `scene-outliner.js` owns the tree DOM, rename sessions, drag feedback, context menus, and arithmetic form. It calls model/controller operations supplied by `app.js`. Its stylesheet is separate from the HTML shell. Rename inputs stay mounted during unrelated redraws.
 
 ## Grid arithmetic

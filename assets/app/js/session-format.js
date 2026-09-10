@@ -155,6 +155,7 @@
         if (layer.volume) validateVolume(layer.volume, layer.name || layer.id);
         if (layer.kind === 'cube' || layer.kind === 'arithmetic') {
           requireValue(finite(layer.iso) && layer.iso >= 0 && finite(layer.opacity) && layer.opacity >= 0.05 && layer.opacity <= 1, 'invalid surface appearance.');
+          requireValue(layer.isoPending == null || typeof layer.isoPending === 'boolean', 'invalid pending iso state.');
         }
         if (layer.kind === 'arithmetic') {
           requireValue(['linear_combination', 'product', 'abs'].includes(layer.operation), 'unsupported arithmetic operation.');

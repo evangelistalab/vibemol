@@ -516,13 +516,22 @@ def molden_group_appearance(page, dialogs):
     assert load(page, [{'name':'group.molden', 'text':MOLDEN}])['ok']
     layers = cubes(page)
     group_id = layers[0]['parentId']
+
+    def iso_labels():
+        return [page.locator(f'.vm-outliner-row[data-id="{layer["id"]}"] .vm-outliner-row__meta').inner_text()
+                for layer in layers]
+
+    assert all(label.startswith('iso ') for label in iso_labels())
     page.locator(f'.vm-outliner-row[data-id="{group_id}"]').click()
     assert page.locator('#surfaceScopeLabel').inner_text() == 'All 3 surfaces in Orbitals'
     assert page.locator('#appearanceSurfacesSection').is_visible()
     page.locator('#autoIsoBtn').check()
     assert all(layer['autoIso'] for layer in cubes(page))
+    assert iso_labels() == ['', '', ''], 'Pending Auto-iso must not display fallback values'
     page.locator('#autoIsoBtn').uncheck()
+    assert iso_labels() == ['', '', ''], 'Disabling Auto-iso alone does not assign a new value'
     set_surface_control(page, '#iso', 0.035)
+    assert all(label.startswith('iso 0.035') for label in iso_labels())
     set_surface_control(page, '#posColor', '#123456')
     set_surface_control(page, '#negColor', '#abcdef')
     set_surface_control(page, '#opacity', 0.6)
@@ -547,6 +556,29 @@ def molden_group_appearance(page, dialogs):
     assert all(layer['autoIso'] for layer in cubes(page))
     assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [1]
     assert [layer['visible'] for layer in cubes(page)] == [False, True, False]
+    assert iso_labels()[0] == iso_labels()[2] == '' and iso_labels()[1].startswith('iso ')
+
+    # Pending labels survive save/open; computing another orbital resolves just its label.
+    before = snapshot(page)
+    saved = page.evaluate('() => window.VibeMolSession.export()')
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolSession')
+    assert page.evaluate('doc => window.VibeMolSession.import(doc)', saved)['ok']
+    assert snapshot(page) == before
+    assert iso_labels()[0] == iso_labels()[2] == '' and iso_labels()[1].startswith('iso ')
+    page.locator(f'.vm-outliner-row[data-id="{layers[2]["id"]}"]').click()
+    assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [1, 2]
+    assert iso_labels()[0] == '' and all(label.startswith('iso ') for label in iso_labels()[1:])
+
+    # Imports made with Auto-iso already enabled also begin with pending labels.
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolPreset')
+    page.evaluate("() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,settings:{'surface.autoIsoEnabled':true}})")
+    assert load(page, [{'name':'auto.molden', 'text':MOLDEN}])['ok']
+    layers = cubes(page)
+    assert all(layer['autoIso'] and layer['isoPending'] for layer in layers)
+    assert iso_labels() == ['', '', '']
+    assert page.evaluate('() => window.__moldenGridBuilds') == []
 
 
 def molden_browsing(page, dialogs):

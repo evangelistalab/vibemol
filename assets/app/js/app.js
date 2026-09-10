@@ -9490,6 +9490,8 @@
     const schemeDefaults = SURFACE_COLOR_SCHEMES[scheme] || null;
     return {
       iso: Math.max(0, Number(surfaceIsoDefault) || DEFAULT_ISO_VALUE),
+      isoPending: !!autoIsoEnabled,
+      autoIso: !!autoIsoEnabled,
       autoIsoEnabled: !!autoIsoEnabled,
       opacity: Math.max(0.05, Math.min(1, Number(surfaceOpacityDefault) || 1)),
       surfaceStyle: 'solid',
@@ -9724,6 +9726,7 @@
     const autoIso = getLayerAutoIsoEnabled(sourceLayer);
     return {
       iso: Math.max(0, Number(sourceLayer && sourceLayer.iso) || DEFAULT_ISO_VALUE),
+      isoPending: !!(sourceLayer && sourceLayer.isoPending),
       autoIso,
       autoIsoEnabled: autoIso,
       opacity: Math.max(0.05, Math.min(1, Number(sourceLayer && sourceLayer.opacity) || 1)),
@@ -10458,6 +10461,8 @@
   function setLayerAutoIsoEnabled(layer, enabled) {
     if (!layer) return;
     const next = !!enabled;
+    // The previous numeric value remains a rendering fallback until reassigned.
+    if (next && !getLayerAutoIsoEnabled(layer)) layer.isoPending = true;
     layer.autoIso = next;
     layer.autoIsoEnabled = next;
   }
@@ -26687,6 +26692,7 @@
     if (!layer) return false;
     layer.iso = Math.max(0, Number(isoInput && isoInput.value) || DEFAULT_ISO_VALUE);
     setLayerAutoIsoEnabled(layer, autoIsoBtn ? !!autoIsoBtn.checked : !!autoIsoEnabled);
+    if (!getLayerAutoIsoEnabled(layer)) layer.isoPending = false;
     layer.opacity = Math.max(0.05, Math.min(1, Number(opInput && opInput.value) || 1));
     layer.surfaceStyle = 'solid';
     layer.solidPreset = String(surfaceMaterialPresetSelect && surfaceMaterialPresetSelect.value || getSurfaceMaterialPresetKey(layer)).toLowerCase();
@@ -28097,6 +28103,7 @@
           visible: layer.visible !== false,
           effectiveVisible: sceneGraphController.isLayerEffectivelyVisible(layer),
           iso: Number(layer.iso),
+          isoPending: !!layer.isoPending,
           autoIso: getLayerAutoIsoEnabled(layer),
           opacity: Number(layer.opacity),
           solidPreset: String(layer.solidPreset || ''),
@@ -31440,6 +31447,7 @@
       visible: layer.visible !== false,
       expanded: layer.expanded !== false,
       iso: layer.iso,
+      isoPending: !!layer.isoPending,
       autoIso: getLayerAutoIsoEnabled(layer),
       autoIsoEnabled: getLayerAutoIsoEnabled(layer),
       opacity: layer.opacity,
@@ -31475,6 +31483,7 @@
       const nextIso = Math.max(0, Number(isoInput.value) || DEFAULT_ISO_VALUE);
       applyToSurfaceAppearanceTargets((target) => {
         target.iso = nextIso;
+        target.isoPending = false;
       });
       return;
     }
@@ -32476,7 +32485,12 @@
           try {
             const stride = autoIsoController.pickAutoIsoSampleStride(vol);
             const estimated = autoIsoController.estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
-            if (Number.isFinite(estimated) && estimated > 0) layer.iso = estimated;
+            if (Number.isFinite(estimated) && estimated > 0) {
+              const changed = layer.isoPending || layer.iso !== estimated;
+              layer.iso = estimated;
+              layer.isoPending = false;
+              if (changed) persistActiveCubeLayerState(layer, { render: false });
+            }
           } catch {
             // Keep the layer iso value when auto-iso estimation fails.
           }
