@@ -98,7 +98,7 @@ Primary capabilities:
 - `tests/unit/trajectory-video.test.mjs`: browserless unit coverage for the shared crop/layout video-export helpers.
 - `tests/unit/load-global-module.mjs`: VM-based loader for global/IIFE modules under Node.
 - `tests/e2e/smoke.py`: Playwright smoke/E2E test that starts a temporary local static server.
-- `tests/e2e/premerge.py`: focused browser regressions for molecule styles and preset fallback, append/replace imports, layer persistence, batch export, Molden arithmetic dependencies, and synchronized trajectories.
+- `tests/e2e/premerge.py`: focused browser regressions for molecule styles and preset fallback, append/replace imports, layer persistence, batch export, Molden orbital browsing/arithmetic dependencies, and synchronized trajectories.
 - `tests/e2e/helpers.py`: shared server/artifact helpers for browser smoke tests.
 - `.github/workflows/ci.yml`: CI workflow for checks, unit tests, and browser smoke tests.
 - `notebooks/vibemol_notebook_demo.ipynb`: notebook demo (PNG render + iframe auto-load via postMessage).
@@ -255,7 +255,8 @@ Preset automation contract exposed globally:
 - ORCA `.hess` files are parsed for `$vibrational_frequencies` + `$normal_modes` and attached using the same matching logic.
 - Dropping an ORCA `.hess` without a same-stem `.xyz` in the same upload batch triggers an explicit warning popup before import continues.
 - Psi4 output logs (`.dat/.out`) are parsed from the harmonic table and create a molecule from the **last** `Geometry (in Angstrom)` block before attaching modes.
-- Molden files expose an Orbitals floating inspector for MO selection and grid step/padding.
+- Loading an active Molden file opens the Orbitals floating inspector in display/measure mode. Closing it is respected through redraws; a later Molden import opens it again.
+- Clicking an Orbitals row shows that MO alone among the active scene's surface layers. Other orbital layers remain in the outliner with their settings and arithmetic dependencies intact; rapid clicks honor the last selection. Grid step/padding edits preserve manually enabled overlays.
 - The non-edit adaptive launcher lives on-canvas above Appearance, shows only context-relevant windows (`Orbitals`, `View actions`, `View`, `Coordinates`, `Trajectory`, `Frequencies`), and enforces mutual exclusivity within that launcher set.
 - Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency, hide-small-frequencies toggle) are shown in the Frequencies panel when available.
 - The `Hide small frequencies` checkbox uses a `5.0 cm^-1` absolute-frequency threshold.

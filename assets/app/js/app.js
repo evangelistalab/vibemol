@@ -1417,6 +1417,7 @@
   let moldenListPopover = null;
   let moldenEnergyThresholdEh = 0;
   let moldenPendingRowIndex = -1;
+  let moldenRenderFrameId = 0;
   let moldenFilterDebounceTimer = 0;
   let moldenGridCommitDebounceTimer = 0;
   let moldenGridBlurDefersToRowActivation = false;
@@ -9176,7 +9177,7 @@
   /**
    * Trigger Molden cube generation for one orbital row.
    * @param {number} rowIndex
-   * @param {{force?:boolean}=} options
+   * @param {{selectOnly?:boolean}=} options
    * @returns {boolean}
    */
   function requestMoldenOrbitalRender(rowIndex, options = {}) {
@@ -9185,19 +9186,24 @@
     const items = buildMoldenOrbitalItems(record);
     if (!record || !vol || vol.kind !== 'molden' || !items.length) return;
     if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= items.length) return;
-    if (moldenPendingRowIndex >= 0) return;
-    const force = !!options.force;
-    const alreadyMaterialized = sceneGraphController.getScenes().some(scene => sceneGraphController.listLayers(scene).some(layer =>
-      layer.record === record && layer.moldenMoIndex === rowIndex && !layer.isSceneGraphDuplicate));
-    if (!force && alreadyMaterialized && (record.moldenMoIndex | 0) === rowIndex) return false;
     record.moldenMoIndex = rowIndex;
     ensureMoldenOrbitalMaterialized(record, rowIndex);
     ensureMoldenGridForRecord(record, vol);
-    sceneSources.addOrbital(record, rowIndex);
+    const layer = sceneSources.addOrbital(record, rowIndex);
     syncSceneGraphFromVolumes({ preferActiveRecord: true });
+    if (layer && options.selectOnly) setActiveSceneGraphLayer(layer.id, {
+      ensureSceneVisible: true,
+      ensureLayerVisible: true,
+      forceSingleCubeVisibility: true,
+      expandPath: true,
+      rebuild: false,
+    });
     moldenPendingRowIndex = rowIndex;
     syncMoldenOrbitalsPanel(record);
-    window.requestAnimationFrame(() => {
+    // Coalesce rapid selections so the final click is the one rendered.
+    if (moldenRenderFrameId) window.cancelAnimationFrame(moldenRenderFrameId);
+    moldenRenderFrameId = window.requestAnimationFrame(() => {
+      moldenRenderFrameId = 0;
       try {
         rebuildScene({ preserveView: true });
       } finally {
@@ -9235,7 +9241,7 @@
     if (selectedIndex < 0 || selectedIndex >= items.length) return { changed, rendered: false };
     return {
       changed,
-      rendered: requestMoldenOrbitalRender(selectedIndex, { force: true }),
+      rendered: requestMoldenOrbitalRender(selectedIndex),
     };
   }
 
@@ -9256,9 +9262,9 @@
    * @param {*} _item
    */
   function activateMoldenOrbitalRow(rowIndex, _item) {
-    const gridCommit = commitMoldenGridInputs({ triggerRender: false });
+    commitMoldenGridInputs({ triggerRender: false });
     moldenGridBlurDefersToRowActivation = false;
-    requestMoldenOrbitalRender(rowIndex, { force: !!gridCommit.changed });
+    requestMoldenOrbitalRender(rowIndex, { selectOnly: true });
   }
 
   const triggerOpenFiles = () => fileInput.click();
@@ -30631,6 +30637,9 @@
     }
     if (loadedTrajectoryCount > 0) {
       setTrajectoryPanelOpen(true, { auto: true });
+    }
+    if (currentMode !== MODES.EDIT && buildMoldenOrbitalItems(volumes[activeIndex]).length) {
+      setMoldenInspectorOpen(true);
     }
     if (loadedCount > 0) {
       setNavigationHint(loadedCount === 1 ? 'Loaded 1 file into scenes' : `Loaded ${loadedCount} files into scenes`);

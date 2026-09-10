@@ -2560,7 +2560,6 @@ def main() -> int:
                 }""",
                 molden_text,
             )
-            page.keyboard.press('o')
             page.wait_for_function(
                 """() => {
                     const panel = document.getElementById('moldenInspector');

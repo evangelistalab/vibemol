@@ -10,6 +10,8 @@ Source records continue to carry molecule/editor data and file metadata. Explici
 
 `rebuildScene()` reads the existing graph and replaces rendered objects. It does not reconstruct layers from files. Render references are cleared and GPU resources are disposed with a shared deduplication state across all layers.
 
+Loading an active Molden file opens the Orbitals inspector outside edit mode. Selecting an orbital row materializes or reuses its layer and applies single-surface visibility in that layer's scene. Previously visited layers retain their identity, appearance, and arithmetic dependencies. Rapid row selections coalesce into one redraw of the final selection. Grid-setting refreshes preserve manually enabled overlays, and ordinary redraws respect a closed inspector.
+
 `scene-outliner.js` owns the tree DOM, rename sessions, drag feedback, context menus, and arithmetic form. It calls model/controller operations supplied by `app.js`. Its stylesheet is separate from the HTML shell. Rename inputs stay mounted during unrelated redraws.
 
 ## Grid arithmetic

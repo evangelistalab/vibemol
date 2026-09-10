@@ -187,6 +187,76 @@ MOLDEN = '\n'.join(['[Molden Format]', '[Atoms] Angs', 'H 1 1 0.0 0.0 0.0', '[GT
                     'Sym= A1', 'Ene= 0.8', 'Spin= Beta', 'Occup= 0.0', '1 -1.0'])
 
 
+def molden_browsing(page, dialogs):
+    page.locator('#fileInput').set_input_files({
+        'name': 'browse.molden', 'mimeType': 'text/plain', 'buffer': MOLDEN.encode(),
+    })
+    panel = page.locator('#moldenInspector')
+    panel.wait_for(state='visible')
+    assert panel.get_attribute('aria-hidden') == 'false'
+    assert page.locator('#moldenInspectorBody tbody tr[data-row-index]').count() == 3
+
+    def wait_for_orbital(name):
+        page.wait_for_function('''(name) => {
+            const state = window.VibeMolTesting.getSceneGraphSnapshot();
+            const visible = state.scenes.flatMap(scene => scene.layers).filter(layer =>
+                layer.kind === 'cube' && layer.effectiveVisible);
+            return visible.length === 1 && visible[0].name === name
+                && state.activeLayerId === visible[0].id
+                && !document.querySelector('#moldenInspectorBody .vm-list-popover__row--pending');
+        }''', arg=name)
+
+    def choose(index, name):
+        page.locator(f'#moldenInspectorBody tbody tr[data-row-index="{index}"]').click()
+        wait_for_orbital(name)
+
+    choose(0, 'MO 1')
+    first = cubes(page)[0]
+    context_item(page, first['id'], 'Rename')
+    page.locator('.vm-outliner-row__rename-input').fill('Named orbital')
+    page.locator('.vm-outliner-row__rename-input').press('Enter')
+    page.locator('#iso').evaluate("el => { el.value = '0.025'; el.dispatchEvent(new Event('input', {bubbles:true})); }")
+    choose(1, 'MO 2')
+    choose(2, 'MO 3')
+    choose(0, 'Named orbital')
+    layers = cubes(page)
+    assert len(layers) == 3, layers
+    assert layers[0]['id'] == first['id'] and layers[0]['iso'] == 0.025, layers
+
+    # Clicking an already-selected row must also restore exclusive visibility.
+    page.locator(f'.vm-outliner-row[data-id="{layers[1]["id"]}"] .vm-outliner-row__eye').click()
+    assert len([layer for layer in cubes(page) if layer['effectiveVisible']]) == 2
+    # Grid edits refresh the current selection without changing an intentional overlay.
+    page.locator('#moldenGridStep').fill('0.3')
+    page.wait_for_function('''() => document.getElementById('moldenGridStep').value === '0.30'
+        && !document.querySelector('#moldenInspectorBody .vm-list-popover__row--pending')''')
+    assert len([layer for layer in cubes(page) if layer['effectiveVisible']]) == 2
+    choose(0, 'Named orbital')
+    page.locator(f'.vm-outliner-row[data-id="{first["id"]}"] .vm-outliner-row__eye').click()
+    assert not any(layer['effectiveVisible'] for layer in cubes(page))
+    choose(0, 'Named orbital')
+
+    # Multiple selections before the next rendered frame must honor the last one.
+    page.evaluate('''() => {
+        for (const index of [1, 2, 0, 2]) {
+            document.querySelector(`#moldenInspectorBody tr[data-row-index="${index}"]`).click();
+        }
+    }''')
+    wait_for_orbital('MO 3')
+    assert len(cubes(page)) == 3
+    before = snapshot(page)
+    page.locator('#moldenInspectorClose').click()
+    redraw(page)
+    assert not panel.is_visible(), 'A redraw must respect a manually closed Orbitals window'
+    assert snapshot(page) == before
+
+    # A subsequent import opens the window again; other input families still close it.
+    assert load(page, [{'name': 'reopened.molden', 'text': MOLDEN}])['ok']
+    assert panel.is_visible()
+    assert load(page, [{'name': 'molecule.xyz', 'text': '1\nHydrogen\nH 0 0 0\n'}])['ok']
+    assert not panel.is_visible()
+
+
 def arithmetic(page, dialogs):
     page.add_init_script('(' + ARITHMETIC_OBSERVER + ')()')
     page.reload(wait_until='domcontentloaded')
@@ -258,7 +328,7 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (molecule_styles, imports, persistence, batch_export, arithmetic, synchronized_trajectories):
+            for run in (molecule_styles, imports, persistence, batch_export, molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})
                 page = context.new_page()
                 errors, console_errors, dialogs = [], [], []
