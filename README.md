@@ -16,6 +16,7 @@ It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes
 - Complete session save/open, with browser autosave and recovery
 - Shared preset model with CLI (`window.VibeMolPreset` + Python client)
 - Vibrational mode playback from sidecar JSON (`.vib.json`), ORCA Hessian files (`.hess`), and Psi4 vibration outputs (`.dat`, `.out`)
+- Click a scene's **Orbitals** header to edit all its surfaces together in Appearance: colors, iso value, Auto-iso, opacity, material, and surface/cloud mode. Hidden and uncomputed orbitals receive the settings too; Molden grids are still computed only when needed. Click an individual orbital to adjust it separately. Differing settings are marked **(mixed)**.
 
 ## Web Quick Start
 ```bash

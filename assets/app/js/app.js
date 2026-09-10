@@ -9557,6 +9557,19 @@
     return isCubeLikeLayer(layer) ? layer : null;
   }
 
+  function getSurfaceAppearanceTargets() {
+    return sceneGraphController.getSurfaceAppearanceTargets();
+  }
+
+  function getSurfaceAppearanceLayer() {
+    return getActiveCubeLayer() || getSurfaceAppearanceTargets()[0] || null;
+  }
+
+  function getActiveSurfaceVisibilityLayer() {
+    const layer = sceneGraphController.getActiveLayer();
+    return layer && (isCubeLikeLayer(layer) || layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP) ? layer : null;
+  }
+
   function getSelectedCubeLayers() {
     const selected = sceneGraphController && typeof sceneGraphController.getSelection === 'function'
       ? sceneGraphController.getSelection()
@@ -10348,8 +10361,9 @@
     } else if (sceneGraphController.clearSelection) {
       sceneGraphController.clearSelection();
     }
-    const recordIndex = layer.record ? getRecordIndex(layer.record) : -1;
-    if (recordIndex >= 0) sceneGraphController.setMoleculeRecord(scene, layer.record);
+    const record = layer.record || (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP ? getSceneFocusRecord(scene) : null);
+    const recordIndex = getRecordIndex(record);
+    if (recordIndex >= 0) sceneGraphController.setMoleculeRecord(scene, record);
     if (recordIndex >= 0 && currentIndex !== recordIndex) {
       currentIndex = recordIndex;
       syncLoadedSceneControls();
@@ -10364,6 +10378,10 @@
       }
     }
     renderSceneOutliner();
+    if (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP && getSurfaceAppearanceTargets().length && options.rebind !== false) {
+      setDisplayInspectorOpen(true);
+      appearanceSurfacesSectionEl.scrollIntoView({ block: 'nearest' });
+    }
     if (options.scroll) scheduleOutlinerScrollToTarget(layer.id);
     return layer;
   }
@@ -10584,15 +10602,15 @@
   }
   // Toggle surface rendering button
   function getActiveSurfaceToggleState() {
-    const layer = getActiveCubeLayer();
+    const layer = getActiveSurfaceVisibilityLayer();
     return layer ? layer.visible !== false : !!showSurfaces;
   }
 
   function setActiveSurfaceToggleState(visible) {
-    const layer = getActiveCubeLayer();
+    const layer = getActiveSurfaceVisibilityLayer();
     if (layer) {
       layer.visible = !!visible;
-      persistActiveCubeLayerState(layer);
+      if (isCubeLikeLayer(layer)) persistActiveCubeLayerState(layer, { render: false });
       renderSceneOutliner();
       return 'layer';
     }
@@ -10613,9 +10631,9 @@
   const updateSurfBtn = () => {
     if (!surfBtn) return;
     const activeVisible = getActiveSurfaceToggleState();
-    const layer = getActiveCubeLayer();
+    const layer = getActiveSurfaceVisibilityLayer();
     const tooltip = layer
-      ? `Toggle ${layer.labelId || 'active cube'} visibility`
+      ? `Toggle ${layer.labelId || layer.name || 'active cube'} visibility`
       : 'Toggle iso-surface rendering';
     const isCheckbox = typeof surfBtn.type === 'string' && surfBtn.type.toLowerCase() === 'checkbox';
     if (isCheckbox) {
@@ -11012,24 +11030,29 @@
   }
 
   /**
-   * Enable/disable the Autoiso button depending on whether one volumetric grid is active.
+   * Reflect shared or mixed Autoiso state without evaluating deferred grids.
    */
   function updateAutoIsoButtonState() {
     if (!autoIsoBtn) return;
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     const record = layer && layer.record ? layer.record : (currentIndex >= 0 ? volumes[currentIndex] : null);
     const vol = layer ? (layer.cubeData || (record && record.vol)) : (record && record.vol);
     const hasGrid = hasVolumetricGrid(vol);
     const isoSlider = getViewSliderComponent(isoInput);
-    const enabled = layer ? getLayerAutoIsoEnabled(layer) : !!autoIsoEnabled;
-    const manualIsoEnabled = !enabled;
+    const targets = getSurfaceAppearanceTargets();
+    const enabled = layer ? targets.every(getLayerAutoIsoEnabled) : !!autoIsoEnabled;
+    const mixed = targets.some(getLayerAutoIsoEnabled) && !enabled;
+    const manualIsoEnabled = !enabled && !mixed;
     autoIsoBtn.disabled = false;
     autoIsoBtn.checked = enabled;
-    autoIsoBtn.setAttribute('aria-checked', enabled ? 'true' : 'false');
+    autoIsoBtn.indeterminate = mixed;
+    autoIsoBtn.setAttribute('aria-checked', mixed ? 'mixed' : (enabled ? 'true' : 'false'));
     if (rowIso) rowIso.setAttribute('data-disabled', manualIsoEnabled ? 'false' : 'true');
     if (isoSlider) isoSlider.setDisabled(!manualIsoEnabled);
     else if (isoInput) isoInput.disabled = !manualIsoEnabled;
-    setTooltipText(autoIsoBtn, hasGrid
+    setTooltipText(autoIsoBtn, mixed
+      ? 'Autoiso differs across these surfaces. Toggle to enable it for all; turn it off for all to edit Iso.'
+      : hasGrid || targets.length
       ? `Autoiso ${enabled ? 'ON' : 'OFF'}: target ${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% density (cached per orbital/component).`
       : `Autoiso ${enabled ? 'ON' : 'OFF'}: load/select a .cube/.2ccube/.molden file to apply.`);
   }
@@ -11561,8 +11584,7 @@
   function renderRibbon() {}
   if (surfBtn && typeof surfBtn.type === 'string' && surfBtn.type.toLowerCase() === 'checkbox') {
     surfBtn.onchange = () => {
-      setActiveSurfaceToggleState(!!surfBtn.checked);
-      const scope = getActiveCubeLayer() ? 'layer' : 'global';
+      const scope = setActiveSurfaceToggleState(!!surfBtn.checked);
       updateSurfBtn();
       rebuildScene({ preserveView: true, syncGraph: scope === 'layer' ? false : true });
       if (scope === 'global') scheduleAppearancePresetAutosave();
@@ -26406,7 +26428,7 @@
     const opacityTooltip = 'Surface opacity';
     const presetSelectEl = document.getElementById('surfaceMaterialPreset');
     const presetRow = document.getElementById('rowSurfaceMaterialPreset');
-    const activeRenderMode = getLayerRenderMode();
+    const activeRenderMode = getLayerRenderMode(getSurfaceAppearanceLayer());
     const physicalSurfacesActive = activeRenderMode === 'surface' && !useToonSurfaceStyle();
     const presetTooltip = physicalSurfacesActive
       ? 'Surface material'
@@ -26490,10 +26512,10 @@
     return a === b || (a == null && b == null);
   }
 
-  function getSelectedLayerDisplayValue(getter) {
-    const active = getActiveCubeLayer();
+  function getSurfaceAppearanceDisplayValue(getter) {
+    const active = getSurfaceAppearanceLayer();
     if (!active || typeof getter !== 'function') return { value: null, mixed: false, selection: [] };
-    const selection = getSelectedCubeLayers();
+    const selection = getSurfaceAppearanceTargets();
     const layers = selection.length ? selection : [active];
     const activeValue = getter(active);
     const first = getter(layers[0]);
@@ -26535,7 +26557,7 @@
   }
 
   function syncSurfaceMixedIndicators() {
-    const active = getActiveCubeLayer();
+    const active = getSurfaceAppearanceLayer();
     if (!active) {
       const anchors = [
         isoInput,
@@ -26554,16 +26576,16 @@
       setButtonGroupMixed(appearanceCloudTypeGroupEl, false);
       return;
     }
-    const isoState = getSelectedLayerDisplayValue((layer) => Math.max(0, Number(layer.iso) || DEFAULT_ISO_VALUE));
-    const opacityState = getSelectedLayerDisplayValue((layer) => Math.max(0.05, Math.min(1, Number(layer.opacity) || 1)));
-    const autoIsoState = getSelectedLayerDisplayValue((layer) => !!getLayerAutoIsoEnabled(layer));
-    const presetState = getSelectedLayerDisplayValue((layer) => getSurfaceMaterialPresetKey(layer));
-    const schemeState = getSelectedLayerDisplayValue((layer) => String(layer.colorScheme || 'emory'));
-    const renderModeState = getSelectedLayerDisplayValue((layer) => getLayerRenderMode(layer));
-    const cloudTypeState = getSelectedLayerDisplayValue((layer) => getLayerCloudType(layer));
-    const signFlipState = getSelectedLayerDisplayValue((layer) => !!layer.signFlip);
-    const posColorState = getSelectedLayerDisplayValue((layer) => getLayerSurfaceColors(layer).pos);
-    const negColorState = getSelectedLayerDisplayValue((layer) => getLayerSurfaceColors(layer).neg);
+    const isoState = getSurfaceAppearanceDisplayValue((layer) => Math.max(0, Number(layer.iso) || DEFAULT_ISO_VALUE));
+    const opacityState = getSurfaceAppearanceDisplayValue((layer) => Math.max(0.05, Math.min(1, Number(layer.opacity) || 1)));
+    const autoIsoState = getSurfaceAppearanceDisplayValue((layer) => !!getLayerAutoIsoEnabled(layer));
+    const presetState = getSurfaceAppearanceDisplayValue((layer) => getSurfaceMaterialPresetKey(layer));
+    const schemeState = getSurfaceAppearanceDisplayValue((layer) => String(layer.colorScheme || 'emory'));
+    const renderModeState = getSurfaceAppearanceDisplayValue((layer) => getLayerRenderMode(layer));
+    const cloudTypeState = getSurfaceAppearanceDisplayValue((layer) => getLayerCloudType(layer));
+    const signFlipState = getSurfaceAppearanceDisplayValue((layer) => !!layer.signFlip);
+    const posColorState = getSurfaceAppearanceDisplayValue((layer) => getLayerSurfaceColors(layer).pos);
+    const negColorState = getSurfaceAppearanceDisplayValue((layer) => getLayerSurfaceColors(layer).neg);
     setSurfaceMixedIndicator(isoInput, 'iso', isoState.mixed);
     setSliderMixedDisplay(isoInput, isoState.mixed);
     setSurfaceMixedIndicator(opInput, 'opacity', opacityState.mixed);
@@ -26580,11 +26602,9 @@
     setSurfaceMixedIndicator(negColor, 'negColor', negColorState.mixed);
   }
 
-  function applyToSelectedCubeLayers(mutator, options = {}) {
-    const active = getActiveCubeLayer();
-    if (!active || typeof mutator !== 'function') return false;
-    const targets = getSelectedCubeLayers();
-    const layers = targets.length ? targets : [active];
+  function applyToSurfaceAppearanceTargets(mutator, options = {}) {
+    const layers = getSurfaceAppearanceTargets();
+    if (!layers.length || typeof mutator !== 'function') return false;
     for (const layer of layers) {
       mutator(layer);
       persistActiveCubeLayerState(layer, { render: false });
@@ -26602,11 +26622,11 @@
    */
   function syncAppearanceInspectorSectionState(vol = undefined) {
     if (!appearanceInspectorController) return;
-    appearanceInspectorController.syncSections(vol, getLayerRenderMode());
+    appearanceInspectorController.syncSections(vol, getLayerRenderMode(getSurfaceAppearanceLayer()));
   }
 
   function syncAppearanceControlsToActiveLayer() {
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     if (!layer) {
       if (surfaceScopeLabelEl) {
         surfaceScopeLabelEl.hidden = true;
@@ -26619,8 +26639,11 @@
       return;
     }
     if (surfaceScopeLabelEl) {
+      const active = sceneGraphController.getActiveLayer();
       surfaceScopeLabelEl.hidden = false;
-      surfaceScopeLabelEl.textContent = `Surface - ${layer.labelId || layer.id}: ${layer.name || 'Cube'}`;
+      surfaceScopeLabelEl.textContent = active && active.kind === SCENE_LAYER_KIND.ORBITALS_GROUP
+        ? `All ${getSurfaceAppearanceTargets().length} surfaces in ${active.name || 'Orbitals'}`
+        : `Surface - ${layer.labelId || layer.id}: ${layer.name || 'Cube'}`;
     }
     setViewControlValue(isoInput, Math.max(0, Number(layer.iso) || DEFAULT_ISO_VALUE));
     setViewControlValue(opInput, Math.max(0.05, Math.min(1, Number(layer.opacity) || 1)));
@@ -26974,11 +26997,11 @@
     onStyleSelected: (nextStyle) => setMoleculeStyle(nextStyle),
     getActiveStyle: () => moleculeStyle,
     getCurrentVolume: () => {
-      const layer = getActiveCubeLayer();
+      const layer = getSurfaceAppearanceLayer();
       return getLayerSourceVolume(layer);
     },
-    getRenderMode: () => getLayerRenderMode(),
-    hasSurfaceControls: (vol) => !!(getActiveCubeLayer() && hasVolumetricGrid(vol)),
+    getRenderMode: () => getLayerRenderMode(getSurfaceAppearanceLayer()),
+    hasSurfaceControls: () => getSurfaceAppearanceTargets().length > 0,
     getFontPair,
     onFontPairSelected: (nextFontPair) => {
       setFontPair(nextFontPair);
@@ -27002,7 +27025,7 @@
       },
       {
         rootEl: appearanceRenderModeGroupEl,
-        getValue: () => getLayerRenderMode(),
+        getValue: () => getLayerRenderMode(getSurfaceAppearanceLayer()),
         setValue: (nextValue) => {
           if (!renderModeSel) return;
           renderModeSel.value = nextValue === 'cloud' ? 'cloud' : 'surface';
@@ -27011,13 +27034,13 @@
       },
       {
         rootEl: appearanceCloudTypeGroupEl,
-        getValue: () => getLayerCloudType(),
+        getValue: () => getLayerCloudType(getSurfaceAppearanceLayer()),
         setValue: (nextValue) => {
           if (!cloudTypeSel) return;
           cloudTypeSel.value = nextValue === 'points' ? 'points' : 'cubes';
           if (typeof cloudTypeSel.onchange === 'function') cloudTypeSel.onchange();
         },
-        isDisabled: () => getLayerRenderMode() !== 'cloud',
+        isDisabled: () => getLayerRenderMode(getSurfaceAppearanceLayer()) !== 'cloud',
       },
     ],
     mirrorToggles: [
@@ -27224,7 +27247,7 @@
     schemeSelect.onchange = () => {
       const v = schemeSelect.value;
       const s = SURFACE_COLOR_SCHEMES[v];
-      const layer = getActiveCubeLayer();
+      const layer = getSurfaceAppearanceLayer();
       if (layer) {
         const nextPos = s ? s.pos : normalizeHexColor(posColor && posColor.value, DEFAULT_POS_SURFACE_COLOR);
         const nextNeg = s ? s.neg : normalizeHexColor(negColor && negColor.value, DEFAULT_NEG_SURFACE_COLOR);
@@ -27234,7 +27257,7 @@
         }
         syncColorPickerFields();
         syncSurfaceColorSchemeUi();
-        applyToSelectedCubeLayers((target) => {
+        applyToSurfaceAppearanceTargets((target) => {
           target.colorScheme = v;
           target.posColor = nextPos;
           target.negColor = nextNeg;
@@ -27263,7 +27286,7 @@
    * Show/hide control rows based on whether surface or cloud mode is active.
    */
   function updateRenderModeUI() {
-    const isCloud = getLayerRenderMode() === 'cloud';
+    const isCloud = getLayerRenderMode(getSurfaceAppearanceLayer()) === 'cloud';
     const rowCloudType = document.getElementById('rowCloudType');
     if (rowCloudType) {
       rowCloudType.classList.toggle('vm-appearance-hidden', !isCloud);
@@ -27288,10 +27311,10 @@
     };
   }
   if (renderModeSel) renderModeSel.onchange = () => {
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     if (layer) {
       const nextMode = renderModeSel.value;
-      applyToSelectedCubeLayers((target) => {
+      applyToSurfaceAppearanceTargets((target) => {
         setLayerRenderMode(target, nextMode);
       }, { updateRenderModeUi: true });
       return;
@@ -27302,10 +27325,10 @@
     scheduleAppearancePresetAutosave();
   };
   if (cloudTypeSel) cloudTypeSel.onchange = () => {
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     if (layer) {
       const nextCloudType = cloudTypeSel.value;
-      applyToSelectedCubeLayers((target) => {
+      applyToSurfaceAppearanceTargets((target) => {
         setLayerCloudType(target, nextCloudType);
       }, { updateRenderModeUi: true });
       return;
@@ -27979,12 +28002,9 @@
   }
 
   function resetAppearanceToFactoryDefaults() {
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     if (layer) {
-      Object.assign(layer, createCubeAppearance({}));
-      persistActiveCubeLayerState(layer);
-      syncAppearanceControlsToActiveLayer();
-      rebuildScene({ preserveView: true, syncGraph: false });
+      applyToSurfaceAppearanceTargets(target => Object.assign(target, createCubeAppearance({})));
       setAppearanceResetPopoverOpen(false);
       return;
     }
@@ -31450,10 +31470,10 @@
   }
 
   isoInput.oninput = () => {
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     if (layer) {
       const nextIso = Math.max(0, Number(isoInput.value) || DEFAULT_ISO_VALUE);
-      applyToSelectedCubeLayers((target) => {
+      applyToSurfaceAppearanceTargets((target) => {
         target.iso = nextIso;
       });
       return;
@@ -31465,10 +31485,10 @@
   isoInput.onchange = isoInput.oninput;
   if (autoIsoBtn) {
     autoIsoBtn.onchange = () => {
-      const layer = getActiveCubeLayer();
+      const layer = getSurfaceAppearanceLayer();
       if (layer) {
         const nextAutoIso = !!autoIsoBtn.checked;
-        applyToSelectedCubeLayers((target) => {
+        applyToSurfaceAppearanceTargets((target) => {
           setLayerAutoIsoEnabled(target, nextAutoIso);
         }, { rebuild: true });
         updateAutoIsoButtonState();
@@ -31492,10 +31512,10 @@
     };
   }
   const handleOpacityInput = () => {
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     if (layer) {
       const nextOpacity = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
-      applyToSelectedCubeLayers((target) => {
+      applyToSurfaceAppearanceTargets((target) => {
         target.opacity = nextOpacity;
       });
       return;
@@ -31509,14 +31529,14 @@
   if (surfaceMaterialPresetSelect) {
     surfaceMaterialPresetSelect.value = getSurfaceMaterialPresetKey();
     surfaceMaterialPresetSelect.onchange = () => {
-      const layer = getActiveCubeLayer();
+      const layer = getSurfaceAppearanceLayer();
       if (layer) {
         let nextPreset = String(surfaceMaterialPresetSelect.value || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
         if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, nextPreset)) {
           nextPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
         }
         surfaceMaterialPresetSelect.value = nextPreset;
-        applyToSelectedCubeLayers((target) => {
+        applyToSurfaceAppearanceTargets((target) => {
           target.solidPreset = nextPreset;
         });
         return;
@@ -31532,24 +31552,26 @@
   }
   if (surfaceSignFlipToggleEl) {
     surfaceSignFlipToggleEl.onchange = () => {
-      const layer = getActiveCubeLayer();
+      const layer = getSurfaceAppearanceLayer();
       if (!layer) return;
       const nextSignFlip = !!surfaceSignFlipToggleEl.checked;
       surfaceSignFlipToggleEl.setAttribute('aria-checked', nextSignFlip ? 'true' : 'false');
-      applyToSelectedCubeLayers((target) => {
+      applyToSurfaceAppearanceTargets((target) => {
         target.signFlip = nextSignFlip;
       });
     };
   }
   const handlePositiveSurfaceColorInput = () => {
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     if (layer) {
       const nextColor = normalizeHexColor(posColor.value, DEFAULT_POS_SURFACE_COLOR);
       if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
       syncColorPickerFields();
-      applyToSelectedCubeLayers((target) => {
+      applyToSurfaceAppearanceTargets((target) => {
+        const colors = getLayerSurfaceColors(target);
         target.colorScheme = 'custom';
         target.posColor = nextColor;
+        target.negColor = colors.neg;
       });
       return;
     }
@@ -31563,13 +31585,15 @@
   posColor.oninput = handlePositiveSurfaceColorInput;
   posColor.onchange = handlePositiveSurfaceColorInput;
   const handleNegativeSurfaceColorInput = () => {
-    const layer = getActiveCubeLayer();
+    const layer = getSurfaceAppearanceLayer();
     if (layer) {
       const nextColor = normalizeHexColor(negColor.value, DEFAULT_NEG_SURFACE_COLOR);
       if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
       syncColorPickerFields();
-      applyToSelectedCubeLayers((target) => {
+      applyToSurfaceAppearanceTargets((target) => {
+        const colors = getLayerSurfaceColors(target);
         target.colorScheme = 'custom';
+        target.posColor = colors.pos;
         target.negColor = nextColor;
       });
       return;

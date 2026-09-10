@@ -239,6 +239,17 @@
       return state.selectedLayerIds.map((id) => getLayerById(id)).filter(Boolean);
     }
 
+    // Appearance scope is separate from the explicit selection used by delete,
+    // duplicate, and arithmetic commands. Group edits include hidden/deferred MOs.
+    function getSurfaceAppearanceTargets() {
+      const active = getActiveLayer();
+      if (!active) return [];
+      if (active.kind === LAYER_KIND.ORBITALS_GROUP) {
+        return listLayers(getSceneForLayer(active)).filter(layer => layer.parentId === active.id && isCubeLikeLayer(layer));
+      }
+      return isCubeLikeLayer(active) ? getSelection() : [];
+    }
+
     function setSelection(ids) {
       state.selectedLayerIds = normalizeSelectionIds(ids);
       return getSelection();
@@ -716,6 +727,7 @@
       getActiveLayer,
       setActiveLayer,
       getSelection,
+      getSurfaceAppearanceTargets,
       setSelection,
       extendSelection,
       extendSelectionRange,

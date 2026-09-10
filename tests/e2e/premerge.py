@@ -423,6 +423,132 @@ MOLDEN = '\n'.join(['[Molden Format]', '[Atoms] Angs', 'H 1 1 0.0 0.0 0.0', '[GT
                     'Sym= A1', 'Ene= 0.8', 'Spin= Beta', 'Occup= 0.0', '1 -1.0'])
 
 
+def set_surface_control(page, selector, value):
+    page.locator(selector).evaluate('''(el, value) => {
+        el.value = value; el.dispatchEvent(new Event('input', {bubbles:true}));
+        el.dispatchEvent(new Event('change', {bubbles:true}));
+    }''', str(value))
+
+
+def orbital_group_appearance(page, dialogs):
+    other_cube = cube(0).replace('1 1 0 0 0\n', '8 8 0 0 0\n')
+    assert load(page, [{'name':'a.cube', 'text':cube(-1)}, {'name':'b.cube', 'text':cube(1)},
+                       {'name':'other.cube', 'text':other_cube}])['ok']
+    a, b, other = cubes(page)
+    assert a['parentId'] == b['parentId'] != other['parentId']
+    for scene in snapshot(page)['scenes']:
+        if not scene['visible']:
+            page.locator(f'.vm-outliner-row[data-id="{scene["id"]}"] .vm-outliner-row__eye').click()
+    page.locator(f'.vm-outliner-row[data-id="{a["id"]}"]').click()
+    set_surface_control(page, '#iso', 0.025)
+    page.locator(f'.vm-outliner-row[data-id="{b["id"]}"] .vm-outliner-row__eye').click()
+    before_visibility = [layer['visible'] for layer in cubes(page)]
+    other_before = cubes(page)[2]
+    assert other_before['effectiveVisible']
+    # Focus a different scene first to exercise scope changes across scenes.
+    page.locator(f'.vm-outliner-row[data-id="{other["id"]}"]').click()
+    page.locator(f'.vm-outliner-row[data-id="{a["parentId"]}"]').click()
+    assert page.locator('#displayInspector').is_visible()
+    assert page.evaluate('() => VibeMolStructure.exportActive().name') == 'a.cube'
+    assert page.locator('#surfaceScopeLabel').inner_text() == 'All 2 surfaces in Orbitals'
+    assert page.locator('[data-mixed-key="iso"]').is_visible()
+    assert snapshot(page)['selectedLayerIds'] == [], 'Group appearance must not create a destructive multi-selection'
+    assert [layer['visible'] for layer in cubes(page)] == before_visibility
+
+    page.locator('#iso').fill('0.045')
+    page.locator('#iso').press('Tab')
+    page.locator('#schemeSelect').select_option('classic')
+    set_surface_control(page, '#posColor', '#12ab34')
+    set_surface_control(page, '#negColor', '#bc23de')
+    set_surface_control(page, '#opacity', 0.65)
+    page.locator('#surfaceMaterialPreset').select_option('matte')
+    page.locator('#surfaceSignFlipBtn').check()
+    page.locator('#appearanceRenderModeGroup [data-value="cloud"]').click()
+    page.locator('#appearanceCloudTypeGroup [data-value="points"]').click()
+    edited = cubes(page)
+    for layer in edited[:2]:
+        assert layer['iso'] == 0.045 and layer['opacity'] == 0.65, layer
+        assert layer['colorScheme'] == 'custom' and layer['posColor'] == '#12ab34' and layer['negColor'] == '#bc23de', layer
+        assert layer['solidPreset'] == 'matte' and layer['signFlip'], layer
+        assert layer['renderMode'] == 'cloud' and layer['cloudType'] == 'points', layer
+    assert edited[2] == other_before
+    assert [layer['visible'] for layer in edited] == before_visibility
+    assert not page.locator('[data-mixed-key="iso"]').is_visible()
+
+    # Parent visibility is independent of the children's visibility choices.
+    page.locator('#surfBtn').uncheck()
+    assert [layer['visible'] for layer in cubes(page)] == before_visibility
+    assert not any(layer['effectiveVisible'] for layer in cubes(page)[:2])
+    assert cubes(page)[2]['effectiveVisible']
+    page.locator('#surfBtn').check()
+    assert [layer['visible'] for layer in cubes(page)] == before_visibility
+
+    # An individual edit leaves its sibling alone; the header exposes mixed Auto-iso.
+    page.locator(f'.vm-outliner-row[data-id="{a["id"]}"]').click()
+    page.locator('#autoIsoBtn').check()
+    assert [layer['autoIso'] for layer in cubes(page)[:2]] == [True, False]
+    page.locator(f'.vm-outliner-row[data-id="{a["parentId"]}"]').click()
+    assert page.locator('#autoIsoBtn').evaluate('el => el.indeterminate')
+    assert page.locator('[data-mixed-key="autoIso"]').is_visible()
+    assert page.locator('#iso').is_disabled()
+    page.locator('#autoIsoBtn').click()
+    assert all(layer['autoIso'] for layer in cubes(page)[:2])
+    page.locator('#autoIsoBtn').uncheck()
+    assert not any(layer['autoIso'] for layer in cubes(page)[:2])
+    assert page.locator('#iso').is_enabled()
+    set_surface_control(page, '#iso', 0.04)
+    assert all(layer['iso'] == 0.04 for layer in cubes(page)[:2])
+    assert cubes(page)[2] == other_before
+
+    page.locator('#appearanceResetBtn').click()
+    page.locator('#appearanceResetConfirmBtn').click()
+    reset = cubes(page)
+    for key in ('iso', 'autoIso', 'opacity', 'solidPreset', 'colorScheme', 'renderMode', 'cloudType', 'signFlip'):
+        assert reset[0][key] == reset[1][key], (key, reset)
+    assert reset[0]['colorScheme'] != 'custom' and not reset[0]['signFlip']
+    assert reset[2] == other_before
+
+
+def molden_group_appearance(page, dialogs):
+    page.add_init_script('(' + MOLDEN_GRID_OBSERVER + ')()')
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolTesting')
+    assert load(page, [{'name':'group.molden', 'text':MOLDEN}])['ok']
+    layers = cubes(page)
+    group_id = layers[0]['parentId']
+    page.locator(f'.vm-outliner-row[data-id="{group_id}"]').click()
+    assert page.locator('#surfaceScopeLabel').inner_text() == 'All 3 surfaces in Orbitals'
+    assert page.locator('#appearanceSurfacesSection').is_visible()
+    page.locator('#autoIsoBtn').check()
+    assert all(layer['autoIso'] for layer in cubes(page))
+    page.locator('#autoIsoBtn').uncheck()
+    set_surface_control(page, '#iso', 0.035)
+    set_surface_control(page, '#posColor', '#123456')
+    set_surface_control(page, '#negColor', '#abcdef')
+    set_surface_control(page, '#opacity', 0.6)
+    before = snapshot(page)
+    assert not any(layer['visible'] for layer in cubes(page))
+    assert page.evaluate('() => window.__moldenGridBuilds') == [], 'Group edits must keep unvisited orbitals lazy'
+
+    # Save/open must retain the group focus and every hidden orbital's appearance.
+    saved = page.evaluate('() => window.VibeMolSession.export()')
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolSession')
+    assert page.evaluate('doc => window.VibeMolSession.import(doc)', saved)['ok']
+    assert snapshot(page) == before
+    assert page.evaluate('() => window.__moldenGridBuilds') == []
+    page.locator(f'.vm-outliner-row[data-id="{layers[1]["id"]}"]').click()
+    assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [1]
+    shown = cubes(page)[1]
+    assert shown['effectiveVisible'] and shown['iso'] == 0.035 and shown['opacity'] == 0.6, shown
+    assert shown['posColor'] == '#123456' and shown['negColor'] == '#abcdef', shown
+    page.locator(f'.vm-outliner-row[data-id="{group_id}"]').click()
+    page.locator('#autoIsoBtn').check()
+    assert all(layer['autoIso'] for layer in cubes(page))
+    assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [1]
+    assert [layer['visible'] for layer in cubes(page)] == [False, True, False]
+
+
 def molden_browsing(page, dialogs):
     page.add_init_script('(' + MOLDEN_GRID_OBSERVER + ')()')
     page.reload(wait_until='domcontentloaded')
@@ -595,7 +721,8 @@ def main():
         browser = playwright.chromium.launch(headless=True)
         try:
             for run in (molecule_styles, imports, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
-                        persistence, batch_export, molden_browsing, arithmetic, synchronized_trajectories):
+                        persistence, batch_export, orbital_group_appearance, molden_group_appearance,
+                        molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})
                 page = context.new_page()
                 errors, console_errors, dialogs = [], [], []

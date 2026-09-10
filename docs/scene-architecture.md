@@ -12,6 +12,8 @@ Source records continue to carry molecule/editor data and file metadata. Explici
 
 Loading an active Molden file opens the Orbitals inspector outside edit mode, with no MO selected for visualization yet. Selecting an orbital in the inspector or outliner computes its grid on demand. Inspector row selection applies single-surface visibility in that layer's scene. Other layers retain their identity, appearance, and arithmetic dependencies. Rapid inspector selections coalesce into one redraw of the final selection. Grid-setting refreshes preserve manually enabled overlays, and ordinary redraws respect a closed inspector.
 
+Focusing an Orbitals group opens Appearance for all its cube/arithmetic children, including hidden and deferred MOs. `getSurfaceAppearanceTargets()` resolves this scope separately from the explicit selection used for delete, duplicate, and arithmetic commands. Edits persist on each child through the existing layer/session state; resolving the scope never evaluates grids. Mixed values are indicated in the controls. With the group focused, Show surfaces toggles parent visibility and preserves each child's visibility choice.
+
 `scene-outliner.js` owns the tree DOM, rename sessions, drag feedback, context menus, and arithmetic form. It calls model/controller operations supplied by `app.js`. Its stylesheet is separate from the HTML shell. Rename inputs stay mounted during unrelated redraws.
 
 ## Grid arithmetic

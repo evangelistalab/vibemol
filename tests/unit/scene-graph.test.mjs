@@ -181,6 +181,58 @@ test('visibility cascade preserves child visibility state', () => {
   assert.equal(graph.isLayerEffectivelyVisible(cube), false);
 });
 
+test('Orbitals appearance scope includes hidden and deferred children without selecting them for commands', () => {
+  const api = loadApi();
+  const graph = api.createSceneGraphController();
+  const scene = graph.createScene({ name: 'orbitals' });
+  const molecule = graph.addMoleculeLayer(scene);
+  const a = graph.addCubeLayer(scene, { name: 'MO 1' });
+  const b = graph.addCubeLayer(scene, { name: 'MO 2' });
+  b.visible = false;
+  const derived = graph.addArithmeticLayer(scene, {
+    name: 'Absolute MO 1', operation: 'abs', inputs: [{ layerId: a.id, coefficient: 1 }],
+  });
+  const other = graph.createScene({ name: 'other' });
+  graph.addCubeLayer(other, { name: 'Other orbital' });
+  graph.addScene(scene);
+  graph.addScene(other);
+  graph.setActiveLayer(scene.orbitalsGroupId);
+
+  assert.deepEqual(Array.from(graph.getSurfaceAppearanceTargets(), layer => layer.id), [a.id, b.id, derived.id]);
+  assert.equal(graph.getSelection().length, 0);
+  assert.equal(b.visible, false);
+  assert.equal(b.cubeData, null);
+
+  // Resolve current membership, including subsequent additions and removals.
+  const added = graph.addCubeLayer(scene, { name: 'MO 3' });
+  graph.removeLayer(b.id);
+  assert.deepEqual(Array.from(graph.getSurfaceAppearanceTargets(), layer => layer.id), [a.id, derived.id, added.id]);
+  graph.setActiveLayer(molecule.id);
+  assert.equal(graph.getSurfaceAppearanceTargets().length, 0);
+});
+
+test('individual surface appearance follows explicit selection and cannot leak between scenes', () => {
+  const api = loadApi();
+  const graph = api.createSceneGraphController();
+  const scene = graph.createScene({ name: 'orbitals' });
+  const a = graph.addCubeLayer(scene, { name: 'a' });
+  const b = graph.addCubeLayer(scene, { name: 'b' });
+  const other = graph.createScene({ name: 'other' });
+  const c = graph.addCubeLayer(other, { name: 'c' });
+  graph.addScene(scene);
+  graph.addScene(other);
+  graph.setActiveLayer(a.id);
+  graph.setSelection([a.id, b.id]);
+  assert.deepEqual(Array.from(graph.getSurfaceAppearanceTargets(), layer => layer.id), [a.id, b.id]);
+  graph.setActiveLayer(c.id);
+  assert.deepEqual(Array.from(graph.getSurfaceAppearanceTargets(), layer => layer.id), [c.id]);
+  graph.setActiveLayer(scene.orbitalsGroupId);
+  graph.setActiveLayer(b.id);
+  assert.deepEqual(Array.from(graph.getSurfaceAppearanceTargets(), layer => layer.id), [b.id]);
+  graph.clearScenes();
+  assert.equal(graph.getSurfaceAppearanceTargets().length, 0);
+});
+
 test('clearScenes disposes each layer exactly once', () => {
   const api = loadApi();
   const disposed = [];
