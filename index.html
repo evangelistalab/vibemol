@@ -2447,11 +2447,10 @@
       <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields vm-sidebar-accordion__panel" aria-hidden="true">
         <div class="appearanceHiddenControl" aria-hidden="true">
           <select id="moleculeStyle" class="vm-select"
-            data-tooltip="Choose atom/bond rendering style (shortcuts: 1=Basic, 2=Toon, 3=Kit, 4=Glossy)">
+            data-tooltip="Choose atom/bond rendering style (shortcuts: 1=Basic, 2=Toon, 3=Kit)">
             <option value="basic" selected>Basic</option>
             <option value="toon">Toon (luminous)</option>
             <option value="kit">Kit (collar joints)</option>
-            <option value="glossy">Glossy (glass edge)</option>
           </select>
           <select id="dofFocusMode" class="vm-select">
             <option value="auto" selected>Auto (target)</option>
@@ -2479,7 +2478,6 @@
                     <button id="appearanceMoleculeStyleBasicBtn" class="vm-button-group__item" type="button" role="radio" data-value="basic" aria-checked="true" data-tooltip="Basic molecule style">Basic</button>
                     <button class="vm-button-group__item" type="button" role="radio" data-value="toon" aria-checked="false" data-tooltip="Toon molecule style">Toon</button>
                     <button class="vm-button-group__item" type="button" role="radio" data-value="kit" aria-checked="false" data-tooltip="Kit molecule style">Kit</button>
-                    <button class="vm-button-group__item" type="button" role="radio" data-value="glossy" aria-checked="false" data-tooltip="Glossy molecule style">Glossy</button>
                   </div>
                 </div>
               </div>
@@ -2630,15 +2628,6 @@
                     <input type="checkbox" id="appearanceSimpleBondsToggle" class="vm-toggle__input" role="switch" data-tooltip="Show multiple-bond rendering when Simple bonds is OFF." />
                     <span class="vm-toggle__thumb" aria-hidden="true"></span>
                   </label>
-                </div>
-              </div>
-              <div id="rowGlossyBond" class="vm-field-row vm-appearance-hidden">
-                <label class="vm-field-label" for="glossyBondRadius">Glossy center</label>
-                <div class="vm-field-control vm-field-control--slider">
-                  <div class="vm-slider" data-vm-slider data-min="0.04" data-max="0.16" data-precision="3">
-                    <input id="glossyBondRadiusRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Center radius for glossy bond connectors (angstrom)" />
-                    <input id="glossyBondRadius" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="0.072" data-tooltip="Center radius for glossy bond connectors (angstrom)" />
-                  </div>
                 </div>
               </div>
             </section>
@@ -3208,7 +3197,7 @@
       </details>
     </div>
   </div>
-  <div id="hint" class="is-visible" aria-hidden="false">Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Basic 2=Toon 3=Kit 4=Glossy</div>
+  <div id="hint" class="is-visible" aria-hidden="false">Orbit: mouse drag • Zoom: wheel • Pan: right-drag • Style: 1=Basic 2=Toon 3=Kit</div>
   <!-- Phase wheel legend (shown in phase-hue modes) -->
   <div id="phaseWheel" aria-hidden="true"
     style="position:fixed; right:12px; bottom:calc(var(--status-ribbon-height) + 34px); width:96px; height:120px; z-index:31; pointer-events:none; display:none;">

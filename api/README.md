@@ -88,7 +88,7 @@ Import preset then override a couple of fields:
 python api/vibemol_client.py assets/data/sample.cube out/sample_from_preset.png \
   --preset my-favorite.json \
   --preset-mode relaxed \
-  --style glossy
+  --style kit
 ```
 
 Save effective settings to a preset file:
@@ -134,12 +134,12 @@ CLI control:
 - `--continue-on-error` keeps batch rendering after one file fails
 
 Style mapping:
-- `default` = Default
+- `basic` = Basic
+- `default` = alias for `basic` (for compatibility)
 - `toon` = Toon
 - `fancy` = alias for `toon` (for compatibility)
 - `kit` = Kit
 - `studio` = alias for `kit` (legacy compatibility)
-- `glossy` = Glossy
 
 ## Notes
 - Single-file mode is `input_file output_png`.

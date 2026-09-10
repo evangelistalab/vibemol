@@ -98,7 +98,7 @@ Primary capabilities:
 - `tests/unit/trajectory-video.test.mjs`: browserless unit coverage for the shared crop/layout video-export helpers.
 - `tests/unit/load-global-module.mjs`: VM-based loader for global/IIFE modules under Node.
 - `tests/e2e/smoke.py`: Playwright smoke/E2E test that starts a temporary local static server.
-- `tests/e2e/premerge.py`: focused browser regressions for append/replace imports, layer persistence, batch export, Molden arithmetic dependencies, and synchronized trajectories.
+- `tests/e2e/premerge.py`: focused browser regressions for molecule styles and preset fallback, append/replace imports, layer persistence, batch export, Molden arithmetic dependencies, and synchronized trajectories.
 - `tests/e2e/helpers.py`: shared server/artifact helpers for browser smoke tests.
 - `.github/workflows/ci.yml`: CI workflow for checks, unit tests, and browser smoke tests.
 - `notebooks/vibemol_notebook_demo.ipynb`: notebook demo (PNG render + iframe auto-load via postMessage).
@@ -230,13 +230,13 @@ Preset automation contract exposed globally:
 
 ## Key Behavior Notes
 - 2C surface mode is global across loaded 2C files.
-- Molecule styles are: `default`, `toon`, `kit` (shown as Kit), `glossy`.
-- Global/display shortcuts `1/2/3/4` map to molecule styles in that order.
-- In edit mode, `4` is used for quadruple-bond preview in Add mode and does not switch to `glossy`.
+- Molecule styles are: `basic`, `toon`, `kit` (shown as Basic, Toon, and Kit).
+- Global/display shortcuts `1/2/3` map to molecule styles in that order.
+- In edit mode, `4` is used for quadruple-bond editing and preview in Add mode.
+- Unsupported molecule styles in saved presets fall back to Basic; the Python CLI rejects unsupported style arguments.
 - `fancy` is treated as a deprecated alias for `toon` in preset/CLI compatibility paths.
 - Python CLI additionally accepts deprecated alias `studio` and maps it to `kit`.
 - Toon molecule style enforces toon-shaded surfaces.
-- Glossy style exposes a configurable glossy bond center radius (`molecule.glossyBondRadius`).
 - Camera rotation uses quaternion orbiting in all interaction modes to avoid pole locking.
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
@@ -525,7 +525,7 @@ After non-trivial changes:
 3. Load at least one `.cube`, one `.2ccube`, and one `.xyz`.
 4. Confirm 2C mode selection persists across file switches.
 5. Toggle surface/cloud modes and verify rendering updates.
-6. Check molecule styles (`default`, `toon`, `kit/Kit`, `glossy`) and keyboard shortcuts `1/2/3/4`.
+6. Check molecule styles (`basic`, `toon`, `kit/Kit`) and keyboard shortcuts `1/2/3`.
 7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
 8. In edit mode, verify the adaptive edit menu appears and the onboarding splash hides.
 9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, and repeated right-click on a selected atom to upgrade to whole-molecule selection.

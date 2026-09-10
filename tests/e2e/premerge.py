@@ -49,6 +49,46 @@ def load_cubes(page):
     assert result['ok'] and result['loadedCount'] == 2, result
 
 
+def molecule_styles(page, dialogs):
+    page.locator('#modeDisplayBtn').click()
+    assert load(page, [{'name': 'bond.xyz', 'text': '2\nStyle fixture\nC 0 0 0\nC 1.34 0 0\n'}])['ok']
+    styles = ['basic', 'toon', 'kit']
+    assert page.locator('#moleculeStyle option').evaluate_all('els => els.map(el => el.value)') == styles
+    chips = page.locator('#appearanceMoleculeStyleGroup [role=radio]')
+    assert chips.evaluate_all('els => els.map(el => el.dataset.value)') == styles
+    page.locator('#displayInspectorBtn').click()
+    for style in styles:
+        page.locator(f'#appearanceMoleculeStyleGroup [data-value="{style}"]').click()
+        assert page.locator('#moleculeStyle').input_value() == style
+        rendered = page.evaluate('() => window.VibeMolTesting.getMoleculeRenderSnapshot()')
+        assert rendered['atomCount'] == 2 and rendered['bondCarrierCount'] >= 1, rendered
+        carriers = page.evaluate('() => window.VibeMolTesting.getBondCarrierSnapshots()')
+        expected = ('kit', 'kitCurved') if style == 'kit' else ('basic',)
+        assert carriers and all(carrier['connectorStyle'] in expected for carrier in carriers), carriers
+        assert page.evaluate('() => window.VibeMolPreset.export().settings["molecule.style"]') == style
+    for key, style in zip(('1', '2', '3'), styles):
+        page.keyboard.press(key)
+        assert page.locator('#moleculeStyle').input_value() == style
+    page.keyboard.press('4')
+    assert page.locator('#moleculeStyle').input_value() == 'kit'
+
+    # Saved presets can still name a retired style; the normal fallback must render.
+    page.evaluate('''() => window.VibeMolPreset.import({kind:'vibemol.preset', presetVersion:1,
+      settings:{'molecule.style':'glossy'}})''')
+    assert page.locator('#moleculeStyle').input_value() == 'basic'
+    assert page.evaluate('() => window.VibeMolPreset.export().settings["molecule.style"]') == 'basic'
+    assert page.evaluate('() => !window.VibeMolPreset.listKeys().includes("molecule.glossyBondRadius")')
+    assert page.locator('#rowGlossyBond, #glossyBondRadius').count() == 0
+
+    # The edit-only bond-order shortcut is independent of the style shortcuts.
+    page.locator('#modeEditBtn').click()
+    page.keyboard.press('/')
+    page.locator('#editAddQuick button[data-z="6"]').click()
+    page.keyboard.press('4')
+    assert 'bond order: 4' in page.evaluate('() => window.VibeMolTesting.getHintMessage()')
+    assert page.locator('#moleculeStyle').input_value() == 'basic'
+
+
 def imports(page, dialogs):
     assert load(page, [{'name': 'a.cube', 'text': cube(-1)}])['loadedCount'] == 1
     appended = load(page, [{'name': 'b.cube', 'text': cube(1)}], clear_first=False)
@@ -218,7 +258,7 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (imports, persistence, batch_export, arithmetic, synchronized_trajectories):
+            for run in (molecule_styles, imports, persistence, batch_export, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})
                 page = context.new_page()
                 errors, console_errors, dialogs = [], [], []

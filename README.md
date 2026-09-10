@@ -7,10 +7,9 @@ It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes
 - Surface rendering and cloud rendering modes
 - 2-component CUBE support with global 2C mode selection across loaded 2C files
 - Molecule styles:
-  - `Default`
+  - `Basic`
   - `Toon (luminous)`
   - `Kit (collar joints)` (internal style id: `kit`)
-  - `Glossy (glass edge)`
 - Edit mode and measurement mode
 - Save PNG, batch export, and XYZ export
 - Portable preset save/load in the web UI
@@ -26,7 +25,7 @@ Open `http://localhost:8000/`.
 Startup now shows the empty onboarding card. Use `Choose files` or `Open sample file` to load content.
 
 ## Controls
-- `1/2/3/4`: switch molecule style (Default / Toon / Kit / Glossy)
+- `1/2/3`: switch molecule style (Basic / Toon / Kit)
 - `S`: save PNG
 - `B`: batch export
 - `I`: toggle surfaces

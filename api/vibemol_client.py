@@ -73,7 +73,7 @@ def _parse_args() -> argparse.Namespace:
         "--style",
         type=_parse_style_arg,
         default=None,
-        help="Optional molecule style (aliases: default->basic, fancy->toon, studio->kit)",
+        help="Optional molecule style: basic, toon, kit (aliases: default->basic, fancy->toon, studio->kit)",
     )
     parser.add_argument(
         "--extra-file",
@@ -142,9 +142,9 @@ def _normalize_style(style: str | None) -> str | None:
 
 def _parse_style_arg(style: str) -> str:
     normalized = _normalize_style(style)
-    if normalized not in ("basic", "toon", "kit", "glossy"):
+    if normalized not in ("basic", "toon", "kit"):
         raise argparse.ArgumentTypeError(
-            f"Unsupported style: {style}. Choose one of basic, toon, kit, glossy"
+            f"Unsupported style: {style}. Choose one of basic, toon, kit"
         )
     return normalized
 
@@ -505,7 +505,6 @@ def _import_preset_dom_fallback(page: Any, preset: dict[str, Any], mode: str) ->
     _apply_input("render.mode", "#renderMode", "change")
     _apply_input("render.cloudType", "#cloudType", "change")
     _apply_input("twoComponent.mode", "#componentSelect", "change")
-    _apply_input("molecule.glossyBondRadius", "#glossyBondRadius", "change")
     _apply_checkbox("surface.enabled", "#surfBtn")
     _apply_checkbox("global.showAtoms", "#showAtoms")
     _apply_checkbox("global.showAtomLabels", "#showAtomLabels")
