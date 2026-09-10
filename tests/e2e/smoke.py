@@ -2605,7 +2605,7 @@ def main() -> int:
                 raise AssertionError(f'Molden load should start molecule-first before MO materialization: {molden_summary}')
             if molden_summary['rowCount'] != 3 or molden_summary['visibleRowCount'] != 3:
                 raise AssertionError(f'Molden inspector did not render all orbital rows: {molden_summary}')
-            if not molden_summary['gridSummary'] or 'selected: 1 (HOMO)' not in molden_summary['footer']:
+            if not molden_summary['gridSummary'] or 'click an orbital to view' not in molden_summary['footer']:
                 raise AssertionError(f'Molden inspector summaries are missing: {molden_summary}')
             if 'HOMO / LUMO' not in molden_summary['dividerText']:
                 raise AssertionError(f'Molden HOMO/LUMO divider is missing: {molden_summary}')

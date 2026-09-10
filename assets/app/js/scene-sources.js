@@ -12,7 +12,7 @@
       sources = new Map();
     }
 
-    function addOrbital(record, index) {
+    function addOrbital(record, index, { visible = index === record.moldenMoIndex } = {}) {
       const source = sources.get(record);
       const scene = graph.getScenes().find(item => item.sceneKey === getSceneKey(record));
       if (!source || !scene) return null;
@@ -21,7 +21,7 @@
       if (existing) return existing;
       const layer = graph.addCubeLayer(scene, Object.assign({}, getDefaults(), (record._moldenSceneGraphLayerStateByMo || {})[index] || {}, {
         sourceId: source.id, name: `MO ${index + 1}`, record, cubeData: null,
-        moldenMoIndex: index, visible: index === record.moldenMoIndex,
+        moldenMoIndex: index, visible,
       }));
       source.orbitals.add(index);
       return layer;
@@ -86,9 +86,11 @@
             }));
             source.cubeImported = true;
           }
-          for (const index of molden ? record.moldenMaterializedOrbitalIndices || [] : []) {
+          const mos = molden && record.vol.molden && record.vol.molden.mos;
+          for (let index = 0; index < (Array.isArray(mos) ? mos.length : 0); index += 1) {
             if (source.orbitals.has(index)) continue;
-            const layer = addOrbital(record, index);
+            // Register metadata only. A user action makes the layer visible and evaluates its grid.
+            const layer = addOrbital(record, index, { visible: false });
             if (record === activeRecord && index === record.moldenMoIndex) activeLayer = layer;
           }
           if (record === activeRecord) {

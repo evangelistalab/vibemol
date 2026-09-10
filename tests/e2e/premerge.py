@@ -181,6 +181,20 @@ ARITHMETIC_OBSERVER = """() => {
   }});
 }"""
 
+MOLDEN_GRID_OBSERVER = """() => {
+  window.__moldenGridBuilds = [];
+  let api;
+  Object.defineProperty(window, 'VibeMolGridStore', { configurable:true, get:()=>api, set:original=> {
+    api = {...original, createGridStore: options => {
+      const store = original.createGridStore(options);
+      return {...store, get: (source, key, evaluate) => store.get(source, key, () => {
+        window.__moldenGridBuilds.push({name:source.name, index:Number(key.split('|')[0])});
+        return evaluate();
+      })};
+    }};
+  }});
+}"""
+
 MOLDEN = '\n'.join(['[Molden Format]', '[Atoms] Angs', 'H 1 1 0.0 0.0 0.0', '[GTO]', '1 0', 's 1 1.0', '1.0 1.0',
                     '[MO]', 'Sym= A1', 'Ene= -0.5', 'Spin= Alpha', 'Occup= 2.0', '1 1.0',
                     'Sym= A1', 'Ene= -0.1', 'Spin= Alpha', 'Occup= 0.0', '1 1.0',
@@ -188,6 +202,9 @@ MOLDEN = '\n'.join(['[Molden Format]', '[Atoms] Angs', 'H 1 1 0.0 0.0 0.0', '[GT
 
 
 def molden_browsing(page, dialogs):
+    page.add_init_script('(' + MOLDEN_GRID_OBSERVER + ')()')
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolTesting')
     page.locator('#fileInput').set_input_files({
         'name': 'browse.molden', 'mimeType': 'text/plain', 'buffer': MOLDEN.encode(),
     })
@@ -195,6 +212,16 @@ def molden_browsing(page, dialogs):
     panel.wait_for(state='visible')
     assert panel.get_attribute('aria-hidden') == 'false'
     assert page.locator('#moldenInspectorBody tbody tr[data-row-index]').count() == 3
+    initial_layers = cubes(page)
+    assert [layer['name'] for layer in initial_layers] == ['MO 1', 'MO 2', 'MO 3']
+    assert not any(layer['effectiveVisible'] for layer in initial_layers)
+    for layer in initial_layers:
+        assert page.locator(f'.vm-outliner-row[data-id="{layer["id"]}"]').is_visible()
+    assert page.evaluate('() => window.__moldenGridBuilds') == []
+    redraw(page)
+    page.locator('#moldenGridStep').fill('0.4')
+    page.wait_for_function("() => document.getElementById('moldenGridStep').value === '0.40'")
+    assert page.evaluate('() => window.__moldenGridBuilds') == [], 'Metadata and grid settings must remain lazy'
 
     def wait_for_orbital(name):
         page.wait_for_function('''(name) => {
@@ -210,6 +237,13 @@ def molden_browsing(page, dialogs):
         page.locator(f'#moldenInspectorBody tbody tr[data-row-index="{index}"]').click()
         wait_for_orbital(name)
 
+    # Selecting a deferred outliner entry computes just that MO and synchronizes the inspector.
+    page.locator(f'.vm-outliner-row[data-id="{initial_layers[2]["id"]}"]').click()
+    wait_for_orbital('MO 3')
+    assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [2]
+    assert 'selected: 3' in page.locator('#moldenInspectorFooter').inner_text()
+    redraw(page)
+    assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [2]
     choose(0, 'MO 1')
     first = cubes(page)[0]
     context_item(page, first['id'], 'Rename')
@@ -219,6 +253,7 @@ def molden_browsing(page, dialogs):
     choose(1, 'MO 2')
     choose(2, 'MO 3')
     choose(0, 'Named orbital')
+    assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [2, 0, 1]
     layers = cubes(page)
     assert len(layers) == 3, layers
     assert layers[0]['id'] == first['id'] and layers[0]['iso'] == 0.025, layers
@@ -259,17 +294,26 @@ def molden_browsing(page, dialogs):
 
 def arithmetic(page, dialogs):
     page.add_init_script('(' + ARITHMETIC_OBSERVER + ')()')
+    page.add_init_script('(' + MOLDEN_GRID_OBSERVER + ')()')
     page.reload(wait_until='domcontentloaded')
     page.wait_for_function('() => window.VibeMolTesting')
     assert load(page, [{'name': 'orbitals.molden', 'text': MOLDEN}])['ok']
+    assert page.evaluate('() => window.__moldenGridBuilds') == []
     for index in (1, 2):
         page.locator(f'#moldenInspectorBody tbody tr[data-row-index="{index}"]').evaluate('el => el.click()')
-        page.wait_for_function('(count) => window.VibeMolTesting.getSceneGraphSnapshot().scenes.flatMap(s=>s.layers).filter(l=>l.kind==="cube").length === count', arg=index)
-    a, b = cubes(page)
+        page.wait_for_function('''(name) => {
+            const state = window.VibeMolTesting.getSceneGraphSnapshot();
+            return state.scenes.flatMap(scene => scene.layers).some(layer =>
+                layer.id === state.activeLayerId && layer.name === name && layer.effectiveVisible)
+                && !document.querySelector('#moldenInspectorBody .vm-list-popover__row--pending');
+        }''', arg=f'MO {index + 1}')
+    _, a, b = cubes(page)
     assert [a['name'], b['name']] == ['MO 2', 'MO 3']
+    assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [1, 2]
     page.locator(f'.vm-outliner-row[data-id="{a["id"]}"]').click()
     page.locator(f'.vm-outliner-row[data-id="{b["id"]}"]').click(modifiers=['ControlOrMeta'])
     context_item(page, a['id'], 'Combine (2)...')
+    assert page.evaluate('() => window.__moldenGridBuilds.map(x => x.index)') == [1, 2], 'Operand menus must not evaluate unused MOs'
     page.locator('.vm-combine-popover__button.is-primary').click()
     page.wait_for_function('() => window.__arithmeticResults.length === 1')
     page.wait_for_function("() => document.querySelector('.vm-combine-popover').hidden")

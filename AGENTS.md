@@ -37,7 +37,7 @@ Primary capabilities:
 - `src/components/VmTooltip.js`: shared root tooltip portal and delegation helpers.
 - `assets/app/js/app.js`: main app orchestration, scene lifecycle, style logic, preset API, file loading.
 - `assets/app/js/scene-graph.js`: authoritative scene/layer model and explicit rename, move, order, focus, and visibility commands.
-- `assets/app/js/scene-sources.js`: incremental source registration and explicit Molden orbital materialization; redraws never reconstruct the graph.
+- `assets/app/js/scene-sources.js`: incremental source registration and metadata-only registration of every Molden orbital; redraws never reconstruct the graph.
 - `assets/app/js/scene-export.js`: explicit batch targets and restoration of graph state after success or failure.
 - `assets/app/js/scene-outliner.js` and `assets/app/css/scene-outliner.css`: outliner rows, rename sessions, drag feedback, menus, and arithmetic forms.
 - `assets/app/js/grid-store.js`: bounded immutable-grid cache keyed by source, orbital, geometry, and grid settings.
@@ -256,6 +256,7 @@ Preset automation contract exposed globally:
 - Dropping an ORCA `.hess` without a same-stem `.xyz` in the same upload batch triggers an explicit warning popup before import continues.
 - Psi4 output logs (`.dat/.out`) are parsed from the harmonic table and create a molecule from the **last** `Geometry (in Angstrom)` block before attaching modes.
 - Loading an active Molden file opens the Orbitals floating inspector in display/measure mode. Closing it is respected through redraws; a later Molden import opens it again.
+- Every MO is listed under the scene's Orbitals group immediately on import, initially hidden and without a computed grid. Selecting an MO from the outliner or inspector computes its grid on demand; rendering reuses the bounded grid cache. Passive appearance/menu updates do not compute grids.
 - Clicking an Orbitals row shows that MO alone among the active scene's surface layers. Other orbital layers remain in the outliner with their settings and arithmetic dependencies intact; rapid clicks honor the last selection. Grid step/padding edits preserve manually enabled overlays.
 - The non-edit adaptive launcher lives on-canvas above Appearance, shows only context-relevant windows (`Orbitals`, `View actions`, `View`, `Coordinates`, `Trajectory`, `Frequencies`), and enforces mutual exclusivity within that launcher set.
 - Vibrational mode controls (mode index, play/pause, amplitude, speed, frequency, hide-small-frequencies toggle) are shown in the Frequencies panel when available.

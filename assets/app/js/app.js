@@ -1347,7 +1347,7 @@
       getCircularOperandIdsForEdit,
       getCubeLayersInScene,
       getFocusedScene,
-      getLayerCubeData,
+      getLayerSourceVolume,
       getLayerDisplayName,
       getLayerFullDisplayName,
       getLayerSurfaceColors,
@@ -8887,7 +8887,7 @@
     const rows = Array.isArray(items) ? items : [];
     if (!rows.length) return '';
     const selectedIndex = record && Number.isInteger(record.moldenMoIndex) ? record.moldenMoIndex : -1;
-    if (selectedIndex < 0 || selectedIndex >= rows.length) return `${rows.length} MOs`;
+    if (selectedIndex < 0 || selectedIndex >= rows.length) return `${rows.length} MOs · click an orbital to view`;
     const relativeLabel = formatOrbitalRelativeLabel(rows, selectedIndex);
     return relativeLabel
       ? `${rows.length} MOs · selected: ${selectedIndex + 1} (${relativeLabel})`
@@ -9122,7 +9122,7 @@
     }
     if (record) {
       if (!Number.isInteger(record.moldenMoIndex) || record.moldenMoIndex < 0 || record.moldenMoIndex >= items.length) {
-        record.moldenMoIndex = 0;
+        record.moldenMoIndex = -1;
       }
       const gridSettings = getMoldenGridSettings(record);
       moldenGridStepEl.value = gridSettings.stepAng.toFixed(2);
@@ -9187,7 +9187,6 @@
     if (!record || !vol || vol.kind !== 'molden' || !items.length) return;
     if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= items.length) return;
     record.moldenMoIndex = rowIndex;
-    ensureMoldenOrbitalMaterialized(record, rowIndex);
     ensureMoldenGridForRecord(record, vol);
     const layer = sceneSources.addOrbital(record, rowIndex);
     syncSceneGraphFromVolumes({ preferActiveRecord: true });
@@ -9483,33 +9482,6 @@
     };
   }
 
-  function getMoldenMaterializedOrbitalIndices(record) {
-    const raw = record && record.moldenMaterializedOrbitalIndices;
-    if (!Array.isArray(raw)) return [];
-    const seen = new Set();
-    const out = [];
-    for (const value of raw) {
-      const index = Number(value) | 0;
-      if (index < 0 || seen.has(index)) continue;
-      seen.add(index);
-      out.push(index);
-    }
-    out.sort((a, b) => a - b);
-    return out;
-  }
-
-  function ensureMoldenOrbitalMaterialized(record, moIndex) {
-    const vol = record && record.vol;
-    if (!record || !vol || vol.kind !== 'molden') return false;
-    const index = Number(moIndex) | 0;
-    if (index < 0) return false;
-    const mos = vol.molden && Array.isArray(vol.molden.mos) ? vol.molden.mos : [];
-    if (index >= mos.length) return false;
-    if (!Array.isArray(record.moldenMaterializedOrbitalIndices)) record.moldenMaterializedOrbitalIndices = [];
-    if (!record.moldenMaterializedOrbitalIndices.includes(index)) record.moldenMaterializedOrbitalIndices.push(index);
-    return true;
-  }
-
   function getVolumeSourceKind(record) {
     const vol = record && record.vol;
     if (vol && vol.kind === 'molden') return 'molden';
@@ -9732,17 +9704,20 @@
     };
   }
 
-  function getLayerCubeData(layer) {
+  // Inspect source metadata without evaluating a deferred Molden grid.
+  function getLayerSourceVolume(layer) {
     if (!layer) return null;
     if (layer.kind === SCENE_LAYER_KIND.ARITHMETIC) return layer.cubeData || null;
-    if (layer.kind === SCENE_LAYER_KIND.CUBE) {
-      if (layer.record && layer.record.vol.kind === 'molden' && Number.isInteger(layer.moldenMoIndex)) {
-        return evaluateMoldenGrid(layer.record, layer.moldenMoIndex);
-      }
-      if (layer.isSceneGraphDuplicate && layer.cubeData) return layer.cubeData;
-      return (layer.record && layer.record.vol) || layer.cubeData || null;
+    if (layer.isSceneGraphDuplicate && layer.cubeData) return layer.cubeData;
+    return (layer.record && layer.record.vol) || layer.cubeData || null;
+  }
+
+  function getLayerCubeData(layer) {
+    if (layer && layer.kind === SCENE_LAYER_KIND.CUBE && layer.record
+      && layer.record.vol.kind === 'molden' && Number.isInteger(layer.moldenMoIndex)) {
+      return evaluateMoldenGrid(layer.record, layer.moldenMoIndex);
     }
-    return layer.cubeData || (layer.record && layer.record.vol) || null;
+    return getLayerSourceVolume(layer);
   }
 
   function clearLayerRenderRefs(layer) {
@@ -26630,7 +26605,7 @@
     syncColorPickerFields();
     updateAutoIsoButtonState();
     updateSurfBtn();
-    syncAppearanceInspectorSectionState(getLayerCubeData(layer));
+    syncAppearanceInspectorSectionState(getLayerSourceVolume(layer));
     syncSurfaceMixedIndicators();
   }
 
@@ -26950,7 +26925,7 @@
     getActiveStyle: () => moleculeStyle,
     getCurrentVolume: () => {
       const layer = getActiveCubeLayer();
-      return getLayerCubeData(layer);
+      return getLayerSourceVolume(layer);
     },
     getRenderMode: () => getLayerRenderMode(),
     hasSurfaceControls: (vol) => !!(getActiveCubeLayer() && hasVolumetricGrid(vol)),

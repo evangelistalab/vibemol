@@ -4,19 +4,21 @@ VibeMol remains a static app with global modules and no build step. `index.html`
 
 ## Ownership
 
-`scene-graph.js` owns scene and layer identity, membership, names, order, visibility, focus, and selection. Rename, reorder, move, and deletion operate on this model. `scene-sources.js` registers new volume records incrementally and records which source grids and Molden orbitals have been imported. Reconciling records cannot recreate a deleted layer. Selecting a deleted orbital again is an explicit materialization action.
+`scene-graph.js` owns scene and layer identity, membership, names, order, visibility, focus, and selection. Rename, reorder, move, and deletion operate on this model. `scene-sources.js` registers new volume records incrementally, including a hidden layer for every Molden MO. These entries contain source/orbital metadata and appearance settings; registration never evaluates a scalar grid. Reconciling records cannot recreate a deleted layer. Selecting a deleted orbital again in the inspector explicitly recreates its layer.
 
 Source records continue to carry molecule/editor data and file metadata. Explicit focus changes bind the active source to the scene's molecule layer. Copied or moved grid layers can retain a source even after its original scene is removed.
 
 `rebuildScene()` reads the existing graph and replaces rendered objects. It does not reconstruct layers from files. Render references are cleared and GPU resources are disposed with a shared deduplication state across all layers.
 
-Loading an active Molden file opens the Orbitals inspector outside edit mode. Selecting an orbital row materializes or reuses its layer and applies single-surface visibility in that layer's scene. Previously visited layers retain their identity, appearance, and arithmetic dependencies. Rapid row selections coalesce into one redraw of the final selection. Grid-setting refreshes preserve manually enabled overlays, and ordinary redraws respect a closed inspector.
+Loading an active Molden file opens the Orbitals inspector outside edit mode, with no MO selected for visualization yet. Selecting an orbital in the inspector or outliner computes its grid on demand. Inspector row selection applies single-surface visibility in that layer's scene. Other layers retain their identity, appearance, and arithmetic dependencies. Rapid inspector selections coalesce into one redraw of the final selection. Grid-setting refreshes preserve manually enabled overlays, and ordinary redraws respect a closed inspector.
 
 `scene-outliner.js` owns the tree DOM, rename sessions, drag feedback, context menus, and arithmetic form. It calls model/controller operations supplied by `app.js`. Its stylesheet is separate from the HTML shell. Rename inputs stay mounted during unrelated redraws.
 
 ## Grid arithmetic
 
 Each Molden source/orbital/geometry/grid-settings combination has its own scalar grid in `grid-store.js`. Consumers treat buffers as read-only; grid metadata is frozen. The cache retains at most 16 entries and 128 MiB per source. Eviction never detaches a field already held by a consumer. Rendering or hovering an orbital does not change the selected orbital.
+
+`getLayerSourceVolume()` reads source metadata for Appearance and arithmetic operand menus without generating grids. `getLayerCubeData()` evaluates a Molden grid only when requested for visualization, arithmetic validation/computation, or export. Unused MOs stay uncomputed when the scene redraws or an operand menu is populated.
 
 `arithmetic-grid.js` validates grids and plans the finest-spacing union without allocating result-sized arrays. Grid bounds describe voxel centers: the final point is `origin + (n - 1) * step`. Trilinear sampling includes upper planes, edges, corners, and singleton axes; it returns zero outside the sampled domain. This implementation supports positive axis-aligned grids.
 

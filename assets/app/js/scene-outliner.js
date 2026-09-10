@@ -28,7 +28,7 @@
       getCircularOperandIdsForEdit,
       getCubeLayersInScene,
       getFocusedScene,
-      getLayerCubeData,
+      getLayerSourceVolume,
       getLayerDisplayName,
       getLayerFullDisplayName,
       getLayerSurfaceColors,
@@ -921,11 +921,12 @@
         ? getCircularOperandIdsForEdit(scene, state.editingLayerId)
         : new Set();
       return getCubeLayersInScene(scene).filter((layer) => {
-        const vol = getLayerCubeData(layer);
+        const vol = getLayerSourceVolume(layer);
+        const moldenOrbital = vol && vol.kind === 'molden' && vol.molden
+          && Array.isArray(vol.molden.mos) && vol.molden.mos[layer.moldenMoIndex];
         return isCubeLikeLayer(layer)
           && layer.cubeDataValid !== false
-          && hasVolumetricGrid(vol)
-          && !!(vol && vol.data && vol.data.length);
+          && (!!moldenOrbital || (hasVolumetricGrid(vol) && !!(vol && vol.data && vol.data.length)));
       }).map((layer) => ({
         layer,
         disabled: circularIds.has(layer.id),

@@ -12,6 +12,9 @@ function setup() {
   return { graph, sources };
 }
 const record = (name, key = 'one') => ({ name, key, vol: { kind: 'cube', atoms: [], data: new Float32Array([1]) } });
+const moldenRecord = (count = 3) => ({ name: 'molden', key: 'one', vol: {
+  kind: 'molden', atoms: [], molden: { mos: Array.from({ length: count }, () => ({})) },
+} });
 
 test('reconciliation preserves layer identity, names, visibility, and deletion', () => {
   const { graph, sources } = setup();
@@ -29,19 +32,23 @@ test('reconciliation preserves layer identity, names, visibility, and deletion',
   assert.equal(graph.getScenes()[0].layers.filter(graph.isCubeLikeLayer).length, 2);
 });
 
-test('Molden sources materialize only requested orbitals without a generic cube', () => {
+test('Molden sources register every orbital as a hidden layer without grid data', () => {
   const { graph, sources } = setup();
-  const source = record('molden');
-  source.vol.kind = 'molden';
-  source.moldenMaterializedOrbitalIndices = [1, 2];
-  source.moldenMoIndex = 2;
+  const source = moldenRecord();
   sources.reconcile([source], { activeRecord: source, preferActiveRecord: true });
   const cubes = graph.getScenes()[0].layers.filter(graph.isCubeLikeLayer);
-  assert.deepEqual(Array.from(cubes, cube => cube.moldenMoIndex), [1, 2]);
-  assert.equal(graph.getActiveLayer().moldenMoIndex, 2);
+  assert.deepEqual(Array.from(cubes, cube => cube.moldenMoIndex), [0, 1, 2]);
+  assert.ok(cubes.every(cube => cube.visible === false && cube.cubeData === null));
+  assert.equal(graph.getActiveLayer().kind, 'molecule');
+  graph.rename(cubes[1].id, 'Selected orbital');
+  cubes[1].visible = true;
+  source.moldenMoIndex = 1;
   graph.removeLayer(cubes[0].id);
-  sources.reconcile([source]);
+  sources.reconcile([source], { activeRecord: source, preferActiveRecord: true });
   assert.equal(graph.getLayerById(cubes[0].id), null);
+  assert.equal(graph.getActiveLayer(), cubes[1]);
+  assert.equal(cubes[1].name, 'Selected orbital');
+  assert.equal(cubes[1].visible, true);
 });
 
 test('moving a source layer survives reconciliation and original-scene removal', () => {
@@ -64,14 +71,13 @@ test('moving a source layer survives reconciliation and original-scene removal',
 
 test('a deleted orbital is recreated only by an explicit materialization request', () => {
   const { graph, sources } = setup();
-  const source = record('molden'); source.vol.kind = 'molden';
-  source.moldenMaterializedOrbitalIndices = [1]; source.moldenMoIndex = 1;
+  const source = moldenRecord(1); source.moldenMoIndex = 0;
   sources.reconcile([source]);
   const first = graph.getScenes()[0].layers.find(graph.isCubeLikeLayer);
   graph.removeLayer(first.id);
   sources.reconcile([source]);
   assert.equal(graph.getScenes()[0].layers.filter(graph.isCubeLikeLayer).length, 0);
-  const second = sources.addOrbital(source, 1);
+  const second = sources.addOrbital(source, 0);
   assert.notEqual(second.id, first.id);
-  assert.equal(second.moldenMoIndex, 1);
+  assert.equal(second.moldenMoIndex, 0);
 });
