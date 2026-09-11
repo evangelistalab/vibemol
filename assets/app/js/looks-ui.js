@@ -28,7 +28,8 @@
     }
     try { if (read(DEFAULT_KEY)) defaultLook = L.normalizeLook(read(DEFAULT_KEY)); } catch { /* Ignore an invalid default. */ }
     root.innerHTML = `
-      <section class="vm-appearance-section" id="lookPresetSection"><h3 class="vm-section-label">Looks</h3><div id="lookPresetControls"></div>
+      <section class="vm-appearance-section" id="lookPresetSection"><h3 class="vm-section-label">Looks</h3>
+        <div class="vm-field-row"><label class="vm-field-label" for="lookPreset">Preset</label><div class="vm-field-control"><select id="lookPreset" class="vm-select"><option value="">Custom / saved look</option></select></div></div>
         <div class="vm-field-row" id="lookSavedRow"><label class="vm-field-label" for="lookSaved">My looks</label><div class="vm-field-control"><select id="lookSaved" class="vm-select"><option value="">Choose saved look</option></select></div></div>
         <p class="vm-session-status"><span id="lookCurrentName"></span> <span id="lookModified"></span></p>
         <div class="vm-popover__actions"><button id="lookUndo" class="secondary" type="button" disabled>Undo</button><button id="lookRevert" class="secondary" type="button" disabled>Revert</button><button id="lookSave" class="secondary" type="button">Save as new</button></div>
@@ -41,13 +42,7 @@
         </details><p id="lookStatus" class="vm-session-status" role="status" aria-live="polite"></p>
       </section><div id="lookComponentEditor"></div>`;
     const $ = id => root.querySelector('#' + id), current = () => deps.getActiveLook();
-    const styleRow = document.getElementById('appearanceStyleRow');
-    if (styleRow) {
-      styleRow.querySelector('label').textContent = 'Preset';
-      styleRow.querySelector('[role="radiogroup"]').setAttribute('aria-label', 'Look preset');
-      styleRow.querySelectorAll('button').forEach(button => button.dataset.tooltip = `Apply the ${button.textContent} preset`);
-      $('lookPresetControls').append(styleRow);
-    }
+    for (const look of L.builtins.filter(item => !item.experimental)) $('lookPreset').add(new Option(look.name,look.id));
     const status = message => { $('lookStatus').textContent = storageMessage || message; };
     const run = action => { try { return action(); } catch (error) { status(error.message); return null; } };
     const snapshotLook = (label, id = userId()) => L.normalizeLook({ id, name: label, settings: deps.captureSettings() });
@@ -69,10 +64,7 @@
       const saved = look && library.find(item => item.id === look.id);
       $('lookCurrentName').textContent = look?.name || 'Custom appearance';
       $('lookModified').textContent = modified ? '· Modified' : '';
-      styleRow?.querySelectorAll('button').forEach(button => {
-        const selected = look?.id === button.dataset.value && !modified;
-        button.setAttribute('aria-checked', String(selected)); button.classList.toggle('active', selected);
-      });
+      $('lookPreset').value = L.builtins.some(item => !item.experimental && item.id===look?.id) ? look.id : '';
       $('lookUndo').disabled = !undoState; $('lookRevert').disabled = !modified;
       $('lookUpdate').disabled = !saved || !modified; $('lookRename').disabled = !saved; $('lookDelete').disabled = !saved;
       $('lookSavedRow').hidden = !library.length;
@@ -101,6 +93,7 @@
       persist(); $('lookNameForm').hidden = true; naming = null; sync();
       status(deps.hasMixedSurfaces() ? `${look.name} saved using the current orbital. Individual overrides stay in your session.` : `${look.name} saved.`);
     }
+    $('lookPreset').onchange = () => run(() => { const look = L.builtins.find(item => item.id===$('lookPreset').value); if (look) choose(look); });
     $('lookSaved').onchange = () => run(() => { const look = library.find(item => item.id === $('lookSaved').value); if (look) choose(look); });
     $('lookSave').onclick = () => beginName('new'); $('lookRename').onclick = () => beginName('rename');
     $('lookNameCancel').onclick = () => { $('lookNameForm').hidden = true; naming = null; $('lookSave').focus(); };
@@ -131,9 +124,9 @@
     };
     editor = global.VibeMolAppearanceEditor.createController({
       root: $('lookComponentEditor'), createSlider: deps.createSlider, captureSettings: deps.captureSettings,
-      getRendering: deps.getRendering, getSurfaceMaterials: deps.getSurfaceMaterials, getFinishScope: deps.getFinishScope, getOpacity: deps.getOpacity,
+      getRendering: deps.getRendering, getOpacity: deps.getOpacity, getActiveLook: current,
       edit: (section, patch, options, phase) => edit(JSON.stringify([section, Object.keys(patch), options]), phase, () => deps.editComponent(section, patch, options)),
-      opacity: (target, scope, value, phase) => edit(`opacity-${target}-${scope}`, phase, () => deps.editOpacity(target, scope, value)),
+      opacity: (value, phase) => edit('opacity', phase, () => deps.editOpacity(value)),
       getMaterials: () => clone(materials),
       updateMaterial: (id, label, material) => run(() => {
         if (!materials.some(item => item.id === id)) throw new Error('Choose a saved material first.');
@@ -149,14 +142,14 @@
         materials.push(item); persist(); sync(); status(`${item.name} material saved.`);
       }),
       exportMaterial: (label, material) => run(() => { deps.download({ kind: 'vibemol.material', version: 1, name: name(label), material: M.validateMaterial(material) }, `${filename(label)}.material.json`); status('Material exported.'); }),
-      importMaterial: async (file, target, scope) => {
+      importMaterial: async file => {
         try {
           if (file.size > 128 * 1024) throw new Error('Material files must be smaller than 128 KB.');
           if (materials.length >= MAX_ENTRIES) throw new Error('The library holds 50 materials.');
           const data = JSON.parse(await file.text());
           if (data.kind !== 'vibemol.material' || data.version !== 1) throw new Error('Unsupported material file.');
           const item = { id: userId(), name: name(data.name), material: M.validateMaterial(data.material) };
-          const before = deps.captureUndo(); deps.editComponent('material', item.material, { target, scope, replace: true });
+          const before = deps.captureUndo(); deps.editComponent('material', item.material, { replace: true });
           undoState = before; transaction = null; materials.push(item); persist(); sync(); status(`${item.name} imported and applied.`);
         } catch (error) { status(error.message); }
       },

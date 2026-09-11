@@ -12,7 +12,7 @@
     specularColor: '#ffffff', tint: '#ffffff', emissiveColor: '#ffffff', emissiveUsesColor: true,
     emissiveIntensity: 0, emissiveScale: 1, emissiveMix: 0, envMapIntensity: 0, iridescence: 0,
     vertexEmissiveColor: null, vertexEmissiveIntensity: null,
-    toonSteps: [12, 64, 142, 255], byElement: {} });
+    toonSteps: [12, 64, 142, 255], iridescenceThicknessRange: [180, 420], byElement: {} });
   const material = patch => ({ ...clone(MATERIAL_DEFAULT), ...clone(patch || {}) });
   function validateMaterial(value) {
     if (!object(value) || !['physical', 'phong', 'toon'].includes(value.model)) throw new Error('Invalid material model.');
@@ -23,11 +23,14 @@
     if (out.vertexEmissiveIntensity !== null && !finite(out.vertexEmissiveIntensity, 0, 2)) throw new Error('Invalid vertex emission intensity.');
     if (typeof out.emissiveUsesColor !== 'boolean' || !Array.isArray(out.toonSteps) || out.toonSteps.length < 2 || out.toonSteps.length > 8
       || !out.toonSteps.every(v => Number.isInteger(v) && v >= 0 && v <= 255)) throw new Error('Invalid material shading.');
+    if (!Array.isArray(out.iridescenceThicknessRange) || out.iridescenceThicknessRange.length !== 2
+      || !out.iridescenceThicknessRange.every(v => finite(v, 0, 1000)) || out.iridescenceThicknessRange[0] > out.iridescenceThicknessRange[1]) throw new Error('Invalid pearlescence thickness.');
     if (!object(out.byElement) || Object.keys(out.byElement).length > 119) throw new Error('Invalid material element overrides.');
     for (const [z, patch] of Object.entries(out.byElement)) {
       if (!/^(0|[1-9]\d{0,2})$/.test(z) || +z > 118 || !object(patch) || 'byElement' in patch) throw new Error('Invalid material element override.');
       validateMaterial({ ...out, ...patch, byElement: {} });
     }
+    out.byElement = {};
     return Object.fromEntries(Object.keys(MATERIAL_DEFAULT).map(key => [key, clone(out[key])]));
   }
   const SURFACE_PRESETS = Object.freeze({
@@ -45,58 +48,58 @@
   const surfacePreset = key => material({ ...(SURFACE_PRESETS[key] || SURFACE_PRESETS.emissive), vertexEmissiveColor: '#000000' });
   const BASIC_GEOMETRY = Object.freeze({ connector: 'cylinder', atomScaleMain: 1, atomScaleTransitionMetal: 1,
     sphereWidthSegments: 36, sphereHeightSegments: 24, bondRadius: 0.099, bondRadialSegments: 16,
-    bondHeightSegments: 2, kitCollarRadius: 0.114, curvedMultipleBonds: false });
+    bondHeightSegments: 2, kitCollarRadius: 0.114, curvedMultipleBonds: false, atomRadii: {} });
   const BASIC_LIGHTING = Object.freeze({ hemiColor: '#ffffff', hemiGroundColor: '#081018', hemiIntensity: 2,
     dirColor: '#ffffff', dirIntensity: 1, dirPos: [1, 1, 1], ambColor: '#999999', ambIntensity: 0.65,
-    rimColor: '#9fb8ff', rimIntensity: 0, exposure: 1, followTheme: true });
-  const metals = [...Array.from({ length: 10 }, (_, i) => 21 + i), ...Array.from({ length: 10 }, (_, i) => 39 + i),
-    ...Array.from({ length: 9 }, (_, i) => 72 + i), ...Array.from({ length: 9 }, (_, i) => 104 + i)];
+    rimColor: '#9fb8ff', rimIntensity: 0, rimPos: [-1.4, 1, -0.8], exposure: 1, toneMapping: 'linear', followTheme: true });
   function legacy(name = 'basic') {
-    const state = { version: 2, geometry: clone(BASIC_GEOMETRY), lighting: clone(BASIC_LIGHTING),
+    const state = { version: 3, geometry: clone(BASIC_GEOMETRY), lighting: clone(BASIC_LIGHTING),
       coloring: { palette: 'basic', elementBonds: true, bondColor: '#eaecf0' },
       effects: { outlineWidth: 0, atomOutlineFraction: 0, bondOutlineFraction: 0, highlights: false },
-      materials: { atoms: material({ roughness: 0.16, metalness: 0.08, clearcoat: 0.82, clearcoatRoughness: 0.12, reflectivity: 0.62 }),
-        bonds: material({ roughness: 0.14, metalness: 0.08, clearcoat: 0.68, clearcoatRoughness: 0.14, reflectivity: 0.58 }),
-        surfaces: surfacePreset('emissive'), bondsLinked: false } };
+      material: material({ roughness: 0.16, metalness: 0.08, clearcoat: 0.82, clearcoatRoughness: 0.12, reflectivity: 0.62 }) };
     if (name === 'toon' || name === 'fancy') {
       Object.assign(state.geometry, { atomScaleMain: 1.16, atomScaleTransitionMetal: 1.22, bondRadius: 0.095, bondRadialSegments: 20, bondHeightSegments: 1 });
       Object.assign(state.lighting, { hemiColor: '#f8fbff', hemiGroundColor: '#0f1826', hemiIntensity: 1.28,
         dirIntensity: 2.25, dirPos: [1.25, 1.2, 1.1], ambColor: '#9aa6ba', ambIntensity: 0.16, rimIntensity: 1.18 });
       state.coloring = { palette: 'toon', elementBonds: true, bondColor: '#d9e2ee' };
       state.effects = { outlineWidth: 0, atomOutlineFraction: 0.08, bondOutlineFraction: 0.18, highlights: true };
-      state.materials.atoms = material({ model: 'toon', emissiveScale: 0.26, emissiveMix: 0.06, emissiveIntensity: 0.56,
-        byElement: Object.fromEntries(metals.map(z => [z, { emissiveScale: 0.42, emissiveMix: 0.12, emissiveColor: '#ffe2a3', emissiveIntensity: 0.82 }])) });
-      state.materials.bonds = material({ model: 'toon', emissiveUsesColor: false, emissiveColor: '#273244', emissiveIntensity: 0.14, toonSteps: [10, 72, 150, 255] });
-      state.materials.surfaces = material({ model: 'toon', emissiveScale: 0.22, emissiveMix: 0.05, emissiveIntensity: 0.4, toonSteps: [8, 58, 132, 214, 255], vertexEmissiveColor: '#5f7392', vertexEmissiveIntensity: 0.2 });
+      state.material = material({ model: 'toon', emissiveScale: 0.26, emissiveMix: 0.06, emissiveIntensity: 0.56 });
     } else if (name === 'kit' || name === 'studio') {
       Object.assign(state.geometry, { connector: 'kit', atomScaleMain: 1.08, atomScaleTransitionMetal: 1.14,
         bondRadius: 0.068, bondRadialSegments: 20, bondHeightSegments: 1, curvedMultipleBonds: true });
       Object.assign(state.lighting, { hemiColor: '#fafcff', hemiGroundColor: '#515965', hemiIntensity: 1.35,
         dirIntensity: 2.1, dirPos: [1.35, 1.28, 1.18], ambColor: '#9ea7b2', ambIntensity: 0.18, rimColor: '#dfe7f2', rimIntensity: 0.75 });
       state.coloring = { palette: 'kit', elementBonds: false, bondColor: '#e7ebf2' };
-      state.materials.atoms = material({ model: 'phong', shininess: 145, emissiveScale: 0.02, emissiveIntensity: 0.06,
-        byElement: { 6: { emissiveScale: 0.012 }, ...Object.fromEntries(metals.map(z => [z, { shininess: 175, specularColor: '#ffe7b8', emissiveUsesColor: false, emissiveColor: '#2b2213', emissiveIntensity: 0.18 }])) } });
-      state.materials.bonds = material({ model: 'phong', shininess: 185, emissiveUsesColor: false, emissiveColor: '#161b24', emissiveIntensity: 0.02 });
+      state.material = material({ model: 'phong', shininess: 145, emissiveScale: 0.02, emissiveIntensity: 0.06 });
     }
     return state;
   }
   function normalize(value) {
-    if (!object(value) || value.version !== 2) throw new Error('Unsupported appearance version.');
-    const out = clone(value), g = out.geometry, l = out.lighting, e = out.effects, c = out.coloring, m = out.materials;
+    if (!object(value) || ![2, 3].includes(value.version)) throw new Error('Unsupported appearance version.');
+    const out = clone(value), g = out.geometry, l = out.lighting, e = out.effects, c = out.coloring;
+    if (out.version === 2) {
+      if (!object(out.materials) || typeof out.materials.bondsLinked !== 'boolean') throw new Error('Invalid material slots.');
+      for (const target of ['atoms', 'bonds', 'surfaces']) validateMaterial(out.materials[target]);
+      out.material = out.materials.atoms; delete out.materials; out.version = 3;
+    }
     if (!object(g) || !['cylinder', 'kit'].includes(g.connector) || typeof g.curvedMultipleBonds !== 'boolean') throw new Error('Invalid display geometry.');
     for (const key of ['atomScaleMain', 'atomScaleTransitionMetal']) if (!finite(g[key], 0.1, 3)) throw new Error('Invalid atom scale.');
     for (const key of ['bondRadius', 'kitCollarRadius']) if (!finite(g[key], 0.01, 0.4)) throw new Error('Invalid bond radius.');
     for (const key of ['sphereWidthSegments', 'sphereHeightSegments', 'bondRadialSegments', 'bondHeightSegments']) if (!Number.isInteger(g[key]) || !finite(g[key], 1, 128)) throw new Error('Invalid geometry resolution.');
+    g.atomRadii ??= {};
+    if (!object(g.atomRadii) || !Object.entries(g.atomRadii).every(([z, radius]) => /^(0|[1-9]\d{0,2})$/.test(z) && +z <= 118 && finite(radius, 0.05, 2))) throw new Error('Invalid atom display radii.');
     if (!object(l) || !Array.isArray(l.dirPos) || l.dirPos.length !== 3 || !l.dirPos.every(v => finite(v, -10, 10))
       || Math.hypot(...l.dirPos) < 0.01 || typeof l.followTheme !== 'boolean') throw new Error('Invalid lighting direction.');
     for (const key of ['hemiColor', 'hemiGroundColor', 'dirColor', 'ambColor', 'rimColor']) if (!hex(l[key])) throw new Error('Invalid light color.');
     for (const key of ['hemiIntensity', 'dirIntensity', 'ambIntensity', 'rimIntensity']) if (!finite(l[key], 0, 6)) throw new Error('Invalid light intensity.');
     if (!finite(l.exposure, 0.4, 2)) throw new Error('Invalid exposure.');
+    l.rimPos ??= clone(BASIC_LIGHTING.rimPos); l.toneMapping ??= 'linear';
+    if (!['linear','aces','none'].includes(l.toneMapping)) throw new Error('Invalid tone mapping.');
+    if (!Array.isArray(l.rimPos) || l.rimPos.length !== 3 || !l.rimPos.every(v => finite(v, -10, 10)) || Math.hypot(...l.rimPos) < 0.01) throw new Error('Invalid rim light direction.');
     if (!object(e) || !finite(e.outlineWidth, 0, 0.04) || !finite(e.atomOutlineFraction, 0, 0.2)
       || !finite(e.bondOutlineFraction, 0, 0.3) || typeof e.highlights !== 'boolean') throw new Error('Invalid contour settings.');
     if (!object(c) || !['basic', 'toon', 'kit'].includes(c.palette) || typeof c.elementBonds !== 'boolean' || !hex(c.bondColor)) throw new Error('Invalid coloring settings.');
-    if (!object(m) || typeof m.bondsLinked !== 'boolean') throw new Error('Invalid material slots.');
-    for (const target of ['atoms', 'bonds', 'surfaces']) m[target] = validateMaterial(m[target]);
+    out.material = validateMaterial(out.material);
     return out;
   }
   function fromLegacy(settings) {
@@ -108,8 +111,7 @@
         metalness: settings['molecule.material.metalness'] ?? 0, clearcoat: settings['molecule.material.clearcoat'] ?? 0.3,
         clearcoatRoughness: 0.15, envMapIntensity: settings['molecule.material.environment'] ?? 0,
         iridescence: settings['molecule.material.iridescence'] ?? 0 });
-      out.materials.atoms = recipe; out.materials.bonds = clone(recipe);
-      out.materials.bondsLinked = true;
+      out.material = recipe;
       out.coloring.elementBonds = settings['molecule.material.elementBonds'] !== false;
       out.coloring.bondColor = out.coloring.elementBonds ? '#ffffff' : settings['molecule.material.bondColor'] || '#9b9b9b';
     }
@@ -118,16 +120,12 @@
       dirColor: '#ffffff', ambColor: '#ffffff', rimColor: '#ffffff', followTheme: false,
       hemiIntensity: settings['lighting.fill'] ?? 2, dirIntensity: settings['lighting.key'] ?? 1,
       ambIntensity: settings['lighting.ambient'] ?? 0.65, rimIntensity: settings['lighting.rim'] ?? 0 });
-    if (out.materials.surfaces.model !== 'toon' || settings['surface.followMoleculeStyle'] === false) out.materials.surfaces = surfacePreset(settings['surface.materialPreset']);
+    if ('surface.materialPreset' in settings && (!finish || finish === 'inherit')) out.material = surfacePreset(settings['surface.materialPreset']);
     return normalize(out);
   }
-  function resolvedMaterial(state, target, z = null) {
-    const base = target === 'bonds' && state.materials.bondsLinked ? state.materials.atoms : state.materials[target];
-    return { ...base, ...(z == null ? {} : base.byElement[z] || {}), byElement: {} };
-  }
+  const resolvedMaterial = state => state.material;
   function patchMaterial(value, patch) {
     const next = validateMaterial({ ...value, ...patch });
-    for (const override of Object.values(next.byElement)) for (const key of Object.keys(patch)) delete override[key];
     if (['emissiveIntensity','emissiveColor','emissiveUsesColor'].some(key => key in patch)) {
       next.vertexEmissiveColor = null; next.vertexEmissiveIntensity = null;
     }
@@ -148,7 +146,7 @@
     else mat = new THREE.MeshPhysicalMaterial({ ...common, roughness: d.roughness, metalness: d.metalness,
       clearcoat: d.clearcoat, clearcoatRoughness: d.clearcoatRoughness, reflectivity: d.reflectivity,
       specularIntensity: d.specularIntensity, specularColor: d.specularColor, envMapIntensity: d.envMapIntensity,
-      iridescence: d.iridescence, iridescenceIOR: 1.3, iridescenceThicknessRange: [180, 420] });
+      iridescence: d.iridescence, iridescenceIOR: 1.3, iridescenceThicknessRange: d.iridescenceThicknessRange });
     mat.envMapIntensity = d.envMapIntensity;
     return mat;
   }

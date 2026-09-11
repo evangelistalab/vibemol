@@ -26,14 +26,14 @@ test('native looks round-trip resolved settings without geometry or orbital comp
 test('look validation rejects malformed files before applying any settings', () => {
   const looks = api();
   for (const mutate of [
-    value => { value.meta.lookVersion = 3; },
+    value => { value.meta.lookVersion = 4; },
     value => { value.settings['appearance.look'].id = '../bad'; },
     value => { value.settings['appearance.look'].name = ''; },
     value => { delete value.settings['appearance.rendering']; },
     value => { value.settings['appearance.rendering'].lighting.dirIntensity = Infinity; },
     value => { value.settings['surface.opacity'] = 0; },
-    value => { value.settings['appearance.rendering'].materials.atoms.roughness = '0.4'; },
-    value => { value.settings['appearance.rendering'].materials.atoms.model = 'pathtraced'; },
+    value => { value.settings['appearance.rendering'].material.roughness = '0.4'; },
+    value => { value.settings['appearance.rendering'].material.model = 'pathtraced'; },
     value => { value.settings['global.elementColorOverrides'] = {6:'url(bad)'}; },
     value => { value.settings['appearance.look'].thumbnail = 'https://example.com/look.png'; },
     value => { value.settings['appearance.look'].thumbnail = 'data:image/svg+xml;base64,PHN2Zz4='; },
@@ -53,8 +53,8 @@ test('personal previews are portable bounded PNG data URLs', () => {
 test('modified detection compares palettes by value and tolerates numeric control rounding', () => {
   const looks = api(), before = looks.builtins[0].settings, after = plain(before);
   after['global.elementColorOverrides'] = Object.fromEntries(Object.entries(after['global.elementColorOverrides']).reverse());
-  after['appearance.rendering'].materials.atoms.roughness += 1e-12;
+  after['appearance.rendering'].material.roughness += 1e-12;
   assert.ok(looks.equal(before, after));
-  after['appearance.rendering'].materials.atoms.roughness += 0.1;
+  after['appearance.rendering'].material.roughness += 0.1;
   assert.ok(!looks.equal(before, after));
 });

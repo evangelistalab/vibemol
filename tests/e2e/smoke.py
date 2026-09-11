@@ -5013,6 +5013,10 @@ def main() -> int:
                 }"""
             )
             load_volume_asset(page, '/assets/data/sample.cube')
+            page.evaluate("""() => {
+                const select=document.getElementById('appearanceMaterialPreset');
+                select.value='emissive';select.dispatchEvent(new Event('change',{bubbles:true}));
+            }""")
             page.wait_for_function(
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
@@ -5026,10 +5030,12 @@ def main() -> int:
             page.wait_for_function(
                 """() => {
                     const row = document.getElementById('rowSurfaceMaterialPreset');
-                    const select = document.getElementById('surfaceMaterialPreset');
+                    const select = document.getElementById('appearanceMaterialPreset');
                     if (!(row && select)) return false;
                     const options = Array.from(select.options || []).map((opt) => String(opt.textContent || '').trim());
-                    return options.join('|') === 'Emissive|Matte|Satin|Enamel|Lacquer|Metal|Gel|Ceramic'
+                    return options.join('|') === 'Custom|Polished|Glossy|Matte|Satin|Vivid|Enamel|Classic smooth|Toon'
+                      && row.classList.contains('appearanceHiddenControl')
+                      && !document.getElementById('appearanceMaterialModel')
                       && String(select.value || '') === 'emissive';
                 }"""
             )

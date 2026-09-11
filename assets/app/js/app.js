@@ -1644,15 +1644,18 @@
     const width = Math.max(1, Number(metrics && metrics.bufferWidth) || 1);
     const height = Math.max(1, Number(metrics && metrics.bufferHeight) || 1);
     const needsWboitTargets = ensureWboitSupport();
+    const colorType = needsWboitTargets && renderer.toneMapping === THREE.ACESFilmicToneMapping ? THREE.HalfFloatType : THREE.UnsignedByteType;
     const needsResize = !sceneRenderTarget
       || sceneRenderTarget.width !== width
       || sceneRenderTarget.height !== height
+      || sceneRenderTarget.texture.type !== colorType
       || !sceneDepthTexture
       || (needsWboitTargets && (!wboitAccumTarget || !wboitRevealTarget));
     if (needsResize) {
       disposeSceneRenderTargets();
       sceneDepthTexture = createSharedSceneDepthTexture(width, height);
       const target = new THREE.WebGLRenderTarget(width, height, {
+        type: colorType,
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
         format: THREE.RGBAFormat,
@@ -2104,8 +2107,9 @@
     hemi.color.set(lighting.hemiColor); hemi.groundColor.set(lighting.hemiGroundColor); hemi.intensity = lighting.hemiIntensity;
     dir.color.set(lighting.dirColor); dir.intensity = lighting.dirIntensity; dir.position.fromArray(lighting.dirPos);
     amb.color.set(lighting.ambColor); amb.intensity = lighting.ambIntensity;
-    rim.color.set(lighting.rimColor); rim.intensity = lighting.rimIntensity;
-    renderer.toneMapping = lighting.exposure === 1 ? THREE.NoToneMapping : THREE.LinearToneMapping;
+    rim.color.set(lighting.rimColor); rim.intensity = lighting.rimIntensity; rim.position.fromArray(lighting.rimPos);
+    renderer.toneMapping = lighting.toneMapping === 'aces' ? THREE.ACESFilmicToneMapping
+      : lighting.toneMapping === 'none' || lighting.exposure === 1 ? THREE.NoToneMapping : THREE.LinearToneMapping;
     renderer.toneMappingExposure = lighting.exposure;
 
     let bg = null;
@@ -2686,7 +2690,9 @@
     const baseScale = isTransitionMetalAtomicNumber(z)
       ? profile.atomScaleTransitionMetal
       : profile.atomScaleMain;
-    return baseScale * getMoleculeAtomRadiusScale();
+    const radius = appearanceState.geometry.atomRadii[z];
+    const radiusScale = radius == null ? 1 : radius / (0.5 * getCovalentRadiusAngstrom(z));
+    return baseScale * radiusScale * getMoleculeAtomRadiusScale();
   }
 
   /**
@@ -4748,14 +4754,9 @@
   }
 
   /**
-   * Resolve a stored surface material, including compatibility for older layers.
+   * Surfaces always use the same material descriptor as atoms and bonds.
    */
-  function getSurfaceMaterialDescriptor(layer = null) {
-    if (layer?.material) return layer.material;
-    // Compatibility adapter for old scene layers; new layers store resolved materials.
-    if (layer && (layer.independentMaterial || appearanceState.materials.surfaces.model !== 'toon')) return appearanceModel.surfacePreset(getSurfaceMaterialPresetKey(layer));
-    return appearanceState.materials.surfaces;
-  }
+  function getSurfaceMaterialDescriptor() { return appearanceState.material; }
   function createSurfaceMaterial(color, opacity, layer, vertexColors = false) {
     const descriptor = getSurfaceMaterialDescriptor(layer);
     const mat = appearanceModel.createMaterial(THREE, descriptor, color, getToonGradientTexture('surface', descriptor.toonSteps), { vertexColors });
@@ -9241,7 +9242,7 @@
       opacity: Math.max(0.05, Math.min(1, Number(surfaceOpacityDefault) || 1)),
       surfaceStyle: 'solid',
       solidPreset: getSurfaceMaterialPresetKey(),
-      material: appearanceModel.clone(appearanceState.materials.surfaces),
+      material: appearanceModel.clone(appearanceState.material),
       colorScheme: scheme,
       posColor: scheme === 'custom' ? surfacePosColorDefault : (schemeDefaults ? schemeDefaults.pos : null),
       negColor: scheme === 'custom' ? surfaceNegColorDefault : (schemeDefaults ? schemeDefaults.neg : null),
@@ -26434,7 +26435,7 @@
     if (!getLayerAutoIsoEnabled(layer)) layer.isoPending = false;
     layer.opacity = Math.max(0.05, Math.min(1, Number(opInput && opInput.value) || 1));
     layer.surfaceStyle = 'solid';
-    if (options.materialChanged) layer.material = appearanceModel.clone(appearanceState.materials.surfaces);
+    if (options.materialChanged) layer.material = appearanceModel.clone(appearanceState.material);
     layer.solidPreset = String(surfaceMaterialPresetSelect && surfaceMaterialPresetSelect.value || getSurfaceMaterialPresetKey(layer)).toLowerCase();
     if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, layer.solidPreset)) layer.solidPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
     layer.colorScheme = (schemeSelect && schemeSelect.value) || surfaceColorSchemeDefault || 'emory';
@@ -27116,7 +27117,7 @@
       if (legacyKeys.some(key => key in settings)) {
         const previous = 'molecule.style' in settings ? {} : { 'molecule.style': moleculeStyle, ...lookRendering };
         next = appearanceModel.fromLegacy({ ...previous, ...settings });
-      } else if ('surface.materialPreset' in settings) next.materials.surfaces = appearanceModel.surfacePreset(settings['surface.materialPreset']);
+      } else if ('surface.materialPreset' in settings) next.material = appearanceModel.surfacePreset(settings['surface.materialPreset']);
       else return settings;
       return { ...settings, 'appearance.rendering': next };
     },
@@ -27826,7 +27827,6 @@
     const values = exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings;
     const layer = getSurfaceAppearanceLayer() || getLookFinishScope('group').layers[0];
     if (layer) Object.assign(values, getLookSurfaceSettings(layer));
-    if (layer) values['appearance.rendering'].materials.surfaces = appearanceModel.clone(getSurfaceMaterialDescriptor(layer));
     return lookModule.settings(values);
   }
   function getLookFinishScope(scope) {
@@ -27913,7 +27913,7 @@
     presetController.applySettings(settings, { mode: PRESET_MODE.STRICT, afterApply: false });
     for (const layer of layers) {
       for (const [key, field] of Object.entries(lookLayerFields)) if (key in settings) layer[field] = settings[key];
-      if ('appearance.rendering' in settings || 'surface.materialPreset' in settings) layer.material = appearanceModel.clone(appearanceState.materials.surfaces);
+      if ('appearance.rendering' in settings || 'surface.materialPreset' in settings) layer.material = appearanceModel.clone(appearanceState.material);
       persistActiveCubeLayerState(layer, { render: false });
     }
   }
@@ -28219,10 +28219,18 @@
         if (!obj.material || (target === 'atoms' ? obj.userData?.type !== 'atom' : obj.material.userData?.vmAppearanceTarget !== target)) return;
         const mat = obj.material;
         materials.push({ type: mat.type, color: mat.color?.getHexString(), roughness: mat.roughness,
-          envMapIntensity: mat.envMapIntensity, iridescence: mat.iridescence });
+          envMapIntensity: mat.envMapIntensity, iridescence: mat.iridescence, clearcoat:mat.clearcoat,
+          metalness:mat.metalness, shininess:mat.shininess, iridescenceThicknessRange:mat.iridescenceThicknessRange });
       });
       return materials;
     },
+    getLookLightingSnapshot: () => ({
+      key:{intensity:dir.intensity,position:dir.position.toArray()},
+      fill:{intensity:hemi.intensity,ground:hemi.groundColor.getHexString()},
+      rim:{intensity:rim.intensity,position:rim.position.toArray()}, ambient:amb.intensity,
+      toneMapping:renderer.toneMapping, exposure:renderer.toneMappingExposure,
+      shadows:renderer.shadowMap.enabled, environment:!!scene.environment,
+    }),
     getBondCarrierSnapshots: () => {
       if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
       const out = [];
@@ -31393,28 +31401,13 @@
   if (surfaceMaterialPresetSelect) {
     surfaceMaterialPresetSelect.value = getSurfaceMaterialPresetKey();
     surfaceMaterialPresetSelect.onchange = () => {
-      const layer = getSurfaceAppearanceLayer();
-      if (layer) {
-        let nextPreset = String(surfaceMaterialPresetSelect.value || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
-        if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, nextPreset)) {
-          nextPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
-        }
-        surfaceMaterialPresetSelect.value = nextPreset;
-        applyToSurfaceAppearanceTargets((target) => {
-          target.solidPreset = nextPreset;
-          target.material = appearanceModel.surfacePreset(nextPreset);
-        });
-        return;
-      }
-      surfaceMaterialPreset = String(surfaceMaterialPresetSelect.value || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();
-      if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, surfaceMaterialPreset)) {
-        surfaceMaterialPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
-      }
-      surfaceMaterialPresetSelect.value = surfaceMaterialPreset;
-      rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
+      const value = surfaceMaterialPresetSelect.value;
+      surfaceMaterialPreset = Object.hasOwn(SURFACE_MATERIAL_PRESETS,value) ? value : DEFAULT_SURFACE_MATERIAL_PRESET;
+      for (const layer of getAllLookLayers()) layer.solidPreset = surfaceMaterialPreset;
+      editAppearanceComponent('material',appearanceModel.surfacePreset(surfaceMaterialPreset),{replace:true});
     };
   }
+
   if (surfaceSignFlipToggleEl) {
     surfaceSignFlipToggleEl.onchange = () => {
       const layer = getSurfaceAppearanceLayer();
@@ -32754,34 +32747,19 @@
   else void sessionRecovery.initialize();
 
   function editAppearanceComponent(section, patch, options = {}) {
-    if (!['material', 'linkBonds', 'geometry', 'lighting', 'effects', 'coloring'].includes(section)) throw new Error('Unknown appearance component.');
-    options = { target: 'atoms', scope: 'group', ...options };
-    if (!['atoms', 'bonds', 'surfaces'].includes(options.target)) throw new Error('Unknown material target.');
+    if (!['material', 'geometry', 'lighting', 'effects', 'coloring'].includes(section)) throw new Error('Unknown appearance component.');
     const next = appearanceModel.clone(appearanceState);
-    const layers = options.target === 'surfaces' ? getLookFinishScope(options.scope || 'group').layers : [];
-    let nextLayerMaterials = [];
-    if (section === 'material') {
-      const target = options.target || 'atoms';
-      if (target === 'bonds' && next.materials.bondsLinked) throw new Error('Unlink bonds to edit their material separately.');
-      next.materials[target] = options.replace ? appearanceModel.validateMaterial(patch) : appearanceModel.patchMaterial(next.materials[target], patch);
-      nextLayerMaterials = layers.map(layer => [layer, options.replace ? appearanceModel.validateMaterial(patch) : appearanceModel.patchMaterial(getSurfaceMaterialDescriptor(layer), patch)]);
-    } else if (section === 'linkBonds') {
-      if (!patch.linked && next.materials.bondsLinked) next.materials.bonds = appearanceModel.clone(next.materials.atoms);
-      next.materials.bondsLinked = !!patch.linked;
-    } else Object.assign(next[section], patch);
-    appearanceModel.normalize(next);
-    if (JSON.stringify(next) === JSON.stringify(appearanceState)
-      && nextLayerMaterials.every(([layer, material]) => JSON.stringify(material) === JSON.stringify(getSurfaceMaterialDescriptor(layer)))
+    if (section === 'material') next.material = options.replace ? appearanceModel.validateMaterial(patch) : appearanceModel.patchMaterial(next.material, patch);
+    else Object.assign(next[section], patch);
+    const normalized = appearanceModel.normalize(next);
+    if (JSON.stringify(normalized) === JSON.stringify(appearanceState)
       && !(section === 'geometry' && (('atomScaleMain' in patch && moleculeAtomRadiusScale !== 1) || ('bondRadius' in patch && moleculeBondRadiusScale !== 1)))) return false;
-    const settings = { 'appearance.rendering': next };
+    const settings = { 'appearance.rendering': normalized };
     if (section === 'geometry' && 'atomScaleMain' in patch) settings['molecule.atomRadiusScale'] = 1;
     if (section === 'geometry' && 'bondRadius' in patch) settings['molecule.bondRadiusScale'] = 1;
     applyLookSettings(settings, []);
-    for (const [layer, material] of nextLayerMaterials) { layer.material = material; layer.independentMaterial = true; persistActiveCubeLayerState(layer, { render: false }); }
     const geometry = ['geometry', 'effects', 'coloring'].includes(section);
-    const targets = section === 'material' ? (options.target === 'atoms' && next.materials.bondsLinked ? ['atoms', 'bonds'] : [options.target])
-      : section === 'linkBonds' ? ['bonds'] : geometry ? ['atoms', 'bonds'] : [];
-    finishLookChange({ geometry, targets, layers: options.target === 'surfaces' ? layers : undefined });
+    finishLookChange({ geometry, targets: section === 'material' ? ['atoms','bonds','surfaces'] : geometry ? ['atoms','bonds'] : [] });
     return true;
   }
   looksUi = window.VibeMolLooksUi.createController({
@@ -32789,20 +32767,17 @@
     applyStartupDefault: !appearanceStudy,
     createSlider: root => { const slider = new VmSlider(root); viewSliderRegistry.set(slider.valueInput, slider); return slider; },
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,
-    getOpacity: (target, scope) => {
-      if (target !== 'surfaces') return { value: target === 'atoms' ? moleculeAtomOpacity : moleculeBondOpacity, mixed: false };
-      const values = getLookFinishScope(scope).layers.map(layer => layer.opacity);
-      return { value: values[0] ?? getSurfaceOpacityValue(), mixed: values.some(value => value !== values[0]) };
+    getOpacity: () => {
+      const values = [moleculeAtomOpacity, moleculeBondOpacity, surfaceOpacityDefault, ...getAllLookLayers().map(layer => layer.opacity)];
+      return { value:values[0], mixed:values.some(value => value!==values[0]) };
     },
-    editOpacity: (target, scope, value) => {
-      const layers = target === 'surfaces' ? getLookFinishScope(scope).layers : [];
-      if (target === 'surfaces' ? surfaceOpacityDefault === value && layers.every(layer => layer.opacity === value)
-        : (target === 'atoms' ? moleculeAtomOpacity : moleculeBondOpacity) === value) return false;
-      applyLookSettings({ [target === 'surfaces' ? 'surface.opacity' : `molecule.opacity.${target === 'atoms' ? 'atom' : 'bond'}`]: value }, layers);
-      finishLookChange({ geometry: target !== 'surfaces', targets: [target], layers });
+    editOpacity: value => {
+      const layers = getAllLookLayers();
+      if (moleculeAtomOpacity===value && moleculeBondOpacity===value && surfaceOpacityDefault===value && layers.every(layer=>layer.opacity===value)) return false;
+      applyLookSettings({'molecule.opacity.atom':value,'molecule.opacity.bond':value,'surface.opacity':value},layers);
+      finishLookChange({geometry:true,targets:['atoms','bonds','surfaces'],layers});
       return true;
     },
-    getSurfaceMaterials: scope => getLookFinishScope(scope).layers.map(layer => appearanceModel.clone(getSurfaceMaterialDescriptor(layer))),
     getActiveLook: () => activeLook,
     setActiveLook: value => { activeLook = cloneJsonLike(value); scheduleAppearancePresetAutosave(); },
     applyLook: applyNamedLook, captureUndo: captureLookUndo, restoreUndo: restoreLookUndo,
@@ -32812,18 +32787,6 @@
       return layers.length > 1 && layers.some(layer => JSON.stringify(getLookSurfaceSettings(layer)) !== JSON.stringify(getLookSurfaceSettings(layers[0]))
         || JSON.stringify(getSurfaceMaterialDescriptor(layer)) !== JSON.stringify(getSurfaceMaterialDescriptor(layers[0])));
     },
-    applyFinish: (material, scope) => {
-      const layers = getLookFinishScope(scope).layers;
-      if (!layers.length) return;
-      applyLookSettings({ 'surface.materialPreset': material }, layers);
-      for (const layer of layers) {
-        layer.independentMaterial = true;
-        layer.material = appearanceModel.surfacePreset(material);
-        persistActiveCubeLayerState(layer, { render: false });
-      }
-      finishLookChange({ geometry: false, targets: ['surfaces'], layers });
-    },
-    adjust: patch => { applyLookSettings(lookModule.settings(patch, false), []); finishLookChange(); },
     download: (value, filename) => {
       const link = document.createElement('a'); link.download = filename;
       link.href = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' }));
@@ -32833,7 +32796,7 @@
   window.VibeMolAppearanceLooks = Object.freeze({
     list: () => lookModule.builtins.map(look => ({ id: look.id, name: look.name, experimental: !!look.experimental })),
     edit: editAppearanceComponent,
-    material: (target, scope = 'group') => target === 'surfaces' ? getLookFinishScope(scope).layers.map(layer => appearanceModel.clone(getSurfaceMaterialDescriptor(layer))) : appearanceModel.clone(appearanceModel.resolvedMaterial(appearanceState, target)),
+    material: () => appearanceModel.clone(appearanceState.material),
     apply: id => { const look = lookModule.builtins.find(item => item.id === id); if (!look) throw new Error('Unknown look.'); looksUi.choose(look); },
     snapshot: () => ({ activeLook: cloneJsonLike(activeLook), settings: captureLookSettings(), saved: looksUi.getLibrary() }),
   });

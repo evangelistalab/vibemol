@@ -2463,7 +2463,7 @@
             <div id="looksPanel" aria-label="Appearance editor"></div>
             <section class="vm-appearance-section" id="appearanceRenderingSection">
               <h3 class="vm-section-label">Rendering</h3>
-              <div class="vm-field-row" id="appearanceStyleRow">
+              <div class="vm-field-row appearanceHiddenControl" id="appearanceStyleRow" aria-hidden="true">
                 <label class="vm-field-label" for="appearanceMoleculeStyleBasicBtn">Style</label>
                 <div class="vm-field-control vm-field-control--group">
                   <div id="appearanceMoleculeStyleGroup" class="vm-button-group" role="radiogroup" aria-label="Molecule style">
@@ -2801,7 +2801,7 @@
                   </div>
                 </div>
               </div>
-              <div id="rowSurfaceMaterialPreset" class="vm-field-row">
+              <div id="rowSurfaceMaterialPreset" class="vm-field-row appearanceHiddenControl" aria-hidden="true">
                 <label class="vm-field-label" for="surfaceMaterialPreset">Material</label>
                 <div class="vm-field-control">
                   <select id="surfaceMaterialPreset" class="vm-select" data-tooltip="Surface material">

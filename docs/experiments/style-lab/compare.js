@@ -35,8 +35,7 @@
     windows[1].VibeMolAppearanceLooks.apply($('mode').value === 'materials' ? $('reference').value : $('candidate').value);
     if ($('mode').value === 'materials') {
       const recipe = windows[1].VibeMolLooks.builtins.find(item => item.id === $('candidate').value).settings['appearance.rendering'];
-      windows[1].VibeMolAppearanceLooks.edit('linkBonds', {linked:false});
-      for (const target of ['atoms','bonds','surfaces']) windows[1].VibeMolAppearanceLooks.edit('material', recipe.materials[target === 'bonds' && recipe.materials.bondsLinked ? 'atoms' : target], {target,replace:true});
+      windows[1].VibeMolAppearanceLooks.edit('material', recipe.material, {replace:true});
     }
     $('leftLabel').textContent = $('reference').selectedOptions[0].textContent;
     $('rightLabel').textContent = $('candidate').selectedOptions[0].textContent + ($('mode').value === 'materials' ? ' · materials only' : '');

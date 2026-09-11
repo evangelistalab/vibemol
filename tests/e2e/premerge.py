@@ -69,11 +69,10 @@ def molecule_styles(page, dialogs):
     assert load(page, [{'name': 'bond.xyz', 'text': '2\nStyle fixture\nC 0 0 0\nC 1.34 0 0\n'}])['ok']
     styles = ['basic', 'toon', 'kit']
     assert page.locator('#moleculeStyle option').evaluate_all('els => els.map(el => el.value)') == styles
-    chips = page.locator('#appearanceMoleculeStyleGroup [role=radio]')
-    assert chips.evaluate_all('els => els.map(el => el.dataset.value)') == styles
+    assert page.locator('#lookPreset option').evaluate_all('els => els.slice(1,4).map(el => el.value)') == styles
     page.locator('#displayInspectorBtn').click()
     for style in styles:
-        page.locator(f'#appearanceMoleculeStyleGroup [data-value="{style}"]').click()
+        page.locator('#lookPreset').select_option(style)
         assert page.locator('#moleculeStyle').input_value() == style
         rendered = page.evaluate('() => window.VibeMolTesting.getMoleculeRenderSnapshot()')
         assert rendered['atomCount'] == 2 and rendered['bondCarrierCount'] >= 1, rendered
@@ -586,7 +585,7 @@ def orbital_group_appearance(page, dialogs):
     set_surface_control(page, '#posColor', '#12ab34')
     set_surface_control(page, '#negColor', '#bc23de')
     set_surface_control(page, '#opacity', 0.65)
-    page.locator('#surfaceMaterialPreset').select_option('matte')
+    page.locator('#appearanceMaterialPreset').select_option('matte')
     page.locator('#surfaceSignFlipBtn').check()
     page.locator('#appearanceRenderModeGroup [data-value="cloud"]').click()
     page.locator('#appearanceCloudTypeGroup [data-value="points"]').click()
@@ -594,9 +593,11 @@ def orbital_group_appearance(page, dialogs):
     for layer in edited[:2]:
         assert layer['iso'] == 0.045 and layer['opacity'] == 0.65, layer
         assert layer['colorScheme'] == 'custom' and layer['posColor'] == '#12ab34' and layer['negColor'] == '#bc23de', layer
-        assert layer['solidPreset'] == 'matte' and layer['signFlip'], layer
+        assert layer['material']['roughness'] == 0.85 and layer['signFlip'], layer
         assert layer['renderMode'] == 'cloud' and layer['cloudType'] == 'points', layer
-    assert edited[2] == other_before
+    assert edited[2]['material']['roughness'] == 0.85
+    assert {key:value for key,value in edited[2].items() if key!='material'} == {key:value for key,value in other_before.items() if key!='material'}
+    other_before=edited[2]
     assert [layer['visible'] for layer in edited] == before_visibility
     assert not page.locator('[data-mixed-key="iso"]').is_visible()
 
@@ -631,7 +632,7 @@ def orbital_group_appearance(page, dialogs):
     for key in ('iso', 'autoIso', 'opacity', 'solidPreset', 'colorScheme', 'renderMode', 'cloudType', 'signFlip'):
         assert reset[0][key] == reset[1][key], (key, reset)
     assert reset[0]['colorScheme'] != 'custom' and not reset[0]['signFlip']
-    assert reset[2] == other_before
+    assert {key:value for key,value in reset[2].items() if key!='material'} == {key:value for key,value in other_before.items() if key!='material'}
 
 
 def molden_group_appearance(page, dialogs):

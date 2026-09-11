@@ -1,8 +1,10 @@
 # Visual Style Lab
 
-Start with the [native renderer comparison](compare.html) and the [component editor documentation](../../appearance-looks.md). The approved product presets are **Basic, Toon, and Kit**. Classic, Porcelain, Nocturne, Ink, Atelier, and Opal remain candidates for later selection. The comparison loads actual VibeMol instances, supports complete looks or materials-only comparisons, and opens the same native editor used in the app. Its previews do not overwrite ordinary appearance autosave or workspace recovery.
+The native editor now includes Basic, Toon, Kit, Classic, Porcelain, Ink, and Opal in its preset menu. Material controls are shared across atoms, bonds, and surfaces. Studio recipes include the Lab's light directions, intensities, reflections, and tone mapping. See [the current appearance guide](../../appearance-looks.md) for the implemented behavior; the study and original design notes below remain a reference.
 
-The original `/docs/experiments/style-lab/` page is retained as an isolated historical study. Its separate renderer, UI skin, and `vibemol.look-study` files are not the product architecture. The notes below describe that earlier experiment; the native component editor supersedes the proposed gallery/Polish integration. Native material editing now exposes independent atom, bond, and surface shading, physical material parameters, Toon bands, lighting, and reusable material swatches.
+Start with the [native renderer comparison](compare.html) and the [component editor documentation](../../appearance-looks.md). The product presets are **Basic, Toon, Kit, Classic, Porcelain, Ink, and Opal**. Nocturne and Atelier remain candidates. The comparison loads actual VibeMol instances, supports complete looks or materials-only comparisons, and opens the same native editor used in the app. Its previews do not overwrite ordinary appearance autosave or workspace recovery.
+
+The original `/docs/experiments/style-lab/` page is retained as an isolated historical study. Its separate renderer, UI skin, and `vibemol.look-study` files are not the product architecture. The notes below describe that earlier experiment; the native component editor supersedes the proposed gallery/Polish integration. Native material editing uses one shared material for atoms, bonds, and surfaces, with physical material parameters, Toon bands, lighting, and reusable material swatches.
 
 ## Orbital reference presets
 
