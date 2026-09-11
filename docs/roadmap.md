@@ -76,7 +76,7 @@ These items should no longer be scheduled as entirely new features. Remaining wo
 | Add autosave; serialize playback in presets | Appearance autosave and vibration preset keys remain available. Sessions now preserve full playback configuration and support complete workspace recovery. |
 | Keep builder hardening first; ongoing refactoring is completed | Replace the old blanket ranking with the ordered milestones below. The scene/arithmetic/trajectory extractions are complete; future refactors should support a specific feature or measured reliability/performance problem. |
 
-Glossy rendering is **retired**. The supported style set is Basic / Toon / Kit, with display shortcuts `1/2/3`. It should not return as a pending style or test-matrix requirement. Edit-mode `4` remains available for bond order.
+The former Glossy molecule style and its welded connectors remain retired. **Glossy is available as an independent material finish** for atoms, bonds, and surfaces, with save/open support. The approved complete presets remain Basic / Toon / Kit, with display shortcuts `1/2/3`. Edit-mode `4` remains available for bond order.
 
 ## Subsequent priorities
 

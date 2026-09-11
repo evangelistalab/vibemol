@@ -40,7 +40,7 @@
     'global.elementColors': [true, bool],
     'global.elementColorOverrides': [{}, value => value && typeof value === 'object' && !Array.isArray(value)
       && Object.entries(value).every(([key, color]) => /^(0|[1-9]\d{0,2})$/.test(key) && +key <= 118 && hex(color))],
-    'surface.materialPreset': ['emissive', choice(['emissive', 'matte', 'satin', 'enamel', 'lacquer', 'metal', 'gel', 'ceramic'])],
+    'surface.materialPreset': ['emissive', choice(Object.keys(model.surfacePresets))],
     'surface.opacity': [1, number(0.05, 1)],
     'surface.colorScheme': ['custom', choice(['custom', 'emory', 'national', 'bright', 'electron', 'classic'])],
     'surface.posColor': ['#ff8000', hex],

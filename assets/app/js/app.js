@@ -4783,7 +4783,7 @@
 
   /**
    * Normalize the selected surface material preset key.
-   * @returns {'emissive'|'matte'|'satin'|'enamel'|'lacquer'|'metal'|'gel'|'ceramic'}
+   * @returns {'emissive'|'glossy'|'matte'|'satin'|'enamel'|'lacquer'|'metal'|'gel'|'ceramic'}
    */
   function getSurfaceMaterialPresetKey(layer = null) {
     const key = String((layer && layer.solidPreset) || surfaceMaterialPreset || DEFAULT_SURFACE_MATERIAL_PRESET).toLowerCase();

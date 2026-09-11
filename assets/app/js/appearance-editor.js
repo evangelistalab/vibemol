@@ -75,7 +75,7 @@
       value => { scope = value; sync(); }, () => target === 'surfaces');
     toggle('materialFields', 'appearanceLinkBonds', 'Link to atoms', s => s.rendering.materials.bondsLinked,
       value => edit('linkBonds', { linked: value }), () => target === 'bonds');
-    const swatches = [['custom','Custom'],['polished','Polished'],['matte','Matte'],['satin','Satin'],['emissive','Vivid'],['enamel','Enamel'],['toon','Toon']];
+    const swatches = [['custom','Custom'],['polished','Polished'],['glossy','Glossy'],['matte','Matte'],['satin','Satin'],['emissive','Vivid'],['enamel','Enamel'],['toon','Toon']];
     const swatchSelect = select('materialFields', 'appearanceMaterialPreset', 'Finish', swatches, s => s.swatch,
       value => { if (value === 'custom') return; const saved = deps.getMaterials().find(item => item.id === value);
         activeMaterialId = saved?.id || null;
@@ -86,12 +86,12 @@
     const visibleFor = model => s => s.material.model === model;
     const disabled = s => !s.available || (target === 'bonds' && s.rendering.materials.bondsLinked);
     for (const [id, label, key, min, max, precision, parent, visible] of [
-      ['Roughness','Roughness','roughness',0,1,2,'materialFields',visibleFor('physical')],
+      ['Roughness','Roughness','roughness',0,1,3,'materialFields',visibleFor('physical')],
       ['Shininess','Shininess','shininess',0,250,0,'materialFields',visibleFor('phong')],
       ['Highlight','Highlight','specularIntensity',0,2,2,'materialFields',visibleFor('physical')],
       ['Metalness','Metalness','metalness',0,1,2,'materialAdvancedFields',visibleFor('physical')],
       ['Clearcoat','Clearcoat','clearcoat',0,1,2,'materialAdvancedFields',visibleFor('physical')],
-      ['CoatRoughness','Coat roughness','clearcoatRoughness',0,1,2,'materialAdvancedFields',visibleFor('physical')],
+      ['CoatRoughness','Coat roughness','clearcoatRoughness',0,1,3,'materialAdvancedFields',visibleFor('physical')],
       ['Environment','Reflections','envMapIntensity',0,2,2,'materialAdvancedFields',visibleFor('physical')],
       ['Reflectivity','Reflectivity','reflectivity',0,1,2,'materialAdvancedFields',visibleFor('physical')],
       ['Emission','Color fill','emissiveIntensity',0,2,2,'materialAdvancedFields',() => true],
