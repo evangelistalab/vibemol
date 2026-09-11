@@ -4575,9 +4575,9 @@
   }
 
   /**
-   * Surfaces always use the same material descriptor as atoms and bonds.
+   * Resolve the look's surface finish, including Basic's original orbital recipe.
    */
-  function getSurfaceMaterialDescriptor() { return appearanceState.material; }
+  function getSurfaceMaterialDescriptor() { return appearanceModel.resolvedMaterial(appearanceState, 'surfaces'); }
   function createSurfaceMaterial(color, opacity, layer, vertexColors = false) {
     const descriptor = getSurfaceMaterialDescriptor(layer);
     const mat = appearanceModel.createMaterial(THREE, descriptor, color, getToonGradientTexture('surface', descriptor.toonSteps), { vertexColors });
@@ -9054,7 +9054,7 @@
       opacity: Math.max(0.05, Math.min(1, Number(surfaceOpacityDefault) || 1)),
       surfaceStyle: 'solid',
       solidPreset: getSurfaceMaterialPresetKey(),
-      material: appearanceModel.clone(appearanceState.material),
+      material: appearanceModel.clone(getSurfaceMaterialDescriptor()),
       colorScheme: scheme,
       posColor: scheme === 'custom' ? surfacePosColorDefault : (schemeDefaults ? schemeDefaults.pos : null),
       negColor: scheme === 'custom' ? surfaceNegColorDefault : (schemeDefaults ? schemeDefaults.neg : null),
@@ -26237,7 +26237,7 @@
     if (!getLayerAutoIsoEnabled(layer)) layer.isoPending = false;
     layer.opacity = Math.max(0.05, Math.min(1, Number(opInput && opInput.value) || 1));
     layer.surfaceStyle = 'solid';
-    if (options.materialChanged) layer.material = appearanceModel.clone(appearanceState.material);
+    if (options.materialChanged) layer.material = appearanceModel.clone(getSurfaceMaterialDescriptor());
     layer.solidPreset = String(surfaceMaterialPresetSelect && surfaceMaterialPresetSelect.value || getSurfaceMaterialPresetKey(layer)).toLowerCase();
     if (!Object.prototype.hasOwnProperty.call(SURFACE_MATERIAL_PRESETS, layer.solidPreset)) layer.solidPreset = DEFAULT_SURFACE_MATERIAL_PRESET;
     layer.colorScheme = (schemeSelect && schemeSelect.value) || surfaceColorSchemeDefault || 'emory';
@@ -26885,8 +26885,10 @@
       if (legacyKeys.some(key => key in settings)) {
         const previous = 'molecule.style' in settings ? {} : { 'molecule.style': moleculeStyle, ...lookRendering };
         next = appearanceModel.fromLegacy({ ...previous, ...settings });
-      } else if ('surface.materialPreset' in settings) next.material = appearanceModel.surfacePreset(settings['surface.materialPreset']);
-      else return settings;
+      } else if ('surface.materialPreset' in settings) {
+        next.material = appearanceModel.surfacePreset(settings['surface.materialPreset']);
+        next.surfaceMaterial = null;
+      } else return settings;
       return { ...settings, 'appearance.rendering': next };
     },
     normalizeImportedSettingValue: (key, value, warnings) => {
@@ -27663,7 +27665,7 @@
     presetController.applySettings(settings, { mode: PRESET_MODE.STRICT, afterApply: false });
     for (const layer of layers) {
       for (const [key, field] of Object.entries(lookLayerFields)) if (key in settings) layer[field] = settings[key];
-      if ('appearance.rendering' in settings || 'surface.materialPreset' in settings) layer.material = appearanceModel.clone(appearanceState.material);
+      if ('appearance.rendering' in settings || 'surface.materialPreset' in settings) layer.material = appearanceModel.clone(getSurfaceMaterialDescriptor());
       persistActiveCubeLayerState(layer, { render: false });
     }
   }
@@ -32500,8 +32502,12 @@
   function editAppearanceComponent(section, patch, options = {}) {
     if (!['material', 'geometry', 'lighting', 'effects', 'coloring'].includes(section)) throw new Error('Unknown appearance component.');
     const next = appearanceModel.clone(appearanceState);
-    if (section === 'material') next.material = options.replace ? appearanceModel.validateMaterial(patch) : appearanceModel.patchMaterial(next.material, patch);
-    else Object.assign(next[section], patch);
+    if (section === 'material') {
+      next.material = options.replace ? appearanceModel.validateMaterial(patch) : appearanceModel.patchMaterial(next.material, patch);
+      // A deliberate material edit applies everywhere, including when selecting
+      // Polished leaves Basic's atom values unchanged. Undo restores the full look.
+      next.surfaceMaterial = null;
+    } else Object.assign(next[section], patch);
     const normalized = appearanceModel.normalize(next);
     if (JSON.stringify(normalized) === JSON.stringify(appearanceState)
       && !(section === 'geometry' && (('atomScaleMain' in patch && moleculeAtomRadiusScale !== 1) || ('bondRadius' in patch && moleculeBondRadiusScale !== 1)))) return false;

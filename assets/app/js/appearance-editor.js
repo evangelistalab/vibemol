@@ -7,7 +7,7 @@
     root.innerHTML = `
       <details class="vm-appearance-section" id="appearanceGeometrySection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Geometry</span></summary><div id="geometryFields"></div></details>
       <details class="vm-appearance-section" id="appearanceMaterialsSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Material</span></summary>
-        <p class="vm-session-status">One material for atoms, bonds, and surfaces.</p><div id="materialFields"></div>
+        <p class="vm-session-status" id="appearanceMaterialScope">One material for atoms, bonds, and surfaces.</p><div id="materialFields"></div>
         <div id="materialAdvancedFields"></div>
         <details><summary class="inspectorSubsectionSummary">Save material</summary><div id="materialLibraryFields"></div></details>
         <div class="vm-session-status" id="materialStatus" role="status"></div>
@@ -139,14 +139,18 @@
       const rendering=deps.getRendering(), settings=deps.captureSettings(), material=currentMaterial();
       const opacityState=deps.getOpacity();
       const state={rendering,settings,material,opacity:opacityState.value,mixedOpacity:opacityState.mixed,swatch:'custom'};
+      $('appearanceMaterialScope').textContent=rendering.surfaceMaterial
+        ? 'This look preserves its original surface finish. Material changes apply to atoms, bonds, and surfaces.'
+        : 'One material for atoms, bonds, and surfaces.';
       const saved=deps.getMaterials();
       for(const option of Array.from(swatchSelect.options))if(option.value.startsWith('user-'))option.remove();
       for(const item of saved)swatchSelect.add(new Option(item.name,item.id));
       const same=other=>JSON.stringify(M.validateMaterial(other))===JSON.stringify(M.validateMaterial(material));
-      state.swatch=saved.find(item=>same(item.material))?.id || swatches.slice(1).find(([id])=>same(preset(id)))?.[0] || 'custom';
+      state.swatch=rendering.surfaceMaterial ? 'custom'
+        : saved.find(item=>same(item.material))?.id || swatches.slice(1).find(([id])=>same(preset(id)))?.[0] || 'custom';
       const look=deps.getActiveLook();
       swatchSelect.options[0].textContent=state.swatch==='custom' && look && same(look.settings['appearance.rendering'].material)
-        ? `${look.name} material` : 'Custom';
+        ? `${look.name} material` : rendering.surfaceMaterial ? 'Look material' : 'Custom';
       if (!activeMaterialId && state.swatch.startsWith('user-')) activeMaterialId=state.swatch;
       const activeSaved=saved.find(item=>item.id===activeMaterialId);
       $('updateMaterial').disabled=!activeSaved;$('deleteMaterial').disabled=!activeSaved;

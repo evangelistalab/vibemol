@@ -82,6 +82,7 @@
       shininess:2+s.smoothness*35, specularColor:s.finish==='phong'?'#777777':'#ffffff',
       metalness:s.metalness, clearcoat:s.coat, clearcoatRoughness:0.22, envMapIntensity:s.environment,
       iridescence:s.iridescence, iridescenceThicknessRange:[130,380], toonSteps:[70,150,210,255] });
+    rendering.surfaceMaterial = null;
     return Object.freeze({ id,name,description,revision:3,experimental,settings:Object.freeze(settings({ ...defaults,
       'appearance.rendering':rendering, 'molecule.feature.shadows':s.finish==='physical',
       'global.backgroundColor':s.background, 'global.elementColorOverrides':{1:s.hydrogen,6:s.carbon,7:s.nitrogen,8:s.oxygen},

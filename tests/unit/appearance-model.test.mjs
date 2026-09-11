@@ -5,7 +5,7 @@ const { VibeMolAppearanceModel: M, VibeMolLooks: L, StyleLabLooks: Lab } = loadG
   'assets/app/js/appearance-model.js','assets/app/js/appearance-looks.js','docs/experiments/style-lab/looks.js']);
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('one material is shared by atoms, bonds, and surfaces independently of geometry and lighting', () => {
+test('shared materials remain independent of geometry and lighting', () => {
   assert.deepEqual(plain(L.builtins.filter(item=>!item.experimental).map(item=>item.name)), ['Basic','Toon','Kit','Classic','Porcelain','Ink','Opal']);
   const kit = M.legacy('kit'), original = plain(kit);
   kit.material = M.material({model:'toon'});
@@ -16,6 +16,34 @@ test('one material is shared by atoms, bonds, and surfaces independently of geom
   assert.equal(result.material.model,'toon');
   assert.equal(M.legacy('kit').material.model,'phong');
   assert.ok(!('materials' in result));
+});
+
+test('Basic restores its original orbital finish without changing the polished atom material', () => {
+  const basic=M.normalize(M.legacy('basic'));
+  assert.equal(M.resolvedMaterial(basic,'atoms'),basic.material);
+  assert.equal(M.resolvedMaterial(basic,'bonds'),basic.material);
+  assert.equal(basic.material.roughness,0.16);assert.equal(basic.material.clearcoat,0.82);
+  assert.equal(basic.material.emissiveIntensity,0);
+  assert.deepEqual(plain(M.resolvedMaterial(basic,'surfaces')),plain(M.surfacePreset('emissive')));
+  assert.equal(basic.surfaceMaterial.vertexEmissiveColor,'#000000');
+  assert.deepEqual(plain(M.normalize(basic)),plain(basic));
+  for(const look of L.builtins.filter(item=>item.id!=='basic')) {
+    const rendering=look.settings['appearance.rendering'];
+    assert.equal(rendering.surfaceMaterial,null,look.id);
+    assert.equal(M.resolvedMaterial(rendering,'surfaces'),rendering.material,look.id);
+  }
+});
+
+test('older v3 looks keep their stored shared finish rather than adopting new Basic defaults', () => {
+  const saved=plain(M.legacy('basic'));delete saved.surfaceMaterial;
+  const reopened=M.normalize(saved);
+  assert.equal(reopened.surfaceMaterial,null);
+  assert.equal(M.resolvedMaterial(reopened,'surfaces'),reopened.material);
+  assert.deepEqual(plain(reopened.material),saved.material);
+  const explicit=M.fromLegacy({'molecule.style':'basic','surface.materialPreset':'gel'});
+  assert.equal(explicit.surfaceMaterial,null);
+  assert.equal(M.resolvedMaterial(explicit,'surfaces'),explicit.material);
+  assert.equal(explicit.material.roughness,0.15);
 });
 
 test('v2 looks migrate to the atom base material without retaining hidden material overrides', () => {
@@ -67,5 +95,6 @@ test('appearance validation rejects invalid shared materials and lighting before
     x=>x.lighting.dirPos=[0,0,0], x=>x.lighting.rimPos=[0,0,0],x=>x.lighting.toneMapping='unknown',
     x=>x.lighting.dirColor='red', x=>x.material.byElement={26:{roughness:3}},
     x=>x.material.toonSteps=[0], x=>x.material.clearcoat=-1,x=>x.material.iridescenceThicknessRange=[300,100],
+    x=>x.surfaceMaterial={...x.material,roughness:-0.1},x=>x.surfaceMaterial='emissive',
   ]) { const value=M.legacy();mutate(value);assert.throws(()=>M.normalize(value)); }
 });

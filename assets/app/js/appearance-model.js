@@ -56,7 +56,10 @@
     const state = { version: 3, geometry: clone(BASIC_GEOMETRY), lighting: clone(BASIC_LIGHTING),
       coloring: { palette: 'basic', elementBonds: true, bondColor: '#eaecf0' },
       effects: { outlineWidth: 0, atomOutlineFraction: 0, bondOutlineFraction: 0, highlights: false },
-      material: material({ roughness: 0.16, metalness: 0.08, clearcoat: 0.82, clearcoatRoughness: 0.12, reflectivity: 0.62 }) };
+      material: material({ roughness: 0.16, metalness: 0.08, clearcoat: 0.82, clearcoatRoughness: 0.12, reflectivity: 0.62 }),
+      // Basic originally paired polished atoms with luminous, clear-coated orbitals.
+      // Store the surface recipe explicitly so saved looks never depend on their name.
+      surfaceMaterial: surfacePreset('emissive') };
     if (name === 'toon' || name === 'fancy') {
       Object.assign(state.geometry, { atomScaleMain: 1.16, atomScaleTransitionMetal: 1.22, bondRadius: 0.095, bondRadialSegments: 20, bondHeightSegments: 1 });
       Object.assign(state.lighting, { hemiColor: '#f8fbff', hemiGroundColor: '#0f1826', hemiIntensity: 1.28,
@@ -64,6 +67,7 @@
       state.coloring = { palette: 'toon', elementBonds: true, bondColor: '#d9e2ee' };
       state.effects = { outlineWidth: 0, atomOutlineFraction: 0.08, bondOutlineFraction: 0.18, highlights: true };
       state.material = material({ model: 'toon', emissiveScale: 0.26, emissiveMix: 0.06, emissiveIntensity: 0.56 });
+      state.surfaceMaterial = null;
     } else if (name === 'kit' || name === 'studio') {
       Object.assign(state.geometry, { connector: 'kit', atomScaleMain: 1.08, atomScaleTransitionMetal: 1.14,
         bondRadius: 0.068, bondRadialSegments: 20, bondHeightSegments: 1, curvedMultipleBonds: true });
@@ -71,6 +75,7 @@
         dirIntensity: 2.1, dirPos: [1.35, 1.28, 1.18], ambColor: '#9ea7b2', ambIntensity: 0.18, rimColor: '#dfe7f2', rimIntensity: 0.75 });
       state.coloring = { palette: 'kit', elementBonds: false, bondColor: '#e7ebf2' };
       state.material = material({ model: 'phong', shininess: 145, emissiveScale: 0.02, emissiveIntensity: 0.06 });
+      state.surfaceMaterial = null;
     }
     return state;
   }
@@ -81,6 +86,7 @@
       if (!object(out.materials) || typeof out.materials.bondsLinked !== 'boolean') throw new Error('Invalid material slots.');
       for (const target of ['atoms', 'bonds', 'surfaces']) validateMaterial(out.materials[target]);
       out.material = out.materials.atoms; delete out.materials; out.version = 3;
+      out.surfaceMaterial = null;
     }
     if (!object(g) || !['cylinder', 'kit'].includes(g.connector) || typeof g.curvedMultipleBonds !== 'boolean') throw new Error('Invalid display geometry.');
     for (const key of ['atomScaleMain', 'atomScaleTransitionMetal']) if (!finite(g[key], 0.1, 3)) throw new Error('Invalid atom scale.');
@@ -100,6 +106,9 @@
       || !finite(e.bondOutlineFraction, 0, 0.3) || typeof e.highlights !== 'boolean') throw new Error('Invalid contour settings.');
     if (!object(c) || !['basic', 'toon', 'kit'].includes(c.palette) || typeof c.elementBonds !== 'boolean' || !hex(c.bondColor)) throw new Error('Invalid coloring settings.');
     out.material = validateMaterial(out.material);
+    // Older v3 looks retain their shared finish; only newly applied Basic uses
+    // the original orbital recipe. The optional descriptor travels with the look.
+    out.surfaceMaterial = out.surfaceMaterial == null ? null : validateMaterial(out.surfaceMaterial);
     return out;
   }
   function fromLegacy(settings) {
@@ -112,6 +121,7 @@
         clearcoatRoughness: 0.15, envMapIntensity: settings['molecule.material.environment'] ?? 0,
         iridescence: settings['molecule.material.iridescence'] ?? 0 });
       out.material = recipe;
+      out.surfaceMaterial = null;
       out.coloring.elementBonds = settings['molecule.material.elementBonds'] !== false;
       out.coloring.bondColor = out.coloring.elementBonds ? '#ffffff' : settings['molecule.material.bondColor'] || '#9b9b9b';
     }
@@ -120,10 +130,13 @@
       dirColor: '#ffffff', ambColor: '#ffffff', rimColor: '#ffffff', followTheme: false,
       hemiIntensity: settings['lighting.fill'] ?? 2, dirIntensity: settings['lighting.key'] ?? 1,
       ambIntensity: settings['lighting.ambient'] ?? 0.65, rimIntensity: settings['lighting.rim'] ?? 0 });
-    if ('surface.materialPreset' in settings && (!finish || finish === 'inherit')) out.material = surfacePreset(settings['surface.materialPreset']);
+    if ('surface.materialPreset' in settings && (!finish || finish === 'inherit')) {
+      out.material = surfacePreset(settings['surface.materialPreset']);
+      out.surfaceMaterial = null;
+    }
     return normalize(out);
   }
-  const resolvedMaterial = state => state.material;
+  const resolvedMaterial = (state, target) => target === 'surfaces' && state.surfaceMaterial ? state.surfaceMaterial : state.material;
   function patchMaterial(value, patch) {
     const next = validateMaterial({ ...value, ...patch });
     if (['emissiveIntensity','emissiveColor','emissiveUsesColor'].some(key => key in patch)) {

@@ -275,11 +275,75 @@ def shared_material_presets(page,context,url):
     print('[looks] six main-branch materials on atoms, bonds, and orbitals; Gel look/session round-trip: passed',flush=True)
 
 
+def basic_surface_finish(page,context,url):
+    orbital=p.hydrogen_2p_cube().replace('1 -8 -8 -8','2 -8 -8 -8').replace('1 0 0 0 0\n','1 0 0 0 0\n1 0 1.2 0 0\n')
+    assert p.load(page,[{'name':'basic.cube','text':orbital}])['ok']
+    # Simulate the earlier shared Basic appearance, then apply the restored preset.
+    page.evaluate('''() => {
+      const old=VibeMolAppearanceModel.legacy('basic');delete old.surfaceMaterial;
+      VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,settings:{'appearance.rendering':old}});
+    }''')
+    atoms=page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot("atoms")')
+    bonds=page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot("bonds")')
+    surfaces=page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')
+    assert len(surfaces)==2 and all(mat['emissiveIntensity']==0 for mat in surfaces)
+    ids=[mat['geometryId'] for mat in surfaces];layers=p.cubes(page)
+    camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+    page.evaluate("() => VibeMolAppearanceLooks.apply('basic')")
+    restored=page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')
+    assert [mat['geometryId'] for mat in restored]==ids
+    assert page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot("atoms")')==atoms
+    assert page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot("bonds")')==bonds
+    expected={'roughness':1,'metalness':0,'clearcoat':1,'clearcoatRoughness':0.1,
+              'reflectivity':0.5,'emissiveIntensity':0.8,'envMapIntensity':0}
+    for mat in restored:
+        for key,expected_value in expected.items():assert math.isclose(mat[key],expected_value,abs_tol=1e-8),(key,mat)
+    camera_equal(camera,page.evaluate('() => VibeMolTesting.getCameraSnapshot()'))
+    for old,layer in zip(layers,p.cubes(page)):
+        for key in ['iso','autoIso','visible','opacity']:assert old[key]==layer[key]
+    original=rendering(page)
+    assert all(layer['material']==original['surfaceMaterial'] for layer in p.cubes(page))
+    page.evaluate("() => VibeMolAppearanceLooks.edit('lighting',{dirIntensity:1.2})")
+    assert rendering(page)['surfaceMaterial']==original['surfaceMaterial']
+    page.evaluate("() => VibeMolAppearanceLooks.apply('basic')")
+    session=page.evaluate('async () => VibeMolSession.export()')
+    look=page.evaluate('() => VibeMolLooks.exportLook(VibeMolAppearanceLooks.snapshot().activeLook)')
+    fresh=context.browser.new_context();other=fresh.new_page();other.goto(url);other.wait_for_function('() => window.VibeMolAppearanceLooks')
+    try:
+        other.locator('#lookFileInput').set_input_files({'name':'original-basic.look.json','mimeType':'application/json','buffer':json.dumps(look).encode()})
+        other.wait_for_function('() => VibeMolAppearanceLooks.snapshot().saved.length===1')
+        assert rendering(other)==original
+        assert other.evaluate('async session => VibeMolSession.import(session)',session)['ok']
+        assert rendering(other)==original and p.cubes(other)==p.cubes(page)
+        assert all(mat['emissiveIntensity']==0.8 for mat in other.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()'))
+    finally:fresh.close()
+    # A material selection explicitly unifies the finishes, even when its atom
+    # recipe equals Basic's existing material. Undo restores the complete look.
+    editor(page)
+    assert page.locator('#appearanceMaterialPreset').input_value()=='custom'
+    assert 'original surface finish' in page.locator('#appearanceMaterialScope').inner_text()
+    page.locator('#appearanceMaterialPreset').select_option('polished')
+    assert rendering(page)['surfaceMaterial'] is None
+    assert all(mat['roughness']==0.16 and mat['emissiveIntensity']==0 for mat in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()'))
+    page.locator('#lookUndo').click()
+    assert rendering(page)==original
+    value(page,'appearanceMaterialRoughness',0.33)
+    assert rendering(page)['surfaceMaterial'] is None
+    for target in ['atoms','bonds','surfaces']:
+        assert all(mat['roughness']==0.33 for mat in page.evaluate('target=>VibeMolTesting.getLookMaterialSnapshot(target)',target))
+    page.locator('#lookRevert').click();assert rendering(page)==original
+    # The restored recipe is also the default for future, uncomputed orbitals.
+    assert p.load(page,[{'name':'deferred.molden','text':p.MOLDEN}])['ok']
+    assert not page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot().length')
+    assert all(layer['material']==original['surfaceMaterial'] for layer in p.cubes(page))
+    print('[looks] original Basic surfaces, unchanged atoms/bonds, shared material edits, undo, saved looks/sessions, deferred orbitals: passed',flush=True)
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [components_and_saving,surfaces_and_sessions,shared_material_presets]:
+            for run in [basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))
