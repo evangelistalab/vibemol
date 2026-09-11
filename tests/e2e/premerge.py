@@ -596,7 +596,9 @@ def orbital_group_appearance(page, dialogs):
         assert layer['material']['roughness'] == 0.85 and layer['signFlip'], layer
         assert layer['renderMode'] == 'cloud' and layer['cloudType'] == 'points', layer
     assert edited[2]['material']['roughness'] == 0.85
-    assert {key:value for key,value in edited[2].items() if key!='material'} == {key:value for key,value in other_before.items() if key!='material'}
+    assert all(layer['solidPreset']=='matte' for layer in edited)
+    material_keys={'material','solidPreset'}
+    assert {key:value for key,value in edited[2].items() if key not in material_keys} == {key:value for key,value in other_before.items() if key not in material_keys}
     other_before=edited[2]
     assert [layer['visible'] for layer in edited] == before_visibility
     assert not page.locator('[data-mixed-key="iso"]').is_visible()

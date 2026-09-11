@@ -67,7 +67,11 @@
     toggle('geometryFields', 'appearanceCurvedBonds', 'Curved bonds', s => s.rendering.geometry.curvedMultipleBonds,
       value => edit('geometry', { curvedMultipleBonds: value }), s => s.rendering.geometry.connector === 'kit');
 
-    const swatches = [['custom','Custom'],['polished','Polished'],['glossy','Glossy'],['matte','Matte'],['satin','Satin'],['emissive','Vivid'],['enamel','Enamel'],['smooth','Classic smooth'],['toon','Toon']];
+    const swatches = [
+      ['custom','Custom'], ['emissive','Emissive'], ['satin','Satin'], ['lacquer','Lacquer'],
+      ['metal','Metal'], ['gel','Gel'], ['ceramic','Ceramic'], ['polished','Polished'],
+      ['matte','Matte'], ['enamel','Enamel'], ['smooth','Classic smooth'], ['toon','Toon'],
+    ];
     const swatchSelect = select('materialFields', 'appearanceMaterialPreset', 'Material', swatches, s => s.swatch,
       value => { if (value === 'custom') return; const saved = deps.getMaterials().find(item => item.id === value);
         activeMaterialId = saved?.id || null;

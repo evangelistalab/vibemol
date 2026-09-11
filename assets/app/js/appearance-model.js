@@ -35,7 +35,7 @@
   }
   const SURFACE_PRESETS = Object.freeze({
     emissive: { roughness: 1, clearcoat: 1, emissiveIntensity: 0.8 },
-    // The former Glossy style's solid finish, independent of its connector geometry.
+    // Retained for saved-look compatibility; the shared Material menu offers Gel.
     glossy: { roughness: 0.045, metalness: 0.03, clearcoat: 1, clearcoatRoughness: 0.015, reflectivity: 0.85 },
     matte: { roughness: 0.85, reflectivity: 0.3, envMapIntensity: 0.4 },
     satin: { roughness: 0.45, envMapIntensity: 0.8 },

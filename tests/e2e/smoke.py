@@ -5033,7 +5033,7 @@ def main() -> int:
                     const select = document.getElementById('appearanceMaterialPreset');
                     if (!(row && select)) return false;
                     const options = Array.from(select.options || []).map((opt) => String(opt.textContent || '').trim());
-                    return options.join('|') === 'Custom|Polished|Glossy|Matte|Satin|Vivid|Enamel|Classic smooth|Toon'
+                    return options.join('|') === 'Custom|Emissive|Satin|Lacquer|Metal|Gel|Ceramic|Polished|Matte|Enamel|Classic smooth|Toon'
                       && row.classList.contains('appearanceHiddenControl')
                       && !document.getElementById('appearanceMaterialModel')
                       && String(select.value || '') === 'emissive';

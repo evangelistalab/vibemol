@@ -151,7 +151,7 @@ def surfaces_and_sessions(page,context,url):
     page.locator('#appearanceGeometrySection > summary').click();page.locator('#appearanceConnector').select_option('kit')
     assert [item['geometryId'] for item in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')]==ids
     camera_equal(camera,page.evaluate('() => VibeMolTesting.getCameraSnapshot()'))
-    page.locator('#appearanceMaterialPreset').select_option('glossy');value(page,'appearanceMaterialRoughness',0.43)
+    page.locator('#appearanceMaterialPreset').select_option('gel');value(page,'appearanceMaterialRoughness',0.43)
     value(page,'appearanceMaterialOpacity',0.65)
     assert all(mat['opacity']==0.65 for mat in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()'))
     assert state(page)['settings']['molecule.opacity.atom']==state(page)['settings']['molecule.opacity.bond']==0.65
@@ -175,27 +175,50 @@ def surfaces_and_sessions(page,context,url):
     print('[looks] shared deferred orbitals, future sources, unchanged geometry, opacity, ACES transparency, sessions: passed',flush=True)
 
 
-def glossy_finish(page,context,url):
-    # A bonded molecule with both orbital signs exercises all three material slots.
+def shared_material_presets(page,context,url):
+    # Reference values from main (e82dcbd), tested on actual shaders for all three targets.
+    fields=['roughness','metalness','clearcoat','clearcoatRoughness','reflectivity','emissiveIntensity','envMapIntensity']
+    recipes={
+        'emissive':[1,0,1,0.1,0.5,0.8,0],
+        'satin':[0.45,0,0,0.1,0.5,0,0.8],
+        'lacquer':[0.25,0,1,0.05,0.6,0,1.2],
+        'metal':[0.2,1,0,0.1,0.8,0,1.2],
+        'gel':[0.15,0,1,0.02,0.5,0.15,1.5],
+        'ceramic':[0.35,0,0.8,0.1,0.5,0.2,0.65],
+    }
+    # A bonded molecule with both orbital signs exercises all three material targets.
     orbital=p.hydrogen_2p_cube().replace('1 -8 -8 -8','2 -8 -8 -8').replace('1 0 0 0 0\n','1 0 0 0 0\n1 0 1.2 0 0\n')
-    assert p.load(page,[{'name':'glossy.cube','text':orbital}])['ok']
+    assert p.load(page,[{'name':'materials.cube','text':orbital}])['ok']
+    # Previously saved Glossy remains readable, but is no longer a menu choice.
     result=page.evaluate('''() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,
       settings:{'molecule.style':'kit','surface.materialPreset':'glossy'}},{mode:'strict'})''')
     assert result['ok'] and not result['warnings'],result
     initial=page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')
     assert len(initial)==2 and all(mat['roughness']==0.045 for mat in initial)
-    editor(page);page.locator('#appearanceMaterialPreset').select_option('matte')
+    editor(page)
+    assert page.locator('#appearanceMaterialPreset option[value="glossy"]').count()==0
+    assert page.locator('#appearanceMaterialPreset option').all_text_contents()[1:7]==['Emissive','Satin','Lacquer','Metal','Gel','Ceramic']
+    page.locator('#appearanceMaterialPreset').select_option('matte')
     before=rendering(page);layers=p.cubes(page)
     camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
     structure=page.evaluate('() => VibeMolStructure.exportActive().volume')
     carriers=page.evaluate('() => VibeMolTesting.getBondCarrierSnapshots()')
     assert carriers and all(bond['connectorStyle'].startswith('kit') for bond in carriers),carriers
-    page.locator('#appearanceMaterialPreset').select_option('glossy')
-    assert page.locator('#appearanceMaterialPreset').input_value()=='glossy'
-    assert float(page.locator('#appearanceMaterialRoughness').input_value())==0.045
-    for slot in ['atoms','bonds','surfaces']:
-        mats=page.evaluate('slot => VibeMolTesting.getLookMaterialSnapshot(slot)',slot)
-        assert mats and all(mat['type']=='MeshPhysicalMaterial' and mat['roughness']==0.045 for mat in mats)
+    for name,values in recipes.items():
+        page.locator('#appearanceMaterialPreset').select_option(name)
+        assert page.locator('#appearanceMaterialPreset').input_value()==name
+        for slot in ['atoms','bonds','surfaces']:
+            mats=page.evaluate('slot => VibeMolTesting.getLookMaterialSnapshot(slot)',slot)
+            assert mats and all(mat['type']=='MeshPhysicalMaterial' for mat in mats)
+            for mat in mats:
+                for field,expected in zip(fields,values):
+                    assert math.isclose(mat[field],expected,abs_tol=1e-8),(name,slot,field,mat[field],expected)
+        assert state(page)['settings']['surface.materialPreset']==name
+        assert all(mat['surfaceMaterialPreset']==name for mat in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()'))
+        assert [mat['geometryId'] for mat in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')]==[mat['geometryId'] for mat in initial]
+    page.wait_for_function('() => VibeMolTesting.getLookLightingSnapshot().environment')
+    page.locator('#appearanceMaterialPreset').select_option('gel')
+    assert float(page.locator('#appearanceMaterialRoughness').input_value())==0.15
     after=rendering(page)
     for key in ['geometry','lighting','coloring','effects']:assert after[key]==before[key]
     assert page.evaluate('() => VibeMolStructure.exportActive().volume')==structure
@@ -203,37 +226,37 @@ def glossy_finish(page,context,url):
     camera_equal(camera,page.evaluate('() => VibeMolTesting.getCameraSnapshot()'))
     surfaces=page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')
     assert [mat['geometryId'] for mat in surfaces]==[mat['geometryId'] for mat in initial]
-    assert all(mat['clearcoat']==1 and mat['clearcoatRoughness']==0.015 and math.isclose(mat['reflectivity'],0.85) for mat in surfaces),surfaces
+    assert all(mat['clearcoat']==1 and mat['clearcoatRoughness']==0.02 and math.isclose(mat['reflectivity'],0.5) for mat in surfaces),surfaces
     for old,layer in zip(layers,p.cubes(page)):
         for key in ['iso','autoIso','visible','posColor','negColor','opacity']:assert old[key]==layer[key]
-    page.locator('#lookSave').click();page.locator('#lookNameInput').fill('Glossy figures');page.locator('#lookNameInput').press('Enter')
+    page.locator('#lookSave').click();page.locator('#lookNameInput').fill('Gel figures');page.locator('#lookNameInput').press('Enter')
     page.locator('#lookSaveDetails > summary').click()
     with page.expect_download() as download:page.locator('#lookExport').click()
     look=json.loads(Path(download.value.path()).read_text())
-    assert look['settings']['surface.materialPreset']=='glossy'
+    assert look['settings']['surface.materialPreset']=='gel'
     assert look['settings']['appearance.rendering']==after
     session=page.evaluate('async () => VibeMolSession.export()')
     fresh=context.browser.new_context();other=fresh.new_page();other.goto(url);other.wait_for_function('() => window.VibeMolAppearanceLooks')
     try:
-        other.locator('#lookFileInput').set_input_files({'name':'glossy.look.json','mimeType':'application/json','buffer':json.dumps(look).encode()})
+        other.locator('#lookFileInput').set_input_files({'name':'gel.look.json','mimeType':'application/json','buffer':json.dumps(look).encode()})
         other.wait_for_function('() => VibeMolAppearanceLooks.snapshot().saved.length===1')
         assert rendering(other)==after
         assert other.evaluate('async session => VibeMolSession.import(session)',session)['ok']
         assert rendering(other)==after and p.cubes(other)==p.cubes(page)
         for slot in ['atoms','bonds','surfaces']:
             editor(other)
-            assert other.locator('#appearanceMaterialPreset').input_value()=='glossy'
+            assert other.locator('#appearanceMaterialPreset').input_value()=='gel'
             mats=other.evaluate('slot => VibeMolTesting.getLookMaterialSnapshot(slot)',slot)
-            assert mats and all(mat['type']=='MeshPhysicalMaterial' and mat['roughness']==0.045 for mat in mats)
+            assert mats and all(mat['type']=='MeshPhysicalMaterial' and mat['roughness']==0.15 for mat in mats)
     finally:fresh.close()
-    print('[looks] Glossy atoms, bonds, orbitals, unchanged geometry, legacy presets, saved looks, sessions: passed',flush=True)
+    print('[looks] six main-branch materials on atoms, bonds, and orbitals; Gel look/session round-trip: passed',flush=True)
 
 
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [components_and_saving,surfaces_and_sessions,glossy_finish]:
+            for run in [components_and_saving,surfaces_and_sessions,shared_material_presets]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))

@@ -76,7 +76,7 @@ These items should no longer be scheduled as entirely new features. Remaining wo
 | Add autosave; serialize playback in presets | Appearance autosave and vibration preset keys remain available. Sessions now preserve full playback configuration and support complete workspace recovery. |
 | Keep builder hardening first; ongoing refactoring is completed | Replace the old blanket ranking with the ordered milestones below. The scene/arithmetic/trajectory extractions are complete; future refactors should support a specific feature or measured reliability/performance problem. |
 
-The former Glossy molecule style and its welded connectors remain retired. **Glossy is available as an independent material finish** for atoms, bonds, and surfaces, with save/open support. The complete preset menu includes Basic / Toon / Kit / Classic / Porcelain / Ink / Opal. The first three retain display shortcuts `1/2/3`. Material controls are shared across atoms, bonds, and surfaces; studio presets include their complete lighting and tone mapping. Edit-mode `4` remains available for bond order.
+The former Glossy molecule style and its welded connectors remain retired. **Emissive / Satin / Lacquer / Metal / Gel / Ceramic** reproduce the original material recipes across atoms, bonds, and surfaces, with save/open support. Gel replaces Glossy in the Material menu; old saved Glossy materials remain readable. The complete preset menu includes Basic / Toon / Kit / Classic / Porcelain / Ink / Opal. The first three retain display shortcuts `1/2/3`. Material controls are shared across atoms, bonds, and surfaces; studio presets include their complete lighting and tone mapping. Edit-mode `4` remains available for bond order.
 
 ## Subsequent priorities
 

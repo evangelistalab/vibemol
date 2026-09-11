@@ -28220,6 +28220,7 @@
         const mat = obj.material;
         materials.push({ type: mat.type, color: mat.color?.getHexString(), roughness: mat.roughness,
           envMapIntensity: mat.envMapIntensity, iridescence: mat.iridescence, clearcoat:mat.clearcoat,
+          clearcoatRoughness:mat.clearcoatRoughness, reflectivity:mat.reflectivity, emissiveIntensity:mat.emissiveIntensity,
           metalness:mat.metalness, shininess:mat.shininess, iridescenceThicknessRange:mat.iridescenceThicknessRange });
       });
       return materials;
@@ -32755,9 +32756,15 @@
     if (JSON.stringify(normalized) === JSON.stringify(appearanceState)
       && !(section === 'geometry' && (('atomScaleMain' in patch && moleculeAtomRadiusScale !== 1) || ('bondRadius' in patch && moleculeBondRadiusScale !== 1)))) return false;
     const settings = { 'appearance.rendering': normalized };
+    if (section === 'material') {
+      // Keep legacy preset exports and stored layer tags aligned with the shared material.
+      const preset = Object.keys(appearanceModel.surfacePresets).find(key =>
+        JSON.stringify(appearanceModel.surfacePreset(key)) === JSON.stringify(normalized.material));
+      if (preset) settings['surface.materialPreset'] = preset;
+    }
     if (section === 'geometry' && 'atomScaleMain' in patch) settings['molecule.atomRadiusScale'] = 1;
     if (section === 'geometry' && 'bondRadius' in patch) settings['molecule.bondRadiusScale'] = 1;
-    applyLookSettings(settings, []);
+    applyLookSettings(settings, section === 'material' ? getAllLookLayers() : []);
     const geometry = ['geometry', 'effects', 'coloring'].includes(section);
     finishLookChange({ geometry, targets: section === 'material' ? ['atoms','bonds','surfaces'] : geometry ? ['atoms','bonds'] : [] });
     return true;
