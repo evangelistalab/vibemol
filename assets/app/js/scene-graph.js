@@ -86,6 +86,7 @@
       surfaceStyle: normalizeSurfaceStyle(source.surfaceStyle),
       solidPreset: String(source.solidPreset || DEFAULT_CUBE_APPEARANCE.solidPreset),
       independentMaterial: !!source.independentMaterial,
+      material: source.material && typeof source.material === 'object' ? JSON.parse(JSON.stringify(source.material)) : null,
       colorScheme: String(source.colorScheme || DEFAULT_CUBE_APPEARANCE.colorScheme),
       posColor: source.posColor == null ? null : String(source.posColor),
       negColor: source.negColor == null ? null : String(source.negColor),

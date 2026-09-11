@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VibeMol · Appearance comparison</title>
+  <link rel="stylesheet" href="../../../src/styles/tokens.css">
+  <link rel="stylesheet" href="../../../assets/app/css/palette.css">
+  <link rel="stylesheet" href="../../../assets/app/css/display-ui.css">
+  <style>
+    body { margin:0; padding:20px; background:var(--vm-color-background,#edf1f5); color:var(--vm-color-text-primary,#18202c); font-family:var(--vm-font-sans, sans-serif); }
+    h1 { font-size:20px; margin:0 0 8px; } p { font-size:13px; line-height:1.5; }
+    .study-controls,.study-views { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .study-controls { max-width:1000px; margin:20px 0; }
+    .study-controls .vm-select { width:100%; min-height:32px; padding:4px 10px; }
+    .study-view { min-width:0; } .study-view iframe { width:100%; height:75vh; min-height:540px; border:1px solid var(--vm-color-border,#d4dbe5); border-radius:8px; background:white; }
+    .study-caption { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:8px 0; }
+    .study-caption button { flex:0 0 auto; } #status { min-height:20px; }
+    @media(max-width:900px) { .study-views { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <h1>Appearance comparison</h1>
+  <p>Compare the approved presets and experimental candidates using VibeMol’s renderer. Open either editor to try your own geometry, materials, and lighting. Use <b>Save as new</b> or <b>Export look</b> to keep an experiment.</p>
+  <div class="study-controls">
+    <div class="vm-field-row"><label class="vm-field-label" for="sample">Sample</label><div class="vm-field-control"><select id="sample" class="vm-select"><option value="pyridine">Pyridine</option><option value="methane">Methane</option><option value="metal">Metal coordination</option><option value="orbital">Orbital lobes</option></select></div></div>
+    <div class="vm-field-row"><label class="vm-field-label" for="mode">Compare</label><div class="vm-field-control"><select id="mode" class="vm-select"><option value="look">Complete looks</option><option value="materials">Materials only</option></select></div></div>
+    <div class="vm-field-row"><label class="vm-field-label" for="reference">Reference</label><div class="vm-field-control"><select id="reference" class="vm-select"><option value="basic">Basic</option><option value="toon">Toon</option><option value="kit">Kit</option></select></div></div>
+    <div class="vm-field-row"><label class="vm-field-label" for="candidate">Candidate</label><div class="vm-field-control"><select id="candidate" class="vm-select"></select></div></div>
+  </div>
+  <p id="status" role="status">Loading VibeMol…</p>
+  <div class="study-views">
+    <div class="study-view"><div class="study-caption"><strong id="leftLabel">Reference</strong><button class="vm-button-group__item" id="editLeft" type="button">Open editor</button></div><iframe id="left" title="Reference look" src="../../../?appearanceStudy=1"></iframe></div>
+    <div class="study-view"><div class="study-caption"><strong id="rightLabel">Candidate</strong><button class="vm-button-group__item" id="editRight" type="button">Open editor</button></div><iframe id="right" title="Candidate look" src="../../../?appearanceStudy=1"></iframe></div>
+  </div>
+  <script src="compare.js"></script>
+</body>
+</html>

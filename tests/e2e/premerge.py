@@ -54,7 +54,9 @@ def context_item(page, layer_id, label):
 
 
 def redraw(page):
-    page.locator('#moleculeStyle').evaluate("el => { el.value = 'toon'; el.dispatchEvent(new Event('change', {bubbles:true})); }")
+    # Basic/Toon/Kit now apply full appearance recipes. Re-dispatch the unchanged
+    # box setting to exercise a full redraw without intentionally editing layers.
+    page.locator('#showBox').evaluate("el => el.dispatchEvent(new Event('change', {bubbles:true}))")
 
 
 def load_cubes(page):

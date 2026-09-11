@@ -94,31 +94,6 @@
       font: inherit;
     }
 
-    .vm-select {
-      appearance: none;
-      -webkit-appearance: none;
-      border: 1px solid var(--vm-color-border);
-      border-radius: var(--vm-radius-md);
-      background-color: var(--vm-color-surface-panel);
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      background-size: 12px 12px;
-      padding-right: 28px !important;
-      font-family: var(--vm-font-sans);
-      font-size: var(--vm-text-base);
-      font-weight: var(--vm-font-weight-emphasis);
-      color: var(--vm-color-text-primary);
-      transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
-    }
-
-    .vm-select:focus,
-    .vm-select:focus-visible {
-      outline: none;
-      border-color: var(--vm-color-accent);
-      box-shadow: var(--vm-shadow-focus-ring);
-    }
-
     .vm-nums {
       font-variant-numeric: tabular-nums;
       font-feature-settings: 'ss01';
@@ -2461,7 +2436,6 @@
         </div>
       </div>
       <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields vm-sidebar-accordion__panel" aria-hidden="true">
-        <section id="looksPanel" class="vm-looks" aria-label="Looks"></section>
         <div class="appearanceHiddenControl" aria-hidden="true">
           <select id="moleculeStyle" class="vm-select"
             data-tooltip="Choose atom/bond rendering style (shortcuts: 1=Basic, 2=Toon, 3=Kit)">
@@ -2486,6 +2460,7 @@
         </div>
         <div class="inspectorGroup inspectorAccordion">
           <div class="inspectorAccordionBody">
+            <div id="looksPanel" aria-label="Appearance editor"></div>
             <section class="vm-appearance-section" id="appearanceRenderingSection">
               <h3 class="vm-section-label">Rendering</h3>
               <div class="vm-field-row" id="appearanceStyleRow">
@@ -2574,7 +2549,7 @@
                   </label>
                 </div>
               </div>
-              <div class="vm-field-row">
+              <div class="vm-field-row appearanceHiddenControl" aria-hidden="true">
                 <label class="vm-field-label" for="moleculeAtomRadiusScale">Scale</label>
                 <div class="vm-field-control vm-field-control--slider">
                   <div class="vm-slider" data-vm-slider data-min="0.60" data-max="1.60" data-precision="2">
@@ -2629,7 +2604,7 @@
                   </label>
                 </div>
               </div>
-              <div class="vm-field-row">
+              <div class="vm-field-row appearanceHiddenControl" aria-hidden="true">
                 <label class="vm-field-label" for="moleculeBondRadiusScale">Radius</label>
                 <div class="vm-field-control vm-field-control--slider">
                   <div class="vm-slider" data-vm-slider data-min="0.60" data-max="1.60" data-precision="2">
@@ -2817,7 +2792,7 @@
                   </label>
                 </div>
               </div>
-              <div class="vm-field-row">
+              <div class="vm-field-row appearanceHiddenControl" aria-hidden="true">
                 <label class="vm-field-label" for="opacity">Opacity</label>
                 <div class="vm-field-control vm-field-control--slider">
                   <div class="vm-slider" data-vm-slider data-min="0.05" data-max="1.0" data-precision="2">
@@ -3867,7 +3842,9 @@
   <script src="./assets/app/js/display-windows.js"></script>
   <!-- appearance inspector helpers -->
   <script src="./assets/app/js/appearance-ui.js"></script>
+  <script src="./assets/app/js/appearance-model.js"></script>
   <script src="./assets/app/js/appearance-looks.js"></script>
+  <script src="./assets/app/js/appearance-editor.js"></script>
   <script src="./assets/app/js/looks-ui.js"></script>
   <!-- edit placement helpers -->
   <script src="./assets/app/js/edit-placement.js"></script>

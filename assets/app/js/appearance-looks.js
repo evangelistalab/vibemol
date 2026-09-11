@@ -1,6 +1,7 @@
 (function (global) {
   'use strict';
   const clone = value => JSON.parse(JSON.stringify(value));
+  const model = global.VibeMolAppearanceModel;
   const hex = value => typeof value === 'string' && /^#[\da-f]{6}$/i.test(value);
   const number = (min, max) => value => typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
   const choice = values => value => values.includes(value);
@@ -49,28 +50,35 @@
     'render.dof.focusDistance': [8, number(0.5, 80)],
     'render.dof.focusRange': [1.5, number(0.1, 20)],
     'render.dof.blurAmount': [4, number(0, 12)],
-    ...extra,
+    'appearance.rendering': [model.legacy('basic'), value => { try { model.normalize(value); return true; } catch { return false; } }],
   };
   const defaults = Object.fromEntries(Object.entries(fields).map(([key, [value]]) => [key, clone(value)]));
   function settings(value, complete = true) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('The look has no appearance settings.');
+    if (complete && !('appearance.rendering' in value)) value = { ...value, 'appearance.rendering': model.fromLegacy(value) };
     const out = {};
     for (const [key, [, validate]] of Object.entries(fields)) {
       if (!(key in value)) { if (complete) throw new Error(`Missing look setting: ${key}`); else continue; }
       if (!validate(value[key])) throw new Error(`Invalid look setting: ${key}`);
-      out[key] = clone(value[key]);
+      out[key] = key === 'appearance.rendering' ? model.normalize(value[key]) : clone(value[key]);
     }
     return out;
   }
   const palette = (carbon, hydrogen, nitrogen, oxygen = '#c65449') => ({ 1: hydrogen, 6: carbon, 7: nitrogen, 8: oxygen });
   function recipe(id, name, description, patch) {
-    return Object.freeze({ id, name, description, revision: 1, settings: Object.freeze(settings({
+    const legacySettings = {
       ...defaults, 'molecule.material.finish': 'physical', 'lighting.custom': true,
       'molecule.material.elementBonds': false, 'surface.followMoleculeStyle': false,
       ...patch,
-    })) });
+    };
+    delete legacySettings['appearance.rendering'];
+    return Object.freeze({ id, name, description, revision: 2, experimental: true, settings: Object.freeze(settings(legacySettings)) });
   }
   const builtins = Object.freeze([
+    ...['basic', 'toon', 'kit'].map(id => Object.freeze({ id, name: id[0].toUpperCase() + id.slice(1), revision: 2,
+      description: {basic:'Original smooth rendering', toon:'Banded shading and contours', kit:'Collar joints and polished materials'}[id],
+      settings: Object.freeze(settings({ ...defaults, 'molecule.style': id, 'appearance.rendering': model.legacy(id),
+        'surface.colorScheme': 'emory', 'surface.posColor': '#f2a900', 'surface.negColor': '#0033a0' })) })),
     recipe('classic', 'Classic', 'Familiar figures', {
       'molecule.material.finish': 'phong', 'molecule.material.polish': 0.28, 'molecule.material.outline': 0.006,
       'molecule.atomRadiusScale': 1.16, 'molecule.bondRadiusScale': 1.4,
@@ -118,7 +126,7 @@
   function normalizeLook(value) {
     if (!value || typeof value.name !== 'string' || !value.name.trim() || value.name.trim().length > 60) throw new Error('Give the look a name of 1–60 characters.');
     if (typeof value.id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(value.id)) throw new Error('Invalid look identifier.');
-    const out = { id: value.id, name: value.name.trim(), revision: 1, settings: settings(value.settings) };
+    const out = { id: value.id, name: value.name.trim(), revision: 2, settings: settings(value.settings) };
     if (value.thumbnail != null) {
       if (typeof value.thumbnail !== 'string' || value.thumbnail.length > 90000 || !/^data:image\/png;base64,[a-z0-9+/=]+$/i.test(value.thumbnail)) throw new Error('Invalid look thumbnail.');
       out.thumbnail = value.thumbnail;
@@ -126,38 +134,27 @@
     return out;
   }
   function equal(a, b) {
+    const same = (x, y) => typeof x === 'number' ? typeof y === 'number' && Math.abs(x-y) < 1e-8
+      : x && typeof x === 'object' ? y && typeof y === 'object' && Object.keys(x).length === Object.keys(y).length && Object.keys(x).every(key => same(x[key],y[key])) : x === y;
     return Object.keys(fields).every(key => {
       if (key === 'global.elementColorOverrides') {
         const left = a[key] || {}, right = b[key] || {};
         return Object.keys(left).length === Object.keys(right).length && Object.keys(left).every(k => left[k] === right[k]);
       }
-      return typeof a[key] === 'number' ? Math.abs(a[key] - b[key]) < 1e-8 : a[key] === b[key];
+      return same(a[key], b[key]);
     });
   }
   function exportLook(look) {
     const value = normalizeLook(look);
-    return { kind: 'vibemol.preset', presetVersion: 1, name: value.name, meta: { lookVersion: 1 },
+    return { kind: 'vibemol.preset', presetVersion: 1, name: value.name, meta: { lookVersion: 2 },
       settings: { ...value.settings, 'appearance.look': value } };
   }
   function importLook(value) {
-    if (!value || value.kind !== 'vibemol.preset' || value.presetVersion !== 1 || value.meta?.lookVersion !== 1) throw new Error('Choose a VibeMol look made with Export look.');
+    if (!value || value.kind !== 'vibemol.preset' || value.presetVersion !== 1 || ![1, 2].includes(value.meta?.lookVersion)) throw new Error('Choose a VibeMol look made with Export look.');
+    if (value.meta.lookVersion === 2 && !value.settings?.['appearance.rendering']) throw new Error('The look has no rendering components.');
     const look = normalizeLook(value.settings?.['appearance.look']);
     look.settings = settings(value.settings);
     return look;
   }
-  function createMaterial(THREE, state, color, gradientMap, bond = false) {
-    const finish = state['molecule.material.finish'];
-    if (finish === 'inherit') return null;
-    const polish = state['molecule.material.polish'];
-    let mat;
-    if (finish === 'phong') mat = new THREE.MeshPhongMaterial({ color, specular: 0x777777, shininess: 2 + polish * 35 });
-    else if (finish === 'toon') mat = new THREE.MeshToonMaterial({ color, gradientMap });
-    else mat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.92 - polish * 0.85,
-      metalness: state['molecule.material.metalness'], clearcoat: state['molecule.material.clearcoat'],
-      clearcoatRoughness: 0.15, envMapIntensity: state['molecule.material.environment'],
-      iridescence: state['molecule.material.iridescence'], iridescenceIOR: 1.3, iridescenceThicknessRange: [180, 420] });
-    if (bond) mat.vertexColors = state['molecule.material.elementBonds'];
-    return mat;
-  }
-  global.VibeMolLooks = Object.freeze({ builtins, fields, extra, defaults, settings, normalizeLook, equal, exportLook, importLook, createMaterial });
+  global.VibeMolLooks = Object.freeze({ builtins, fields, extra, defaults, settings, normalizeLook, equal, exportLook, importLook });
 })(window);

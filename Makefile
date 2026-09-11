@@ -19,7 +19,10 @@ JS_CHECK_FILES = \
 	assets/app/js/bond-editing.js \
 	assets/app/js/edit-ui.js \
 	assets/app/js/appearance-looks.js \
+	assets/app/js/appearance-model.js \
+	assets/app/js/appearance-editor.js \
 	assets/app/js/looks-ui.js \
+	docs/experiments/style-lab/compare.js \
 	assets/app/js/edit-placement.js \
 	assets/app/js/edit-tools.js \
 	assets/app/js/edit-gizmos.js \

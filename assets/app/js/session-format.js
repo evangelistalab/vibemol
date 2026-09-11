@@ -156,6 +156,7 @@
         if (layer.kind === 'cube' || layer.kind === 'arithmetic') {
           requireValue(finite(layer.iso) && layer.iso >= 0 && finite(layer.opacity) && layer.opacity >= 0.05 && layer.opacity <= 1, 'invalid surface appearance.');
           requireValue(layer.isoPending == null || typeof layer.isoPending === 'boolean', 'invalid pending iso state.');
+          if (layer.material != null) global.VibeMolAppearanceModel.validateMaterial(layer.material);
         }
         if (layer.kind === 'arithmetic') {
           requireValue(['linear_combination', 'product', 'abs'].includes(layer.operation), 'unsupported arithmetic operation.');
@@ -194,6 +195,7 @@
       && finite(view.fov) && view.fov > 0 && view.fov < 180, 'invalid camera state.');
     requireValue(object(session.preset) && session.preset.kind === 'vibemol.preset' && session.preset.presetVersion === 1
       && object(session.preset.settings), 'invalid appearance preset.');
+    if (session.preset.settings['appearance.rendering'] != null) global.VibeMolAppearanceModel.normalize(session.preset.settings['appearance.rendering']);
     return session;
   }
 

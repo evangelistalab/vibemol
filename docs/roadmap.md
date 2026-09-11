@@ -49,6 +49,7 @@ This provides the foundation for recent sessions, reproducible automation, and m
 - [x] Vibrational playback from sidecar JSON, ORCA `.hess`, and Psi4 outputs; cropped WebM export from both trajectory and vibration panels.
 - [x] Cube/2C surface and cloud rendering, Molden MO selection/grid controls, normalized-grid hover metrics, and PubChem 3D import.
 - [x] Basic, Toon, and Kit molecule styles; optional shadows; gradient-derived surface normals; WBOIT surface/cloud transparency with a fallback; 2C split-view labels and spinor information.
+- [x] Appearance components: independent display geometry, atom/bond/surface materials, coloring, and lighting. Native Basic/Toon/Kit presets and reusable look/material libraries preserve exact values through sessions and autosave. Additional curated presets remain under evaluation in the real-renderer comparison.
 - [x] Gesture editing, Build palette and selection build cue, move/rotate/transform, snapping, undo/redo, inline coordinates, and new/duplicate structure flows.
 - [x] External XYZ-backed catalog with fragment/molecule kinds, atom/fragment/molecule placement, append/replace-H attachment, and supported ring-fusion preview/commit/cancel flows.
 - [x] Stable builder group metadata and fragment/molecule transform scopes; preset operation-log storage and single-record structure round-trip.

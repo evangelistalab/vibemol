@@ -6,6 +6,7 @@
   const PRESET_OBJECT_VALUE_KEYS = new Set([
     'global.elementColorOverrides',
     'appearance.look',
+    'appearance.rendering',
   ]);
   const PRESET_TOP_LEVEL_KEYS = new Set([
     'kind',
@@ -306,7 +307,8 @@
     function applyPresetSettings(settingsLike, options = {}) {
       const mode = normalizePresetMode(options.mode);
       const warnings = [];
-      const flatSettings = flattenSettingsTree(settingsLike);
+      const flatSettings = typeof deps.normalizeSettings === 'function'
+        ? deps.normalizeSettings(flattenSettingsTree(settingsLike)) : flattenSettingsTree(settingsLike);
       const unknownSettings = {};
       for (const key of Object.keys(flatSettings)) {
         if (!presetSettingRegistry.has(key)) {
@@ -340,7 +342,7 @@
         deps.setPresetRebuildSuspended(false);
       }
 
-      if (options.afterApply !== false && typeof deps.afterApplySettings === 'function') deps.afterApplySettings();
+      if (options.afterApply !== false && typeof deps.afterApplySettings === 'function') deps.afterApplySettings({ settings: flatSettings, applied });
       if (!options.preserveUnknown) presetUnknownSettings = deps.cloneJsonLike(unknownSettings) || {};
       return {
         ok: true,

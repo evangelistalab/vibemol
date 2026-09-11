@@ -1,6 +1,8 @@
 # Visual Style Lab
 
-An interactive rendering and appearance-library study on `codex/visual-style-lab`, based on `main` at `e82dcbd`. Run a static server from the repository root and open `/docs/experiments/style-lab/`. The six-look study is isolated. The branch now also includes a native **Appearance → Looks** gallery in the main app, with shared renderer materials, named saves, scoped orbital finishes, and session preservation; see [the implemented workflow](../../appearance-looks.md). The study format remains separate from native look presets.
+Start with the [native renderer comparison](compare.html) and the [component editor documentation](../../appearance-looks.md). The approved product presets are **Basic, Toon, and Kit**. Classic, Porcelain, Nocturne, Ink, Atelier, and Opal remain candidates for later selection. The comparison loads actual VibeMol instances, supports complete looks or materials-only comparisons, and opens the same native editor used in the app. Its previews do not overwrite ordinary appearance autosave or workspace recovery.
+
+The original `/docs/experiments/style-lab/` page is retained as an isolated historical study. Its separate renderer, UI skin, and `vibemol.look-study` files are not the product architecture. The notes below describe that earlier experiment; the native component editor supersedes the proposed gallery/Polish integration. Native material editing now exposes independent atom, bond, and surface shading, physical material parameters, Toon bands, lighting, and reusable material swatches.
 
 ## Orbital reference presets
 
