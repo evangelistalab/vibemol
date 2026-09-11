@@ -42,6 +42,7 @@
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
   <link rel="stylesheet" href="src/styles/vm-list-popover.css" />
   <link rel="stylesheet" href="assets/app/css/session-ui.css" />
+  <link rel="stylesheet" href="assets/app/css/looks-ui.css" />
   <style>
     :root {
       --vm-color-accent: #0c3575;
@@ -2460,6 +2461,7 @@
         </div>
       </div>
       <div id="displayInspector" class="tb-toolbarInspector tb-toolbarInspectorFields vm-sidebar-accordion__panel" aria-hidden="true">
+        <section id="looksPanel" class="vm-looks" aria-label="Looks"></section>
         <div class="appearanceHiddenControl" aria-hidden="true">
           <select id="moleculeStyle" class="vm-select"
             data-tooltip="Choose atom/bond rendering style (shortcuts: 1=Basic, 2=Toon, 3=Kit)">
@@ -3865,6 +3867,8 @@
   <script src="./assets/app/js/display-windows.js"></script>
   <!-- appearance inspector helpers -->
   <script src="./assets/app/js/appearance-ui.js"></script>
+  <script src="./assets/app/js/appearance-looks.js"></script>
+  <script src="./assets/app/js/looks-ui.js"></script>
   <!-- edit placement helpers -->
   <script src="./assets/app/js/edit-placement.js"></script>
   <!-- edit tool/selection helpers -->

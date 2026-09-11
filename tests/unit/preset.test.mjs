@@ -54,6 +54,23 @@ function createController(options = {}) {
   return { controller, downloads, volumes };
 }
 
+test('appearance patches preserve foreign preset data and atomic look metadata', () => {
+  const { controller } = createController();
+  let material = 'emissive', look = null;
+  controller.registerSetting('surface.materialPreset', () => material, value => { material = value; });
+  controller.registerSetting('appearance.look', () => look, value => { look = value; });
+  const original = { kind:'vibemol.preset', presetVersion:1, name:'External preset', extensions:{ foreign:{keep:true} },
+    settings:{ 'foreign.choice':42, 'appearance.look':{ id:'classic', name:'Classic', settings:{'lighting.key':1.4} } } };
+  controller.importEnvelope(original, { mode:'relaxed' });
+  controller.applySettings({ 'surface.materialPreset':'enamel' }, { mode:'strict', afterApply:false });
+  const exported = JSON.parse(JSON.stringify(controller.exportEnvelope()));
+  assert.equal(exported.name, 'External preset');
+  assert.equal(exported.settings['foreign.choice'], 42);
+  assert.equal(exported.settings['surface.materialPreset'], 'enamel');
+  assert.deepEqual(exported.settings['appearance.look'], original.settings['appearance.look']);
+  assert.deepEqual(exported.extensions.foreign, {keep:true});
+});
+
 test('preset controller exports registered settings into a preset envelope', () => {
   const state = { style: 'toon', speed: 2 };
   const { controller } = createController();

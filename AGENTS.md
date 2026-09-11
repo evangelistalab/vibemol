@@ -82,6 +82,9 @@ Primary capabilities:
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/display-windows.js`: non-edit adaptive launcher/window catalog, exclusivity rules, positioning, and floating-inspector anchoring controller.
 - `assets/app/js/appearance-ui.js`: Appearance inspector chip/action-toggle binding plus conditional-section sync controller.
+- `assets/app/js/appearance-looks.js`: validated native look recipes and shared atom/bond material factory.
+- `assets/app/js/looks-ui.js` and `assets/app/css/looks-ui.css`: Looks gallery, named library, portable previews, default selection, and scoped orbital finish picker.
+- `docs/appearance-looks.md`: look scope, preservation, and validation contracts.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
 - `assets/app/js/edit-tools.js`: edit-tool state, selection coordination, and transient edit cleanup.
 - `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover state, visibility, and picking helpers.
@@ -150,6 +153,7 @@ Required script order in `index.html`:
 23. `assets/app/js/edit-ui.js`
 24. `assets/app/js/display-windows.js`
 25. `assets/app/js/appearance-ui.js`
+    - `assets/app/js/appearance-looks.js` and `assets/app/js/looks-ui.js` follow Appearance UI and precede `app.js`.
 26. `assets/app/js/edit-placement.js`
 27. `assets/app/js/edit-tools.js`
 28. `assets/app/js/edit-gizmos.js`
@@ -209,6 +213,8 @@ Required script order in `index.html`:
 - `window.VibeMolEditUi`
 - `window.VibeMolDisplayWindows`
 - `window.VibeMolAppearanceUi`
+- `window.VibeMolLooks`
+- `window.VibeMolLooksUi`
 - `window.VibeMolPrefs`
 - `window.VibeMolEditPlacement`
 - `window.VibeMolEditTools`
@@ -250,7 +256,7 @@ Preset automation contract exposed globally:
 - Unsupported molecule styles in saved presets fall back to Basic; the Python CLI rejects unsupported style arguments.
 - `fancy` is treated as a deprecated alias for `toon` in preset/CLI compatibility paths.
 - Python CLI additionally accepts deprecated alias `studio` and maps it to `kit`.
-- Toon molecule style enforces toon-shaded surfaces.
+- Toon molecule style shades surfaces with Toon by default; an explicitly chosen orbital finish overrides it for the targeted layers.
 - Camera rotation uses quaternion orbiting in all interaction modes to avoid pole locking.
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
@@ -289,6 +295,7 @@ Preset automation contract exposed globally:
 - The `Symmetry` tool supports point-group analysis, RMS-based approximate fits, preview/apply/auto-apply symmetrization, and 3D symmetry-element visualization.
 - Appearance is a compact accordion inspector with an always-visible `Quick style` strip and collapsed `Molecule`, `Lighting & atmosphere`, `Camera`, `Surfaces`, and `Visibility` sections; `Surfaces` and its 2C/cloud subsections appear only when relevant.
 - Appearance controls include an optional `Shadows` toggle for molecule self-shadowing.
+- Appearance starts with a native Looks gallery (Classic, Porcelain, Nocturne, Ink, Atelier, Opal), My looks, named save/update/rename/delete, PNG thumbnails, preset export/import, and an explicit default for new sessions. Its dedicated Undo look does not replace molecular edit undo. Looks preserve camera, geometry, layer visibility, isovalues/Auto-iso, phase, and render mode, and never compute deferred MOs. Orbital finish defaults to all orbitals in the active molecule, with a selected-orbital option. Vivid is the gallery label for Emissive. Exact recipe values and metadata persist through presets, appearance autosave, and complete sessions. See `docs/appearance-looks.md` and `tests/e2e/looks.py`.
 - The experimental `Enamel` surface material gives opaque orbital figures compact highlights, a small colored fill, and no environment reflections. Native blue/orange Emissive, Enamel, and Satin presets and actual renderer previews live in `docs/experiments/style-lab/`; the six-look lab still uses its separate study format.
 - Loaded `.2ccube` files expose the 2C quantity selector in Appearance with math-aware labels (`Re(ψ^α)`, `Im(ψ^β)`, and so on).
 - In `alphaBetaPhase` split view, the canvas overlays centered `α` / `β` labels and exposes a `Spinor info` popover whose copy follows the active 2C quantity; the phase wheel sits at the lower-right above the hint bar.

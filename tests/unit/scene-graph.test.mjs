@@ -111,6 +111,7 @@ test('cube appearance owns Phase 2a per-layer surface and cloud properties', () 
     cloudStride: 4,
     cloudAlpha: 0.35,
     signFlip: true,
+    independentMaterial: true,
   });
 
   assert.equal(appearance.autoIso, true);
@@ -120,6 +121,8 @@ test('cube appearance owns Phase 2a per-layer surface and cloud properties', () 
   assert.equal(appearance.cloudStride, 4);
   assert.equal(appearance.cloudAlpha, 0.35);
   assert.equal(appearance.signFlip, true);
+  assert.equal(appearance.independentMaterial, true);
+  assert.equal(api.createCubeAppearance().independentMaterial, false);
 });
 
 test('active layer changes active scene globally', () => {

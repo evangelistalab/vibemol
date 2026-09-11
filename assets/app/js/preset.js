@@ -5,6 +5,7 @@
   const PRESET_VERSION = 1;
   const PRESET_OBJECT_VALUE_KEYS = new Set([
     'global.elementColorOverrides',
+    'appearance.look',
   ]);
   const PRESET_TOP_LEVEL_KEYS = new Set([
     'kind',
@@ -340,7 +341,7 @@
       }
 
       if (options.afterApply !== false && typeof deps.afterApplySettings === 'function') deps.afterApplySettings();
-      presetUnknownSettings = deps.cloneJsonLike(unknownSettings) || {};
+      if (!options.preserveUnknown) presetUnknownSettings = deps.cloneJsonLike(unknownSettings) || {};
       return {
         ok: true,
         mode,
@@ -437,6 +438,7 @@
       syncBuilderExtensionFromVolumes,
       exportEnvelope,
       importEnvelope,
+      applySettings: (settings, options = {}) => applyPresetSettings(settings, { ...options, preserveUnknown: true }),
       saveCurrentPresetToFile,
       importFromText,
       getPublicApi,

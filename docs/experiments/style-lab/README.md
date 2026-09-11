@@ -1,6 +1,6 @@
 # Visual Style Lab
 
-An interactive rendering and appearance-library study on `codex/visual-style-lab`, based on `main` at `e82dcbd`. Run a static server from the repository root and open `/docs/experiments/style-lab/`. The six-look study is isolated; this branch also adds the native Enamel surface material and the orbital presets below.
+An interactive rendering and appearance-library study on `codex/visual-style-lab`, based on `main` at `e82dcbd`. Run a static server from the repository root and open `/docs/experiments/style-lab/`. The six-look study is isolated. The branch now also includes a native **Appearance → Looks** gallery in the main app, with shared renderer materials, named saves, scoped orbital finishes, and session preservation; see [the implemented workflow](../../appearance-looks.md). The study format remains separate from native look presets.
 
 ## Orbital reference presets
 

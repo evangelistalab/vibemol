@@ -33,7 +33,11 @@
   const UI_THEME_STORAGE_KEY = 'vibemol.uiTheme';
   const AUTOSAVE_STORAGE_KEY = 'vibemol.autosavePreset';
   const APPEARANCE_AUTOSAVE_PERSIST_SCOPE = 'appearanceAutosave';
-  const AUTOSAVE_PRESET_OBJECT_VALUE_KEYS = new Set(['global.elementColorOverrides']);
+  const AUTOSAVE_PRESET_OBJECT_VALUE_KEYS = new Set(['global.elementColorOverrides', 'appearance.look']);
+  const lookModule = window.VibeMolLooks;
+  const lookRendering = Object.fromEntries(Object.entries(lookModule.extra).map(([key, [value]]) => [key, value]));
+  let activeLook = null;
+  let looksUi = null;
   const DARK_THEME_SCENE_BG_BLEND = 0.975;
   const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
   const DEFAULT_ISO_VALUE = 0.02;
@@ -1401,6 +1405,7 @@
   }
   function renderSceneOutliner(...args) {
     const result = getSceneOutliner().renderSceneOutliner(...args);
+    if (looksUi) looksUi.scheduleSync();
     markSessionChanged();
     return result;
   }
@@ -2258,6 +2263,17 @@
     amb.intensity = lighting.ambIntensity;
     rim.color.setHex(lighting.rimColor);
     rim.intensity = lighting.rimIntensity;
+    if (lookRendering['lighting.custom']) {
+      hemi.color.setHex(0xffffff);
+      hemi.groundColor.setHex(0x383e47);
+      hemi.intensity = lookRendering['lighting.fill'];
+      dir.color.setHex(0xffffff);
+      dir.intensity = lookRendering['lighting.key'];
+      amb.color.setHex(0xffffff);
+      amb.intensity = lookRendering['lighting.ambient'];
+      rim.color.setHex(0xffffff);
+      rim.intensity = lookRendering['lighting.rim'];
+    }
 
     let bg = null;
     if (bgColor && bgColor.value) {
@@ -2268,7 +2284,7 @@
       hemi.groundColor.setHex(0xf5f5f5);
       rim.intensity = Math.min(rim.intensity, 0.35);
     }
-    if (bg) bg = getThemeAdjustedSceneBackground(bg);
+    if (bg && !lookRendering['lighting.custom']) bg = getThemeAdjustedSceneBackground(bg);
     if (bg) scene.background = bg;
 
     if (moleculeFogEnabled) {
@@ -2326,8 +2342,8 @@
    * Determine whether surfaces should use toon shading.
    * @returns {boolean}
    */
-  function useToonSurfaceStyle() {
-    return getMoleculeStyleProfile().key === 'toon';
+  function useToonSurfaceStyle(layer = null) {
+    return lookRendering['surface.followMoleculeStyle'] && !layer?.independentMaterial && getMoleculeStyleProfile().key === 'toon';
   }
 
   /**
@@ -2928,6 +2944,8 @@
    * @returns {THREE.Material}
    */
   function buildAtomMaterialForCurrentStyle(color, z) {
+    const lookMaterial = lookModule.createMaterial(THREE, lookRendering, color, getToonGradientTexture('atom'));
+    if (lookMaterial) return lookMaterial;
     const styleKey = getMoleculeStyleProfile().key;
     let mat = null;
     if (styleKey === 'kit') {
@@ -3020,6 +3038,7 @@
     const atomColor = color && color.isColor ? color.clone() : new THREE.Color(color || 0xffffff);
     const signature = [
       getMoleculeStyleProfile().key,
+      JSON.stringify(lookRendering),
       moleculeInkEnabled ? 1 : 0,
       moleculeBlackbodyEnabled ? 1 : 0,
       z | 0,
@@ -3048,6 +3067,7 @@
     if (!mesh) return null;
     const signature = [
       getMoleculeStyleProfile().key,
+      JSON.stringify(lookRendering),
       moleculeInkEnabled ? 1 : 0,
       Number(opacity).toFixed(3),
     ].join('|');
@@ -3114,8 +3134,15 @@
    */
   function getBondMaterial() {
     const key = getMoleculeStyleProfile().key;
-    const cacheKey = `${key}:ink=${moleculeInkEnabled ? 1 : 0}:alpha=${moleculeBondOpacity.toFixed(3)}`;
+    const cacheKey = `${key}:ink=${moleculeInkEnabled ? 1 : 0}:alpha=${moleculeBondOpacity.toFixed(3)}:look=${JSON.stringify(lookRendering)}`;
     if (bondMaterialCache.has(cacheKey)) return bondMaterialCache.get(cacheKey);
+    const lookColor = new THREE.Color(lookRendering['molecule.material.elementBonds'] ? '#ffffff' : lookRendering['molecule.material.bondColor']);
+    const lookMaterial = lookModule.createMaterial(THREE, lookRendering, lookColor, getToonGradientTexture('bond'), true);
+    if (lookMaterial) {
+      applyGlobalMaterialOpacity(lookMaterial, moleculeBondOpacity);
+      bondMaterialCache.set(cacheKey, lookMaterial);
+      return lookMaterial;
+    }
 
     let mat;
     if (key === 'kit') {
@@ -3162,7 +3189,7 @@
   function getStylizedBondOutlineMaterial() {
     const profile = getMoleculeStyleProfile();
     const styleKey = profile.key;
-    const useOutline = useStylizedMoleculeStyle() || moleculeInkEnabled;
+    const useOutline = useStylizedMoleculeStyle() || moleculeInkEnabled || lookRendering['molecule.material.outline'] > 0;
     if (!useOutline) return null;
     const alphaKey = Math.max(0.35, Math.min(1, moleculeBondOpacity)).toFixed(3);
     const key = `${styleKey}:outline:ink=${moleculeInkEnabled ? 1 : 0}:alpha=${alphaKey}`;
@@ -3948,7 +3975,7 @@
     const profile = getMoleculeStyleProfile();
     const isToonStyle = profile.key === 'toon';
     const isInkStyle = !!moleculeInkEnabled;
-    const usesOutline = isToonStyle || isInkStyle;
+    const usesOutline = isToonStyle || isInkStyle || lookRendering['molecule.material.outline'] > 0;
     const atomGeom = new THREE.SphereGeometry(
       0.5,
       profile.sphereWidthSegments,
@@ -3970,7 +3997,7 @@
     const hydrogenDisplayRadius = 0.5 * getCovalentRadiusAngstrom(1) * getAtomRenderScaleFactor(1);
     const baseOutlineScale = isInkStyle ? 1.09 : isToonStyle ? 1.08 : 1.0;
     // Keep atom outline shell thickness constant across atom sizes (match hydrogen).
-    const targetOutlineThickness = Math.max(1e-4, hydrogenDisplayRadius * Math.max(0, baseOutlineScale - 1));
+    const targetOutlineThickness = lookRendering['molecule.material.outline'] || Math.max(1e-4, hydrogenDisplayRadius * Math.max(0, baseOutlineScale - 1));
     const atomEntries = [];
     const positions = [];
     for (let atomIndex = 0; atomIndex < (vol.atoms || []).length; atomIndex++) {
@@ -4246,7 +4273,7 @@
     const bondEdges = getVolumeBondEdges(vol, atomPositions);
     const bondMat = getBondMaterial();
     // Keep bond outlines in toon and ink styles.
-    const stylizedBondOutlineMat = (isToonStyle || isInkStyle) ? getStylizedBondOutlineMaterial() : null;
+    const stylizedBondOutlineMat = (isToonStyle || isInkStyle || lookRendering['molecule.material.outline'] > 0) ? getStylizedBondOutlineMaterial() : null;
     const stylizedBondHighlightMat = isToonStyle ? getStylizedBondHighlightMaterial() : null;
     const up = new THREE.Vector3(0, 1, 0);
     const kitCenterRadius = profile.bondRadius * getMoleculeBondRadiusScale();
@@ -4358,7 +4385,9 @@
         connectorEndRadius: isKitStyle ? kitCollarRadius : componentCenterRadius,
         bondDisplayRadius: Math.max(0.01, componentCenterRadius),
       };
-      const outlineScale = isInkStyle ? 1.08 : 1.18;
+      const outlineScale = lookRendering['molecule.material.outline'] > 0
+        ? 1 + lookRendering['molecule.material.outline'] / Math.max(0.01, componentCenterRadius)
+        : isInkStyle ? 1.08 : 1.18;
       const highlightScale = 1.03;
       /**
        * Attach outline/highlight shells to one bond mesh when needed.
@@ -4990,7 +5019,7 @@
     const col = new THREE.Color(sign === 'neg'
       ? (layerColors ? layerColors.neg : negColor.value)
       : (layerColors ? layerColors.pos : posColor.value));
-    if (useToonSurfaceStyle()) {
+    if (useToonSurfaceStyle(layer)) {
       return applySurfaceBlendFlags(new THREE.MeshToonMaterial({
         color: col,
         gradientMap: getToonGradientTexture('surface'),
@@ -5018,7 +5047,7 @@
    * @returns {THREE.Material}
    */
   function createIsoMaterial2C(opacity, layer = null) {
-    if (useToonSurfaceStyle()) {
+    if (useToonSurfaceStyle(layer)) {
       return applySurfaceBlendFlags(new THREE.MeshToonMaterial({
         color: 0xffffff,
         vertexColors: true,
@@ -9472,6 +9501,7 @@
       'opacity',
       'surfaceStyle',
       'solidPreset',
+      'independentMaterial',
       'colorScheme',
       'posColor',
       'negColor',
@@ -9742,6 +9772,7 @@
       opacity: Math.max(0.05, Math.min(1, Number(sourceLayer && sourceLayer.opacity) || 1)),
       surfaceStyle: 'solid',
       solidPreset: String(sourceLayer && sourceLayer.solidPreset || DEFAULT_SURFACE_MATERIAL_PRESET),
+      independentMaterial: !!sourceLayer?.independentMaterial,
       colorScheme: String(sourceLayer && sourceLayer.colorScheme || 'emory'),
       posColor: !sourceLayer || sourceLayer.posColor == null ? null : String(sourceLayer.posColor),
       negColor: !sourceLayer || sourceLayer.negColor == null ? null : String(sourceLayer.negColor),
@@ -12367,7 +12398,20 @@
     if (!moleculeStyleSel) return;
     const target = normalizeMoleculeStyleKey(nextStyle);
     const shouldRebuild = options.rebuild !== false && !suspendPresetRebuild;
-    if (moleculeStyle === target && moleculeStyleSel.value === target) return;
+    const hasLookOverrides = shouldRebuild && (lookRendering['molecule.material.finish'] !== 'inherit'
+      || lookRendering['molecule.material.outline'] > 0 || lookRendering['lighting.custom'] || !lookRendering['surface.followMoleculeStyle']
+      || getAllLookLayers().some(layer => layer.independentMaterial));
+    if (moleculeStyle === target && moleculeStyleSel.value === target && !hasLookOverrides) return;
+    if (shouldRebuild) {
+      lookRendering['molecule.material.finish'] = 'inherit';
+      lookRendering['molecule.material.outline'] = 0;
+      lookRendering['lighting.custom'] = false;
+      lookRendering['surface.followMoleculeStyle'] = true;
+      for (const layer of getAllLookLayers()) {
+        layer.independentMaterial = false;
+        persistActiveCubeLayerState(layer, { render: false });
+      }
+    }
     moleculeStyle = target;
     moleculeStyleSel.value = target;
     applyMoleculeStyleUiState();
@@ -26444,7 +26488,7 @@
     const presetSelectEl = document.getElementById('surfaceMaterialPreset');
     const presetRow = document.getElementById('rowSurfaceMaterialPreset');
     const activeRenderMode = getLayerRenderMode(getSurfaceAppearanceLayer());
-    const physicalSurfacesActive = activeRenderMode === 'surface' && !useToonSurfaceStyle();
+    const physicalSurfacesActive = activeRenderMode === 'surface' && !useToonSurfaceStyle(getSurfaceAppearanceLayer());
     const presetTooltip = physicalSurfacesActive
       ? 'Surface material'
       : 'Available when surfaces use physical shading';
@@ -27879,6 +27923,15 @@
     syncVibrationControls();
   });
 
+  for (const [key, [fallback, validate]] of Object.entries(lookModule.extra)) {
+    registerAppearancePresetSetting(key, () => lookRendering[key], value => {
+      lookRendering[key] = validate(value) ? value : fallback;
+    });
+  }
+  registerAppearancePresetSetting('appearance.look', () => cloneJsonLike(activeLook), value => {
+    activeLook = value == null ? null : lookModule.normalizeLook(value);
+  });
+
   function getSceneGraphAwarePresetPublicApi() {
     const baseApi = getPresetPublicApi();
     return Object.freeze(Object.assign({}, baseApi, {
@@ -27979,6 +28032,7 @@
   }
 
   function scheduleAppearancePresetAutosave() {
+    if (looksUi) looksUi.scheduleSync();
     if (appearancePresetAutosaveSuppressDepth > 0) return;
     markSessionChanged();
     const presetApi = window.VibeMolPreset;
@@ -27998,6 +28052,7 @@
   }
 
   function syncAppearancePersistenceUi() {
+    if (looksUi) looksUi.scheduleSync();
     if (appearanceInspectorController) appearanceInspectorController.syncAll();
     syncAllAppearanceActionToggleButtons();
   }
@@ -28053,6 +28108,84 @@
     scheduleAppearancePresetAutosave();
     return result;
   };
+
+  // Looks own appearance only. Do not route them through the ordinary preset
+  // post-apply hook, which copies iso/Auto-iso controls into the active layer.
+  const lookLayerFields = Object.freeze({
+    'surface.materialPreset': 'solidPreset', 'surface.opacity': 'opacity',
+    'surface.colorScheme': 'colorScheme', 'surface.posColor': 'posColor', 'surface.negColor': 'negColor',
+  });
+  function getAllLookLayers() {
+    return sceneGraphController.getScenes().flatMap(scene => sceneGraphController.listLayers(scene)).filter(isCubeLikeLayer);
+  }
+  function getLookSurfaceSettings(layer) {
+    const colors = getLayerSurfaceColors(layer);
+    return { 'surface.materialPreset': getSurfaceMaterialPresetKey(layer), 'surface.opacity': layer.opacity,
+      'surface.colorScheme': layer.colorScheme || 'emory', 'surface.posColor': colors.pos, 'surface.negColor': colors.neg };
+  }
+  function captureLookSettings() {
+    const values = exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings;
+    const layer = getSurfaceAppearanceLayer() || getLookFinishScope('group').layers[0];
+    if (layer) Object.assign(values, getLookSurfaceSettings(layer));
+    if (layer?.independentMaterial) values['surface.followMoleculeStyle'] = false;
+    return lookModule.settings(values);
+  }
+  function getLookFinishScope(scope) {
+    const scene = sceneGraphController.getActiveScene();
+    const active = getActiveCubeLayer();
+    const layers = scene ? sceneGraphController.listLayers(scene).filter(isCubeLikeLayer) : [];
+    const targets = scope === 'selected' && active ? [active] : layers;
+    const finish = layer => useToonSurfaceStyle(layer) ? 'toon' : getSurfaceMaterialPresetKey(layer);
+    const material = targets.length && targets.every(layer => finish(layer) === finish(targets[0])) ? finish(targets[0]) : 'mixed';
+    return { layers: targets, available: layers.length > 0, total: layers.length, selected: !!active,
+      material, label: material === 'toon' ? 'Toon follows the molecule style. Choose a finish to override it.' : `${targets.length} orbital${targets.length === 1 ? '' : 's'} · ${scene?.name || ''}` };
+  }
+  function finishLookChange() {
+    applyMoleculeStyleUiState();
+    rebuildScene({ preserveView: true, skipAutoIso: true, syncGraph: false });
+    refreshActiveAddGrowPreview();
+    if (moleculePlaceActive) rebuildMoleculePlacementPreviewMeshes();
+    if (addFusePreviewState) rebuildFuseRingPreviewMeshes();
+    syncAppearanceControlsToActiveLayer();
+    syncAppearancePersistenceUi();
+    renderSceneOutliner();
+    scheduleAppearancePresetAutosave();
+  }
+  function applyLookSettings(settings, layers = getAllLookLayers()) {
+    if (applyingSession || sessionController?.isOpening() || batchExportRunning
+      || trajectoryVideoController?.isActive() || vibrationVideoController?.isActive()) {
+      throw new Error('Finish the current open or export before changing the look.');
+    }
+    presetController.applySettings(settings, { mode: PRESET_MODE.STRICT, afterApply: false });
+    for (const layer of layers) {
+      for (const [key, field] of Object.entries(lookLayerFields)) if (key in settings) layer[field] = settings[key];
+      persistActiveCubeLayerState(layer, { render: false });
+    }
+  }
+  function applyNamedLook(look) {
+    const value = lookModule.normalizeLook(look);
+    applyLookSettings(value.settings);
+    for (const layer of getAllLookLayers()) {
+      layer.independentMaterial = false;
+      persistActiveCubeLayerState(layer, { render: false });
+    }
+    activeLook = { ...value, settings: captureLookSettings() };
+    finishLookChange();
+  }
+  function captureLookUndo() {
+    return { settings: lookModule.settings(exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings),
+      activeLook: cloneJsonLike(activeLook), layers: getAllLookLayers().map(layer => ({ layer, settings: getLookSurfaceSettings(layer), independentMaterial: !!layer.independentMaterial })) };
+  }
+  function restoreLookUndo(saved) {
+    applyLookSettings(saved.settings, []);
+    for (const entry of saved.layers) if (sceneGraphController.getLayerById(entry.layer.id) === entry.layer) {
+      for (const [key, field] of Object.entries(lookLayerFields)) entry.layer[field] = entry.settings[key];
+      entry.layer.independentMaterial = entry.independentMaterial;
+      persistActiveCubeLayerState(entry.layer, { render: false });
+    }
+    activeLook = cloneJsonLike(saved.activeLook);
+    finishLookChange();
+  }
 
   defaultAppearancePresetEnvelope = cloneJsonLike(exportAppearancePresetEnvelope('Defaults'));
   restoreAppearancePresetAutosave();
@@ -28126,6 +28259,7 @@
           autoIso: getLayerAutoIsoEnabled(layer),
           opacity: Number(layer.opacity),
           solidPreset: String(layer.solidPreset || ''),
+          independentMaterial: !!layer.independentMaterial,
           colorScheme: String(layer.colorScheme || ''),
           posColor: layer.posColor == null ? null : String(layer.posColor),
           negColor: layer.negColor == null ? null : String(layer.negColor),
@@ -28320,6 +28454,16 @@
         atoms,
         bonds,
       };
+    },
+    getLookMaterialSnapshot: () => {
+      const materials = [];
+      contentGroup.traverse(obj => {
+        if (obj.userData?.type !== 'atom' || !obj.material) return;
+        const mat = obj.material;
+        materials.push({ type: mat.type, color: mat.color?.getHexString(), roughness: mat.roughness,
+          envMapIntensity: mat.envMapIntensity, iridescence: mat.iridescence });
+      });
+      return materials;
     },
     getBondCarrierSnapshots: () => {
       if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
@@ -31404,6 +31548,7 @@
       opacity: layer.opacity,
       surfaceStyle: layer.surfaceStyle,
       solidPreset: layer.solidPreset,
+      independentMaterial: !!layer.independentMaterial,
       colorScheme: layer.colorScheme,
       posColor: layer.posColor,
       negColor: layer.negColor,
@@ -32737,6 +32882,8 @@
         selectedLayerIds: [], syncMaster: { frame: 0, fps: 12, playing: false, lastStepMs: 0 } });
       volumes = [];
       currentIndex = -1;
+      Object.assign(lookRendering, Object.fromEntries(Object.entries(lookModule.extra).map(([key, [value]]) => [key, value])));
+      activeLook = null;
       importPresetEnvelope(saved.preset, { mode: PRESET_MODE.RELAXED, applyBuilder: false, afterApply: false });
       volumes = saved.records;
       currentIndex = saved.activeRecord ? volumes.indexOf(saved.activeRecord) : (volumes.length ? 0 : -1);
@@ -32808,6 +32955,7 @@
       }
     },
     onOpened: staged => {
+      if (looksUi) looksUi.clearUndo();
       if (sessionStatusEl) sessionStatusEl.textContent = `Opened ${staged.name || 'session'}`;
       if (sessionRecovery) { sessionRecovery.startFresh(); sessionRecovery.markDirty(); }
       setHintMessage('Session opened. Playback is paused.');
@@ -32891,6 +33039,48 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) void sessionRecovery.flush(); });
   window.addEventListener('pagehide', () => { void sessionRecovery.flush(); });
   void sessionRecovery.initialize();
+
+  looksUi = window.VibeMolLooksUi.createController({
+    root: document.getElementById('looksPanel'), captureSettings: captureLookSettings,
+    captureThumbnail: () => {
+      if (!volumes.length) return null;
+      const thumbnail = document.createElement('canvas'); thumbnail.width = 180; thumbnail.height = 120;
+      const source = renderer.domElement, scale = Math.min(source.width / 180, source.height / 120);
+      thumbnail.getContext('2d').drawImage(source, (source.width - 180 * scale) / 2, (source.height - 120 * scale) / 2,
+        180 * scale, 120 * scale, 0, 0, 180, 120);
+      return thumbnail.toDataURL('image/png');
+    },
+    getActiveLook: () => activeLook,
+    setActiveLook: value => { activeLook = cloneJsonLike(value); scheduleAppearancePresetAutosave(); },
+    applyLook: applyNamedLook, captureUndo: captureLookUndo, restoreUndo: restoreLookUndo,
+    getFinishScope: getLookFinishScope,
+    hasMixedSurfaces: () => {
+      const layers = getAllLookLayers();
+      return layers.length > 1 && layers.some(layer => JSON.stringify(getLookSurfaceSettings(layer)) !== JSON.stringify(getLookSurfaceSettings(layers[0]))
+        || useToonSurfaceStyle(layer) !== useToonSurfaceStyle(layers[0]));
+    },
+    applyFinish: (material, scope) => {
+      const layers = getLookFinishScope(scope).layers;
+      if (!layers.length) return;
+      applyLookSettings({ 'surface.materialPreset': material }, layers);
+      for (const layer of layers) {
+        layer.independentMaterial = true;
+        persistActiveCubeLayerState(layer, { render: false });
+      }
+      finishLookChange();
+    },
+    adjust: patch => { applyLookSettings(lookModule.settings(patch, false), []); finishLookChange(); },
+    download: (value, filename) => {
+      const link = document.createElement('a'); link.download = filename;
+      link.href = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' }));
+      link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    },
+  });
+  window.VibeMolAppearanceLooks = Object.freeze({
+    list: () => lookModule.builtins.map(look => ({ id: look.id, name: look.name })),
+    apply: id => { const look = lookModule.builtins.find(item => item.id === id); if (!look) throw new Error('Unknown look.'); looksUi.choose(look); },
+    snapshot: () => ({ activeLook: cloneJsonLike(activeLook), settings: captureLookSettings(), saved: looksUi.getLibrary() }),
+  });
 
   // Startup: begin with an empty scene and onboarding text.
   updateEmptyStateVisibility();
