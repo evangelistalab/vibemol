@@ -543,6 +543,7 @@ Repo checks:
 - `git diff --stat`
 
 ## Editing Rules For Agents
+- Keep controls stationary on hover: use color, background, border color, or shadow feedback without changing their position, size, or rotation. Hover-revealed menus fade in place. Preserve transforms needed for positioning or explicit state changes, such as accordion chevrons and toggle thumbs.
 - Prefer editing `assets/app/js/` modules over large inline script blocks in `index.html`.
 - Preserve script load order and global contracts in `index.html`.
 - Prefer extending `assets/fragments/library.json` + `assets/fragments/*.xyz` for catalog growth instead of hard-coding new fragment geometry in `app.js`.

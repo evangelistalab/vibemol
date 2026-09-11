@@ -373,8 +373,7 @@
       font-weight: var(--vm-font-weight-strong);
       cursor: pointer;
       white-space: nowrap;
-      transform-origin: 50% 55%;
-      transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+      transition: background-color 150ms ease, color 150ms ease;
     }
 
     #toolbar button.secondary {
@@ -411,15 +410,13 @@
       gap: 14px;
       opacity: 0;
       pointer-events: none;
-      transform: translateY(-6px);
-      transition: opacity 160ms ease, transform 160ms ease;
+      transition: opacity 160ms ease;
     }
 
     #topRightUtilities:hover #topRightUtilitiesReveal,
     #topRightUtilities:focus-within #topRightUtilitiesReveal {
       opacity: 1;
       pointer-events: auto;
-      transform: translateY(0);
     }
 
     .topRightUtilityLink {
@@ -431,13 +428,12 @@
       color: var(--vm-color-utility-overlay-fg);
       text-decoration: none;
       filter: drop-shadow(0 1px 1px var(--vm-color-utility-overlay-shadow)) drop-shadow(0 0 8px var(--vm-color-utility-overlay-glow));
-      transition: color 160ms ease, transform 160ms ease, filter 160ms ease;
+      transition: color 160ms ease, filter 160ms ease;
     }
 
     .topRightUtilityLink:hover,
     .topRightUtilityLink:focus-visible {
       color: var(--vm-color-utility-overlay-fg-hover);
-      transform: translateY(-1px);
       filter: drop-shadow(0 1px 1px var(--vm-color-utility-overlay-shadow)) drop-shadow(0 0 10px var(--vm-color-utility-overlay-glow));
       outline: none;
     }
@@ -1280,13 +1276,7 @@
       font-size: 14px;
       font-weight: var(--vm-font-weight-heading);
       cursor: pointer;
-      transform-origin: 50% 55%;
-      transition: filter 150ms ease, transform 150ms ease;
-    }
-
-    #toolbar button:not(.secondary):hover,
-    #emptyStateOpenBtn:hover {
-      transform: rotate(calc(var(--vm-angle-tetrahedral) * 0.00456746));
+      transition: filter 150ms ease;
     }
 
     #emptyStateOpenBtn:hover {

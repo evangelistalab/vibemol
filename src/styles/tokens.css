@@ -236,7 +236,6 @@
   --vm-font-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --vm-font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --vm-font-icon: 'Material Symbols Rounded';
-  --vm-angle-tetrahedral: 109.47deg;
   /* UI accent and positive-isosurface blue are intentionally separate tokens. */
   --vm-brand-positive: #3b5bd9;
   --vm-brand-negative: #ffc53a;
