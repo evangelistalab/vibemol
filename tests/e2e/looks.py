@@ -15,9 +15,11 @@ def rendering(page):
     return state(page)['settings']['appearance.rendering']
 
 
-def editor(page):
+def editor(page, material=True):
     if page.locator('#displayInspectorBtn').get_attribute('aria-expanded') != 'true':
         page.locator('#displayInspectorBtn').click()
+    if material and not page.locator('#appearanceMaterialsSection').evaluate('el => el.open'):
+        page.locator('#appearanceMaterialsSection > summary').click()
 
 
 def value(page, control, number):
@@ -33,7 +35,27 @@ def camera_equal(before, after):
 def components_and_saving(page, context, url):
     assert p.load(page,[{'name':'pyridine.xyz','text':(p.ROOT/'assets/fragments/pyridine.xyz').read_text()}])['ok']
     molecule=page.evaluate('() => VibeMolStructure.exportActive().volume')
-    camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()');editor(page)
+    camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()');editor(page,material=False)
+    assert not page.locator('#appearanceMaterialsSection').evaluate('el => el.open')
+    assert not page.locator('#appearanceMaterialPreset').is_visible()
+    assert page.locator('#moleculeInkToggle, #moleculeBlackbodyToggle, #blackbodyColdColor, #blackbodyHotColor').count()==0
+    assert page.get_by_text('More material settings',exact=True).count()==0
+    summary=page.locator('#appearanceMaterialsSection > summary')
+    summary.focus();summary.press('Enter')
+    assert page.locator('#appearanceMaterialPreset').is_visible()
+    assert page.locator('#appearanceMaterialMetalness').evaluate('el => el.closest("details").id')=='appearanceMaterialsSection'
+    # Retired flags cannot change rendering or reappear in new presets, even in strict imports.
+    retired={'molecule.feature.ink':True,'molecule.feature.blackbody.enabled':True,
+             'molecule.feature.blackbody.coldColor':'#ff0000','molecule.feature.blackbody.hotColor':'#0000ff'}
+    page.wait_for_function('() => VibeMolTesting.getLookLightingSnapshot().environment')
+    original_materials=page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot()')
+    original_lights=page.evaluate('() => VibeMolTesting.getLookLightingSnapshot()')
+    result=page.evaluate('settings => VibeMolPreset.import({kind:"vibemol.preset",presetVersion:1,settings},{mode:"strict"})',retired)
+    assert result['ok'],result
+    assert page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot()')==original_materials
+    assert page.evaluate('() => VibeMolTesting.getLookLightingSnapshot()')==original_lights
+    assert not set(retired).intersection(page.evaluate('() => VibeMolPreset.listKeys()'))
+    assert not set(retired).intersection(page.evaluate('() => Object.keys(VibeMolPreset.export().settings)'))
     assert page.locator('#lookPreset option').all_text_contents()[1:]==['Basic','Toon','Kit','Classic','Porcelain','Ink','Opal']
     assert page.locator('#appearanceMaterialTarget, #appearanceMaterialModel, #appearanceLinkBonds, #lookFinishScope').count()==0
     assert not page.locator('#rowSurfaceMaterialPreset').is_visible()
@@ -111,6 +133,7 @@ def components_and_saving(page, context, url):
     page.locator('#lookClearDefault').click();value(page,'appearanceMaterialRoughness',0.44)
     page.wait_for_function('() => JSON.parse(localStorage.getItem("vibemol.autosavePreset")).settings["appearance.rendering"].material.roughness===0.44')
     page.reload();page.wait_for_function('() => window.VibeMolAppearanceLooks')
+    assert not page.locator('#appearanceMaterialsSection').evaluate('el => el.open')
     assert rendering(page)['material']['roughness']==0.44
     assert state(page)['saved'][0]['settings']==saved
     editor(page);page.set_viewport_size({'width':390,'height':844})

@@ -6,12 +6,12 @@
     let activeMaterialId = null;
     root.innerHTML = `
       <details class="vm-appearance-section" id="appearanceGeometrySection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Geometry</span></summary><div id="geometryFields"></div></details>
-      <section class="vm-appearance-section" id="appearanceMaterialsSection"><h3 class="vm-section-label">Material</h3>
+      <details class="vm-appearance-section" id="appearanceMaterialsSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Material</span></summary>
         <p class="vm-session-status">One material for atoms, bonds, and surfaces.</p><div id="materialFields"></div>
-        <details><summary class="inspectorSubsectionSummary">More material settings</summary><div id="materialAdvancedFields"></div></details>
+        <div id="materialAdvancedFields"></div>
         <details><summary class="inspectorSubsectionSummary">Save material</summary><div id="materialLibraryFields"></div></details>
         <div class="vm-session-status" id="materialStatus" role="status"></div>
-      </section>
+      </details>
       <details class="vm-appearance-section" id="appearanceLightingSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Lighting & contours</span></summary><div id="lightingFields"></div>
         <details><summary class="inspectorSubsectionSummary">Light colors</summary><div id="lightColorFields"></div></details>
       </details>`;

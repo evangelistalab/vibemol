@@ -78,6 +78,8 @@ These items should no longer be scheduled as entirely new features. Remaining wo
 
 The former Glossy molecule style and its welded connectors remain retired. **Emissive / Satin / Lacquer / Metal / Gel / Ceramic** reproduce the original material recipes across atoms, bonds, and surfaces, with save/open support. Gel replaces Glossy in the Material menu; old saved Glossy materials remain readable. The complete preset menu includes Basic / Toon / Kit / Classic / Porcelain / Ink / Opal. The first three retain display shortcuts `1/2/3`. Material controls are shared across atoms, bonds, and surfaces; studio presets include their complete lighting and tone mapping. Edit-mode `4` remains available for bond order.
 
+Material opens from a section closed by default, with all material properties directly inside it. The former Ink outlines and Blackbody coloring toggles and their rendering code are retired; older saved flags are ignored. The curated Ink preset uses the standard material and contour controls.
+
 ## Subsequent priorities
 
 ### 2. Local geometry cleanup and builder reliability

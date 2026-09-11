@@ -32,10 +32,6 @@
     'molecule.feature.shadows': [false, bool],
     'molecule.feature.fog': [false, bool],
     'molecule.feature.fog.depth': [14, number(6, 40)],
-    'molecule.feature.ink': [false, bool],
-    'molecule.feature.blackbody.enabled': [false, bool],
-    'molecule.feature.blackbody.coldColor': ['#2f0202', hex],
-    'molecule.feature.blackbody.hotColor': ['#eaf6ff', hex],
     'global.backgroundColor': ['#ffffff', hex],
     'global.elementColors': [true, bool],
     'global.elementColorOverrides': [{}, value => value && typeof value === 'object' && !Array.isArray(value)

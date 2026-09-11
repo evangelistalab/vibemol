@@ -15,7 +15,6 @@
     "surface.materialPreset": "satin",
     "render.mode": "surface",
     "render.dof.enabled": false,
-    "molecule.feature.fog": false,
-    "molecule.feature.ink": false
+    "molecule.feature.fog": false
   }
 }

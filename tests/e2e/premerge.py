@@ -585,6 +585,7 @@ def orbital_group_appearance(page, dialogs):
     set_surface_control(page, '#posColor', '#12ab34')
     set_surface_control(page, '#negColor', '#bc23de')
     set_surface_control(page, '#opacity', 0.65)
+    page.locator('#appearanceMaterialsSection > summary').click()
     page.locator('#appearanceMaterialPreset').select_option('matte')
     page.locator('#surfaceSignFlipBtn').check()
     page.locator('#appearanceRenderModeGroup [data-value="cloud"]').click()

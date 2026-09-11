@@ -1482,10 +1482,6 @@
   let moleculeShadowsEnabled = false;
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
-  let moleculeBlackbodyEnabled = false;
-  let moleculeBlackbodyColdColor = '#2f0202';
-  let moleculeBlackbodyHotColor = '#eaf6ff';
-  let moleculeInkEnabled = false;
   let moleculeAtomOpacity = 1.0;
   let moleculeBondOpacity = 1.0;
   let surfaceIsoDefault = DEFAULT_ISO_VALUE;
@@ -2116,11 +2112,6 @@
     if (bgColor && bgColor.value) {
       try { bg = new THREE.Color(bgColor.value); } catch { bg = null; }
     }
-    if (moleculeInkEnabled) {
-      bg = new THREE.Color(0xffffff);
-      hemi.groundColor.setHex(0xf5f5f5);
-      rim.intensity = Math.min(rim.intensity, 0.35);
-    }
     if (bg && appearanceState.lighting.followTheme) bg = getThemeAdjustedSceneBackground(bg);
     if (bg) scene.background = bg;
 
@@ -2561,17 +2552,6 @@
   }
 
   /**
-   * Clamp a style scalar to [0, 1].
-   * @param {*} value
-   * @returns {number}
-   */
-  function clampStyleScalar(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, Math.min(1, n));
-  }
-
-  /**
    * Clamp the fog far-distance control (near plane is derived from this value).
    * @returns {number}
    */
@@ -2582,38 +2562,15 @@
   }
 
   /**
-   * Approximate blackbody-like color ramp for scalar-driven styling.
-   * 0.0 -> deep red, 1.0 -> white/blue-hot.
-   * @param {number} scalar
-   * @returns {THREE.Color}
-   */
-  function blackbodyColorFromScalar(scalar) {
-    const t = clampStyleScalar(scalar);
-    const cold = new THREE.Color(moleculeBlackbodyColdColor || '#2f0202');
-    const hot = new THREE.Color(moleculeBlackbodyHotColor || '#eaf6ff');
-    const shaped = Math.pow(t, 0.82);
-    return cold.lerp(hot, shaped);
-  }
-
-  /**
    * Resolve the display color for an element under the active molecule style.
    * @param {number} z
    * @returns {THREE.Color}
    */
-  function getAtomRenderColor(z, context = null) {
+  function getAtomRenderColor(z) {
     const styleKey = appearanceState.coloring.palette;
     const useElementColors = isElementColoringEnabled();
     const hasColorOverride = elementColorOverrides.has(z | 0);
-    const styleScalar = clampStyleScalar(context && context.scalar);
     let atomColor = getElementBaseColor(z);
-
-    if (moleculeBlackbodyEnabled) {
-      return blackbodyColorFromScalar(styleScalar);
-    }
-    if (moleculeInkEnabled) {
-      if (!useElementColors) return new THREE.Color(0xf3f3f3);
-      return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.84);
-    }
 
     if (styleKey === 'kit') {
       if (!useElementColors) return new THREE.Color(0xd6dde6);
@@ -2653,17 +2610,9 @@
    * @param {number} z
    * @returns {THREE.Color}
    */
-  function getBondRenderColor(atomColor, z, context = null) {
+  function getBondRenderColor(atomColor, z) {
     const styleKey = appearanceState.coloring.palette;
     const hasColorOverride = elementColorOverrides.has(z | 0);
-    const styleScalar = clampStyleScalar(context && context.scalar);
-
-    if (moleculeBlackbodyEnabled) {
-      return blackbodyColorFromScalar(styleScalar).lerp(new THREE.Color(0xffffff), 0.08);
-    }
-    if (moleculeInkEnabled) {
-      return atomColor.clone().lerp(new THREE.Color(0xffffff), 0.72);
-    }
 
     if (styleKey === 'kit') {
       if (appearanceState.coloring.elementBonds) return atomColor.clone();
@@ -2787,11 +2736,6 @@
   function buildAtomMaterialForCurrentStyle(color, z) {
     const descriptor = appearanceModel.resolvedMaterial(appearanceState, 'atoms', z);
     const mat = appearanceModel.createMaterial(THREE, descriptor, color, getToonGradientTexture('atom', descriptor.toonSteps));
-    if (moleculeInkEnabled) {
-      if ('specular' in mat) mat.specular.set(0xffffff);
-      if ('shininess' in mat) mat.shininess = 10;
-      mat.color.lerp(new THREE.Color(0xffffff), 0.15);
-    }
     mat.userData.vmAppearanceTarget = 'atoms'; mat.userData.vmAppearanceZ = z; mat.userData.vmAppearanceColor = color.getHexString();
     return mat;
   }
@@ -2846,8 +2790,6 @@
     const signature = [
       getMoleculeStyleProfile().key,
       JSON.stringify(appearanceState),
-      moleculeInkEnabled ? 1 : 0,
-      moleculeBlackbodyEnabled ? 1 : 0,
       z | 0,
       atomColor.getHexString(),
       Number(opacity).toFixed(3),
@@ -2875,7 +2817,6 @@
     const signature = [
       getMoleculeStyleProfile().key,
       JSON.stringify(appearanceState),
-      moleculeInkEnabled ? 1 : 0,
       Number(opacity).toFixed(3),
     ].join('|');
     if (mesh.userData && mesh.userData.ghostBondMaterialSignature === signature && mesh.material) {
@@ -2904,19 +2845,6 @@
   function createAtomHighlightMaterial(z) {
     const isTransitionMetal = isTransitionMetalAtomicNumber(z);
     const opacityScale = Math.max(0.05, Math.min(1, moleculeAtomOpacity));
-    if (moleculeInkEnabled) {
-      return new THREE.MeshPhongMaterial({
-        color: 0xffffff,
-        specular: 0xffffff,
-        shininess: 12,
-        transparent: true,
-        opacity: 0.12 * opacityScale,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        depthTest: true,
-        side: THREE.FrontSide,
-      });
-    }
     return new THREE.MeshPhongMaterial({
       color: isTransitionMetal ? 0xffd39a : 0x88a4d2,
       specular: 0xffffff,
@@ -2942,15 +2870,10 @@
   function getBondMaterial(options = {}) {
     const descriptor = appearanceModel.resolvedMaterial(appearanceState, 'bonds');
     const coloring = appearanceState.coloring;
-    const cacheKey = JSON.stringify([descriptor, coloring, moleculeInkEnabled, moleculeBondOpacity, options]);
+    const cacheKey = JSON.stringify([descriptor, coloring, moleculeBondOpacity, options]);
     if (bondMaterialCache.has(cacheKey)) return bondMaterialCache.get(cacheKey);
     const mat = appearanceModel.createMaterial(THREE, descriptor, new THREE.Color(options.color || coloring.bondColor),
       getToonGradientTexture('bond', descriptor.toonSteps), { vertexColors: options.vertexColors ?? coloring.elementBonds });
-    if (moleculeInkEnabled) {
-      mat.color.lerp(new THREE.Color(0xffffff), 0.2);
-      if ('specular' in mat) mat.specular.set(0xffffff);
-      if ('shininess' in mat) mat.shininess = 12;
-    }
     applyGlobalMaterialOpacity(mat, moleculeBondOpacity * (options.opacityFactor ?? 1));
     mat.userData.vmAppearanceTarget = 'bonds';
     mat.userData.vmAppearanceBondOptions = { ...options };
@@ -2965,13 +2888,13 @@
   function getStylizedBondOutlineMaterial() {
     const profile = getMoleculeStyleProfile();
     const styleKey = profile.key;
-    const useOutline = appearanceState.effects.bondOutlineFraction > 0 || moleculeInkEnabled || appearanceState.effects.outlineWidth > 0;
+    const useOutline = appearanceState.effects.bondOutlineFraction > 0 || appearanceState.effects.outlineWidth > 0;
     if (!useOutline) return null;
     const alphaKey = Math.max(0.35, Math.min(1, moleculeBondOpacity)).toFixed(3);
-    const key = `${styleKey}:outline:ink=${moleculeInkEnabled ? 1 : 0}:alpha=${alphaKey}`;
+    const key = `${styleKey}:outline:alpha=${alphaKey}`;
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
     const mat = new THREE.MeshBasicMaterial({
-      color: moleculeInkEnabled ? 0x171717 : 0x334050,
+      color: 0x334050,
       side: THREE.BackSide,
       transparent: true,
       opacity: 0.86 * Math.max(0.35, Math.min(1, moleculeBondOpacity)),
@@ -3726,8 +3649,7 @@
     atomLabelTrackTargets.length = 0;
     const profile = getMoleculeStyleProfile();
     const hasRelativeOutline = appearanceState.effects.atomOutlineFraction > 0;
-    const isInkStyle = !!moleculeInkEnabled;
-    const usesOutline = hasRelativeOutline || isInkStyle || appearanceState.effects.outlineWidth > 0;
+    const usesOutline = hasRelativeOutline || appearanceState.effects.outlineWidth > 0;
     const atomGeom = new THREE.SphereGeometry(
       0.5,
       profile.sphereWidthSegments,
@@ -3735,7 +3657,7 @@
     );
     const stylizedOutlineMat = usesOutline
       ? new THREE.MeshBasicMaterial({
-        color: isInkStyle ? 0x171717 : 0x303846,
+        color: 0x303846,
         side: THREE.BackSide,
         transparent: true,
         opacity: 0.9 * Math.max(0.35, Math.min(1, moleculeAtomOpacity)),
@@ -3747,30 +3669,18 @@
     const labelMaterialCache = new Map();
     const toAng = (vol.units === 'angstrom');
     const hydrogenDisplayRadius = 0.5 * getCovalentRadiusAngstrom(1) * getAtomRenderScaleFactor(1);
-    const baseOutlineScale = isInkStyle ? 1.09 : 1 + appearanceState.effects.atomOutlineFraction;
+    const baseOutlineScale = 1 + appearanceState.effects.atomOutlineFraction;
     // Keep atom outline shell thickness constant across atom sizes (match hydrogen).
     const targetOutlineThickness = appearanceState.effects.outlineWidth || Math.max(1e-4, hydrogenDisplayRadius * Math.max(0, baseOutlineScale - 1));
-    const atomEntries = [];
-    const positions = [];
     for (let atomIndex = 0; atomIndex < (vol.atoms || []).length; atomIndex++) {
       const a = vol.atoms[atomIndex];
       const z = a.Z | 0;
       const px = toAng ? a.x : a.x * BOHR_TO_ANG;
       const py = toAng ? a.y : a.y * BOHR_TO_ANG;
       const pz = toAng ? a.z : a.z * BOHR_TO_ANG;
-      let pos = new THREE.Vector3(px, py, pz);
-      atomEntries.push({ atom: a, z, pos, atomIndex });
-      positions.push(pos);
-    }
-    const radialStats = computePositionRadialStats(positions);
-    for (const entry of atomEntries) {
-      const { z, pos, atomIndex } = entry;
+      const pos = new THREE.Vector3(px, py, pz);
       const r = getCovalentRadiusAngstrom(z);
-      const styleScalar = Math.max(
-        0,
-        Math.min(1, pos.distanceTo(radialStats.center) / Math.max(1e-8, radialStats.maxDistance))
-      );
-      const atomColor = getAtomRenderColor(z, { scalar: styleScalar });
+      const atomColor = getAtomRenderColor(z);
       const isTransitionMetal = isTransitionMetalAtomicNumber(z);
       const matKey = `${moleculeStyle}:${atomColor.getHexString()}:${isTransitionMetal ? 'tm' : 'main'}`;
       let mat = materialCache.get(matKey);
@@ -3785,15 +3695,12 @@
       if (stylizedOutlineMat) {
         const outline = new THREE.Mesh(atomGeom, stylizedOutlineMat);
         const displayRadius = 0.5 * atomScale;
-        const outlineScale = isInkStyle
-          ? computeInkOutlineScale(displayRadius, pos)
-          : 1 + (targetOutlineThickness / Math.max(1e-4, displayRadius));
+        const outlineScale = 1 + (targetOutlineThickness / Math.max(1e-4, displayRadius));
         outline.scale.setScalar(Math.max(1.001, Math.min(1.2, outlineScale)));
         outline.userData = { type: 'atomOutline' };
         mesh.add(outline);
       }
-      // Keep additive highlight shells for toon/blackbody only.
-      if (appearanceState.effects.highlights || moleculeBlackbodyEnabled) {
+      if (appearanceState.effects.highlights) {
         const highlightKey = `${moleculeStyle}:${isTransitionMetal ? 'tm' : 'main'}`;
         let highlightMat = highlightMaterialCache.get(highlightKey);
         if (!highlightMat) {
@@ -3860,114 +3767,30 @@
    * Build per-atom bond-render records in angstrom units.
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
    * @param {{includeRenderColor?:boolean}=} options
-   * @returns {Array<{pos:THREE.Vector3,Z:number,color:THREE.Color|null,bondColor:THREE.Color|null,displayRadius:number,styleScalar:number,metalBondMode:string}>}
+   * @returns {Array<{pos:THREE.Vector3,Z:number,color:THREE.Color|null,bondColor:THREE.Color|null,displayRadius:number,metalBondMode:string}>}
    */
   function buildBondAtomRecords(vol, options = {}) {
     const includeRenderColor = options.includeRenderColor !== false;
     const atomPositions = [];
     const toAng = (vol.units === 'angstrom');
-    const positions = [];
     for (const a of vol.atoms) {
       const z = a.Z | 0;
       const px = toAng ? a.x : a.x * BOHR_TO_ANG;
       const py = toAng ? a.y : a.y * BOHR_TO_ANG;
       const pz = toAng ? a.z : a.z * BOHR_TO_ANG;
       const pos = new THREE.Vector3(px, py, pz);
-      positions.push(pos);
+      const color = includeRenderColor ? getAtomRenderColor(z) : null;
       atomPositions.push({
         pos,
         Z: z,
-        color: null,
-        bondColor: null,
-        styleScalar: 0,
+        color,
+        bondColor: color ? getBondRenderColor(color, z) : null,
         metalBondMode: normalizeMetalBondingMode(getAtomMetalBondingMeta(vol, a).mode),
         // Sphere geometry radius is 0.5, then scaled by the style-dependent atom scale factor.
         displayRadius: 0.5 * getCovalentRadiusAngstrom(z) * getAtomRenderScaleFactor(z),
       });
     }
-    let center = new THREE.Vector3();
-    if (positions.length) {
-      for (const p of positions) center.add(p);
-      center.multiplyScalar(1 / positions.length);
-    }
-    let maxDistance = 1e-8;
-    for (const p of positions) {
-      const d = p.distanceTo(center);
-      if (d > maxDistance) maxDistance = d;
-    }
-    for (const rec of atomPositions) {
-      const styleScalar = Math.max(0, Math.min(1, rec.pos.distanceTo(center) / maxDistance));
-      rec.styleScalar = styleScalar;
-      if (!includeRenderColor) continue;
-      const atomColor = getAtomRenderColor(rec.Z, { scalar: styleScalar });
-      rec.color = atomColor;
-      rec.bondColor = getBondRenderColor(atomColor, rec.Z, { scalar: styleScalar });
-    }
     return atomPositions;
-  }
-
-  /**
-   * Compute center and max radial distance for a set of vectors.
-   * @param {THREE.Vector3[]} positions
-   * @returns {{center:THREE.Vector3,maxDistance:number}}
-   */
-  function computePositionRadialStats(positions) {
-    const center = new THREE.Vector3();
-    if (!positions || !positions.length) return { center, maxDistance: 1 };
-    for (const p of positions) center.add(p);
-    center.multiplyScalar(1 / positions.length);
-    let maxDistance = 1e-8;
-    for (const p of positions) {
-      const d = p.distanceTo(center);
-      if (d > maxDistance) maxDistance = d;
-    }
-    return { center, maxDistance };
-  }
-
-  /**
-   * Compute a variable ink-style outline scale based on camera distance.
-   * Closer atoms receive slightly thicker outlines.
-   * @param {number} radius
-   * @param {THREE.Vector3} worldPos
-   * @returns {number}
-   */
-  function computeInkOutlineScale(radius, worldPos) {
-    const displayRadius = Math.max(1e-6, Number(radius) || 1e-6);
-    const distance = Math.max(0.2, camera.position.distanceTo(worldPos || new THREE.Vector3()));
-    const near = 2.0;
-    const far = 14.0;
-    const t = Math.max(0, Math.min(1, (distance - near) / Math.max(1e-6, far - near)));
-    const thickness = THREE.MathUtils.lerp(displayRadius * 0.16, displayRadius * 0.055, t);
-    return 1 + thickness / displayRadius;
-  }
-
-  /**
-   * Update ink-style variable outline thickness each frame.
-   */
-  function updateInkOutlineThickness() {
-    if (!moleculeInkEnabled) return;
-    if (!atomGroup || !atomGroup.children) return;
-    for (const atomMesh of atomGroup.children) {
-      if (!atomMesh || !atomMesh.children || !atomMesh.children.length) continue;
-      const radius = Number(atomMesh.userData && atomMesh.userData.displayRadius) || 0;
-      if (!(radius > 0)) continue;
-      for (const child of atomMesh.children) {
-        if (!child || !child.userData || child.userData.type !== 'atomOutline') continue;
-        const scale = computeInkOutlineScale(radius, atomMesh.position);
-        child.scale.setScalar(Math.max(1.001, Math.min(1.25, scale)));
-      }
-    }
-    if (!bondGroup || !bondGroup.children) return;
-    for (const bondMesh of bondGroup.children) {
-      if (!bondMesh || !bondMesh.children || !bondMesh.children.length) continue;
-      const radius = Number(bondMesh.userData && bondMesh.userData.bondDisplayRadius) || 0;
-      if (!(radius > 0)) continue;
-      for (const child of bondMesh.children) {
-        if (!child || !child.userData || child.userData.type !== 'bondOutline') continue;
-        const scale = computeInkOutlineScale(radius, bondMesh.position);
-        child.scale.set(Math.max(1.001, Math.min(1.25, scale)), 1.0, Math.max(1.001, Math.min(1.25, scale)));
-      }
-    }
   }
 
   /**
@@ -4019,13 +3842,11 @@
     const profile = getMoleculeStyleProfile();
     const hasRelativeOutline = appearanceState.effects.bondOutlineFraction > 0;
     const isKitStyle = profile.key === 'kit';
-    const isInkStyle = !!moleculeInkEnabled;
     const usesTrimmedConnector = !!profile.usesTrimmedConnector;
     const atomPositions = buildBondAtomRecords(vol);
     const bondEdges = getVolumeBondEdges(vol, atomPositions);
     const bondMat = getBondMaterial();
-    // Keep bond outlines in toon and ink styles.
-    const stylizedBondOutlineMat = (hasRelativeOutline || isInkStyle || appearanceState.effects.outlineWidth > 0) ? getStylizedBondOutlineMaterial() : null;
+    const stylizedBondOutlineMat = (hasRelativeOutline || appearanceState.effects.outlineWidth > 0) ? getStylizedBondOutlineMaterial() : null;
     const stylizedBondHighlightMat = appearanceState.effects.highlights ? getStylizedBondHighlightMaterial() : null;
     const up = new THREE.Vector3(0, 1, 0);
     const kitCenterRadius = profile.bondRadius * getMoleculeBondRadiusScale();
@@ -4139,7 +3960,7 @@
       };
       const outlineScale = appearanceState.effects.outlineWidth > 0
         ? 1 + appearanceState.effects.outlineWidth / Math.max(0.01, componentCenterRadius)
-        : isInkStyle ? 1.08 : 1 + appearanceState.effects.bondOutlineFraction;
+        : 1 + appearanceState.effects.bondOutlineFraction;
       const highlightScale = 1.03;
       /**
        * Attach outline/highlight shells to one bond mesh when needed.
@@ -6933,7 +6754,6 @@
     controls.update();
     updateEditPlaneHelpers();
     updateTrackedAtomLabelOrientation();
-    updateInkOutlineThickness();
     if (editHaloController) {
       editHaloController.refresh();
       renderEditHaloOverlay();
@@ -7395,16 +7215,8 @@
   const moleculeFogToggleEl = document.getElementById('moleculeFogToggle');
   const rowMoleculeFogDepth = document.getElementById('rowMoleculeFogDepth');
   const moleculeFogDepthEl = document.getElementById('moleculeFogDepth');
-  const moleculeInkToggleEl = document.getElementById('moleculeInkToggle');
   const moleculeAtomOpacityEl = document.getElementById('moleculeAtomOpacity');
   const moleculeBondOpacityEl = document.getElementById('moleculeBondOpacity');
-  const moleculeBlackbodyToggleEl = document.getElementById('moleculeBlackbodyToggle');
-  const rowBlackbodyColdColor = document.getElementById('rowBlackbodyColdColor');
-  const rowBlackbodyHotColor = document.getElementById('rowBlackbodyHotColor');
-  const blackbodyColdColorEl = document.getElementById('blackbodyColdColor');
-  const blackbodyColdSwatchEl = document.getElementById('blackbodyColdSwatch');
-  const blackbodyHotColorEl = document.getElementById('blackbodyHotColor');
-  const blackbodyHotSwatchEl = document.getElementById('blackbodyHotSwatch');
   const dofToggleEl = document.getElementById('dofToggle');
   const rowDofFocusMode = document.getElementById('rowDofFocusMode');
   const dofFocusModeEl = document.getElementById('dofFocusMode');
@@ -10409,8 +10221,6 @@
       [posColor, posColorHexEl, posColorSwatchEl],
       [negColor, negColorHexEl, negColorSwatchEl],
       [bgColor, bgColorHexEl, bgColorSwatchEl],
-      [blackbodyColdColorEl, null, blackbodyColdSwatchEl],
-      [blackbodyHotColorEl, null, blackbodyHotSwatchEl],
     ];
     for (const [inputEl, hexEl, swatchEl] of fields) {
       if (!inputEl) continue;
@@ -16208,8 +16018,6 @@
           normalizedKind,
           data.id,
           getMoleculeStyleProfile().key,
-          moleculeInkEnabled ? 1 : 0,
-          moleculeBlackbodyEnabled ? 1 : 0,
           DEFAULT_GHOST_ATOM_PREVIEW_OPACITY.toFixed(3),
           DEFAULT_GHOST_BOND_PREVIEW_OPACITY.toFixed(3),
         ].join(':');
@@ -26223,14 +26031,8 @@
     setViewControlValue(moleculeFogDepthEl, getMoleculeFogDepth());
     setViewControlValue(moleculeAtomRadiusScaleEl, getMoleculeAtomRadiusScale());
     setViewControlValue(moleculeBondRadiusScaleEl, getMoleculeBondRadiusScale());
-    if (moleculeInkToggleEl) moleculeInkToggleEl.checked = !!moleculeInkEnabled;
-    if (moleculeBlackbodyToggleEl) moleculeBlackbodyToggleEl.checked = !!moleculeBlackbodyEnabled;
     setViewControlValue(moleculeAtomOpacityEl, Number(moleculeAtomOpacity));
     setViewControlValue(moleculeBondOpacityEl, Number(moleculeBondOpacity));
-    if (blackbodyColdColorEl) blackbodyColdColorEl.value = normalizeHexColor(moleculeBlackbodyColdColor, '#2f0202');
-    if (blackbodyHotColorEl) blackbodyHotColorEl.value = normalizeHexColor(moleculeBlackbodyHotColor, '#eaf6ff');
-    if (rowBlackbodyColdColor) rowBlackbodyColdColor.classList.toggle('vm-appearance-hidden', !moleculeBlackbodyEnabled);
-    if (rowBlackbodyHotColor) rowBlackbodyHotColor.classList.toggle('vm-appearance-hidden', !moleculeBlackbodyEnabled);
     if (appearanceSimpleBondsToggleEl) appearanceSimpleBondsToggleEl.checked = !showMultiBonds;
     syncAllAppearanceActionToggleButtons();
     syncColorPickerFields();
@@ -26841,44 +26643,6 @@
     moleculeFogDepthEl.oninput = applyFogDepth;
     moleculeFogDepthEl.onchange = applyFogDepth;
   }
-  if (moleculeInkToggleEl) {
-    moleculeInkToggleEl.onchange = () => {
-      moleculeInkEnabled = !!moleculeInkToggleEl.checked;
-      applyMoleculeStyleUiState();
-      rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
-    };
-  }
-  if (moleculeBlackbodyToggleEl) {
-    moleculeBlackbodyToggleEl.onchange = () => {
-      moleculeBlackbodyEnabled = !!moleculeBlackbodyToggleEl.checked;
-      applyMoleculeStyleUiState();
-      rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
-    };
-  }
-  if (blackbodyColdColorEl) {
-    const applyCold = () => {
-      moleculeBlackbodyColdColor = normalizeHexColor(blackbodyColdColorEl.value, moleculeBlackbodyColdColor);
-      blackbodyColdColorEl.value = moleculeBlackbodyColdColor;
-      syncColorPickerFields();
-      if (moleculeBlackbodyEnabled) rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
-    };
-    blackbodyColdColorEl.oninput = applyCold;
-    blackbodyColdColorEl.onchange = applyCold;
-  }
-  if (blackbodyHotColorEl) {
-    const applyHot = () => {
-      moleculeBlackbodyHotColor = normalizeHexColor(blackbodyHotColorEl.value, moleculeBlackbodyHotColor);
-      blackbodyHotColorEl.value = moleculeBlackbodyHotColor;
-      syncColorPickerFields();
-      if (moleculeBlackbodyEnabled) rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
-    };
-    blackbodyHotColorEl.oninput = applyHot;
-    blackbodyHotColorEl.onchange = applyHot;
-  }
   if (twoComponentModeSelect) {
     twoComponentModeSelect.onchange = () => {
       const comp = twoComponentModeSelect.value;
@@ -27111,6 +26875,10 @@
     isPlainObject,
     setPresetRebuildSuspended: (value) => { suspendPresetRebuild = !!value; },
     normalizeSettings: settings => {
+      // Retired effects in older presets/sessions are ignored, including strict imports.
+      settings = { ...settings };
+      for (const key of ['molecule.feature.ink', 'molecule.feature.blackbody.enabled',
+        'molecule.feature.blackbody.coldColor', 'molecule.feature.blackbody.hotColor']) delete settings[key];
       if ('appearance.rendering' in settings) return { ...settings, 'appearance.rendering': appearanceModel.normalize(settings['appearance.rendering']) };
       const legacyKeys = ['molecule.style', ...Object.keys(lookModule.extra)];
       let next = appearanceModel.clone(appearanceState);
@@ -27469,24 +27237,6 @@
   registerAppearancePresetSetting('molecule.feature.fog.depth', () => getMoleculeFogDepth(), (value) => {
     moleculeFogDepth = Math.max(6.0, Math.min(40.0, asFiniteNumber(value, getMoleculeFogDepth())));
     setViewControlValue(moleculeFogDepthEl, moleculeFogDepth);
-    applyMoleculeStyleUiState();
-  });
-  registerAppearancePresetSetting('molecule.feature.blackbody.enabled', () => !!moleculeBlackbodyEnabled, (value) => {
-    moleculeBlackbodyEnabled = asBoolean(value);
-    applyMoleculeStyleUiState();
-  });
-  registerAppearancePresetSetting('molecule.feature.blackbody.coldColor', () => moleculeBlackbodyColdColor, (value) => {
-    moleculeBlackbodyColdColor = asHexColor(value, moleculeBlackbodyColdColor || '#2f0202');
-    if (blackbodyColdColorEl) blackbodyColdColorEl.value = moleculeBlackbodyColdColor;
-    applyMoleculeStyleUiState();
-  });
-  registerAppearancePresetSetting('molecule.feature.blackbody.hotColor', () => moleculeBlackbodyHotColor, (value) => {
-    moleculeBlackbodyHotColor = asHexColor(value, moleculeBlackbodyHotColor || '#eaf6ff');
-    if (blackbodyHotColorEl) blackbodyHotColorEl.value = moleculeBlackbodyHotColor;
-    applyMoleculeStyleUiState();
-  });
-  registerAppearancePresetSetting('molecule.feature.ink', () => !!moleculeInkEnabled, (value) => {
-    moleculeInkEnabled = asBoolean(value);
     applyMoleculeStyleUiState();
   });
   registerAppearancePresetSetting('molecule.opacity.atom', () => moleculeAtomOpacity, (value) => {
