@@ -64,6 +64,7 @@ Primary capabilities:
 - `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate and marching-cubes isosurface helpers.
 - `assets/app/js/volume-2c.js`: 2C phase and Bloch-colored isosurface builders.
 - `assets/app/js/bond-inference.js`: nonmetal covalent candidate generation, metal-aware coordination-style inference, bond-order inference, and aromatic six-ring detection helpers.
+- `assets/app/js/bond-geometry.js`: continuous closed bond cylinders, including sharp element-color boundaries without internal caps or separate half-cylinder transforms.
 - `assets/app/js/coordination.js`: coordination-geometry catalog and element-aware coordination choice menus.
 - `assets/app/js/geometry-inference.js`: bond-order-driven main-group geometry inference plus transition-metal coordination defaults.
 - `assets/app/js/uff.js`: standalone UFF force-field implementation plus local energy/gradient helpers.
@@ -147,6 +148,7 @@ Required script order in `index.html`:
 15. `assets/app/js/structure.js`
 16. `assets/app/js/volume-geometry.js`
 17. `assets/app/js/volume-2c.js`
+    - `bond-geometry.js` loads after `volume-2c.js` and before `bond-inference.js`.
 18. `assets/app/js/bond-inference.js`
 19. `assets/app/js/auto-hydrogen.js`
 20. `assets/app/js/autoiso.js`
@@ -205,6 +207,7 @@ Required script order in `index.html`:
 - `window.VibeMolVolumeGeometry`
 - `window.VibeMolVolume2C`
 - `window.VibeMolBondInference`
+- `window.VibeMolBondGeometry`
 - `window.VibeMolCoordination`
 - `window.VibeMolGeometryInference`
 - `window.VibeMolUFFAdapter`
@@ -300,6 +303,7 @@ Preset automation contract exposed globally:
 - Appearance is an accordion inspector with a native Looks preset menu, independent Geometry/Material/Lighting controls, and the existing Rendering, Atoms, Bonds, Camera, Scene, Surfaces, and Preferences sections. Surface and 2C/cloud controls appear only when relevant.
 - Emissive, Satin, Lacquer, Metal, Gel, and Ceramic use the original main-branch material recipes for atoms, bonds, and surfaces together. Gel replaces Glossy in the shared Material menu. Materials preserve geometry and lighting and round-trip through material files, looks, and complete sessions; old Glossy material presets remain readable, while the retired Glossy molecule-style key still falls back to Basic.
 - Appearance controls include an optional `Shadows` toggle for molecule self-shadowing.
+- Bonds exposes Uniform / By element coloring and its color/tint swatch; Atoms exposes the palette. Uniform coloring also applies to metal connectors and aromatic guides. Straight bonds use one mesh, with no internal midpoint caps even for two element colors. Kit live geometry updates retain vertex colors. Geometry exposes separate atom/metal scales, per-element display radii/reset, mesh detail, and legacy size multipliers. Material exposes exact Toon brightness levels, fill scale/mix, and pearlescence thickness. Contour sizing is explicitly fixed or relative. See `docs/appearance-audit.md` for the preset/control inventory and regression coverage.
 - Material is closed by default and uses the existing disclosure style. All material controls appear directly inside it; Save material remains a nested disclosure. The legacy Ink outlines and Blackbody coloring toggles/renderers are removed; old preset/session flags are ignored during import. The curated Ink preset still uses the standard material/contour system.
 - Appearance starts with a Basic / Toon / Kit / Classic / Porcelain / Ink / Opal preset menu, My looks, and independent Geometry, Material, and Lighting & contours controls. Material selections and edits apply to atoms, bonds, and all surfaces; there are no material target, linking, or separate Finish/Shading controls. Basic preserves its original luminous, clear-coated surface finish alongside polished atoms/bonds until a material is explicitly edited or selected; Undo/Revert restores the pairing. It reuses existing inspector components. Look and material libraries support named saves, update/delete, portable import/export, and exact settings; full looks also support a startup default and Revert. Appearance Undo groups slider drags and is separate from molecular edit undo. Material/light edits reuse geometry; shape edits rebuild molecule display meshes only. Looks preserve coordinates, topology, camera, visibility, isovalues/Auto-iso, phase, and render mode, and never compute deferred MOs. Material edits apply globally, including to hidden/deferred orbitals and future sources; orbital colors and scientific properties retain group/selected scope. Rendering version 3 stores the shared material and an optional surfaceMaterial descriptor for Basic; missing/null surfaceMaterial keeps older saved looks shared, and v2 slots migrate to the atom base material. Saved light rigs include key/rim directions and tone mapping. Exact settings survive presets, autosave, and complete sessions. See `docs/appearance-looks.md` and `tests/e2e/looks.py`.
 - The experimental `Enamel` surface material gives opaque orbital figures compact highlights, a small colored fill, and no environment reflections. Native blue/orange Emissive, Enamel, and Satin presets and actual renderer previews live in `docs/experiments/style-lab/`; the original six-look lab keeps its separate study format. `compare.html` uses real app frames to compare full looks or materials only; Basic/Toon/Kit/Classic/Porcelain/Ink/Opal are approved; Nocturne and Atelier remain experimental. Studio presets retain the original Lab lighting, environment reflections, display radii, and ACES tone mapping (Classic uses no tone mapping). Study frames skip normal autosave/default/recovery behavior.

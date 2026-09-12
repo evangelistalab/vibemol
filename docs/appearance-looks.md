@@ -10,11 +10,12 @@ Nocturne and Atelier remain experimental candidates in the [real-renderer compar
 
 ## Native editor
 
-- **Geometry:** cylinders or Kit connectors, atom scale, bond radius, Kit collar radius, and curved multiple bonds. These affect displayed shapes, never molecular coordinates or topology.
+- **Geometry:** cylinders or Kit connectors, independent atom/metal scales, bond radius, Kit collar radius, and curved multiple bonds. Atom radii, Mesh detail, and Size multipliers expose the remaining shape settings. Per-element radii can be edited or reset to the covalent defaults. These affect displayed shapes, never molecular coordinates or topology.
+- **Bond colors:** Bonds contains a By element / Uniform menu and a color swatch (Element tint in element mode). Uniform colors also apply to metal/coordination bonds and aromatic guides. Atoms contains the Standard / Luminous / Kit palette menu; explicit element-color swatches are used exactly.
 - **Material:** a section closed by default, using the same disclosure arrow as Geometry and Lighting. Opening it reveals all material controls directly, followed by Save material; there is no nested More material settings menu. Material selections and edits apply to all atoms, bonds, and surfaces, across every loaded molecule and all hidden/deferred orbitals. There are no target tabs, linking controls, or separate Finish/Shading menus. Emissive, Satin, Lacquer, Metal, Gel, and Ceramic reproduce the material recipes from `main` across all three targets. Polished, Matte, Enamel, Classic smooth, and Toon are also available. Only applicable controls appear. Adjusting a property marks the material Custom. Element and orbital phase colors remain distinct.
 - **Gel:** replaces Glossy in the menu, using the original Gel recipe (roughness `0.15`, clearcoat `1`, coat roughness `0.02`, reflectivity `0.5`, color fill `0.15`, environment reflections `1.5`). Material selection preserves geometry, lighting, opacity, and scientific data. Old saved Glossy material descriptors and preset keys remain readable.
 - **Opacity:** the single opacity control changes atoms, bonds, and every orbital together. Older imported scenes can retain differing opacity values until this control is adjusted; these appear as Mixed.
-- **Lighting & contours:** key/fill/rim/ambient strengths, key and rim directions, light colors, exposure, tone mapping, contours, highlight shells, and theme-following background behavior. Palette and bond colors are independent of material choice.
+- **Lighting & contours:** key/fill/rim/ambient strengths, key and rim directions, light colors, exposure, tone mapping, fixed-width or separate relative atom/bond contours, highlight shells, and theme-following background behavior. Palette and bond colors are independent of material choice.
 - **Retired effects:** the former Ink outlines and Blackbody coloring toggles and their rendering paths have been removed. Older preset/session flags are ignored on import and omitted from new exports. The curated Ink preset uses the standard material and contour system.
 - **Orbital properties:** colors, isovalues, Auto-iso, visibility, phase, and surface/cloud mode retain their group/selected-orbital behavior. Every orbital uses the current look's surface finish, including future sources.
 
@@ -32,6 +33,8 @@ The editor reuses these existing components:
 
 `looks-ui.css` contains only hidden-state and wrapping/spacing rules. Look/material actions reuse the compact inspector button styling, including hover, disabled, and keyboard-focus states. Save/share disclosures use `vm-section-label`, and the current look name uses `vm-stat-label`. The editor follows the selected app font and theme without separate typography or color rules.
 
+Material also exposes each Toon band's brightness, emission scale/mixing, and the pearlescence thickness interval. Basic's **Use surface finish everywhere** action adopts its original orbital finish as the shared material for editing with these same controls. See the [appearance audit](appearance-audit.md) for the complete preset-to-control inventory.
+
 ## Saving and preservation
 
 **Undo** restores the previous appearance edit, grouping a slider drag into one step. Molecular edit undo remains separate. **Modified** compares current resolved values with the saved recipe; **Revert** reapplies the recipe. Built-ins cannot be overwritten. **Save as new** creates a named look in **My looks**. Save & share provides update, rename, delete, import/export, and an explicit default. Updating a saved look does not change a previously saved startup default until **Set as default** is used again.
@@ -47,6 +50,8 @@ Looks preserve coordinates, topology, camera/projection, visibility, selections,
 ## Renderer contract
 
 `appearance-model.js` validates and migrates geometry/material/color/light/effect data and creates Three.js materials. The shared material is independent of connector geometry. Vertex-colored surface emission remains an explicit descriptor value. Phase colors and field-gradient surface normals remain intact.
+
+`bond-geometry.js` builds one closed cylinder for each straight bond component. Element coloring duplicates vertices at the color boundary while retaining continuous geometry and side normals; there are no internal midpoint caps. Kit's collars and curved shafts retain their geometric form, and live updates restore vertex colors when regenerating geometry.
 
 `appearance-looks.js` owns complete look recipes. `appearance-editor.js` binds native component controls. `looks-ui.js` manages named look/material libraries and appearance undo. `app.js` applies component patches and synchronizes the existing renderer and scene model.
 

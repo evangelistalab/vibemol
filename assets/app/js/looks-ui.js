@@ -124,6 +124,7 @@
     };
     editor = global.VibeMolAppearanceEditor.createController({
       root: $('lookComponentEditor'), createSlider: deps.createSlider, captureSettings: deps.captureSettings,
+      atomFields: deps.atomFields, bondFields: deps.bondFields, getAtomBaseRadius: deps.getAtomBaseRadius,
       getRendering: deps.getRendering, getOpacity: deps.getOpacity, getActiveLook: current,
       edit: (section, patch, options, phase) => edit(JSON.stringify([section, Object.keys(patch), options]), phase, () => deps.editComponent(section, patch, options)),
       opacity: (value, phase) => edit('opacity', phase, () => deps.editOpacity(value)),

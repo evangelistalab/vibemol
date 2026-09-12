@@ -339,11 +339,107 @@ def basic_surface_finish(page,context,url):
     print('[looks] original Basic surfaces, unchanged atoms/bonds, shared material edits, undo, saved looks/sessions, deferred orbitals: passed',flush=True)
 
 
+def bond_colors_and_preset_controls(page, context, url):
+    assert p.load(page,[{'name':'bond.xyz','text':'2\nBond fixture\nN 0 0 0\nH 1.02 0 0\n'}])['ok']
+    editor(page)
+    assert page.locator('#appearanceBondColorMode').evaluate('el=>el.closest("section").id')=='appearanceBondsSection'
+    assert page.locator('#appearancePalette').evaluate('el=>el.closest("section").id')=='appearanceAtomsSection'
+    scalar_controls={
+      'geometry':{'atomScaleMain':'AtomSize','atomScaleTransitionMetal':'MetalSize','bondRadius':'BondRadius','kitCollarRadius':'CollarRadius',
+                  'sphereWidthSegments':'SphereSegments','sphereHeightSegments':'SphereRings','bondRadialSegments':'BondSegments','bondHeightSegments':'BondRings'},
+      'material':{'roughness':'MaterialRoughness','shininess':'MaterialShininess','specularIntensity':'MaterialHighlight','metalness':'MaterialMetalness',
+                  'clearcoat':'MaterialClearcoat','clearcoatRoughness':'MaterialCoatRoughness','envMapIntensity':'MaterialEnvironment',
+                  'reflectivity':'MaterialReflectivity','emissiveIntensity':'MaterialEmission','emissiveScale':'MaterialEmissionScale',
+                  'emissiveMix':'MaterialEmissionMix','iridescence':'MaterialIridescence'},
+      'lighting':{'dirIntensity':'LightdirIntensity','hemiIntensity':'LighthemiIntensity','rimIntensity':'LightrimIntensity','ambIntensity':'LightambIntensity','exposure':'Lightexposure'},
+      'effects':{'outlineWidth':'Contours','atomOutlineFraction':'AtomContours','bondOutlineFraction':'BondContours'},
+    }
+    for preset in ['basic','toon','kit','classic','porcelain','ink','opal']:
+        page.locator('#lookPreset').select_option(preset)
+        page.locator('#looksPanel details').evaluate_all('els=>els.forEach(el=>el.open=true)')
+        before=rendering(page)
+        for section,fields in scalar_controls.items():
+            for key,suffix in fields.items():
+                control=page.locator('#appearance'+suffix)
+                if not control.is_visible(): continue # Inactive material models / connector types.
+                precision=int(control.locator('..').get_attribute('data-precision'))
+                assert math.isclose(float(control.input_value()),before[section][key],abs_tol=0.51*10**(-precision)),(preset,section,key,control.input_value(),before[section][key])
+        for z,radius in before['geometry']['atomRadii'].items():
+            page.locator('#appearanceRadiusElement').select_option(z)
+            assert math.isclose(float(page.locator('#appearanceElementRadius').input_value()),radius,abs_tol=0.0005)
+        if before['material']['model']=='toon':
+            for i,tone in enumerate(before['material']['toonSteps']): assert int(page.locator('#appearanceToonTone'+str(i)).input_value())==tone
+        if before['material']['model']=='physical':
+            for i,thickness in enumerate(before['material']['iridescenceThicknessRange']): assert float(page.locator('#appearancePearlThickness'+str(i)).input_value())==thickness
+        for key,name in [('dirPos','Light'),('rimPos','Rim')]:
+            for axis,coordinate in enumerate('XYZ'):
+                assert math.isclose(float(page.locator('#appearance'+name+'Position'+coordinate).input_value()),before['lighting'][key][axis],abs_tol=0.0051)
+        assert rendering(page)==before,'opening controls must not rewrite preset values'
+        carriers=page.evaluate('() => VibeMolTesting.getBondCarrierSnapshots()')
+        assert len(carriers)==1 and carriers[0]['isMesh'] and len(carriers[0]['meshes'])==1,(preset,carriers)
+        page.locator('#appearanceBondColorMode').select_option('uniform')
+        value(page,'appearanceBondColor','#d426a8')
+        carriers=page.evaluate('() => VibeMolTesting.getBondCarrierSnapshots()')
+        assert len(carriers[0]['meshes'])==1 and not carriers[0]['meshes'][0]['hasColors']
+        assert carriers[0]['meshes'][0]['color']=='d426a8'
+        page.locator('#lookUndo').click()
+        assert rendering(page)['coloring']['bondColor']==before['coloring']['bondColor']
+
+    page.locator('#lookPreset').select_option('kit')
+    page.locator('#appearanceBondColorMode').select_option('element')
+    page.locator('#modeEditBtn').click()
+    page.evaluate('() => VibeMolTesting.setEditSelectionIndices([0,1])')
+    cue=page.locator('#editSelectionTranslateCueButton');cue.wait_for(state='visible')
+    box=cue.bounding_box();x=box['x']+box['width']/2;y=box['y']+box['height']/2
+    before=page.evaluate('() => VibeMolTesting.getBondCarrierSnapshots()')[0]['meshes'][0]
+    page.mouse.move(x,y);page.mouse.down();page.mouse.move(x+40,y+24,steps=5)
+    page.wait_for_function('(id)=>VibeMolTesting.getBondCarrierSnapshots()[0]?.meshes[0]?.geometryId!==id',arg=before['geometryId'])
+    after=page.evaluate('() => VibeMolTesting.getBondCarrierSnapshots()')[0]['meshes'][0]
+    assert after['hasColors'] and after['firstColor']==before['firstColor'],after
+    page.mouse.up();page.locator('#modeDisplayBtn').click()
+
+    # Every new control edits the canonical object, with one appearance undo.
+    page.locator('#lookPreset').select_option('opal')
+    before=rendering(page);value(page,'appearanceLightPositionX',-4.2)
+    assert rendering(page)['lighting']['dirPos']==[-4.2,5,7]
+    page.locator('#lookUndo').click();assert rendering(page)==before
+    for control,section,key,new_value in [('appearanceMetalSize','geometry','atomScaleTransitionMetal',1.4),
+       ('appearanceMaterialEmissionScale','material','emissiveScale',0.3),('appearanceMaterialEmissionMix','material','emissiveMix',0.2),
+       ('appearanceBondSegments','geometry','bondRadialSegments',48)]:
+        before=rendering(page)
+        value(page,control,new_value)
+        assert rendering(page)[section][key]==new_value
+        if control=='appearanceMetalSize': assert rendering(page)['geometry']['atomScaleMain']==before['geometry']['atomScaleMain']
+        page.locator('#lookUndo').click();assert rendering(page)==before
+    page.locator('#appearanceRadiusElement').select_option('6');value(page,'appearanceElementRadius',0.51)
+    assert rendering(page)['geometry']['atomRadii']['6']==0.51
+    page.locator('#appearanceRadiusReset').click();assert '6' not in rendering(page)['geometry']['atomRadii']
+    page.locator('#lookUndo').click();assert rendering(page)['geometry']['atomRadii']['6']==0.51
+    page.locator('#lookPreset').select_option('toon');value(page,'appearanceToonTone1',91)
+    assert rendering(page)['material']['toonSteps'][1]==91
+    value(page,'appearanceBondContours',0.12);assert rendering(page)['effects']['bondOutlineFraction']==0.12
+    assert rendering(page)['effects']['atomOutlineFraction']==0.08
+    page.locator('#lookPreset').select_option('basic')
+    surface=rendering(page)['surfaceMaterial'];page.locator('#appearanceUseSurfaceMaterial').click()
+    assert rendering(page)['surfaceMaterial'] is None and rendering(page)['material']==surface
+    page.locator('#lookUndo').click();assert rendering(page)['surfaceMaterial']==surface
+    # Uniform colors also apply to solid and dashed metal connectors.
+    assert p.load(page,[{'name':'metal.xyz','text':'4\nCoordination\nFe 0 0 0\nN 2.0 0 0\nN 0 2.6 0\nH 3.01 0 0\n'}])['ok']
+    page.locator('#appearanceBondColorMode').select_option('uniform');value(page,'appearanceBondColor','#b02fd1')
+    mats=page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot("bonds")')
+    assert mats and all(mat['color']=='b02fd1' for mat in mats),mats
+    saved=page.evaluate('() => VibeMolSession.export()')
+    page.locator('#lookPreset').select_option('kit')
+    result=page.evaluate('(saved) => VibeMolSession.import(saved)',saved);assert result['ok'],result
+    assert rendering(page)['coloring']=={'palette':'basic','elementBonds':False,'bondColor':'#b02fd1'}
+    print('[looks] seamless bonds, uniform/element colors, Kit live edits, preset control values, advanced edits, undo, and sessions: passed',flush=True)
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
+            for run in [bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))

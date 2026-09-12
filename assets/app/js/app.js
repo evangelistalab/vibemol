@@ -411,6 +411,9 @@
   const MAX_SYMMETRY_TOLERANCE_ANG = 1.0;
   const SYMMETRY_TOLERANCE_OPTIONS_ANG = Object.freeze([0.05, 0.1, 0.25, 0.5, 1.0]);
 
+  const { createCylinder: createBondCylinderGeometry } = window.VibeMolBondGeometry || {};
+  if (typeof createBondCylinderGeometry !== 'function') throw new Error('VibeMolBondGeometry is not loaded.');
+
   const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
   if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/app.js.');
@@ -2571,6 +2574,8 @@
     const useElementColors = isElementColoringEnabled();
     const hasColorOverride = elementColorOverrides.has(z | 0);
     let atomColor = getElementBaseColor(z);
+    // Explicit swatches are exact colors, independent of the palette recipe.
+    if (useElementColors && hasColorOverride) return atomColor;
 
     if (styleKey === 'kit') {
       if (!useElementColors) return new THREE.Color(0xd6dde6);
@@ -2613,6 +2618,7 @@
   function getBondRenderColor(atomColor, z) {
     const styleKey = appearanceState.coloring.palette;
     const hasColorOverride = elementColorOverrides.has(z | 0);
+    if (isElementColoringEnabled() && hasColorOverride) return atomColor.clone();
 
     if (styleKey === 'kit') {
       if (appearanceState.coloring.elementBonds) return atomColor.clone();
@@ -2933,7 +2939,8 @@
    */
   function getAromaticRingMaterial() {
     const profile = getMoleculeStyleProfile();
-    return getBondMaterial({ color: '#' + new THREE.Color(profile.aromaticDashColor).getHexString(),
+    return getBondMaterial({ color: appearanceState.coloring.elementBonds
+      ? '#' + new THREE.Color(profile.aromaticDashColor).multiply(new THREE.Color(appearanceState.coloring.bondColor)).getHexString() : appearanceState.coloring.bondColor,
       vertexColors: false, opacityFactor: profile.aromaticDashOpacity });
   }
 
@@ -2976,7 +2983,7 @@
     const dashAngle = sectorAngle * 0.58;
     const halfDashAngle = dashAngle * 0.5;
     const dashChordLength = Math.max(0.02, 2 * radius * Math.sin(halfDashAngle));
-    const radialSegments = useStylizedMoleculeStyle() ? 14 : 10;
+    const radialSegments = profile.bondRadialSegments;
     const dashGeom = new THREE.CylinderGeometry(
       dashRadius,
       dashRadius,
@@ -3115,7 +3122,7 @@
    */
   function createKitFlangeGeometry(centerRadius, collarRadius) {
     const cR = Math.max(1e-4, centerRadius);
-    const kR = Math.max(cR * 1.2, collarRadius);
+    const kR = Math.max(1e-4, collarRadius);
     const plateau = Math.max(1e-5, KIT_FLANGE_PLATEAU_END);
     const taper = Math.max(plateau + 1e-5, KIT_FLANGE_TAPER_END);
     const profile = [
@@ -3123,7 +3130,7 @@
       new THREE.Vector2(kR, plateau),
       new THREE.Vector2(cR, taper),
     ];
-    const geom = new THREE.LatheGeometry(profile, 28);
+    const geom = new THREE.LatheGeometry(profile, getMoleculeStyleProfile().bondRadialSegments);
     try { geom.computeVertexNormals(); } catch { }
     return geom;
   }
@@ -3151,7 +3158,7 @@
     endTangentHint
   ) {
     const tSeg = Math.max(2, tubularSegments | 0);
-    const rSeg = Math.max(8, radialSegments | 0);
+    const rSeg = Math.max(3, radialSegments | 0);
     const r = Math.max(1e-5, Number(radius) || 0);
 
     const points = new Array(tSeg + 1);
@@ -3313,7 +3320,7 @@
   function createKitCollaredBondGeometry(length, centerRadius, collarRadius) {
     const L = Math.max(1e-4, length);
     const cR = Math.max(1e-4, centerRadius);
-    const kR = Math.max(cR * 1.2, collarRadius);
+    const kR = Math.max(1e-4, collarRadius);
     const halfL = L * 0.5;
     const profile = [];
 
@@ -3342,7 +3349,7 @@
       if (profile[i].y <= profile[i - 1].y) profile[i].y = profile[i - 1].y + eps;
     }
 
-    const geom = new THREE.LatheGeometry(profile, 32);
+    const geom = new THREE.LatheGeometry(profile, getMoleculeStyleProfile().bondRadialSegments);
     try { geom.computeVertexNormals(); } catch { }
     return geom;
   }
@@ -3934,9 +3941,9 @@
         const adjustedPlacement = computeBondSegmentPlacement(a.pos, b.pos, localTrimA, localTrimB, 0.08);
         if (adjustedPlacement.valid) {
           localGeomLen = adjustedPlacement.geomLen;
-          // Preserve per-component lateral offset (multi-bond separation).
-          // Only update length here; caller-provided `mid` already includes
-          // the component displacement in the local bond plane.
+          // Adjust the axial center along with the new asymmetric trims while
+          // retaining the caller's lateral multiple-bond displacement.
+          localMid = mid.clone().addScaledVector(dirNorm, 0.5 * (localTrimA - trimA - localTrimB + trimB));
         }
       }
       const carrierUserData = {
@@ -3984,44 +3991,12 @@
       const gradientColorA = a.bondColor || a.color;
       const gradientColorB = b.bondColor || b.color;
       const q = new THREE.Quaternion().setFromUnitVectors(up, dirNorm);
-      const useSplitColorBondConnector = profile.connector === 'cylinder';
-      if (useSplitColorBondConnector && gradientColorA && gradientColorB) {
-        const sameElement = (a.Z | 0) === (b.Z | 0);
-        if (sameElement) {
-          const geom = new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, localGeomLen, bondRadialSegments, 1, false);
-          applySolidVertexColor(geom, gradientColorA);
-          const cyl = new THREE.Mesh(geom, bondMat);
-          decorateBondMesh(cyl, geom);
-          cyl.position.copy(localMid);
-          cyl.setRotationFromQuaternion(q);
-          cyl.userData = carrierUserData;
-          group.add(cyl);
-          return;
-        }
-        const halfLen = Math.max(1e-4, localGeomLen * 0.5);
-        const halfOffset = localGeomLen * 0.25;
-        const carrier = new THREE.Group();
-        const geomA = new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, halfLen, bondRadialSegments, 1, false);
-        applySolidVertexColor(geomA, gradientColorA);
-        const meshA = new THREE.Mesh(geomA, bondMat);
-        meshA.position.y = -halfOffset;
-        decorateBondMesh(meshA, geomA);
-        const geomB = new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, halfLen, bondRadialSegments, 1, false);
-        applySolidVertexColor(geomB, gradientColorB);
-        const meshB = new THREE.Mesh(geomB, bondMat);
-        meshB.position.y = halfOffset;
-        decorateBondMesh(meshB, geomB);
-        carrier.add(meshA, meshB);
-        carrier.position.copy(localMid);
-        carrier.setRotationFromQuaternion(q);
-        carrier.userData = carrierUserData;
-        group.add(carrier);
-        return;
-      }
+      const elementColors = appearanceState.coloring.elementBonds;
       const geom = isKitStyle
         ? createKitCollaredBondGeometry(localGeomLen, componentCenterRadius, kitCollarRadius)
-        : new THREE.CylinderGeometry(componentCenterRadius, componentCenterRadius, localGeomLen, bondRadialSegments, bondHeightSegments, false);
-      if (gradientColorA && gradientColorB) applyBondGradient(geom, gradientColorA, gradientColorB);
+        : createBondCylinderGeometry(THREE, componentCenterRadius, localGeomLen, bondRadialSegments, bondHeightSegments,
+          elementColors ? gradientColorA : null, elementColors ? gradientColorB : null);
+      if (isKitStyle && elementColors && gradientColorA && gradientColorB) applyBondGradient(geom, gradientColorA, gradientColorB);
       const cyl = new THREE.Mesh(geom, bondMat);
       decorateBondMesh(cyl, geom);
       cyl.position.copy(localMid);
@@ -4180,7 +4155,7 @@
         shaftCurve,
         shaftSegments,
         bondRadius,
-        22,
+        bondRadialSegments,
         lateralDir,
         startNormal,
         endNormal
@@ -4188,9 +4163,11 @@
 
       const flangeStartGeom = createKitFlangeGeometry(bondRadius, kitCollarRadius);
       const flangeEndGeom = createKitFlangeGeometry(bondRadius, kitCollarRadius);
-      applyBondGradient(shaftGeom, atomPositions[i].bondColor, atomPositions[j].bondColor, dirNorm);
-      applySolidVertexColor(flangeStartGeom, atomPositions[i].bondColor);
-      applySolidVertexColor(flangeEndGeom, atomPositions[j].bondColor);
+      if (appearanceState.coloring.elementBonds) {
+        applyBondGradient(shaftGeom, atomPositions[i].bondColor, atomPositions[j].bondColor, dirNorm);
+        applySolidVertexColor(flangeStartGeom, atomPositions[i].bondColor);
+        applySolidVertexColor(flangeEndGeom, atomPositions[j].bondColor);
+      }
       const shaft = new THREE.Mesh(shaftGeom, bondMat);
       const flangeStart = new THREE.Mesh(flangeStartGeom, bondMat);
       const flangeEnd = new THREE.Mesh(flangeEndGeom, bondMat);
@@ -4222,11 +4199,13 @@
     }
 
     function resolveMetalConnectorColor(edge, atomA, atomB) {
-      if (edge.style === METAL_BOND_STYLE.METAL_METAL) return new THREE.Color(0xaeb6c2);
+      const tint = new THREE.Color(appearanceState.coloring.bondColor);
+      if (!appearanceState.coloring.elementBonds) return tint;
+      if (edge.style === METAL_BOND_STYLE.METAL_METAL) return new THREE.Color(0xaeb6c2).multiply(tint);
       const source = isMetalAtomZ(atomA.Z | 0) ? atomA : atomB;
-      if (source && source.color && typeof source.color.clone === 'function') return source.color.clone();
-      if (source && source.bondColor && typeof source.bondColor.clone === 'function') return source.bondColor.clone();
-      return new THREE.Color(0xc3ccd9);
+      if (source && source.color && typeof source.color.clone === 'function') return source.color.clone().multiply(tint);
+      if (source && source.bondColor && typeof source.bondColor.clone === 'function') return source.bondColor.clone().multiply(tint);
+      return new THREE.Color(0xc3ccd9).multiply(tint);
     }
 
     function addMetalStyledBond(edge, atomA, atomB) {
@@ -4413,7 +4392,7 @@
         return;
       }
     }
-    const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false }).map((a) => ({ pos: a.pos }));
+    const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: useKitMoleculeStyle() && appearanceState.coloring.elementBonds });
     const uniqueEdges = [];
     const seenEdgeKeys = new Set();
     for (const obj of targetBondGroup.children) {
@@ -4477,6 +4456,7 @@
           Number.isFinite(connectorCenterRadius) ? connectorCenterRadius : 0.068,
           Number.isFinite(connectorEndRadius) ? connectorEndRadius : 0.114
         );
+        if (appearanceState.coloring.elementBonds) applyBondGradient(newGeom, aInfo.bondColor, bInfo.bondColor);
         obj.geometry = newGeom;
         if (obj.children && obj.children.length) {
           for (const child of obj.children) {
@@ -19165,7 +19145,7 @@
     const len = delta.length();
     if (len <= 1e-6) return null;
     const dir = delta.multiplyScalar(1 / len);
-    const geom = new THREE.CylinderGeometry(radius, radius, len, 12, 1, false);
+    const geom = new THREE.CylinderGeometry(radius, radius, len, useAppearance ? getMoleculeStyleProfile().bondRadialSegments : 12, 1, false);
     const mat = useAppearance ? getBondMaterial({ color: '#' + color.getHexString(), vertexColors: false }) : new THREE.MeshPhysicalMaterial({
       color,
       transparent: opacity < 0.999,
@@ -19194,8 +19174,9 @@
       return Number(segment.radius) > 0;
     }) : [];
     if (!items.length) return null;
-    const geom = new THREE.CylinderGeometry(1, 1, 1, 12, 1, false);
-    const mat = getBondMaterial({ color: '#ffffff', vertexColors: false });
+    const geom = new THREE.CylinderGeometry(1, 1, 1, getMoleculeStyleProfile().bondRadialSegments, 1, false);
+    const useInstanceColors = appearanceState.coloring.elementBonds;
+    const mat = getBondMaterial({ color: useInstanceColors ? '#ffffff' : appearanceState.coloring.bondColor, vertexColors: false });
     const mesh = new THREE.InstancedMesh(geom, mat, items.length);
     const up = new THREE.Vector3(0, 1, 0);
     const dummy = new THREE.Object3D();
@@ -19213,7 +19194,7 @@
       dummy.scale.set(radius, len, radius);
       dummy.updateMatrix();
       mesh.setMatrixAt(count, dummy.matrix);
-      if (typeof mesh.setColorAt === 'function') mesh.setColorAt(count, segment.color);
+      if (useInstanceColors && typeof mesh.setColorAt === 'function') mesh.setColorAt(count, segment.color);
       count += 1;
     }
     if (count <= 0) {
@@ -27993,12 +27974,24 @@
         const i = carrier.userData.i;
         const j = carrier.userData.j;
         if (!Number.isInteger(i) || !Number.isInteger(j) || i === j) continue;
+        const meshes = [];
+        carrier.traverse(mesh => {
+          if (!mesh.isMesh || mesh.material?.userData?.vmAppearanceTarget !== 'bonds') return;
+          const colors = mesh.geometry.getAttribute('color');
+          meshes.push({ geometryId: mesh.geometry.uuid, vertexCount: mesh.geometry.getAttribute('position')?.count,
+            hasColors: !!colors, vertexColors: !!mesh.material.vertexColors, color: mesh.material.color.getHexString(),
+            firstColor: colors ? [colors.getX(0), colors.getY(0), colors.getZ(0)] : null });
+        });
         out.push({
           i: i | 0,
           j: j | 0,
           logicalKey: String(getBondCarrierLogicalKey(carrier) || ''),
           connectorStyle: String(carrier.userData.connectorStyle || ''),
           isMesh: !!carrier.isMesh,
+          meshes,
+          length: carrier.userData.baseGeomLen,
+          trimA: carrier.userData.trimA,
+          trimB: carrier.userData.trimB,
           x: Number(carrier.position && carrier.position.x) || 0,
           y: Number(carrier.position && carrier.position.y) || 0,
           z: Number(carrier.position && carrier.position.z) || 0,
@@ -32509,8 +32502,7 @@
       next.surfaceMaterial = null;
     } else Object.assign(next[section], patch);
     const normalized = appearanceModel.normalize(next);
-    if (JSON.stringify(normalized) === JSON.stringify(appearanceState)
-      && !(section === 'geometry' && (('atomScaleMain' in patch && moleculeAtomRadiusScale !== 1) || ('bondRadius' in patch && moleculeBondRadiusScale !== 1)))) return false;
+    if (JSON.stringify(normalized) === JSON.stringify(appearanceState)) return false;
     const settings = { 'appearance.rendering': normalized };
     if (section === 'material') {
       // Keep legacy preset exports and stored layer tags aligned with the shared material.
@@ -32518,8 +32510,6 @@
         JSON.stringify(appearanceModel.surfacePreset(key)) === JSON.stringify(normalized.material));
       if (preset) settings['surface.materialPreset'] = preset;
     }
-    if (section === 'geometry' && 'atomScaleMain' in patch) settings['molecule.atomRadiusScale'] = 1;
-    if (section === 'geometry' && 'bondRadius' in patch) settings['molecule.bondRadiusScale'] = 1;
     applyLookSettings(settings, section === 'material' ? getAllLookLayers() : []);
     const geometry = ['geometry', 'effects', 'coloring'].includes(section);
     finishLookChange({ geometry, targets: section === 'material' ? ['atoms','bonds','surfaces'] : geometry ? ['atoms','bonds'] : [] });
@@ -32527,6 +32517,8 @@
   }
   looksUi = window.VibeMolLooksUi.createController({
     root: document.getElementById('looksPanel'), captureSettings: captureLookSettings,
+    atomFields: document.getElementById('appearanceAtomColorFields'), bondFields: document.getElementById('appearanceBondColorFields'),
+    getAtomBaseRadius: z => 0.5 * getCovalentRadiusAngstrom(z),
     applyStartupDefault: !appearanceStudy,
     createSlider: root => { const slider = new VmSlider(root); viewSliderRegistry.set(slider.valueInput, slider); return slider; },
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,

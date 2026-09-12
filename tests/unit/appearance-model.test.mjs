@@ -98,3 +98,13 @@ test('appearance validation rejects invalid shared materials and lighting before
     x=>x.surfaceMaterial={...x.material,roughness:-0.1},x=>x.surfaceMaterial='emissive',
   ]) { const value=M.legacy();mutate(value);assert.throws(()=>M.normalize(value)); }
 });
+
+test('all color-fill edits release legacy vertex emission overrides', () => {
+  const original=M.material({vertexEmissiveColor:'#000000',vertexEmissiveIntensity:0.1});
+  for(const patch of [{emissiveIntensity:0.5},{emissiveScale:0.3},{emissiveMix:0.2},{emissiveColor:'#aabbcc'},{emissiveUsesColor:false}]) {
+    const updated=M.patchMaterial(original,patch);
+    assert.equal(updated.vertexEmissiveColor,null);assert.equal(updated.vertexEmissiveIntensity,null);
+    for(const [key,value] of Object.entries(patch)) assert.equal(updated[key],value);
+  }
+  assert.equal(M.patchMaterial(original,{roughness:0.4}).vertexEmissiveColor,'#000000');
+});

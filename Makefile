@@ -13,6 +13,7 @@ JS_CHECK_FILES = \
 	assets/app/js/volume-geometry.js \
 	assets/app/js/volume-2c.js \
 	assets/app/js/bond-inference.js \
+	assets/app/js/bond-geometry.js \
 	assets/app/js/auto-hydrogen.js \
 	assets/app/js/autoiso.js \
 	assets/app/js/cloud-rendering.js \

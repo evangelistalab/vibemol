@@ -139,7 +139,7 @@
   const resolvedMaterial = (state, target) => target === 'surfaces' && state.surfaceMaterial ? state.surfaceMaterial : state.material;
   function patchMaterial(value, patch) {
     const next = validateMaterial({ ...value, ...patch });
-    if (['emissiveIntensity','emissiveColor','emissiveUsesColor'].some(key => key in patch)) {
+    if (['emissiveIntensity','emissiveColor','emissiveUsesColor','emissiveScale','emissiveMix'].some(key => key in patch)) {
       next.vertexEmissiveColor = null; next.vertexEmissiveIntensity = null;
     }
     return next;
