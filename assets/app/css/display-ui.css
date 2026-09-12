@@ -1445,7 +1445,8 @@ kbd,
   min-width: 0;
 }
 
-#toolbar #displayInspector #elementColorBtn {
+/* Compact inspector actions share the same typography and theme colors. */
+#toolbar #displayInspector .vm-btn--ghost.vm-btn--sm {
   justify-content: flex-start;
   width: auto;
   min-width: 0;
@@ -1462,13 +1463,13 @@ kbd,
   box-shadow: none;
 }
 
-#toolbar #displayInspector #elementColorBtn:hover:not(:disabled) {
+#toolbar #displayInspector .vm-btn--ghost.vm-btn--sm:hover:not(:disabled) {
   color: var(--vm-color-text-primary);
   background: color-mix(in srgb, var(--vm-color-text-primary) 6%, transparent);
 }
 
-#toolbar #displayInspector #elementColorBtn:focus,
-#toolbar #displayInspector #elementColorBtn:focus-visible {
+#toolbar #displayInspector .vm-btn--ghost.vm-btn--sm:focus,
+#toolbar #displayInspector .vm-btn--ghost.vm-btn--sm:focus-visible {
   outline: none;
   box-shadow: var(--vm-shadow-focus-ring);
 }

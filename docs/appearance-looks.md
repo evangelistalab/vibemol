@@ -27,10 +27,10 @@ The editor reuses these existing components:
 | Preset and material menus | `vm-select` |
 | Numeric controls | `VmSlider`, `vm-slider__range`, `vm-slider__value`, `vm-mono` |
 | Switches and colors | `vm-toggle`, `vm-color-swatch` |
-| Menus and actions | `vm-select`, `secondary`, `vm-popover__actions` |
+| Menus and actions | `vm-select`, `vm-btn vm-btn--ghost vm-btn--sm`, `vm-popover__actions` |
 | Status text | `vm-session-status` |
 
-`looks-ui.css` contains only hidden-state and wrapping/spacing rules. The previous gallery-specific cards, thumbnails, button skins, and slider skins were removed. The editor inherits the app's tokens, fonts, themes, and focus treatments.
+`looks-ui.css` contains only hidden-state and wrapping/spacing rules. Look/material actions reuse the compact inspector button styling, including hover, disabled, and keyboard-focus states. Save/share disclosures use `vm-section-label`, and the current look name uses `vm-stat-label`. The editor follows the selected app font and theme without separate typography or color rules.
 
 ## Saving and preservation
 

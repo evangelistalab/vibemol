@@ -9,11 +9,11 @@
       <details class="vm-appearance-section" id="appearanceMaterialsSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Material</span></summary>
         <p class="vm-session-status" id="appearanceMaterialScope">One material for atoms, bonds, and surfaces.</p><div id="materialFields"></div>
         <div id="materialAdvancedFields"></div>
-        <details><summary class="inspectorSubsectionSummary">Save material</summary><div id="materialLibraryFields"></div></details>
+        <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Save material</span></summary><div id="materialLibraryFields"></div></details>
         <div class="vm-session-status" id="materialStatus" role="status"></div>
       </details>
       <details class="vm-appearance-section" id="appearanceLightingSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Lighting & contours</span></summary><div id="lightingFields"></div>
-        <details><summary class="inspectorSubsectionSummary">Light colors</summary><div id="lightColorFields"></div></details>
+        <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Light colors</span></summary><div id="lightColorFields"></div></details>
       </details>`;
     function row(parent, id, label, content) {
       const el = document.createElement('div'); el.className = 'vm-field-row'; el.id = id + 'Row';
@@ -118,9 +118,9 @@
     for (const [key,label] of [['dirColor','Key color'],['hemiColor','Fill color'],['hemiGroundColor','Ground color'],['rimColor','Rim color'],['ambColor','Ambient color']]) color('lightColorFields','appearanceLight'+key,label,s=>s.rendering.lighting[key],(value,phase)=>edit('lighting',{[key]:value},phase));
 
     row('materialLibraryFields','materialName','Name','<input id="materialName" type="text" maxlength="60" aria-label="Material name">');
-    const actions=document.createElement('div');actions.className='vm-popover__actions';actions.innerHTML='<button id="saveMaterial" class="secondary" type="button">Save as new</button><button id="exportMaterial" class="secondary" type="button">Export</button><button id="importMaterial" class="secondary" type="button">Import</button><input id="materialFile" type="file" accept=".json,application/json" hidden>';$('materialLibraryFields').append(actions);
+    const actions=document.createElement('div');actions.className='vm-popover__actions';actions.innerHTML='<button id="saveMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Save as new</button><button id="exportMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Export</button><button id="importMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Import</button><input id="materialFile" type="file" accept=".json,application/json" hidden>';$('materialLibraryFields').append(actions);
     $('saveMaterial').onclick=()=>deps.saveMaterial($('materialName').value, currentMaterial());
-    const manage=document.createElement('div');manage.className='vm-popover__actions';manage.innerHTML='<button id="updateMaterial" class="secondary" type="button" disabled>Update saved</button><button id="deleteMaterial" class="secondary" type="button" disabled>Delete saved</button>';$('materialLibraryFields').append(manage);
+    const manage=document.createElement('div');manage.className='vm-popover__actions';manage.innerHTML='<button id="updateMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Update saved</button><button id="deleteMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Delete saved</button>';$('materialLibraryFields').append(manage);
     $('updateMaterial').onclick=()=>deps.updateMaterial(activeMaterialId,$('materialName').value,currentMaterial());
     $('deleteMaterial').onclick=()=>{deps.deleteMaterial(activeMaterialId);activeMaterialId=null;sync();};
     $('exportMaterial').onclick=()=>deps.exportMaterial($('materialName').value || 'My material', currentMaterial());
