@@ -1536,6 +1536,7 @@
   let moleculeShadowsEnabled = false;
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
+  let sceneBackgroundColor = UI_PALETTE.white;
   let surfaceIsoDefault = DEFAULT_ISO_VALUE;
   let surfaceOpacityDefault = 1.0;
   let surfaceColorSchemeDefault = 'emory';
@@ -2162,15 +2163,12 @@
       : lighting.toneMapping === 'none' || lighting.exposure === 1 ? THREE.NoToneMapping : THREE.LinearToneMapping;
     renderer.toneMappingExposure = lighting.exposure;
 
-    let bg = null;
-    if (bgColor && bgColor.value) {
-      try { bg = new THREE.Color(bgColor.value); } catch { bg = null; }
-    }
-    if (bg && appearanceState.lighting.followTheme) bg = getThemeAdjustedSceneBackground(bg);
-    if (bg) scene.background = bg;
+    let bg = new THREE.Color(sceneBackgroundColor);
+    if (lighting.followTheme) bg = getThemeAdjustedSceneBackground(bg);
+    scene.background = bg;
 
     if (moleculeFogEnabled) {
-      const fogColor = bg ? bg.clone() : new THREE.Color(0xdbe5f1);
+      const fogColor = bg.clone();
       const fogFar = getMoleculeFogDepth();
       const fogNear = Math.max(0.5, fogFar * 0.23);
       scene.fog = new THREE.Fog(fogColor, fogNear, fogFar);
@@ -27144,9 +27142,9 @@
     syncColorPickerFields();
     syncSurfaceColorSchemeUi();
   });
-  registerAppearancePresetSetting('global.backgroundColor', () => (bgColor && bgColor.value) || UI_PALETTE.white, (value) => {
-    if (!bgColor) return;
-    bgColor.value = asHexColor(value, bgColor.value || UI_PALETTE.white);
+  registerAppearancePresetSetting('global.backgroundColor', () => sceneBackgroundColor, (value) => {
+    sceneBackgroundColor = asHexColor(value, sceneBackgroundColor);
+    if (bgColor) bgColor.value = sceneBackgroundColor;
     syncColorPickerFields();
     applyMoleculeStyleLighting();
   });
@@ -27645,6 +27643,19 @@
     }
     activeLook = { ...value, settings: captureLookSettings() };
     finishLookChange();
+  }
+  function editSceneBackgroundColor(value, phase = 'change') {
+    const apply = () => {
+      const next = asHexColor(value, sceneBackgroundColor);
+      if (next === sceneBackgroundColor) return false;
+      applyLookSettings({ 'global.backgroundColor': next }, []);
+      scheduleAppearancePresetAutosave();
+      return true;
+    };
+    // Both pickers share model state, so a native input event cannot overwrite
+    // the previous color before Appearance Undo captures it.
+    if (looksUi) looksUi.edit('global.backgroundColor', phase, apply);
+    else apply();
   }
   function captureLookUndo() {
     return { settings: lookModule.settings(exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings),
@@ -31224,11 +31235,7 @@
   };
   negColor.oninput = handleNegativeSurfaceColorInput;
   negColor.onchange = handleNegativeSurfaceColorInput;
-  const handleBackgroundColorInput = () => {
-    syncColorPickerFields();
-    applyMoleculeStyleLighting();
-    scheduleAppearancePresetAutosave();
-  };
+  const handleBackgroundColorInput = event => editSceneBackgroundColor(bgColor.value, event.type);
   bgColor.oninput = handleBackgroundColorInput;
   bgColor.onchange = handleBackgroundColorInput;
   toggleAtoms.onchange = () => {
@@ -32559,6 +32566,7 @@
     applyStartupDefault: !appearanceStudy,
     createSlider: root => { const slider = new VmSlider(root); viewSliderRegistry.set(slider.valueInput, slider); return slider; },
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,
+    editBackgroundColor: editSceneBackgroundColor,
     getActiveLook: () => activeLook,
     setActiveLook: value => { activeLook = cloneJsonLike(value); scheduleAppearancePresetAutosave(); },
     applyLook: applyNamedLook, captureUndo: captureLookUndo, restoreUndo: restoreLookUndo,

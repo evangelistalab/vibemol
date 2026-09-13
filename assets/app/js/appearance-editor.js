@@ -148,6 +148,11 @@
     select('appearanceBondColorFields','appearanceBondColorMode','Bond colors',[['element','By element'],['uniform','Uniform']],s=>s.rendering.coloring.elementBonds?'element':'uniform',value=>edit('coloring',{elementBonds:value==='element'}));
     color('appearanceBondColorFields','appearanceBondColor','Color',s=>s.rendering.coloring.bondColor,(value,phase)=>edit('coloring',{bondColor:value},phase));
     controls.push(s=>{const label=s.rendering.coloring.elementBonds?'Element tint':'Color';$('appearanceBondColorRow').querySelector('label').textContent=label;$('appearanceBondColor').setAttribute('aria-label',label);});
+    color('lightingFields','appearanceBackgroundColor','Background',s=>s.settings['global.backgroundColor'],
+      (value,phase)=>deps.editBackgroundColor(value,phase));
+    $('appearanceBackgroundColor').setAttribute('data-tooltip','Scene background, shared with Appearance → Scene and saved with the look.');
+    toggle('lightingFields','appearanceFollowTheme','Follow UI theme',s=>s.rendering.lighting.followTheme,value=>edit('lighting',{followTheme:value}));
+    $('appearanceFollowTheme').setAttribute('data-tooltip','Darken the chosen background when the app uses its dark theme.');
     for (const [key,label,min,max] of [['dirIntensity','Key light',0,6],['hemiIntensity','Fill light',0,6],['rimIntensity','Rim light',0,6],['ambIntensity','Ambient',0,6],['exposure','Exposure',0.4,2]]) {
       slider('lightingFields','appearanceLight'+key,label,min,max,2,s=>s.rendering.lighting[key],(value,phase)=>edit('lighting',{[key]:value},phase),
         {disabled:s=>key==='exposure'&&s.rendering.lighting.toneMapping==='none'});
@@ -171,7 +176,6 @@
     slider('lightingFields','appearanceBondContours','Bond contours',0,0.3,3,s=>s.rendering.effects.bondOutlineFraction,
       (value,phase)=>edit('effects',{bondOutlineFraction:value},phase),{visible:relativeContours});
     toggle('lightingFields','appearanceHighlights','Highlight shells',s=>s.rendering.effects.highlights,value=>edit('effects',{highlights:value}));
-    toggle('lightingFields','appearanceFollowTheme','Follow UI theme',s=>s.rendering.lighting.followTheme,value=>edit('lighting',{followTheme:value}));
     for (const [key,label] of [['dirColor','Key color'],['hemiColor','Fill color'],['hemiGroundColor','Ground color'],['rimColor','Rim color'],['ambColor','Ambient color']]) color('lightColorFields','appearanceLight'+key,label,s=>s.rendering.lighting[key],(value,phase)=>edit('lighting',{[key]:value},phase));
 
     row('materialLibraryFields','materialName','Name','<input id="materialName" type="text" maxlength="60" aria-label="Material name">');

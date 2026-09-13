@@ -66,7 +66,7 @@
       run(() => {
         const before = transaction === key ? null : deps.captureUndo();
         const changed = action(); if (before && changed !== false) undoState = before;
-        transaction = phase === 'input' ? key : null;
+        transaction = phase === 'input' && (transaction === key || changed !== false) ? key : null;
         if (changed !== false) { sync(); status('Appearance adjusted.'); }
       });
     }
@@ -155,6 +155,7 @@
       root: $('lookComponentEditor'), createSlider: deps.createSlider, captureSettings: deps.captureSettings,
       atomFields: deps.atomFields, bondFields: deps.bondFields, getAtomBaseRadius: deps.getAtomBaseRadius,
       getRendering: deps.getRendering, getActiveLook: current,
+      editBackgroundColor: deps.editBackgroundColor,
       edit: (section, patch, options, phase) => edit(JSON.stringify([section, Object.keys(patch), options]), phase, () => deps.editComponent(section, patch, options)),
       getMaterials: () => clone(materials),
       updateMaterial: (id, label, material) => run(() => {

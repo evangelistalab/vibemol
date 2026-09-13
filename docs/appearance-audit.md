@@ -1,6 +1,21 @@
-# Bond rendering and preset controls audit
+# Appearance and preset controls audit
 
 Scope: all seven curated looks, the shared material presets, molecule bond construction and live updates, the Appearance inspector, and portable look/session state.
+
+## Style Studio scope audit
+
+Background color is one global canvas setting, stored in each look as `global.backgroundColor`. It is now editable in both **Style Studio → Lighting & contours → Background** and **Appearance → Scene → Background**. Both controls update the same state, including Modified, grouped Appearance Undo, Revert, named looks, portable exports, autosave, and sessions. Background changes reuse existing molecule and surface meshes. **Follow UI theme** sits beside the Studio swatch: it darkens the rendered background in dark mode without altering the saved base color.
+
+The remaining mismatches are listed below; these behaviors have not been changed by the background-control addition.
+
+| Mismatch | Current behavior | Suggested next change |
+| --- | --- | --- |
+| Some global style settings are only editable outside Studio. | Atom palette and element colors are under Atoms; bond color mode/tint under Bonds; shadows and fog under Rendering. All belong to a saved look. Shadows, palettes, and colors vary between curated presets; all seven presets disable fog but still store/reset its depth. | Expose these in Studio through the same state and handlers as the sidebar. Keep the sidebar controls as shortcuts. |
+| Camera focus is included in look recipes. | `render.dof.*` stores enabled state, focus mode, focus distance, focus range, and blur amount. Every curated preset disables depth of field and restores its focus defaults. Camera pose/projection are preserved. | Keep camera-dependent focus settings with the camera instead of resetting them on a style change. Decide explicitly whether blur enablement/strength should remain part of a look. |
+| Orbital styling has two different application scopes. | Surfaces edits colors and opacity on the selected orbital or focused group. Saving a look captures one representative orbital; applying that look overwrites those settings on all loaded surface layers, including hidden/deferred layers and other scenes. Mixed values are indicated, but the scope change is easy to miss. | Distinguish global surface defaults from per-orbital overrides, and make replacing overrides an explicit action. Keep opacity in Surfaces as requested. |
+| Appearance Undo depends on the control used. | Studio component edits, the sidebar palette/bond color controls, surface opacity, and now both background controls record Appearance Undo. Older sidebar handlers for shadows, fog, element-color edits, surface colors, and depth of field update appearance without recording that edit. | Route style edits through one shared appearance transaction path so Undo is consistent everywhere. |
+
+Correct exclusions: camera position/rotation/projection, atom and bond visibility, axes and bounding box, coordinates/topology, orbital isovalues/Auto-iso, phase inversion, surface/cloud mode, playback, and UI font/accent/theme do not belong to a named look. These remain workspace state or app preferences. The broader appearance autosave and general preset format are intentionally not identical to a named look or a material-only file. The UI theme itself remains global; a look only chooses whether its background follows it.
 
 ## Findings and changes
 
@@ -40,9 +55,10 @@ Scope: all seven curated looks, the shared material presets, molecule bond const
 | Exact key/rim XYZ coordinates, including distance used for shadow-camera placement | Lighting & contours → Light positions |
 | Absolute width, relative atom/bond contour sizing, highlight shells | Lighting & contours |
 | Shadows and fog | Rendering |
-| Background color | Scene |
+| Background color | Style Studio → Lighting & contours, synchronized with Appearance → Scene |
 | Orbital phase colors and palette | Surfaces |
 | Surface opacity | Surfaces → Opacity, scoped to the selected orbital or group; differing values show Mixed. Atoms and bonds stay opaque; their retired opacity keys are ignored on import. |
+| Depth of field enabled state, focus mode/distance/range, blur strength | Camera; see the focus-scope mismatch above |
 
 Material-model-specific controls appear only when the renderer uses them. For example, physical roughness is inactive under Toon, and environment intensity is inactive under Phong. Key/rim angles provide convenient directional adjustment; Light positions exposes the exact stored coordinates, including the key light's shadow-camera placement.
 
@@ -52,11 +68,13 @@ The historical `molecule.style` key is a compatibility selector for Basic/Toon/K
 
 ## Validation
 
+The Style Studio/background update passes `make check`, all 291 unit tests, and both `style_studio.py` browser scenarios using software WebGL. The background regression covers both controls, a color stream starting with an unchanged value, grouped Undo, Revert, named look export/import, appearance autosave, session restoration, actual rendered theme behavior, unchanged surface geometry, and deferred Molden orbitals. Light and dark layouts were inspected.
+
 - Cylinder topology tests check that every welded edge belongs to two triangles, no midpoint cap exists, normals remain cylindrical, and the color transition stays sharp.
 - Browser regressions inspect actual bond meshes for all seven looks, uniform colors, live Kit edits, advanced control values, Appearance Undo, and session restoration.
 - Existing appearance tests cover materials, surfaces, deferred orbitals, saved looks/defaults, and fresh-page session imports. Molecular edit, trajectory, transparency, and export checks remain in the full smoke suite.
 
-For this review, all 281 unit tests and the complete appearance and premerge browser suites passed. Before/after renders were inspected for Basic, Classic, Porcelain, Ink, Kit, and Opal; the Bonds controls were checked in both UI themes. Browser checks used software WebGL after the default graphics backend timed out on ordinary UI actions.
+For the original bond review, all 281 unit tests and the complete appearance and premerge browser suites passed. Before/after renders were inspected for Basic, Classic, Porcelain, Ink, Kit, and Opal; the Bonds controls were checked in both UI themes. Browser checks used software WebGL after the default graphics backend timed out on ordinary UI actions.
 
 The full smoke suite did not pass: selection-cue visibility failed during the rotate step with these changes and during the translate step when serving the unchanged committed application. These results identify an existing broader Edit/test reliability issue, not a clean end-to-end validation result. Its cause remains separate work; the focused new regression does exercise live bond updates during an actual selection drag.
 

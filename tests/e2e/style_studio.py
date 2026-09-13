@@ -1,12 +1,107 @@
 #!/usr/bin/env python3
 """Style Studio window, preset gallery, editing, persistence, and responsive UI."""
 import json
+import math
 from pathlib import Path
 import premerge as p
 
 
 def settings(page):
     return page.evaluate('() => VibeMolAppearanceLooks.snapshot().settings')
+
+
+def background_controls(page):
+    def choose_color(selector, colors):
+        page.locator(selector).evaluate('''(el, colors) => {
+          for (const value of colors) { el.value=value; el.dispatchEvent(new Event('input',{bubbles:true})); }
+          el.dispatchEvent(new Event('change',{bubbles:true}));
+        }''', colors)
+
+    def check_color(color):
+        page.wait_for_function('color => ["bgColor","appearanceBackgroundColor"].every(id=>document.getElementById(id).value===color)', arg=color)
+        assert settings(page)['global.backgroundColor'] == color
+        previews=page.locator('#bgColorSwatch, #appearanceBackgroundColor + span').evaluate_all('els=>els.map(el=>getComputedStyle(el).backgroundColor)')
+        assert len(previews)==2 and previews[0]==previews[1], previews
+
+    def background_pixel():
+        return page.evaluate('''async () => {
+          await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+          const sample=document.createElement('canvas'); sample.width=sample.height=1;
+          const ctx=sample.getContext('2d'); ctx.drawImage(document.getElementById('canvas'),10,10,1,1,0,0,1,1);
+          return [...ctx.getImageData(0,0,1,1).data];
+        }''')
+
+    assert p.load(page,[{'name':'orbital.cube','text':p.cube(0)}])['ok']
+    page.locator('#displayInspectorBtn').click();page.locator('#styleStudioBtn').click()
+    page.locator('#lookPreset').select_option('classic')
+    page.locator('#appearanceGeometrySection > summary').click()
+    page.locator('#appearanceLightingSection > summary').click()
+    assert page.locator('#appearanceBackgroundColor').is_visible()
+    original=settings(page)
+    molecule=page.evaluate('() => VibeMolStructure.exportActive().volume')
+    initial_pixel=background_pixel()
+    for selector in ['#appearanceBackgroundColor','#bgColor']:
+        camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+        surfaces=page.evaluate('() => JSON.parse(JSON.stringify(VibeMolTesting.getSurfaceMaterialSnapshot()))')
+        assert surfaces
+        choose_color(selector,[original['global.backgroundColor'],'#112233','#284c68','#345678'])
+        check_color('#345678')
+        assert settings(page)=={**original,'global.backgroundColor':'#345678'}
+        assert page.locator('#lookModified').inner_text()=='· Modified'
+        assert page.evaluate('() => JSON.parse(JSON.stringify(VibeMolTesting.getSurfaceMaterialSnapshot()))')==surfaces
+        assert page.evaluate('() => VibeMolStructure.exportActive().volume')==molecule
+        after=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+        assert after['mode']==camera['mode'] and after['controlsEnabled']==camera['controlsEnabled']
+        assert all(math.isclose(after[vector][axis],camera[vector][axis],rel_tol=0,abs_tol=1e-10)
+                   for vector in ['camera','target','up'] for axis in ['x','y','z']), (camera,after)
+        assert background_pixel()!=initial_pixel
+        page.locator('#lookUndo').click();check_color(original['global.backgroundColor'])
+        assert settings(page)==original and page.locator('#lookModified').inner_text()==''
+
+    # A named look, portable export, Revert, appearance autosave, and session all
+    # retain the same shared color rather than a second Studio-only setting.
+    choose_color('#appearanceBackgroundColor',['#345678'])
+    page.locator('#lookSave').click();page.locator('#lookNameInput').fill('Blue background');page.locator('#lookNameInput').press('Enter')
+    saved=page.evaluate('() => VibeMolAppearanceLooks.snapshot().saved[0]')
+    page.locator('#lookSaveDetails > summary').click()
+    with page.expect_download() as download:
+        page.locator('#lookExport').click()
+    exported=json.loads(Path(download.value.path()).read_text())
+    assert exported['settings']['global.backgroundColor']=='#345678'
+    choose_color('#bgColor',['#885522']);page.locator('#lookRevert').click();check_color('#345678')
+    session=page.evaluate('() => VibeMolSession.export()')
+    page.wait_for_function('() => JSON.parse(localStorage.getItem("vibemol.autosavePreset"))?.settings["global.backgroundColor"]==="#345678"')
+    page.reload();page.wait_for_function('() => window.VibeMolAppearanceLooks')
+    check_color('#345678')
+    page.evaluate('() => VibeMolAppearanceLooks.apply("opal")');check_color('#171b2b')
+    assert page.evaluate('preset=>VibeMolPreset.import(preset,{mode:"strict"})',exported)['ok']
+    check_color('#345678')
+    page.evaluate('() => VibeMolAppearanceLooks.apply("ink")')
+    assert page.evaluate('saved=>VibeMolSession.import(saved)',session)['ok']
+    check_color('#345678')
+    assert page.evaluate('() => VibeMolAppearanceLooks.snapshot().activeLook.id')==saved['id']
+
+    # Theme following changes the rendered background, never the saved base color.
+    exact_pixel=background_pixel()
+    page.hover('#topRightUtilities')
+    page.wait_for_function('() => Number(getComputedStyle(document.querySelector("#topRightUtilitiesReveal")).opacity)>0.95')
+    page.locator('#themeToggleShell').click()
+    assert page.locator('html').get_attribute('data-theme')=='dark'
+    assert background_pixel()==exact_pixel
+    page.evaluate('() => VibeMolAppearanceLooks.openStudio()')
+    page.locator('#appearanceLightingSection').evaluate('el=>el.open=true')
+    page.locator('#appearanceFollowTheme').check();check_color('#345678')
+    dark_pixel=background_pixel()
+    assert sum(dark_pixel[:3])<sum(exact_pixel[:3]), (exact_pixel,dark_pixel)
+    page.screenshot(path=str(p.ARTIFACTS/'style-studio-background-dark.png'))
+    page.locator('#appearanceFollowTheme').uncheck();check_color('#345678')
+    assert background_pixel()==exact_pixel
+
+    assert p.load(page,[{'name':'orbitals.molden','text':p.MOLDEN}])['ok']
+    orbitals=p.cubes(page)
+    choose_color('#appearanceBackgroundColor',['#223344']);check_color('#223344')
+    assert p.cubes(page)==orbitals and page.evaluate('() => window.__moldenGridBuilds')==[]
+    print('[studio] shared background, grouped Undo, Revert, save/export/import, autosave, sessions, theme following and deferred orbitals: passed',flush=True)
 
 
 def run(page):
@@ -130,17 +225,21 @@ def main():
     with p.run_http_server(p.ROOT) as url, p.sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            context = browser.new_context(viewport={'width':1440,'height':1000},device_scale_factor=1)
-            page = context.new_page();errors=[];console_errors=[]
-            page.on('pageerror',lambda error:errors.append(str(error)))
-            page.on('console',lambda message:console_errors.append(message.text) if message.type=='error' else None)
-            page.on('dialog',lambda dialog:dialog.dismiss())
-            try:
-                page.goto(url);page.wait_for_function('() => window.VibeMolAppearanceLooks')
-                run(page)
-                assert not errors,errors
-            except Exception:
-                p.write_failure_artifacts(page,p.ARTIFACTS,'style-studio-failure',errors,console_errors);raise
+            for scenario in [run,background_controls]:
+                context = browser.new_context(viewport={'width':1440,'height':1000},device_scale_factor=1)
+                context.add_init_script('('+p.MOLDEN_GRID_OBSERVER+')()')
+                page = context.new_page();errors=[];console_errors=[]
+                page.on('pageerror',lambda error:errors.append(str(error)))
+                page.on('console',lambda message:console_errors.append(message.text) if message.type=='error' else None)
+                page.on('dialog',lambda dialog:dialog.dismiss())
+                try:
+                    page.goto(url);page.wait_for_function('() => window.VibeMolAppearanceLooks')
+                    scenario(page)
+                    assert not errors,errors
+                except Exception:
+                    p.write_failure_artifacts(page,p.ARTIFACTS,'style-studio-'+scenario.__name__+'-failure',errors,console_errors);raise
+                finally:
+                    context.close()
         finally:
             browser.close()
 
