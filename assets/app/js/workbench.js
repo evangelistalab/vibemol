@@ -20,6 +20,9 @@
   const byId = new Map(entries.map(item => [item.id, item]));
   const body = document.body;
   body.classList.add('vm-workbench');
+  const canvas = document.getElementById('canvas');
+  canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Molecule viewport');
+  canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }), { capture: true });
   if (narrow) host.setSidebarCollapsed(true);
 
   function icon(name) {
@@ -37,8 +40,20 @@
   }
   const bar = document.createElement('nav'); bar.className = 'wb-bar'; bar.id = 'workbenchBar'; bar.setAttribute('aria-label', 'Workbench tools');
   const brand = document.createElement('div'); brand.className = 'wb-brand';
-  const wordmark = document.createElement('strong'); wordmark.textContent = 'Workbench'; brand.append(wordmark); label(brand, 'LAB', 'wb-lab');
-  const tools = document.createElement('div'); tools.className = 'wb-tools'; bar.append(brand, tools);
+  label(brand, 'LAB', 'wb-lab');
+  const modes = document.getElementById('toolbarModeRow');
+  const oldModeSection = modes.closest('.tb-modes');
+  bar.append(modes); oldModeSection?.remove();
+  modes.querySelector('#modeDisplayBtn').setAttribute('aria-label', 'View mode');
+  const tools = document.createElement('div'); tools.className = 'wb-tools'; bar.append(tools, brand);
+  const editTools = document.createElement('div'); editTools.className = 'wb-context-tools'; editTools.hidden = true; tools.append(editTools);
+  for (const id of ['editAdaptiveAddAtomBtn', 'editAdaptiveSymmetryBtn', 'editAdaptiveCleanStructureBtn']) {
+    const control = document.getElementById(id); control.classList.add('vm-btn', 'vm-btn--ghost', 'wb-tool', 'wb-edit-tool');
+    control.setAttribute('data-tooltip-placement', 'bottom'); editTools.append(control);
+  }
+  const clearMeasurements = button('Clear measurements', 'backspace', () => host.clearMeasurements(), 'wb-tool');
+  clearMeasurements.id = 'workbenchClearMeasurements'; clearMeasurements.hidden = true;
+  clearMeasurements.setAttribute('data-tooltip', 'Clear measurements (Esc)'); label(clearMeasurements, 'Clear measurements', 'wb-tool-label'); tools.append(clearMeasurements);
   for (const item of entries) {
     const tool = button(item.label, item.icon, () => toggle(item.id), 'wb-tool');
     tool.dataset.window = item.id; tool.setAttribute('data-tooltip', item.label);
@@ -73,7 +88,7 @@
   const snap = document.createElement('div'); snap.className = 'wb-snap'; snap.id = 'workbenchSnap'; snap.hidden = true;
   const snapLabel = label(snap, ''); body.append(snap);
 
-  function available(item) { return item.id === 'styleStudio' || (host.getMode() !== 'edit' && item.entry.buttonEl && !item.entry.buttonEl.hidden); }
+  function available(item) { return item.id === 'styleStudio' || (item.entry.buttonEl && !item.entry.buttonEl.hidden); }
   function open(item) { return !!item.entry.isOpen(); }
   function isParked(id) { return state.parked.includes(id); }
   function compact() { return focus ? compactBeforeFocus : model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth() }).compact; }
@@ -144,6 +159,9 @@
   function sync() {
     scheduled = false;
     body.dataset.wbMode = host.getMode();
+    const isCompact = compact(); body.dataset.wbCompact = String(isCompact);
+    editTools.hidden = host.getMode() !== 'edit'; clearMeasurements.hidden = host.getMode() !== 'measure';
+    for (const control of editTools.children) control.setAttribute('aria-pressed', String(control.classList.contains('active')));
     for (const item of entries) {
       const requested = pending.has(item.id) && available(item);
       const restoring = requested && !open(item);
@@ -154,27 +172,34 @@
       item.tool.hidden = !available(item);
       item.tool.dataset.parked = String(isOpen && isParked(item.id));
     }
-    const live = entries.filter(item => open(item) && !isParked(item.id));
-    const right = live.filter(item => effectivePlace(item.id) === 'right');
-    const bottom = live.filter(item => effectivePlace(item.id) === 'bottom');
-    if (!right.some(item => item.id === state.activeRight)) state.activeRight = right[0]?.id || null;
-    if (!bottom.some(item => item.id === state.activeBottom)) state.activeBottom = bottom[0]?.id || null;
+    const placementFor = id => isCompact ? 'bottom' : state.placements[id];
+    const live = entries.filter(item => open(item) && available(item) && !isParked(item.id));
+    const right = live.filter(item => placementFor(item.id) === 'right');
+    const bottom = live.filter(item => placementFor(item.id) === 'bottom');
+    // Keep a suspended inspector's preferred tab so it returns with its mode.
+    for (const [key, items] of [['activeRight', right], ['activeBottom', bottom]]) {
+      const selected = byId.get(state[key]);
+      if (!selected || (!open(selected) && !pending.has(selected.id))) state[key] = items[0]?.id || null;
+    }
+    const activeRight = right.some(item => item.id === state.activeRight) ? state.activeRight : right[0]?.id;
+    const activeBottom = bottom.some(item => item.id === state.activeBottom) ? state.activeBottom : bottom[0]?.id;
     const regions = model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth(), right: !!right.length,
-      bottom: !!bottom.length, rightWidth: state.rightWidth, bottomHeight: state.bottomHeight, focus });
+      bottom: !!bottom.length, rightWidth: state.rightWidth, bottomHeight: state.bottomHeight, focus, top: bar.getBoundingClientRect().height });
     const key = JSON.stringify(regions);
     body.style.setProperty('--wb-left', regions.left + 'px'); body.style.setProperty('--wb-right', regions.right + 'px'); body.style.setProperty('--wb-bottom', regions.bottom + 'px');
+    body.style.setProperty('--wb-top', regions.top + 'px');
     docks.right.el.hidden = !regions.right; docks.bottom.el.hidden = !regions.bottom;
-    renderTabs('right', right, state.activeRight); renderTabs('bottom', bottom, state.activeBottom);
+    renderTabs('right', right, activeRight); renderTabs('bottom', bottom, activeBottom);
     for (const item of entries) {
-      const placement = effectivePlace(item.id), isOpen = open(item);
-      const active = placement === 'float' || item.id === (placement === 'right' ? state.activeRight : state.activeBottom);
-      const hidden = isParked(item.id) || !active || focus;
+      const placement = placementFor(item.id), isOpen = open(item);
+      const active = placement === 'float' || item.id === (placement === 'right' ? activeRight : activeBottom);
+      const hidden = !available(item) || isParked(item.id) || !active || focus;
       item.root.dataset.wbHidden = String(hidden); item.root.dataset.wbPlacement = placement;
       item.root.toggleAttribute('data-vm-floating-docked', placement !== 'float');
-      item.root.toggleAttribute('data-vm-floating-drag-disabled', compact());
+      item.root.toggleAttribute('data-vm-floating-drag-disabled', isCompact);
       const handle = item.root.querySelector('[data-vm-drag-handle]');
-      handle?.setAttribute('aria-label', compact() ? item.label + ' window' : 'Move ' + item.label);
-      handle?.setAttribute('data-tooltip', compact() ? 'Use window options to minimize or close.' : 'Drag to move. Release near the right or bottom edge to dock.');
+      handle?.setAttribute('aria-label', isCompact ? item.label + ' window' : 'Move ' + item.label);
+      handle?.setAttribute('data-tooltip', isCompact ? 'Use window options to minimize or close.' : 'Drag to move. Release near the right or bottom edge to dock.');
       if (placement !== 'float') {
         item.root.setAttribute('role', 'tabpanel'); item.root.setAttribute('aria-labelledby', 'wb-tab-' + item.id);
       } else {
@@ -186,7 +211,7 @@
         global.VibeMolFloatingPanels.get(item.root)?.moveTo(point.left, point.top); restorePositions.delete(item.id);
       }
       item.tool.setAttribute('aria-pressed', String(isOpen && !hidden));
-      if (isOpen && placement !== 'float') {
+      if (isOpen && available(item) && placement !== 'float') {
         const box = docks[placement].slot.getBoundingClientRect();
         for (const [name, value] of Object.entries({ left: box.left, top: box.top, width: box.width, height: box.height })) item.root.style.setProperty('--wb-panel-' + name, value + 'px');
       }
@@ -315,6 +340,16 @@
     observer.observe(item.root, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
     if (item.entry.buttonEl) observer.observe(item.entry.buttonEl, { attributes: true, attributeFilter: ['hidden'] });
   }
+  document.querySelector('#sidePanel > header > h2').textContent = 'Camera';
+  const editObserver = new MutationObserver(schedule);
+  for (const control of editTools.children) editObserver.observe(control, { attributes: true, attributeFilter: ['hidden', 'class'] });
+  modes.addEventListener('keydown', event => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const buttons = [...modes.querySelectorAll('button')], index = buttons.indexOf(event.target);
+    if (index < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+    event.preventDefault(); event.stopPropagation(); buttons[next].click(); buttons[next].focus();
+  });
   const sidebarObserver = new MutationObserver(schedule); sidebarObserver.observe(body, { attributes: true, attributeFilter: ['class'] });
   const modeObserver = new MutationObserver(schedule); modeObserver.observe(document.getElementById('displayWindowAdaptiveMenu'), { attributes: true, attributeFilter: ['data-mode'] });
   for (const target of Object.values(docks)) target.tabs.addEventListener('keydown', event => {
@@ -342,9 +377,9 @@
       snapPlace = x > innerWidth - 64 ? 'right' : y > innerHeight - 64 ? 'bottom' : null;
       snap.hidden = !snapPlace;
       if (snapPlace) {
-        const region = model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth(), right: snapPlace === 'right', bottom: snapPlace === 'bottom', rightWidth: state.rightWidth, bottomHeight: state.bottomHeight });
+        const region = model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth(), right: snapPlace === 'right', bottom: snapPlace === 'bottom', rightWidth: state.rightWidth, bottomHeight: state.bottomHeight, top: bar.getBoundingClientRect().height });
         const left = snapPlace === 'right' ? innerWidth - region.right : region.left;
-        const top = snapPlace === 'right' ? 56 : innerHeight - region.bottom;
+        const top = snapPlace === 'right' ? region.top : innerHeight - region.bottom;
         Object.assign(snap.style, { left: left + 'px', top: top + 'px', width: (innerWidth - left) + 'px', height: (innerHeight - top) + 'px' });
         snapLabel.textContent = 'Release to dock ' + (snapPlace === 'right' ? 'right' : 'below');
       }
@@ -359,6 +394,7 @@
     closeMenu(); sync();
   });
   global.VibeMolWorkbench = Object.freeze({
+    beforeModeChange: () => { if (focus) setFocus(false); closeMenu(); },
     manages: id => byId.has(id),
     isDocked: id => byId.has(id) && effectivePlace(id) !== 'float',
     restoreIfHidden: id => { const item = byId.get(id); if (item && open(item) && item.root.dataset.wbHidden === 'true' && !focus) { reveal(id); return true; } return false; },

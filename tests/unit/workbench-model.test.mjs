@@ -33,3 +33,7 @@ test('focus clears both regions without changing the saved layout', () => {
   const r = model.regions(value);
   assert.equal(r.left + r.right + r.bottom, 0); assert.equal(value.sidebar, 341);
 });
+test('a two-row mode bar leaves room for the molecule above the mobile dock', () => {
+  const r = model.regions({width:390, height:640, sidebar:0, right:true, top:96, bottomHeight:480});
+  assert.equal(r.top,96); assert.ok(640-r.top-r.bottom>=200);
+});

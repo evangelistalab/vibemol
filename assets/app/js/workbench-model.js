@@ -5,7 +5,7 @@
     { id: 'coordsPanel', panel: 'coordsPanel', label: 'Coordinates', icon: 'table_rows', place: 'bottom' },
     { id: 'styleStudio', panel: 'styleStudio', label: 'Style Studio', icon: 'palette', place: 'right' },
     { id: 'viewInspector', panel: 'viewInspector', label: 'View actions', icon: 'tune', place: 'right' },
-    { id: 'viewPanel', panel: 'sidePanel', label: 'View', icon: 'view_in_ar', place: 'right' },
+    { id: 'viewPanel', panel: 'sidePanel', label: 'Camera', icon: 'view_in_ar', place: 'right' },
     { id: 'trajectoryPanel', panel: 'trajectoryPanel', label: 'Trajectory', icon: 'timeline', place: 'bottom' },
     { id: 'vibrationPanel', panel: 'vibrationPanel', label: 'Frequencies', icon: 'graphic_eq', place: 'bottom' },
     { id: 'spinorInfo', panel: 'spinorInfoPanel', label: 'Spinor info', icon: 'info', place: 'right' },
@@ -28,12 +28,12 @@
       activeRight: ids.has(value.activeRight) ? value.activeRight : null,
       activeBottom: ids.has(value.activeBottom) ? value.activeBottom : null };
   }
-  function regions({ width, height, sidebar = 0, right = false, bottom = false, rightWidth = 380, bottomHeight = 270, focus = false }) {
+  function regions({ width, height, sidebar = 0, right = false, bottom = false, rightWidth = 380, bottomHeight = 270, focus = false, top = 56 }) {
     const left = focus || width < 760 ? 0 : Math.max(0, Math.min(sidebar, width - 100));
     const compact = width - left < 700;
     const rw = !focus && right && !compact ? Math.min(rightWidth, width - left - 340) : 0;
-    const bh = !focus && (bottom || (right && compact)) ? Math.min(bottomHeight, Math.max(100, height - 270)) : 0;
-    return { left, compact, right: Math.max(0, rw), bottom: bh, top: 56 };
+    const bh = !focus && (bottom || (right && compact)) ? Math.min(bottomHeight, Math.max(100, height - top - 214)) : 0;
+    return { left, compact, right: Math.max(0, rw), bottom: bh, top };
   }
   global.VibeMolWorkbenchModel = Object.freeze({ catalog, normalize, regions });
 })(window);

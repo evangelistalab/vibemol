@@ -7,6 +7,7 @@
   window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
+  const HINT_EDIT = 'Select atoms to edit • / opens Build • Esc clears selection';
   const HINT_START = '';
   const VIBRATION_KIND = 'vibemol.vibrations';
   const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
@@ -7958,10 +7959,10 @@
       getState(context) {
         return {
           visible: context.isVisible,
-          active: context.buildModeActive || context.emptyEditState,
+          active: context.buildModeActive || (!workspaceExperiment && context.emptyEditState),
           presentation: {
             icon: 'add',
-            label: context.buildModeActive ? 'Elements' : 'Build',
+            label: context.buildModeActive && !workspaceExperiment ? 'Elements' : 'Build',
             meta: '',
             key: '/',
             title: 'Build palette (/)',
@@ -7975,7 +7976,7 @@
       getButtonEl: () => editAdaptiveSymmetryBtn,
       getMetaEl: () => editAdaptiveSymmetryMetaEl,
       getState(context) {
-        if (context.buildModeActive) {
+        if (context.buildModeActive && !workspaceExperiment) {
           return {
             visible: true,
             active: false,
@@ -8008,7 +8009,7 @@
       getButtonEl: () => editAdaptiveCleanStructureBtn,
       getMetaEl: () => editAdaptiveCleanStructureMetaEl,
       getState(context) {
-        if (context.buildModeActive) {
+        if (context.buildModeActive && !workspaceExperiment) {
           return {
             visible: true,
             active: false,
@@ -10989,6 +10990,7 @@
       return;
     }
     const prevMode = currentMode;
+    window.VibeMolWorkbench?.beforeModeChange();
     if (prevMode === MODES.EDIT && newMode !== MODES.EDIT) {
       closeEditModeTransientPopovers();
     }
@@ -11022,6 +11024,8 @@
     updateEditToolboxUi();
     if (currentMode === MODES.MEASURE) {
       setHintMessage(HINT_MEASURE, { accent: false });
+    } else if (currentMode === MODES.EDIT) {
+      setHintMessage(HINT_EDIT, { accent: false });
     } else if (currentMode === MODES.DISPLAY) {
       setNavigationHint(HINT_START);
     }
@@ -11443,10 +11447,14 @@
       if (!itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen() && typeof entry.setOpen === 'function') {
         entry.setOpen(false);
       }
-      visibleItems.push({ el: itemDef.buttonEl, visible: itemDef.visible });
+      // Workbench keeps shared inspectors available while editing. Analysis-only
+      // windows are suspended by the workspace, without closing their saved tabs.
+      const sharedWhileEditing = [NON_EDIT_WINDOW_ID.COORDS_PANEL, NON_EDIT_WINDOW_ID.VIEW_PANEL, NON_EDIT_WINDOW_ID.VIEW_INSPECTOR].includes(itemDef.windowId);
+      const visibleInMode = itemDef.visible && (!workspaceExperiment || currentMode !== MODES.EDIT || sharedWhileEditing);
+      visibleItems.push({ el: itemDef.buttonEl, visible: visibleInMode });
       activeItems.push({ el: itemDef.buttonEl, active: !!(itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen()) });
     }
-    for (const buttonEl of getEditAdaptiveButtonEls()) {
+    for (const buttonEl of (workspaceExperiment && currentMode === MODES.EDIT ? [] : getEditAdaptiveButtonEls())) {
       visibleItems.push({ el: buttonEl, visible: false });
       activeItems.push({ el: buttonEl, active: false });
     }
@@ -11483,7 +11491,7 @@
       activeItems.push({ el: buttonEl, active: !!chipState.active });
       metaItems.push({ el: metaEl, text: chipState.presentation.meta || '' });
     }
-    for (const buttonEl of displayModeButtons) {
+    for (const buttonEl of (workspaceExperiment ? [] : displayModeButtons)) {
       visibleItems.push({ el: buttonEl, visible: false });
       activeItems.push({ el: buttonEl, active: false });
     }
@@ -11499,10 +11507,16 @@
 
   function updateCanvasAdaptiveMenuUi() {
     if (!canvasAdaptiveMenuEl) return;
-    if (currentMode === MODES.EDIT) closeExclusiveDisplayWindows();
-    const menuModel = currentMode === MODES.EDIT
+    if (currentMode === MODES.EDIT && !workspaceExperiment) closeExclusiveDisplayWindows();
+    let menuModel = currentMode === MODES.EDIT
       ? buildEditAdaptiveMenuModel()
       : buildDisplayAdaptiveMenuModel();
+    if (workspaceExperiment && currentMode === MODES.EDIT) {
+      const shared = buildDisplayAdaptiveMenuModel();
+      menuModel = { ...menuModel,
+        visibleItems: [...menuModel.visibleItems, ...shared.visibleItems],
+        activeItems: [...menuModel.activeItems, ...shared.activeItems] };
+    }
     canvasAdaptiveMenuEl.dataset.mode = menuModel.mode;
     updateAdaptiveMenuUiHelper({
       menuEl: canvasAdaptiveMenuEl,
@@ -11517,7 +11531,7 @@
       displayWindowsController.positionOpenButtonAnchoredPopovers();
     }
     if (displayAdaptiveMenuAutoHideController) {
-      displayAdaptiveMenuAutoHideController.setEnabled(canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+      displayAdaptiveMenuAutoHideController.setEnabled(!workspaceExperiment && canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
     }
     syncTwoComponentOverlayLabelOffsets();
   }
@@ -17211,7 +17225,7 @@
     if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
     if (editAdaptiveCleanStructureBtn) {
       editAdaptiveCleanStructureBtn.onclick = () => {
-        if (isBuildPopoverOpen()) {
+        if (isBuildPopoverOpen() && !workspaceExperiment) {
           if (autoHydrogenController) autoHydrogenController.handleShortcut();
           return;
         }
@@ -18270,6 +18284,8 @@
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveAddAtomPopoverEl,
       triggerEl: editAdaptiveAddAtomBtn,
+      placement: workspaceExperiment ? 'bottom' : 'right',
+      topInset: workspaceExperiment ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
       defaultWidth: 360,
       defaultHeight: 420,
@@ -18328,6 +18344,7 @@
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
+    window.VibeMolWorkbench?.setFocus(false);
     const wasOpen = isBuildPopoverOpen();
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
@@ -18351,6 +18368,8 @@
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveSymmetryPopoverEl,
       triggerEl: editAdaptiveSymmetryBtn,
+      placement: workspaceExperiment ? 'bottom' : 'right',
+      topInset: workspaceExperiment ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
       defaultWidth: 220,
       defaultHeight: 460,
@@ -18861,6 +18880,7 @@
 
   function showSymmetryPopover() {
     if (!editAdaptiveSymmetryPopoverEl) return;
+    window.VibeMolWorkbench?.setFocus(false);
     clearSymmetryCurrentGroupHighlight();
     symmetryPopoverCurrentGroupLabel = '';
     symmetryPopoverSelectedElementId = '';
@@ -25688,7 +25708,8 @@
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
   bind('down', MODES.EDIT, 'm', (e) => {
-    if (e && e.shiftKey) {
+    if (workspaceExperiment && (e?.ctrlKey || e?.metaKey || e?.altKey)) return;
+    if (workspaceExperiment || (e && e.shiftKey)) {
       setMode(MODES.MEASURE);
       return;
     }
@@ -25705,8 +25726,12 @@
     showBuildPopover({ focusSearch: true });
   });
   bind('down', MODES.EDIT, 'c', () => {
-    setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
+    toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL);
   });
+  if (workspaceExperiment) {
+    bind('down', MODES.EDIT, 'v', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL));
+    bind('down', MODES.EDIT, 'q', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR));
+  }
   bind('down', MODES.EDIT, ' ', (e) => {
     if (autoHydrogenController && autoHydrogenController.handleShortcut()) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -25880,7 +25905,7 @@
       setElementColorOverlayOpen(false);
       return;
     }
-    if (e.key === 'Escape' && styleStudio?.isOpen()) {
+    if (e.key === 'Escape' && styleStudio?.isOpen() && !workspaceExperiment) {
       e.preventDefault();
       styleStudio.setOpen(false);
       return;
@@ -25935,7 +25960,7 @@
       hideSymmetryPopover({ restore: true });
       return;
     }
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && !workspaceExperiment) {
       const closed = closeNonEditWindows(ESCAPABLE_NON_EDIT_WINDOW_ORDER);
       if (closed) {
         e.preventDefault();
@@ -27807,6 +27832,10 @@
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.length : 0;
     },
+    getMeasurementSnapshot: () => ({
+      atomIndices: editSel.slice(),
+      labelCount: editSelGroup.children.filter(child => child.userData?.measurementLabel).length,
+    }),
     getEditSelectionIndices: () => {
       const selection = getEditAtomSelection();
       return Array.isArray(selection) ? selection.slice() : [];
@@ -32567,7 +32596,13 @@
   // remains owned by the existing window controllers and renderer.
   window.VibeMolWorkbenchHost = Object.freeze({
     windows: displayWindowsController,
-    getMode: () => currentMode,
+    // Match the launcher's UI ids; the internal measurement-mode key is longer.
+    getMode: () => currentMode === MODES.MEASURE ? 'measure' : currentMode,
+    clearMeasurements: () => {
+      if (currentMode !== MODES.MEASURE) return;
+      clearEditSelection();
+      setHintMessage(HINT_MEASURE, { accent: false });
+    },
     setSidebarCollapsed: setWorkspaceSidebarCollapsed,
     resize,
   });

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Opt-in workspace behavior against the real renderer and inspector controls."""
+import math
 import premerge as p
 
 
@@ -14,6 +15,108 @@ def window_menu(page, panel, action):
 
 def capture(page, name):
     page.screenshot(path=str(p.ARTIFACTS/('workbench-'+name+'.png')),animations='disabled')
+
+
+def bounded_palette(page, panel):
+    box=panel.bounding_box();bar=page.locator('#workbenchBar').bounding_box()
+    assert box['x']>=11 and box['x']+box['width']<=page.viewport_size['width']-11,box
+    assert box['y']>=bar['y']+bar['height'] and box['y']+box['height']<=page.viewport_size['height']-11,box
+    assert panel.evaluate('el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+20,r.y+20))}')
+
+
+def modes(page):
+    page.evaluate('() => VibeMolWorkbench.applyLayout({})')
+    assert p.load(page,[{'name':'modes.molden','text':p.MOLDEN}])['ok']
+    page.evaluate('() => {VibeMolWorkbench.open("styleStudio");VibeMolWorkbench.open("moldenInspector");VibeMolWorkbench.open("coordsPanel")}')
+    before=p.snapshot(page);windows=layout(page);camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+    assert page.locator('#workbenchBar #toolbarModeRow').count()==1
+    assert page.locator('#toolbar #toolbarModeRow').count()==0
+    for mode in ['Measure','Edit','Display']:
+        page.locator('#mode'+mode+'Btn').click()
+        page.wait_for_function('(mode)=>document.body.dataset.wbMode===mode',arg={'Measure':'measure','Edit':'edit','Display':'display'}[mode])
+        assert page.locator('#displayWindowAdaptiveMenu').is_hidden()
+        for window in ['coordsPanel','styleStudio','viewPanel','viewInspector']:
+            assert page.locator('.wb-tool[data-window="'+window+'"]').is_visible()
+        assert page.locator('#coordsPanel').is_visible()
+        assert ('moldenInspector' in layout(page)['open'])
+        assert page.locator('#moldenInspector').is_visible()==(mode!='Edit')
+        assert page.locator('#workbenchClearMeasurements').is_visible()==(mode=='Measure')
+        assert page.locator('#editAdaptiveAddAtomBtn').is_visible()==(mode=='Edit')
+        if mode=='Edit':assert 'opens Build' in page.locator('#hint').inner_text()
+    assert layout(page)==windows
+    assert p.snapshot(page)==before and page.evaluate('() => __moldenGridBuilds')==[]
+    after_camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+    assert after_camera['mode']==camera['mode'] and after_camera['controlsEnabled']==camera['controlsEnabled']
+    for vector in ['camera','target','up']:
+        for axis in ['x','y','z']:assert math.isclose(after_camera[vector][axis],camera[vector][axis],abs_tol=1e-10)
+
+    # Mode keys follow the original callbacks; shared inspector shortcuts work in Edit.
+    page.locator('#canvas').focus();page.keyboard.press('e')
+    page.wait_for_function('()=>document.body.dataset.wbMode==="edit"')
+    page.keyboard.press('m');assert page.locator('#modeMeasureBtn').get_attribute('aria-pressed')=='true'
+    page.keyboard.press('e');assert page.locator('#modeEditBtn').get_attribute('aria-pressed')=='true'
+    window_menu(page,page.locator('#coordsPanel'),'Minimize to tools bar')
+    page.locator('#canvas').focus();page.keyboard.press('c');assert page.locator('#coordsPanel').is_visible()
+    page.keyboard.press('v');assert page.locator('#sidePanel').is_visible()
+    page.keyboard.press('v');assert page.locator('#sidePanel').is_hidden()
+    page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0])')
+    page.locator('#canvas').focus();page.keyboard.press('Escape')
+    # An active operator cancels before the underlying atom selection clears.
+    if page.evaluate('()=>VibeMolTesting.getEditSelectionCount()'):
+        page.keyboard.press('Escape')
+    assert page.evaluate('()=>VibeMolTesting.getEditSelectionCount()')==0
+    assert 'styleStudio' in layout(page)['open'] and page.locator('#coordsPanel').is_visible()
+    page.locator('#workbenchFocus').click();page.locator('#canvas').focus();page.keyboard.press('/')
+    assert not layout(page)['focus']
+    build=page.locator('#editAdaptiveAddAtomPopover');bounded_palette(page,build)
+    assert page.locator('#editAdaptiveAddAtomBtn .adaptiveEditItemLabel').inner_text()=='Build'
+    assert page.locator('#editAdaptiveSymmetryBtn .adaptiveEditItemLabel').inner_text()=='Symmetry'
+    assert page.locator('#editAdaptiveCleanStructureBtn .adaptiveEditItemLabel').inner_text()=='Optimize'
+    page.locator('#editAdaptiveSymmetryBtn').click()
+    assert build.is_hidden();bounded_palette(page,page.locator('#editAdaptiveSymmetryPopover'))
+    page.locator('#modeMeasureBtn').click();assert page.locator('#editAdaptiveSymmetryPopover').is_hidden()
+    assert page.get_by_role('tab',name='Orbitals',exact=True).is_visible()
+    page.get_by_role('tab',name='Orbitals',exact=True).click()
+    assert page.locator('#moldenInspector').is_visible()
+
+    # Collapsed sidebar and Focus both retain direct access to all three modes.
+    page.locator('#toolbarCollapseBtn').click()
+    page.locator('#modeMeasureBtn').focus();page.keyboard.press('ArrowRight')
+    assert page.locator('#modeEditBtn').get_attribute('aria-pressed')=='true'
+    page.locator('#workbenchFocus').click();page.locator('#modeDisplayBtn').click()
+    assert not layout(page)['focus'] and page.locator('#moldenInspector').is_visible()
+    assert page.locator('#toolbarShowBtn').is_visible()
+    page.locator('#toolbarShowBtn').click();capture(page,'modes-desktop')
+
+    page.set_viewport_size({'width':390,'height':740})
+    for mode in ['Measure','Edit','Display']:
+        page.locator('#mode'+mode+'Btn').click()
+        for name in ['Display','Measure','Edit']:assert page.locator('#mode'+name+'Btn').is_visible()
+        bar=page.locator('#workbenchBar').bounding_box();canvas=page.locator('#canvas').bounding_box()
+        assert canvas['y']>=bar['height'] and canvas['height']>=200
+        if mode=='Edit':
+            page.locator('#editAdaptiveAddAtomBtn').click();bounded_palette(page,build);capture(page,'modes-mobile-build')
+    assert build.is_hidden();capture(page,'modes-mobile')
+    page.set_viewport_size({'width':1440,'height':1000})
+
+    # The Measure action clears actual picked atoms and the rendered distance label.
+    page.evaluate('() => VibeMolWorkbench.applyLayout({})')
+    assert p.load(page,[{'name':'water.xyz','text':'O 0 0 0\nH 0.95 0 0\nH -0.24 0.92 0'}])['ok']
+    page.locator('#modeMeasureBtn').click()
+    page.evaluate('()=>VibeMolWorkbench.open("styleStudio")')
+    for index in [0,1]:
+        point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index);page.mouse.click(point['x'],point['y'])
+    page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
+    page.keyboard.press('Escape')
+    assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot()')=={'atomIndices':[],'labelCount':0}
+    assert page.locator('#styleStudio').is_visible()
+    for index in [0,1]:
+        point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index);page.mouse.click(point['x'],point['y'])
+    page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
+    page.locator('#workbenchClearMeasurements').click()
+    assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot()')=={'atomIndices':[],'labelCount':0}
+    assert page.locator('#modeMeasureBtn').get_attribute('aria-pressed')=='true'
+    print('[workbench] mode bar, shared and suspended inspectors, stable Edit actions, palette bounds, shortcuts, Focus and measurements: passed',flush=True)
 
 
 def run(page):
@@ -158,8 +261,9 @@ def main():
                 page.goto(url+'?appearanceStudy=1');page.wait_for_function('() => VibeMolAppearanceLooks')
                 assert page.evaluate('() => typeof VibeMolWorkbench')=='undefined'
                 assert page.locator('#workbenchBar').count()==0
+                assert page.locator('#toolbar #toolbarModeRow').count()==1
                 page.goto(url+'?workspaceLab=1');page.wait_for_function('() => window.VibeMolWorkbench')
-                run(page);assert not errors,errors
+                run(page);modes(page);assert not errors,errors
             except Exception:
                 p.write_failure_artifacts(page,p.ARTIFACTS,'workbench-failure',errors,consoles);raise
             finally:context.close()
