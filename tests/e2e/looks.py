@@ -19,6 +19,14 @@ def rendering(page):
 def editor(page, material=True):
     if page.locator('#displayInspectorBtn').get_attribute('aria-expanded') != 'true':
         page.locator('#displayInspectorBtn').click()
+    if page.locator('#styleStudioBtn').get_attribute('aria-expanded') != 'true':
+        page.locator('#styleStudioBtn').click()
+    # Keep sidebar controls accessible while testing the independent Studio.
+    if page.viewport_size['width'] >= 1000:
+        panel=page.locator('#styleStudio').bounding_box()
+        header=page.locator('#styleStudio .vm-list-popover__header').bounding_box()
+        page.mouse.move(header['x']+80,header['y']+15);page.mouse.down()
+        page.mouse.move(page.viewport_size['width']-panel['width']+68,header['y']+15);page.mouse.up()
     if material and not page.locator('#appearanceMaterialsSection').evaluate('el => el.open'):
         page.locator('#appearanceMaterialsSection > summary').click()
 
@@ -293,7 +301,7 @@ def surfaces_and_sessions(page,context,url):
     page.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
     assert page.locator('canvas').first.evaluate('el=>el.toDataURL()')!=pixels
     value(page,'appearanceLightexposure',1)
-    page.locator('#appearanceGeometrySection > summary').click();page.locator('#appearanceConnector').select_option('kit')
+    page.locator('#appearanceGeometrySection').evaluate('el=>el.open=true');page.locator('#appearanceConnector').select_option('kit')
     assert [item['geometryId'] for item in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')]==ids
     camera_equal(camera,page.evaluate('() => VibeMolTesting.getCameraSnapshot()'))
     page.locator('#appearanceMaterialPreset').select_option('gel');value(page,'appearanceMaterialRoughness',0.43)
@@ -510,6 +518,7 @@ def bond_colors_and_preset_controls(page, context, url):
 
     page.locator('#lookPreset').select_option('kit')
     page.locator('#appearanceBondColorMode').select_option('element')
+    page.locator('#styleStudioClose').click()
     page.locator('#modeEditBtn').click()
     page.evaluate('() => VibeMolTesting.setEditSelectionIndices([0,1])')
     cue=page.locator('#editSelectionTranslateCueButton');cue.wait_for(state='visible')
@@ -522,6 +531,7 @@ def bond_colors_and_preset_controls(page, context, url):
     page.mouse.up();page.locator('#modeDisplayBtn').click()
 
     # Every new control edits the canonical object, with one appearance undo.
+    editor(page)
     page.locator('#lookPreset').select_option('opal')
     before=rendering(page);value(page,'appearanceLightPositionX',-4.2)
     assert rendering(page)['lighting']['dirPos']==[-4.2,5,7]

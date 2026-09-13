@@ -30,6 +30,7 @@
     root.innerHTML = `
       <section class="vm-appearance-section" id="lookPresetSection"><h3 class="vm-section-label">Looks</h3>
         <div class="vm-field-row"><label class="vm-field-label" for="lookPreset">Preset</label><div class="vm-field-control"><select id="lookPreset" class="vm-select"><option value="">Custom / saved look</option></select></div></div>
+        <div id="lookGallery" class="vm-look-gallery" role="group" aria-label="Preset previews"></div>
         <div class="vm-field-row" id="lookSavedRow"><label class="vm-field-label" for="lookSaved">My looks</label><div class="vm-field-control"><select id="lookSaved" class="vm-select"><option value="">Choose saved look</option></select></div></div>
         <p class="vm-stat-label"><span id="lookCurrentName"></span> <span id="lookModified"></span></p>
         <div class="vm-popover__actions"><button id="lookUndo" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Undo</button><button id="lookRevert" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Revert</button><button id="lookSave" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Save as new</button></div>
@@ -42,7 +43,17 @@
         </details><p id="lookStatus" class="vm-session-status" role="status" aria-live="polite"></p>
       </section><div id="lookComponentEditor"></div>`;
     const $ = id => root.querySelector('#' + id), current = () => deps.getActiveLook();
-    for (const look of L.builtins.filter(item => !item.experimental).sort((a, b) => a.name.localeCompare(b.name))) $('lookPreset').add(new Option(look.name,look.id));
+    for (const look of L.builtins.filter(item => !item.experimental).sort((a, b) => a.name.localeCompare(b.name))) {
+      $('lookPreset').add(new Option(look.name,look.id));
+      const card = document.createElement('button');
+      card.type = 'button'; card.className = 'vm-look-card'; card.dataset.look = look.id;
+      card.setAttribute('aria-pressed', 'false'); card.setAttribute('aria-label', look.name + ' preset');
+      const preview = document.createElement('img'); preview.src = `assets/app/img/looks/studio-${look.id}.png`;
+      preview.alt = ''; preview.width = 240; preview.height = 160; preview.draggable = false;
+      const label = document.createElement('span'); label.textContent = look.name;
+      card.append(preview, label); card.addEventListener('click', () => run(() => choose(look)));
+      $('lookGallery').append(card);
+    }
     const status = message => { $('lookStatus').textContent = storageMessage || message; };
     const run = action => { try { return action(); } catch (error) { status(error.message); return null; } };
     const snapshotLook = (label, id = userId()) => L.normalizeLook({ id, name: label, settings: deps.captureSettings() });
@@ -64,6 +75,8 @@
       const saved = look && library.find(item => item.id === look.id);
       $('lookCurrentName').textContent = look?.name || 'Custom appearance';
       $('lookModified').textContent = modified ? '· Modified' : '';
+      if (deps.currentLabel) deps.currentLabel.textContent = (look?.name || 'Custom appearance') + (modified ? ' · Modified' : '');
+      for (const card of $('lookGallery').children) card.setAttribute('aria-pressed', String(card.dataset.look === look?.id));
       $('lookPreset').value = L.builtins.some(item => !item.experimental && item.id===look?.id) ? look.id : '';
       $('lookUndo').disabled = !undoState; $('lookRevert').disabled = !modified;
       $('lookUpdate').disabled = !saved || !modified; $('lookRename').disabled = !saved; $('lookDelete').disabled = !saved;

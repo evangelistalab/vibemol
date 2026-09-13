@@ -11,14 +11,14 @@
   font-size: 12px;
 }
 
-#toolbar .vm-session-status {
+:is(#toolbar, #styleStudio) .vm-session-status {
   font-size: 11px;
   line-height: 1.4;
   color: var(--vm-color-text-muted, #687180);
   overflow-wrap: anywhere;
 }
 
-#toolbar .vm-session-status:empty { display: none; }
+:is(#toolbar, #styleStudio) .vm-session-status:empty { display: none; }
 #sessionFileInput[hidden], #sessionRecoveryPrompt[hidden], #sessionBusyOverlay[hidden], #retryAutosaveBtn[hidden] { display: none; }
 
 #toolbar .vm-session-recovery {

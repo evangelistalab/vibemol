@@ -40,6 +40,7 @@
   const lookRendering = Object.fromEntries(Object.entries(lookModule.extra).map(([key, [value]]) => [key, value]));
   let activeLook = null;
   let looksUi = null;
+  let styleStudio = null;
   const DARK_THEME_SCENE_BG_BLEND = 0.975;
   const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
   const DEFAULT_ISO_VALUE = 0.02;
@@ -11756,6 +11757,12 @@
   displayWindowsController = createDisplayWindowsController({
     positionFloatingPopover: positionFloatingPopoverUi,
     entries: {
+      [NON_EDIT_WINDOW_ID.STYLE_STUDIO]: {
+        id: NON_EDIT_WINDOW_ID.STYLE_STUDIO,
+        label: 'Style Studio',
+        isOpen: () => !!styleStudio?.isOpen(),
+        setOpen: open => styleStudio?.setOpen(open, { focus: false }),
+      },
       [NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR]: {
         id: NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
         label: 'Appearance inspector',
@@ -25834,6 +25841,11 @@
       setElementColorOverlayOpen(false);
       return;
     }
+    if (e.key === 'Escape' && styleStudio?.isOpen()) {
+      e.preventDefault();
+      styleStudio.setOpen(false);
+      return;
+    }
     if (currentMode === MODES.EDIT && addAtomOperatorSession) {
       if (e.key === 'Enter' && !isTypingInInput()) {
         e.preventDefault();
@@ -32539,6 +32551,7 @@
   }
   looksUi = window.VibeMolLooksUi.createController({
     root: document.getElementById('looksPanel'), captureSettings: captureLookSettings,
+    currentLabel: document.getElementById('styleStudioCurrent'),
     atomFields: document.getElementById('appearanceAtomColorFields'), bondFields: document.getElementById('appearanceBondColorFields'),
     getAtomBaseRadius: z => 0.5 * getCovalentRadiusAngstrom(z),
     applyStartupDefault: !appearanceStudy,
@@ -32559,7 +32572,13 @@
       link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     },
   });
+  styleStudio = window.VibeMolStyleStudio.createController({
+    panel: document.getElementById('styleStudio'), button: document.getElementById('styleStudioBtn'),
+    closeButton: document.getElementById('styleStudioClose'), onOpen: () => looksUi.scheduleSync(),
+  });
   window.VibeMolAppearanceLooks = Object.freeze({
+    openStudio: () => styleStudio.setOpen(true),
+    closeStudio: () => styleStudio.setOpen(false),
     list: () => lookModule.builtins.map(look => ({ id: look.id, name: look.name, experimental: !!look.experimental })),
     edit: editAppearanceComponent,
     material: () => appearanceModel.clone(appearanceState.material),

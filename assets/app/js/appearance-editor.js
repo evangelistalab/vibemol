@@ -8,7 +8,7 @@
     let activeMaterialId = null;
     let radiusElement = '6';
     root.innerHTML = `
-      <details class="vm-appearance-section" id="appearanceGeometrySection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Geometry</span></summary><div id="geometryFields"></div>
+      <details class="vm-appearance-section" id="appearanceGeometrySection" open><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Geometry</span></summary><div id="geometryFields"></div>
         <p class="vm-session-status" id="bondRadiusStatus">Bond radius sets the maximum thickness. Each bond is narrowed as needed to fit both atoms, including multiple bonds and joints.</p>
         <details id="appearanceAtomRadiiSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Atom radii</span></summary><div id="atomRadiusFields"></div><p class="vm-session-status" id="atomRadiusStatus"></p></details>
         <details id="appearanceMeshSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Mesh detail</span></summary><div id="meshDetailFields"></div></details>

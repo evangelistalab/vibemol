@@ -1,6 +1,8 @@
 # Appearance components and looks
 
-**Appearance → Looks → Preset** lists **Basic, Classic, Ink, Kit, Opal, Porcelain, and Toon** alphabetically. Each is a complete recipe with explicit display geometry, materials, colors, lighting, and effects. Rendering presets are selected through the menu; number keys are reserved for editing. Geometry and material remain independent: Kit connectors can use any material.
+**Appearance → Style Studio** opens a floating window with **Basic, Classic, Ink, Kit, Opal, Porcelain, and Toon** in alphabetical order. Choose from rendered preview cards or the preset menu, edit Geometry, Material, and Lighting & contours, and save or share your presets in the same window. Each preset is a complete recipe with explicit display geometry, materials, colors, lighting, and effects. Number keys are reserved for editing. Geometry and material remain independent: Kit connectors can use any material.
+
+The Studio previews changes immediately on the loaded molecule. Its title bar can be dragged; the window stays open while interacting with the scene. Close or Escape keeps the current appearance, and Undo/Revert restores earlier settings. Opening, moving, and closing the Studio never changes coordinates, camera, layer selection, or computed grids. Window position and open state are transient. The sidebar shows the current look and keeps the rendering, visibility, atom/bond coloring, camera, scene, and scientific surface controls.
 
 Basic preserves its original pairing: polished atoms/bonds and luminous, clear-coated orbital surfaces. Its surface finish uses roughness `1`, clearcoat `1`, coat roughness `0.1`, color fill `0.8`, and no metalness or environment reflections. The atom/bond recipe and lighting stay unchanged. Selecting or editing a material explicitly replaces this pairing with one shared material; Appearance Undo or Revert restores the full Basic look. The Material section explains this behavior without adding separate target controls. Other curated presets use one material throughout.
 
@@ -57,7 +59,7 @@ Looks preserve coordinates, topology, camera/projection, visibility, selections,
 
 Bond radius is a requested maximum. Each bond is capped against its smaller rendered atom, including multiple-component offsets, mesh facets, collars, and contours. End caps sit entirely inside the atom meshes. Requested settings remain portable; changes to atom size automatically update the effective bond thickness. See [bond fitting](bond-fitting.md) for the equations, limits, and hydrogen topology rules.
 
-`appearance-looks.js` owns complete look recipes. `appearance-editor.js` binds native component controls. `looks-ui.js` manages named look/material libraries and appearance undo. `app.js` applies component patches and synchronizes the existing renderer and scene model.
+`appearance-looks.js` owns complete look recipes. `appearance-editor.js` binds native component controls. `looks-ui.js` manages the preview gallery, named look/material libraries, and appearance undo. `style-studio.js` handles the floating window, dragging, focus, and keyboard scope. Its controls share the sidebar's inspector styles; its shell uses the existing motion-panel/list-popover components. `app.js` applies component patches and synchronizes the existing renderer and scene model.
 
 Material and light changes reuse existing geometry. Geometry, palette, and contour changes rebuild molecule display meshes only. Neither route re-marches orbital surfaces nor computes deferred Molden grids. Full looks also preserve existing orbital meshes. Cloud colors and opacity update from each layer's own appearance. Edit placement previews use the same material model.
 
@@ -67,7 +69,7 @@ The existing **Shadows** switch applies to atoms, bonds, and isosurfaces togethe
 
 Shadow maps fit the visible mesh bounds without changing the saved key-light direction. Transparent surface shadows approximate opacity using texel-scale coverage with PCF filtering; they are not refractive or colored transmission. WBOIT builds one complete shadow map before separating opaque and transparent color passes, then reuses it for those passes. Each alpha/beta viewport uses its own map, also when depth of field or standard transparency is active. The switch updates existing meshes without remeshing surfaces. Its portable key remains `molecule.feature.shadows`, so looks, presets, and sessions remain compatible. Owned surface depth materials are disposed with their meshes.
 
-The automation API is `VibeMolAppearanceLooks.list/apply/edit/material/snapshot`. `list()` marks experimental recipes. For example:
+The automation API is `VibeMolAppearanceLooks.list/apply/edit/material/snapshot/openStudio/closeStudio`. `list()` marks experimental recipes. For example:
 
 ```js
 VibeMolAppearanceLooks.apply('kit');
@@ -78,3 +80,5 @@ VibeMolAppearanceLooks.edit('material', { roughness: 0.35 });
 Validation: `make check`, `make test-unit`, and the `looks.py`, `premerge.py`, `sessions.py`, and `smoke.py` browser suites in `tests/e2e/`. Appearance regressions cover component independence, actual materials, shared materials across deferred orbitals and future sources, unchanged surface geometry, undo, named libraries, defaults, reload, malformed imports, and portable sessions.
 
 `surface_shadows.py`, run by `looks.py`, compares rendered pixels with only the molecule or surface shadow draws suppressed. It verifies both directions of shadowing at opaque and translucent settings, actual alpha/beta shadow draw isolation, transparency fallback, phase/Bloch surfaces, visibility, unchanged geometry on toggles, and session restoration.
+
+`style_studio.py` verifies the gallery, live edits, saving/export/reload, Undo/Revert, focus and shortcut isolation, dragging, matching typography, and light/dark/mobile layouts. Refresh the real-renderer thumbnails with `python tools/render_look_previews.py` (add `--software` for software WebGL). These previews use the same pyridine structure and camera for every current built-in preset.

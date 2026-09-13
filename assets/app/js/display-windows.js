@@ -2,6 +2,7 @@
   'use strict';
 
   const WINDOW_IDS = Object.freeze({
+    STYLE_STUDIO: 'styleStudio',
     DISPLAY_INSPECTOR: 'displayInspector',
     MOLDEN_INSPECTOR: 'moldenInspector',
     SPINOR_INFO: 'spinorInfo',
@@ -15,6 +16,7 @@
   });
 
   const ESCAPABLE_WINDOW_IDS = Object.freeze([
+    WINDOW_IDS.STYLE_STUDIO,
     WINDOW_IDS.DISPLAY_INSPECTOR,
     WINDOW_IDS.MOLDEN_INSPECTOR,
     WINDOW_IDS.SPINOR_INFO,

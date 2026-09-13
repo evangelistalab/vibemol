@@ -71,6 +71,7 @@ def molecule_styles(page, dialogs):
     assert page.locator('#moleculeStyle option').evaluate_all('els => els.map(el => el.value)') == styles
     assert page.locator('#lookPreset option').evaluate_all('els => els.slice(1).map(el => el.value)') == ['basic','classic','ink','kit','opal','porcelain','toon']
     page.locator('#displayInspectorBtn').click()
+    page.locator('#styleStudioBtn').click()
     for style in styles:
         page.locator('#lookPreset').select_option(style)
         assert page.locator('#moleculeStyle').input_value() == style
@@ -82,6 +83,7 @@ def molecule_styles(page, dialogs):
         assert page.evaluate('() => window.VibeMolPreset.export().settings["molecule.style"]') == style
     # Number keys must leave the full appearance unchanged, including idle Edit.
     page.locator('#lookPreset').select_option('classic')
+    page.locator('#styleStudioClose').click()
     appearance = page.evaluate('() => VibeMolAppearanceLooks.snapshot().settings')
     for mode in ['Display', 'Measure', 'Edit']:
         page.locator('#mode' + mode + 'Btn').click()

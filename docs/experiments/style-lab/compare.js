@@ -62,6 +62,7 @@
     const win = windows[index];
     win.document.getElementById(win.document.body.classList.contains('sidebar-collapsed') ? 'toolbarShowBtn' : 'toolbarCollapseBtn').click();
     if (win.document.getElementById('displayInspectorBtn').getAttribute('aria-expanded') !== 'true') win.document.getElementById('displayInspectorBtn').click();
+    win.VibeMolAppearanceLooks.openStudio();
   };
   await load();
 })();

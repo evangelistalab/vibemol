@@ -1,4 +1,61 @@
 /* Layout only: appearance controls inherit the existing inspector components. */
-#toolbar #looksPanel [hidden] { display: none !important; }
-#toolbar #looksPanel .vm-popover__actions { display: flex; flex-wrap: wrap; margin: 8px 0; }
-#toolbar #looksPanel .vm-session-status:empty { display: none; }
+#looksPanel [hidden] { display: none !important; }
+#looksPanel .vm-popover__actions { display: flex; flex-wrap: wrap; margin: 8px 0; }
+#looksPanel .vm-session-status:empty { display: none; }
+
+#styleStudio {
+  left: 12px;
+  right: auto;
+  width: min(680px, calc(100vw - 24px));
+  height: min(760px, calc(100dvh - 96px));
+  max-height: calc(100dvh - 24px);
+  font-family: var(--vm-font-sans);
+  overflow: hidden;
+  z-index: 50;
+}
+
+#styleStudio .vm-list-popover__header { cursor: grab; touch-action: none; user-select: none; }
+#styleStudio .vm-list-popover__header.is-dragging { cursor: grabbing; }
+#styleStudioDescription { margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--vm-color-border); }
+#styleStudio #looksPanel { display: grid; grid-template-columns: 240px minmax(0, 1fr); overflow: hidden; }
+#styleStudio #lookPresetSection, #styleStudio #lookComponentEditor { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px; scrollbar-width: thin; }
+#styleStudio #lookComponentEditor { border-left: 1px solid var(--vm-color-border); }
+#styleStudio #lookPresetSection > .vm-field-row { grid-template-columns: 60px minmax(0, 1fr); gap: 8px; }
+#styleStudio #lookPresetSection > .vm-field-row > .vm-field-label { width: auto; max-width: none; }
+#styleStudio #lookSaveDetails { margin-top: 16px; }
+#styleStudio #lookNameForm .vm-field-row { grid-template-columns: 1fr; gap: 4px; }
+#styleStudio #lookCurrentName { overflow-wrap: anywhere; }
+#styleStudio #lookModified { white-space: nowrap; }
+#styleStudio #lookComponentEditor > .vm-appearance-section + .vm-appearance-section { border-top: 1px solid var(--vm-color-border); padding-top: 16px; }
+#toolbar #styleStudioBtn { width: 100%; gap: 8px; }
+#toolbar #styleStudioBtn > :last-child { margin-left: auto; font-size: 16px; }
+#styleStudioCurrent { padding: 4px 8px 8px; overflow-wrap: anywhere; }
+
+.vm-look-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0 16px; }
+.vm-look-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--vm-color-border);
+  border-radius: var(--vm-radius-md);
+  background: var(--vm-color-surface-panel);
+  color: var(--vm-color-text-secondary);
+  font: 500 12px var(--vm-font-sans);
+  box-shadow: none;
+  cursor: pointer;
+}
+.vm-look-card img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
+.vm-look-card span { padding: 8px 4px; text-align: center; }
+.vm-look-card:hover, .vm-look-card[aria-pressed='true'] { border-color: var(--vm-brand-accent); color: var(--vm-color-text-primary); }
+.vm-look-card[aria-pressed='true'] { box-shadow: inset 0 0 0 1px var(--vm-brand-accent); background: var(--vm-button-group-active); }
+.vm-look-card:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring); }
+
+@media (max-width: 680px) {
+  #styleStudio #looksPanel { display: block; overflow-y: auto; }
+  #styleStudio #lookPresetSection, #styleStudio #lookComponentEditor { overflow: visible; }
+  #styleStudio #lookComponentEditor { border-left: 0; border-top: 1px solid var(--vm-color-border); }
+  .vm-look-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
