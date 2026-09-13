@@ -67,7 +67,7 @@
       background: '#f4f1eb', carbon: '#575d63', hydrogen: '#f5f0e7', nitrogen: '#446ac4', oxygen: '#c65449',
       bond: '#aaa9a5', positive: '#476fc4', negative: '#d3724f', ...patch };
     const rendering = model.legacy('basic');
-    Object.assign(rendering.geometry, { atomScaleMain: s.atomScale, atomScaleTransitionMetal: s.atomScale,
+    Object.assign(rendering.geometry, { atomScaleMain: s.atomScale, atomScaleTransitionMetal: s.metalScale ?? s.atomScale,
       atomRadii: {1:0.28,6:0.43,7:0.42,8:0.4}, bondRadius: s.bondRadius,
       sphereWidthSegments: 64, sphereHeightSegments: 40, bondRadialSegments: 36, bondHeightSegments: 1 });
     Object.assign(rendering.lighting, { hemiColor:'#ffffff', hemiGroundColor:s.finish==='phong'?'#777777':'#383e47', hemiIntensity:s.fill,
@@ -91,7 +91,7 @@
       description: {basic:'Original smooth rendering', toon:'Banded shading and contours', kit:'Collar joints and polished materials'}[id],
       settings: Object.freeze(settings({ ...defaults, 'molecule.style': id, 'appearance.rendering': model.legacy(id),
         'surface.colorScheme': 'emory', 'surface.posColor': '#f2a900', 'surface.negColor': '#0033a0' })) })),
-    studioRecipe('classic','Classic','Familiar figures', { finish:'phong', atomScale:1.16, bondRadius:0.14,
+    studioRecipe('classic','Classic','Familiar figures', { finish:'phong', atomScale:1, metalScale:1.15, bondRadius:0.11,
       smoothness:0.28, outline:0.007, key:1.8, fill:0.85, rim:0, environment:0, coat:0,
       background:'#ffffff', carbon:'#626262', hydrogen:'#f4f4f4', bond:'#9b9b9b' }),
     studioRecipe('porcelain','Porcelain','Soft studio shading', { smoothness:0.4, atomScale:1.1,

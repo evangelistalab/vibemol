@@ -82,7 +82,10 @@ test('curated studio looks retain the original lab light rig, finishes, palettes
     assert.equal(value.material.clearcoat,reference.coat);assert.equal(value.material.iridescence,reference.iridescence);
     assert.equal(value.material.roughness,0.92-reference.smoothness*0.85);
     assert.deepEqual(plain(value.material.iridescenceThicknessRange),[130,380]);
-    assert.equal(value.geometry.atomScaleMain,reference.atomScale);assert.equal(value.geometry.bondRadius,reference.bondRadius);
+    // Classic uses the approved app proportions; the standalone lab is the original study.
+    assert.equal(value.geometry.atomScaleMain,id==='classic'?1:reference.atomScale);
+    assert.equal(value.geometry.atomScaleTransitionMetal,id==='classic'?1.15:reference.atomScale);
+    assert.equal(value.geometry.bondRadius,id==='classic'?0.11:reference.bondRadius);
     assert.deepEqual(plain(value.geometry.atomRadii),{1:0.28,6:0.43,7:0.42,8:0.4});
     assert.equal(look.settings['global.backgroundColor'],reference.background);
     assert.equal(look.settings['surface.posColor'],reference.positive);assert.equal(look.settings['surface.negColor'],reference.negative);
