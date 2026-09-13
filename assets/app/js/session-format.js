@@ -156,6 +156,8 @@
         if (layer.kind === 'cube' || layer.kind === 'arithmetic') {
           requireValue(finite(layer.iso) && layer.iso >= 0 && finite(layer.opacity) && layer.opacity >= 0.05 && layer.opacity <= 1, 'invalid surface appearance.');
           requireValue(layer.isoPending == null || typeof layer.isoPending === 'boolean', 'invalid pending iso state.');
+          requireValue(layer.styleOverrides == null || (object(layer.styleOverrides)
+            && typeof layer.styleOverrides.colors === 'boolean' && typeof layer.styleOverrides.opacity === 'boolean'), 'invalid surface style overrides.');
           if (layer.material != null) global.VibeMolAppearanceModel.validateMaterial(layer.material);
         }
         if (layer.kind === 'arithmetic') {

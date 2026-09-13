@@ -14,6 +14,10 @@
         <details id="appearanceMeshSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Mesh detail</span></summary><div id="meshDetailFields"></div></details>
         <details id="appearanceScaleSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Size multipliers</span></summary><div id="appearanceScaleFields"></div></details>
       </details>
+      <details class="vm-appearance-section" id="appearanceColorsSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Colors</span></summary>
+        <h3 class="vm-section-label">Atoms</h3><div id="studioAtomColorFields"></div>
+        <h3 class="vm-section-label">Bonds</h3><div id="studioBondColorFields"></div>
+      </details>
       <details class="vm-appearance-section" id="appearanceMaterialsSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Material</span></summary>
         <p class="vm-session-status" id="appearanceMaterialScope">One material for atoms, bonds, and surfaces.</p>
         <button id="appearanceUseSurfaceMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" hidden>Use surface finish everywhere</button><div id="materialFields"></div>
@@ -23,6 +27,12 @@
       <details class="vm-appearance-section" id="appearanceLightingSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Lighting & contours</span></summary><div id="lightingFields"></div>
         <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Light colors</span></summary><div id="lightColorFields"></div></details>
         <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Light positions</span></summary><div id="lightPositionFields"></div></details>
+      </details>
+      <details class="vm-appearance-section" id="appearanceSurfaceDefaultsSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Surfaces</span></summary>
+        <p class="vm-session-status">Style defaults. Custom orbital colors and opacity are preserved when changing styles.</p>
+        <div id="surfaceDefaultFields"></div>
+        <p id="studioSurfaceOverridesStatus" class="vm-session-status"></p>
+        <button id="studioResetSurfaceOverrides" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" data-tooltip="Replace custom colors and opacity on every loaded orbital with these style defaults. Undo restores the overrides.">Apply defaults to all orbitals</button>
       </details>`;
     for (const id of ['moleculeAtomRadiusScale','moleculeBondRadiusScale']) {
       const row = document.getElementById(id)?.closest('.vm-field-row');
@@ -144,10 +154,20 @@
     toggle('materialAdvancedFields','appearanceEmissionUsesColor','Fill from color',s=>s.material.emissiveUsesColor,value=>edit('material',{emissiveUsesColor:value}));
     color('materialAdvancedFields','appearanceEmissionColor','Fill color',s=>s.material.emissiveColor,(value,phase)=>edit('material',{emissiveColor:value},phase),s=>!s.material.emissiveUsesColor||s.material.emissiveMix>0);
 
-    select('appearanceAtomColorFields','appearancePalette','Palette',[['basic','Standard'],['toon','Luminous'],['kit','Kit']],s=>s.rendering.coloring.palette,value=>edit('coloring',{palette:value}));
-    select('appearanceBondColorFields','appearanceBondColorMode','Bond colors',[['element','By element'],['uniform','Uniform']],s=>s.rendering.coloring.elementBonds?'element':'uniform',value=>edit('coloring',{elementBonds:value==='element'}));
-    color('appearanceBondColorFields','appearanceBondColor','Color',s=>s.rendering.coloring.bondColor,(value,phase)=>edit('coloring',{bondColor:value},phase));
-    controls.push(s=>{const label=s.rendering.coloring.elementBonds?'Element tint':'Color';$('appearanceBondColorRow').querySelector('label').textContent=label;$('appearanceBondColor').setAttribute('aria-label',label);});
+    for (const [atomParent, bondParent, prefix] of [['appearanceAtomColorFields','appearanceBondColorFields','appearance'],['studioAtomColorFields','studioBondColorFields','studio']]) {
+      select(atomParent,prefix+'Palette','Palette',[['basic','Standard'],['toon','Luminous'],['kit','Kit']],s=>s.rendering.coloring.palette,value=>edit('coloring',{palette:value}));
+      select(bondParent,prefix+'BondColorMode','Bond colors',[['element','By element'],['uniform','Uniform']],s=>s.rendering.coloring.elementBonds?'element':'uniform',value=>edit('coloring',{elementBonds:value==='element'}));
+      color(bondParent,prefix+'BondColor','Color',s=>s.rendering.coloring.bondColor,(value,phase)=>edit('coloring',{bondColor:value},phase));
+      controls.push(s=>{const label=s.rendering.coloring.elementBonds?'Element tint':'Color';$(prefix+'BondColorRow').querySelector('label').textContent=label;$(prefix+'BondColor').setAttribute('aria-label',label);});
+    }
+    toggle('studioAtomColorFields','studioElementColors','Use element colors',s=>s.settings['global.elementColors'],value=>deps.editSettings({'global.elementColors':value}));
+    row('studioAtomColorFields','studioElementColorEdit','Element colors','<button id="studioElementColorEdit" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Edit…</button>');
+    $('studioElementColorEdit').onclick=()=>deps.openElementColors();
+
+    toggle('lightingFields','studioShadows','Shadows',s=>s.settings['molecule.feature.shadows'],value=>deps.editSettings({'molecule.feature.shadows':value}));
+    toggle('lightingFields','studioFog','Fog',s=>s.settings['molecule.feature.fog'],value=>deps.editSettings({'molecule.feature.fog':value}));
+    slider('lightingFields','studioFogDepth','Fog depth',6,40,1,s=>s.settings['molecule.feature.fog.depth'],(value,phase)=>deps.editSettings({'molecule.feature.fog.depth':value},phase),
+      {visible:s=>s.settings['molecule.feature.fog']});
     color('lightingFields','appearanceBackgroundColor','Background',s=>s.settings['global.backgroundColor'],
       (value,phase)=>deps.editBackgroundColor(value,phase));
     $('appearanceBackgroundColor').setAttribute('data-tooltip','Scene background, shared with Appearance → Scene and saved with the look.');
@@ -177,6 +197,18 @@
       (value,phase)=>edit('effects',{bondOutlineFraction:value},phase),{visible:relativeContours});
     toggle('lightingFields','appearanceHighlights','Highlight shells',s=>s.rendering.effects.highlights,value=>edit('effects',{highlights:value}));
     for (const [key,label] of [['dirColor','Key color'],['hemiColor','Fill color'],['hemiGroundColor','Ground color'],['rimColor','Rim color'],['ambColor','Ambient color']]) color('lightColorFields','appearanceLight'+key,label,s=>s.rendering.lighting[key],(value,phase)=>edit('lighting',{[key]:value},phase));
+
+    select('surfaceDefaultFields','studioSurfaceScheme','Color scheme',deps.surfaceColorSchemes,s=>s.settings['surface.colorScheme'],value=>deps.editSurfaceDefaults({'surface.colorScheme':value}));
+    for (const [key,label] of [['posColor','Positive color'],['negColor','Negative color']]) {
+      color('surfaceDefaultFields','studioSurface'+key,label,s=>s.settings['surface.'+key],(value,phase)=>deps.editSurfaceDefaults({['surface.'+key]:value},phase),s=>s.settings['surface.colorScheme']==='custom');
+    }
+    slider('surfaceDefaultFields','studioSurfaceOpacity','Opacity',0.05,1,2,s=>s.settings['surface.opacity'],(value,phase)=>deps.editSurfaceDefaults({'surface.opacity':value},phase));
+    $('studioResetSurfaceOverrides').onclick=()=>deps.resetSurfaceOverrides();
+    controls.push(()=>{
+      const counts=deps.getSurfaceOverrideCounts();
+      $('studioSurfaceOverridesStatus').textContent=`Color overrides: ${counts.colors} · Opacity overrides: ${counts.opacity}`;
+      $('studioResetSurfaceOverrides').disabled=!counts.colors&&!counts.opacity;
+    });
 
     row('materialLibraryFields','materialName','Name','<input id="materialName" type="text" maxlength="60" aria-label="Material name">');
     const actions=document.createElement('div');actions.className='vm-popover__actions';actions.innerHTML='<button id="saveMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Save as new</button><button id="exportMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Export</button><button id="importMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Import</button><input id="materialFile" type="file" accept=".json,application/json" hidden>';$('materialLibraryFields').append(actions);

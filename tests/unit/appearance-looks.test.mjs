@@ -11,7 +11,7 @@ test('native looks round-trip resolved settings without geometry or orbital comp
     const reopened = looks.importLook(file);
     assert.ok(looks.equal(reopened.settings, builtin.settings));
     assert.equal(file.kind, 'vibemol.preset');
-    for (const key of ['surface.iso', 'surface.autoIsoEnabled', 'surface.enabled', 'view.projection', 'view.camera.x', 'global.showAtoms']) {
+    for (const key of ['surface.iso', 'surface.autoIsoEnabled', 'surface.enabled', 'view.projection', 'view.camera.x', 'global.showAtoms', ...Object.keys(looks.cameraFields)]) {
       assert.ok(!(key in file.settings), key);
     }
     file.settings['view.camera.x'] = 123;
@@ -26,7 +26,7 @@ test('native looks round-trip resolved settings without geometry or orbital comp
 test('look validation rejects malformed files before applying any settings', () => {
   const looks = api();
   for (const mutate of [
-    value => { value.meta.lookVersion = 4; },
+    value => { value.meta.lookVersion = 5; },
     value => { value.settings['appearance.look'].id = '../bad'; },
     value => { value.settings['appearance.look'].name = ''; },
     value => { delete value.settings['appearance.rendering']; },
@@ -73,4 +73,37 @@ test('modified detection compares palettes by value and tolerates numeric contro
   assert.ok(looks.equal(before, after));
   after['appearance.rendering'].material.roughness += 0.1;
   assert.ok(!looks.equal(before, after));
+});
+
+test('legacy named looks shed camera focus while full presets retain their wider scope', () => {
+  const looks = api();
+  for (const version of [1, 2, 3, 4]) {
+    const file = plain(looks.exportLook(looks.builtins[0]));
+    file.meta.lookVersion = version;
+    for (const settings of [file.settings, file.settings['appearance.look'].settings]) {
+      settings['render.dof.enabled'] = true;
+      settings['render.dof.focusDistance'] = 22;
+    }
+    assert.equal(looks.isLookPreset(file), true);
+    const restored = looks.importLook(file), exported = looks.exportLook(restored);
+    assert.equal(exported.meta.lookVersion, 4);
+    assert.ok(looks.equal(restored.settings, looks.builtins[0].settings));
+    assert.ok(!('render.dof.focusDistance' in exported.settings));
+    file.settings['view.projection'] = 'orthographic';
+    assert.equal(looks.isLookPreset(file), false);
+  }
+});
+
+test('legacy surface overrides are inferred independently and explicit matching overrides survive', () => {
+  const looks = api(), defaults = plain(looks.builtins[0].settings);
+  assert.deepEqual(plain(looks.surfaceOverrides(defaults, defaults)), { colors:false, opacity:false });
+  assert.deepEqual(plain(looks.surfaceOverrides({ ...defaults, 'surface.opacity':0.42 }, defaults)), { colors:false, opacity:true });
+  const different = { ...defaults, 'surface.posColor':'#123456' };
+  assert.deepEqual(plain(looks.surfaceOverrides(different, defaults)), { colors:true, opacity:false });
+  const explicit = { colors:true, opacity:false };
+  const copy = looks.surfaceOverrides(defaults, defaults, explicit);
+  assert.deepEqual(plain(copy), explicit);
+  copy.colors = false;
+  assert.equal(explicit.colors, true);
+  assert.deepEqual(plain(looks.surfaceOverrides({ ...defaults, 'surface.opacity':1-1e-12, 'surface.posColor':defaults['surface.posColor'].toUpperCase() }, defaults)), { colors:false, opacity:false });
 });

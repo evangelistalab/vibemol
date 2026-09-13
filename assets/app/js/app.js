@@ -1537,6 +1537,7 @@
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
   let sceneBackgroundColor = UI_PALETTE.white;
+  let useElementColors = true;
   let surfaceIsoDefault = DEFAULT_ISO_VALUE;
   let surfaceOpacityDefault = 1.0;
   let surfaceColorSchemeDefault = 'emory';
@@ -2248,7 +2249,7 @@
    * @returns {boolean}
    */
   function isElementColoringEnabled() {
-    return !!(typeof elementColors !== 'undefined' && elementColors && elementColors.checked && ATOM_Z_TO_DATA);
+    return !!(useElementColors && ATOM_Z_TO_DATA);
   }
 
   /**
@@ -8960,6 +8961,7 @@
       'surfaceStyle',
       'solidPreset',
       'independentMaterial',
+      'styleOverrides',
       'material',
       'colorScheme',
       'posColor',
@@ -8996,6 +8998,7 @@
       surfaceStyle: 'solid',
       solidPreset: getSurfaceMaterialPresetKey(),
       material: appearanceModel.clone(getSurfaceMaterialDescriptor()),
+      styleOverrides: { colors: false, opacity: false },
       colorScheme: scheme,
       posColor: scheme === 'custom' ? surfacePosColorDefault : (schemeDefaults ? schemeDefaults.pos : null),
       negColor: scheme === 'custom' ? surfaceNegColorDefault : (schemeDefaults ? schemeDefaults.neg : null),
@@ -9233,6 +9236,7 @@
       surfaceStyle: 'solid',
       solidPreset: String(sourceLayer && sourceLayer.solidPreset || DEFAULT_SURFACE_MATERIAL_PRESET),
       independentMaterial: !!sourceLayer?.independentMaterial,
+      styleOverrides: sourceLayer ? { ...getSurfaceStyleOverrides(sourceLayer) } : { colors: false, opacity: false },
       material: appearanceModel.clone(getSurfaceMaterialDescriptor(sourceLayer)),
       colorScheme: String(sourceLayer && sourceLayer.colorScheme || 'emory'),
       posColor: !sourceLayer || sourceLayer.posColor == null ? null : String(sourceLayer.posColor),
@@ -26132,6 +26136,7 @@
   }
 
   function syncAppearanceControlsToActiveLayer() {
+    syncSurfaceStyleScopeUi();
     const layer = getSurfaceAppearanceLayer();
     if (!layer) {
       if (surfaceScopeLabelEl) {
@@ -26303,54 +26308,18 @@
     if (mesh.customDepthMaterial) mesh.customDepthMaterial.userData.vmShadowOpacity.value = opacity;
   }
 
-  /**
-   * Bind a numeric input to a clamped state value with optional live scene rebuild.
-   * @param {HTMLInputElement|null} inputEl
-   * @param {() => number} getClampedValue
-   * @param {(n:number) => void} setValue
-   * @param {(() => boolean)=} shouldRebuild
-   * @param {(() => void)=} afterApply
-   */
-  function bindClampedNumericInput(inputEl, getClampedValue, setValue, shouldRebuild, afterApply = null) {
+  // Native sidebar sliders use the same grouped edit path as Studio sliders.
+  function bindAppearanceNumber(inputEl, key, getValue, min, max) {
     if (!inputEl) return;
     const slider = getViewSliderComponent(inputEl);
-    const syncFromState = () => {
-      const clamped = getClampedValue();
-      setValue(clamped);
-      if (slider) slider.setValue(clamped);
-      else inputEl.value = String(clamped);
-    };
-    const applyInput = (event) => {
-      if (slider && slider.isEditing && event && event.type === 'input') return;
+    setViewControlValue(inputEl, getValue());
+    const applyInput = event => {
+      if (slider?.isEditing && event?.type === 'input') return;
       const parsed = Number(inputEl.value);
-      if (Number.isFinite(parsed)) setValue(parsed);
-      syncFromState();
-      if (typeof shouldRebuild === 'function' && shouldRebuild()) {
-        rebuildScene({ preserveView: true });
-      }
-      if (typeof afterApply === 'function') afterApply();
+      if (Number.isFinite(parsed)) editAppearanceSettings({ [key]: Math.max(min, Math.min(max, parsed)) }, event?.type);
     };
-    syncFromState();
     inputEl.onchange = applyInput;
-    // `input` enables immediate feedback while keeping logic centralized.
     inputEl.oninput = applyInput;
-  }
-
-  /**
-   * Bind one DOF numeric control.
-   * @param {HTMLInputElement|null} inputEl
-   * @param {() => number} getValue
-   * @param {(n:number) => void} setValue
-   * @param {(() => void)=} afterApply
-   */
-  function bindDofNumericControl(inputEl, getValue, setValue, afterApply = null) {
-    bindClampedNumericInput(
-      inputEl,
-      getValue,
-      setValue,
-      () => false,
-      afterApply
-    );
   }
 
   const isoCalibrationRecordIds = new WeakMap();
@@ -26494,20 +26463,8 @@
     syncDofControlState();
   }
 
-  bindClampedNumericInput(
-    moleculeAtomRadiusScaleEl,
-    getMoleculeAtomRadiusScale,
-    (n) => { moleculeAtomRadiusScale = n; },
-    () => true,
-    scheduleAppearancePresetAutosave
-  );
-  bindClampedNumericInput(
-    moleculeBondRadiusScaleEl,
-    getMoleculeBondRadiusScale,
-    (n) => { moleculeBondRadiusScale = n; },
-    () => true,
-    scheduleAppearancePresetAutosave
-  );
+  bindAppearanceNumber(moleculeAtomRadiusScaleEl, 'molecule.atomRadiusScale', getMoleculeAtomRadiusScale, 0.6, 1.6);
+  bindAppearanceNumber(moleculeBondRadiusScaleEl, 'molecule.bondRadiusScale', getMoleculeBondRadiusScale, 0.6, 1.6);
   appearanceInspectorController = createAppearanceInspectorController({
     styleGroupEl: appearanceMoleculeStyleGroupEl,
     fontPairGroupEl: appearanceFontPairGroupEl,
@@ -26588,32 +26545,12 @@
     applyMoleculeStyleUiState();
   }
   if (moleculeShadowsToggleEl) {
-    moleculeShadowsToggleEl.onchange = () => {
-      moleculeShadowsEnabled = !!moleculeShadowsToggleEl.checked;
-      applyMoleculeStyleUiState();
-      scheduleAppearancePresetAutosave();
-    };
+    moleculeShadowsToggleEl.onchange = () => editAppearanceSettings({ 'molecule.feature.shadows': moleculeShadowsToggleEl.checked });
   }
   if (moleculeFogToggleEl) {
-    moleculeFogToggleEl.onchange = () => {
-      moleculeFogEnabled = !!moleculeFogToggleEl.checked;
-      applyMoleculeStyleUiState();
-      scheduleAppearancePresetAutosave();
-    };
+    moleculeFogToggleEl.onchange = () => editAppearanceSettings({ 'molecule.feature.fog': moleculeFogToggleEl.checked });
   }
-  if (moleculeFogDepthEl) {
-    const applyFogDepth = () => {
-      const parsed = Number(moleculeFogDepthEl.value);
-      if (Number.isFinite(parsed)) moleculeFogDepth = parsed;
-      moleculeFogDepth = getMoleculeFogDepth();
-      setViewControlValue(moleculeFogDepthEl, moleculeFogDepth);
-      applyMoleculeStyleLighting();
-      scheduleAppearancePresetAutosave();
-    };
-    applyFogDepth();
-    moleculeFogDepthEl.oninput = applyFogDepth;
-    moleculeFogDepthEl.onchange = applyFogDepth;
-  }
+  bindAppearanceNumber(moleculeFogDepthEl, 'molecule.feature.fog.depth', getMoleculeFogDepth, 6, 40);
   if (twoComponentModeSelect) {
     twoComponentModeSelect.onchange = () => {
       const comp = twoComponentModeSelect.value;
@@ -26693,29 +26630,14 @@
   }
 
   if (dofToggleEl) {
-    dofToggleEl.onchange = () => {
-      dofState.enabled = !!dofToggleEl.checked;
-      if (!dofState.enabled) disposeSceneRenderTargets();
-      syncDofControlState();
-      scheduleAppearancePresetAutosave();
-    };
+    dofToggleEl.onchange = () => editAppearanceSettings({ 'render.dof.enabled': dofToggleEl.checked });
   }
   if (dofFocusModeEl) {
-    dofFocusModeEl.onchange = () => {
-      dofState.focusMode = dofFocusModeEl.value === 'manual' ? 'manual' : 'auto';
-      syncDofControlState();
-      scheduleAppearancePresetAutosave();
-    };
+    dofFocusModeEl.onchange = () => editAppearanceSettings({ 'render.dof.focusMode': dofFocusModeEl.value === 'manual' ? 'manual' : 'auto' });
   }
-  bindDofNumericControl(dofFocusDistanceEl, getDofFocusDistance, (n) => {
-    dofState.focusDistance = Math.max(0.5, Math.min(80, Number.isFinite(n) ? n : getDofFocusDistance()));
-  }, scheduleAppearancePresetAutosave);
-  bindDofNumericControl(dofFocusRangeEl, getDofFocusRange, (n) => {
-    dofState.focusRange = Math.max(0.1, Math.min(20, Number.isFinite(n) ? n : getDofFocusRange()));
-  }, scheduleAppearancePresetAutosave);
-  bindDofNumericControl(dofBlurAmountEl, getDofBlurAmount, (n) => {
-    dofState.blurAmount = Math.max(0, Math.min(12, Number.isFinite(n) ? n : getDofBlurAmount()));
-  }, scheduleAppearancePresetAutosave);
+  bindAppearanceNumber(dofFocusDistanceEl, 'render.dof.focusDistance', getDofFocusDistance, 0.5, 80);
+  bindAppearanceNumber(dofFocusRangeEl, 'render.dof.focusRange', getDofFocusRange, 0.1, 20);
+  bindAppearanceNumber(dofBlurAmountEl, 'render.dof.blurAmount', getDofBlurAmount, 0, 12);
   syncDofControlState();
 
   // Default color schemes for +/- surfaces
@@ -26725,40 +26647,7 @@
     if (rowSurfaceNegColor) rowSurfaceNegColor.classList.toggle('vm-appearance-hidden', !isCustom);
   }
 
-  if (schemeSelect) {
-    schemeSelect.onchange = () => {
-      const v = schemeSelect.value;
-      const s = SURFACE_COLOR_SCHEMES[v];
-      const layer = getSurfaceAppearanceLayer();
-      if (layer) {
-        const nextPos = s ? s.pos : normalizeHexColor(posColor && posColor.value, DEFAULT_POS_SURFACE_COLOR);
-        const nextNeg = s ? s.neg : normalizeHexColor(negColor && negColor.value, DEFAULT_NEG_SURFACE_COLOR);
-        if (s) {
-          posColor.value = nextPos;
-          negColor.value = nextNeg;
-        }
-        syncColorPickerFields();
-        syncSurfaceColorSchemeUi();
-        applyToSurfaceAppearanceTargets((target) => {
-          target.colorScheme = v;
-          target.posColor = nextPos;
-          target.negColor = nextNeg;
-        });
-        return;
-      }
-      if (s) {
-        posColor.value = s.pos;
-        negColor.value = s.neg;
-        syncColorPickerFields();
-        updateOpacityAndColors();
-      }
-      surfaceColorSchemeDefault = v;
-      surfacePosColorDefault = normalizeHexColor(posColor && posColor.value, DEFAULT_POS_SURFACE_COLOR);
-      surfaceNegColorDefault = normalizeHexColor(negColor && negColor.value, DEFAULT_NEG_SURFACE_COLOR);
-      syncSurfaceColorSchemeUi();
-      scheduleAppearancePresetAutosave();
-    };
-  }
+  if (schemeSelect) schemeSelect.onchange = () => editSurfaceStyle({ 'surface.colorScheme': schemeSelect.value });
   syncSurfaceColorSchemeUi();
 
   // Render mode / cloud params
@@ -26845,10 +26734,20 @@
     getVolumes: () => volumes,
     isPlainObject,
     setPresetRebuildSuspended: (value) => { suspendPresetRebuild = !!value; },
+    importSpecialPreset: (preset, options) => {
+      if (!lookModule.isLookPreset(preset)) return null;
+      const look = lookModule.importLook(preset);
+      if (looksUi) looksUi.choose(look); else applyNamedLook(look);
+      return { ok: true, mode: options.mode, kind: 'vibemol.preset', presetVersion: 1,
+        name: look.name, applied: Object.keys(look.settings), warnings: [], unknownTop: [], unknownSettings: [] };
+    },
     normalizeSettings: settings => {
       // Retired effects and molecule opacity are ignored in old presets/sessions,
       // including strict imports. Real atoms and bonds always remain opaque.
       settings = { ...settings };
+      if (Object.values(lookModule.surfaceGroups).some(keys => keys.some(key => key in settings))) {
+        for (const layer of getAllLookLayers()) getSurfaceStyleOverrides(layer);
+      }
       for (const key of ['molecule.feature.ink', 'molecule.feature.blackbody.enabled',
         'molecule.feature.blackbody.coldColor', 'molecule.feature.blackbody.hotColor',
         'molecule.opacity.atom', 'molecule.opacity.bond']) delete settings[key];
@@ -26882,6 +26781,9 @@
       updateRenderModeUI();
       updateSurfBtn();
       applySurfaceControlsToActiveCubeLayerFromUi({ materialChanged: 'appearance.rendering' in settings });
+      if (Object.values(lookModule.surfaceGroups).some(keys => keys.some(key => key in settings))) {
+        applyInheritedSurfaceSettings(getAllLookLayers());
+      }
       rebuildScene({ preserveView: true });
       updateSidePanel();
       updateOpacityAndColors();
@@ -27172,8 +27074,11 @@
     showMultiBonds = asBoolean(value);
     if (toggleMultiBonds) toggleMultiBonds.checked = showMultiBonds;
   });
-  registerAppearancePresetSetting('global.elementColors', () => !!(elementColors && elementColors.checked), (value) => {
-    if (elementColors) elementColors.checked = asBoolean(value);
+  registerAppearancePresetSetting('global.elementColors', () => useElementColors, (value) => {
+    useElementColors = asBoolean(value);
+    if (elementColors) elementColors.checked = useElementColors;
+    if (visibilityElementColorsToggleEl) visibilityElementColorsToggleEl.checked = useElementColors;
+    refreshPeriodicCells();
   });
   registerAppearancePresetSetting('global.elementColorOverrides', () => exportElementColorOverrides(), (value) => {
     importElementColorOverrides(value);
@@ -27352,7 +27257,7 @@
     return Object.freeze(Object.assign({}, baseApi, {
       import: (preset, options = {}) => {
         const result = baseApi.import(preset, options);
-        applySurfaceControlsToActiveCubeLayerFromUi();
+        if (!lookModule.isLookPreset(preset)) applySurfaceControlsToActiveCubeLayerFromUi();
         scheduleAppearancePresetAutosave();
         return result;
       },
@@ -27542,19 +27447,91 @@
   }
   function captureLookSettings() {
     const values = exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings;
-    const layer = getSurfaceAppearanceLayer() || getLookFinishScope('group').layers[0];
-    if (layer) Object.assign(values, getLookSurfaceSettings(layer));
     return lookModule.settings(values);
   }
-  function getLookFinishScope(scope) {
-    const scene = sceneGraphController.getActiveScene();
-    const active = getActiveCubeLayer();
-    const layers = scene ? sceneGraphController.listLayers(scene).filter(isCubeLikeLayer) : [];
-    const targets = scope === 'selected' && active ? [active] : layers;
-    const finish = layer => useToonSurfaceStyle(layer) ? 'toon' : getSurfaceMaterialPresetKey(layer);
-    const material = targets.length && targets.every(layer => finish(layer) === finish(targets[0])) ? finish(targets[0]) : 'mixed';
-    return { layers: targets, available: layers.length > 0, total: layers.length, selected: !!active,
-      material, label: `${targets.length} orbital${targets.length === 1 ? '' : 's'} · ${scene?.name || ''}` };
+  function getSurfaceStyleDefaults() {
+    return { 'surface.opacity': surfaceOpacityDefault, 'surface.colorScheme': surfaceColorSchemeDefault,
+      'surface.posColor': surfacePosColorDefault, 'surface.negColor': surfaceNegColorDefault };
+  }
+  function getSurfaceStyleOverrides(layer) {
+    layer.styleOverrides = lookModule.surfaceOverrides(getLookSurfaceSettings(layer), getSurfaceStyleDefaults(), layer.styleOverrides);
+    return layer.styleOverrides;
+  }
+  function getSurfaceOverrideCounts(layers = getAllLookLayers()) {
+    return Object.fromEntries(Object.keys(lookModule.surfaceGroups).map(group =>
+      [group, layers.filter(layer => getSurfaceStyleOverrides(layer)[group]).length]));
+  }
+  function applyInheritedSurfaceSettings(layers, settings = getSurfaceStyleDefaults()) {
+    for (const layer of layers) {
+      const overrides = getSurfaceStyleOverrides(layer);
+      for (const [group, keys] of Object.entries(lookModule.surfaceGroups)) {
+        if (!overrides[group]) for (const key of keys) if (key in settings) layer[lookLayerFields[key]] = settings[key];
+      }
+      persistActiveCubeLayerState(layer, { render: false });
+    }
+  }
+  function normalizeSurfaceStylePatch(patch, base) {
+    const next = { ...patch };
+    if ('surface.opacity' in next) next['surface.opacity'] = Math.max(0.05, Math.min(1, Number(next['surface.opacity']) || 1));
+    if ('surface.colorScheme' in next) {
+      const scheme = SURFACE_COLOR_SCHEMES[next['surface.colorScheme']];
+      if (!scheme && next['surface.colorScheme'] !== 'custom') throw new Error('Unknown surface color scheme.');
+      next['surface.posColor'] = scheme?.pos || base['surface.posColor'];
+      next['surface.negColor'] = scheme?.neg || base['surface.negColor'];
+    } else if ('surface.posColor' in next || 'surface.negColor' in next) {
+      next['surface.colorScheme'] = 'custom';
+      for (const key of ['surface.posColor', 'surface.negColor']) next[key] = normalizeHexColor(next[key], base[key]);
+    }
+    return next;
+  }
+  function refreshSurfaceStyle(layers, groups) {
+    if (groups.includes('colors')) { refreshAppearanceMaterials(['surfaces'], layers); refreshCloudAppearance(layers); }
+    else if (groups.includes('opacity')) updateRenderedLayerOpacity(layers);
+    syncAppearanceControlsToActiveLayer();
+    renderSceneOutliner();
+    scheduleAppearancePresetAutosave();
+  }
+  function editSurfaceStyle(patch, phase = 'change', defaults = false) {
+    const layers = defaults ? [] : getSurfaceAppearanceTargets();
+    if (!layers.length) return editAppearanceSettings(normalizeSurfaceStylePatch(patch, getSurfaceStyleDefaults()), phase);
+    const groups = Object.entries(lookModule.surfaceGroups).filter(([, keys]) => keys.some(key => key in patch)).map(([group]) => group);
+    runAppearanceEdit(`surface:${groups.join(',')}:${layers.map(layer => layer.id).join(',')}`, phase, () => {
+      let changed = false;
+      for (const layer of layers) {
+        const overrides = getSurfaceStyleOverrides(layer), current = getLookSurfaceSettings(layer);
+        const next = normalizeSurfaceStylePatch(patch, current);
+        if (groups.every(group => overrides[group]) && Object.keys(next).every(key => next[key] === current[key])) continue;
+        for (const group of groups) overrides[group] = true;
+        for (const [key, value] of Object.entries(next)) layer[lookLayerFields[key]] = value;
+        persistActiveCubeLayerState(layer, { render: false });
+        changed = true;
+      }
+      if (changed) refreshSurfaceStyle(layers, groups);
+      return changed;
+    });
+  }
+  function resetSurfaceStyleOverrides(groups = ['colors', 'opacity'], all = false) {
+    const layers = all ? getAllLookLayers() : getSurfaceAppearanceTargets();
+    runAppearanceEdit('surface-reset', 'change', () => {
+      const changed = layers.filter(layer => groups.some(group => getSurfaceStyleOverrides(layer)[group]));
+      if (!changed.length) return false;
+      for (const layer of changed) for (const group of groups) layer.styleOverrides[group] = false;
+      applyInheritedSurfaceSettings(changed);
+      refreshSurfaceStyle(changed, groups);
+      return true;
+    });
+  }
+  function syncSurfaceStyleScopeUi() {
+    const layers = getSurfaceAppearanceTargets(), counts = getSurfaceOverrideCounts(layers);
+    const status = document.getElementById('surfaceStyleScopeStatus');
+    if (status) {
+      const label = group => !counts[group] ? 'Style' : counts[group] === layers.length ? 'Custom' : 'Mixed';
+      status.textContent = layers.length ? `Colors: ${label('colors')} · Opacity: ${label('opacity')}` : 'Style defaults';
+    }
+    for (const [group, id] of [['colors', 'surfaceUseStyleColors'], ['opacity', 'surfaceUseStyleOpacity']]) {
+      const button = document.getElementById(id);
+      if (button) button.disabled = !counts[group];
+    }
   }
   function refreshAppearanceMaterials(targets = ['atoms', 'bonds', 'surfaces'], layers = getAllLookLayers()) {
     const allowed = new Set(targets), layerIds = new Set(layers.map(layer => layer.id));
@@ -27627,9 +27604,12 @@
       || trajectoryVideoController?.isActive() || vibrationVideoController?.isActive()) {
       throw new Error('Finish the current open or export before changing the look.');
     }
+    // Resolve legacy layers against the old defaults before changing the recipe.
+    for (const layer of layers) getSurfaceStyleOverrides(layer);
     presetController.applySettings(settings, { mode: PRESET_MODE.STRICT, afterApply: false });
+    applyInheritedSurfaceSettings(layers, settings);
     for (const layer of layers) {
-      for (const [key, field] of Object.entries(lookLayerFields)) if (key in settings) layer[field] = settings[key];
+      if ('surface.materialPreset' in settings) layer.solidPreset = settings['surface.materialPreset'];
       if ('appearance.rendering' in settings || 'surface.materialPreset' in settings) layer.material = appearanceModel.clone(getSurfaceMaterialDescriptor());
       persistActiveCubeLayerState(layer, { render: false });
     }
@@ -27644,28 +27624,51 @@
     activeLook = { ...value, settings: captureLookSettings() };
     finishLookChange();
   }
-  function editSceneBackgroundColor(value, phase = 'change') {
+  function runAppearanceEdit(key, phase, action) {
+    if (looksUi) looksUi.edit(key, phase || 'change', action);
+    else action();
+  }
+  function editAppearanceSettings(patch, phase = 'change') {
+    const keys = Object.keys(patch);
+    for (const key of keys) {
+      const definition = lookModule.fields[key] || lookModule.cameraFields[key];
+      if (!definition || !definition[1](patch[key])) throw new Error(`Invalid appearance setting: ${key}`);
+    }
     const apply = () => {
-      const next = asHexColor(value, sceneBackgroundColor);
-      if (next === sceneBackgroundColor) return false;
-      applyLookSettings({ 'global.backgroundColor': next }, []);
+      const current = exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings;
+      if (keys.every(key => JSON.stringify(patch[key]) === JSON.stringify(current[key]))) return false;
+      const surface = keys.some(key => Object.values(lookModule.surfaceGroups).some(group => group.includes(key)));
+      const layers = surface ? getAllLookLayers() : [];
+      applyLookSettings(patch, layers);
+      const geometry = keys.some(key => ['global.elementColors', 'global.elementColorOverrides', 'molecule.atomRadiusScale', 'molecule.bondRadiusScale'].includes(key));
+      if (geometry) finishLookChange({ targets: ['atoms', 'bonds'] });
+      else {
+        if (keys.includes('surface.opacity')) updateRenderedLayerOpacity(layers);
+        if (keys.some(key => lookModule.surfaceGroups.colors.includes(key))) {
+          refreshAppearanceMaterials(['surfaces'], layers); refreshCloudAppearance(layers);
+        }
+        syncAppearanceControlsToActiveLayer();
+        syncAppearancePersistenceUi();
+      }
       scheduleAppearancePresetAutosave();
       return true;
     };
-    // Both pickers share model state, so a native input event cannot overwrite
-    // the previous color before Appearance Undo captures it.
-    if (looksUi) looksUi.edit('global.backgroundColor', phase, apply);
-    else apply();
+    runAppearanceEdit(keys.sort().join(','), phase, apply);
+  }
+  function editSceneBackgroundColor(value, phase = 'change') {
+    editAppearanceSettings({ 'global.backgroundColor': asHexColor(value, sceneBackgroundColor) }, phase);
   }
   function captureLookUndo() {
-    return { settings: lookModule.settings(exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings),
-      activeLook: cloneJsonLike(activeLook), layers: getAllLookLayers().map(layer => ({ layer, settings: getLookSurfaceSettings(layer), independentMaterial: !!layer.independentMaterial, material: appearanceModel.clone(getSurfaceMaterialDescriptor(layer)) })) };
+    const values = exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings;
+    return { settings: { ...lookModule.settings(values), ...Object.fromEntries(Object.keys(lookModule.cameraFields).map(key => [key, values[key]])) },
+      activeLook: cloneJsonLike(activeLook), layers: getAllLookLayers().map(layer => ({ layer, settings: getLookSurfaceSettings(layer), styleOverrides: { ...getSurfaceStyleOverrides(layer) }, independentMaterial: !!layer.independentMaterial, material: appearanceModel.clone(getSurfaceMaterialDescriptor(layer)) })) };
   }
   function restoreLookUndo(saved) {
     applyLookSettings(saved.settings, []);
     for (const entry of saved.layers) if (sceneGraphController.getLayerById(entry.layer.id) === entry.layer) {
       for (const [key, field] of Object.entries(lookLayerFields)) entry.layer[field] = entry.settings[key];
       entry.layer.independentMaterial = entry.independentMaterial;
+      entry.layer.styleOverrides = { ...entry.styleOverrides };
       entry.layer.material = appearanceModel.clone(entry.material);
       persistActiveCubeLayerState(entry.layer, { render: false });
     }
@@ -27746,6 +27749,7 @@
           opacity: Number(layer.opacity),
           solidPreset: String(layer.solidPreset || ''),
           independentMaterial: !!layer.independentMaterial,
+          styleOverrides: layer.styleOverrides && { ...layer.styleOverrides },
           material: isCubeLikeLayer(layer) ? appearanceModel.clone(getSurfaceMaterialDescriptor(layer)) : null,
           colorScheme: String(layer.colorScheme || ''),
           posColor: layer.posColor == null ? null : String(layer.posColor),
@@ -31078,6 +31082,7 @@
       surfaceStyle: layer.surfaceStyle,
       solidPreset: layer.solidPreset,
       independentMaterial: !!layer.independentMaterial,
+      styleOverrides: { ...getSurfaceStyleOverrides(layer) },
       material: appearanceModel.clone(getSurfaceMaterialDescriptor(layer)),
       colorScheme: layer.colorScheme,
       posColor: layer.posColor,
@@ -31147,24 +31152,8 @@
     };
   }
   const handleOpacityInput = event => {
-    if (event.type === 'input' && document.activeElement === opInput) return;
-    const nextOpacity = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
-    const layers = getSurfaceAppearanceTargets();
-    const apply = () => {
-      if (layers.length) {
-        if (layers.every(layer => layer.opacity === nextOpacity)) return false;
-        applyToSurfaceAppearanceTargets(target => { target.opacity = nextOpacity; }, { rebuild: false });
-        updateRenderedLayerOpacity(layers);
-      } else {
-        if (surfaceOpacityDefault === nextOpacity) return false;
-        surfaceOpacityDefault = nextOpacity;
-        updateRenderedLayerOpacity();
-      }
-      scheduleAppearancePresetAutosave();
-      return true;
-    };
-    if (looksUi) looksUi.edit(`surface-opacity:${layers.map(layer => layer.id).join(',')}`, event.type, apply);
-    else apply();
+    if (event?.type === 'input' && document.activeElement === opInput) return;
+    editSurfaceStyle({ 'surface.opacity': opInput.value }, event?.type);
   };
   opInput.oninput = handleOpacityInput;
   opInput.onchange = handleOpacityInput;
@@ -31189,53 +31178,15 @@
       });
     };
   }
-  const handlePositiveSurfaceColorInput = () => {
-    const layer = getSurfaceAppearanceLayer();
-    if (layer) {
-      const nextColor = normalizeHexColor(posColor.value, DEFAULT_POS_SURFACE_COLOR);
-      if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
-      syncColorPickerFields();
-      applyToSurfaceAppearanceTargets((target) => {
-        const colors = getLayerSurfaceColors(target);
-        target.colorScheme = 'custom';
-        target.posColor = nextColor;
-        target.negColor = colors.neg;
-      });
-      return;
-    }
-    if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
-    surfaceColorSchemeDefault = 'custom';
-    surfacePosColorDefault = normalizeHexColor(posColor.value, DEFAULT_POS_SURFACE_COLOR);
-    syncColorPickerFields();
-    updateOpacityAndColors();
-    scheduleAppearancePresetAutosave();
-  };
+  const handlePositiveSurfaceColorInput = event => editSurfaceStyle({ 'surface.posColor': posColor.value }, event?.type);
   posColor.oninput = handlePositiveSurfaceColorInput;
   posColor.onchange = handlePositiveSurfaceColorInput;
-  const handleNegativeSurfaceColorInput = () => {
-    const layer = getSurfaceAppearanceLayer();
-    if (layer) {
-      const nextColor = normalizeHexColor(negColor.value, DEFAULT_NEG_SURFACE_COLOR);
-      if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
-      syncColorPickerFields();
-      applyToSurfaceAppearanceTargets((target) => {
-        const colors = getLayerSurfaceColors(target);
-        target.colorScheme = 'custom';
-        target.posColor = colors.pos;
-        target.negColor = nextColor;
-      });
-      return;
-    }
-    if (typeof schemeSelect !== 'undefined' && schemeSelect) schemeSelect.value = 'custom';
-    surfaceColorSchemeDefault = 'custom';
-    surfaceNegColorDefault = normalizeHexColor(negColor.value, DEFAULT_NEG_SURFACE_COLOR);
-    syncColorPickerFields();
-    updateOpacityAndColors();
-    scheduleAppearancePresetAutosave();
-  };
+  const handleNegativeSurfaceColorInput = event => editSurfaceStyle({ 'surface.negColor': negColor.value }, event?.type);
   negColor.oninput = handleNegativeSurfaceColorInput;
   negColor.onchange = handleNegativeSurfaceColorInput;
-  const handleBackgroundColorInput = event => editSceneBackgroundColor(bgColor.value, event.type);
+  document.getElementById('surfaceUseStyleColors').onclick = () => resetSurfaceStyleOverrides(['colors']);
+  document.getElementById('surfaceUseStyleOpacity').onclick = () => resetSurfaceStyleOverrides(['opacity']);
+  const handleBackgroundColorInput = event => editSceneBackgroundColor(bgColor.value, event?.type);
   bgColor.oninput = handleBackgroundColorInput;
   bgColor.onchange = handleBackgroundColorInput;
   toggleAtoms.onchange = () => {
@@ -31275,23 +31226,9 @@
       scheduleAppearancePresetAutosave();
     };
   }
-  elementColors.onchange = () => {
-    refreshPeriodicCells();
-    if (visibilityElementColorsToggleEl) visibilityElementColorsToggleEl.checked = !!elementColors.checked;
-    syncAllAppearanceActionToggleButtons();
-    rebuildScene({ preserveView: true });
-    scheduleAppearancePresetAutosave();
-  };
+  elementColors.onchange = () => editAppearanceSettings({ 'global.elementColors': elementColors.checked });
   if (visibilityElementColorsToggleEl) {
-    visibilityElementColorsToggleEl.onchange = () => {
-      if (!elementColors) return;
-      elementColors.checked = !!visibilityElementColorsToggleEl.checked;
-      if (typeof elementColors.onchange === 'function') {
-        elementColors.onchange();
-        return;
-      }
-      syncAllAppearanceActionToggleButtons();
-    };
+    visibilityElementColorsToggleEl.onchange = () => editAppearanceSettings({ 'global.elementColors': visibilityElementColorsToggleEl.checked });
   }
   if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);
   if (elementColorClose) elementColorClose.onclick = () => setElementColorOverlayOpen(false);
@@ -31303,12 +31240,11 @@
   /**
    * Apply the current picker value as an override for the selected element.
    */
-  function applyElementColorPickerValue() {
+  function applyElementColorPickerValue(event) {
     if (!elementColorPicker) return;
-    setElementColorOverride(selectedElementForEditor, elementColorPicker.value);
-    refreshPeriodicCell(selectedElementForEditor);
-    rebuildScene({ preserveView: true });
-    scheduleAppearancePresetAutosave();
+    editAppearanceSettings({ 'global.elementColorOverrides': {
+      ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),
+    } }, event?.type);
   }
   if (elementColorPicker) {
     // Some browsers commit `<input type="color">` on `change` only.
@@ -31317,22 +31253,12 @@
   }
   if (elementColorResetOne) {
     elementColorResetOne.onclick = () => {
-      elementColorOverrides.delete(selectedElementForEditor);
-      refreshPeriodicCell(selectedElementForEditor);
-      if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
-      rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
+      const colors = exportElementColorOverrides();
+      delete colors[selectedElementForEditor];
+      editAppearanceSettings({ 'global.elementColorOverrides': colors });
     };
   }
-  if (elementColorResetAll) {
-    elementColorResetAll.onclick = () => {
-      elementColorOverrides.clear();
-      refreshPeriodicCells();
-      if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
-      rebuildScene({ preserveView: true });
-      scheduleAppearancePresetAutosave();
-    };
-  }
+  if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });
   toggleBox.onchange = () => {
     rebuildScene({ preserveView: true });
     scheduleAppearancePresetAutosave();
@@ -32357,6 +32283,7 @@
   }
 
   function getSessionState() {
+    for (const layer of getAllLookLayers()) getSurfaceStyleOverrides(layer);
     return { graph: sceneGraphController, sources: sceneSources, records: volumes, activeRecord: volumes[currentIndex],
       preset: exportPresetEnvelope(), view: captureSessionView(), appVersion: APP_VERSION };
   }
@@ -32381,6 +32308,7 @@
       volumes = saved.records;
       currentIndex = saved.activeRecord ? volumes.indexOf(saved.activeRecord) : (volumes.length ? 0 : -1);
       sceneGraphController.restoreState(saved.graph);
+      for (const layer of getAllLookLayers()) getSurfaceStyleOverrides(layer);
       sceneSources.restore(saved.sources);
       for (const record of volumes) if (record.vol.isTwoComponent) setVolume2CComponent(record, global2CComponentMode);
       trajectoryPlaying = false;
@@ -32567,15 +32495,15 @@
     createSlider: root => { const slider = new VmSlider(root); viewSliderRegistry.set(slider.valueInput, slider); return slider; },
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,
     editBackgroundColor: editSceneBackgroundColor,
+    editSettings: editAppearanceSettings,
+    editSurfaceDefaults: (patch, phase) => editSurfaceStyle(patch, phase, true),
+    resetSurfaceOverrides: () => resetSurfaceStyleOverrides(['colors', 'opacity'], true),
+    getSurfaceOverrideCounts,
+    surfaceColorSchemes: Array.from(schemeSelect.options, option => [option.value, option.textContent]),
+    openElementColors: () => setElementColorOverlayOpen(true),
     getActiveLook: () => activeLook,
     setActiveLook: value => { activeLook = cloneJsonLike(value); scheduleAppearancePresetAutosave(); },
     applyLook: applyNamedLook, captureUndo: captureLookUndo, restoreUndo: restoreLookUndo,
-    getFinishScope: getLookFinishScope,
-    hasMixedSurfaces: () => {
-      const layers = getAllLookLayers();
-      return layers.length > 1 && layers.some(layer => JSON.stringify(getLookSurfaceSettings(layer)) !== JSON.stringify(getLookSurfaceSettings(layers[0]))
-        || JSON.stringify(getSurfaceMaterialDescriptor(layer)) !== JSON.stringify(getSurfaceMaterialDescriptor(layers[0])));
-    },
     download: (value, filename) => {
       const link = document.createElement('a'); link.download = filename;
       link.href = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' }));

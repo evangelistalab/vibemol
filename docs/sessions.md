@@ -6,11 +6,11 @@ A session contains the data needed to reopen offline. Original source files do n
 
 - All loaded sources, including sources retained by copied or moved layers after their original scene was deleted. Duplicate filenames remain separate sources.
 - Edited atoms, explicit/perceived/suppressed bonds and metal styles, annotations, and builder operation logs.
-- Scene and layer identity, names, order, membership, visibility, expansion, focus, selection, and individual surface/cloud appearance.
+- Scene and layer identity, names, order, membership, visibility, expansion, focus, selection, and individual surface/cloud appearance, including separate color/opacity override flags. Older sessions infer overrides from differences against their saved global defaults.
 - Molden basis/MO coefficients, selected orbitals and grid settings. Deleted entries stay deleted. Disposable MO grids are regenerated when needed for visible layers or explicit calculations.
 - Arithmetic results and recipes, including dependency chains that can still be edited after reopening.
 - Trajectory frames, selected frame, FPS, loop, and synchronization; vibration modes, equilibrium coordinates, selected mode, amplitude, speed, and phase.
-- The global appearance preset and camera position, orientation, projection, zoom, target, and scene shift.
+- The global appearance preset and camera position, orientation, projection, zoom, target, scene shift, and depth-of-field focus/blur settings. Named look changes preserve these camera settings.
 
 Sessions reopen in View mode with trajectory, vibration, and camera auto-rotation paused. Undo history, active drags/placement previews, temporary atom selections, and floating-window layout are not part of the format. Builder logs are restored with the edited structure; they are not replayed.
 

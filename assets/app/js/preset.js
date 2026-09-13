@@ -371,6 +371,11 @@
         warnings.push(msg);
       }
 
+      if (typeof deps.importSpecialPreset === 'function') {
+        const result = deps.importSpecialPreset({ ...preset, settings: flattenSettingsTree(preset.settings || {}) }, { ...options, mode });
+        if (result) return result;
+      }
+
       const unknownTop = {};
       for (const [key, value] of Object.entries(preset)) {
         if (!PRESET_TOP_LEVEL_KEYS.has(key)) unknownTop[key] = value;

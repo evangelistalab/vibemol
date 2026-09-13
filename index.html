@@ -2594,6 +2594,7 @@
 
             <section class="vm-appearance-section" id="appearanceCameraSection">
               <h3 class="vm-section-label">Camera</h3>
+              <p class="vm-session-status">Camera and focus settings are saved with the session and preserved when changing styles.</p>
               <div class="vm-field-row">
                 <label class="vm-field-label" for="projectionPerspectiveBtn">Projection</label>
                 <div class="vm-field-control vm-field-control--group">
@@ -2684,6 +2685,11 @@
             <section class="vm-appearance-section" id="appearanceSurfacesSection" hidden>
               <h3 class="vm-section-label">Surfaces</h3>
               <div id="surfaceScopeLabel" class="vm-surface-scope-label" hidden></div>
+              <p id="surfaceStyleScopeStatus" class="vm-session-status"></p>
+              <div class="vm-popover__actions">
+                <button id="surfaceUseStyleColors" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Use style colors</button>
+                <button id="surfaceUseStyleOpacity" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Use style opacity</button>
+              </div>
               <div class="vm-field-row">
                 <label class="vm-field-label" for="surfBtn">Show surfaces</label>
                 <div class="vm-field-control">

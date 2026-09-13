@@ -72,7 +72,7 @@
     }
     function sync() {
       syncPending = false;
-      const look = current(), modified = !!look && (!L.equal(look.settings, deps.captureSettings()) || deps.hasMixedSurfaces());
+      const look = current(), modified = !!look && !L.equal(look.settings, deps.captureSettings());
       const saved = look && library.find(item => item.id === look.id);
       $('lookCurrentName').textContent = look?.name || 'Custom appearance';
       $('lookModified').textContent = modified ? '· Modified' : '';
@@ -116,7 +116,7 @@
         if (defaultLook?.id === look.id) defaultLook.name = look.name;
       } else { library.push(look); deps.setActiveLook(look); }
       persist(); $('lookNameForm').hidden = true; naming = null; sync();
-      status(deps.hasMixedSurfaces() ? `${look.name} saved using the current orbital. Individual overrides stay in your session.` : `${look.name} saved.`);
+      status(`${look.name} saved. Orbital overrides stay in your session.`);
     }
     $('lookPreset').onchange = () => run(() => { const look = L.builtins.find(item => item.id===$('lookPreset').value); if (look) choose(look); });
     if (deps.presetSelect) deps.presetSelect.onchange = () => run(() => {
@@ -156,6 +156,9 @@
       atomFields: deps.atomFields, bondFields: deps.bondFields, getAtomBaseRadius: deps.getAtomBaseRadius,
       getRendering: deps.getRendering, getActiveLook: current,
       editBackgroundColor: deps.editBackgroundColor,
+      editSettings: deps.editSettings, editSurfaceDefaults: deps.editSurfaceDefaults,
+      resetSurfaceOverrides: deps.resetSurfaceOverrides, getSurfaceOverrideCounts: deps.getSurfaceOverrideCounts,
+      surfaceColorSchemes: deps.surfaceColorSchemes, openElementColors: deps.openElementColors,
       edit: (section, patch, options, phase) => edit(JSON.stringify([section, Object.keys(patch), options]), phase, () => deps.editComponent(section, patch, options)),
       getMaterials: () => clone(materials),
       updateMaterial: (id, label, material) => run(() => {

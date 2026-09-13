@@ -6,16 +6,18 @@ Scope: all seven curated looks, the shared material presets, molecule bond const
 
 Background color is one global canvas setting, stored in each look as `global.backgroundColor`. It is now editable in both **Style Studio → Lighting & contours → Background** and **Appearance → Scene → Background**. Both controls update the same state, including Modified, grouped Appearance Undo, Revert, named looks, portable exports, autosave, and sessions. Background changes reuse existing molecule and surface meshes. **Follow UI theme** sits beside the Studio swatch: it darkens the rendered background in dark mode without altering the saved base color.
 
-The remaining mismatches are listed below; these behaviors have not been changed by the background-control addition.
+The Studio/sidebar mismatches are resolved with these boundaries:
 
-| Mismatch | Current behavior | Suggested next change |
-| --- | --- | --- |
-| Some global style settings are only editable outside Studio. | Atom palette and element colors are under Atoms; bond color mode/tint under Bonds; shadows and fog under Rendering. All belong to a saved look. Shadows, palettes, and colors vary between curated presets; all seven presets disable fog but still store/reset its depth. | Expose these in Studio through the same state and handlers as the sidebar. Keep the sidebar controls as shortcuts. |
-| Camera focus is included in look recipes. | `render.dof.*` stores enabled state, focus mode, focus distance, focus range, and blur amount. Every curated preset disables depth of field and restores its focus defaults. Camera pose/projection are preserved. | Keep camera-dependent focus settings with the camera instead of resetting them on a style change. Decide explicitly whether blur enablement/strength should remain part of a look. |
-| Orbital styling has two different application scopes. | Surfaces edits colors and opacity on the selected orbital or focused group. Saving a look captures one representative orbital; applying that look overwrites those settings on all loaded surface layers, including hidden/deferred layers and other scenes. Mixed values are indicated, but the scope change is easy to miss. | Distinguish global surface defaults from per-orbital overrides, and make replacing overrides an explicit action. Keep opacity in Surfaces as requested. |
-| Appearance Undo depends on the control used. | Studio component edits, the sidebar palette/bond color controls, surface opacity, and now both background controls record Appearance Undo. Older sidebar handlers for shadows, fog, element-color edits, surface colors, and depth of field update appearance without recording that edit. | Route style edits through one shared appearance transaction path so Undo is consistent everywhere. |
+| Area | Behavior |
+| --- | --- |
+| Shared style controls | Studio **Colors** mirrors the sidebar atom palette, element-color toggle/editor, and bond color mode/tint. Studio **Lighting & contours** mirrors shadows, fog, and fog depth. Both locations edit the same registered state and use the same Appearance Undo transactions. Geometry size multipliers and element-color reset actions use that path too. |
+| Camera and depth of field | All focus and blur settings stay under Camera. Selecting, reverting, importing, or applying a startup look preserves them. Camera edits support Appearance Undo without marking the look Modified. Full presets, appearance autosave, and complete sessions still save them. Old named looks discard their camera settings on import. |
+| Surface defaults and overrides | Studio **Surfaces** edits the global palette, phase colors, and opacity saved with a look. These defaults apply to inherited layers and future imports. Sidebar **Surfaces** edits explicit overrides on the selected orbital/group; a deliberate edit remains an override even if it currently matches the default. Colors and opacity are tracked independently. Custom orbital values survive a look change. |
+| Explicit reset and saving | The sidebar reports Style/Custom/Mixed separately for colors and opacity, with **Use style colors** and **Use style opacity** actions. Studio **Apply defaults to all orbitals** clears both overrides across loaded layers. These actions support Undo. Saving a look always captures global defaults; individual orbital edits do not mark that recipe Modified and remain in sessions. |
 
-Correct exclusions: camera position/rotation/projection, atom and bond visibility, axes and bounding box, coordinates/topology, orbital isovalues/Auto-iso, phase inversion, surface/cloud mode, playback, and UI font/accent/theme do not belong to a named look. These remain workspace state or app preferences. The broader appearance autosave and general preset format are intentionally not identical to a named look or a material-only file. The UI theme itself remains global; a look only chooses whether its background follows it.
+New look exports use `meta.lookVersion: 4`; the rendering descriptor remains version 3. Named-look imports through Studio, file loading, and the preset API use the same application path. General preset/session imports retain their broader scope. Per-layer `styleOverrides` metadata survives duplicates, source state, session save/open, and recovery. Older sessions infer overrides where local colors or opacity differ from the saved global defaults; an old file cannot record deliberate overrides that exactly matched those defaults.
+
+Camera pose/projection, visibility, axes and bounding box, coordinates/topology, orbital isovalues/Auto-iso, phase inversion, surface/cloud mode, playback, and UI font/accent/theme remain outside named looks. Background remains a shared canvas value stored in a look, and the look can choose whether it follows the UI theme. Editing defaults, applying looks, and resetting overrides do not compute hidden Molden grids or remesh surfaces.
 
 ## Findings and changes
 
@@ -43,8 +45,8 @@ Correct exclusions: camera position/rotation/projection, atom and bond visibilit
 | Per-element base display radii | Geometry → Atom radii |
 | Sphere width/height detail, bond radial/axial detail | Geometry → Mesh detail |
 | Legacy overall atom/bond radius multipliers | Geometry → Size multipliers |
-| Standard / Luminous / Kit palette, explicit element colors | Atoms → Palette / Element colors |
-| Element vs uniform bonds and base tint/color | Bonds → Bond colors / swatch |
+| Standard / Luminous / Kit palette, explicit element colors | Studio → Colors → Atoms and sidebar Atoms |
+| Element vs uniform bonds and base tint/color | Studio → Colors → Bonds and sidebar Bonds |
 | Physical / Phong / Toon material recipe | Material menu; applicable property controls follow the chosen material |
 | Roughness, metalness, clearcoat, coat roughness, specular strength/color, reflectivity, environment intensity, shininess, tint | Material |
 | Emission intensity, scale, mixing, color source and blend color | Material → Color fill / Fill scale / Fill blend / Fill from color / Fill color |
@@ -54,21 +56,23 @@ Correct exclusions: camera position/rotation/projection, atom and bond visibilit
 | Key/fill/ground/rim/ambient colors | Lighting & contours → Light colors |
 | Exact key/rim XYZ coordinates, including distance used for shadow-camera placement | Lighting & contours → Light positions |
 | Absolute width, relative atom/bond contour sizing, highlight shells | Lighting & contours |
-| Shadows and fog | Rendering |
+| Shadows and fog | Studio → Lighting & contours and sidebar Rendering |
 | Background color | Style Studio → Lighting & contours, synchronized with Appearance → Scene |
-| Orbital phase colors and palette | Surfaces |
-| Surface opacity | Surfaces → Opacity, scoped to the selected orbital or group; differing values show Mixed. Atoms and bonds stay opaque; their retired opacity keys are ignored on import. |
-| Depth of field enabled state, focus mode/distance/range, blur strength | Camera; see the focus-scope mismatch above |
+| Orbital phase colors and palette | Studio → Surfaces for defaults; sidebar Surfaces for orbital/group overrides |
+| Surface opacity | Studio → Surfaces for defaults; sidebar Surfaces → Opacity for orbital/group overrides. Atoms and bonds stay opaque. |
+| Depth of field enabled state, focus mode/distance/range, blur strength | Camera; these view settings are excluded from named looks |
 
 Material-model-specific controls appear only when the renderer uses them. For example, physical roughness is inactive under Toon, and environment intensity is inactive under Phong. Key/rim angles provide convenient directional adjustment; Light positions exposes the exact stored coordinates, including the key light's shadow-camera placement.
 
 Basic intentionally retains its original atom/bond versus orbital finish pairing. **Use surface finish everywhere** adopts that exact orbital descriptor as the shared material, making its properties available in the same editor. Selecting or editing any material also returns to the shared-material policy. Undo/Revert can restore Basic's pairing. No separate material targets are introduced.
 
-The historical `molecule.style` key is a compatibility selector for Basic/Toon/Kit, not another hidden rendering component. Resolved geometry, material, coloring, lighting, and effects determine the rendering. All added controls edit existing registered state; no additional preset version is needed.
+The historical `molecule.style` key is a compatibility selector for Basic/Toon/Kit, not another hidden rendering component. Resolved geometry, material, coloring, lighting, and effects determine the rendering. Shared controls edit existing registered state. Look version 4 records the new scope contract; the general preset version remains 1.
 
 ## Validation
 
-The Style Studio/background update passes `make check`, all 291 unit tests, and both `style_studio.py` browser scenarios using software WebGL. The background regression covers both controls, a color stream starting with an unchanged value, grouped Undo, Revert, named look export/import, appearance autosave, session restoration, actual rendered theme behavior, unchanged surface geometry, and deferred Molden orbitals. Light and dark layouts were inspected.
+The Studio scope update passes `make check`, all 293 unit tests, and the complete `appearance_scopes.py`, `looks.py`, `sessions.py`, `premerge.py`, and `style_studio.py` browser scenarios using software WebGL. Scope regressions cover shared controls and grouped Undo, camera isolation across all seven looks and legacy imports, default/override inheritance, explicit matching overrides, reset/Undo, global look saving, legacy session migration, and deferred Molden groups. Session checks include recovery, corruption/quota handling, cross-tab protection, and playback after restoration. Playback tests now wait for actual motion instead of fixed delays; the orbital-group test opens Studio for material edits.
+
+The background regression covers both controls, a color stream starting with an unchanged value, grouped Undo, Revert, named look export/import, appearance autosave, session restoration, actual rendered theme behavior, unchanged surface geometry, and deferred Molden orbitals. Shared controls and surface-default layouts were visually inspected; Studio checks also cover light/dark themes and mobile bounds.
 
 - Cylinder topology tests check that every welded edge belongs to two triangles, no midpoint cap exists, normals remain cylindrical, and the color transition stays sharp.
 - Browser regressions inspect actual bond meshes for all seven looks, uniform colors, live Kit edits, advanced control values, Appearance Undo, and session restoration.

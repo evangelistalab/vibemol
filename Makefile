@@ -57,7 +57,7 @@ check:
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
 	done
-	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_shadows.py tests/e2e/style_studio.py tools/render_look_previews.py
+	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_shadows.py tests/e2e/style_studio.py tests/e2e/appearance_scopes.py tools/render_look_previews.py
 	git diff --check
 
 test-unit:
@@ -69,5 +69,6 @@ test-e2e:
 	python3 tests/e2e/sessions.py
 	python3 tests/e2e/looks.py
 	python3 tests/e2e/style_studio.py
+	python3 tests/e2e/appearance_scopes.py
 
 test: check test-unit test-e2e

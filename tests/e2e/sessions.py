@@ -152,7 +152,7 @@ def vibration_and_topology(page, dialogs):
     page.evaluate('text => VibeMolStructure.importFromText(text)', json.dumps(structure))
     page.evaluate("() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,settings:{'vibration.modeIndex':1,'vibration.amplitude':1.25,'vibration.speed':1.7}})")
     page.locator('#vibrationPlayBtn').evaluate('el=>el.click()')
-    page.wait_for_timeout(180)
+    page.wait_for_function('() => VibeMolStructure.exportActive().volume.vibration.phase > 0')
     page.locator('#vibrationPlayBtn').evaluate('el=>el.click()')
     saved = export(page)
     active = next(source for source in saved['sources'] if source['id'] == saved['activeSourceId'])
@@ -164,7 +164,8 @@ def vibration_and_topology(page, dialogs):
     assert restored['sources'] == saved['sources'], (saved['sources'],restored['sources'])
     assert page.evaluate('() => VibeMolStructure.exportActive().volume.bonds') == vol['bonds']
     page.locator('#vibrationPlayBtn').evaluate('el=>el.click()')
-    page.wait_for_timeout(100)
+    page.wait_for_function('phase => { const next=VibeMolStructure.exportActive().volume.vibration.phase; return next>0 && Math.abs(next-phase)>1e-8; }',
+                           arg=active['volume']['vibration']['phase'])
     page.locator('#vibrationPlayBtn').evaluate('el=>el.click()')
     assert export(page)['sources'] != saved['sources'], 'Vibration remains playable after restore'
 

@@ -7,6 +7,10 @@
     let sources = new Map();
     let nextSourceId = 1;
 
+    function appearanceFromState(saved) {
+      return Object.assign({}, getDefaults(), saved || {}, saved ? { styleOverrides: saved.styleOverrides ?? null } : {});
+    }
+
     function register(record) {
       if (!sources.has(record)) sources.set(record, { id: `source-${nextSourceId++}`, record, cubeImported: false, orbitals: new Set() });
       return sources.get(record);
@@ -36,7 +40,7 @@
       const existing = graph.getScenes().flatMap(item => graph.listLayers(item)).find(layer =>
         layer.record === record && layer.moldenMoIndex === index && !layer.isSceneGraphDuplicate);
       if (existing) return existing;
-      const layer = graph.addCubeLayer(scene, Object.assign({}, getDefaults(), (record._moldenSceneGraphLayerStateByMo || {})[index] || {}, {
+      const layer = graph.addCubeLayer(scene, Object.assign({}, appearanceFromState((record._moldenSceneGraphLayerStateByMo || {})[index]), {
         sourceId: source.id, name: `MO ${index + 1}`, record, cubeData: null,
         moldenMoIndex: index, visible,
       }));
@@ -89,7 +93,7 @@
           if (record._sceneGraphHasOrbitalsGroup || molden || hasGrid(record.vol)) graph.ensureOrbitalsGroup(scene);
           if (!molden && hasGrid(record.vol) && !source.cubeImported) {
             const first = !graph.listLayers(scene).some(graph.isCubeLikeLayer);
-            graph.addCubeLayer(scene, Object.assign({}, getDefaults(), record._sceneGraphLayerState || {}, {
+            graph.addCubeLayer(scene, Object.assign({}, appearanceFromState(record._sceneGraphLayerState), {
               sourceId: source.id,
               name: record.name,
               record,

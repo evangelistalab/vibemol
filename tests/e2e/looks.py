@@ -118,7 +118,7 @@ def components_and_saving(page, context, url):
     page.locator('#lookSaved').select_option(state(page)['saved'][0]['id'])
     with page.expect_download() as download: page.locator('#lookExport').click()
     exported=json.loads(Path(download.value.path()).read_text())
-    assert exported['meta']['lookVersion']==3 and 'surface.iso' not in exported['settings']
+    assert exported['meta']['lookVersion']==4 and 'surface.iso' not in exported['settings']
     fresh=context.browser.new_context();other=fresh.new_page();other.goto(url);other.wait_for_function('() => window.VibeMolAppearanceLooks')
     other.locator('#lookFileInput').set_input_files({'name':'my.look.json','mimeType':'application/json','buffer':json.dumps(exported).encode()})
     other.wait_for_function('() => VibeMolAppearanceLooks.snapshot().saved.length===1')

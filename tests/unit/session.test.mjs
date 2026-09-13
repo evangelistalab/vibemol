@@ -21,6 +21,7 @@ function setup() {
     const [one,two] = graph.getScenes();
     const layer = one.layers.find(graph.isCubeLikeLayer);
     layer.name = 'Edited name'; layer.iso = 0.014; layer.opacity = 0.35;
+    layer.styleOverrides = { colors:false, opacity:true };
     Object.assign(two.layers.find(graph.isCubeLikeLayer), { autoIso:true, autoIsoEnabled:true, isoPending:true });
     layer.geometry = {renderer:true, circular:graph.getState()};
     const derived = graph.addArithmeticLayer(one, { name:'Difference', inputs:[{layerId:layer.id,coefficient:2}],
@@ -57,6 +58,7 @@ test('session round-trip preserves source identity, topology, graph recipes, app
   assert.equal(cubes[0].name, 'Edited name');
   assert.equal(cubes[0].iso, 0.014);
   assert.equal(cubes[0].opacity, 0.35);
+  assert.deepEqual(JSON.parse(JSON.stringify(cubes[0].styleOverrides)), { colors:false, opacity:true });
   assert.equal(cubes[0].isoPending, false);
   assert.equal(fixture.graph.getScenes()[1].layers.find(fixture.graph.isCubeLikeLayer).isoPending, true);
   assert.equal(cubes[2].inputs[0].layerId, cubes[1].id);
@@ -122,6 +124,7 @@ test('session import rejects damaged buffers and bad graph references before app
     doc => { doc.sources[1].id = doc.sources[0].id; },
     doc => { doc.graph.scenes[0].layers.find(x=>x.kind==='cube').sourceId = 'missing'; },
     doc => { doc.graph.scenes[0].layers.find(x=>x.kind==='cube').isoPending = 'pending'; },
+    doc => { doc.graph.scenes[0].layers.find(x=>x.kind==='cube').styleOverrides = {colors:'yes',opacity:false}; },
     doc => { const l = doc.graph.scenes[0].layers.find(x=>x.kind==='arithmetic'); l.inputs[0].layerId = l.id; },
     doc => { doc.sources[0].volume.nxyz = [999,1,1]; },
     doc => { doc.sources[0].volume.bonds[0].a = 'missing-atom'; },

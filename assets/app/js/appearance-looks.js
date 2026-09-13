@@ -6,6 +6,24 @@
   const number = (min, max) => value => typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
   const choice = values => value => values.includes(value);
   const bool = value => typeof value === 'boolean';
+  const cameraFields = {
+    'render.dof.enabled': [false, bool],
+    'render.dof.focusMode': ['auto', choice(['auto', 'manual'])],
+    'render.dof.focusDistance': [8, number(0.5, 80)],
+    'render.dof.focusRange': [1.5, number(0.1, 20)],
+    'render.dof.blurAmount': [4, number(0, 12)],
+  };
+  const surfaceGroups = Object.freeze({
+    colors: Object.freeze(['surface.colorScheme', 'surface.posColor', 'surface.negColor']),
+    opacity: Object.freeze(['surface.opacity']),
+  });
+  function surfaceOverrides(values, defaults, saved) {
+    const same = (a, b) => typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-8
+      : typeof a === 'string' && typeof b === 'string' ? a.toLowerCase() === b.toLowerCase() : a === b;
+    return Object.fromEntries(Object.entries(surfaceGroups).map(([group, keys]) => [group,
+      typeof saved?.[group] === 'boolean' ? saved[group] : keys.some(key => !same(values[key], defaults[key]))
+    ]));
+  }
   const extra = {
     'molecule.material.finish': ['inherit', choice(['inherit', 'phong', 'physical', 'toon'])],
     'molecule.material.polish': [0.5, number(0, 1)],
@@ -39,11 +57,6 @@
     'surface.colorScheme': ['custom', choice(['custom', 'emory', 'national', 'bright', 'electron', 'classic'])],
     'surface.posColor': ['#ff8000', hex],
     'surface.negColor': ['#0066b3', hex],
-    'render.dof.enabled': [false, bool],
-    'render.dof.focusMode': ['auto', choice(['auto', 'manual'])],
-    'render.dof.focusDistance': [8, number(0.5, 80)],
-    'render.dof.focusRange': [1.5, number(0.1, 20)],
-    'render.dof.blurAmount': [4, number(0, 12)],
     'appearance.rendering': [model.legacy('basic'), value => { try { model.normalize(value); return true; } catch { return false; } }],
   };
   const defaults = Object.fromEntries(Object.entries(fields).map(([key, [value]]) => [key, clone(value)]));
@@ -81,13 +94,13 @@
       metalness:s.metalness, clearcoat:s.coat, clearcoatRoughness:0.22, envMapIntensity:s.environment,
       iridescence:s.iridescence, iridescenceThicknessRange:[130,380], toonSteps:[70,150,210,255] });
     rendering.surfaceMaterial = null;
-    return Object.freeze({ id,name,description,revision:3,experimental,settings:Object.freeze(settings({ ...defaults,
+    return Object.freeze({ id,name,description,revision:4,experimental,settings:Object.freeze(settings({ ...defaults,
       'appearance.rendering':rendering, 'molecule.feature.shadows':s.finish==='physical',
       'global.backgroundColor':s.background, 'global.elementColorOverrides':{1:s.hydrogen,6:s.carbon,7:s.nitrogen,8:s.oxygen},
       'surface.colorScheme':s.colorScheme, 'surface.posColor':s.positive, 'surface.negColor':s.negative })) });
   }
   const builtins = Object.freeze([
-    ...['basic', 'toon', 'kit'].map(id => Object.freeze({ id, name: id[0].toUpperCase() + id.slice(1), revision: 3,
+    ...['basic', 'toon', 'kit'].map(id => Object.freeze({ id, name: id[0].toUpperCase() + id.slice(1), revision: 4,
       description: {basic:'Original smooth rendering', toon:'Banded shading and contours', kit:'Collar joints and polished materials'}[id],
       settings: Object.freeze(settings({ ...defaults, 'molecule.style': id, 'appearance.rendering': model.legacy(id),
         'surface.colorScheme': 'emory', 'surface.posColor': '#f2a900', 'surface.negColor': '#0033a0' })) })),
@@ -113,7 +126,7 @@
   function normalizeLook(value) {
     if (!value || typeof value.name !== 'string' || !value.name.trim() || value.name.trim().length > 60) throw new Error('Give the look a name of 1–60 characters.');
     if (typeof value.id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(value.id)) throw new Error('Invalid look identifier.');
-    const out = { id: value.id, name: value.name.trim(), revision: 3, settings: settings(value.settings) };
+    const out = { id: value.id, name: value.name.trim(), revision: 4, settings: settings(value.settings) };
     if (value.thumbnail != null) {
       if (typeof value.thumbnail !== 'string' || value.thumbnail.length > 90000 || !/^data:image\/png;base64,[a-z0-9+/=]+$/i.test(value.thumbnail)) throw new Error('Invalid look thumbnail.');
       out.thumbnail = value.thumbnail;
@@ -133,15 +146,22 @@
   }
   function exportLook(look) {
     const value = normalizeLook(look);
-    return { kind: 'vibemol.preset', presetVersion: 1, name: value.name, meta: { lookVersion: 3 },
+    return { kind: 'vibemol.preset', presetVersion: 1, name: value.name, meta: { lookVersion: 4 },
       settings: { ...value.settings, 'appearance.look': value } };
   }
   function importLook(value) {
-    if (!value || value.kind !== 'vibemol.preset' || value.presetVersion !== 1 || ![1, 2, 3].includes(value.meta?.lookVersion)) throw new Error('Choose a VibeMol look made with Export look.');
+    if (!value || value.kind !== 'vibemol.preset' || value.presetVersion !== 1 || ![1, 2, 3, 4].includes(value.meta?.lookVersion)) throw new Error('Choose a VibeMol look made with Export look.');
     if (value.meta.lookVersion >= 2 && !value.settings?.['appearance.rendering']) throw new Error('The look has no rendering components.');
     const look = normalizeLook(value.settings?.['appearance.look']);
     look.settings = settings(value.settings);
     return look;
   }
-  global.VibeMolLooks = Object.freeze({ builtins, fields, extra, defaults, settings, normalizeLook, equal, exportLook, importLook });
+  function isLookPreset(value) {
+    // Older general exports could retain look metadata. Their view/scientific
+    // settings still identify a full preset and must keep their original scope.
+    return value?.meta?.lookVersion != null && Object.keys(value.settings || {}).every(key =>
+      key in fields || key in cameraFields || key in extra || key === 'appearance.look');
+  }
+  global.VibeMolLooks = Object.freeze({ builtins, fields, cameraFields, surfaceGroups, surfaceOverrides,
+    extra, defaults, settings, normalizeLook, equal, exportLook, importLook, isLookPreset });
 })(window);
