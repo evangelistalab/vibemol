@@ -58,14 +58,14 @@
     }
     return out;
   }
-  // These recipes retain the standalone Style Lab's lighting, material response,
-  // display radii, and colors. Camera and scientific data stay outside a look.
+  // These recipes use the standalone Style Lab's lighting, material response,
+  // display radii, and colors as a base. Camera and scientific data stay outside a look.
   function studioRecipe(id, name, description, patch, experimental = false) {
     const s = { finish: 'physical', atomScale: 1, bondRadius: 0.105, smoothness: 0.55,
       outline: 0, key: 3.2, fill: 0.65, rim: 1.3, exposure: 1,
       environment: 0.55, metalness: 0, coat: 0.25, iridescence: 0,
       background: '#f4f1eb', carbon: '#575d63', hydrogen: '#f5f0e7', nitrogen: '#446ac4', oxygen: '#c65449',
-      bond: '#aaa9a5', positive: '#476fc4', negative: '#d3724f', ...patch };
+      bond: '#aaa9a5', colorScheme: 'custom', positive: '#476fc4', negative: '#d3724f', ...patch };
     const rendering = model.legacy('basic');
     Object.assign(rendering.geometry, { atomScaleMain: s.atomScale, atomScaleTransitionMetal: s.metalScale ?? s.atomScale,
       atomRadii: {1:0.28,6:0.43,7:0.42,8:0.4}, bondRadius: s.bondRadius,
@@ -84,7 +84,7 @@
     return Object.freeze({ id,name,description,revision:3,experimental,settings:Object.freeze(settings({ ...defaults,
       'appearance.rendering':rendering, 'molecule.feature.shadows':s.finish==='physical',
       'global.backgroundColor':s.background, 'global.elementColorOverrides':{1:s.hydrogen,6:s.carbon,7:s.nitrogen,8:s.oxygen},
-      'surface.posColor':s.positive, 'surface.negColor':s.negative })) });
+      'surface.colorScheme':s.colorScheme, 'surface.posColor':s.positive, 'surface.negColor':s.negative })) });
   }
   const builtins = Object.freeze([
     ...['basic', 'toon', 'kit'].map(id => Object.freeze({ id, name: id[0].toUpperCase() + id.slice(1), revision: 3,
@@ -93,7 +93,8 @@
         'surface.colorScheme': 'emory', 'surface.posColor': '#f2a900', 'surface.negColor': '#0033a0' })) })),
     studioRecipe('classic','Classic','Familiar figures', { finish:'phong', atomScale:1, metalScale:1.15, bondRadius:0.11,
       smoothness:0.28, outline:0.007, key:1.8, fill:0.85, rim:0, environment:0, coat:0,
-      background:'#ffffff', carbon:'#626262', hydrogen:'#f4f4f4', bond:'#9b9b9b' }),
+      background:'#ffffff', carbon:'#626262', hydrogen:'#f4f4f4', bond:'#9b9b9b',
+      colorScheme:'national', positive:'#e60000', negative:'#0033a0' }),
     studioRecipe('porcelain','Porcelain','Soft studio shading', { smoothness:0.4, atomScale:1.1,
       key:3.4, fill:0.85, rim:1.5, environment:0.7, coat:0.38 }),
     studioRecipe('ink','Ink','Teaching & diagrams', { finish:'toon', outline:0.021,

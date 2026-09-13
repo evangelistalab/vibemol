@@ -70,7 +70,7 @@ test('v1 custom looks migrate with their material and lighting values', () => {
   assert.deepEqual(plain(L.importLook(file).settings['appearance.rendering']),plain(migrated));
 });
 
-test('curated studio looks retain the original lab light rig, finishes, palettes, and display radii', () => {
+test('curated studio looks preserve lab rendering with approved Classic defaults', () => {
   for(const id of ['classic','porcelain','ink','opal']) {
     const reference=Lab.builtins.find(look=>look.id===id).settings;
     const look=L.builtins.find(look=>look.id===id), value=look.settings['appearance.rendering'];
@@ -88,7 +88,9 @@ test('curated studio looks retain the original lab light rig, finishes, palettes
     assert.equal(value.geometry.bondRadius,id==='classic'?0.11:reference.bondRadius);
     assert.deepEqual(plain(value.geometry.atomRadii),{1:0.28,6:0.43,7:0.42,8:0.4});
     assert.equal(look.settings['global.backgroundColor'],reference.background);
-    assert.equal(look.settings['surface.posColor'],reference.positive);assert.equal(look.settings['surface.negColor'],reference.negative);
+    assert.equal(look.settings['surface.colorScheme'],id==='classic'?'national':'custom');
+    assert.equal(look.settings['surface.posColor'],id==='classic'?'#e60000':reference.positive);
+    assert.equal(look.settings['surface.negColor'],id==='classic'?'#0033a0':reference.negative);
   }
 });
 
