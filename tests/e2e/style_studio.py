@@ -139,7 +139,6 @@ def run(page):
     page.locator('#appearanceAtomSize').fill('1.22'); page.locator('#appearanceAtomSize').press('Enter')
     assert settings(page)['appearance.rendering']['geometry']['atomScaleMain'] == 1.22
     assert page.locator('#lookModified').inner_text() == '· Modified'
-    assert page.locator('#styleStudioCurrent').inner_text() == 'Classic · Modified'
     page.locator('#lookUndo').click(); assert settings(page) == original
     page.locator('#appearanceMaterialsSection > summary').click()
     page.locator('#appearanceMaterialPreset').select_option('satin')
@@ -183,7 +182,7 @@ def run(page):
     assert abs(moved['x']-box['x']-100)<1 and abs(moved['y']-box['y']-40)<1, (box,moved)
     page.locator('#styleStudioClose').click()
     assert page.locator('#styleStudioBtn').evaluate('el=>el===document.activeElement')
-    assert page.locator('#styleStudioCurrent').inner_text() == 'My studio look'
+    assert quick_preset.locator('option:checked').inner_text() == 'My studio look'
     page.locator('#styleStudioBtn').click()
     assert page.locator('#styleStudio').bounding_box() == moved
     page.locator('#helpFab').click()

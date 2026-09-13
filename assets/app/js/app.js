@@ -32487,7 +32487,6 @@
   }
   looksUi = window.VibeMolLooksUi.createController({
     root: document.getElementById('looksPanel'), captureSettings: captureLookSettings,
-    currentLabel: document.getElementById('styleStudioCurrent'),
     presetSelect: document.getElementById('appearanceLookPreset'),
     atomFields: document.getElementById('appearanceAtomColorFields'), bondFields: document.getElementById('appearanceBondColorFields'),
     getAtomBaseRadius: z => 0.5 * getCovalentRadiusAngstrom(z),

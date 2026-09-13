@@ -76,7 +76,6 @@
       const saved = look && library.find(item => item.id === look.id);
       $('lookCurrentName').textContent = look?.name || 'Custom appearance';
       $('lookModified').textContent = modified ? '· Modified' : '';
-      if (deps.currentLabel) deps.currentLabel.textContent = (look?.name || 'Custom appearance') + (modified ? ' · Modified' : '');
       for (const card of $('lookGallery').children) card.setAttribute('aria-pressed', String(card.dataset.look === look?.id));
       const builtinId = builtinLooks.some(item => item.id === look?.id) ? look.id : '';
       $('lookPreset').value = builtinId;
