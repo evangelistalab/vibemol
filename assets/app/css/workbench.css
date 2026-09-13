@@ -1,0 +1,112 @@
+/* Opt-in workspace experiment; reuse VibeMol's theme and control tokens. */
+body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; }
+.vm-workbench #drop, .vm-workbench #emptyState {
+  left: var(--wb-left); right: var(--wb-right); top: 56px; bottom: var(--wb-bottom);
+}
+.vm-workbench #hint, .vm-workbench:not(.sidebar-collapsed) #hint {
+  left: calc(var(--wb-left) + 12px); right: calc(var(--wb-right) + 12px);
+  bottom: calc(var(--wb-bottom) + 16px); max-width: none;
+}
+.vm-workbench #helpFab { left: calc(var(--wb-left) + 16px); bottom: calc(var(--wb-bottom) + 56px); }
+.vm-workbench #phaseWheel { right: calc(var(--wb-right) + 12px) !important; bottom: calc(var(--wb-bottom) + 60px) !important; }
+.vm-workbench:not([data-wb-mode='edit']) #displayWindowAdaptiveMenu { display: none !important; }
+.vm-workbench .vm-two-component-overlay__label { top: 12px; }
+
+.wb-bar {
+  position: fixed; top: 0; left: var(--wb-left); right: 0; height: 56px; z-index: 45;
+  display: flex; align-items: center; gap: 12px; padding: 0 16px; box-sizing: border-box;
+  background: var(--vm-color-surface-panel); border-bottom: 1px solid var(--vm-color-border);
+  color: var(--vm-color-text-primary); font: 500 12px var(--vm-font-sans);
+}
+.wb-brand { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.wb-brand strong { font-size: 12px; letter-spacing: .02em; }
+.wb-lab { border: 1px solid var(--vm-color-border); border-radius: 4px; padding: 2px 4px; font-size: 9px; color: var(--vm-color-text-secondary); }
+.wb-tools { display: flex; align-items: center; gap: 3px; overflow-x: auto; scrollbar-width: thin; flex: 1; min-width: 0; }
+.wb-bar [hidden] { display: none !important; }
+.wb-bar .vm-btn, .wb-dock .vm-btn, .wb-menu .vm-btn { font: 500 12px var(--vm-font-sans); box-shadow: none; }
+.wb-tool { flex-shrink: 0; white-space: nowrap; gap: 6px; padding: 7px 8px; border: 1px solid transparent; background: transparent; color: var(--vm-color-text-secondary); }
+.wb-tool[aria-pressed='true'] { color: var(--vm-color-toolbar-tab-fg-active); background: var(--vm-color-surface-secondary); }
+.wb-tool[data-parked='true']::after { content: ''; width: 5px; height: 5px; border-radius: 50%; border: 1px solid currentColor; }
+.wb-tool .material-symbols-rounded, .wb-bar .material-symbols-rounded, .wb-dock .material-symbols-rounded { font-size: 17px; }
+.wb-bar-actions { display: flex; align-items: center; flex-shrink: 0; gap: 5px; border-left: 1px solid var(--vm-color-border); padding-left: 10px; }
+.wb-bar-actions .vm-btn { gap: 5px; white-space: nowrap; }
+.vm-workbench #topRightUtilities { position: static; inset: auto; width: auto; height: auto; }
+.vm-workbench #topRightUtilitiesReveal { position: static; opacity: 1; pointer-events: auto; gap: 6px; }
+.vm-workbench #topRightUtilities .themeToggleText { display: none; }
+.vm-workbench #topRightUtilities .themeToggleShell,
+.vm-workbench #topRightUtilities .topRightUtilityLink { filter: none; color: var(--vm-color-text-secondary); }
+.vm-workbench #toolbarShowBtn { position: static; inset: auto; flex-shrink: 0; box-shadow: none; }
+.wb-bar button:hover, .wb-menu button:hover { background: var(--vm-color-surface-chip); }
+.wb-bar button:focus-visible, .wb-menu button:focus-visible, .wb-tab:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring); }
+.wb-dock { position: fixed; z-index: 40; background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); box-sizing: border-box; }
+.wb-dock[hidden] { display: none; }
+.wb-dock--right { top: 56px; right: 0; bottom: 0; width: var(--wb-right); border-left: 1px solid var(--vm-color-border); }
+.wb-dock--bottom { left: var(--wb-left); right: var(--wb-right); bottom: 0; height: var(--wb-bottom); border-top: 1px solid var(--vm-color-border); }
+.wb-tabs { display: flex; align-items: stretch; gap: 2px; padding: 0 8px; height: 38px; overflow: auto; scrollbar-width: thin; border-bottom: 1px solid var(--vm-color-border); }
+.wb-tab { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--vm-color-text-secondary); font: 500 12px var(--vm-font-sans); box-shadow: none; }
+.wb-tab[aria-selected='true'] { border-bottom-color: var(--vm-color-toolbar-tab-accent); color: var(--vm-color-text-primary); }
+.wb-tab:hover { background: var(--vm-color-surface-chip); }
+.wb-slot { position: absolute; top: 39px; left: 1px; right: 0; bottom: 0; }
+.wb-resize { position: absolute; touch-action: none; z-index: 2; background: transparent; }
+.wb-dock--right .wb-resize { width: 7px; top: 0; bottom: 0; left: -4px; cursor: ew-resize; }
+.wb-dock--bottom .wb-resize { height: 7px; left: 0; right: 0; top: -4px; cursor: ns-resize; }
+.wb-resize:hover, .wb-resize:focus-visible { background: color-mix(in srgb, var(--vm-color-toolbar-tab-accent) 22%, transparent); outline: none; }
+
+/* Keep original panel nodes and their handlers; only their viewport changes. */
+.vm-workbench [data-wb-hidden='true'] { display: none !important; }
+.vm-workbench [data-wb-placement='right'], .vm-workbench [data-wb-placement='bottom'] {
+  position: fixed !important; left: var(--wb-panel-left) !important; top: var(--wb-panel-top) !important;
+  width: var(--wb-panel-width) !important; height: var(--wb-panel-height) !important;
+  right: auto !important; bottom: auto !important; transform: none !important;
+  min-width: 0 !important; min-height: 0 !important; max-width: none !important; max-height: none !important;
+  z-index: 41 !important; box-sizing: border-box; border: 0; border-radius: 0; box-shadow: none;
+  display: flex; flex-direction: column; overflow: auto;
+}
+.vm-workbench [data-wb-panel] > [data-vm-drag-handle] { flex-shrink: 0; }
+.vm-workbench [data-vm-floating-drag-disabled] [data-vm-drag-handle] { cursor: default; touch-action: pan-y; }
+.wb-window-header { display: flex; align-items: center; gap: 8px; }
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader > .title,
+.vm-workbench #sidePanel[data-wb-placement]:not([data-wb-placement='float']) > header > h2 { display: none; }
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader::before,
+.vm-workbench #sidePanel[data-wb-placement]:not([data-wb-placement='float']) > header::before {
+  content: 'drag_indicator'; font: 18px 'Material Symbols Rounded'; color: var(--vm-color-text-secondary); flex-shrink: 0;
+}
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader > .actions { margin-left: auto; }
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelBody,
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) #viewControls { flex: 1; min-height: 0; overflow: auto; }
+.wb-window-menu.vm-btn { flex-shrink: 0; width: 26px; height: 26px; min-width: 26px; padding: 0; margin-left: auto; color: var(--vm-color-text-secondary); background: transparent; border: 0; box-shadow: none; }
+.wb-window-menu .material-symbols-rounded { font-size: 17px; }
+.vm-workbench #styleStudio[data-wb-placement]:not([data-wb-placement='float']) { container-type: inline-size; }
+.vm-workbench #styleStudio[data-wb-placement]:not([data-wb-placement='float']) #looksPanel { flex: 1; min-height: 0; }
+@container (max-width: 620px) {
+  #styleStudio #looksPanel { display: block; overflow-y: auto; }
+  #styleStudio #lookPresetSection, #styleStudio #lookComponentEditor { overflow: visible; }
+  #styleStudio #lookComponentEditor { border-left: 0; border-top: 1px solid var(--vm-color-border); }
+  #styleStudio .vm-look-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.wb-menu { position: fixed; z-index: 10060; width: 280px; max-width: calc(100vw - 24px); box-sizing: border-box; font-family: var(--vm-font-sans); }
+.wb-menu[hidden] { display: none; }
+.wb-menu-title { font-size: 11px; font-weight: 600; color: var(--vm-color-text-secondary); padding: 2px 6px 8px; }
+.wb-menu .vm-btn { width: 100%; justify-content: flex-start; gap: 9px; padding: 8px; background: transparent; color: var(--vm-color-text-primary); border: 0; text-align: left; }
+.wb-menu .material-symbols-rounded { font-size: 17px; }
+.wb-menu small { display: block; margin-top: 2px; color: var(--vm-color-text-secondary); font-weight: 400; }
+.wb-menu hr { border: 0; border-top: 1px solid var(--vm-color-border); margin: 8px 0; }
+.wb-save { display: flex; gap: 6px; padding: 4px; }
+.wb-save input { min-width: 0; width: 100%; font: 12px var(--vm-font-sans); padding: 6px 8px; color: var(--vm-color-text-primary); background: var(--vm-color-surface-input); border: 1px solid var(--vm-color-border-input); border-radius: var(--vm-radius-md); box-sizing: border-box; }
+.wb-save input:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring); }
+.wb-save .vm-btn { width: auto; }
+.wb-status { color: var(--vm-color-text-secondary); font: 11px var(--vm-font-sans); padding: 5px 6px; }
+.wb-snap { position: fixed; z-index: 10055; pointer-events: none; border: 2px solid var(--vm-color-toolbar-tab-accent); border-radius: var(--vm-radius-lg); background: color-mix(in srgb, var(--vm-color-toolbar-tab-accent) 10%, transparent); display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.wb-snap[hidden] { display: none; }
+.wb-snap span { background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); padding: 8px 14px; border-radius: var(--vm-radius-md); box-shadow: var(--vm-shadow-lg); font: 500 12px var(--vm-font-sans); }
+.vm-workbench[data-wb-focus='true'] #toolbar,
+.vm-workbench[data-wb-focus='true'] #toolbarShowBtn,
+.vm-workbench[data-wb-focus='true'] #displayWindowAdaptiveMenu,
+.vm-workbench[data-wb-focus='true'] [data-vm-floating-panel],
+.vm-workbench[data-wb-focus='true'] #hint,
+.vm-workbench[data-wb-focus='true'] #helpFab { visibility: hidden !important; pointer-events: none !important; }
+.vm-workbench[data-wb-focus='true'] .wb-tools,
+.vm-workbench[data-wb-focus='true'] .wb-arrange { visibility: hidden; pointer-events: none; }
+@media (max-width: 1250px) { .wb-tool-label { display: none; } .wb-brand strong { display: none; } }
+@media (max-width: 650px) { .wb-bar { gap: 5px; padding: 0 8px; } .wb-bar-actions { padding-left: 5px; } .wb-brand { display: none; } .wb-arrange span:not(.material-symbols-rounded) { display: none; } }
+@media (prefers-reduced-motion: reduce) { .vm-workbench * { scroll-behavior: auto !important; } }

@@ -84,6 +84,7 @@ Primary capabilities:
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/display-windows.js`: non-edit adaptive launcher/window catalog, exclusivity rules, positioning, and floating-inspector anchoring controller.
 - `assets/app/js/floating-panels.js` and `assets/app/css/floating-panels.css`: shared pointer/touch/keyboard dragging for every custom floating interface, viewport bounds, transient manual placement, and dynamic header registration. See `docs/floating-interfaces.md` for the complete inventory.
+- `assets/app/js/workbench-model.js`, `assets/app/js/workbench.js`, and `assets/app/css/workbench.css`: opt-in `?workspaceLab=1` experiment with tabbed docks, snap previews, minimized windows, Focus, named layouts, and responsive bottom panels. The scripts load after `app.js`; ordinary launches keep the current interface. See `docs/experiments/workbench/README.md` for rationale, sources, and scope.
 - `assets/app/js/appearance-ui.js`: Appearance inspector chip/action-toggle binding plus conditional-section sync controller.
 - `assets/app/js/appearance-model.js`: independent geometry, material, coloring, lighting, and effect descriptors; validation, legacy migration, and shared material factory.
 - `assets/app/js/appearance-looks.js`: complete resolved look recipes, approved Basic/Toon/Kit presets, experimental candidates, and portable look validation.
@@ -263,6 +264,7 @@ Preset automation contract exposed globally:
 - `window.VibeMolPreset.import(preset, options?)`
 
 ## Key Behavior Notes
+- The Workbench experiment manages eight persistent display inspectors through `VibeMolWorkbenchHost`; edit menus and transient dialogs retain their existing behavior. Its layout storage is separate from scientific presets/sessions. Workbench uses study mode to avoid overwriting ordinary autosave/recovery. Only `?workspaceLab=1&workspaceDemo=1` loads the bundled methane demonstration into an empty scene.
 - All 24 custom floating interfaces use title bars or compact grips for movement, including display/edit windows, operator panels, scene/arithmetic menus, modal dialogs, confirmations, and video recording controls. Manual positions survive close/reopen and scene updates until reload; Alt+arrows move a focused handle and Alt+Home restores anchoring. Native browser dialogs/pickers remain browser-controlled. Floating layout is excluded from presets/sessions/recovery. `floating-panels.js` loads before UI controllers and registers static shells; the outliner registers its dynamic shells.
 - 2C surface mode is global across loaded 2C files.
 - Molecule styles are: `basic`, `toon`, `kit` (shown as Basic, Toon, and Kit).

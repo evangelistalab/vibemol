@@ -31,7 +31,8 @@
   const MOLDEN_GRID_MAX_TOTAL_POINTS = 360000;
   const UI_THEME_STORAGE_KEY = 'vibemol.uiTheme';
   const AUTOSAVE_STORAGE_KEY = 'vibemol.autosavePreset';
-  const appearanceStudy = new URLSearchParams(window.location.search).get('appearanceStudy') === '1';
+  const workspaceExperiment = new URLSearchParams(window.location.search).get('workspaceLab') === '1';
+  const appearanceStudy = workspaceExperiment || new URLSearchParams(window.location.search).get('appearanceStudy') === '1';
   const APPEARANCE_AUTOSAVE_PERSIST_SCOPE = 'appearanceAutosave';
   const AUTOSAVE_PRESET_OBJECT_VALUE_KEYS = new Set(['global.elementColorOverrides', 'appearance.look', 'appearance.rendering']);
   const lookModule = window.VibeMolLooks;
@@ -11785,12 +11786,15 @@
   }
   document.addEventListener('pointerdown', (event) => {
     if (!isFloatingPanelCurrentlyOpen(spinorInfoPanel)) return;
+    if (window.VibeMolWorkbench?.isDocked(NON_EDIT_WINDOW_ID.SPINOR_INFO)) return;
     const target = event && event.target ? event.target : null;
     if ((spinorInfoPanel && spinorInfoPanel.contains(target)) || (spinorInfoBtn && spinorInfoBtn.contains(target))) return;
     setSpinorInfoPanelOpen(false);
   });
   displayWindowsController = createDisplayWindowsController({
     positionFloatingPopover: positionFloatingPopoverUi,
+    keepOpenOnSwitch: id => !!window.VibeMolWorkbench?.manages(id),
+    revealHiddenWindow: id => !!window.VibeMolWorkbench?.restoreIfHidden(id),
     entries: {
       [NON_EDIT_WINDOW_ID.STYLE_STUDIO]: {
         id: NON_EDIT_WINDOW_ID.STYLE_STUDIO,
@@ -32491,7 +32495,7 @@
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) void sessionRecovery.flush(); });
   window.addEventListener('pagehide', () => { void sessionRecovery.flush(); });
-  if (appearanceStudy) { sessionRecovery.stop(); sessionStatusEl.textContent = 'Appearance study'; }
+  if (appearanceStudy) { sessionRecovery.stop(); sessionStatusEl.textContent = workspaceExperiment ? 'Workspace experiment' : 'Appearance study'; }
   else void sessionRecovery.initialize();
 
   function editAppearanceComponent(section, patch, options = {}) {
@@ -32558,6 +32562,15 @@
   // Startup: begin with an empty scene and onboarding text.
   syncLoadedSceneControls();
   updateEmptyStateVisibility();
+
+  // Narrow host adapter for the opt-in workspace experiment. Scientific state
+  // remains owned by the existing window controllers and renderer.
+  window.VibeMolWorkbenchHost = Object.freeze({
+    windows: displayWindowsController,
+    getMode: () => currentMode,
+    setSidebarCollapsed: setWorkspaceSidebarCollapsed,
+    resize,
+  });
 
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 

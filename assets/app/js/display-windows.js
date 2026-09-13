@@ -79,6 +79,7 @@
       try {
         for (const id of EXCLUSIVE_WINDOW_IDS) {
           if (exceptId && id === exceptId) continue;
+          if (exceptId && deps?.keepOpenOnSwitch?.(id)) continue;
           const entry = getEntry(id);
           if (!entry || typeof entry.isOpen !== 'function' || typeof entry.setOpen !== 'function') continue;
           if (!entry.isOpen()) continue;
@@ -90,6 +91,7 @@
     }
 
     function toggleExclusiveWindow(id) {
+      if (deps?.revealHiddenWindow?.(id)) return;
       const entry = getEntry(id);
       if (!entry || typeof entry.isOpen !== 'function' || typeof entry.setOpen !== 'function') return;
       if (entry.isOpen()) entry.setOpen(false);
