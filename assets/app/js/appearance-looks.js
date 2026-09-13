@@ -27,8 +27,6 @@
     'molecule.style': ['basic', choice(['basic', 'toon', 'kit'])],
     'molecule.atomRadiusScale': [1, number(0.6, 1.6)],
     'molecule.bondRadiusScale': [1, number(0.6, 1.6)],
-    'molecule.opacity.atom': [1, number(0.05, 1)],
-    'molecule.opacity.bond': [1, number(0.05, 1)],
     'molecule.feature.shadows': [false, bool],
     'molecule.feature.fog': [false, bool],
     'molecule.feature.fog.depth': [14, number(6, 40)],

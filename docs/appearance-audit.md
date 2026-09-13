@@ -42,7 +42,7 @@ Scope: all seven curated looks, the shared material presets, molecule bond const
 | Shadows and fog | Rendering |
 | Background color | Scene |
 | Orbital phase colors and palette | Surfaces |
-| Atom/bond/surface opacity | Shared Material opacity; differing imported values remain visible as Mixed until changed |
+| Surface opacity | Surfaces → Opacity, scoped to the selected orbital or group; differing values show Mixed. Atoms and bonds stay opaque; their retired opacity keys are ignored on import. |
 
 Material-model-specific controls appear only when the renderer uses them. For example, physical roughness is inactive under Toon, and environment intensity is inactive under Phong. Key/rim angles provide convenient directional adjustment; Light positions exposes the exact stored coordinates, including the key light's shadow-camera placement.
 

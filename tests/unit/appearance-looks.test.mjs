@@ -50,6 +50,22 @@ test('personal previews are portable bounded PNG data URLs', () => {
   assert.equal(looks.importLook(plain(looks.exportLook(look))).thumbnail, look.thumbnail);
 });
 
+test('old looks retain surface opacity and discard retired atom/bond opacity', () => {
+  const looks = api(), file = plain(looks.exportLook(looks.builtins[0]));
+  for (const settings of [file.settings, file.settings['appearance.look'].settings]) {
+    settings['molecule.opacity.atom'] = 0.2;
+    settings['molecule.opacity.bond'] = 0.4;
+    settings['surface.opacity'] = 0.65;
+  }
+  const reopened = looks.importLook(file), exported = looks.exportLook(reopened);
+  assert.equal(exported.settings['surface.opacity'], 0.65);
+  for (const key of ['molecule.opacity.atom', 'molecule.opacity.bond']) {
+    assert.ok(!(key in reopened.settings));
+    assert.ok(!(key in exported.settings));
+    assert.ok(!(key in exported.settings['appearance.look'].settings));
+  }
+});
+
 test('modified detection compares palettes by value and tolerates numeric control rounding', () => {
   const looks = api(), before = looks.builtins[0].settings, after = plain(before);
   after['global.elementColorOverrides'] = Object.fromEntries(Object.entries(after['global.elementColorOverrides']).reverse());

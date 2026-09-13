@@ -1535,8 +1535,6 @@
   let moleculeShadowsEnabled = false;
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
-  let moleculeAtomOpacity = 1.0;
-  let moleculeBondOpacity = 1.0;
   let surfaceIsoDefault = DEFAULT_ISO_VALUE;
   let surfaceOpacityDefault = 1.0;
   let surfaceColorSchemeDefault = 'emory';
@@ -1925,8 +1923,7 @@
     return { ...g, key: g.connector === 'kit' ? 'kit' : 'basic',
       usesKitCurvedMultiBond: g.curvedMultipleBonds,
       stylizedMolecule: appearanceState.effects.highlights,
-      aromaticDashColor: palette === 'kit' ? 0x59616d : palette === 'toon' ? 0x515a66 : 0x4f5560,
-      aromaticDashOpacity: 0.96 };
+      aromaticDashColor: palette === 'kit' ? 0x59616d : palette === 'toon' ? 0x515a66 : 0x4f5560 };
   }
   // Global molecule render multipliers applied on top of the active style profile.
   let moleculeAtomRadiusScale = 1.0;
@@ -2740,44 +2737,17 @@
   }
 
   /**
-   * Apply one global opacity control to a material.
-   * @param {THREE.Material} material
-   * @param {number} opacity
-   * @returns {THREE.Material}
-   */
-  function applyGlobalMaterialOpacity(material, opacity) {
-    if (!material || typeof material !== 'object') return material;
-    const alpha = Math.max(0.05, Math.min(1, Number.isFinite(opacity) ? opacity : 1));
-    if ('opacity' in material) material.opacity = alpha;
-    if ('transparent' in material) material.transparent = alpha < 0.999 || !!material.transparent;
-    if ('depthWrite' in material) material.depthWrite = alpha >= 0.999;
-    material.needsUpdate = true;
-    return material;
-  }
-
-  /**
-   * Build the base atom material for the active molecule style.
-   * Opacity policy is applied by higher-level callers so previews can reuse
-   * the same style without inheriting the live molecule-opacity controls.
-   * @param {THREE.Color} color
-   * @param {number} z
-   * @returns {THREE.Material}
-   */
-  function buildAtomMaterialForCurrentStyle(color, z) {
-    const descriptor = appearanceModel.resolvedMaterial(appearanceState, 'atoms', z);
-    const mat = appearanceModel.createMaterial(THREE, descriptor, color, getToonGradientTexture('atom', descriptor.toonSteps));
-    mat.userData.vmAppearanceTarget = 'atoms'; mat.userData.vmAppearanceZ = z; mat.userData.vmAppearanceColor = color.getHexString();
-    return mat;
-  }
-
-  /**
-   * Create an atom material that matches the active molecule style.
+   * Build an opaque atom material for the active molecule style.
+   * Transient edit previews apply their own opacity after creating the material.
    * @param {THREE.Color} color
    * @param {number} z
    * @returns {THREE.Material}
    */
   function createAtomMaterial(color, z) {
-    return applyGlobalMaterialOpacity(buildAtomMaterialForCurrentStyle(color, z), moleculeAtomOpacity);
+    const descriptor = appearanceModel.resolvedMaterial(appearanceState, 'atoms', z);
+    const mat = appearanceModel.createMaterial(THREE, descriptor, color, getToonGradientTexture('atom', descriptor.toonSteps));
+    mat.userData.vmAppearanceTarget = 'atoms'; mat.userData.vmAppearanceZ = z; mat.userData.vmAppearanceColor = color.getHexString();
+    return mat;
   }
 
   const DEFAULT_GHOST_ATOM_PREVIEW_OPACITY = 0.6;
@@ -2801,7 +2771,7 @@
 
   function createGhostAtomPreviewMaterial(color, z, opacity = DEFAULT_GHOST_ATOM_PREVIEW_OPACITY) {
     const atomColor = color && color.isColor ? color.clone() : new THREE.Color(color || 0xffffff);
-    const material = buildAtomMaterialForCurrentStyle(atomColor, z);
+    const material = createAtomMaterial(atomColor, z);
     return applyGhostPreviewMaterialOpacity(material, opacity);
   }
 
@@ -2874,7 +2844,6 @@
    */
   function createAtomHighlightMaterial(z) {
     const isTransitionMetal = isTransitionMetalAtomicNumber(z);
-    const opacityScale = Math.max(0.05, Math.min(1, moleculeAtomOpacity));
     return new THREE.MeshPhongMaterial({
       color: isTransitionMetal ? 0xffd39a : 0x88a4d2,
       specular: 0xffffff,
@@ -2882,7 +2851,7 @@
       emissive: isTransitionMetal ? new THREE.Color(0x5a3f00) : new THREE.Color(0x172236),
       emissiveIntensity: isTransitionMetal ? 0.18 : 0.1,
       transparent: true,
-      opacity: (isTransitionMetal ? 0.52 : 0.34) * opacityScale,
+      opacity: isTransitionMetal ? 0.52 : 0.34,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       depthTest: true,
@@ -2900,11 +2869,10 @@
   function getBondMaterial(options = {}) {
     const descriptor = appearanceModel.resolvedMaterial(appearanceState, 'bonds');
     const coloring = appearanceState.coloring;
-    const cacheKey = JSON.stringify([descriptor, coloring, moleculeBondOpacity, options]);
+    const cacheKey = JSON.stringify([descriptor, coloring, options]);
     if (bondMaterialCache.has(cacheKey)) return bondMaterialCache.get(cacheKey);
     const mat = appearanceModel.createMaterial(THREE, descriptor, new THREE.Color(options.color || coloring.bondColor),
       getToonGradientTexture('bond', descriptor.toonSteps), { vertexColors: options.vertexColors ?? coloring.elementBonds });
-    applyGlobalMaterialOpacity(mat, moleculeBondOpacity * (options.opacityFactor ?? 1));
     mat.userData.vmAppearanceTarget = 'bonds';
     mat.userData.vmAppearanceBondOptions = { ...options };
     bondMaterialCache.set(cacheKey, mat);
@@ -2920,14 +2888,13 @@
     const styleKey = profile.key;
     const useOutline = appearanceState.effects.bondOutlineFraction > 0 || appearanceState.effects.outlineWidth > 0;
     if (!useOutline) return null;
-    const alphaKey = Math.max(0.35, Math.min(1, moleculeBondOpacity)).toFixed(3);
-    const key = `${styleKey}:outline:alpha=${alphaKey}`;
+    const key = `${styleKey}:outline`;
     if (bondMaterialCache.has(key)) return bondMaterialCache.get(key);
     const mat = new THREE.MeshBasicMaterial({
       color: 0x334050,
       side: THREE.BackSide,
       transparent: true,
-      opacity: 0.86 * Math.max(0.35, Math.min(1, moleculeBondOpacity)),
+      opacity: 0.86,
       depthWrite: false,
     });
     bondMaterialCache.set(key, mat);
@@ -2965,7 +2932,7 @@
     const profile = getMoleculeStyleProfile();
     return getBondMaterial({ color: appearanceState.coloring.elementBonds
       ? '#' + new THREE.Color(profile.aromaticDashColor).multiply(new THREE.Color(appearanceState.coloring.bondColor)).getHexString() : appearanceState.coloring.bondColor,
-      vertexColors: false, opacityFactor: profile.aromaticDashOpacity });
+      vertexColors: false });
   }
 
   /**
@@ -3674,7 +3641,7 @@
         color: 0x303846,
         side: THREE.BackSide,
         transparent: true,
-        opacity: 0.9 * Math.max(0.35, Math.min(1, moleculeAtomOpacity)),
+        opacity: 0.9,
         depthWrite: false,
       })
       : null;
@@ -4234,7 +4201,7 @@
           cursor += dashLength + gapLength;
         }
       } else {
-        const solid = createWorldSegmentBondMesh(placement.aEnd, placement.bEnd, color, radius, moleculeBondOpacity, true);
+        const solid = createWorldSegmentBondMesh(placement.aEnd, placement.bEnd, color, radius, 1, true);
         if (solid) {
           solid.userData = Object.assign({}, solid.userData || {}, { type: 'metalBondSolid' });
           carrier.add(solid);
@@ -4313,7 +4280,7 @@
       if (!atomA || !atomB) continue;
       addMetalStyledBond(edge, atomA, atomB);
     }
-    const metalDashMesh = createWorldSegmentBondInstances(metalDashSegments, moleculeBondOpacity);
+    const metalDashMesh = createWorldSegmentBondInstances(metalDashSegments);
     if (metalDashMesh) group.add(metalDashMesh);
     group.userData = Object.assign({}, group.userData || {}, {
       hasMetalStyleBonds: metalStyleEdges.length > 0,
@@ -7192,8 +7159,6 @@
   const moleculeFogToggleEl = document.getElementById('moleculeFogToggle');
   const rowMoleculeFogDepth = document.getElementById('rowMoleculeFogDepth');
   const moleculeFogDepthEl = document.getElementById('moleculeFogDepth');
-  const moleculeAtomOpacityEl = document.getElementById('moleculeAtomOpacity');
-  const moleculeBondOpacityEl = document.getElementById('moleculeBondOpacity');
   const dofToggleEl = document.getElementById('dofToggle');
   const rowDofFocusMode = document.getElementById('rowDofFocusMode');
   const dofFocusModeEl = document.getElementById('dofFocusMode');
@@ -19165,10 +19130,9 @@
    * Each segment scales one shared unit cylinder by radius/length and uses
    * per-instance color so large dashed metal-bond sets stay cheap to draw.
    * @param {Array<{start:THREE.Vector3,end:THREE.Vector3,color:THREE.Color,radius:number}>} segments
-   * @param {number=} opacity
    * @returns {THREE.InstancedMesh|null}
    */
-  function createWorldSegmentBondInstances(segments, opacity = 0.8) {
+  function createWorldSegmentBondInstances(segments) {
     const items = Array.isArray(segments) ? segments.filter((segment) => {
       if (!segment || !segment.start || !segment.end || !segment.color) return false;
       return Number(segment.radius) > 0;
@@ -26025,8 +25989,6 @@
     setViewControlValue(moleculeFogDepthEl, getMoleculeFogDepth());
     setViewControlValue(moleculeAtomRadiusScaleEl, getMoleculeAtomRadiusScale());
     setViewControlValue(moleculeBondRadiusScaleEl, getMoleculeBondRadiusScale());
-    setViewControlValue(moleculeAtomOpacityEl, Number(moleculeAtomOpacity));
-    setViewControlValue(moleculeBondOpacityEl, Number(moleculeBondOpacity));
     if (appearanceSimpleBondsToggleEl) appearanceSimpleBondsToggleEl.checked = !showMultiBonds;
     syncAllAppearanceActionToggleButtons();
     syncColorPickerFields();
@@ -26543,20 +26505,6 @@
     () => true,
     scheduleAppearancePresetAutosave
   );
-  bindClampedNumericInput(
-    moleculeAtomOpacityEl,
-    () => Math.max(0.05, Math.min(1, Number.isFinite(moleculeAtomOpacity) ? moleculeAtomOpacity : 1)),
-    (n) => { moleculeAtomOpacity = n; },
-    () => true,
-    scheduleAppearancePresetAutosave
-  );
-  bindClampedNumericInput(
-    moleculeBondOpacityEl,
-    () => Math.max(0.05, Math.min(1, Number.isFinite(moleculeBondOpacity) ? moleculeBondOpacity : 1)),
-    (n) => { moleculeBondOpacity = n; },
-    () => true,
-    scheduleAppearancePresetAutosave
-  );
   appearanceInspectorController = createAppearanceInspectorController({
     styleGroupEl: appearanceMoleculeStyleGroupEl,
     fontPairGroupEl: appearanceFontPairGroupEl,
@@ -26895,10 +26843,12 @@
     isPlainObject,
     setPresetRebuildSuspended: (value) => { suspendPresetRebuild = !!value; },
     normalizeSettings: settings => {
-      // Retired effects in older presets/sessions are ignored, including strict imports.
+      // Retired effects and molecule opacity are ignored in old presets/sessions,
+      // including strict imports. Real atoms and bonds always remain opaque.
       settings = { ...settings };
       for (const key of ['molecule.feature.ink', 'molecule.feature.blackbody.enabled',
-        'molecule.feature.blackbody.coldColor', 'molecule.feature.blackbody.hotColor']) delete settings[key];
+        'molecule.feature.blackbody.coldColor', 'molecule.feature.blackbody.hotColor',
+        'molecule.opacity.atom', 'molecule.opacity.bond']) delete settings[key];
       if ('appearance.rendering' in settings) return { ...settings, 'appearance.rendering': appearanceModel.normalize(settings['appearance.rendering']) };
       const legacyKeys = ['molecule.style', ...Object.keys(lookModule.extra)];
       let next = appearanceModel.clone(appearanceState);
@@ -27259,14 +27209,6 @@
   registerAppearancePresetSetting('molecule.feature.fog.depth', () => getMoleculeFogDepth(), (value) => {
     moleculeFogDepth = Math.max(6.0, Math.min(40.0, asFiniteNumber(value, getMoleculeFogDepth())));
     setViewControlValue(moleculeFogDepthEl, moleculeFogDepth);
-    applyMoleculeStyleUiState();
-  });
-  registerAppearancePresetSetting('molecule.opacity.atom', () => moleculeAtomOpacity, (value) => {
-    moleculeAtomOpacity = Math.max(0.05, Math.min(1, asFiniteNumber(value, moleculeAtomOpacity)));
-    applyMoleculeStyleUiState();
-  });
-  registerAppearancePresetSetting('molecule.opacity.bond', () => moleculeBondOpacity, (value) => {
-    moleculeBondOpacity = Math.max(0.05, Math.min(1, asFiniteNumber(value, moleculeBondOpacity)));
     applyMoleculeStyleUiState();
   });
   registerPresetSetting('builder.transformCleanup.auto', () => !!editTransformAutoCleanupEnabled, (value) => {
@@ -27993,7 +27935,8 @@
       contentGroup.traverse(obj => {
         if (!obj.material || (target === 'atoms' ? obj.userData?.type !== 'atom' : obj.material.userData?.vmAppearanceTarget !== target)) return;
         const mat = obj.material;
-        materials.push({ type: mat.type, color: mat.color?.getHexString(), roughness: mat.roughness,
+        materials.push({ type: mat.type, color: mat.color?.getHexString(), opacity: mat.opacity,
+          transparent: mat.transparent, depthWrite: mat.depthWrite, roughness: mat.roughness,
           envMapIntensity: mat.envMapIntensity, iridescence: mat.iridescence, clearcoat:mat.clearcoat,
           clearcoatRoughness:mat.clearcoatRoughness, reflectivity:mat.reflectivity, emissiveIntensity:mat.emissiveIntensity,
           metalness:mat.metalness, shininess:mat.shininess, iridescenceThicknessRange:mat.iridescenceThicknessRange });
@@ -31190,18 +31133,26 @@
       setHintMessage(`Autoiso ON (${Math.round(AUTO_ISO_TARGET_FRACTION * 100)}% target): cached per orbital/component.`);
     };
   }
-  const handleOpacityInput = () => {
-    const layer = getSurfaceAppearanceLayer();
-    if (layer) {
-      const nextOpacity = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
-      applyToSurfaceAppearanceTargets((target) => {
-        target.opacity = nextOpacity;
-      });
-      return;
-    }
-    surfaceOpacityDefault = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
-    updateOpacityAndColors();
-    scheduleAppearancePresetAutosave();
+  const handleOpacityInput = event => {
+    if (event.type === 'input' && document.activeElement === opInput) return;
+    const nextOpacity = Math.max(0.05, Math.min(1, Number(opInput.value) || 1));
+    const layers = getSurfaceAppearanceTargets();
+    const apply = () => {
+      if (layers.length) {
+        if (layers.every(layer => layer.opacity === nextOpacity)) return false;
+        applyToSurfaceAppearanceTargets(target => { target.opacity = nextOpacity; }, { rebuild: false });
+        refreshAppearanceMaterials(['surfaces'], layers);
+        refreshCloudAppearance(layers);
+      } else {
+        if (surfaceOpacityDefault === nextOpacity) return false;
+        surfaceOpacityDefault = nextOpacity;
+        updateOpacityAndColors();
+      }
+      scheduleAppearancePresetAutosave();
+      return true;
+    };
+    if (looksUi) looksUi.edit(`surface-opacity:${layers.map(layer => layer.id).join(',')}`, event.type, apply);
+    else apply();
   };
   opInput.oninput = handleOpacityInput;
   opInput.onchange = handleOpacityInput;
@@ -32584,17 +32535,6 @@
     applyStartupDefault: !appearanceStudy,
     createSlider: root => { const slider = new VmSlider(root); viewSliderRegistry.set(slider.valueInput, slider); return slider; },
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,
-    getOpacity: () => {
-      const values = [moleculeAtomOpacity, moleculeBondOpacity, surfaceOpacityDefault, ...getAllLookLayers().map(layer => layer.opacity)];
-      return { value:values[0], mixed:values.some(value => value!==values[0]) };
-    },
-    editOpacity: value => {
-      const layers = getAllLookLayers();
-      if (moleculeAtomOpacity===value && moleculeBondOpacity===value && surfaceOpacityDefault===value && layers.every(layer=>layer.opacity===value)) return false;
-      applyLookSettings({'molecule.opacity.atom':value,'molecule.opacity.bond':value,'surface.opacity':value},layers);
-      finishLookChange({geometry:true,targets:['atoms','bonds','surfaces'],layers});
-      return true;
-    },
     getActiveLook: () => activeLook,
     setActiveLook: value => { activeLook = cloneJsonLike(value); scheduleAppearancePresetAutosave(); },
     applyLook: applyNamedLook, captureUndo: captureLookUndo, restoreUndo: restoreLookUndo,

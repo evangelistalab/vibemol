@@ -19,7 +19,6 @@
         <button id="appearanceUseSurfaceMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" hidden>Use surface finish everywhere</button><div id="materialFields"></div>
         <div id="materialAdvancedFields"></div>
         <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Save material</span></summary><div id="materialLibraryFields"></div></details>
-        <div class="vm-session-status" id="materialStatus" role="status"></div>
       </details>
       <details class="vm-appearance-section" id="appearanceLightingSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Lighting & contours</span></summary><div id="lightingFields"></div>
         <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Light colors</span></summary><div id="lightColorFields"></div></details>
@@ -63,9 +62,6 @@
         el.hidden = options.visible ? !options.visible(state) : false;
         component.setDisabled(options.disabled ? options.disabled(state) : false);
         if (document.activeElement !== $(id)) component.setValue(getter(state));
-        const mixed = options.mixed && options.mixed(state);
-        $(id).placeholder = mixed ? 'Mixed' : '';
-        if (mixed && document.activeElement !== $(id)) $(id).value = '';
       });
     }
     function color(parent, id, label, getter, setter, visible = () => true) {
@@ -136,7 +132,6 @@
       ['Iridescence','Pearlescence','iridescence',0,1,2,'materialAdvancedFields',visibleFor('physical')],
     ]) slider(parent, 'appearanceMaterial'+id, label, min,max,precision,s => s.material[key], (value,phase) => edit('material',{[key]:value},phase),
       { visible });
-    slider('materialFields','appearanceMaterialOpacity','Opacity',0.05,1,2,s => s.opacity,(value,phase) => deps.opacity(value,phase),{mixed:s=>s.mixedOpacity});
     slider('materialFields','appearanceToonBands','Bands',2,8,0,s=>s.material.toonSteps.length,(value,phase)=>edit('material',{toonSteps:Array.from({length:Math.round(value)},(_,i)=>Math.round(255*i/(Math.round(value)-1)))},phase),{visible:visibleFor('toon')});
     for(let i=0;i<8;i++) slider('materialFields','appearanceToonTone'+i,'Band '+(i+1),0,255,0,s=>s.material.toonSteps[i]??0,
       (value,phase)=>{const toonSteps=[...deps.getRendering().material.toonSteps];toonSteps[i]=Math.round(value);edit('material',{toonSteps},phase);},
@@ -199,8 +194,7 @@
     }
     function sync() {
       const rendering=deps.getRendering(), settings=deps.captureSettings(), material=currentMaterial();
-      const opacityState=deps.getOpacity();
-      const state={rendering,settings,material,opacity:opacityState.value,mixedOpacity:opacityState.mixed,swatch:'custom'};
+      const state={rendering,settings,material,swatch:'custom'};
       $('appearanceMaterialScope').textContent=rendering.surfaceMaterial
         ? 'This look preserves its original surface finish. Material changes apply to atoms, bonds, and surfaces.'
         : 'One material for atoms, bonds, and surfaces.';
@@ -218,7 +212,6 @@
       const activeSaved=saved.find(item=>item.id===activeMaterialId);
       $('updateMaterial').disabled=!activeSaved;$('deleteMaterial').disabled=!activeSaved;
       for(const fn of controls)fn(state);
-      $('materialStatus').textContent=opacityState.mixed?'Opacity varies in this scene. Adjust it to apply one value everywhere.':'';
     }
     return Object.freeze({sync,currentMaterial});
   }

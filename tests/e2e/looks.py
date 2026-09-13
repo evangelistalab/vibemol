@@ -143,6 +143,68 @@ def components_and_saving(page, context, url):
     print('[looks] seven presets, shared material, studio lighting, undo, libraries, import/export, defaults, reload: passed',flush=True)
 
 
+def surface_opacity_controls(page,context,url):
+    p.load_cubes(page)
+    assert p.load(page,[{'name':'pyridine.xyz','text':(p.ROOT/'assets/fragments/pyridine.xyz').read_text()}],clear_first=False)['ok']
+    a,b=p.cubes(page)
+    page.locator(f'.vm-outliner-row[data-id="{a["id"]}"]').click()
+    editor(page)
+    assert page.locator('#appearanceSurfacesSection #opacity').is_visible()
+    assert page.locator('#appearanceMaterialOpacity,#materialStatus,#moleculeAtomOpacity,#moleculeBondOpacity').count()==0
+
+    def molecule_is_opaque():
+        for target in ['atoms','bonds']:
+            mats=page.evaluate('target=>VibeMolTesting.getLookMaterialSnapshot(target)',target)
+            assert mats and all(m['opacity']==1 and not m['transparent'] and m['depthWrite'] for m in mats),(target,mats)
+
+    def surface_ids():
+        return [m['geometryId'] for m in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')]
+
+    ids=surface_ids();material=rendering(page)['material']
+    page.locator('#opacity').fill('0.42');page.locator('#opacity').press('Tab')
+    assert [layer['opacity'] for layer in p.cubes(page)]==[0.42,1]
+    molecule_is_opaque();assert surface_ids()==ids
+    assert rendering(page)['material']==material
+    # A native slider drag is one appearance undo step, scoped to this orbital.
+    page.locator('#opacityRange').evaluate('''el=>{
+      for(const value of [550,620,740]){el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));}
+      el.dispatchEvent(new Event('change',{bubbles:true}));
+    }''')
+    assert p.cubes(page)[0]['opacity']!=0.42
+    page.locator('#lookUndo').click();assert [layer['opacity'] for layer in p.cubes(page)]==[0.42,1]
+    page.locator(f'.vm-outliner-row[data-id="{a["parentId"]}"]').click()
+    assert page.locator('[data-mixed-key="opacity"]').is_visible()
+    ids=surface_ids()
+    page.locator('#opacity').fill('0.6');page.locator('#opacity').press('Tab')
+    assert [layer['opacity'] for layer in p.cubes(page)]==[0.6,0.6]
+    assert not page.locator('[data-mixed-key="opacity"]').is_visible()
+    assert surface_ids()==ids;molecule_is_opaque()
+    page.locator('#lookUndo').click();assert [layer['opacity'] for layer in p.cubes(page)]==[0.42,1]
+    # Strict legacy presets and sessions retain surface values, never molecule transparency.
+    legacy={'molecule.opacity.atom':0.2,'molecule.opacity.bond':0.3}
+    result=page.evaluate('settings=>VibeMolPreset.import({kind:"vibemol.preset",presetVersion:1,settings},{mode:"strict"})',legacy)
+    assert result['ok'],result
+    molecule_is_opaque()
+    saved=page.evaluate('() => VibeMolSession.export()')
+    saved['preset']['settings'].update(legacy)
+    before=[layer['opacity'] for layer in p.cubes(page)]
+    assert page.evaluate('saved=>VibeMolSession.import(saved)',saved)['ok']
+    assert [layer['opacity'] for layer in p.cubes(page)]==before;molecule_is_opaque()
+    exported=page.evaluate('() => VibeMolPreset.export().settings')
+    assert all(key not in exported for key in legacy)
+    # Hidden Molden orbitals accept group opacity edits without computing any grids.
+    assert p.load(page,[{'name':'orbitals.molden','text':p.MOLDEN}])['ok']
+    orbitals=p.cubes(page)
+    page.locator(f'.vm-outliner-row[data-id="{orbitals[0]["parentId"]}"]').click()
+    page.locator('#opacity').fill('0.35');page.locator('#opacity').press('Tab')
+    assert all(layer['opacity']==0.35 and not layer['visible'] for layer in p.cubes(page))
+    assert page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot().length')==0
+    page.locator(f'.vm-outliner-row[data-id="{orbitals[0]["id"]}"]').click()
+    page.wait_for_function('() => VibeMolTesting.getSurfaceMaterialSnapshot().length>0')
+    assert page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot().every(m=>m.opacity===0.35)')
+    print('[looks] visible surface-only opacity, individual/group edits, mixed values, slider undo, stable geometry, opaque molecules, legacy presets/sessions and deferred MOs: passed',flush=True)
+
+
 def surfaces_and_sessions(page,context,url):
     assert p.load(page,[{'name':'orbitals.molden','text':p.MOLDEN}])['ok']
     before=p.cubes(page);editor(page)
@@ -176,9 +238,10 @@ def surfaces_and_sessions(page,context,url):
     assert [item['geometryId'] for item in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')]==ids
     camera_equal(camera,page.evaluate('() => VibeMolTesting.getCameraSnapshot()'))
     page.locator('#appearanceMaterialPreset').select_option('gel');value(page,'appearanceMaterialRoughness',0.43)
-    value(page,'appearanceMaterialOpacity',0.65)
+    value(page,'opacity',0.65)
     assert all(mat['opacity']==0.65 for mat in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()'))
-    assert state(page)['settings']['molecule.opacity.atom']==state(page)['settings']['molecule.opacity.bond']==0.65
+    assert page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot("atoms").every(mat=>mat.opacity===1&&!mat.transparent&&mat.depthWrite)')
+    assert [item['geometryId'] for item in page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')]==ids
     # ACES must work through the transparent surface compositor as well as direct rendering.
     page.locator('#appearanceToneMapping').select_option('aces')
     page.wait_for_function('() => {const s=VibeMolTesting.getWboitSnapshot();return s.active || s.fallback}')
@@ -516,7 +579,7 @@ def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [surfaces_cast_and_receive,split_surface_shadows,bond_sphere_fit,hydrogen_bond_restrictions,bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
+            for run in [surface_opacity_controls,surfaces_cast_and_receive,split_surface_shadows,bond_sphere_fit,hydrogen_bond_restrictions,bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))

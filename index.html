@@ -2748,12 +2748,12 @@
                   </label>
                 </div>
               </div>
-              <div class="vm-field-row appearanceHiddenControl" aria-hidden="true">
+              <div id="rowSurfaceOpacity" class="vm-field-row">
                 <label class="vm-field-label" for="opacity">Opacity</label>
                 <div class="vm-field-control vm-field-control--slider">
                   <div class="vm-slider" data-vm-slider data-min="0.05" data-max="1.0" data-precision="2">
-                    <input id="opacityRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" data-tooltip="Surface opacity" />
-                    <input id="opacity" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" data-tooltip="Surface opacity" />
+                    <input id="opacityRange" class="vm-slider__range" type="range" min="0" max="1000" step="1" value="0" aria-label="Surface opacity" data-tooltip="Surface opacity" />
+                    <input id="opacity" class="vm-slider__value vm-mono" type="text" inputmode="decimal" value="1.00" aria-label="Surface opacity value" data-tooltip="Surface opacity" />
                   </div>
                 </div>
               </div>

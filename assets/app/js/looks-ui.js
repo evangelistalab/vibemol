@@ -125,9 +125,8 @@
     editor = global.VibeMolAppearanceEditor.createController({
       root: $('lookComponentEditor'), createSlider: deps.createSlider, captureSettings: deps.captureSettings,
       atomFields: deps.atomFields, bondFields: deps.bondFields, getAtomBaseRadius: deps.getAtomBaseRadius,
-      getRendering: deps.getRendering, getOpacity: deps.getOpacity, getActiveLook: current,
+      getRendering: deps.getRendering, getActiveLook: current,
       edit: (section, patch, options, phase) => edit(JSON.stringify([section, Object.keys(patch), options]), phase, () => deps.editComponent(section, patch, options)),
-      opacity: (value, phase) => edit('opacity', phase, () => deps.editOpacity(value)),
       getMaterials: () => clone(materials),
       updateMaterial: (id, label, material) => run(() => {
         if (!materials.some(item => item.id === id)) throw new Error('Choose a saved material first.');
@@ -161,7 +160,7 @@
       if (initial) deps.setActiveLook(L.normalizeLook(initial));
     }
     sync(); if (defaultLook && deps.applyStartupDefault !== false) run(() => { deps.applyLook(defaultLook); sync(); });
-    return Object.freeze({ sync, scheduleSync, choose, getLibrary: () => clone(library), clearUndo: () => { undoState = null; transaction = null; scheduleSync(); } });
+    return Object.freeze({ sync, scheduleSync, choose, edit, getLibrary: () => clone(library), clearUndo: () => { undoState = null; transaction = null; scheduleSync(); } });
   }
   global.VibeMolLooksUi = Object.freeze({ createController });
 })(window);
