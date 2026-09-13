@@ -84,7 +84,9 @@ def modes(page):
     page.locator('#modeMeasureBtn').focus();page.keyboard.press('ArrowRight')
     assert page.locator('#modeEditBtn').get_attribute('aria-pressed')=='true'
     page.locator('#workbenchFocus').click();page.locator('#modeDisplayBtn').click()
-    assert not layout(page)['focus'] and page.locator('#moldenInspector').is_visible()
+    assert layout(page)['focus']
+    page.locator('#workbenchFocus').click()
+    assert page.locator('#moldenInspector').is_visible()
     assert page.locator('#toolbarShowBtn').is_visible()
     page.locator('#toolbarShowBtn').click();capture(page,'modes-desktop')
 

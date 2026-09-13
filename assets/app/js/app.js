@@ -1559,8 +1559,6 @@
   let atomLabelCapGeometry = null;
   // Per-element color overrides (z -> "#rrggbb"), used when element colors are enabled.
   const elementColorOverrides = new Map();
-  // Retained for old integration paths; edit/measure now suppress rendering without mutating this value.
-  let __savedShowSurfaces = null;
   const DEFAULT_SURFACE_MATERIAL_PRESET = 'emissive';
   const LEGACY_SURFACE_STYLE_KEY = 'solid';
   const SURFACE_MATERIAL_PRESETS = Object.freeze(Object.fromEntries(Object.keys(appearanceModel.surfacePresets)
@@ -8475,6 +8473,9 @@
           const record = currentIndex >= 0 ? volumes[currentIndex] : null;
           return record ? `Active: ${record.name}` : '';
         },
+        getFooterText: () => currentMode === MODES.EDIT
+          ? 'Click a value to edit. Changes can be undone.'
+          : 'Read-only · Switch to Edit to modify coordinates.',
         getEmptyText: () => {
           const record = currentIndex >= 0 ? volumes[currentIndex] : null;
           return record ? 'No atoms' : 'No file loaded';
@@ -8494,7 +8495,7 @@
             label: '#',
             align: 'right',
             mono: true,
-            editable: true,
+            get editable() { return currentMode === MODES.EDIT; },
             width: 42,
             buttonClassName: 'coordsCellButton',
             editorClassName: 'coordsCellEditor',
@@ -8507,7 +8508,7 @@
           {
             key: 'sym',
             label: 'Sym',
-            editable: true,
+            get editable() { return currentMode === MODES.EDIT; },
             width: 56,
             buttonClassName: 'coordsCellButton',
             editorClassName: 'coordsCellEditor',
@@ -8521,7 +8522,7 @@
             label: 'Z',
             align: 'right',
             mono: true,
-            editable: true,
+            get editable() { return currentMode === MODES.EDIT; },
             width: 44,
             buttonClassName: 'coordsCellButton',
             editorClassName: 'coordsCellEditor',
@@ -8536,7 +8537,7 @@
             label: 'x',
             align: 'right',
             mono: true,
-            editable: true,
+            get editable() { return currentMode === MODES.EDIT; },
             buttonClassName: 'coordsCellButton',
             editorClassName: 'coordsCellEditor',
             inputType: 'text',
@@ -8550,7 +8551,7 @@
             label: 'y',
             align: 'right',
             mono: true,
-            editable: true,
+            get editable() { return currentMode === MODES.EDIT; },
             buttonClassName: 'coordsCellButton',
             editorClassName: 'coordsCellEditor',
             inputType: 'text',
@@ -8564,7 +8565,7 @@
             label: 'z',
             align: 'right',
             mono: true,
-            editable: true,
+            get editable() { return currentMode === MODES.EDIT; },
             buttonClassName: 'coordsCellButton',
             editorClassName: 'coordsCellEditor',
             inputType: 'text',
@@ -10990,6 +10991,7 @@
       return;
     }
     const prevMode = currentMode;
+    coordsListPopover?.cancelInlineEdit({ focusButton: false });
     window.VibeMolWorkbench?.beforeModeChange();
     if (prevMode === MODES.EDIT && newMode !== MODES.EDIT) {
       closeEditModeTransientPopovers();
@@ -11029,24 +11031,18 @@
     } else if (currentMode === MODES.DISPLAY) {
       setNavigationHint(HINT_START);
     }
-    // Entering measurement mode: suppress surface rendering without changing layer visibility.
-    if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
+    // Measure picks atoms directly and keeps orbital context visible. Only Edit
+    // suppresses surfaces; this never changes the user's layer visibility flags.
+    if (currentMode === MODES.MEASURE) {
       setBondHover(null);
       setSurfaceHover(null);
       hideSurfaceHoverLabel();
-      if (!surfaceRenderSuppressed) {
-        surfaceRenderSuppressed = true;
-        if (typeof updateSurfBtn === 'function') updateSurfBtn();
-        rebuildScene({ preserveView: true });
-      }
     }
-    // Entering edit mode: suppress surface rendering without changing layer visibility.
-    if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
-      if (!surfaceRenderSuppressed) {
-        surfaceRenderSuppressed = true;
-        if (typeof updateSurfBtn === 'function') updateSurfBtn();
-        rebuildScene({ preserveView: true });
-      }
+    const suppressSurfaces = currentMode === MODES.EDIT;
+    if (surfaceRenderSuppressed !== suppressSurfaces) {
+      surfaceRenderSuppressed = suppressSurfaces;
+      if (typeof updateSurfBtn === 'function') updateSurfBtn();
+      rebuildScene({ preserveView: true });
     }
     // Clear transient edit interaction state when leaving edit mode.
     if (currentMode === MODES.DISPLAY) {
@@ -11070,30 +11066,16 @@
         hover: false,
       });
     }
-    // Leaving measurement mode to display: restore render suppression and clear selection.
     if (prevMode === MODES.MEASURE && currentMode === MODES.DISPLAY) {
-      if (surfaceRenderSuppressed) {
-        surfaceRenderSuppressed = false;
-        if (typeof updateSurfBtn === 'function') updateSurfBtn();
-        rebuildScene({ preserveView: true });
-      }
-      __savedShowSurfaces = null;
-      clearEditSelection && clearEditSelection();
-      updateSelectedHalos && updateSelectedHalos();
+      clearEditSelection();
+      updateSelectedHalos();
     }
-    // Leaving edit mode to display: restore render suppression.
-    if (prevMode === MODES.EDIT && currentMode === MODES.DISPLAY) {
-      if (surfaceRenderSuppressed) {
-        surfaceRenderSuppressed = false;
-        if (typeof updateSurfBtn === 'function') updateSurfBtn();
-        rebuildScene({ preserveView: true });
-      }
-      __savedShowSurfaces = null;
-    }
+    coordsListPopover?.render();
     updateAxisGuideLine && updateAxisGuideLine();
     updateEmptyStateVisibility();
     updateModeButtons();
     updateDisplayWindowAdaptiveMenuUi();
+    window.VibeMolWorkbench?.afterModeChange();
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
@@ -11406,7 +11388,7 @@
         windowId: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
         buttonEl: viewInspectorBtn,
         visible: showViewActions,
-        presentation: { icon: 'tune', label: 'View actions', meta: '', key: 'Q', title: 'View actions (Q)', static: false },
+        presentation: { icon: 'tune', label: 'Quick actions', meta: '', key: 'Q', title: 'Quick actions (Q)', static: false },
       },
       {
         windowId: NON_EDIT_WINDOW_ID.VIEW_PANEL,
@@ -11492,8 +11474,9 @@
       metaItems.push({ el: metaEl, text: chipState.presentation.meta || '' });
     }
     for (const buttonEl of (workspaceExperiment ? [] : displayModeButtons)) {
-      visibleItems.push({ el: buttonEl, visible: false });
-      activeItems.push({ el: buttonEl, active: false });
+      const showCoordinates = buttonEl === coordsPanelBtn && context.hasEditableAtoms;
+      visibleItems.push({ el: buttonEl, visible: showCoordinates });
+      activeItems.push({ el: buttonEl, active: showCoordinates && isFloatingPanelCurrentlyOpen(coordsPanel) });
     }
     return {
       mode: MODES.EDIT,
@@ -11507,7 +11490,7 @@
 
   function updateCanvasAdaptiveMenuUi() {
     if (!canvasAdaptiveMenuEl) return;
-    if (currentMode === MODES.EDIT && !workspaceExperiment) closeExclusiveDisplayWindows();
+    if (currentMode === MODES.EDIT && !workspaceExperiment) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
     let menuModel = currentMode === MODES.EDIT
       ? buildEditAdaptiveMenuModel()
       : buildDisplayAdaptiveMenuModel();
@@ -11651,11 +11634,13 @@
   if (coordsPanelClose) coordsPanelClose.onclick = () => setCoordsPanelOpen(false);
 
   /**
-   * Open/close the compact display inspector panel.
+   * Open/close Appearance in the sidebar or reveal its Workbench panel.
    * @param {boolean} open
+   * @param {{reveal?: boolean}} [options]
    */
-  function setDisplayInspectorOpen(open) {
+  function setDisplayInspectorOpen(open, options = {}) {
     setToolbarInspectorOpen(displayInspectorRefs, open);
+    if (open && options.reveal !== false) window.VibeMolWorkbench?.open(NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR);
     if (!open) setAppearanceResetPopoverOpen(false);
   }
   bindToolbarInspectorToggle(displayInspectorRefs);
@@ -11820,7 +11805,7 @@
         id: NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
         label: 'Appearance inspector',
         isOpen: () => isToolbarInspectorOpen(displayInspectorRefs),
-        setOpen: (open) => setDisplayInspectorOpen(open),
+        setOpen: (open) => setDisplayInspectorOpen(open, { reveal: false }),
       },
       [NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR]: {
         id: NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
@@ -11840,7 +11825,7 @@
       },
       [NON_EDIT_WINDOW_ID.VIEW_INSPECTOR]: {
         id: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
-        label: 'View inspector',
+        label: 'Quick actions',
         buttonEl: viewInspectorBtn,
         panelEl: viewInspector,
         isOpen: () => isToolbarInspectorOpen(viewInspectorRefs),
@@ -17078,7 +17063,9 @@
         setBuildPaletteFilterQuery(query, { syncInput: false });
         renderBuildPopover({ preferPayloadSelection: false });
       });
-      editBuildSearchEl.addEventListener('change', commit);
+      // Workbench search is a filter. Moving the panel or changing mode must
+      // not select a payload and close it as a side effect of blurring the field.
+      if (!workspaceExperiment) editBuildSearchEl.addEventListener('change', commit);
       editBuildSearchEl.addEventListener('keydown', (e) => {
         if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
@@ -18344,7 +18331,7 @@
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
-    window.VibeMolWorkbench?.setFocus(false);
+    if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     const wasOpen = isBuildPopoverOpen();
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
@@ -18878,9 +18865,9 @@
     applyHide();
   }
 
-  function showSymmetryPopover() {
+  function showSymmetryPopover(options = {}) {
     if (!editAdaptiveSymmetryPopoverEl) return;
-    window.VibeMolWorkbench?.setFocus(false);
+    if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     clearSymmetryCurrentGroupHighlight();
     symmetryPopoverCurrentGroupLabel = '';
     symmetryPopoverSelectedElementId = '';
@@ -29020,6 +29007,7 @@
    */
   function applyCoordsPopoverEdit(atomIndex, field, parsedValue) {
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    if (currentMode !== MODES.EDIT) return buildCoordsPopoverItems(record);
     const vol = record && record.vol;
     if (!record || !vol || !Array.isArray(vol.atoms) || atomIndex < 0 || atomIndex >= vol.atoms.length) {
       return buildCoordsPopoverItems(record);
@@ -32602,6 +32590,12 @@
       if (currentMode !== MODES.MEASURE) return;
       clearEditSelection();
       setHintMessage(HINT_MEASURE, { accent: false });
+    },
+    captureEditPanels: () => ({ build: isBuildPopoverOpen(), query: getBuildPaletteFilterQuery(), symmetry: isSymmetryPopoverOpen() }),
+    restoreEditPanels: state => {
+      if (currentMode !== MODES.EDIT || !state) return;
+      if (state.build) showBuildPopover({ query: state.query, preserveFocus: true });
+      else if (state.symmetry) showSymmetryPopover({ preserveFocus: true });
     },
     setSidebarCollapsed: setWorkspaceSidebarCollapsed,
     resize,

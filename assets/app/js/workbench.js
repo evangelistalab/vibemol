@@ -13,6 +13,7 @@
     .slice(0, 8).map(item => ({ name: item.name.slice(0, 48), layout: model.normalize(item.layout) })) : [];
   let focus = false, compactBeforeFocus = false, sidebarBeforeFocus = false, scheduled = false, saving = 0, lastRegionKey = '';
   let menuReturn = null, snapPlace = null, draggingId = null, narrow = global.innerWidth < 760;
+  let editPanels = null;
   const pending = new Set(state.open);
   const restorePositions = new Set(Object.keys(state.positions));
   const previousOpen = new Set();
@@ -23,6 +24,7 @@
   const canvas = document.getElementById('canvas');
   canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Molecule viewport');
   canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }), { capture: true });
+  installAppearancePanel();
   if (narrow) host.setSidebarCollapsed(true);
 
   function icon(name) {
@@ -37,6 +39,33 @@
   }
   function label(el, text, className = '') {
     const span = document.createElement('span'); span.className = className; span.textContent = text; el.append(span); return span;
+  }
+  function installAppearancePanel() {
+    const panel = document.getElementById('displayInspector');
+    const sidebar = panel.closest('.tb-appearance');
+    // Preserve the native preset shortcut; move the actual bound controls once.
+    sidebar.append(document.getElementById('appearancePresetSection'));
+    const launcher = document.getElementById('displayInspectorBtn');
+    launcher.setAttribute('aria-haspopup', 'dialog');
+    launcher.setAttribute('data-tooltip', 'Open Appearance');
+    launcher.onclick = () => toggle('displayInspector');
+    document.getElementById('displayInspectorToggleIcon').replaceWith(icon('open_in_new'));
+    const header = document.createElement('header'); header.className = 'vm-popover__header';
+    const title = document.createElement('h2'); title.id = 'workbenchAppearanceTitle'; title.textContent = 'Appearance';
+    const actions = document.createElement('div'); actions.className = 'vm-popover__actions';
+    const reset = document.getElementById('appearanceResetBtn');
+    reset.className = 'vm-btn vm-btn--icon'; actions.append(reset);
+    const dismiss = button('Close Appearance', 'close', () => close('displayInspector'), 'vm-btn--icon');
+    dismiss.id = 'workbenchAppearanceClose'; actions.append(dismiss); header.append(title, actions);
+    panel.classList.remove('vm-sidebar-accordion__panel');
+    panel.classList.add('vm-popover', 'wb-appearance');
+    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-labelledby', title.id);
+    panel.prepend(header); document.body.append(panel);
+    global.VibeMolFloatingPanels.register(panel, { label: 'Appearance', handle: '.vm-popover__header' });
+    const cameraSettings = document.getElementById('appearanceCameraSection');
+    cameraSettings.querySelector('.vm-section-label').textContent = 'Projection & focus';
+    cameraSettings.classList.add('vm-view-section');
+    document.getElementById('viewControls').append(cameraSettings);
   }
   const bar = document.createElement('nav'); bar.className = 'wb-bar'; bar.id = 'workbenchBar'; bar.setAttribute('aria-label', 'Workbench tools');
   const brand = document.createElement('div'); brand.className = 'wb-brand';
@@ -66,7 +95,7 @@
   focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton);
   const utilities = document.getElementById('topRightUtilities'); if (utilities) actions.append(utilities);
   const sidebarButton = document.getElementById('toolbarShowBtn');
-  if (sidebarButton) { sidebarButton.setAttribute('aria-label', 'Show scenes and appearance'); bar.prepend(sidebarButton); }
+  if (sidebarButton) { sidebarButton.setAttribute('aria-label', 'Show scenes'); bar.prepend(sidebarButton); }
   body.append(bar);
 
   function dock(place, title) {
@@ -88,7 +117,7 @@
   const snap = document.createElement('div'); snap.className = 'wb-snap'; snap.id = 'workbenchSnap'; snap.hidden = true;
   const snapLabel = label(snap, ''); body.append(snap);
 
-  function available(item) { return item.id === 'styleStudio' || (item.entry.buttonEl && !item.entry.buttonEl.hidden); }
+  function available(item) { return ['styleStudio', 'displayInspector'].includes(item.id) || (item.entry.buttonEl && !item.entry.buttonEl.hidden); }
   function open(item) { return !!item.entry.isOpen(); }
   function isParked(id) { return state.parked.includes(id); }
   function compact() { return focus ? compactBeforeFocus : model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth() }).compact; }
@@ -394,7 +423,14 @@
     closeMenu(); sync();
   });
   global.VibeMolWorkbench = Object.freeze({
-    beforeModeChange: () => { if (focus) setFocus(false); closeMenu(); },
+    beforeModeChange: () => {
+      if (host.getMode() === 'edit') editPanels = host.captureEditPanels();
+      closeMenu();
+    },
+    afterModeChange: () => {
+      if (host.getMode() === 'edit') host.restoreEditPanels(editPanels);
+      sync();
+    },
     manages: id => byId.has(id),
     isDocked: id => byId.has(id) && effectivePlace(id) !== 'float',
     restoreIfHidden: id => { const item = byId.get(id); if (item && open(item) && item.root.dataset.wbHidden === 'true' && !focus) { reveal(id); return true; } return false; },

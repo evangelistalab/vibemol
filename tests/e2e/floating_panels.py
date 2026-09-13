@@ -112,6 +112,10 @@ def live_workflows(page):
     assert page.evaluate('() => VibeMolAppearanceLooks.snapshot().settings')==before
 
     page.locator('#modeEditBtn').click()
+    # Coordinates now remains available in Edit. Close it explicitly before
+    # exercising selection tools at the same position on the canvas.
+    assert page.locator('#coordsPanel').is_visible()
+    page.locator('#coordsPanelClose').click()
     page.locator('#editAdaptiveAddAtomBtn').evaluate('el=>el.click()')
     build=page.locator('#editAdaptiveAddAtomPopover'); moved=drag(page,build)
     page.locator('#editBuildSearch').fill('carbon')

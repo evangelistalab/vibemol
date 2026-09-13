@@ -17,6 +17,20 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   box-sizing: border-box; max-height: calc(100dvh - var(--wb-top) - 24px); overflow: auto;
 }
 .vm-workbench .vm-two-component-overlay__label { top: 12px; }
+.vm-workbench #displayInspector.wb-appearance {
+  position: fixed; left: calc(var(--wb-left) + 24px); top: calc(var(--wb-top) + 12px);
+  width: min(420px, calc(100vw - 24px)); height: min(780px, calc(100dvh - var(--wb-top) - 24px));
+  min-width: 0; padding: 0; display: flex; flex-direction: column; overflow: hidden;
+  font-family: var(--vm-font-sans); z-index: 50;
+}
+.vm-workbench #displayInspector.wb-appearance:not(.open) { display: none !important; }
+.wb-appearance > .vm-popover__header { align-items: center; flex-shrink: 0; padding: 12px; border-bottom: 1px solid var(--vm-color-border); }
+.vm-workbench #displayInspector > .inspectorAccordion { flex: 1; min-height: 0; overflow: auto; padding: 0; border: 0; }
+.vm-workbench #displayInspector .inspectorAccordionBody { margin: 0; border: 0; border-radius: 0; box-shadow: none; }
+.vm-workbench #displayInspector .vm-appearance-section { scroll-margin-top: 12px; }
+.vm-workbench #appearancePresetSection { padding: 0 4px 8px; }
+.vm-workbench #appearancePresetSection .vm-field-row { grid-template-columns: 108px minmax(0, 1fr); }
+.vm-workbench #displayInspectorBtn > .material-symbols-rounded { font-size: 16px; }
 
 .wb-bar {
   position: fixed; top: 0; left: var(--wb-left); right: 0; height: 56px; z-index: 45;
@@ -97,8 +111,12 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .wb-window-header { display: flex; align-items: center; gap: 8px; }
 .vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader > .title,
 .vm-workbench #sidePanel[data-wb-placement]:not([data-wb-placement='float']) > header > h2 { display: none; }
+.vm-workbench #displayInspector[data-wb-placement]:not([data-wb-placement='float']) > header > h2 { display: none; }
 .vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader::before,
 .vm-workbench #sidePanel[data-wb-placement]:not([data-wb-placement='float']) > header::before {
+  content: 'drag_indicator'; font: 18px 'Material Symbols Rounded'; color: var(--vm-color-text-secondary); flex-shrink: 0;
+}
+.vm-workbench #displayInspector[data-wb-placement]:not([data-wb-placement='float']) > header::before {
   content: 'drag_indicator'; font: 18px 'Material Symbols Rounded'; color: var(--vm-color-text-secondary); flex-shrink: 0;
 }
 .vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader > .actions { margin-left: auto; }

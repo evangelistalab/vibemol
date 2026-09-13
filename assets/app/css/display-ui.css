@@ -1353,11 +1353,11 @@ kbd,
   padding: 0 4px;
 }
 
-#toolbar #displayInspector .appearanceHiddenControl {
+#displayInspector .appearanceHiddenControl {
   display: none;
 }
 
-#toolbar #displayInspector .inspectorAccordion {
+#displayInspector .inspectorAccordion {
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -1365,8 +1365,8 @@ kbd,
   padding-top: 6px;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .inspectorAccordionSummary,
-:is(#toolbar #displayInspector, #styleStudio) .inspectorSubsectionSummary {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1377,13 +1377,13 @@ kbd,
   padding: 2px 0 8px 0;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .inspectorAccordionSummary::-webkit-details-marker,
-:is(#toolbar #displayInspector, #styleStudio) .inspectorSubsectionSummary::-webkit-details-marker {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary::-webkit-details-marker,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary::-webkit-details-marker {
   display: none;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .inspectorAccordionSummary::after,
-:is(#toolbar #displayInspector, #styleStudio) .inspectorSubsectionSummary::after {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary::after,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary::after {
   font-family: inherit;
   font-size: 14px;
   line-height: 1;
@@ -1392,13 +1392,13 @@ kbd,
   flex: 0 0 auto;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) details[open]>.inspectorAccordionSummary::after,
-:is(#toolbar #displayInspector, #styleStudio) details[open]>.inspectorSubsectionSummary::after {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) details[open]>.inspectorAccordionSummary::after,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) details[open]>.inspectorSubsectionSummary::after {
   content: "▾";
   color: var(--tb-text-color-emphasis);
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .inspectorAccordionBody {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody {
   display: grid;
   gap: 8px;
   padding: 12px;
@@ -1409,36 +1409,36 @@ kbd,
   box-shadow: var(--vm-shadow-sm);
 }
 
-#toolbar #displayInspector,
-:is(#toolbar #displayInspector, #styleStudio) .inspectorGroup,
-:is(#toolbar #displayInspector, #styleStudio) .inspectorAccordionBody,
-:is(#toolbar #displayInspector, #styleStudio) .vm-appearance-section,
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-row {
+#displayInspector,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorGroup,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-row {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .inspectorAccordionBody>.secondary {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody>.secondary {
   justify-self: start;
   margin-top: 2px;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-appearance-section+.vm-appearance-section {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section+.vm-appearance-section {
   margin-top: 16px;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-appearance-section .vm-section-label {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section .vm-section-label {
   margin: 0 0 8px;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-row>.vm-field-control>.vm-button-group,
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-row>.vm-field-control>.vm-select,
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-row>.vm-field-control>.vm-slider {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-button-group,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-select,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-slider {
   width: 100%;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-row>.vm-field-control>.vm-button-group {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-button-group {
   display: inline-flex;
   align-items: stretch;
   flex: 1 1 auto;
@@ -1446,7 +1446,7 @@ kbd,
 }
 
 /* Compact inspector actions share the same typography and theme colors. */
-:is(#toolbar #displayInspector, #styleStudio) .vm-btn--ghost.vm-btn--sm {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm {
   justify-content: flex-start;
   width: auto;
   min-width: 0;
@@ -1463,18 +1463,18 @@ kbd,
   box-shadow: none;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-btn--ghost.vm-btn--sm:hover:not(:disabled) {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:hover:not(:disabled) {
   color: var(--vm-color-text-primary);
   background: color-mix(in srgb, var(--vm-color-text-primary) 6%, transparent);
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-btn--ghost.vm-btn--sm:focus,
-:is(#toolbar #displayInspector, #styleStudio) .vm-btn--ghost.vm-btn--sm:focus-visible {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:focus,
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:focus-visible {
   outline: none;
   box-shadow: var(--vm-shadow-focus-ring);
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-button-group__item {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item {
   position: static;
   display: inline-flex;
   align-items: center;
@@ -1495,40 +1495,40 @@ kbd,
   white-space: nowrap;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-button-group__item[aria-checked='true'],
-:is(#toolbar #displayInspector, #styleStudio) .vm-button-group__item[aria-pressed='true'],
-:is(#toolbar #displayInspector, #styleStudio) .vm-button-group__item.active {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item[aria-checked='true'],
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item[aria-pressed='true'],
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item.active {
   background: var(--vm-button-group-active);
   color: var(--vm-color-text-primary);
   box-shadow: var(--vm-shadow-sm), 0 0 0 1px var(--vm-color-border);
   font-weight: 600;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-row>.vm-field-control>.vm-select {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-select {
   min-width: 0;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-row>.vm-field-control>.secondary {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.secondary {
   justify-self: start;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-appearance-hidden {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-hidden {
   display: none !important;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-control--group {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--group {
   min-width: 0;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-control--swatch {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--swatch {
   justify-content: flex-start;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) .vm-field-control--slider .vm-slider {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--slider .vm-slider {
   --vm-slider-track-width: 100%;
 }
 
-:is(#toolbar #displayInspector, #styleStudio) #appearanceTypefaceRow .vm-button-group__item {
+:is(#displayInspector, #styleStudio, #appearancePresetSection, #appearanceCameraSection) #appearanceTypefaceRow .vm-button-group__item {
   padding-left: 8px;
   padding-right: 8px;
 }

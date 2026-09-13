@@ -316,9 +316,9 @@
       white-space: nowrap;
     }
 
-    :is(#toolbar, #styleStudio) select,
-    :is(#toolbar, #styleStudio) input[type="number"],
-    :is(#toolbar, #styleStudio) input[type="text"] {
+    :is(#toolbar, #styleStudio, #displayInspector, #appearanceCameraSection) select,
+    :is(#toolbar, #styleStudio, #displayInspector, #appearanceCameraSection) input[type="number"],
+    :is(#toolbar, #styleStudio, #displayInspector, #appearanceCameraSection) input[type="text"] {
       height: 30px;
       border: 1px solid var(--vm-color-border);
       border-radius: 8px;
@@ -2028,9 +2028,9 @@
       justify-content: flex-start;
     }
 
-    :is(#toolbar, #styleStudio) select,
-    :is(#toolbar, #styleStudio) input[type="number"],
-    :is(#toolbar, #styleStudio) input[type="text"] {
+    :is(#toolbar, #styleStudio, #displayInspector, #appearanceCameraSection) select,
+    :is(#toolbar, #styleStudio, #displayInspector, #appearanceCameraSection) input[type="number"],
+    :is(#toolbar, #styleStudio, #displayInspector, #appearanceCameraSection) input[type="text"] {
       width: 100%;
       box-sizing: border-box;
       height: 32px;
@@ -2128,8 +2128,8 @@
       color: var(--vm-color-text-secondary);
     }
 
-    #toolbar .vm-button-group.is-mixed .vm-button-group__item[aria-checked='true'],
-    #toolbar .vm-button-group.is-mixed .vm-button-group__item.active {
+    :is(#toolbar, .vm-workbench) .vm-button-group.is-mixed .vm-button-group__item[aria-checked='true'],
+    :is(#toolbar, .vm-workbench) .vm-button-group.is-mixed .vm-button-group__item.active {
       background: transparent;
       color: inherit;
     }
@@ -2154,7 +2154,7 @@
       gap: 0;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorGroup {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorGroup {
       border: none;
       border-radius: 0;
       padding: 0;
@@ -2162,23 +2162,23 @@
       background: transparent;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorTitle {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorTitle {
       color: var(--tb-text-color-emphasis);
       font-size: var(--tb-text-size-label);
       font-weight: var(--tb-text-weight-bold);
       margin: 0;
     }
 
-    #toolbar .tb-toolbarInspectorFields label {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields label {
       color: var(--tb-text-color-subtle);
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorRow {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorRow {
       flex-wrap: nowrap;
       gap: 4px;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow {
       display: grid;
       grid-template-columns: 94px minmax(0, 1fr);
       align-items: center;
@@ -2186,12 +2186,12 @@
       margin-bottom: 7px;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow:last-child,
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow:last-of-type {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow:last-child,
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow:last-of-type {
       margin-bottom: 0;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow label {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow label {
       display: inline-flex;
       align-items: center;
       justify-content: flex-start;
@@ -2203,8 +2203,8 @@
       font-weight: var(--tb-text-weight-semibold);
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow select,
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"] {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow select,
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"] {
       width: 100%;
       min-width: 0;
       height: 30px;
@@ -2216,8 +2216,8 @@
       padding: 0 10px;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow select:focus,
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"]:focus {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow select:focus,
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"]:focus {
       outline: none;
       box-shadow: none;
     }
@@ -2915,11 +2915,11 @@
         <span class="adaptiveShortcutKey">O</span>
       </span>
     </button>
-    <button id="viewInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="View actions (Q)" hidden>
+    <button id="viewInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="Quick actions (Q)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">tune</span>
-          <span class="adaptiveEditItemLabel">View actions</span>
+          <span class="adaptiveEditItemLabel">Quick actions</span>
         </span>
         <span class="adaptiveEditItemMeta"></span>
       </span>
@@ -3108,7 +3108,7 @@
       </button>
       <button id="alignInertiaBtn" class="secondary tb-quickActionBtn"
         data-tooltip="Align Principal Axes: rotate the active molecule to align inertia axes with X/Y/Z."
-        aria-label="Align camera to principal axes of inertia">
+        aria-label="Align molecule to principal axes of inertia">
         <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">3d_rotation</span>
         <span class="tb-quickActionText">Align Principal Axes</span>
       </button>
@@ -3750,7 +3750,7 @@
         <section class="vm-helpSection">
           <h3 class="vm-section-label">View</h3>
           <div class="vm-helpGrid">
-            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Q</kbd></div><div class="vm-helpDescription">Open View actions</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Q</kbd></div><div class="vm-helpDescription">Open Quick actions</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">V</kbd></div><div class="vm-helpDescription">Open View panel</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">O</kbd></div><div class="vm-helpDescription">Open Orbitals panel (molden files only)</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">C</kbd></div><div class="vm-helpDescription">Open Coordinates panel</div></div>

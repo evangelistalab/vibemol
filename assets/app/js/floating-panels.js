@@ -176,7 +176,7 @@
   const catalog = [
     ['styleStudio', 'Style Studio', '.vm-list-popover__header'],
     ['moldenInspector', 'Orbitals', '.motionPanelHeader'],
-    ['viewInspector', 'View actions', '.viewInspectorTitle'],
+    ['viewInspector', 'Quick actions', '.viewInspectorTitle'],
     ['spinorInfoPanel', 'Spinor information', '.spinorInfoPanelHead'],
     ['sidePanel', 'View', '.vm-popover__header'],
     ['coordsPanel', 'Coordinates', '.motionPanelHeader'],

@@ -19,7 +19,10 @@
         if (focus) button.focus({ preventScroll: true });
       }
     }
-    button.addEventListener('click', () => setOpen(!isOpen()));
+    button.addEventListener('click', () => {
+      if (global.VibeMolWorkbench?.restoreIfHidden('styleStudio')) return;
+      setOpen(!isOpen());
+    });
     closeButton.addEventListener('click', () => setOpen(false));
     panel.addEventListener('keydown', event => {
       // Controls keep native typing and navigation without triggering scene tools.

@@ -3,8 +3,9 @@
   const catalog = Object.freeze([
     { id: 'moldenInspector', panel: 'moldenInspector', label: 'Orbitals', icon: 'blur_on', place: 'right' },
     { id: 'coordsPanel', panel: 'coordsPanel', label: 'Coordinates', icon: 'table_rows', place: 'bottom' },
+    { id: 'displayInspector', panel: 'displayInspector', label: 'Appearance', icon: 'tune', place: 'right' },
     { id: 'styleStudio', panel: 'styleStudio', label: 'Style Studio', icon: 'palette', place: 'right' },
-    { id: 'viewInspector', panel: 'viewInspector', label: 'View actions', icon: 'tune', place: 'right' },
+    { id: 'viewInspector', panel: 'viewInspector', label: 'Quick actions', icon: 'bolt', place: 'right' },
     { id: 'viewPanel', panel: 'sidePanel', label: 'Camera', icon: 'view_in_ar', place: 'right' },
     { id: 'trajectoryPanel', panel: 'trajectoryPanel', label: 'Trajectory', icon: 'timeline', place: 'bottom' },
     { id: 'vibrationPanel', panel: 'vibrationPanel', label: 'Frequencies', icon: 'graphic_eq', place: 'bottom' },

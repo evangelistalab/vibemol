@@ -2748,6 +2748,7 @@ def main() -> int:
 
             page.keyboard.press('Escape')
             page.wait_for_function("() => !document.getElementById('moldenInspector')?.classList.contains('open')")
+            page.locator('#modeEditBtn').click()
             page.evaluate("() => document.getElementById('coordsPanelBtn')?.click()")
             page.wait_for_function("() => document.getElementById('coordsPanel')?.classList.contains('open')")
             page.locator('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]').click()
@@ -2789,6 +2790,7 @@ def main() -> int:
             )
 
             # Geometry-only imports should infer perceived connectivity.
+            page.locator('#modeDisplayBtn').click()
             inferred_xyz_text = build_fixture_inferred_xyz()
             page.evaluate(
                 """async (text) => {
