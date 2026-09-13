@@ -57,7 +57,7 @@ def components_and_saving(page, context, url):
     assert page.evaluate('() => VibeMolTesting.getLookLightingSnapshot()')==original_lights
     assert not set(retired).intersection(page.evaluate('() => VibeMolPreset.listKeys()'))
     assert not set(retired).intersection(page.evaluate('() => Object.keys(VibeMolPreset.export().settings)'))
-    assert page.locator('#lookPreset option').all_text_contents()[1:]==['Basic','Toon','Kit','Classic','Porcelain','Ink','Opal']
+    assert page.locator('#lookPreset option').all_text_contents()[1:]==['Basic','Classic','Ink','Kit','Opal','Porcelain','Toon']
     assert page.locator('#appearanceMaterialTarget, #appearanceMaterialModel, #appearanceLinkBonds, #lookFinishScope').count()==0
     assert not page.locator('#rowSurfaceMaterialPreset').is_visible()
     for style,expected in [('basic','MeshPhysicalMaterial'),('toon','MeshToonMaterial'),('kit','MeshPhongMaterial'),

@@ -1,6 +1,6 @@
 # Appearance components and looks
 
-**Appearance → Looks → Preset** contains **Basic, Toon, Kit, Classic, Porcelain, Ink, and Opal**. Each is a complete recipe with explicit display geometry, materials, colors, lighting, and effects. Shortcuts `1/2/3` still apply Basic/Toon/Kit. Geometry and material remain independent: Kit connectors can use any material.
+**Appearance → Looks → Preset** lists **Basic, Classic, Ink, Kit, Opal, Porcelain, and Toon** alphabetically. Each is a complete recipe with explicit display geometry, materials, colors, lighting, and effects. Shortcuts `1/2/3` still apply Basic/Toon/Kit. Geometry and material remain independent: Kit connectors can use any material.
 
 Basic preserves its original pairing: polished atoms/bonds and luminous, clear-coated orbital surfaces. Its surface finish uses roughness `1`, clearcoat `1`, coat roughness `0.1`, color fill `0.8`, and no metalness or environment reflections. The atom/bond recipe and lighting stay unchanged. Selecting or editing a material explicitly replaces this pairing with one shared material; Appearance Undo or Revert restores the full Basic look. The Material section explains this behavior without adding separate target controls. Other curated presets use one material throughout.
 

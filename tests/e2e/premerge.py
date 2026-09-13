@@ -69,7 +69,7 @@ def molecule_styles(page, dialogs):
     assert load(page, [{'name': 'bond.xyz', 'text': '2\nStyle fixture\nC 0 0 0\nC 1.34 0 0\n'}])['ok']
     styles = ['basic', 'toon', 'kit']
     assert page.locator('#moleculeStyle option').evaluate_all('els => els.map(el => el.value)') == styles
-    assert page.locator('#lookPreset option').evaluate_all('els => els.slice(1,4).map(el => el.value)') == styles
+    assert page.locator('#lookPreset option').evaluate_all('els => els.slice(1).map(el => el.value)') == ['basic','classic','ink','kit','opal','porcelain','toon']
     page.locator('#displayInspectorBtn').click()
     for style in styles:
         page.locator('#lookPreset').select_option(style)

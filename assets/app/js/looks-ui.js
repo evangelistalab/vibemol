@@ -42,7 +42,7 @@
         </details><p id="lookStatus" class="vm-session-status" role="status" aria-live="polite"></p>
       </section><div id="lookComponentEditor"></div>`;
     const $ = id => root.querySelector('#' + id), current = () => deps.getActiveLook();
-    for (const look of L.builtins.filter(item => !item.experimental)) $('lookPreset').add(new Option(look.name,look.id));
+    for (const look of L.builtins.filter(item => !item.experimental).sort((a, b) => a.name.localeCompare(b.name))) $('lookPreset').add(new Option(look.name,look.id));
     const status = message => { $('lookStatus').textContent = storageMessage || message; };
     const run = action => { try { return action(); } catch (error) { status(error.message); return null; } };
     const snapshotLook = (label, id = userId()) => L.normalizeLook({ id, name: label, settings: deps.captureSettings() });
