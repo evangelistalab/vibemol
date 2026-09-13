@@ -209,6 +209,7 @@
           resetIsoToDefault: hasGrid,
           skipAutoIsoOnInitialRebuild: hasGrid,
           targetSceneKey: options.targetSceneKey || '',
+          newScenes: !!options.newScenes,
         };
         if (typeof deps.handleSceneDropRecords === 'function') {
           try {

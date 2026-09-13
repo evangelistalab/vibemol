@@ -14,6 +14,7 @@
       arithmeticLayers,
       clearOutlinerSelectionToActive,
       copyCubeLayerAppearance,
+      createNewMoleculeScene,
       deleteSceneFromOutliner,
       deleteSelectedCubeLayers,
       duplicateCubeLayer,
@@ -80,7 +81,7 @@
 
     let outlinerAddFileInputEl = null;
 
-    let outlinerAddTargetSceneKey = '';
+    let outlinerAddFileOptions = {};
 
     let outlinerDragState = null;
 
@@ -529,38 +530,32 @@
       return finishOutlinerRename({ commit: false });
     }
 
-    function getOutlinerAddSceneKey(scene = getFocusedScene()) {
-      return scene && scene.sceneKey ? String(scene.sceneKey) : '';
-    }
-
     function ensureOutlinerAddFileInput() {
       if (outlinerAddFileInputEl) return outlinerAddFileInputEl;
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = '.cube,.cub';
       input.multiple = true;
       input.hidden = true;
       input.setAttribute('aria-hidden', 'true');
       input.addEventListener('change', () => {
         const files = input.files ? Array.from(input.files) : [];
-        const targetSceneKey = outlinerAddTargetSceneKey;
+        const options = outlinerAddFileOptions;
         input.value = '';
-        outlinerAddTargetSceneKey = '';
+        outlinerAddFileOptions = {};
         if (!files.length) return;
-        void loadFiles(files, {
-          sceneDispatch: true,
-          targetSceneKey,
-        });
+        void loadFiles(files, options);
       });
       document.body.appendChild(input);
       outlinerAddFileInputEl = input;
       return outlinerAddFileInputEl;
     }
 
-    function openOutlinerAddCubeFilePicker(scene = getFocusedScene()) {
+    function openOutlinerFilePicker({ scene = null, newScenes = false } = {}) {
       closeCubeLayerContextMenu();
-      outlinerAddTargetSceneKey = getOutlinerAddSceneKey(scene);
-      ensureOutlinerAddFileInput().click();
+      outlinerAddFileOptions = { newScenes, targetSceneKey: String(scene && scene.sceneKey || '') };
+      const input = ensureOutlinerAddFileInput();
+      input.accept = newScenes ? '.xyz,.cube,.cub,.2ccube,.molden' : '.cube,.cub';
+      input.click();
     }
 
     function buildOutlinerRow(options = {}) {
@@ -740,7 +735,7 @@
       if (!scenes.length) {
         const empty = document.createElement('div');
         empty.className = 'vm-outliner__empty';
-        empty.textContent = 'No file loaded. Drag and drop a .cube, .molden, or .xyz file, or click the open icon above to begin.';
+        empty.textContent = 'No file loaded. Use + to create an empty scene or load an XYZ, Cube, or Molden file.';
         sceneOutlinerBodyEl.appendChild(empty);
         return;
       }
@@ -1484,11 +1479,15 @@
       return menu;
     }
 
-    function renderOutlinerAddMenu(scene = getFocusedScene()) {
+    function renderOutlinerAddMenu() {
       const menu = ensureCubeLayerContextMenu();
       if (!menu) return null;
       menu.textContent = '';
-      appendOutlinerContextMenuItem(menu, 'Add cube file...', () => openOutlinerAddCubeFilePicker(scene));
+      appendOutlinerContextMenuItem(menu, 'Create empty scene', () => {
+        const scene = createNewMoleculeScene();
+        if (scene) setHintMessage(`Created ${scene.name}.`);
+      });
+      appendOutlinerContextMenuItem(menu, 'From file...', () => openOutlinerFilePicker({ newScenes: true }));
       return menu;
     }
 
@@ -1519,7 +1518,7 @@
       }
       if (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP) {
         menu.textContent = '';
-        appendOutlinerContextMenuItem(menu, 'Add cube file...', () => openOutlinerAddCubeFilePicker(target.scene));
+        appendOutlinerContextMenuItem(menu, 'Add cube file...', () => openOutlinerFilePicker({ scene: target.scene }));
         return menu;
       }
       return null;
@@ -1706,13 +1705,12 @@
         event.stopPropagation();
       }
       if (outlinerRenameState) finishOutlinerRename({ commit: true });
-      const scene = getFocusedScene();
       cubeLayerContextMenuLayerId = null;
       const rect = sceneOutlinerAddBtn ? sceneOutlinerAddBtn.getBoundingClientRect() : null;
       cubeLayerContextMenuPoint = rect
         ? { clientX: rect.left, clientY: rect.bottom + 4 }
         : { clientX: Number(event && event.clientX) || 0, clientY: Number(event && event.clientY) || 0 };
-      const menu = renderOutlinerAddMenu(scene);
+      const menu = renderOutlinerAddMenu();
       if (!menu) return;
       menu.hidden = false;
       menu.setAttribute('aria-hidden', 'false');

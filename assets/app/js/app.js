@@ -1398,6 +1398,7 @@
       arithmeticLayers,
       clearOutlinerSelectionToActive,
       copyCubeLayerAppearance,
+      createNewMoleculeScene,
       deleteSceneFromOutliner,
       deleteSelectedCubeLayers,
       duplicateCubeLayer,
@@ -30187,7 +30188,7 @@
     const targetSceneKey = String(options.targetSceneKey || '').trim();
     const targetSceneVol = targetSceneKey ? getSceneMoleculeVolume(targetSceneKey) : null;
     const resolveSceneKeyForItem = (item, forceNewScene) => {
-      if (forceNewScene) return '';
+      if (forceNewScene || options.newScenes) return '';
       if (targetSceneKey) {
         return moleculeMatchesVolume(item && item.vol, targetSceneVol) ? targetSceneKey : '';
       }
@@ -32588,6 +32589,7 @@
   });
 
   // Startup: begin with an empty scene and onboarding text.
+  syncLoadedSceneControls();
   updateEmptyStateVisibility();
 
   // Keyboard shortcuts are handled by the mode-aware router defined above.

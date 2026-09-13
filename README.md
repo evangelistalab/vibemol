@@ -29,6 +29,7 @@ Startup now shows the empty onboarding card. Use `Choose files` or `Open sample 
 XYZ files and pasted coordinates share the same import checks. If a structure has at least two atoms but no plausible bonds at angstrom distances, a popup offers conversion from bohr to angstroms. Choose **OK** to convert or **Cancel** to keep the original coordinates as angstroms. For trajectories, the check uses the first frame and conversion applies to every frame.
 
 ## Controls
+- **Scenes → +**: create an empty editable scene or create scenes from XYZ, Cube, or Molden files
 - **Appearance → Preset**: choose a built-in preset or one of your saved looks
 - **Appearance → Style Studio**: choose, customize, and save rendering presets
 - `S`: save PNG

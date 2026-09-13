@@ -1401,7 +1401,7 @@ def main() -> int:
                     return !!title
                       && (title.textContent || '').trim() === 'Scenes'
                       && !!empty
-                      && /No file loaded\\. Drag and drop a \\.cube, \\.molden, or \\.xyz file, or click the open icon above to begin\\./.test(empty.textContent || '')
+                      && (empty.textContent || '').includes('Use + to create an empty scene or load an XYZ, Cube, or Molden file.')
                       && !document.querySelector('.vm-active-file')
                       && !document.getElementById('fileSelect');
                 }"""

@@ -64,6 +64,96 @@ def load_cubes(page):
     assert result['ok'] and result['loadedCount'] == 2, result
 
 
+def scene_creation(page, dialogs):
+    page.add_init_script('(' + MOLDEN_GRID_OBSERVER + ')()')
+    page.reload()
+    page.wait_for_function('() => window.VibeMolSession && window.VibeMolTesting')
+
+    def open_add_menu():
+        page.locator('#sceneOutlinerAddBtn').click()
+        assert page.locator('.vm-outliner-context-menu__item').all_text_contents() == ['Create empty scene', 'From file...']
+
+    def from_files(files):
+        page.locator('#modeDisplayBtn').click()
+        count = len(snapshot(page)['scenes'])
+        open_add_menu()
+        with page.expect_file_chooser() as picker:
+            page.get_by_role('menuitem', name='From file...', exact=True).click()
+        assert {'.xyz', '.cube', '.cub', '.molden'}.issubset(set(picker.value.element.get_attribute('accept').split(',')))
+        picker.value.set_files([{'name': name, 'mimeType': 'text/plain', 'buffer': text.encode()} for name, text in files])
+        page.wait_for_function('count => VibeMolTesting.getSceneGraphSnapshot().scenes.length === count + 1', arg=count)
+        state = snapshot(page)
+        return next(scene for scene in state['scenes'] if scene['id'] == state['focusedSceneId'])
+
+    assert snapshot(page)['scenes'] == []
+    open_add_menu()
+    page.get_by_role('menuitem', name='Create empty scene', exact=True).click()
+    first = snapshot(page)['scenes'][0]
+    assert page.locator('#modeEditBtn').get_attribute('aria-pressed') == 'true'
+    assert page.evaluate('() => VibeMolStructure.exportActive().volume.atoms') == []
+    assert {layer['kind'] for layer in first['layers']} == {'molecule', 'orbitals_group'}
+    assert first['visible'] and snapshot(page)['focusedSceneId'] == first['id']
+    open_add_menu()
+    page.get_by_role('menuitem', name='Create empty scene', exact=True).click()
+    state = snapshot(page)
+    second = next(scene for scene in state['scenes'] if scene['id'] != first['id'])
+    assert second['name'] != first['name'] and state['focusedSceneId'] == second['id']
+
+    # A new empty scene is immediately editable, without changing the earlier one.
+    canvas = page.locator('#canvas').bounding_box()
+    page.mouse.click(canvas['x'] + canvas['width'] * 0.7, canvas['y'] + canvas['height'] * 0.6)
+    page.wait_for_function('() => VibeMolStructure.exportActive().volume.atoms.length > 0')
+    page.keyboard.press('Enter')
+    page.locator('#modeDisplayBtn').click()
+    saved = page.evaluate('() => VibeMolSession.export()')
+    assert len(saved['sources']) == 2
+    assert any(source['volume']['atoms'] == [] for source in saved['sources'])
+    before = snapshot(page)
+    page.reload()
+    page.wait_for_function('() => window.VibeMolSession')
+    assert page.evaluate('doc => VibeMolSession.import(doc)', saved)['ok']
+    assert snapshot(page) == before, 'Empty scenes survive a complete session round-trip'
+
+    # Repeated structures explicitly create scenes here instead of matching an existing scene.
+    xyz = '1\nHydrogen\nH 0 0 0\n'
+    xyz_scene = from_files([('hydrogen.xyz', xyz)])
+    repeated = from_files([('hydrogen.xyz', xyz)])
+    assert repeated['id'] != xyz_scene['id']
+    assert page.evaluate('() => VibeMolStructure.exportActive().volume.atoms.length') == 1
+    cube_scene = from_files([('a.cube', cube(-1)), ('b.cub', cube(1))])
+    assert len([layer for layer in cube_scene['layers'] if layer['kind'] == 'cube']) == 2
+    assert len(snapshot(page)['scenes']) == 5
+
+    # The Orbitals group's existing add action still appends layers to that scene.
+    group = next(layer for layer in cube_scene['layers'] if layer['kind'] == 'orbitals_group')
+    with page.expect_file_chooser() as picker:
+        context_item(page, group['id'], 'Add cube file...')
+    picker.value.set_files({'name': 'extra.cube', 'mimeType': 'text/plain', 'buffer': cube(0).encode()})
+    page.wait_for_function('() => VibeMolTesting.getSceneGraphSnapshot().scenes.flatMap(s=>s.layers).some(l=>l.name==="extra.cube")')
+    assert len(snapshot(page)['scenes']) == 5
+    assert len(cubes(page)) == 3
+    molden_scene = from_files([('hydrogen.molden', MOLDEN)])
+    orbitals = [layer for layer in molden_scene['layers'] if layer['kind'] == 'cube']
+    assert len(orbitals) == 3 and not any(layer['visible'] for layer in orbitals)
+    assert page.evaluate('() => window.__moldenGridBuilds') == []
+    assert page.locator('#moldenInspector').is_visible()
+    assert {first['id'], second['id']}.issubset({scene['id'] for scene in snapshot(page)['scenes']})
+
+    # Canceling or rejecting a file cannot create a placeholder or erase an existing scene.
+    before = snapshot(page)
+    open_add_menu()
+    with page.expect_file_chooser() as picker:
+        page.get_by_role('menuitem', name='From file...', exact=True).click()
+    picker.value.set_files([])
+    assert snapshot(page) == before
+    open_add_menu()
+    with page.expect_file_chooser() as picker:
+        page.get_by_role('menuitem', name='From file...', exact=True).click()
+    with page.expect_event('dialog'):
+        picker.value.set_files({'name': 'broken.cube', 'mimeType': 'text/plain', 'buffer': b'invalid cube'})
+    assert snapshot(page) == before
+
+
 def molecule_styles(page, dialogs):
     page.locator('#modeDisplayBtn').click()
     assert load(page, [{'name': 'bond.xyz', 'text': '2\nStyle fixture\nC 0 0 0\nC 1.34 0 0\n'}])['ok']
@@ -890,7 +980,7 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (molecule_styles, orbital_reference_presets, imports, psi4_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
+            for run in (scene_creation, molecule_styles, orbital_reference_presets, imports, psi4_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
                         persistence, batch_export, orbital_group_appearance, molden_group_appearance,
                         molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})
