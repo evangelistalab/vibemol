@@ -43,7 +43,8 @@
         </details><p id="lookStatus" class="vm-session-status" role="status" aria-live="polite"></p>
       </section><div id="lookComponentEditor"></div>`;
     const $ = id => root.querySelector('#' + id), current = () => deps.getActiveLook();
-    for (const look of L.builtins.filter(item => !item.experimental).sort((a, b) => a.name.localeCompare(b.name))) {
+    const builtinLooks = L.builtins.filter(item => !item.experimental).sort((a, b) => a.name.localeCompare(b.name));
+    for (const look of builtinLooks) {
       $('lookPreset').add(new Option(look.name,look.id));
       const card = document.createElement('button');
       card.type = 'button'; card.className = 'vm-look-card'; card.dataset.look = look.id;
@@ -77,7 +78,18 @@
       $('lookModified').textContent = modified ? '· Modified' : '';
       if (deps.currentLabel) deps.currentLabel.textContent = (look?.name || 'Custom appearance') + (modified ? ' · Modified' : '');
       for (const card of $('lookGallery').children) card.setAttribute('aria-pressed', String(card.dataset.look === look?.id));
-      $('lookPreset').value = L.builtins.some(item => !item.experimental && item.id===look?.id) ? look.id : '';
+      const builtinId = builtinLooks.some(item => item.id === look?.id) ? look.id : '';
+      $('lookPreset').value = builtinId;
+      if (deps.presetSelect) {
+        const options = [new Option('Custom appearance', ''), ...builtinLooks.map(item => new Option(item.name, item.id))];
+        if (library.length) {
+          const savedGroup = document.createElement('optgroup'); savedGroup.label = 'My looks';
+          for (const item of [...library].sort((a, b) => a.name.localeCompare(b.name))) savedGroup.append(new Option(item.name, item.id));
+          options.push(savedGroup);
+        }
+        deps.presetSelect.replaceChildren(...options);
+        deps.presetSelect.value = saved?.id || builtinId;
+      }
       $('lookUndo').disabled = !undoState; $('lookRevert').disabled = !modified;
       $('lookUpdate').disabled = !saved || !modified; $('lookRename').disabled = !saved; $('lookDelete').disabled = !saved;
       $('lookSavedRow').hidden = !library.length;
@@ -107,6 +119,10 @@
       status(deps.hasMixedSurfaces() ? `${look.name} saved using the current orbital. Individual overrides stay in your session.` : `${look.name} saved.`);
     }
     $('lookPreset').onchange = () => run(() => { const look = L.builtins.find(item => item.id===$('lookPreset').value); if (look) choose(look); });
+    if (deps.presetSelect) deps.presetSelect.onchange = () => run(() => {
+      const look = [...builtinLooks, ...library].find(item => item.id === deps.presetSelect.value);
+      if (look) choose(look);
+    });
     $('lookSaved').onchange = () => run(() => { const look = library.find(item => item.id === $('lookSaved').value); if (look) choose(look); });
     $('lookSave').onclick = () => beginName('new'); $('lookRename').onclick = () => beginName('rename');
     $('lookNameCancel').onclick = () => { $('lookNameForm').hidden = true; naming = null; $('lookSave').focus(); };

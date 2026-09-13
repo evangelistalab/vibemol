@@ -16,6 +16,12 @@ def run(page):
     molecule = page.evaluate('() => VibeMolStructure.exportActive().volume')
     camera = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
     page.locator('#displayInspectorBtn').click()
+    quick_preset = page.locator('#appearanceLookPreset')
+    assert quick_preset.locator('option').evaluate_all('els=>els.slice(1).map(el=>el.textContent)') == ['Basic','Classic','Ink','Kit','Opal','Porcelain','Toon']
+    quick_preset.select_option('classic')
+    assert not page.locator('#styleStudio').is_visible()
+    assert page.locator('#lookPreset').input_value() == 'classic'
+    assert page.locator('#styleStudioBtn').bounding_box()['y'] >= quick_preset.bounding_box()['y'] + quick_preset.bounding_box()['height']
     page.locator('#styleStudioBtn').click()
     assert page.locator('#styleStudio').get_attribute('aria-hidden') == 'false'
     assert page.locator('#styleStudioBtn').get_attribute('aria-expanded') == 'true'
@@ -30,6 +36,7 @@ def run(page):
         card.click()
         assert card.get_attribute('aria-pressed') == 'true'
         assert page.locator('#lookPreset').input_value() == name
+        assert quick_preset.input_value() == name
     page.locator('.vm-look-card[data-look="classic"]').click()
     original = settings(page)
     assert page.evaluate('() => VibeMolStructure.exportActive().volume') == molecule
@@ -51,8 +58,14 @@ def run(page):
     assert page.locator('#styleStudio').is_visible()
     saved = page.evaluate('() => VibeMolAppearanceLooks.snapshot().saved[0]')
     assert saved['name'] == 'My studio look'
+    assert quick_preset.input_value() == saved['id']
+    assert quick_preset.locator('optgroup option').all_text_contents() == [saved['name']]
     assert page.locator('#modeDisplayBtn').get_attribute('aria-pressed') == 'true'
-    page.locator('.vm-look-card[data-look="opal"]').click()
+    page.locator('#styleStudioClose').click()
+    quick_preset.select_option('opal')
+    quick_preset.select_option(saved['id']); assert settings(page) == original
+    assert not page.locator('#styleStudio').is_visible()
+    page.locator('#styleStudioBtn').click()
     page.locator('#lookSaved').select_option(saved['id']); assert settings(page) == original
     page.locator('#lookSaveDetails > summary').click()
     with page.expect_download() as download:
