@@ -10,6 +10,28 @@ def mode(page, name):
     page.wait_for_function('(m)=>VibeMolWorkbenchHost.getMode()===m',arg=name.lower())
 
 
+def corner_axes(page):
+    # The last WebGL viewport is the real corner-axes pass, in buffer pixels.
+    bounds=page.evaluate('''async () => {
+      await new Promise(requestAnimationFrame); await new Promise(requestAnimationFrame);
+      const canvas=document.getElementById('canvas'), box=canvas.getBoundingClientRect();
+      const gl=canvas.getContext('webgl2') || canvas.getContext('webgl');
+      const [x,y,w,h]=gl.getParameter(gl.VIEWPORT);
+      const sx=box.width/gl.drawingBufferWidth, sy=box.height/gl.drawingBufferHeight;
+      const hint=document.getElementById('hint'), style=getComputedStyle(hint);
+      const hintBox=hint.getBoundingClientRect();
+      const anchor=style.visibility==='hidden' || !hintBox.height ? box.bottom
+        : hintBox.top - new DOMMatrixReadOnly(style.transform).m42;
+      return {left:box.left+x*sx, right:box.left+(x+w)*sx, top:box.bottom-(y+h)*sy,
+        bottom:box.bottom-y*sy, canvas:box.toJSON(), gap:anchor-(box.bottom-y*sy)};
+    }''')
+    assert 15<=bounds['gap']<=17,bounds
+    assert bounds['left']>=bounds['canvas']['left']+15,bounds
+    assert bounds['right']<=bounds['canvas']['right']-15,bounds
+    assert bounds['top']>=bounds['canvas']['top']+15,bounds
+    assert page.locator('#helpFab').count()==0
+
+
 def coordinates(page):
     assert p.load(page,[{'name':'water.xyz','text':'O 0 0 0\nH 0.95 0 0\nH -0.24 0.92 0'}])['ok']
     mode(page,'Display')
@@ -38,6 +60,7 @@ def workspace(page):
     # Both atoms are inside an opaque isosurface: picking must still reach them.
     field=p.cube(0).replace('1 -4 -4 -4','2 -4 -4 -4',1).replace('1 1 0 0 0\n','1 1 0 0 0\n1 1 1.4 0 0\n',1)
     assert p.load(page,[{'name':'enclosed.cube','text':field}])['ok']
+    corner_axes(page)
     assert page.locator('#toolbar #displayInspector').count()==0
     assert page.locator('#toolbar .tb-appearance').count()==0
     assert page.locator('#toolbar #appearancePresetSection').count()==0
@@ -67,6 +90,7 @@ def workspace(page):
     page.locator('#iso').fill('0.03');page.locator('#iso').press('Enter')
     page.wait_for_function('()=>VibeMolTesting.getSceneGraphSnapshot().scenes.flatMap(s=>s.layers).some(l=>l.kind==="cube" && Math.abs(l.iso-0.03)<0.001)')
     page.evaluate('()=>VibeMolWorkbench.open("coordsPanel")')
+    corner_axes(page)
     page.evaluate('()=>VibeMolWorkbench.open("viewInspector")')
     window_menu(page,page.locator('#viewInspector'),'Minimize to tools bar')
     page.evaluate('()=>VibeMolWorkbench.open("styleStudio")')
@@ -131,6 +155,7 @@ def workspace(page):
     page.locator('#workbenchFocus').click()
     for name in ['Measure','Edit','Display']:
         mode(page,name);assert layout(page)['focus']
+        corner_axes(page)
     page.locator('#workbenchFocus').click()
     launcher.click()
     window_menu(page,appearance,'Dock right')
@@ -144,6 +169,7 @@ def workspace(page):
     assert box['x']>=0 and box['x']+box['width']<=391
     assert box['y']+box['height']<=741
     page.locator('#iso').scroll_into_view_if_needed()
+    corner_axes(page)
     capture(page,'appearance-mobile')
     page.set_viewport_size({'width':1440,'height':1000})
     print('[consistency] Appearance, Quick actions, surfaces, measurement picking, layouts, Build, Symmetry and Focus: passed',flush=True)
@@ -184,6 +210,7 @@ def main():
             assert page.locator('#toolbar #displayInspector').count()==1
             assert page.locator('#toolbarModeRow').count()==1
             coordinates(page)
+            corner_axes(page)
             assert not errors,errors
         except Exception:
             p.write_failure_artifacts(page,p.ARTIFACTS,'consistency-failure',errors,[]);raise

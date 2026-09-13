@@ -673,7 +673,7 @@
   let adaptivePopoverController = null;
   const axisOverlayLayout = { x: 16, y: 16, size: 0 };
   const axisOverlaySidebar = document.getElementById('toolbar');
-  const axisOverlayBottomControls = ['helpFab', 'hint'].map(id => document.getElementById(id)).filter(Boolean);
+  const axisOverlayBottomControls = ['hint'].map(id => document.getElementById(id)).filter(Boolean);
 
   /** Keep the corner axes inside the unobscured canvas, above the bottom controls. */
   function updateAxisOverlayLayout() {
@@ -686,9 +686,11 @@
     for (const element of axisOverlayBottomControls) {
       const rect = element.getBoundingClientRect();
       if (!rect.width || !rect.height || rect.right <= viewport.left + left || rect.left >= viewport.right) continue;
+      const style = getComputedStyle(element);
+      if (style.visibility === 'hidden') continue;
       // Reserve the hint's full space even while it fades/translates, so the axes
       // do not jump when the navigation hint appears or disappears.
-      const inset = Number.parseFloat(getComputedStyle(element).bottom) || 0;
+      const inset = Number.parseFloat(style.bottom) || 0;
       bottom = Math.max(bottom, viewport.bottom - window.innerHeight + inset + element.offsetHeight + gap);
     }
     const desiredSize = Math.max(64, Math.min(128, Math.floor(Math.min(viewport.width, viewport.height) / 5)));
@@ -6857,7 +6859,6 @@
   const vibrationResetBtn = document.getElementById('vibrationResetBtn');
   const vibrationSaveVideoBtn = document.getElementById('vibrationSaveVideoBtn');
   const vibrationPanelClose = document.getElementById('vibrationPanelClose');
-  const helpFab = document.getElementById('helpFab');
   const helpOverlay = document.getElementById('helpOverlay');
   const helpModal = document.getElementById('helpModal');
   const helpClose = document.getElementById('helpClose');
@@ -11775,7 +11776,6 @@
   if (vibrationPanelClose) vibrationPanelClose.onclick = () => setVibrationPanelOpen(false);
 
   if (helpBtn) helpBtn.onclick = () => toggleHelp(helpBtn);
-  if (helpFab) helpFab.onclick = () => toggleHelp(helpFab);
   if (helpClose) helpClose.onclick = () => closeHelp();
   if (helpOverlay) {
     helpOverlay.addEventListener('click', (e) => {
@@ -25868,7 +25868,7 @@
     const helpTogglePressed = !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === '?' || (e.key === '/' && e.shiftKey));
     if (helpTogglePressed) {
       e.preventDefault();
-      toggleHelp(document.activeElement || helpFab || helpBtn || null);
+      toggleHelp(document.activeElement || helpBtn || null);
       return;
     }
     if (isHelpOpen()) {

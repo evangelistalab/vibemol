@@ -188,7 +188,7 @@ def live_menus_and_video(page):
 
 
 def touch_and_resize(page):
-    page.locator('#helpFab').click()
+    page.locator('#helpBtn').click()
     modal=page.locator('#helpModal')
     before=modal.bounding_box(); handle=modal.locator('[data-vm-drag-handle]').first.bounding_box()
     x,y=handle['x']+30,handle['y']+18

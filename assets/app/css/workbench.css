@@ -9,7 +9,6 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   left: calc(var(--wb-left) + 12px); right: calc(var(--wb-right) + 12px);
   bottom: calc(var(--wb-bottom) + 16px); max-width: none;
 }
-.vm-workbench #helpFab { left: calc(var(--wb-left) + 16px); bottom: calc(var(--wb-bottom) + 56px); }
 .vm-workbench #phaseWheel { right: calc(var(--wb-right) + 12px) !important; bottom: calc(var(--wb-bottom) + 60px) !important; }
 .vm-workbench #displayWindowAdaptiveMenu { display: none !important; }
 .vm-workbench [data-vm-floating-panel]:not([data-wb-panel]):not(#displayWindowAdaptiveMenu) { z-index: max(60, var(--vm-floating-z, 60)) !important; }
@@ -148,8 +147,7 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .vm-workbench[data-wb-focus='true'] #toolbarShowBtn,
 .vm-workbench[data-wb-focus='true'] #displayWindowAdaptiveMenu,
 .vm-workbench[data-wb-focus='true'] [data-vm-floating-panel],
-.vm-workbench[data-wb-focus='true'] #hint,
-.vm-workbench[data-wb-focus='true'] #helpFab { visibility: hidden !important; pointer-events: none !important; }
+.vm-workbench[data-wb-focus='true'] #hint { visibility: hidden !important; pointer-events: none !important; }
 .vm-workbench[data-wb-focus='true'] .wb-tools,
 .vm-workbench[data-wb-focus='true'] .wb-arrange { visibility: hidden; pointer-events: none; }
 @media (max-width: 1500px) { .wb-tool-label { display: none; } .wb-brand { display: none; } }

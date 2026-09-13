@@ -185,7 +185,7 @@ def run(page):
     assert quick_preset.locator('option:checked').inner_text() == 'My studio look'
     page.locator('#styleStudioBtn').click()
     assert page.locator('#styleStudio').bounding_box() == moved
-    page.locator('#helpFab').click()
+    page.locator('#helpBtn').click()
     assert page.locator('#helpOverlay').get_attribute('aria-hidden') == 'false'
     page.keyboard.press('Escape')
     assert page.locator('#helpOverlay').get_attribute('aria-hidden') == 'true'
