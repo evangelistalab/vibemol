@@ -25551,7 +25551,7 @@
     let dist = camera.position.distanceTo(target);
     if (!(Number.isFinite(dist) && dist > 1e-6)) dist = 8;
     camera.position.copy(target).addScaledVector(dir, dist);
-    if (key === 'y') camera.up.set(0, 0, 1);
+    if (key === 'x' || key === 'y') camera.up.set(0, 0, 1);
     else camera.up.set(0, 1, 0);
     camera.lookAt(target);
     const { w, h } = getViewportSize();
