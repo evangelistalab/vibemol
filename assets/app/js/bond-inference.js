@@ -383,7 +383,10 @@
     if (skipUnsupported && (!isAutoBondSupportedAtomicNumber(atomI.Z) || !isAutoBondSupportedAtomicNumber(atomJ.Z))) return null;
     const singleRef = getCovalentRadiusAngstrom(atomI.Z) + getCovalentRadiusAngstrom(atomJ.Z);
     if (!(singleRef > 0)) return null;
-    const cutoff = tolerance * singleRef;
+    // The two-decimal H radii sum to 0.64 Å: the usual 1.15 tolerance
+    // misses H2 at 0.74 Å by 0.004 Å. Allow one radius-table rounding unit.
+    const roundingAllowance = (atomI.Z | 0) === 1 && (atomJ.Z | 0) === 1 ? 0.01 : 0;
+    const cutoff = tolerance * (singleRef + roundingAllowance);
     const len = atomI.pos.distanceTo(atomJ.pos);
     if (!Number.isFinite(len) || len < minDistance || len > cutoff) return null;
     return { len, singleRef, cutoff, ratio: len / Math.max(1e-6, singleRef), order: 1, maxOrder: 1 };
@@ -531,12 +534,22 @@
       seen.add(key);
       accepted.push(edge);
     }
-    accepted.sort((left, right) => {
+    // Metal-ligand and covalent perception must share hydrogen's capacity.
+    // Their separate passes can otherwise attach the same H to two centers.
+    accepted.sort((a, b) => a.len - b.len || a.i - b.i || a.j - b.j);
+    const usedHydrogens = new Set();
+    const constrained = accepted.filter(edge => {
+      const ids = [edge.i, edge.j].filter(i => (atomPositions[i].Z | 0) === 1);
+      if (ids.some(i => usedHydrogens.has(i))) return false;
+      ids.forEach(i => usedHydrogens.add(i));
+      return true;
+    });
+    constrained.sort((left, right) => {
       const iDelta = (left && left.i || 0) - (right && right.i || 0);
       if (iDelta !== 0) return iDelta;
       return (left && left.j || 0) - (right && right.j || 0);
     });
-    return accepted;
+    return constrained;
   }
 
   /**
@@ -564,7 +577,7 @@
       const atomI = atomPositions[i];
       const atomJ = atomPositions[j];
       if (!atomI || !atomJ) continue;
-      const baseOrder = Math.max(1, Number(edge.order) || 1);
+      const baseOrder = (atomI.Z | 0) === 1 || (atomJ.Z | 0) === 1 ? 1 : Math.max(1, Number(edge.order) || 1);
       const style = String(edge.style || 'covalent');
       edge.order = baseOrder;
       if (style !== 'covalent') {

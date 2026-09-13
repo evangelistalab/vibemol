@@ -53,6 +53,8 @@ Looks preserve coordinates, topology, camera/projection, visibility, selections,
 
 `bond-geometry.js` builds one closed cylinder for each straight bond component. Element coloring duplicates vertices at the color boundary while retaining continuous geometry and side normals; there are no internal midpoint caps. Kit's collars and curved shafts retain their geometric form, and live updates restore vertex colors when regenerating geometry.
 
+Bond radius is a requested maximum. Each bond is capped against its smaller rendered atom, including multiple-component offsets, mesh facets, collars, and contours. End caps sit entirely inside the atom meshes. Requested settings remain portable; changes to atom size automatically update the effective bond thickness. See [bond fitting](bond-fitting.md) for the equations, limits, and hydrogen topology rules.
+
 `appearance-looks.js` owns complete look recipes. `appearance-editor.js` binds native component controls. `looks-ui.js` manages named look/material libraries and appearance undo. `app.js` applies component patches and synchronizes the existing renderer and scene model.
 
 Material and light changes reuse existing geometry. Geometry, palette, and contour changes rebuild molecule display meshes only. Neither route re-marches orbital surfaces nor computes deferred Molden grids. Full looks also preserve existing orbital meshes. Cloud colors and opacity update from each layer's own appearance. Edit placement previews use the same material model.

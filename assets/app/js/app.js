@@ -205,6 +205,8 @@
     normalizeVolumeBondOrigin,
     normalizeVolumeBondStyle,
     normalizeVolumeBondRecord,
+    normalizeVolumeBonds,
+    getHydrogenBondError,
     ensureVolumeSchema: ensureVolumeSchemaCore,
     cloneBondSnapshot,
     bondSnapshotsEqual,
@@ -248,6 +250,8 @@
     normalizeVolumeBondOrigin,
     normalizeVolumeBondStyle,
     normalizeVolumeBondRecord,
+    normalizeVolumeBonds,
+    getHydrogenBondError,
     ensureVolumeSchemaCore,
     cloneBondSnapshot,
     bondSnapshotsEqual,
@@ -411,8 +415,8 @@
   const MAX_SYMMETRY_TOLERANCE_ANG = 1.0;
   const SYMMETRY_TOLERANCE_OPTIONS_ANG = Object.freeze([0.05, 0.1, 0.25, 0.5, 1.0]);
 
-  const { createCylinder: createBondCylinderGeometry } = window.VibeMolBondGeometry || {};
-  if (typeof createBondCylinderGeometry !== 'function') throw new Error('VibeMolBondGeometry is not loaded.');
+  const { createCylinder: createBondCylinderGeometry, componentOffsets: getBondComponentOffsets, fitBond: fitBondToAtoms } = window.VibeMolBondGeometry || {};
+  if (![createBondCylinderGeometry, getBondComponentOffsets, fitBondToAtoms].every(fn => typeof fn === 'function')) throw new Error('VibeMolBondGeometry is not loaded.');
 
   const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
   if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
@@ -1872,7 +1876,7 @@
   function getMoleculeStyleProfile() {
     const g = appearanceState.geometry, palette = appearanceState.coloring.palette;
     return { ...g, key: g.connector === 'kit' ? 'kit' : 'basic',
-      usesTrimmedConnector: g.connector === 'kit', usesKitCurvedMultiBond: g.curvedMultipleBonds,
+      usesKitCurvedMultiBond: g.curvedMultipleBonds,
       stylizedMolecule: appearanceState.effects.highlights,
       aromaticDashColor: palette === 'kit' ? 0x59616d : palette === 'toon' ? 0x515a66 : 0x4f5560,
       aromaticDashOpacity: 0.96 };
@@ -2195,44 +2199,11 @@
   }
 
   /**
-   * Determine whether straight bond connectors should be seated against atom
-   * surfaces instead of rendered center-to-center.
-   * Basic and toon intentionally share this geometry policy.
-   * @param {{key?:string}|null|undefined} profile
-   * @returns {boolean}
-   */
-  function useSurfaceSeatedStraightBondConnectors(profile = null) {
-    const key = String((profile && profile.key) || getMoleculeStyleProfile().key || '');
-    return key === 'basic' || key === 'toon';
-  }
-
-  /**
    * Check whether element-based coloring is enabled and atomic metadata is available.
    * @returns {boolean}
    */
   function isElementColoringEnabled() {
     return !!(typeof elementColors !== 'undefined' && elementColors && elementColors.checked && ATOM_Z_TO_DATA);
-  }
-
-  /**
-   * Get centered lateral offset coefficients for drawing multiple bond components.
-   * Coefficients are expressed in the local (u, v) frame orthogonal to the bond axis.
-   * For order=3, components are arranged at 120 degrees around the bond axis.
-   * For order=4, components are arranged in a square around the bond axis.
-   * @param {number} order
-   * @returns {Array<[number, number]>}
-   */
-  function getBondComponentOffsets(order) {
-    if (order >= 4) {
-      const q = Math.SQRT1_2; // 45° square points (unit radius)
-      return [[q, q], [-q, q], [-q, -q], [q, -q]];
-    }
-    if (order >= 3) {
-      const h = Math.sqrt(3) * 0.5;
-      return [[1, 0], [-0.5, h], [-0.5, -h]];
-    }
-    if (order === 2) return [[-0.5, 0], [0.5, 0]];
-    return [[0, 0]];
   }
 
   /**
@@ -2690,14 +2661,18 @@
    * @returns {{valid:boolean,len:number,dirNorm:THREE.Vector3,geomLen:number,mid:THREE.Vector3,aEnd:THREE.Vector3,bEnd:THREE.Vector3,trimA:number,trimB:number,bondRadius:number}}
    */
   function getPreviewBondSegmentPlacement(aPos, bPos, aZ, bZ, options = {}) {
-    const bondRadius = Math.max(
+    const requestedRadius = Math.max(
       1e-4,
       Number.isFinite(options.bondRadius) ? Number(options.bondRadius) : getPreviewBondRadius()
     );
     const surfaceInset = Number.isFinite(options.surfaceInset) ? Number(options.surfaceInset) : 0.01;
     const minGeomLen = Math.max(0.0, Number.isFinite(options.minGeomLen) ? Number(options.minGeomLen) : 0.03);
-    let trimA = Math.max(0, getSphereSectionAxisDistance(getRenderedAtomDisplayRadius(aZ | 0), bondRadius) - surfaceInset);
-    let trimB = Math.max(0, getSphereSectionAxisDistance(getRenderedAtomDisplayRadius(bZ | 0), bondRadius) - surfaceInset);
+    const profile = getMoleculeStyleProfile();
+    const fit = fitBondToAtoms({ radius: requestedRadius, radiusA: getRenderedAtomDisplayRadius(aZ | 0), radiusB: getRenderedAtomDisplayRadius(bZ | 0),
+      widthSegments: profile.sphereWidthSegments, heightSegments: profile.sphereHeightSegments });
+    const bondRadius = fit.radius;
+    let trimA = Math.max(0, fit.trimA - surfaceInset);
+    let trimB = Math.max(0, fit.trimB - surfaceInset);
     const rawLen = aPos.distanceTo(bPos);
     const maxTrim = Math.max(0, rawLen - minGeomLen);
     const trimSum = trimA + trimB;
@@ -3121,8 +3096,8 @@
    * @returns {THREE.BufferGeometry}
    */
   function createKitFlangeGeometry(centerRadius, collarRadius) {
-    const cR = Math.max(1e-4, centerRadius);
-    const kR = Math.max(1e-4, collarRadius);
+    const cR = Math.max(1e-8, centerRadius);
+    const kR = Math.max(1e-8, collarRadius);
     const plateau = Math.max(1e-5, KIT_FLANGE_PLATEAU_END);
     const taper = Math.max(plateau + 1e-5, KIT_FLANGE_TAPER_END);
     const profile = [
@@ -3319,8 +3294,8 @@
    */
   function createKitCollaredBondGeometry(length, centerRadius, collarRadius) {
     const L = Math.max(1e-4, length);
-    const cR = Math.max(1e-4, centerRadius);
-    const kR = Math.max(1e-4, collarRadius);
+    const cR = Math.max(1e-8, centerRadius);
+    const kR = Math.max(1e-8, collarRadius);
     const halfL = L * 0.5;
     const profile = [];
 
@@ -3365,23 +3340,6 @@
     const R0raw = Math.max(1e-6, Number(sectionRadius) || 0);
     const R0 = Math.min(R0raw, Math.max(1e-6, Rs - 1e-4));
     return Math.sqrt(Math.max(0, Rs * Rs - R0 * R0));
-  }
-
-  /**
-   * Compute where a kit connector should start relative to an atom center so the
-   * flange rim (radius R0) contacts the sphere surface. Smaller spheres naturally
-   * require deeper insertion because their curvature is higher.
-   * @param {number} sphereRadius Rendered atom radius in angstroms.
-   * @param {number} flangeRadius Kit flange outer radius R0 in angstroms.
-   * @returns {number} Distance from atom center to connector start plane along bond axis.
-   */
-  function getKitConnectorTrimDistance(sphereRadius, flangeRadius) {
-    const R0 = Math.max(1e-6, Number(flangeRadius) || 0);
-    let x = getSphereSectionAxisDistance(sphereRadius, R0);
-    // Small extra overlap hides seams; tangent geometry already provides the curvature scaling.
-    const seatOverlap = Math.min(0.010, Math.max(0.003, R0 * 0.035));
-    x = Math.max(0, x - seatOverlap);
-    return x;
   }
 
   /**
@@ -3849,16 +3807,14 @@
     const profile = getMoleculeStyleProfile();
     const hasRelativeOutline = appearanceState.effects.bondOutlineFraction > 0;
     const isKitStyle = profile.key === 'kit';
-    const usesTrimmedConnector = !!profile.usesTrimmedConnector;
     const atomPositions = buildBondAtomRecords(vol);
     const bondEdges = getVolumeBondEdges(vol, atomPositions);
     const bondMat = getBondMaterial();
     const stylizedBondOutlineMat = (hasRelativeOutline || appearanceState.effects.outlineWidth > 0) ? getStylizedBondOutlineMaterial() : null;
     const stylizedBondHighlightMat = appearanceState.effects.highlights ? getStylizedBondHighlightMaterial() : null;
     const up = new THREE.Vector3(0, 1, 0);
-    const kitCenterRadius = profile.bondRadius * getMoleculeBondRadiusScale();
-    const kitCollarRadius = (profile.kitCollarRadius || 0.114) * getMoleculeBondRadiusScale();
-    const bondRadius = getRenderedBondRadius(profile.key);
+    const requestedCollarRadius = profile.kitCollarRadius * getMoleculeBondRadiusScale();
+    const requestedBondRadius = getRenderedBondRadius(profile.key);
     const bondRadialSegments = profile.bondRadialSegments;
     const bondHeightSegments = profile.bondHeightSegments;
     const multiBondRenderingEnabled = !!showMultiBonds;
@@ -3885,7 +3841,6 @@
     const bondAdjacency = multiBondRenderingEnabled
       ? buildBondAdjacency(covalentRenderEdges, atomPositions.length)
       : [];
-    const componentSpacing = Math.max(0.13, bondRadius * 2.1);
 
     /**
      * Build and add one visible connector component for a bond.
@@ -3902,50 +3857,14 @@
      * @param {number} order
      * @param {number} componentOffsetU
      * @param {number} componentOffsetV
+     * @param {object} fit Safe radii and seat depths from fitBondToAtoms.
      */
-    function addBondComponent(a, b, i, j, dirNorm, len, geomLen, mid, trimA, trimB, order, componentOffsetU, componentOffsetV) {
+    function addBondComponent(a, b, i, j, dirNorm, len, geomLen, mid, trimA, trimB, order, componentOffsetU, componentOffsetV, fit) {
       const offsetU = Number.isFinite(componentOffsetU) ? componentOffsetU : 0;
       const offsetV = Number.isFinite(componentOffsetV) ? componentOffsetV : 0;
-      const lateralOffset = Math.hypot(offsetU, offsetV);
-      const componentCenterRadius = bondRadius;
-      let localTrimA = Math.max(0, Number.isFinite(trimA) ? trimA : 0);
-      let localTrimB = Math.max(0, Number.isFinite(trimB) ? trimB : 0);
-      let localGeomLen = geomLen;
-      let localMid = mid;
-      // For surface-seated straight multi-bonds, compensate seat depth for
-      // lateral component offset so connector ends remain hidden inside spheres.
-      if (useSurfaceSeatedStraightBondConnectors(profile) && order >= 2) {
-        // Order-4 components need deeper seating so their clipped ends stay hidden.
-        const defaultMultiSeatOverlap = order >= 4 ? 0.06 : (order >= 3 ? 0.06 : 0.02);
-        const seatAFromOffset = Math.sqrt(Math.max(
-          0,
-          a.displayRadius * a.displayRadius
-            - lateralOffset * lateralOffset
-            - componentCenterRadius * componentCenterRadius
-        ));
-        const seatBFromOffset = Math.sqrt(Math.max(
-          0,
-          b.displayRadius * b.displayRadius
-            - lateralOffset * lateralOffset
-            - componentCenterRadius * componentCenterRadius
-        ));
-        localTrimA = Math.max(0, seatAFromOffset - defaultMultiSeatOverlap);
-        localTrimB = Math.max(0, seatBFromOffset - defaultMultiSeatOverlap);
-        const maxTrim = Math.max(0, len - 0.16);
-        const trimSum = localTrimA + localTrimB;
-        if (trimSum > maxTrim && trimSum > 1e-8) {
-          const s = maxTrim / trimSum;
-          localTrimA *= s;
-          localTrimB *= s;
-        }
-        const adjustedPlacement = computeBondSegmentPlacement(a.pos, b.pos, localTrimA, localTrimB, 0.08);
-        if (adjustedPlacement.valid) {
-          localGeomLen = adjustedPlacement.geomLen;
-          // Adjust the axial center along with the new asymmetric trims while
-          // retaining the caller's lateral multiple-bond displacement.
-          localMid = mid.clone().addScaledVector(dirNorm, 0.5 * (localTrimA - trimA - localTrimB + trimB));
-        }
-      }
+      const componentCenterRadius = fit.radius;
+      const kitCollarRadius = fit.collarRadius;
+      const localTrimA = trimA, localTrimB = trimB, localGeomLen = geomLen, localMid = mid;
       const carrierUserData = {
         bondId: covalentRenderEdges.find((edge) => edge.i === i && edge.j === j && edge.order === order && edge.kind === 'normal')?.id || buildVolumeBondId(ensureAtomId(vol.atoms[i]), ensureAtomId(vol.atoms[j])),
         baseLen: len,
@@ -3963,11 +3882,10 @@
         connectorStyle: isKitStyle ? 'kit' : 'basic',
         connectorCenterRadius: componentCenterRadius,
         connectorEndRadius: isKitStyle ? kitCollarRadius : componentCenterRadius,
-        bondDisplayRadius: Math.max(0.01, componentCenterRadius),
+        bondDisplayRadius: componentCenterRadius,
+        fit, requestedBondRadius,
       };
-      const outlineScale = appearanceState.effects.outlineWidth > 0
-        ? 1 + appearanceState.effects.outlineWidth / Math.max(0.01, componentCenterRadius)
-        : 1 + appearanceState.effects.bondOutlineFraction;
+      const outlineScale = fit.outlineScale;
       const highlightScale = 1.03;
       /**
        * Attach outline/highlight shells to one bond mesh when needed.
@@ -4024,11 +3942,14 @@
      * @param {number} offsetDistance
      * @param {number} componentOffsetU
      * @param {number} componentOffsetV
+     * @param {object} fit Safe radii and seat depths from fitBondToAtoms.
      */
     function addKitCurvedBondComponent(
       i, j, order, len, geomLen, trimA, trimB, aPos, bPos, aRadius, bRadius, dirNorm,
-      offsetDirection, offsetDistance, componentOffsetU, componentOffsetV
+      offsetDirection, offsetDistance, componentOffsetU, componentOffsetV, fit
     ) {
+      const bondRadius = fit.radius, kitCollarRadius = fit.collarRadius;
+      aRadius = fit.fitA; bRadius = fit.fitB;
       const bondMid = new THREE.Vector3().addVectors(aPos, bPos).multiplyScalar(0.5);
       const symmetricEligible = isMirrorSymmetryEligible(aRadius, bRadius, trimA, trimB);
 
@@ -4194,6 +4115,7 @@
         connectorStyle: 'kitCurved',
         connectorCenterRadius: bondRadius,
         connectorEndRadius: kitCollarRadius,
+        fit, requestedBondRadius,
       };
       group.add(connector);
     }
@@ -4214,13 +4136,14 @@
       const radiusScale = style === METAL_BOND_STYLE.STRONG
         ? 0.85
         : (style === METAL_BOND_STYLE.DATIVE ? 0.70 : 0.75);
-      const radius = Math.max(0.018, bondRadius * radiusScale);
+      let radius = Math.max(0.018, requestedBondRadius * radiusScale);
       const placement = getPreviewBondSegmentPlacement(atomA.pos, atomB.pos, atomA.Z, atomB.Z, {
         bondRadius: radius,
         surfaceInset: 0.012,
         minGeomLen: useDashedConnector ? 0.18 : 0.08,
       });
       if (!placement.valid || !(placement.geomLen > 1e-4)) return;
+      radius = placement.bondRadius;
       const color = resolveMetalConnectorColor(edge, atomA, atomB);
       const carrier = new THREE.Object3D();
       carrier.userData = {
@@ -4281,42 +4204,23 @@
       const len = basePlacement.len;
       const dirNorm = basePlacement.dirNorm;
 
-      let trimA = 0;
-      let trimB = 0;
-      let geomLen = basePlacement.geomLen;
-      let mid = basePlacement.mid;
-      const useSurfaceSeatedStraightBond = useSurfaceSeatedStraightBondConnectors(profile);
-      if (usesTrimmedConnector || useSurfaceSeatedStraightBond) {
-        const connectorEndRadius = isKitStyle ? kitCollarRadius : bondRadius;
-        if (useSurfaceSeatedStraightBond) {
-          // Basic/toon straight bonds: seat at sphere contact for constant
-          // bond radius and add a tiny overlap so bonds dip into atom shells.
-          // Keeping this in one branch prevents the styles from drifting.
-          const defaultSeatOverlap = 0.01;
-          trimA = Math.max(0, getSphereSectionAxisDistance(a.displayRadius, bondRadius) - defaultSeatOverlap);
-          trimB = Math.max(0, getSphereSectionAxisDistance(b.displayRadius, bondRadius) - defaultSeatOverlap);
-        } else {
-          // Kit seating depends on sphere curvature; small atoms need deeper insertion.
-          trimA = getKitConnectorTrimDistance(a.displayRadius, connectorEndRadius);
-          trimB = getKitConnectorTrimDistance(b.displayRadius, connectorEndRadius);
-        }
-        const maxTrim = Math.max(0, len - (isKitStyle ? 0.12 : 0.16));
-        const trimSum = trimA + trimB;
-        if (trimSum > maxTrim && trimSum > 1e-8) {
-          const s = maxTrim / trimSum;
-          trimA *= s;
-          trimB *= s;
-        }
-        const minGeomLen = isKitStyle ? 0.06 : 0.08;
-        const trimmedPlacement = computeBondSegmentPlacement(a.pos, b.pos, trimA, trimB, minGeomLen);
-        if (!trimmedPlacement.valid) continue;
-        geomLen = trimmedPlacement.geomLen;
-        mid = trimmedPlacement.mid;
-      }
+      const fit = fitBondToAtoms({ radius: requestedBondRadius,
+        collarRadius: isKitStyle ? requestedCollarRadius : requestedBondRadius,
+        radiusA: a.displayRadius, radiusB: b.displayRadius, order,
+        widthSegments: profile.sphereWidthSegments, heightSegments: profile.sphereHeightSegments,
+        outlineWidth: appearanceState.effects.outlineWidth,
+        outlineFraction: appearanceState.effects.bondOutlineFraction,
+        highlightScale: stylizedBondHighlightMat ? 1.03 : 1 });
+      const componentSpacing = fit.spacing;
+      // Short bonds may be seated deeper, never shallower than the safe plane.
+      const trimScale = Math.min(1, Math.max(0, len - 0.001) / Math.max(1e-12, fit.trimA + fit.trimB));
+      const trimA = fit.trimA * trimScale, trimB = fit.trimB * trimScale;
+      const placement = computeBondSegmentPlacement(a.pos, b.pos, trimA, trimB, 0);
+      const geomLen = placement.geomLen, mid = placement.mid;
 
       const offsets = multiBondRenderingEnabled ? getBondComponentOffsets(order) : [[0, 0]];
       if (offsets.length <= 1) {
-        addBondComponent(a, b, i, j, dirNorm, len, geomLen, mid, trimA, trimB, order, 0, 0);
+        addBondComponent(a, b, i, j, dirNorm, len, geomLen, mid, trimA, trimB, order, 0, 0, fit);
         continue;
       }
       const perp = getBondPlaneOffsetDirection(i, j, dirNorm, atomPositions, bondAdjacency);
@@ -4331,7 +4235,7 @@
           isKitStyle
         );
         const componentVec = perp.clone().multiplyScalar(componentOffsetU).addScaledVector(perpOrtho, componentOffsetV);
-        if (isKitStyle && order >= 2) {
+        if (isKitStyle && profile.usesKitCurvedMultiBond && order >= 2) {
           const offsetDistance = componentVec.length();
           const offsetDirection = offsetDistance > 1e-8
             ? componentVec.clone().multiplyScalar(1 / offsetDistance)
@@ -4339,13 +4243,13 @@
           addKitCurvedBondComponent(
             i, j, order, len, geomLen, trimA, trimB,
             a.pos, b.pos, a.displayRadius, b.displayRadius, dirNorm,
-            offsetDirection, offsetDistance, componentOffsetU, componentOffsetV
+            offsetDirection, offsetDistance, componentOffsetU, componentOffsetV, fit
           );
           continue;
         }
         const componentMid = mid.clone().add(componentVec);
         addBondComponent(
-          a, b, i, j, dirNorm, len, geomLen, componentMid, trimA, trimB, order, componentOffsetU, componentOffsetV
+          a, b, i, j, dirNorm, len, geomLen, componentMid, trimA, trimB, order, componentOffsetU, componentOffsetV, fit
         );
       }
     }
@@ -4430,8 +4334,14 @@
       if (!aInfo || !bInfo) continue;
       const aPos = aInfo.pos;
       const bPos = bInfo.pos;
-      const placement = computeBondSegmentPlacement(aPos, bPos, trimA, trimB, 1e-4);
-      if (!placement.valid) continue;
+      const fit = obj.userData.fit;
+      const distance = aPos.distanceTo(bPos);
+      const trimScale = fit ? Math.min(1, Math.max(0, distance - 0.001) / Math.max(1e-12, fit.trimA + fit.trimB)) : 1;
+      const nextTrimA = fit ? fit.trimA * trimScale : trimA;
+      const nextTrimB = fit ? fit.trimB * trimScale : trimB;
+      const placement = computeBondSegmentPlacement(aPos, bPos, nextTrimA, nextTrimB, 1e-6);
+      obj.userData.trimA = nextTrimA; obj.userData.trimB = nextTrimB;
+      if (!placement.valid) { obj.visible = false; continue; }
       const len = placement.len;
       const dirNorm = placement.dirNorm;
       let geomLen = placement.geomLen;
@@ -4471,7 +4381,7 @@
         const s = geomLen / (base || geomLen);
         obj.scale.set(1, s, 1);
       }
-      obj.visible = geomLen > 0.04;
+      obj.visible = geomLen > 1e-6;
     }
     if (needsFullRebuild) rebuildBondsFromAtoms(record);
   }
@@ -12339,7 +12249,7 @@
     const explicitKeys = new Set(explicitBonds.map((bond) => buildVolumeBondId(bond.a, bond.b)));
     const perceivedBonds = buildPerceivedBondRecords(vol, atomPositions, { inferOrders: !!options.inferOrders })
       .filter((bond) => !explicitKeys.has(buildVolumeBondId(bond.a, bond.b)));
-    vol.bonds = explicitBonds.concat(perceivedBonds);
+    vol.bonds = normalizeVolumeBonds(vol, explicitBonds.concat(perceivedBonds));
     pruneInvalidCoordinationPreferences(vol);
     return vol.bonds;
   }
@@ -12891,6 +12801,7 @@
    * @returns {number}
    */
   function getEditAddBondLength(anchorZ, newZ, order) {
+    if ((anchorZ | 0) === 1 || (newZ | 0) === 1) order = 1;
     const rA = getCovalentRadiusAngstrom(anchorZ | 0);
     const rB = getCovalentRadiusAngstrom(newZ | 0);
     const base = Math.max(0.6, 0.92 * (rA + rB));
@@ -15509,6 +15420,7 @@
     normalizeVolumeBondRecord,
     normalizeVolumeBondStyle,
     upsertVolumeBond,
+    getHydrogenBondError,
     removeVolumeBond,
     getElementSymbol,
     isMetalAtomZ,
@@ -15894,7 +15806,7 @@
         minGeomLen: 0.03,
       });
       if (!placement.valid) continue;
-      const geom = new THREE.CylinderGeometry(bondRadius, bondRadius, placement.geomLen, bondRadialSegments, 1, false);
+      const geom = new THREE.CylinderGeometry(placement.bondRadius, placement.bondRadius, placement.geomLen, bondRadialSegments, 1, false);
       const mesh = new THREE.Mesh(geom, bondMat);
       mesh.position.copy(placement.mid);
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), placement.dirNorm);
@@ -16209,10 +16121,10 @@
         minGeomLen: 0.03,
       });
       if (!placement.valid) continue;
-      const key = `${bondRadius}:${placement.geomLen.toFixed(4)}:${bondRadialSegments}`;
+      const key = `${placement.bondRadius}:${placement.geomLen.toFixed(4)}:${bondRadialSegments}`;
       let cylinder = cylGeomCache.get(key);
       if (!cylinder) {
-        cylinder = new THREE.CylinderGeometry(bondRadius, bondRadius, placement.geomLen, bondRadialSegments, 1, false);
+        cylinder = new THREE.CylinderGeometry(placement.bondRadius, placement.bondRadius, placement.geomLen, bondRadialSegments, 1, false);
         cylGeomCache.set(key, cylinder);
       }
       const mesh = new THREE.Mesh(cylinder, bondMat);
@@ -18041,6 +17953,7 @@
         startClientX: Number(e.clientX) || 0,
         startOrder: resolved.order | 0,
         currentOrder: resolved.order | 0,
+        maxOrder: (resolved.atomA.Z | 0) === 1 || (resolved.atomB.Z | 0) === 1 ? 1 : 4,
       };
       if (buttonEl && Number.isInteger(e.pointerId) && typeof buttonEl.setPointerCapture === 'function') {
         try { buttonEl.setPointerCapture(e.pointerId); } catch { }
@@ -18100,10 +18013,10 @@
     if (!selectionCueDragState || selectionCueDragState.buttonEl !== buttonEl) return false;
     if (Number.isInteger(selectionCueDragState.pointerId) && selectionCueDragState.pointerId !== e.pointerId) return false;
     if (selectionCueDragState.action === 'bondOrder') {
-      const nextOrder = clampBondCenterInteractiveOrder(
+      const nextOrder = Math.min(selectionCueDragState.maxOrder, clampBondCenterInteractiveOrder(
         (selectionCueDragState.startOrder | 0)
         + Math.round(((Number(e.clientX) || 0) - (selectionCueDragState.startClientX || 0)) / 24)
-      );
+      ));
       if (nextOrder !== (selectionCueDragState.currentOrder | 0) && applyBondCenterSelectionOrder(nextOrder)) {
         selectionCueDragState.currentOrder = nextOrder;
       }
@@ -22990,6 +22903,10 @@
       const normalizedIds = normalizeBondCenterSelectionIds(atomIdA, atomIdB);
       const metalPair = !!(isMetalAtomZ((atomA && atomA.Z) | 0) || isMetalAtomZ((atomB && atomB.Z) | 0));
       if (!metalPair && normalizedIds) {
+        if ((atomA.Z | 0) === 1 || (atomB.Z | 0) === 1) {
+          setHintMessage('Hydrogen can only form a single bond.');
+          return true; // Consume the click so it cannot fall through to atom placement.
+        }
         const currentOrder = clampBondCenterInteractiveOrder(getBondCarrierDisplayedOrder(carrier));
         const nextOrder = getNextBondCenterClickOrder(normalizedIds.atomIdA, normalizedIds.atomIdB, currentOrder);
         changed = nextOrder > 0
@@ -23143,7 +23060,8 @@
         setHintMessage(`Selected ${symbolA}-${symbolB} bond • Style ${getMetalBondStyleLabel(resolved.style)} • Click the bond cue or use 1/2/3/0.`);
       } else {
         const order = resolved ? resolved.order : 0;
-        setHintMessage(`Selected ${symbolA}-${symbolB} bond • Order ${order} • Drag the bond cue to change 0-4.`);
+        const maxOrder = (vol.atoms[i].Z | 0) === 1 || (vol.atoms[j].Z | 0) === 1 ? 1 : 4;
+        setHintMessage(`Selected ${symbolA}-${symbolB} bond • Order ${order} • Drag the bond cue to change 0-${maxOrder}.`);
       }
     }
     return true;
@@ -23217,7 +23135,11 @@
       else if (value === 3) handled = applyBondCenterSelectionStyle(METAL_BOND_STYLE.DATIVE);
       else handled = false;
     } else {
-      if (value >= 0 && value <= 4) handled = applyBondCenterSelectionOrder(value);
+      if (value >= 0 && value <= 4) {
+        const error = value > 0 ? getHydrogenBondError(vol, resolved.atomIdA, resolved.atomIdB, value) : '';
+        if (error) { setHintMessage(error); handled = true; }
+        else handled = applyBondCenterSelectionOrder(value);
+      }
     }
     if (handled && e && typeof e.preventDefault === 'function') e.preventDefault();
     return handled;
@@ -24178,10 +24100,13 @@
     const vol = record && record.vol;
     const anchor = anchorIndex | 0;
     const z = Number.isInteger(options.elementZ) ? (options.elementZ | 0) : (editAddElementZ | 0);
-    const bondOrder = normalizeEditAddBondOrder(options.bondOrder || editAddBondOrder || 1);
+    let bondOrder = normalizeEditAddBondOrder(options.bondOrder || editAddBondOrder || 1);
     if (!record || !vol || !Array.isArray(vol.atoms) || anchor < 0 || anchor >= vol.atoms.length || !worldPos || !worldPos.isVector3 || !ATOM_Z_TO_DATA[z]) {
       return null;
     }
+    const hydrogenError = getHydrogenBondError(vol, ensureAtomId(vol.atoms[anchor]), '', 1);
+    if (hydrogenError) { setHintMessage(hydrogenError); return null; }
+    if (z === 1 || (vol.atoms[anchor].Z | 0) === 1) bondOrder = 1;
     const beforeAtoms = cloneAtomsSnapshot(vol);
     const beforeBonds = cloneBondSnapshot(vol);
     const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
@@ -24271,11 +24196,12 @@
     finalizePendingNewAtomOperatorSession();
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
-    const bondOrder = normalizeEditAddBondOrder(options.bondOrder || editAddBondOrder || 1);
+    let bondOrder = normalizeEditAddBondOrder(options.bondOrder || editAddBondOrder || 1);
     const z = Number.isInteger(options.elementZ) ? (options.elementZ | 0) : (editAddElementZ | 0);
     if (!record || !vol || !Array.isArray(vol.atoms) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return null;
     const replacement = resolveGestureTerminalHydrogenReplacement(vol, anchorIndex, hydrogenIndex);
     if (!replacement) return null;
+    if (z === 1 || (replacement.anchorAtom.Z | 0) === 1) bondOrder = 1;
     const beforeAtoms = cloneAtomsSnapshot(vol);
     const beforeBonds = cloneBondSnapshot(vol);
     const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
@@ -27965,9 +27891,10 @@
       toneMapping:renderer.toneMapping, exposure:renderer.toneMappingExposure,
       shadows:renderer.shadowMap.enabled, environment:!!scene.environment,
     }),
-    getBondCarrierSnapshots: () => {
+    getBondCarrierSnapshots: (options = {}) => {
       if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
       const out = [];
+      const atoms = options.capFit ? buildBondAtomRecords(volumes[currentIndex].vol, { includeRenderColor: false }) : null;
       for (const child of bondGroup.children) {
         const carrier = getBondCarrierObject(child) || child;
         if (!carrier || !carrier.userData) continue;
@@ -27982,6 +27909,20 @@
             hasColors: !!colors, vertexColors: !!mesh.material.vertexColors, color: mesh.material.color.getHexString(),
             firstColor: colors ? [colors.getX(0), colors.getY(0), colors.getZ(0)] : null });
         });
+        let capDistances = null;
+        if (atoms && carrier.isMesh && carrier.userData.fit) {
+          const p = carrier.geometry.getAttribute('position');
+          let low = Infinity, high = -Infinity;
+          for (let v = 0; v < p.count; v++) { low = Math.min(low, p.getY(v)); high = Math.max(high, p.getY(v)); }
+          capDistances = [0, 0];
+          const point = new THREE.Vector3();
+          for (let v = 0; v < p.count; v++) {
+            const end = Math.abs(p.getY(v) - low) < 1e-7 ? 0 : Math.abs(p.getY(v) - high) < 1e-7 ? 1 : -1;
+            if (end < 0) continue;
+            point.fromBufferAttribute(p, v).multiply(carrier.scale).applyQuaternion(carrier.quaternion).add(carrier.position);
+            capDistances[end] = Math.max(capDistances[end], point.distanceTo(atoms[end === 0 ? i : j].pos));
+          }
+        }
         out.push({
           i: i | 0,
           j: j | 0,
@@ -27990,6 +27931,10 @@
           isMesh: !!carrier.isMesh,
           meshes,
           length: carrier.userData.baseGeomLen,
+          radius: carrier.userData.connectorCenterRadius,
+          offset: Math.hypot(carrier.userData.bondComponentOffsetU || 0, carrier.userData.bondComponentOffsetV || 0),
+          fit: carrier.userData.fit ? { ...carrier.userData.fit } : null,
+          capDistances,
           trimA: carrier.userData.trimA,
           trimB: carrier.userData.trimB,
           x: Number(carrier.position && carrier.position.x) || 0,

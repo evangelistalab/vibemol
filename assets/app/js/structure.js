@@ -586,15 +586,55 @@
     const b = resolveEndpoint(raw.b);
     if (!a || !b || a === b) return null;
     const id = String(raw.id || '').trim() || buildVolumeBondId(a, b);
+    const hydrogen = [a, b].some(atomId => (atoms[resolvedContext.atomIndexById.get(atomId)].Z | 0) === 1);
     return {
       id,
       a,
       b,
-      order: normalizeEditAddBondOrder(raw.order || 1),
+      order: hydrogen ? 1 : normalizeEditAddBondOrder(raw.order || 1),
       kind: normalizeVolumeBondKind(raw.kind),
       origin: normalizeVolumeBondOrigin(raw.origin),
       style: normalizeVolumeBondStyle(raw.style),
     };
+  }
+
+  /** One shared hydrogen rule for editing, builders, and imported topology. */
+  function getHydrogenBondError(vol, atomIdA, atomIdB, order = 1) {
+    const context = createVolumeBondNormalizationContext(vol);
+    const hydrogenIds = [atomIdA, atomIdB].filter(id => (context.atoms[context.atomIndexById.get(id)]?.Z | 0) === 1);
+    if (!hydrogenIds.length) return '';
+    if (normalizeEditAddBondOrder(order) !== 1) return 'Hydrogen can only form a single bond.';
+    for (const raw of vol.bonds || []) {
+      const bond = normalizeVolumeBondRecord(vol, raw, context);
+      if (!bond || bond.kind === 'blocked') continue;
+      if ((bond.a === atomIdA && bond.b === atomIdB) || (bond.a === atomIdB && bond.b === atomIdA)) continue;
+      if (hydrogenIds.some(id => bond.a === id || bond.b === id)) return 'Hydrogen can only bond to one atom. Remove its existing bond first.';
+    }
+    return '';
+  }
+
+  /** Repair legacy/imported hydrogen bonds: explicit connections win over
+   * perception, then the nearest neighbor wins. Blocked pairs do not use valence.
+   * Keep input order for accepted records, so unrelated topology is unchanged.
+   */
+  function normalizeVolumeBonds(vol, bonds = vol.bonds) {
+    const context = createVolumeBondNormalizationContext(vol);
+    const normalized = (bonds || []).map(bond => normalizeVolumeBondRecord(vol, bond, context)).filter(Boolean);
+    const hydrogenIds = bond => [bond.a, bond.b].filter(id => (context.atoms[context.atomIndexById.get(id)].Z | 0) === 1);
+    const distance = bond => {
+      const a = context.atoms[context.atomIndexById.get(bond.a)], b = context.atoms[context.atomIndexById.get(bond.b)];
+      return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+    };
+    const candidates = normalized.filter(bond => bond.kind !== 'blocked' && hydrogenIds(bond).length);
+    candidates.sort((a, b) => (a.origin === 'explicit' ? 0 : 1) - (b.origin === 'explicit' ? 0 : 1)
+      || distance(a) - distance(b) || buildVolumeBondId(a.a, a.b).localeCompare(buildVolumeBondId(b.a, b.b)));
+    const used = new Set(), rejected = new Set();
+    for (const bond of candidates) {
+      const ids = hydrogenIds(bond);
+      if (ids.some(id => used.has(id))) rejected.add(bond);
+      else ids.forEach(id => used.add(id));
+    }
+    return normalized.filter(bond => !rejected.has(bond));
   }
 
   /**
@@ -621,16 +661,11 @@
     if (typeof options.rehydrateBuilderState === 'function') {
       options.rehydrateBuilderState(vol);
     }
-    if (Array.isArray(vol.bonds)) {
-      const bondContext = createVolumeBondNormalizationContext(vol);
-      vol.bonds = vol.bonds
-        .map((bond) => normalizeVolumeBondRecord(vol, bond, bondContext))
-        .filter(Boolean);
-    } else if (options.inferMissingBonds !== false && typeof options.inferBonds === 'function') {
-      options.inferBonds(vol);
-    } else {
-      vol.bonds = [];
+    if (!Array.isArray(vol.bonds)) {
+      if (options.inferMissingBonds !== false && typeof options.inferBonds === 'function') options.inferBonds(vol);
+      else vol.bonds = [];
     }
+    if (Array.isArray(vol.bonds)) vol.bonds = normalizeVolumeBonds(vol);
     return vol;
   }
 
@@ -725,8 +760,12 @@
     const a = String(atomIdA || '').trim();
     const b = String(atomIdB || '').trim();
     if (!a || !b || a === b) return null;
-    const nextOrder = normalizeEditAddBondOrder(order || 1);
+    const context = createVolumeBondNormalizationContext(vol);
+    if (!context.atomIds.has(a) || !context.atomIds.has(b)) return null;
+    const hydrogen = [a, b].some(id => (context.atoms[context.atomIndexById.get(id)].Z | 0) === 1);
+    const nextOrder = hydrogen ? 1 : normalizeEditAddBondOrder(order || 1);
     const nextKind = normalizeVolumeBondKind(kind);
+    if (nextKind !== 'blocked' && getHydrogenBondError(vol, a, b, nextOrder)) return null;
     const nextStyle = normalizeVolumeBondStyle(style);
     const index = findVolumeBondRecordIndex(vol, a, b);
     if (index >= 0) {
@@ -983,6 +1022,8 @@
     normalizeVolumeBondOrigin,
     normalizeVolumeBondStyle,
     normalizeVolumeBondRecord,
+    normalizeVolumeBonds,
+    getHydrogenBondError,
     ensureVolumeSchema,
     cloneBondSnapshot,
     bondSnapshotsEqual,

@@ -121,6 +121,30 @@ function createHarness(options = {}) {
   };
 }
 
+test('hydrogen bond cycling and direct order changes are rejected without history or hydrogen adjustment', () => {
+  const h = createHarness({ atomZ1: 1 });
+  const carrier = { userData: { i: 0, j: 1, bondOrder: 1 } };
+  assert.equal(h.controller.stepCarrierOrder(carrier, 1), false);
+  assert.equal(h.controller.applyToCarrier(carrier, { orderOverride: 3 }), false);
+  assert.equal(h.record.vol.bonds[0].order, 1);
+  assert.equal(h.calls.history.length, 0);
+  assert.equal(h.calls.hydrogenAdjustments.length, 0);
+  assert.ok(h.calls.hints.every(text => text.includes('single bond')));
+  assert.equal(h.controller.stepCarrierOrder(carrier, -1), true, 'deletion remains available');
+});
+
+test('a second hydrogen neighbor is rejected by all direct atom-pair edits', () => {
+  const h = createHarness({ atomZ1: 1 });
+  h.record.vol.atoms.push({ id: 'atom-3', Z: 26, x: 0, y: 2, z: 0 });
+  assert.equal(h.controller.applyToAtomPair(0, 2, { orderOverride: 1 }), false);
+  assert.equal(h.record.vol.bonds.length, 1);
+  assert.equal(h.calls.history.length, 0);
+  assert.match(h.calls.hints.at(-1), /one atom/);
+  assert.equal(h.controller.applyToAtom(0), true);
+  assert.equal(h.controller.applyToAtom(2), false);
+  assert.match(h.calls.hints.at(-1), /one atom/, 'two-click tool preserves the restriction message');
+});
+
 test('bond-editing stepCarrierOrder raises one displayed bond order and makes the bond explicit', () => {
   const { controller, record, calls, carrier } = createHarness({ order: 1, origin: 'perceived' });
 

@@ -6,6 +6,58 @@ const { THREE, VibeMolBondGeometry: B } = loadGlobalModules([
   'assets/vendor/js/three.min.js', 'assets/app/js/bond-geometry.js',
 ]);
 
+test('bond fit uses the outer rim, with size-dependent double and triple maxima', () => {
+  for (const order of [1, 2, 3, 4]) {
+    for (const radiusA of [0.003, 0.05, 0.462, 0.499, 1.5]) {
+      const radiusB = radiusA * 1.31;
+      for (const radius of [0.01, 0.105, 0.14, 0.64]) {
+        const fit = B.fitBond({ radius, radiusA, radiusB, order, widthSegments: 64, heightSegments: 40 });
+        const factor = order === 1 ? 1 : order === 2 ? 2.05 : 3.1;
+        assert.ok(Math.abs(fit.maxRadius - fit.fitA / factor) < 1e-12);
+        assert.ok(fit.radius <= radius && fit.radius > 0);
+        for (const [u, v] of B.componentOffsets(order)) {
+          const d = Math.hypot(u, v) * fit.spacing;
+          for (const [R, t] of [[fit.fitA, fit.trimA], [fit.fitB, fit.trimB]]) {
+            // Check every point around the cap, including the offending outer rim.
+            for (let i = 0; i < 360; i++) {
+              const angle = i * Math.PI / 180;
+              const extent = Math.hypot(t, d + fit.radius * Math.cos(angle), fit.radius * Math.sin(angle));
+              assert.ok(extent <= R + 1e-12, `order ${order}: cap must be fully inside both atoms`);
+            }
+          }
+        }
+        const tooThick = fit.maxRadius * 1.001;
+        assert.ok(factor * tooThick > fit.fitA, 'no axial insertion can hide a bundle above the limit');
+      }
+    }
+  }
+});
+
+test('sphere fit radius lies behind every actual triangulated sphere face', () => {
+  for (const [w, h] of [[3, 2], [7, 5], [12, 8], [36, 24], [64, 40]]) {
+    const g = new THREE.SphereGeometry(1, w, h), p = g.getAttribute('position'), index = g.index;
+    const safeRadius = B.sphereFitRadius(1, w, h);
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+    for (let i = 0; i < index.count; i += 3) {
+      a.fromBufferAttribute(p, index.getX(i)); b.fromBufferAttribute(p, index.getX(i + 1)); c.fromBufferAttribute(p, index.getX(i + 2));
+      const normal = b.clone().sub(a).cross(c.clone().sub(a)).normalize();
+      assert.ok(Math.abs(normal.dot(a)) >= safeRadius, 'analytic safety bound must account for mesh facets');
+    }
+    g.dispose();
+  }
+});
+
+test('joint radii and decorative shells are included in the fit', () => {
+  for (const order of [1, 2, 3, 4]) {
+    const fit = B.fitBond({ radius: 0.64, collarRadius: 0.35, radiusA: 0.03, radiusB: 0.06, order,
+      outlineWidth: 0.04, outlineFraction: 0.2, highlightScale: 1.03 });
+    const outer = Math.max(...B.componentOffsets(order).map(([u, v]) => Math.hypot(u, v) * fit.spacing)) + fit.rimRadius;
+    assert.ok(Math.hypot(outer, fit.trimA) <= fit.fitA + 1e-12);
+    assert.ok(Math.hypot(outer, fit.trimB) <= fit.fitB + 1e-12);
+    assert.ok(fit.collarRadius < fit.radius);
+  }
+});
+
 function checkClosedCylinder(geometry, length) {
   const positions = geometry.getAttribute('position'), normals = geometry.getAttribute('normal');
   const indices = geometry.index ? Array.from(geometry.index.array) : Array.from({length:positions.count}, (_, i) => i);

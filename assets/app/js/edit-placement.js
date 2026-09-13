@@ -951,6 +951,9 @@
         return false;
       }
 
+      const hydrogenError = global.VibeMolStructureCore?.getHydrogenBondError(vol, ensureAtomId(vol.atoms[anchor]), '', 1);
+      if (hydrogenError) { setHintMessage(hydrogenError); return false; }
+
       const beforeAtoms = cloneAtomsSnapshot(vol);
       const beforeBonds = cloneBondSnapshot(vol);
       const beforeAnnotations = cloneVolumeAnnotationsSnapshot(vol);
@@ -1005,7 +1008,8 @@
         setHintMessage('Fragment placement failed: invalid connection atom.');
         return false;
       }
-      const bondOrder = normalizeEditAddBondOrder(getEditAddBondOrder() || fragment.preferredBondOrder || 1);
+      const bondOrder = (anchorAtom.Z | 0) === 1 || (conn.Z | 0) === 1
+        ? 1 : normalizeEditAddBondOrder(getEditAddBondOrder() || fragment.preferredBondOrder || 1);
       const bondLength = getEditAddBondLength(anchorAtom.Z | 0, conn.Z | 0, bondOrder);
       const connectionWorld = anchorPos.clone().addScaledVector(attachDir, bondLength);
       const oldAtomIndexSet = new Set(Array.from({ length: vol.atoms.length }, (_, i) => i));

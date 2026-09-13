@@ -64,7 +64,8 @@ Primary capabilities:
 - `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate and marching-cubes isosurface helpers.
 - `assets/app/js/volume-2c.js`: 2C phase and Bloch-colored isosurface builders.
 - `assets/app/js/bond-inference.js`: nonmetal covalent candidate generation, metal-aware coordination-style inference, bond-order inference, and aromatic six-ring detection helpers.
-- `assets/app/js/bond-geometry.js`: continuous closed bond cylinders, including sharp element-color boundaries without internal caps or separate half-cylinder transforms.
+- `docs/bond-fitting.md`: cap seating equations, per-bond radius limits, sphere mesh clearance, and hydrogen topology constraints.
+- `assets/app/js/bond-geometry.js`: continuous closed bond cylinders, sharp element-color boundaries without internal caps, and shared sphere seating / per-bond radius-limit math.
 - `assets/app/js/coordination.js`: coordination-geometry catalog and element-aware coordination choice menus.
 - `assets/app/js/geometry-inference.js`: bond-order-driven main-group geometry inference plus transition-metal coordination defaults.
 - `assets/app/js/uff.js`: standalone UFF force-field implementation plus local energy/gradient helpers.
@@ -298,6 +299,8 @@ Preset automation contract exposed globally:
 - Trajectory playback and vibrational playback are mutually exclusive for one active file.
 - Trajectory and Frequencies panels both expose `Save video`, which opens a crop overlay over the 3D canvas and exports one cropped WebM pass of the current animation.
 - Outside edit mode, trajectory bond rendering is dynamic per frame and does not mutate stored `vol.bonds`.
+- Bond radius is a requested maximum: each connector is capped to fit its smaller atom, with mesh facets, contours, and joints included. For plain cylinders, double-bond radius is at most `R/2.05`, triple/quadruple at most `R/3.1`, where `R` is the smaller sphere mesh's safe interior radius. Component spacing scales with thickness. Straight end caps use `sqrt(R²-(offset+rimRadius)²)` and live edits recompute the seating. Saved looks retain the requested radius; see `docs/bond-fitting.md`.
+- Hydrogen has one neighbor and order one across covalent/metal styles. The structure core normalizes legacy H orders and surplus neighbors (explicit then closest), and rejects a new neighbor on occupied H. Bond editing disables/rejects higher H orders; saturated-H growth stops before atom insertion. Covalent and metal inference share H capacity; H2 is supported. Explicit H deletion retains its no-adjustment/no-optimization behavior.
 - In edit mode, the `Build` popover is toggled explicitly by the toolbar button or `/`; pressing `/` focuses the Build search field when the palette is already open. The `Symmetry` popover is toggled explicitly by the toolbar button or `S`.
 - The `Symmetry` tool supports point-group analysis, RMS-based approximate fits, preview/apply/auto-apply symmetrization, and 3D symmetry-element visualization.
 - Appearance is an accordion inspector with a native Looks preset menu, independent Geometry/Material/Lighting controls, and the existing Rendering, Atoms, Bonds, Camera, Scene, Surfaces, and Preferences sections. Surface and 2C/cloud controls appear only when relevant.

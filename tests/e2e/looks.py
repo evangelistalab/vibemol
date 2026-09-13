@@ -435,11 +435,87 @@ def bond_colors_and_preset_controls(page, context, url):
     print('[looks] seamless bonds, uniform/element colors, Kit live edits, preset control values, advanced edits, undo, and sessions: passed',flush=True)
 
 
+def bond_sphere_fit(page, context, url):
+    def fixture(order):
+        assert p.load(page,[{'name':'fit.xyz','text':'2\nBond fit\nC -0.64 -0.2 -0.1\nN 0.64 0.2 0.1\n'}])['ok']
+        doc=page.evaluate('() => VibeMolStructure.exportActive()')
+        left,right=[atom['id'] for atom in doc['volume']['atoms']]
+        doc['volume']['bonds']=[{'a':left,'b':right,'order':order,'kind':'normal','origin':'explicit'}]
+        result=p.load(page,[{'name':'fit.structure.json','text':json.dumps(doc)}]);assert result['ok'],result
+
+    def check(order):
+        bonds=page.evaluate('() => VibeMolTesting.getBondCarrierSnapshots({capFit:true})')
+        assert len(bonds)==order,(order,bonds)
+        for bond in bonds:
+            fit=bond['fit'];assert fit and 0<bond['radius']<=fit['maxRadius']+1e-12
+            if bond['capDistances']:
+                assert bond['capDistances'][0]<=fit['fitA']+2e-6,bond
+                assert bond['capDistances'][1]<=fit['fitB']+2e-6,bond
+            if bond['connectorStyle']!='kitCurved':
+                for key in ['A','B']:
+                    assert math.hypot(bond['trim'+key],bond['offset']+fit['rimRadius'])<=fit['fit'+key]+1e-9,bond
+        return bonds
+
+    for order in [2,3,4]:
+        fixture(order)
+        for preset in ['basic','toon','classic','porcelain','ink','opal','kit']:
+            page.evaluate('id=>VibeMolAppearanceLooks.apply(id)',preset)
+            check(order)
+            # Actual meshes fit after extreme thickness, size, and detail changes.
+            page.evaluate('() => VibeMolAppearanceLooks.edit("geometry",{bondRadius:0.4,atomScaleMain:0.1,sphereWidthSegments:7,sphereHeightSegments:5})')
+            value(page,'moleculeBondRadiusScale',1.6)
+            bonds=check(order)
+            assert all(bond['radius']<0.1 for bond in bonds)
+            assert rendering(page)['geometry']['bondRadius']==0.4,'portable requested size survives per-bond fitting'
+            if preset=='kit':
+                page.evaluate('() => VibeMolAppearanceLooks.edit("geometry",{curvedMultipleBonds:false})')
+                assert all(b['connectorStyle']=='kit' for b in check(order))
+    fixture(2);page.evaluate('() => VibeMolAppearanceLooks.apply("classic")')
+    original=check(2);saved=page.evaluate('() => VibeMolSession.export()')
+    page.evaluate('() => VibeMolAppearanceLooks.edit("geometry",{atomRadii:{6:0.07,7:0.05},bondRadius:0.4})')
+    check(2)
+    assert page.evaluate('saved=>VibeMolSession.import(saved)',saved)['ok']
+    restored=check(2)
+    assert [b['radius'] for b in restored]==[b['radius'] for b in original]
+    print('[looks] sphere-cap containment, all multiple-bond orders/presets, small atoms, radius caps, Kit toggle and sessions: passed',flush=True)
+
+
+def hydrogen_bond_restrictions(page, context, url):
+    assert p.load(page,[{'name':'hydrogen.xyz','text':'3\nHydrogen test\nH -1 0 0\nC 0.1 0 0\nN 3.5 0 0\n'}])['ok']
+    # Legacy structure imports repair multiple/over-coordinated H bonds.
+    doc=page.evaluate('() => VibeMolStructure.exportActive()')
+    h,c,n=[atom['id'] for atom in doc['volume']['atoms']]
+    doc['volume']['bonds']=[{'a':h,'b':c,'order':3,'origin':'explicit'},
+                            {'a':h,'b':n,'order':2,'origin':'perceived'}]
+    assert p.load(page,[{'name':'hydrogen.structure.json','text':json.dumps(doc)}])['ok']
+    topology=page.evaluate('() => VibeMolStructure.exportActive().volume.bonds')
+    assert len(topology)==1 and topology[0]['order']==1
+    page.locator('#modeEditBtn').click()
+    from smoke import find_bond_midpoint_canvas_point, find_atom_click_point
+    x,y=find_bond_midpoint_canvas_point(page);page.mouse.click(x,y)
+    assert page.evaluate('() => VibeMolStructure.exportActive().volume.bonds')==topology
+    assert 'single bond' in page.evaluate('() => VibeMolTesting.getHintMessage()')
+    # Growing from a saturated H must not leave an unconnected new atom behind.
+    page.evaluate('() => VibeMolTesting.setEditSelectionIndices([])')
+    x,y=find_atom_click_point(page,0);page.mouse.move(x,y);page.mouse.down()
+    page.mouse.move(x,y-150,steps=12);page.mouse.up()
+    structure=page.evaluate('() => VibeMolStructure.exportActive().volume')
+    assert len(structure['atoms'])==3 and structure['bonds']==topology
+    assert 'one atom' in page.evaluate('() => VibeMolTesting.getHintMessage()')
+    saved=page.evaluate('() => VibeMolSession.export()')
+    assert page.evaluate('saved=>VibeMolSession.import(saved)',saved)['ok']
+    assert page.evaluate('() => VibeMolStructure.exportActive().volume.bonds')==topology
+    assert p.load(page,[{'name':'h2.xyz','text':'2\nHydrogen molecule\nH -0.37 0 0\nH 0.37 0 0\n'}])['ok']
+    bonds=page.evaluate('() => VibeMolStructure.exportActive().volume.bonds')
+    assert len(bonds)==1 and bonds[0]['order']==1
+    print('[looks] hydrogen import repair, order cycling, saturated-H growth, sessions and H2: passed',flush=True)
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
+            for run in [bond_sphere_fit,hydrogen_bond_restrictions,bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))

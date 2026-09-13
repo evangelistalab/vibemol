@@ -34,6 +34,7 @@
    *   normalizeVolumeBondRecord:(vol:any, raw:any)=>any,
    *   normalizeVolumeBondStyle?:(style:any)=>string,
    *   upsertVolumeBond:(vol:any, atomIdA:any, atomIdB:any, order:any, kind?:any)=>('created'|'updated'|'unchanged'|null),
+   *   getHydrogenBondError?:(vol:any, atomIdA:string, atomIdB:string, order?:number)=>string,
    *   removeVolumeBond:(vol:any, atomIdA:any, atomIdB:any)=>boolean,
    *   getElementSymbol:(z:any)=>string,
    *   isMetalAtomZ?:(z:any)=>boolean,
@@ -78,6 +79,7 @@
     const normalizeVolumeBondRecord = typeof options.normalizeVolumeBondRecord === 'function' ? options.normalizeVolumeBondRecord : (() => null);
     const normalizeVolumeBondStyle = typeof options.normalizeVolumeBondStyle === 'function' ? options.normalizeVolumeBondStyle : ((style) => String(style || 'covalent'));
     const upsertVolumeBond = typeof options.upsertVolumeBond === 'function' ? options.upsertVolumeBond : (() => null);
+    const getHydrogenBondError = options.getHydrogenBondError || global.VibeMolStructureCore?.getHydrogenBondError || (() => '');
     const removeVolumeBond = typeof options.removeVolumeBond === 'function' ? options.removeVolumeBond : (() => false);
     const getElementSymbol = typeof options.getElementSymbol === 'function' ? options.getElementSymbol : ((z) => String(z || '?'));
     const isMetalAtomZ = typeof options.isMetalAtomZ === 'function' ? options.isMetalAtomZ : (() => false);
@@ -124,6 +126,7 @@
       const order = bond ? normalizeOrder(bond.order || 1) : normalizeOrder(carrier && carrier.userData && carrier.userData.bondOrder || 1);
       return {
         metalPair,
+        hydrogenPair: (atomA.Z | 0) === 1 || (atomB.Z | 0) === 1,
         style,
         order,
         bond,
@@ -135,6 +138,8 @@
       const buttons = popupButtonsEl.querySelectorAll('button[data-bond-order-popup]');
       for (const btn of buttons) {
         const rawOrder = Number(btn.getAttribute('data-bond-order-popup'));
+        btn.disabled = !!(popupState?.hydrogenPair && !popupState.metalPair && rawOrder > 1);
+        btn.title = btn.disabled ? 'Hydrogen can only form a single bond.' : '';
         if (popupState && popupState.metalPair) {
           if (rawOrder === 4) {
             btn.hidden = true;
@@ -307,6 +312,9 @@
       if (applyOptions.deleteOverride) {
         return upsertVolumeBond(vol, atomIdA, atomIdB, 1, 'blocked', 'explicit', metalPair ? resolveDefaultBondStyle(atomA, atomB) : 'covalent');
       }
+      const error = getHydrogenBondError(vol, atomIdA, atomIdB,
+        metalPair ? 1 : (Number.isFinite(applyOptions.orderOverride) ? applyOptions.orderOverride : getBondOrder()));
+      if (error) { setHintMessage(error); return null; }
       if (metalPair) {
         const nextStyle = normalizeVolumeBondStyle(
           applyOptions.styleOverride == null ? resolveDefaultBondStyle(atomA, atomB) : applyOptions.styleOverride
@@ -351,7 +359,8 @@
         orderOverride: nextOrder,
         styleOverride: nextStyle,
       });
-      if (!status || status === 'unchanged') {
+      if (!status) return false;
+      if (status === 'unchanged') {
         setHintMessage(`Bond tool: ${getElementSymbol(atomA.Z | 0)}-${getElementSymbol(atomB.Z | 0)} is already order ${nextOrder}.`);
         return false;
       }
@@ -402,7 +411,8 @@
         styleOverride: nextStyle,
       });
       clearPendingSelection();
-      if (!status || status === 'unchanged') {
+      if (!status) return false;
+      if (status === 'unchanged') {
         setHintMessage(`Bond already exists between ${getElementSymbol(pendingAtom.Z | 0)} and ${getElementSymbol(atom.Z | 0)}. Click the bond to change its order.`);
         return false;
       }
@@ -558,7 +568,8 @@
         const status = nextIndex < 0
           ? applyBondState(vol, atomIdA, atomIdB, atomA, atomB, { deleteOverride: true })
           : applyBondState(vol, atomIdA, atomIdB, atomA, atomB, { styleOverride: styles[nextIndex] });
-        if (!status || status === 'unchanged') {
+        if (!status) return false;
+        if (status === 'unchanged') {
           setHintMessage(nextIndex < 0
             ? `${symbolA}-${symbolB} bond is already removed.`
             : `${symbolA}-${symbolB} bond is already ${getBondStyleLabel(styles[nextIndex])}.`);
