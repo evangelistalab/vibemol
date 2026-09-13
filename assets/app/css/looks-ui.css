@@ -27,7 +27,7 @@
 #styleStudio #lookModified { white-space: nowrap; }
 #styleStudio #lookComponentEditor > .vm-appearance-section + .vm-appearance-section { border-top: 1px solid var(--vm-color-border); padding-top: 16px; }
 #styleStudioBtn { width: 100%; gap: 8px; }
-#toolbar #styleStudioBtn > :last-child { margin-left: auto; font-size: 16px; }
+#styleStudioBtn > :last-child { margin-left: auto; font-size: 16px; }
 
 @media (max-width: 980px) {
   #appearancePresetSection > .vm-field-row { grid-template-columns: 1fr; gap: 4px; }

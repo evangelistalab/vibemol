@@ -43,13 +43,7 @@
   function installAppearancePanel() {
     const panel = document.getElementById('displayInspector');
     const sidebar = panel.closest('.tb-appearance');
-    // Preserve the native preset shortcut; move the actual bound controls once.
-    sidebar.append(document.getElementById('appearancePresetSection'));
-    const launcher = document.getElementById('displayInspectorBtn');
-    launcher.setAttribute('aria-haspopup', 'dialog');
-    launcher.setAttribute('data-tooltip', 'Open Appearance');
-    launcher.onclick = () => toggle('displayInspector');
-    document.getElementById('displayInspectorToggleIcon').replaceWith(icon('open_in_new'));
+    // Move the bound inspector, including its preset controls, out of the sidebar.
     const header = document.createElement('header'); header.className = 'vm-popover__header';
     const title = document.createElement('h2'); title.id = 'workbenchAppearanceTitle'; title.textContent = 'Appearance';
     const actions = document.createElement('div'); actions.className = 'vm-popover__actions';
@@ -61,6 +55,7 @@
     panel.classList.add('vm-popover', 'wb-appearance');
     panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-labelledby', title.id);
     panel.prepend(header); document.body.append(panel);
+    sidebar.remove();
     global.VibeMolFloatingPanels.register(panel, { label: 'Appearance', handle: '.vm-popover__header' });
     const cameraSettings = document.getElementById('appearanceCameraSection');
     cameraSettings.querySelector('.vm-section-label').textContent = 'Projection & focus';

@@ -28,9 +28,6 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .vm-workbench #displayInspector > .inspectorAccordion { flex: 1; min-height: 0; overflow: auto; padding: 0; border: 0; }
 .vm-workbench #displayInspector .inspectorAccordionBody { margin: 0; border: 0; border-radius: 0; box-shadow: none; }
 .vm-workbench #displayInspector .vm-appearance-section { scroll-margin-top: 12px; }
-.vm-workbench #appearancePresetSection { padding: 0 4px 8px; }
-.vm-workbench #appearancePresetSection .vm-field-row { grid-template-columns: 108px minmax(0, 1fr); }
-.vm-workbench #displayInspectorBtn > .material-symbols-rounded { font-size: 16px; }
 
 .wb-bar {
   position: fixed; top: 0; left: var(--wb-left); right: 0; height: 56px; z-index: 45;

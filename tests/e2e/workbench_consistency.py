@@ -39,12 +39,28 @@ def workspace(page):
     field=p.cube(0).replace('1 -4 -4 -4','2 -4 -4 -4',1).replace('1 1 0 0 0\n','1 1 0 0 0\n1 1 1.4 0 0\n',1)
     assert p.load(page,[{'name':'enclosed.cube','text':field}])['ok']
     assert page.locator('#toolbar #displayInspector').count()==0
-    assert page.locator('#toolbar #appearancePresetSection').count()==1
+    assert page.locator('#toolbar .tb-appearance').count()==0
+    assert page.locator('#toolbar #appearancePresetSection').count()==0
+    assert page.locator('#displayInspector #appearancePresetSection').count()==1
     assert page.locator('#sidePanel #appearanceCameraSection').count()==1
     assert page.get_by_role('button',name='Quick actions',exact=True).is_visible()
-    page.locator('#displayInspectorBtn').click()
+    launcher=page.locator('#workbenchBar [data-window="displayInspector"]')
+    launcher.click()
     appearance=page.locator('#displayInspector')
     assert appearance.is_visible() and appearance.get_attribute('data-wb-placement')=='right'
+    appearance.locator('#appearanceResetBtn').click()
+    assert page.locator('#appearanceResetPopover').is_visible()
+    page.locator('#appearanceResetCancelBtn').click()
+    preset=page.locator('#appearanceLookPreset');original=preset.input_value()
+    preset.select_option('classic');assert page.locator('#lookPreset').input_value()=='classic'
+    preset.select_option(original)
+    appearance.locator('#styleStudioBtn').click()
+    assert page.locator('#styleStudio').is_visible()
+    page.locator('#styleStudioClose').click()
+    studio_launcher=page.locator('#workbenchBar [data-window="styleStudio"]')
+    assert studio_launcher.evaluate('el=>document.activeElement===el')
+    studio_launcher.click();assert page.locator('#styleStudio').is_visible()
+    launcher.click();assert appearance.is_visible()
     assert page.locator('#iso').count()==1 and appearance.locator('#iso').count()==1
     assert appearance.locator('select.vm-select:visible').first.bounding_box()['height']>=30
     page.locator('#autoIsoBtn').uncheck()
@@ -54,7 +70,7 @@ def workspace(page):
     page.evaluate('()=>VibeMolWorkbench.open("viewInspector")')
     window_menu(page,page.locator('#viewInspector'),'Minimize to tools bar')
     page.evaluate('()=>VibeMolWorkbench.open("styleStudio")')
-    page.locator('#displayInspectorBtn').click()
+    launcher.click()
     assert appearance.is_visible()
     window_menu(page,appearance,'Float window')
     handle=appearance.locator('[data-vm-drag-handle]');box=handle.bounding_box()
@@ -79,7 +95,7 @@ def workspace(page):
         page.mouse.click(point['x'],point['y'])
     page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
     assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot().atomIndices')==[0,1]
-    page.locator('#displayInspectorBtn').click();assert appearance.is_visible()
+    launcher.click();assert appearance.is_visible()
     page.locator('#surfBtn').uncheck()
     mode(page,'Edit');mode(page,'Display')
     assert not page.locator('#surfBtn').is_checked()
@@ -116,7 +132,7 @@ def workspace(page):
     for name in ['Measure','Edit','Display']:
         mode(page,name);assert layout(page)['focus']
     page.locator('#workbenchFocus').click()
-    page.locator('#displayInspectorBtn').click()
+    launcher.click()
     window_menu(page,appearance,'Dock right')
     capture(page,'appearance-desktop')
     page.locator('#themeToggleShell').click();capture(page,'appearance-dark')

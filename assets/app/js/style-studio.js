@@ -16,7 +16,10 @@
         if (focus) panel.querySelector('#lookPreset')?.focus({ preventScroll: true });
       } else {
         movable.cancelDrag();
-        if (focus) button.focus({ preventScroll: true });
+        if (focus) {
+          const launcher = document.querySelector('#workbenchBar [data-window="styleStudio"]') || button;
+          launcher.focus({ preventScroll: true });
+        }
       }
     }
     button.addEventListener('click', () => {

@@ -24,7 +24,7 @@ Analysis inspectors (Orbitals, Trajectory, Frequencies, Spinor info) are tempora
 
 Dock separators support arrow keys, with Shift for fine adjustment. Tabs and the mode selector support Left/Right/Home/End. Window menus and Focus have explicit buttons; no new global shortcuts compete with molecular editing. Opening Build or Symmetry by keyboard exits Focus. Escape inside a window closes that window, while text controls retain their editing behavior.
 
-Appearance has one bound inspector that can dock or float. Its original controls are moved, without cloning their values or handlers. The left sidebar retains scene/file management and the compact preset/Style Studio shortcut. Scientific surface controls (isovalue, Auto-iso, quantity, visibility) remain in Appearance; curated visual preset editing stays in Style Studio. Projection and depth-of-field controls join Camera. Coordinates can be read/copied/exported in every mode, but cell editors and edit commits are available only in Edit.
+Appearance has one bound inspector that can dock or float. Its original controls are moved, without cloning their values or handlers. The left sidebar is dedicated to scene/file management. Preset selection and the Style Studio shortcut live at the top of Appearance; Appearance and Style Studio are both available from the top bar. Scientific surface controls (isovalue, Auto-iso, quantity, visibility) remain in Appearance; curated visual preset editing stays in Style Studio. Projection and depth-of-field controls join Camera. Coordinates can be read/copied/exported in every mode, but cell editors and edit commits are available only in Edit.
 
 ## What belongs where
 
