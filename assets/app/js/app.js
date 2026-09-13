@@ -4700,15 +4700,15 @@
     material.userData = material.userData || {};
     const passState = {
       pass,
-      uniforms: null,
+      // Sync must work before the first shader compile, and all side/lighting
+      // variants must share this value. Starting a new variant at 1 caused a
+      // fully opaque frame that briefly covered the molecule during edits.
+      uniforms: { uWboitAlpha: { value: getRenderableAlphaValue(null, material) } },
     };
     material.userData.vmWboitPass = passState;
     material.onBeforeCompile = (shader, rendererRef) => {
       if (previousOnBeforeCompile) previousOnBeforeCompile(shader, rendererRef);
-      shader.uniforms.uWboitAlpha = { value: 1.0 };
-      passState.uniforms = {
-        uWboitAlpha: shader.uniforms.uWboitAlpha,
-      };
+      shader.uniforms.uWboitAlpha = passState.uniforms.uWboitAlpha;
       if (shader.vertexShader.indexOf('varying vec3 vmWboitViewPosition;') === -1) {
         shader.vertexShader = shader.vertexShader.replace(
           'void main() {',
@@ -31141,12 +31141,11 @@
       if (layers.length) {
         if (layers.every(layer => layer.opacity === nextOpacity)) return false;
         applyToSurfaceAppearanceTargets(target => { target.opacity = nextOpacity; }, { rebuild: false });
-        refreshAppearanceMaterials(['surfaces'], layers);
-        refreshCloudAppearance(layers);
+        updateRenderedLayerOpacity(layers);
       } else {
         if (surfaceOpacityDefault === nextOpacity) return false;
         surfaceOpacityDefault = nextOpacity;
-        updateOpacityAndColors();
+        updateRenderedLayerOpacity();
       }
       scheduleAppearancePresetAutosave();
       return true;
@@ -32152,6 +32151,24 @@
   }
 
   /**
+   * Change opacity without replacing materials or discarding WBOIT programs.
+   * Recompile only when crossing between opaque and transparent rendering.
+   */
+  function updateRenderedLayerOpacity(layers = getAllLookLayers()) {
+    const byId = new Map(layers.map(layer => [layer.id, layer]));
+    for (const mesh of getRenderedSurfaceMeshes()) {
+      const layer = byId.get(mesh.userData.sceneLayerId);
+      if (!layer || !mesh.material) continue;
+      const mat = mesh.material, transparent = mat.transparent;
+      mat.opacity = layer.opacity;
+      applySurfaceBlendFlags(mat, layer.opacity);
+      if (mat.transparent !== transparent) mat.needsUpdate = true;
+      applySurfaceShadowParticipation(mesh);
+    }
+    refreshCloudAppearance(layers);
+  }
+
+  /**
    * Update surface material opacity/color/roughness state in-place.
    */
   function refreshCloudAppearance(layers = getAllLookLayers()) {
@@ -32161,14 +32178,17 @@
       if (!layer || !ids.has(layer.id) || !obj.material) continue;
       const mat = obj.material, alpha = layer.opacity;
       if (mat.uniforms?.uAlpha) mat.uniforms.uAlpha.value = alpha;
-      else if ('opacity' in mat) { mat.opacity = alpha; mat.transparent = alpha < 0.999; mat.depthWrite = alpha >= 0.999; }
+      else if ('opacity' in mat) {
+        const transparent = alpha < 0.999;
+        if (mat.transparent !== transparent) mat.needsUpdate = true;
+        mat.opacity = alpha; mat.transparent = transparent; mat.depthWrite = !transparent;
+      }
       const sign = obj.userData.sign;
       if (sign === 'pos' || sign === 'neg') {
         const color = getLayerRenderSurfaceColors(layer)[sign];
         if (mat.uniforms?.uColor) mat.uniforms.uColor.value.set(color);
         else if (mat.color) mat.color.set(color);
       }
-      mat.needsUpdate = true;
     }
   }
   function updateOpacityAndColors() {

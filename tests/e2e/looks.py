@@ -143,6 +143,65 @@ def components_and_saving(page, context, url):
     print('[looks] seven presets, shared material, studio lighting, undo, libraries, import/export, defaults, reload: passed',flush=True)
 
 
+def surface_opacity_rendering(page,context,url):
+    page.evaluate('''() => {
+      window.opacityMeshes=new Set();window.opacityDisposals=0;
+      const dispose=THREE.Material.prototype.dispose;
+      THREE.Material.prototype.dispose=function(){
+        if(this.userData.vmAppearanceTarget==='surfaces')opacityDisposals++;
+        return dispose.call(this);
+      };
+      THREE.Mesh.prototype.onBeforeRender=function(){
+        if(this.material?.userData?.vmAppearanceTarget==='surfaces')opacityMeshes.add(this);
+      };
+    }''')
+    assert p.load(page,[{'name':'orbital.cube','text':p.hydrogen_2p_cube()}])['ok']
+    page.locator('#viewAxisYBtn').evaluate('el=>el.click()')
+    page.wait_for_function('() => VibeMolTesting.getWboitSnapshot().sceneEnvironmentLoaded')
+    for look in ['basic','porcelain']:
+        page.evaluate('id=>VibeMolAppearanceLooks.apply(id)',look)
+        result=page.evaluate('''async () => {
+          await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+          const start=opacityDisposals, frames=[], canvas=document.querySelector('#canvas');
+          const scratch=document.createElement('canvas');scratch.width=canvas.width;scratch.height=canvas.height;
+          const ctx=scratch.getContext('2d');
+          const pixels=()=>{ctx.drawImage(canvas,0,0);return ctx.getImageData(0,0,canvas.width,canvas.height).data;};
+          for(const value of [.65,.62,.57,.35,1,.55]){
+            const input=document.querySelector('#opacity');input.value=value;
+            input.dispatchEvent(new Event('input',{bubbles:true}));
+            await new Promise(requestAnimationFrame);const first=pixels();
+            await new Promise(requestAnimationFrame);const settled=pixels();
+            let changed=0;
+            for(let i=0;i<first.length;i+=4){
+              const difference=Math.abs(first[i]-settled[i])+Math.abs(first[i+1]-settled[i+1])+Math.abs(first[i+2]-settled[i+2]);
+              if(difference>8)changed++;
+            }
+            frames.push({value,changed,resources:[...opacityMeshes].filter(mesh=>mesh.parent).map(mesh=>[
+              mesh.geometry.uuid,mesh.material.uuid,mesh.userData.vmWboit?.accumMaterial.uuid,mesh.userData.vmWboit?.revealMaterial.uuid
+            ]),alpha:[...opacityMeshes].filter(mesh=>mesh.parent).map(mesh=>mesh.material.opacity)});
+          }
+          document.querySelector('#opacity').dispatchEvent(new Event('change',{bubbles:true}));
+          return {frames,disposals:opacityDisposals-start};
+        }''')
+        assert result['disposals']==0,(look,result)
+        for frame in result['frames']:
+            assert frame['changed']<10,(look,frame)
+            assert frame['resources']==result['frames'][0]['resources'],(look,frame)
+            assert frame['alpha'] and all(alpha==frame['value'] for alpha in frame['alpha']),frame
+    # Deliberate material changes still create new shaders; their first frame
+    # must also use the chosen opacity, including front/back and shadow variants.
+    changed=page.evaluate('''async () => {
+      VibeMolAppearanceLooks.edit('material',{roughness:.61});
+      await new Promise(requestAnimationFrame);
+      return [...opacityMeshes].filter(mesh=>mesh.parent).flatMap(mesh=>{
+        const cache=mesh.userData.vmWboit;
+        return [cache.accumMaterial,cache.revealMaterial].map(mat=>mat.userData.vmWboitPass.uniforms.uWboitAlpha.value);
+      });
+    }''')
+    assert changed and all(alpha==0.55 for alpha in changed),changed
+    print('[looks] first-frame opacity, stable frames during drag/full-opacity transitions, reusable surface/WBOIT materials, and shader variants: passed',flush=True)
+
+
 def surface_opacity_controls(page,context,url):
     p.load_cubes(page)
     assert p.load(page,[{'name':'pyridine.xyz','text':(p.ROOT/'assets/fragments/pyridine.xyz').read_text()}],clear_first=False)['ok']
@@ -579,7 +638,7 @@ def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [surface_opacity_controls,surfaces_cast_and_receive,split_surface_shadows,bond_sphere_fit,hydrogen_bond_restrictions,bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
+            for run in [surface_opacity_rendering,surface_opacity_controls,surfaces_cast_and_receive,split_surface_shadows,bond_sphere_fit,hydrogen_bond_restrictions,bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))
