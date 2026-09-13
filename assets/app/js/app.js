@@ -669,6 +669,31 @@
     dpr: 1,
   };
   let adaptivePopoverController = null;
+  const axisOverlayLayout = { x: 16, y: 16, size: 0 };
+  const axisOverlaySidebar = document.getElementById('toolbar');
+  const axisOverlayBottomControls = ['helpFab', 'hint'].map(id => document.getElementById(id)).filter(Boolean);
+
+  /** Keep the corner axes inside the unobscured canvas, above the bottom controls. */
+  function updateAxisOverlayLayout() {
+    const viewport = canvas.getBoundingClientRect();
+    const gap = 16;
+    let left = gap, bottom = gap;
+    if (axisOverlaySidebar && !document.body.classList.contains('sidebar-collapsed')) {
+      left = Math.max(left, axisOverlaySidebar.getBoundingClientRect().right - viewport.left + gap);
+    }
+    for (const element of axisOverlayBottomControls) {
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height || rect.right <= viewport.left + left || rect.left >= viewport.right) continue;
+      // Reserve the hint's full space even while it fades/translates, so the axes
+      // do not jump when the navigation hint appears or disappears.
+      const inset = Number.parseFloat(getComputedStyle(element).bottom) || 0;
+      bottom = Math.max(bottom, viewport.bottom - window.innerHeight + inset + element.offsetHeight + gap);
+    }
+    const desiredSize = Math.max(64, Math.min(128, Math.floor(Math.min(viewport.width, viewport.height) / 5)));
+    axisOverlayLayout.x = left;
+    axisOverlayLayout.y = bottom;
+    axisOverlayLayout.size = Math.max(0, Math.min(desiredSize, viewport.width - left - gap, viewport.height - bottom - gap));
+  }
 
   /**
    * Read one CSS viewport size from the active drop region.
@@ -1093,6 +1118,7 @@
       cssHeight: cssSize.height,
       dpr: Math.min(2, window.devicePixelRatio || 1),
     });
+    updateAxisOverlayLayout();
     updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight);
     const vibrationPanelEl = document.getElementById('vibrationPanel');
     if (vibrationPanelEl && vibrationPanelEl.classList.contains('open')) {
@@ -1132,11 +1158,18 @@
     dropResizeObserver.observe(dropViewportEl);
   }
   resize();
+  if (typeof ResizeObserver !== 'undefined') {
+    const axisUiResizeObserver = new ResizeObserver(updateAxisOverlayLayout);
+    for (const element of [axisOverlaySidebar, ...axisOverlayBottomControls]) {
+      if (element) axisUiResizeObserver.observe(element);
+    }
+  }
 
   // --- Corner axes (overlay) ---
   const axisScene = new THREE.Scene();
   // Use an orthographic camera so the gizmo stays centered without perspective shift
-  const axisCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+  // Arrow tips reach 1.05 units from the origin; leave room at every orientation.
+  const axisCamera = new THREE.OrthographicCamera(-1.15, 1.15, 1.15, -1.15, 0.1, 10);
   axisCamera.position.set(0, 0, 2);
   axisCamera.lookAt(0, 0, 0);
   const axisGizmo = new THREE.Group();
@@ -6675,11 +6708,10 @@
    * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
    */
   function renderAxisOverlayPass(metrics) {
-    if (!window.__showAxes__) return;
+    if (!window.__showAxes__ || axisOverlayLayout.size <= 0) return;
     axisGizmo.quaternion.copy(camera.quaternion).invert();
-    const px = Math.max(64, Math.min(128, Math.floor(Math.min(metrics.cssWidth, metrics.cssHeight) / 5)));
-    const margin = 10;
-    const rect = cssRectToBufferRect(metrics, margin, margin, px, px);
+    const { x, y, size } = axisOverlayLayout;
+    const rect = cssRectToBufferRect(metrics, x, y, size, size);
     renderer.clearDepth();
     renderer.setScissorTest(true);
     renderer.setScissor(rect.x, rect.y, rect.width, rect.height);
