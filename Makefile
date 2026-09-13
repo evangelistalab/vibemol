@@ -56,7 +56,7 @@ check:
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
 	done
-	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py
+	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_shadows.py
 	git diff --check
 
 test-unit:

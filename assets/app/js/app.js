@@ -829,9 +829,25 @@
   const amb = new THREE.AmbientLight(0x999999, 0.65);
   const rim = new THREE.DirectionalLight(0x9fb8ff, 0.0);
   rim.position.set(-1.4, 1.0, -0.8);
-  sceneLightRig.add(hemi, dir, amb, rim);
+  // Translating the key and its target together fits its shadow camera without
+  // changing the camera-relative light direction stored in a look.
+  const shadowLightRig = new THREE.Group();
+  shadowLightRig.add(dir, dir.target);
+  sceneLightRig.add(hemi, shadowLightRig, amb, rim);
   renderer.shadowMap.enabled = false;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const shadowBounds = new THREE.Box3();
+  const shadowObjectBounds = new THREE.Box3();
+  const shadowCenter = new THREE.Vector3();
+  const shadowSize = new THREE.Vector3();
+  // A public renderer pass builds the shadow map with every caster present.
+  // Its color pass emits no fragments and never modifies the shared depth.
+  const shadowPassMaterial = new THREE.ShaderMaterial({
+    vertexShader: 'void main() { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); }',
+    fragmentShader: 'void main() { discard; }',
+    colorWrite: false, depthWrite: false, depthTest: false,
+  });
+  window.addEventListener('beforeunload', () => shadowPassMaterial.dispose());
 
   /**
    * Keep the main scene light vectors camera-relative.
@@ -839,6 +855,36 @@
   function updateSceneLightRigOrientation() {
     sceneLightRig.quaternion.copy(camera.quaternion);
     sceneLightRig.updateMatrixWorld();
+  }
+
+  /** Fit the key's shadow camera to cached mesh bounds, including large orbitals. */
+  function updateSceneShadowBounds() {
+    if (!renderer.shadowMap.enabled) return;
+    contentGroup.updateMatrixWorld(true);
+    shadowBounds.makeEmpty();
+    contentGroup.traverseVisible(node => {
+      if (!node.isMesh || !(node.castShadow || node.receiveShadow)) return;
+      if (node.material?.userData?.vmAppearanceTarget === 'surfaces') applySurfaceShadowParticipation(node);
+      if (!(node.material?.visible !== false && Number(node.material?.opacity) > 0)) return;
+      const geometry = node.geometry;
+      if (!geometry) return;
+      if (!geometry.boundingBox) geometry.computeBoundingBox();
+      shadowObjectBounds.copy(geometry.boundingBox).applyMatrix4(node.matrixWorld);
+      shadowBounds.union(shadowObjectBounds);
+    });
+    if (shadowBounds.isEmpty()) return;
+    shadowBounds.getCenter(shadowCenter);
+    const radius = Math.max(0.5, shadowBounds.getSize(shadowSize).length() * 0.5);
+    const extent = radius * 1.05;
+    sceneLightRig.worldToLocal(shadowCenter);
+    shadowLightRig.position.copy(dir.position).normalize().multiplyScalar(extent + 1)
+      .sub(dir.position).add(shadowCenter);
+    shadowLightRig.updateMatrixWorld(true);
+    const shadowCamera = dir.shadow.camera;
+    shadowCamera.left = -extent; shadowCamera.right = extent;
+    shadowCamera.top = extent; shadowCamera.bottom = -extent;
+    shadowCamera.near = 0.1; shadowCamera.far = 2 * extent + 2;
+    shadowCamera.updateProjectionMatrix();
   }
 
   /**
@@ -1793,6 +1839,7 @@
    */
   function renderSceneFrame(metrics, sceneTarget) {
     updateSceneLightRigOrientation();
+    updateSceneShadowBounds();
     let didSplit = false;
     wboitActiveFrame = false;
     if (sceneTarget && shouldUseWboitForCurrentFrame()) {
@@ -1978,6 +2025,8 @@
     } else {
       disposeMaterial(mat, state);
     }
+    disposeMaterial(node.customDepthMaterial, state);
+    disposeMaterial(node.customDistanceMaterial, state);
   }
 
   /**
@@ -4472,6 +4521,8 @@
     const descriptor = getSurfaceMaterialDescriptor(layer);
     const mat = appearanceModel.createMaterial(THREE, descriptor, color, getToonGradientTexture('surface', descriptor.toonSteps), { vertexColors });
     mat.side = THREE.DoubleSide; mat.opacity = opacity;
+    // Count the near wall once when casting an opacity-weighted surface shadow.
+    mat.shadowSide = THREE.FrontSide;
     mat.userData.vmAppearanceTarget = 'surfaces';
     mat.userData.vmSurfaceStyle = getSurfaceMaterialPresetKey(layer);
     return applySurfaceBlendFlags(mat, opacity);
@@ -6520,14 +6571,44 @@
       throw new Error(wboitFailureReason || 'wboit-unavailable');
     }
     updateActiveCameraProjection(cssWidth, metrics.cssHeight);
-    renderSceneRect(sceneTarget, rect, [], { hideNonSurfaces: false, clearDepth: true, clearColor: true });
     const renderables = getTransparentRenderables(renderableFilter);
-    if (!renderables.length) return;
-    clearRenderTargetRect(wboitAccumTarget, rect, 0x000000, 0.0, { clearDepth: false });
-    clearRenderTargetRect(wboitRevealTarget, rect, 0xffffff, 1.0, { clearDepth: false });
-    renderTransparentWboitPass(wboitAccumTarget, rect, renderables, 'accum');
-    renderTransparentWboitPass(wboitRevealTarget, rect, renderables, 'reveal');
-    compositeWboitRect(sceneTarget, rect);
+    withSharedSceneShadowMap(renderables, () => {
+      renderSceneRect(sceneTarget, rect, [], { hideNonSurfaces: false, clearDepth: true, clearColor: true });
+      if (!renderables.length) return;
+      clearRenderTargetRect(wboitAccumTarget, rect, 0x000000, 0.0, { clearDepth: false });
+      clearRenderTargetRect(wboitRevealTarget, rect, 0xffffff, 1.0, { clearDepth: false });
+      renderTransparentWboitPass(wboitAccumTarget, rect, renderables, 'accum');
+      renderTransparentWboitPass(wboitRevealTarget, rect, renderables, 'reveal');
+      compositeWboitRect(sceneTarget, rect);
+    });
+  }
+
+  /**
+   * Share one complete shadow map across the opaque and transparent color passes.
+   * Each split viewport gets its own map so the other spinor cannot cast into it.
+   */
+  function withSharedSceneShadowMap(renderables, callback) {
+    if (!renderer.shadowMap.enabled) return callback();
+    const autoUpdate = renderer.shadowMap.autoUpdate;
+    const override = scene.overrideMaterial;
+    const autoClear = renderer.autoClear;
+    try {
+      renderer.shadowMap.autoUpdate = true;
+      renderer.autoClear = false;
+      scene.overrideMaterial = shadowPassMaterial;
+      withSceneBackgroundDisabled(() => renderables
+        ? withContentGroupVisibility(renderables, {}, () => renderer.render(scene, camera))
+        : renderer.render(scene, camera));
+      scene.overrideMaterial = override;
+      renderer.autoClear = autoClear;
+      renderer.shadowMap.autoUpdate = false;
+      renderer.shadowMap.needsUpdate = false;
+      return callback();
+    } finally {
+      scene.overrideMaterial = override;
+      renderer.autoClear = autoClear;
+      renderer.shadowMap.autoUpdate = autoUpdate;
+    }
   }
 
   /**
@@ -6571,16 +6652,22 @@
     try {
       betaObject.visible = false;
       alphaObject.visible = true;
-      applyRendererRect(leftRect);
       updateActiveCameraProjection(cssHalfWidth, metrics.cssHeight);
-      renderer.render(scene, camera);
+      withSharedSceneShadowMap(null, () => {
+        renderer.setScissorTest(true);
+        applyRendererRect(leftRect);
+        renderer.render(scene, camera);
+      });
 
       renderer.clearDepth();
       alphaObject.visible = false;
       betaObject.visible = true;
-      applyRendererRect(rightRect);
       updateActiveCameraProjection(cssHalfWidth, metrics.cssHeight);
-      renderer.render(scene, camera);
+      withSharedSceneShadowMap(null, () => {
+        renderer.setScissorTest(true);
+        applyRendererRect(rightRect);
+        renderer.render(scene, camera);
+      });
       return true;
     } finally {
       alphaObject.visible = prevAlphaVisible;
@@ -26226,6 +26313,31 @@
     });
   }
 
+  /** Surfaces cast shadows that fade with opacity, including in the WBOIT path. */
+  function applySurfaceShadowParticipation(mesh) {
+    if (!mesh?.isMesh) return;
+    const opacity = Math.max(0, Math.min(1, Number(mesh.material?.opacity) || 0));
+    mesh.castShadow = !!moleculeShadowsEnabled && opacity > 0;
+    mesh.receiveShadow = !!moleculeShadowsEnabled;
+    if (!mesh.customDepthMaterial && moleculeShadowsEnabled) {
+      const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+      const alpha = { value: opacity };
+      depth.userData.vmShadowOpacity = alpha;
+      depth.onBeforeCompile = shader => {
+        shader.uniforms.vmShadowOpacity = alpha;
+        shader.fragmentShader = 'uniform float vmShadowOpacity;\n' + shader.fragmentShader.replace(
+          '#include <alphahash_fragment>',
+          // Sub-texel interleaved noise averages under PCF filtering, unlike
+          // coarse object-space hashing. Opaque surfaces discard no fragments.
+          'if (vmShadowOpacity < fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))))) discard;'
+        );
+      };
+      depth.customProgramCacheKey = () => 'vm-surface-shadow-opacity-v1';
+      mesh.customDepthMaterial = depth;
+    }
+    if (mesh.customDepthMaterial) mesh.customDepthMaterial.userData.vmShadowOpacity.value = opacity;
+  }
+
   /**
    * Bind a numeric input to a clamped state value with optional live scene rebuild.
    * @param {HTMLInputElement|null} inputEl
@@ -26409,6 +26521,8 @@
     applyMoleculeStyleLighting();
     applyShadowParticipation(atomGroup);
     applyShadowParticipation(bondGroup);
+    for (const group of extraMoleculeRenderGroups) applyShadowParticipation(group);
+    for (const mesh of getRenderedSurfaceMeshes()) applySurfaceShadowParticipation(mesh);
     syncMoleculeStyleChipState();
     syncSurfaceMaterialControlState();
     syncMoleculeFeatureControlsState();
@@ -26526,7 +26640,6 @@
     moleculeShadowsToggleEl.onchange = () => {
       moleculeShadowsEnabled = !!moleculeShadowsToggleEl.checked;
       applyMoleculeStyleUiState();
-      rebuildScene({ preserveView: true });
       scheduleAppearancePresetAutosave();
     };
   }
@@ -27772,6 +27885,9 @@
       return {
         sign: String(mesh && mesh.userData && mesh.userData.sign || ''),
         phaseHue: !!(mesh && mesh.userData && mesh.userData.phaseHue),
+        which: String(mesh.userData?.which || ''),
+        castShadow: !!mesh.castShadow,
+        receiveShadow: !!mesh.receiveShadow,
         type: String(material && material.type || ''),
         opacity: Number(material && material.opacity) || 0,
         roughness: Number(material && material.roughness),
@@ -31482,6 +31598,7 @@
    */
   function addSurfaceMesh(mesh, layer = null) {
     if (mesh) mesh.renderOrder = 10;
+    applySurfaceShadowParticipation(mesh);
     if (mesh && layer) {
       mesh.userData = Object.assign({}, mesh.userData || {}, {
         sceneLayerId: layer.id,

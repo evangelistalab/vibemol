@@ -4,7 +4,7 @@
 
 Basic preserves its original pairing: polished atoms/bonds and luminous, clear-coated orbital surfaces. Its surface finish uses roughness `1`, clearcoat `1`, coat roughness `0.1`, color fill `0.8`, and no metalness or environment reflections. The atom/bond recipe and lighting stay unchanged. Selecting or editing a material explicitly replaces this pairing with one shared material; Appearance Undo or Revert restores the full Basic look. The Material section explains this behavior without adding separate target controls. Other curated presets use one material throughout.
 
-Classic, Porcelain, Ink, and Opal retain the standalone Style Lab's camera-relative key/fill/rim lights, light directions, studio environment reflections, display radii, and material response. Classic uses smooth Phong shading without tone mapping; the other studio looks use ACES. Porcelain and Opal enable molecule shadows. Opal retains the Lab's pearlescence thickness range. Transparent surfaces and depth of field use an HDR intermediate target when supported, preserving highlight values before the final tone mapping pass.
+Classic, Porcelain, Ink, and Opal retain the standalone Style Lab's camera-relative key/fill/rim lights, light directions, studio environment reflections, display radii, and material response. Classic uses smooth Phong shading without tone mapping; the other studio looks use ACES. Porcelain and Opal enable shadows. Opal retains the Lab's pearlescence thickness range. Transparent surfaces and depth of field use an HDR intermediate target when supported, preserving highlight values before the final tone mapping pass.
 
 Nocturne and Atelier remain experimental candidates in the [real-renderer comparison](experiments/style-lab/compare.html). The comparison supports methane, pyridine, metal coordination, and orbital lobes. **Materials only** holds the reference geometry, palette, background, and lighting fixed. Each preview opens the actual VibeMol editor. Study previews skip normal autosave, startup defaults, and workspace recovery; explicit saves and exports remain available.
 
@@ -59,6 +59,10 @@ Bond radius is a requested maximum. Each bond is capped against its smaller rend
 
 Material and light changes reuse existing geometry. Geometry, palette, and contour changes rebuild molecule display meshes only. Neither route re-marches orbital surfaces nor computes deferred Molden grids. Full looks also preserve existing orbital meshes. Cloud colors and opacity update from each layer's own appearance. Edit placement previews use the same material model.
 
+The existing **Shadows** switch applies to atoms, bonds, and isosurfaces together, including orbital, arithmetic, phase-colored, and Bloch-colored surfaces. Surfaces cast onto the molecule and other surfaces and receive shadows from them. Emission and ambient/environment lighting remain visible in shaded regions. Hidden surfaces do not cast shadows. Cloud rendering keeps its existing behavior.
+
+Shadow maps fit the visible mesh bounds without changing the saved key-light direction. Transparent surface shadows approximate opacity using texel-scale coverage with PCF filtering; they are not refractive or colored transmission. WBOIT builds one complete shadow map before separating opaque and transparent color passes, then reuses it for those passes. Each alpha/beta viewport uses its own map, also when depth of field or standard transparency is active. The switch updates existing meshes without remeshing surfaces. Its portable key remains `molecule.feature.shadows`, so looks, presets, and sessions remain compatible. Owned surface depth materials are disposed with their meshes.
+
 The automation API is `VibeMolAppearanceLooks.list/apply/edit/material/snapshot`. `list()` marks experimental recipes. For example:
 
 ```js
@@ -68,3 +72,5 @@ VibeMolAppearanceLooks.edit('material', { roughness: 0.35 });
 ```
 
 Validation: `make check`, `make test-unit`, and the `looks.py`, `premerge.py`, `sessions.py`, and `smoke.py` browser suites in `tests/e2e/`. Appearance regressions cover component independence, actual materials, shared materials across deferred orbitals and future sources, unchanged surface geometry, undo, named libraries, defaults, reload, malformed imports, and portable sessions.
+
+`surface_shadows.py`, run by `looks.py`, compares rendered pixels with only the molecule or surface shadow draws suppressed. It verifies both directions of shadowing at opaque and translucent settings, actual alpha/beta shadow draw isolation, transparency fallback, phase/Bloch surfaces, visibility, unchanged geometry on toggles, and session restoration.
