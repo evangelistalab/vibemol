@@ -145,7 +145,7 @@ test('file loader clearAllLoadedFiles resets state and emits startup hint', () =
   assert.deepEqual(JSON.parse(JSON.stringify(events.slice(0, 3))), [
     ['clearEditHistory'],
     ['activateVolumeIndex', -1, { rebuild: false, clearSceneWhenEmpty: true }],
-    ['setNavigationHint', 'Start', { includeStyles: true }],
+    ['setNavigationHint', 'Start'],
   ]);
 });
 

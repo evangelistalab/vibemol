@@ -80,11 +80,17 @@ def molecule_styles(page, dialogs):
         expected = ('kit', 'kitCurved') if style == 'kit' else ('basic',)
         assert carriers and all(carrier['connectorStyle'] in expected for carrier in carriers), carriers
         assert page.evaluate('() => window.VibeMolPreset.export().settings["molecule.style"]') == style
-    for key, style in zip(('1', '2', '3'), styles):
-        page.keyboard.press(key)
-        assert page.locator('#moleculeStyle').input_value() == style
-    page.keyboard.press('4')
-    assert page.locator('#moleculeStyle').input_value() == 'kit'
+    # Number keys must leave the full appearance unchanged, including idle Edit.
+    page.locator('#lookPreset').select_option('classic')
+    appearance = page.evaluate('() => VibeMolAppearanceLooks.snapshot().settings')
+    for mode in ['Display', 'Measure', 'Edit']:
+        page.locator('#mode' + mode + 'Btn').click()
+        for key in '0123456789':
+            page.keyboard.press(key)
+            assert page.evaluate('() => VibeMolAppearanceLooks.snapshot().settings') == appearance, (mode, key)
+            assert page.locator('#lookPreset').input_value() == 'classic', (mode, key)
+    page.locator('#modeDisplayBtn').click()
+    assert 'Style:' not in page.locator('#hint').text_content()
 
     # Saved presets can still name a retired style; the normal fallback must render.
     page.evaluate('''() => window.VibeMolPreset.import({kind:'vibemol.preset', presetVersion:1,
@@ -94,13 +100,14 @@ def molecule_styles(page, dialogs):
     assert page.evaluate('() => !window.VibeMolPreset.listKeys().includes("molecule.glossyBondRadius")')
     assert page.locator('#rowGlossyBond, #glossyBondRadius').count() == 0
 
-    # The edit-only bond-order shortcut is independent of the style shortcuts.
+    # Bond-order keys still work in edit mode.
     page.locator('#modeEditBtn').click()
     page.keyboard.press('/')
     page.locator('#editAddQuick button[data-z="6"]').click()
-    page.keyboard.press('4')
-    assert 'bond order: 4' in page.evaluate('() => window.VibeMolTesting.getHintMessage()')
-    assert page.locator('#moleculeStyle').input_value() == 'basic'
+    for key in '1234':
+        page.keyboard.press(key)
+        assert 'bond order: ' + key in page.evaluate('() => window.VibeMolTesting.getHintMessage()')
+        assert page.locator('#moleculeStyle').input_value() == 'basic'
 
 
 def orbital_reference_presets(page, dialogs):

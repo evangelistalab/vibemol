@@ -6,7 +6,6 @@
   const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
   window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
-  const HINT_STYLE_KEYS = 'Style: 1=Basic 2=Toon 3=Kit';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
   const HINT_START = '';
   const VIBRATION_KIND = 'vibemol.vibrations';
@@ -10987,7 +10986,7 @@
     if (currentMode === MODES.MEASURE) {
       setHintMessage(HINT_MEASURE, { accent: false });
     } else if (currentMode === MODES.DISPLAY) {
-      setNavigationHint(HINT_START, { includeStyles: true });
+      setNavigationHint(HINT_START);
     }
     // Entering measurement mode: suppress surface rendering without changing layer visibility.
     if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
@@ -11850,7 +11849,7 @@
   });
 
   /**
-   * Apply a molecule style selection from UI or keyboard shortcuts.
+   * Apply a molecule style selection from the UI.
    * @param {'basic'|'toon'|'kit'} nextStyle
    * @param {{rebuild?:boolean}=} options
    */
@@ -25572,10 +25571,6 @@
     scheduleAppearancePresetAutosave();
   });
   bind('down', 'global', 'r', () => centerActiveMoleculeMassAtOrigin());
-  // Global: molecule style presets (1=Basic, 2=Toon, 3=Kit)
-  bind('down', 'global', '1', () => setMoleculeStyle('basic'));
-  bind('down', 'global', '2', () => setMoleculeStyle('toon'));
-  bind('down', 'global', '3', () => setMoleculeStyle('kit'));
 
   // Global: Up/Down arrows cycle cube layers in the focused scene.
   /**
@@ -25677,7 +25672,6 @@
     } else if (handleBondCenterSelectionShortcut(1, e)) {
       return;
     } else if (isBuildBondOrderIntentValue(getEditIntent())) setEditAddBondOrder(1);
-    else setMoleculeStyle('basic');
   });
   bind('down', MODES.EDIT, '2', (e) => {
     if (editGestureController && editGestureController.handleBondOrderKey(2)) {
@@ -25685,7 +25679,6 @@
     } else if (handleBondCenterSelectionShortcut(2, e)) {
       return;
     } else if (isBuildBondOrderIntentValue(getEditIntent())) setEditAddBondOrder(2);
-    else setMoleculeStyle('toon');
   });
   bind('down', MODES.EDIT, '3', (e) => {
     if (editGestureController && editGestureController.handleBondOrderKey(3)) {
@@ -25693,7 +25686,6 @@
     } else if (handleBondCenterSelectionShortcut(3, e)) {
       return;
     } else if (isBuildBondOrderIntentValue(getEditIntent())) setEditAddBondOrder(3);
-    else setMoleculeStyle('kit');
   });
   // In edit mode, "4" selects quadruple bonds for the current bond or build preview.
   bind('down', MODES.EDIT, '4', (e) => {
@@ -30539,12 +30531,9 @@
   /**
    * Compose and show a standard navigation hint.
    * @param {string} prefix
-   * @param {{includeStyles?:boolean}=} options
    */
-  function setNavigationHint(prefix, options = {}) {
-    const includeStyles = !!options.includeStyles;
+  function setNavigationHint(prefix) {
     const parts = [String(prefix || '').trim(), HINT_NAVIGATION];
-    if (includeStyles) parts.push(HINT_STYLE_KEYS);
     setHintMessage(parts.filter(Boolean).join(' • '), { accent: false });
   }
 

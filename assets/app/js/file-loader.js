@@ -302,7 +302,7 @@
       deps.setVolumes([]);
       deps.clearEditHistory();
       deps.activateVolumeIndex(-1, { rebuild: false, clearSceneWhenEmpty: true });
-      if (includeHint) deps.setNavigationHint(deps.HINT_START, { includeStyles: true });
+      if (includeHint) deps.setNavigationHint(deps.HINT_START);
     }
 
     async function loadEmbeddedFiles(files, options = {}) {
@@ -390,7 +390,7 @@
           [await fetchText(path)], String(path.split('/').pop() || path), { type: 'text/plain' }
         )));
         const result = await handleFiles(files, { extras: { isSample: true } });
-        if (result.ok) deps.setNavigationHint(`Loaded ${label}`, { includeStyles: true });
+        if (result.ok) deps.setNavigationHint(`Loaded ${label}`);
         return result.ok;
       } catch (err) {
         const message = `Could not load ${label}: ${err && err.message || err}`;

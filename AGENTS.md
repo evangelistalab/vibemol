@@ -259,7 +259,7 @@ Preset automation contract exposed globally:
 ## Key Behavior Notes
 - 2C surface mode is global across loaded 2C files.
 - Molecule styles are: `basic`, `toon`, `kit` (shown as Basic, Toon, and Kit).
-- Global/display shortcuts `1/2/3` map to molecule styles in that order.
+- Rendering presets are selected through the Appearance menu. Number keys do not change rendering in any mode; edit-mode bond-order/style shortcuts remain active.
 - In edit mode, `4` is used for quadruple-bond editing and preview in Add mode.
 - Unsupported molecule styles in saved presets fall back to Basic; the Python CLI rejects unsupported style arguments.
 - `fancy` is treated as a deprecated alias for `toon` in preset/CLI compatibility paths.
@@ -572,7 +572,7 @@ After non-trivial changes:
 3. Load at least one `.cube`, one `.2ccube`, and one `.xyz`.
 4. Confirm 2C mode selection persists across file switches.
 5. Toggle surface/cloud modes and verify rendering updates.
-6. Check molecule styles (`basic`, `toon`, `kit/Kit`) and keyboard shortcuts `1/2/3`.
+6. Check molecule styles (`basic`, `toon`, `kit/Kit`) through the Appearance menu and verify number keys do not change rendering in Display, Measure, or Edit mode.
 7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
 8. In edit mode, verify the adaptive edit menu appears and the onboarding splash hides.
 9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, and repeated right-click on a selected atom to upgrade to whole-molecule selection.
