@@ -19,6 +19,7 @@ JS_CHECK_FILES = \
 	assets/app/js/cloud-rendering.js \
 	assets/app/js/bond-editing.js \
 	assets/app/js/edit-ui.js \
+	assets/app/js/floating-panels.js \
 	assets/app/js/appearance-looks.js \
 	assets/app/js/appearance-model.js \
 	assets/app/js/appearance-editor.js \
@@ -57,7 +58,7 @@ check:
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
 	done
-	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_shadows.py tests/e2e/style_studio.py tests/e2e/appearance_scopes.py tools/render_look_previews.py
+	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_shadows.py tests/e2e/style_studio.py tests/e2e/appearance_scopes.py tests/e2e/floating_panels.py tools/render_look_previews.py
 	git diff --check
 
 test-unit:
@@ -70,5 +71,6 @@ test-e2e:
 	python3 tests/e2e/looks.py
 	python3 tests/e2e/style_studio.py
 	python3 tests/e2e/appearance_scopes.py
+	python3 tests/e2e/floating_panels.py
 
 test: check test-unit test-e2e

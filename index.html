@@ -1764,10 +1764,11 @@
       color: var(--vm-color-text-primary);
     }
 
-    #toolbar .vm-sidebar-reset-popover {
-      position: absolute;
-      top: calc(100% + 4px);
-      right: 0;
+    .vm-sidebar-reset-popover {
+      position: fixed;
+      top: 12px;
+      right: auto;
+      font-family: var(--tb-font-family);
       width: min(280px, calc(100vw - 28px));
       padding: 12px;
       border-radius: 12px;
@@ -1776,34 +1777,34 @@
       box-shadow: 0 18px 32px rgba(4, 8, 16, 0.22);
       display: grid;
       gap: 10px;
-      z-index: 40;
+      z-index: 56;
     }
 
-    #toolbar .vm-sidebar-reset-popover[aria-hidden='true'] {
+    .vm-sidebar-reset-popover[aria-hidden='true'] {
       display: none;
     }
 
-    #toolbar .vm-sidebar-reset-popover__title {
+    .vm-sidebar-reset-popover__title {
       color: var(--tb-text-color-strong);
       font-size: var(--tb-text-size-ui);
       font-weight: var(--tb-text-weight-bold);
       line-height: 1.2;
     }
 
-    #toolbar .vm-sidebar-reset-popover__body {
+    .vm-sidebar-reset-popover__body {
       color: var(--tb-text-color-subtle);
       font-size: var(--tb-text-size-label);
       font-weight: var(--tb-text-weight-regular);
       line-height: 1.45;
     }
 
-    #toolbar .vm-sidebar-reset-popover__actions {
+    .vm-sidebar-reset-popover__actions {
       display: flex;
       justify-content: flex-end;
       gap: 8px;
     }
 
-    #toolbar .vm-sidebar-reset-popover__action {
+    .vm-sidebar-reset-popover__action {
       min-width: 76px;
       height: 30px;
       padding: 0 12px;
@@ -1813,21 +1814,21 @@
       font-weight: var(--tb-text-weight-semibold);
     }
 
-    #toolbar .vm-sidebar-reset-popover__action.is-secondary {
+    .vm-sidebar-reset-popover__action.is-secondary {
       background: var(--tb-surface-emphasis);
       color: var(--tb-text-color-primary);
     }
 
-    #toolbar .vm-sidebar-reset-popover__action.is-secondary:hover {
+    .vm-sidebar-reset-popover__action.is-secondary:hover {
       background: var(--tb-surface-emphasis-hover);
     }
 
-    #toolbar .vm-sidebar-reset-popover__action.is-primary {
+    .vm-sidebar-reset-popover__action.is-primary {
       background: var(--tb-color-accent);
       color: var(--tb-text-color-inverse);
     }
 
-    #toolbar .vm-sidebar-reset-popover__action.is-primary:hover {
+    .vm-sidebar-reset-popover__action.is-primary:hover {
       background: color-mix(in srgb, var(--tb-color-accent) 88%, white 12%);
     }
 
@@ -2263,6 +2264,7 @@
   </style>
   <link rel="stylesheet" href="./assets/app/css/scene-outliner.css">
   <link rel="stylesheet" href="./assets/app/css/trajectory-ui.css">
+  <link rel="stylesheet" href="./assets/app/css/floating-panels.css">
 </head>
 
 <body>
@@ -3831,6 +3833,7 @@
   <!-- bond editing helpers -->
   <script src="./assets/app/js/bond-editing.js"></script>
   <!-- edit ui helpers -->
+  <script src="./assets/app/js/floating-panels.js"></script>
   <script src="./assets/app/js/edit-ui.js"></script>
   <!-- non-edit display window helpers -->
   <script src="./assets/app/js/display-windows.js"></script>

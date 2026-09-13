@@ -83,6 +83,7 @@ Primary capabilities:
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
 - `assets/app/js/edit-ui.js`: adaptive edit menu, floating popover, and operator-panel UI helpers.
 - `assets/app/js/display-windows.js`: non-edit adaptive launcher/window catalog, exclusivity rules, positioning, and floating-inspector anchoring controller.
+- `assets/app/js/floating-panels.js` and `assets/app/css/floating-panels.css`: shared pointer/touch/keyboard dragging for every custom floating interface, viewport bounds, transient manual placement, and dynamic header registration. See `docs/floating-interfaces.md` for the complete inventory.
 - `assets/app/js/appearance-ui.js`: Appearance inspector chip/action-toggle binding plus conditional-section sync controller.
 - `assets/app/js/appearance-model.js`: independent geometry, material, coloring, lighting, and effect descriptors; validation, legacy migration, and shared material factory.
 - `assets/app/js/appearance-looks.js`: complete resolved look recipes, approved Basic/Toon/Kit presets, experimental candidates, and portable look validation.
@@ -131,6 +132,7 @@ Required stylesheet order in `index.html`:
 7. `assets/app/css/session-ui.css`
 8. `assets/app/css/scene-outliner.css` (after the inline shell styles)
 9. `assets/app/css/trajectory-ui.css`
+10. `assets/app/css/floating-panels.css`
 
 Required script order in `index.html`:
 1. `assets/vendor/js/three.min.js`
@@ -157,6 +159,7 @@ Required script order in `index.html`:
 21. `assets/app/js/cloud-rendering.js`
 22. `assets/app/js/bond-editing.js`
 23. `assets/app/js/edit-ui.js`
+    - `floating-panels.js` loads immediately before edit UI, registering the static floating shells before their controllers.
 24. `assets/app/js/display-windows.js`
 25. `assets/app/js/appearance-ui.js`
     - `appearance-model.js`, `appearance-looks.js`, `appearance-editor.js`, `looks-ui.js`, and `style-studio.js` load in that order after Appearance UI and before `app.js`.
@@ -219,6 +222,7 @@ Required script order in `index.html`:
 - `window.VibeMolBondEditing`
 - `window.VibeMolEditUi`
 - `window.VibeMolDisplayWindows`
+- `window.VibeMolFloatingPanels`
 - `window.VibeMolAppearanceUi`
 - `window.VibeMolAppearanceModel`
 - `window.VibeMolAppearanceEditor`
@@ -259,6 +263,7 @@ Preset automation contract exposed globally:
 - `window.VibeMolPreset.import(preset, options?)`
 
 ## Key Behavior Notes
+- All 24 custom floating interfaces use title bars or compact grips for movement, including display/edit windows, operator panels, scene/arithmetic menus, modal dialogs, confirmations, and video recording controls. Manual positions survive close/reopen and scene updates until reload; Alt+arrows move a focused handle and Alt+Home restores anchoring. Native browser dialogs/pickers remain browser-controlled. Floating layout is excluded from presets/sessions/recovery. `floating-panels.js` loads before UI controllers and registers static shells; the outliner registers its dynamic shells.
 - 2C surface mode is global across loaded 2C files.
 - Molecule styles are: `basic`, `toon`, `kit` (shown as Basic, Toon, and Kit).
 - Rendering presets are selected through the Appearance menu. Number keys do not change rendering in any mode; edit-mode bond-order/style shortcuts remain active.

@@ -5,6 +5,7 @@
 
 #styleStudio {
   left: 12px;
+  top: 72px;
   right: auto;
   width: min(680px, calc(100vw - 24px));
   height: min(760px, calc(100dvh - 96px));
@@ -14,8 +15,6 @@
   z-index: 50;
 }
 
-#styleStudio .vm-list-popover__header { cursor: grab; touch-action: none; user-select: none; }
-#styleStudio .vm-list-popover__header.is-dragging { cursor: grabbing; }
 #styleStudioDescription { margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--vm-color-border); }
 #styleStudio #looksPanel { display: grid; grid-template-columns: 240px minmax(0, 1fr); overflow: hidden; }
 #styleStudio #lookPresetSection, #styleStudio #lookComponentEditor { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px; scrollbar-width: thin; }

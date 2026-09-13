@@ -1,0 +1,45 @@
+/* Shared movement only; panel surfaces, typography and controls keep their styles. */
+[data-vm-floating-panel][aria-hidden='true'],
+[data-vm-floating-panel][hidden] { display: none !important; }
+
+[data-vm-drag-handle] {
+  cursor: grab !important;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+[data-vm-drag-handle].is-dragging { cursor: grabbing !important; }
+[data-vm-drag-handle]:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring); }
+
+/* Keep manual placement independent of live anchor/scene positioning updates. */
+[data-vm-floating-moved='true'] {
+  position: fixed !important;
+  left: var(--vm-floating-left) !important;
+  top: var(--vm-floating-top) !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  z-index: var(--vm-floating-z, 50) !important;
+  max-width: min(var(--vm-floating-max-width), calc(100vw - 24px - var(--vm-floating-extra-width))) !important;
+  max-height: min(var(--vm-floating-max-height), calc(100dvh - 24px - var(--vm-floating-extra-height))) !important;
+  overflow: auto;
+}
+.vm-floating-panel__title { margin: 0 0 8px; }
+.vm-floating-panel__grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--vm-radius-sm);
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  pointer-events: auto;
+}
+.vm-floating-panel__grip--inline { width: 24px; align-self: stretch; }
+.vm-floating-panel__grip .material-symbols-rounded { font-size: 16px; }
+.vm-floating-panel__grip:hover { background: color-mix(in srgb, currentColor 8%, transparent); }

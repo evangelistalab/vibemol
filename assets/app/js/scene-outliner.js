@@ -824,6 +824,7 @@
     }
 
     function positionCubeLayerContextMenu(event) {
+      global.VibeMolFloatingPanels?.get(cubeLayerContextMenuEl)?.refresh();
       if (!cubeLayerContextMenuEl) return;
       const gap = 8;
       const rect = cubeLayerContextMenuEl.getBoundingClientRect();
@@ -849,6 +850,7 @@
       menu.setAttribute('aria-hidden', 'true');
       menu.setAttribute('role', 'menu');
       document.body.appendChild(menu);
+      global.VibeMolFloatingPanels?.register(menu, { label: 'Scene and orbital actions', handle: '.vm-outliner-context-menu__title' });
       cubeLayerContextMenuEl = menu;
       document.addEventListener('pointerdown', (event) => {
         if (!cubeLayerContextMenuEl || cubeLayerContextMenuEl.hidden) return;
@@ -858,8 +860,13 @@
       window.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') closeCubeLayerContextMenu();
       });
-      window.addEventListener('resize', closeCubeLayerContextMenu);
-      window.addEventListener('scroll', closeCubeLayerContextMenu, true);
+      const onAnchorChange = event => {
+        if (event.target?.nodeType && menu.contains(event.target)) return;
+        const movable = global.VibeMolFloatingPanels?.get(menu);
+        if (movable?.getPosition()) movable.refresh(); else closeCubeLayerContextMenu();
+      };
+      window.addEventListener('resize', onAnchorChange);
+      window.addEventListener('scroll', onAnchorChange, true);
       return cubeLayerContextMenuEl;
     }
 
@@ -873,6 +880,7 @@
 
     function positionCombinePopover(point) {
       if (!combinePopoverEl) return;
+      global.VibeMolFloatingPanels?.get(combinePopoverEl)?.refresh();
       const gap = 10;
       const rect = combinePopoverEl.getBoundingClientRect();
       const width = Math.max(1, rect.width || 360);
@@ -898,6 +906,7 @@
       popover.setAttribute('role', 'dialog');
       popover.setAttribute('aria-label', 'Combine cube layers');
       document.body.appendChild(popover);
+      global.VibeMolFloatingPanels?.register(popover, { label: 'Orbital arithmetic', handle: '.vm-combine-popover__title' });
       combinePopoverEl = popover;
       document.addEventListener('pointerdown', (event) => {
         if (!combinePopoverEl || combinePopoverEl.hidden) return;
@@ -907,8 +916,13 @@
       window.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && combinePopoverEl && !combinePopoverEl.hidden) closeCombinePopover();
       });
-      window.addEventListener('resize', closeCombinePopover);
-      window.addEventListener('scroll', closeCombinePopover, true);
+      const onAnchorChange = event => {
+        if (event.target?.nodeType && popover.contains(event.target)) return;
+        const movable = global.VibeMolFloatingPanels?.get(popover);
+        if (movable?.getPosition()) movable.refresh(); else closeCombinePopover();
+      };
+      window.addEventListener('resize', onAnchorChange);
+      window.addEventListener('scroll', onAnchorChange, true);
       return combinePopoverEl;
     }
 
