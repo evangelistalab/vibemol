@@ -307,6 +307,20 @@ test('edit-gestures bond center click resolver does not override a current near-
   assert.equal(resolved, null);
 });
 
+test('edit-gestures sticky bond center never overrides a newly visible atom', () => {
+  const { controller, calls, getSelection } = createHarness();
+  controller.handlePointerMove(pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'center' } }));
+
+  const event = pointerEvent({ atomIndex: 2 });
+  assert.equal(controller.resolveBondCenterClickHit(event), null);
+  controller.handlePointerDown(event);
+  controller.handlePointerUp(event);
+
+  assert.deepEqual(calls.bondCenterClicks, []);
+  assert.deepEqual(calls.selectionClicks, []);
+  assert.deepEqual(getSelection(), []);
+});
+
 test('edit-gestures left double-click on atom remains inert', () => {
   const { controller, calls, getSelection } = createHarness({ selection: [] });
 

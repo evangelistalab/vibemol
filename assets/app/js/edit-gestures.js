@@ -129,6 +129,7 @@
     }
 
     function resolveBondCenterClickHit(e) {
+      if (pickAtomObject(e)) return null;
       const pickedBondHit = pickBondHit(e);
       if (pickedBondHit && pickedBondHit.object) {
         return pickedBondHit.section === 'center'

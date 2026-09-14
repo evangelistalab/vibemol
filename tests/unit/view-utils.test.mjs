@@ -126,3 +126,65 @@ test('a depth refit during picking is included in the cached view', () => {
   assert.equal(cache.get({}), 'hit');
   assert.equal(calls, 1);
 });
+
+test('grouped instance picking matches the rendered dash sides, caps, gaps and transforms', () => {
+  const geometry = new T.CylinderGeometry(0.2, 0.2, 0.6, 12), material = new T.MeshBasicMaterial();
+  geometry.computeBoundingBox();
+  const mesh = new T.InstancedMesh(geometry, material, 3), entries = [];
+  for (let i = 0; i < 3; i++) {
+    const matrix = new T.Matrix4().makeTranslation(0, (i - 1) * 2, 0);
+    mesh.setMatrixAt(i, matrix);
+    entries.push({ object: new T.Object3D(), bounds: geometry.boundingBox.clone().applyMatrix4(matrix), instances: [i] });
+  }
+  const grouped = V.createGroupedInstanceRaycast(T, entries);
+  for (const rotated of [false, true]) {
+    mesh.position.set(4, 3, -5); mesh.rotation.set(rotated ? 0.4 : 0, 0.7, 0.2); mesh.scale.set(1, 2, 0.8);
+    mesh.updateMatrixWorld(true);
+    for (const [origin, direction] of [
+      [[0, 0, 5], [0, 0, -1]], // shaft
+      [[0, 1, 5], [0, 0, -1]], // real gap
+      [[0, 5, 0], [0, -1, 0]], // closed cap, parallel to the bond axis
+      [[0.195, 0, 5], [0, 0, -1]], // polygonal silhouette
+    ]) {
+      const raycaster = new T.Raycaster(new T.Vector3(...origin).applyMatrix4(mesh.matrixWorld),
+        new T.Vector3(...direction).transformDirection(mesh.matrixWorld), 0, 20);
+      const expected = [], actual = [];
+      T.InstancedMesh.prototype.raycast.call(mesh, raycaster, expected);
+      grouped.call(mesh, raycaster, actual);
+      const byDistance = (a, b) => a.distance - b.distance;
+      expected.sort(byDistance); actual.sort(byDistance);
+      assert.equal(actual.length, expected.length);
+      actual.forEach((hit, i) => {
+        assert.equal(hit.instanceId, expected[i].instanceId);
+        assert.equal(hit.object, entries[hit.instanceId].object);
+        near(hit.distance, expected[i].distance);
+      });
+    }
+  }
+  mesh.visible = false;
+  const hits = []; grouped.call(mesh, new T.Raycaster(), hits); assert.equal(hits.length, 0);
+});
+
+test('group bounds limit triangle raycasts to the few dashes under the pointer', () => {
+  const geometry = new T.CylinderGeometry(0.1, 0.1, 0.3, 12), material = new T.MeshBasicMaterial();
+  geometry.computeBoundingBox();
+  const mesh = new T.InstancedMesh(geometry, material, 5000), entries = [];
+  for (let group = 0; group < 1000; group++) {
+    const entry = { object: new T.Object3D(), bounds: new T.Box3(), instances: [] };
+    for (let dash = 0; dash < 5; dash++) {
+      const index = group * 5 + dash, matrix = new T.Matrix4().makeTranslation(group * 3, dash, 0);
+      mesh.setMatrixAt(index, matrix); entry.instances.push(index);
+      entry.bounds.union(geometry.boundingBox.clone().applyMatrix4(matrix));
+    }
+    entries.push(entry);
+  }
+  mesh.updateMatrixWorld(true);
+  const cast = V.createGroupedInstanceRaycast(T, entries), original = T.Mesh.prototype.raycast;
+  let calls = 0;
+  T.Mesh.prototype.raycast = function (...args) { calls++; return original.apply(this, args); };
+  try {
+    const hits = [];
+    cast.call(mesh, new T.Raycaster(new T.Vector3(0, 0, 10), new T.Vector3(0, 0, -1)), hits);
+    assert.equal(calls, 5); assert.ok(hits.length); assert.equal(hits[0].instanceId, 0);
+  } finally { T.Mesh.prototype.raycast = original; }
+});

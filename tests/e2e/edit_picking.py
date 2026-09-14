@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded bond picking, cache invalidation, and cheap Edit mode transitions."""
+"""Frontmost molecular picking, bounded work, and cheap Edit mode transitions."""
 import json
 import os
 import sys
@@ -15,7 +15,7 @@ def instrumented_source():
     for signature, key in [
         ('buildBondAtomRecords(vol, options = {})', 'records'),
         ('getBondCarrierInteractionSegment(carrier, vol)', 'segments'),
-        ('pickBondHitUncached(e)', 'queries'),
+        ('pickMoleculeHitUncached(e)', 'queries'),
     ]:
         marker = f'function {signature} {{'
         assert source.count(marker) == 1, marker
@@ -25,9 +25,41 @@ def instrumented_source():
     return source.replace(marker, '''window.__editProbe = {
       reset() { window.__pickCounts = {records:0, segments:0, queries:0}; },
       query(point, fresh=false) {
-        if(fresh) bondPickCache.clear();
+        if(fresh) moleculePickCache.clear();
         const hit=pickBondHit(point);
         return hit ? {i:hit.endpointAIndex,j:hit.endpointBIndex,section:hit.section,t:hit.t} : null;
+      },
+      geometryQuery(point) {
+        setRaycasterFromEvent(point);
+        const hit=pickBondHitUncached(point) || pickBondHitFromDisplayedSpan(point);
+        return hit ? {i:hit.endpointAIndex,j:hit.endpointBIndex,section:hit.section,t:hit.t} : null;
+      },
+      overlapPoints() {
+        contentGroup.updateMatrixWorld(true);
+        const mesh=bondGroup.children.find(o=>o.isInstancedMesh);
+        if(!mesh) return {bond:this.points()[1]};
+        const matrix=new THREE.Matrix4(), centers=[], gaps=[];
+        let previousEnd=null;
+        for(let i=0;i<mesh.count;i++) {
+          mesh.getMatrixAt(i,matrix); matrix.premultiply(mesh.matrixWorld);
+          centers.push(new THREE.Vector3().setFromMatrixPosition(matrix));
+          const start=new THREE.Vector3(0,-0.5,0).applyMatrix4(matrix);
+          if(previousEnd) gaps.push(previousEnd.add(start).multiplyScalar(0.5));
+          previousEnd=new THREE.Vector3(0,0.5,0).applyMatrix4(matrix);
+        }
+        const centerX=mesh.matrixWorld.elements[12];
+        const closest=points=>points.sort((a,b)=>Math.abs(a.x-centerX)-Math.abs(b.x-centerX))[0];
+        const project=world=>{const p=projectWorldToClient(world);return {clientX:p.x,clientY:p.y};};
+        return {bond:project(closest(centers)),gap:project(closest(gaps))};
+      },
+      hover() {
+        const hit=editGestureController.getHoverBondHit();
+        return {atom:hoverAtomMesh?.userData.index ?? -1,
+          bond:hit ? [hit.endpointAIndex,hit.endpointBIndex] : null};
+      },
+      setAtomDepth(index,z) {
+        const vol=volumes[currentIndex].vol, frame=vol.atoms.flatMap(a=>[a.x,a.y,a.z]);
+        frame[index*3+2]=z; applyAtomCoordinateFrame(vol,frame,vol.atoms.length);
       },
       identity() { return {atoms:atomGroup.uuid, bonds:bondGroup.uuid, revision:bondGroup.userData.pickRevision||0}; },
       points() {
@@ -36,7 +68,7 @@ def instrumented_source():
           const segment=getBondCarrierDisplayedSegment(carrier,volumes[currentIndex].vol);
           if(!segment) return [];
           return [0.15,0.5,0.85].map(t=>{
-            let world=segment.start.clone().lerp(segment.end,t);
+            let world=segment.start.clone().lerp(segment.end,t).applyMatrix4(bondGroup.matrixWorld);
             if(carrier.userData.connectorStyle==='kitCurved') {
               // Sample the actual curved shaft's centerline, not its chord.
               const shaft=carrier.children[0], pos=shaft.geometry.attributes.position, normal=shaft.geometry.attributes.normal;
@@ -106,11 +138,15 @@ def slab(page):
     point = {'clientX': 750, 'clientY': 450}
     page.evaluate('()=>__editProbe.reset()')
     hit = query(page, point, fresh=True)
-    assert hit
-    assert counts(page) == {'queries': 1, 'records': 0, 'segments': 5400}, counts(page)
+    work = counts(page)
+    assert work['queries'] == 1 and work['records'] == 0 and work['segments'] <= 5400, work
     for _ in range(10):
         assert query(page, point) == hit
     assert counts(page)['queries'] == 1
+    # A miss must still keep the full-span tolerance path linear in bond count.
+    page.evaluate('()=>__editProbe.reset()')
+    assert query(page, {'clientX': 350, 'clientY': 120}, fresh=True) is None
+    assert counts(page) == {'queries': 1, 'records': 0, 'segments': 5400}, counts(page)
     # Exercise the real pointer handlers and the halo's stationary-frame refresh.
     page.mouse.move(point['clientX'], point['clientY'])
     settle(page)
@@ -142,7 +178,8 @@ def multiple_bonds(page):
             mode(page, 'Edit')
             points = page.evaluate('()=>__editProbe.points()')
             assert len(points) >= order * 3, (style, order, points)
-            hits = [query(page, point, fresh=True) for point in points]
+            # Validate section math independently of atom occlusion at the caps.
+            hits = [page.evaluate('point=>__editProbe.geometryQuery(point)', point) for point in points]
             assert all(hit and {hit['i'], hit['j']} == {0, 1} for hit in hits), (style, order, hits)
             assert {'nearA', 'center', 'nearB'}.issubset({hit['section'] for hit in hits}), (style, hits)
             before = page.evaluate('()=>__editProbe.identity()')
@@ -153,6 +190,89 @@ def multiple_bonds(page):
             for point in page.evaluate('()=>__editProbe.points()'):
                 compare_fresh(page, point)
     print('[picking] double/triple Basic, Classic and Kit hit regions and live coordinate invalidation: passed', flush=True)
+
+
+def occlusion(page):
+    def picked(point):
+        return page.evaluate('p=>VibeMolTesting.pickEditHitAtClient(p.clientX,p.clientY)', point)
+
+    def hover(point):
+        page.mouse.move(point['clientX'], point['clientY'])
+        settle(page)
+        return page.evaluate('()=>__editProbe.hover()')
+
+    for style, bond_style, order in [('basic', 'metal-dative', 1), ('basic', 'metal-strong', 1),
+                                     ('classic', 'covalent', 1), ('kit', 'covalent', 2)]:
+        for projection in ['orthographic', 'perspective']:
+            mode(page, 'Display')
+            payload = json.loads(build_fixture_structure())
+            atoms = payload['volume']['atoms']
+            atoms[0].update(Z=11 if bond_style.startswith('metal') else 6, x=-2, z=2)
+            atoms[1].update(Z=17 if bond_style.startswith('metal') else 6, x=2, z=2)
+            atoms.append({'id': 'rear', 'Z': 11, 'x': 0, 'y': 0, 'z': 0})
+            payload['volume']['natoms'] = 3
+            payload['volume']['bonds'][0].update(style=bond_style, order=order, origin='explicit')
+            page.evaluate('v=>VibeMolStructure.importFromText(JSON.stringify(v),"occlusion")', payload)
+            page.evaluate('style=>VibeMolAppearanceLooks.apply(style)', style)
+            settings(page, {'view.projection': projection, 'view.camera.x': 0, 'view.camera.y': 0,
+                            'view.camera.z': 10, 'view.target.x': 0, 'view.target.y': 0, 'view.target.z': 0,
+                            'view.shift.x': 0, 'view.shift.y': 0, 'view.shift.z': 0,
+                            'molecule.feature.shadows': False})
+            mode(page, 'Edit')
+            points = page.evaluate('()=>__editProbe.overlapPoints()')
+            point = points['bond']
+            assert picked(point) == {'atomIndex': -1, 'bondSection': 'center'}, (style, projection, points, picked(point))
+            assert hover(point) == {'atom': -1, 'bond': [0, 1]}, (style, projection, hover(point))
+            if 'gap' in points:
+                # The hover overlay must not fill the dash gap for picking. The
+                # recently hovered bond also must not steal the subsequent click.
+                assert picked(points['gap']) == {'atomIndex': 2, 'bondSection': ''}
+                assert hover(points['gap']) == {'atom': 2, 'bond': None}
+                page.mouse.click(points['gap']['clientX'], points['gap']['clientY'], button='right')
+                assert page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()') == [2]
+                hover(point)
+            # A selected rear atom's drag/context tolerance cannot override the
+            # actual foreground bond. Exercise the real right-click handler.
+            page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([2])')
+            assert hover(point) == {'atom': -1, 'bond': [0, 1]}
+            page.mouse.click(point['clientX'], point['clientY'], button='right')
+            cue = page.evaluate('()=>VibeMolTesting.getBondCenterCueState()')
+            assert cue['visible'] and cue['style'] == bond_style, (style, projection, cue)
+            assert 2 not in page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()')
+            page.keyboard.press('Escape')
+            # Move the rear atom in front without moving the pointer: depth and
+            # cached hover results must update after a live coordinate change.
+            page.evaluate('()=>__editProbe.setAtomDepth(2,3)')
+            assert picked(point) == {'atomIndex': 2, 'bondSection': ''}, (style, projection, picked(point))
+            assert hover(point) == {'atom': 2, 'bond': None}
+            page.mouse.click(point['clientX'], point['clientY'], button='right')
+            assert page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()') == [2]
+            page.evaluate('()=>{VibeMolTesting.setEditSelectionIndices([]);__editProbe.setAtomDepth(2,0);}')
+            settings(page, {'view.shift.x': 0.8, 'view.shift.y': 0.3, 'view.shift.z': 0.25})
+            shifted = page.evaluate('()=>__editProbe.overlapPoints().bond')
+            assert picked(shifted) == {'atomIndex': -1, 'bondSection': 'center'}, (style, projection, picked(shifted))
+
+    # Two continuous bonds cross in projection. Their endpoint atoms do not
+    # cover the crossing, so bond-vs-bond depth decides the target.
+    mode(page, 'Display')
+    payload['volume']['atoms'] = [
+        {'id': str(i), 'Z': 6, 'x': x, 'y': y, 'z': z}
+        for i, (x, y, z) in enumerate([(-2, 0, 2), (2, 0, 2), (0, -2, 0), (0, 2, 0)])]
+    payload['volume']['natoms'] = 4
+    payload['volume']['bonds'] = [
+        {'id': str(i), 'a': str(i), 'b': str(i+1), 'order': 1, 'kind': 'normal', 'origin': 'explicit'}
+        for i in [0, 2]]
+    page.evaluate('v=>VibeMolStructure.importFromText(JSON.stringify(v),"crossing")', payload)
+    page.evaluate('()=>VibeMolAppearanceLooks.apply("basic")')
+    settings(page, {'view.camera.x': 0, 'view.camera.y': 0, 'view.camera.z': 10,
+                    'view.shift.x': 0, 'view.shift.y': 0, 'view.shift.z': 0,
+                    'view.target.x': 0, 'view.target.y': 0, 'view.target.z': 0, 'molecule.feature.shadows': False})
+    mode(page, 'Edit')
+    point = page.evaluate('()=>__editProbe.overlapPoints().bond')
+    assert query(page, point)['i'] == 0
+    page.evaluate('()=>{__editProbe.setAtomDepth(2,3);__editProbe.setAtomDepth(3,3);}')
+    assert query(page, point)['i'] == 2
+    print('[picking] frontmost atoms/bonds, real dash gaps, selected-atom fallbacks, crossing bonds, and both projections: passed', flush=True)
 
 
 def orbital_modes(page):
@@ -193,6 +313,7 @@ def main():
             page.goto(url + '?workspaceLab=1'); page.wait_for_function('()=>window.__editProbe')
             slab(page)
             multiple_bonds(page)
+            occlusion(page)
             orbital_modes(page)
             assert not errors, errors
         except Exception:

@@ -149,6 +149,38 @@
     });
   }
 
+  /**
+   * Raycast only candidate instances inside each logical object's local bounds.
+   * Uses the rendered mesh triangles, including cylinder caps and real dash gaps.
+   * Entries: {object, bounds: THREE.Box3, instances: number[]} in mesh-local space.
+   * Recreate the entries when instance geometry/transforms change.
+   */
+  function createGroupedInstanceRaycast(THREE, entries) {
+    const inverse = new THREE.Matrix4(), matrix = new THREE.Matrix4();
+    const localRay = new THREE.Ray(), mesh = new THREE.Mesh(), hits = [];
+    return function raycast(raycaster, intersections) {
+      if (!this.visible || !this.material || this.material.visible === false) return;
+      localRay.copy(raycaster.ray).applyMatrix4(inverse.copy(this.matrixWorld).invert());
+      mesh.geometry = this.geometry;
+      mesh.material = this.material;
+      for (const entry of entries) {
+        if (entry.object.visible === false || !localRay.intersectsBox(entry.bounds)) continue;
+        for (const index of entry.instances) {
+          if (index >= this.count) continue;
+          this.getMatrixAt(index, matrix);
+          mesh.matrixWorld.multiplyMatrices(this.matrixWorld, matrix);
+          hits.length = 0;
+          mesh.raycast(raycaster, hits);
+          for (const hit of hits) {
+            hit.object = entry.object;
+            hit.instanceId = index;
+            intersections.push(hit);
+          }
+        }
+      }
+    };
+  }
+
   window.VibeMolViewUtils = Object.freeze({
     copyCameraPose,
     getViewportSize,
@@ -157,5 +189,6 @@
     createCameraDepthController,
     setCameraRay,
     createPickCache,
+    createGroupedInstanceRaycast,
   });
 })();

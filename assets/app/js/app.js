@@ -147,8 +147,9 @@
     createCameraDepthController,
     setCameraRay,
     createPickCache,
+    createGroupedInstanceRaycast,
   } = window.VibeMolViewUtils || {};
-  if (![copyCameraPoseUtil, computeOrthographicFrustum, createCameraDepthController, setCameraRay, createPickCache].every(fn => typeof fn === 'function')) {
+  if (![copyCameraPoseUtil, computeOrthographicFrustum, createCameraDepthController, setCameraRay, createPickCache, createGroupedInstanceRaycast].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolViewUtils is not loaded. Ensure assets/app/js/view-utils.js is included before assets/app/js/app.js.');
   }
 
@@ -2006,7 +2007,7 @@
   contentGroup.add(bondGroup);
   contentGroup.add(cloudGroup);
   const cameraDepthController = createCameraDepthController(THREE, MOLDEN_GRID_PADDING_ANG);
-  const bondPickCache = createPickCache(getBondPickKey, pickBondHitUncached);
+  const moleculePickCache = createPickCache(getMoleculePickKey, pickMoleculeHitUncached);
   let bondInteractionContext = null;
 
   /**
@@ -2126,7 +2127,7 @@
    * Remove all currently rendered geometry groups and release GPU resources.
    */
   function clearSceneMeshes() {
-    bondPickCache.clear();
+    moleculePickCache.clear();
     bondInteractionContext = null;
     surfaceGeometryDeferred = false;
     suppressedSurfaceVisibility = new WeakMap();
@@ -4268,6 +4269,7 @@
             end: segEnd,
             color,
             radius,
+            carrier,
           });
           cursor += dashLength + gapLength;
         }
@@ -5235,6 +5237,7 @@
    */
   function applyAtomCoordinateFrame(vol, frame, atomCount, options = {}) {
     if (!vol || !Array.isArray(vol.atoms) || !frame) return;
+    moleculePickCache.clear();
     const record = options.record || (Array.isArray(volumes) ? volumes.find((item) => item && item.vol === vol) : null);
     const targets = getMoleculeRenderTargetsForRecord(record);
     const targetAtomGroup = targets.atomGroup || atomGroup;
@@ -15034,6 +15037,7 @@
    */
   function applyTransformWorldPositions(vol, indices, worldPositions) {
     if (!vol || !Array.isArray(vol.atoms) || !Array.isArray(indices) || !Array.isArray(worldPositions)) return;
+    moleculePickCache.clear();
     const count = Math.min(indices.length, worldPositions.length);
     for (let i = 0; i < count; i++) {
       const atomIdx = indices[i] | 0;
@@ -19245,7 +19249,7 @@
    * Build one instanced mesh for many straight bond segments.
    * Each segment scales one shared unit cylinder by radius/length and uses
    * per-instance color so large dashed metal-bond sets stay cheap to draw.
-   * @param {Array<{start:THREE.Vector3,end:THREE.Vector3,color:THREE.Color,radius:number}>} segments
+   * @param {Array<{start:THREE.Vector3,end:THREE.Vector3,color:THREE.Color,radius:number,carrier:THREE.Object3D}>} segments
    * @returns {THREE.InstancedMesh|null}
    */
   function createWorldSegmentBondInstances(segments) {
@@ -19260,6 +19264,8 @@
     const mesh = new THREE.InstancedMesh(geom, mat, items.length);
     const up = new THREE.Vector3(0, 1, 0);
     const dummy = new THREE.Object3D();
+    const pickGroups = new Map();
+    const segmentBounds = new THREE.Box3();
     let count = 0;
     for (const segment of items) {
       const start = segment.start.clone();
@@ -19275,6 +19281,16 @@
       dummy.updateMatrix();
       mesh.setMatrixAt(count, dummy.matrix);
       if (useInstanceColors && typeof mesh.setColorAt === 'function') mesh.setColorAt(count, segment.color);
+      if (segment.carrier) {
+        let entry = pickGroups.get(segment.carrier);
+        if (!entry) {
+          entry = { object: segment.carrier, bounds: new THREE.Box3(), instances: [] };
+          pickGroups.set(segment.carrier, entry);
+        }
+        segmentBounds.setFromPoints([start, end]).expandByScalar(radius);
+        entry.bounds.union(segmentBounds);
+        entry.instances.push(count);
+      }
       count += 1;
     }
     if (count <= 0) {
@@ -19288,8 +19304,7 @@
       type: 'metalBondDashInstances',
       segmentCount: count,
     });
-    // Bond interaction resolves through lightweight carrier objects instead.
-    mesh.raycast = () => {};
+    mesh.raycast = createGroupedInstanceRaycast(THREE, Array.from(pickGroups.values()));
     return mesh;
   }
 
@@ -22028,6 +22043,8 @@
     if (!overlay) overlay = buildBondOverlayClone(carrier, color, opacity);
     if (!overlay) return null;
     overlay.userData = { type: key, section: overlaySection };
+    // Selection/hover feedback must not change the geometry being picked.
+    overlay.traverse(node => { node.raycast = () => {}; });
     const overlayParent = (overlaySection && overlay !== carrier && !carrier.isMesh && carrier.parent)
       ? carrier.parent
       : carrier;
@@ -23318,6 +23335,7 @@
 
   function resolveGestureBondCenterClickHit(pointerLike) {
     if (getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || !editGestureController) return null;
+    if (pointerLike && pickAtom(pointerLike)) return null;
     if (typeof editGestureController.resolveBondCenterClickHit === 'function') {
       const hit = editGestureController.resolveBondCenterClickHit(pointerLike);
       if (hit && hit.object && hit.section === 'center') return hit;
@@ -23447,10 +23465,7 @@
    * @returns {THREE.Intersection|null}
    */
   function pickAtom(e) {
-    if (!atomGroup || !atomGroup.children || atomGroup.children.length === 0) return null;
-    setRaycasterFromEvent(e);
-    const hits = raycaster.intersectObjects(atomGroup.children, false);
-    return hits.length > 0 ? hits[0].object : null;
+    return pickAtomHit(e)?.object || null;
   }
 
   /**
@@ -23459,10 +23474,7 @@
    * @returns {THREE.Intersection|null}
    */
   function pickAtomHit(e) {
-    if (!atomGroup || !atomGroup.children || atomGroup.children.length === 0) return null;
-    setRaycasterFromEvent(e);
-    const hits = raycaster.intersectObjects(atomGroup.children, false);
-    return hits.length > 0 ? hits[0] : null;
+    return moleculePickCache.get(e).atomHit;
   }
 
   function pickSelectedAtomDragFallback(e) {
@@ -23490,12 +23502,10 @@
 
   function pickGestureAtom(e) {
     const atomObject = pickAtom(e);
-    const selectedFallback = pickSelectedAtomDragFallback(e);
-    if (!selectedFallback) return atomObject;
-    if (!(atomObject && atomObject.userData)) return selectedFallback;
-    const hitIndex = atomObject.userData.index | 0;
-    const selectedIndex = selectedFallback.userData.index | 0;
-    return hitIndex === selectedIndex ? atomObject : selectedFallback;
+    if (atomObject) return atomObject;
+    const bondHit = pickBondHit(e);
+    if (bondHit && !bondHit.isProximity) return null;
+    return pickSelectedAtomDragFallback(e);
   }
 
   function pickSelectedEditContextAtomFallback(e) {
@@ -23524,6 +23534,8 @@
   function pickEditContextAtomHit(e) {
     const atomHit = pickAtomHit(e);
     if (atomHit && atomHit.object && atomHit.object.userData) return atomHit;
+    const bondHit = pickBondHit(e);
+    if (bondHit && !bondHit.isProximity) return null;
     const selectedFallback = pickSelectedEditContextAtomFallback(e);
     if (!(selectedFallback && selectedFallback.userData)) return null;
     return {
@@ -23685,16 +23697,18 @@
     if (!vol || !Array.isArray(vol.atoms) || !carrier || !carrier.userData || !hitPoint || !hitPoint.isVector3) {
       return { section: 'center', t: 0.5 };
     }
+    // Rendered intersections are world-space; stored endpoints are group-local.
+    const localPoint = bondGroup.worldToLocal(hitPoint.clone());
     const segment = getBondCarrierDisplayedSegment(carrier, vol);
     if (segment && segment.start && segment.end) {
-      return classifyBondHitSectionFromPoints(segment.start, segment.end, hitPoint);
+      return classifyBondHitSectionFromPoints(segment.start, segment.end, localPoint);
     }
     const i = carrier.userData.i | 0;
     const j = carrier.userData.j | 0;
     if (i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length || i === j) {
       return { section: 'center', t: 0.5 };
     }
-    return classifyBondHitSectionFromPoints(atomUnitsToAng(vol, vol.atoms[i]), atomUnitsToAng(vol, vol.atoms[j]), hitPoint);
+    return classifyBondHitSectionFromPoints(atomUnitsToAng(vol, vol.atoms[i]), atomUnitsToAng(vol, vol.atoms[j]), localPoint);
   }
 
   function getBondCarrierInteractionSegment(carrier, vol) {
@@ -23729,7 +23743,7 @@
     const capturePx = 16;
     for (const child of bondGroup.children) {
       const carrier = getBondCarrierObject(child);
-      if (!carrier || !carrier.userData) continue;
+      if (!carrier || !carrier.userData || !isMoleculePickObjectVisible(carrier)) continue;
       const i = carrier.userData.i | 0;
       const j = carrier.userData.j | 0;
       if (i < 0 || j < 0 || i === j) continue;
@@ -23740,6 +23754,8 @@
       seen.add(key);
       const segment = getBondCarrierInteractionSegment(carrier, vol);
       if (!segment || !segment.start || !segment.end) continue;
+      segment.start.applyMatrix4(bondGroup.matrixWorld);
+      segment.end.applyMatrix4(bondGroup.matrixWorld);
       const startClient = projectWorldToClient(segment.start);
       const endClient = projectWorldToClient(segment.end);
       if (!startClient || !endClient || startClient.visible === false || endClient.visible === false) continue;
@@ -23748,17 +23764,27 @@
       const segLenSq = segDx * segDx + segDy * segDy;
       if (!(segLenSq > 1e-8)) continue;
       const rawT = ((pointerX - startClient.x) * segDx + (pointerY - startClient.y) * segDy) / segLenSq;
-      const t = Math.max(0, Math.min(1, rawT));
-      const closestX = startClient.x + segDx * t;
-      const closestY = startClient.y + segDy * t;
+      const screenT = Math.max(0, Math.min(1, rawT));
+      const closestX = startClient.x + segDx * screenT;
+      const closestY = startClient.y + segDy * screenT;
       const distancePx = Math.hypot(pointerX - closestX, pointerY - closestY);
       if (!(distancePx <= capturePx)) continue;
+      let t = screenT;
+      if (camera.isPerspectiveCamera) {
+        const depthA = -segment.start.clone().applyMatrix4(camera.matrixWorldInverse).z;
+        const depthB = -segment.end.clone().applyMatrix4(camera.matrixWorldInverse).z;
+        t = screenT * depthA / ((1 - screenT) * depthB + screenT * depthA);
+      }
       const worldPoint = segment.start.clone().lerp(segment.end, t);
+      const distance = worldPoint.clone().sub(raycaster.ray.origin).dot(raycaster.ray.direction);
+      if (distance < raycaster.near || distance > raycaster.far) continue;
       const sectionInfo = classifyBondHitSectionFromPoints(segment.start, segment.end, worldPoint);
       const candidate = {
         object: carrier,
         point: worldPoint,
-        distance: distancePx,
+        distance,
+        screenDistance: distancePx,
+        isProximity: true,
         section: sectionInfo.section,
         t: sectionInfo.t,
         endpointAIndex: i,
@@ -23766,36 +23792,60 @@
         nearAtomIndex: sectionInfo.section === 'nearB' ? j : i,
         farAtomIndex: sectionInfo.section === 'nearB' ? i : j,
       };
-      if (!best || candidate.distance < best.distance) best = candidate;
+      if (!best || distancePx < best.screenDistance - 0.5
+        || (Math.abs(distancePx - best.screenDistance) <= 0.5 && distance < best.distance)) best = candidate;
     }
     return best;
   }
 
-  /** Pointer, topology revision, and copied matrices that determine a bond hit. */
-  function getBondPickKey(e) {
+  /** Pointer, geometry revision, and copied matrices that determine a molecular hit. */
+  function getMoleculePickKey(e) {
     camera.updateMatrixWorld(true);
     bondGroup.updateWorldMatrix(true, false);
+    atomGroup.updateWorldMatrix(true, false);
     const rect = canvasEl.getBoundingClientRect();
     return [Number(e && e.clientX), Number(e && e.clientY), currentMode,
       volumes[currentIndex]?.vol, bondGroup, bondGroup.userData.pickRevision || 0, bondGroup.visible,
+      atomGroup, atomGroup.visible, ...atomGroup.matrixWorld.elements,
       rect.left, rect.top, rect.width, rect.height,
       ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, ...bondGroup.matrixWorld.elements];
   }
 
   function pickBondHit(e) {
-    return bondPickCache.get(e);
+    return moleculePickCache.get(e).bondHit;
+  }
+
+  function isMoleculePickObjectVisible(object) {
+    for (let node = object; node; node = node.parent) {
+      if (node.visible === false || node.material?.visible === false || node.material?.opacity === 0) return false;
+    }
+    return true;
+  }
+
+  /** Share the foremost physical hit between hover, clicks, context menus and the halo. */
+  function pickMoleculeHitUncached(e) {
+    setRaycasterFromEvent(e);
+    const atomHit = raycaster.intersectObjects(atomGroup.children, false)
+      .find(hit => isMoleculePickObjectVisible(hit.object)) || null;
+    const bondHit = pickBondHitUncached(e);
+    if (atomHit && (!bondHit || atomHit.distance <= bondHit.distance + 1e-6)) {
+      return { atomHit, bondHit: null };
+    }
+    // Pixel tolerance helps target thin bonds, but never displaces an actual atom
+    // or bond beneath the pointer (including atoms visible through a dash gap).
+    return { atomHit: null, bondHit: bondHit || pickBondHitFromDisplayedSpan(e) };
   }
 
   /**
-   * Raycast and return the first bond hit, including wrapped groups/meshes.
-   * @param {PointerEvent} e
+   * Return the first physical bond hit using the prepared pointer ray,
+   * including wrapped groups/meshes and instanced dash carriers.
    * @returns {{object:*,point:THREE.Vector3|null,distance:number,section:'nearA'|'center'|'nearB',t:number,endpointAIndex:number,endpointBIndex:number,nearAtomIndex:number,farAtomIndex:number}|null}
    */
   function pickBondHitUncached(e) {
     if (!bondGroup || !bondGroup.children || bondGroup.children.length === 0) return null;
-    setRaycasterFromEvent(e);
     const hits = raycaster.intersectObjects(bondGroup.children, true);
     for (const hit of hits) {
+      if (!isMoleculePickObjectVisible(hit.object)) continue;
       const carrier = getBondCarrierObject(hit && hit.object);
       if (!carrier) continue;
       const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
@@ -23816,7 +23866,7 @@
         farAtomIndex: sectionInfo.section === 'nearB' ? i : j,
       };
     }
-    return pickBondHitFromDisplayedSpan(e);
+    return null;
   }
 
   /**
