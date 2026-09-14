@@ -34,8 +34,8 @@ def shared_controls(page, context, url):
         ('appearanceBondColor','studioBondColor',None,'#3579bd'),
         ('studioElementColors','visibilityElementColorsToggle','global.elementColors',False),
         ('visibilityElementColorsToggle','studioElementColors','global.elementColors',False),
-        ('studioShadows','moleculeShadowsToggle','molecule.feature.shadows',True),
-        ('moleculeShadowsToggle','studioShadows','molecule.feature.shadows',True),
+        ('studioShadows','moleculeShadowsToggle','molecule.feature.shadows',False),
+        ('moleculeShadowsToggle','studioShadows','molecule.feature.shadows',False),
         ('studioFog','moleculeFogToggle','molecule.feature.fog',True),
         ('moleculeFogToggle','studioFog','molecule.feature.fog',True),
     ]:

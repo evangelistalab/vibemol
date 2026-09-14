@@ -45,6 +45,53 @@ def darker_pixels(page, lit, shadowed, region):
     }''', {'lit':lit,'shadowed':shadowed,'region':region})
 
 
+def shadow_camera_fit(page, context, url):
+    # Inspect the actual shadow camera and all visible casters/receivers, including
+    # objects a bad frustum might cull before their onBeforeShadow callback.
+    page.evaluate('''() => {
+      THREE.Mesh.prototype.onBeforeShadow=function(renderer,object,camera,shadowCamera){
+        window.fitCamera=shadowCamera;window.fitRenderer=renderer;
+      };
+      THREE.Mesh.prototype.onBeforeRender=function(renderer,scene,camera,geometry,material){
+        if(material===this.material && material.userData.vmAppearanceTarget)window.fitScene=scene;
+      };
+      window.readShadowFit=() => {
+        const clip=new THREE.Box3(),world=new THREE.Box3(),box=new THREE.Box3();
+        const view=new THREE.Matrix4().multiplyMatrices(fitCamera.projectionMatrix,fitCamera.matrixWorldInverse);
+        const matrix=new THREE.Matrix4();let count=0,light;
+        fitScene.traverseVisible(node=>{
+          if(node.isDirectionalLight && node.castShadow)light=node;
+          if(!node.isMesh || !(node.castShadow || node.receiveShadow) || node.material?.opacity<=0)return;
+          if(!node.geometry.boundingBox)node.geometry.computeBoundingBox();
+          matrix.multiplyMatrices(view,node.matrixWorld);
+          clip.union(box.copy(node.geometry.boundingBox).applyMatrix4(matrix));
+          world.union(box.copy(node.geometry.boundingBox).applyMatrix4(node.matrixWorld));count++;
+        });
+        return {count,min:clip.min.toArray(),max:clip.max.toArray(),
+          map:[light.shadow.map.width,light.shadow.map.height],limit:fitRenderer.capabilities.maxTextureSize,
+          area:(fitCamera.right-fitCamera.left)*(fitCamera.top-fitCamera.bottom),
+          oldArea:Math.pow(world.getSize(new THREE.Vector3()).length()*1.05,2)};
+      };
+    }''')
+    for file in [
+        {'name':'long.xyz','text':'5\nOffset, elongated structure\nC 80 0 0\nH 78.95 0.15 0\nC 104 0 0\nN 105.4 0.3 0\nO 106.65 0 0.2\n'},
+        {'name':'surface.cube','text':shadow_cube()},
+    ]:
+        assert p.load(page,[file])['ok']
+        page.evaluate('() => VibeMolAppearanceLooks.apply("classic")')
+        settings(page,{'surface.iso':0.03,'surface.autoIsoEnabled':False})
+        for direction in [[-3.5,5,7],[0,1,0],[0,-1,0]]:
+            page.evaluate('dirPos=>VibeMolAppearanceLooks.edit("lighting",{dirPos})',direction)
+            for axis in ['X','Y','Z']:
+                page.locator('#viewAxis'+axis+'Btn').evaluate('el=>el.click()');settle(page)
+                fit=page.evaluate('() => readShadowFit()')
+                assert fit['count']>=3,fit
+                assert all(v>=-1.00001 for v in fit['min']) and all(v<=1.00001 for v in fit['max']),fit
+                assert fit['map']==[min(2048,fit['limit'])]*2,fit
+                if file['name']=='long.xyz':assert fit['area']<fit['oldArea']*0.85,fit
+    print('[looks] tighter shadow framing, device map limit, rotated/offset molecules, large surfaces and pole-aligned lights: passed',flush=True)
+
+
 def surfaces_cast_and_receive(page, context, url):
     # Observe actual shadow draws. Muting a caster in this test changes only its
     # depth draw, allowing pixel comparisons with identical color geometry.

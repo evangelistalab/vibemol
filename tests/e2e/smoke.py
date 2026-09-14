@@ -535,6 +535,26 @@ def get_trajectory_video_export_stub_state(page) -> dict[str, Any]:
     return result
 
 
+def start_video_and_check_recording_ui(page, prefix: str) -> None:
+    # A two-frame recording can finish before Playwright's next polling turn.
+    # Capture the UI immediately after the real click handler, before playback.
+    page.evaluate("""prefix => {
+        window.__recordingUiReady = false;
+        document.getElementById(prefix+'VideoCropStartBtn').addEventListener('click', () => {
+            const overlay = document.getElementById(prefix+'VideoCropOverlay');
+            const saveBtn = document.getElementById(prefix+'SaveVideoBtn');
+            const frame = document.getElementById(prefix+'VideoCropFrame');
+            window.__recordingUiReady = overlay.dataset.state === 'recording'
+                && saveBtn.querySelector('.motionPanelIconGlyph').textContent.trim() === 'stop_circle'
+                && document.getElementById(prefix+'PlayBtn').disabled
+                && document.getElementById(prefix+'ResetBtn').disabled
+                && getComputedStyle(frame).visibility === 'hidden';
+        }, {once:true});
+    }""", prefix)
+    page.locator('#'+prefix+'VideoCropStartBtn').click()
+    assert page.evaluate('() => window.__recordingUiReady'), prefix
+
+
 def canvas_point(page, fx: float = 0.62, fy: float = 0.56) -> tuple[float, float]:
     box = page.locator('#canvas').bounding_box()
     if not box:
@@ -2748,6 +2768,7 @@ def main() -> int:
 
             page.keyboard.press('Escape')
             page.wait_for_function("() => !document.getElementById('moldenInspector')?.classList.contains('open')")
+            page.locator('#modeEditBtn').click()
             page.evaluate("() => document.getElementById('coordsPanelBtn')?.click()")
             page.wait_for_function("() => document.getElementById('coordsPanel')?.classList.contains('open')")
             page.locator('#coordsContent tr[data-atom-index="0"] [data-edit-field="x"]').click()
@@ -2789,6 +2810,7 @@ def main() -> int:
             )
 
             # Geometry-only imports should infer perceived connectivity.
+            page.locator('#modeDisplayBtn').click()
             inferred_xyz_text = build_fixture_inferred_xyz()
             page.evaluate(
                 """async (text) => {
@@ -4273,26 +4295,7 @@ def main() -> int:
                 raise AssertionError(f'Could not read shrunken trajectory crop rect: {crop_min!r}')
             if crop_min['width'] < 159 or crop_min['height'] < 89:
                 raise AssertionError(f'Trajectory crop rectangle shrank below the minimum size: {crop_min}')
-            page.locator('#trajectoryVideoCropStartBtn').click()
-            page.wait_for_function(
-                """() => {
-                    const overlay = document.getElementById('trajectoryVideoCropOverlay');
-                    const saveBtn = document.getElementById('trajectorySaveVideoBtn');
-                    const saveGlyph = saveBtn?.querySelector('.motionPanelIconGlyph')?.textContent || '';
-                    const playBtn = document.getElementById('trajectoryPlayBtn');
-                    const resetBtn = document.getElementById('trajectoryResetBtn');
-                    const frame = document.getElementById('trajectoryVideoCropFrame');
-                    return !!overlay
-                      && overlay.dataset.state === 'recording'
-                      && saveGlyph.trim() === 'stop_circle'
-                      && !!playBtn
-                      && !!resetBtn
-                      && playBtn.disabled
-                      && resetBtn.disabled
-                      && !!frame
-                      && getComputedStyle(frame).visibility === 'hidden';
-                }"""
-            )
+            start_video_and_check_recording_ui(page, 'trajectory')
             page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 1""")
             export_state = get_trajectory_video_export_stub_state(page)
             if export_state['downloads'][0]['download'] != 'trajectory.webm':
@@ -4432,26 +4435,7 @@ def main() -> int:
                       && getComputedStyle(actions).display === 'flex';
                 }"""
             )
-            page.locator('#vibrationVideoCropStartBtn').click()
-            page.wait_for_function(
-                """() => {
-                    const overlay = document.getElementById('vibrationVideoCropOverlay');
-                    const saveBtn = document.getElementById('vibrationSaveVideoBtn');
-                    const saveGlyph = saveBtn?.querySelector('.motionPanelIconGlyph')?.textContent || '';
-                    const playBtn = document.getElementById('vibrationPlayBtn');
-                    const resetBtn = document.getElementById('vibrationResetBtn');
-                    const frame = document.getElementById('vibrationVideoCropFrame');
-                    return !!overlay
-                      && overlay.dataset.state === 'recording'
-                      && saveGlyph.trim() === 'stop_circle'
-                      && !!playBtn
-                      && !!resetBtn
-                      && playBtn.disabled
-                      && resetBtn.disabled
-                      && !!frame
-                      && getComputedStyle(frame).visibility === 'hidden';
-                }"""
-            )
+            start_video_and_check_recording_ui(page, 'vibration')
             page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 1""")
             export_state = get_trajectory_video_export_stub_state(page)
             if export_state['downloads'][0]['download'] != 'vibration.webm':

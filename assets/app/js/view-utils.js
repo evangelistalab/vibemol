@@ -60,10 +60,135 @@
     };
   }
 
+  /**
+   * Keep the visible geometry inside the camera's depth range without changing
+   * framing. Cached local bounds avoid scanning surface/cloud vertices each frame.
+   * Orthographic depth may extend behind the camera; perspective depth must stay positive.
+   */
+  function createCameraDepthController(THREE, minimumPadding = 3) {
+    const toCamera = new THREE.Matrix4();
+    const geometryVersions = new WeakMap();
+    const instanceVersions = new WeakMap();
+    const materialVisible = material => material && material.visible !== false && material.opacity !== 0;
+    function update(root, camera) {
+      camera.updateMatrixWorld(true);
+      root.updateWorldMatrix(true, true);
+      let nearest = Infinity, farthest = -Infinity;
+      root.traverseVisible(node => {
+        const geometry = node.geometry, material = node.material;
+        if (!geometry || !(Array.isArray(material) ? material.some(materialVisible) : materialVisible(material))) return;
+        const version = geometry.attributes.position?.version;
+        if (!geometry.boundingBox || geometryVersions.get(geometry) !== version) {
+          geometry.computeBoundingBox();
+          geometryVersions.set(geometry, version);
+        }
+        let bounds = geometry.boundingBox;
+        if (node.isInstancedMesh) {
+          if (!node.count) return;
+          const previous = instanceVersions.get(node);
+          if (!node.boundingBox || !previous || previous.matrix !== node.instanceMatrix.version
+            || previous.count !== node.count || previous.geometry !== version || previous.source !== geometry) {
+            node.computeBoundingBox();
+            instanceVersions.set(node, { matrix: node.instanceMatrix.version, count: node.count, geometry: version, source: geometry });
+          }
+          bounds = node.boundingBox;
+        }
+        if (!bounds || bounds.isEmpty()) return;
+        toCamera.multiplyMatrices(camera.matrixWorldInverse, node.matrixWorld);
+        const e = toCamera.elements, lo = bounds.min, hi = bounds.max;
+        // Only the camera-space Z interval is needed, including transformed
+        // atom radii, bond thickness, and the full extent of each orbital.
+        const zMin = e[14] + e[2] * (e[2] >= 0 ? lo.x : hi.x)
+          + e[6] * (e[6] >= 0 ? lo.y : hi.y) + e[10] * (e[10] >= 0 ? lo.z : hi.z);
+        const zMax = e[14] + e[2] * (e[2] >= 0 ? hi.x : lo.x)
+          + e[6] * (e[6] >= 0 ? hi.y : lo.y) + e[10] * (e[10] >= 0 ? hi.z : lo.z);
+        nearest = Math.min(nearest, -zMax);
+        farthest = Math.max(farthest, -zMin);
+      });
+      if (!Number.isFinite(nearest) || !Number.isFinite(farthest)) return;
+      const padding = Math.max(minimumPadding, (farthest - nearest) * 0.05);
+      const near = camera.isOrthographicCamera ? nearest - padding : Math.max(0.01, nearest - padding);
+      const far = Math.max(near + 1, farthest + padding);
+      if (camera.near === near && camera.far === far) return;
+      camera.near = near; camera.far = far;
+      camera.updateProjectionMatrix();
+    }
+    return Object.freeze({ update });
+  }
+
+  /** Match picking to the same depth interval that is rendered. */
+  function setCameraRay(raycaster, ndc, camera) {
+    raycaster.setFromCamera(ndc, camera);
+    if (camera.isOrthographicCamera) {
+      // Three starts orthographic rays at the camera plane. Start at the visible
+      // near plane instead, so atoms on both sides of the camera remain selectable.
+      raycaster.ray.origin.set(ndc.x, ndc.y, -1).unproject(camera);
+      raycaster.near = 0;
+      raycaster.far = camera.far - camera.near;
+    } else {
+      const e = camera.matrixWorld.elements, direction = raycaster.ray.direction;
+      const cosine = Math.max(1e-6, -(e[8] * direction.x + e[9] * direction.y + e[10] * direction.z));
+      raycaster.near = camera.near / cosine;
+      raycaster.far = camera.far / cosine;
+    }
+  }
+
+  /** Reuse a hit (including a miss) until pointer or scene/view inputs change. */
+  function createPickCache(getKey, computeHit) {
+    let key = null, hit = null;
+    return Object.freeze({
+      get(event) {
+        const next = getKey(event);
+        if (key && key.length === next.length && next.every((value, i) => value === key[i])) return hit;
+        hit = computeHit(event);
+        // Picking may refit the camera depth. Store the resulting projection.
+        key = getKey(event);
+        return hit;
+      },
+      clear() { key = null; hit = null; },
+    });
+  }
+
+  /**
+   * Raycast only candidate instances inside each logical object's local bounds.
+   * Uses the rendered mesh triangles, including cylinder caps and real dash gaps.
+   * Entries: {object, bounds: THREE.Box3, instances: number[]} in mesh-local space.
+   * Recreate the entries when instance geometry/transforms change.
+   */
+  function createGroupedInstanceRaycast(THREE, entries) {
+    const inverse = new THREE.Matrix4(), matrix = new THREE.Matrix4();
+    const localRay = new THREE.Ray(), mesh = new THREE.Mesh(), hits = [];
+    return function raycast(raycaster, intersections) {
+      if (!this.visible || !this.material || this.material.visible === false) return;
+      localRay.copy(raycaster.ray).applyMatrix4(inverse.copy(this.matrixWorld).invert());
+      mesh.geometry = this.geometry;
+      mesh.material = this.material;
+      for (const entry of entries) {
+        if (entry.object.visible === false || !localRay.intersectsBox(entry.bounds)) continue;
+        for (const index of entry.instances) {
+          if (index >= this.count) continue;
+          this.getMatrixAt(index, matrix);
+          mesh.matrixWorld.multiplyMatrices(this.matrixWorld, matrix);
+          hits.length = 0;
+          mesh.raycast(raycaster, hits);
+          for (const hit of hits) {
+            hit.object = entry.object;
+            hit.instanceId = index;
+            intersections.push(hit);
+          }
+        }
+      }
+    };
+  }
+
   window.VibeMolViewUtils = Object.freeze({
     copyCameraPose,
     getViewportSize,
     computePerspectiveFitDistance,
     computeOrthographicFrustum,
+    createCameraDepthController,
+    setCameraRay,
+    createPickCache,
+    createGroupedInstanceRaycast,
   });
 })();
