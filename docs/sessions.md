@@ -14,6 +14,8 @@ A session contains the data needed to reopen offline. Original source files do n
 
 Sessions reopen in View mode with trajectory, vibration, and camera auto-rotation paused. Undo history, active drags/placement previews, temporary atom selections, and floating-window layout are not part of the format. Builder logs are restored with the edited structure; they are not replayed.
 
+Camera depth limits are recomputed from the restored visible geometry with orbital padding. This preserves the saved camera pose and zoom while preventing large structures from reopening with clipped atoms or surfaces.
+
 ## Browser autosave
 
 Autosave uses the same session serializer and writes to IndexedDB. It waits approximately 1.5 seconds after changes settle, or up to 15 seconds during continuous changes. It waits for file loads, calculations, exports, and unfinished placements before taking a snapshot. Encoding numeric buffers yields to the browser between chunks; serialization is not part of the rendering loop.

@@ -144,8 +144,10 @@
   const {
     copyCameraPose: copyCameraPoseUtil,
     computeOrthographicFrustum,
+    createCameraDepthController,
+    setCameraRay,
   } = window.VibeMolViewUtils || {};
-  if (![copyCameraPoseUtil, computeOrthographicFrustum].every(fn => typeof fn === 'function')) {
+  if (![copyCameraPoseUtil, computeOrthographicFrustum, createCameraDepthController, setCameraRay].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolViewUtils is not loaded. Ensure assets/app/js/view-utils.js is included before assets/app/js/app.js.');
   }
 
@@ -829,8 +831,6 @@
       orthographicCamera.right = frustum.right;
       orthographicCamera.top = frustum.top;
       orthographicCamera.bottom = frustum.bottom;
-      orthographicCamera.near = Math.max(0.01, dist / 100);
-      orthographicCamera.far = Math.max(orthographicCamera.near + 10, dist * 20 + Math.abs(frustum.top) * 10);
       orthographicCamera.updateProjectionMatrix();
       return;
     }
@@ -1819,8 +1819,8 @@
     dofUniforms.focusDistance.value = getActiveDofFocusDistance();
     dofUniforms.focusRange.value = getDofFocusRange();
     dofUniforms.blurAmount.value = getDofBlurAmount();
-    dofUniforms.cameraNear.value = Math.max(0.001, camera.near || 0.1);
-    dofUniforms.cameraFar.value = Math.max(dofUniforms.cameraNear.value + 1, camera.far || 1000.0);
+    dofUniforms.cameraNear.value = camera.near;
+    dofUniforms.cameraFar.value = camera.far;
     dofUniforms.isPerspective.value = viewState.mode === 'orthographic' ? 0.0 : 1.0;
   }
 
@@ -2002,6 +2002,7 @@
   contentGroup.add(atomGroup);
   contentGroup.add(bondGroup);
   contentGroup.add(cloudGroup);
+  const cameraDepthController = createCameraDepthController(THREE, MOLDEN_GRID_PADDING_ANG);
 
   /**
    * Create per-pass registries used to avoid double-disposing shared GPU resources.
@@ -5125,9 +5126,8 @@
    * Apply one computed camera fit to the active view/camera.
    * @param {THREE.Vector3} center
    * @param {number} distance
-   * @param {number} fitDiameter
    */
-  function applySceneCameraFit(center, distance, fitDiameter) {
+  function applySceneCameraFit(center, distance) {
     const dir = new THREE.Vector3(1, 1, 1).normalize();
     const aspect = Math.max(1e-6, currentViewportMetrics.cssWidth / Math.max(1, currentViewportMetrics.cssHeight));
     perspectiveCamera.up.copy(DEFAULT_VIEW_UP);
@@ -5140,16 +5140,13 @@
       orthographicCamera.right = frustum.right;
       orthographicCamera.top = frustum.top;
       orthographicCamera.bottom = frustum.bottom;
-      orthographicCamera.near = Math.max(0.01, distance / 100);
-      orthographicCamera.far = Math.max(orthographicCamera.near + 10, distance * 10 + fitDiameter);
       orthographicCamera.updateProjectionMatrix();
     } else {
-      perspectiveCamera.near = Math.max(0.01, distance / 100);
-      perspectiveCamera.far = distance * 10 + fitDiameter;
       perspectiveCamera.updateProjectionMatrix();
     }
     controls.target.copy(center);
     controls.update();
+    cameraDepthController.update(contentGroup, camera);
   }
 
   /**
@@ -5166,7 +5163,7 @@
       metrics.cssWidth / Math.max(1, metrics.cssHeight),
       perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV
     );
-    applySceneCameraFit(center, fit.distance, fit.fitDiameter);
+    applySceneCameraFit(center, fit.distance);
   }
 
   let trajectoryUiController = null;
@@ -6756,6 +6753,7 @@
     updateTrajectoryPlayback(now);
     updateVibrationPlayback(now);
     controls.update();
+    cameraDepthController.update(contentGroup, camera);
     updateEditPlaneHelpers();
     updateTrackedAtomLabelOrientation();
     if (editHaloController) {
@@ -22744,7 +22742,8 @@
    */
   function setRaycasterFromEvent(e) {
     setNDCFromEvent(e);
-    raycaster.setFromCamera(ndc, camera);
+    cameraDepthController.update(contentGroup, camera);
+    setCameraRay(raycaster, ndc, camera);
   }
 
   function hideEditSelectionMarquee() {

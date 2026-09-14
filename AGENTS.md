@@ -55,7 +55,7 @@ Primary capabilities:
 - `assets/app/js/rendering.js`: volume/stat helpers used by `app.js`.
 - `assets/app/js/interaction.js`: keyboard shortcut routing and input-focus guards.
 - `assets/app/js/ui.js`: UI formatting helpers for coordinates and XYZ export text.
-- `assets/app/js/view-utils.js`: viewport/camera helpers shared by `app.js`.
+- `assets/app/js/view-utils.js`: viewport/camera helpers, cached visible-geometry depth fitting, and clipping-aware picking shared by `app.js`.
 - `assets/app/js/edit-utils.js`: edit-mode math helpers (mass properties, inertia, eigen solve).
 - `assets/app/js/edit-commands.js`: history command object creation for atom snapshots.
 - `assets/app/js/edit-state.js`: editable-record bootstrap plus undo/redo history orchestration.
@@ -278,6 +278,7 @@ Preset automation contract exposed globally:
 - Python CLI additionally accepts deprecated alias `studio` and maps it to `kit`.
 - Toon molecule style shades surfaces with Toon by default; an explicitly chosen orbital finish overrides it for the targeted layers.
 - Camera rotation uses quaternion orbiting in all interaction modes to avoid pole locking.
+- Camera clipping follows visible atom/bond/surface/cloud bounds with at least 3 Å of padding on each side, growing to 5% of the depth span for large structures. Orthographic depth may extend behind the nominal camera position without changing framing; picking and depth-of-field share that signed range. Perspective clipping stays positive and updates while dollying. Rotation, playback, edits, and session restoration refit depth without computing hidden orbitals.
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
 - The Scenes `+` menu is initialized at empty startup and offers `Create empty scene` and `From file...`. Empty scenes reuse the editor's new-molecule path, open in Edit mode, retain earlier scenes, and survive session save/open. The file picker accepts XYZ, Cube/Cub/2ccube, and Molden; `newScenes: true` bypasses matching existing scenes while retaining geometry grouping within the selected batch. The Orbitals group retains its targeted `Add cube file...` action. `tests/e2e/premerge.py` covers creation, editing, repeated imports, deferred MOs, cancellation/failure, and empty-scene session restoration.
 - Drag/drop file loading works on both the scene and onboarding card/drop zone.
