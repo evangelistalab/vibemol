@@ -45,7 +45,7 @@
     'molecule.style': ['basic', choice(['basic', 'toon', 'kit'])],
     'molecule.atomRadiusScale': [1, number(0.6, 1.6)],
     'molecule.bondRadiusScale': [1, number(0.6, 1.6)],
-    'molecule.feature.shadows': [false, bool],
+    'molecule.feature.shadows': [true, bool],
     'molecule.feature.fog': [false, bool],
     'molecule.feature.fog.depth': [14, number(6, 40)],
     'global.backgroundColor': ['#ffffff', hex],
@@ -95,7 +95,7 @@
       iridescence:s.iridescence, iridescenceThicknessRange:[130,380], toonSteps:[70,150,210,255] });
     rendering.surfaceMaterial = null;
     return Object.freeze({ id,name,description,revision:4,experimental,settings:Object.freeze(settings({ ...defaults,
-      'appearance.rendering':rendering, 'molecule.feature.shadows':s.finish==='physical',
+      'appearance.rendering':rendering,
       'global.backgroundColor':s.background, 'global.elementColorOverrides':{1:s.hydrogen,6:s.carbon,7:s.nitrogen,8:s.oxygen},
       'surface.colorScheme':s.colorScheme, 'surface.posColor':s.positive, 'surface.negColor':s.negative })) });
   }

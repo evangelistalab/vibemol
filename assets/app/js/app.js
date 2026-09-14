@@ -1568,7 +1568,7 @@
   // Current atom/bond material style
   let moleculeStyle = 'basic';
   // Independent molecule appearance features.
-  let moleculeShadowsEnabled = false;
+  let moleculeShadowsEnabled = lookModule.defaults['molecule.feature.shadows'];
   let moleculeFogEnabled = false;
   let moleculeFogDepth = 14.0;
   let sceneBackgroundColor = UI_PALETTE.white;
