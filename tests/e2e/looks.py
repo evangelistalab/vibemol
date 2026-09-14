@@ -5,7 +5,7 @@ import json
 import math
 from pathlib import Path
 import premerge as p
-from surface_shadows import surfaces_cast_and_receive, split_surface_shadows
+from surface_shadows import shadow_camera_fit, surfaces_cast_and_receive, split_surface_shadows
 
 
 def state(page):
@@ -648,7 +648,7 @@ def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [surface_opacity_rendering,surface_opacity_controls,surfaces_cast_and_receive,split_surface_shadows,bond_sphere_fit,hydrogen_bond_restrictions,bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
+            for run in [surface_opacity_rendering,surface_opacity_controls,shadow_camera_fit,surfaces_cast_and_receive,split_surface_shadows,bond_sphere_fit,hydrogen_bond_restrictions,bond_colors_and_preset_controls,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))

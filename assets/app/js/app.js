@@ -846,9 +846,8 @@
   const dir = new THREE.DirectionalLight(0xffffff, 1.0);
   dir.position.set(1, 1, 1);
   dir.castShadow = false;
-  dir.shadow.mapSize.set(1536, 1536);
-  dir.shadow.bias = -0.00035;
-  dir.shadow.normalBias = 0.015;
+  const shadowMapSize = Math.min(2048, renderer.capabilities.maxTextureSize);
+  dir.shadow.mapSize.set(shadowMapSize, shadowMapSize);
   dir.shadow.camera.near = 0.25;
   dir.shadow.camera.far = 42;
   dir.shadow.camera.left = -12;
@@ -869,6 +868,11 @@
   const shadowObjectBounds = new THREE.Box3();
   const shadowCenter = new THREE.Vector3();
   const shadowSize = new THREE.Vector3();
+  const shadowOrigin = new THREE.Vector3();
+  const shadowUp = new THREE.Vector3(0, 1, 0);
+  const shadowOrientation = new THREE.Matrix4();
+  const shadowWorldToLight = new THREE.Matrix4();
+  const shadowObjectToLight = new THREE.Matrix4();
   // A public renderer pass builds the shadow map with every caster present.
   // Its color pass emits no fragments and never modifies the shared depth.
   const shadowPassMaterial = new THREE.ShaderMaterial({
@@ -886,10 +890,14 @@
     sceneLightRig.updateMatrixWorld();
   }
 
-  /** Fit the key's shadow camera to cached mesh bounds, including large orbitals. */
+  /** Fit cached mesh bounds in light space so empty space does not waste shadow texels. */
   function updateSceneShadowBounds() {
     if (!renderer.shadowMap.enabled) return;
     contentGroup.updateMatrixWorld(true);
+    // Build the basis in rig space first, including lookAt's parallel-up fallback.
+    // Rotating the camera then rotates the entire shadow grid consistently.
+    shadowOrientation.identity().lookAt(dir.position, shadowOrigin, shadowUp).premultiply(sceneLightRig.matrixWorld);
+    shadowWorldToLight.copy(shadowOrientation).invert();
     shadowBounds.makeEmpty();
     contentGroup.traverseVisible(node => {
       if (!node.isMesh || !(node.castShadow || node.receiveShadow)) return;
@@ -898,21 +906,39 @@
       const geometry = node.geometry;
       if (!geometry) return;
       if (!geometry.boundingBox) geometry.computeBoundingBox();
-      shadowObjectBounds.copy(geometry.boundingBox).applyMatrix4(node.matrixWorld);
+      shadowObjectToLight.multiplyMatrices(shadowWorldToLight, node.matrixWorld);
+      shadowObjectBounds.copy(geometry.boundingBox).applyMatrix4(shadowObjectToLight);
       shadowBounds.union(shadowObjectBounds);
     });
     if (shadowBounds.isEmpty()) return;
     shadowBounds.getCenter(shadowCenter);
-    const radius = Math.max(0.5, shadowBounds.getSize(shadowSize).length() * 0.5);
-    const extent = radius * 1.05;
+    shadowBounds.getSize(shadowSize);
+    const padding = Math.max(shadowSize.x, shadowSize.y, shadowSize.z) * 0.02 + 0.02;
+    const halfWidth = Math.max(0.25, shadowSize.x * 0.5 + padding);
+    const halfHeight = Math.max(0.25, shadowSize.y * 0.5 + padding);
+    const halfDepth = Math.max(0.25, shadowSize.z * 0.5);
+    const depthPadding = Math.max(0.1, padding);
+    const texelX = 2 * halfWidth / dir.shadow.mapSize.x;
+    const texelY = 2 * halfHeight / dir.shadow.mapSize.y;
+    // Keep translations within a texel from moving the sampling grid. Padding
+    // also covers this rounding and the existing PCF soft-filter footprint.
+    shadowCenter.x = Math.round(shadowCenter.x / texelX) * texelX;
+    shadowCenter.y = Math.round(shadowCenter.y / texelY) * texelY;
+    shadowCenter.applyMatrix4(shadowOrientation);
     sceneLightRig.worldToLocal(shadowCenter);
-    shadowLightRig.position.copy(dir.position).normalize().multiplyScalar(extent + 1)
+    shadowLightRig.position.copy(dir.position).normalize().multiplyScalar(halfDepth + depthPadding + 0.1)
       .sub(dir.position).add(shadowCenter);
     shadowLightRig.updateMatrixWorld(true);
     const shadowCamera = dir.shadow.camera;
-    shadowCamera.left = -extent; shadowCamera.right = extent;
-    shadowCamera.top = extent; shadowCamera.bottom = -extent;
-    shadowCamera.near = 0.1; shadowCamera.far = 2 * extent + 2;
+    shadowCamera.up.setFromMatrixColumn(shadowOrientation, 1);
+    shadowCamera.left = -halfWidth; shadowCamera.right = halfWidth;
+    shadowCamera.top = halfHeight; shadowCamera.bottom = -halfHeight;
+    shadowCamera.near = 0.1; shadowCamera.far = 2 * (halfDepth + depthPadding) + 0.1;
+    // Scale the offset to map precision: suppress self-shadow speckles without
+    // the fixed normal offset that can separate small bonds from their shadows.
+    const texelSize = Math.max(texelX, texelY);
+    dir.shadow.normalBias = Math.min(0.015, 1.5 * texelSize);
+    dir.shadow.bias = -0.35 * texelSize / (shadowCamera.far - shadowCamera.near);
     shadowCamera.updateProjectionMatrix();
   }
 
