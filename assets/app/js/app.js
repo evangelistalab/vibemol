@@ -146,8 +146,9 @@
     computeOrthographicFrustum,
     createCameraDepthController,
     setCameraRay,
+    createPickCache,
   } = window.VibeMolViewUtils || {};
-  if (![copyCameraPoseUtil, computeOrthographicFrustum, createCameraDepthController, setCameraRay].every(fn => typeof fn === 'function')) {
+  if (![copyCameraPoseUtil, computeOrthographicFrustum, createCameraDepthController, setCameraRay, createPickCache].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolViewUtils is not loaded. Ensure assets/app/js/view-utils.js is included before assets/app/js/app.js.');
   }
 
@@ -1561,6 +1562,8 @@
   let moldenGridBlurDefersToRowActivation = false;
   let showSurfaces = true; // global default surface visibility
   let surfaceRenderSuppressed = false; // transient mode-level suppression; does not mutate layer visibility
+  let surfaceGeometryDeferred = false;
+  let suppressedSurfaceVisibility = new WeakMap();
   let renderMode = 'surface';
   let cloudType = 'cubes';
   // Autoiso mode applies one cached 85%-density isovalue per orbital/component.
@@ -2003,6 +2006,8 @@
   contentGroup.add(bondGroup);
   contentGroup.add(cloudGroup);
   const cameraDepthController = createCameraDepthController(THREE, MOLDEN_GRID_PADDING_ANG);
+  const bondPickCache = createPickCache(getBondPickKey, pickBondHitUncached);
+  let bondInteractionContext = null;
 
   /**
    * Create per-pass registries used to avoid double-disposing shared GPU resources.
@@ -2121,6 +2126,10 @@
    * Remove all currently rendered geometry groups and release GPU resources.
    */
   function clearSceneMeshes() {
+    bondPickCache.clear();
+    bondInteractionContext = null;
+    surfaceGeometryDeferred = false;
+    suppressedSurfaceVisibility = new WeakMap();
     const state = createDisposeState();
     hideSurfaceHoverLabel();
     setSurfaceHover(null);
@@ -4360,6 +4369,7 @@
     const targets = getMoleculeRenderTargetsForRecord(record);
     const targetBondGroup = targets.bondGroup;
     if (!targetBondGroup || !targetBondGroup.children) return;
+    targetBondGroup.userData.pickRevision = (targetBondGroup.userData.pickRevision || 0) + 1;
     if (targetBondGroup.userData && targetBondGroup.userData.hasMetalStyleBonds) {
       rebuildBondsFromAtoms(record);
       return;
@@ -6491,6 +6501,19 @@
       out.push(obj);
     });
     return out;
+  }
+
+  /** Hide cached orbital graphics in Edit without rebuilding unchanged molecules. */
+  function syncSurfaceModeVisibility() {
+    for (const obj of [...getRenderedSurfaceMeshes(), ...getRenderedCloudObjects()]) {
+      if (surfaceRenderSuppressed) {
+        if (!suppressedSurfaceVisibility.has(obj)) suppressedSurfaceVisibility.set(obj, obj.visible);
+        obj.visible = false;
+      } else if (suppressedSurfaceVisibility.has(obj)) {
+        obj.visible = suppressedSurfaceVisibility.get(obj);
+        suppressedSurfaceVisibility.delete(obj);
+      }
+    }
   }
 
   /**
@@ -11058,7 +11081,7 @@
     }
     // Measure picks atoms directly and keeps orbital context visible. Only Edit
     // suppresses surfaces; this never changes the user's layer visibility flags.
-    if (currentMode === MODES.MEASURE) {
+    if (currentMode === MODES.MEASURE || currentMode === MODES.EDIT) {
       setBondHover(null);
       setSurfaceHover(null);
       hideSurfaceHoverLabel();
@@ -11067,7 +11090,23 @@
     if (surfaceRenderSuppressed !== suppressSurfaces) {
       surfaceRenderSuppressed = suppressSurfaces;
       if (typeof updateSurfBtn === 'function') updateSurfBtn();
-      rebuildScene({ preserveView: true });
+      if (!suppressSurfaces && surfaceGeometryDeferred) {
+        // A real rebuild/import in Edit discarded the orbital geometry.
+        rebuildScene({ preserveView: true });
+      } else {
+        syncSurfaceModeVisibility();
+        // Trajectories switch between their dynamic display and stored edit bonds.
+        for (const graphScene of sceneGraphController.getScenes()) {
+          if (graphScene.visible !== false && isTrajectoryVolumeRecord(graphScene.moleculeRecord?.vol)) {
+            rebuildBondsFromAtoms(graphScene.moleculeRecord);
+          }
+        }
+        updateSelectedHalos();
+        updateTransformBondSelectionHalos();
+        updateTransformSelectionGuides();
+      }
+      const record = volumes[currentIndex];
+      syncTwoComponentOverlayUi(record?.vol, getComponentMode(record?.vol));
     }
     // Clear transient edit interaction state when leaving edit mode.
     if (currentMode === MODES.DISPLAY) {
@@ -11095,7 +11134,7 @@
       clearEditSelection();
       updateSelectedHalos();
     }
-    coordsListPopover?.render();
+    renderCoordsPanelIfOpen();
     updateAxisGuideLine && updateAxisGuideLine();
     updateEmptyStateVisibility();
     updateModeButtons();
@@ -11186,6 +11225,7 @@
     setFloatingPanelOpen(coordsPanel, shouldOpen);
     if (coordsPanelBtn) coordsPanelBtn.classList.toggle('active', shouldOpen);
     if (shouldOpen && coordsListPopover) {
+      renderCoordsPanelIfOpen();
       window.setTimeout(() => {
         if (coordsListPopover) coordsListPopover.focusBody();
       }, 0);
@@ -21916,25 +21956,31 @@
    * @returns {{start:THREE.Vector3,end:THREE.Vector3,dirNorm:THREE.Vector3,geomLen:number}|null}
    */
   function getBondCarrierDisplayedSegment(carrier, vol) {
-    if (!carrier || !carrier.userData || !vol || !Array.isArray(vol.atoms)) return null;
+    const segment = getBondCarrierInteractionSegment(carrier, vol);
+    if (!segment) return null;
     const i = carrier.userData.i | 0;
     const j = carrier.userData.j | 0;
-    if (i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length || i === j) return null;
-    const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false }).map((a) => ({ pos: a.pos }));
-    const aPos = atomPositions[i] && atomPositions[i].pos ? atomPositions[i].pos.clone() : null;
-    const bPos = atomPositions[j] && atomPositions[j].pos ? atomPositions[j].pos.clone() : null;
-    if (!aPos || !bPos) return null;
-    const trimA = Math.max(0, Number(carrier.userData.trimA) || 0);
-    const trimB = Math.max(0, Number(carrier.userData.trimB) || 0);
-    const placement = computeBondSegmentPlacement(aPos, bPos, trimA, trimB, 1e-4);
-    if (!placement.valid || !(placement.geomLen > 1e-4)) return null;
-    const start = placement.aEnd.clone();
-    const end = placement.bEnd.clone();
     const offsetU = Number.isFinite(carrier.userData.bondComponentOffsetU)
       ? carrier.userData.bondComponentOffsetU
       : (Number.isFinite(carrier.userData.bondComponentOffset) ? carrier.userData.bondComponentOffset : 0);
     const offsetV = Number.isFinite(carrier.userData.bondComponentOffsetV) ? carrier.userData.bondComponentOffsetV : 0;
     if (Math.abs(offsetU) > 1e-8 || Math.abs(offsetV) > 1e-8) {
+      const { atomPositions, bondAdjacency } = getBondInteractionContext(vol);
+      const perp = getBondPlaneOffsetDirection(i, j, segment.dirNorm, atomPositions, bondAdjacency);
+      const perpOrtho = new THREE.Vector3().crossVectors(segment.dirNorm, perp).normalize();
+      const offsetVec = perp.clone().multiplyScalar(offsetU).addScaledVector(perpOrtho, offsetV);
+      segment.start.add(offsetVec);
+      segment.end.add(offsetVec);
+    }
+    return segment;
+  }
+
+  /** Multiple-bond plane data is shared until the displayed structure changes. */
+  function getBondInteractionContext(vol) {
+    const revision = bondGroup.userData.pickRevision || 0;
+    if (!bondInteractionContext || bondInteractionContext.group !== bondGroup
+      || bondInteractionContext.vol !== vol || bondInteractionContext.revision !== revision) {
+      const atomPositions = vol.atoms.map(atom => ({ pos: atomUnitsToAng(vol, atom) }));
       const uniqueEdges = [];
       const seenEdgeKeys = new Set();
       if (bondGroup && Array.isArray(bondGroup.children)) {
@@ -21951,19 +21997,10 @@
           uniqueEdges.push({ i: edgeA, j: edgeB });
         }
       }
-      const bondAdjacency = buildBondAdjacency(uniqueEdges, atomPositions.length);
-      const perp = getBondPlaneOffsetDirection(i, j, placement.dirNorm, atomPositions, bondAdjacency);
-      const perpOrtho = new THREE.Vector3().crossVectors(placement.dirNorm, perp).normalize();
-      const offsetVec = perp.clone().multiplyScalar(offsetU).addScaledVector(perpOrtho, offsetV);
-      start.add(offsetVec);
-      end.add(offsetVec);
+      bondInteractionContext = { group: bondGroup, vol, revision, atomPositions,
+        bondAdjacency: buildBondAdjacency(uniqueEdges, atomPositions.length) };
     }
-    return {
-      start,
-      end,
-      dirNorm: placement.dirNorm.clone(),
-      geomLen: placement.geomLen,
-    };
+    return bondInteractionContext;
   }
 
   /**
@@ -23665,10 +23702,8 @@
     const i = carrier.userData.i | 0;
     const j = carrier.userData.j | 0;
     if (i < 0 || j < 0 || i >= vol.atoms.length || j >= vol.atoms.length || i === j) return null;
-    const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: false }).map((a) => ({ pos: a.pos }));
-    const aPos = atomPositions[i] && atomPositions[i].pos ? atomPositions[i].pos.clone() : null;
-    const bPos = atomPositions[j] && atomPositions[j].pos ? atomPositions[j].pos.clone() : null;
-    if (!aPos || !bPos) return null;
+    const aPos = atomUnitsToAng(vol, vol.atoms[i]);
+    const bPos = atomUnitsToAng(vol, vol.atoms[j]);
     const trimA = Math.max(0, Number(carrier.userData.trimA) || 0);
     const trimB = Math.max(0, Number(carrier.userData.trimB) || 0);
     const placement = computeBondSegmentPlacement(aPos, bPos, trimA, trimB, 1e-4);
@@ -23736,12 +23771,27 @@
     return best;
   }
 
+  /** Pointer, topology revision, and copied matrices that determine a bond hit. */
+  function getBondPickKey(e) {
+    camera.updateMatrixWorld(true);
+    bondGroup.updateWorldMatrix(true, false);
+    const rect = canvasEl.getBoundingClientRect();
+    return [Number(e && e.clientX), Number(e && e.clientY), currentMode,
+      volumes[currentIndex]?.vol, bondGroup, bondGroup.userData.pickRevision || 0, bondGroup.visible,
+      rect.left, rect.top, rect.width, rect.height,
+      ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, ...bondGroup.matrixWorld.elements];
+  }
+
+  function pickBondHit(e) {
+    return bondPickCache.get(e);
+  }
+
   /**
    * Raycast and return the first bond hit, including wrapped groups/meshes.
    * @param {PointerEvent} e
    * @returns {{object:*,point:THREE.Vector3|null,distance:number,section:'nearA'|'center'|'nearB',t:number,endpointAIndex:number,endpointBIndex:number,nearAtomIndex:number,farAtomIndex:number}|null}
    */
-  function pickBondHit(e) {
+  function pickBondHitUncached(e) {
     if (!bondGroup || !bondGroup.children || bondGroup.children.length === 0) return null;
     setRaycasterFromEvent(e);
     const hits = raycaster.intersectObjects(bondGroup.children, true);
@@ -27922,6 +27972,7 @@
       const material = mesh && mesh.material ? mesh.material : null;
       const color = material && material.color ? material.color : null;
       return {
+        visible: mesh.visible,
         sign: String(mesh && mesh.userData && mesh.userData.sign || ''),
         phaseHue: !!(mesh && mesh.userData && mesh.userData.phaseHue),
         which: String(mesh.userData?.which || ''),
@@ -27959,6 +28010,7 @@
         ? material.uniforms.uColor.value
         : null;
       return {
+        visible: obj.visible,
         sign: String(obj && obj.userData && obj.userData.sign || ''),
         phaseHue: !!(obj && obj.userData && obj.userData.phaseHue),
         which: String(obj && obj.userData && obj.userData.which || ''),
@@ -29139,13 +29191,17 @@
     coordsInlineEditState = null;
     setCoordsHoveredAtomIndex(-1);
     syncCoordsUnitsUi();
-    if (coordsListPopover) coordsListPopover.render();
+    renderCoordsPanelIfOpen();
     updatePubChemMetadataPanel(record);
     syncMoldenOrbitalsPanel(record);
     syncTrajectoryControls();
     syncVibrationControls();
     updateAutoIsoButtonState();
     updateEditAdaptiveMenuUi();
+  }
+
+  function renderCoordsPanelIfOpen() {
+    if (isFloatingPanelCurrentlyOpen(coordsPanel)) coordsListPopover?.render();
   }
 
   /**
@@ -32125,6 +32181,7 @@
         layer.negMaterial = negMat;
 
         const surfacesEnabled = showSurfaces && !surfaceRenderSuppressed;
+        if (showSurfaces && surfaceRenderSuppressed) surfaceGeometryDeferred = true;
         const layerRenderMode = getLayerRenderMode(layer);
         if (layerRenderMode === 'surface' && surfacesEnabled) {
           if (vol && vol.isTwoComponent && isPhaseLikeComponent(compMode)) {

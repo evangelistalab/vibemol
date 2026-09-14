@@ -97,3 +97,32 @@ test('perspective ray limits use depth along the view axis at the screen edge', 
   assert.ok(hits.length && hits.every(hit => hit.object === visible));
   assert.ok(hits[0].distance > camera.far);
 });
+
+test('picking reuses hits and misses until pointer, geometry, or view changes', () => {
+  let group = {}, revision = 0, calls = 0;
+  const matrix = [1, 0, 0, 1], viewport = [0, 0, 800, 600];
+  const hit = { id: 'bond' };
+  const cache = V.createPickCache(e => [e.x, e.y, group, revision, ...matrix, ...viewport], e => {
+    calls++; return e.x > 0 ? hit : null;
+  });
+  const point = { x: 5, y: 6 };
+  assert.equal(cache.get(point), hit);
+  for (let frame = 0; frame < 100; frame++) assert.equal(cache.get({ ...point }), hit);
+  assert.equal(calls, 1);
+  matrix[2] = 3; cache.get(point); assert.equal(calls, 2);
+  viewport[0] = 200; cache.get(point); assert.equal(calls, 3);
+  revision++; cache.get(point); assert.equal(calls, 4);
+  group = {}; cache.get(point); assert.equal(calls, 5);
+  assert.equal(cache.get({ x: -1, y: 6 }), null);
+  assert.equal(cache.get({ x: -1, y: 6 }), null);
+  assert.equal(calls, 6);
+  cache.clear(); cache.get(point); assert.equal(calls, 7);
+});
+
+test('a depth refit during picking is included in the cached view', () => {
+  let far = 10, calls = 0;
+  const cache = V.createPickCache(() => [far], () => { calls++; far = 100; return 'hit'; });
+  assert.equal(cache.get({}), 'hit');
+  assert.equal(cache.get({}), 'hit');
+  assert.equal(calls, 1);
+});

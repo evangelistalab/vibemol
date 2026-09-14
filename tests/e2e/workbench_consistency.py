@@ -107,7 +107,9 @@ def workspace(page):
         assert layout(page)==windows
         assert p.snapshot(page)==graph
         meshes=page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')
-        assert len(meshes)==(0 if name=='Edit' else len(materials))
+        assert len(meshes)==len(materials)
+        assert [m['geometryId'] for m in meshes]==[m['geometryId'] for m in materials]
+        assert all(m['visible']==(name!='Edit') for m in meshes)
         assert appearance.is_visible()
     # View-to-Measure is only an interaction change: reuse the exact surface meshes.
     materials=page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')

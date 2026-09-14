@@ -133,6 +133,22 @@
     }
   }
 
+  /** Reuse a hit (including a miss) until pointer or scene/view inputs change. */
+  function createPickCache(getKey, computeHit) {
+    let key = null, hit = null;
+    return Object.freeze({
+      get(event) {
+        const next = getKey(event);
+        if (key && key.length === next.length && next.every((value, i) => value === key[i])) return hit;
+        hit = computeHit(event);
+        // Picking may refit the camera depth. Store the resulting projection.
+        key = getKey(event);
+        return hit;
+      },
+      clear() { key = null; hit = null; },
+    });
+  }
+
   window.VibeMolViewUtils = Object.freeze({
     copyCameraPose,
     getViewportSize,
@@ -140,5 +156,6 @@
     computeOrthographicFrustum,
     createCameraDepthController,
     setCameraRay,
+    createPickCache,
   });
 })();
