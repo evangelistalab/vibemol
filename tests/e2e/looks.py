@@ -52,7 +52,9 @@ def components_and_saving(page, context, url):
     summary=page.locator('#appearanceMaterialsSection > summary')
     summary.focus();summary.press('Enter')
     assert page.locator('#appearanceMaterialPreset').is_visible()
-    assert page.locator('#appearanceMaterialMetalness').evaluate('el => el.closest("details").id')=='appearanceMaterialsSection'
+    assert page.locator('#appearanceMaterialMetalness').evaluate('el => el.closest("details").id')=='appearanceMaterialChannels'
+    assert not page.locator('#appearanceMaterialMetalness').is_visible()
+    page.locator('#appearanceMaterialChannels > summary').click()
     # Retired flags cannot change rendering or reappear in new presets, even in strict imports.
     retired={'molecule.feature.ink':True,'molecule.feature.blackbody.enabled':True,
              'molecule.feature.blackbody.coldColor':'#ff0000','molecule.feature.blackbody.hotColor':'#0000ff'}

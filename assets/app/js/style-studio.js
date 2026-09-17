@@ -17,7 +17,7 @@
       } else {
         movable.cancelDrag();
         if (focus) {
-          const launcher = document.querySelector('#workbenchBar [data-window="styleStudio"]') || button;
+          const launcher = document.getElementById('workbenchPanelsBtn') || button;
           launcher.focus({ preventScroll: true });
         }
       }

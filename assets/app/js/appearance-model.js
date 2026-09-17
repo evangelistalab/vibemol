@@ -144,6 +144,26 @@
     }
     return next;
   }
+  // The editor and factory share the shader's parameter contract. Optional
+  // channels keep their strength editable at zero; dependent controls only
+  // appear after that channel is enabled.
+  const physicalParameters = Object.freeze(['roughness', 'metalness', 'clearcoat', 'clearcoatRoughness',
+    'reflectivity', 'specularIntensity', 'specularColor', 'envMapIntensity', 'iridescence', 'iridescenceThicknessRange']);
+  function materialParameters(value) {
+    const d = validateMaterial(value);
+    const supported = new Set(['tint', 'emissiveIntensity', 'emissiveUsesColor', 'emissiveColor', 'emissiveScale', 'emissiveMix']);
+    if (d.model === 'physical') for (const key of physicalParameters) supported.add(key);
+    if (d.model === 'phong') for (const key of ['shininess', 'specularColor', 'envMapIntensity']) supported.add(key);
+    if (d.model === 'toon') supported.add('toonSteps');
+    const active = new Set(supported);
+    if (!d.clearcoat) active.delete('clearcoatRoughness');
+    if (!d.iridescence) active.delete('iridescenceThicknessRange');
+    if (!d.emissiveIntensity) for (const key of ['emissiveUsesColor', 'emissiveColor', 'emissiveScale', 'emissiveMix']) active.delete(key);
+    if (!d.emissiveUsesColor) { active.delete('emissiveScale'); active.delete('emissiveMix'); }
+    if (d.emissiveUsesColor && !d.emissiveMix) active.delete('emissiveColor');
+    if (d.model === 'physical' && d.metalness === 1) for (const key of ['reflectivity', 'specularIntensity', 'specularColor']) active.delete(key);
+    return Object.freeze({ supported: [...supported], active: [...active] });
+  }
   function createMaterial(THREE, value, color, gradient, options = {}) {
     const d = value, col = color.clone().multiply(new THREE.Color(d.tint));
     const emissive = d.emissiveUsesColor ? col.clone().multiplyScalar(d.emissiveScale) : new THREE.Color(d.emissiveColor);
@@ -156,13 +176,11 @@
     let mat;
     if (d.model === 'phong') mat = new THREE.MeshPhongMaterial({ ...common, specular: d.specularColor, shininess: d.shininess });
     else if (d.model === 'toon') mat = new THREE.MeshToonMaterial({ ...common, gradientMap: gradient });
-    else mat = new THREE.MeshPhysicalMaterial({ ...common, roughness: d.roughness, metalness: d.metalness,
-      clearcoat: d.clearcoat, clearcoatRoughness: d.clearcoatRoughness, reflectivity: d.reflectivity,
-      specularIntensity: d.specularIntensity, specularColor: d.specularColor, envMapIntensity: d.envMapIntensity,
-      iridescence: d.iridescence, iridescenceIOR: 1.3, iridescenceThicknessRange: d.iridescenceThicknessRange });
+    else mat = new THREE.MeshPhysicalMaterial({ ...common,
+      ...Object.fromEntries(physicalParameters.map(key => [key, d[key]])), iridescenceIOR: 1.3 });
     mat.envMapIntensity = d.envMapIntensity;
     return mat;
   }
   global.VibeMolAppearanceModel = Object.freeze({ clone, material, validateMaterial, normalize, legacy, fromLegacy,
-    surfacePreset, surfacePresets: SURFACE_PRESETS, resolvedMaterial, patchMaterial, createMaterial, materialLimits: MATERIAL_LIMITS });
+    surfacePreset, surfacePresets: SURFACE_PRESETS, resolvedMaterial, patchMaterial, createMaterial, materialParameters, materialLimits: MATERIAL_LIMITS });
 })(window);

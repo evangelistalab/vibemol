@@ -5,6 +5,25 @@ const { VibeMolAppearanceModel: M, VibeMolLooks: L, StyleLabLooks: Lab } = loadG
   'assets/app/js/appearance-model.js','assets/app/js/appearance-looks.js','docs/experiments/style-lab/looks.js']);
 const plain = value => JSON.parse(JSON.stringify(value));
 
+test('material disclosure follows shader capabilities and optional channels', () => {
+  const active = material => M.materialParameters(material).active;
+  for (const type of ['matte', 'gel', 'ceramic', 'lacquer', 'metal']) {
+    const keys = active(M.surfacePreset(type));
+    assert.ok(keys.includes('roughness'), type);
+    assert.ok(!keys.includes('toonSteps'), type);
+    assert.equal(keys.includes('clearcoatRoughness'), M.surfacePreset(type).clearcoat > 0, type);
+    assert.ok(!keys.includes('iridescenceThicknessRange'), type);
+  }
+  const toon = active(M.material({model:'toon'}));
+  assert.ok(toon.includes('toonSteps'));
+  assert.ok(!toon.includes('clearcoat'));
+  assert.ok(!toon.includes('roughness'));
+  assert.ok(!active(M.surfacePreset('metal')).includes('specularIntensity'));
+  assert.ok(active(M.material({iridescence:0.5})).includes('iridescenceThicknessRange'));
+  assert.ok(!active(M.material({emissiveIntensity:0})).includes('emissiveScale'));
+  assert.ok(active(M.material({emissiveIntensity:1})).includes('emissiveScale'));
+});
+
 test('shared materials remain independent of geometry and lighting', () => {
   assert.deepEqual(plain(L.builtins.filter(item=>!item.experimental).map(item=>item.name)), ['Basic','Toon','Kit','Classic','Porcelain','Ink','Opal']);
   const kit = M.legacy('kit'), original = plain(kit);

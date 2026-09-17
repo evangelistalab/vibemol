@@ -80,6 +80,7 @@
     return {
       iso: normalizeNumber(source.iso, DEFAULT_CUBE_APPEARANCE.iso, 0),
       isoPending: !!source.isoPending,
+      showBox: typeof source.showBox === 'boolean' ? source.showBox : null,
       autoIso,
       autoIsoEnabled: autoIso,
       opacity: normalizeNumber(source.opacity, DEFAULT_CUBE_APPEARANCE.opacity, 0.05, 1),

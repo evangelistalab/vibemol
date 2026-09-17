@@ -2,7 +2,8 @@
 """Appearance ownership, coordinate permissions, and preserved mode context."""
 import math
 import premerge as p
-from workbench import layout, window_menu, capture
+from workbench import layout, window_menu, capture, open_panel
+from workbench_bar import open_menu
 
 
 def mode(page, name):
@@ -66,9 +67,8 @@ def workspace(page):
     assert page.locator('#toolbar #appearancePresetSection').count()==0
     assert page.locator('#displayInspector #appearancePresetSection').count()==1
     assert page.locator('#sidePanel #appearanceCameraSection').count()==1
-    assert page.get_by_role('button',name='Quick actions',exact=True).is_visible()
-    launcher=page.locator('#workbenchBar [data-window="displayInspector"]')
-    launcher.click()
+    assert open_menu(page).get_by_role('menuitemcheckbox',name='Quick actions',exact=True).is_visible()
+    open_panel(page,'Appearance')
     appearance=page.locator('#displayInspector')
     assert appearance.is_visible() and appearance.get_attribute('data-wb-placement')=='right'
     appearance.locator('#appearanceResetBtn').click()
@@ -80,10 +80,10 @@ def workspace(page):
     appearance.locator('#styleStudioBtn').click()
     assert page.locator('#styleStudio').is_visible()
     page.locator('#styleStudioClose').click()
-    studio_launcher=page.locator('#workbenchBar [data-window="styleStudio"]')
+    studio_launcher=page.locator('#workbenchPanelsBtn')
     assert studio_launcher.evaluate('el=>document.activeElement===el')
-    studio_launcher.click();assert page.locator('#styleStudio').is_visible()
-    launcher.click();assert appearance.is_visible()
+    open_panel(page,'Style Studio');assert page.locator('#styleStudio').is_visible()
+    open_panel(page,'Appearance');assert appearance.is_visible()
     assert page.locator('#iso').count()==1 and appearance.locator('#iso').count()==1
     assert appearance.locator('select.vm-select:visible').first.bounding_box()['height']>=30
     page.locator('#autoIsoBtn').uncheck()
@@ -92,9 +92,9 @@ def workspace(page):
     page.evaluate('()=>VibeMolWorkbench.open("coordsPanel")')
     corner_axes(page)
     page.evaluate('()=>VibeMolWorkbench.open("viewInspector")')
-    window_menu(page,page.locator('#viewInspector'),'Minimize to tools bar')
+    window_menu(page,page.locator('#viewInspector'),'Minimize to Panels menu')
     page.evaluate('()=>VibeMolWorkbench.open("styleStudio")')
-    launcher.click()
+    open_panel(page,'Appearance')
     assert appearance.is_visible()
     window_menu(page,appearance,'Float window')
     handle=appearance.locator('[data-vm-drag-handle]');box=handle.bounding_box()
@@ -115,20 +115,20 @@ def workspace(page):
     materials=page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')
     mode(page,'Measure')
     assert page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')==materials
-    window_menu(page,appearance,'Minimize to tools bar')
+    window_menu(page,appearance,'Minimize to Panels menu')
     for index in [0,1]:
         point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index)
         page.mouse.click(point['x'],point['y'])
     page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
     assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot().atomIndices')==[0,1]
-    launcher.click();assert appearance.is_visible()
+    open_panel(page,'Appearance');assert appearance.is_visible()
     page.locator('#surfBtn').uncheck()
     mode(page,'Edit');mode(page,'Display')
     assert not page.locator('#surfBtn').is_checked()
     assert page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')==[]
     page.locator('#surfBtn').check()
     # Build is suspended, preserving its search, position, and explicit close choice.
-    window_menu(page,appearance,'Minimize to tools bar')
+    window_menu(page,appearance,'Minimize to Panels menu')
     mode(page,'Edit');page.locator('#editAdaptiveAddAtomBtn').click()
     build=page.locator('#editAdaptiveAddAtomPopover')
     page.locator('#editBuildSearch').fill('carbon')
@@ -159,7 +159,7 @@ def workspace(page):
         mode(page,name);assert layout(page)['focus']
         corner_axes(page)
     page.locator('#workbenchFocus').click()
-    launcher.click()
+    open_panel(page,'Appearance')
     window_menu(page,appearance,'Dock right')
     capture(page,'appearance-desktop')
     page.locator('#themeToggleShell').click();capture(page,'appearance-dark')
@@ -181,7 +181,7 @@ def group_scope(page):
     assert p.load(page,[{'name':'orbitals.molden','text':p.MOLDEN}])['ok']
     page.evaluate('()=>VibeMolWorkbench.open("displayInspector")')
     appearance=page.locator('#displayInspector')
-    window_menu(page,appearance,'Minimize to tools bar')
+    window_menu(page,appearance,'Minimize to Panels menu')
     orbitals=p.cubes(page)
     page.locator(f'.vm-outliner-row[data-id="{orbitals[0]["parentId"]}"]').click()
     assert appearance.is_visible(), 'Group selection must reveal a minimized Appearance panel'

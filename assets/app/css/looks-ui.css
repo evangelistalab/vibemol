@@ -62,3 +62,10 @@
   #styleStudio #lookComponentEditor { border-left: 0; border-top: 1px solid var(--vm-color-border); }
   .vm-look-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* Explicit disclosure also keeps controls out of layout/QA while collapsed. */
+#looksPanel details:not([open]) > :not(summary) { display: none !important; }
+.vm-style-property { position: relative; padding-right: 28px; }
+.vm-property-reset { position: absolute; right: 0; top: 50%; margin-top: -14px; width: 28px; height: 28px; min-height: 28px; padding: 4px; }
+.vm-property-reset .material-symbols-rounded { font-size: 16px; }
+.vm-style-property[data-style-state="modified"] > .vm-field-label::after { content: ''; display: inline-block; width: 5px; height: 5px; margin-left: 6px; border-radius: 50%; background: var(--vm-brand-accent); vertical-align: middle; }

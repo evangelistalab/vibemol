@@ -6849,6 +6849,7 @@
   const elementColorResetOne = document.getElementById('elementColorResetOne');
   const elementColorResetAll = document.getElementById('elementColorResetAll');
   const toggleBox = document.getElementById('showBox');
+  let showSimulationBoxes = !!toggleBox.checked;
   const toggleAxes = document.getElementById('showAxes');
   const saveBtn = document.getElementById('saveBtn');
   const batchBtn = document.getElementById('batchBtn');
@@ -9048,6 +9049,7 @@
       'solidPreset',
       'independentMaterial',
       'styleOverrides',
+      'showBox',
       'material',
       'colorScheme',
       'posColor',
@@ -9323,6 +9325,7 @@
       solidPreset: String(sourceLayer && sourceLayer.solidPreset || DEFAULT_SURFACE_MATERIAL_PRESET),
       independentMaterial: !!sourceLayer?.independentMaterial,
       styleOverrides: sourceLayer ? { ...getSurfaceStyleOverrides(sourceLayer) } : { colors: false, opacity: false },
+      showBox: sourceLayer?.showBox ?? null,
       material: appearanceModel.clone(getSurfaceMaterialDescriptor(sourceLayer)),
       colorScheme: String(sourceLayer && sourceLayer.colorScheme || 'emory'),
       posColor: !sourceLayer || sourceLayer.posColor == null ? null : String(sourceLayer.posColor),
@@ -11027,7 +11030,9 @@
       if (!btn) continue;
       const active = currentMode === mode;
       btn.classList.toggle('active', active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      if (btn.getAttribute('role') === 'radio') {
+        btn.setAttribute('aria-checked', String(active)); btn.tabIndex = active ? 0 : -1;
+      } else btn.setAttribute('aria-pressed', String(active));
     }
     syncToolbarModeButtonThemeState();
   }
@@ -26309,8 +26314,14 @@
   }
 
   function syncAppearanceControlsToActiveLayer() {
+    looksUi?.scheduleSync();
     syncSurfaceStyleScopeUi();
     const layer = getSurfaceAppearanceLayer();
+    if (workspaceExperiment) {
+      const values = getSurfaceAppearanceTargets().map(target => target.showBox ?? showSimulationBoxes);
+      toggleBox.checked = !!values[0];
+      toggleBox.indeterminate = values.some(value => value !== values[0]);
+    }
     if (!layer) {
       if (surfaceScopeLabelEl) {
         surfaceScopeLabelEl.hidden = true;
@@ -27258,8 +27269,9 @@
     refreshPeriodicCells();
     if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
   });
-  registerAppearancePresetSetting('global.showBox', () => !!(toggleBox && toggleBox.checked), (value) => {
-    if (toggleBox) toggleBox.checked = asBoolean(value);
+  registerAppearancePresetSetting('global.showBox', () => showSimulationBoxes, (value) => {
+    showSimulationBoxes = asBoolean(value);
+    if (toggleBox) toggleBox.checked = showSimulationBoxes;
   });
   registerAppearancePresetSetting('global.showAxes', () => !!window.__showAxes__, (value) => {
     window.__showAxes__ = asBoolean(value);
@@ -27899,6 +27911,10 @@
     isFuseRingPreviewActive: () => !!addFusePreviewState,
     listNonEditWindows: () => Object.values(NON_EDIT_WINDOW_ID),
     getOpenNonEditWindows: () => listOpenNonEditWindowIds(),
+    getSimulationBoxSnapshot: () => [boxHelper, ...extraBoxHelpers].filter(Boolean).map(box => ({
+      layerId: box.userData.sceneLayerId || null,
+      bounds: (() => { const b = new THREE.Box3().setFromObject(box); return { min: b.min.toArray(), max: b.max.toArray() }; })(),
+    })),
     getSceneGraphSnapshot: () => ({
       focusedSceneId: String(sceneGraphController.getState().focusedSceneId || ''),
       activeLayerId: String(sceneGraphController.getState().activeLayerId || ''),
@@ -27923,6 +27939,7 @@
           solidPreset: String(layer.solidPreset || ''),
           independentMaterial: !!layer.independentMaterial,
           styleOverrides: layer.styleOverrides && { ...layer.styleOverrides },
+          showBox: layer.showBox ?? null,
           material: isCubeLikeLayer(layer) ? appearanceModel.clone(getSurfaceMaterialDescriptor(layer)) : null,
           colorScheme: String(layer.colorScheme || ''),
           posColor: layer.posColor == null ? null : String(layer.posColor),
@@ -31267,6 +31284,7 @@
       solidPreset: layer.solidPreset,
       independentMaterial: !!layer.independentMaterial,
       styleOverrides: { ...getSurfaceStyleOverrides(layer) },
+      showBox: layer.showBox ?? null,
       material: appearanceModel.clone(getSurfaceMaterialDescriptor(layer)),
       colorScheme: layer.colorScheme,
       posColor: layer.posColor,
@@ -31444,7 +31462,15 @@
   }
   if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });
   toggleBox.onchange = () => {
-    rebuildScene({ preserveView: true });
+    if (workspaceExperiment) {
+      const value = toggleBox.checked;
+      for (const layer of getSurfaceAppearanceTargets()) { layer.showBox = value; persistActiveCubeLayerState(layer, { render: false }); }
+      refreshSimulationBoxes();
+      syncAppearanceControlsToActiveLayer();
+    } else {
+      showSimulationBoxes = toggleBox.checked;
+      rebuildScene({ preserveView: true });
+    }
     scheduleAppearancePresetAutosave();
   };
   if (toggleAxes) toggleAxes.onchange = () => {
@@ -32130,12 +32156,29 @@
       if (asActive) bondGroup = nextBondGroup;
       else extraMoleculeRenderGroups.push(nextBondGroup);
     }
-    if (toggleBox.checked && hasGrid) {
+    if (!workspaceExperiment && showSimulationBoxes && hasGrid) {
       const nextBoxHelper = buildBox(vol);
       contentGroup.add(nextBoxHelper);
       if (asActive) boxHelper = nextBoxHelper;
       else extraBoxHelpers.push(nextBoxHelper);
       if (isCubeDebugLoggingEnabled()) console.log('[CUBE] Box helper added');
+    }
+  }
+
+  function refreshSimulationBoxes() {
+    if (!workspaceExperiment) return;
+    for (const box of [boxHelper, ...extraBoxHelpers]) if (box) { box.parent?.remove(box); disposeDeep(box); }
+    boxHelper = null; extraBoxHelpers = [];
+    for (const scene of sceneGraphController.getScenes()) {
+      for (const layer of sceneGraphController.listLayers(scene)) {
+        if (!isCubeLikeLayer(layer) || !sceneGraphController.isLayerEffectivelyVisible(layer)
+          || !(layer.showBox ?? showSimulationBoxes)) continue;
+        // Read an existing grid only: showing a box must not calculate a hidden MO.
+        const vol = layer.cubeData || (layer.record?.vol.kind === 'molden' ? null : getLayerSourceVolume(layer));
+        if (!hasVolumetricGrid(vol)) continue;
+        const box = buildBox(vol); box.userData.sceneLayerId = layer.id;
+        contentGroup.add(box); extraBoxHelpers.push(box);
+      }
     }
   }
 
@@ -32259,6 +32302,7 @@
       lastIsoCalibrationKey = '';
     }
 
+    refreshSimulationBoxes();
     applyCameraStrategy(preserveView, savedCam, savedTarget);
     updateSidePanel();
     updatePostRebuildUI(activeSurfaceVol || moleculeVol, activeSurfaceCompMode);
@@ -32671,7 +32715,7 @@
     return true;
   }
   looksUi = window.VibeMolLooksUi.createController({
-    root: document.getElementById('looksPanel'), captureSettings: captureLookSettings,
+    root: document.getElementById('looksPanel'), showBindings: workspaceExperiment, captureSettings: captureLookSettings,
     presetSelect: document.getElementById('appearanceLookPreset'),
     atomFields: document.getElementById('appearanceAtomColorFields'), bondFields: document.getElementById('appearanceBondColorFields'),
     getAtomBaseRadius: z => 0.5 * getCovalentRadiusAngstrom(z),
@@ -32680,9 +32724,12 @@
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,
     editBackgroundColor: editSceneBackgroundColor,
     editSettings: editAppearanceSettings,
-    editSurfaceDefaults: (patch, phase) => editSurfaceStyle(patch, phase, true),
-    resetSurfaceOverrides: () => resetSurfaceStyleOverrides(['colors', 'opacity'], true),
-    getSurfaceOverrideCounts,
+    surfaceSelectionMode: workspaceExperiment,
+    editSurfaceSelection: (patch, phase) => editSurfaceStyle(patch, phase, !workspaceExperiment),
+    captureSurfaceSettings: () => workspaceExperiment && getSurfaceAppearanceLayer() ? getLookSurfaceSettings(getSurfaceAppearanceLayer()) : getSurfaceStyleDefaults(),
+    hasSurfaceSelection: () => !workspaceExperiment || getSurfaceAppearanceTargets().length > 0,
+    resetSurfaceOverrides: () => resetSurfaceStyleOverrides(undefined, !workspaceExperiment),
+    getSurfaceOverrideCounts: () => getSurfaceOverrideCounts(workspaceExperiment ? getSurfaceAppearanceTargets() : getAllLookLayers()),
     surfaceColorSchemes: Array.from(schemeSelect.options, option => [option.value, option.textContent]),
     openElementColors: () => setElementColorOverlayOpen(true),
     getActiveLook: () => activeLook,

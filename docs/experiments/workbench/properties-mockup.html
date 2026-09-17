@@ -1,0 +1,398 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400&display=swap');
+#vm-properties-concept {
+  --vm-paper: light-dark(#ffffff, #202631); --vm-chrome: light-dark(#eef1f5, #272e3a);
+  --vm-text: light-dark(#142039, #e8edf7); --vm-muted: light-dark(#677285, #b0bacb);
+  --vm-line: light-dark(#dce1e8, #3e4858); --vm-accent: light-dark(#103e80, #a9c9ff);
+  --vm-selected: light-dark(#d8e2ef, #384a65); --vm-soft: light-dark(#f5f7fa, #2b3443);
+  --vm-field: light-dark(#ffffff, #242d3b); --vm-backdrop: light-dark(#ffffff, #202631);
+  color: var(--vm-text); font: 400 13px/1.45 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  width: 100%; background: var(--vm-paper); color-scheme: light dark;
+}
+#vm-properties-concept * { box-sizing: border-box; }
+#vm-properties-concept [hidden] { display: none !important; }
+#vm-properties-concept button, #vm-properties-concept input, #vm-properties-concept select { font: inherit; color: inherit; }
+#vm-properties-concept button { cursor: pointer; }
+#vm-properties-concept button:disabled { opacity: .45; cursor: default; }
+#vm-properties-concept button:focus-visible, #vm-properties-concept select:focus-visible, #vm-properties-concept summary:focus-visible { outline: 2px solid var(--vm-accent); outline-offset: 2px; }
+#vm-properties-concept .vm-comparison { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 14px; background: var(--vm-soft); border-bottom: 1px solid var(--vm-line); }
+#vm-properties-concept .vm-comparison-title { color: var(--vm-muted); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+#vm-properties-concept .vm-comparison-field { display: flex; align-items: center; gap: 10px; flex: 1 1 270px; min-width: 0; font-weight: 500; }
+#vm-properties-concept .vm-comparison-field > label { flex: 0 0 64px; }
+#vm-properties-concept .vm-comparison select { flex: 1; font-weight: 400; }
+#vm-properties-concept .vm-head { display: flex; align-items: center; gap: 18px; min-height: 54px; padding: 10px 14px; border-bottom: 1px solid var(--vm-line); }
+#vm-properties-concept .vm-logo { font-size: 20px; letter-spacing: -.8px; font-weight: 500; white-space: nowrap; }
+#vm-properties-concept .vm-mode { display: flex; gap: 2px; background: var(--vm-chrome); padding: 3px; border-radius: 6px; }
+#vm-properties-concept .vm-mode span { padding: 5px 12px; color: var(--vm-muted); }
+#vm-properties-concept .vm-mode span:first-child { background: var(--vm-paper); color: var(--vm-accent); border-radius: 4px; }
+#vm-properties-concept .vm-concept-tag { margin-left: auto; color: var(--vm-muted); font-size: 11px; text-align: right; }
+#vm-properties-concept .vm-workspace { display: grid; grid-template-columns: 172px minmax(200px, 1fr) 360px; min-height: 652px; }
+#vm-properties-concept .vm-scenes { padding: 20px 10px; background: var(--vm-chrome); border-right: 1px solid var(--vm-line); }
+#vm-properties-concept .vm-section-title { font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .055em; color: var(--vm-muted); margin: 0 0 12px; }
+#vm-properties-concept .vm-scenes-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 8px 12px; }
+#vm-properties-concept .vm-scenes-heading .vm-section-title { margin: 0; }
+#vm-properties-concept .vm-file { display: flex; align-items: center; gap: 7px; font-weight: 500; padding: 8px; }
+#vm-properties-concept .vm-tree { display: grid; gap: 2px; }
+#vm-properties-concept .vm-tree button { display: flex; align-items: center; gap: 7px; width: 100%; border: 0; border-left: 2px solid transparent; padding: 9px 6px 9px 14px; background: transparent; border-radius: 3px; text-align: left; color: var(--vm-muted); }
+#vm-properties-concept .vm-tree button[aria-pressed="true"] { border-left-color: var(--vm-accent); background: var(--vm-selected); color: var(--vm-text); }
+#vm-properties-concept .vm-tree button:hover { background: var(--vm-selected); }
+#vm-properties-concept .vm-tree .vm-orbital { padding-left: 28px; }
+#vm-properties-concept .vm-group { display: flex; align-items: center; gap: 8px; padding: 11px 8px 6px 16px; font-weight: 500; }
+#vm-properties-concept .vm-layer-id { font-family: 'Geist Mono', monospace; font-size: 11px; }
+#vm-properties-concept .vm-clear { margin: 17px 7px 0; }
+#vm-properties-concept .vm-mobile-selection { display: none; }
+#vm-properties-concept .vm-ghost { background: transparent; border: 0; padding: 6px 8px; color: var(--vm-muted); border-radius: 4px; display: inline-flex; gap: 6px; align-items: center; justify-content: center; }
+#vm-properties-concept .vm-ghost:hover { background: var(--vm-soft); color: var(--vm-text); }
+#vm-properties-concept .vm-stage { background: var(--vm-backdrop); display: flex; flex-direction: column; min-width: 0; position: relative; }
+#vm-properties-concept .vm-scene-top { padding: 18px 20px 0; display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--vm-muted); font-size: 11px; justify-content: space-between; }
+#vm-properties-concept .vm-scene-drawing { display: block; width: 100%; flex: 1; min-height: 250px; max-height: 493px; }
+#vm-properties-concept .vm-scene-drawing .vm-surface { cursor: pointer; }
+#vm-properties-concept .vm-scene-drawing .vm-picked { stroke: var(--vm-accent); stroke-width: 1.6; stroke-dasharray: 4 4; }
+#vm-properties-concept .vm-material-key { margin: auto 16px 16px; padding-top: 12px; border-top: 1px solid var(--vm-line); display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; font-size: 11px; color: var(--vm-muted); }
+#vm-properties-concept .vm-material-key dd, #vm-properties-concept .vm-material-key dt { margin: 0; }
+#vm-properties-concept .vm-material-key dd { text-align: right; color: var(--vm-text); }
+#vm-properties-concept .vm-panel { border-left: 1px solid var(--vm-line); min-width: 0; display: flex; flex-direction: column; height: 652px; background: var(--vm-paper); }
+#vm-properties-concept .vm-panel-head { display: flex; align-items: center; gap: 8px; padding: 13px 16px; border-bottom: 1px solid var(--vm-line); font-weight: 500; }
+#vm-properties-concept .vm-panel-head small { margin-left: auto; color: var(--vm-muted); font-size: 11px; font-weight: 400; }
+#vm-properties-concept .vm-tabs { display: flex; gap: 4px; padding: 0 14px; border-bottom: 1px solid var(--vm-line); }
+#vm-properties-concept .vm-tab { padding: 11px 16px 10px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--vm-muted); }
+#vm-properties-concept .vm-tab[aria-selected="true"] { border-bottom-color: var(--vm-accent); color: var(--vm-accent); font-weight: 500; }
+#vm-properties-concept .vm-panel-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+#vm-properties-concept .vm-scope { padding: 18px 16px; }
+#vm-properties-concept .vm-scope-name { font-size: 14px; font-weight: 500; margin: 0; }
+#vm-properties-concept .vm-subtitle { display: block; color: var(--vm-muted); font-size: 11px; margin-top: 3px; }
+#vm-properties-concept .vm-scope-heading { margin-bottom: 22px; }
+#vm-properties-concept .vm-row { display: grid; grid-template-columns: 114px minmax(0,1fr); gap: 10px; align-items: center; margin: 12px 0; }
+#vm-properties-concept .vm-row > label, #vm-properties-concept .vm-row > .vm-label { color: var(--vm-muted); font-size: 12px; }
+#vm-properties-concept select, #vm-properties-concept input[type="text"], #vm-properties-concept input[type="number"] { width: 100%; min-width: 0; border: 1px solid var(--vm-line); border-radius: 4px; background: var(--vm-field); padding: 7px 9px; }
+#vm-properties-concept input[type="range"] { width: 100%; min-width: 0; height: 20px; accent-color: var(--vm-accent); margin: 0; }
+#vm-properties-concept .vm-slider { display: grid; grid-template-columns: minmax(0,1fr) 56px; gap: 10px; align-items: center; }
+#vm-properties-concept .vm-slider output { font-family: 'Geist Mono', monospace; font-size: 12px; padding: 5px 4px; text-align: center; border: 1px solid var(--vm-line); border-radius: 4px; background: var(--vm-field); }
+#vm-properties-concept .vm-toggle { appearance: none; width: 30px; height: 18px; border: 1px solid var(--vm-line); background: var(--vm-line); border-radius: 12px; margin: 0; cursor: pointer; position: relative; }
+#vm-properties-concept .vm-toggle::after { content: ''; position: absolute; width: 12px; height: 12px; background: var(--vm-paper); border-radius: 50%; top: 2px; left: 2px; }
+#vm-properties-concept .vm-toggle:checked { background: var(--vm-accent); border-color: var(--vm-accent); }
+#vm-properties-concept .vm-toggle:checked::after { left: 14px; }
+#vm-properties-concept .vm-inherited { color: var(--vm-muted); font-size: 11px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+#vm-properties-concept .vm-inherited span { overflow-wrap: anywhere; }
+#vm-properties-concept .vm-inherited .vm-ghost { font-size: 11px; padding: 4px; flex-shrink: 0; }
+#vm-properties-concept .vm-dot { width: 5px; height: 5px; display: inline-block; border-radius: 50%; background: var(--vm-accent); margin-right: 4px; }
+#vm-properties-concept .vm-empty { color: var(--vm-muted); padding: 34px 12px; text-align: center; }
+#vm-properties-concept .vm-empty i { display: block; margin-bottom: 10px; }
+#vm-properties-concept .vm-empty strong { color: var(--vm-text); display: block; font-weight: 500; margin-bottom: 6px; }
+#vm-properties-concept .vm-divider { border: 0; border-top: 1px solid var(--vm-line); margin: 20px 0; }
+#vm-properties-concept .vm-gallery { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; margin: 14px 0; }
+#vm-properties-concept .vm-look { min-width: 0; background: var(--vm-paper); border: 1px solid var(--vm-line); padding: 0; border-radius: 5px; overflow: hidden; }
+#vm-properties-concept .vm-look[aria-pressed="true"] { border-color: var(--vm-accent); box-shadow: inset 0 0 0 1px var(--vm-accent); }
+#vm-properties-concept .vm-look-image { height: 41px; background: var(--vm-soft); display: flex; align-items: center; justify-content: center; position: relative; }
+#vm-properties-concept .vm-look span:last-child { font-size: 11px; display: block; padding: 5px 0; }
+#vm-properties-concept .vm-look-ball { display: block; width: 24px; height: 24px; border-radius: 50%; background: radial-gradient(circle at 33% 27%,#cfd3da 0%,#69717e 32%,#3a404c 78%); box-shadow: 12px 9px 0 -5px #dfe2e8, -12px 6px 0 -5px #dfe2e8; }
+#vm-properties-concept .vm-look[data-look="toon"] .vm-look-ball, #vm-properties-concept .vm-look[data-look="ink"] .vm-look-ball { background: radial-gradient(circle at 33% 27%,#c7d5e2 0 23%,#738897 24% 56%,#344855 57%); }
+#vm-properties-concept .vm-look[data-look="porcelain"] .vm-look-ball { background: radial-gradient(circle at 33% 27%,#fff 0%,#d1ccc5 48%,#b2aba2 78%); }
+#vm-properties-concept .vm-look[data-look="opal"] .vm-look-image { background: #24283c; }
+#vm-properties-concept .vm-look[data-look="opal"] .vm-look-ball { background: radial-gradient(circle at 33% 27%,#fff3d8 0%,#b5cbed 26%,#9c8eb9 60%,#595b8c 80%); }
+#vm-properties-concept .vm-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px -5px; }
+#vm-properties-concept details { border-top: 1px solid var(--vm-line); margin-top: 13px; padding-top: 13px; }
+#vm-properties-concept summary { display: flex; justify-content: space-between; align-items: center; color: var(--vm-muted); cursor: pointer; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; list-style: none; padding: 5px 0; }
+#vm-properties-concept summary::-webkit-details-marker { display: none; }
+#vm-properties-concept summary::after { content: '›'; font-size: 16px; }
+#vm-properties-concept details[open] > summary::after { content: '⌄'; }
+#vm-properties-concept details:not([open]) > :not(summary) { display: none !important; }
+#vm-properties-concept .vm-save-form { padding: 8px 0 4px; }
+#vm-properties-concept .vm-status { padding: 8px 14px; border-top: 1px solid var(--vm-line); color: var(--vm-muted); background: var(--vm-soft); font-size: 11px; min-height: 34px; }
+#vm-properties-concept[data-layout="continuous"] #vm-demo-look { border-top: 1px solid var(--vm-line); }
+#vm-properties-concept .vm-color { width: 29px; height: 28px; padding: 2px; border: 1px solid var(--vm-line); border-radius: 5px; background: var(--vm-paper); }
+#vm-properties-concept .vm-shortcuts { display: flex; gap: 4px; padding: 6px 12px; border-bottom: 1px solid var(--vm-line); }
+#vm-properties-concept .vm-shortcuts .vm-ghost { font-size: 11px; }
+@media(max-width: 860px) {
+  #vm-properties-concept .vm-workspace { grid-template-columns: minmax(200px, 1fr) 350px; }
+  #vm-properties-concept .vm-scenes { grid-column: 1/-1; border-right: 0; border-bottom: 1px solid var(--vm-line); display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+  #vm-properties-concept .vm-scenes-heading, #vm-properties-concept .vm-file, #vm-properties-concept .vm-tree, #vm-properties-concept .vm-clear { display: none; }
+  #vm-properties-concept .vm-mobile-selection { display: flex; align-items: center; gap: 10px; width: 100%; }
+  #vm-properties-concept .vm-mobile-selection label { font-size: 11px; text-transform: uppercase; color: var(--vm-muted); }
+  #vm-properties-concept .vm-mobile-selection select { max-width: 320px; }
+}
+@media(max-width: 600px) {
+  #vm-properties-concept .vm-workspace { display: flex; flex-direction: column; }
+  #vm-properties-concept .vm-head { gap: 10px; flex-wrap: wrap; }
+  #vm-properties-concept .vm-mode { display: none; }
+  #vm-properties-concept .vm-scene-drawing { min-height: 180px; height: 215px; flex: none; }
+  #vm-properties-concept .vm-scene-top { padding: 12px 16px 0; }
+  #vm-properties-concept .vm-material-key { margin: 0 16px 12px; grid-template-columns: auto 1fr auto 1fr; }
+  #vm-properties-concept .vm-material-key dt:last-of-type { grid-column: 1; }
+  #vm-properties-concept .vm-panel { height: 620px; border-left: 0; border-top: 1px solid var(--vm-line); }
+  #vm-properties-concept .vm-row { grid-template-columns: 108px minmax(0,1fr); }
+  #vm-properties-concept select, #vm-properties-concept input[type="text"] { font-size: 16px; }
+}
+@media(pointer:coarse) {
+  #vm-properties-concept button, #vm-properties-concept select, #vm-properties-concept summary { min-height: 44px; }
+  #vm-properties-concept .vm-row { min-height: 44px; }
+}
+</style>
+<div id="vm-properties-concept" aria-label="VibeMol inspector options" data-layout="tabs">
+  <div class="vm-comparison" role="group" aria-label="Compare inspector options">
+    <span class="vm-comparison-title">Compare options</span>
+    <div class="vm-comparison-field"><label for="vm-demo-layout">Layout</label><select id="vm-demo-layout"><option value="tabs">Object / Look tabs</option><option value="continuous">One scrolling panel</option></select></div>
+    <div class="vm-comparison-field"><label for="vm-demo-materials">Materials</label><select id="vm-demo-materials"><option value="shared">One shared material</option><option value="surface">Per-surface overrides</option></select></div>
+  </div>
+  <header class="vm-head">
+    <div class="vm-logo">VibeMol</div>
+    <div class="vm-mode" aria-label="View mode"><span>View</span><span>Measure</span><span>Edit</span></div>
+    <div class="vm-concept-tag">UI concept<br><span id="vm-demo-variant">Tabs · Shared material</span></div>
+  </header>
+  <div class="vm-workspace">
+    <aside class="vm-scenes" aria-label="Scene content">
+      <div class="vm-scenes-heading"><h2 class="vm-section-title">Scenes</h2><i data-lucide="layers" aria-hidden="true"></i></div>
+      <div class="vm-file"><i data-lucide="file" aria-hidden="true"></i> molecule.molden</div>
+      <div class="vm-tree">
+        <button type="button" data-object="molecule" aria-pressed="false"><i data-lucide="hexagon" aria-hidden="true"></i>Molecule</button>
+        <div class="vm-group"><i data-lucide="chevron-down" aria-hidden="true"></i>Orbitals</div>
+        <button class="vm-orbital" type="button" data-object="l0" aria-pressed="true"><i data-lucide="eye" aria-hidden="true"></i><span class="vm-layer-id">L0</span>HOMO</button>
+        <button class="vm-orbital" type="button" data-object="l1" aria-pressed="false"><i data-lucide="eye" aria-hidden="true"></i><span class="vm-layer-id">L1</span>LUMO</button>
+      </div>
+      <button class="vm-ghost vm-clear" type="button" data-object="none">Clear selection</button>
+      <div class="vm-mobile-selection"><label for="vm-demo-selection">Selection</label><select id="vm-demo-selection"><option value="l0">L0 · HOMO</option><option value="l1">L1 · LUMO</option><option value="molecule">Molecule</option><option value="none">Nothing selected</option></select></div>
+    </aside>
+    <section class="vm-stage" aria-label="Illustrative molecular preview">
+      <div class="vm-scene-top"><span id="vm-demo-scene-name">Molecule + two orbitals</span><span>Illustrative preview</span></div>
+      <svg class="vm-scene-drawing" id="vm-demo-drawing" viewBox="0 0 500 530" role="img" aria-label="Molecule and two orbital layers with independently visible material finishes"></svg>
+      <dl class="vm-material-key" aria-label="Material applied to each object" aria-live="polite">
+        <dt>Molecule</dt><dd id="vm-demo-molecule-finish">Classic smooth</dd>
+        <dt>L0 · HOMO</dt><dd id="vm-demo-l0-finish">Classic smooth</dd>
+        <dt>L1 · LUMO</dt><dd id="vm-demo-l1-finish">Classic smooth</dd>
+      </dl>
+    </section>
+    <aside class="vm-panel" aria-label="Properties">
+      <div class="vm-panel-head"><i data-lucide="sliders-horizontal" aria-hidden="true"></i> Properties <small id="vm-demo-panel-scope">Selected object / named look</small></div>
+      <div class="vm-tabs" id="vm-demo-tabs" role="tablist" aria-label="Properties scope">
+        <button class="vm-tab" type="button" id="vm-demo-object-tab" role="tab" aria-controls="vm-demo-object" aria-selected="true" data-tab="object">Object</button>
+        <button class="vm-tab" type="button" id="vm-demo-look-tab" role="tab" aria-controls="vm-demo-look" aria-selected="false" data-tab="look">Look</button>
+      </div>
+      <div class="vm-shortcuts" id="vm-demo-jumps" hidden><button class="vm-ghost" type="button" data-jump="object">Selected object ↓</button><button class="vm-ghost" type="button" data-jump="look">Look ↓</button></div>
+      <div class="vm-panel-body" id="vm-demo-body">
+        <section class="vm-scope" id="vm-demo-object" role="tabpanel" aria-labelledby="vm-demo-object-tab">
+          <div class="vm-scope-heading"><h2 class="vm-scope-name" id="vm-demo-object-name">L0 · HOMO</h2><span class="vm-subtitle" id="vm-demo-object-scope">Selected orbital</span></div>
+          <div id="vm-demo-empty" class="vm-empty" hidden><i data-lucide="mouse-pointer-2" aria-hidden="true"></i><strong>Nothing selected</strong>Select a molecule or orbital in Scenes.</div>
+          <div id="vm-demo-surface-fields">
+            <h3 class="vm-section-title">Isosurface</h3>
+            <div class="vm-row"><label for="vm-demo-scheme">Color scheme</label><select id="vm-demo-scheme"><option value="national">National</option><option value="emory">Emory</option><option value="bright">Bright</option><option value="custom">Custom</option></select></div>
+            <div class="vm-row" id="vm-demo-positive-row" hidden><label for="vm-demo-positive">Positive color</label><input class="vm-color" id="vm-demo-positive" type="color" value="#e60000"></div>
+            <div class="vm-row" id="vm-demo-negative-row" hidden><label for="vm-demo-negative">Negative color</label><input class="vm-color" id="vm-demo-negative" type="color" value="#0033a0"></div>
+            <div class="vm-row"><label for="vm-demo-iso">Iso value</label><div class="vm-slider"><input id="vm-demo-iso" type="range" min="0.01" max="0.06" step="0.001" value="0.02"><output id="vm-demo-iso-value" for="vm-demo-iso">0.020</output></div></div>
+            <div class="vm-row"><label for="vm-demo-auto">Auto-iso</label><input class="vm-toggle" id="vm-demo-auto" type="checkbox"></div>
+            <div class="vm-row"><label for="vm-demo-opacity">Opacity</label><div class="vm-slider"><input id="vm-demo-opacity" type="range" min="0.1" max="1" step="0.05" value="0.65"><output id="vm-demo-opacity-value" for="vm-demo-opacity">0.65</output></div></div>
+            <div class="vm-inherited"><span id="vm-demo-surface-binding">Colors from Classic</span><button class="vm-ghost" id="vm-demo-reset-colors" type="button" hidden>Reset to look</button></div>
+            <div class="vm-row"><label for="vm-demo-box">Simulation box</label><input class="vm-toggle" id="vm-demo-box" type="checkbox"></div>
+            <hr class="vm-divider">
+            <div id="vm-demo-shared-note" class="vm-inherited"><span id="vm-demo-inherited-material">Material from Look · Classic smooth</span><button class="vm-ghost" type="button" id="vm-demo-edit-shared">Edit in Look <i data-lucide="arrow-up-right" aria-hidden="true"></i></button></div>
+            <div id="vm-demo-surface-material-fields" hidden>
+              <div class="vm-row"><label for="vm-demo-surface-material">Surface material</label><select id="vm-demo-surface-material"><option value="inherit">Use look</option></select></div>
+              <div class="vm-row" id="vm-demo-surface-roughness-row" hidden><label for="vm-demo-surface-roughness">Roughness</label><div class="vm-slider"><input id="vm-demo-surface-roughness" type="range" min="0.02" max="0.95" step="0.01" value="0.15"><output id="vm-demo-surface-roughness-value" for="vm-demo-surface-roughness">0.15</output></div></div>
+              <div class="vm-inherited"><span id="vm-demo-material-binding">Using look</span><button class="vm-ghost" id="vm-demo-reset-material" type="button" hidden>Reset to look</button></div>
+            </div>
+          </div>
+          <div id="vm-demo-molecule-fields" hidden>
+            <h3 class="vm-section-title">Visibility</h3>
+            <div class="vm-row"><label for="vm-demo-atoms">Show atoms</label><input id="vm-demo-atoms" class="vm-toggle" type="checkbox" checked></div>
+            <div class="vm-row"><label for="vm-demo-bonds">Show bonds</label><input id="vm-demo-bonds" class="vm-toggle" type="checkbox" checked></div>
+            <div class="vm-row"><label for="vm-demo-labels">Atom labels</label><input id="vm-demo-labels" class="vm-toggle" type="checkbox"></div>
+            <div class="vm-row"><label for="vm-demo-multiple">Multiple bonds</label><input id="vm-demo-multiple" class="vm-toggle" type="checkbox" checked></div>
+            <hr class="vm-divider"><div class="vm-inherited"><span id="vm-demo-molecule-material-note">Material from Look</span><button class="vm-ghost" type="button" id="vm-demo-edit-molecule">Edit in Look <i data-lucide="arrow-up-right" aria-hidden="true"></i></button></div>
+          </div>
+        </section>
+        <section class="vm-scope" id="vm-demo-look" role="tabpanel" aria-labelledby="vm-demo-look-tab" hidden>
+          <div class="vm-scope-heading"><h2 class="vm-scope-name">Look</h2><span class="vm-subtitle">Named style · portable across molecules</span></div>
+          <div class="vm-row"><label for="vm-demo-preset">Preset</label><select id="vm-demo-preset"><option value="basic">Basic</option><option value="classic" selected>Classic</option><option value="ink">Ink</option><option value="kit">Kit</option><option value="opal">Opal</option><option value="porcelain">Porcelain</option><option value="toon">Toon</option></select></div>
+          <div class="vm-gallery" id="vm-demo-gallery" role="group" aria-label="Look presets"></div>
+          <div class="vm-inherited"><span id="vm-demo-look-name">Classic</span><span id="vm-demo-look-modified" hidden>· Modified</span></div>
+          <div class="vm-actions"><button class="vm-ghost" id="vm-demo-undo" type="button" disabled>Undo</button><button class="vm-ghost" id="vm-demo-revert" type="button" disabled>Revert</button><button class="vm-ghost" id="vm-demo-save" type="button">Save as new</button></div>
+          <form class="vm-save-form" id="vm-demo-save-form" hidden><div class="vm-row"><label for="vm-demo-save-name">Look name</label><input type="text" id="vm-demo-save-name" value="My Classic" maxlength="40" required></div><button class="vm-ghost" type="submit">Save look</button></form>
+          <details id="vm-demo-material-section" open><summary id="vm-demo-material-title">Shared material</summary>
+            <span class="vm-subtitle" id="vm-demo-material-scope">Atoms, bonds, and all surfaces</span>
+            <div class="vm-row"><label for="vm-demo-global-material">Material</label><select id="vm-demo-global-material"></select></div>
+            <div class="vm-row" id="vm-demo-global-roughness-row"><label for="vm-demo-global-roughness">Roughness</label><div class="vm-slider"><input id="vm-demo-global-roughness" type="range" min="0.02" max="0.95" step="0.01" value="0.47"><output id="vm-demo-global-roughness-value" for="vm-demo-global-roughness">0.47</output></div></div>
+            <div class="vm-inherited"><span id="vm-demo-global-material-binding">From Classic</span><button class="vm-ghost" id="vm-demo-reset-global-material" type="button" hidden>Reset to look</button></div>
+          </details>
+          <details><summary>Geometry</summary><div class="vm-row"><label for="vm-demo-atom-scale">Atom scale</label><div class="vm-slider"><input id="vm-demo-atom-scale" type="range" min="0.65" max="1.4" step="0.05" value="1"><output id="vm-demo-atom-scale-value" for="vm-demo-atom-scale">1.00</output></div></div></details>
+          <details><summary>Lighting &amp; background</summary><div class="vm-row"><label for="vm-demo-background">Background</label><input class="vm-color" id="vm-demo-background" type="color" value="#ffffff"></div><div class="vm-row"><label for="vm-demo-theme">Follow UI theme</label><input class="vm-toggle" type="checkbox" id="vm-demo-theme" checked></div></details>
+        </section>
+      </div>
+    </aside>
+  </div>
+  <div class="vm-status" id="vm-demo-status" role="status" aria-live="polite">L0 selected · Its colors, opacity, and iso value are independent.</div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('vm-properties-concept');
+  const $ = key => root.querySelector('#vm-demo-' + key);
+  const design = { layout: 'tabs', materials: 'shared' };
+  const finishes = {
+    smooth: { name: 'Classic smooth', roughness: .47, shine: .34 }, satin: { name: 'Satin', roughness: .45, shine: .18 },
+    lacquer: { name: 'Lacquer', roughness: .25, shine: .72 }, gel: { name: 'Gel', roughness: .15, shine: .95 },
+    ceramic: { name: 'Ceramic', roughness: .35, shine: .52 }, metal: { name: 'Metal', roughness: .2, shine: .86 },
+    matte: { name: 'Matte', roughness: .85, shine: .02 }, toon: { name: 'Toon', roughness: .8, shine: 0 },
+    emissive: { name: 'Emissive', roughness: .7, shine: .2 }
+  };
+  const looks = {
+    basic: {name:'Basic', material:'lacquer', roughness:.16, scheme:'emory', background:'#ffffff'},
+    classic: {name:'Classic', material:'smooth', roughness:.47, scheme:'national', background:'#ffffff'},
+    ink: {name:'Ink', material:'toon', roughness:.8, scheme:'emory', background:'#fbf8f0'},
+    kit: {name:'Kit', material:'lacquer', roughness:.22, scheme:'emory', background:'#ffffff'},
+    opal: {name:'Opal', material:'gel', roughness:.13, scheme:'bright', background:'#202438'},
+    porcelain: {name:'Porcelain', material:'ceramic', roughness:.35, scheme:'emory', background:'#f4f1eb'},
+    toon: {name:'Toon', material:'toon', roughness:.8, scheme:'emory', background:'#ffffff'}
+  };
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const colors = { national:['#e60000','#0033a0'], emory:['#f2a900','#0033a0'], bright:['#eec100','#00a5bb'] };
+  const layer = name => ({name, material:'inherit', roughness:.15, opacity:.65, iso:.02, auto:false, box:false, scheme:'national', custom:['#e60000','#0033a0'], colorOverride:false});
+  let state = { selected:'l0', tab:'object', look:'classic', material:'smooth', roughness:.47, atomScale:1,
+    background:'#ffffff', followTheme:true, atoms:true, bonds:true, labels:false, multiple:true,
+    layers:{l0:layer('L0 · HOMO'), l1:layer('L1 · LUMO')} };
+  let undo = null, designKey = '', saveNumber = 0;
+  function markUndo() { undo = clone(state); }
+  const selectedLayer = () => state.layers[state.selected];
+  const message = text => { $('status').textContent = text; };
+  const finishFor = id => id && design.materials === 'surface' && state.layers[id].material !== 'inherit' ? state.layers[id].material : state.material;
+  const roughnessFor = id => id && design.materials === 'surface' && state.layers[id].material !== 'inherit' ? state.layers[id].roughness : state.roughness;
+  const defaultLook = () => looks[state.look];
+  function fillMaterials(select, inherit = false) {
+    if (inherit) select.replaceChildren(new Option('Use look', 'inherit'));
+    for (const [value, {name}] of Object.entries(finishes)) select.add(new Option(name, value));
+  }
+  fillMaterials($('global-material')); fillMaterials($('surface-material'), true);
+  for (const [key, look] of Object.entries(looks)) {
+    const card = document.createElement('button'); card.type='button'; card.className='vm-look'; card.dataset.look=key;
+    card.setAttribute('aria-label', look.name + ' preset'); card.setAttribute('aria-pressed',String(key===state.look));
+    card.innerHTML='<span class="vm-look-image"><span class="vm-look-ball"></span></span><span></span>';
+    card.lastElementChild.textContent=look.name; card.onclick=()=>applyLook(key); $('gallery').append(card);
+  }
+  function applyLook(key) {
+    markUndo(); const look=looks[key];
+    Object.assign(state,{look:key,material:look.material,roughness:look.roughness,background:look.background,atomScale:look.atomScale||1});
+    for (const l of Object.values(state.layers)) if (!l.colorOverride) l.scheme=look.scheme;
+    render(); message(look.name+' applied'+(design.materials==='surface'?' · Surface overrides are preserved.':' · One material across atoms, bonds, and surfaces.'));
+  }
+  function chooseObject(value) {
+    state.selected=value; render();
+    message(value==='none'?'Selection cleared.':value==='molecule'?'Molecule selected · Visibility belongs to this object.':state.layers[value].name+' selected · Object edits affect this layer only.');
+  }
+  function showScope(value, material = false) {
+    state.tab=value; render();
+    const target=material?$('material-section'):$(value);
+    if (material) $('material-section').open=true;
+    if (design.layout==='continuous'||material) $('body').scrollTo({top:target.offsetTop-$('body').offsetTop,behavior:'instant'});
+    else $('body').scrollTop=0;
+  }
+  function syncRange(key, value, digits=2) { $(key).value=value; $(key+'-value').textContent=Number(value).toFixed(digits); }
+  function bindRange(key, getter, setter, digits=2) {
+    $(key).addEventListener('pointerdown',markUndo);
+    $(key).addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key))markUndo();});
+    $(key).oninput=()=>{setter(Number($(key).value)); render();};
+  }
+  function render() {
+    const l=selectedLayer(), base=defaultLook();
+    root.dataset.layout=design.layout;
+    $('layout').value=design.layout; $('materials').value=design.materials;
+    $('variant').textContent=(design.layout==='tabs'?'Object / Look tabs':'One scrolling panel')+' · '+(design.materials==='shared'?'Shared material':'Per-surface overrides');
+    $('tabs').hidden=design.layout!=='tabs'; $('jumps').hidden=design.layout==='tabs';
+    for (const key of ['object','look']) {
+      $(key).hidden=design.layout==='tabs'&&state.tab!==key;
+      $(key+'-tab').setAttribute('aria-selected',String(state.tab===key));
+      $(key).setAttribute('role',design.layout==='tabs'?'tabpanel':'region');
+    }
+    $('object-name').textContent=l?l.name:state.selected==='molecule'?'Molecule':'Object';
+    $('object-scope').textContent=l?'Selected orbital · molecule.molden':state.selected==='molecule'?'Selected molecule · molecule.molden':'Selection from Scenes';
+    $('empty').hidden=state.selected!=='none'; $('surface-fields').hidden=!l; $('molecule-fields').hidden=state.selected!=='molecule';
+    for(const button of root.querySelectorAll('[data-object]'))button.setAttribute('aria-pressed',String(button.dataset.object===state.selected));
+    $('selection').value=state.selected;
+    $('shared-note').hidden=design.materials!=='shared'; $('surface-material-fields').hidden=design.materials!=='surface';
+    $('inherited-material').textContent='Material from Look · '+finishes[state.material].name;
+    $('molecule-material-note').textContent='Material from Look · '+finishes[state.material].name;
+    if (l) {
+      $('scheme').value=l.scheme; $('positive').value=l.custom[0]; $('negative').value=l.custom[1];
+      $('positive-row').hidden=$('negative-row').hidden=l.scheme!=='custom';
+      syncRange('iso',l.iso,3); syncRange('opacity',l.opacity); $('auto').checked=l.auto; $('iso').disabled=l.auto; $('box').checked=l.box;
+      $('surface-binding').textContent=l.colorOverride?'Custom colors · '+l.name:'Colors from '+base.name;
+      $('reset-colors').hidden=!l.colorOverride;
+      $('surface-material').options[0].textContent='Use look ('+finishes[state.material].name+')'; $('surface-material').value=l.material;
+      const own=l.material!=='inherit'; $('surface-roughness-row').hidden=!own||l.material==='toon';
+      syncRange('surface-roughness',l.roughness); $('reset-material').hidden=!own;
+      $('material-binding').textContent=own?'Override · '+l.name+' only':'Inherited from '+base.name;
+    }
+    for(const key of ['atoms','bonds','labels','multiple'])$(key).checked=state[key];
+    $('preset').value=state.look; $('look-name').textContent=base.name;
+    for(const card of $('gallery').children)card.setAttribute('aria-pressed',String(card.dataset.look===state.look));
+    const modified=state.material!==base.material||state.roughness!==base.roughness||state.atomScale!==(base.atomScale||1)||state.background!==base.background;
+    $('look-modified').hidden=!modified; $('revert').disabled=!modified; $('undo').disabled=!undo;
+    $('material-title').textContent=design.materials==='shared'?'Shared material':'Default material';
+    $('material-scope').textContent=design.materials==='shared'?'Atoms, bonds, and all surfaces':'Atoms, bonds, and surfaces using the look';
+    $('global-material').value=state.material; syncRange('global-roughness',state.roughness); syncRange('atom-scale',state.atomScale);
+    $('global-roughness-row').hidden=state.material==='toon';
+    const changed=state.material!==base.material||state.roughness!==base.roughness;
+    $('global-material-binding').textContent=changed?'Modified from '+base.name:'From '+base.name; $('reset-global-material').hidden=!changed;
+    $('background').value=state.background; $('theme').checked=state.followTheme;
+    root.style.setProperty('--vm-backdrop',state.followTheme?'light-dark('+state.background+', #202631)':state.background);
+    for(const id of ['molecule','l0','l1'])$(id+'-finish').textContent=finishes[finishFor(id==='molecule'?null:id)].name+(id!=='molecule'&&design.materials==='surface'&&state.layers[id].material!=='inherit'?' · override':'');
+    draw();
+    const newKey=design.layout+':'+design.materials;
+    if(designKey&&designKey!==newKey){$('body').scrollTop=0;message(design.materials==='shared'?'Shared material · A material edit affects atoms, bonds, L0, and L1.':'Per-surface materials · Object can override one orbital; Look supplies the default.');}
+    designKey=newKey;
+  }
+  function blend(hex, target, ratio) {
+    const a=hex.replace('#','').match(/../g).map(x=>parseInt(x,16)), b=target.replace('#','').match(/../g).map(x=>parseInt(x,16));
+    return '#'+a.map((v,i)=>Math.round(v*(1-ratio)+b[i]*ratio).toString(16).padStart(2,'0')).join('');
+  }
+  function gradient(id,color,material,roughness) {
+    const f=finishes[material], sheen=f.shine*(1-roughness*.7), toon=material==='toon';
+    return `<radialGradient id="${id}" cx="32%" cy="25%" r="82%"><stop offset="0" stop-color="${blend(color,'#ffffff',sheen*.87+.10)}"/><stop offset="${toon?'28%':'18%'}" stop-color="${blend(color,'#ffffff',sheen*.25)}"/><stop offset="${toon?'29%':'50%'}" stop-color="${color}"/><stop offset="${toon?'64%':'78%'}" stop-color="${blend(color,'#000000',.16+sheen*.08)}"/><stop offset="${toon?'65%':'100%'}" stop-color="${blend(color,'#000000',.28+sheen*.15)}"/></radialGradient>`;
+  }
+  function draw() {
+    const gm=state.material, gr=state.roughness, defs=[], rear=[], front=[];
+    const molScale=state.atomScale;
+    for(const [name,color] of [['carbon','#626262'],['oxygen','#d34040'],['hydrogen','#eeeff2'],['bond','#999da4']])defs.push(gradient('vm-g-'+name,color,gm,gr));
+    for(const [id,cx,cy,angle,scale] of [['l0',228,255,-19,1],['l1',338,283,53,.73]]){
+      const l=state.layers[id], col=l.scheme==='custom'?l.custom:colors[l.scheme], mat=finishFor(id), rough=roughnessFor(id);
+      for(let i=0;i<2;i++)defs.push(gradient('vm-g-'+id+i,col[i],mat,rough));
+      const size=scale*(1.12-(l.iso-.01)*5), selected=state.selected===id?'vm-picked':'';
+      const shape=(sign,i)=>`<g transform="translate(${cx} ${cy}) rotate(${angle}) scale(${size})"><path class="vm-surface ${selected}" data-pick="${id}" opacity="${l.opacity}" fill="url(#vm-g-${id}${i})" d="M 0 ${sign*6} C -12 ${sign*24}, -78 ${sign*41}, -63 ${sign*113} C -53 ${sign*183}, 59 ${sign*182}, 66 ${sign*107} C 71 ${sign*52}, 15 ${sign*27}, 0 ${sign*6} Z"/>${finishes[mat].shine>.4?`<ellipse pointer-events="none" cx="-20" cy="${sign*103}" rx="${6+(1-rough)*5}" ry="17" opacity="${finishes[mat].shine*l.opacity*.5}" fill="#ffffff" transform="rotate(-14 -20 ${sign*103})"/>`:''}</g>`;
+      rear.push(shape(-1,0)); front.push(shape(1,1));
+      if(l.box)rear.push(`<rect x="${cx-105*scale}" y="${cy-171*scale}" width="${210*scale}" height="${342*scale}" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="5 5"/>`);
+    }
+    const bonds=state.bonds?`<g stroke="url(#vm-g-bond)" stroke-linecap="round" stroke-width="19"><path d="M220 273L122 214 M220 273L147 362"/>${state.multiple?'<path d="M239 272L328 292 M236 293L325 313"/>':'<path d="M230 283L328 303"/>'}</g>`:'';
+    const atoms=state.atoms?[['hydrogen',122,214,22,'H'],['hydrogen',147,362,22,'H'],['carbon',221,281,40,'C'],['oxygen',341,305,35,'O']].map(([name,x,y,r,symbol])=>`<g><circle cx="${x}" cy="${y}" r="${r*molScale}" fill="url(#vm-g-${name})" ${state.selected==='molecule'?'stroke="currentColor" stroke-width="1"':''}/>${finishes[gm].shine>.4?`<ellipse cx="${x-r*.29}" cy="${y-r*.36}" rx="${r*.13}" ry="${r*.18}" fill="#ffffff" opacity="${finishes[gm].shine*.6}"/>`:''}${state.labels?`<text x="${x}" y="${y+5}" text-anchor="middle" font-size="17" fill="${name==='hydrogen'?'#303846':'#ffffff'}">${symbol}</text>`:''}</g>`).join(''):'';
+    $('drawing').innerHTML=`<title>Illustrative molecule, HOMO and LUMO. Material scope is reflected in every object.</title><defs>${defs.join('')}</defs>${rear.join('')}${bonds}${atoms}${front.join('')}`;
+  }
+  for(const b of root.querySelectorAll('[data-object]'))b.onclick=()=>chooseObject(b.dataset.object);
+  $('layout').onchange=()=>{design.layout=$('layout').value;render();};
+  $('materials').onchange=()=>{design.materials=$('materials').value;render();};
+  $('selection').onchange=()=>chooseObject($('selection').value);
+  $('drawing').onclick=event=>{const id=event.target.closest('[data-pick]')?.dataset.pick;if(id)chooseObject(id);};
+  for(const b of root.querySelectorAll('[data-tab]'))b.onclick=()=>showScope(b.dataset.tab);
+  $('tabs').onkeydown=event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const next=event.key==='Home'?'object':event.key==='End'?'look':state.tab==='object'?'look':'object';showScope(next);$(next+'-tab').focus();}};
+  for(const b of root.querySelectorAll('[data-jump]'))b.onclick=()=>showScope(b.dataset.jump);
+  $('edit-shared').onclick=$('edit-molecule').onclick=()=>showScope('look',true);
+  $('scheme').onchange=()=>{if(!selectedLayer())return;markUndo();selectedLayer().scheme=$('scheme').value;selectedLayer().colorOverride=true;render();message('Colors changed for '+selectedLayer().name+' only.');};
+  for(const [key,index] of [['positive',0],['negative',1]])$(key).oninput=()=>{if(!selectedLayer())return;selectedLayer().custom[index]=$(key).value;selectedLayer().colorOverride=true;render();};
+  bindRange('iso',()=>selectedLayer()?.iso,value=>{if(selectedLayer())selectedLayer().iso=value;});
+  bindRange('opacity',()=>selectedLayer()?.opacity,value=>{if(selectedLayer())selectedLayer().opacity=value;});
+  bindRange('surface-roughness',()=>selectedLayer()?.roughness,value=>{if(selectedLayer())selectedLayer().roughness=value;});
+  bindRange('global-roughness',()=>state.roughness,value=>{state.roughness=value;});
+  bindRange('atom-scale',()=>state.atomScale,value=>{state.atomScale=value;});
+  for(const key of ['box','auto'])$(key).onchange=()=>{if(selectedLayer()){markUndo();selectedLayer()[key]=$(key).checked;render();}};
+  for(const key of ['atoms','bonds','labels','multiple'])$(key).onchange=()=>{markUndo();state[key]=$(key).checked;render();};
+  $('global-material').onchange=()=>{markUndo();state.material=$('global-material').value;state.roughness=finishes[state.material].roughness;render();message(finishes[state.material].name+(design.materials==='shared'?' applied to molecule, L0, and L1.':' applied to molecule and surfaces without an override.'));};
+  $('surface-material').onchange=()=>{const l=selectedLayer();if(!l)return;markUndo();l.material=$('surface-material').value;if(l.material!=='inherit')l.roughness=finishes[l.material].roughness;render();message(l.material==='inherit'?l.name+' follows the Look again.':finishes[l.material].name+' applied to '+l.name+' only.');};
+  $('reset-material').onclick=()=>{markUndo();selectedLayer().material='inherit';render();message(selectedLayer().name+' follows the Look again.');};
+  $('reset-colors').onclick=()=>{markUndo();selectedLayer().scheme=defaultLook().scheme;selectedLayer().colorOverride=false;render();};
+  $('reset-global-material').onclick=()=>{markUndo();state.material=defaultLook().material;state.roughness=defaultLook().roughness;render();};
+  $('preset').onchange=()=>applyLook($('preset').value);
+  $('background').oninput=()=>{state.background=$('background').value;render();};
+  $('theme').onchange=()=>{state.followTheme=$('theme').checked;render();};
+  $('undo').onclick=()=>{if(undo){const current=clone(state);state=undo;undo=current;render();message('Previous appearance restored.');}};
+  $('revert').onclick=()=>applyLook(state.look);
+  $('save').onclick=()=>{$('save-form').hidden=!$('save-form').hidden;$('save-name').value='My '+defaultLook().name;if(!$('save-form').hidden)$('save-name').focus();};
+  $('save-form').onsubmit=event=>{event.preventDefault();const name=$('save-name').value.trim();if(!name)return;markUndo();const key='saved-'+(++saveNumber);looks[key]={name,material:state.material,roughness:state.roughness,scheme:defaultLook().scheme,background:state.background,atomScale:state.atomScale};$('preset').add(new Option(name,key));state.look=key;$('save-form').hidden=true;render();message(name+' saved in this preview.');};
+  render();
+  // Mock state only; this never writes to a VibeMol scene or its preferences.
+  globalThis.vmPropertiesMock={design,getState:()=>clone(state),setDesign:patch=>{Object.assign(design,patch);render();},showScope};
+})();
+</script>

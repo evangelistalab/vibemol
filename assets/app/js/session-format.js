@@ -155,6 +155,7 @@
         if (layer.volume) validateVolume(layer.volume, layer.name || layer.id);
         if (layer.kind === 'cube' || layer.kind === 'arithmetic') {
           requireValue(finite(layer.iso) && layer.iso >= 0 && finite(layer.opacity) && layer.opacity >= 0.05 && layer.opacity <= 1, 'invalid surface appearance.');
+          requireValue(layer.showBox == null || typeof layer.showBox === 'boolean', 'invalid simulation box visibility.');
           requireValue(layer.isoPending == null || typeof layer.isoPending === 'boolean', 'invalid pending iso state.');
           requireValue(layer.styleOverrides == null || (object(layer.styleOverrides)
             && typeof layer.styleOverrides.colors === 'boolean' && typeof layer.styleOverrides.opacity === 'boolean'), 'invalid surface style overrides.');

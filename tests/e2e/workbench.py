@@ -2,6 +2,7 @@
 """Opt-in workspace behavior against the real renderer and inspector controls."""
 import math
 import premerge as p
+from workbench_bar import open_menu
 
 
 def layout(page):
@@ -11,6 +12,17 @@ def layout(page):
 def window_menu(page, panel, action):
     panel.locator('.wb-window-menu').click()
     page.locator('#workbenchMenu').get_by_role('button', name=action, exact=True).click()
+
+
+def open_panel(page, name):
+    row = open_menu(page).get_by_role('menuitemcheckbox', name=name, exact=True)
+    if row.get_attribute('aria-checked') != 'true':
+        row.click()
+    if page.locator('#workbenchPanelsMenu').is_visible():
+        page.keyboard.press('Escape')
+    tab = page.get_by_role('tab', name=name, exact=True)
+    if tab.count():
+        tab.click()
 
 
 def capture(page, name):
@@ -35,8 +47,9 @@ def modes(page):
         page.locator('#mode'+mode+'Btn').click()
         page.wait_for_function('(mode)=>document.body.dataset.wbMode===mode',arg={'Measure':'measure','Edit':'edit','Display':'display'}[mode])
         assert page.locator('#displayWindowAdaptiveMenu').is_hidden()
-        for window in ['coordsPanel','styleStudio','viewPanel','viewInspector']:
-            assert page.locator('.wb-tool[data-window="'+window+'"]').is_visible()
+        for name in ['Coordinates','Style Studio','Camera','Quick actions']:
+            assert open_menu(page).get_by_role('menuitemcheckbox',name=name,exact=True).is_visible()
+        page.keyboard.press('Escape')
         assert page.locator('#coordsPanel').is_visible()
         assert ('moldenInspector' in layout(page)['open'])
         assert page.locator('#moldenInspector').is_visible()==(mode!='Edit')
@@ -53,9 +66,9 @@ def modes(page):
     # Mode keys follow the original callbacks; shared inspector shortcuts work in Edit.
     page.locator('#canvas').focus();page.keyboard.press('e')
     page.wait_for_function('()=>document.body.dataset.wbMode==="edit"')
-    page.keyboard.press('m');assert page.locator('#modeMeasureBtn').get_attribute('aria-pressed')=='true'
-    page.keyboard.press('e');assert page.locator('#modeEditBtn').get_attribute('aria-pressed')=='true'
-    window_menu(page,page.locator('#coordsPanel'),'Minimize to tools bar')
+    page.keyboard.press('m');assert page.locator('#modeMeasureBtn').get_attribute('aria-checked')=='true'
+    page.keyboard.press('e');assert page.locator('#modeEditBtn').get_attribute('aria-checked')=='true'
+    window_menu(page,page.locator('#coordsPanel'),'Minimize to Panels menu')
     page.locator('#canvas').focus();page.keyboard.press('c');assert page.locator('#coordsPanel').is_visible()
     page.keyboard.press('v');assert page.locator('#sidePanel').is_visible()
     page.keyboard.press('v');assert page.locator('#sidePanel').is_hidden()
@@ -82,7 +95,7 @@ def modes(page):
     # Collapsed sidebar and Focus both retain direct access to all three modes.
     page.locator('#toolbarCollapseBtn').click()
     page.locator('#modeMeasureBtn').focus();page.keyboard.press('ArrowRight')
-    assert page.locator('#modeEditBtn').get_attribute('aria-pressed')=='true'
+    assert page.locator('#modeEditBtn').get_attribute('aria-checked')=='true'
     page.locator('#workbenchFocus').click();page.locator('#modeDisplayBtn').click()
     assert layout(page)['focus']
     page.locator('#workbenchFocus').click()
@@ -117,7 +130,7 @@ def modes(page):
     page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
     page.locator('#workbenchClearMeasurements').click()
     assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot()')=={'atomIndices':[],'labelCount':0}
-    assert page.locator('#modeMeasureBtn').get_attribute('aria-pressed')=='true'
+    assert page.locator('#modeMeasureBtn').get_attribute('aria-checked')=='true'
     print('[workbench] mode bar, shared and suspended inspectors, stable Edit actions, palette bounds, shortcuts, Focus and measurements: passed',flush=True)
 
 
@@ -126,9 +139,9 @@ def run(page):
     orbitals=page.locator('#moldenInspector'); coordinates=page.locator('#coordsPanel')
     page.wait_for_function('() => document.getElementById("moldenInspector").dataset.wbPlacement==="right"')
     assert orbitals.is_visible()
-    assert page.locator('.wb-tool[data-window="trajectoryPanel"]').is_hidden()
-    assert page.locator('.wb-tool[data-window="spinorInfo"]').is_hidden()
-    page.locator('.wb-tool[data-window="coordsPanel"]').click()
+    assert open_menu(page).get_by_role('menuitemcheckbox',name='Trajectory',exact=True).count()==0
+    assert open_menu(page).get_by_role('menuitemcheckbox',name='Spinor info',exact=True).count()==0
+    open_panel(page,'Coordinates')
     assert coordinates.is_visible() and orbitals.is_visible()
     canvas=page.locator('#canvas').bounding_box()
     assert canvas['x']+canvas['width'] <= orbitals.bounding_box()['x']+1
@@ -137,7 +150,7 @@ def run(page):
     assert 'bohr' in page.locator('#coordsPanelTitle').inner_text()
     page.locator('#moldenEnergyFilter').fill('0.1'); page.locator('#moldenEnergyFilter').press('Tab')
     before=p.snapshot(page)
-    page.locator('.wb-tool[data-window="styleStudio"]').click()
+    open_panel(page,'Style Studio')
     assert orbitals.is_hidden() and page.locator('#styleStudio').is_visible() and coordinates.is_visible()
     assert 'moldenInspector' in layout(page)['open']
     page.get_by_role('tab',name='Orbitals',exact=True).click()
@@ -174,7 +187,7 @@ def run(page):
     size=layout(page)['rightWidth']; grip=page.get_by_role('separator',name='Resize right dock')
     grip.focus(); page.keyboard.press('ArrowLeft')
     assert layout(page)['rightWidth']==size+10
-    window_menu(page,coordinates,'Minimize to tools bar')
+    window_menu(page,coordinates,'Minimize to Panels menu')
     assert coordinates.is_hidden() and 'coordsPanel' in layout(page)['open']
     page.locator('#canvas').focus();page.keyboard.press('c')
     assert coordinates.is_visible()

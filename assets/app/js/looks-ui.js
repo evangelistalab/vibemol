@@ -78,16 +78,15 @@
       $('lookModified').textContent = modified ? '· Modified' : '';
       for (const card of $('lookGallery').children) card.setAttribute('aria-pressed', String(card.dataset.look === look?.id));
       const builtinId = builtinLooks.some(item => item.id === look?.id) ? look.id : '';
-      $('lookPreset').value = builtinId;
-      if (deps.presetSelect) {
-        const options = [new Option('Custom appearance', ''), ...builtinLooks.map(item => new Option(item.name, item.id))];
+      for (const selector of [$('lookPreset'), deps.presetSelect].filter(Boolean)) {
+        const options = [new Option(look && !saved && !builtinId ? look.name : 'Custom appearance', ''), ...builtinLooks.map(item => new Option(item.name, item.id))];
         if (library.length) {
           const savedGroup = document.createElement('optgroup'); savedGroup.label = 'My looks';
           for (const item of [...library].sort((a, b) => a.name.localeCompare(b.name))) savedGroup.append(new Option(item.name, item.id));
           options.push(savedGroup);
         }
-        deps.presetSelect.replaceChildren(...options);
-        deps.presetSelect.value = saved?.id || builtinId;
+        selector.replaceChildren(...options);
+        selector.value = saved?.id || builtinId;
       }
       $('lookUndo').disabled = !undoState; $('lookRevert').disabled = !modified;
       $('lookUpdate').disabled = !saved || !modified; $('lookRename').disabled = !saved; $('lookDelete').disabled = !saved;
@@ -117,7 +116,7 @@
       persist(); $('lookNameForm').hidden = true; naming = null; sync();
       status(`${look.name} saved. Orbital overrides stay in your session.`);
     }
-    $('lookPreset').onchange = () => run(() => { const look = L.builtins.find(item => item.id===$('lookPreset').value); if (look) choose(look); });
+    $('lookPreset').onchange = () => run(() => { const look = [...L.builtins, ...library].find(item => item.id===$('lookPreset').value); if (look) choose(look); });
     if (deps.presetSelect) deps.presetSelect.onchange = () => run(() => {
       const look = [...builtinLooks, ...library].find(item => item.id === deps.presetSelect.value);
       if (look) choose(look);
@@ -151,11 +150,11 @@
       } catch (error) { status(error.message); }
     };
     editor = global.VibeMolAppearanceEditor.createController({
-      root: $('lookComponentEditor'), createSlider: deps.createSlider, captureSettings: deps.captureSettings,
+      root: $('lookComponentEditor'), showBindings: deps.showBindings, createSlider: deps.createSlider, captureSettings: deps.captureSettings,
       atomFields: deps.atomFields, bondFields: deps.bondFields, getAtomBaseRadius: deps.getAtomBaseRadius,
       getRendering: deps.getRendering, getActiveLook: current,
       editBackgroundColor: deps.editBackgroundColor,
-      editSettings: deps.editSettings, editSurfaceDefaults: deps.editSurfaceDefaults,
+      editSettings: deps.editSettings, surfaceSelectionMode: deps.surfaceSelectionMode, editSurfaceSelection: deps.editSurfaceSelection, captureSurfaceSettings: deps.captureSurfaceSettings, hasSurfaceSelection: deps.hasSurfaceSelection,
       resetSurfaceOverrides: deps.resetSurfaceOverrides, getSurfaceOverrideCounts: deps.getSurfaceOverrideCounts,
       surfaceColorSchemes: deps.surfaceColorSchemes, openElementColors: deps.openElementColors,
       edit: (section, patch, options, phase) => edit(JSON.stringify([section, Object.keys(patch), options]), phase, () => deps.editComponent(section, patch, options)),
