@@ -4136,6 +4136,10 @@ def main() -> int:
             stored_before_traj = active_structure_summary(page)
             if stored_before_traj['bondCount'] != 1 or stored_before_traj['bondOrigins'] != ['perceived']:
                 raise AssertionError(f'Trajectory import stored graph is unexpected: {stored_before_traj}')
+            # Earlier camera checks leave the view along X, the trajectory's
+            # bond axis. Look along Z so this pixel check sees the bond rather
+            # than the atom that occludes it in both frames.
+            page.locator('#viewAxisZBtn').evaluate('el => el.click()')
             page.locator('#trajectoryFrame').evaluate(
                 """(el) => {
                     el.value = '0';
@@ -4146,6 +4150,8 @@ def main() -> int:
             page.wait_for_function(
                 """() => /1\\/2/.test(document.getElementById('trajectoryFrameLabel')?.textContent || '')"""
             )
+            page.wait_for_function('() => VibeMolTesting.getMoleculeRenderSnapshot().bondCarrierCount > 0')
+            page.evaluate('() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))')
             frame1_sample = sample_canvas_region_rgb(page, 0.5, 0.5, 11)
             page.locator('#trajectoryFrame').evaluate(
                 """(el) => {
@@ -4157,6 +4163,8 @@ def main() -> int:
             page.wait_for_function(
                 """() => /2\\/2/.test(document.getElementById('trajectoryFrameLabel')?.textContent || '')"""
             )
+            page.wait_for_function('() => VibeMolTesting.getMoleculeRenderSnapshot().bondCarrierCount === 0')
+            page.evaluate('() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))')
             frame2_sample = sample_canvas_region_rgb(page, 0.5, 0.5, 11)
             if (frame2_sample['r'] + frame2_sample['g'] + frame2_sample['b']) <= (frame1_sample['r'] + frame1_sample['g'] + frame1_sample['b']) + 0.05:
                 raise AssertionError(f'Trajectory frame switch did not visibly remove the bond: {frame1_sample} -> {frame2_sample}')

@@ -24,6 +24,7 @@ def instrumented_source():
     assert source.count(marker) == 1
     return source.replace(marker, '''window.__editProbe = {
       reset() { window.__pickCounts = {records:0, segments:0, queries:0}; },
+      rebuild() { rebuildScene({preserveView:true}); },
       query(point, fresh=false) {
         if(fresh) moleculePickCache.clear();
         const hit=pickBondHit(point);
@@ -292,7 +293,8 @@ def orbital_modes(page):
         after = page.evaluate(f'()=>JSON.parse(JSON.stringify(VibeMolTesting.{snapshot}()))')
         assert after == before, (render_mode, cloud_type, before, after)
         # A real rebuild in Edit drops hidden graphics; leaving must recreate them.
-        mode(page, 'Edit'); p.redraw(page)
+        # Box visibility is now a layer-only update, not a full scene rebuild.
+        mode(page, 'Edit'); page.evaluate('()=>__editProbe.rebuild()')
         assert page.evaluate(f'()=>JSON.parse(JSON.stringify(VibeMolTesting.{snapshot}()))') == []
         mode(page, 'Display')
         restored = page.evaluate(f'()=>JSON.parse(JSON.stringify(VibeMolTesting.{snapshot}()))')

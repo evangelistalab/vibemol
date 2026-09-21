@@ -226,6 +226,9 @@ def run(page):
     capture(page,'dark')
     page.set_viewport_size({'width':390,'height':740})
     page.wait_for_function('() => VibeMolWorkbench.snapshot().compact')
+    # compact() reads the viewport immediately; wait for the resize handler to
+    # move the actual dock before asserting its rendered visibility.
+    page.locator('#workbenchDockRight').wait_for(state='hidden')
     assert page.locator('#workbenchDockRight').is_hidden()
     assert page.locator('#workbenchDockBottom').is_visible()
     assert page.locator('#canvas').bounding_box()['height']>=200
