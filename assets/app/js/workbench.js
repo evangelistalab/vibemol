@@ -1,10 +1,9 @@
 (function (global) {
   'use strict';
   const params = new URLSearchParams(global.location.search);
-  if (params.get('workspaceLab') !== '1') return;
   const host = global.VibeMolWorkbenchHost;
   const model = global.VibeMolWorkbenchModel;
-  if (!host || !model) return;
+  if (!host?.enabled || !model) return;
   const storageKey = 'vibemol.workbench.lab.v1';
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem(storageKey)) || {}; } catch (_) { /* Browser storage is optional. */ }
@@ -42,7 +41,6 @@
   }
   const bar = document.createElement('nav'); bar.className = 'wb-bar'; bar.id = 'workbenchBar'; bar.setAttribute('aria-label', 'Workbench tools');
   const brand = document.createElement('div'); brand.className = 'wb-brand';
-  label(brand, 'LAB', 'wb-lab');
   const modes = document.getElementById('toolbarModeRow');
   const oldModeSection = modes.closest('.tb-modes');
   bar.append(modes); oldModeSection?.remove();

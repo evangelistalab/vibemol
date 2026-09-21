@@ -150,7 +150,7 @@ python -m playwright install chromium
 ```
 
 ## Deployment
-- Current release: **v0.9.0** — [release notes](docs/releases/v0.9.0.md). The [Workbench interface](https://vibemol.org/?workspaceLab=1) remains opt-in.
+- Current release: **v0.9.0** — [release notes](docs/releases/v0.9.0.md). [VibeMol](https://vibemol.org/) opens the Workbench interface by default.
 - Static deployment from repository root (`index.html`)
 - `.nojekyll` is required for GitHub Pages compatibility
 - Keep `CNAME` (`vibemol.org`) in source for production. The beta deployment workflow removes it only from the beta mirror.

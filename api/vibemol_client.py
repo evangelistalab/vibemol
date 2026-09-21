@@ -411,6 +411,10 @@ def _set_toggle_button(page: Any, selector: str, value: bool) -> bool:
 def _set_style_with_alias(page: Any, style: str) -> str | None:
     return page.evaluate(
         """(style) => {
+            if (window.VibeMolAppearanceLooks?.apply) {
+                window.VibeMolAppearanceLooks.apply(style, {includeColors: true});
+                return style;
+            }
             const sel = document.getElementById('moleculeStyle');
             if (!sel) return null;
             const values = Array.from(sel.options).map((o) => o.value);

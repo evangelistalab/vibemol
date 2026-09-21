@@ -95,7 +95,7 @@ def camera_scope(page, context, url):
     change(page,'dofFocusDistance',9)
     assert l.pristine(page)
     page.locator('#lookUndo').click();assert focus_settings(page)==focus
-    fresh=context.new_page();fresh.goto(url);fresh.wait_for_function('() => window.VibeMolSession')
+    fresh=context.new_page();fresh.goto(url+'?workspaceLab=0');fresh.wait_for_function('() => window.VibeMolSession')
     assert fresh.evaluate('value=>VibeMolSession.import(value)',session)['ok']
     assert focus_settings(fresh)==focus
     fresh.close()
@@ -175,7 +175,7 @@ def main():
                 page.on('console',lambda message:console_errors.append(message.text) if message.type=='error' else None)
                 page.on('dialog',lambda dialog:dialog.dismiss())
                 try:
-                    page.goto(url);page.wait_for_function('() => window.VibeMolAppearanceLooks')
+                    page.goto(url+'?workspaceLab=0');page.wait_for_function('() => window.VibeMolAppearanceLooks')
                     run(page,context,url);assert not errors,errors
                 except Exception:
                     p.write_failure_artifacts(page,p.ARTIFACTS,'scopes-'+run.__name__,errors,console_errors);raise

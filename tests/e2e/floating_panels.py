@@ -219,7 +219,7 @@ def main():
                 page.on('console',lambda message:console_errors.append(message.text) if message.type=='error' else None)
                 page.on('dialog',lambda dialog:dialog.dismiss())
                 try:
-                    page.goto(url+'?appearanceStudy=1',wait_until='domcontentloaded')
+                    page.goto(url+'?workspaceLab=0&appearanceStudy=1',wait_until='domcontentloaded')
                     page.wait_for_function('() => window.VibeMolAppearanceLooks')
                     run(page)
                     assert not errors,errors

@@ -1004,17 +1004,12 @@ def wait_for_hint_contains(page, snippet: str) -> None:
 
 
 def wait_for_clickable(page, selector: str, timeout: int = 30000) -> None:
-    deadline = time.monotonic() + (max(0, int(timeout)) / 1000.0)
-    last_error = None
-    locator = page.locator(selector)
-    while time.monotonic() < deadline:
-        try:
-            locator.click(trial=True, timeout=1000)
-            return
-        except Exception as exc:  # Playwright raises actionability errors until the control can receive events.
-            last_error = exc
-            page.wait_for_timeout(100)
-    raise AssertionError(f'Control did not become clickable: {selector}: {last_error}')
+    # Let Playwright finish one actionability check on software-rendered CI.
+    # Repeated one-second deadlines can abort after scrolling on every attempt.
+    try:
+        page.locator(selector).click(trial=True, timeout=timeout)
+    except Exception as exc:
+        raise AssertionError(f'Control did not become clickable: {selector}: {exc}') from exc
 
 
 def click_when_ready(page, selector: str, timeout: int = 30000) -> None:
@@ -1412,7 +1407,7 @@ def main() -> int:
         page.on('console', lambda msg: console_errors.append(msg.text) if msg.type == 'error' else None)
         try:
             log_step('load app')
-            page.goto(base_url, wait_until='networkidle')
+            page.goto(base_url+'?workspaceLab=0', wait_until='networkidle')
             wait_for_ready(page)
             page.wait_for_function(
                 """() => {

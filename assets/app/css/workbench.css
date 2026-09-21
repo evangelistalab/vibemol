@@ -61,7 +61,6 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .wb-edit-tool .adaptiveEditItemLabel { font: inherit; color: inherit; }
 .wb-edit-tool .adaptiveEditItemIcon { font-size: 17px; color: inherit; }
 .wb-edit-tool .adaptiveShortcutGroup, .wb-edit-tool .adaptiveEditItemMeta { display: none; }
-.wb-lab { border: 1px solid var(--vm-color-border); border-radius: 4px; padding: 2px 4px; font-size: 9px; color: var(--vm-color-text-secondary); }
 .wb-tools { display: flex; align-items: center; gap: 3px; flex: 1; min-width: 0; padding-left: 12px; border-left: 1px solid var(--vm-color-toolbar-divider); }
 .wb-bar [hidden] { display: none !important; }
 .wb-bar .vm-btn, .wb-dock .vm-btn, .wb-menu .vm-btn { font: 500 12px var(--vm-font-sans); box-shadow: none; }

@@ -6,7 +6,7 @@ from appearance_controls import change
 
 
 def complete_look_tiles(page, context, url):
-    page.goto(url + '?workspaceLab=1');page.wait_for_function('()=>window.VibeMolWorkbench')
+    page.goto(url + '?workspaceLab=1&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
     assert p.load(page, [{'name': 'sample.cube', 'text': (p.ROOT / 'assets/data/sample.cube').read_text()}])['ok']
     page.evaluate('VibeMolAppearanceLooks.openStudio()')
     page.wait_for_function('()=>[...document.querySelectorAll(".vm-look-card img")].every(im=>im.complete&&im.naturalWidth>0)')

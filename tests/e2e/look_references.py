@@ -22,7 +22,7 @@ def save(page, name):
 
 
 def reference_ui(page, context, url):
-    page.goto(url + '?workspaceLab=1');page.wait_for_function('()=>window.VibeMolWorkbench')
+    page.goto(url + '?workspaceLab=1&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
     assert p.load(page, [{'name':'sample.cube','text':(p.ROOT/'assets/data/sample.cube').read_text()}])['ok']
     page.evaluate('VibeMolAppearanceLooks.openStudio()')
     style = page.locator('#lookPreset');colors = page.locator('#lookColorPreset');revert = page.locator('#lookRevert')
@@ -96,7 +96,7 @@ def reference_ui(page, context, url):
 
 
 def reference_persistence(page, context, url):
-    page.goto(url+'?workspaceLab=1');page.wait_for_function('()=>window.VibeMolWorkbench')
+    page.goto(url+'?workspaceLab=1&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
     assert p.load(page,[{'name':'ref.cube','text':p.hydrogen_2p_cube()}])['ok']
     page.evaluate('VibeMolAppearanceLooks.openStudio()')
     tile(page,'opal');style_id=save(page,'Saved style')
@@ -111,7 +111,7 @@ def reference_persistence(page, context, url):
     fresh=context.browser.new_context(viewport={'width':1600,'height':1000});other=fresh.new_page();errors=[]
     other.on('pageerror',lambda e:errors.append(str(e)))
     try:
-        other.goto(url+'?workspaceLab=1');other.wait_for_function('()=>window.VibeMolAppearanceLooks')
+        other.goto(url+'?workspaceLab=1&appearanceStudy=1');other.wait_for_function('()=>window.VibeMolAppearanceLooks')
         assert other.evaluate('saved=>VibeMolSession.import(saved)',saved)['ok']
         after=state(other)
         for key in ['styleRef','colorsRef','styleModified','colorsModified','label','settings']: assert after[key]==before[key],key
@@ -157,7 +157,7 @@ def reference_persistence(page, context, url):
 
 
 def reference_migration(page, context, url):
-    page.goto(url+'?workspaceLab=1');page.wait_for_function('()=>window.VibeMolWorkbench')
+    page.goto(url+'?workspaceLab=1&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
     assert p.load(page,[{'name':'legacy.cube','text':p.hydrogen_2p_cube()}])['ok']
     page.evaluate('VibeMolAppearanceLooks.openStudio()')
     for style,colors in [('opal','classic'),('classic','classic')]:

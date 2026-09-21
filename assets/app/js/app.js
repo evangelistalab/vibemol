@@ -32,8 +32,9 @@
   const MOLDEN_GRID_MAX_TOTAL_POINTS = 360000;
   const UI_THEME_STORAGE_KEY = 'vibemol.uiTheme';
   const AUTOSAVE_STORAGE_KEY = 'vibemol.autosavePreset';
-  const workspaceExperiment = new URLSearchParams(window.location.search).get('workspaceLab') === '1';
-  const appearanceStudy = workspaceExperiment || new URLSearchParams(window.location.search).get('appearanceStudy') === '1';
+  const launchParams = new URLSearchParams(window.location.search);
+  const workspaceEnabled = launchParams.get('workspaceLab') !== '0';
+  const appearanceStudy = launchParams.get('appearanceStudy') === '1' || launchParams.get('workspaceDemo') === '1';
   const APPEARANCE_AUTOSAVE_PERSIST_SCOPE = 'appearanceAutosave';
   const AUTOSAVE_PRESET_OBJECT_VALUE_KEYS = new Set(['global.elementColorOverrides', 'appearance.look', 'appearance.references', 'appearance.rendering']);
   const lookModule = window.VibeMolLooks;
@@ -1431,7 +1432,7 @@
   let sessionRecovery = null;
   let applyingSession = false;
   const sceneGraphController = createSceneGraphController({
-    mixedSelection: workspaceExperiment,
+    mixedSelection: workspaceEnabled,
     disposeLayer: disposeSceneGraphLayer,
   });
   const sceneSources = window.VibeMolSceneSources.createSceneSources({
@@ -8008,10 +8009,10 @@
       getState(context) {
         return {
           visible: context.isVisible,
-          active: context.buildModeActive || (!workspaceExperiment && context.emptyEditState),
+          active: context.buildModeActive || (!workspaceEnabled && context.emptyEditState),
           presentation: {
             icon: 'add',
-            label: context.buildModeActive && !workspaceExperiment ? 'Elements' : 'Build',
+            label: context.buildModeActive && !workspaceEnabled ? 'Elements' : 'Build',
             meta: '',
             key: '/',
             title: 'Build palette (/)',
@@ -8025,7 +8026,7 @@
       getButtonEl: () => editAdaptiveSymmetryBtn,
       getMetaEl: () => editAdaptiveSymmetryMetaEl,
       getState(context) {
-        if (context.buildModeActive && !workspaceExperiment) {
+        if (context.buildModeActive && !workspaceEnabled) {
           return {
             visible: true,
             active: false,
@@ -8058,7 +8059,7 @@
       getButtonEl: () => editAdaptiveCleanStructureBtn,
       getMetaEl: () => editAdaptiveCleanStructureMetaEl,
       getState(context) {
-        if (context.buildModeActive && !workspaceExperiment) {
+        if (context.buildModeActive && !workspaceEnabled) {
           return {
             visible: true,
             active: false,
@@ -9270,7 +9271,7 @@
   }
 
   function toggleCubeLayerSelection(layer) {
-    if (!isCubeLikeLayer(layer) && !(workspaceExperiment && layer?.kind === SCENE_LAYER_KIND.MOLECULE)) return;
+    if (!isCubeLikeLayer(layer) && !(workspaceEnabled && layer?.kind === SCENE_LAYER_KIND.MOLECULE)) return;
     const scene = sceneGraphController.getSceneForLayer(layer);
     if (scene) focusScene(scene);
     if (sceneGraphController.extendSelection) sceneGraphController.extendSelection(layer.id);
@@ -9971,7 +9972,7 @@
     if (isCubeLikeLayer(layer) && (singleCubeMode || options.forceSingleCubeVisibility)) {
       setOnlyCubeVisibleInScene(scene, layer);
     }
-    if (isCubeLikeLayer(layer) || (workspaceExperiment && layer.kind === SCENE_LAYER_KIND.MOLECULE)) {
+    if (isCubeLikeLayer(layer) || (workspaceEnabled && layer.kind === SCENE_LAYER_KIND.MOLECULE)) {
       const selectionMode = options.selection || 'replace';
       if (selectionMode === 'range') {
         if (sceneGraphController.extendSelectionRange) {
@@ -11535,11 +11536,11 @@
       // Workbench keeps shared inspectors available while editing. Analysis-only
       // windows are suspended by the workspace, without closing their saved tabs.
       const sharedWhileEditing = [NON_EDIT_WINDOW_ID.COORDS_PANEL, NON_EDIT_WINDOW_ID.VIEW_PANEL, NON_EDIT_WINDOW_ID.VIEW_INSPECTOR].includes(itemDef.windowId);
-      const visibleInMode = itemDef.visible && (!workspaceExperiment || currentMode !== MODES.EDIT || sharedWhileEditing);
+      const visibleInMode = itemDef.visible && (!workspaceEnabled || currentMode !== MODES.EDIT || sharedWhileEditing);
       visibleItems.push({ el: itemDef.buttonEl, visible: visibleInMode });
       activeItems.push({ el: itemDef.buttonEl, active: !!(itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen()) });
     }
-    for (const buttonEl of (workspaceExperiment && currentMode === MODES.EDIT ? [] : getEditAdaptiveButtonEls())) {
+    for (const buttonEl of (workspaceEnabled && currentMode === MODES.EDIT ? [] : getEditAdaptiveButtonEls())) {
       visibleItems.push({ el: buttonEl, visible: false });
       activeItems.push({ el: buttonEl, active: false });
     }
@@ -11576,7 +11577,7 @@
       activeItems.push({ el: buttonEl, active: !!chipState.active });
       metaItems.push({ el: metaEl, text: chipState.presentation.meta || '' });
     }
-    for (const buttonEl of (workspaceExperiment ? [] : displayModeButtons)) {
+    for (const buttonEl of (workspaceEnabled ? [] : displayModeButtons)) {
       const showCoordinates = buttonEl === coordsPanelBtn && context.hasEditableAtoms;
       visibleItems.push({ el: buttonEl, visible: showCoordinates });
       activeItems.push({ el: buttonEl, active: showCoordinates && isFloatingPanelCurrentlyOpen(coordsPanel) });
@@ -11593,11 +11594,11 @@
 
   function updateCanvasAdaptiveMenuUi() {
     if (!canvasAdaptiveMenuEl) return;
-    if (currentMode === MODES.EDIT && !workspaceExperiment) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
+    if (currentMode === MODES.EDIT && !workspaceEnabled) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
     let menuModel = currentMode === MODES.EDIT
       ? buildEditAdaptiveMenuModel()
       : buildDisplayAdaptiveMenuModel();
-    if (workspaceExperiment && currentMode === MODES.EDIT) {
+    if (workspaceEnabled && currentMode === MODES.EDIT) {
       const shared = buildDisplayAdaptiveMenuModel();
       menuModel = { ...menuModel,
         visibleItems: [...menuModel.visibleItems, ...shared.visibleItems],
@@ -11617,7 +11618,7 @@
       displayWindowsController.positionOpenButtonAnchoredPopovers();
     }
     if (displayAdaptiveMenuAutoHideController) {
-      displayAdaptiveMenuAutoHideController.setEnabled(!workspaceExperiment && canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+      displayAdaptiveMenuAutoHideController.setEnabled(!workspaceEnabled && canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
     }
     syncTwoComponentOverlayLabelOffsets();
   }
@@ -11899,12 +11900,12 @@
     setSpinorInfoPanelOpen(false);
   });
   displayWindowsController = createDisplayWindowsController({
-    aliases: workspaceExperiment ? { displayInspector: 'inspector', styleStudio: 'inspector' } : {},
+    aliases: workspaceEnabled ? { displayInspector: 'inspector', styleStudio: 'inspector' } : {},
     positionFloatingPopover: positionFloatingPopoverUi,
     keepOpenOnSwitch: id => !!window.VibeMolWorkbench?.manages(id),
     revealHiddenWindow: id => !!window.VibeMolWorkbench?.restoreIfHidden(id),
     entries: {
-      ...(workspaceExperiment ? { inspector: {
+      ...(workspaceEnabled ? { inspector: {
         id: 'inspector', label: 'Properties',
         isOpen: () => !!propertiesInspector?.isOpen(),
         setOpen: open => propertiesInspector?.setOpen(open, { focus: false }),
@@ -17180,7 +17181,7 @@
       });
       // Workbench search is a filter. Moving the panel or changing mode must
       // not select a payload and close it as a side effect of blurring the field.
-      if (!workspaceExperiment) editBuildSearchEl.addEventListener('change', commit);
+      if (!workspaceEnabled) editBuildSearchEl.addEventListener('change', commit);
       editBuildSearchEl.addEventListener('keydown', (e) => {
         if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
@@ -17327,7 +17328,7 @@
     if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
     if (editAdaptiveCleanStructureBtn) {
       editAdaptiveCleanStructureBtn.onclick = () => {
-        if (isBuildPopoverOpen() && !workspaceExperiment) {
+        if (isBuildPopoverOpen() && !workspaceEnabled) {
           if (autoHydrogenController) autoHydrogenController.handleShortcut();
           return;
         }
@@ -18386,8 +18387,8 @@
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveAddAtomPopoverEl,
       triggerEl: editAdaptiveAddAtomBtn,
-      placement: workspaceExperiment ? 'bottom' : 'right',
-      topInset: workspaceExperiment ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
+      placement: workspaceEnabled ? 'bottom' : 'right',
+      topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
       defaultWidth: 360,
       defaultHeight: 420,
@@ -18470,8 +18471,8 @@
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveSymmetryPopoverEl,
       triggerEl: editAdaptiveSymmetryBtn,
-      placement: workspaceExperiment ? 'bottom' : 'right',
-      topInset: workspaceExperiment ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
+      placement: workspaceEnabled ? 'bottom' : 'right',
+      topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
       defaultWidth: 220,
       defaultHeight: 460,
@@ -25867,8 +25868,8 @@
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
   bind('down', MODES.EDIT, 'm', (e) => {
-    if (workspaceExperiment && (e?.ctrlKey || e?.metaKey || e?.altKey)) return;
-    if (workspaceExperiment || (e && e.shiftKey)) {
+    if (workspaceEnabled && (e?.ctrlKey || e?.metaKey || e?.altKey)) return;
+    if (workspaceEnabled || (e && e.shiftKey)) {
       setMode(MODES.MEASURE);
       return;
     }
@@ -25887,7 +25888,7 @@
   bind('down', MODES.EDIT, 'c', () => {
     toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL);
   });
-  if (workspaceExperiment) {
+  if (workspaceEnabled) {
     bind('down', MODES.EDIT, 'v', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL));
     bind('down', MODES.EDIT, 'q', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR));
   }
@@ -26064,7 +26065,7 @@
       setElementColorOverlayOpen(false);
       return;
     }
-    if (e.key === 'Escape' && styleStudio?.isOpen() && !workspaceExperiment) {
+    if (e.key === 'Escape' && styleStudio?.isOpen() && !workspaceEnabled) {
       e.preventDefault();
       styleStudio.setOpen(false);
       return;
@@ -26119,7 +26120,7 @@
       hideSymmetryPopover({ restore: true });
       return;
     }
-    if (e.key === 'Escape' && !workspaceExperiment) {
+    if (e.key === 'Escape' && !workspaceEnabled) {
       const closed = closeNonEditWindows(ESCAPABLE_NON_EDIT_WINDOW_ORDER);
       if (closed) {
         e.preventDefault();
@@ -26360,7 +26361,7 @@
     propertiesInspector?.scheduleSync();
     syncSurfaceStyleScopeUi();
     const layer = getSurfaceAppearanceLayer();
-    if (workspaceExperiment) {
+    if (workspaceEnabled) {
       const values = getSurfaceAppearanceTargets().map(target => target.showBox ?? showSimulationBoxes);
       toggleBox.checked = !!values[0];
       toggleBox.indeterminate = values.some(value => value !== values[0]);
@@ -27734,7 +27735,7 @@
   }
   function editSurfaceStyle(patch, phase = 'change', defaults = false) {
     const layers = defaults ? [] : getSurfaceAppearanceTargets();
-    if (workspaceExperiment && !defaults && !layers.length) return false;
+    if (workspaceEnabled && !defaults && !layers.length) return false;
     if (!layers.length) return editAppearanceSettings(normalizeSurfaceStylePatch(patch, getSurfaceStyleDefaults()), phase);
     const groups = Object.entries(lookModule.surfaceGroups).filter(([, keys]) => keys.some(key => key in patch)).map(([group]) => group);
     runAppearanceEdit(`surface:${groups.join(',')}:${layers.map(layer => layer.id).join(',')}`, phase, () => {
@@ -27991,6 +27992,7 @@
     optimizeActiveStructureWithUff,
   });
   window.VibeMolTesting = Object.freeze({
+    rebuildScene: () => rebuildScene({ preserveView: true }),
     getHintMessage: () => String(hintEl && hintEl.textContent || ''),
     isFuseRingPreviewActive: () => !!addFusePreviewState,
     listNonEditWindows: () => Object.values(NON_EDIT_WINDOW_ID),
@@ -31604,7 +31606,7 @@
   }
   if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });
   toggleBox.onchange = () => {
-    if (workspaceExperiment) {
+    if (workspaceEnabled) {
       const value = toggleBox.checked;
       for (const layer of getSurfaceAppearanceTargets()) { layer.showBox = value; persistActiveCubeLayerState(layer, { render: false }); }
       refreshSimulationBoxes();
@@ -32299,7 +32301,7 @@
       if (asActive) bondGroup = nextBondGroup;
       else extraMoleculeRenderGroups.push(nextBondGroup);
     }
-    if (!workspaceExperiment && showSimulationBoxes && hasGrid) {
+    if (!workspaceEnabled && showSimulationBoxes && hasGrid) {
       const nextBoxHelper = buildBox(vol);
       contentGroup.add(nextBoxHelper);
       if (asActive) boxHelper = nextBoxHelper;
@@ -32309,7 +32311,7 @@
   }
 
   function refreshSimulationBoxes() {
-    if (!workspaceExperiment) return;
+    if (!workspaceEnabled) return;
     for (const box of [boxHelper, ...extraBoxHelpers]) if (box) { box.parent?.remove(box); disposeDeep(box); }
     boxHelper = null; extraBoxHelpers = [];
     for (const scene of sceneGraphController.getScenes()) {
@@ -32831,7 +32833,7 @@
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) void sessionRecovery.flush(); });
   window.addEventListener('pagehide', () => { void sessionRecovery.flush(); });
-  if (appearanceStudy) { sessionRecovery.stop(); sessionStatusEl.textContent = workspaceExperiment ? 'Workspace experiment' : 'Appearance study'; }
+  if (appearanceStudy) { sessionRecovery.stop(); sessionStatusEl.textContent = launchParams.get('workspaceDemo') === '1' ? 'Demo session' : 'Appearance study'; }
   else void sessionRecovery.initialize();
 
   function editAppearanceComponent(section, patch, options = {}) {
@@ -32864,8 +32866,8 @@
     return true;
   }
   looksUi = window.VibeMolLooksUi.createController({
-    root: document.getElementById('looksPanel'), consolidated: workspaceExperiment, showBindings: workspaceExperiment, captureSettings: captureLookSettings,
-    presetSelect: workspaceExperiment ? null : document.getElementById('appearanceLookPreset'),
+    root: document.getElementById('looksPanel'), consolidated: workspaceEnabled, showBindings: workspaceEnabled, captureSettings: captureLookSettings,
+    presetSelect: workspaceEnabled ? null : document.getElementById('appearanceLookPreset'),
     atomFields: document.getElementById('appearanceAtomColorFields'), bondFields: document.getElementById('appearanceBondColorFields'),
     getAtomBaseRadius: z => 0.5 * getCovalentRadiusAngstrom(z),
     applyStartupDefault: !appearanceStudy,
@@ -32873,13 +32875,13 @@
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,
     editBackgroundColor: editSceneBackgroundColor,
     editSettings: editAppearanceSettings,
-    surfaceSelectionMode: workspaceExperiment,
-    editSurfaceSelection: (patch, phase) => editSurfaceStyle(patch, phase, !workspaceExperiment),
+    surfaceSelectionMode: workspaceEnabled,
+    editSurfaceSelection: (patch, phase) => editSurfaceStyle(patch, phase, !workspaceEnabled),
     editSurfaceDefaults: (patch, phase) => editSurfaceStyle(patch, phase, true),
-    captureSurfaceSettings: () => workspaceExperiment && getSurfaceAppearanceLayer() ? getLookSurfaceSettings(getSurfaceAppearanceLayer()) : getSurfaceStyleDefaults(),
-    hasSurfaceSelection: () => !workspaceExperiment || getSurfaceAppearanceTargets().length > 0,
-    resetSurfaceOverrides: () => resetSurfaceStyleOverrides(undefined, !workspaceExperiment),
-    getSurfaceOverrideCounts: () => getSurfaceOverrideCounts(workspaceExperiment ? getSurfaceAppearanceTargets() : getAllLookLayers()),
+    captureSurfaceSettings: () => workspaceEnabled && getSurfaceAppearanceLayer() ? getLookSurfaceSettings(getSurfaceAppearanceLayer()) : getSurfaceStyleDefaults(),
+    hasSurfaceSelection: () => !workspaceEnabled || getSurfaceAppearanceTargets().length > 0,
+    resetSurfaceOverrides: () => resetSurfaceStyleOverrides(undefined, !workspaceEnabled),
+    getSurfaceOverrideCounts: () => getSurfaceOverrideCounts(workspaceEnabled ? getSurfaceAppearanceTargets() : getAllLookLayers()),
     surfaceColorSchemes: Array.from(schemeSelect.options, option => [option.value, option.textContent]),
     openElementColors: () => setElementColorOverlayOpen(true),
     references: lookReferences,
@@ -32897,7 +32899,7 @@
       link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     },
   });
-  if (workspaceExperiment) {
+  if (workspaceEnabled) {
     propertiesInspector = window.VibeMolPropertiesInspector.createController({
       getObjects: getPropertyObjects, getMoleculeDisplay, editMoleculeDisplay,
       syncLook: () => looksUi.scheduleSync(),
@@ -32942,9 +32944,10 @@
   syncLoadedSceneControls();
   updateEmptyStateVisibility();
 
-  // Narrow host adapter for the opt-in workspace experiment. Scientific state
+  // Narrow host adapter for the Workbench interface. Scientific state
   // remains owned by the existing window controllers and renderer.
   window.VibeMolWorkbenchHost = Object.freeze({
+    enabled: workspaceEnabled,
     windows: displayWindowsController,
     properties: propertiesInspector,
     // Match the launcher's UI ids; the internal measurement-mode key is longer.

@@ -235,7 +235,7 @@ def main():
                 page.on('console',lambda message:console_errors.append(message.text) if message.type=='error' else None)
                 page.on('dialog',lambda dialog:dialog.dismiss())
                 try:
-                    page.goto(url);page.wait_for_function('() => window.VibeMolAppearanceLooks')
+                    page.goto(url+'?workspaceLab=0');page.wait_for_function('() => window.VibeMolAppearanceLooks')
                     scenario(page)
                     assert not errors,errors
                 except Exception:

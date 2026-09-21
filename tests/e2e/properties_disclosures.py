@@ -64,7 +64,7 @@ def main():
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
                 try:
-                    page.goto(url + '?workspaceLab=1')
+                    page.goto(url + '?workspaceLab=1&appearanceStudy=1')
                     page.wait_for_function('() => window.VibeMolWorkbench')
                     check_panel(page, placement)
                     assert not errors, errors

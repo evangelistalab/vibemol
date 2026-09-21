@@ -154,14 +154,14 @@ def main():
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.on('dialog', lambda dialog: dialog.dismiss())
         try:
-            page.goto(url + '?appearanceStudy=1'); page.wait_for_function('()=>window.VibeMolTesting')
+            page.goto(url + '?workspaceLab=0&appearanceStudy=1'); page.wait_for_function('()=>window.VibeMolTesting')
             assert page.locator('#toolbar #displayInspector').count() == 1
             assert page.locator('#toolbarModeRow').count() == 1
             assert page.locator('#workbenchBar').count() == 0
             coordinates(page)
             coordinate_row_actions(page)
             orbital_context(page)
-            page.goto(url + '?workspaceLab=1'); page.wait_for_function('()=>window.VibeMolTesting')
+            page.goto(url + '?workspaceLab=1&appearanceStudy=1'); page.wait_for_function('()=>window.VibeMolTesting')
             coordinate_row_actions(page)
             assert not errors, errors
         except Exception:

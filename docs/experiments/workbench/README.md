@@ -2,11 +2,11 @@
 
 **Recommendation:** give persistent inspectors a home around the canvas, with floating windows available when useful. Keep short-lived actions close to the molecule. The user should spend their time looking at chemistry, with very little time arranging windows.
 
-The working prototype is on `codex/window-workspace-lab`:
+Workbench was developed on `codex/window-workspace-lab` and is the default interface in v0.9.0:
 
-- [Open Workbench](../../../?workspaceLab=1)
+- [Open Workbench](../../../)
 - [Try it with the methane orbital demo](../../../?workspaceLab=1&workspaceDemo=1)
-- Open the app without these parameters to use the current interface.
+- Existing `?workspaceLab=1` links open the same interface. Use `?workspaceLab=0` only for the older interface.
 
 ## The interaction
 
@@ -54,9 +54,9 @@ My design judgment is to combine stable docks with deliberate floating, visible 
 
 The bar derives one `{open, dock, active}` record per catalog entry from the window host and existing layout state. Menu checkmarks consume `open`; unchanged dock-tab markup consumes `active`. An inactive tab remains open. Minimized inspectors retain their controller state but are excluded from the menu's open count until restored. This projection adds no persisted fields. The mode group alone uses selected styling; Build exposes `aria-expanded`, commands remain ghost buttons, and the Panels rows use `menuitemcheckbox`. No `aria-pressed` attributes appear in the bar. Bar labels compact when space is tight; the number of available panels never increases bar width. Dock sizing and responsive placement rules are unchanged.
 
-The experiment starts only with `workspaceLab=1`. Its browser storage key is `vibemol.workbench.lab.v1`; it stores placements, sizes, open/minimized windows, selected tabs, floating coordinates, and up to eight named layouts. Corrupt or unavailable storage falls back safely. Loading a layout never generates deferred orbital grids or modifies coordinates, molecular topology, materials, isovalues, or camera pose.
+Workbench starts by default; `workspaceLab=0` explicitly selects the older interface. The `VibeMolWorkbenchHost.enabled` flag shares this decision with the dock controller. The existing browser storage key `vibemol.workbench.lab.v1` is retained so saved layouts survive the release; it stores placements, sizes, open/minimized windows, selected tabs, floating coordinates, and up to eight named layouts. Corrupt or unavailable storage falls back safely. Loading a layout never generates deferred orbital grids or modifies coordinates, molecular topology, materials, isovalues, or camera pose.
 
-Workspace Lab uses the existing study mode, so it does not overwrite ordinary appearance defaults or session recovery. Explicit session save/open remains available. Demo loading is opt-in and only starts in an empty scene. It opens a bundled methane orbital, with Properties on the right and Coordinates below the canvas.
+Normal launches, including old `workspaceLab=1` links, restore saved appearance and startup defaults and enable session autosave/recovery. Only explicit `appearanceStudy=1` or `workspaceDemo=1` pages skip persistence. Explicit session save/open remains available there. Demo loading is opt-in and only starts in an empty scene. It opens a bundled methane orbital, with Properties on the right and Coordinates below the canvas. `tests/e2e/workbench_release.py` verifies the default launch, old links, last appearance, startup defaults, recovery, and Python renderer compatibility.
 
 ## What to evaluate next
 

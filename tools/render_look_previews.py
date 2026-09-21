@@ -21,7 +21,7 @@ def main():
           else ['--use-angle=metal'] if sys.platform == 'darwin' else [])
         try:
             page = browser.new_page(viewport={'width': 600, 'height': 400}, device_scale_factor=1)
-            page.goto(url + '?appearanceStudy=1')
+            page.goto(url + '?workspaceLab=0&appearanceStudy=1')
             page.wait_for_function('() => window.VibeMolAppearanceLooks')
             page.locator('#toolbarCollapseBtn').click()
             result = page.evaluate('files => VibeMolEmbed.loadFiles(files, {clearFirst:true})', [

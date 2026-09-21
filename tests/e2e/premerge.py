@@ -54,9 +54,9 @@ def context_item(page, layer_id, label):
 
 
 def redraw(page):
-    # Basic/Toon/Kit now apply full appearance recipes. Re-dispatch the unchanged
-    # box setting to exercise a full redraw without intentionally editing layers.
-    page.locator('#showBox').evaluate("el => el.dispatchEvent(new Event('change', {bubbles:true}))")
+    # Box visibility is layer-scoped in Properties, so redispatching that control
+    # edits the selected layer. Exercise a real redraw without changing settings.
+    page.evaluate('() => VibeMolTesting.rebuildScene()')
 
 
 def load_cubes(page):
@@ -994,7 +994,7 @@ def main():
                     dialog.accept() if dialog.type == 'confirm' and getattr(page, '_accept_xyz_conversion', False)
                     else dialog.dismiss()))
                 try:
-                    page.goto(url, wait_until='domcontentloaded')
+                    page.goto(url+'?workspaceLab=0', wait_until='domcontentloaded')
                     page.wait_for_function('() => window.VibeMolEmbed && window.VibeMolTesting')
                     run(page, dialogs)
                     assert not errors, errors

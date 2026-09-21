@@ -40,7 +40,7 @@ def check_labels(page):
 
 
 def surface_schemes(page, context, url):
-    page.goto(url + '?workspaceLab=1');page.wait_for_function('()=>window.VibeMolWorkbench')
+    page.goto(url + '?workspaceLab=1&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
     assert p.load(page, [{'name': 'polarity.cube', 'text': p.hydrogen_2p_cube()}])['ok']
     page.evaluate('VibeMolWorkbench.open("inspector")')
     check_labels(page)

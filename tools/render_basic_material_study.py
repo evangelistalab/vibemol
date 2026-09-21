@@ -39,7 +39,7 @@ def main():
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         try:
-            page.goto(url + '?appearanceStudy=1')
+            page.goto(url + '?workspaceLab=0&appearanceStudy=1')
             page.wait_for_function('() => window.VibeMolAppearanceLooks')
             page.locator('#toolbarCollapseBtn').click()
             loaded = page.evaluate('files => VibeMolEmbed.loadFiles(files, {clearFirst:true})', [

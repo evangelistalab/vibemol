@@ -193,15 +193,15 @@ def main():
         errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
         page.on('dialog',lambda d:d.dismiss())
         try:
-            page.goto(url+'?workspaceLab=1');page.wait_for_function('()=>window.VibeMolWorkbench')
+            page.goto(url+'?workspaceLab=1&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
             workspace(page)
-            page.goto(url+'?workspaceLab=1');page.wait_for_function('()=>window.VibeMolWorkbench')
+            page.goto(url+'?workspaceLab=1&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
             page.evaluate('()=>VibeMolWorkbench.applyLayout({})')
             group_scope(page)
-            page.goto(url+'?workspaceLab=1');page.wait_for_function('()=>window.VibeMolWorkbench')
+            page.goto(url+'?workspaceLab=1&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
             page.evaluate('()=>VibeMolWorkbench.applyLayout({})')
             coordinates(page)
-            page.goto(url+'?appearanceStudy=1');page.wait_for_function('()=>window.VibeMolTesting')
+            page.goto(url+'?workspaceLab=0&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolTesting')
             assert page.locator('#toolbar #displayInspector').count()==1
             assert page.locator('#toolbarModeRow').count()==1
             coordinates(page)

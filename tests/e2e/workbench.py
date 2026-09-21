@@ -276,11 +276,11 @@ def main():
             page.on('console',lambda m:consoles.append(m.text) if m.type=='error' else None)
             page.on('dialog',lambda d:d.dismiss())
             try:
-                page.goto(url+'?appearanceStudy=1');page.wait_for_function('() => VibeMolAppearanceLooks')
+                page.goto(url+'?workspaceLab=0&appearanceStudy=1');page.wait_for_function('() => VibeMolAppearanceLooks')
                 assert page.evaluate('() => typeof VibeMolWorkbench')=='undefined'
                 assert page.locator('#workbenchBar').count()==0
                 assert page.locator('#toolbar #toolbarModeRow').count()==1
-                page.goto(url+'?workspaceLab=1');page.wait_for_function('() => window.VibeMolWorkbench')
+                page.goto(url+'?workspaceLab=1&appearanceStudy=1');page.wait_for_function('() => window.VibeMolWorkbench')
                 run(page);modes(page);assert not errors,errors
             except Exception:
                 p.write_failure_artifacts(page,p.ARTIFACTS,'workbench-failure',errors,consoles);raise

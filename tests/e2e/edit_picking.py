@@ -312,7 +312,7 @@ def main():
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.on('dialog', lambda dialog: dialog.dismiss())
         try:
-            page.goto(url + '?workspaceLab=1'); page.wait_for_function('()=>window.__editProbe')
+            page.goto(url + '?workspaceLab=1&appearanceStudy=1'); page.wait_for_function('()=>window.__editProbe')
             slab(page)
             multiple_bonds(page)
             occlusion(page)

@@ -130,7 +130,7 @@ def main():
                 page.on('console',lambda message:console_errors.append(message.text) if message.type=='error' else None)
                 page.on('dialog',lambda dialog:dialog.dismiss())
                 try:
-                    page.goto(url+'?appearanceStudy=1');page.wait_for_function('() => window.VibeMolSession')
+                    page.goto(url+'?workspaceLab=0&appearanceStudy=1');page.wait_for_function('() => window.VibeMolSession')
                     run(page,context,url);assert not errors,errors
                 except Exception:
                     p.write_failure_artifacts(page,p.ARTIFACTS,'camera-depth-'+run.__name__,errors,console_errors);raise

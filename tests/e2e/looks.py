@@ -141,7 +141,7 @@ def material_families(page, context, url):
     fresh=context.browser.new_context(viewport={'width':1512,'height':950})
     other=fresh.new_page();errors=[];other.on('pageerror',lambda error:errors.append(str(error)))
     try:
-        other.goto(url+'?workspaceLab=1');other.wait_for_function('()=>window.VibeMolWorkbench')
+        other.goto(url+'?workspaceLab=1&appearanceStudy=1');other.wait_for_function('()=>window.VibeMolWorkbench')
         exercise(other,True)
         assert not errors,errors
     finally:fresh.close()
@@ -234,7 +234,7 @@ def independent_colors(page, context, url):
     fresh=context.browser.new_context(viewport={'width':1512,'height':950})
     other=fresh.new_page();errors=[];other.on('pageerror',lambda e:errors.append(str(e)))
     try:
-        other.goto(url+'?workspaceLab=1');other.wait_for_function('()=>window.VibeMolWorkbench')
+        other.goto(url+'?workspaceLab=1&appearanceStudy=1');other.wait_for_function('()=>window.VibeMolWorkbench')
         exercise(other,True);assert not errors,errors
     finally:fresh.close()
 
@@ -316,14 +316,14 @@ def components_and_saving(page, context, url):
     saved=state(page)['settings']
     page.locator('#lookSaveDetails > summary').click();page.locator('#lookDefault').click()
     page.locator('#lookPreset').select_option('basic')
-    second=context.new_page();second.goto(url);second.wait_for_function('() => window.VibeMolAppearanceLooks')
+    second=context.new_page();second.goto(url+'?workspaceLab=0');second.wait_for_function('() => window.VibeMolAppearanceLooks')
     assert state(second)['settings'] == saved
     second.close()
     page.locator('#lookSaved').select_option(state(page)['saved'][0]['id'])
     with page.expect_download() as download: page.locator('#lookExport').click()
     exported=json.loads(Path(download.value.path()).read_text())
     assert exported['meta']['lookVersion']==4 and 'surface.iso' not in exported['settings']
-    fresh=context.browser.new_context();other=fresh.new_page();other.goto(url);other.wait_for_function('() => window.VibeMolAppearanceLooks')
+    fresh=context.browser.new_context();other=fresh.new_page();other.goto(url+'?workspaceLab=0');other.wait_for_function('() => window.VibeMolAppearanceLooks')
     other.locator('#lookFileInput').set_input_files({'name':'my.look.json','mimeType':'application/json','buffer':json.dumps(exported).encode()})
     other.wait_for_function('() => VibeMolAppearanceLooks.snapshot().saved.length===1')
     assert state(other)['settings']==saved
@@ -344,7 +344,7 @@ def components_and_saving(page, context, url):
     choose_material(page,'matte');choose_material(page,swatch['id'])
     assert rendering(page)['material']==swatch['material']
     page.locator('#lookClearDefault').click();value(page,'appearanceMaterialRoughness',0.44)
-    page.wait_for_function('() => JSON.parse(localStorage.getItem("vibemol.autosavePreset")).settings["appearance.rendering"].material.roughness===0.44')
+    page.wait_for_function('() => JSON.parse(localStorage.getItem("vibemol.autosavePreset"))?.settings["appearance.rendering"]?.material.roughness===0.44')
     page.reload();page.wait_for_function('() => window.VibeMolAppearanceLooks')
     assert not page.locator('#appearanceMaterialsSection').evaluate('el => el.open')
     assert rendering(page)['material']['roughness']==0.44
@@ -487,7 +487,7 @@ def surfaces_and_sessions(page,context,url):
     for old,layer in zip(before,p.cubes(page)):
         for key in ['id','iso','isoPending','autoIso','visible']:assert old[key]==layer[key],(key,old,layer)
     saved=page.evaluate('async () => VibeMolSession.export()');exact=state(page)
-    fresh=context.browser.new_context();other=fresh.new_page();other.goto(url);other.wait_for_function('() => window.VibeMolAppearanceLooks')
+    fresh=context.browser.new_context();other=fresh.new_page();other.goto(url+'?workspaceLab=0');other.wait_for_function('() => window.VibeMolAppearanceLooks')
     assert other.evaluate('async saved => VibeMolSession.import(saved)',saved)['ok']
     assert state(other)['settings']==exact['settings'] and p.cubes(other)==p.cubes(page)
     fresh.close()
@@ -624,7 +624,7 @@ def shared_material_presets(page,context,url):
     assert look['settings']['surface.materialPreset']=='gel'
     assert look['settings']['appearance.rendering']==after
     session=page.evaluate('async () => VibeMolSession.export()')
-    fresh=context.browser.new_context();other=fresh.new_page();other.goto(url);other.wait_for_function('() => window.VibeMolAppearanceLooks')
+    fresh=context.browser.new_context();other=fresh.new_page();other.goto(url+'?workspaceLab=0');other.wait_for_function('() => window.VibeMolAppearanceLooks')
     try:
         other.locator('#lookFileInput').set_input_files({'name':'gel.look.json','mimeType':'application/json','buffer':json.dumps(look).encode()})
         other.wait_for_function('() => VibeMolAppearanceLooks.snapshot().saved.length===1')
@@ -764,7 +764,7 @@ def basic_surface_finish(page,context,url):
         (session,look,original,p.cubes(page),0.36),
         (old_session,old_look,historical,layers,0.8),
     ]:
-        fresh=context.browser.new_context();other=fresh.new_page();other.goto(url);other.wait_for_function('() => window.VibeMolAppearanceLooks')
+        fresh=context.browser.new_context();other=fresh.new_page();other.goto(url+'?workspaceLab=0');other.wait_for_function('() => window.VibeMolAppearanceLooks')
         try:
             other.locator('#lookFileInput').set_input_files({'name':'basic.look.json','mimeType':'application/json','buffer':json.dumps(document).encode()})
             other.wait_for_function('() => VibeMolAppearanceLooks.snapshot().saved.length===1')
@@ -1003,7 +1003,7 @@ def main():
                 page.on('console',lambda message:console_errors.append(message.text) if message.type=='error' else None)
                 page.on('dialog',lambda dialog:dialog.dismiss())
                 try:
-                    page.goto(url);page.wait_for_function('() => window.VibeMolAppearanceLooks');run(page,context,url)
+                    page.goto(url+'?workspaceLab=0');page.wait_for_function('() => window.VibeMolAppearanceLooks');run(page,context,url)
                     assert not errors,errors
                 except Exception:
                     p.write_failure_artifacts(page,p.ARTIFACTS,'looks-'+run.__name__,errors,console_errors);raise

@@ -166,7 +166,7 @@ def split_surface_shadows(page, context, url):
                 return ['EXT_color_buffer_float','EXT_color_buffer_half_float'].includes(name)?null:original.call(this,name);
               };
             }''')
-            page.goto(url+'?appearanceStudy=1');page.wait_for_function('() => window.VibeMolAppearanceLooks')
+            page.goto(url+'?workspaceLab=0&appearanceStudy=1');page.wait_for_function('() => window.VibeMolAppearanceLooks')
         page.evaluate('''() => {
           window.shadowPasses=[];let colorSeen=true;
           THREE.Mesh.prototype.onBeforeShadow=function(){

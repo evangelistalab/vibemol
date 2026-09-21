@@ -1,6 +1,6 @@
 # Properties inspector consolidation
 
-Implemented on `codex/window-workspace-lab` for `?workspaceLab=1`. The accepted design uses Object / Look tabs and shared material editing. Open the actual application; the separate review mockup is no longer the implementation target. The ordinary launch retains its existing Appearance and Style Studio interface.
+Implemented on `codex/window-workspace-lab` and released as the default interface in v0.9.0. The accepted design uses Object / Look tabs and shared material editing. Open the actual application; the separate review mockup is no longer the implementation target. The older Appearance and Style Studio interface remains available with `?workspaceLab=0`.
 
 ## Scope
 
