@@ -17,6 +17,9 @@
       <details class="vm-appearance-section" id="appearanceColorsSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Colors</span></summary>
         <h3 class="vm-section-label">Atoms</h3><div id="studioAtomColorFields"></div>
         <h3 class="vm-section-label">Bonds</h3><div id="studioBondColorFields"></div>
+        <h3 class="vm-section-label">Orbital defaults</h3><div id="studioSurfaceColorFields"></div>
+        <p class="vm-session-status">Individual orbital color overrides are preserved.</p>
+        <h3 class="vm-section-label">Scene</h3><div id="studioBackgroundFields"></div>
       </details>
       <details class="vm-appearance-section" id="appearanceMaterialsSection" data-section="material"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Material</span></summary>
         <p class="vm-session-status" id="appearanceMaterialScope">One material for atoms, bonds, and surfaces.</p>
@@ -46,9 +49,8 @@
       el.innerHTML = `<label class="vm-field-label" for="${id}">${label}</label><div class="vm-field-control">${content}</div>`;
       $(parent).append(el); return el;
     }
-    function bindLookRow(el, id, label, getter, setter) {
-      if (!deps.showBindings || ['appearanceRadiusElement', 'appearanceMaterialPreset'].includes(id) || id.startsWith('studioSurface')) return;
-      const same = (a, b) => typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-8 : JSON.stringify(a) === JSON.stringify(b);
+    function bindLookRow(el, id, label, getter, setter, same = (a, b) => typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-8 : JSON.stringify(a) === JSON.stringify(b)) {
+      if (!deps.showBindings || ['appearanceRadiusElement', 'appearanceMaterialFamily', 'appearanceMaterialPreset'].includes(id) || id.startsWith('studioSurface')) return;
       const reset = document.createElement('button');
       reset.type = 'button'; reset.className = 'vm-btn vm-btn--icon vm-property-reset';
       reset.innerHTML = '<span class="material-symbols-rounded" aria-hidden="true">restart_alt</span>';
@@ -61,15 +63,20 @@
         const base = baseState();
         const modified = !!base && !same(getter(state), getter(base));
         el.dataset.styleState = modified ? 'modified' : 'inherited'; reset.hidden = !modified;
-        const description = `Reset ${label.toLowerCase()} to ${deps.getActiveLook()?.name || 'look'}`;
+        const description = `Reset ${label.toLowerCase()} to ${deps.getBaseline()?.name || 'look'}`;
         reset.setAttribute('aria-label', description); reset.setAttribute('data-tooltip', description);
       });
     }
     function baseState() {
-      const settings = deps.getActiveLook()?.settings;
+      const settings = deps.getBaseline()?.settings;
       if (!settings) return null;
       const rendering = settings['appearance.rendering'];
       return { settings, rendering, material: rendering.material, surface: settings };
+    }
+    for (const [id, key, label] of [['moleculeAtomRadiusScale', 'molecule.atomRadiusScale', 'atom multiplier'],
+      ['moleculeBondRadiusScale', 'molecule.bondRadiusScale', 'bond multiplier']]) {
+      const el = document.getElementById(id)?.closest('.vm-field-row');
+      if (el) bindLookRow(el, id, label, s => s.settings[key], value => deps.editSettings({ [key]: value }));
     }
     const edit = (section, patch, phase = 'change', options = {}) => deps.edit(section, patch, options, phase);
     function select(parent, id, label, choices, getter, setter, visible = () => true) {
@@ -144,50 +151,62 @@
         {visible:s=>key!=='bondHeightSegments'||s.rendering.geometry.connector==='cylinder'});
     }
 
-    const swatches = [
-      ['custom','Custom'], ['emissive','Emissive'], ['satin','Satin'], ['lacquer','Lacquer'],
-      ['metal','Metal'], ['gel','Gel'], ['ceramic','Ceramic'], ['polished','Polished'],
-      ['matte','Matte'], ['enamel','Enamel'], ['smooth','Classic smooth'], ['toon','Toon'],
-    ];
-    const swatchSelect = select('materialFields', 'appearanceMaterialPreset', 'Material', swatches, s => s.swatch,
+    const { materialFamilies, materialPresets, materialRecipe } = global.VibeMolLooks;
+    select('materialFields', 'appearanceMaterialFamily', 'Family', materialFamilies.map(({ id, name }) => [id, name]), s => s.material.model,
+      value => {
+        activeMaterialId = null;
+        const recipe = materialRecipe(materialFamilies.find(item => item.id === value).defaultRecipe);
+        edit('material', recipe.material, 'change', { replace: true, restoreSurfaceMaterial: recipe.surfaceMaterial });
+      });
+    $('appearanceMaterialFamily').setAttribute('data-tooltip', 'Start a family with Basic, Classic, or Toon. Appearance Undo restores the previous material.');
+    // Reserve the same reset gutter as Recipe; its reset restores both rows.
+    if (deps.showBindings) $('appearanceMaterialFamilyRow').classList.add('vm-style-property');
+    const swatchSelect = select('materialFields', 'appearanceMaterialPreset', 'Recipe', [['custom','Custom']], s => s.swatch,
       value => { if (value === 'custom') return; const saved = deps.getMaterials().find(item => item.id === value);
         activeMaterialId = saved?.id || null;
         if (saved) $('materialName').value = saved.name;
-        const mat = saved ? saved.material : preset(value); edit('material', mat, 'change', { replace: true }); });
+        const recipe = saved ? { material: saved.material, surfaceMaterial: null } : materialRecipe(value);
+        edit('material', recipe.material, 'change', { replace: true, restoreSurfaceMaterial: recipe.surfaceMaterial }); });
+    let recipeMenuKey = null;
+    bindLookRow($('appearanceMaterialPresetRow'), 'materialRecipe', 'material',
+      s => ({ material: s.rendering.material, surfaceMaterial: s.rendering.surfaceMaterial }),
+      value => edit('material', value.material, 'change', { replace: true, restoreSurfaceMaterial: value.surfaceMaterial }),
+      (a, b) => M.materialEqual(a.material, b.material) && M.materialEqual(a.surfaceMaterial, b.surfaceMaterial));
     $('appearanceUseSurfaceMaterial').onclick=()=>edit('material',deps.getRendering().surfaceMaterial,'change',{replace:true});
     const consumes = key => s => s.parameters.active.includes(key);
     for (const [id, label, key, min, max, precision, parent] of [
       ['Roughness','Roughness','roughness',0,1,3,'materialFields'],
       ['Shininess','Shininess','shininess',0,250,1,'materialFields'],
-      ['Highlight','Highlight','specularIntensity',0,2,2,'materialFields'],
-      ['Metalness','Metalness','metalness',0,1,2,'materialAdvancedFields'],
-      ['Clearcoat','Clearcoat','clearcoat',0,1,2,'materialAdvancedFields'],
+      ['Highlight','Highlight','specularIntensity',0,2,2,'materialAdvancedFields'],
+      ['Metalness','Metalness','metalness',0,1,2,'materialFields'],
+      ['Clearcoat','Clearcoat','clearcoat',0,1,2,'materialFields'],
       ['CoatRoughness','Coat roughness','clearcoatRoughness',0,1,3,'materialAdvancedFields'],
-      ['Environment','Reflections','envMapIntensity',0,2,2,'materialAdvancedFields'],
+      ['Environment','Reflections','envMapIntensity',0,2,2,'materialFields'],
       ['Reflectivity','Reflectivity','reflectivity',0,1,2,'materialAdvancedFields'],
-      ['Emission','Color fill','emissiveIntensity',0,2,2,'materialAdvancedFields'],
       ['EmissionScale','Fill scale','emissiveScale',0,1,3,'materialAdvancedFields'],
       ['EmissionMix','Fill blend','emissiveMix',0,1,3,'materialAdvancedFields'],
-      ['Iridescence','Pearlescence','iridescence',0,1,2,'materialAdvancedFields'],
+      ['Iridescence','Pearlescence','iridescence',0,1,2,'materialFields'],
     ]) slider(parent, 'appearanceMaterial'+id, label, min,max,precision,s => s.material[key], (value,phase) => edit('material',{[key]:value},phase),
       { visible: consumes(key) });
     slider('materialFields','appearanceToonBands','Bands',2,8,0,s=>s.material.toonSteps.length,(value,phase)=>edit('material',{toonSteps:Array.from({length:Math.round(value)},(_,i)=>Math.round(255*i/(Math.round(value)-1)))},phase),{visible:consumes('toonSteps')});
-    for(let i=0;i<8;i++) slider('materialAdvancedFields','appearanceToonTone'+i,'Band '+(i+1),0,255,0,s=>s.material.toonSteps[i]??0,
+    for(let i=0;i<8;i++) slider('materialFields','appearanceToonTone'+i,'Band '+(i+1),0,255,0,s=>s.material.toonSteps[i]??0,
       (value,phase)=>{const toonSteps=[...deps.getRendering().material.toonSteps];toonSteps[i]=Math.round(value);edit('material',{toonSteps},phase);},
       {visible:s=>consumes('toonSteps')(s)&&i<s.material.toonSteps.length});
     for(const [i,label] of [[0,'Pearl minimum'],[1,'Pearl maximum']]) slider('materialAdvancedFields','appearancePearlThickness'+i,label,0,1000,0,s=>s.material.iridescenceThicknessRange[i],
       (value,phase)=>{const range=[...deps.getRendering().material.iridescenceThicknessRange];range[i]=value;range[1-i]=i===0?Math.max(value,range[1]):Math.min(value,range[0]);edit('material',{iridescenceThicknessRange:range},phase);},
       {visible:consumes('iridescenceThicknessRange')});
-    color('materialAdvancedFields','appearanceSpecularColor','Highlight color',s=>s.material.specularColor,(value,phase)=>edit('material',{specularColor:value},phase),consumes('specularColor'));
+    color('materialFields','appearanceSpecularColor','Highlight color',s=>s.material.specularColor,(value,phase)=>edit('material',{specularColor:value},phase),consumes('specularColor'));
+    slider('materialFields','appearanceMaterialEmission','Color fill',0,2,2,s=>s.material.emissiveIntensity,(value,phase)=>edit('material',{emissiveIntensity:value},phase));
     color('materialFields','appearanceMaterialTint','Tint',s=>s.material.tint,(value,phase)=>edit('material',{tint:value},phase));
     toggle('materialAdvancedFields','appearanceEmissionUsesColor','Fill from color',s=>s.material.emissiveUsesColor,value=>edit('material',{emissiveUsesColor:value}),consumes('emissiveUsesColor'));
-    color('materialAdvancedFields','appearanceEmissionColor','Fill color',s=>s.material.emissiveColor,(value,phase)=>edit('material',{emissiveColor:value},phase),consumes('emissiveColor'));
+    color('materialAdvancedFields','appearanceEmissionColor','Emission color',s=>s.material.emissiveColor,(value,phase)=>edit('material',{emissiveColor:value},phase),consumes('emissiveColor'));
 
     for (const [atomParent, bondParent, prefix] of [['appearanceAtomColorFields','appearanceBondColorFields','appearance'],['studioAtomColorFields','studioBondColorFields','studio']]) {
+      if (deps.consolidated && prefix === 'appearance') continue;
       select(atomParent,prefix+'Palette','Palette',[['basic','Standard'],['toon','Luminous'],['kit','Kit']],s=>s.rendering.coloring.palette,value=>edit('coloring',{palette:value}));
       select(bondParent,prefix+'BondColorMode','Bond colors',[['element','By element'],['uniform','Uniform']],s=>s.rendering.coloring.elementBonds?'element':'uniform',value=>edit('coloring',{elementBonds:value==='element'}));
       color(bondParent,prefix+'BondColor','Color',s=>s.rendering.coloring.bondColor,(value,phase)=>edit('coloring',{bondColor:value},phase));
-      controls.push(s=>{const label=s.rendering.coloring.elementBonds?'Element tint':'Color';$(prefix+'BondColorRow').querySelector('label').textContent=label;$(prefix+'BondColor').setAttribute('aria-label',label);});
+      controls.push(s=>{const label=s.rendering.coloring.elementBonds?'Bond tint':'Bond color';$(prefix+'BondColorRow').querySelector('label').textContent=label;$(prefix+'BondColor').setAttribute('aria-label',label);});
     }
     toggle('studioAtomColorFields','studioElementColors','Use element colors',s=>s.settings['global.elementColors'],value=>deps.editSettings({'global.elementColors':value}));
     row('studioAtomColorFields','studioElementColorEdit','Element colors','<button id="studioElementColorEdit" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Edit…</button>');
@@ -197,10 +216,10 @@
     toggle('lightingFields','studioFog','Fog',s=>s.settings['molecule.feature.fog'],value=>deps.editSettings({'molecule.feature.fog':value}));
     slider('lightingFields','studioFogDepth','Fog depth',6,40,1,s=>s.settings['molecule.feature.fog.depth'],(value,phase)=>deps.editSettings({'molecule.feature.fog.depth':value},phase),
       {visible:s=>s.settings['molecule.feature.fog']});
-    color('lightingFields','appearanceBackgroundColor','Background',s=>s.settings['global.backgroundColor'],
+    color('studioBackgroundFields','appearanceBackgroundColor','Background',s=>s.settings['global.backgroundColor'],
       (value,phase)=>deps.editBackgroundColor(value,phase));
-    $('appearanceBackgroundColor').setAttribute('data-tooltip','Scene background, shared with Appearance → Scene and saved with the look.');
-    toggle('lightingFields','appearanceFollowTheme','Follow UI theme',s=>s.rendering.lighting.followTheme,value=>edit('lighting',{followTheme:value}));
+    $('appearanceBackgroundColor').setAttribute('data-tooltip','Scene background, shared with Appearance → Scene and included in the color scheme.');
+    toggle('studioBackgroundFields','appearanceFollowTheme','Follow UI theme',s=>s.rendering.lighting.followTheme,value=>edit('lighting',{followTheme:value}));
     $('appearanceFollowTheme').setAttribute('data-tooltip','Darken the chosen background when the app uses its dark theme.');
     for (const [key,label,min,max] of [['dirIntensity','Key light',0,6],['hemiIntensity','Fill light',0,6],['rimIntensity','Rim light',0,6],['ambIntensity','Ambient',0,6],['exposure','Exposure',0.4,2]]) {
       slider('lightingFields','appearanceLight'+key,label,min,max,2,s=>s.rendering.lighting[key],(value,phase)=>edit('lighting',{[key]:value},phase),
@@ -227,10 +246,11 @@
     toggle('lightingFields','appearanceHighlights','Highlight shells',s=>s.rendering.effects.highlights,value=>edit('effects',{highlights:value}));
     for (const [key,label] of [['dirColor','Key color'],['hemiColor','Fill color'],['hemiGroundColor','Ground color'],['rimColor','Rim color'],['ambColor','Ambient color']]) color('lightColorFields','appearanceLight'+key,label,s=>s.rendering.lighting[key],(value,phase)=>edit('lighting',{[key]:value},phase));
 
-    select('surfaceDefaultFields','studioSurfaceScheme','Color scheme',deps.surfaceColorSchemes,s=>s.surface['surface.colorScheme'],value=>deps.editSurfaceSelection({'surface.colorScheme':value}));
-    for (const [key,label] of [['posColor','Positive color'],['negColor','Negative color']]) {
-      color('surfaceDefaultFields','studioSurface'+key,label,s=>s.surface['surface.'+key],(value,phase)=>deps.editSurfaceSelection({['surface.'+key]:value},phase),s=>s.surface['surface.colorScheme']==='custom');
+    select('studioSurfaceColorFields','studioSurfaceScheme','Default palette',deps.surfaceColorSchemes,s=>s.settings['surface.colorScheme'],value=>deps.editSurfaceDefaults({'surface.colorScheme':value}));
+    for (const [key,label] of [['posColor','Default positive'],['negColor','Default negative']]) {
+      color('studioSurfaceColorFields','studioSurface'+key,label,s=>s.settings['surface.'+key],(value,phase)=>deps.editSurfaceDefaults({['surface.'+key]:value},phase),s=>s.settings['surface.colorScheme']==='custom');
     }
+    if (!deps.consolidated) {
     slider('surfaceDefaultFields','studioSurfaceOpacity','Opacity',0.05,1,2,s=>s.surface['surface.opacity'],(value,phase)=>deps.editSurfaceSelection({'surface.opacity':value},phase));
     $('studioResetSurfaceOverrides').onclick=()=>deps.resetSurfaceOverrides();
     controls.push(()=>{
@@ -239,6 +259,7 @@
       $('studioSurfaceOverridesStatus').textContent=`Color overrides: ${counts.colors} · Opacity overrides: ${counts.opacity}`;
       $('studioResetSurfaceOverrides').disabled=!counts.colors&&!counts.opacity;
     });
+    } else $('appearanceSurfaceDefaultsSection').remove();
 
     row('materialLibraryFields','materialName','Name','<input id="materialName" type="text" maxlength="60" aria-label="Material name">');
     const actions=document.createElement('div');actions.className='vm-popover__actions';actions.innerHTML='<button id="saveMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Save as new</button><button id="exportMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Export</button><button id="importMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Import</button><input id="materialFile" type="file" accept=".json,application/json" hidden>';$('materialLibraryFields').append(actions);
@@ -249,35 +270,42 @@
     $('exportMaterial').onclick=()=>deps.exportMaterial($('materialName').value || 'My material', currentMaterial());
     $('importMaterial').onclick=()=>$('materialFile').click();
     $('materialFile').onchange=async()=>{const file=$('materialFile').files[0];$('materialFile').value='';if(file)await deps.importMaterial(file);};
-    function preset(id) {
-      if(id==='polished')return M.legacy('basic').material;
-      if(id==='smooth')return M.material({model:'phong',shininess:30,specularColor:'#777777'});
-      if(id==='toon')return M.material({model:'toon'});
-      return M.surfacePreset(id);
-    }
     function currentMaterial() {
       return deps.getRendering().material;
     }
     function sync() {
       const rendering=deps.getRendering(), settings=deps.captureSettings(), material=currentMaterial();
       const state={rendering,settings,material,parameters:M.materialParameters(material),surface:deps.captureSurfaceSettings(),swatch:'custom'};
-      $('appearanceMaterialScope').textContent=rendering.surfaceMaterial
-        ? 'This look preserves its original surface finish. Material changes apply to atoms, bonds, and surfaces.'
-        : 'One material for atoms, bonds, and surfaces.';
       $('appearanceUseSurfaceMaterial').hidden=!rendering.surfaceMaterial;
       const saved=deps.getMaterials();
-      for(const option of Array.from(swatchSelect.options))if(option.value.startsWith('user-'))option.remove();
-      for(const item of saved)swatchSelect.add(new Option(item.name,item.id));
-      const same=other=>JSON.stringify(M.validateMaterial(other))===JSON.stringify(M.validateMaterial(material));
-      state.swatch=rendering.surfaceMaterial ? 'custom'
-        : saved.find(item=>same(item.material))?.id || swatches.slice(1).find(([id])=>same(preset(id)))?.[0] || 'custom';
-      const look=deps.getActiveLook();
-      swatchSelect.options[0].textContent=state.swatch==='custom' && look && same(look.settings['appearance.rendering'].material)
-        ? `${look.name} material` : rendering.surfaceMaterial ? 'Look material' : 'Custom';
-      if (!activeMaterialId && state.swatch.startsWith('user-')) activeMaterialId=state.swatch;
-      const activeSaved=saved.find(item=>item.id===activeMaterialId);
+      const recipes=materialPresets.filter(item=>item.family===material.model);
+      const familySaved=saved.filter(item=>item.material.model===material.model).sort((a,b)=>a.name.localeCompare(b.name));
+      const menuKey=JSON.stringify([material.model,familySaved.map(({id,name})=>[id,name])]);
+      // Keep the select and its options stable during slider edits and redraws.
+      if(menuKey!==recipeMenuKey) {
+        const custom=new Option('Custom','custom'); custom.disabled=true;
+        swatchSelect.replaceChildren(custom);
+        for(const item of recipes)swatchSelect.add(new Option(item.name,item.id));
+        if(familySaved.length) {
+          const group=document.createElement('optgroup');group.label='My materials';
+          for(const item of familySaved)group.append(new Option(item.name,item.id));
+          swatchSelect.append(group);
+        }
+        recipeMenuKey=menuKey;
+      }
+      const matchesRecipe = recipe => M.materialEqual(recipe.material, material) && M.materialEqual(recipe.surfaceMaterial, rendering.surfaceMaterial);
+      $('appearanceMaterialScope').textContent = !rendering.surfaceMaterial
+        ? 'One material for atoms, bonds, and surfaces.'
+        : 'This saved appearance uses a separate surface finish. Material edits apply to atoms, bonds, and surfaces.';
+      state.swatch = (!rendering.surfaceMaterial && familySaved.find(item => item.id===activeMaterialId && M.materialEqual(item.material,material))?.id)
+        || (!rendering.surfaceMaterial && familySaved.find(item => M.materialEqual(item.material,material))?.id)
+        || recipes.find(({id}) => matchesRecipe(materialRecipe(id)))?.id || 'custom';
+      if (!familySaved.some(item=>item.id===activeMaterialId)) activeMaterialId=null;
+      if (state.swatch.startsWith('user-')) activeMaterialId=state.swatch;
+      const activeSaved=familySaved.find(item=>item.id===activeMaterialId);
       $('updateMaterial').disabled=!activeSaved;$('deleteMaterial').disabled=!activeSaved;
       for(const fn of controls)fn(state);
+      $('appearanceMaterialChannels').hidden=!Array.from($('materialAdvancedFields').children).some(el=>!el.hidden);
     }
     return Object.freeze({sync,currentMaterial});
   }

@@ -6,6 +6,7 @@
   const PRESET_OBJECT_VALUE_KEYS = new Set([
     'global.elementColorOverrides',
     'appearance.look',
+    'appearance.references',
     'appearance.rendering',
   ]);
   const PRESET_TOP_LEVEL_KEYS = new Set([
@@ -252,7 +253,8 @@
           if (PRESET_OBJECT_VALUE_KEYS.has(nextKey)) out[nextKey] = deps.cloneJsonLike(value);
           else flattenSettingsTree(value, nextKey, out);
         } else {
-          out[nextKey] = value;
+          out[nextKey] = nextKey === 'surface.colorScheme' && global.VibeMolLooks
+            ? global.VibeMolLooks.normalizeSurfaceScheme(value) : value;
         }
       }
       return out;
@@ -267,7 +269,7 @@
       const type = (typeof options.type === 'string' && options.type.trim()) ? options.type.trim() : 'any';
       const description = (typeof options.description === 'string') ? options.description : '';
       const persistScope = normalizePersistScope(options.persistScope);
-      presetSettingRegistry.set(key, { get: getter, set: setter, persistScope });
+      presetSettingRegistry.set(key, { get: getter, set: setter, persistScope, importOnly: !!options.importOnly });
       presetSettingSchema.set(key, Object.freeze({ key, section, type, description, persistScope }));
     }
 
@@ -280,8 +282,16 @@
       if (!persistScope) syncBuilderExtensionFromVolumes();
       const settings = persistScope ? {} : (deps.cloneJsonLike(presetUnknownSettings) || {});
       for (const [key, def] of presetSettingRegistry.entries()) {
+        if (def.importOnly) continue;
         if (persistScope && def.persistScope !== persistScope) continue;
         settings[key] = def.get();
+      }
+      // Keep concrete colors beside the id for readers without this palette.
+      if ('surface.colorScheme' in settings && global.VibeMolLooks) {
+        const looks = global.VibeMolLooks;
+        settings['surface.colorScheme'] = looks.normalizeSurfaceScheme(settings['surface.colorScheme']);
+        const palette = looks.surfaceColorSchemes[settings['surface.colorScheme']];
+        if (palette) Object.assign(settings, { 'surface.posColor': palette.pos, 'surface.negColor': palette.neg });
       }
       const name = (typeof options.name === 'string' && options.name.trim()) ? options.name.trim() : presetName;
       const now = new Date().toISOString();
@@ -386,7 +396,9 @@
       if (deps.isPlainObject(preset.meta)) presetMeta = deps.cloneJsonLike(preset.meta) || {};
       if (deps.isPlainObject(preset.extensions)) presetExtensions = deps.cloneJsonLike(preset.extensions) || {};
 
-      const applyResult = applyPresetSettings(preset.settings || {}, { mode, afterApply: options.afterApply });
+      const settings = flattenSettingsTree(preset.settings || {});
+      const applyResult = applyPresetSettings(settings, { mode, afterApply: options.afterApply });
+      if (typeof deps.afterImportSettings === 'function') deps.afterImportSettings({ settings });
       if (options.applyBuilder !== false) applyBuilderExtensionToLoadedVolumes();
       return {
         ok: true,

@@ -706,6 +706,11 @@
           return;
         }
         if (!options.layer) return;
+        if (document.body.classList.contains('vm-workbench') && options.layer.kind === SCENE_LAYER_KIND.MOLECULE
+          && (event.metaKey || event.ctrlKey)) {
+          toggleCubeLayerSelection(options.layer);
+          return;
+        }
         if (!isCubeLikeLayer(options.layer)) {
           setActiveSceneGraphLayer(options.layer.id);
           return;
@@ -779,7 +784,8 @@
         expandable: children.length > 0,
         expanded: layer.expanded !== false,
         active: !!(activeLayer && activeLayer.id === layer.id),
-        selected: isCubeLikeLayer(layer) && isCubeLayerSelected(layer),
+        selected: isCubeLikeLayer(layer) ? isCubeLayerSelected(layer)
+          : document.body.classList.contains('vm-workbench') && sceneGraphController.getSelection().some(item => item.id === layer.id),
       });
       sceneOutlinerBodyEl.appendChild(row);
       if (children.length && layer.expanded !== false) {

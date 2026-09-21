@@ -39,7 +39,7 @@ def bounded_palette(page, panel):
 def modes(page):
     page.evaluate('() => VibeMolWorkbench.applyLayout({})')
     assert p.load(page,[{'name':'modes.molden','text':p.MOLDEN}])['ok']
-    page.evaluate('() => {VibeMolWorkbench.open("styleStudio");VibeMolWorkbench.open("moldenInspector");VibeMolWorkbench.open("coordsPanel")}')
+    page.evaluate('() => {VibeMolWorkbench.open("inspector");VibeMolWorkbench.open("moldenInspector");VibeMolWorkbench.open("coordsPanel")}')
     before=p.snapshot(page);windows=layout(page);camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
     assert page.locator('#workbenchBar #toolbarModeRow').count()==1
     assert page.locator('#toolbar #toolbarModeRow').count()==0
@@ -47,7 +47,7 @@ def modes(page):
         page.locator('#mode'+mode+'Btn').click()
         page.wait_for_function('(mode)=>document.body.dataset.wbMode===mode',arg={'Measure':'measure','Edit':'edit','Display':'display'}[mode])
         assert page.locator('#displayWindowAdaptiveMenu').is_hidden()
-        for name in ['Coordinates','Style Studio','Camera','Quick actions']:
+        for name in ['Coordinates','Properties','Camera','Quick actions']:
             assert open_menu(page).get_by_role('menuitemcheckbox',name=name,exact=True).is_visible()
         page.keyboard.press('Escape')
         assert page.locator('#coordsPanel').is_visible()
@@ -78,7 +78,7 @@ def modes(page):
     if page.evaluate('()=>VibeMolTesting.getEditSelectionCount()'):
         page.keyboard.press('Escape')
     assert page.evaluate('()=>VibeMolTesting.getEditSelectionCount()')==0
-    assert 'styleStudio' in layout(page)['open'] and page.locator('#coordsPanel').is_visible()
+    assert 'inspector' in layout(page)['open'] and page.locator('#coordsPanel').is_visible()
     page.locator('#workbenchFocus').click();page.locator('#canvas').focus();page.keyboard.press('/')
     assert not layout(page)['focus']
     build=page.locator('#editAdaptiveAddAtomPopover');bounded_palette(page,build)
@@ -118,13 +118,13 @@ def modes(page):
     page.evaluate('() => VibeMolWorkbench.applyLayout({})')
     assert p.load(page,[{'name':'water.xyz','text':'O 0 0 0\nH 0.95 0 0\nH -0.24 0.92 0'}])['ok']
     page.locator('#modeMeasureBtn').click()
-    page.evaluate('()=>VibeMolWorkbench.open("styleStudio")')
+    page.evaluate('()=>VibeMolWorkbench.open("inspector")')
     for index in [0,1]:
         point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index);page.mouse.click(point['x'],point['y'])
     page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
     page.keyboard.press('Escape')
     assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot()')=={'atomIndices':[],'labelCount':0}
-    assert page.locator('#styleStudio').is_visible()
+    assert page.locator('#inspector').is_visible()
     for index in [0,1]:
         point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index);page.mouse.click(point['x'],point['y'])
     page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
@@ -150,8 +150,8 @@ def run(page):
     assert 'bohr' in page.locator('#coordsPanelTitle').inner_text()
     page.locator('#moldenEnergyFilter').fill('0.1'); page.locator('#moldenEnergyFilter').press('Tab')
     before=p.snapshot(page)
-    open_panel(page,'Style Studio')
-    assert orbitals.is_hidden() and page.locator('#styleStudio').is_visible() and coordinates.is_visible()
+    open_panel(page,'Properties')
+    assert orbitals.is_hidden() and page.locator('#inspector').is_visible() and coordinates.is_visible()
     assert 'moldenInspector' in layout(page)['open']
     page.get_by_role('tab',name='Orbitals',exact=True).click()
     assert page.locator('#moldenEnergyFilter').input_value()=='0.1'
@@ -208,7 +208,7 @@ def run(page):
     page.keyboard.press('Escape')
     page.locator('#workbenchArrange').click()
     page.get_by_role('button',name='Style',exact=True).click()
-    assert page.locator('#styleStudio').is_visible()
+    assert page.locator('#inspector').is_visible()
     page.locator('#workbenchArrange').click()
     page.get_by_role('button',name='Orbital analysis',exact=True).click()
     assert coordinates.is_visible() and orbitals.is_visible()
@@ -217,7 +217,7 @@ def run(page):
     # Focus must retain the active tab when hiding the sidebar crosses a breakpoint.
     page.set_viewport_size({'width':900,'height':850})
     page.wait_for_function('() => VibeMolWorkbench.snapshot().compact')
-    page.get_by_role('tab',name='Style Studio',exact=True).click()
+    page.get_by_role('tab',name='Properties',exact=True).click()
     compact_layout=layout(page)
     page.locator('#workbenchFocus').click();page.keyboard.press('Escape')
     assert layout(page)==compact_layout
@@ -229,9 +229,9 @@ def run(page):
     assert page.locator('#workbenchDockRight').is_hidden()
     assert page.locator('#workbenchDockBottom').is_visible()
     assert page.locator('#canvas').bounding_box()['height']>=200
-    for name in ['Orbitals','Coordinates','Style Studio']:
+    for name in ['Orbitals','Coordinates','Properties']:
         page.get_by_role('tab',name=name,exact=True).click()
-        selected=page.locator('.wb-tab[aria-selected="true"]'); assert selected.get_attribute('aria-label')==name
+        selected=page.locator('.wb-dock .wb-tab[aria-selected="true"]'); assert selected.get_attribute('aria-label')==name
     capture(page,'mobile')
     assert page.evaluate('() => __moldenGridBuilds')==[]
     page.set_viewport_size({'width':1600,'height':1000})
@@ -247,10 +247,10 @@ def run(page):
     page.wait_for_function('() => document.getElementById("moldenInspector").dataset.wbPlacement==="float"')
     assert abs(orbitals.bounding_box()['x']-moved['x'])<1 and abs(orbitals.bounding_box()['y']-moved['y'])<1
     assert page.evaluate('() => __moldenGridBuilds')==[]
-    # Escape closes the focused inspector even if Style Studio is also logically open.
-    page.evaluate('() => VibeMolWorkbench.open("styleStudio")')
+    # Escape closes the focused inspector even if Properties is also logically open.
+    page.evaluate('() => VibeMolWorkbench.open("inspector")')
     orbitals.locator('[data-vm-drag-handle]').focus();page.keyboard.press('Escape')
-    assert orbitals.is_hidden() and page.locator('#styleStudio').is_visible()
+    assert orbitals.is_hidden() and page.locator('#inspector').is_visible()
     # Keep molecular editing and its contextual Build palette available in the study.
     page.locator('#modeEditBtn').click()
     page.locator('#editAdaptiveAddAtomBtn').evaluate('el=>el.click()')

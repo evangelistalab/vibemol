@@ -47,14 +47,15 @@
     }
 
     function getEntry(id) {
-      const key = String(id || '').trim();
+      const raw = String(id || '').trim();
+      const key = deps.aliases?.[raw] || raw;
       if (!key) return null;
       return entries[key] || null;
     }
 
     function listOpenWindowIds(ids = undefined) {
       const keys = Array.isArray(ids) && ids.length ? ids : Object.keys(entries);
-      return keys.filter((id) => {
+      return [...new Set(keys.map(id => deps.aliases?.[id] || id))].filter((id) => {
         const entry = getEntry(id);
         return !!(entry && typeof entry.isOpen === 'function' && entry.isOpen());
       });

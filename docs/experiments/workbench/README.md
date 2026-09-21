@@ -10,12 +10,12 @@ The working prototype is on `codex/window-workspace-lab`:
 
 ## The interaction
 
-1. **Modes, commands, and panels have distinct controls.** View / Measure / Edit is a segmented radio group at the start of the bar, including with the sidebar collapsed or Focus active. Contextual commands follow it; Clear measurements belongs to this group in Measure. A single Panels menu lists available inspectors with checkmarks and their Right/Bottom/Floating locations. Its badge counts open panels, including inactive dock tabs. Coordinates, Camera, Quick actions, Appearance, and Style Studio remain available in all three modes. Theme and sidebar controls remain in the same bar.
+1. **Modes, commands, and panels have distinct controls.** View / Measure / Edit is a segmented radio group at the start of the bar, including with the sidebar collapsed or Focus active. Contextual commands follow it; Clear measurements belongs to this group in Measure. A single Panels menu lists available inspectors with checkmarks and their Right/Bottom/Floating locations. Its badge counts open panels, including inactive dock tabs. Coordinates, Camera, Quick actions, and Properties remain available in all three modes. Theme and sidebar controls remain in the same bar.
 2. **Two resizable docks.** Use the right side for inspection and the bottom for tables or playback. A dock reserves canvas space instead of covering the molecule. Tabs retain the real controls and their state.
 3. **Drag to dock.** Pull a window out by its header grip. Near the right or bottom edge, a preview shows where it will land. Release to dock. The header's `…` menu offers the same choices without dragging.
 4. **Minimize without losing context.** A minimized window has an unchecked row marked Minimized in the Panels menu. Choosing it restores its tab or floating position. Choosing a checked row closes that window; use its dock tab to bring an already open window to the front. Choosing a menu item dismisses the menu and moves focus to the opened inspector.
 5. **Focus and return.** Focus clears the workspace chrome; the molecule gets the available viewport. Escape or Back to workspace restores the previous panels, tabs, sizes, and sidebar state.
-6. **Workspaces for different jobs.** Arrange offers Explore, Analyze, and Style. Users can name and save their own arrangements. Saving an existing name updates that workspace. Window positions and dock sizes are remembered independently of molecular files and rendering presets.
+6. **Workspaces for different jobs.** Layout offers Explore, Analyze, and Style. Users can name and save their own arrangements. Saving an existing name updates that workspace. Window positions and dock sizes are remembered independently of molecular files and rendering presets.
 7. **A small-screen version.** The bar uses two rows to keep all three mode labels visible. Windows share one tabbed bottom panel when there is insufficient horizontal room. Desktop docking preferences are retained when returning to a larger window.
 
 Edit uses the same bar for Build, Symmetry, and Optimize. Their names and actions stay stable when Build opens; hydrogen adjustment and bond-order controls remain in Build and its existing shortcuts. Build and Symmetry open below their buttons, above the docks, with their full content reachable by scrolling. Quick actions retains COM/axis commands, avoiding duplicate buttons in the Edit bar. The old floating launcher is hidden in every mode. The floating question-mark Help button is removed; Help remains in the sidebar and on `?`. Corner axes sit at the bottom left with 16 px of clearance above the hint bar, including when docks resize or the hint wraps. Focus releases the hidden hint’s space.
@@ -24,13 +24,13 @@ Analysis inspectors (Orbitals, Trajectory, Frequencies, Spinor info) are tempora
 
 Dock separators support arrow keys, with Shift for fine adjustment. Dock tabs retain their existing Left/Right/Home/End behavior. The mode selector has one Tab stop; Left/Right/Up/Down wrap selection and focus together, and Home/End choose the first/last mode. Panels supports Up/Down/Home/End and typing a panel name. Escape returns focus to Panels; Tab leaves the menu, and an outside click dismisses it. Window menus and Focus have explicit buttons; no new global shortcuts compete with molecular editing. Opening Build or Symmetry by keyboard exits Focus. Escape inside a window closes that window, while text controls retain their editing behavior.
 
-Appearance has one bound inspector that can dock or float. Its original controls are moved, without cloning their values or handlers. The left sidebar is dedicated to scene/file management. Preset selection and the Style Studio shortcut live at the top of Appearance; Appearance and Style Studio are both available from the top bar. Scientific surface controls (isovalue, Auto-iso, quantity, visibility) remain in Appearance; curated visual preset editing stays in Style Studio. Projection and depth-of-field controls join Camera. Coordinates can be read/copied/exported in every mode, but cell editors and edit commits are available only in Edit.
+Properties is one dockable/floating inspector with Object and Look tabs. Object follows structure/orbital selection, including mixed selections; Look owns the portable style and shared material. The left sidebar stays dedicated to scene management. Axes, projection, and depth-of-field controls live in Camera. Coordinates can be read/copied/exported in every mode, but edited only in Edit. See [the consolidation notes](inspector-consolidation.md) for scope, migration, and verification details.
 
 ## What belongs where
 
 | Interface role | Prototype behavior | Reason |
 | --- | --- | --- |
-| Orbitals, Coordinates, Appearance, Style Studio, Quick actions, Camera, Trajectory, Frequencies, Spinor info | Tabbed right/bottom docks, or floating windows | These remain useful while inspecting the molecule. |
+| Orbitals, Coordinates, Properties, Quick actions, Camera, Trajectory, Frequencies, Spinor info | Tabbed right/bottom docks, or floating windows | These remain useful while inspecting the molecule. |
 | Build, Symmetry, selection tools, bond/coordination menus, placement operators | Movable contextual interfaces; Build/Symmetry launch from the shared top bar | Their geometry and gesture workflows need a dedicated edit-workspace study before changing their ownership. |
 | Confirmations, Help, element-color editor, recording controls | Existing dialog/popover behavior and movement | A confirmation should stay attached to its current task. |
 
@@ -56,7 +56,7 @@ The bar derives one `{open, dock, active}` record per catalog entry from the win
 
 The experiment starts only with `workspaceLab=1`. Its browser storage key is `vibemol.workbench.lab.v1`; it stores placements, sizes, open/minimized windows, selected tabs, floating coordinates, and up to eight named layouts. Corrupt or unavailable storage falls back safely. Loading a layout never generates deferred orbital grids or modifies coordinates, molecular topology, materials, isovalues, or camera pose.
 
-Workspace Lab uses the existing study mode, so it does not overwrite ordinary appearance defaults or session recovery. Explicit session save/open remains available. Demo loading is opt-in and only starts in an empty scene. It opens a bundled methane orbital, with Style Studio on the right and Coordinates below the canvas.
+Workspace Lab uses the existing study mode, so it does not overwrite ordinary appearance defaults or session recovery. Explicit session save/open remains available. Demo loading is opt-in and only starts in an empty scene. It opens a bundled methane orbital, with Properties on the right and Coordinates below the canvas.
 
 ## What to evaluate next
 

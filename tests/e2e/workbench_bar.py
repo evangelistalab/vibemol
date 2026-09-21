@@ -58,7 +58,7 @@ def screenshot(page, name):
 
 
 def run(page):
-    page.wait_for_function('() => VibeMolWorkbench.snapshot().open.includes("styleStudio") && VibeMolWorkbench.snapshot().open.includes("coordsPanel")')
+    page.wait_for_function('() => VibeMolWorkbench.snapshot().open.includes("inspector") && VibeMolWorkbench.snapshot().open.includes("coordsPanel")')
     # The requested desktop report uses the real demo and the existing dock sizes.
     report = {}
     for mode in ['Display', 'Measure', 'Edit']:
@@ -122,21 +122,21 @@ def run(page):
 
     # Two open windows sharing a dock remain checked as tabs switch.
     page.locator('#modeDisplayBtn').click()
-    page.evaluate('() => VibeMolWorkbench.applyLayout({open:["coordsPanel","styleStudio"],activeBottom:"coordsPanel",activeRight:"styleStudio"})')
+    page.evaluate('() => VibeMolWorkbench.applyLayout({open:["coordsPanel","inspector"],activeBottom:"coordsPanel",activeRight:"inspector"})')
     page.set_viewport_size({'width': 1024, 'height': 950})
     page.wait_for_function('() => VibeMolWorkbench.snapshot().compact')
-    for name in ['Style Studio', 'Coordinates']:
+    for name in ['Properties', 'Coordinates']:
         page.get_by_role('tab', name=name, exact=True).click()
-        assert page.locator('.wb-tab[aria-selected="true"]').count() == 1
-        for panel in ['Style Studio', 'Coordinates']:
+        assert page.locator('.wb-dock .wb-tab[aria-selected="true"]').count() == 1
+        for panel in ['Properties', 'Coordinates']:
             row = open_menu(page).get_by_role('menuitemcheckbox', name=panel, exact=True)
             assert row.get_attribute('aria-checked') == 'true'
             assert 'Bottom' in row.inner_text()
         assert page.locator('#workbenchPanelsCount').inner_text() == '2'
         page.keyboard.press('Escape')
     # An inactive checked row closes its window; dock selection is not a checkbox.
-    open_menu(page).get_by_role('menuitemcheckbox', name='Style Studio', exact=True).click()
-    assert 'styleStudio' not in page.evaluate('() => VibeMolWorkbench.snapshot().open')
+    open_menu(page).get_by_role('menuitemcheckbox', name='Properties', exact=True).click()
+    assert 'inspector' not in page.evaluate('() => VibeMolWorkbench.snapshot().open')
     assert menu.is_hidden()
     page.evaluate('() => VibeMolWorkbench.park("coordsPanel")')
     row = open_menu(page).get_by_role('menuitemcheckbox', name='Coordinates', exact=True)
@@ -178,7 +178,7 @@ def run(page):
         for mode in ['Display', 'Measure', 'Edit']:
             page.locator('#mode' + mode + 'Btn').click()
             result = check_bar(page)
-            assert len(result['rows']) == 9, result
+            assert len(result['rows']) == 8, result
             report['responsive'].append({'width': width, **result})
         if width == 320: screenshot(page, 'mobile-edit')
     page.evaluate('() => { for (const button of __allPanelButtons) delete button.hidden; }')

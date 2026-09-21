@@ -1,11 +1,45 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadGlobalModule } from './load-global-module.mjs';
+import { loadGlobalModule, loadGlobalModules } from './load-global-module.mjs';
+
+test('all surface layer constructors and restored scenes migrate palette ids with unchanged explicit colors', () => {
+  const { VibeMolSceneGraph: api } = loadGlobalModules(['assets/app/js/appearance-model.js',
+    'assets/app/js/appearance-looks.js', 'assets/app/js/scene-graph.js']).window;
+  const graph = api.createSceneGraphController(), scene = graph.createScene({name:'Legacy'});
+  const legacy = {colorScheme:'classic',posColor:'#1f77b4',negColor:'#d62728',signFlip:false};
+  const layers = [api.createCubeAppearance(legacy), graph.addCubeLayer(scene, legacy),
+    graph.addArithmeticLayer(scene, legacy), graph.addLayer(scene, {...legacy,kind:'cube'}),
+    api.createCubeAppearance({colorScheme:'classic'})];
+  for (const layer of layers) {
+    assert.equal(layer.colorScheme, 'tableau');
+    assert.equal(layer.posColor, '#1f77b4');
+    assert.equal(layer.negColor, '#d62728');
+    assert.equal(layer.signFlip, false);
+  }
+  Object.assign(layers[1], legacy, {posColor:'#123456'});
+  graph.addScene(scene);
+  assert.equal(layers[1].colorScheme, 'tableau');
+  assert.equal(layers[1].posColor, '#123456', 'per-layer explicit colors keep their rendering precedence');
+});
 
 function loadApi() {
   const context = loadGlobalModule('assets/app/js/scene-graph.js');
   return context.window.VibeMolSceneGraph;
 }
+
+test('Workbench mixed selection scopes surfaces separately and can clear the last selection', () => {
+  const graph = loadApi().createSceneGraphController({ mixedSelection: true });
+  const scene = graph.createScene({ name: 'mixed' });
+  const molecule = graph.addMoleculeLayer(scene), a = graph.addCubeLayer(scene), b = graph.addCubeLayer(scene);
+  graph.addScene(scene); graph.setActiveLayer(molecule.id); graph.setSelection([molecule.id]);
+  graph.extendSelection(a.id); graph.extendSelection(b.id);
+  assert.deepEqual(Array.from(graph.getSelection(), layer => layer.id), [molecule.id, a.id, b.id]);
+  assert.deepEqual(Array.from(graph.getSurfaceAppearanceTargets(), layer => layer.id), [a.id, b.id]);
+  graph.extendSelection(a.id); graph.extendSelection(b.id); graph.extendSelection(molecule.id);
+  assert.equal(graph.getSelection().length, 0); assert.equal(graph.getActiveLayer(), null);
+  graph.setActiveLayer(scene.orbitalsGroupId);
+  assert.equal(graph.getSurfaceAppearanceTargets().length, 2);
+});
 
 test('scene graph creates scene layers and activates first cube', () => {
   const api = loadApi();

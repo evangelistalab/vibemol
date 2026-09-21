@@ -74,6 +74,17 @@
     return 'volumetric';
   }
 
+  // Also used by generic layer/session restoration, which bypasses addCubeLayer.
+  function normalizeCubeColors(source) {
+    const looks = global.VibeMolLooks;
+    const raw = String(source.colorScheme || DEFAULT_CUBE_APPEARANCE.colorScheme);
+    const colorScheme = looks ? looks.normalizeSurfaceScheme(raw) : raw;
+    const palette = looks?.surfaceColorSchemes[colorScheme];
+    return { colorScheme,
+      posColor: source.posColor == null ? (palette?.pos || null) : String(source.posColor),
+      negColor: source.negColor == null ? (palette?.neg || null) : String(source.negColor) };
+  }
+
   function createCubeAppearance(defaults = {}) {
     const source = Object.assign({}, DEFAULT_CUBE_APPEARANCE, cloneShallowObject(defaults));
     const autoIso = source.autoIso == null ? !!source.autoIsoEnabled : !!source.autoIso;
@@ -91,9 +102,7 @@
         colors: !!source.styleOverrides.colors, opacity: !!source.styleOverrides.opacity,
       },
       material: source.material && typeof source.material === 'object' ? JSON.parse(JSON.stringify(source.material)) : null,
-      colorScheme: String(source.colorScheme || DEFAULT_CUBE_APPEARANCE.colorScheme),
-      posColor: source.posColor == null ? null : String(source.posColor),
-      negColor: source.negColor == null ? null : String(source.negColor),
+      ...normalizeCubeColors(source),
       renderMode: normalizeRenderMode(source.renderMode),
       cloudType: normalizeCloudType(source.cloudType),
       cloudStride: normalizeNumber(source.cloudStride, DEFAULT_CUBE_APPEARANCE.cloudStride, 1),
@@ -208,14 +217,19 @@
     }
 
     function focusedCubeIdSet() {
-      return new Set(listFocusedSceneCubeLayers().map((layer) => layer.id));
+      const layers = listFocusedSceneCubeLayers();
+      if (options.mixedSelection) {
+        const molecule = getLayerById(getFocusedScene()?.moleculeLayerId);
+        if (molecule) layers.push(molecule);
+      }
+      return new Set(layers.map((layer) => layer.id));
     }
 
     function getFocusedActiveCube() {
       const scene = getFocusedScene();
       if (!scene || !scene.activeLayerId) return null;
       const active = getLayerById(scene.activeLayerId);
-      if (!(active && isCubeLikeLayer(active) && active.sceneId === scene.id)) return null;
+      if (!(active && (isCubeLikeLayer(active) || (options.mixedSelection && active.kind === LAYER_KIND.MOLECULE)) && active.sceneId === scene.id)) return null;
       const validIds = focusedCubeIdSet();
       return validIds.has(active.id) ? active : null;
     }
@@ -256,7 +270,7 @@
       if (active.kind === LAYER_KIND.ORBITALS_GROUP) {
         return listLayers(getSceneForLayer(active)).filter(layer => layer.parentId === active.id && isCubeLikeLayer(layer));
       }
-      return isCubeLikeLayer(active) ? getSelection() : [];
+      return getSelection().filter(isCubeLikeLayer);
     }
 
     function setSelection(ids) {
@@ -267,7 +281,7 @@
     function extendSelection(id) {
       const layer = getLayerById(id);
       const validIds = focusedCubeIdSet();
-      if (!(layer && isCubeLikeLayer(layer) && validIds.has(layer.id))) return getSelection();
+      if (!(layer && validIds.has(layer.id))) return getSelection();
       const selected = normalizeSelectionIds(state.selectedLayerIds, { ensureActive: false });
       const index = selected.indexOf(layer.id);
       if (index >= 0) selected.splice(index, 1);
@@ -280,6 +294,10 @@
           if (scene) scene.activeLayerId = nextActiveId;
           state.activeLayerId = nextActiveId;
           state.activeSceneId = layer.sceneId;
+        } else if (options.mixedSelection) {
+          const scene = getFocusedScene();
+          if (scene) scene.activeLayerId = null;
+          state.activeLayerId = null;
         }
       }
       state.selectedLayerIds = normalizeSelectionIds(selected);
@@ -371,7 +389,7 @@
         name: String(props.name || kind || 'Layer'),
         visible: normalizeBool(props.visible, true),
         expanded: normalizeBool(props.expanded, true),
-      }, props);
+      }, props, isCubeLikeLayer(props) ? normalizeCubeColors(props) : {});
     }
 
     function createScene(props = {}) {
@@ -397,7 +415,10 @@
       if (!scene || !scene.id) return null;
       reserveId(scene.id);
       if (!Array.isArray(scene.layers)) scene.layers = [];
-      scene.layers.forEach(layer => reserveId(layer.id));
+      scene.layers.forEach(layer => {
+        reserveId(layer.id);
+        if (isCubeLikeLayer(layer)) Object.assign(layer, normalizeCubeColors(layer));
+      });
       state.scenes.push(scene);
       state.activeSceneId = scene.id;
       state.focusedSceneId = scene.id;

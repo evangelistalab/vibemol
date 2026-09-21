@@ -25,7 +25,6 @@
   const canvas = document.getElementById('canvas');
   canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Molecule viewport');
   canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }), { capture: true });
-  installAppearancePanel();
   if (narrow) host.setSidebarCollapsed(true);
 
   function icon(name) {
@@ -40,35 +39,6 @@
   }
   function label(el, text, className = '') {
     const span = document.createElement('span'); span.className = className; span.textContent = text; el.append(span); return span;
-  }
-  function installAppearancePanel() {
-    const panel = document.getElementById('displayInspector');
-    const sidebar = panel.closest('.tb-appearance');
-    // Move the bound inspector, including its preset controls, out of the sidebar.
-    const header = document.createElement('header'); header.className = 'vm-popover__header';
-    const title = document.createElement('h2'); title.id = 'workbenchAppearanceTitle'; title.textContent = 'Appearance';
-    const actions = document.createElement('div'); actions.className = 'vm-popover__actions';
-    const reset = document.getElementById('appearanceResetBtn');
-    reset.className = 'vm-btn vm-btn--icon'; actions.append(reset);
-    const dismiss = button('Close Appearance', 'close', () => close('displayInspector'), 'vm-btn--icon');
-    dismiss.id = 'workbenchAppearanceClose'; actions.append(dismiss); header.append(title, actions);
-    panel.classList.remove('vm-sidebar-accordion__panel');
-    panel.classList.add('vm-popover', 'wb-appearance');
-    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-labelledby', title.id);
-    panel.prepend(header); document.body.append(panel);
-    sidebar.remove();
-    global.VibeMolFloatingPanels.register(panel, { label: 'Appearance', handle: '.vm-popover__header' });
-    const cameraSettings = document.getElementById('appearanceCameraSection');
-    cameraSettings.querySelector('.vm-section-label').textContent = 'Projection & focus';
-    cameraSettings.classList.add('vm-view-section');
-    document.getElementById('viewControls').append(cameraSettings);
-    cameraSettings.append(document.getElementById('showAxes').closest('.vm-field-row'));
-    // Keep the backing select with its existing visible focus-mode button group.
-    const focusMode = document.getElementById('dofFocusMode');
-    focusMode.hidden = true; cameraSettings.append(focusMode);
-    const boxRow = document.getElementById('showBox').closest('.vm-field-row');
-    boxRow.querySelector('.vm-field-label').textContent = 'Simulation box';
-    document.getElementById('appearanceSurfacesSection').append(boxRow);
   }
   const bar = document.createElement('nav'); bar.className = 'wb-bar'; bar.id = 'workbenchBar'; bar.setAttribute('aria-label', 'Workbench tools');
   const brand = document.createElement('div'); brand.className = 'wb-brand';
@@ -101,8 +71,8 @@
   const panelsCount = label(panelsButton, '', 'wb-panel-count'); panelsCount.id = 'workbenchPanelsCount';
   panelsButton.setAttribute('aria-describedby', panelsCount.id); panelsButton.append(icon('expand_more')); tools.append(panelsButton);
   const actions = document.createElement('div'); actions.className = 'wb-bar-actions'; bar.append(actions);
-  const arrange = button('Arrange workspace', 'dashboard_customize', () => openArrange(), 'wb-arrange');
-  arrange.id = 'workbenchArrange'; arrange.setAttribute('aria-haspopup', 'dialog'); label(arrange, 'Arrange');
+  const arrange = button('Layout', 'dashboard_customize', () => openArrange(), 'wb-arrange');
+  arrange.id = 'workbenchArrange'; arrange.setAttribute('aria-haspopup', 'dialog'); label(arrange, 'Layout');
   const focusButton = button('Focus on molecule', 'fullscreen', () => setFocus(!focus));
   focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton);
   const utilities = document.getElementById('topRightUtilities'); if (utilities) actions.append(utilities);
@@ -144,7 +114,7 @@
   const snap = document.createElement('div'); snap.className = 'wb-snap'; snap.id = 'workbenchSnap'; snap.hidden = true;
   const snapLabel = label(snap, ''); body.append(snap);
 
-  function available(item) { return ['styleStudio', 'displayInspector'].includes(item.id) || (item.entry.buttonEl && !item.entry.buttonEl.hidden); }
+  function available(item) { return item.id === 'inspector' || (item.entry.buttonEl && !item.entry.buttonEl.hidden); }
   function open(item) { return !!item.entry.isOpen(); }
   function isParked(id) { return state.parked.includes(id); }
   function compact() { return focus ? compactBeforeFocus : model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth() }).compact; }
@@ -172,6 +142,7 @@
     if (place === 'bottom') state.activeBottom = id;
   }
   function reveal(id, takeFocus = true) {
+    id = model.resolveId(id);
     const item = byId.get(id); if (!item || !available(item)) return;
     state.parked = state.parked.filter(value => value !== id); pending.delete(id);
     item.entry.setOpen(true); activate(id); sync();
@@ -180,9 +151,11 @@
       target?.focus({ preventScroll: true });
     }
   }
-  function close(id) { pending.delete(id); byId.get(id)?.entry.setOpen(false); state.parked = state.parked.filter(value => value !== id); sync(); panelsButton.focus({ preventScroll: true }); }
-  function park(id) { if (!isParked(id)) state.parked.push(id); closeMenu(); sync(); panelsButton.focus({ preventScroll: true }); }
+  function close(id) { id = model.resolveId(id); pending.delete(id); byId.get(id)?.entry.setOpen(false); state.parked = state.parked.filter(value => value !== id); sync(); panelsButton.focus({ preventScroll: true }); }
+  function park(id) {
+    id = model.resolveId(id); if (!isParked(id)) state.parked.push(id); closeMenu(); sync(); panelsButton.focus({ preventScroll: true }); }
   function place(id, placement, { drag = false } = {}) {
+    id = model.resolveId(id);
     const item = byId.get(id); if (!item) return;
     state.placements[id] = placement; state.parked = state.parked.filter(value => value !== id);
     item.root.removeAttribute('data-wb-placement'); item.root.removeAttribute('data-wb-hidden');
@@ -365,7 +338,7 @@
       const table = ['vibrationPanel', 'trajectoryPanel', 'coordsPanel'].find(id => available(byId.get(id)));
       if (table) next.open.push(table);
     }
-    if (name === 'style') { next.open = ['styleStudio']; next.rightWidth = 560; }
+    if (name === 'style') { next.open = ['inspector']; host.properties.setTab('look'); next.rightWidth = 560; }
     if (name === 'explore' && available(byId.get('moldenInspector'))) next.open = ['moldenInspector'];
     applyLayout(next);
   }
@@ -374,7 +347,7 @@
     startMenu(arrange, 'Arrange your workspace');
     menuAction('Explore', 'deployed_code', () => preset('explore'), 'Keep the molecule in view');
     menuAction('Analyze', 'view_quilt', () => preset('analyze'), 'Inspect data alongside the molecule');
-    menuAction('Style', 'palette', () => preset('style'), 'A spacious home for Style Studio');
+    menuAction('Style', 'palette', () => preset('style'), 'Edit the look alongside the molecule');
     if (saved.length) {
       menu.append(document.createElement('hr'));
       for (const item of saved) menuAction(item.name, 'bookmark', () => applyLayout(item.layout));
@@ -384,7 +357,7 @@
     const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'Name this workspace'; input.setAttribute('aria-label', 'Workspace name'); input.maxLength = 48; input.required = true;
     const save = button('Save workspace', 'bookmark_add', () => {}); save.type = 'submit';
     const status = document.createElement('div'); status.className = 'wb-status'; status.setAttribute('role', 'status');
-    form.append(input, save); menu.append(form, status);
+    form.append(input, save); menu.append(form, status, host.properties.preferences);
     form.addEventListener('submit', event => {
       event.preventDefault(); const name = input.value.trim(); if (!name) return;
       saved = saved.filter(item => item.name !== name); saved.push({ name, layout: snapshot() }); saved = saved.slice(-8);
@@ -527,9 +500,9 @@
       if (host.getMode() === 'edit') host.restoreEditPanels(editPanels);
       sync();
     },
-    manages: id => byId.has(id),
-    isDocked: id => byId.has(id) && effectivePlace(id) !== 'float',
-    restoreIfHidden: id => { const item = byId.get(id); if (item && open(item) && item.root.dataset.wbHidden === 'true' && !focus) { reveal(id); return true; } return false; },
+    manages: id => byId.has(model.resolveId(id)),
+    isDocked: id => byId.has(model.resolveId(id)) && effectivePlace(model.resolveId(id)) !== 'float',
+    restoreIfHidden: id => { id = model.resolveId(id); const item = byId.get(id); if (item && open(item) && item.root.dataset.wbHidden === 'true' && !focus) { reveal(id); return true; } return false; },
     open: reveal, close, place, park, setFocus, applyLayout, preset,
     snapshot: () => ({ ...snapshot(), focus, compact: compact(), draggingId }),
   });

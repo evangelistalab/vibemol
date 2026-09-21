@@ -47,24 +47,30 @@ Camera pose/projection, visibility, axes and bounding box, coordinates/topology,
 | Legacy overall atom/bond radius multipliers | Geometry → Size multipliers |
 | Standard / Luminous / Kit palette, explicit element colors | Studio → Colors → Atoms and sidebar Atoms |
 | Element vs uniform bonds and base tint/color | Studio → Colors → Bonds and sidebar Bonds |
-| Physical / Phong / Toon material recipe | Material menu; applicable property controls follow the chosen material |
+| Physical / Phong / Toon material recipe | Material → Family / Recipe; named recipes and controls follow the family |
 | Roughness, metalness, clearcoat, coat roughness, specular strength/color, reflectivity, environment intensity, shininess, tint | Material |
 | Emission intensity, scale, mixing, color source and blend color | Material → Color fill / Fill scale / Fill blend / Fill from color / Fill color |
 | Toon brightness array | Material → Bands / Band 1…8 |
 | Iridescence amount and thickness interval | Material → Pearlescence / Pearl minimum / Pearl maximum |
-| Key/fill/rim/ambient intensity, key/rim direction, exposure, tone mapping, theme following | Lighting & contours |
+| Key/fill/rim/ambient intensity, key/rim direction, exposure, tone mapping | Lighting & contours |
 | Key/fill/ground/rim/ambient colors | Lighting & contours → Light colors |
 | Exact key/rim XYZ coordinates, including distance used for shadow-camera placement | Lighting & contours → Light positions |
 | Absolute width, relative atom/bond contour sizing, highlight shells | Lighting & contours |
 | Shadows and fog | Studio → Lighting & contours and sidebar Rendering |
-| Background color | Style Studio → Lighting & contours, synchronized with Appearance → Scene |
-| Orbital phase colors and palette | Studio → Surfaces for defaults; sidebar Surfaces for orbital/group overrides |
+| Background color and theme following | Colors → Scene, synchronized with Appearance → Scene |
+| Orbital phase colors and palette | Colors → Orbital defaults; sidebar/Object Surfaces for orbital/group overrides |
 | Surface opacity | Studio → Surfaces for defaults; sidebar Surfaces → Opacity for orbital/group overrides. Atoms and bonds stay opaque. |
 | Depth of field enabled state, focus mode/distance/range, blur strength | Camera; these view settings are excluded from named looks |
 
 Material-model-specific controls appear only when the renderer uses them. For example, physical roughness is inactive under Toon, and environment intensity is inactive under Phong. Key/rim angles provide convenient directional adjustment; Light positions exposes the exact stored coordinates, including the key light's shadow-camera placement.
 
-Basic intentionally retains its original atom/bond versus orbital finish pairing. **Use surface finish everywhere** adopts that exact orbital descriptor as the shared material, making its properties available in the same editor. Selecting or editing any material also returns to the shared-material policy. Undo/Revert can restore Basic's pairing. No separate material targets are introduced.
+The family audit resolved three inconsistencies: recipes from the same shader family are now grouped under a Family selector; their distinguishing controls are directly editable; and matching no longer compares unused raw fields. Phong's ineffective Reflections control is removed from its parameter contract. Physical coating/metalness/pearlescence and Toon brightness bands remain editable without selecting another recipe. Saved values, legacy surface/vertex overrides, and full Look rendering stay intact. Family changes have one Undo step and preserve all other Look components.
+
+Style and Color scheme menu selections are independent stored references. Background/theme-following, atom/bond palettes, element overrides and orbital default colors form the color scope. The renderer and color comparison share `VibeMolLooks.surfaceColorSchemes`; Basic/Toon/Kit formerly stored stale Emory swatches despite rendering the current named palette. Comparisons resolve named palette colors without modifying old files. Tiles, My looks selection, saved appearance imports, and startup defaults apply complete combinations; either mixing menu applies only its component. Per-axis dots/resets compare live settings against that reference. Revert composes the two referenced baselines without changing identity; Undo captures references and settings. A tile remains pressed after edits when both references identify it. Object overrides remain independent.
+
+`appearance.references` replaces the fused active-look snapshot in general presets, sessions/recovery, and last appearance. User baselines travel with the references for fresh-browser restoration. Equality-based identity inference runs only during legacy migration; equal user aliases, null references, and unlisted recipes retain their identities during normal edits. `tests/e2e/look_references.py` covers these transitions and the pure Classic regression. `snapshot()` exposes both references, both modified flags, the derived label, live settings, and the saved library.
+
+Basic now uses the approved Luminous recipe on atoms, bonds, and orbitals. All material menu choices share one finish. Older saved pairs retain their explicit descriptors and expose **Use surface finish everywhere**; Undo can restore them. Color-derived emission follows vertex and instance colors consistently, including on bonds, while fixed-color fill stays fixed. Gel and Emissive no longer suppress emission for colored geometry in their new shared recipes.
 
 The historical `molecule.style` key is a compatibility selector for Basic/Toon/Kit, not another hidden rendering component. Resolved geometry, material, coloring, lighting, and effects determine the rendering. Shared controls edit existing registered state. Look version 4 records the new scope contract; the general preset version remains 1.
 

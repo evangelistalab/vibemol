@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { loadGlobalModules } from './load-global-module.mjs';
 const { VibeMolAppearanceModel: M, VibeMolLooks: L, StyleLabLooks: Lab } = loadGlobalModules([
   'assets/app/js/appearance-model.js','assets/app/js/appearance-looks.js','docs/experiments/style-lab/looks.js']);
 const plain = value => JSON.parse(JSON.stringify(value));
+const basicStudy = JSON.parse(readFileSync(new URL('../../docs/experiments/style-lab/basic-materials/recipes.json', import.meta.url), 'utf8'));
 
 test('material disclosure follows shader capabilities and optional channels', () => {
   const active = material => M.materialParameters(material).active;
@@ -22,6 +24,56 @@ test('material disclosure follows shader capabilities and optional channels', ()
   assert.ok(active(M.material({iridescence:0.5})).includes('iridescenceThicknessRange'));
   assert.ok(!active(M.material({emissiveIntensity:0})).includes('emissiveScale'));
   assert.ok(active(M.material({emissiveIntensity:1})).includes('emissiveScale'));
+  assert.ok(!active(M.material({emissiveIntensity:1,emissiveMix:1})).includes('emissiveScale'));
+  for (const material of [M.legacy('kit').material,L.materialRecipe('classic').material]) {
+    assert.ok(active(material).includes('shininess'));
+    assert.ok(!M.materialParameters(material).supported.includes('envMapIntensity'));
+  }
+});
+
+test('recipes match by active shader settings without changing serialized descriptors', () => {
+  for (const [from, to] of [['basic','porcelain'],['classic','kit'],['ink','toon']]) {
+    const source=L.materialRecipe(from).material, target=L.materialRecipe(to).material;
+    assert.ok(!M.materialEqual(source,target));
+    const edited=plain(source);
+    for (const key of M.materialParameters(target).supported) edited[key]=plain(target[key]);
+    assert.notDeepEqual(edited,plain(target),'inactive fields remain different');
+    const before=plain(edited);
+    assert.ok(M.materialEqual(edited,target),`${from} → ${to}`);
+    assert.ok(M.materialEqual(target,edited),'symmetric');
+    assert.deepEqual(edited,before);
+    const rendering=plain(M.legacy());rendering.material=edited;
+    assert.deepEqual(plain(M.normalize(rendering).material),before,'saving stays lossless');
+  }
+});
+
+test('material matching ignores dormant channels and retains meaningful differences', () => {
+  const base=M.material({model:'physical',specularColor:'#abcdef'});
+  const dormant={...plain(base),shininess:99,toonSteps:[1,240],clearcoatRoughness:0.8,
+    iridescenceThicknessRange:[0,990],emissiveColor:'#123456',emissiveScale:0.8,emissiveMix:0.3,
+    specularColor:'#ABCDEF',roughness:base.roughness+1e-12};
+  assert.ok(M.materialEqual(base,dormant));
+  for (const patch of [{roughness:0.3},{model:'toon'},{clearcoat:0.1},{iridescence:0.1},{tint:'#aabbcc'},
+    {specularColor:'#123456'},{emissiveIntensity:0.5},{envMapIntensity:0.5}]) {
+    assert.ok(!M.materialEqual(base,{...plain(base),...patch}),JSON.stringify(patch));
+  }
+  const metal=L.materialRecipe('metal').material;
+  assert.ok(M.materialEqual(metal,{...plain(metal),reflectivity:0.1,specularIntensity:0.2,specularColor:'#123456'}));
+  assert.ok(!M.materialEqual(M.material({clearcoat:1}),M.material({clearcoat:1,clearcoatRoughness:0.8})));
+  assert.ok(!M.materialEqual(M.material({iridescence:1}),M.material({iridescence:1,iridescenceThicknessRange:[0,900]})));
+  assert.ok(!M.materialEqual(null,base));assert.ok(M.materialEqual(null,undefined));
+});
+
+test('recipe matching preserves legacy vertex fill overrides', () => {
+  const gel=L.materialRecipe('gel').material;
+  assert.ok(!M.materialEqual(gel,M.surfacePreset('gel')));
+  assert.ok(!M.materialEqual(gel,{...plain(gel),vertexEmissiveIntensity:0.7}));
+  assert.ok(M.materialEqual(gel,{...plain(gel),vertexEmissiveIntensity:gel.emissiveIntensity}));
+  const dark=M.material({emissiveIntensity:0,vertexEmissiveColor:'#123456'});
+  assert.ok(M.materialEqual(dark,M.material()));
+  assert.ok(!M.materialEqual(dark,{...plain(dark),vertexEmissiveIntensity:1}));
+  assert.ok(!M.materialEqual(M.material({emissiveIntensity:0,vertexEmissiveIntensity:1}),
+    M.material({emissiveIntensity:0,vertexEmissiveIntensity:1,emissiveScale:0.5})));
 });
 
 test('shared materials remain independent of geometry and lighting', () => {
@@ -37,24 +89,26 @@ test('shared materials remain independent of geometry and lighting', () => {
   assert.ok(!('materials' in result));
 });
 
-test('Basic restores its original orbital finish without changing the polished atom material', () => {
+test('Basic uses the approved Luminous material on atoms, bonds, and surfaces', () => {
   const basic=M.normalize(M.legacy('basic'));
-  assert.equal(M.resolvedMaterial(basic,'atoms'),basic.material);
-  assert.equal(M.resolvedMaterial(basic,'bonds'),basic.material);
-  assert.equal(basic.material.roughness,0.16);assert.equal(basic.material.clearcoat,0.82);
-  assert.equal(basic.material.emissiveIntensity,0);
-  assert.deepEqual(plain(M.resolvedMaterial(basic,'surfaces')),plain(M.surfacePreset('emissive')));
-  assert.equal(basic.surfaceMaterial.vertexEmissiveColor,'#000000');
+  assert.deepEqual(plain(basic.material),basicStudy.options.find(item=>item.id==='luminous').material);
+  assert.equal(basic.surfaceMaterial,null);
+  for (const key of ['geometry','lighting','coloring','effects']) {
+    assert.deepEqual(plain(basic[key]),basicStudy.referenceSettings['appearance.rendering'][key],key);
+  }
   assert.deepEqual(plain(M.normalize(basic)),plain(basic));
-  for(const look of L.builtins.filter(item=>item.id!=='basic')) {
+  for(const look of L.builtins) {
     const rendering=look.settings['appearance.rendering'];
     assert.equal(rendering.surfaceMaterial,null,look.id);
-    assert.equal(M.resolvedMaterial(rendering,'surfaces'),rendering.material,look.id);
+    for (const target of ['atoms','bonds','surfaces']) assert.equal(M.resolvedMaterial(rendering,target),rendering.material,look.id);
   }
 });
 
-test('older v3 looks keep their stored shared finish rather than adopting new Basic defaults', () => {
-  const saved=plain(M.legacy('basic'));delete saved.surfaceMaterial;
+test('older v3 looks retain both paired and shared finishes instead of adopting new Basic defaults', () => {
+  const saved=plain(basicStudy.referenceSettings['appearance.rendering']);
+  assert.deepEqual(plain(M.normalize(saved)),saved);
+  assert.notDeepEqual(saved.material,plain(M.legacy('basic').material));
+  delete saved.surfaceMaterial;
   const reopened=M.normalize(saved);
   assert.equal(reopened.surfaceMaterial,null);
   assert.equal(M.resolvedMaterial(reopened,'surfaces'),reopened.material);

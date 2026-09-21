@@ -4998,6 +4998,11 @@ def main() -> int:
             )
             load_volume_asset(page, '/assets/data/sample.cube')
             page.evaluate("""() => {
+                const family=document.getElementById('appearanceMaterialFamily');
+                family.value='physical';family.dispatchEvent(new Event('change',{bubbles:true}));
+            }""")
+            page.wait_for_function("() => !!document.querySelector('#appearanceMaterialPreset option[value=emissive]')")
+            page.evaluate("""() => {
                 const select=document.getElementById('appearanceMaterialPreset');
                 select.value='emissive';select.dispatchEvent(new Event('change',{bubbles:true}));
             }""")
@@ -5017,7 +5022,8 @@ def main() -> int:
                     const select = document.getElementById('appearanceMaterialPreset');
                     if (!(row && select)) return false;
                     const options = Array.from(select.options || []).map((opt) => String(opt.textContent || '').trim());
-                    return options.join('|') === 'Custom|Emissive|Satin|Lacquer|Metal|Gel|Ceramic|Polished|Matte|Enamel|Classic smooth|Toon'
+                    return options.join('|') === 'Custom|Basic|Emissive|Gel|Matte|Metal|Opal|Porcelain'
+                      && document.getElementById('appearanceMaterialFamily').value === 'physical'
                       && row.classList.contains('appearanceHiddenControl')
                       && !document.getElementById('appearanceMaterialModel')
                       && String(select.value || '') === 'emissive';

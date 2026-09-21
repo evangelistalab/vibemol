@@ -1,37 +1,40 @@
 # Properties inspector consolidation
 
-This work is staged on `codex/window-workspace-lab`. The existing Workbench bar changes are its prerequisite. The two windows have **not yet been merged**: the brief requires a layout decision before Stage 2, and the actual shared material behavior needs resolving against the proposed Surface/Molecule split.
+Implemented on `codex/window-workspace-lab` for `?workspaceLab=1`. The accepted design uses Object / Look tabs and shared material editing. Open the actual application; the separate review mockup is no longer the implementation target. The ordinary launch retains its existing Appearance and Style Studio interface.
 
-## Decisions and scope audit
+## Scope
 
-- Axes are a camera orientation aid. In Workbench, `showAxes` and the backing `dofFocusMode` select now live in Camera, alongside the visible projection/focus controls.
-- Simulation boxes belong to individual cube/arithmetic layers. `showBox` now lives with the selected surface controls and uses the selected layers' grids. It does not evaluate deferred molecular orbitals. A nullable `showBox` field is retained by the existing layer/session serializer; missing values inherit the legacy global setting. It is excluded from Looks.
-- `renderMode` and `cloudType` are already per-layer and fit the proposed Object scope.
-- Both existing material pickers deliberately call the shared material editor. Basic alone carries a legacy surface finish until a material edit. Renaming these controls to imply independent Surface/Molecule scopes would be misleading without an explicit change of behavior. The user has been asked whether to retain one shared material or add per-surface overrides.
-- Molecule visibility/labels/multiple-bond controls currently use global flags; the proposed Object scope requires either selected-molecule storage or an explicit global qualifier. Two-component display mode is also intentionally global across 2C sources. These must not be silently presented as isolated layer edits.
-- Portable sessions explicitly exclude window layout. Workbench stores open windows, dock positions and named layouts under `vibemol.workbench.lab.v1`. Stage 2 must normalize `displayInspector` and `styleStudio` aliases there and in window/shortcut APIs, rather than add panel state to scientific sessions.
-- Look exports remain version 4; no Look schema or default-library key has changed.
+- **Object** follows the outliner selection. Nothing selected shows an empty state. A structure and orbitals can be selected together with Command/Ctrl-click. The inspector shows selection visibility, Structure settings, and Surfaces settings with applicable counts. Surface/group commands still filter their targets to surfaces; selecting a structure does not make it an arithmetic operand or a cube-delete target.
+- Structure visibility, labels, numbers, and multiple-bond rendering use each molecule layer's `moleculeDisplay` settings. These are session state; older sessions inherit the legacy global values. Changing the Look preserves these choices. Rendering, including bond updates during editing, uses the resolved layer settings.
+- Surface iso, Auto-iso, phase, render mode, cloud type, and simulation box are data-dependent Object properties. They are excluded from Looks. Group edits include hidden/deferred orbitals without computing their grids. Differing values remain mixed until explicitly edited.
+- Surface colors and opacity have explicit override dots and reset-to-look buttons. Reset returns selected layers to inheritance; existing Appearance Undo restores the overrides.
+- **Look** owns preset selection, gallery, saved Looks, Geometry, Colors, shared Material, Lighting & contours, and background. Material changes apply to atoms, bonds, and surfaces. The Basic material option uses the approved shared Luminous finish without changing the other Look components. Every material choice and parameter edit uses one shared finish. Whole-material reset restores the complete original recipe, including an explicit surface descriptor in older saved appearances.
+- Axes and depth-of-field focus live in Camera. Typeface remains an application preference and is available from Layout. Simulation boxes are per-surface. Two-component display remains global across 2C files and is explicitly labelled as such in Object; it appears whenever a selected layer has two components.
 
-## Implemented preparation
+A Look must be portable across molecules. There are no reset-to-look buttons on scientific or visibility settings that are not part of a Look.
 
-Stage 0 binds the Workbench Studio surface controls to the same selected-orbital/group edits as Appearance. Passive synchronization never writes layer values or changes Look defaults. The ordinary interface retains its existing global-default/selected-override distinction. Both Look dropdowns now list and apply saved Looks, as well as built-ins; saved identity no longer disappears or fails to apply in Studio.
+The Look tab now has independent Look and Color scheme selectors. Color schemes contain atom/bond colors, orbital defaults, and background/theme-following; material/light/geometry choices preserve them. Colors exposes the global orbital defaults separately from Object's selected-layer overrides. Existing save/open/default/session paths retain the complete combination. See `docs/appearance-looks.md` for the selection and persistence contracts.
 
-Stage 1 shares physical-material parameter definitions between the material factory and editor. Shader type determines supported parameters; optional channel strengths gate dependent controls (coat roughness, pearlescent thickness and emission mixing). Clearcoat is available for Gel and Ceramic as well as Lacquer. Remaining channels use the existing disclosure component, preserving full customization. Bands are exclusive to Toon.
+## Implementation and compatibility
 
-Row-level Look reset buttons and modified dots are prepared in the shared editor for Workbench, with existing Appearance Undo support. Complete Object indicators and the material selector's whole-recipe reset remain for Stage 3.
+`properties-inspector.js` builds one window (`inspector`, Properties) and two accessible scope tabs once. Selection updates existing nodes; it does not reconstruct controls or lose disclosure/scroll state. Object reuses the existing bound surface controls; Look reuses the existing editor and gallery. The duplicate Appearance controls and Studio surface mirrors are absent from the Workbench DOM. Legacy global preset adapters retain their bound backing state off-DOM; the ordinary interface still uses that path.
 
-## Validation checkpoint
+Each scope body owns its scrollbar. The former Studio container-query rules must not create an inner scroll container on `looksPanel`: its contained overscroll traps wheel input, and WebKit can move a subsection heading between pointer-down and pointer-up. Removing those rules preserves native disclosure behavior without intercepting clicks or keyboard events.
 
-- Syntax/whitespace checks and all 312 unit tests pass.
-- `tests/e2e/appearance_controls.py` passes: two-layer color isolation and both binding directions, saved Look selection, individual row reset/Undo, axes placement, per-layer box visibility and session restoration, and disclosure across every material type.
-- Initial Material input/select counts: 6 for Emissive, Satin, Lacquer, Gel, Ceramic, Polished, Matte and Enamel; 4 for Metal, Classic smooth and Toon. Expanded channel controls are still available. The previous physical-material form exposed 30 inputs/selects with all dependent controls shown.
-- The existing `tests/e2e/appearance_scopes.py` regression also passes, covering shared controls, camera scope, orbital defaults/overrides, legacy imports and sessions. A pre-edit Look export imports successfully and its startup default is retained.
-- A matched Gel comparison at 1512 × 950 with Geometry closed and Material open reduced `looksPanel` scroll height from 1546 to 1071 pixels in a 767-pixel body (ratio 2.02 → 1.40). This measures Stage 1, before panel consolidation.
-- The complete panel-height comparison and the three Object-tab screenshots must be measured after Stage 2. The current 1512 × 950 capture still has two panels and is not the final layout.
+The single window replaces Appearance and Style Studio in the Panels menu. `workbench-model.js` normalizes both old ids to `inspector`, merges duplicate entries, prefers the formerly active placement/position, and does not minimize an inspector if either old window was visible. Existing window APIs accept both aliases. Mode switches, floating positions, docks, minimized state, Focus, and named layouts retain their behavior. Scope tabs are transient and do not add a persistence key.
 
-## Remaining stages
+Portable sessions continue to exclude window layout. Existing Workbench storage (`vibemol.workbench.lab.v1`) handles layout migration. Nullable per-layer `showBox`, optional `moleculeDisplay`, and mixed structure/orbital selection round-trip through the session serializer with validation. No Look schema version or saved-library/default key changed. Legacy Looks and ordinary-launch default behavior remain compatible.
 
-1. Confirm Object/Look tabs versus a single selection-first scrolling panel, and shared versus per-surface material behavior.
-2. Build the merged `inspector` once, subscribe to existing selection changes, remove the specified duplicate nodes, and migrate window aliases without changing dock sizing or persistence.
-3. Finish per-property reset/inheritance indicators in Object and Look, including whole-material resets.
-4. Check old Look import, startup default, layout migration, session restoration, keyboard navigation, both themes, mobile bounds, duplicate labels/IDs, and selected-cube/molecule/empty states. Record final control counts and comparable scroll ratios and screenshots.
+## Validation
+
+- All 314 unit tests pass, including alias migration and mixed selection / surface-target separation.
+- `tests/e2e/properties_inspector.py` covers the empty, structure, surface, and mixed states; stable DOM nodes; two-layer isolation; mixed indicators; scalar/2C selection and cloud controls; actual rendered atom visibility; reset/Undo; shared materials; saved Looks; session restoration; old window aliases; mode stability; and responsive bounds in both themes.
+- `tests/e2e/appearance_controls.py` retains the previous test entry point and now runs the consolidated-inspector regression.
+- `tests/e2e/properties_disclosures.py` verifies wheel scrolling, stationary first clicks on every subsection, unchanged heading/scroll positions, and native Space/Enter behavior in right, bottom, and floating layouts. It passes in Chromium and WebKit (`--browser webkit`); CI runs both engines.
+- `tests/e2e/appearance_scopes.py` passes on the ordinary interface: shared appearance controls, old Look import, focus isolation, defaults/overrides, saved Looks, and sessions.
+- Workbench layout, mode consistency, deferred-orbital, and bar regressions pass. The Panels menu now contains eight persistent inspectors, with one Properties entry. Bar coverage checks 320–1920 px and keyboard/ARIA behavior.
+- The complete browser smoke test, JavaScript syntax checks, Python compilation, and whitespace checks pass.
+- Material now uses Family and Recipe selectors. Physical contains Basic/Luminous, Emissive, Gel, Matte, Metal, Opal, and Porcelain; Smooth (Phong) contains Classic and Kit; Toon contains Ink and Toon. Each family exposes its main distinguishing controls directly, with applicable finer adjustments under Material channels. This supersedes the initial consolidation's smaller visible control counts. The browser report records current counts and checks family-specific visibility rather than enforcing a fixed total.
+- Family changes apply their default recipe as one Undo step; whole-material reset restores the saved family and descriptor. Matching ignores dormant shader parameters without discarding them from saved files. Personal materials are filtered by family. `material_families` in `tests/e2e/looks.py` covers both Properties and ordinary Studio, including manual recipe matching, stable option nodes, libraries/import, Undo, and sessions.
+
+The focused browser test writes `properties-report.json` plus `properties-empty.png`, `properties-structure.png`, `properties-surface.png`, `properties-mixed.png`, and `properties-look.png` to the configured test-artifact directory.

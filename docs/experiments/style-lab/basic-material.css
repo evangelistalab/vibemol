@@ -1,0 +1,28 @@
+body { margin:0; background:var(--vm-color-surface-panel); color:var(--vm-color-text-primary); font-family:var(--vm-font-sans); }
+main { max-width:1440px; margin:auto; padding:28px; }
+h1 { margin:8px 0; font-size:26px; font-weight:600; }
+h2 { margin:0; font-size:18px; font-weight:600; }
+p { margin:10px 0; line-height:1.5; font-size:14px; }
+header { margin-bottom:24px; }
+header > p:last-child { color:var(--vm-color-text-secondary); }
+.comparison { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px 32px; }
+.comparison article { min-width:0; border-top:1px solid var(--vm-color-border); padding-top:16px; }
+.option-heading { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px; }
+.option-heading .vm-session-status { font-size:12px; }
+.recommendation { font-size:12px; font-weight:600; color:var(--vm-brand-accent); }
+.views { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:8px; }
+figure { margin:0; min-width:0; }
+figure img { display:block; width:100%; height:auto; }
+figcaption { text-align:center; color:var(--vm-color-text-secondary); font-size:12px; }
+.try-material { border-top:1px solid var(--vm-color-border); margin-top:28px; padding-top:22px; }
+.vm-popover__actions { display:flex; flex-wrap:wrap; gap:12px; margin:12px 0 20px; }
+.vm-popover__actions a { text-decoration:none; }
+details { margin-top:16px; }
+.table-wrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; margin:12px 0; font-size:13px; font-variant-numeric:tabular-nums; }
+th,td { text-align:left; padding:10px; border-bottom:1px solid var(--vm-color-border); }
+.live-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:16px 0 4px; font-size:14px; }
+.live-controls select { min-width:160px; }
+#liveHost iframe { display:block; box-sizing:border-box; width:100%; height:640px; border:1px solid var(--vm-color-border); border-radius:var(--vm-radius-md); }
+@media(max-width:800px) { main { padding:20px; } .comparison { grid-template-columns:1fr; } h1 { font-size:22px; } }
+@media(max-width:420px) { .live-controls { display:grid; grid-template-columns:auto minmax(0,1fr); } .live-controls select { min-width:0; } }

@@ -3,12 +3,24 @@ import assert from 'node:assert/strict';
 import { loadGlobalModule } from './load-global-module.mjs';
 const { VibeMolWorkbenchModel: model } = loadGlobalModule('assets/app/js/workbench-model.js');
 
+test('legacy inspectors merge into the active placement without duplicating or minimizing a visible panel', () => {
+  const value = model.normalize({ open: ['displayInspector', 'styleStudio'], parked: ['displayInspector'],
+    activeBottom: 'styleStudio', placements: { displayInspector: 'right', styleStudio: 'float' },
+    positions: { styleStudio: { left: 101, top: 205 } }, rightWidth: 570, bottomHeight: 290 });
+  assert.equal(value.open.join(), 'inspector'); assert.equal(value.parked.length, 0);
+  assert.equal(value.placements.inspector, 'float'); assert.equal(value.activeBottom, 'inspector');
+  assert.equal(value.positions.inspector.left, 101); assert.equal(value.rightWidth, 570);
+  assert.equal(JSON.stringify(model.normalize(value)), JSON.stringify(value));
+  assert.equal(model.normalize({ open: false }).open.length, 0);
+  assert.equal(model.normalize({ open: ['styleStudio'], parked: false }).parked.length, 0);
+});
+
 test('workspace imports keep only known windows and bound panel sizes', () => {
   const value = model.normalize({ placements: { coordsPanel: 'float', styleStudio: 'elsewhere' },
     positions: { coordsPanel: { left: -100, top: 99999 }, styleStudio: { left: Infinity, top: 0 }, unknown: { left: 10, top: 10 } },
     open: ['coordsPanel', 'unknown', 'coordsPanel'], parked: ['unknown'], rightWidth: 999999, bottomHeight: -20 });
   assert.equal(value.placements.coordsPanel, 'float');
-  assert.equal(value.placements.styleStudio, 'right');
+  assert.equal(value.placements.inspector, 'right');
   assert.equal(value.open.join(), 'coordsPanel');
   assert.equal(value.parked.length, 0);
   assert.equal(value.rightWidth, 680); assert.equal(value.bottomHeight, 180);

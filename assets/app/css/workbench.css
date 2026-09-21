@@ -16,17 +16,7 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   box-sizing: border-box; max-height: calc(100dvh - var(--wb-top) - 24px); overflow: auto;
 }
 .vm-workbench .vm-two-component-overlay__label { top: 12px; }
-.vm-workbench #displayInspector.wb-appearance {
-  position: fixed; left: calc(var(--wb-left) + 24px); top: calc(var(--wb-top) + 12px);
-  width: min(420px, calc(100vw - 24px)); height: min(780px, calc(100dvh - var(--wb-top) - 24px));
-  min-width: 0; padding: 0; display: flex; flex-direction: column; overflow: hidden;
-  font-family: var(--vm-font-sans); z-index: 50;
-}
-.vm-workbench #displayInspector.wb-appearance:not(.open) { display: none !important; }
-.wb-appearance > .vm-popover__header { align-items: center; flex-shrink: 0; padding: 12px; border-bottom: 1px solid var(--vm-color-border); }
-.vm-workbench #displayInspector > .inspectorAccordion { flex: 1; min-height: 0; overflow: auto; padding: 0; border: 0; }
-.vm-workbench #displayInspector .inspectorAccordionBody { margin: 0; border: 0; border-radius: 0; box-shadow: none; }
-.vm-workbench #displayInspector .vm-appearance-section { scroll-margin-top: 12px; }
+
 
 .wb-bar {
   position: fixed; top: 0; left: var(--wb-left); right: 0; height: 56px; z-index: 45;
@@ -119,27 +109,18 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .wb-window-header { display: flex; align-items: center; gap: 8px; }
 .vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader > .title,
 .vm-workbench #sidePanel[data-wb-placement]:not([data-wb-placement='float']) > header > h2 { display: none; }
-.vm-workbench #displayInspector[data-wb-placement]:not([data-wb-placement='float']) > header > h2 { display: none; }
 .vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader::before,
 .vm-workbench #sidePanel[data-wb-placement]:not([data-wb-placement='float']) > header::before {
   content: 'drag_indicator'; font: 18px 'Material Symbols Rounded'; color: var(--vm-color-text-secondary); flex-shrink: 0;
 }
-.vm-workbench #displayInspector[data-wb-placement]:not([data-wb-placement='float']) > header::before {
-  content: 'drag_indicator'; font: 18px 'Material Symbols Rounded'; color: var(--vm-color-text-secondary); flex-shrink: 0;
-}
+
 .vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader > .actions { margin-left: auto; }
 .vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelBody,
 .vm-workbench [data-wb-placement]:not([data-wb-placement='float']) #viewControls { flex: 1; min-height: 0; overflow: auto; }
 .wb-window-menu.vm-btn { flex-shrink: 0; width: 26px; height: 26px; min-width: 26px; padding: 0; margin-left: auto; color: var(--vm-color-text-secondary); background: transparent; border: 0; box-shadow: none; }
 .wb-window-menu .material-symbols-rounded { font-size: 17px; }
-.vm-workbench #styleStudio[data-wb-placement]:not([data-wb-placement='float']) { container-type: inline-size; }
-.vm-workbench #styleStudio[data-wb-placement]:not([data-wb-placement='float']) #looksPanel { flex: 1; min-height: 0; }
-@container (max-width: 620px) {
-  #styleStudio #looksPanel { display: block; overflow-y: auto; }
-  #styleStudio #lookPresetSection, #styleStudio #lookComponentEditor { overflow: visible; }
-  #styleStudio #lookComponentEditor { border-left: 0; border-top: 1px solid var(--vm-color-border); }
-  #styleStudio .vm-look-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
+/* Properties owns scrolling in its Object/Look bodies at every dock width.
+   Nested Studio scroll containers trap wheel events and shift WebKit's click targets. */
 .wb-menu { position: fixed; z-index: 10060; width: 280px; max-width: calc(100vw - 24px); box-sizing: border-box; font-family: var(--vm-font-sans); }
 .wb-menu[hidden] { display: none; }
 .wb-menu-title { font-size: 11px; font-weight: 600; color: var(--vm-color-text-secondary); padding: 2px 6px 8px; }

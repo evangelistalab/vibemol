@@ -56,10 +56,10 @@
     const state = { version: 3, geometry: clone(BASIC_GEOMETRY), lighting: clone(BASIC_LIGHTING),
       coloring: { palette: 'basic', elementBonds: true, bondColor: '#eaecf0' },
       effects: { outlineWidth: 0, atomOutlineFraction: 0, bondOutlineFraction: 0, highlights: false },
-      material: material({ roughness: 0.16, metalness: 0.08, clearcoat: 0.82, clearcoatRoughness: 0.12, reflectivity: 0.62 }),
-      // Basic originally paired polished atoms with luminous, clear-coated orbitals.
-      // Store the surface recipe explicitly so saved looks never depend on their name.
-      surfaceMaterial: surfacePreset('emissive') };
+      // The approved Luminous recipe is shared by atoms, bonds, and surfaces.
+      material: material({ roughness: 0.72, metalness: 0.04, clearcoat: 1, clearcoatRoughness: 0.1,
+        reflectivity: 0.62, emissiveIntensity: 0.36 }),
+      surfaceMaterial: null };
     if (name === 'toon' || name === 'fancy') {
       Object.assign(state.geometry, { atomScaleMain: 1.16, atomScaleTransitionMetal: 1.22, bondRadius: 0.095, bondRadialSegments: 20, bondHeightSegments: 1 });
       Object.assign(state.lighting, { hemiColor: '#f8fbff', hemiGroundColor: '#0f1826', hemiIntensity: 1.28,
@@ -106,8 +106,8 @@
       || !finite(e.bondOutlineFraction, 0, 0.3) || typeof e.highlights !== 'boolean') throw new Error('Invalid contour settings.');
     if (!object(c) || !['basic', 'toon', 'kit'].includes(c.palette) || typeof c.elementBonds !== 'boolean' || !hex(c.bondColor)) throw new Error('Invalid coloring settings.');
     out.material = validateMaterial(out.material);
-    // Older v3 looks retain their shared finish; only newly applied Basic uses
-    // the original orbital recipe. The optional descriptor travels with the look.
+    // Preserve explicit surface finishes in older saved looks. New presets use
+    // a shared material, but loading a saved descriptor never replaces its values.
     out.surfaceMaterial = out.surfaceMaterial == null ? null : validateMaterial(out.surfaceMaterial);
     return out;
   }
@@ -153,16 +153,42 @@
     const d = validateMaterial(value);
     const supported = new Set(['tint', 'emissiveIntensity', 'emissiveUsesColor', 'emissiveColor', 'emissiveScale', 'emissiveMix']);
     if (d.model === 'physical') for (const key of physicalParameters) supported.add(key);
-    if (d.model === 'phong') for (const key of ['shininess', 'specularColor', 'envMapIntensity']) supported.add(key);
+    // Phong has no environment map in this renderer; envMapIntensity is a
+    // Physical shader parameter. Retain old values only for round-tripping.
+    if (d.model === 'phong') for (const key of ['shininess', 'specularColor']) supported.add(key);
     if (d.model === 'toon') supported.add('toonSteps');
     const active = new Set(supported);
     if (!d.clearcoat) active.delete('clearcoatRoughness');
     if (!d.iridescence) active.delete('iridescenceThicknessRange');
     if (!d.emissiveIntensity) for (const key of ['emissiveUsesColor', 'emissiveColor', 'emissiveScale', 'emissiveMix']) active.delete(key);
     if (!d.emissiveUsesColor) { active.delete('emissiveScale'); active.delete('emissiveMix'); }
+    if (d.emissiveMix === 1) active.delete('emissiveScale');
     if (d.emissiveUsesColor && !d.emissiveMix) active.delete('emissiveColor');
     if (d.model === 'physical' && d.metalness === 1) for (const key of ['reflectivity', 'specularIntensity', 'specularColor']) active.delete(key);
     return Object.freeze({ supported: [...supported], active: [...active] });
+  }
+  function materialEqual(left, right) {
+    if (left == null || right == null) return left == null && right == null;
+    const a = validateMaterial(left), b = validateMaterial(right);
+    if (a.model !== b.model) return false;
+    const same = (x, y) => typeof x === 'number' ? typeof y === 'number' && Math.abs(x - y) < 1e-8
+      : Array.isArray(x) ? Array.isArray(y) && x.length === y.length && x.every((v, i) => same(v, y[i]))
+      : typeof x === 'string' ? typeof y === 'string' && x.toLowerCase() === y.toLowerCase() : x === y;
+    const keys = new Set([...materialParameters(a).active, ...materialParameters(b).active]);
+    for (const key of keys) if (!key.startsWith('emissive') && !same(a[key], b[key])) return false;
+    // Compare fill separately for uniform and vertex-colored geometry. Legacy
+    // overrides can still affect surfaces/bonds and must not match a shared
+    // recipe accidentally. Dormant fill settings do not change a recipe.
+    const fill = (d, vertex) => {
+      const intensity = vertex ? d.vertexEmissiveIntensity ?? d.emissiveIntensity : d.emissiveIntensity;
+      if (!intensity) return [];
+      const fixed = vertex && d.vertexEmissiveColor != null ? d.vertexEmissiveColor
+        : !d.emissiveUsesColor || d.emissiveMix === 1 ? d.emissiveColor : null;
+      if (fixed != null) return fixed.toLowerCase() === '#000000' ? [] : [intensity, fixed];
+      if (!d.emissiveScale && !d.emissiveMix) return [];
+      return [intensity, d.emissiveScale, d.emissiveMix, d.emissiveMix ? d.emissiveColor : null];
+    };
+    return same(fill(a, false), fill(b, false)) && same(fill(a, true), fill(b, true));
   }
   function createMaterial(THREE, value, color, gradient, options = {}) {
     const d = value, col = color.clone().multiply(new THREE.Color(d.tint));
@@ -179,8 +205,35 @@
     else mat = new THREE.MeshPhysicalMaterial({ ...common,
       ...Object.fromEntries(physicalParameters.map(key => [key, d[key]])), iridescenceIOR: 1.3 });
     mat.envMapIntensity = d.envMapIntensity;
+    if (d.emissiveUsesColor && !(options.vertexColors && d.vertexEmissiveColor != null)) {
+      // Three multiplies diffuse light by vertex/instance colors, but not emission.
+      // Only the color-derived part of our fill should follow those colors; the
+      // fixed-color mix stays fixed. Channel fractions also respect later changes
+      // to emissiveIntensity without a per-frame uniform update.
+      const derived = col.clone().multiplyScalar(d.emissiveScale * (1 - d.emissiveMix));
+      const weight = new THREE.Color().setRGB(...['r','g','b'].map(key =>
+        emissive[key] > 0 ? derived[key] / emissive[key] : 0));
+      mat.onBeforeCompile = shader => {
+        shader.uniforms.vmColorFillWeight = { value: weight };
+        shader.fragmentShader = 'uniform vec3 vmColorFillWeight;\n' + shader.fragmentShader;
+        shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>',
+          `#if defined( USE_COLOR ) || defined( USE_COLOR_ALPHA )
+            totalEmissiveRadiance *= mix(vec3(1.0), vColor.rgb, vmColorFillWeight);
+          #endif
+          #include <emissivemap_fragment>`);
+      };
+      mat.customProgramCacheKey = () => 'vm-color-fill-v1';
+    }
     return mat;
   }
+  function cloneMaterial(source) {
+    const material = source.clone();
+    // Three's Material.copy does not preserve compilation hooks. Transparent
+    // WBOIT passes and edit previews need the same color-fill calculation.
+    material.onBeforeCompile = source.onBeforeCompile;
+    material.customProgramCacheKey = source.customProgramCacheKey;
+    return material;
+  }
   global.VibeMolAppearanceModel = Object.freeze({ clone, material, validateMaterial, normalize, legacy, fromLegacy,
-    surfacePreset, surfacePresets: SURFACE_PRESETS, resolvedMaterial, patchMaterial, createMaterial, materialParameters, materialLimits: MATERIAL_LIMITS });
+    surfacePreset, surfacePresets: SURFACE_PRESETS, resolvedMaterial, patchMaterial, createMaterial, cloneMaterial, materialParameters, materialEqual, materialLimits: MATERIAL_LIMITS });
 })(window);

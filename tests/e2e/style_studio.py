@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 import premerge as p
+from looks import choose_material
 
 
 def settings(page):
@@ -33,9 +34,10 @@ def background_controls(page):
 
     assert p.load(page,[{'name':'orbital.cube','text':p.cube(0)}])['ok']
     page.locator('#displayInspectorBtn').click();page.locator('#styleStudioBtn').click()
+    page.locator('#lookColorPreset').select_option('classic')
     page.locator('#lookPreset').select_option('classic')
     page.locator('#appearanceGeometrySection > summary').click()
-    page.locator('#appearanceLightingSection > summary').click()
+    page.locator('#appearanceColorsSection > summary').click()
     assert page.locator('#appearanceBackgroundColor').is_visible()
     original=settings(page)
     molecule=page.evaluate('() => VibeMolStructure.exportActive().volume')
@@ -47,7 +49,7 @@ def background_controls(page):
         choose_color(selector,[original['global.backgroundColor'],'#112233','#284c68','#345678'])
         check_color('#345678')
         assert settings(page)=={**original,'global.backgroundColor':'#345678'}
-        assert page.locator('#lookModified').inner_text()=='· Modified'
+        assert page.evaluate('VibeMolAppearanceLooks.snapshot().colorsModified')
         assert page.evaluate('() => JSON.parse(JSON.stringify(VibeMolTesting.getSurfaceMaterialSnapshot()))')==surfaces
         assert page.evaluate('() => VibeMolStructure.exportActive().volume')==molecule
         after=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
@@ -56,7 +58,7 @@ def background_controls(page):
                    for vector in ['camera','target','up'] for axis in ['x','y','z']), (camera,after)
         assert background_pixel()!=initial_pixel
         page.locator('#lookUndo').click();check_color(original['global.backgroundColor'])
-        assert settings(page)==original and page.locator('#lookModified').inner_text()==''
+        assert settings(page)==original and page.evaluate('!VibeMolAppearanceLooks.snapshot().styleModified && !VibeMolAppearanceLooks.snapshot().colorsModified')
 
     # A named look, portable export, Revert, appearance autosave, and session all
     # retain the same shared color rather than a second Studio-only setting.
@@ -73,13 +75,13 @@ def background_controls(page):
     page.wait_for_function('() => JSON.parse(localStorage.getItem("vibemol.autosavePreset"))?.settings["global.backgroundColor"]==="#345678"')
     page.reload();page.wait_for_function('() => window.VibeMolAppearanceLooks')
     check_color('#345678')
-    page.evaluate('() => VibeMolAppearanceLooks.apply("opal")');check_color('#171b2b')
+    page.evaluate('() => VibeMolAppearanceLooks.apply("opal",{includeColors:true})');check_color('#171b2b')
     assert page.evaluate('preset=>VibeMolPreset.import(preset,{mode:"strict"})',exported)['ok']
     check_color('#345678')
-    page.evaluate('() => VibeMolAppearanceLooks.apply("ink")')
+    page.evaluate('() => VibeMolAppearanceLooks.apply("ink",{includeColors:true})')
     assert page.evaluate('saved=>VibeMolSession.import(saved)',session)['ok']
     check_color('#345678')
-    assert page.evaluate('() => VibeMolAppearanceLooks.snapshot().activeLook.id')==saved['id']
+    assert page.evaluate('() => VibeMolAppearanceLooks.snapshot().styleRef.id')==saved['id']
 
     # Theme following changes the rendered background, never the saved base color.
     exact_pixel=background_pixel()
@@ -90,6 +92,7 @@ def background_controls(page):
     assert background_pixel()==exact_pixel
     page.evaluate('() => VibeMolAppearanceLooks.openStudio()')
     page.locator('#appearanceLightingSection').evaluate('el=>el.open=true')
+    page.locator('#appearanceColorsSection').evaluate('el=>el.open=true')
     page.locator('#appearanceFollowTheme').check();check_color('#345678')
     dark_pixel=background_pixel()
     assert sum(dark_pixel[:3])<sum(exact_pixel[:3]), (exact_pixel,dark_pixel)
@@ -138,10 +141,10 @@ def run(page):
     assert page.evaluate('() => VibeMolTesting.getCameraSnapshot()') == camera
     page.locator('#appearanceAtomSize').fill('1.22'); page.locator('#appearanceAtomSize').press('Enter')
     assert settings(page)['appearance.rendering']['geometry']['atomScaleMain'] == 1.22
-    assert page.locator('#lookModified').inner_text() == '· Modified'
+    assert page.evaluate('VibeMolAppearanceLooks.snapshot().styleModified')
     page.locator('#lookUndo').click(); assert settings(page) == original
     page.locator('#appearanceMaterialsSection > summary').click()
-    page.locator('#appearanceMaterialPreset').select_option('satin')
+    choose_material(page,'porcelain')
     page.locator('#appearanceMaterialRoughness').fill('0.43'); page.locator('#appearanceMaterialRoughness').press('Enter')
     assert settings(page)['appearance.rendering']['material']['roughness'] == 0.43
     page.locator('#lookRevert').click(); assert settings(page) == original

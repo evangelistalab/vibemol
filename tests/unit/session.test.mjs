@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { loadGlobalModules, evaluateInContext } from './load-global-module.mjs';
 
 function setup() {
-  const ctx = loadGlobalModules(['assets/app/js/scene-graph.js', 'assets/app/js/scene-sources.js',
+  const ctx = loadGlobalModules(['assets/app/js/appearance-model.js', 'assets/app/js/appearance-looks.js',
+    'assets/app/js/scene-graph.js', 'assets/app/js/scene-sources.js',
     'assets/app/js/session-format.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
   const fixture = evaluateInContext(ctx, `(() => {
     const graph = VibeMolSceneGraph.createSceneGraphController();
@@ -37,6 +38,31 @@ function setup() {
   const format = ctx.VibeMolSessionFormat;
   return { ctx, fixture, capture, format };
 }
+
+test('legacy session layers and cached cube/Molden appearance restore and re-export the Tableau palette', async () => {
+  const {ctx, fixture, capture, format} = setup();
+  const old = {colorScheme:'classic',posColor:'#1f77b4',negColor:'#d62728',signFlip:false};
+  const encoded = await format.encode(capture()), decoded = await format.decode(encoded);
+  Object.assign(decoded.graph.scenes[0].layers.find(layer=>layer.kind==='cube'), old);
+  Object.assign(decoded.graph.scenes[0].layers.find(layer=>layer.kind==='arithmetic'), old);
+  decoded.sources[0].recordState._sceneGraphLayerState = {...old};
+  decoded.sources[0].recordState._moldenSceneGraphLayerStateByMo = {0:{...old}};
+  const restored = ctx.VibeMolSessionModule.hydrate(decoded);
+  const states = [restored.graph.scenes[0].layers.find(layer=>layer.kind==='cube'),
+    restored.graph.scenes[0].layers.find(layer=>layer.kind==='arithmetic'),
+    restored.records[0]._sceneGraphLayerState, restored.records[0]._moldenSceneGraphLayerStateByMo[0]];
+  for (const state of states) {
+    assert.equal(state.colorScheme,'tableau');assert.equal(state.posColor,old.posColor);
+    assert.equal(state.negColor,old.negColor);assert.equal(state.signFlip,false);
+  }
+  fixture.graph.restoreState(restored.graph);fixture.sources.restore(restored.sources);
+  fixture.records = restored.records;fixture.activeRecord = restored.activeRecord;
+  const saved = await format.decode(await format.encode(capture()));
+  assert.equal(saved.sources[0].recordState._sceneGraphLayerState.colorScheme,'tableau');
+  assert.equal(saved.sources[0].recordState._moldenSceneGraphLayerStateByMo[0].colorScheme,'tableau');
+  assert.equal(saved.graph.scenes[0].layers.find(layer=>layer.kind==='cube').colorScheme,'tableau');
+  assert.equal(decoded.sources[0].recordState._sceneGraphLayerState.colorScheme,'classic','source metadata is not mutated');
+});
 
 test('session round-trip preserves source identity, topology, graph recipes, appearance, and binary values', async () => {
   const {ctx, fixture, capture, format} = setup();
