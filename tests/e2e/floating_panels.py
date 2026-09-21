@@ -112,6 +112,10 @@ def live_workflows(page):
     assert page.evaluate('() => VibeMolAppearanceLooks.snapshot().settings')==before
 
     page.locator('#modeEditBtn').click()
+    # Coordinates now remains available in Edit. Close it explicitly before
+    # exercising selection tools at the same position on the canvas.
+    assert page.locator('#coordsPanel').is_visible()
+    page.locator('#coordsPanelClose').click()
     page.locator('#editAdaptiveAddAtomBtn').evaluate('el=>el.click()')
     build=page.locator('#editAdaptiveAddAtomPopover'); moved=drag(page,build)
     page.locator('#editBuildSearch').fill('carbon')
@@ -184,7 +188,7 @@ def live_menus_and_video(page):
 
 
 def touch_and_resize(page):
-    page.locator('#helpFab').click()
+    page.locator('#helpBtn').click()
     modal=page.locator('#helpModal')
     before=modal.bounding_box(); handle=modal.locator('[data-vm-drag-handle]').first.bounding_box()
     x,y=handle['x']+30,handle['y']+18

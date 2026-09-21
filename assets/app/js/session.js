@@ -9,11 +9,24 @@
   const SCENE_FIELDS = ['id', 'name', 'visible', 'expanded', 'sceneKey', 'sourceFile', 'kind', 'meta',
     'moleculeLayerId', 'orbitalsGroupId', 'measurementsGroupId', 'activeLayerId'];
   const LAYER_FIELDS = ['id', 'sceneId', 'parentId', 'kind', 'name', 'visible', 'expanded', 'labelId',
-    'moldenMoIndex', 'isSceneGraphDuplicate', 'atomCount', 'operation', 'inputs', 'nameUserEdited', 'cubeDataValid'];
+    'moldenMoIndex', 'isSceneGraphDuplicate', 'atomCount', 'operation', 'inputs', 'nameUserEdited', 'cubeDataValid', 'moleculeDisplay'];
 
   function pick(value, keys) {
     const out = {};
     for (const key of keys) if (value && value[key] !== undefined) out[key] = value[key];
+    return out;
+  }
+
+  function normalizeRecordSurfaceState(recordState) {
+    const out = { ...recordState };
+    const normalize = state => {
+      if (!state || typeof state !== 'object') return state;
+      const appearance = global.VibeMolSceneGraph.createCubeAppearance(state);
+      return { ...state, ...pick(appearance, ['colorScheme', 'posColor', 'negColor']) };
+    };
+    if (out._sceneGraphLayerState) out._sceneGraphLayerState = normalize(out._sceneGraphLayerState);
+    if (out._moldenSceneGraphLayerStateByMo) out._moldenSceneGraphLayerStateByMo = Object.fromEntries(
+      Object.entries(out._moldenSceneGraphLayerStateByMo).map(([index, state]) => [index, normalize(state)]));
     return out;
   }
 
@@ -59,7 +72,7 @@
       // while its source ID and the graph's actual layer membership stay intact.
       const owner = scenes.find(scene => scene.moleculeRecord === record || scene.layers.some(layer => layer.record === record));
       const sceneKey = sceneKeys.has(record._sceneGraphSceneKey) ? record._sceneGraphSceneKey : owner && owner.sceneKey;
-      const recordState = pick(record, RECORD_FIELDS);
+      const recordState = normalizeRecordSurfaceState(pick(record, RECORD_FIELDS));
       if (record.vol.kind === 'molden') Object.assign(recordState, {
         moldenMoIndex: record.moldenMoIndex ?? -1,
         moldenGridStepAng: record.moldenGridStepAng ?? 0.35,
@@ -97,7 +110,7 @@
       const vol = source.volume;
       vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
       if (vol.trajectory) Object.assign(vol.trajectory, { currentFrame: vol.trajectory.frameIndex, playing: false, _lastStepMs: 0 });
-      const record = Object.assign({}, source.recordState, { name: source.name, vol: prepareVolume(vol), _sceneGraphSceneKey: source.sceneKey });
+      const record = Object.assign({}, normalizeRecordSurfaceState(source.recordState), { name: source.name, vol: prepareVolume(vol), _sceneGraphSceneKey: source.sceneKey });
       return { id: source.id, record };
     });
     const byId = new Map(sources.map(source => [source.id, source.record]));

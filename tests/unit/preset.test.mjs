@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadGlobalModule } from './load-global-module.mjs';
+import { loadGlobalModules } from './load-global-module.mjs';
 
 function createController(options = {}) {
-  const context = loadGlobalModule('assets/app/js/preset.js');
+  const context = loadGlobalModules(['assets/app/js/appearance-model.js', 'assets/app/js/appearance-looks.js', 'assets/app/js/preset.js']);
   const volumes = options.volumes || [];
   const downloads = [];
   const controller = context.VibeMolPresetModule.createPresetController({
@@ -47,12 +47,44 @@ function createController(options = {}) {
     setPresetRebuildSuspended: () => {},
     normalizeImportedSettingValue: options.normalizeImportedSettingValue,
     afterApplySettings: options.afterApplySettings || (() => {}),
+    afterImportSettings: options.afterImportSettings,
     beforeSavePreset: options.beforeSavePreset || (() => {}),
     downloadJsonText: (text, filename) => downloads.push({ text, filename }),
     warn: (...args) => { (options.warns || []).push(args); },
   });
   return { controller, downloads, volumes };
 }
+
+test('reference metadata stays atomic and legacy migration runs only at the import boundary', () => {
+  const calls = [];let refs = null, style = 'basic';
+  const { controller } = createController({afterImportSettings: input => calls.push({...input,style})});
+  controller.registerSetting('appearance.references', () => refs, value => { refs=value; });
+  controller.registerSetting('appearance.look', () => null, () => {}, {importOnly:true});
+  controller.registerSetting('molecule.style', () => style, value => { style=value; });
+  const references = {styleRef:{kind:'builtin',id:'opal'},colorsRef:null};
+  controller.importEnvelope({kind:'vibemol.preset',presetVersion:1,settings:{appearance:{references,look:{id:'classic'}},'molecule.style':'toon'}},{mode:'strict',afterApply:false});
+  assert.equal(calls.length,1);assert.equal(calls[0].style,'toon');assert.deepEqual(calls[0].settings['appearance.look'],{id:'classic'});
+  assert.deepEqual(controller.exportEnvelope().settings['appearance.references'],references);
+  assert.ok(!('appearance.look' in controller.exportEnvelope().settings));
+  controller.applySettings({'molecule.style':'kit'},{afterApply:false});assert.equal(calls.length,1);
+});
+
+test('flat and nested legacy surface schemes normalize before preset setters in strict and relaxed imports', () => {
+  for (const mode of ['strict','relaxed']) for (const settings of [
+    {'surface.colorScheme':'classic'}, {surface:{colorScheme:'classic'}},
+  ]) {
+    const {controller} = createController();
+    let scheme = 'emory';
+    controller.registerSetting('surface.colorScheme', () => scheme, value => {
+      assert.equal(value, 'tableau', 'the validator must see the normalized id'); scheme = value;
+    });
+    assert.ok(controller.importEnvelope({kind:'vibemol.preset',presetVersion:1,settings},{mode}).ok);
+    const out = controller.exportEnvelope().settings;
+    assert.equal(out['surface.colorScheme'],'tableau');
+    assert.equal(out['surface.posColor'],'#1f77b4');
+    assert.equal(out['surface.negColor'],'#d62728');
+  }
+});
 
 test('appearance patches preserve foreign preset data and atomic look metadata', () => {
   const { controller } = createController();

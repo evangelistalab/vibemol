@@ -81,7 +81,7 @@ def camera_scope(page, context, url):
         page.locator('#lookPreset').select_option(preset)
         assert focus_settings(page)==focus
         assert not any(key.startswith('render.dof.') for key in l.state(page)['settings'])
-        assert page.locator('#lookModified').inner_text()==''
+        assert l.pristine(page)
         l.camera_equal(camera,page.evaluate('() => VibeMolTesting.getCameraSnapshot()'))
     legacy=page.evaluate('() => VibeMolLooks.exportLook(VibeMolLooks.builtins[0])')
     legacy['meta']['lookVersion']=3
@@ -93,7 +93,7 @@ def camera_scope(page, context, url):
     assert focus_settings(page)==focus
     session=page.evaluate('() => VibeMolSession.export()')
     change(page,'dofFocusDistance',9)
-    assert page.locator('#lookModified').inner_text()==''
+    assert l.pristine(page)
     page.locator('#lookUndo').click();assert focus_settings(page)==focus
     fresh=context.new_page();fresh.goto(url);fresh.wait_for_function('() => window.VibeMolSession')
     assert fresh.evaluate('value=>VibeMolSession.import(value)',session)['ok']
@@ -134,7 +134,7 @@ def orbital_scope(page, context, url):
     page.locator('#lookSave').click();page.locator('#lookNameInput').fill('Global orbital defaults');page.locator('#lookNameInput').press('Enter')
     saved=l.state(page)['saved'][0]['settings']
     assert saved['surface.opacity']==0.65 and saved['surface.colorScheme']=='bright'
-    assert saved['surface.posColor']!='#abcdef' and page.locator('#lookModified').inner_text()==''
+    assert saved['surface.posColor']!='#abcdef' and l.pristine(page)
     before=layer_styles(page)
     page.locator('#studioResetSurfaceOverrides').click()
     assert all(layer['styleOverrides']=={'colors':False,'opacity':False} and layer['opacity']==0.65 for layer in p.cubes(page))

@@ -3,7 +3,7 @@
 #looksPanel .vm-popover__actions { display: flex; flex-wrap: wrap; margin: 8px 0; }
 #looksPanel .vm-session-status:empty { display: none; }
 
-#styleStudio {
+:is(#styleStudio, #inspector) {
   left: 12px;
   top: 72px;
   right: auto;
@@ -16,18 +16,17 @@
 }
 
 #styleStudioDescription { margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--vm-color-border); }
-#styleStudio #looksPanel { display: grid; grid-template-columns: 240px minmax(0, 1fr); overflow: hidden; }
-#styleStudio #lookPresetSection, #styleStudio #lookComponentEditor { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px; scrollbar-width: thin; }
-#styleStudio #lookComponentEditor { border-left: 1px solid var(--vm-color-border); }
-#styleStudio #lookPresetSection > .vm-field-row { grid-template-columns: 60px minmax(0, 1fr); gap: 8px; }
-#styleStudio #lookPresetSection > .vm-field-row > .vm-field-label { width: auto; max-width: none; }
-#styleStudio #lookSaveDetails { margin-top: 16px; }
-#styleStudio #lookNameForm .vm-field-row { grid-template-columns: 1fr; gap: 4px; }
-#styleStudio #lookCurrentName { overflow-wrap: anywhere; }
-#styleStudio #lookModified { white-space: nowrap; }
-#styleStudio #lookComponentEditor > .vm-appearance-section + .vm-appearance-section { border-top: 1px solid var(--vm-color-border); padding-top: 16px; }
-#toolbar #displayInspector #styleStudioBtn { width: 100%; gap: 8px; }
-#toolbar #styleStudioBtn > :last-child { margin-left: auto; font-size: 16px; }
+:is(#styleStudio, #inspector) #looksPanel { display: grid; grid-template-columns: 240px minmax(0, 1fr); overflow: hidden; }
+:is(#styleStudio, #inspector) #lookPresetSection, :is(#styleStudio, #inspector) #lookComponentEditor { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px; scrollbar-width: thin; }
+:is(#styleStudio, #inspector) #lookComponentEditor { border-left: 1px solid var(--vm-color-border); }
+:is(#styleStudio, #inspector) #lookPresetSection > .vm-field-row { grid-template-columns: minmax(92px, 0.8fr) minmax(0, 1.2fr); gap: 8px; }
+:is(#styleStudio, #inspector) #lookPresetSection > .vm-field-row > .vm-field-label { width: auto; max-width: none; }
+:is(#styleStudio, #inspector) #lookSaveDetails { margin-top: 16px; }
+:is(#styleStudio, #inspector) #lookNameForm .vm-field-row { grid-template-columns: 1fr; gap: 4px; }
+:is(#styleStudio, #inspector) #lookCurrentName { overflow-wrap: anywhere; }
+:is(#styleStudio, #inspector) #lookComponentEditor > .vm-appearance-section + .vm-appearance-section { border-top: 1px solid var(--vm-color-border); padding-top: 16px; }
+#styleStudioBtn { width: 100%; gap: 8px; }
+#styleStudioBtn > :last-child { margin-left: auto; font-size: 16px; }
 
 @media (max-width: 980px) {
   #appearancePresetSection > .vm-field-row { grid-template-columns: 1fr; gap: 4px; }
@@ -52,13 +51,41 @@
 }
 .vm-look-card img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; }
 .vm-look-card span { padding: 8px 4px; text-align: center; }
-.vm-look-card:hover, .vm-look-card[aria-pressed='true'] { border-color: var(--vm-brand-accent); color: var(--vm-color-text-primary); }
-.vm-look-card[aria-pressed='true'] { box-shadow: inset 0 0 0 1px var(--vm-brand-accent); background: var(--vm-button-group-active); }
+.vm-look-card:hover { border-color: var(--vm-color-border-strong); color: var(--vm-color-text-primary); }
+.vm-look-card[aria-pressed='true'] { border-color: var(--vm-brand-accent); color: var(--vm-color-text-primary); box-shadow: inset 0 0 0 1px var(--vm-brand-accent); background: var(--vm-button-group-active); }
 .vm-look-card:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring); }
+.vm-look-card[aria-pressed='true']:focus-visible { box-shadow: inset 0 0 0 1px var(--vm-brand-accent), var(--vm-shadow-focus-ring); }
 
 @media (max-width: 680px) {
-  #styleStudio #looksPanel { display: block; overflow-y: auto; }
-  #styleStudio #lookPresetSection, #styleStudio #lookComponentEditor { overflow: visible; }
-  #styleStudio #lookComponentEditor { border-left: 0; border-top: 1px solid var(--vm-color-border); }
+  :is(#styleStudio, #inspector) #looksPanel { display: block; overflow-y: auto; }
+  :is(#styleStudio, #inspector) #lookPresetSection, :is(#styleStudio, #inspector) #lookComponentEditor { overflow: visible; }
+  :is(#styleStudio, #inspector) #lookComponentEditor { border-left: 0; border-top: 1px solid var(--vm-color-border); }
   .vm-look-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* Explicit disclosure also keeps controls out of layout/QA while collapsed. */
+#looksPanel details:not([open]) > :not(summary) { display: none !important; }
+.vm-style-property { position: relative; padding-right: 28px; }
+.vm-property-reset { position: absolute; right: 0; top: 50%; margin-top: -14px; width: 28px; height: 28px; min-height: 28px; padding: 4px; }
+.vm-property-reset .material-symbols-rounded { font-size: 16px; }
+.vm-style-property[data-style-state="modified"] > .vm-field-label::after { content: ''; display: inline-block; width: 5px; height: 5px; margin-left: 6px; border-radius: 50%; background: var(--vm-brand-accent); vertical-align: middle; }
+
+/* Properties shares the existing window, field, disclosure, and dock-tab styles. */
+#inspector { display: none; flex-direction: column; padding: 0; }
+#inspector.open { display: flex; }
+#inspector [hidden] { display: none !important; }
+#inspector .vm-properties-tabs { flex: none; }
+#inspector .vm-properties-tabs .wb-tab { flex: 1; justify-content: center; min-height: 38px; }
+#inspector .vm-properties-body { min-height: 0; flex: 1; overflow: auto; padding: 14px; overscroll-behavior: contain; }
+#inspector #inspectorLook { padding: 0; }
+#inspector .vm-properties-scope { padding: 10px 14px; margin: 0; border-bottom: 1px solid var(--vm-color-border); }
+#inspector #looksPanel { display: block; overflow: visible; }
+#inspector #lookPresetSection, #inspector #lookComponentEditor { overflow: visible; padding: 14px; }
+#inspector #lookComponentEditor { border-left: 0; border-top: 1px solid var(--vm-color-border); }
+#inspector .vm-look-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#inspector .vm-field-row { grid-template-columns: minmax(92px, 0.8fr) minmax(0, 1.2fr); }
+#inspector .vm-field-label { min-width: 0; overflow-wrap: anywhere; }
+#inspector #inspectorSelection { margin: 0 0 12px; overflow-wrap: anywhere; }
+#inspector .vm-toggle__input:indeterminate + .vm-toggle__thumb { left: 10px; }
+#inspector .vm-toggle__input:indeterminate + .vm-toggle__thumb::after { content: '−'; position: absolute; inset: 0; color: var(--vm-color-text-secondary); font: 600 14px/16px var(--vm-font-sans); text-align: center; }
+#inspector .vm-appearance-section + .vm-appearance-section { border-top: 1px solid var(--vm-color-border); padding-top: 12px; margin-top: 12px; }

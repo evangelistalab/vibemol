@@ -33,13 +33,15 @@
   }
 
   /**
-   * Position one floating popover to the right of a trigger.
+   * Position one floating popover beside or below a trigger.
    * @param {{
    *   popoverEl: HTMLElement|null,
    *   triggerEl: HTMLElement|null,
    *   gap?: number,
    *   defaultWidth?: number,
    *   defaultHeight?: number,
+   *   placement?: 'right'|'bottom',
+   *   topInset?: number,
    * }} options
    */
   function positionFloatingPopover(options = {}) {
@@ -67,14 +69,16 @@
       1,
       Math.round(popoverRect.height || popoverEl.offsetHeight || options.defaultHeight || 160)
     );
+    const below = options.placement === 'bottom';
+    const topInset = Math.max(gap, Number(options.topInset) || gap);
     const left = Math.min(
-      Math.round(triggerRect.right + gap),
+      Math.max(gap, Math.round(below ? triggerRect.left : triggerRect.right + gap)),
       Math.max(gap, viewportWidth - popoverWidth - gap)
     );
-    const centeredTop = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
+    const centeredTop = Math.round(below ? triggerRect.bottom + gap : triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
     const top = Math.min(
-      Math.max(gap, centeredTop),
-      Math.max(gap, viewportHeight - popoverHeight - gap)
+      Math.max(topInset, centeredTop),
+      Math.max(topInset, viewportHeight - popoverHeight - gap)
     );
     popoverEl.style.left = `${left}px`;
     popoverEl.style.top = `${top}px`;

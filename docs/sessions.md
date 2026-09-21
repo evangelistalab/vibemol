@@ -16,6 +16,8 @@ Sessions reopen in View mode with trajectory, vibration, and camera auto-rotatio
 
 Camera depth limits are recomputed from the restored visible geometry with orbital padding. This preserves the saved camera pose and zoom while preventing large structures from reopening with clipped atoms or surfaces.
 
+Appearance settings include independent Style and Color scheme references in `appearance.references`, plus the original definitions of referenced user looks. A session can reopen in a fresh browser with the same names, per-axis modified flags, and Revert baselines without adding entries to that browser's My looks library. Live settings still determine rendering. Legacy sessions carrying `appearance.look` migrate once at load; see [Appearance components and looks](appearance-looks.md#saving-and-preservation). Explicit null references stay null even if their colors or materials match an existing recipe.
+
 ## Browser autosave
 
 Autosave uses the same session serializer and writes to IndexedDB. It waits approximately 1.5 seconds after changes settle, or up to 15 seconds during continuous changes. It waits for file loads, calculations, exports, and unfinished placements before taking a snapshot. Encoding numeric buffers yields to the browser between chunks; serialization is not part of the rendering loop.

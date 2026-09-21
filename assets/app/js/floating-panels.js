@@ -68,19 +68,25 @@
         if (!handle.hasAttribute('data-tooltip')) handle.setAttribute('data-tooltip', instructions);
       }
     }
-    function cancelDrag() {
+    function emitDrag(phase, event) {
+      panel.dispatchEvent(new CustomEvent('vm-floating-drag', { bubbles: true,
+        detail: { phase, x: event?.clientX, y: event?.clientY } }));
+    }
+    function cancelDrag(phase = 'cancel', event = null) {
       if (!drag) return;
-      const { id, handle } = drag;
+      const { id, handle, moved } = drag;
       drag.handle.classList.remove('is-dragging');
       drag = null;
       panel.removeAttribute('data-vm-floating-dragging');
       if (handle.hasPointerCapture?.(id)) handle.releasePointerCapture(id);
+      if (moved) emitDrag(phase, event);
     }
     function refresh() {
       scheduled = false;
       refreshHandles();
       if (drag && !drag.handle.isConnected) cancelDrag();
       if (!visible()) { cancelDrag(); return; }
+      if (panel.hasAttribute('data-vm-floating-docked')) return;
       if (position) move(position.left, position.top, false);
       else if (options.anchor) {
         const anchor = document.querySelector(options.anchor)?.getBoundingClientRect();
@@ -103,6 +109,7 @@
       refresh();
     }
     function handleFor(event) {
+      if (panel.hasAttribute('data-vm-floating-drag-disabled')) return null;
       const handle = event.target.closest?.('[data-vm-drag-handle]');
       if (!handle || handle.closest('[data-vm-floating-panel]') !== panel) return null;
       const control = event.target.closest(interactive);
@@ -123,18 +130,20 @@
       if (!drag || drag.id !== event.pointerId) return;
       const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 3) return;
-      drag.moved = true;
+      if (!drag.moved) { drag.moved = true; emitDrag('start', event); }
+      if (!drag) return;
       drag.handle.classList.add('is-dragging');
       panel.setAttribute('data-vm-floating-dragging', 'true');
       move(drag.left + dx, drag.top + dy);
+      emitDrag('move', event);
       event.preventDefault(); event.stopPropagation();
     });
     panel.addEventListener('pointerup', event => {
       if (!drag || drag.id !== event.pointerId) return;
       suppressClick = drag.moved;
-      cancelDrag(); event.stopPropagation();
+      cancelDrag('end', event); event.stopPropagation();
     });
-    for (const type of ['pointercancel', 'lostpointercapture']) panel.addEventListener(type, cancelDrag);
+    for (const type of ['pointercancel', 'lostpointercapture']) panel.addEventListener(type, () => cancelDrag());
     panel.addEventListener('click', event => {
       if (!suppressClick) return;
       suppressClick = false;
@@ -158,7 +167,7 @@
     // A centered dialog may be opened by changing its backdrop rather than itself.
     const backdrop = panel.closest('#helpOverlay, #elementColorOverlay, .vm-canvas-video-export__overlay');
     if (backdrop) observer.observe(backdrop, { attributes: true, attributeFilter: ['aria-hidden', 'class', 'hidden'] });
-    const api = Object.freeze({ refresh, cancelDrag, reset, getPosition: () => position && { ...position } });
+    const api = Object.freeze({ refresh, cancelDrag, reset, moveTo: move, getPosition: () => position && { ...position } });
     entries.set(panel, { api, baseZ });
     refresh();
     return api;
@@ -167,7 +176,7 @@
   const catalog = [
     ['styleStudio', 'Style Studio', '.vm-list-popover__header'],
     ['moldenInspector', 'Orbitals', '.motionPanelHeader'],
-    ['viewInspector', 'View actions', '.viewInspectorTitle'],
+    ['viewInspector', 'Quick actions', '.viewInspectorTitle'],
     ['spinorInfoPanel', 'Spinor information', '.spinorInfoPanelHead'],
     ['sidePanel', 'View', '.vm-popover__header'],
     ['coordsPanel', 'Coordinates', '.motionPanelHeader'],

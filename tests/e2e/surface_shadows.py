@@ -78,7 +78,7 @@ def shadow_camera_fit(page, context, url):
         {'name':'surface.cube','text':shadow_cube()},
     ]:
         assert p.load(page,[file])['ok']
-        page.evaluate('() => VibeMolAppearanceLooks.apply("classic")')
+        page.evaluate('() => VibeMolAppearanceLooks.apply("classic",{includeColors:true})')
         settings(page,{'surface.iso':0.03,'surface.autoIsoEnabled':False})
         for direction in [[-3.5,5,7],[0,1,0],[0,-1,0]]:
             page.evaluate('dirPos=>VibeMolAppearanceLooks.edit("lighting",{dirPos})',direction)
@@ -111,7 +111,7 @@ def surfaces_cast_and_receive(page, context, url):
       };
     }''')
     assert p.load(page,[{'name':'shadows.cube','text':shadow_cube()}])['ok']
-    page.evaluate('() => VibeMolAppearanceLooks.apply("classic")')
+    page.evaluate('() => VibeMolAppearanceLooks.apply("classic",{includeColors:true})')
     page.evaluate('() => VibeMolAppearanceLooks.edit("lighting",{dirPos:[-1.6,0,1],dirIntensity:2.5,hemiIntensity:0.3,hemiColor:"#ffffff",hemiGroundColor:"#ffffff",ambColor:"#ffffff",ambIntensity:0.1,rimIntensity:0})')
     page.evaluate('() => VibeMolAppearanceLooks.edit("material",{emissiveIntensity:0,envMapIntensity:0})')
     settings(page,{'surface.autoIsoEnabled':False,'surface.iso':0.3,'surface.posColor':'#286ed4',
@@ -181,7 +181,7 @@ def split_surface_shadows(page, context, url):
         field=p.cube(1).splitlines()[7]
         spinor=p.cube(-1)+'\n'.join([field,field,field])+'\n'
         assert p.load(page,[{'name':'shadows.2ccube','text':spinor}])['ok']
-        page.evaluate('() => VibeMolAppearanceLooks.apply("porcelain")')
+        page.evaluate('() => VibeMolAppearanceLooks.apply("porcelain",{includeColors:true})')
         settings(page,{'twoComponent.mode':'alphaBetaPhase','surface.autoIsoEnabled':False,
                        'surface.iso':0.04,'molecule.feature.shadows':True,'render.dof.enabled':True})
         for opacity in [1,0.55]:

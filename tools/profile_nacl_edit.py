@@ -46,7 +46,7 @@ async def profile_edit_mode(args):
         await page.add_init_script('('+MONITOR+')()')
         with run_http_server(ROOT) as url:
             try:
-                await page.goto(url+'?appearanceStudy=1')
+                await page.goto(url+'?workspaceLab=1')
                 await page.wait_for_function('() => window.VibeMolTesting && window.VibeMolEmbed')
                 print('Ready',flush=True)
                 await page.evaluate('''() => {

@@ -2,7 +2,7 @@
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   // App version displayed in Help
-  const APP_VERSION = '0.9.0b';
+  const APP_VERSION = '0.9.0';
   const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
   window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
@@ -32,16 +32,19 @@
   const MOLDEN_GRID_MAX_TOTAL_POINTS = 360000;
   const UI_THEME_STORAGE_KEY = 'vibemol.uiTheme';
   const AUTOSAVE_STORAGE_KEY = 'vibemol.autosavePreset';
-  const appearanceStudy = new URLSearchParams(window.location.search).get('appearanceStudy') === '1';
+  const workspaceExperiment = new URLSearchParams(window.location.search).get('workspaceLab') === '1';
+  const appearanceStudy = workspaceExperiment || new URLSearchParams(window.location.search).get('appearanceStudy') === '1';
   const APPEARANCE_AUTOSAVE_PERSIST_SCOPE = 'appearanceAutosave';
-  const AUTOSAVE_PRESET_OBJECT_VALUE_KEYS = new Set(['global.elementColorOverrides', 'appearance.look', 'appearance.rendering']);
+  const AUTOSAVE_PRESET_OBJECT_VALUE_KEYS = new Set(['global.elementColorOverrides', 'appearance.look', 'appearance.references', 'appearance.rendering']);
   const lookModule = window.VibeMolLooks;
   const appearanceModel = window.VibeMolAppearanceModel;
   let appearanceState = appearanceModel.legacy('basic');
   const lookRendering = Object.fromEntries(Object.entries(lookModule.extra).map(([key, [value]]) => [key, value]));
-  let activeLook = null;
+  const lookReferences = lookModule.createReferenceController();
+  let pendingAppearanceMigration = null;
   let looksUi = null;
   let styleStudio = null;
+  let propertiesInspector = null;
   const DARK_THEME_SCENE_BG_BLEND = 0.975;
   const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
   const DEFAULT_ISO_VALUE = 0.02;
@@ -86,13 +89,7 @@
     measurementLabelText: '#e8eef6',
     atomLabelTextDefault: '#f3f7ff',
   });
-  const SURFACE_COLOR_SCHEMES = Object.freeze({
-    emory: Object.freeze({ pos: '#f2a900', neg: '#0033a0' }),
-    national: Object.freeze({ pos: '#e60000', neg: '#0033a0' }),
-    bright: Object.freeze({ pos: '#ffcc00', neg: '#00bfff' }),
-    electron: Object.freeze({ pos: '#ff00bf', neg: '#2eb82e' }),
-    classic: Object.freeze({ pos: '#1f77b4', neg: '#d62728' }),
-  });
+  const SURFACE_COLOR_SCHEMES = window.VibeMolLooks.surfaceColorSchemes;
   const DEFAULT_SURFACE_SCHEME = SURFACE_COLOR_SCHEMES.emory;
   const DEFAULT_POS_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.pos;
   const DEFAULT_NEG_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.neg;
@@ -676,7 +673,7 @@
   let adaptivePopoverController = null;
   const axisOverlayLayout = { x: 16, y: 16, size: 0 };
   const axisOverlaySidebar = document.getElementById('toolbar');
-  const axisOverlayBottomControls = ['helpFab', 'hint'].map(id => document.getElementById(id)).filter(Boolean);
+  const axisOverlayBottomControls = ['hint'].map(id => document.getElementById(id)).filter(Boolean);
 
   /** Keep the corner axes inside the unobscured canvas, above the bottom controls. */
   function updateAxisOverlayLayout() {
@@ -689,9 +686,11 @@
     for (const element of axisOverlayBottomControls) {
       const rect = element.getBoundingClientRect();
       if (!rect.width || !rect.height || rect.right <= viewport.left + left || rect.left >= viewport.right) continue;
+      const style = getComputedStyle(element);
+      if (style.visibility === 'hidden') continue;
       // Reserve the hint's full space even while it fades/translates, so the axes
       // do not jump when the navigation hint appears or disappears.
-      const inset = Number.parseFloat(getComputedStyle(element).bottom) || 0;
+      const inset = Number.parseFloat(style.bottom) || 0;
       bottom = Math.max(bottom, viewport.bottom - window.innerHeight + inset + element.offsetHeight + gap);
     }
     const desiredSize = Math.max(64, Math.min(128, Math.floor(Math.min(viewport.width, viewport.height) / 5)));
@@ -1432,6 +1431,7 @@
   let sessionRecovery = null;
   let applyingSession = false;
   const sceneGraphController = createSceneGraphController({
+    mixedSelection: workspaceExperiment,
     disposeLayer: disposeSceneGraphLayer,
   });
   const sceneSources = window.VibeMolSceneSources.createSceneSources({
@@ -1526,6 +1526,7 @@
   function renderSceneOutliner(...args) {
     const result = getSceneOutliner().renderSceneOutliner(...args);
     if (looksUi) looksUi.scheduleSync();
+    propertiesInspector?.scheduleSync();
     markSessionChanged();
     return result;
   }
@@ -2847,7 +2848,7 @@
   function createGhostBondPreviewMaterial(opacity = DEFAULT_GHOST_BOND_PREVIEW_OPACITY) {
     const source = getBondMaterial();
     const material = source && typeof source.clone === 'function'
-      ? source.clone()
+      ? appearanceModel.cloneMaterial(source)
       : new THREE.MeshPhysicalMaterial({ color: 0xdbe3ef });
     if ('vertexColors' in material) material.vertexColors = false;
     return applyGhostPreviewMaterialOpacity(material, opacity);
@@ -3623,9 +3624,9 @@
    * @param {number} atomIndex0Based
    * @returns {string}
    */
-  function getAtomLabelText(symbol, atomIndex0Based) {
+  function getAtomLabelText(symbol, atomIndex0Based, numbers = showAtomLabelNumbers) {
     const base = (typeof symbol === 'string' && symbol.trim()) ? symbol.trim() : '?';
-    if (!showAtomLabelNumbers) return base;
+    if (!numbers) return base;
     return `${base}${toSubscriptDigits((atomIndex0Based | 0) + 1)}`;
   }
 
@@ -3694,9 +3695,8 @@
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
    * @returns {THREE.Group}
   */
-  function buildAtoms(vol) {
+  function buildAtoms(vol, display = getMoleculeDisplay()) {
     const group = new THREE.Group();
-    atomLabelTrackTargets.length = 0;
     const profile = getMoleculeStyleProfile();
     const hasRelativeOutline = appearanceState.effects.atomOutlineFraction > 0;
     const usesOutline = hasRelativeOutline || appearanceState.effects.outlineWidth > 0;
@@ -3762,9 +3762,9 @@
         highlight.userData = { type: 'atomHighlight' };
         mesh.add(highlight);
       }
-      if (showAtomLabels) {
+      if (display.showAtomLabels) {
         const symbol = getElementSymbol(z);
-        const labelText = getAtomLabelText(symbol, atomIndex);
+        const labelText = getAtomLabelText(symbol, atomIndex, display.showAtomLabelNumbers);
         const labelHex = UI_PALETTE.white;
         const labelStrokeHex = getReadableLabelDarkenedHex(atomColor, 0.25);
         const labelKey = `${labelText}:${labelHex}:${labelStrokeHex}`;
@@ -3802,7 +3802,7 @@
    * Labels remain embedded on the atom surface while tracking the current view.
    */
   function updateTrackedAtomLabelOrientation() {
-    if (!showAtomLabels || atomLabelTrackTargets.length === 0) return;
+    if (atomLabelTrackTargets.length === 0) return;
     camera.getWorldQuaternion(atomLabelCameraWorldQuat);
     for (const label of atomLabelTrackTargets) {
       if (!label || !label.parent) continue;
@@ -3887,7 +3887,7 @@
    * @param {{atoms:Array<{Z:number,x:number,y:number,z:number}>,units?:string}} vol
    * @returns {THREE.Group}
    */
-  function buildBonds(vol) {
+  function buildBonds(vol, display = getMoleculeDisplay()) {
     const group = new THREE.Group();
     const profile = getMoleculeStyleProfile();
     const hasRelativeOutline = appearanceState.effects.bondOutlineFraction > 0;
@@ -3902,7 +3902,7 @@
     const requestedBondRadius = getRenderedBondRadius(profile.key);
     const bondRadialSegments = profile.bondRadialSegments;
     const bondHeightSegments = profile.bondHeightSegments;
-    const multiBondRenderingEnabled = !!showMultiBonds;
+    const multiBondRenderingEnabled = !!display.showMultiBonds;
     const metalDashSegments = [];
     const renderEdges = bondEdges.map((edge) => ({
       id: edge.id,
@@ -4494,7 +4494,9 @@
       const extraIndex = extraMoleculeRenderGroups.indexOf(previousBondGroup);
       if (extraIndex >= 0) extraMoleculeRenderGroups.splice(extraIndex, 1);
     }
-    const nextBondGroup = buildBonds(vol);
+    const display = getMoleculeDisplay(targets.layer);
+    const nextBondGroup = display.showBonds ? buildBonds(vol, display) : new THREE.Group();
+    applyShadowParticipation(nextBondGroup);
     contentGroup.add(nextBondGroup);
     if (targets.layer) targets.layer.renderBondGroup = nextBondGroup;
     if (previousBondGroup === bondGroup) {
@@ -4730,7 +4732,7 @@
    */
   function cloneMeshMaterialForWboit(sourceMaterial) {
     if (!(sourceMaterial && typeof sourceMaterial.clone === 'function')) return null;
-    const material = sourceMaterial.clone();
+    const material = appearanceModel.cloneMaterial(sourceMaterial);
     material.userData = Object.assign({}, sourceMaterial.userData || {}, material.userData || {});
     delete material.userData.vmWboitPass;
     return material;
@@ -6846,6 +6848,7 @@
   const elementColorResetOne = document.getElementById('elementColorResetOne');
   const elementColorResetAll = document.getElementById('elementColorResetAll');
   const toggleBox = document.getElementById('showBox');
+  let showSimulationBoxes = !!toggleBox.checked;
   const toggleAxes = document.getElementById('showAxes');
   const saveBtn = document.getElementById('saveBtn');
   const batchBtn = document.getElementById('batchBtn');
@@ -6906,7 +6909,6 @@
   const vibrationResetBtn = document.getElementById('vibrationResetBtn');
   const vibrationSaveVideoBtn = document.getElementById('vibrationSaveVideoBtn');
   const vibrationPanelClose = document.getElementById('vibrationPanelClose');
-  const helpFab = document.getElementById('helpFab');
   const helpOverlay = document.getElementById('helpOverlay');
   const helpModal = document.getElementById('helpModal');
   const helpClose = document.getElementById('helpClose');
@@ -8006,10 +8008,10 @@
       getState(context) {
         return {
           visible: context.isVisible,
-          active: context.buildModeActive || context.emptyEditState,
+          active: context.buildModeActive || (!workspaceExperiment && context.emptyEditState),
           presentation: {
             icon: 'add',
-            label: context.buildModeActive ? 'Elements' : 'Build',
+            label: context.buildModeActive && !workspaceExperiment ? 'Elements' : 'Build',
             meta: '',
             key: '/',
             title: 'Build palette (/)',
@@ -8023,7 +8025,7 @@
       getButtonEl: () => editAdaptiveSymmetryBtn,
       getMetaEl: () => editAdaptiveSymmetryMetaEl,
       getState(context) {
-        if (context.buildModeActive) {
+        if (context.buildModeActive && !workspaceExperiment) {
           return {
             visible: true,
             active: false,
@@ -8056,7 +8058,7 @@
       getButtonEl: () => editAdaptiveCleanStructureBtn,
       getMetaEl: () => editAdaptiveCleanStructureMetaEl,
       getState(context) {
-        if (context.buildModeActive) {
+        if (context.buildModeActive && !workspaceExperiment) {
           return {
             visible: true,
             active: false,
@@ -8523,8 +8525,8 @@
           return record ? `Active: ${record.name}` : '';
         },
         getFooterText: () => currentMode === MODES.EDIT
-          ? 'Click a value to edit. Changes can be undone.'
-          : 'Read-only · Switch to Edit to modify coordinates.',
+          ? 'Click a value to edit. Copy or delete an atom with its row buttons. Changes can be undone.'
+          : 'Read-only · Copy an atom with its row button (Å). Switch to Edit to modify coordinates.',
         getEmptyText: () => {
           const record = currentIndex >= 0 ? volumes[currentIndex] : null;
           return record ? 'No atoms' : 'No file loaded';
@@ -8622,6 +8624,12 @@
             format: (value) => Number(value).toFixed(3),
             getEditValue: (value) => Number(value).toFixed(6).replace(/0+$/u, '').replace(/\.$/u, ''),
             parse: (text) => parseCoordsCoordinateInput(text),
+          },
+          {
+            key: 'actions',
+            label: '',
+            get width() { return currentMode === MODES.EDIT ? 64 : 32; },
+            renderCell: (_value, item) => buildCoordsRowActions(item),
           },
         ],
       });
@@ -9046,6 +9054,7 @@
       'solidPreset',
       'independentMaterial',
       'styleOverrides',
+      'showBox',
       'material',
       'colorScheme',
       'posColor',
@@ -9062,6 +9071,7 @@
     for (const key of keys) {
       if (Object.prototype.hasOwnProperty.call(source, key)) out[key] = source[key];
     }
+    if ('colorScheme' in out) out.colorScheme = lookModule.normalizeSurfaceScheme(out.colorScheme);
     return out;
   }
 
@@ -9150,6 +9160,30 @@
     return sceneGraphController.getSurfaceAppearanceTargets();
   }
 
+  // Structure display is session state. Older sessions inherit the legacy globals.
+  function getMoleculeDisplay(layer = null) {
+    return { showAtoms: !!toggleAtoms?.checked, showBonds: !!toggleBonds?.checked,
+      showAtomLabels, showAtomLabelNumbers, showMultiBonds, ...layer?.moleculeDisplay };
+  }
+
+  function getPropertyObjects() {
+    const selected = sceneGraphController.getSelection();
+    const active = sceneGraphController.getActiveLayer();
+    return active?.kind === SCENE_LAYER_KIND.ORBITALS_GROUP ? getSurfaceAppearanceTargets() : selected;
+  }
+
+  function editMoleculeDisplay(key, value) {
+    const layers = getPropertyObjects().filter(layer => layer.kind === SCENE_LAYER_KIND.MOLECULE);
+    if (!layers.length || !(key in getMoleculeDisplay())) return;
+    runAppearanceEdit('structure-display:' + key, 'change', () => {
+      for (const layer of layers) layer.moleculeDisplay = { ...layer.moleculeDisplay, [key]: !!value };
+      rebuildAppearanceMolecules();
+      syncAppearanceControlsToActiveLayer();
+      markSessionChanged();
+      return true;
+    });
+  }
+
   function getSurfaceAppearanceLayer() {
     return getActiveCubeLayer() || getSurfaceAppearanceTargets()[0] || null;
   }
@@ -9236,7 +9270,7 @@
   }
 
   function toggleCubeLayerSelection(layer) {
-    if (!isCubeLikeLayer(layer)) return;
+    if (!isCubeLikeLayer(layer) && !(workspaceExperiment && layer?.kind === SCENE_LAYER_KIND.MOLECULE)) return;
     const scene = sceneGraphController.getSceneForLayer(layer);
     if (scene) focusScene(scene);
     if (sceneGraphController.extendSelection) sceneGraphController.extendSelection(layer.id);
@@ -9321,8 +9355,9 @@
       solidPreset: String(sourceLayer && sourceLayer.solidPreset || DEFAULT_SURFACE_MATERIAL_PRESET),
       independentMaterial: !!sourceLayer?.independentMaterial,
       styleOverrides: sourceLayer ? { ...getSurfaceStyleOverrides(sourceLayer) } : { colors: false, opacity: false },
+      showBox: sourceLayer?.showBox ?? null,
       material: appearanceModel.clone(getSurfaceMaterialDescriptor(sourceLayer)),
-      colorScheme: String(sourceLayer && sourceLayer.colorScheme || 'emory'),
+      colorScheme: lookModule.normalizeSurfaceScheme(String(sourceLayer && sourceLayer.colorScheme || 'emory')),
       posColor: !sourceLayer || sourceLayer.posColor == null ? null : String(sourceLayer.posColor),
       negColor: !sourceLayer || sourceLayer.negColor == null ? null : String(sourceLayer.negColor),
       renderMode: normalizeLayerRenderModeValue(sourceLayer && sourceLayer.renderMode),
@@ -9936,7 +9971,7 @@
     if (isCubeLikeLayer(layer) && (singleCubeMode || options.forceSingleCubeVisibility)) {
       setOnlyCubeVisibleInScene(scene, layer);
     }
-    if (isCubeLikeLayer(layer)) {
+    if (isCubeLikeLayer(layer) || (workspaceExperiment && layer.kind === SCENE_LAYER_KIND.MOLECULE)) {
       const selectionMode = options.selection || 'replace';
       if (selectionMode === 'range') {
         if (sceneGraphController.extendSelectionRange) {
@@ -9944,12 +9979,12 @@
         }
       } else if (selectionMode === 'add') {
         if (sceneGraphController.setSelection) {
-          const ids = getSelectedCubeLayerIds();
+          const ids = sceneGraphController.getSelection().map(target => target.id);
           if (!ids.includes(layer.id)) ids.push(layer.id);
           sceneGraphController.setSelection(ids);
         }
       } else if (selectionMode !== 'preserve') {
-        selectOnlyCubeLayer(layer);
+        sceneGraphController.setSelection([layer.id]);
       }
     } else if (sceneGraphController.clearSelection) {
       sceneGraphController.clearSelection();
@@ -10058,7 +10093,7 @@
   }
 
   function getLayerSurfaceColors(layer) {
-    const scheme = SURFACE_COLOR_SCHEMES[String(layer && layer.colorScheme || 'emory')] || SURFACE_COLOR_SCHEMES.emory;
+    const scheme = SURFACE_COLOR_SCHEMES[lookModule.normalizeSurfaceScheme(String(layer && layer.colorScheme || 'emory'))] || SURFACE_COLOR_SCHEMES.emory;
     return {
       pos: normalizeHexColor(layer && layer.posColor, scheme.pos || DEFAULT_POS_SURFACE_COLOR),
       neg: normalizeHexColor(layer && layer.negColor, scheme.neg || DEFAULT_NEG_SURFACE_COLOR),
@@ -11025,7 +11060,9 @@
       if (!btn) continue;
       const active = currentMode === mode;
       btn.classList.toggle('active', active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      if (btn.getAttribute('role') === 'radio') {
+        btn.setAttribute('aria-checked', String(active)); btn.tabIndex = active ? 0 : -1;
+      } else btn.setAttribute('aria-pressed', String(active));
     }
     syncToolbarModeButtonThemeState();
   }
@@ -11041,6 +11078,7 @@
     }
     const prevMode = currentMode;
     coordsListPopover?.cancelInlineEdit({ focusButton: false });
+    window.VibeMolWorkbench?.beforeModeChange();
     if (prevMode === MODES.EDIT && newMode !== MODES.EDIT) {
       closeEditModeTransientPopovers();
     }
@@ -11139,6 +11177,7 @@
     updateEmptyStateVisibility();
     updateModeButtons();
     updateDisplayWindowAdaptiveMenuUi();
+    window.VibeMolWorkbench?.afterModeChange();
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
@@ -11452,7 +11491,7 @@
         windowId: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
         buttonEl: viewInspectorBtn,
         visible: showViewActions,
-        presentation: { icon: 'tune', label: 'View actions', meta: '', key: 'Q', title: 'View actions (Q)', static: false },
+        presentation: { icon: 'tune', label: 'Quick actions', meta: '', key: 'Q', title: 'Quick actions (Q)', static: false },
       },
       {
         windowId: NON_EDIT_WINDOW_ID.VIEW_PANEL,
@@ -11493,10 +11532,14 @@
       if (!itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen() && typeof entry.setOpen === 'function') {
         entry.setOpen(false);
       }
-      visibleItems.push({ el: itemDef.buttonEl, visible: itemDef.visible });
+      // Workbench keeps shared inspectors available while editing. Analysis-only
+      // windows are suspended by the workspace, without closing their saved tabs.
+      const sharedWhileEditing = [NON_EDIT_WINDOW_ID.COORDS_PANEL, NON_EDIT_WINDOW_ID.VIEW_PANEL, NON_EDIT_WINDOW_ID.VIEW_INSPECTOR].includes(itemDef.windowId);
+      const visibleInMode = itemDef.visible && (!workspaceExperiment || currentMode !== MODES.EDIT || sharedWhileEditing);
+      visibleItems.push({ el: itemDef.buttonEl, visible: visibleInMode });
       activeItems.push({ el: itemDef.buttonEl, active: !!(itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen()) });
     }
-    for (const buttonEl of getEditAdaptiveButtonEls()) {
+    for (const buttonEl of (workspaceExperiment && currentMode === MODES.EDIT ? [] : getEditAdaptiveButtonEls())) {
       visibleItems.push({ el: buttonEl, visible: false });
       activeItems.push({ el: buttonEl, active: false });
     }
@@ -11533,7 +11576,7 @@
       activeItems.push({ el: buttonEl, active: !!chipState.active });
       metaItems.push({ el: metaEl, text: chipState.presentation.meta || '' });
     }
-    for (const buttonEl of displayModeButtons) {
+    for (const buttonEl of (workspaceExperiment ? [] : displayModeButtons)) {
       const showCoordinates = buttonEl === coordsPanelBtn && context.hasEditableAtoms;
       visibleItems.push({ el: buttonEl, visible: showCoordinates });
       activeItems.push({ el: buttonEl, active: showCoordinates && isFloatingPanelCurrentlyOpen(coordsPanel) });
@@ -11550,10 +11593,16 @@
 
   function updateCanvasAdaptiveMenuUi() {
     if (!canvasAdaptiveMenuEl) return;
-    if (currentMode === MODES.EDIT) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
-    const menuModel = currentMode === MODES.EDIT
+    if (currentMode === MODES.EDIT && !workspaceExperiment) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
+    let menuModel = currentMode === MODES.EDIT
       ? buildEditAdaptiveMenuModel()
       : buildDisplayAdaptiveMenuModel();
+    if (workspaceExperiment && currentMode === MODES.EDIT) {
+      const shared = buildDisplayAdaptiveMenuModel();
+      menuModel = { ...menuModel,
+        visibleItems: [...menuModel.visibleItems, ...shared.visibleItems],
+        activeItems: [...menuModel.activeItems, ...shared.activeItems] };
+    }
     canvasAdaptiveMenuEl.dataset.mode = menuModel.mode;
     updateAdaptiveMenuUiHelper({
       menuEl: canvasAdaptiveMenuEl,
@@ -11568,7 +11617,7 @@
       displayWindowsController.positionOpenButtonAnchoredPopovers();
     }
     if (displayAdaptiveMenuAutoHideController) {
-      displayAdaptiveMenuAutoHideController.setEnabled(canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+      displayAdaptiveMenuAutoHideController.setEnabled(!workspaceExperiment && canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
     }
     syncTwoComponentOverlayLabelOffsets();
   }
@@ -11688,11 +11737,19 @@
   if (coordsPanelClose) coordsPanelClose.onclick = () => setCoordsPanelOpen(false);
 
   /**
-   * Open/close the compact display inspector panel.
+   * Open/close Appearance in the sidebar or reveal its Workbench panel.
    * @param {boolean} open
+   * @param {{reveal?: boolean}} [options]
    */
-  function setDisplayInspectorOpen(open) {
+  function setDisplayInspectorOpen(open, options = {}) {
+    if (propertiesInspector) {
+      propertiesInspector.setTab('object');
+      propertiesInspector.setOpen(open, { focus: false });
+      if (open && options.reveal !== false) window.VibeMolWorkbench?.open('inspector');
+      return;
+    }
     setToolbarInspectorOpen(displayInspectorRefs, open);
+    if (open && options.reveal !== false) window.VibeMolWorkbench?.open(NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR);
     if (!open) setAppearanceResetPopoverOpen(false);
   }
   bindToolbarInspectorToggle(displayInspectorRefs);
@@ -11827,7 +11884,6 @@
   if (vibrationPanelClose) vibrationPanelClose.onclick = () => setVibrationPanelOpen(false);
 
   if (helpBtn) helpBtn.onclick = () => toggleHelp(helpBtn);
-  if (helpFab) helpFab.onclick = () => toggleHelp(helpFab);
   if (helpClose) helpClose.onclick = () => closeHelp();
   if (helpOverlay) {
     helpOverlay.addEventListener('click', (e) => {
@@ -11837,13 +11893,22 @@
   }
   document.addEventListener('pointerdown', (event) => {
     if (!isFloatingPanelCurrentlyOpen(spinorInfoPanel)) return;
+    if (window.VibeMolWorkbench?.isDocked(NON_EDIT_WINDOW_ID.SPINOR_INFO)) return;
     const target = event && event.target ? event.target : null;
     if ((spinorInfoPanel && spinorInfoPanel.contains(target)) || (spinorInfoBtn && spinorInfoBtn.contains(target))) return;
     setSpinorInfoPanelOpen(false);
   });
   displayWindowsController = createDisplayWindowsController({
+    aliases: workspaceExperiment ? { displayInspector: 'inspector', styleStudio: 'inspector' } : {},
     positionFloatingPopover: positionFloatingPopoverUi,
+    keepOpenOnSwitch: id => !!window.VibeMolWorkbench?.manages(id),
+    revealHiddenWindow: id => !!window.VibeMolWorkbench?.restoreIfHidden(id),
     entries: {
+      ...(workspaceExperiment ? { inspector: {
+        id: 'inspector', label: 'Properties',
+        isOpen: () => !!propertiesInspector?.isOpen(),
+        setOpen: open => propertiesInspector?.setOpen(open, { focus: false }),
+      } } : {}),
       [NON_EDIT_WINDOW_ID.STYLE_STUDIO]: {
         id: NON_EDIT_WINDOW_ID.STYLE_STUDIO,
         label: 'Style Studio',
@@ -11853,8 +11918,8 @@
       [NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR]: {
         id: NON_EDIT_WINDOW_ID.DISPLAY_INSPECTOR,
         label: 'Appearance inspector',
-        isOpen: () => isToolbarInspectorOpen(displayInspectorRefs),
-        setOpen: (open) => setDisplayInspectorOpen(open),
+        isOpen: () => propertiesInspector ? propertiesInspector.isOpen() : isToolbarInspectorOpen(displayInspectorRefs),
+        setOpen: (open) => setDisplayInspectorOpen(open, { reveal: false }),
       },
       [NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR]: {
         id: NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
@@ -11874,7 +11939,7 @@
       },
       [NON_EDIT_WINDOW_ID.VIEW_INSPECTOR]: {
         id: NON_EDIT_WINDOW_ID.VIEW_INSPECTOR,
-        label: 'View inspector',
+        label: 'Quick actions',
         buttonEl: viewInspectorBtn,
         panelEl: viewInspector,
         isOpen: () => isToolbarInspectorOpen(viewInspectorRefs),
@@ -17113,7 +17178,9 @@
         setBuildPaletteFilterQuery(query, { syncInput: false });
         renderBuildPopover({ preferPayloadSelection: false });
       });
-      editBuildSearchEl.addEventListener('change', commit);
+      // Workbench search is a filter. Moving the panel or changing mode must
+      // not select a payload and close it as a side effect of blurring the field.
+      if (!workspaceExperiment) editBuildSearchEl.addEventListener('change', commit);
       editBuildSearchEl.addEventListener('keydown', (e) => {
         if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
@@ -17260,7 +17327,7 @@
     if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
     if (editAdaptiveCleanStructureBtn) {
       editAdaptiveCleanStructureBtn.onclick = () => {
-        if (isBuildPopoverOpen()) {
+        if (isBuildPopoverOpen() && !workspaceExperiment) {
           if (autoHydrogenController) autoHydrogenController.handleShortcut();
           return;
         }
@@ -18319,6 +18386,8 @@
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveAddAtomPopoverEl,
       triggerEl: editAdaptiveAddAtomBtn,
+      placement: workspaceExperiment ? 'bottom' : 'right',
+      topInset: workspaceExperiment ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
       defaultWidth: 360,
       defaultHeight: 420,
@@ -18377,6 +18446,7 @@
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
+    if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     const wasOpen = isBuildPopoverOpen();
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
@@ -18400,6 +18470,8 @@
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveSymmetryPopoverEl,
       triggerEl: editAdaptiveSymmetryBtn,
+      placement: workspaceExperiment ? 'bottom' : 'right',
+      topInset: workspaceExperiment ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
       defaultWidth: 220,
       defaultHeight: 460,
@@ -18908,8 +18980,9 @@
     applyHide();
   }
 
-  function showSymmetryPopover() {
+  function showSymmetryPopover(options = {}) {
     if (!editAdaptiveSymmetryPopoverEl) return;
+    if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     clearSymmetryCurrentGroupHighlight();
     symmetryPopoverCurrentGroupLabel = '';
     symmetryPopoverSelectedElementId = '';
@@ -25794,7 +25867,8 @@
   // Edit mode bindings
   bind('down', MODES.EDIT, 'e', () => { setMode(MODES.DISPLAY); });
   bind('down', MODES.EDIT, 'm', (e) => {
-    if (e && e.shiftKey) {
+    if (workspaceExperiment && (e?.ctrlKey || e?.metaKey || e?.altKey)) return;
+    if (workspaceExperiment || (e && e.shiftKey)) {
       setMode(MODES.MEASURE);
       return;
     }
@@ -25811,8 +25885,12 @@
     showBuildPopover({ focusSearch: true });
   });
   bind('down', MODES.EDIT, 'c', () => {
-    setCoordsPanelOpen(!(coordsPanel && coordsPanel.classList.contains('open')));
+    toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL);
   });
+  if (workspaceExperiment) {
+    bind('down', MODES.EDIT, 'v', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL));
+    bind('down', MODES.EDIT, 'q', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR));
+  }
   bind('down', MODES.EDIT, ' ', (e) => {
     if (autoHydrogenController && autoHydrogenController.handleShortcut()) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -25962,7 +26040,7 @@
     const helpTogglePressed = !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === '?' || (e.key === '/' && e.shiftKey));
     if (helpTogglePressed) {
       e.preventDefault();
-      toggleHelp(document.activeElement || helpFab || helpBtn || null);
+      toggleHelp(document.activeElement || helpBtn || null);
       return;
     }
     if (isHelpOpen()) {
@@ -25986,7 +26064,7 @@
       setElementColorOverlayOpen(false);
       return;
     }
-    if (e.key === 'Escape' && styleStudio?.isOpen()) {
+    if (e.key === 'Escape' && styleStudio?.isOpen() && !workspaceExperiment) {
       e.preventDefault();
       styleStudio.setOpen(false);
       return;
@@ -26041,7 +26119,7 @@
       hideSymmetryPopover({ restore: true });
       return;
     }
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && !workspaceExperiment) {
       const closed = closeNonEditWindows(ESCAPABLE_NON_EDIT_WINDOW_ORDER);
       if (closed) {
         e.preventDefault();
@@ -26232,7 +26310,7 @@
     const opacityState = getSurfaceAppearanceDisplayValue((layer) => Math.max(0.05, Math.min(1, Number(layer.opacity) || 1)));
     const autoIsoState = getSurfaceAppearanceDisplayValue((layer) => !!getLayerAutoIsoEnabled(layer));
     const presetState = getSurfaceAppearanceDisplayValue((layer) => getSurfaceMaterialPresetKey(layer));
-    const schemeState = getSurfaceAppearanceDisplayValue((layer) => String(layer.colorScheme || 'emory'));
+    const schemeState = getSurfaceAppearanceDisplayValue((layer) => lookModule.normalizeSurfaceScheme(String(layer.colorScheme || 'emory')));
     const renderModeState = getSurfaceAppearanceDisplayValue((layer) => getLayerRenderMode(layer));
     const cloudTypeState = getSurfaceAppearanceDisplayValue((layer) => getLayerCloudType(layer));
     const signFlipState = getSurfaceAppearanceDisplayValue((layer) => !!layer.signFlip);
@@ -26278,8 +26356,15 @@
   }
 
   function syncAppearanceControlsToActiveLayer() {
+    looksUi?.scheduleSync();
+    propertiesInspector?.scheduleSync();
     syncSurfaceStyleScopeUi();
     const layer = getSurfaceAppearanceLayer();
+    if (workspaceExperiment) {
+      const values = getSurfaceAppearanceTargets().map(target => target.showBox ?? showSimulationBoxes);
+      toggleBox.checked = !!values[0];
+      toggleBox.indeterminate = values.some(value => value !== values[0]);
+    }
     if (!layer) {
       if (surfaceScopeLabelEl) {
         surfaceScopeLabelEl.hidden = true;
@@ -26319,7 +26404,7 @@
       surfaceSignFlipToggleEl.setAttribute('aria-checked', layer.signFlip ? 'true' : 'false');
     }
     if (schemeSelect) {
-      const layerScheme = String(layer.colorScheme || 'emory');
+      const layerScheme = lookModule.normalizeSurfaceScheme(String(layer.colorScheme || 'emory'));
       const scheme = (SURFACE_COLOR_SCHEMES[layerScheme] || layerScheme === 'custom') ? layerScheme : 'custom';
       schemeSelect.value = Array.from(schemeSelect.options).some((option) => option.value === scheme) ? scheme : 'custom';
     }
@@ -26879,7 +26964,7 @@
     importSpecialPreset: (preset, options) => {
       if (!lookModule.isLookPreset(preset)) return null;
       const look = lookModule.importLook(preset);
-      if (looksUi) looksUi.choose(look); else applyNamedLook(look);
+      if (looksUi) looksUi.importLook(look); else applyNamedLook(look);
       return { ok: true, mode: options.mode, kind: 'vibemol.preset', presetVersion: 1,
         name: look.name, applied: Object.keys(look.settings), warnings: [], unknownTop: [], unknownSettings: [] };
     },
@@ -26887,6 +26972,7 @@
       // Retired effects and molecule opacity are ignored in old presets/sessions,
       // including strict imports. Real atoms and bonds always remain opaque.
       settings = { ...settings };
+      if ('appearance.references' in settings) settings['appearance.references'] = lookModule.normalizeReferenceState(settings['appearance.references']);
       if (Object.values(lookModule.surfaceGroups).some(keys => keys.some(key => key in settings))) {
         for (const layer of getAllLookLayers()) getSurfaceStyleOverrides(layer);
       }
@@ -26915,6 +27001,14 @@
         return normalized;
       }
       return value;
+    },
+    afterImportSettings: ({ settings }) => {
+      if ('appearance.references' in settings) {
+        pendingAppearanceMigration = null;
+        if (looksUi) lookReferences.reconcile();
+      } else if (looksUi) lookReferences.migrate(captureLookSettings(), settings['appearance.look']);
+      else pendingAppearanceMigration = { recordedLook: settings['appearance.look'] };
+      syncAppearancePersistenceUi();
     },
     afterApplySettings: ({ settings }) => {
       controls.update();
@@ -27170,6 +27264,7 @@
     syncSurfaceColorSchemeUi();
   });
   registerAppearancePresetSetting('surface.colorScheme', () => surfaceColorSchemeDefault, (value) => {
+    value = lookModule.normalizeSurfaceScheme(value);
     const options = new Set(schemeSelect ? Array.from(schemeSelect.options).map((o) => o.value) : Object.keys(SURFACE_COLOR_SCHEMES).concat(['custom']));
     const next = (typeof value === 'string' && options.has(value)) ? value : 'custom';
     surfaceColorSchemeDefault = next;
@@ -27227,8 +27322,9 @@
     refreshPeriodicCells();
     if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
   });
-  registerAppearancePresetSetting('global.showBox', () => !!(toggleBox && toggleBox.checked), (value) => {
-    if (toggleBox) toggleBox.checked = asBoolean(value);
+  registerAppearancePresetSetting('global.showBox', () => showSimulationBoxes, (value) => {
+    showSimulationBoxes = asBoolean(value);
+    if (toggleBox) toggleBox.checked = showSimulationBoxes;
   });
   registerAppearancePresetSetting('global.showAxes', () => !!window.__showAxes__, (value) => {
     window.__showAxes__ = asBoolean(value);
@@ -27390,8 +27486,10 @@
     });
   }
   registerAppearancePresetSetting('appearance.rendering', () => appearanceModel.clone(appearanceState), value => { appearanceState = appearanceModel.normalize(value); });
-  registerAppearancePresetSetting('appearance.look', () => cloneJsonLike(activeLook), value => {
-    activeLook = value == null ? null : lookModule.normalizeLook(value);
+  // Read old fused snapshots only at the import boundary; new exports store refs.
+  registerPresetSetting('appearance.look', () => null, () => {}, { persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE, importOnly: true });
+  registerAppearancePresetSetting('appearance.references', () => lookReferences.exportState(), value => {
+    lookReferences.restore(value, { prune: !!looksUi });
   });
 
   function getSceneGraphAwarePresetPublicApi() {
@@ -27585,7 +27683,7 @@
   function getLookSurfaceSettings(layer) {
     const colors = getLayerSurfaceColors(layer);
     return { 'surface.materialPreset': getSurfaceMaterialPresetKey(layer), 'surface.opacity': layer.opacity,
-      'surface.colorScheme': layer.colorScheme || 'emory', 'surface.posColor': colors.pos, 'surface.negColor': colors.neg };
+      'surface.colorScheme': lookModule.normalizeSurfaceScheme(layer.colorScheme || 'emory'), 'surface.posColor': colors.pos, 'surface.negColor': colors.neg };
   }
   function captureLookSettings() {
     const values = exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings;
@@ -27616,6 +27714,7 @@
     const next = { ...patch };
     if ('surface.opacity' in next) next['surface.opacity'] = Math.max(0.05, Math.min(1, Number(next['surface.opacity']) || 1));
     if ('surface.colorScheme' in next) {
+      next['surface.colorScheme'] = lookModule.normalizeSurfaceScheme(next['surface.colorScheme']);
       const scheme = SURFACE_COLOR_SCHEMES[next['surface.colorScheme']];
       if (!scheme && next['surface.colorScheme'] !== 'custom') throw new Error('Unknown surface color scheme.');
       next['surface.posColor'] = scheme?.pos || base['surface.posColor'];
@@ -27635,6 +27734,7 @@
   }
   function editSurfaceStyle(patch, phase = 'change', defaults = false) {
     const layers = defaults ? [] : getSurfaceAppearanceTargets();
+    if (workspaceExperiment && !defaults && !layers.length) return false;
     if (!layers.length) return editAppearanceSettings(normalizeSurfaceStylePatch(patch, getSurfaceStyleDefaults()), phase);
     const groups = Object.entries(lookModule.surfaceGroups).filter(([, keys]) => keys.some(key => key in patch)).map(([group]) => group);
     runAppearanceEdit(`surface:${groups.join(',')}:${layers.map(layer => layer.id).join(',')}`, phase, () => {
@@ -27756,14 +27856,35 @@
       persistActiveCubeLayerState(layer, { render: false });
     }
   }
-  function applyNamedLook(look) {
+  function applyNamedLook(look, { includeColors = true } = {}) {
     const value = lookModule.normalizeLook(look);
-    applyLookSettings(value.settings);
+    applyLookSettings(includeColors ? value.settings : lookModule.withColors(value.settings, captureLookSettings()));
     for (const layer of getAllLookLayers()) {
       layer.independentMaterial = false;
       persistActiveCubeLayerState(layer, { render: false });
     }
-    activeLook = { ...value, settings: captureLookSettings() };
+    lookReferences.select(value, includeColors ? 'both' : 'style');
+    finishLookChange();
+  }
+  function applyNamedColorScheme(look) {
+    const value = lookModule.normalizeLook(look), current = captureLookSettings();
+    if (lookModule.colorsEqual(value.settings, current)) {
+      if (lookModule.sameReference(lookReferences.get().colorsRef, lookReferences.reference(value))) return false;
+      lookReferences.select(value, 'colors'); scheduleAppearancePresetAutosave(); return true;
+    }
+    const combined = lookModule.withColors(current, value.settings);
+    const patch = Object.fromEntries(lookModule.colorKeys.map(key => [key, combined[key]]));
+    patch['appearance.rendering'] = combined['appearance.rendering'];
+    applyLookSettings(patch);
+    lookReferences.select(value, 'colors');
+    finishLookChange();
+    return true;
+  }
+  function resetLookReference(axis = 'both') {
+    const live = captureLookSettings(), state = lookReferences.project(live);
+    const settings = axis === 'style' ? lookModule.withColors(state.baseline, live)
+      : axis === 'colors' ? lookModule.withColors(live, state.baseline) : state.baseline;
+    applyLookSettings(settings);
     finishLookChange();
   }
   function runAppearanceEdit(key, phase, action) {
@@ -27803,10 +27924,16 @@
   function captureLookUndo() {
     const values = exportPresetEnvelope({ persistScope: APPEARANCE_AUTOSAVE_PERSIST_SCOPE }).settings;
     return { settings: { ...lookModule.settings(values), ...Object.fromEntries(Object.keys(lookModule.cameraFields).map(key => [key, values[key]])) },
-      activeLook: cloneJsonLike(activeLook), layers: getAllLookLayers().map(layer => ({ layer, settings: getLookSurfaceSettings(layer), styleOverrides: { ...getSurfaceStyleOverrides(layer) }, independentMaterial: !!layer.independentMaterial, material: appearanceModel.clone(getSurfaceMaterialDescriptor(layer)) })) };
+      references: lookReferences.exportState(),
+      molecules: sceneGraphController.getScenes().map(scene => sceneGraphController.getLayerById(scene.moleculeLayerId)).filter(Boolean)
+        .map(layer => ({ layer, display: { ...layer.moleculeDisplay } })),
+      layers: getAllLookLayers().map(layer => ({ layer, settings: getLookSurfaceSettings(layer), styleOverrides: { ...getSurfaceStyleOverrides(layer) }, independentMaterial: !!layer.independentMaterial, material: appearanceModel.clone(getSurfaceMaterialDescriptor(layer)) })) };
   }
   function restoreLookUndo(saved) {
     applyLookSettings(saved.settings, []);
+    for (const entry of saved.molecules || []) if (sceneGraphController.getLayerById(entry.layer.id) === entry.layer) {
+      entry.layer.moleculeDisplay = { ...entry.display };
+    }
     for (const entry of saved.layers) if (sceneGraphController.getLayerById(entry.layer.id) === entry.layer) {
       for (const [key, field] of Object.entries(lookLayerFields)) entry.layer[field] = entry.settings[key];
       entry.layer.independentMaterial = entry.independentMaterial;
@@ -27814,7 +27941,7 @@
       entry.layer.material = appearanceModel.clone(entry.material);
       persistActiveCubeLayerState(entry.layer, { render: false });
     }
-    activeLook = cloneJsonLike(saved.activeLook);
+    lookReferences.restore(saved.references);
     finishLookChange();
   }
 
@@ -27868,10 +27995,14 @@
     isFuseRingPreviewActive: () => !!addFusePreviewState,
     listNonEditWindows: () => Object.values(NON_EDIT_WINDOW_ID),
     getOpenNonEditWindows: () => listOpenNonEditWindowIds(),
+    getSimulationBoxSnapshot: () => [boxHelper, ...extraBoxHelpers].filter(Boolean).map(box => ({
+      layerId: box.userData.sceneLayerId || null,
+      bounds: (() => { const b = new THREE.Box3().setFromObject(box); return { min: b.min.toArray(), max: b.max.toArray() }; })(),
+    })),
     getSceneGraphSnapshot: () => ({
       focusedSceneId: String(sceneGraphController.getState().focusedSceneId || ''),
       activeLayerId: String(sceneGraphController.getState().activeLayerId || ''),
-      selectedLayerIds: getSelectedCubeLayerIds(),
+      selectedLayerIds: sceneGraphController.getSelection().map(layer => layer.id),
       scenes: sceneGraphController.getScenes().map((scene) => ({
         id: String(scene.id || ''),
         name: String(scene.name || ''),
@@ -27884,6 +28015,7 @@
           labelId: String(layer.labelId || ''),
           name: String(layer.name || ''),
           visible: layer.visible !== false,
+          moleculeDisplay: layer.kind === SCENE_LAYER_KIND.MOLECULE ? getMoleculeDisplay(layer) : undefined,
           effectiveVisible: sceneGraphController.isLayerEffectivelyVisible(layer),
           iso: Number(layer.iso),
           isoPending: !!layer.isoPending,
@@ -27892,6 +28024,7 @@
           solidPreset: String(layer.solidPreset || ''),
           independentMaterial: !!layer.independentMaterial,
           styleOverrides: layer.styleOverrides && { ...layer.styleOverrides },
+          showBox: layer.showBox ?? null,
           material: isCubeLikeLayer(layer) ? appearanceModel.clone(getSurfaceMaterialDescriptor(layer)) : null,
           colorScheme: String(layer.colorScheme || ''),
           posColor: layer.posColor == null ? null : String(layer.posColor),
@@ -29038,6 +29171,7 @@
     if (!vol || !Array.isArray(vol.atoms) || !vol.atoms.length) return [];
     return vol.atoms.map((atom, atomIndex) => ({
       atomIndex,
+      atomId: atom.id,
       order: atomIndex + 1,
       sym: getElementSymbol(atom.Z | 0),
       z: atom.Z | 0,
@@ -29045,6 +29179,62 @@
       y: getCoordsDisplayValue(vol, atom, 'y'),
       zCoord: getCoordsDisplayValue(vol, atom, 'zCoord'),
     }));
+  }
+
+  /** Row actions share the normal XYZ clipboard and undoable deletion paths. */
+  function buildCoordsRowActions(item) {
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null;
+    const actions = document.createElement('div');
+    actions.className = 'coordsRowActions';
+    const addAction = (action, label, icon) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `vm-btn vm-btn--icon vm-btn--ghost${action === 'delete' ? ' vm-btn--danger' : ' vm-copy'}`;
+      button.dataset.coordsAction = action;
+      button.setAttribute('aria-label', label);
+      setTooltipText(button, label);
+      button.innerHTML = icon;
+      // A blur commits an inline edit and rebuilds the table before click arrives.
+      // Keep it alive until click, then resolve the original atom by stable id.
+      button.addEventListener('pointerdown', (event) => {
+        if (coordsInlineEditState) event.preventDefault();
+      });
+      button.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
+      });
+      button.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        if (record !== volumes[currentIndex]) return;
+        if (action === 'delete' && currentMode !== MODES.EDIT) return;
+        commitCoordsInlineEdit();
+        const atomIndex = record?.vol?.atoms.findIndex(atom => atom.id === item.atomId) ?? -1;
+        if (atomIndex < 0) return;
+        if (action === 'copy') {
+          const text = getStructureClipboardText(record, [atomIndex]);
+          if (text && await copyTextToClipboard(text)) {
+            editClipboardSelection = null;
+            setViewCopyButtonCopied(button, true);
+            setTimeout(() => setViewCopyButtonCopied(button, false), 1200);
+            setHintMessage(`Copied atom ${atomIndex + 1} XYZ coordinates (Å).`);
+          } else {
+            setHintMessage('Could not copy coordinates to the clipboard.');
+          }
+          return;
+        }
+        clearSymmetryPreview({ restore: true, keepPopover: false, quiet: true });
+        if (!deleteAtomAtIndex(atomIndex)) return;
+        const nextIndex = Math.min(atomIndex, record.vol.atoms.length - 1);
+        const nextButton = coordsContent.querySelector(`[data-atom-index="${nextIndex}"] [data-coords-action="delete"]`);
+        if (nextButton) nextButton.focus({ preventScroll: true });
+        else coordsListPopover.focusBody();
+      });
+      actions.appendChild(button);
+    };
+    addAction('copy', `Copy atom ${item.order} coordinates in angstroms`, VIEW_COPY_ICON_SVG);
+    if (currentMode === MODES.EDIT) {
+      addAction('delete', `Delete atom ${item.order} (${item.sym})`, '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"></path></svg>');
+    }
+    return actions;
   }
 
   /**
@@ -31236,8 +31426,9 @@
       solidPreset: layer.solidPreset,
       independentMaterial: !!layer.independentMaterial,
       styleOverrides: { ...getSurfaceStyleOverrides(layer) },
+      showBox: layer.showBox ?? null,
       material: appearanceModel.clone(getSurfaceMaterialDescriptor(layer)),
-      colorScheme: layer.colorScheme,
+      colorScheme: lookModule.normalizeSurfaceScheme(layer.colorScheme),
       posColor: layer.posColor,
       negColor: layer.negColor,
       renderMode: normalizeLayerRenderModeValue(layer.renderMode),
@@ -31413,7 +31604,15 @@
   }
   if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });
   toggleBox.onchange = () => {
-    rebuildScene({ preserveView: true });
+    if (workspaceExperiment) {
+      const value = toggleBox.checked;
+      for (const layer of getSurfaceAppearanceTargets()) { layer.showBox = value; persistActiveCubeLayerState(layer, { render: false }); }
+      refreshSimulationBoxes();
+      syncAppearanceControlsToActiveLayer();
+    } else {
+      showSimulationBoxes = toggleBox.checked;
+      rebuildScene({ preserveView: true });
+    }
     scheduleAppearancePresetAutosave();
   };
   if (toggleAxes) toggleAxes.onchange = () => {
@@ -32083,28 +32282,46 @@
   function applyPostGeometry(vol, hasGrid, options = {}) {
     const asActive = options.asActive !== false;
     const moleculeLayer = options.moleculeLayer || null;
-    if (toggleAtoms.checked) {
-      const nextAtomGroup = buildAtoms(vol);
+    const display = getMoleculeDisplay(moleculeLayer);
+    if (display.showAtoms) {
+      const nextAtomGroup = buildAtoms(vol, display);
       applyShadowParticipation(nextAtomGroup);
       contentGroup.add(nextAtomGroup);
       if (moleculeLayer) moleculeLayer.renderAtomGroup = nextAtomGroup;
       if (asActive) atomGroup = nextAtomGroup;
       else extraMoleculeRenderGroups.push(nextAtomGroup);
     }
-    if (toggleBonds.checked) {
-      const nextBondGroup = buildBonds(vol);
+    if (display.showBonds) {
+      const nextBondGroup = buildBonds(vol, display);
       applyShadowParticipation(nextBondGroup);
       contentGroup.add(nextBondGroup);
       if (moleculeLayer) moleculeLayer.renderBondGroup = nextBondGroup;
       if (asActive) bondGroup = nextBondGroup;
       else extraMoleculeRenderGroups.push(nextBondGroup);
     }
-    if (toggleBox.checked && hasGrid) {
+    if (!workspaceExperiment && showSimulationBoxes && hasGrid) {
       const nextBoxHelper = buildBox(vol);
       contentGroup.add(nextBoxHelper);
       if (asActive) boxHelper = nextBoxHelper;
       else extraBoxHelpers.push(nextBoxHelper);
       if (isCubeDebugLoggingEnabled()) console.log('[CUBE] Box helper added');
+    }
+  }
+
+  function refreshSimulationBoxes() {
+    if (!workspaceExperiment) return;
+    for (const box of [boxHelper, ...extraBoxHelpers]) if (box) { box.parent?.remove(box); disposeDeep(box); }
+    boxHelper = null; extraBoxHelpers = [];
+    for (const scene of sceneGraphController.getScenes()) {
+      for (const layer of sceneGraphController.listLayers(scene)) {
+        if (!isCubeLikeLayer(layer) || !sceneGraphController.isLayerEffectivelyVisible(layer)
+          || !(layer.showBox ?? showSimulationBoxes)) continue;
+        // Read an existing grid only: showing a box must not calculate a hidden MO.
+        const vol = layer.cubeData || (layer.record?.vol.kind === 'molden' ? null : getLayerSourceVolume(layer));
+        if (!hasVolumetricGrid(vol)) continue;
+        const box = buildBox(vol); box.userData.sceneLayerId = layer.id;
+        contentGroup.add(box); extraBoxHelpers.push(box);
+      }
     }
   }
 
@@ -32228,6 +32445,7 @@
       lastIsoCalibrationKey = '';
     }
 
+    refreshSimulationBoxes();
     applyCameraStrategy(preserveView, savedCam, savedTarget);
     updateSidePanel();
     updatePostRebuildUI(activeSurfaceVol || moleculeVol, activeSurfaceCompMode);
@@ -32456,7 +32674,7 @@
       volumes = [];
       currentIndex = -1;
       Object.assign(lookRendering, Object.fromEntries(Object.entries(lookModule.extra).map(([key, [value]]) => [key, value])));
-      activeLook = null;
+      lookReferences.restore({ styleRef: null, colorsRef: null });
       appearanceState = appearanceModel.legacy('basic');
       importPresetEnvelope(saved.preset, { mode: PRESET_MODE.RELAXED, applyBuilder: false, afterApply: false });
       volumes = saved.records;
@@ -32613,7 +32831,7 @@
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) void sessionRecovery.flush(); });
   window.addEventListener('pagehide', () => { void sessionRecovery.flush(); });
-  if (appearanceStudy) { sessionRecovery.stop(); sessionStatusEl.textContent = 'Appearance study'; }
+  if (appearanceStudy) { sessionRecovery.stop(); sessionStatusEl.textContent = workspaceExperiment ? 'Workspace experiment' : 'Appearance study'; }
   else void sessionRecovery.initialize();
 
   function editAppearanceComponent(section, patch, options = {}) {
@@ -32621,18 +32839,24 @@
     const next = appearanceModel.clone(appearanceState);
     if (section === 'material') {
       next.material = options.replace ? appearanceModel.validateMaterial(patch) : appearanceModel.patchMaterial(next.material, patch);
-      // A deliberate material edit applies everywhere, including when selecting
-      // Polished leaves Basic's atom values unchanged. Undo restores the full look.
-      next.surfaceMaterial = null;
+      // Ordinary material edits apply everywhere. Undo/reset can restore an
+      // explicit surface finish from an older saved appearance.
+      next.surfaceMaterial = options.restoreSurfaceMaterial || null;
     } else Object.assign(next[section], patch);
     const normalized = appearanceModel.normalize(next);
     if (JSON.stringify(normalized) === JSON.stringify(appearanceState)) return false;
     const settings = { 'appearance.rendering': normalized };
     if (section === 'material') {
-      // Keep legacy preset exports and stored layer tags aligned with the shared material.
+      // Keep legacy preset exports and stored layer tags aligned with the actual
+      // surface finish, including older appearances with a separate descriptor.
+      const surfaceMaterial = appearanceModel.resolvedMaterial(normalized, 'surfaces');
       const preset = Object.keys(appearanceModel.surfacePresets).find(key =>
-        JSON.stringify(appearanceModel.surfacePreset(key)) === JSON.stringify(normalized.material));
-      if (preset) settings['surface.materialPreset'] = preset;
+        appearanceModel.materialEqual(appearanceModel.surfacePreset(key), surfaceMaterial)
+        || (lookModule.materialPresets.some(item => item.id === key)
+          && appearanceModel.materialEqual(lookModule.materialRecipe(key).material, surfaceMaterial)));
+      // Custom/canonical recipes use the standard fallback tag, never a stale
+      // previous selection. The full descriptor remains authoritative.
+      settings['surface.materialPreset'] = preset || DEFAULT_SURFACE_MATERIAL_PRESET;
     }
     applyLookSettings(settings, section === 'material' ? getAllLookLayers() : []);
     const geometry = ['geometry', 'effects', 'coloring'].includes(section);
@@ -32640,8 +32864,8 @@
     return true;
   }
   looksUi = window.VibeMolLooksUi.createController({
-    root: document.getElementById('looksPanel'), captureSettings: captureLookSettings,
-    presetSelect: document.getElementById('appearanceLookPreset'),
+    root: document.getElementById('looksPanel'), consolidated: workspaceExperiment, showBindings: workspaceExperiment, captureSettings: captureLookSettings,
+    presetSelect: workspaceExperiment ? null : document.getElementById('appearanceLookPreset'),
     atomFields: document.getElementById('appearanceAtomColorFields'), bondFields: document.getElementById('appearanceBondColorFields'),
     getAtomBaseRadius: z => 0.5 * getCovalentRadiusAngstrom(z),
     applyStartupDefault: !appearanceStudy,
@@ -32649,37 +32873,96 @@
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,
     editBackgroundColor: editSceneBackgroundColor,
     editSettings: editAppearanceSettings,
+    surfaceSelectionMode: workspaceExperiment,
+    editSurfaceSelection: (patch, phase) => editSurfaceStyle(patch, phase, !workspaceExperiment),
     editSurfaceDefaults: (patch, phase) => editSurfaceStyle(patch, phase, true),
-    resetSurfaceOverrides: () => resetSurfaceStyleOverrides(['colors', 'opacity'], true),
-    getSurfaceOverrideCounts,
+    captureSurfaceSettings: () => workspaceExperiment && getSurfaceAppearanceLayer() ? getLookSurfaceSettings(getSurfaceAppearanceLayer()) : getSurfaceStyleDefaults(),
+    hasSurfaceSelection: () => !workspaceExperiment || getSurfaceAppearanceTargets().length > 0,
+    resetSurfaceOverrides: () => resetSurfaceStyleOverrides(undefined, !workspaceExperiment),
+    getSurfaceOverrideCounts: () => getSurfaceOverrideCounts(workspaceExperiment ? getSurfaceAppearanceTargets() : getAllLookLayers()),
     surfaceColorSchemes: Array.from(schemeSelect.options, option => [option.value, option.textContent]),
     openElementColors: () => setElementColorOverlayOpen(true),
-    getActiveLook: () => activeLook,
-    setActiveLook: value => { activeLook = cloneJsonLike(value); scheduleAppearancePresetAutosave(); },
-    applyLook: applyNamedLook, captureUndo: captureLookUndo, restoreUndo: restoreLookUndo,
+    references: lookReferences,
+    initializeReferences: () => {
+      if (pendingAppearanceMigration) lookReferences.migrate(captureLookSettings(), pendingAppearanceMigration.recordedLook);
+      else lookReferences.reconcile();
+      pendingAppearanceMigration = null;
+    },
+    referencesChanged: scheduleAppearancePresetAutosave,
+    resetReference: resetLookReference,
+    applyLook: applyNamedLook, applyColors: applyNamedColorScheme, captureUndo: captureLookUndo, restoreUndo: restoreLookUndo,
     download: (value, filename) => {
       const link = document.createElement('a'); link.download = filename;
       link.href = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2) + '\n'], { type: 'application/json' }));
       link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     },
   });
-  styleStudio = window.VibeMolStyleStudio.createController({
+  if (workspaceExperiment) {
+    propertiesInspector = window.VibeMolPropertiesInspector.createController({
+      getObjects: getPropertyObjects, getMoleculeDisplay, editMoleculeDisplay,
+      syncLook: () => looksUi.scheduleSync(),
+      getOverrides: getSurfaceStyleOverrides, resetSurfaceOverrides: resetSurfaceStyleOverrides,
+      getBoxVisible: layer => layer.showBox ?? showSimulationBoxes,
+      isTwoComponent: layer => !!getLayerSourceVolume(layer)?.isTwoComponent,
+      getComponentMode: () => global2CComponentMode || DEFAULT_2C_COMPONENT_MODE,
+      usesIntrinsicColors: layer => !!getLayerSourceVolume(layer)?.isTwoComponent && isPhaseLikeComponent(global2CComponentMode || DEFAULT_2C_COMPONENT_MODE),
+      setVisible: visible => {
+        for (const layer of getPropertyObjects()) {
+          layer.visible = !!visible;
+          if (visible) {
+            const scene = sceneGraphController.getSceneForLayer(layer); if (scene) scene.visible = true;
+            const parent = sceneGraphController.getLayerById(layer.parentId); if (parent) parent.visible = true;
+          }
+          if (isCubeLikeLayer(layer)) persistActiveCubeLayerState(layer, { render: false });
+        }
+        rebuildScene({ preserveView: true, syncGraph: false });
+        syncAppearanceControlsToActiveLayer(); renderSceneOutliner(); markSessionChanged();
+      },
+    });
+    styleStudio = propertiesInspector;
+  } else styleStudio = window.VibeMolStyleStudio.createController({
     panel: document.getElementById('styleStudio'), button: document.getElementById('styleStudioBtn'),
     closeButton: document.getElementById('styleStudioClose'), onOpen: () => looksUi.scheduleSync(),
   });
   window.VibeMolAppearanceLooks = Object.freeze({
-    openStudio: () => styleStudio.setOpen(true),
+    openStudio: () => { propertiesInspector?.setTab('look'); styleStudio.setOpen(true); window.VibeMolWorkbench?.open('inspector'); },
     closeStudio: () => styleStudio.setOpen(false),
     list: () => lookModule.builtins.map(look => ({ id: look.id, name: look.name, experimental: !!look.experimental })),
     edit: editAppearanceComponent,
     material: () => appearanceModel.clone(appearanceState.material),
-    apply: id => { const look = lookModule.builtins.find(item => item.id === id); if (!look) throw new Error('Unknown look.'); looksUi.choose(look); },
-    snapshot: () => ({ activeLook: cloneJsonLike(activeLook), settings: captureLookSettings(), saved: looksUi.getLibrary() }),
+    apply: (id, options) => { const look = lookModule.builtins.find(item => item.id === id); if (!look) throw new Error('Unknown look.'); looksUi.choose(look, options); },
+    applyColors: id => { const look = lookModule.builtins.find(item => item.id === id); if (!look) throw new Error('Unknown color scheme.'); looksUi.chooseColors(look); },
+    snapshot: () => {
+      const settings = captureLookSettings(), { baseline, ...state } = lookReferences.project(settings);
+      return { ...state, settings, saved: looksUi.getLibrary() };
+    },
   });
 
   // Startup: begin with an empty scene and onboarding text.
   syncLoadedSceneControls();
   updateEmptyStateVisibility();
+
+  // Narrow host adapter for the opt-in workspace experiment. Scientific state
+  // remains owned by the existing window controllers and renderer.
+  window.VibeMolWorkbenchHost = Object.freeze({
+    windows: displayWindowsController,
+    properties: propertiesInspector,
+    // Match the launcher's UI ids; the internal measurement-mode key is longer.
+    getMode: () => currentMode === MODES.MEASURE ? 'measure' : currentMode,
+    clearMeasurements: () => {
+      if (currentMode !== MODES.MEASURE) return;
+      clearEditSelection();
+      setHintMessage(HINT_MEASURE, { accent: false });
+    },
+    captureEditPanels: () => ({ build: isBuildPopoverOpen(), query: getBuildPaletteFilterQuery(), symmetry: isSymmetryPopoverOpen() }),
+    restoreEditPanels: state => {
+      if (currentMode !== MODES.EDIT || !state) return;
+      if (state.build) showBuildPopover({ query: state.query, preserveFocus: true });
+      else if (state.symmetry) showSymmetryPopover({ preserveFocus: true });
+    },
+    setSidebarCollapsed: setWorkspaceSidebarCollapsed,
+    resize,
+  });
 
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 

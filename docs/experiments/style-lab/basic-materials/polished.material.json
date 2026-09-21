@@ -1,0 +1,37 @@
+{
+  "kind": "vibemol.material",
+  "version": 1,
+  "name": "Basic Polished",
+  "material": {
+    "model": "physical",
+    "roughness": 0.16,
+    "metalness": 0.08,
+    "clearcoat": 0.82,
+    "clearcoatRoughness": 0.12,
+    "reflectivity": 0.62,
+    "specularIntensity": 1,
+    "shininess": 30,
+    "specularColor": "#ffffff",
+    "tint": "#ffffff",
+    "emissiveColor": "#ffffff",
+    "emissiveUsesColor": true,
+    "emissiveIntensity": 0,
+    "emissiveScale": 1,
+    "emissiveMix": 0,
+    "envMapIntensity": 0,
+    "iridescence": 0,
+    "vertexEmissiveColor": null,
+    "vertexEmissiveIntensity": null,
+    "toonSteps": [
+      12,
+      64,
+      142,
+      255
+    ],
+    "iridescenceThicknessRange": [
+      180,
+      420
+    ],
+    "byElement": {}
+  }
+}

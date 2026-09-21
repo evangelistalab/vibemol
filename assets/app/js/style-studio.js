@@ -16,10 +16,16 @@
         if (focus) panel.querySelector('#lookPreset')?.focus({ preventScroll: true });
       } else {
         movable.cancelDrag();
-        if (focus) button.focus({ preventScroll: true });
+        if (focus) {
+          const launcher = document.getElementById('workbenchPanelsBtn') || button;
+          launcher.focus({ preventScroll: true });
+        }
       }
     }
-    button.addEventListener('click', () => setOpen(!isOpen()));
+    button.addEventListener('click', () => {
+      if (global.VibeMolWorkbench?.restoreIfHidden('styleStudio')) return;
+      setOpen(!isOpen());
+    });
     closeButton.addEventListener('click', () => setOpen(false));
     panel.addEventListener('keydown', event => {
       // Controls keep native typing and navigation without triggering scene tools.

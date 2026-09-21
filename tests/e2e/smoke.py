@@ -4136,6 +4136,10 @@ def main() -> int:
             stored_before_traj = active_structure_summary(page)
             if stored_before_traj['bondCount'] != 1 or stored_before_traj['bondOrigins'] != ['perceived']:
                 raise AssertionError(f'Trajectory import stored graph is unexpected: {stored_before_traj}')
+            # Earlier camera checks leave the view along X, the trajectory's
+            # bond axis. Look along Z so this pixel check sees the bond rather
+            # than the atom that occludes it in both frames.
+            page.locator('#viewAxisZBtn').evaluate('el => el.click()')
             page.locator('#trajectoryFrame').evaluate(
                 """(el) => {
                     el.value = '0';
@@ -4146,6 +4150,8 @@ def main() -> int:
             page.wait_for_function(
                 """() => /1\\/2/.test(document.getElementById('trajectoryFrameLabel')?.textContent || '')"""
             )
+            page.wait_for_function('() => VibeMolTesting.getMoleculeRenderSnapshot().bondCarrierCount > 0')
+            page.evaluate('() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))')
             frame1_sample = sample_canvas_region_rgb(page, 0.5, 0.5, 11)
             page.locator('#trajectoryFrame').evaluate(
                 """(el) => {
@@ -4157,6 +4163,8 @@ def main() -> int:
             page.wait_for_function(
                 """() => /2\\/2/.test(document.getElementById('trajectoryFrameLabel')?.textContent || '')"""
             )
+            page.wait_for_function('() => VibeMolTesting.getMoleculeRenderSnapshot().bondCarrierCount === 0')
+            page.evaluate('() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)))')
             frame2_sample = sample_canvas_region_rgb(page, 0.5, 0.5, 11)
             if (frame2_sample['r'] + frame2_sample['g'] + frame2_sample['b']) <= (frame1_sample['r'] + frame1_sample['g'] + frame1_sample['b']) + 0.05:
                 raise AssertionError(f'Trajectory frame switch did not visibly remove the bond: {frame1_sample} -> {frame2_sample}')
@@ -4998,6 +5006,11 @@ def main() -> int:
             )
             load_volume_asset(page, '/assets/data/sample.cube')
             page.evaluate("""() => {
+                const family=document.getElementById('appearanceMaterialFamily');
+                family.value='physical';family.dispatchEvent(new Event('change',{bubbles:true}));
+            }""")
+            page.wait_for_function("() => !!document.querySelector('#appearanceMaterialPreset option[value=emissive]')")
+            page.evaluate("""() => {
                 const select=document.getElementById('appearanceMaterialPreset');
                 select.value='emissive';select.dispatchEvent(new Event('change',{bubbles:true}));
             }""")
@@ -5017,7 +5030,8 @@ def main() -> int:
                     const select = document.getElementById('appearanceMaterialPreset');
                     if (!(row && select)) return false;
                     const options = Array.from(select.options || []).map((opt) => String(opt.textContent || '').trim());
-                    return options.join('|') === 'Custom|Emissive|Satin|Lacquer|Metal|Gel|Ceramic|Polished|Matte|Enamel|Classic smooth|Toon'
+                    return options.join('|') === 'Custom|Basic|Emissive|Gel|Matte|Metal|Opal|Porcelain'
+                      && document.getElementById('appearanceMaterialFamily').value === 'physical'
                       && row.classList.contains('appearanceHiddenControl')
                       && !document.getElementById('appearanceMaterialModel')
                       && String(select.value || '') === 'emissive';

@@ -20,11 +20,14 @@ JS_CHECK_FILES = \
 	assets/app/js/bond-editing.js \
 	assets/app/js/edit-ui.js \
 	assets/app/js/floating-panels.js \
+	assets/app/js/workbench-model.js \
+	assets/app/js/workbench.js \
 	assets/app/js/appearance-looks.js \
 	assets/app/js/appearance-model.js \
 	assets/app/js/appearance-editor.js \
 	assets/app/js/looks-ui.js \
 	assets/app/js/style-studio.js \
+	assets/app/js/properties-inspector.js \
 	docs/experiments/style-lab/compare.js \
 	assets/app/js/edit-placement.js \
 	assets/app/js/edit-tools.js \
@@ -58,7 +61,7 @@ check:
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
 	done
-	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_shadows.py tests/e2e/camera_depth.py tests/e2e/edit_picking.py tests/e2e/mode_consistency.py tests/e2e/style_studio.py tests/e2e/appearance_scopes.py tests/e2e/floating_panels.py tools/render_look_previews.py tools/profile_nacl_edit.py
+	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_schemes.py tests/e2e/look_tiles.py tests/e2e/look_references.py tests/e2e/surface_shadows.py tests/e2e/camera_depth.py tests/e2e/edit_picking.py tests/e2e/mode_consistency.py tests/e2e/style_studio.py tests/e2e/appearance_scopes.py tests/e2e/appearance_controls.py tests/e2e/properties_inspector.py tests/e2e/properties_disclosures.py tests/e2e/floating_panels.py tests/e2e/workbench.py tests/e2e/workbench_consistency.py tests/e2e/workbench_bar.py tools/render_look_previews.py tools/profile_nacl_edit.py
 	git diff --check
 
 test-unit:
@@ -74,6 +77,11 @@ test-e2e:
 	python3 tests/e2e/mode_consistency.py
 	python3 tests/e2e/style_studio.py
 	python3 tests/e2e/appearance_scopes.py
+	python3 tests/e2e/properties_inspector.py
+	python3 tests/e2e/properties_disclosures.py
 	python3 tests/e2e/floating_panels.py
+	python3 tests/e2e/workbench.py
+	python3 tests/e2e/workbench_consistency.py
+	python3 tests/e2e/workbench_bar.py
 
 test: check test-unit test-e2e

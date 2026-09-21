@@ -24,6 +24,7 @@ def instrumented_source():
     assert source.count(marker) == 1
     return source.replace(marker, '''window.__editProbe = {
       reset() { window.__pickCounts = {records:0, segments:0, queries:0}; },
+      rebuild() { rebuildScene({preserveView:true}); },
       query(point, fresh=false) {
         if(fresh) moleculePickCache.clear();
         const hit=pickBondHit(point);
@@ -159,7 +160,7 @@ def slab(page):
     invalidates(page, point, lambda: page.set_viewport_size({'width': 1100, 'height': 850}))
     invalidates(page, point, lambda: mode(page, 'Measure'))
     mode(page, 'Edit')
-    page.locator('#canvas').focus(); page.keyboard.press('c')
+    page.evaluate('()=>VibeMolWorkbench.open("coordsPanel")')
     assert page.locator('#coordsContent tr[data-atom-index]').count() == 2000
     assert page.locator('#coordsContent [data-edit-field]').count() > 0
     page.locator('#coordsPanelClose').evaluate('el=>el.click()')
@@ -292,7 +293,8 @@ def orbital_modes(page):
         after = page.evaluate(f'()=>JSON.parse(JSON.stringify(VibeMolTesting.{snapshot}()))')
         assert after == before, (render_mode, cloud_type, before, after)
         # A real rebuild in Edit drops hidden graphics; leaving must recreate them.
-        mode(page, 'Edit'); p.redraw(page)
+        # Box visibility is now a layer-only update, not a full scene rebuild.
+        mode(page, 'Edit'); page.evaluate('()=>__editProbe.rebuild()')
         assert page.evaluate(f'()=>JSON.parse(JSON.stringify(VibeMolTesting.{snapshot}()))') == []
         mode(page, 'Display')
         restored = page.evaluate(f'()=>JSON.parse(JSON.stringify(VibeMolTesting.{snapshot}()))')
@@ -310,7 +312,7 @@ def main():
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.on('dialog', lambda dialog: dialog.dismiss())
         try:
-            page.goto(url + '?appearanceStudy=1'); page.wait_for_function('()=>window.__editProbe')
+            page.goto(url + '?workspaceLab=1'); page.wait_for_function('()=>window.__editProbe')
             slab(page)
             multiple_bonds(page)
             occlusion(page)

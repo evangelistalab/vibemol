@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VibeMol · One material for Basic</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../../src/styles/tokens.css">
+  <link rel="stylesheet" href="../../../assets/app/css/palette.css">
+  <link rel="stylesheet" href="../../../assets/app/css/display-ui.css">
+  <link rel="stylesheet" href="basic-material.css">
+</head>
+<body>
+  <main>
+    <header>
+      <p class="vm-section-label">VibeMol · Basic material study</p>
+      <h1>One finish for atoms, bonds, and orbitals</h1>
+      <p>Actual VibeMol renders. Basic geometry, colors, lighting, and shadows are identical across the options.</p>
+    </header>
+    <section class="comparison" aria-label="Original Basic and three shared-material candidates">
+      <article>
+        <div class="option-heading"><h2>Original Basic</h2><span class="vm-session-status">Two finishes · reference</span></div>
+        <div class="views">
+          <figure><a href="basic-materials/current-atoms.png" target="_blank" rel="noopener"><img src="basic-materials/current-atoms.png" width="1280" height="1040" alt="Original Basic: polished carbon, white hydrogen spheres, and bonds in methane."></a><figcaption>Atoms &amp; bonds</figcaption></figure>
+          <figure><a href="basic-materials/current-orbital.png" target="_blank" rel="noopener"><img src="basic-materials/current-orbital.png" width="1280" height="1040" alt="Original Basic: bright gold and blue orbital lobes with compact highlights over the same methane structure."></a><figcaption>Orbital &amp; structure</figcaption></figure>
+        </div>
+        <p>Polished atoms, plus a separate luminous finish for orbitals.</p>
+      </article>
+      <article>
+        <div class="option-heading"><h2>A · Polished</h2><span class="vm-session-status">Preserve the atoms</span></div>
+        <div class="views">
+          <figure><a href="basic-materials/polished-atoms.png" target="_blank" rel="noopener"><img src="basic-materials/polished-atoms.png" width="1280" height="1040" alt="Candidate A: methane atoms and bonds retain exactly the original Basic finish."></a><figcaption>Atoms &amp; bonds</figcaption></figure>
+          <figure><a href="basic-materials/polished-orbital.png" target="_blank" rel="noopener"><img src="basic-materials/polished-orbital.png" width="1280" height="1040" alt="Candidate A: the same polished material on gold and blue lobes, with deeper shadows and broad highlights."></a><figcaption>Orbital &amp; structure</figcaption></figure>
+        </div>
+        <p>The original atom finish everywhere. Orbitals have deeper shading and rounded highlights.</p>
+      </article>
+      <article>
+        <div class="option-heading"><h2>B · Balanced</h2><span class="vm-session-status">Balanced alternative</span></div>
+        <div class="views">
+          <figure><a href="basic-materials/balanced-atoms.png" target="_blank" rel="noopener"><img src="basic-materials/balanced-atoms.png" width="1280" height="1040" alt="Candidate B: lightly brightened atoms with a smooth clearcoat highlight."></a><figcaption>Atoms &amp; bonds</figcaption></figure>
+          <figure><a href="basic-materials/balanced-orbital.png" target="_blank" rel="noopener"><img src="basic-materials/balanced-orbital.png" width="1280" height="1040" alt="Candidate B: moderately bright gold and blue orbital lobes with clear highlights and visible depth shading."></a><figcaption>Orbital &amp; structure</figcaption></figure>
+        </div>
+        <p>A little color fill softens shadows; a clearcoat keeps both atoms and orbitals shiny.</p>
+      </article>
+      <article>
+        <div class="option-heading"><h2>C · Luminous</h2><span class="recommendation">Selected for Basic</span></div>
+        <div class="views">
+          <figure><a href="basic-materials/luminous-atoms.png" target="_blank" rel="noopener"><img src="basic-materials/luminous-atoms.png" width="1280" height="1040" alt="Candidate C: brighter methane atoms and bonds, with flatter white hydrogens."></a><figcaption>Atoms &amp; bonds</figcaption></figure>
+          <figure><a href="basic-materials/luminous-orbital.png" target="_blank" rel="noopener"><img src="basic-materials/luminous-orbital.png" width="1280" height="1040" alt="Candidate C: brighter gold and blue orbital lobes, closer to the original luminous finish."></a><figcaption>Orbital &amp; structure</figcaption></figure>
+        </div>
+        <p>Brighter orbital colors and compact highlights. White atoms lose some depth shading.</p>
+      </article>
+    </section>
+    <section class="try-material" aria-labelledby="tryHeading">
+      <h2 id="tryHeading">Try a shared finish</h2>
+      <p>Download a material, then use <b>Properties → Look → Material → Save material → Import</b>. Material imports preserve the current geometry and lighting.</p>
+      <div class="vm-popover__actions">
+        <a class="vm-btn vm-btn--ghost vm-btn--sm" href="basic-materials/polished.material.json" download>A · Polished</a>
+        <a class="vm-btn vm-btn--ghost vm-btn--sm" href="basic-materials/balanced.material.json" download>B · Balanced</a>
+        <a class="vm-btn vm-btn--ghost vm-btn--sm" href="basic-materials/luminous.material.json" download>C · Luminous</a>
+      </div>
+      <details id="liveStudy"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Rotate and compare in VibeMol</span></summary>
+        <div class="live-controls">
+          <label for="candidate">Finish</label><select id="candidate" class="vm-select"><option value="current">Original Basic</option><option value="polished">A · Polished</option><option value="balanced">B · Balanced</option><option value="luminous" selected>C · Luminous</option></select>
+          <label for="subject">Show</label><select id="subject" class="vm-select"><option value="orbital">Orbital &amp; structure</option><option value="atoms">Atoms &amp; bonds</option></select>
+        </div>
+        <p id="liveStatus" class="vm-session-status" role="status">Opening a separate preview leaves your workspace unchanged.</p>
+        <div id="liveHost"></div>
+      </details>
+      <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Material values &amp; comparison conditions</span></summary>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Finish</th><th>Roughness</th><th>Metalness</th><th>Clearcoat</th><th>Coat roughness</th><th>Color fill</th></tr></thead>
+          <tbody><tr><th>Original atoms / A</th><td>0.16</td><td>0.08</td><td>0.82</td><td>0.12</td><td>0</td></tr>
+          <tr><th>Original orbitals</th><td>1</td><td>0</td><td>1</td><td>0.10</td><td>0.80</td></tr>
+          <tr><th>B · Balanced</th><td>0.38</td><td>0.04</td><td>0.90</td><td>0.10</td><td>0.12</td></tr>
+          <tr><th>C · Luminous</th><td>0.72</td><td>0.04</td><td>1</td><td>0.10</td><td>0.36</td></tr></tbody>
+        </table></div>
+        <p>All candidates use Three.js physical materials with zero environment reflections, no transmission, and 100% surface opacity. Each candidate uses one identical descriptor on all three targets. No per-element or surface-specific material rules are added.</p>
+        <p>The included <a href="../../../assets/data/methane/canonical_4.cube">methane canonical orbital 4</a> is rendered at ±0.06 in the cube's scalar units. The molecule views hide the same orbital and zoom in. Within each view, coordinates, camera, geometry, phase colors, shadows, and lighting are fixed. Basic now uses C · Luminous for atoms, bonds, and orbitals. The original recipe remains here as a historical reference.</p>
+        <p><a href="basic-materials/recipes.json">Complete rendering recipes and capture settings</a></p>
+      </details>
+    </section>
+  </main>
+  <script src="basic-material.js"></script>
+</body>
+</html>

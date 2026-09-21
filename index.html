@@ -316,9 +316,9 @@
       white-space: nowrap;
     }
 
-    :is(#toolbar, #styleStudio) select,
-    :is(#toolbar, #styleStudio) input[type="number"],
-    :is(#toolbar, #styleStudio) input[type="text"] {
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) select,
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) input[type="number"],
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) input[type="text"] {
       height: 30px;
       border: 1px solid var(--vm-color-border);
       border-radius: 8px;
@@ -2028,9 +2028,9 @@
       justify-content: flex-start;
     }
 
-    :is(#toolbar, #styleStudio) select,
-    :is(#toolbar, #styleStudio) input[type="number"],
-    :is(#toolbar, #styleStudio) input[type="text"] {
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) select,
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) input[type="number"],
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) input[type="text"] {
       width: 100%;
       box-sizing: border-box;
       height: 32px;
@@ -2128,8 +2128,8 @@
       color: var(--vm-color-text-secondary);
     }
 
-    #toolbar .vm-button-group.is-mixed .vm-button-group__item[aria-checked='true'],
-    #toolbar .vm-button-group.is-mixed .vm-button-group__item.active {
+    :is(#toolbar, .vm-workbench) .vm-button-group.is-mixed .vm-button-group__item[aria-checked='true'],
+    :is(#toolbar, .vm-workbench) .vm-button-group.is-mixed .vm-button-group__item.active {
       background: transparent;
       color: inherit;
     }
@@ -2154,7 +2154,7 @@
       gap: 0;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorGroup {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorGroup {
       border: none;
       border-radius: 0;
       padding: 0;
@@ -2162,23 +2162,23 @@
       background: transparent;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorTitle {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorTitle {
       color: var(--tb-text-color-emphasis);
       font-size: var(--tb-text-size-label);
       font-weight: var(--tb-text-weight-bold);
       margin: 0;
     }
 
-    #toolbar .tb-toolbarInspectorFields label {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields label {
       color: var(--tb-text-color-subtle);
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorRow {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorRow {
       flex-wrap: nowrap;
       gap: 4px;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow {
       display: grid;
       grid-template-columns: 94px minmax(0, 1fr);
       align-items: center;
@@ -2186,12 +2186,12 @@
       margin-bottom: 7px;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow:last-child,
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow:last-of-type {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow:last-child,
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow:last-of-type {
       margin-bottom: 0;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow label {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow label {
       display: inline-flex;
       align-items: center;
       justify-content: flex-start;
@@ -2203,8 +2203,8 @@
       font-weight: var(--tb-text-weight-semibold);
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow select,
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"] {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow select,
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"] {
       width: 100%;
       min-width: 0;
       height: 30px;
@@ -2216,8 +2216,8 @@
       padding: 0 10px;
     }
 
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow select:focus,
-    #toolbar .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"]:focus {
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow select:focus,
+    :is(#toolbar, .vm-workbench) .tb-toolbarInspectorFields .inspectorSelectRow input[type="number"]:focus {
       outline: none;
       box-shadow: none;
     }
@@ -2265,6 +2265,7 @@
   <link rel="stylesheet" href="./assets/app/css/scene-outliner.css">
   <link rel="stylesheet" href="./assets/app/css/trajectory-ui.css">
   <link rel="stylesheet" href="./assets/app/css/floating-panels.css">
+  <link rel="stylesheet" href="./assets/app/css/workbench.css">
 </head>
 
 <body>
@@ -2706,14 +2707,14 @@
                 </div>
               </div>
               <div class="vm-field-row">
-                <label class="vm-field-label" for="schemeSelect">Color scheme</label>
+                <label class="vm-field-label" for="schemeSelect">Surface palette</label>
                 <div class="vm-field-control">
-                  <select id="schemeSelect" class="vm-select" data-tooltip="Choose default +/- surface colors">
-                    <option value="emory" selected>Emory (gold/blue)</option>
-                    <option value="national">National (red/blue)</option>
-                    <option value="bright">Bright (yellow/cyan)</option>
-                    <option value="electron">Electron (magenta/green)</option>
-                    <option value="classic">Classic (blue/red)</option>
+                  <select id="schemeSelect" class="vm-select" data-tooltip="Choose positive (+) and negative (−) surface colors">
+                    <option value="emory" selected>Emory (gold + / blue −)</option>
+                    <option value="national">National (red + / navy −)</option>
+                    <option value="bright">Bright (yellow + / sky −)</option>
+                    <option value="electron">Electron (magenta + / green −)</option>
+                    <option value="tableau">Tableau (blue + / red −)</option>
                     <option value="custom">Custom</option>
                   </select>
                 </div>
@@ -2900,7 +2901,6 @@
       </div>
     </div>
   </div>
-  <button id="helpFab" class="vm-btn vm-btn--icon vm-btn--ghost" type="button" aria-label="Keyboard shortcuts (?)" data-tooltip="Keyboard shortcuts (?)">?</button>
   <div id="displayWindowAdaptiveMenu" class="adaptiveMenu" data-mode="display" aria-hidden="true">
     <button id="moldenInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="Orbitals (O)" hidden>
       <span class="adaptiveEditItemBody">
@@ -2914,11 +2914,11 @@
         <span class="adaptiveShortcutKey">O</span>
       </span>
     </button>
-    <button id="viewInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="View actions (Q)" hidden>
+    <button id="viewInspectorBtn" class="adaptiveEditItem" type="button" data-tooltip="Quick actions (Q)" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">tune</span>
-          <span class="adaptiveEditItemLabel">View actions</span>
+          <span class="adaptiveEditItemLabel">Quick actions</span>
         </span>
         <span class="adaptiveEditItemMeta"></span>
       </span>
@@ -3749,7 +3749,7 @@
         <section class="vm-helpSection">
           <h3 class="vm-section-label">View</h3>
           <div class="vm-helpGrid">
-            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Q</kbd></div><div class="vm-helpDescription">Open View actions</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Q</kbd></div><div class="vm-helpDescription">Open Quick actions</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">V</kbd></div><div class="vm-helpDescription">Open View panel</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">O</kbd></div><div class="vm-helpDescription">Open Orbitals panel (molden files only)</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">C</kbd></div><div class="vm-helpDescription">Open Coordinates panel</div></div>
@@ -3844,6 +3844,7 @@
   <script src="./assets/app/js/appearance-editor.js"></script>
   <script src="./assets/app/js/looks-ui.js"></script>
   <script src="./assets/app/js/style-studio.js"></script>
+  <script src="./assets/app/js/properties-inspector.js"></script>
   <!-- edit placement helpers -->
   <script src="./assets/app/js/edit-placement.js"></script>
   <!-- edit tool/selection helpers -->
@@ -3899,6 +3900,8 @@
 
   <div id="sessionBusyOverlay" role="status" aria-live="polite" hidden>Opening session…</div>
   <script src="./assets/app/js/app.js"></script>
+  <script src="./assets/app/js/workbench-model.js"></script>
+  <script src="./assets/app/js/workbench.js"></script>
 </body>
 
 </html>

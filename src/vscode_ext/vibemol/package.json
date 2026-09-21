@@ -2,7 +2,7 @@
   "name": "vibemol",
   "displayName": "VibeMol",
   "description": "Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files, with a companion Python automation client. It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes.json`, ORCA `.hess`, and Psi4 `.dat/.out` frequency outputs).",
-  "version": "0.0.1",
+  "version": "0.8.7",
   "engines": {
     "vscode": "^1.118.0"
   },

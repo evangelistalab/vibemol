@@ -6,7 +6,7 @@ All 24 custom floating interfaces share `assets/app/js/floating-panels.js`:
 | --- | --- |
 | Style Studio | Title bar |
 | Orbitals | Title bar; filter and close controls remain interactive |
-| View actions | Quick actions heading |
+| Quick actions | Quick actions heading |
 | Spinor information | Title bar |
 | View | Title bar |
 | Coordinates | Title bar; units/copy/close controls remain interactive |

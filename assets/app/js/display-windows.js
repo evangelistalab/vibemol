@@ -47,14 +47,15 @@
     }
 
     function getEntry(id) {
-      const key = String(id || '').trim();
+      const raw = String(id || '').trim();
+      const key = deps.aliases?.[raw] || raw;
       if (!key) return null;
       return entries[key] || null;
     }
 
     function listOpenWindowIds(ids = undefined) {
       const keys = Array.isArray(ids) && ids.length ? ids : Object.keys(entries);
-      return keys.filter((id) => {
+      return [...new Set(keys.map(id => deps.aliases?.[id] || id))].filter((id) => {
         const entry = getEntry(id);
         return !!(entry && typeof entry.isOpen === 'function' && entry.isOpen());
       });
@@ -79,6 +80,7 @@
       try {
         for (const id of EXCLUSIVE_WINDOW_IDS) {
           if (exceptId && id === exceptId) continue;
+          if (exceptId && deps?.keepOpenOnSwitch?.(id)) continue;
           const entry = getEntry(id);
           if (!entry || typeof entry.isOpen !== 'function' || typeof entry.setOpen !== 'function') continue;
           if (!entry.isOpen()) continue;
@@ -90,6 +92,7 @@
     }
 
     function toggleExclusiveWindow(id) {
+      if (deps?.revealHiddenWindow?.(id)) return;
       const entry = getEntry(id);
       if (!entry || typeof entry.isOpen !== 'function' || typeof entry.setOpen !== 'function') return;
       if (entry.isOpen()) entry.setOpen(false);

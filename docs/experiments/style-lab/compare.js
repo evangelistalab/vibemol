@@ -31,8 +31,8 @@
     return {name:'pyridine.xyz',text:await response.text()};
   }
   function apply() {
-    windows[0].VibeMolAppearanceLooks.apply($('reference').value);
-    windows[1].VibeMolAppearanceLooks.apply($('mode').value === 'materials' ? $('reference').value : $('candidate').value);
+    windows[0].VibeMolAppearanceLooks.apply($('reference').value,{includeColors:true});
+    windows[1].VibeMolAppearanceLooks.apply($('mode').value === 'materials' ? $('reference').value : $('candidate').value,{includeColors:true});
     if ($('mode').value === 'materials') {
       const recipe = windows[1].VibeMolLooks.builtins.find(item => item.id === $('candidate').value).settings['appearance.rendering'];
       windows[1].VibeMolAppearanceLooks.edit('material', recipe.material, {replace:true});

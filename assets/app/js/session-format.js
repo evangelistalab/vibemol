@@ -144,7 +144,13 @@
         requireValue(layer.parentId == null || (local.has(layer.parentId) && ['orbitals_group', 'measurements_group'].includes(local.get(layer.parentId).kind)), 'invalid layer parent.');
         requireValue(!['orbitals_group', 'measurements_group', 'molecule'].includes(layer.kind) || layer.parentId == null, 'invalid group nesting.');
         requireValue(layer.sourceId == null || sources.has(layer.sourceId), 'missing layer source.');
-        if (layer.kind === 'molecule') requireValue(sources.has(layer.sourceId) && layer.sourceId === scene.moleculeSourceId, 'missing or mismatched molecule data.');
+        if (layer.kind === 'molecule') {
+          requireValue(sources.has(layer.sourceId) && layer.sourceId === scene.moleculeSourceId, 'missing or mismatched molecule data.');
+          requireValue(layer.moleculeDisplay == null || (object(layer.moleculeDisplay)
+            && Object.entries(layer.moleculeDisplay).every(([key, value]) =>
+              ['showAtoms', 'showBonds', 'showAtomLabels', 'showAtomLabelNumbers', 'showMultiBonds'].includes(key)
+              && typeof value === 'boolean')), 'invalid structure display settings.');
+        }
         if (layer.kind === 'cube') {
           const source = sources.get(layer.sourceId);
           requireValue(!!source || !!layer.volume, 'missing cube data.');
@@ -155,6 +161,7 @@
         if (layer.volume) validateVolume(layer.volume, layer.name || layer.id);
         if (layer.kind === 'cube' || layer.kind === 'arithmetic') {
           requireValue(finite(layer.iso) && layer.iso >= 0 && finite(layer.opacity) && layer.opacity >= 0.05 && layer.opacity <= 1, 'invalid surface appearance.');
+          requireValue(layer.showBox == null || typeof layer.showBox === 'boolean', 'invalid simulation box visibility.');
           requireValue(layer.isoPending == null || typeof layer.isoPending === 'boolean', 'invalid pending iso state.');
           requireValue(layer.styleOverrides == null || (object(layer.styleOverrides)
             && typeof layer.styleOverrides.colors === 'boolean' && typeof layer.styleOverrides.opacity === 'boolean'), 'invalid surface style overrides.');
@@ -187,7 +194,7 @@
     requireValue(graph.activeLayerId == null || layers.has(graph.activeLayerId), 'invalid active layer.');
     requireValue(Array.isArray(graph.selectedLayerIds) && new Set(graph.selectedLayerIds).size === graph.selectedLayerIds.length
       && graph.selectedLayerIds.every(key => layers.has(key) && layers.get(key).sceneId === graph.focusedSceneId
-        && ['cube', 'arithmetic'].includes(layers.get(key).kind)), 'invalid layer selection.');
+        && ['molecule', 'cube', 'arithmetic'].includes(layers.get(key).kind)), 'invalid layer selection.');
     requireValue(object(graph.syncMaster) && integer(graph.syncMaster.frame) && finite(graph.syncMaster.fps)
       && graph.syncMaster.fps >= 1 && graph.syncMaster.fps <= 120, 'invalid synchronized playback controls.');
     const view = session.view;
@@ -198,6 +205,9 @@
     requireValue(object(session.preset) && session.preset.kind === 'vibemol.preset' && session.preset.presetVersion === 1
       && object(session.preset.settings), 'invalid appearance preset.');
     if (session.preset.settings['appearance.rendering'] != null) global.VibeMolAppearanceModel.normalize(session.preset.settings['appearance.rendering']);
+    const references = Object.hasOwn(session.preset.settings, 'appearance.references')
+      ? session.preset.settings['appearance.references'] : session.preset.settings.appearance?.references;
+    if (references !== undefined) global.VibeMolLooks.normalizeReferenceState(references);
     return session;
   }
 

@@ -35,10 +35,12 @@ jobs:
           python-version: '3.12'
       - name: Install Python dependencies
         run: python -m pip install --upgrade pip && pip install -r api/requirements.txt
-      - name: Install Playwright Chromium
-        run: python -m playwright install --with-deps chromium
+      - name: Install Playwright Chromium and WebKit
+        run: python -m playwright install --with-deps chromium webkit
       - name: End-to-end smoke tests
         run: make test-e2e
+      - name: WebKit Properties interactions
+        run: python tests/e2e/properties_disclosures.py --browser webkit
       - name: Upload E2E artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -1,0 +1,179 @@
+/* Opt-in workspace experiment; reuse VibeMol's theme and control tokens. */
+body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top: 56px; }
+.vm-workbench #canvas:focus { outline: none; }
+.vm-workbench #canvas:focus-visible { outline: 2px solid var(--vm-color-toolbar-tab-accent); outline-offset: -2px; }
+.vm-workbench #drop, .vm-workbench #emptyState {
+  left: var(--wb-left); right: var(--wb-right); top: var(--wb-top); bottom: var(--wb-bottom);
+}
+.vm-workbench #hint, .vm-workbench:not(.sidebar-collapsed) #hint {
+  left: calc(var(--wb-left) + 12px); right: calc(var(--wb-right) + 12px);
+  bottom: calc(var(--wb-bottom) + 16px); max-width: none;
+}
+.vm-workbench #phaseWheel { right: calc(var(--wb-right) + 12px) !important; bottom: calc(var(--wb-bottom) + 60px) !important; }
+.vm-workbench #displayWindowAdaptiveMenu { display: none !important; }
+.vm-workbench [data-vm-floating-panel]:not([data-wb-panel]):not(#displayWindowAdaptiveMenu) { z-index: max(60, var(--vm-floating-z, 60)) !important; }
+.vm-workbench #editAdaptiveAddAtomPopover, .vm-workbench #editAdaptiveSymmetryPopover {
+  box-sizing: border-box; max-height: calc(100dvh - var(--wb-top) - 24px); overflow: auto;
+}
+.vm-workbench .vm-two-component-overlay__label { top: 12px; }
+
+
+.wb-bar {
+  position: fixed; top: 0; left: var(--wb-left); right: 0; height: 56px; z-index: 45;
+  display: flex; align-items: center; gap: 12px; padding: 0 16px; box-sizing: border-box;
+  background: var(--vm-color-surface-panel); border-bottom: 1px solid var(--vm-color-border);
+  color: var(--vm-color-text-primary); font: 500 12px var(--vm-font-sans);
+  container: workbench-bar / inline-size;
+}
+.wb-brand { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.wb-bar #toolbarModeRow {
+  --toolbar-mode-tab-fg: var(--vm-color-toolbar-tab-fg);
+  --toolbar-mode-tab-fg-hover: var(--vm-color-toolbar-tab-fg-hover);
+  --toolbar-mode-tab-accent: var(--vm-color-toolbar-tab-accent);
+  --toolbar-divider: var(--vm-color-border);
+  position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 210px; flex: 0 0 auto; margin: 0; border: 0; isolation: isolate;
+  padding: 2px; background: var(--vm-color-surface-base); border-radius: var(--vm-radius-md);
+}
+.wb-bar #toolbarModeRow::before {
+  content: ''; position: absolute; left: 2px; top: 2px; bottom: 2px; width: calc((100% - 4px) / 3);
+  border-radius: var(--vm-radius-md); background: var(--vm-color-surface-panel); box-shadow: var(--vm-shadow-sm);
+  transform: translateX(calc(var(--wb-mode-index, 0) * 100%)); transition: transform 160ms ease;
+  pointer-events: none; z-index: -1;
+}
+.wb-bar #toolbarModeRow .tb-modeBtn {
+  width: auto; height: 32px; padding: 0 8px; border: 0; box-shadow: none; border-radius: var(--vm-radius-md);
+  font: 600 12px var(--vm-font-sans); color: var(--vm-color-toolbar-tab-fg) !important;
+  background: transparent !important;
+}
+.wb-bar #toolbarModeRow .tb-modeBtn::after { display: none; }
+.wb-bar #toolbarModeRow .tb-modeBtn[aria-checked='true'] { color: var(--vm-color-toolbar-tab-fg-active) !important; }
+.wb-bar #toolbarModeRow .tb-modeBtn:hover { color: var(--vm-color-toolbar-tab-fg-hover) !important; }
+.wb-bar #toolbarModeRow .tb-modeBtn:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring) !important; }
+.wb-context-tools { display: flex; gap: 3px; padding-right: 8px; margin-right: 5px; border-right: 1px solid var(--vm-color-toolbar-divider); flex-shrink: 0; }
+.vm-workbench .wb-bar .wb-edit-tool {
+  display: inline-flex; justify-content: center; width: auto; min-width: 0; max-width: none; min-height: 30px;
+  padding: 7px 8px; border: 1px solid transparent; border-radius: var(--vm-radius-md);
+  background: transparent; color: var(--vm-color-text-secondary); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.vm-workbench .wb-bar .wb-edit-tool[aria-expanded='true'] { border-color: var(--vm-color-border); color: var(--vm-color-text-primary); }
+.wb-edit-tool .adaptiveEditItemTitleRow { gap: 6px; }
+.wb-edit-tool .adaptiveEditItemLabel { font: inherit; color: inherit; }
+.wb-edit-tool .adaptiveEditItemIcon { font-size: 17px; color: inherit; }
+.wb-edit-tool .adaptiveShortcutGroup, .wb-edit-tool .adaptiveEditItemMeta { display: none; }
+.wb-lab { border: 1px solid var(--vm-color-border); border-radius: 4px; padding: 2px 4px; font-size: 9px; color: var(--vm-color-text-secondary); }
+.wb-tools { display: flex; align-items: center; gap: 3px; flex: 1; min-width: 0; padding-left: 12px; border-left: 1px solid var(--vm-color-toolbar-divider); }
+.wb-bar [hidden] { display: none !important; }
+.wb-bar .vm-btn, .wb-dock .vm-btn, .wb-menu .vm-btn { font: 500 12px var(--vm-font-sans); box-shadow: none; }
+.wb-tool { flex-shrink: 0; white-space: nowrap; gap: 6px; padding: 7px 8px; border: 1px solid transparent; background: transparent; color: var(--vm-color-text-secondary); }
+.wb-panel-count { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px;
+  border-radius: var(--vm-radius-md); background: var(--vm-color-surface-base); color: var(--vm-color-text-secondary); font-size: 10px; }
+.wb-tool .material-symbols-rounded, .wb-bar .material-symbols-rounded, .wb-dock .material-symbols-rounded { font-size: 17px; }
+.wb-bar-actions { display: flex; align-items: center; flex-shrink: 0; gap: 5px; border-left: 1px solid var(--vm-color-toolbar-divider); padding-left: 10px; }
+.wb-bar-actions .vm-btn { gap: 5px; white-space: nowrap; }
+.vm-workbench .wb-bar-actions .vm-btn { background: transparent; border-color: transparent; color: var(--vm-color-text-secondary); }
+.vm-workbench #topRightUtilities { position: static; inset: auto; width: auto; height: auto; }
+.vm-workbench #topRightUtilitiesReveal { position: static; opacity: 1; pointer-events: auto; gap: 6px; }
+.vm-workbench #topRightUtilities .themeToggleText { display: none; }
+.vm-workbench #topRightUtilities .themeToggleShell,
+.vm-workbench #topRightUtilities .topRightUtilityLink { filter: none; color: var(--vm-color-text-secondary); }
+.vm-workbench #toolbarShowBtn { position: static; inset: auto; flex-shrink: 0; box-shadow: none; }
+.wb-bar button:hover, .wb-menu button:hover { background: var(--vm-color-surface-chip); }
+.wb-bar button:focus-visible, .wb-menu button:focus-visible, .wb-tab:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring); }
+.wb-dock { position: fixed; z-index: 40; background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); box-sizing: border-box; }
+.wb-dock[hidden] { display: none; }
+.wb-dock--right { top: var(--wb-top); right: 0; bottom: 0; width: var(--wb-right); border-left: 1px solid var(--vm-color-border); }
+.wb-dock--bottom { left: var(--wb-left); right: var(--wb-right); bottom: 0; height: var(--wb-bottom); border-top: 1px solid var(--vm-color-border); }
+.wb-tabs { display: flex; align-items: stretch; gap: 2px; padding: 0 8px; height: 38px; overflow: auto; scrollbar-width: thin; border-bottom: 1px solid var(--vm-color-border); }
+.wb-tab { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--vm-color-text-secondary); font: 500 12px var(--vm-font-sans); box-shadow: none; }
+.wb-tab[aria-selected='true'] { border-bottom-color: var(--vm-color-toolbar-tab-accent); color: var(--vm-color-text-primary); }
+.wb-tab:hover { background: var(--vm-color-surface-chip); }
+.wb-slot { position: absolute; top: 39px; left: 1px; right: 0; bottom: 0; }
+.wb-resize { position: absolute; touch-action: none; z-index: 2; background: transparent; }
+.wb-dock--right .wb-resize { width: 7px; top: 0; bottom: 0; left: -4px; cursor: ew-resize; }
+.wb-dock--bottom .wb-resize { height: 7px; left: 0; right: 0; top: -4px; cursor: ns-resize; }
+.wb-resize:hover, .wb-resize:focus-visible { background: color-mix(in srgb, var(--vm-color-toolbar-tab-accent) 22%, transparent); outline: none; }
+
+/* Keep original panel nodes and their handlers; only their viewport changes. */
+.vm-workbench [data-wb-hidden='true'] { display: none !important; }
+.vm-workbench [data-wb-placement='right'], .vm-workbench [data-wb-placement='bottom'] {
+  position: fixed !important; left: var(--wb-panel-left) !important; top: var(--wb-panel-top) !important;
+  width: var(--wb-panel-width) !important; height: var(--wb-panel-height) !important;
+  right: auto !important; bottom: auto !important; transform: none !important;
+  min-width: 0 !important; min-height: 0 !important; max-width: none !important; max-height: none !important;
+  z-index: 41 !important; box-sizing: border-box; border: 0; border-radius: 0; box-shadow: none;
+  display: flex; flex-direction: column; overflow: auto;
+}
+.vm-workbench [data-wb-panel] > [data-vm-drag-handle] { flex-shrink: 0; }
+.vm-workbench [data-vm-floating-drag-disabled] [data-vm-drag-handle] { cursor: default; touch-action: pan-y; }
+.wb-window-header { display: flex; align-items: center; gap: 8px; }
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader > .title,
+.vm-workbench #sidePanel[data-wb-placement]:not([data-wb-placement='float']) > header > h2 { display: none; }
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader::before,
+.vm-workbench #sidePanel[data-wb-placement]:not([data-wb-placement='float']) > header::before {
+  content: 'drag_indicator'; font: 18px 'Material Symbols Rounded'; color: var(--vm-color-text-secondary); flex-shrink: 0;
+}
+
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelHeader > .actions { margin-left: auto; }
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) .motionPanelBody,
+.vm-workbench [data-wb-placement]:not([data-wb-placement='float']) #viewControls { flex: 1; min-height: 0; overflow: auto; }
+.wb-window-menu.vm-btn { flex-shrink: 0; width: 26px; height: 26px; min-width: 26px; padding: 0; margin-left: auto; color: var(--vm-color-text-secondary); background: transparent; border: 0; box-shadow: none; }
+.wb-window-menu .material-symbols-rounded { font-size: 17px; }
+/* Properties owns scrolling in its Object/Look bodies at every dock width.
+   Nested Studio scroll containers trap wheel events and shift WebKit's click targets. */
+.wb-menu { position: fixed; z-index: 10060; width: 280px; max-width: calc(100vw - 24px); box-sizing: border-box; font-family: var(--vm-font-sans); }
+.wb-menu[hidden] { display: none; }
+.wb-menu-title { font-size: 11px; font-weight: 600; color: var(--vm-color-text-secondary); padding: 2px 6px 8px; }
+.wb-menu .vm-btn { width: 100%; justify-content: flex-start; gap: 9px; padding: 8px; background: transparent; color: var(--vm-color-text-primary); border: 0; text-align: left; }
+.wb-menu .material-symbols-rounded { font-size: 17px; }
+.wb-menu small { display: block; margin-top: 2px; color: var(--vm-color-text-secondary); font-weight: 400; }
+.wb-menu hr { border: 0; border-top: 1px solid var(--vm-color-border); margin: 8px 0; }
+.wb-panels-menu { padding: 6px; overflow-y: auto; }
+.wb-panels-menu [hidden] { display: none !important; }
+.wb-panel-option[aria-checked='false'] > .material-symbols-rounded { visibility: hidden; }
+.wb-panel-location { margin-left: auto; white-space: nowrap; color: var(--vm-color-text-secondary); }
+.wb-save { display: flex; gap: 6px; padding: 4px; }
+.wb-save input { min-width: 0; width: 100%; font: 12px var(--vm-font-sans); padding: 6px 8px; color: var(--vm-color-text-primary); background: var(--vm-color-surface-input); border: 1px solid var(--vm-color-border-input); border-radius: var(--vm-radius-md); box-sizing: border-box; }
+.wb-save input:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring); }
+.wb-save .vm-btn { width: auto; }
+.wb-status { color: var(--vm-color-text-secondary); font: 11px var(--vm-font-sans); padding: 5px 6px; }
+.wb-snap { position: fixed; z-index: 10055; pointer-events: none; border: 2px solid var(--vm-color-toolbar-tab-accent); border-radius: var(--vm-radius-lg); background: color-mix(in srgb, var(--vm-color-toolbar-tab-accent) 10%, transparent); display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.wb-snap[hidden] { display: none; }
+.wb-snap span { background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); padding: 8px 14px; border-radius: var(--vm-radius-md); box-shadow: var(--vm-shadow-lg); font: 500 12px var(--vm-font-sans); }
+.vm-workbench[data-wb-focus='true'] #toolbar,
+.vm-workbench[data-wb-focus='true'] #toolbarShowBtn,
+.vm-workbench[data-wb-focus='true'] #displayWindowAdaptiveMenu,
+.vm-workbench[data-wb-focus='true'] [data-vm-floating-panel],
+.vm-workbench[data-wb-focus='true'] #hint { visibility: hidden !important; pointer-events: none !important; }
+.vm-workbench[data-wb-focus='true'] .wb-tools,
+.vm-workbench[data-wb-focus='true'] .wb-arrange { visibility: hidden; pointer-events: none; }
+@media (max-width: 1500px) { .wb-brand { display: none; } }
+@media (max-width: 650px) { .wb-bar { gap: 5px; padding: 0 8px; } .wb-bar-actions { padding-left: 5px; } .wb-brand { display: none; } .wb-arrange span:not(.material-symbols-rounded) { display: none; } }
+.vm-workbench[data-wb-compact='true'] .wb-bar { height: 96px; flex-wrap: wrap; gap: 0 6px; padding: 4px 8px; align-content: center; }
+.vm-workbench[data-wb-compact='true'] .wb-bar #toolbarModeRow { margin-right: auto; }
+.vm-workbench[data-wb-compact='true'] .wb-brand { display: none; }
+.vm-workbench[data-wb-compact='true'] .wb-tools { flex-basis: 100%; order: 2; height: 40px; }
+.vm-workbench[data-wb-compact='true'] .wb-tools { padding-left: 0; border-left: 0; }
+.vm-workbench[data-wb-compact='true'] .wb-bar-actions { border: 0; padding-left: 0; gap: 3px; }
+.vm-workbench[data-wb-compact='true'] .wb-bar-actions .vm-btn { padding: 0 6px; }
+.vm-workbench[data-wb-compact='true'] .wb-bar-actions .vm-btn > span:not(.material-symbols-rounded),
+.vm-workbench[data-wb-compact='true'] .wb-bar #topRightUtilities .topRightUtilityLink { display: none; }
+/* Only compact the bar's labels; panel count never consumes more bar space and
+   existing dock breakpoints, sizes, and placement rules stay independent. */
+@container workbench-bar (max-width: 900px) {
+  .vm-workbench .wb-bar-actions .vm-btn { padding: 0 6px; min-height: 30px; }
+  .vm-workbench:not([data-wb-compact='true']) .wb-bar .wb-tool-label,
+  .vm-workbench:not([data-wb-compact='true']) .wb-bar .adaptiveEditItemLabel,
+  .vm-workbench:not([data-wb-compact='true']) .wb-bar-actions .vm-btn > span:not(.material-symbols-rounded) { display: none; }
+}
+@container workbench-bar (max-width: 420px) {
+  .wb-bar .wb-tool-label, .wb-bar .adaptiveEditItemLabel { display: none; }
+}
+@container workbench-bar (max-width: 360px) {
+  .wb-bar #toolbarModeRow { width: 180px; }
+  .wb-bar #toolbarModeRow .tb-modeBtn { padding: 0 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vm-workbench * { scroll-behavior: auto !important; }
+  .wb-bar #toolbarModeRow::before { transition: none; }
+}

@@ -6,6 +6,17 @@
   const number = (min, max) => value => typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
   const choice = values => value => values.includes(value);
   const bool = value => typeof value === 'boolean';
+  const surfaceColorSchemes = Object.freeze({
+    emory: Object.freeze({ pos: '#ffba04', neg: '#153fc7' }),
+    national: Object.freeze({ pos: '#e60000', neg: '#0033a0' }),
+    bright: Object.freeze({ pos: '#ffcc00', neg: '#00bfff' }),
+    electron: Object.freeze({ pos: '#ff00bf', neg: '#2eb82e' }),
+    tableau: Object.freeze({ pos: '#1f77b4', neg: '#d62728' }),
+  });
+  const legacySurfaceSchemes = Object.freeze({ classic: 'tableau' });
+  function normalizeSurfaceScheme(id) {
+    return Object.hasOwn(legacySurfaceSchemes, id) ? legacySurfaceSchemes[id] : id;
+  }
   const cameraFields = {
     'render.dof.enabled': [false, bool],
     'render.dof.focusMode': ['auto', choice(['auto', 'manual'])],
@@ -21,7 +32,9 @@
     const same = (a, b) => typeof a === 'number' && typeof b === 'number' ? Math.abs(a - b) < 1e-8
       : typeof a === 'string' && typeof b === 'string' ? a.toLowerCase() === b.toLowerCase() : a === b;
     return Object.fromEntries(Object.entries(surfaceGroups).map(([group, keys]) => [group,
-      typeof saved?.[group] === 'boolean' ? saved[group] : keys.some(key => !same(values[key], defaults[key]))
+      typeof saved?.[group] === 'boolean' ? saved[group] : keys.some(key => !same(
+        key === 'surface.colorScheme' ? normalizeSurfaceScheme(values[key]) : values[key],
+        key === 'surface.colorScheme' ? normalizeSurfaceScheme(defaults[key]) : defaults[key]))
     ]));
   }
   const extra = {
@@ -54,14 +67,37 @@
       && Object.entries(value).every(([key, color]) => /^(0|[1-9]\d{0,2})$/.test(key) && +key <= 118 && hex(color))],
     'surface.materialPreset': ['emissive', choice(Object.keys(model.surfacePresets))],
     'surface.opacity': [1, number(0.05, 1)],
-    'surface.colorScheme': ['custom', choice(['custom', 'emory', 'national', 'bright', 'electron', 'classic'])],
+    'surface.colorScheme': ['custom', choice(['custom', ...Object.keys(surfaceColorSchemes)])],
     'surface.posColor': ['#ff8000', hex],
     'surface.negColor': ['#0066b3', hex],
     'appearance.rendering': [model.legacy('basic'), value => { try { model.normalize(value); return true; } catch { return false; } }],
   };
   const defaults = Object.fromEntries(Object.entries(fields).map(([key, [value]]) => [key, clone(value)]));
+  const colorKeys = Object.freeze(['global.backgroundColor', 'global.elementColors', 'global.elementColorOverrides', ...surfaceGroups.colors]);
+  function colors(value) {
+    const scheme = normalizeSurfaceScheme(value['surface.colorScheme']);
+    const palette = surfaceColorSchemes[scheme];
+    return { ...Object.fromEntries(colorKeys.map(key => [key, clone(value[key])])),
+      'surface.colorScheme': scheme,
+      'surface.posColor': palette?.pos || value['surface.posColor'], 'surface.negColor': palette?.neg || value['surface.negColor'],
+      coloring: clone(value['appearance.rendering'].coloring), followTheme: value['appearance.rendering'].lighting.followTheme };
+  }
+  function withColors(value, source) {
+    const out = clone(value), palette = colors(source);
+    for (const key of colorKeys) out[key] = palette[key];
+    out['appearance.rendering'].coloring = palette.coloring;
+    out['appearance.rendering'].lighting.followTheme = palette.followTheme;
+    return out;
+  }
+  function colorsEqual(left, right) {
+    const same = (a, b) => a && typeof a === 'object' ? b && typeof b === 'object'
+      && Object.keys(a).length === Object.keys(b).length && Object.keys(a).every(key => same(a[key], b[key]))
+      : typeof a === 'string' ? typeof b === 'string' && a.toLowerCase() === b.toLowerCase() : a === b;
+    return same(colors(left), colors(right));
+  }
   function settings(value, complete = true) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('The look has no appearance settings.');
+    if ('surface.colorScheme' in value) value = { ...value, 'surface.colorScheme': normalizeSurfaceScheme(value['surface.colorScheme']) };
     if (complete && !('appearance.rendering' in value)) value = { ...value, 'appearance.rendering': model.fromLegacy(value) };
     const out = {};
     for (const [key, [, validate]] of Object.entries(fields)) {
@@ -101,9 +137,9 @@
   }
   const builtins = Object.freeze([
     ...['basic', 'toon', 'kit'].map(id => Object.freeze({ id, name: id[0].toUpperCase() + id.slice(1), revision: 4,
-      description: {basic:'Original smooth rendering', toon:'Banded shading and contours', kit:'Collar joints and polished materials'}[id],
+      description: {basic:'Luminous shared finish', toon:'Banded shading and contours', kit:'Collar joints and polished materials'}[id],
       settings: Object.freeze(settings({ ...defaults, 'molecule.style': id, 'appearance.rendering': model.legacy(id),
-        'surface.colorScheme': 'emory', 'surface.posColor': '#f2a900', 'surface.negColor': '#0033a0' })) })),
+        'surface.colorScheme': 'emory', 'surface.posColor': surfaceColorSchemes.emory.pos, 'surface.negColor': surfaceColorSchemes.emory.neg })) })),
     studioRecipe('classic','Classic','Familiar figures', { finish:'phong', atomScale:1, metalScale:1.15, bondRadius:0.11,
       smoothness:0.28, outline:0.007, key:1.8, fill:0.85, rim:0, environment:0, coat:0,
       background:'#ffffff', carbon:'#626262', hydrogen:'#f4f4f4', bond:'#9b9b9b',
@@ -123,6 +159,32 @@
       nitrogen:'#477c89', bond:'#9d8673', positive:'#4b8e91', negative:'#c68b4d', smoothness:0.62,
       environment:0.9, metalness:0.32, coat:0.35, key:3.4, fill:0.7, rim:1.6, atomScale:1.08 },true),
   ]);
+  // Use the looks themselves as the source of truth for shared materials.
+  // Keep only complementary finishes in the menu; older descriptors
+  // remain valid in imported looks, materials, and sessions.
+  const materialCatalog = [
+    ...builtins.filter(look => !look.experimental).map(({ id, name, settings }) => ({
+      id, name, material: settings['appearance.rendering'].material,
+      surfaceMaterial: settings['appearance.rendering'].surfaceMaterial,
+    })),
+    ...['emissive', 'gel', 'matte', 'metal'].map(id => ({
+      id, name: id[0].toUpperCase() + id.slice(1),
+      // Legacy surface recipes disabled emission on phase-colored geometry.
+      // Shared materials use the same fill on atoms, bonds, and phase surfaces.
+      material: { ...model.surfacePreset(id), vertexEmissiveColor: null, vertexEmissiveIntensity: null }, surfaceMaterial: null,
+    })),
+  ].sort((a, b) => a.name.localeCompare(b.name));
+  const materialFamilies = Object.freeze([
+    { id: 'physical', name: 'Physical', defaultRecipe: 'basic' },
+    { id: 'phong', name: 'Smooth (Phong)', defaultRecipe: 'classic' },
+    { id: 'toon', name: 'Toon', defaultRecipe: 'toon' },
+  ].map(Object.freeze));
+  const materialPresets = Object.freeze(materialCatalog.map(({ id, name, material }) => Object.freeze({ id, name, family: material.model })));
+  function materialRecipe(id) {
+    const recipe = materialCatalog.find(item => item.id === id);
+    if (!recipe) throw new Error('Unknown material recipe.');
+    return clone({ material: recipe.material, surfaceMaterial: recipe.surfaceMaterial });
+  }
   function normalizeLook(value) {
     if (!value || typeof value.name !== 'string' || !value.name.trim() || value.name.trim().length > 60) throw new Error('Give the look a name of 1–60 characters.');
     if (typeof value.id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(value.id)) throw new Error('Invalid look identifier.');
@@ -137,6 +199,14 @@
     const same = (x, y) => typeof x === 'number' ? typeof y === 'number' && Math.abs(x-y) < 1e-8
       : x && typeof x === 'object' ? y && typeof y === 'object' && Object.keys(x).length === Object.keys(y).length && Object.keys(x).every(key => same(x[key],y[key])) : x === y;
     return Object.keys(fields).every(key => {
+      // A resolved descriptor is authoritative; this tag only serves legacy
+      // exports. Compare the material's active shader parameters, not its
+      // dormant channels or compatibility tag.
+      if (key === 'surface.materialPreset' && a['appearance.rendering'] && b['appearance.rendering']) return true;
+      if (key === 'appearance.rendering' && a[key] && b[key]) {
+        return Object.keys(a[key]).length === Object.keys(b[key]).length && Object.keys(a[key]).every(part =>
+          ['material', 'surfaceMaterial'].includes(part) ? model.materialEqual(a[key][part], b[key][part]) : same(a[key][part], b[key][part]));
+      }
       if (key === 'global.elementColorOverrides') {
         const left = a[key] || {}, right = b[key] || {};
         return Object.keys(left).length === Object.keys(right).length && Object.keys(left).every(k => left[k] === right[k]);
@@ -144,8 +214,91 @@
       return same(a[key], b[key]);
     });
   }
+  // Keep the style/color partition identical to the renderer's composition.
+  function styleEqual(a, b) { return equal(a, withColors(b, a)); }
+  function baseline(styleSettings, colorSettings) { return withColors(styleSettings, colorSettings); }
+  const sameReference = (a, b) => !!a && !!b && a.kind === b.kind && a.id === b.id;
+  function normalizeReferenceState(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid appearance references.');
+    const ref = value => {
+      if (value === null) return null;
+      if (!value || !['builtin', 'user'].includes(value.kind) || typeof value.id !== 'string'
+        || !/^[a-z0-9-]{1,80}$/.test(value.id)) throw new Error('Invalid appearance reference.');
+      return { kind: value.kind, id: value.id };
+    };
+    const out = { styleRef: ref(value.styleRef), colorsRef: ref(value.colorsRef) };
+    if (value.looks !== undefined) {
+      if (!Array.isArray(value.looks) || value.looks.length > 2) throw new Error('Invalid referenced look definitions.');
+      out.looks = value.looks.map(normalizeLook);
+      if (out.looks.some(look => builtins.some(item => item.id === look.id))
+        || new Set(out.looks.map(look => look.id)).size !== out.looks.length) throw new Error('Invalid referenced look identifiers.');
+    }
+    return out;
+  }
+  function createReferenceController() {
+    let refs = { styleRef: { kind: 'builtin', id: 'basic' }, colorsRef: { kind: 'builtin', id: 'basic' } };
+    let library = [], retained = [];
+    const reference = look => ({ kind: builtins.some(item => item.id === look.id) ? 'builtin' : 'user', id: look.id });
+    const resolve = ref => !ref ? null : (ref.kind === 'builtin' ? builtins : [...library, ...retained]).find(look => look.id === ref.id) || null;
+    const get = () => clone(refs);
+    function reconcile() {
+      for (const key of ['styleRef', 'colorsRef']) if (!resolve(refs[key])) refs[key] = null;
+    }
+    function select(look, axis = 'both') {
+      const value = normalizeLook(look), ref = reference(value);
+      if (ref.kind === 'user') retained = [...retained.filter(item => item.id !== value.id), value];
+      if (axis !== 'colors') refs.styleRef = ref;
+      if (axis !== 'style') refs.colorsRef = ref;
+    }
+    function restore(value, { prune = true } = {}) {
+      const normalized = normalizeReferenceState(value);
+      retained = normalized.looks || [];
+      refs = { styleRef: normalized.styleRef, colorsRef: normalized.colorsRef };
+      if (prune) reconcile();
+    }
+    function exportState() {
+      const looks = [];
+      for (const ref of [refs.styleRef, refs.colorsRef]) {
+        const look = resolve(ref);
+        if (ref?.kind === 'user' && look && !looks.some(item => item.id === look.id)) looks.push(clone(look));
+      }
+      return { ...get(), ...(looks.length ? { looks } : {}) };
+    }
+    // The only preset matching path: run once for an old settings file/load.
+    function migrate(live, recordedLook) {
+      retained = [];
+      if (recordedLook?.id && !builtins.some(look => look.id === recordedLook.id)
+        && !library.some(look => look.id === recordedLook.id)) {
+        try { retained.push(normalizeLook(recordedLook)); } catch { /* An unavailable legacy name has no baseline. */ }
+      }
+      const users = [...library, ...retained.filter(look => !library.some(item => item.id === look.id))].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+      const choices = [...builtins, ...users];
+      const styles = choices.filter(look => styleEqual(live, look.settings));
+      const style = recordedLook?.id ? choices.find(look => look.id === recordedLook.id) : styles.length === 1 ? styles[0] : null;
+      const colors = choices.filter(look => colorsEqual(live, look.settings));
+      const color = colors.find(look => look.id === style?.id) || colors[0];
+      refs = { styleRef: style ? reference(style) : null, colorsRef: color ? reference(color) : null };
+      return get();
+    }
+    function project(live) {
+      const style = resolve(refs.styleRef), colors = resolve(refs.colorsRef);
+      const label = style && colors && sameReference(refs.styleRef, refs.colorsRef) ? style.name
+        : !style && !colors ? 'Custom' : `${style ? style.name : 'Custom'} style · ${colors ? colors.name : 'Custom'} colors`;
+      return { ...get(), styleModified: !!style && !styleEqual(live, style.settings),
+        colorsModified: !!colors && !colorsEqual(live, colors.settings), label,
+        baseline: baseline(style?.settings || live, colors?.settings || live) };
+    }
+    return Object.freeze({ get, resolve, reference, select, restore, exportState, migrate, project, reconcile,
+      setLibrary: looks => { library = looks.map(normalizeLook); },
+      remove: id => {
+        library = library.filter(look => look.id !== id); retained = retained.filter(look => look.id !== id);
+        for (const key of ['styleRef', 'colorsRef']) if (refs[key]?.kind === 'user' && refs[key].id === id) refs[key] = null;
+      } });
+  }
   function exportLook(look) {
     const value = normalizeLook(look);
+    const resolved = colors(value.settings);
+    for (const key of surfaceGroups.colors) value.settings[key] = resolved[key];
     return { kind: 'vibemol.preset', presetVersion: 1, name: value.name, meta: { lookVersion: 4 },
       settings: { ...value.settings, 'appearance.look': value } };
   }
@@ -162,6 +315,7 @@
     return value?.meta?.lookVersion != null && Object.keys(value.settings || {}).every(key =>
       key in fields || key in cameraFields || key in extra || key === 'appearance.look');
   }
-  global.VibeMolLooks = Object.freeze({ builtins, fields, cameraFields, surfaceGroups, surfaceOverrides,
-    extra, defaults, settings, normalizeLook, equal, exportLook, importLook, isLookPreset });
+  global.VibeMolLooks = Object.freeze({ builtins, materialFamilies, materialPresets, materialRecipe, fields, cameraFields, surfaceGroups, surfaceOverrides,
+    extra, defaults, surfaceColorSchemes, normalizeSurfaceScheme, colorKeys, colors, withColors, colorsEqual, styleEqual, baseline,
+    sameReference, normalizeReferenceState, createReferenceController, settings, normalizeLook, equal, exportLook, importLook, isLookPreset });
 })(window);

@@ -680,7 +680,7 @@ def orbital_group_appearance(page, dialogs):
 
     page.locator('#iso').fill('0.045')
     page.locator('#iso').press('Tab')
-    page.locator('#schemeSelect').select_option('classic')
+    page.locator('#schemeSelect').select_option('tableau')
     set_surface_control(page, '#posColor', '#12ab34')
     set_surface_control(page, '#negColor', '#bc23de')
     set_surface_control(page, '#opacity', 0.65)
