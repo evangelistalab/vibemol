@@ -2,7 +2,7 @@
   "name": "vibemol",
   "displayName": "VibeMol",
   "description": "Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files, with a companion Python automation client. It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes.json`, ORCA `.hess`, and Psi4 `.dat/.out` frequency outputs).",
-  "version": "0.8.7",
+  "version": "0.9.0",
   "engines": {
     "vscode": "^1.118.0"
   },
@@ -30,6 +30,10 @@
       {
         "command": "vibemol.openFile",
         "title": "Open in VibeMol"
+      },
+      {
+        "command": "vibemol.openFolder",
+        "title": "Open Folder in VibeMol"
       }
     ],
     "customEditors": [
@@ -92,6 +96,11 @@
         }
       ],
       "explorer/context": [
+        {
+          "command": "vibemol.openFolder",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation"
+        },
         {
           "command": "vibemol.openFile",
           "when": "resourceExtname == .xyz || resourceExtname == .molden || resourceExtname == .cube || resourceExtname == .cub || resourceExtname == .2ccube || resourceExtname == .hess || resourceExtname == .dat || resourceExtname == .out || resourceExtname == .output || resourceFilename =~ /\\.(vib|vmodes|modes)\\.json$/",

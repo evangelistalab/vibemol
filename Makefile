@@ -1,4 +1,7 @@
 JS_CHECK_FILES = \
+	src/vscode_ext/vibemol/src/extension.js \
+	src/vscode_ext/vibemol/src/vmWebview.js \
+	src/vscode_ext/vibemol/src/folderFiles.js \
 	assets/app/js/parsers.js \
 	assets/app/js/rendering.js \
 	assets/app/js/interaction.js \

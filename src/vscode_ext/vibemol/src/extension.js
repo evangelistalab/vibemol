@@ -11,6 +11,14 @@ function activate(context) {
         vscode.commands.registerCommand('vibemol.openFile', (uri) => {
             const fileUri = uri || vscode.window.activeTextEditor?.document.uri;
             vmWebview(context.extensionUri, fileUri, provider);
+        }),
+        vscode.commands.registerCommand('vibemol.openFolder', async (uri) => {
+            const folderUri = uri || (await vscode.window.showOpenDialog({
+                canSelectFiles: false, canSelectFolders: true, canSelectMany: false,
+                openLabel: 'Open in VibeMol', title: 'Open molecular folder',
+                defaultUri: vscode.workspace.workspaceFolders?.[0]?.uri,
+            }))?.[0];
+            if (folderUri) vmWebview(context.extensionUri, null, provider, { folderUri });
         })
     );
 }

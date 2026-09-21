@@ -2,9 +2,10 @@ const vscode = require('vscode');
 const crypto = require('crypto');
 const https = require('https');
 const path = require('path');
+const { parentFolder, readFolderFiles, MAX_FILE_BYTES } = require('./folderFiles');
 
 const MAX_DROPPED_FILES = 50;
-const MAX_DROPPED_FILE_BYTES = 250 * 1024 * 1024;
+const MAX_DROPPED_FILE_BYTES = MAX_FILE_BYTES;
 const MAX_PUBCHEM_RESPONSE_BYTES = 25 * 1024 * 1024;
 const PUBCHEM_REQUEST_TIMEOUT_MS = 30000;
 const PUBCHEM_HOST = 'pubchem.ncbi.nlm.nih.gov';
@@ -319,126 +320,70 @@ class VibeMolEditorProvider {
   }
 
   async resolveCustomTextEditor(document, webviewPanel) {
-    const projectRoot = vscode.Uri.joinPath(this._extensionUri, 'app');
-    webviewPanel.webview.options = { enableScripts: true, localResourceRoots: [projectRoot] };
-    webviewPanel.iconPath = vscode.Uri.joinPath(projectRoot, 'assets', 'app', 'img', 'favicon-tetra.svg');
-
-    const scriptUri = webviewPanel.webview.asWebviewUri(projectRoot);
-    const assetUri = webviewPanel.webview.asWebviewUri(projectRoot);
-    webviewPanel.webview.html = getWebviewContent(webviewPanel.webview, scriptUri, assetUri);
-
-    // Track which panel is active so the global undo/redo commands know where to send
-    this._activePanel = webviewPanel;
-    webviewPanel.onDidChangeViewState((e) => {
-      if (e.webviewPanel.active) this._activePanel = webviewPanel;
+    initializePanel(this._extensionUri, webviewPanel, this, {
+      folderUri: parentFolder(document.uri), selectedDocument: document,
     });
-
-    webviewPanel.onDidDispose(() => {
-      if (this._activePanel === webviewPanel) this._activePanel = null;
-      vscode.commands.executeCommand('setContext', 'vibemolWebviewFocused', false);
-    });
-
-    const fileName = document.uri.path.split('/').pop();
-    const loadInitialFile = async () => {
-      const contents = document.getText();
-      webviewPanel.webview.postMessage({
-        command: 'droppedFileContents',
-        files: [{ fileName, contents }]
-      });
-    };
-
-    let initialLoaded = false;
-    webviewPanel.webview.onDidReceiveMessage(async (msg) => {
-      if (msg.command === 'ready' && !initialLoaded) {
-        initialLoaded = true;
-        await loadInitialFile();
-      }
-
-      if (msg.command === 'readDroppedFiles') {
-        await handleDroppedFileRead(msg, webviewPanel.webview);
-      }
-
-      if (msg.command === 'downloadFile') {
-        await handleDownload(msg);
-      }
-
-      if (msg.command === 'pubchemFetch') {
-        await handlePubChemFetch(msg, webviewPanel.webview);
-      }
-    });
-
-    // Fallback: load after 2s if no ready signal received
-    setTimeout(() => { if (!initialLoaded) { initialLoaded = true; loadInitialFile(); } }, 2000);
   }
 }
 
-// ─── Plain webview launcher (no file association) ────────────────────────────
-// Used by the "Launch VibeMol" command that opens a blank viewer.
-
-function vmWebview(extensionUri, fileUri, provider) {
+// Both custom editors and explicit folder launches use the same batch loader
+// and readiness handshake. No timer may send data before the app can receive it.
+function initializePanel(extensionUri, panel, provider, options = {}) {
   const projectRoot = vscode.Uri.joinPath(extensionUri, 'app');
-
-  const panel = vscode.window.createWebviewPanel(
-    'vibemol_viewer', 'VibeMol',
-    vscode.ViewColumn.Active,
-    { enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [projectRoot] }
-  );
-
+  panel.webview.options = { enableScripts: true, localResourceRoots: [projectRoot] };
   panel.iconPath = vscode.Uri.joinPath(projectRoot, 'assets', 'app', 'img', 'favicon-tetra.svg');
-  const scriptUri = panel.webview.asWebviewUri(projectRoot);
-  const assetUri = panel.webview.asWebviewUri(projectRoot);
-
-  // Reuse the globally registered undo/redo commands by registering this
-  // panel as the active target on the provider
-  if (provider) {
-    provider._activePanel = panel;
-    panel.onDidChangeViewState((e) => {
-      if (e.webviewPanel.active) provider._activePanel = panel;
-    });
-  }
-
-  panel.onDidDispose(() => {
-    if (provider && provider._activePanel === panel) provider._activePanel = null;
-    vscode.commands.executeCommand('setContext', 'vibemolWebviewFocused', false);
+  let disposed = false, initialLoaded = false;
+  if (provider) provider._activePanel = panel;
+  const viewListener = panel.onDidChangeViewState(e => {
+    if (provider && e.webviewPanel.active) provider._activePanel = panel;
   });
-
-  panel.webview.onDidReceiveMessage(async (msg) => {
-    console.log('[vmWebview] received message:', msg.command);
-
-    if (msg.command === 'readDroppedFiles') {
+  const messageListener = panel.webview.onDidReceiveMessage(async (msg) => {
+    if (!msg || disposed) return;
+    if (msg.command === 'ready' && !initialLoaded) {
+      initialLoaded = true;
+      if (!options.folderUri) return;
+      try {
+        const { files, errors } = await readFolderFiles(vscode, options.folderUri,
+          options.selectedDocument, options.selectedUri);
+        if (disposed) return;
+        if (errors.length) vscode.window.showWarningMessage(
+          'VibeMol skipped ' + errors.length + ' file(s): ' + errors.slice(0, 3).join('; '));
+        if (files.length) await panel.webview.postMessage({ command: 'droppedFileContents', files });
+        else if (!errors.length) vscode.window.showInformationMessage('VibeMol: no supported molecular files in this folder.');
+      } catch (error) {
+        if (!disposed) vscode.window.showErrorMessage('VibeMol: could not read folder: ' + (error.message || error));
+      }
+    } else if (msg.command === 'initializationError') {
+      vscode.window.showErrorMessage('VibeMol could not start its file loader. Reload the window to try again.');
+    } else if (msg.command === 'readDroppedFiles') {
       await handleDroppedFileRead(msg, panel.webview);
-    }
-
-    if (msg.command === 'downloadFile') {
+    } else if (msg.command === 'downloadFile') {
       await handleDownload(msg);
-    }
-
-    if (msg.command === 'pubchemFetch') {
+    } else if (msg.command === 'pubchemFetch') {
       await handlePubChemFetch(msg, panel.webview);
     }
   });
+  panel.onDidDispose(() => {
+    disposed = true;
+    messageListener.dispose(); viewListener.dispose();
+    if (provider && provider._activePanel === panel) provider._activePanel = null;
+    vscode.commands.executeCommand('setContext', 'vibemolWebviewFocused', false);
+  });
+  const resourceUri = panel.webview.asWebviewUri(projectRoot);
+  // Register the listener before assigning HTML: even a cached app may start
+  // immediately, and the initial folder must never be lost in that interval.
+  panel.webview.html = getWebviewContent(panel.webview, resourceUri, resourceUri);
+}
 
-  if (fileUri) {
-    let initialLoaded = false;
-    const loadFile = async () => {
-      if (initialLoaded) return;
-      initialLoaded = true;
-      try {
-        const bytes = await vscode.workspace.fs.readFile(fileUri);
-        const contents = Buffer.from(bytes).toString('utf8');
-        const fileName = fileUri.path.split('/').pop();
-        panel.webview.postMessage({ command: 'droppedFileContents', files: [{ fileName, contents }] });
-      } catch (err) {
-        console.error('[vmWebview] failed to load file on open:', err);
-      }
-    };
-    const readyListener = panel.webview.onDidReceiveMessage((msg) => {
-      if (msg.command === 'ready') { readyListener.dispose(); loadFile(); }
-    });
-    setTimeout(() => { readyListener.dispose(); void loadFile(); }, 2000);
-  }
-
-  panel.webview.html = getWebviewContent(panel.webview, scriptUri, assetUri);
+function vmWebview(extensionUri, fileUri, provider, options = {}) {
+  const folderUri = options.folderUri || (fileUri ? parentFolder(fileUri) : null);
+  const title = folderUri ? 'VibeMol — ' + path.posix.basename(folderUri.path) : 'VibeMol';
+  const panel = vscode.window.createWebviewPanel(
+    'vibemol_viewer', title, vscode.ViewColumn.Active,
+    { enableScripts: true, retainContextWhenHidden: true }
+  );
+  initializePanel(extensionUri, panel, provider, { folderUri, selectedUri: fileUri });
+  return panel;
 }
 
 function getWebviewContent(webview, scriptUri, assetUri) {
@@ -522,8 +467,23 @@ function getWebviewContent(webview, scriptUri, assetUri) {
     });
 <\/script>
 <script nonce="${escapedNonce}">
+    const pendingFileLoads = [];
+    function loadVsCodeFiles(msg) {
+        if (!window.VibeMolEmbed || typeof window.VibeMolEmbed.loadFiles !== 'function') {
+            pendingFileLoads.push(msg);
+            return;
+        }
+        window.VibeMolEmbed.loadFiles(
+            msg.files.map(f => ({ name: f.fileName, text: f.contents })),
+            { clearFirst: false }
+        ).then(r => console.log('[vscode-drop] loadFiles result:', r))
+            .catch(e => console.error('[vscode-drop] loadFiles error:', e));
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+        for (const msg of pendingFileLoads.splice(0)) loadVsCodeFiles(msg);
+    }, { once: true });
     window.addEventListener('message', (event) => {
-        const msg = event.data;
+        const msg = event.data || {};
         if (msg.command === 'keydown') {
             const ke = new KeyboardEvent('keydown', {
                 key: msg.key,
@@ -535,16 +495,7 @@ function getWebviewContent(webview, scriptUri, assetUri) {
             });
             document.dispatchEvent(ke);
         }
-        if (msg.command === 'droppedFileContents') {
-            if (window.VibeMolEmbed && typeof window.VibeMolEmbed.loadFiles === 'function') {
-                window.VibeMolEmbed.loadFiles(
-                    msg.files.map(f => ({ name: f.fileName, text: f.contents })),
-                    { clearFirst: false }
-                )
-                    .then(r => console.log('[vscode-drop] loadFiles result:', r))
-                    .catch(e => console.error('[vscode-drop] loadFiles error:', e));
-            }
-        }
+        if (msg.command === 'droppedFileContents' && Array.isArray(msg.files)) loadVsCodeFiles(msg);
         if (msg.command === 'fileReadErrors') {
             console.warn('[vscode-drop] skipped files:', msg.errors);
         }
@@ -589,7 +540,15 @@ function getWebviewContent(webview, scriptUri, assetUri) {
         }));
     });
 
-    if (vscodeApi) vscodeApi.postMessage({ command: 'ready' });
+    const announceReady = () => {
+        if (vscodeApi) vscodeApi.postMessage({
+            command: window.VibeMolEmbed && typeof window.VibeMolEmbed.loadFiles === 'function'
+                ? 'ready' : 'initializationError'
+        });
+    };
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', announceReady, { once: true });
+    } else announceReady();
 
     // Intercept <a download> blob clicks — VSCode webviews silently swallow them
     const _origCreateElement = document.createElement.bind(document);
