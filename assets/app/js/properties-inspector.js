@@ -72,12 +72,15 @@
       });
     }
     toggle('inspectorVisibilityFields', 'inspectorVisible', 'Visible', s => s.objects.map(layer => layer.visible !== false), deps.setVisible);
-    for (const [key, label] of [['showAtoms', 'Show atoms'], ['showBonds', 'Show bonds'], ['showAtomLabels', 'Atom labels'],
+    for (const [key, label] of [['showAtoms', 'Show atoms'], ['showBonds', 'Show bonds'], ['showHydrogenBonds', 'Hydrogen bonds'], ['showAtomLabels', 'Atom labels'],
       ['showAtomLabelNumbers', 'Atom numbers'], ['showMultiBonds', 'Multiple bonds']]) {
       toggle('inspectorStructureFields', 'inspector' + key[0].toUpperCase() + key.slice(1), label,
         s => s.molecules.map(layer => deps.getMoleculeDisplay(layer)[key]), value => deps.editMoleculeDisplay(key, value),
         s => key === 'showAtomLabelNumbers' && s.molecules.some(layer => !deps.getMoleculeDisplay(layer).showAtomLabels));
     }
+
+    $('inspectorShowHydrogenBonds').closest('.vm-field-row').setAttribute('data-tooltip',
+      'Dashed D–H···A contacts within this structure: H···A ≤ 2.5 Å, D···A ≤ 3.5 Å, angle ≥ 120°. Requires explicit H on N/O/F/S and a suitable acceptor.');
 
     const bindingRows = [];
     for (const [id, group, label] of [['schemeSelect', 'colors', 'surface colors'], ['posColor', 'colors', 'surface colors'],

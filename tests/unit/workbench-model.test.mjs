@@ -28,6 +28,15 @@ test('workspace imports keep only known windows and bound panel sizes', () => {
   assert.equal(Object.keys(value.positions).join(), 'coordsPanel');
   assert.equal(model.normalize(null).rightWidth, 380);
 });
+test('old Quick actions layouts shed the retired window without disturbing other panels', () => {
+  const value=model.normalize({open:['viewInspector','coordsPanel'], parked:['viewInspector'],
+    placements:{viewInspector:'float',coordsPanel:'bottom'}, activeRight:'viewInspector', activeBottom:'coordsPanel',
+    positions:{viewInspector:{left:110,top:150}}, rightWidth:510, bottomHeight:240});
+  assert.equal(value.open.join(), 'coordsPanel'); assert.equal(value.parked.length,0);
+  assert.equal(value.activeRight,null); assert.equal(value.activeBottom,'coordsPanel');
+  assert.equal(value.rightWidth,510); assert.equal(value.bottomHeight,240);
+  assert.equal('viewInspector' in value.placements,false); assert.equal('viewInspector' in value.positions,false);
+});
 test('desktop docks reserve a usable canvas at extreme saved widths', () => {
   for (const width of [1100, 1440, 1920]) {
     const r = model.regions({ width, height: 900, sidebar: 341, right: true, bottom: true, rightWidth: 680, bottomHeight: 480 });

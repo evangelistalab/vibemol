@@ -67,7 +67,7 @@ def workspace(page):
     assert page.locator('#toolbar #appearancePresetSection').count()==0
     assert page.locator('#displayInspector').count()==0
     assert page.locator('#sidePanel #appearanceCameraSection').count()==1
-    assert open_menu(page).get_by_role('menuitemcheckbox',name='Quick actions',exact=True).is_visible()
+    assert open_menu(page).get_by_role('menuitemcheckbox',name='Quick actions',exact=True).count()==0
     open_panel(page,'Properties')
     appearance=page.locator('#inspector')
     assert appearance.is_visible() and appearance.get_attribute('data-wb-placement')=='right'
@@ -84,8 +84,9 @@ def workspace(page):
     page.wait_for_function('()=>VibeMolTesting.getSceneGraphSnapshot().scenes.flatMap(s=>s.layers).some(l=>l.kind==="cube" && Math.abs(l.iso-0.03)<0.001)')
     page.evaluate('()=>VibeMolWorkbench.open("coordsPanel")')
     corner_axes(page)
-    page.evaluate('()=>VibeMolWorkbench.open("viewInspector")')
-    window_menu(page,page.locator('#viewInspector'),'Minimize to Panels menu')
+    page.locator('#canvas').focus();page.keyboard.press('q')
+    assert page.locator('#centerMassBtn').evaluate('el=>document.activeElement===el')
+    assert page.locator('#viewInspector').is_hidden()
     page.evaluate('()=>VibeMolWorkbench.open("styleStudio")')
     open_panel(page,'Properties')
     assert appearance.is_visible()

@@ -6,7 +6,7 @@ All 24 custom floating interfaces share `assets/app/js/floating-panels.js`:
 | --- | --- |
 | Style Studio | Title bar |
 | Orbitals | Title bar; filter and close controls remain interactive |
-| Quick actions | Quick actions heading |
+| Quick actions (legacy interface only) | Quick actions heading; the default Workbench moves its commands into the top bar |
 | Spinor information | Title bar |
 | View | Title bar |
 | Coordinates | Title bar; units/copy/close controls remain interactive |
@@ -16,8 +16,8 @@ All 24 custom floating interfaces share `assets/app/js/floating-panels.js`:
 | Element colors | Dialog title bar |
 | Reset appearance confirmation | Confirmation title |
 | Display/edit window launcher | Small grip above the tools |
-| Build palette | Build heading |
-| Symmetry | Symmetry title row |
+| Build | Build heading; Workbench window options and close controls remain interactive |
+| Symmetry | Symmetry title row; Workbench adds window options and close, with a separate scrolling body |
 | Selection tools | Small grip beside the tool buttons |
 | Coordination choices | Coordination heading |
 | Metal bond mode choices | Metal bond mode heading |
@@ -40,3 +40,5 @@ Manual positions survive closing/reopening and ordinary scene/menu refreshes for
 Browser/OS interfaces (native select menus, color/file pickers, and alert/confirm/prompt dialogs) are controlled by the browser. They do not expose draggable title bars to page code. The docked sidebar, onboarding card, tooltips, axes, phase legend, selection marquee, and scientific hover labels are not popup windows. Video crop frames already have their own drag/resize behavior; their companion recording controls now move independently.
 
 Validation is in `tests/e2e/floating_panels.py`, `tests/e2e/style_studio.py`, and `tests/unit/floating-panels.test.mjs`. The browser tests cover every registered shell plus live window/edit workflows, interactive header controls, pointer/keyboard movement, touch, bounds, reopening, and camera/structure preservation.
+
+In the default Workbench interface, Build and Symmetry join the persistent panels: they can dock right/below, float, or minimize, and their layouts are saved in browser-local workspaces. Both are available only in Edit. Build search and Symmetry tolerance survive mode switches and close/reopen for the current page; temporary placement previews and symmetry candidates still clear on leaving Edit. Explicit `?workspaceLab=0` launches retain the original popups.

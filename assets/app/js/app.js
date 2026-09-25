@@ -481,6 +481,9 @@
     throw new Error('VibeMolBondInference is not loaded. Ensure assets/app/js/bond-inference.js is included before assets/app/js/app.js.');
   }
 
+  const hydrogenBonds = window.VibeMolHydrogenBonds;
+  if (!hydrogenBonds) throw new Error('VibeMolHydrogenBonds is not loaded.');
+
   const { createAutoIsoController } = window.VibeMolAutoIso || {};
   if (![createAutoIsoController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolAutoIso is not loaded. Ensure assets/app/js/autoiso.js is included before assets/app/js/app.js.');
@@ -2079,6 +2082,7 @@
    */
   function disposeNode(node, state) {
     if (!node) return;
+    if (node.userData?.type === 'hydrogenBondContacts') node.dispose?.();
 
     const geom = node.geometry;
     if (geom && geom.dispose && !state.geometries.has(geom)) {
@@ -3834,6 +3838,7 @@
       atomPositions.push({
         pos,
         Z: z,
+        formalCharge: Number(a.formalCharge) || 0,
         color,
         bondColor: color ? getBondRenderColor(color, z) : null,
         metalBondMode: normalizeMetalBondingMode(getAtomMetalBondingMeta(vol, a).mode),
@@ -3895,6 +3900,12 @@
     const isKitStyle = profile.key === 'kit';
     const atomPositions = buildBondAtomRecords(vol);
     const bondEdges = getVolumeBondEdges(vol, atomPositions);
+    group.userData.hydrogenBondsEnabled = display.showHydrogenBonds && atomPositions.some(atom => atom.Z === 1);
+    if (group.userData.hydrogenBondsEnabled) {
+      group.userData.hydrogenBondEdges = bondEdges;
+      hydrogenBonds.updateGraphics(THREE, group, atomPositions, bondEdges, getBondMaterial({ color: '#398e9b', vertexColors: false }));
+    }
+    if (!display.showBonds) return group;
     const bondMat = getBondMaterial();
     const stylizedBondOutlineMat = (hasRelativeOutline || appearanceState.effects.outlineWidth > 0) ? getStylizedBondOutlineMaterial() : null;
     const stylizedBondHighlightMat = appearanceState.effects.highlights ? getStylizedBondHighlightMaterial() : null;
@@ -4385,6 +4396,12 @@
       }
     }
     const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: useKitMoleculeStyle() && appearanceState.coloring.elementBonds });
+    if (targetBondGroup.userData.hydrogenBondsEnabled) {
+      // Coordinate-only updates reuse topology; edits to connectivity and dynamic
+      // trajectory bonding rebuild this group and its edge snapshot above.
+      hydrogenBonds.updateGraphics(THREE, targetBondGroup, atomPositions, targetBondGroup.userData.hydrogenBondEdges,
+        getBondMaterial({ color: '#398e9b', vertexColors: false }));
+    }
     const uniqueEdges = [];
     const seenEdgeKeys = new Set();
     for (const obj of targetBondGroup.children) {
@@ -4487,6 +4504,7 @@
     if (previousBondGroup) {
       contentGroup.remove(previousBondGroup);
       previousBondGroup.traverse(obj => {
+        if (obj.userData?.type === 'hydrogenBondContacts') obj.dispose?.();
         if (obj.isMesh || obj.isLine) {
           obj.geometry?.dispose?.(); // keep shared material caches
         }
@@ -4496,7 +4514,7 @@
       if (extraIndex >= 0) extraMoleculeRenderGroups.splice(extraIndex, 1);
     }
     const display = getMoleculeDisplay(targets.layer);
-    const nextBondGroup = display.showBonds ? buildBonds(vol, display) : new THREE.Group();
+    const nextBondGroup = (display.showBonds || display.showHydrogenBonds) ? buildBonds(vol, display) : new THREE.Group();
     applyShadowParticipation(nextBondGroup);
     contentGroup.add(nextBondGroup);
     if (targets.layer) targets.layer.renderBondGroup = nextBondGroup;
@@ -9164,7 +9182,7 @@
   // Structure display is session state. Older sessions inherit the legacy globals.
   function getMoleculeDisplay(layer = null) {
     return { showAtoms: !!toggleAtoms?.checked, showBonds: !!toggleBonds?.checked,
-      showAtomLabels, showAtomLabelNumbers, showMultiBonds, ...layer?.moleculeDisplay };
+      showAtomLabels, showAtomLabelNumbers, showMultiBonds, showHydrogenBonds: true, ...layer?.moleculeDisplay };
   }
 
   function getPropertyObjects() {
@@ -10172,7 +10190,8 @@
     const nextRecord = (nextIndex >= 0 && volumes[nextIndex]) ? volumes[nextIndex] : null;
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     if (previousRecord !== nextRecord && isSymmetryPopoverOpen()) {
-      hideSymmetryPopover({ restore: true });
+      if (workspaceEnabled) clearSymmetryPreview({ quiet: true });
+      else hideSymmetryPopover({ restore: true });
     }
     if (clearTransient) clearTransientInteractionState();
     currentIndex = nextIndex;
@@ -11708,6 +11727,10 @@
    * @param {boolean} open
    */
   function setViewInspectorOpen(open) {
+    if (workspaceEnabled) {
+      if (open) window.VibeMolWorkbench?.focusQuickActions();
+      return;
+    }
     const shouldOpen = !!open;
     if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR);
     setToolbarInspectorOpen(viewInspectorRefs, shouldOpen);
@@ -11909,6 +11932,20 @@
         id: 'inspector', label: 'Properties',
         isOpen: () => !!propertiesInspector?.isOpen(),
         setOpen: open => propertiesInspector?.setOpen(open, { focus: false }),
+      }, buildPanel: {
+        id: 'buildPanel', label: 'Build', buttonEl: editAdaptiveAddAtomBtn,
+        isOpen: isBuildPopoverOpen,
+        setOpen: open => {
+          if (!open) hideBuildPopover();
+          else if (!isBuildPopoverOpen()) showBuildPopover({ fromWorkbench: true, preserveFocus: true });
+        },
+      }, symmetryPanel: {
+        id: 'symmetryPanel', label: 'Symmetry', buttonEl: editAdaptiveSymmetryBtn,
+        isOpen: isSymmetryPopoverOpen,
+        setOpen: open => {
+          if (!open) hideSymmetryPopover();
+          else if (!isSymmetryPopoverOpen()) showSymmetryPopover({ fromWorkbench: true, preserveFocus: true });
+        },
       } } : {}),
       [NON_EDIT_WINDOW_ID.STYLE_STUDIO]: {
         id: NON_EDIT_WINDOW_ID.STYLE_STUDIO,
@@ -15596,7 +15633,7 @@
   }
 
   function shouldBlockEditVoidPlacement() {
-    return currentMode === MODES.EDIT && isSymmetryPopoverOpen();
+    return !workspaceEnabled && currentMode === MODES.EDIT && isSymmetryPopoverOpen();
   }
 
   bondEditing = createBondEditingController({
@@ -16562,11 +16599,16 @@
 
   /**
    * Hide every adaptive tool popover except one optional kind.
-   * @param {'atom'|'molecule'|''=} exceptKind
+   * @param {'build'|'symmetry'|''=} exceptKind
    */
   function hideAllAdaptiveToolPopovers(exceptKind = '') {
-    if (exceptKind !== 'build') hideBuildPopover({ quiet: true });
-    if (exceptKind !== 'symmetry') hideSymmetryPopover({ restore: true, quiet: true });
+    // Workbench owns Edit panel visibility. Cancel unfinished chemistry while
+    // preserving the user's open tabs and layout choices.
+    if (!workspaceEnabled && exceptKind !== 'build') hideBuildPopover({ quiet: true });
+    if (exceptKind !== 'symmetry') {
+      if (workspaceEnabled) clearSymmetryPreview({ quiet: true });
+      else hideSymmetryPopover({ restore: true, quiet: true });
+    }
   }
 
   function closeEditModeTransientPopovers() {
@@ -16922,7 +16964,8 @@
   function commitBuildPaletteSelection(selection, options = {}) {
     const applied = applyBuildPaletteSelection(selection, options);
     if (!applied) return false;
-    if (options.closePopover !== false) hideBuildPopover();
+    if (!workspaceEnabled && options.closePopover !== false) hideBuildPopover();
+    if (workspaceEnabled) canvas.focus({ preventScroll: true });
     return true;
   }
 
@@ -17272,6 +17315,7 @@
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a template first, then align to Z.'); };
     if (editAdaptiveAddAtomBtn) {
       editAdaptiveAddAtomBtn.onclick = () => {
+        if (window.VibeMolWorkbench?.restoreIfHidden('buildPanel')) return;
         if (isBuildPopoverOpen()) hideBuildPopover();
         else showBuildPopover();
       };
@@ -17291,6 +17335,7 @@
     if (editAdaptiveSymmetryBtn) {
       editAdaptiveSymmetryBtn.onclick = () => {
         if (editAdaptiveSymmetryBtn.dataset.static === 'true') return;
+        if (window.VibeMolWorkbench?.restoreIfHidden('symmetryPanel')) return;
         if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
         else showSymmetryPopover();
       };
@@ -18384,6 +18429,7 @@
 
   function positionBuildPopover() {
     if (!editAdaptiveAddAtomPopoverEl || !editAdaptiveAddAtomBtn) return;
+    if (window.VibeMolWorkbench?.isDocked('buildPanel')) return;
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveAddAtomPopoverEl,
       triggerEl: editAdaptiveAddAtomBtn,
@@ -18438,7 +18484,8 @@
   function hideBuildPopover(options = {}) {
     const quiet = !!(options && options.quiet);
     clearBuildSearchKeyboardSelection();
-    resetBuildSearchFieldOnHide();
+    if (!workspaceEnabled) resetBuildSearchFieldOnHide();
+    else if (editAdaptiveAddAtomPopoverEl?.contains(document.activeElement)) editBuildSearchEl?.blur();
     if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
     restoreBuildPopoverPanes();
     syncBuildSearchNavigationUi();
@@ -18447,12 +18494,12 @@
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
+    if (workspaceEnabled && currentMode !== MODES.EDIT) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
-    const wasOpen = isBuildPopoverOpen();
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
-    if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
+    if (!workspaceEnabled && isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
     if (Object.prototype.hasOwnProperty.call(options, 'query')) {
       setBuildPaletteFilterQuery(String(options.query || ''), { syncInput: true });
     }
@@ -18463,11 +18510,13 @@
       preferPayloadSelection: options.preferPayloadSelection !== false,
     });
     updateEditAdaptiveMenuUi();
+    if (!options.fromWorkbench) window.VibeMolWorkbench?.open('buildPanel', false);
     if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
   }
 
   function positionSymmetryPopover() {
     if (!editAdaptiveSymmetryPopoverEl || !editAdaptiveSymmetryBtn) return;
+    if (window.VibeMolWorkbench?.isDocked('symmetryPanel')) return;
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveSymmetryPopoverEl,
       triggerEl: editAdaptiveSymmetryBtn,
@@ -18580,8 +18629,11 @@
     const quiet = !!options.quiet;
     symmetryPreviewState = null;
     if (symmetryController) symmetryController.clearPreview();
+    clearSymmetryElementGuide();
     invalidateSymmetryPopoverAnalysisCache();
-    if (!keepPopover && editAdaptiveSymmetryPopoverEl) {
+    // Clearing a chemistry operation must not close a Workbench panel. Only
+    // hideSymmetryPopover handles an explicit close in that interface.
+    if (!workspaceEnabled && !keepPopover && editAdaptiveSymmetryPopoverEl) {
       editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'true');
     }
     if (!quiet) updateEditAdaptiveMenuUi();
@@ -18928,6 +18980,7 @@
   }
 
   function renderSymmetryPopover() {
+    if (currentMode !== MODES.EDIT) return;
     if (!editAdaptiveSymmetryPopoverEl || editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'true') return;
     const target = resolveEditSymmetryTarget();
     syncSymmetryToleranceUi();
@@ -18976,6 +19029,7 @@
       symmetryPopoverSelectedElementId = '';
       clearSymmetryElementGuide();
       clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
+      editAdaptiveSymmetryPopoverEl?.setAttribute('aria-hidden', 'true');
       if (!options.quiet) updateEditAdaptiveMenuUi();
     };
     applyHide();
@@ -18983,6 +19037,7 @@
 
   function showSymmetryPopover(options = {}) {
     if (!editAdaptiveSymmetryPopoverEl) return;
+    if (workspaceEnabled && currentMode !== MODES.EDIT) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     clearSymmetryCurrentGroupHighlight();
     symmetryPopoverCurrentGroupLabel = '';
@@ -18991,12 +19046,13 @@
     clearGestureVoidPreview();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
-    hideBuildPopover();
+    if (!workspaceEnabled) hideBuildPopover();
     invalidateSymmetryPopoverAnalysisCache();
     editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
     if (editGestureController) editGestureController.refreshUi();
     renderSymmetryPopover();
     updateEditAdaptiveMenuUi();
+    if (!options.fromWorkbench) window.VibeMolWorkbench?.open('symmetryPanel', false);
   }
 
   function setSymmetryTolerance(nextValue) {
@@ -19118,6 +19174,13 @@
 
   function showSelectionFragmentCuePopover(options = {}) {
     if (!editSelectionAddFragmentCueButtonEl || !editSelectionFragmentCuePopoverEl || !editAddFragmentPaneEl) return;
+    if (workspaceEnabled) {
+      // The legacy cue and Build share this pane. Keep one owner in Workbench.
+      showBuildPopover({ query: '' });
+      editAddFragmentPaneEl.scrollIntoView({ block: 'nearest' });
+      if (options.focusSearch) focusElementDeferred(editBuildSearchEl);
+      return;
+    }
     if (selectionFragmentCuePopoverHideTimer) {
       clearTimeout(selectionFragmentCuePopoverHideTimer);
       selectionFragmentCuePopoverHideTimer = 0;
@@ -19667,7 +19730,7 @@
     if (!state || !state.choices.length) return;
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
-    hideBuildPopover({ quiet: true });
+    if (!workspaceEnabled) hideBuildPopover({ quiet: true });
     editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionMetalBondingCuePopover();
   }
@@ -23650,7 +23713,7 @@
   }
 
   function shouldConsumeSymmetryContextHit(e) {
-    if (currentMode !== MODES.EDIT || !isSymmetryPopoverOpen()) return false;
+    if (workspaceEnabled || currentMode !== MODES.EDIT || !isSymmetryPopoverOpen()) return false;
     const atomHit = pickAtomHit(e);
     if (atomHit && atomHit.object && atomHit.object.userData) return true;
     const bondHit = pickBondHit(e);
@@ -25623,7 +25686,7 @@
     dragBeforeBondSnapshot = null;
     const obj = pickAtom(e);
     if (currentMode === MODES.EDIT) {
-      if (isSymmetryPopoverOpen()) {
+      if (!workspaceEnabled && isSymmetryPopoverOpen()) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return;
       }
@@ -25878,6 +25941,12 @@
   bind('down', MODES.EDIT, 'p', () => { alignActiveMoleculePrincipalAxes(); });
   bind('down', MODES.EDIT, 's', (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (window.VibeMolWorkbench?.snapshot().focus) {
+      window.VibeMolWorkbench.setFocus(false);
+      window.VibeMolWorkbench.open('symmetryPanel');
+      return;
+    }
+    if (window.VibeMolWorkbench?.restoreIfHidden('symmetryPanel')) return;
     if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
     else showSymmetryPopover();
   });
@@ -26115,9 +26184,11 @@
       setHintMessage('Canceled fuse-ring placement.');
       return;
     }
-    if (e.key === 'Escape' && currentMode === MODES.EDIT && isSymmetryPopoverOpen()) {
+    if (e.key === 'Escape' && currentMode === MODES.EDIT && isSymmetryPopoverOpen()
+      && (!workspaceEnabled || symmetryPreviewState)) {
       e.preventDefault();
-      hideSymmetryPopover({ restore: true });
+      if (workspaceEnabled) cancelSymmetryPreview();
+      else hideSymmetryPopover({ restore: true });
       return;
     }
     if (e.key === 'Escape' && !workspaceEnabled) {
@@ -26505,6 +26576,7 @@
         && type !== 'atomHighlight'
         && type !== 'atomLabel'
         && type !== 'bondOutline'
+        && type !== 'hydrogenBondContacts'
         && type !== 'bondHighlight';
       node.castShadow = allow;
       node.receiveShadow = allow;
@@ -28193,6 +28265,7 @@
     getMoleculeRenderSnapshot: () => {
       const atoms = [];
       const bonds = [];
+      const hydrogenBondContacts = [];
       const world = new THREE.Vector3();
       const isVisible = (obj) => {
         for (let cur = obj; cur; cur = cur.parent) {
@@ -28204,6 +28277,7 @@
       if (contentGroup && typeof contentGroup.traverse === 'function') {
         contentGroup.traverse((obj) => {
           if (!obj || !obj.userData || !isVisible(obj)) return;
+          if (obj.userData.type === 'hydrogenBondContacts') hydrogenBondContacts.push(...obj.userData.contacts);
           if (obj.userData.type === 'atom' && obj.position) {
             obj.getWorldPosition(world);
             atoms.push({
@@ -28229,6 +28303,8 @@
       return {
         atomCount: atoms.length,
         bondCarrierCount: bonds.length,
+        hydrogenBondCount: hydrogenBondContacts.length,
+        hydrogenBondContacts,
         atoms,
         bonds,
       };
@@ -32293,7 +32369,7 @@
       if (asActive) atomGroup = nextAtomGroup;
       else extraMoleculeRenderGroups.push(nextAtomGroup);
     }
-    if (display.showBonds) {
+    if (display.showBonds || display.showHydrogenBonds) {
       const nextBondGroup = buildBonds(vol, display);
       applyShadowParticipation(nextBondGroup);
       contentGroup.add(nextBondGroup);
@@ -32956,12 +33032,6 @@
       if (currentMode !== MODES.MEASURE) return;
       clearEditSelection();
       setHintMessage(HINT_MEASURE, { accent: false });
-    },
-    captureEditPanels: () => ({ build: isBuildPopoverOpen(), query: getBuildPaletteFilterQuery(), symmetry: isSymmetryPopoverOpen() }),
-    restoreEditPanels: state => {
-      if (currentMode !== MODES.EDIT || !state) return;
-      if (state.build) showBuildPopover({ query: state.query, preserveFocus: true });
-      else if (state.symmetry) showSymmetryPopover({ preserveFocus: true });
     },
     setSidebarCollapsed: setWorkspaceSidebarCollapsed,
     resize,

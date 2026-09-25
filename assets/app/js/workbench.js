@@ -12,7 +12,6 @@
     .slice(0, 8).map(item => ({ name: item.name.slice(0, 48), layout: model.normalize(item.layout) })) : [];
   let focus = false, compactBeforeFocus = false, sidebarBeforeFocus = false, scheduled = false, saving = 0, lastRegionKey = '';
   let menuReturn = null, snapPlace = null, draggingId = null, narrow = global.innerWidth < 760;
-  let editPanels = null;
   const pending = new Set(state.open);
   const restorePositions = new Set(Object.keys(state.positions));
   const previousOpen = new Set();
@@ -57,11 +56,25 @@
     const control = document.getElementById(id); control.classList.add('vm-btn', 'vm-btn--ghost', 'wb-tool', 'wb-edit-tool');
     control.setAttribute('data-tooltip-placement', 'bottom'); editTools.append(control);
   }
-  const buildButton = editTools.querySelector('#editAdaptiveAddAtomBtn');
-  buildButton.setAttribute('aria-haspopup', 'dialog'); buildButton.setAttribute('aria-controls', 'editAdaptiveAddAtomPopover');
+  const editPanelButtons = new Map(entries.filter(item => item.mode === 'edit')
+    .map(item => [item.id, item.entry.buttonEl]));
+  for (const [id, control] of editPanelButtons) control.setAttribute('aria-controls', byId.get(id).panel);
   const clearMeasurements = button('Clear measurements', 'backspace', () => host.clearMeasurements(), 'wb-tool');
   clearMeasurements.id = 'workbenchClearMeasurements'; clearMeasurements.hidden = true;
   clearMeasurements.setAttribute('data-tooltip', 'Clear measurements (Esc)'); label(clearMeasurements, 'Clear measurements', 'wb-tool-label'); editTools.append(clearMeasurements);
+  // Reuse the real buttons and their chemistry/camera handlers. Quick actions
+  // are commands in the bar, so they no longer occupy a saved dock or window.
+  const quickActions = document.createElement('div'); quickActions.id = 'workbenchQuickActions';
+  quickActions.className = 'wb-context-tools'; quickActions.setAttribute('role', 'group');
+  quickActions.setAttribute('aria-label', 'Quick actions'); tools.append(quickActions);
+  const quickActionsSource = document.getElementById('viewInspectorBtn');
+  const quickButtons = [...document.querySelectorAll('#viewInspector .tb-quickActionBtn')];
+  for (const control of quickButtons) {
+    control.classList.remove('secondary'); control.classList.add('vm-btn', 'vm-btn--ghost', 'wb-tool');
+    control.classList.add(control.id.startsWith('viewAxis') ? 'wb-quick-axis' : 'wb-quick-icon');
+    control.setAttribute('data-tooltip-placement', 'bottom'); quickActions.append(control);
+  }
+  document.getElementById('viewInspector').hidden = true;
   const panelsButton = button('Panels', 'view_quilt', () => togglePanelsMenu(), 'wb-tool wb-panels-trigger');
   panelsButton.id = 'workbenchPanelsBtn'; panelsButton.setAttribute('aria-haspopup', 'menu');
   panelsButton.setAttribute('aria-expanded', 'false'); panelsButton.setAttribute('aria-controls', 'workbenchPanelsMenu');
@@ -112,7 +125,10 @@
   const snap = document.createElement('div'); snap.className = 'wb-snap'; snap.id = 'workbenchSnap'; snap.hidden = true;
   const snapLabel = label(snap, ''); body.append(snap);
 
-  function available(item) { return item.id === 'inspector' || (item.entry.buttonEl && !item.entry.buttonEl.hidden); }
+  function available(item) {
+    if (item.mode && item.mode !== host.getMode()) return false;
+    return item.id === 'inspector' || (item.entry.buttonEl && !item.entry.buttonEl.hidden);
+  }
   function open(item) { return !!item.entry.isOpen(); }
   function isParked(id) { return state.parked.includes(id); }
   function compact() { return focus ? compactBeforeFocus : model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth() }).compact; }
@@ -140,6 +156,7 @@
     if (place === 'bottom') state.activeBottom = id;
   }
   function reveal(id, takeFocus = true) {
+    if (id === 'viewInspector') { focusQuickActions(); return; }
     id = model.resolveId(id);
     const item = byId.get(id); if (!item || !available(item)) return;
     state.parked = state.parked.filter(value => value !== id); pending.delete(id);
@@ -184,8 +201,8 @@
     body.dataset.wbMode = host.getMode();
     const isCompact = compact(); body.dataset.wbCompact = String(isCompact);
     editTools.hidden = host.getMode() === 'display'; clearMeasurements.hidden = host.getMode() !== 'measure';
+    for (const control of quickButtons) control.disabled = quickActionsSource.hidden;
     for (const control of editTools.children) control.removeAttribute('aria-pressed');
-    buildButton.setAttribute('aria-expanded', String(document.getElementById('editAdaptiveAddAtomPopover').getAttribute('aria-hidden') === 'false'));
     for (const control of modeButtons) {
       const checked = control.classList.contains('active');
       control.setAttribute('aria-checked', String(checked)); control.tabIndex = checked ? 0 : -1;
@@ -218,6 +235,11 @@
       return [item.id, { open: isOpen, dock: placement === 'float' ? null : placement,
         active: isOpen && available(item) && (placement === 'float' || item.id === (placement === 'right' ? activeRight : activeBottom)) }];
     }));
+    for (const [id, control] of editPanelButtons) {
+      control.setAttribute('aria-expanded', String(windowStates.get(id).active && !focus));
+      if (placementFor(id) === 'float') control.setAttribute('aria-haspopup', 'dialog');
+      else control.removeAttribute('aria-haspopup');
+    }
     const regions = model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth(), right: !!right.length,
       bottom: !!bottom.length, rightWidth: state.rightWidth, bottomHeight: state.bottomHeight, focus, top: bar.getBoundingClientRect().height });
     const key = JSON.stringify(regions);
@@ -332,7 +354,7 @@
   function preset(name) {
     const next = model.normalize();
     if (name === 'analyze') {
-      next.open = ['moldenInspector', 'viewInspector'].filter(id => available(byId.get(id))).slice(0, 1);
+      next.open = ['moldenInspector', 'viewPanel'].filter(id => available(byId.get(id))).slice(0, 1);
       const table = ['vibrationPanel', 'trajectoryPanel', 'coordsPanel'].find(id => available(byId.get(id)));
       if (table) next.open.push(table);
     }
@@ -377,6 +399,11 @@
     focusLabel.textContent = focus ? 'Back to workspace' : 'Focus';
     focusButton.setAttribute('aria-label', focus ? 'Return to workspace' : 'Focus on molecule'); sync();
   }
+  function focusQuickActions() {
+    if (quickActionsSource.hidden) return;
+    setFocus(false);
+    quickButtons[0]?.focus({ preventScroll: true });
+  }
   function installResize(grip, placement) {
     let gesture = null;
     const set = value => { state[placement === 'right' ? 'rightWidth' : 'bottomHeight'] = Math.max(placement === 'right' ? 300 : 180, Math.min(placement === 'right' ? 680 : 480, value)); sync(); };
@@ -396,12 +423,25 @@
     item.role = item.root.getAttribute('role'); item.labelledBy = item.root.getAttribute('aria-labelledby');
     item.root.dataset.wbPanel = item.id;
     const header = item.root.querySelector('[data-vm-drag-handle]');
+    if (item.mode === 'edit') {
+      item.role = 'dialog'; item.root.setAttribute('aria-label', item.label);
+      if (item.id === 'symmetryPanel') {
+        // Keep the existing drag handle, with the scientific summary in the
+        // scrolling body and the window controls always within reach.
+        document.getElementById('editSymmetryHeader').prepend(document.getElementById('editSymmetryTargetSummary'));
+        item.root.prepend(header);
+      }
+      if (header) { header.textContent = ''; label(header, item.label, 'wb-window-title'); }
+      const closeButton = button('Close ' + item.label, 'close', () => close(item.id), 'wb-window-close');
+      header?.append(closeButton);
+    }
     header?.classList.add('wb-window-header');
     header?.querySelectorAll('button.secondary').forEach(control => control.classList.add('vm-btn', 'vm-btn--ghost'));
     const windowMenu = button('Window options for ' + item.label, 'more_horiz', () => openWindowMenu(item, windowMenu), 'wb-window-menu');
     windowMenu.setAttribute('aria-haspopup', 'dialog'); windowMenu.setAttribute('data-tooltip', 'Dock, float, or minimize');
     const actionGroup = header?.querySelector('.vm-list-popover__actions, .motionPanelHeaderActions, .vm-popover__actions, .actions');
-    if (actionGroup) actionGroup.prepend(windowMenu); else header?.append(windowMenu);
+    if (actionGroup) actionGroup.prepend(windowMenu);
+    else if (header) header.insertBefore(windowMenu, header.querySelector('.wb-window-close'));
     header?.setAttribute('data-tooltip', 'Drag to move. Release near the right or bottom edge to dock. Use window options for other placements.');
     const observer = new MutationObserver(schedule);
     observer.observe(item.root, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
@@ -420,6 +460,10 @@
   });
   const sidebarObserver = new MutationObserver(schedule); sidebarObserver.observe(body, { attributes: true, attributeFilter: ['class'] });
   const modeObserver = new MutationObserver(schedule); modeObserver.observe(document.getElementById('displayWindowAdaptiveMenu'), { attributes: true, attributeFilter: ['data-mode'] });
+  modeObserver.observe(quickActionsSource, { attributes: true, attributeFilter: ['hidden'] });
+  // Wrapped command rows reserve their actual height above the canvas/docks.
+  const barObserver = global.ResizeObserver && new global.ResizeObserver(schedule);
+  barObserver?.observe(bar);
   for (const target of Object.values(docks)) target.tabs.addEventListener('keydown', event => {
     const tabs = [...target.tabs.children], index = tabs.indexOf(event.target);
     if (index < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -491,17 +535,13 @@
   });
   global.VibeMolWorkbench = Object.freeze({
     beforeModeChange: () => {
-      if (host.getMode() === 'edit') editPanels = host.captureEditPanels();
       closePanelsMenu(); closeMenu();
     },
-    afterModeChange: () => {
-      if (host.getMode() === 'edit') host.restoreEditPanels(editPanels);
-      sync();
-    },
+    afterModeChange: sync,
     manages: id => byId.has(model.resolveId(id)),
     isDocked: id => byId.has(model.resolveId(id)) && effectivePlace(model.resolveId(id)) !== 'float',
     restoreIfHidden: id => { id = model.resolveId(id); const item = byId.get(id); if (item && open(item) && item.root.dataset.wbHidden === 'true' && !focus) { reveal(id); return true; } return false; },
-    open: reveal, close, place, park, setFocus, applyLayout, preset,
+    open: reveal, close, place, park, setFocus, focusQuickActions, applyLayout, preset,
     snapshot: () => ({ ...snapshot(), focus, compact: compact(), draggingId }),
   });
   sync();

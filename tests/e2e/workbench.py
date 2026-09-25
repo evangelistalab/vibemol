@@ -36,6 +36,13 @@ def bounded_palette(page, panel):
     assert panel.evaluate('el=>{const r=el.getBoundingClientRect();return el.contains(document.elementFromPoint(r.x+20,r.y+20))}')
 
 
+def bounded_build(page, panel):
+    box=panel.bounding_box();canvas=page.locator('#canvas').bounding_box()
+    assert box['x']>=0 and box['x']+box['width']<=page.viewport_size['width']+1,box
+    assert box['y']>=canvas['y'] and box['y']+box['height']<=page.viewport_size['height']+1,box
+    assert box['x']>=canvas['x']+canvas['width']-1 or box['y']>=canvas['y']+canvas['height']-1
+
+
 def modes(page):
     page.evaluate('() => VibeMolWorkbench.applyLayout({})')
     assert p.load(page,[{'name':'modes.molden','text':p.MOLDEN}])['ok']
@@ -47,9 +54,10 @@ def modes(page):
         page.locator('#mode'+mode+'Btn').click()
         page.wait_for_function('(mode)=>document.body.dataset.wbMode===mode',arg={'Measure':'measure','Edit':'edit','Display':'display'}[mode])
         assert page.locator('#displayWindowAdaptiveMenu').is_hidden()
-        for name in ['Coordinates','Properties','Camera','Quick actions']:
+        for name in ['Coordinates','Properties','Camera']:
             assert open_menu(page).get_by_role('menuitemcheckbox',name=name,exact=True).is_visible()
         page.keyboard.press('Escape')
+        assert page.locator('#workbenchQuickActions button:enabled').count()==6
         assert page.locator('#coordsPanel').is_visible()
         assert ('moldenInspector' in layout(page)['open'])
         assert page.locator('#moldenInspector').is_visible()==(mode!='Edit')
@@ -81,12 +89,12 @@ def modes(page):
     assert 'inspector' in layout(page)['open'] and page.locator('#coordsPanel').is_visible()
     page.locator('#workbenchFocus').click();page.locator('#canvas').focus();page.keyboard.press('/')
     assert not layout(page)['focus']
-    build=page.locator('#editAdaptiveAddAtomPopover');bounded_palette(page,build)
+    build=page.locator('#editAdaptiveAddAtomPopover');bounded_build(page,build)
     assert page.locator('#editAdaptiveAddAtomBtn .adaptiveEditItemLabel').inner_text()=='Build'
     assert page.locator('#editAdaptiveSymmetryBtn .adaptiveEditItemLabel').inner_text()=='Symmetry'
     assert page.locator('#editAdaptiveCleanStructureBtn .adaptiveEditItemLabel').inner_text()=='Optimize'
     page.locator('#editAdaptiveSymmetryBtn').click()
-    assert build.is_hidden();bounded_palette(page,page.locator('#editAdaptiveSymmetryPopover'))
+    assert build.is_hidden();bounded_build(page,page.locator('#editAdaptiveSymmetryPopover'))
     page.locator('#modeMeasureBtn').click();assert page.locator('#editAdaptiveSymmetryPopover').is_hidden()
     assert page.get_by_role('tab',name='Orbitals',exact=True).is_visible()
     page.get_by_role('tab',name='Orbitals',exact=True).click()
@@ -110,7 +118,7 @@ def modes(page):
         bar=page.locator('#workbenchBar').bounding_box();canvas=page.locator('#canvas').bounding_box()
         assert canvas['y']>=bar['height'] and canvas['height']>=200
         if mode=='Edit':
-            page.locator('#editAdaptiveAddAtomBtn').click();bounded_palette(page,build);capture(page,'modes-mobile-build')
+            page.evaluate('()=>VibeMolWorkbench.open("buildPanel")');bounded_build(page,build);capture(page,'modes-mobile-build')
     assert build.is_hidden();capture(page,'modes-mobile')
     page.set_viewport_size({'width':1440,'height':1000})
 
@@ -254,11 +262,11 @@ def run(page):
     page.evaluate('() => VibeMolWorkbench.open("inspector")')
     orbitals.locator('[data-vm-drag-handle]').focus();page.keyboard.press('Escape')
     assert orbitals.is_hidden() and page.locator('#inspector').is_visible()
-    # Keep molecular editing and its contextual Build palette available in the study.
+    # Build shares the panel system and suspends outside Edit.
     page.locator('#modeEditBtn').click()
     page.locator('#editAdaptiveAddAtomBtn').evaluate('el=>el.click()')
     build=page.locator('#editAdaptiveAddAtomPopover');assert build.is_visible()
-    assert build.get_attribute('data-wb-placement') is None
+    assert build.get_attribute('data-wb-placement') == 'right'
     page.locator('#editBuildSearch').fill('carbon')
     page.locator('#modeDisplayBtn').click()
     assert build.is_hidden()

@@ -148,7 +148,7 @@
           requireValue(sources.has(layer.sourceId) && layer.sourceId === scene.moleculeSourceId, 'missing or mismatched molecule data.');
           requireValue(layer.moleculeDisplay == null || (object(layer.moleculeDisplay)
             && Object.entries(layer.moleculeDisplay).every(([key, value]) =>
-              ['showAtoms', 'showBonds', 'showAtomLabels', 'showAtomLabelNumbers', 'showMultiBonds'].includes(key)
+              ['showAtoms', 'showBonds', 'showHydrogenBonds', 'showAtomLabels', 'showAtomLabelNumbers', 'showMultiBonds'].includes(key)
               && typeof value === 'boolean')), 'invalid structure display settings.');
         }
         if (layer.kind === 'cube') {
