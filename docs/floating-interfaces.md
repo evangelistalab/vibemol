@@ -1,6 +1,6 @@
 # Floating interfaces
 
-All 24 custom floating interfaces share `assets/app/js/floating-panels.js`:
+All 25 custom floating interfaces share `assets/app/js/floating-panels.js`:
 
 | Interface | Drag handle |
 | --- | --- |
@@ -9,6 +9,7 @@ All 24 custom floating interfaces share `assets/app/js/floating-panels.js`:
 | Quick actions (legacy interface only) | Quick actions heading; the default Workbench moves its commands into the top bar |
 | Spinor information | Title bar |
 | View | Title bar |
+| Measurements | Title bar; units, precision, copy/export, and per-row actions remain interactive |
 | Coordinates | Title bar; units/copy/close controls remain interactive |
 | Trajectory | Title bar; playback/export buttons remain interactive |
 | Frequencies | Title bar; playback/export buttons remain interactive |

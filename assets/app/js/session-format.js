@@ -106,6 +106,18 @@
     sources.forEach(source => {
       requireValue(typeof source.name === 'string' && id(source.sceneKey) && object(source.recordState), 'invalid source metadata.');
       validateVolume(source.volume, source.name || source.id);
+      const measurements = source.recordState.measurements;
+      if (measurements !== undefined) {
+        requireValue(object(measurements) && ['angstrom', 'bohr'].includes(measurements.units)
+          && integer(measurements.decimals, 0) && measurements.decimals <= 6
+          && Array.isArray(measurements.entries) && measurements.entries.length <= 200, 'invalid measurement settings.');
+        for (const entry of measurements.entries) {
+          const size = { distance: 2, angle: 3, dihedral: 4 }[entry?.type];
+          requireValue(size && Array.isArray(entry.atomIds) && entry.atomIds.length === size
+            && entry.atomIds.every(atomId => id(atomId) && atomId.length <= 128)
+            && new Set(entry.atomIds).size === size, 'invalid measurement atom references.');
+        }
+      }
       if (source.volume.kind === 'molden') {
         const s = source.recordState;
         requireValue(integer(s.moldenMoIndex, -1) && s.moldenMoIndex < source.volume.molden.mos.length, 'invalid selected MO.');

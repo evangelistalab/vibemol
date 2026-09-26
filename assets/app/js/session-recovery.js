@@ -144,7 +144,9 @@
         ready = true;
         if (pending) {
           status('recovery', 'A previous session is available to recover.');
-          if (deps.onRecovery) deps.onRecovery(candidates.map(({id, name, savedAt}) => ({id, name, savedAt})));
+          if (deps.onRecovery) deps.onRecovery(candidates.map(({id, name, savedAt, text}) => ({
+            id, name: deps.getSnapshotName?.(text) || name, savedAt,
+          })));
         } else { status('idle', 'Autosave ready'); schedule(); }
       } catch (error) {
         ready = false;

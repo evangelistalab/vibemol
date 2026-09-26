@@ -129,9 +129,9 @@ def orbital_context(page):
         assert p.snapshot(page) == graph
         meshes = page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')
         assert [m['geometryId'] for m in meshes] == [m['geometryId'] for m in materials]
-        assert all(m['visible'] == (name != 'Edit') for m in meshes)
+        assert all(m['visible'] == (name == 'Display') for m in meshes)
     mode(page, 'Measure')
-    assert page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()') == materials
+    assert not any(m['visible'] for m in page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()'))
     for index in [0, 1]:
         point = page.evaluate('i=>VibeMolTesting.projectActiveAtomToClient(i)', index)
         page.mouse.click(point['x'], point['y'])

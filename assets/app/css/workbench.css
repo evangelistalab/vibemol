@@ -206,6 +206,7 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   .vm-workbench:not([data-wb-compact='true']) .wb-bar-actions .vm-btn > span:not(.material-symbols-rounded) { display: none; }
 }
 @container workbench-bar (max-width: 420px) {
+  .wb-bar #toolbarModeRow { width: 180px; }
   .wb-bar .wb-tool-label, .wb-bar .adaptiveEditItemLabel { display: none; }
   .wb-panels-trigger > span:not(.material-symbols-rounded):not(.wb-panel-count) { display: none; }
 }
@@ -217,3 +218,9 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   .vm-workbench * { scroll-behavior: auto !important; }
   .wb-bar #toolbarModeRow::before { transition: none; }
 }
+
+/* The scene rail and docks yield to the canvas on smaller workspaces. */
+body.vm-workbench { --workspace-sidebar-width: clamp(220px, 21vw, 300px); }
+body.vm-workbench #toolbar { width: var(--workspace-sidebar-width); box-sizing: border-box; }
+@media (max-width: 759px) { body.vm-workbench #toolbar { width: min(82vw, 300px); } }
+.vm-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

@@ -44,7 +44,7 @@
     camera.append($('showAxes').closest('.vm-field-row'));
     const focusMode = $('dofFocusMode'); focusMode.hidden = true; camera.append(focusMode);
     $('viewControls').append(camera);
-    // Typeface is an application preference, exposed by the workspace menu.
+    // Typeface is an application preference, exposed by App settings.
     const preferences = $('appearancePreferencesSection'); preferences.remove();
     const twoComponent = $('appearanceTwoComponentSection');
     twoComponent.querySelector('.vm-section-label').textContent = 'Two-component display';
@@ -79,6 +79,13 @@
         s => key === 'showAtomLabelNumbers' && s.molecules.some(layer => !deps.getMoleculeDisplay(layer).showAtomLabels));
     }
 
+    const numbersRow = $('inspectorShowAtomLabelNumbers').closest('.vm-field-row');
+    numbersRow.querySelector('.vm-field-label').textContent = '↳ Atom numbers';
+    numbersRow.setAttribute('data-tooltip', 'Enable Atom labels on all selected structures to show atom numbers.');
+    numbersRow.id = 'inspectorAtomNumbersRow';
+    $('inspectorShowAtomLabelNumbers').setAttribute('aria-describedby', 'inspectorAtomNumbersHelp');
+    const help = document.createElement('span'); help.id = 'inspectorAtomNumbersHelp'; help.className = 'vm-visually-hidden';
+    help.textContent = 'Requires Atom labels on all selected structures.'; numbersRow.append(help);
     $('inspectorShowHydrogenBonds').closest('.vm-field-row').setAttribute('data-tooltip',
       'Dashed D–H···A contacts within this structure: H···A ≤ 2.5 Å, D···A ≤ 3.5 Å, angle ≥ 120°. Requires explicit H on N/O/F/S and a suitable acceptor.');
 

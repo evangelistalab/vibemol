@@ -5,7 +5,7 @@ import { loadGlobalModules, evaluateInContext } from './load-global-module.mjs';
 function setup() {
   const ctx = loadGlobalModules(['assets/app/js/appearance-model.js', 'assets/app/js/appearance-looks.js',
     'assets/app/js/scene-graph.js', 'assets/app/js/scene-sources.js',
-    'assets/app/js/session-format.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
+    'assets/app/js/session-format.js', 'assets/app/js/measurements.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
   const fixture = evaluateInContext(ctx, `(() => {
     const graph = VibeMolSceneGraph.createSceneGraphController();
     const sources = VibeMolSceneSources.createSceneSources({ graph, hasGrid: v => !!v.data.length,
@@ -198,4 +198,32 @@ test('rehydrating an already typed structure retains MO coefficients and vibrati
   assert.equal(result.modes.constructor.name, 'Float32Array');
   assert.equal(result.modes.length, 3);
   assert.deepEqual(Array.from(result.coefficients), [1,-1]);
+});
+
+test('recovery reconciles a stale hidden selection with the visible focused molecule', async () => {
+  const {ctx,fixture,capture,format}=setup();
+  const [hidden,visible]=fixture.graph.getScenes(); hidden.visible=false;
+  fixture.graph.setFocusedScene(visible.id);
+  fixture.activeRecord=fixture.records[0]; // Legacy currentIndex can lag behind focus.
+  const snapshot=capture();
+  assert.match(snapshot.name,/2 scenes/);
+  assert.equal(snapshot.activeSourceId,snapshot.graph.scenes[1].moleculeSourceId);
+  fixture.records[1].measurements=ctx.VibeMolMeasurements.normalize({entries:[{type:'distance',atomIds:['atom-1','atom-2']}],units:'bohr',decimals:2});
+  const decoded=await format.decode(await format.encode(capture()));
+  decoded.graph.activeSceneId=hidden.id; decoded.graph.focusedSceneId=hidden.id;
+  decoded.graph.activeLayerId=hidden.activeLayerId; decoded.graph.selectedLayerIds=[hidden.activeLayerId];
+  decoded.activeSourceId=decoded.sources[0].id;
+  decoded.name=hidden.name; // Older autosaves also stored this stale prompt title.
+  assert.equal(ctx.VibeMolSessionModule.snapshotName(JSON.stringify(decoded)),`2 scenes · ${visible.name}`);
+  assert.equal(ctx.VibeMolSessionModule.snapshotName('broken'),null);
+  assert.equal(ctx.VibeMolSessionModule.snapshotName('{"graph":{}}'),null);
+  const restored=ctx.VibeMolSessionModule.hydrate(decoded);
+  assert.equal(restored.graph.focusedSceneId,visible.id);
+  assert.equal(restored.graph.activeSceneId,visible.id);
+  assert.equal(restored.activeRecord,restored.graph.scenes[1].moleculeRecord);
+  assert.equal(restored.graph.scenes[0].visible,false);
+  assert.equal(restored.activeRecord.measurements.entries.length,1);
+  assert.equal(restored.activeRecord.measurements.units,'bohr');
+  decoded.sources[1].recordState.measurements.decimals=99;
+  assert.throws(()=>format.validate(decoded),/measurement/);
 });

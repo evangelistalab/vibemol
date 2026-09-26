@@ -299,9 +299,9 @@
   --vm-color-border-input: rgba(15, 20, 30, 0.12);
 
   --vm-color-text-primary: #0f172a;
-  --vm-color-text-secondary: #6b7280;
+  --vm-color-text-secondary: #525e70;
   --vm-color-text-label: #4a5568;
-  --vm-color-text-muted: #9aa3b2;
+  --vm-color-text-muted: #606b7c;
   --vm-color-text-inverse: #ffffff;
   --vm-color-text-on-accent: #ffffff;
 
@@ -347,7 +347,7 @@
   --vm-color-text-primary: #e6edf6;
   --vm-color-text-secondary: #9aa7ba;
   --vm-color-text-label: #b8c3d4;
-  --vm-color-text-muted: #6b7688;
+  --vm-color-text-muted: #929fb2;
   --vm-color-text-inverse: #ffffff;
   --vm-color-text-on-accent: #f6fbff;
 

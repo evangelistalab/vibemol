@@ -46,6 +46,10 @@ def bounded_build(page, panel):
 def modes(page):
     page.evaluate('() => VibeMolWorkbench.applyLayout({})')
     assert p.load(page,[{'name':'modes.molden','text':p.MOLDEN}])['ok']
+    page.locator('#modeMeasureBtn').click()
+    assert page.locator('#measurementsPanel').is_visible()
+    page.evaluate('()=>VibeMolWorkbench.close("measurementsPanel")')
+    page.locator('#modeDisplayBtn').click()
     page.evaluate('() => {VibeMolWorkbench.open("inspector");VibeMolWorkbench.open("moldenInspector");VibeMolWorkbench.open("coordsPanel")}')
     before=p.snapshot(page);windows=layout(page);camera=page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
     assert page.locator('#workbenchBar #toolbarModeRow').count()==1
@@ -57,7 +61,7 @@ def modes(page):
         for name in ['Coordinates','Properties','Camera']:
             assert open_menu(page).get_by_role('menuitemcheckbox',name=name,exact=True).is_visible()
         page.keyboard.press('Escape')
-        assert page.locator('#workbenchQuickActions button:enabled').count()==6
+        assert page.locator('#workbenchQuickActions button:enabled').count()==3
         assert page.locator('#coordsPanel').is_visible()
         assert ('moldenInspector' in layout(page)['open'])
         assert page.locator('#moldenInspector').is_visible()==(mode!='Edit')
@@ -131,13 +135,15 @@ def modes(page):
         point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index);page.mouse.click(point['x'],point['y'])
     page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
     page.keyboard.press('Escape')
-    assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot()')=={'atomIndices':[],'labelCount':0}
+    state=page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot()')
+    assert state['atomIndices']==[] and state['labelCount']==1 and len(state['rows'])==1
     assert page.locator('#inspector').is_visible()
     for index in [0,1]:
         point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index);page.mouse.click(point['x'],point['y'])
     page.wait_for_function('()=>VibeMolTesting.getMeasurementSnapshot().labelCount>0')
     page.locator('#workbenchClearMeasurements').click()
-    assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot()')=={'atomIndices':[],'labelCount':0}
+    state=page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot()')
+    assert state['atomIndices']==[] and state['labelCount']==0 and not state['rows']
     assert page.locator('#modeMeasureBtn').get_attribute('aria-checked')=='true'
     print('[workbench] mode bar, shared and suspended inspectors, stable Edit actions, palette bounds, shortcuts, Focus and measurements: passed',flush=True)
 
@@ -215,7 +221,7 @@ def run(page):
     assert 'saved' in page.locator('#workbenchMenu [role="status"]').inner_text()
     page.keyboard.press('Escape')
     page.locator('#workbenchArrange').click()
-    page.get_by_role('button',name='Style',exact=True).click()
+    page.get_by_role('button',name='Presentation',exact=True).click()
     assert page.locator('#inspector').is_visible()
     page.locator('#workbenchArrange').click()
     page.get_by_role('button',name='Orbital analysis',exact=True).click()

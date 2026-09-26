@@ -133,7 +133,7 @@ def run(page):
     # Two open windows sharing a dock remain checked as tabs switch.
     page.locator('#modeDisplayBtn').click()
     page.evaluate('() => VibeMolWorkbench.applyLayout({open:["coordsPanel","inspector"],activeBottom:"coordsPanel",activeRight:"inspector"})')
-    page.set_viewport_size({'width': 1024, 'height': 950})
+    page.set_viewport_size({'width': 900, 'height': 950})
     page.wait_for_function('() => VibeMolWorkbench.snapshot().compact')
     for name in ['Properties', 'Coordinates']:
         page.get_by_role('tab', name=name, exact=True).click()
@@ -188,7 +188,7 @@ def run(page):
         for mode in ['Display', 'Measure', 'Edit']:
             page.locator('#mode' + mode + 'Btn').click()
             result = check_bar(page)
-            assert len(result['rows']) == (9 if mode == 'Edit' else 7), result
+            assert len(result['rows']) == (9 if mode == 'Edit' else 8), result
             report['responsive'].append({'width': width, **result})
         if width == 320: screenshot(page, 'mobile-edit')
     page.evaluate('() => { for (const button of __allPanelButtons) delete button.hidden; }')

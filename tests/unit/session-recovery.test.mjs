@@ -33,6 +33,21 @@ test('recovery waits for a decision and never overwrites a snapshot with an empt
   controller.stop();
 });
 
+test('recovery prompt derives legacy names without opening or rewriting snapshots', async () => {
+  const {controller, deps, snapshots, recovered} = setup({latest:{id:'old',name:'hidden.xyz',text:'legacy session'},
+    previous:{id:'older',name:'fallback name',text:'broken'}});
+  deps.getSnapshotName = text => text === 'legacy session' ? '2 scenes · visible.xyz' : null;
+  let candidates;
+  deps.onRecovery = value => { candidates = value; };
+  await controller.initialize();
+  assert.equal(candidates[0].name, '2 scenes · visible.xyz');
+  assert.equal(candidates[1].name, 'fallback name');
+  assert.equal(snapshots.latest.name, 'hidden.xyz');
+  assert.deepEqual(recovered, []);
+  assert.equal(controller.getState().pending, true);
+  controller.stop();
+});
+
 test('quota failure preserves last good data and requires an explicit retry', async () => {
   const {controller, deps, snapshots, messages} = setup({latest:{id:'old',text:'old data'}});
   await controller.initialize(); controller.startFresh(); controller.markDirty();

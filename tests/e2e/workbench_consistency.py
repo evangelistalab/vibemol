@@ -61,6 +61,10 @@ def workspace(page):
     # Both atoms are inside an opaque isosurface: picking must still reach them.
     field=p.cube(0).replace('1 -4 -4 -4','2 -4 -4 -4',1).replace('1 1 0 0 0\n','1 1 0 0 0\n1 1 1.4 0 0\n',1)
     assert p.load(page,[{'name':'enclosed.cube','text':field}])['ok']
+    mode(page,'Measure')
+    assert page.locator('#measurementsPanel').is_visible()
+    page.evaluate('()=>VibeMolWorkbench.close("measurementsPanel")')
+    mode(page,'Display')
     corner_axes(page)
     assert page.locator('#toolbar #displayInspector').count()==0
     assert page.locator('#toolbar .tb-appearance').count()==0
@@ -103,12 +107,12 @@ def workspace(page):
         meshes=page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')
         assert len(meshes)==len(materials)
         assert [m['geometryId'] for m in meshes]==[m['geometryId'] for m in materials]
-        assert all(m['visible']==(name!='Edit') for m in meshes)
+        assert all(m['visible']==(name=='Display') for m in meshes)
         assert appearance.is_visible()
     # View-to-Measure is only an interaction change: reuse the exact surface meshes.
     materials=page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')
     mode(page,'Measure')
-    assert page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')==materials
+    assert not any(m['visible'] for m in page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()'))
     window_menu(page,appearance,'Minimize to Panels menu')
     for index in [0,1]:
         point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index)

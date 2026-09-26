@@ -6,7 +6,7 @@
   const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
   window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
-  const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
+  const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc starts a new selection • saved values remain in Measurements';
   const HINT_EDIT = 'Select atoms to edit • / opens Build • Esc clears selection';
   const HINT_START = '';
   const VIBRATION_KIND = 'vibemol.vibrations';
@@ -1019,21 +1019,54 @@
 
   /**
    * Build the lightweight XY-plane edit grid shown only in edit mode.
-   * @returns {THREE.GridHelper}
+   * A single antialiased plane avoids WebGL's one-pixel line-width limit.
+   * @returns {THREE.Mesh}
    */
   function buildEditGridHelper() {
-    const helper = new THREE.GridHelper(48, 48, 0x92a0b4, 0xc3ccd8);
-    helper.rotation.x = -Math.PI / 2;
-    helper.position.set(0, 0, 0);
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        lineWidth: { value: 1.35 },
+        gridColor: { value: new THREE.Color(0xc3ccd8) },
+        xColor: { value: new THREE.Color(0xff4136) },
+        yColor: { value: new THREE.Color(0x2ecc40) },
+      },
+      vertexShader: `
+        varying vec2 gridPosition;
+        void main() {
+          gridPosition = position.xy;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float lineWidth;
+        uniform vec3 gridColor, xColor, yColor;
+        varying vec2 gridPosition;
+        void main() {
+          vec2 dx = dFdx(gridPosition), dy = dFdy(gridPosition);
+          vec2 pixelSize = max(sqrt(dx * dx + dy * dy), vec2(0.000001));
+          vec2 distanceToLine = abs(fract(gridPosition + 0.5) - 0.5) / pixelSize;
+          vec2 lines = clamp(vec2(lineWidth * 0.5 + 0.5) - distanceToLine, 0.0, 1.0);
+          // Fade the repeated lines before they become a dense subpixel pattern.
+          lines *= clamp(1.0 / pixelSize - 1.0, 0.0, 1.0);
+          vec2 axes = clamp(vec2(lineWidth * 0.5 + 0.5) - abs(gridPosition) / pixelSize, 0.0, 1.0);
+          float coverage = max(max(lines.x, lines.y), max(axes.x, axes.y));
+          if (coverage <= 0.0) discard;
+          vec3 color = mix(gridColor, xColor, axes.y);
+          color = mix(color, yColor, axes.x);
+          gl_FragColor = vec4(color, coverage * 0.5);
+          #include <colorspace_fragment>
+        }
+      `,
+      transparent: true, depthWrite: false, toneMapped: false,
+      side: THREE.DoubleSide, extensions: { derivatives: true },
+    });
+    const helper = new THREE.Mesh(new THREE.PlaneGeometry(48, 48), material);
+    helper.name = 'edit-grid';
     helper.renderOrder = -20;
-    const materials = Array.isArray(helper.material) ? helper.material : [helper.material];
-    for (const material of materials) {
-      if (!material) continue;
-      material.transparent = true;
-      material.opacity = 0.5;
-      material.depthWrite = false;
-      material.toneMapped = false;
-    }
+    helper.onBeforeRender = () => {
+      // The app sizes the drawing buffer explicitly, including export scaling.
+      material.uniforms.lineWidth.value = 1.35 * currentViewportMetrics.dpr;
+    };
     helper.visible = false;
     return helper;
   }
@@ -1067,6 +1100,13 @@
   let currentMode = MODES.DISPLAY;
   let canvasAdaptiveMenuEl = null;
   let displayWindowsController = null;
+  const measurements = window.VibeMolMeasurements;
+  let measurementsPanel = null;
+  let measureShowSurfaces = false;
+  let measurementPanelIntroduced = false;
+  let measurementViewBeforeFit = null;
+  let measurementLayoutKey = '';
+  const measurementRecord = () => (getFocusedScene() || sceneGraphController.getActiveScene())?.moleculeRecord || volumes[currentIndex];
   let displayAdaptiveMenuAutoHideController = null;
   let appearanceInspectorController = null;
   let editAtomsMenuEl = null;
@@ -1872,6 +1912,7 @@
    * @param {THREE.WebGLRenderTarget|null} sceneTarget
    */
   function renderSceneFrame(metrics, sceneTarget) {
+    layoutMeasurementLabels(metrics);
     updateSceneLightRigOrientation();
     updateSceneShadowBounds();
     let didSplit = false;
@@ -5248,7 +5289,7 @@
     if (currentMode === MODES.MEASURE) {
       updateSelectedHalos();
       updateEditSelectionVisuals();
-    }
+    } else measurementsPanel?.sync();
   }
   function getTrajectorySyncMaster() {
     const state = sceneGraphController && sceneGraphController.getState ? sceneGraphController.getState() : null;
@@ -6327,6 +6368,11 @@
   let __fpsAccMs = 0;
   let __fpsFrames = 0;
   let __fpsEMA = 0;
+  document.addEventListener('visibilitychange', () => {
+    __fpsLast = performance.now(); __fpsAccMs = 0; __fpsFrames = 0; __fpsEMA = 0;
+    const el = document.getElementById('fpsValue');
+    if (el) { el.textContent = document.hidden ? 'Paused' : '—'; el.title = document.hidden ? 'Frame rate paused while this tab is hidden' : 'Frames per second while this tab is visible'; }
+  });
 
   /**
    * Find alpha/beta render objects for split 2C rendering.
@@ -6778,7 +6824,7 @@
 
     // FPS update
     const dt = now - __fpsLast; __fpsLast = now;
-    __fpsAccMs += dt; __fpsFrames += 1;
+    if (!document.hidden) { __fpsAccMs += dt; __fpsFrames += 1; }
     if (__fpsAccMs >= 500) {
       const inst = (__fpsFrames * 1000) / __fpsAccMs;
       __fpsEMA = (__fpsEMA === 0) ? inst : (__fpsEMA * 0.8 + inst * 0.2);
@@ -6856,6 +6902,7 @@
   const spinorInfoLine3 = document.getElementById('spinorInfoLine3');
   const viewPanelBtn = document.getElementById('viewPanelBtn');
   const coordsPanelBtn = document.getElementById('coordsPanelBtn');
+  const measurementsPanelBtn = document.getElementById('measurementsPanelBtn');
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
   const displayInspectorToggleIcon = document.getElementById('displayInspectorToggleIcon');
   const appearanceResetBtn = document.getElementById('appearanceResetBtn');
@@ -11059,6 +11106,10 @@
       return;
     }
     const prevMode = currentMode;
+    const hadSurfaceContext = meshes.some(mesh => mesh.visible !== false) || cloudGroup.children.length > 0;
+    if (newMode === MODES.MEASURE && hadSurfaceContext && !measureShowSurfaces) {
+      measurementViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
+    }
     coordsListPopover?.cancelInlineEdit({ focusButton: false });
     window.VibeMolWorkbench?.beforeModeChange();
     if (prevMode === MODES.EDIT && newMode !== MODES.EDIT) {
@@ -11099,14 +11150,14 @@
     } else if (currentMode === MODES.DISPLAY) {
       setNavigationHint(HINT_START);
     }
-    // Measure picks atoms directly and keeps orbital context visible. Only Edit
-    // suppresses surfaces; this never changes the user's layer visibility flags.
+    // Temporary surface suppression exposes atoms without changing layer state.
+    // Measure can opt back into surface context from its panel.
     if (currentMode === MODES.MEASURE || currentMode === MODES.EDIT) {
       setBondHover(null);
       setSurfaceHover(null);
       hideSurfaceHoverLabel();
     }
-    const suppressSurfaces = currentMode === MODES.EDIT;
+    const suppressSurfaces = currentMode === MODES.EDIT || (currentMode === MODES.MEASURE && !measureShowSurfaces);
     if (surfaceRenderSuppressed !== suppressSurfaces) {
       surfaceRenderSuppressed = suppressSurfaces;
       if (typeof updateSurfBtn === 'function') updateSurfBtn();
@@ -11160,6 +11211,21 @@
     updateModeButtons();
     updateDisplayWindowAdaptiveMenuUi();
     window.VibeMolWorkbench?.afterModeChange();
+    updateEditSelectionVisuals();
+    if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
+      if (workspaceEnabled && !measurementPanelIntroduced && window.VibeMolWorkbench) {
+        window.VibeMolWorkbench.open('measurementsPanel', false);
+        measurementPanelIntroduced = true;
+      }
+      if (hadSurfaceContext && !measureShowSurfaces) requestAnimationFrame(() => {
+        if (currentMode === MODES.MEASURE && !measureShowSurfaces) frameMeasurementAtoms();
+      });
+    }
+    if (prevMode === MODES.MEASURE && currentMode !== MODES.MEASURE) {
+      if (currentMode === MODES.DISPLAY) restoreMeasurementSurfaceView();
+      measurementViewBeforeFit = null;
+    }
+    if (currentMode === MODES.EDIT && !workspaceEnabled) measurementsPanel?.setOpen(false);
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
@@ -11463,6 +11529,8 @@
     const showTrajectory = getAllTrajectoryInfos().length > 0;
     const showVibration = !!getActiveVibrationInfo().enabled;
     const itemDefs = [
+      { windowId: 'measurementsPanel', buttonEl: measurementsPanelBtn, visible: hasAtoms,
+        presentation: { icon: 'straighten', label: 'Measurements', meta: '', key: '', title: 'Measurements', static: false } },
       {
         windowId: NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
         buttonEl: moldenInspectorBtn,
@@ -11511,7 +11579,7 @@
     for (const itemDef of itemDefs) {
       setAdaptiveItemPresentation(itemDef.buttonEl, itemDef.presentation);
       const entry = displayWindowsController ? displayWindowsController.getEntry(itemDef.windowId) : null;
-      if (!itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen() && typeof entry.setOpen === 'function') {
+      if (!itemDef.visible && !(workspaceEnabled && itemDef.windowId === 'measurementsPanel') && entry && typeof entry.isOpen === 'function' && entry.isOpen() && typeof entry.setOpen === 'function') {
         entry.setOpen(false);
       }
       // Workbench keeps shared inspectors available while editing. Analysis-only
@@ -11545,6 +11613,7 @@
       viewInspectorBtn,
       viewPanelBtn,
       coordsPanelBtn,
+      measurementsPanelBtn,
       spinorInfoBtn,
       trajectoryPanelBtn,
       vibrationPanelBtn,
@@ -11884,12 +11953,38 @@
     if ((spinorInfoPanel && spinorInfoPanel.contains(target)) || (spinorInfoBtn && spinorInfoBtn.contains(target))) return;
     setSpinorInfoPanelOpen(false);
   });
+  measurementsPanel = window.VibeMolMeasurementsPanel.create({
+    getRecord: measurementRecord,
+    isMeasuring: () => currentMode === MODES.MEASURE,
+    showSurfaces: () => measureShowSurfaces,
+    setShowSurfaces: value => {
+      if (!value && measureShowSurfaces) measurementViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
+      measureShowSurfaces = value;
+      surfaceRenderSuppressed = currentMode === MODES.EDIT || (currentMode === MODES.MEASURE && !value);
+      if (!surfaceRenderSuppressed && surfaceGeometryDeferred) rebuildScene({ preserveView: true });
+      else syncSurfaceModeVisibility();
+      if (value) restoreMeasurementSurfaceView();
+      else frameMeasurementAtoms();
+      measurementsPanel.sync();
+    },
+    frameAtoms: frameMeasurementAtoms,
+    onOpenChange: updateDisplayWindowAdaptiveMenuUi,
+    onStatus: text => setHintMessage(text),
+    newSelection: clearEditSelection,
+    onChange: () => { updateEditSelectionVisuals(); markSessionChanged(); },
+  });
+  measurementsPanelBtn.onclick = () => toggleExclusiveDisplayWindow('measurementsPanel');
   displayWindowsController = createDisplayWindowsController({
     aliases: workspaceEnabled ? { displayInspector: 'inspector', styleStudio: 'inspector' } : {},
     positionFloatingPopover: positionFloatingPopoverUi,
     keepOpenOnSwitch: id => !!window.VibeMolWorkbench?.manages(id),
     revealHiddenWindow: id => !!window.VibeMolWorkbench?.restoreIfHidden(id),
     entries: {
+      measurementsPanel: { id: 'measurementsPanel', label: 'Measurements', buttonEl: measurementsPanelBtn,
+        panelEl: measurementsPanel.panel, isOpen: measurementsPanel.isOpen, setOpen: open => {
+          if (open) closeExclusiveDisplayWindows('measurementsPanel');
+          measurementsPanel.setOpen(open);
+        } },
       ...(workspaceEnabled ? { inspector: {
         id: 'inspector', label: 'Properties',
         isOpen: () => !!propertiesInspector?.isOpen(),
@@ -21615,64 +21710,14 @@
     return record.measurementLabelOffsets;
   }
 
-  /**
-   * Build one stable atom-id token for measurement-label keys.
-   * @param {*} vol
-   * @param {number} atomIndex
-   * @returns {string}
-   */
-  function getMeasurementAtomKeyToken(vol, atomIndex) {
-    if (!vol || !Array.isArray(vol.atoms)) return '';
-    const atom = vol.atoms[atomIndex | 0];
-    return atom ? String(ensureAtomId(atom)) : '';
-  }
-
-  /**
-   * Build one stable key for a distance label.
-   * @param {*} vol
-   * @param {number} i
-   * @param {number} j
-   * @returns {string}
-   */
+  // Transform guides and measurement annotations share stable label-offset keys.
   function buildMeasurementDistanceKey(vol, i, j) {
-    const a = getMeasurementAtomKeyToken(vol, i);
-    const b = getMeasurementAtomKeyToken(vol, j);
-    if (!a || !b) return '';
-    return a < b ? `distance:${a}:${b}` : `distance:${b}:${a}`;
+    const atoms = [vol?.atoms[i], vol?.atoms[j]];
+    return atoms.every(Boolean) ? measurements.key('distance', atoms.map(ensureAtomId)) : '';
   }
-
-  /**
-   * Build one stable key for an angle label.
-   * @param {*} vol
-   * @param {number} ia
-   * @param {number} ib
-   * @param {number} ic
-   * @returns {string}
-   */
-  function buildMeasurementAngleKey(vol, ia, ib, ic) {
-    const a = getMeasurementAtomKeyToken(vol, ia);
-    const b = getMeasurementAtomKeyToken(vol, ib);
-    const c = getMeasurementAtomKeyToken(vol, ic);
-    if (!a || !b || !c) return '';
-    return a < c ? `angle:${a}:${b}:${c}` : `angle:${c}:${b}:${a}`;
-  }
-
-  /**
-   * Build one stable key for a dihedral label.
-   * @param {*} vol
-   * @param {number} i
-   * @param {number} j
-   * @param {number} k
-   * @param {number} l
-   * @returns {string}
-   */
   function buildMeasurementDihedralKey(vol, i, j, k, l) {
-    const a = getMeasurementAtomKeyToken(vol, i);
-    const b = getMeasurementAtomKeyToken(vol, j);
-    const c = getMeasurementAtomKeyToken(vol, k);
-    const d = getMeasurementAtomKeyToken(vol, l);
-    if (!a || !b || !c || !d) return '';
-    return `dihedral:${a}:${b}:${c}:${d}`;
+    const atoms = [vol?.atoms[i], vol?.atoms[j], vol?.atoms[k], vol?.atoms[l]];
+    return atoms.every(Boolean) ? measurements.key('dihedral', atoms.map(ensureAtomId)) : '';
   }
 
   /**
@@ -21739,7 +21784,9 @@
     const nextOptions = hovered
       ? Object.assign({}, baseOptions, { bgColor: UI_PALETTE.measurementLabelBgHover })
       : baseOptions;
+    const scale = sprite.scale.clone();
     applyTextSpriteTexture(sprite, data.text, nextOptions);
+    sprite.scale.copy(scale);
     sprite.userData.measurementLabel.hovered = !!hovered;
   }
 
@@ -21817,6 +21864,11 @@
     if (editSel.length >= 4) editSel = editSel.slice(1); // keep last 3, then push new -> last 4
     if (editSel.length && editSel[editSel.length - 1] === i) return; // ignore duplicate consecutive
     editSel.push(i);
+    const record = measurementRecord();
+    if (record) {
+      ensureVolumeAtomIds(record.vol);
+      if (measurements.add(record, editSel.map(index => String(record.vol.atoms[index]?.id)))) markSessionChanged();
+    }
     updateEditSelectionVisuals();
   }
   /**
@@ -22591,8 +22643,9 @@
     const w = textW + wpad * 2;
     const h = Math.max(fontPx + hpad * 2, Math.round(18 * uiScale) + hpad * 2);
     // hi-DPI backing store
-    c.width = w * 2; c.height = h * 2;
-    ctx.scale(2, 2);
+    const backingScale = options.backingScale || 2;
+    c.width = w * backingScale; c.height = h * backingScale;
+    ctx.scale(backingScale, backingScale);
     ctx.font = font;
 
     // rounded rectangle background
@@ -22668,11 +22721,11 @@
    */
   function makeMeasurementLabelSprite(txt, key, basePosition, options = {}) {
     const sprite = makeTextSprite(txt, {
-      uiScale: Number(options.uiScale) || 0.9,
+      uiScale: Number(options.uiScale) || 0.9, backingScale: 4,
       bgColor: UI_PALETTE.measurementLabelBg,
       textColor: UI_PALETTE.measurementLabelText,
     });
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const record = measurementRecord();
     const offset = getMeasurementLabelOffset(record, key);
     sprite.position.copy(basePosition).add(offset);
     sprite.renderOrder = 125;
@@ -22682,7 +22735,7 @@
         text: String(txt || ''),
         basePosition: basePosition.clone(),
         textOptions: {
-          uiScale: Number(options.uiScale) || 0.9,
+          uiScale: Number(options.uiScale) || 0.9, backingScale: 4,
           bgColor: UI_PALETTE.measurementLabelBg,
           textColor: UI_PALETTE.measurementLabelText,
         },
@@ -22699,159 +22752,96 @@
    * Render distance, angle, and dihedral overlays for the current selection.
    */
   function updateEditSelectionVisuals() {
+    measurementLayoutKey = '';
     measurementLabelHoverSprite = null;
     clearGroup(editSelGroup);
-    // Only render measurement overlays in measurement mode
-    if (currentMode !== MODES.MEASURE || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    if (!vol || !Array.isArray(vol.atoms)) return;
-    ensureVolumeAtomIds(vol);
-    /**
-     * Get atom position by atom index.
-     * @param {number} idx
-     * @returns {THREE.Vector3|null}
-     */
-    const posOf = (idx) => (atomGroup.children[idx] && atomGroup.children[idx].position) ? atomGroup.children[idx].position.clone() : null;
-    /**
-     * Format a distance value for labels.
-     * @param {number} d
-     * @returns {string}
-     */
-    const fmtDist = (d) => d.toFixed(4) + ' Å';
-    /**
-     * Format an angle in radians as a degree label.
-     * @param {number} r
-     * @returns {string}
-     */
-    const fmtDeg = (r) => (r * 180 / Math.PI).toFixed(2) + '°';
-    /**
-     * Draw a measurement edge and midpoint distance label.
-     * @param {number} i
-     * @param {number} j
-     * @param {number} color
-     */
-    const addEdge = (i, j, color = 0xd3d3d3) => {
-      const a = posOf(i), b = posOf(j); if (!a || !b) return;
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([a.x, a.y, a.z, b.x, b.y, b.z]), 3));
-      const m = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9, depthTest: false });
-      editSelGroup.add(new THREE.Line(g, m));
-      // label at midpoint
-      const mid = a.clone().add(b).multiplyScalar(0.5);
-      const dist = a.distanceTo(b);
-      const labelKey = buildMeasurementDistanceKey(vol, i, j);
-      const label = makeMeasurementLabelSprite(fmtDist(dist), labelKey, mid, { uiScale: 0.9 });
-      label.position.copy(mid);
-      // slight lift towards camera to avoid z-fighting
-      const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
-      const basePosition = mid.clone().add(camDir.multiplyScalar(0.01));
-      label.position.copy(basePosition).add(getMeasurementLabelOffset(record, labelKey));
-      if (label.userData && label.userData.measurementLabel) label.userData.measurementLabel.basePosition.copy(basePosition);
-      editSelGroup.add(label);
-    };
-    // Draw distances for adjacent pairs
-    for (let t = 0; t < editSel.length - 1; t++) addEdge(editSel[t], editSel[t + 1]);
-
-    // Helper to draw angle fan and numeric label for triplet a-b-c (angle at b)
-    /**
-     * Draw an angle fan and label for a three-atom selection.
-     * @param {*} ia
-     * @param {*} ib
-     * @param {*} ic
-     */
-    const addAngle = (ia, ib, ic) => {
-      const pa = posOf(ia), pb = posOf(ib), pc = posOf(ic);
-      if (!pa || !pb || !pc) return;
-      const v1 = pa.clone().sub(pb).normalize();
-      const v2 = pc.clone().sub(pb).normalize();
-      let dot = v1.dot(v2); dot = Math.max(-1, Math.min(1, dot));
-      const theta = Math.acos(dot);
-      const n = new THREE.Vector3().crossVectors(v1, v2);
-      if (n.lengthSq() < 1e-8 || !isFinite(theta) || theta <= 0) return;
-      n.normalize();
-      const e1 = v1.clone();
-      const e3 = n.clone();
-      const e2 = new THREE.Vector3().crossVectors(e3, e1).normalize();
-      const radius = Math.max(0.4, Math.min(pa.distanceTo(pb), pc.distanceTo(pb)) * 0.45);
-      const segs = 48;
-      const geom = new THREE.CircleGeometry(radius, segs, 0, theta);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
-      const fan = new THREE.Mesh(geom, mat);
-      const basis = new THREE.Matrix4(); basis.makeBasis(e1, e2, e3);
-      const q = new THREE.Quaternion().setFromRotationMatrix(basis);
-      fan.quaternion.copy(q);
-      fan.position.copy(pb.clone().add(e3.clone().multiplyScalar(0.002)));
-      editSelGroup.add(fan);
-      // Angle label at arc midpoint
-      const midDir = e1.clone().multiplyScalar(Math.cos(theta / 2)).add(e2.clone().multiplyScalar(Math.sin(theta / 2)));
-      const basePosition = pb.clone().add(midDir.multiplyScalar(radius + 0.06));
-      const labelKey = buildMeasurementAngleKey(vol, ia, ib, ic);
-      const label = makeMeasurementLabelSprite(fmtDeg(theta), labelKey, basePosition, { uiScale: 0.9 });
-      editSelGroup.add(label);
-    };
-
-    if (editSel.length >= 3) {
-      for (let t = 0; t <= editSel.length - 3; t++) addAngle(editSel[t], editSel[t + 1], editSel[t + 2]);
-    }
-
-    // Dihedral for four atoms: 1-2-3-4
-    if (editSel.length >= 4) {
-      const i = editSel[0], j = editSel[1], k = editSel[2], l = editSel[3];
-      const p1 = posOf(i), p2 = posOf(j), p3 = posOf(k), p4 = posOf(l);
-      if (p1 && p2 && p3 && p4) {
-        // Bond vectors
-        const b1 = p2.clone().sub(p1);
-        const b2 = p3.clone().sub(p2);
-        const b3 = p4.clone().sub(p3);
-        // Axis of rotation (normalized 2->3)
-        const u = b2.clone().normalize();
-        if (!isFinite(u.length()) || u.lengthSq() < 1e-10) { /* skip */ }
-        else {
-          // Project (-b1) and (b3) onto plane perpendicular to u (spanning vectors)
-          const vAraw = b1.clone().negate();
-          const vBraw = b3.clone();
-          const vA = vAraw.clone().sub(u.clone().multiplyScalar(vAraw.dot(u)));
-          const vB = vBraw.clone().sub(u.clone().multiplyScalar(vBraw.dot(u)));
-          const lenA = vA.length(), lenB = vB.length();
-          if (lenA > 1e-6 && lenB > 1e-6) {
-            vA.multiplyScalar(1 / lenA);
-            vB.multiplyScalar(1 / lenB);
-            // Signed dihedral angle φ from vA -> vB around axis u
-            const cosPhi = vA.dot(vB);
-            const sinPhi = u.dot(new THREE.Vector3().crossVectors(vA, vB));
-            const phi = Math.atan2(sinPhi, cosPhi); // [-pi, pi]
-            const mid = p2.clone().add(p3).multiplyScalar(0.5);
-            // Local basis: eZ along u, eX along vA, eY = eZ × eX
-            const eZ = u.clone();
-            const eX = vA.clone();
-            const eY = new THREE.Vector3().crossVectors(eZ, eX).normalize();
-            // Arc parameters so ends align with vA and vB
-            const thetaStart = (phi < 0 ? phi : 0);
-            const thetaLen = Math.abs(phi);
-            const segs = 64;
-            const radius = Math.max(0.35, Math.min(b2.length() * 0.35, 1.2));
-            const geom = new THREE.CircleGeometry(radius, segs, thetaStart, thetaLen);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
-            const fan = new THREE.Mesh(geom, mat);
-            const basis = new THREE.Matrix4().makeBasis(eX, eY, eZ);
-            fan.quaternion.setFromRotationMatrix(basis);
-            fan.position.copy(mid.clone().add(eZ.clone().multiplyScalar(0.002)));
-            editSelGroup.add(fan);
-            // Emphasize the central bond axis
-            addEdge(j, k, 0x8e44ad);
-            // Dihedral label (abs degrees, 2 digits) along arc bisector
-            const half = phi / 2;
-            const midDir = eX.clone().multiplyScalar(Math.cos(half)).add(eY.clone().multiplyScalar(Math.sin(half))).normalize();
-            const basePosition = mid.clone().add(midDir.multiplyScalar(radius + 0.08));
-            const labelKey = buildMeasurementDihedralKey(vol, i, j, k, l);
-            const label = makeMeasurementLabelSprite(fmtDeg(Math.abs(phi)), labelKey, basePosition, { uiScale: 0.9 });
-            editSelGroup.add(label);
-          }
+    measurementsPanel?.sync();
+    if (currentMode !== MODES.MEASURE || !atomGroup?.children.length) return;
+    const record = measurementRecord();
+    if (!record) return;
+    for (const row of measurements.rows(record)) {
+      if (row.value === null) continue;
+      const points = row.points.map(point => new THREE.Vector3(...point));
+      const color = row.type === 'distance' ? 0xd3d3d3 : row.type === 'angle' ? 0xffa500 : 0x8e44ad;
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8, depthTest: false, depthWrite: false }));
+      editSelGroup.add(line);
+      let anchor = points[0].clone().add(points[1]).multiplyScalar(0.5);
+      if (row.type === 'angle') {
+        const a = points[0].clone().sub(points[1]).normalize(), b = points[2].clone().sub(points[1]).normalize();
+        const axis = new THREE.Vector3().crossVectors(a, b).normalize();
+        const radius = Math.min(points[0].distanceTo(points[1]), points[2].distanceTo(points[1])) * 0.4;
+        const bisector = a.clone().add(b);
+        if (bisector.lengthSq() < 1e-8) bisector.crossVectors(a, camera.up);
+        anchor = points[1].clone().add(bisector.normalize().multiplyScalar(radius));
+        if (axis.lengthSq() > 1e-8) {
+          const arc = Array.from({ length: 33 }, (_, i) => a.clone().applyAxisAngle(axis, row.value * Math.PI / 180 * i / 32).multiplyScalar(radius).add(points[1]));
+          editSelGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(arc),
+            new THREE.LineBasicMaterial({ color, depthTest: false, depthWrite: false })));
         }
-      }
+      } else if (row.type === 'dihedral') anchor = points[1].clone().add(points[2]).multiplyScalar(0.5);
+      const label = makeMeasurementLabelSprite(row.text, row.id, anchor);
+      const leader = new THREE.Line(new THREE.BufferGeometry().setFromPoints([anchor, anchor]),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.65, depthTest: false, depthWrite: false }));
+      label.userData.measurementLabel.leader = leader;
+      label.userData.measurementLabel.baseScale = label.scale.clone();
+      editSelGroup.add(leader, label);
     }
     syncMeasurementLabelCursor();
+  }
+
+  function restoreMeasurementSurfaceView() {
+    if (measurementViewBeforeFit?.record === measurementRecord()) restoreSessionView(measurementViewBeforeFit.view);
+    measurementViewBeforeFit = null;
+  }
+
+  function frameMeasurementAtoms() {
+    if (!atomGroup?.children.length) return;
+    const bounds = new THREE.Box3().setFromObject(atomGroup);
+    if (bounds.isEmpty()) return;
+    const center = bounds.getCenter(new THREE.Vector3());
+    const metrics = readRendererViewportMetrics();
+    const fit = computeSceneFitGeometry({ contentBox: bounds }, center, metrics.cssWidth / metrics.cssHeight, perspectiveCamera.fov);
+    // Keep the chosen viewing direction and projection while framing atoms.
+    const direction = camera.position.clone().sub(controls.target).normalize(), up = camera.up.clone();
+    camera.zoom = 1;
+    applySceneCameraFit(center, fit.distance);
+    camera.up.copy(up); camera.position.copy(center).addScaledVector(direction, fit.distance);
+    controls.autoRotate = false; controls.update(); refreshViewUI();
+  }
+
+  function layoutMeasurementLabels(metrics) {
+    if (currentMode !== MODES.MEASURE || measurementLabelDragState) return;
+    const labels = editSelGroup.children.filter(child => child.userData?.measurementLabel);
+    if (!labels.length) return;
+    camera.updateMatrixWorld(); editSelGroup.updateWorldMatrix(true, false);
+    const width = metrics.cssWidth || canvasEl.clientWidth, height = metrics.cssHeight || canvasEl.clientHeight;
+    const key = [...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, ...editSelGroup.matrixWorld.elements, width, height].join(',');
+    if (key === measurementLayoutKey) return; measurementLayoutKey = key;
+    const record = measurementRecord(), world = new THREE.Vector3();
+    const items = labels.map((sprite, index) => {
+      const data = sprite.userData.measurementLabel, offset = getMeasurementLabelOffset(record, data.key);
+      const anchor = editSelGroup.localToWorld(data.basePosition.clone().add(offset));
+      const projected = anchor.clone().project(camera);
+      const base = data.baseScale;
+      const viewDepth = Math.abs(anchor.clone().applyMatrix4(camera.matrixWorldInverse).z);
+      const worldPerPixel = camera.isOrthographicCamera ? (camera.top-camera.bottom)/camera.zoom/height
+        : 2 * viewDepth * Math.tan(THREE.MathUtils.degToRad(camera.fov/2)) / camera.zoom / height;
+      // Keep world-size zoom behavior, with a readable on-screen minimum.
+      const h = Math.max(24, Math.min(36, base.y / worldPerPixel)), w = h * base.x / base.y;
+      sprite.scale.set(w * worldPerPixel, h * worldPerPixel, 1);
+      return { id: index, x: (projected.x+1)*width/2, y: (1-projected.y)*height/2, z: projected.z, w, h, manual: offset.lengthSq() > 0 };
+    });
+    for (const item of measurements.layoutLabels(items, width, height)) {
+      const sprite = labels[item.id], data = sprite.userData.measurementLabel;
+      sprite.visible = item.z >= -1 && item.z <= 1 && !item.crowded;
+      world.set(item.x/width*2-1, 1-item.y/height*2, item.z).unproject(camera);
+      sprite.position.copy(editSelGroup.worldToLocal(world));
+      const position = data.leader.geometry.attributes.position;
+      position.setXYZ(0, data.basePosition.x, data.basePosition.y, data.basePosition.z);
+      position.setXYZ(1, sprite.position.x, sprite.position.y, sprite.position.z); position.needsUpdate = true;
+      data.leader.geometry.computeBoundingSphere(); data.leader.visible = sprite.visible;
+    }
   }
   /**
    * Update normalized device coordinates from a pointer event.
@@ -22953,7 +22943,7 @@
    */
   function beginMeasurementLabelDrag(e, hit) {
     const sprite = hit && hit.object;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const record = measurementRecord();
     const labelData = sprite && sprite.userData && sprite.userData.measurementLabel;
     if (!record || !sprite || !sprite.isSprite || !labelData || !labelData.basePosition || !labelData.basePosition.isVector3) return false;
     const key = String(labelData.key || '');
@@ -22963,7 +22953,7 @@
     const cameraDir = new THREE.Vector3();
     camera.getWorldDirection(cameraDir);
     if (cameraDir.lengthSq() < 1e-10) cameraDir.set(0, 0, -1);
-    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(cameraDir.normalize(), sprite.position.clone());
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(cameraDir.normalize(), sprite.getWorldPosition(new THREE.Vector3()));
     const planePoint = new THREE.Vector3();
     if (!raycaster.ray.intersectPlane(plane, planePoint)) return false;
     measurementLabelDragState = {
@@ -22972,8 +22962,8 @@
       key,
       record,
       plane,
-      startPlanePoint: planePoint.clone(),
-      initialOffset: getMeasurementLabelOffset(record, key),
+      startPlanePoint: editSelGroup.worldToLocal(planePoint.clone()),
+      initialOffset: sprite.position.clone().sub(labelData.basePosition),
     };
     try { canvasEl.setPointerCapture(e.pointerId); } catch { }
     __editMoved = false;
@@ -22994,7 +22984,7 @@
     if (!raycaster.ray.intersectPlane(plane, planeHit)) return;
     const labelData = sprite.userData && sprite.userData.measurementLabel;
     if (!labelData || !labelData.basePosition || !labelData.basePosition.isVector3) return;
-    const nextOffset = initialOffset.clone().add(planeHit.sub(startPlanePoint));
+    const nextOffset = initialOffset.clone().add(editSelGroup.worldToLocal(planeHit).sub(startPlanePoint));
     setMeasurementLabelOffset(record, key, nextOffset);
     sprite.position.copy(labelData.basePosition).add(nextOffset);
     __editMoved = true;
@@ -23005,6 +22995,7 @@
    * @param {PointerEvent=} e
    */
   function finalizeMeasurementLabelDrag(e) {
+    measurementLayoutKey = '';
     if (!measurementLabelDragState) return false;
     const pointerId = measurementLabelDragState.pointerId;
     if (Number.isInteger(pointerId)) {
@@ -26021,6 +26012,10 @@
     const isRedo = (key === 'z' && e.shiftKey) || key === 'y';
     if (!isUndo && !isRedo) return false;
     e.preventDefault();
+    if (currentMode === MODES.MEASURE) {
+      measurements.undo(measurementRecord(), isRedo);
+      updateEditSelectionVisuals(); markSessionChanged(); return true;
+    }
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     if (isUndo) undoLastEditAction();
     else redoLastEditAction();
@@ -28083,6 +28078,17 @@
     },
     getMeasurementSnapshot: () => ({
       atomIndices: editSel.slice(),
+      rows: measurements.rows(measurementRecord()),
+      surfacesSuppressed: surfaceRenderSuppressed,
+      labels: editSelGroup.children.filter(child => child.userData?.measurementLabel).map(sprite => {
+        const center = sprite.getWorldPosition(new THREE.Vector3());
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(sprite.scale.x / 2);
+        const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(sprite.scale.y / 2);
+        const a = center.clone().sub(right).add(up).project(camera), b = center.clone().add(right).sub(up).project(camera);
+        return { key: sprite.userData.measurementLabel.key, text: sprite.userData.measurementLabel.text, visible: sprite.visible,
+          left: (a.x+1)*currentViewportMetrics.cssWidth/2, top: (1-a.y)*currentViewportMetrics.cssHeight/2,
+          right: (b.x+1)*currentViewportMetrics.cssWidth/2, bottom: (1-b.y)*currentViewportMetrics.cssHeight/2 };
+      }),
       labelCount: editSelGroup.children.filter(child => child.userData?.measurementLabel).length,
     }),
     getEditSelectionIndices: () => {
@@ -29433,6 +29439,7 @@
    * Refresh coordinates panel contents for the active file.
    */
   function updateSidePanel() {
+    measurementsPanel?.sync();
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     ensureListPopovers();
     if (coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });
@@ -30829,7 +30836,7 @@
       ['Name', meta.title || '—'],
       ['CID', meta.cid != null ? String(meta.cid) : '—'],
       ['Formula', meta.molecularFormula || '—'],
-      ['Weight', meta.molecularWeight || '—'],
+      ['Molar mass', meta.molecularWeight ? `${meta.molecularWeight} g/mol` : '—'],
       ['IUPAC', meta.iupacName || '—'],
       ['SMILES', meta.connectivitySmiles || '—'],
       ['Source', meta.source || 'PubChem']
@@ -32790,7 +32797,7 @@
       if (looksUi) looksUi.clearUndo();
       if (sessionStatusEl) sessionStatusEl.textContent = `Opened ${staged.name || 'session'}`;
       if (sessionRecovery) { sessionRecovery.startFresh(); sessionRecovery.markDirty(); }
-      setHintMessage('Session opened. Playback is paused.');
+      setHintMessage('Session opened in View. Playback and auto-rotate are paused.');
     },
   });
   window.VibeMolSession = Object.freeze({
@@ -32831,14 +32838,17 @@
     importText: text => window.VibeMolSession.importText(text),
     hasWork: () => sceneGraphController.getScenes().length > 0,
     isBusy: () => !!(applyingSession || sessionController.isOpening() || fileLoaderController.isLoading() || getSessionBusyReason()),
-    getName: () => sceneGraphController.getScenes()[0]?.name || 'VibeMol session',
+    getName: () => window.VibeMolSessionModule.sessionName(sceneGraphController),
+    getSnapshotName: text => window.VibeMolSessionModule.snapshotName(text),
     onStatus: ({state, message}) => {
       sessionStatusEl.textContent = message;
       sessionStatusEl.dataset.state = state;
       retryAutosaveBtn.hidden = state !== 'error';
+      window.VibeMolWorkbench?.refresh();
     },
     onRecovery: candidates => {
       recoveryPrompt.hidden = !candidates.length;
+      window.VibeMolWorkbench?.refresh();
       if (candidates.length) {
         const candidate = candidates[0];
         const date = new Date(candidate.savedAt);
@@ -32987,11 +32997,16 @@
     enabled: workspaceEnabled,
     windows: displayWindowsController,
     properties: propertiesInspector,
+    awaitingRecovery: () => {
+      const status = sessionRecovery?.getState();
+      return !appearanceStudy && status && ((!status.ready && sessionStatusEl.dataset.state !== 'error') || status.pending);
+    },
     // Match the launcher's UI ids; the internal measurement-mode key is longer.
     getMode: () => currentMode === MODES.MEASURE ? 'measure' : currentMode,
     clearMeasurements: () => {
       if (currentMode !== MODES.MEASURE) return;
-      clearEditSelection();
+      measurements.clear(measurementRecord());
+      clearEditSelection(); markSessionChanged();
       setHintMessage(HINT_MEASURE, { accent: false });
     },
     setSidebarCollapsed: setWorkspaceSidebarCollapsed,

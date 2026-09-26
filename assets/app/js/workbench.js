@@ -61,7 +61,7 @@
   for (const [id, control] of editPanelButtons) control.setAttribute('aria-controls', byId.get(id).panel);
   const clearMeasurements = button('Clear measurements', 'backspace', () => host.clearMeasurements(), 'wb-tool');
   clearMeasurements.id = 'workbenchClearMeasurements'; clearMeasurements.hidden = true;
-  clearMeasurements.setAttribute('data-tooltip', 'Clear measurements (Esc)'); label(clearMeasurements, 'Clear measurements', 'wb-tool-label'); editTools.append(clearMeasurements);
+  clearMeasurements.setAttribute('data-tooltip', 'Clear all measurements (undo available in Measurements)'); label(clearMeasurements, 'Clear measurements', 'wb-tool-label'); editTools.append(clearMeasurements);
   // Reuse the real buttons and their chemistry/camera handlers. Quick actions
   // are commands in the bar, so they no longer occupy a saved dock or window.
   const quickActions = document.createElement('div'); quickActions.id = 'workbenchQuickActions';
@@ -84,8 +84,11 @@
   const actions = document.createElement('div'); actions.className = 'wb-bar-actions'; bar.append(actions);
   const arrange = button('Layout', 'dashboard_customize', () => openArrange(), 'wb-arrange');
   arrange.id = 'workbenchArrange'; arrange.setAttribute('aria-haspopup', 'dialog'); label(arrange, 'Layout');
+  const preferencesButton = button('App settings', 'settings', () => openPreferences());
+  preferencesButton.id = 'workbenchPreferences'; preferencesButton.setAttribute('aria-haspopup', 'dialog');
+  preferencesButton.setAttribute('data-tooltip', 'App settings');
   const focusButton = button('Focus on molecule', 'fullscreen', () => setFocus(!focus));
-  focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton);
+  focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton, preferencesButton);
   const utilities = document.getElementById('topRightUtilities'); if (utilities) actions.append(utilities);
   bar.querySelector('#themeToggleInput')?.setAttribute('aria-label', 'Dark mode');
   const sidebarButton = document.getElementById('toolbarShowBtn');
@@ -127,6 +130,7 @@
 
   function available(item) {
     if (item.mode && item.mode !== host.getMode()) return false;
+    if (item.id === 'measurementsPanel') return host.getMode() !== 'edit';
     return item.id === 'inspector' || (item.entry.buttonEl && !item.entry.buttonEl.hidden);
   }
   function open(item) { return !!item.entry.isOpen(); }
@@ -209,7 +213,7 @@
     }
     modes.style.setProperty('--wb-mode-index', modeButtons.findIndex(control => control.classList.contains('active')));
     for (const item of entries) {
-      const requested = pending.has(item.id) && available(item);
+      const requested = !host.awaitingRecovery() && pending.has(item.id) && available(item);
       const restoring = requested && !open(item);
       if (requested) { pending.delete(item.id); if (restoring) item.entry.setOpen(true); }
       const isOpen = open(item);
@@ -217,7 +221,7 @@
       if (isOpen) previousOpen.add(item.id); else { previousOpen.delete(item.id); if (!pending.has(item.id)) state.parked = state.parked.filter(id => id !== item.id); }
     }
     const placementFor = id => isCompact ? 'bottom' : state.placements[id];
-    const live = entries.filter(item => open(item) && available(item) && !isParked(item.id));
+    const live = entries.filter(item => !host.awaitingRecovery() && open(item) && available(item) && !isParked(item.id));
     const right = live.filter(item => placementFor(item.id) === 'right');
     const bottom = live.filter(item => placementFor(item.id) === 'bottom');
     // Keep a suspended inspector's preferred tab so it returns with its mode.
@@ -233,7 +237,7 @@
     windowStates = new Map(entries.map(item => {
       const placement = placementFor(item.id), isOpen = open(item) && !isParked(item.id);
       return [item.id, { open: isOpen, dock: placement === 'float' ? null : placement,
-        active: isOpen && available(item) && (placement === 'float' || item.id === (placement === 'right' ? activeRight : activeBottom)) }];
+        active: !host.awaitingRecovery() && isOpen && available(item) && (placement === 'float' || item.id === (placement === 'right' ? activeRight : activeBottom)) }];
     }));
     for (const [id, control] of editPanelButtons) {
       control.setAttribute('aria-expanded', String(windowStates.get(id).active && !focus));
@@ -317,6 +321,7 @@
   }
   function startMenu(trigger, title) {
     closePanelsMenu(); closeMenu(); menuReturn = trigger;
+    menu.setAttribute('aria-label', title);
     if (trigger !== arrange) trigger.setAttribute('aria-expanded', 'true'); menu.replaceChildren();
     const heading = document.createElement('div'); heading.className = 'wb-menu-title'; heading.textContent = title; menu.append(heading);
     menu.hidden = false; menu.setAttribute('aria-hidden', 'false'); menuMover.reset();
@@ -356,7 +361,8 @@
     if (name === 'analyze') {
       next.open = ['moldenInspector', 'viewPanel'].filter(id => available(byId.get(id))).slice(0, 1);
       const table = ['vibrationPanel', 'trajectoryPanel', 'coordsPanel'].find(id => available(byId.get(id)));
-      if (table) next.open.push(table);
+      if (table) { next.open.push(table); next.placements[table] = 'right'; next.activeRight = table; }
+      next.rightWidth = 340;
     }
     if (name === 'style') { next.open = ['inspector']; host.properties.setTab('look'); next.rightWidth = 560; }
     if (name === 'explore' && available(byId.get('moldenInspector'))) next.open = ['moldenInspector'];
@@ -367,7 +373,7 @@
     startMenu(arrange, 'Arrange your workspace');
     menuAction('Explore', 'deployed_code', () => preset('explore'), 'Keep the molecule in view');
     menuAction('Analyze', 'view_quilt', () => preset('analyze'), 'Inspect data alongside the molecule');
-    menuAction('Style', 'palette', () => preset('style'), 'Edit the look alongside the molecule');
+    menuAction('Presentation', 'palette', () => preset('style'), 'Edit the look alongside the molecule');
     if (saved.length) {
       menu.append(document.createElement('hr'));
       for (const item of saved) menuAction(item.name, 'bookmark', () => applyLayout(item.layout));
@@ -377,7 +383,7 @@
     const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'Name this workspace'; input.setAttribute('aria-label', 'Workspace name'); input.maxLength = 48; input.required = true;
     const save = button('Save workspace', 'bookmark_add', () => {}); save.type = 'submit';
     const status = document.createElement('div'); status.className = 'wb-status'; status.setAttribute('role', 'status');
-    form.append(input, save); menu.append(form, status, host.properties.preferences);
+    form.append(input, save); menu.append(form, status);
     form.addEventListener('submit', event => {
       event.preventDefault(); const name = input.value.trim(); if (!name) return;
       saved = saved.filter(item => item.name !== name); saved.push({ name, layout: snapshot() }); saved = saved.slice(-8);
@@ -389,6 +395,14 @@
       preset('explore');
     });
     finishMenu();
+  }
+  function openPreferences() {
+    if (!menu.hidden && menuReturn === preferencesButton) { closeMenu(true); return; }
+    startMenu(preferencesButton, 'App settings');
+    menu.append(host.properties.preferences);
+    const note = document.createElement('p'); note.className = 'vm-session-status';
+    note.textContent = 'Theme and typeface are browser preferences, independent of molecules, looks, and workspace layouts.';
+    menu.append(note); finishMenu();
   }
   function setFocus(value) {
     const next = !!value; if (focus === next) return;
@@ -537,7 +551,7 @@
     beforeModeChange: () => {
       closePanelsMenu(); closeMenu();
     },
-    afterModeChange: sync,
+    afterModeChange: sync, refresh: schedule,
     manages: id => byId.has(model.resolveId(id)),
     isDocked: id => byId.has(model.resolveId(id)) && effectivePlace(model.resolveId(id)) !== 'float',
     restoreIfHidden: id => { id = model.resolveId(id); const item = byId.get(id); if (item && open(item) && item.root.dataset.wbHidden === 'true' && !focus) { reveal(id); return true; } return false; },

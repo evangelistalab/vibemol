@@ -11,6 +11,7 @@
   margin: 0; padding: 0; border: 0; border-radius: 50%;
   background: transparent; box-shadow: none; outline: none;
   pointer-events: auto; cursor: pointer; touch-action: manipulation;
+  clip-path: circle(50%);
   transform: none; transition: none;
 }
 /* Feedback is drawn with the gizmo so exports and on-screen geometry agree. */

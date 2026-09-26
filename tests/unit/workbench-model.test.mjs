@@ -58,3 +58,12 @@ test('a two-row mode bar leaves room for the molecule above the mobile dock', ()
   const r = model.regions({width:390, height:640, sidebar:0, right:true, top:96, bottomHeight:480});
   assert.equal(r.top,96); assert.ok(640-r.top-r.bottom>=200);
 });
+test('saved large docks scale with the viewport rather than consuming it', () => {
+  for(const [width,height] of [[1512,741],[1080,741],[390,640]]) {
+    const r=model.regions({width,height,sidebar:Math.min(300,Math.max(220,width*.21)),right:true,bottom:true,rightWidth:680,bottomHeight:480});
+    assert.ok(r.bottom<=(height-r.top)*.36+1);
+    assert.ok(width-r.left-r.right>=Math.min(340,width));
+  }
+  const analyze=model.regions({width:1512,height:741,sidebar:300,right:true,rightWidth:340});
+  assert.ok((1512-analyze.left-analyze.right)*(741-analyze.top)>1512*741*.5);
+});

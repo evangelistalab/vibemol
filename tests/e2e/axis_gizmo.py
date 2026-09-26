@@ -32,10 +32,47 @@ def bounded(page):
       const hint=document.getElementById('hint'),hintBox=hint.getBoundingClientRect();
       const ends=[...gizmo.querySelectorAll('button')].map(b=>{const r=b.getBoundingClientRect();return {
         id:b.id,inside:r.left>=box.left && r.top>=box.top && r.right<=box.right && r.bottom<=box.bottom,
-        hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===b};});
+        hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===b,
+        current:b.getAttribute('aria-current')==='true'};});
       return {inside:box.left>=canvas.left && box.right<=canvas.right && box.top>=canvas.top && box.bottom<=canvas.bottom,
         clear:getComputedStyle(hint).visibility==='hidden'||box.bottom<=hintBox.top-10,ends};
     }''')
+
+
+def ring_edge_joins(page):
+    # Negative shafts touch the ring without entering its white-filled face.
+    page.evaluate("""()=>{
+      window.negativeEndPixels=()=>{
+        const source=document.getElementById('canvas'),box=source.getBoundingClientRect();
+        const gizmo=document.getElementById('axisGizmo').getBoundingClientRect();
+        const image=document.createElement('canvas');image.width=source.width;image.height=source.height;
+        const ctx=image.getContext('2d');ctx.drawImage(source,0,0);
+        return [...document.querySelectorAll('#axisGizmo [data-sign="-1"]')].map(button=>{
+          const r=button.getBoundingClientRect(),cx=r.x+r.width/2,cy=r.y+r.height/2;
+          const dx=cx-gizmo.x-gizmo.width/2,dy=cy-gizmo.y-gizmo.height/2,d=Math.hypot(dx,dy);
+          // Sample the shaft centerline six CSS pixels inside the circle.
+          const x=Math.round((cx-6*dx/d-box.x)*source.width/box.width),
+            y=Math.round((cy-6*dy/d-box.y)*source.height/box.height);
+          return {axis:button.dataset.axis,pixels:[...ctx.getImageData(x-1,y-1,3,3).data]};
+        });
+      };
+      window.negativeShaftsVisible=visible=>axisTestScene.traverse(o=>{
+        if(o.isMesh&&o.geometry.type==='CylinderGeometry'&&o.material.transparent)o.visible=visible;
+      });
+    }""")
+    # Include nearly side-on views, where the cap projection changes most.
+    for x,y,z in [(8,8,8),(-8,8,8),(8,-8,-8),(-8,-8,-8),(8,-.1,4),(8,0,4),(8,.1,4)]:
+        settings(page,{'view.camera.x':x,'view.camera.y':y,'view.camera.z':z,
+          'view.target.x':0,'view.target.y':0,'view.target.z':0})
+        page.mouse.move(900,100);settle(page)
+        with_shafts=page.evaluate('()=>negativeEndPixels()')
+        page.evaluate('()=>negativeShaftsVisible(false)');settle(page)
+        without_shafts=page.evaluate('()=>negativeEndPixels()')
+        page.evaluate('()=>negativeShaftsVisible(true)');settle(page)
+        for front,back in zip(with_shafts,without_shafts):
+            delta=max(abs(a-b) for a,b in zip(front['pixels'],back['pixels']))
+            assert delta<=2, ('Cylinder must not enter the circle face',front['axis'],delta)
+    page.screenshot(path=str(p.ARTIFACTS/'axis-gizmo-ring-edge.png'),clip=page.locator('#axisGizmo').bounding_box())
 
 
 def run(page,url):
@@ -47,7 +84,8 @@ def run(page,url):
     before=pose(page);axis_button(page,'x',-1).click();assert_pose(page,'x',-1,before)
     assert p.load(page,[{'name':'water.xyz','text':'O 0 0 0\nH 1 0 0\nH -.3 .9 0'}])['ok']
     atoms=page.evaluate('()=>JSON.stringify(VibeMolStructure.exportActive().volume.atoms)')
-    page.evaluate('()=>{THREE.Mesh.prototype.onBeforeRender=function(renderer,scene,camera){if(this.userData.type==="atom"){window.axisTestCamera=camera;window.axisTestRenderer=renderer;}};}')
+    page.evaluate('()=>{THREE.Mesh.prototype.onBeforeRender=function(renderer,scene,camera){if(this.userData.type==="atom"){window.axisTestCamera=camera;window.axisTestRenderer=renderer;}if(scene.children.some(o=>o.name.startsWith("axis-gizmo-negative-")))window.axisTestScene=scene;};}')
+    ring_edge_joins(page)
     for projection in ['perspective','orthographic']:
         settings(page,{'view.projection':projection,'view.camera.x':9,'view.camera.y':6,'view.camera.z':8,
           'view.target.x':1,'view.target.y':2,'view.target.z':3,'global.showAxes':True})
@@ -60,13 +98,21 @@ def run(page,url):
             if mode=='Edit':page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0])')
             for axis in 'xyz':
                 for sign in [1,-1]:
+                    # Unobstructed view for each pointer target; head-on opposite
+                    # ends intentionally overlap and remain keyboard accessible.
+                    settings(page,{'view.camera.x':9,'view.camera.y':10,'view.camera.z':11})
+                    settle(page)
                     before=pose(page);axis_button(page,axis,sign).click();settle(page)
                     assert_pose(page,axis,sign,before)
                     assert page.evaluate('()=>axisTestCamera.zoom')==zoom
                     assert axis_button(page,axis,sign).get_attribute('aria-current')=='true'
-                    bounds=bounded(page);assert bounds['inside'] and bounds['clear'] and all(e['inside'] and e['hit'] for e in bounds['ends']),bounds
+                    bounds=bounded(page);assert bounds['inside'] and bounds['clear'] and all(e['inside'] and (e['hit'] or not e['current']) for e in bounds['ends']),bounds
                     assert page.evaluate('()=>JSON.stringify(VibeMolStructure.exportActive().volume.atoms)')==atoms
                     if mode=='Edit':assert page.evaluate('()=>VibeMolTesting.getEditSelectionCount()')==1
+    # The front endpoint owns an overlapping hit area, with neither end moved.
+    front=axis_button(page,'z',-1).bounding_box();rear=axis_button(page,'z',1).bounding_box()
+    assert abs(front['x']-rear['x'])<.05 and abs(front['y']-rear['y'])<.05,(front,rear)
+    assert not next(e for e in bounded(page)['ends'] if e['id']=='viewAxisZBtn')['hit']
     # A pointer drag on the widget cannot become a molecular drag or snap.
     before=pose(page);button=axis_button(page,'x',1);box=button.bounding_box()
     page.mouse.move(box['x']+12,box['y']+12);page.mouse.down()
@@ -105,7 +151,7 @@ def run(page,url):
             page.evaluate('(dark)=>document.documentElement.setAttribute("data-theme",dark?"dark":"light")',dark);settle(page)
             bounds=bounded(page);assert bounds['inside'] and bounds['clear'],bounds
         page.evaluate('()=>VibeMolWorkbench.setFocus(true)');settle(page)
-        bounds=bounded(page);assert bounds['inside'] and bounds['clear'] and all(e['hit'] for e in bounds['ends']),bounds
+        bounds=bounded(page);assert bounds['inside'] and bounds['clear'] and all(e['hit'] for e in bounds['ends'] if e['current']),bounds
         page.evaluate('()=>VibeMolWorkbench.setFocus(false)')
     page.screenshot(path=str(p.ARTIFACTS/'axis-gizmo-mobile.png'))
     page.goto(url+'?workspaceLab=0&appearanceStudy=1');page.wait_for_function('()=>window.VibeMolTesting')
