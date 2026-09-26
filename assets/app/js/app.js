@@ -1019,51 +1019,86 @@
 
   /**
    * Build the lightweight XY-plane edit grid shown only in edit mode.
-   * A single antialiased plane avoids WebGL's one-pixel line-width limit.
+   * Project an unbounded XY plane through a screen-filling quad. Its depth is
+   * clamped independently so molecule-fitted clipping cannot crop the grid.
    * @returns {THREE.Mesh}
    */
   function buildEditGridHelper() {
     const material = new THREE.ShaderMaterial({
       uniforms: {
+        inverseProjection: { value: new THREE.Matrix4() },
+        cameraWorld: { value: new THREE.Matrix4() },
+        viewProjection: { value: new THREE.Matrix4() },
+        fadeDistance: { value: 10 },
         lineWidth: { value: 1.35 },
         gridColor: { value: new THREE.Color(0xc3ccd8) },
         xColor: { value: new THREE.Color(0xff4136) },
         yColor: { value: new THREE.Color(0x2ecc40) },
       },
       vertexShader: `
-        varying vec2 gridPosition;
+        uniform mat4 inverseProjection, cameraWorld;
+        varying vec3 rayOrigin, rayDirection;
         void main() {
-          gridPosition = position.xy;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          vec4 nearPoint = inverseProjection * vec4(position.xy, -1.0, 1.0);
+          nearPoint /= nearPoint.w;
+          // A view-space ray avoids subtracting nearly coincident world points
+          // when the camera's clipping range is tight or far from the origin.
+          rayOrigin = (cameraWorld * (isOrthographic ? nearPoint : vec4(0.0, 0.0, 0.0, 1.0))).xyz;
+          rayDirection = mat3(cameraWorld) * (isOrthographic ? vec3(0.0, 0.0, -1.0) : nearPoint.xyz);
+          gl_Position = vec4(position.xy, 0.0, 1.0);
         }
       `,
       fragmentShader: `
-        uniform float lineWidth;
+        uniform mat4 viewProjection;
+        uniform float lineWidth, fadeDistance;
         uniform vec3 gridColor, xColor, yColor;
-        varying vec2 gridPosition;
+        varying vec3 rayOrigin, rayDirection;
         void main() {
+          vec3 direction = normalize(rayDirection);
+          if (abs(direction.z) < 0.000001) discard;
+          float distanceToPlane = -rayOrigin.z / direction.z;
+          // Perspective sees only forward intersections. Orthographic cameras
+          // deliberately support signed depths, including before their near plane.
+          if (!isOrthographic && distanceToPlane <= 0.0) discard;
+          vec3 worldPosition = rayOrigin + direction * distanceToPlane;
+          vec2 gridPosition = worldPosition.xy;
           vec2 dx = dFdx(gridPosition), dy = dFdy(gridPosition);
           vec2 pixelSize = max(sqrt(dx * dx + dy * dy), vec2(0.000001));
           vec2 distanceToLine = abs(fract(gridPosition + 0.5) - 0.5) / pixelSize;
           vec2 lines = clamp(vec2(lineWidth * 0.5 + 0.5) - distanceToLine, 0.0, 1.0);
           // Fade the repeated lines before they become a dense subpixel pattern.
           lines *= clamp(1.0 / pixelSize - 1.0, 0.0, 1.0);
+          vec2 distanceToMajor = abs(fract(gridPosition / 5.0 + 0.5) - 0.5) * 5.0 / pixelSize;
+          vec2 majorLines = clamp(vec2(lineWidth * 0.5 + 0.5) - distanceToMajor, 0.0, 1.0);
+          majorLines *= clamp(5.0 / pixelSize - 1.0, 0.0, 1.0);
           vec2 axes = clamp(vec2(lineWidth * 0.5 + 0.5) - abs(gridPosition) / pixelSize, 0.0, 1.0);
-          float coverage = max(max(lines.x, lines.y), max(axes.x, axes.y));
+          float coverage = max(max(lines.x, lines.y) * 0.65, max(majorLines.x, majorLines.y));
+          coverage = max(coverage, max(axes.x, axes.y));
+          // Recede smoothly into the horizon instead of exposing a plane edge.
+          // Orthographic views have no perspective horizon or distance falloff.
+          if (!isOrthographic) coverage *= 1.0 - smoothstep(fadeDistance * 2.0, fadeDistance * 8.0, distanceToPlane);
           if (coverage <= 0.0) discard;
           vec3 color = mix(gridColor, xColor, axes.y);
           color = mix(color, yColor, axes.x);
+          vec4 clipPosition = viewProjection * vec4(worldPosition.xy, 0.0, 1.0);
+          // Retain physical occlusion without widening molecular depth bounds.
+          gl_FragDepthEXT = clamp(0.5 * clipPosition.z / clipPosition.w + 0.5, 0.0, 1.0);
           gl_FragColor = vec4(color, coverage * 0.5);
           #include <colorspace_fragment>
         }
       `,
       transparent: true, depthWrite: false, toneMapped: false,
-      side: THREE.DoubleSide, extensions: { derivatives: true },
+      extensions: { derivatives: true, fragDepth: true },
     });
-    const helper = new THREE.Mesh(new THREE.PlaneGeometry(48, 48), material);
+    const helper = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
     helper.name = 'edit-grid';
+    helper.frustumCulled = false;
     helper.renderOrder = -20;
-    helper.onBeforeRender = () => {
+    helper.onBeforeRender = (_renderer, _scene, renderCamera) => {
+      material.uniforms.inverseProjection.value.copy(renderCamera.projectionMatrixInverse);
+      material.uniforms.cameraWorld.value.copy(renderCamera.matrixWorld);
+      material.uniforms.viewProjection.value.multiplyMatrices(renderCamera.projectionMatrix, renderCamera.matrixWorldInverse);
+      material.uniforms.fadeDistance.value = Math.max(4, renderCamera.position.distanceTo(controls.target));
       // The app sizes the drawing buffer explicitly, including export scaling.
       material.uniforms.lineWidth.value = 1.35 * currentViewportMetrics.dpr;
     };

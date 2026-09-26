@@ -119,11 +119,91 @@ def orbital_depth(page, context, url):
     print('[camera] orbital padding, transparent 2C split/Bloch surfaces, signed DOF depth and cube/point clouds: passed',flush=True)
 
 
+def edit_grid_continuity(page, context, url):
+    observe(page)
+    assert p.load(page,[{'name':'water.xyz','text':'O 0 0 0\nH .96 0 0\nH -.25 .93 0'}])['ok']
+    page.locator('#modeEditBtn').evaluate('el=>el.click()')
+    settings(page,{'global.showAxes':False,'molecule.feature.shadows':False})
+    settle(page)
+    page.evaluate('''() => {
+      window.gridImage=() => {
+        const src=document.getElementById('canvas'),dst=document.createElement('canvas');
+        dst.width=src.width;dst.height=src.height;
+        const ctx=dst.getContext('2d');ctx.drawImage(src,0,0);
+        return ctx.getImageData(0,0,dst.width,dst.height);
+      };
+      window.gridSamples=() => {
+        const c=depthCamera,src=document.getElementById('canvas');
+        const groups={outside:[],before:[],after:[]};
+        for(let x=-120;x<=120;x+=5)for(let y=-120;y<=120;y+=5){
+          const world=new THREE.Vector3(x,y,0),ndc=world.clone().project(c);
+          if(Math.abs(ndc.x)>.7 || Math.abs(ndc.y)>.65 || Math.hypot(x,y)<5)continue;
+          const distance=world.distanceTo(c.position);
+          if(c.isPerspectiveCamera && (world.clone().applyMatrix4(c.matrixWorldInverse).z>=0 || distance>2*depthScene.getObjectByName('edit-grid').material.uniforms.fadeDistance.value))continue;
+          const point={x:Math.round((ndc.x+1)*src.width/2),y:Math.round((1-ndc.y)*src.height/2)};
+          if(Math.abs(x)>24 || Math.abs(y)>24)groups.outside.push(point);
+          if(ndc.z < -1)groups.before.push(point);
+          if(ndc.z > 1)groups.after.push(point);
+        }
+        return groups;
+      };
+      window.gridDelta=point => {
+        let delta=0;
+        for(let y=point.y-2;y<=point.y+2;y++)for(let x=point.x-2;x<=point.x+2;x++){
+          const i=(y*gridWith.width+x)*4;
+          for(let j=0;j<3;j++)delta=Math.max(delta,Math.abs(gridWith.data[i+j]-gridWithout.data[i+j]));
+        }
+        return delta;
+      };
+    }''')
+    for projection,shift in [('orthographic',0),('orthographic',80),('perspective',0)]:
+        settings(page,{'view.projection':projection,'view.camera.x':8+shift,'view.camera.y':-12,'view.camera.z':5,
+                       'view.target.x':shift,'view.target.y':0,'view.target.z':0})
+        settle(page)
+        if projection=='orthographic':
+            page.evaluate('''() => {const c=depthCamera;c.left=-40;c.right=40;c.top=30;c.bottom=-30;c.zoom=1;c.updateProjectionMatrix();}''')
+        settle(page)
+        groups=page.evaluate('() => gridSamples()')
+        depth=page.evaluate('() => [depthCamera.near,depthCamera.far]')
+        page.evaluate('''() => {window.gridWith=gridImage();depthScene.getObjectByName('edit-grid').material.visible=false;}''')
+        settle(page)
+        page.evaluate('() => {window.gridWithout=gridImage();}')
+        without_depth=page.evaluate('() => [depthCamera.near,depthCamera.far]')
+        assert all(math.isclose(a,b,rel_tol=1e-8,abs_tol=1e-6) for a,b in zip(depth,without_depth)),(depth,without_depth)
+        for kind in (['outside','before','after'] if projection=='orthographic' else ['after']):
+            points=groups[kind]
+            assert points,(projection,shift,kind)
+            deltas=page.evaluate('points => points.map(gridDelta)',points)
+            assert all(delta>3 for delta in deltas),(projection,shift,kind,deltas)
+        page.evaluate("() => {depthScene.getObjectByName('edit-grid').material.visible=true;}")
+        settle(page)
+    # The ground must still be occluded by atoms, and remain hidden outside Edit.
+    settings(page,{'view.projection':'orthographic','view.camera.x':0,'view.camera.y':0,'view.camera.z':8,
+                   'view.target.x':0,'view.target.y':0,'view.target.z':0})
+    settle(page)
+    page.evaluate('''() => {depthCamera.zoom=8;depthCamera.updateProjectionMatrix();}''')
+    settle(page)
+    point=page.evaluate('''() => {
+      let atom;depthScene.traverseVisible(o=>{if(o.userData.type==='atom' && o.userData.index===0)atom=o;});
+      const src=document.getElementById('canvas'),v=atom.getWorldPosition(new THREE.Vector3()).project(depthCamera);
+      window.gridWith=gridImage();depthScene.getObjectByName('edit-grid').material.visible=false;
+      return {x:Math.round((v.x+1)*src.width/2),y:Math.round((1-v.y)*src.height/2)};
+    }''')
+    settle(page)
+    page.evaluate('() => {window.gridWithout=gridImage();}')
+    assert page.evaluate('point => gridDelta(point)',point)<=1
+    page.evaluate("() => {depthScene.getObjectByName('edit-grid').material.visible=true;}")
+    for mode in ['Display','Measure','Edit']:
+        page.locator('#mode'+mode+'Btn').evaluate('el=>el.click()');settle(page)
+        assert page.evaluate("() => depthScene.getObjectByName('edit-grid').visible")== (mode=='Edit')
+    print('[grid] unbounded extent, panning, signed clipping, perspective, molecular depth/occlusion and mode visibility: passed',flush=True)
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [slab_rotation_and_picking,orbital_depth]:
+            for run in [slab_rotation_and_picking,orbital_depth,edit_grid_continuity]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))
