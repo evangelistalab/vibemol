@@ -71,7 +71,7 @@
   const quickButtons = [...document.querySelectorAll('#viewInspector .tb-quickActionBtn')];
   for (const control of quickButtons) {
     control.classList.remove('secondary'); control.classList.add('vm-btn', 'vm-btn--ghost', 'wb-tool');
-    control.classList.add(control.id.startsWith('viewAxis') ? 'wb-quick-axis' : 'wb-quick-icon');
+    control.classList.add('wb-quick-icon');
     control.setAttribute('data-tooltip-placement', 'bottom'); quickActions.append(control);
   }
   document.getElementById('viewInspector').hidden = true;

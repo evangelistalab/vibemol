@@ -1333,21 +1333,6 @@ kbd,
   grid-column: 1 / -1;
 }
 
-.floatingAuxInspectorView .viewPresetRow,
-#toolbar .tb-toolbarInspectorView .viewPresetRow {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.floatingAuxInspectorView .viewPresetRow button,
-#toolbar .tb-toolbarInspectorView .viewPresetRow button {
-  justify-content: center;
-  text-align: center;
-  padding: 0 4px;
-}
-
 #displayInspector .appearanceHiddenControl {
   display: none;
 }

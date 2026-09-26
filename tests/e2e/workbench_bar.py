@@ -51,7 +51,7 @@ def check_bar(page):
     assert page.locator('.wb-tools button[data-window]').count() == 0
     assert page.locator('.wb-context-tools #workbenchClearMeasurements').count() == 1
     assert page.locator('#themeToggleInput').get_attribute('aria-label') == 'Dark mode'
-    assert page.locator('#workbenchQuickActions .tb-quickActionBtn').count()==6
+    assert page.locator('#workbenchQuickActions .tb-quickActionBtn').count()==3
     assert not any(row['id']=='viewInspector' for row in result['rows'])
     assert page.evaluate('''()=> {
       const group=document.getElementById('workbenchQuickActions'), panel=document.getElementById('workbenchPanelsBtn');
@@ -123,7 +123,7 @@ def run(page):
     open_menu(page); page.keyboard.press('Tab')
     assert menu.is_hidden() and page.locator('#workbenchArrange').evaluate('el => document.activeElement === el')
     open_menu(page); page.keyboard.press('Shift+Tab')
-    assert menu.is_hidden() and page.locator('#viewAxisZBtn').evaluate('el => document.activeElement === el')
+    assert menu.is_hidden() and page.locator('#alignInertiaBtn').evaluate('el => document.activeElement === el')
     open_menu(page); page.locator('#canvas').click(position={'x': 30, 'y': 30})
     assert menu.is_hidden()
     page.locator('#workbenchArrange').click()
@@ -224,7 +224,7 @@ def run(page):
 def quick_actions(page, url):
     page.goto(url+'?appearanceStudy=1')
     page.wait_for_function('()=>window.VibeMolWorkbench')
-    assert page.locator('#workbenchQuickActions button:disabled').count()==6
+    assert page.locator('#workbenchQuickActions button:disabled').count()==3
     assert p.load(page,[{'name':'hydrogen.xyz','text':'H 2 3 4\nH 2.4 3.4 4.4'}])['ok']
     for mode in ['Display','Measure','Edit']:
         page.locator('#mode'+mode+'Btn').click()
@@ -263,7 +263,7 @@ def quick_actions(page, url):
     assert p.load(page,[{'name':'hydrogen.xyz','text':'H 0 0 0\nH .7 0 0'}])['ok']
     page.keyboard.press('q')
     assert page.locator('#viewInspector').is_visible()
-    assert page.locator('#viewInspector .tb-quickActionBtn').count()==6
+    assert page.locator('#viewInspector .tb-quickActionBtn').count()==3
     print('[quick actions] moved commands, geometry/camera behavior, Q, Focus, Analyze and legacy: passed',flush=True)
 
 

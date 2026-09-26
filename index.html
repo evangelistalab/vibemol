@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="assets/app/css/palette.css" />
   <link rel="stylesheet" href="assets/app/css/edit-ui.css" />
   <link rel="stylesheet" href="assets/app/css/display-ui.css" />
+  <link rel="stylesheet" href="assets/app/css/axis-gizmo.css" />
   <link rel="stylesheet" href="src/styles/vm-list-popover.css" />
   <link rel="stylesheet" href="assets/app/css/session-ui.css" />
   <link rel="stylesheet" href="assets/app/css/looks-ui.css" />
@@ -3111,26 +3112,6 @@
         <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">3d_rotation</span>
         <span class="tb-quickActionText">Align Principal Axes</span>
       </button>
-      <div class="viewPresetRow">
-        <button id="viewAxisXBtn" class="secondary tb-quickActionBtn"
-          data-tooltip="View +X: look from +X with +Y to the right and +Z up."
-          aria-label="View along positive X axis">
-          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">east</span>
-          <span class="tb-quickActionText">+X</span>
-        </button>
-        <button id="viewAxisYBtn" class="secondary tb-quickActionBtn"
-          data-tooltip="View +Y: place the camera on +Y looking at the current target."
-          aria-label="View along positive Y axis">
-          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north</span>
-          <span class="tb-quickActionText">+Y</span>
-        </button>
-        <button id="viewAxisZBtn" class="secondary tb-quickActionBtn"
-          data-tooltip="View +Z: place the camera on +Z looking at the current target."
-          aria-label="View along positive Z axis">
-          <span class="material-symbols-rounded tb-quickActionIcon" aria-hidden="true">north_east</span>
-          <span class="tb-quickActionText">+Z</span>
-        </button>
-      </div>
     </div>
   </div>
   <div id="spinorInfoPanel" class="floatingAuxInspector floatingAuxInspectorSpinor" aria-hidden="true">
@@ -3805,6 +3786,7 @@
   <script src="./assets/app/js/ui.js"></script>
   <!-- view/camera helpers -->
   <script src="./assets/app/js/view-utils.js"></script>
+  <script src="./assets/app/js/axis-gizmo.js"></script>
   <!-- edit math helpers -->
   <script src="./assets/app/js/edit-utils.js"></script>
   <!-- edit command objects -->

@@ -63,7 +63,7 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .wb-edit-tool .adaptiveShortcutGroup, .wb-edit-tool .adaptiveEditItemMeta { display: none; }
 .wb-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; flex: 1; min-width: 0; padding-left: 12px; border-left: 1px solid var(--vm-color-toolbar-divider); }
 .wb-bar .tb-quickActionBtn { width: 32px; min-width: 32px; height: 32px; justify-content: center; padding: 6px; }
-.wb-quick-icon .tb-quickActionText, .wb-quick-axis .tb-quickActionIcon { display: none; }
+.wb-quick-icon .tb-quickActionText { display: none; }
 .wb-bar [hidden] { display: none !important; }
 .wb-bar .vm-btn, .wb-dock .vm-btn, .wb-menu .vm-btn { font: 500 12px var(--vm-font-sans); box-shadow: none; }
 .wb-tool { flex-shrink: 0; white-space: nowrap; gap: 6px; padding: 7px 8px; border: 1px solid transparent; background: transparent; color: var(--vm-color-text-secondary); }

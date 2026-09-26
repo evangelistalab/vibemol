@@ -675,7 +675,7 @@
     dpr: 1,
   };
   let adaptivePopoverController = null;
-  const axisOverlayLayout = { x: 16, y: 16, size: 0 };
+  const axisOverlayLayout = { x: 16, y: 16, left: 16, top: 16, size: 0 };
   const axisOverlaySidebar = document.getElementById('toolbar');
   const axisOverlayBottomControls = ['hint'].map(id => document.getElementById(id)).filter(Boolean);
 
@@ -697,10 +697,12 @@
       const inset = Number.parseFloat(style.bottom) || 0;
       bottom = Math.max(bottom, viewport.bottom - window.innerHeight + inset + element.offsetHeight + gap);
     }
-    const desiredSize = Math.max(64, Math.min(128, Math.floor(Math.min(viewport.width, viewport.height) / 5)));
+    const desiredSize = Math.max(112, Math.min(144, Math.floor(Math.min(viewport.width, viewport.height) / 4)));
     axisOverlayLayout.x = left;
     axisOverlayLayout.y = bottom;
     axisOverlayLayout.size = Math.max(0, Math.min(desiredSize, viewport.width - left - gap, viewport.height - bottom - gap));
+    axisOverlayLayout.left = viewport.left + left;
+    axisOverlayLayout.top = viewport.bottom - bottom - axisOverlayLayout.size;
   }
 
   /**
@@ -1197,47 +1199,11 @@
     }
   }
 
-  // --- Corner axes (overlay) ---
-  const axisScene = new THREE.Scene();
-  // Use an orthographic camera so the gizmo stays centered without perspective shift
-  // Arrow tips reach 1.05 units from the origin; leave room at every orientation.
-  const axisCamera = new THREE.OrthographicCamera(-1.15, 1.15, 1.15, -1.15, 0.1, 10);
-  axisCamera.position.set(0, 0, 2);
-  axisCamera.lookAt(0, 0, 0);
-  const axisGizmo = new THREE.Group();
-  // Simple lights so the gizmo shows shaded heads/shafts
-  {
-    const aHemi = new THREE.HemisphereLight(0xffffff, 0x223344, 0.9);
-    const aDir = new THREE.DirectionalLight(0xffffff, 1.2); aDir.position.set(1, 1, 1);
-    axisScene.add(aHemi, aDir);
-  }
-  /**
-   * Add shaded arrow.
-   * @param {*} dir
-   * @param {*} color
-   */
-  function addShadedArrow(dir, color) {
-    const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.15 });
-    // Shaft along +Y
-    const shaftLen = 0.75, shaftRad = 0.05;
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(shaftRad, shaftRad, shaftLen, 16, 1), mat);
-    shaft.position.y = shaftLen / 2;
-    g.add(shaft);
-    // Head (cone) along +Y
-    const headLen = 0.30, headRad = 0.12;
-    const head = new THREE.Mesh(new THREE.ConeGeometry(headRad, headLen, 20, 1), mat);
-    head.position.y = shaftLen + headLen / 2;
-    g.add(head);
-    // Rotate to desired direction
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-    g.setRotationFromQuaternion(q);
-    axisGizmo.add(g);
-  }
-  addShadedArrow(new THREE.Vector3(1, 0, 0), 0xff4136); // X - red
-  addShadedArrow(new THREE.Vector3(0, 1, 0), 0x2ecc40); // Y - green
-  addShadedArrow(new THREE.Vector3(0, 0, 1), 0x0074d9); // Z - blue
-  axisScene.add(axisGizmo);
+  // Camera orientation control, rendered into the canvas with native hit targets.
+  const axisGizmo = window.VibeMolAxisGizmo.create({ THREE,
+    onSelect: (axis, sign) => setCameraAxisPreset(axis, sign),
+    onEscape: () => canvas.focus({ preventScroll: true }),
+  });
 
   const dofPostScene = new THREE.Scene();
   const dofPostCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -6777,15 +6743,14 @@
    * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
    */
   function renderAxisOverlayPass(metrics) {
-    if (!window.__showAxes__ || axisOverlayLayout.size <= 0) return;
-    axisGizmo.quaternion.copy(camera.quaternion).invert();
+    if (!axisGizmo.update(camera, axisOverlayLayout, !!window.__showAxes__)) return;
     const { x, y, size } = axisOverlayLayout;
     const rect = cssRectToBufferRect(metrics, x, y, size, size);
     renderer.clearDepth();
     renderer.setScissorTest(true);
     renderer.setScissor(rect.x, rect.y, rect.width, rect.height);
     renderer.setViewport(rect.x, rect.y, rect.width, rect.height);
-    renderer.render(axisScene, axisCamera);
+    renderer.render(axisGizmo.scene, axisGizmo.camera);
     renderer.setScissorTest(false);
   }
 
@@ -6962,9 +6927,6 @@
   const alignInertiaBtn = document.getElementById('alignInertiaBtn');
   const projectionPerspectiveBtn = document.getElementById('projectionPerspectiveBtn');
   const projectionOrthographicBtn = document.getElementById('projectionOrthographicBtn');
-  const viewAxisXBtn = document.getElementById('viewAxisXBtn');
-  const viewAxisYBtn = document.getElementById('viewAxisYBtn');
-  const viewAxisZBtn = document.getElementById('viewAxisZBtn');
   const camX = document.getElementById('camX');
   const camY = document.getElementById('camY');
   const camZ = document.getElementById('camZ');
@@ -25822,8 +25784,9 @@
   /**
    * Snap camera to one principal axis direction while keeping target and distance.
    * @param {'x'|'y'|'z'} axis
+   * @param {1|-1} sign Camera side of the target (not the gaze vector).
    */
-  function setCameraAxisPreset(axis) {
+  function setCameraAxisPreset(axis, sign = 1) {
     const key = axis === 'y' ? 'y' : (axis === 'z' ? 'z' : 'x');
     const dir = key === 'x'
       ? new THREE.Vector3(1, 0, 0)
@@ -25831,7 +25794,8 @@
     const target = controls.target.clone();
     let dist = camera.position.distanceTo(target);
     if (!(Number.isFinite(dist) && dist > 1e-6)) dist = 8;
-    camera.position.copy(target).addScaledVector(dir, dist);
+    camera.position.copy(target).addScaledVector(dir, dist * (sign < 0 ? -1 : 1));
+    controls.autoRotate = false;
     if (key === 'x' || key === 'y') camera.up.set(0, 0, 1);
     else camera.up.set(0, 1, 0);
     camera.lookAt(target);
@@ -25839,11 +25803,8 @@
     updateActiveCameraProjection(w, h);
     controls.update();
     refreshViewUI();
-    setHintMessage(`View preset: +${key.toUpperCase()}`);
+    setHintMessage(`View from ${sign < 0 ? '−' : '+'}${key.toUpperCase()}`);
   }
-  if (viewAxisXBtn) viewAxisXBtn.onclick = () => setCameraAxisPreset('x');
-  if (viewAxisYBtn) viewAxisYBtn.onclick = () => setCameraAxisPreset('y');
-  if (viewAxisZBtn) viewAxisZBtn.onclick = () => setCameraAxisPreset('z');
 
   // --- Shortcut bindings ---
 
