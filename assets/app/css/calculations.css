@@ -1,0 +1,20 @@
+.vm-calculations { position: fixed; top: 80px; right: 24px; width: min(430px, calc(100vw - 24px)); max-height: calc(100dvh - 96px); background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); border: 1px solid var(--vm-color-border); border-radius: var(--vm-radius-md); box-shadow: var(--vm-shadow-lg); font: var(--vm-text-sm) var(--vm-font-sans); }
+.vm-calculations .vm-list-popover__body { padding: 8px 12px; overflow: auto; }
+.vm-calculations [hidden] { display: none !important; }
+.vm-calculations .vm-field-control > :is(input:not([type='checkbox']), select) { min-width: 0; width: 100%; }
+.vm-calculations .vm-select { min-height: 32px; padding: 4px 8px; font-size: var(--vm-text-sm); }
+.vm-calculations input[type='text'] { text-align: left; }
+.vm-calculations .vm-appearance-section { border-top: 1px solid var(--vm-color-border); margin-top: 10px; }
+.vm-avas-atom { padding: 8px 0; border-bottom: 1px solid var(--vm-color-border); }
+.vm-avas-atom-title { display: flex; gap: 8px; align-items: center; justify-content: space-between; color: var(--vm-color-text-secondary); }
+.vm-avas-chips { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 6px; padding-top: 4px; }
+.vm-avas-shell { display: flex; flex-wrap: wrap; border: 1px solid var(--vm-color-border); border-radius: var(--vm-radius-sm); }
+.vm-avas-shell > button { min-height: 28px; padding: 4px 7px; }
+.vm-avas-shell button[aria-pressed='true'] { background: var(--vm-color-accent-primary-soft); color: var(--vm-color-text-primary); }
+.vm-avas-shell button[aria-pressed='mixed'] { box-shadow: inset 0 -3px var(--vm-color-accent); }
+.vm-avas-components { display: flex; flex-wrap: wrap; width: 100%; padding: 4px; gap: 4px; border-top: 1px solid var(--vm-color-border); }
+.vm-avas-plane-atom { display: flex; gap: 8px; padding: 4px 0; align-items: baseline; color: var(--vm-color-text-secondary); }
+.vm-calculations-count { font-weight: var(--vm-font-weight-strong); }
+.vm-calculations textarea { display: block; box-sizing: border-box; width: 100%; min-height: 240px; margin-top: 6px; resize: vertical; font: var(--vm-text-xs) var(--vm-font-mono); background: var(--vm-color-surface-base); color: var(--vm-color-text-primary); border: 1px solid var(--vm-color-border); border-radius: var(--vm-radius-sm); padding: 8px; white-space: pre; }
+.vm-avas-picker { right: auto; width: min(340px, calc(100vw - 24px)); max-height: min(520px, calc(100dvh - 24px)); z-index: 60; }
+.vm-avas-picker .vm-list-popover__actions { flex-wrap: wrap; }

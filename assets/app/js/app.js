@@ -1131,12 +1131,15 @@
   }
 
   // --- Mode system + shortcut routing ---
-  const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
+  const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement', CALCULATIONS: 'calculations' });
   let currentMode = MODES.DISPLAY;
   let canvasAdaptiveMenuEl = null;
   let displayWindowsController = null;
   const measurements = window.VibeMolMeasurements;
   let measurementsPanel = null;
+  const calculationsModel = window.VibeMolCalculationsModel;
+  let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = "", calculationsViewBeforeFit = null;
+  let calculationsPanelIntroduced = false;
   let measureShowSurfaces = false;
   let measurementPanelIntroduced = false;
   let measurementViewBeforeFit = null;
@@ -1148,6 +1151,7 @@
   let editAtomsMenuBodyEl = null;
   let editAtomsMenuCurrentEl = null;
   let editSelectionTranslateCueEl = null;
+  let editSelectionPositionUi = null;
   let editSelectionTranslateCueButtonEl = null;
   let editSelectionRotateCueButtonEl = null;
   let editSelectionCoordinationCueButtonEl = null;
@@ -5218,7 +5222,7 @@
     }
     controls.target.copy(center);
     controls.update();
-    cameraDepthController.update(contentGroup, camera);
+    cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
   }
 
   /**
@@ -6843,7 +6847,8 @@
     updateTrajectoryPlayback(now);
     updateVibrationPlayback(now);
     controls.update();
-    cameraDepthController.update(contentGroup, camera);
+    if (currentMode === MODES.CALCULATIONS) calculationsRenderer?.updateTransform(atomGroup);
+    cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
     updateEditPlaneHelpers();
     updateTrackedAtomLabelOrientation();
     if (editHaloController) {
@@ -7864,6 +7869,11 @@
   editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
   editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
   editSelectionTranslateCueEl = document.getElementById('editSelectionTranslateCue');
+  editSelectionPositionUi = window.VibeMolEditUi.createSelectionPositionController({
+    root: document.getElementById('editSelectionPosition'),
+    getSnapshot: getSelectionPositionSnapshot,
+    onCommit: (axis, value) => editTransformController?.setSelectionPosition(axis, value),
+  });
   editSelectionTranslateCueButtonEl = document.getElementById('editSelectionTranslateCueButton');
   editSelectionRotateCueButtonEl = document.getElementById('editSelectionRotateCueButton');
   editSelectionCoordinationCueButtonEl = document.getElementById('editSelectionCoordinationCueButton');
@@ -8266,6 +8276,8 @@
   const modeDisplayBtn = document.getElementById('modeDisplayBtn');
   const modeMeasureBtn = document.getElementById('modeMeasureBtn');
   const modeEditBtn = document.getElementById('modeEditBtn');
+  const modeCalculationsBtn = document.getElementById('modeCalculationsBtn');
+  modeCalculationsBtn.hidden = !workspaceEnabled;
   const themeToggleInputEl = document.getElementById('themeToggleInput');
   const themeToggleShellEl = document.getElementById('themeToggleShell');
   const surfaceHoverLabelEl = (() => {
@@ -8310,7 +8322,7 @@
    */
   function syncToolbarModeButtonThemeState() {
     const isDark = getUiTheme() === 'dark';
-    const buttons = [modeDisplayBtn, modeMeasureBtn, modeEditBtn];
+    const buttons = [modeDisplayBtn, modeMeasureBtn, modeEditBtn, modeCalculationsBtn];
     for (const btn of buttons) {
       if (!btn) continue;
       const active = btn.classList.contains('active');
@@ -11119,6 +11131,7 @@
       [modeDisplayBtn, MODES.DISPLAY],
       [modeMeasureBtn, MODES.MEASURE],
       [modeEditBtn, MODES.EDIT],
+      [modeCalculationsBtn, MODES.CALCULATIONS],
     ];
     for (const [btn, mode] of buttons) {
       if (!btn) continue;
@@ -11141,6 +11154,7 @@
       return;
     }
     const prevMode = currentMode;
+    if (newMode === MODES.CALCULATIONS) calculationsViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
     const hadSurfaceContext = meshes.some(mesh => mesh.visible !== false) || cloudGroup.children.length > 0;
     if (newMode === MODES.MEASURE && hadSurfaceContext && !measureShowSurfaces) {
       measurementViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
@@ -11159,10 +11173,10 @@
     endQuaternionViewRotate();
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
-    if (currentMode === MODES.EDIT && !options.preserveTrajectoryPlayback && isAnyTrajectoryPlaybackActive()) {
+    if ((currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS) && !options.preserveTrajectoryPlayback && isAnyTrajectoryPlaybackActive()) {
       stopAllTrajectoryPlayback({ syncUi: true });
     }
-    if (currentMode === MODES.EDIT) {
+    if (currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS) {
       const vibInfo = getActiveVibrationInfo();
       if (vibInfo.enabled) {
         vibrationPlaying = false;
@@ -11178,7 +11192,9 @@
     updateAxisButtons();
     updateEditPlaneHelpers();
     updateEditToolboxUi();
-    if (currentMode === MODES.MEASURE) {
+    if (currentMode === MODES.CALCULATIONS) {
+      setHintMessage('Click atoms to select · choose orbitals in the popup · drag to orbit · click empty space to deselect', { accent: false });
+    } else if (currentMode === MODES.MEASURE) {
       setHintMessage(HINT_MEASURE, { accent: false });
     } else if (currentMode === MODES.EDIT) {
       setHintMessage(HINT_EDIT, { accent: false });
@@ -11187,12 +11203,12 @@
     }
     // Temporary surface suppression exposes atoms without changing layer state.
     // Measure can opt back into surface context from its panel.
-    if (currentMode === MODES.MEASURE || currentMode === MODES.EDIT) {
+    if (currentMode === MODES.MEASURE || currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS) {
       setBondHover(null);
       setSurfaceHover(null);
       hideSurfaceHoverLabel();
     }
-    const suppressSurfaces = currentMode === MODES.EDIT || (currentMode === MODES.MEASURE && !measureShowSurfaces);
+    const suppressSurfaces = currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS || (currentMode === MODES.MEASURE && !measureShowSurfaces);
     if (surfaceRenderSuppressed !== suppressSurfaces) {
       surfaceRenderSuppressed = suppressSurfaces;
       if (typeof updateSurfBtn === 'function') updateSurfBtn();
@@ -11261,14 +11277,27 @@
       measurementViewBeforeFit = null;
     }
     if (currentMode === MODES.EDIT && !workspaceEnabled) measurementsPanel?.setOpen(false);
+    if (currentMode === MODES.CALCULATIONS) {
+      if (!calculationsPanelIntroduced && window.VibeMolWorkbench) {
+        window.VibeMolWorkbench.open('subspacePanel', false);
+        calculationsPanelIntroduced = true;
+      }
+      calculationsPanel.ensureBasis();
+      requestAnimationFrame(() => { if (currentMode === MODES.CALCULATIONS) frameMeasurementAtoms(); });
+    } else if (prevMode === MODES.CALCULATIONS) {
+      if (currentMode === MODES.DISPLAY && calculationsViewBeforeFit?.record === measurementRecord()) restoreSessionView(calculationsViewBeforeFit.view);
+      calculationsViewBeforeFit = null;
+    }
+    syncCalculations(true); updateSelectedHalos();
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
   if (modeMeasureBtn) modeMeasureBtn.onclick = () => setMode(MODES.MEASURE);
   if (modeEditBtn) modeEditBtn.onclick = () => setMode(MODES.EDIT);
+  modeCalculationsBtn.onclick = () => setMode(MODES.CALCULATIONS);
   updateModeButtons();
 
-  const shortcutRegistry = createShortcutRegistry([MODES.DISPLAY, MODES.EDIT, MODES.MEASURE]);
+  const shortcutRegistry = createShortcutRegistry([MODES.DISPLAY, MODES.EDIT, MODES.MEASURE, MODES.CALCULATIONS]);
   const bind = shortcutRegistry.bind;
   const dispatchShortcut = (e, kind, mode, options = {}) => {
     if (!options.allowTyping && isTypingInInput()) return false;
@@ -12009,12 +12038,50 @@
     onChange: () => { updateEditSelectionVisuals(); markSessionChanged(); },
   });
   measurementsPanelBtn.onclick = () => toggleExclusiveDisplayWindow('measurementsPanel');
+  calculationsRenderer = window.VibeMolMinaoRenderer.create({ scene,
+    createMaterial: sign => createSurfaceMaterial(new THREE.Color(sign === 'neg' ? surfaceNegColorDefault : surfacePosColorDefault), 0.65, null),
+    onStatus: text => calculationsPanel?.setStatus(text),
+  });
+  calculationsPanel = window.VibeMolCalculationsPanel.create({ getRecord: measurementRecord,
+    onChange: render => { markSessionChanged(); syncCalculations(render); updateSelectedHalos(); },
+    onSelect: ids => { calculationsModel.setSelectedAtoms(measurementRecord(),ids); syncCalculations(); updateSelectedHalos(); calculationsPicker.show(true); },
+    onOpenChange: () => { window.VibeMolWorkbench?.refresh(); },
+  });
+  calculationsPicker = window.VibeMolCalculationsPicker.create({ getRecord: measurementRecord,
+    isActive: () => currentMode === MODES.CALCULATIONS,
+    getViewport: () => renderer.domElement.getBoundingClientRect(),
+    onChange: () => { markSessionChanged(); syncCalculations(); updateSelectedHalos(); },
+    onDeselect: () => { calculationsModel.setSelectedAtoms(measurementRecord(),[]); syncCalculations(); updateSelectedHalos(); },
+  });
+  function syncCalculations(force = false) {
+    if (!calculationsRenderer) return;
+    const record = measurementRecord(), enabled = currentMode === MODES.CALCULATIONS;
+    if (record) ensureVolumeAtomIds(record.vol);
+    calculationsPanel?.sync();
+    calculationsPicker?.sync();
+    if (!enabled) { calculationsRenderer.setVisible(false); calculationsSignature = ''; return; }
+    const selection = calculationsModel.state(record);
+    const signature = JSON.stringify([record?._sceneGraphSceneKey, selection.selections, selection.planes, record?.vol?.atoms,
+      surfacePosColorDefault, surfaceNegColorDefault, appearanceState.material]);
+    if (!force && signature === calculationsSignature) return;
+    calculationsSignature = signature;
+    calculationsRenderer.sync(record, true); updateSelectedHalos();
+  }
+  async function toggleCalculationAtom(index, extend) {
+    const record = measurementRecord(); if (!record?.vol?.atoms[index]) return;
+    if (currentMode !== MODES.CALCULATIONS || record !== measurementRecord()) return;
+    ensureVolumeAtomIds(record.vol);
+    calculationsModel.toggleAtom(record, String(record.vol.atoms[index].id), extend);
+    syncCalculations(); updateSelectedHalos(); calculationsPicker.show();
+  }
   displayWindowsController = createDisplayWindowsController({
     aliases: workspaceEnabled ? { displayInspector: 'inspector', styleStudio: 'inspector' } : {},
     positionFloatingPopover: positionFloatingPopoverUi,
     keepOpenOnSwitch: id => !!window.VibeMolWorkbench?.manages(id),
     revealHiddenWindow: id => !!window.VibeMolWorkbench?.restoreIfHidden(id),
     entries: {
+      subspacePanel: { id: 'subspacePanel', label: 'Subspace', panelEl: calculationsPanel.panel,
+        isOpen: calculationsPanel.isOpen, setOpen: calculationsPanel.setOpen },
       measurementsPanel: { id: 'measurementsPanel', label: 'Measurements', buttonEl: measurementsPanelBtn,
         panelEl: measurementsPanel.panel, isOpen: measurementsPanel.isOpen, setOpen: open => {
           if (open) closeExclusiveDisplayWindows('measurementsPanel');
@@ -18052,6 +18119,10 @@
   function updateSelectedHalos() {
     if (!atomGroup || !atomGroup.children) return;
     const selectedSet = new Set();
+    if (currentMode === MODES.CALCULATIONS) {
+      const record = measurementRecord(), ids = new Set(calculationsModel.selectedIds(record));
+      for (const atom of calculationsModel.atoms(record)) if (ids.has(atom.id)) selectedSet.add(atom.index);
+    }
     if (currentMode === MODES.MEASURE) {
       for (const idx of editSel) selectedSet.add(idx);
     }
@@ -18464,6 +18535,7 @@
   }
 
   function hideEditSelectionTranslateCue() {
+    editSelectionPositionUi?.sync(null);
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
@@ -20020,6 +20092,18 @@
     };
   }
 
+  function getSelectionPositionSnapshot() {
+    if (currentMode !== MODES.EDIT || getEffectiveEditSelectionDragMode() !== 'translate'
+      || isSelectionBuildCueActive() || getCurrentTransformSelectionContext()?.type === 'bond') return null;
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null, vol = record?.vol;
+    const selection = getEditAtomSelection();
+    if (!vol || !selection.length || getBondCenterSelectionResolved(vol)) return null;
+    const center = getEditSelectionCenterWorld(selection, vol);
+    if (!center) return null;
+    return { record, center, key: JSON.stringify(selection.map(i => vol.atoms[i]?.id)),
+      label: selection.length === 1 ? 'Position (Å)' : 'Center of mass (Å)' };
+  }
+
   function renderEditSelectionTranslateCue() {
     if (!editSelectionTranslateCueEl) return;
     if (currentMode !== MODES.EDIT) {
@@ -20144,7 +20228,11 @@
       editSelectionDeleteCueButtonEl.hidden = false;
       editSelectionDeleteCueButtonEl.setAttribute('aria-pressed', 'false');
     }
-    if (isBondCenterSelection) {
+    const positionSnapshot = getSelectionPositionSnapshot();
+    editSelectionPositionUi?.sync(positionSnapshot);
+    if (positionSnapshot) {
+      setTooltipText(editSelectionTranslateCueEl, '');
+    } else if (isBondCenterSelection) {
       setTooltipText(editSelectionTranslateCueEl, bondCenterSelection.metalPair
         ? `Bond style ${getMetalBondStyleLabel(bondCenterSelection.style)}`
         : `Bond order ${bondCenterSelection.order | 0}`);
@@ -20155,20 +20243,24 @@
     } else {
       setTooltipText(editSelectionTranslateCueEl, effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection');
     }
+    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
+    if (editSelectionPositionUi?.isEditing()) return;
     const badgeWidth = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().width || editSelectionTranslateCueEl.offsetWidth || 42));
     const badgeHeight = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().height || editSelectionTranslateCueEl.offsetHeight || 42));
-    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
-    const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
+    const viewportWidth = Math.max(1, Math.round(window.innerWidth || document.documentElement.clientWidth));
+    const viewportHeight = Math.max(1, Math.round(window.innerHeight || document.documentElement.clientHeight));
     const margin = 12;
     const toolbarRect = toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function'
       ? toolbarEl.getBoundingClientRect()
       : null;
-    const minLeft = toolbarRect ? Math.max(margin, Math.round(toolbarRect.right + 12)) : margin;
+    const maxLeft = Math.max(margin, viewportWidth - badgeWidth - margin);
+    const minLeft = Math.min(maxLeft, toolbarRect ? Math.max(margin, Math.round(toolbarRect.right + 12)) : margin);
     const cueGap = 14;
     let left = Math.round(bounds.maxX + cueGap);
     let top = Math.round(bounds.minY - badgeHeight - cueGap);
     if (left + badgeWidth > viewportWidth - margin) left = Math.round(bounds.minX - badgeWidth - cueGap);
     if (left < minLeft) left = Math.max(minLeft, Math.min(viewportWidth - badgeWidth - margin, Math.round(bounds.maxX + cueGap)));
+    left = Math.max(margin, Math.min(maxLeft, left));
     if (top < margin) top = Math.round(bounds.maxY + cueGap);
     if (top + badgeHeight > viewportHeight - margin) top = Math.max(margin, viewportHeight - badgeHeight - margin);
     editSelectionTranslateCueEl.style.left = `${left}px`;
@@ -20496,7 +20588,7 @@
     const vol = record && record.vol;
     const activeBondCenterSelection = getBondCenterSelectionResolved(vol);
     const selection = getEditAtomSelection();
-    if (selection.length >= 2 && editGizmos && editTransformController) {
+    if (selection.length && editGizmos && editTransformController) {
       const moveGizmoHit = editGizmos.pickMoveHit(e);
       if (moveGizmoHit) {
         const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
@@ -20789,7 +20881,7 @@
       return true;
     }
     const selection = getEditAtomSelection();
-    if (selection.length >= 2 && !(editTransformState.dragActive || editTransformState.rotateDragActive) && editGizmos) {
+    if (selection.length && !(editTransformState.dragActive || editTransformState.rotateDragActive) && editGizmos) {
       const moveGizmoHit = editGizmos.pickMoveHit(e);
       if (moveGizmoHit) {
         editGizmos.setMoveHover(moveGizmoHit.axis);
@@ -22894,7 +22986,7 @@
    */
   function setRaycasterFromEvent(e) {
     setNDCFromEvent(e);
-    cameraDepthController.update(contentGroup, camera);
+    cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
     setCameraRay(raycaster, ndc, camera);
   }
 
@@ -25509,11 +25601,14 @@
       return;
     }
     // Allow hover highlighting in Display, Edit, and Measurement modes.
-    const allowHover = (currentMode === MODES.DISPLAY || currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
+    const allowHover = (currentMode === MODES.DISPLAY || currentMode === MODES.EDIT || currentMode === MODES.MEASURE || currentMode === MODES.CALCULATIONS);
     if (!allowHover) {
       clearMeasurementLabelHover();
       hideSurfaceHoverLabel();
       return;
+    }
+    if (currentMode === MODES.CALCULATIONS) {
+      setHover(pickAtom(e)); setBondHover(null); setSurfaceHover(null); hideSurfaceHoverLabel(); return;
     }
     // Track movement to distinguish click vs drag in measurement and edit modes.
     if ((currentMode === MODES.MEASURE || currentMode === MODES.EDIT) && __editDownPt) {
@@ -25685,6 +25780,10 @@
       beginQuaternionViewRotate(e);
       e.preventDefault();
       return;
+    } else if (currentMode === MODES.CALCULATIONS) {
+      beginQuaternionViewRotate(e);
+      __editClickIdx = obj?.userData?.index ?? -1;
+      e.preventDefault();
     } else if (currentMode === MODES.MEASURE) {
       const labelHit = pickMeasurementLabelHit(e);
       if (labelHit && beginMeasurementLabelDrag(e, labelHit)) {
@@ -25729,6 +25828,11 @@
         updateAxisGuideLine();
         __editDownPt = null; __editClickIdx = -1; __editMoved = false;
         return;
+      }
+    } else if (currentMode === MODES.CALCULATIONS) {
+      if (e.button === 0 && !__editMoved) {
+        if (__editClickIdx >= 0) toggleCalculationAtom(__editClickIdx, e.shiftKey).catch(error => setHintMessage(error.message));
+        else { calculationsModel.setSelectedAtoms(measurementRecord(),[]); syncCalculations(); updateSelectedHalos(); }
       }
     } else if (currentMode === MODES.MEASURE) {
       if (finalizeMeasurementLabelDrag(e)) {
@@ -25888,6 +25992,12 @@
   // Note: Esc handling removed per request. Use on-screen UI to close dialogs.
 
   // Display mode bindings
+  bind('down', MODES.CALCULATIONS, 'Escape', () => {
+    if(calculationsModel.selectedIds(measurementRecord()).length){calculationsModel.setSelectedAtoms(measurementRecord(),[]);syncCalculations();updateSelectedHalos();}
+    else setMode(MODES.DISPLAY);
+  });
+  bind('down', MODES.CALCULATIONS, 'e', () => setMode(MODES.EDIT));
+  bind('down', MODES.CALCULATIONS, 'm', () => setMode(MODES.MEASURE));
   bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
   bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
   // Toggle View window in standard (display) mode
@@ -27892,6 +28002,7 @@
     updateSelectedHalos(); updateTransformBondSelectionHalos(); updateTransformSelectionGuides();
   }
   function finishLookChange(options = {}) {
+    syncCalculations(true);
     applyMoleculeStyleUiState();
     if (options.geometry !== false) rebuildAppearanceMolecules();
     const targets = options.targets || ['atoms', 'bonds', 'surfaces'];
@@ -28050,6 +28161,20 @@
 
   // Public API for browser automation and future integrations.
   window.VibeMolStructure = structureTransportController.getPublicApi();
+  window.VibeMolCalculations = Object.freeze({
+    enter: () => setMode(MODES.CALCULATIONS),
+    ready: () => calculationsModel.loadBasis(),
+    state: () => { const r=measurementRecord(); return JSON.parse(JSON.stringify({ ...calculationsModel.state(r), selectedAtomIds:calculationsModel.selectedIds(r), options:calculationsModel.optionsFor(r) })); },
+    toggleAtom: toggleCalculationAtom,
+    selectAtoms: indices => { const r=measurementRecord();if(!r)return;ensureVolumeAtomIds(r.vol);calculationsModel.setSelectedAtoms(r,indices.map(i=>String(r.vol.atoms[i]?.id)));syncCalculations();updateSelectedHalos();calculationsPicker.show(); },
+    selectShell: (index, shell) => { const r=measurementRecord(); ensureVolumeAtomIds(r.vol); calculationsModel.selectShell(r,String(r.vol.atoms[index].id),shell); markSessionChanged(); syncCalculations(true); },
+    selectComponent: (index, shell, component) => { const r=measurementRecord(); ensureVolumeAtomIds(r.vol); calculationsModel.selectComponent(r,String(r.vol.atoms[index].id),shell,component); markSessionChanged(); syncCalculations(true); },
+    addPlane: indices => { const r=measurementRecord(); const result=calculationsModel.addPlane(r,indices?.map(i=>String(r.vol.atoms[i].id))); markSessionChanged(); syncCalculations(true); return result; },
+    configure: patch => { calculationsModel.setOptions(measurementRecord(),patch); markSessionChanged(); syncCalculations(); },
+    export: () => ({ code: calculationsModel.generate(measurementRecord()), specs: calculationsModel.specs(measurementRecord()), planes: calculationsModel.planeSpecs(measurementRecord()),
+      counts: (() => { const p=calculationsModel.projection(measurementRecord()); return { minao:p.minao,orbitals:p.orbitals,atoms:p.atomCount }; })(), validation: calculationsModel.validation(measurementRecord()) }),
+    cacheSize: () => calculationsRenderer.cacheSize(),
+  });
   window.VibeMolUFFLocal = Object.freeze({
     createActiveLocalUffContext,
     optimizeActiveStructureWithUff,
@@ -29475,6 +29600,7 @@
    */
   function updateSidePanel() {
     measurementsPanel?.sync();
+    syncCalculations();
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     ensureListPopovers();
     if (coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });
@@ -33038,6 +33164,10 @@
     },
     // Match the launcher's UI ids; the internal measurement-mode key is longer.
     getMode: () => currentMode === MODES.MEASURE ? 'measure' : currentMode,
+    calculations: Object.freeze({
+      showPlanes: () => calculationsPanel.showPlanes(),
+      clear: () => { const record = measurementRecord(); if (!record) return; const s = calculationsModel.state(record); s.selections = []; s.planes = []; calculationsModel.setSelectedAtoms(record,[]); markSessionChanged(); syncCalculations(true); },
+    }),
     clearMeasurements: () => {
       if (currentMode !== MODES.MEASURE) return;
       measurements.clear(measurementRecord());

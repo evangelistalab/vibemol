@@ -1345,8 +1345,8 @@ kbd,
   padding-top: 6px;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1357,13 +1357,13 @@ kbd,
   padding: 2px 0 8px 0;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary::-webkit-details-marker,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary::-webkit-details-marker {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary::-webkit-details-marker,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary::-webkit-details-marker {
   display: none;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary::after,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary::after {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary::after,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorSubsectionSummary::after {
   font-family: inherit;
   font-size: 14px;
   line-height: 1;
@@ -1372,13 +1372,13 @@ kbd,
   flex: 0 0 auto;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) details[open]>.inspectorAccordionSummary::after,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) details[open]>.inspectorSubsectionSummary::after {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) details[open]>.inspectorAccordionSummary::after,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) details[open]>.inspectorSubsectionSummary::after {
   content: "▾";
   color: var(--tb-text-color-emphasis);
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody {
   display: grid;
   gap: 8px;
   padding: 12px;
@@ -1390,35 +1390,35 @@ kbd,
 }
 
 #displayInspector,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorGroup,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-row {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorGroup,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-row {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody>.secondary {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionBody>.secondary {
   justify-self: start;
   margin-top: 2px;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section+.vm-appearance-section {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section+.vm-appearance-section {
   margin-top: 16px;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section .vm-section-label {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-section .vm-section-label {
   margin: 0 0 8px;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-button-group,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-select,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-slider {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-button-group,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-select,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-slider {
   width: 100%;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-button-group {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-button-group {
   display: inline-flex;
   align-items: stretch;
   flex: 1 1 auto;
@@ -1426,7 +1426,7 @@ kbd,
 }
 
 /* Compact inspector actions share the same typography and theme colors. */
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm {
   justify-content: flex-start;
   width: auto;
   min-width: 0;
@@ -1443,18 +1443,18 @@ kbd,
   box-shadow: none;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:hover:not(:disabled) {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:hover:not(:disabled) {
   color: var(--vm-color-text-primary);
   background: color-mix(in srgb, var(--vm-color-text-primary) 6%, transparent);
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:focus,
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:focus-visible {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:focus,
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-btn--ghost.vm-btn--sm:focus-visible {
   outline: none;
   box-shadow: var(--vm-shadow-focus-ring);
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item {
   position: static;
   display: inline-flex;
   align-items: center;
@@ -1475,40 +1475,40 @@ kbd,
   white-space: nowrap;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item[aria-checked='true'],
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item[aria-pressed='true'],
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item.active {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item[aria-checked='true'],
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item[aria-pressed='true'],
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-button-group__item.active {
   background: var(--vm-button-group-active);
   color: var(--vm-color-text-primary);
   box-shadow: var(--vm-shadow-sm), 0 0 0 1px var(--vm-color-border);
   font-weight: 600;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-select {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.vm-select {
   min-width: 0;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.secondary {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-row>.vm-field-control>.secondary {
   justify-self: start;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-hidden {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-appearance-hidden {
   display: none !important;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--group {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--group {
   min-width: 0;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--swatch {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--swatch {
   justify-content: flex-start;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--slider .vm-slider {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .vm-field-control--slider .vm-slider {
   --vm-slider-track-width: 100%;
 }
 
-:is(#displayInspector, #styleStudio, #inspector, #appearancePresetSection, #appearanceCameraSection) #appearanceTypefaceRow .vm-button-group__item {
+:is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) #appearanceTypefaceRow .vm-button-group__item {
   padding-left: 8px;
   padding-right: 8px;
 }

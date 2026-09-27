@@ -43,7 +43,7 @@ def check_bar(page):
     assert result['scrollWidth'] <= result['clientWidth'] + 1, result
     assert not result['occluded'], result
     assert result['pressed'] == 0, result
-    assert len(result['radios']) == 3, result
+    assert len(result['radios']) == 4, result
     assert sum(r['checked'] == 'true' for r in result['radios']) == 1, result
     assert sum(r['tab'] == 0 for r in result['radios']) == 1, result
     assert all((r['checked'] == 'true') == (r['tab'] == 0) for r in result['radios']), result
@@ -81,8 +81,8 @@ def run(page):
 
     # A single Tab stop for modes; arrows change the actual mode, not just focus.
     page.locator('#modeDisplayBtn').click()
-    for key, target in [('ArrowRight', 'Measure'), ('ArrowRight', 'Edit'), ('ArrowRight', 'Display'),
-                        ('ArrowUp', 'Edit'), ('ArrowDown', 'Display'), ('End', 'Edit'), ('Home', 'Display'), ('ArrowLeft', 'Edit')]:
+    for key, target in [('ArrowRight', 'Measure'), ('ArrowRight', 'Edit'), ('ArrowRight', 'Calculations'), ('ArrowRight', 'Display'),
+                        ('ArrowUp', 'Calculations'), ('ArrowDown', 'Display'), ('End', 'Calculations'), ('Home', 'Display'), ('ArrowLeft', 'Calculations'), ('ArrowLeft', 'Edit')]:
         page.keyboard.press(key)
         assert page.locator('#mode' + target + 'Btn').evaluate('el => document.activeElement === el')
         assert page.locator('#mode' + target + 'Btn').get_attribute('aria-checked') == 'true'

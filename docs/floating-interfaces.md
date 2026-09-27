@@ -1,6 +1,6 @@
 # Floating interfaces
 
-All 25 custom floating interfaces share `assets/app/js/floating-panels.js`:
+All custom floating interfaces share `assets/app/js/floating-panels.js`:
 
 | Interface | Drag handle |
 | --- | --- |
@@ -10,6 +10,8 @@ All 25 custom floating interfaces share `assets/app/js/floating-panels.js`:
 | Spinor information | Title bar |
 | View | Title bar |
 | Measurements | Title bar; units, precision, copy/export, and per-row actions remain interactive |
+| Subspace | Title bar; calculation settings and assignment actions remain interactive |
+| Atomic orbitals | Title bar; transient single-atom/same-period group shell and component picker, with π-plane fitting |
 | Coordinates | Title bar; units/copy/close controls remain interactive |
 | Trajectory | Title bar; playback/export buttons remain interactive |
 | Frequencies | Title bar; playback/export buttons remain interactive |

@@ -23,6 +23,17 @@ def instrumented_source():
     marker = 'window.VibeMolTesting = Object.freeze({'
     assert source.count(marker) == 1
     return source.replace(marker, '''window.__editProbe = {
+      moveGizmo() {
+        contentGroup.updateMatrixWorld(true);
+        const group=editGizmos.getMoveGroup();
+        return {visible:group.visible, arrows:group.children.map(arrow=>{
+          const point=projectWorldToClient(arrow.localToWorld(new THREE.Vector3(0,1.04,0)));
+          const center=projectWorldToClient(group.getWorldPosition(new THREE.Vector3()));
+          const hit=editGizmos.pickMoveHit({clientX:point.x,clientY:point.y});
+          return {axis:arrow.userData.moveSelectionAxis, point, center, hit:hit?.axis,
+            opacity:arrow.userData.moveSelectionMaterial.opacity};
+        })};
+      },
       reset() { window.__pickCounts = {records:0, segments:0, queries:0}; },
       rebuild() { rebuildScene({preserveView:true}); },
       query(point, fresh=false) {
@@ -121,6 +132,121 @@ def invalidates(page, point, action):
     page.evaluate('()=>__editProbe.reset()')
     action()
     assert compare_fresh(page, point)['counts']['queries'] >= 1, 'Changed geometry/view reused a stale hit'
+
+
+def single_atom_translation(page):
+    mode(page, 'Display')
+    page.evaluate('text=>VibeMolStructure.importFromText(text,"single-atom-translation")', build_fixture_structure())
+    settings(page, {'view.camera.x': 4, 'view.camera.y': 3, 'view.camera.z': 6,
+                    'view.target.x': 0, 'view.target.y': 0, 'view.target.z': 0,
+                    'view.shift.x': 0, 'view.shift.y': 0, 'view.shift.z': 0})
+    mode(page, 'Edit')
+    page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([])')
+    point=page.evaluate('()=>VibeMolTesting.projectActiveAtomToClient(0)')
+    page.mouse.click(point['x'],point['y'],button='right');settle(page)
+    assert page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()')==[0],page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()')
+    page.locator('#editSelectionTranslateCueButton').click();settle(page)
+    coords='()=>VibeMolStructure.exportActive().volume.atoms.map(a=>[a.x,a.y,a.z])'
+    before=page.evaluate(coords)
+    def shortcut(shift=False):
+        page.evaluate('shift=>window.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,shiftKey:shift,bubbles:true,cancelable:true}))',shift)
+        settle(page)
+    for index,axis in enumerate('xyz'):
+        # Undo restores coordinates and clears transient selection in the editor.
+        page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0])');settle(page)
+        gizmo=page.evaluate('()=>__editProbe.moveGizmo()')
+        assert gizmo['visible'],gizmo
+        arrow=next(a for a in gizmo['arrows'] if a['axis']==axis)
+        assert arrow['hit']==axis,arrow
+        x,y=arrow['point']['x'],arrow['point']['y']
+        dx,dy=x-arrow['center']['x'],y-arrow['center']['y']
+        length=(dx*dx+dy*dy)**.5
+        page.mouse.move(x,y);settle(page)
+        assert next(a for a in page.evaluate('()=>__editProbe.moveGizmo().arrows') if a['axis']==axis)['opacity']==1
+        page.mouse.down();page.mouse.move(x+30*dx/length,y+30*dy/length,steps=5);page.mouse.up();settle(page)
+        after=page.evaluate(coords)
+        assert after[1:]==before[1:],(axis,before,after)
+        assert abs(after[0][index]-before[0][index])>1e-4,(axis,before,after)
+        assert all(abs(after[0][k]-before[0][k])<1e-9 for k in range(3) if k!=index),(axis,before,after)
+        shortcut();assert page.evaluate(coords)==before
+        shortcut(True);assert page.evaluate(coords)==after
+        shortcut();assert page.evaluate(coords)==before
+    page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([])');settle(page)
+    assert not page.evaluate('()=>__editProbe.moveGizmo().visible')
+    page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0,1])');settle(page)
+    assert page.evaluate('()=>__editProbe.moveGizmo().visible')
+    mode(page,'Display')
+    assert not page.evaluate('()=>__editProbe.moveGizmo().visible')
+    print('[picking] single-atom XYZ arrows: hover, constrained pointer drags, unselected-atom isolation and undo/redo: passed',flush=True)
+
+
+def selection_position_fields(page):
+    mode(page,'Display')
+    payload=json.loads(build_fixture_structure())
+    payload['volume']['atoms'][1]['Z']=8
+    page.evaluate('v=>VibeMolStructure.importFromText(JSON.stringify(v),"selection-position")',payload)
+    settings(page, {'view.camera.x':4,'view.camera.y':3,'view.camera.z':6,
+                    'view.shift.x':2,'view.shift.y':-1,'view.shift.z':3})
+    mode(page,'Edit')
+    select=lambda indices: page.evaluate('ids=>VibeMolTesting.setEditSelectionIndices(ids)',indices)
+    coords=lambda: page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms.map(a=>[a.x,a.y,a.z])')
+    panel=page.locator('#editSelectionPosition')
+    field=lambda axis: panel.locator('[data-selection-axis="'+axis+'"]')
+    select([0]);settle(page)
+    assert panel.is_visible() and panel.locator('[data-position-label]').inner_text()=='Position (Å)'
+    assert abs(float(field('x').input_value())+.7)<1e-5 # Molecular coordinates, not display shift.
+    before=coords()
+    field('x').fill('-1.25');settle(page)
+    assert field('x').input_value()=='-1.25' and coords()==before
+    field('x').press('Enter');settle(page)
+    assert coords()==[[-1.25,0,0],before[1]]
+    field('y').fill('bad');field('y').press('Enter');settle(page)
+    assert coords()[0]==[-1.25,0,0] and field('y').input_value()=='0.0000'
+    field('y').fill('');field('y').press('Tab');settle(page)
+    assert coords()[0]==[-1.25,0,0]
+    field('z').fill('9');field('z').press('Escape');settle(page)
+    assert coords()[0]==[-1.25,0,0]
+    assert page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()')==[0]
+    field('x').fill('7')
+    select([1]);settle(page);field('x').press('Tab');settle(page)
+    assert coords()==[[-1.25,0,0],before[1]],'A stale draft edited the new selection'
+    select([0,1]);settle(page)
+    assert panel.locator('[data-position-label]').inner_text()=='Center of mass (Å)'
+    masses=page.evaluate('()=>[ATOM_Z_TO_DATA[6].mass,ATOM_Z_TO_DATA[8].mass]')
+    before=coords()
+    com=sum(a[0]*m for a,m in zip(before,masses))/sum(masses)
+    assert abs(float(field('x').input_value())-com)<.000051
+    field('x').fill('0.5');field('x').press('Tab');settle(page)
+    after=coords();delta=.5-com
+    for a,b in zip(after,before):
+        assert abs(a[0]-b[0]-delta)<1e-9 and a[1:]==b[1:]
+    assert field('y').evaluate('el=>el===document.activeElement')
+    field('y').fill('0.3');field('y').press('Enter');settle(page)
+    assert all(abs(a[1]-.3)<1e-9 for a in coords())
+    # Absolute coordinates are undoable; one field change is one history entry.
+    page.evaluate('()=>window.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true,cancelable:true}))');settle(page)
+    assert coords()==after
+    select([0,1]);settle(page)
+    page.locator('#editSelectionRotateCueButton').click();settle(page);assert not panel.is_visible()
+    page.locator('#editSelectionTranslateCueButton').click();settle(page);assert panel.is_visible()
+    page.screenshot(path=str(p.ARTIFACTS/'selection-center-of-mass.png'))
+    mode(page,'Display');assert not panel.is_visible()
+    # Native bohr coordinates must still display/edit absolute angstrom values.
+    payload['volume']['units']='bohr'
+    for atom in payload['volume']['atoms']:
+        atom['x']/=.529177210903
+    page.evaluate('v=>VibeMolStructure.importFromText(JSON.stringify(v),"bohr-position")',payload)
+    mode(page,'Edit');select([0]);settle(page)
+    assert abs(float(field('x').input_value())+.7)<1e-5
+    field('z').fill('0.2');field('z').press('Enter');settle(page)
+    assert abs(coords()[0][2]*.529177210903-.2)<1e-9
+    page.set_viewport_size({'width':390,'height':850});settle(page)
+    box=panel.bounding_box()
+    assert box['x']>=0 and box['x']+box['width']<=390,box
+    for axis in 'xyz':
+        assert field(axis).bounding_box()['width']>=60
+    page.set_viewport_size({'width':1440,'height':1000})
+    print('[picking] editable atom/COM positions: rigid translation, units, undo, input validation, stale focus, Tab and compact layout: passed',flush=True)
 
 
 def slab(page):
@@ -313,6 +439,8 @@ def main():
         page.on('dialog', lambda dialog: dialog.dismiss())
         try:
             page.goto(url + '?workspaceLab=1&appearanceStudy=1'); page.wait_for_function('()=>window.__editProbe')
+            single_atom_translation(page)
+            selection_position_fields(page)
             slab(page)
             multiple_bonds(page)
             occlusion(page)

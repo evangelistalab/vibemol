@@ -1,0 +1,47 @@
+{
+  "materialControls": {
+    "basic": 16,
+    "classic": 8,
+    "emissive": 16,
+    "gel": 16,
+    "ink": 15,
+    "kit": 8,
+    "matte": 16,
+    "metal": 15,
+    "opal": 16,
+    "porcelain": 16,
+    "toon": 15
+  },
+  "after": {
+    "clientHeight": 765,
+    "scrollHeight": 1399,
+    "selection": {
+      "tab": "look",
+      "selected": [
+        {
+          "id": "cube-1",
+          "kind": "cube",
+          "name": "a.cube"
+        }
+      ]
+    },
+    "materialControls": [
+      "appearanceMaterialFamily",
+      "appearanceMaterialPreset",
+      "appearanceMaterialRoughnessRange",
+      "appearanceMaterialRoughness",
+      "appearanceMaterialMetalnessRange",
+      "appearanceMaterialMetalness",
+      "appearanceMaterialClearcoatRange",
+      "appearanceMaterialClearcoat",
+      "appearanceMaterialEnvironmentRange",
+      "appearanceMaterialEnvironment",
+      "appearanceMaterialIridescenceRange",
+      "appearanceMaterialIridescence",
+      "appearanceSpecularColor",
+      "appearanceMaterialEmissionRange",
+      "appearanceMaterialEmission",
+      "appearanceMaterialTint"
+    ]
+  }
+}

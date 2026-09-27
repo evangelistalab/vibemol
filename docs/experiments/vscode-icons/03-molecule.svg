@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <title>VibeMol — Flat molecule</title>
+  <desc>A compact ball-and-stick symbol.</desc>
+  <path d="M128 66V132L60 182M128 132L196 182" stroke="#3b5bd9" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><circle cx="128" cy="62" r="24" fill="#3b5bd9"/><circle cx="59" cy="183" r="25" fill="#3b5bd9"/><circle cx="197" cy="183" r="25" fill="#3b5bd9"/><circle cx="128" cy="132" r="30" fill="#ffc53a"/>
+</svg>

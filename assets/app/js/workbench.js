@@ -62,6 +62,13 @@
   const clearMeasurements = button('Clear measurements', 'backspace', () => host.clearMeasurements(), 'wb-tool');
   clearMeasurements.id = 'workbenchClearMeasurements'; clearMeasurements.hidden = true;
   clearMeasurements.setAttribute('data-tooltip', 'Clear all measurements (undo available in Measurements)'); label(clearMeasurements, 'Clear measurements', 'wb-tool-label'); editTools.append(clearMeasurements);
+  const calculationTools = document.createElement('div'); calculationTools.className = 'wb-context-tools';
+  calculationTools.setAttribute('role', 'group'); calculationTools.setAttribute('aria-label', 'Calculation actions'); calculationTools.hidden = true; tools.append(calculationTools);
+  const subspaceButton = button('Subspace', 'science', () => reveal('subspacePanel'), 'wb-tool');
+  subspaceButton.id = 'workbenchSubspace'; label(subspaceButton, 'Subspace'); subspaceButton.setAttribute('aria-controls', 'subspacePanel');
+  const planesButton = button('π planes', 'layers', () => { reveal('subspacePanel'); host.calculations.showPlanes(); }, 'wb-tool'); label(planesButton, 'π planes');
+  const clearSubspace = button('Clear subspace', 'backspace', () => host.calculations.clear(), 'wb-tool'); label(clearSubspace, 'Clear');
+  calculationTools.append(subspaceButton, planesButton, clearSubspace);
   // Reuse the real buttons and their chemistry/camera handlers. Quick actions
   // are commands in the bar, so they no longer occupy a saved dock or window.
   const quickActions = document.createElement('div'); quickActions.id = 'workbenchQuickActions';
@@ -130,6 +137,8 @@
 
   function available(item) {
     if (item.mode && item.mode !== host.getMode()) return false;
+    if (item.id === 'subspacePanel') return true;
+    if (host.getMode() === 'calculations' && ['moldenInspector','trajectoryPanel','vibrationPanel','spinorInfo','measurementsPanel'].includes(item.id)) return false;
     if (item.id === 'measurementsPanel') return host.getMode() !== 'edit';
     return item.id === 'inspector' || (item.entry.buttonEl && !item.entry.buttonEl.hidden);
   }
@@ -204,7 +213,8 @@
     scheduled = false;
     body.dataset.wbMode = host.getMode();
     const isCompact = compact(); body.dataset.wbCompact = String(isCompact);
-    editTools.hidden = host.getMode() === 'display'; clearMeasurements.hidden = host.getMode() !== 'measure';
+    calculationTools.hidden = host.getMode() !== 'calculations';
+    editTools.hidden = !['edit','measure'].includes(host.getMode()); clearMeasurements.hidden = host.getMode() !== 'measure';
     for (const control of quickButtons) control.disabled = quickActionsSource.hidden;
     for (const control of editTools.children) control.removeAttribute('aria-pressed');
     for (const control of modeButtons) {
@@ -221,7 +231,9 @@
       if (isOpen) previousOpen.add(item.id); else { previousOpen.delete(item.id); if (!pending.has(item.id)) state.parked = state.parked.filter(id => id !== item.id); }
     }
     const placementFor = id => isCompact ? 'bottom' : state.placements[id];
-    const live = entries.filter(item => !host.awaitingRecovery() && open(item) && available(item) && !isParked(item.id));
+    // Recovery delays restoring saved windows above, not windows opened for the
+    // current workspace. A pending recovery choice must not hide live panels.
+    const live = entries.filter(item => open(item) && available(item) && !isParked(item.id));
     const right = live.filter(item => placementFor(item.id) === 'right');
     const bottom = live.filter(item => placementFor(item.id) === 'bottom');
     // Keep a suspended inspector's preferred tab so it returns with its mode.
@@ -237,8 +249,9 @@
     windowStates = new Map(entries.map(item => {
       const placement = placementFor(item.id), isOpen = open(item) && !isParked(item.id);
       return [item.id, { open: isOpen, dock: placement === 'float' ? null : placement,
-        active: !host.awaitingRecovery() && isOpen && available(item) && (placement === 'float' || item.id === (placement === 'right' ? activeRight : activeBottom)) }];
+        active: isOpen && available(item) && (placement === 'float' || item.id === (placement === 'right' ? activeRight : activeBottom)) }];
     }));
+    subspaceButton.setAttribute('aria-expanded', String(windowStates.get('subspacePanel').active && !focus));
     for (const [id, control] of editPanelButtons) {
       control.setAttribute('aria-expanded', String(windowStates.get(id).active && !focus));
       if (placementFor(id) === 'float') control.setAttribute('aria-haspopup', 'dialog');

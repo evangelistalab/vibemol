@@ -1,6 +1,54 @@
 (function (global) {
   'use strict';
 
+  function createSelectionPositionController({ root, getSnapshot, onCommit }) {
+    const inputs = [...root.querySelectorAll('[data-selection-axis]')];
+    const title = root.querySelector('[data-position-label]');
+    let editing = null;
+    const matches = (a, b) => a && b && a.record === b.record && a.key === b.key;
+    const isEditing = () => !root.hidden && root.contains(document.activeElement);
+    function sync(snapshot = getSnapshot(), force = false) {
+      if (!matches(editing, snapshot)) editing = null;
+      if (root.hidden !== !snapshot) root.hidden = !snapshot;
+      if (!snapshot) return;
+      if (title.textContent !== snapshot.label) title.textContent = snapshot.label;
+      for (const input of inputs) {
+        if (!force && editing?.input === input && document.activeElement === input) continue;
+        const value = snapshot.center[input.dataset.selectionAxis].toFixed(4);
+        if (input.value !== value) input.value = value;
+        if (input.hasAttribute('aria-invalid')) input.removeAttribute('aria-invalid');
+      }
+    }
+    function commit(input) {
+      const snapshot = getSnapshot(), draft = editing;
+      editing = null;
+      const text = input.value.trim(), value = Number(text);
+      if (matches(draft, snapshot) && draft.input === input && text !== draft.text && text && Number.isFinite(value)) {
+        onCommit(input.dataset.selectionAxis, value);
+      }
+      sync();
+    }
+    for (const input of inputs) {
+      input.addEventListener('focus', () => {
+        const snapshot = getSnapshot();
+        if (snapshot) editing = { record: snapshot.record, key: snapshot.key, input, text: input.value.trim() };
+      });
+      input.addEventListener('input', () => {
+        input.setAttribute('aria-invalid', String(!input.value.trim() || !Number.isFinite(Number(input.value))));
+      });
+      input.addEventListener('change', () => commit(input));
+      input.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' && event.key !== 'Enter') return;
+        event.preventDefault(); event.stopPropagation();
+        if (event.key === 'Enter') commit(input);
+        else { editing = null; sync(undefined, true); }
+        input.blur();
+      });
+      input.addEventListener('blur', () => { editing = null; sync(); });
+    }
+    return Object.freeze({ sync, isEditing });
+  }
+
   /**
    * Position the floating adaptive edit menu against the toolbar edge.
    * @param {{
@@ -562,6 +610,7 @@
   }
 
   global.VibeMolEditUi = Object.freeze({
+    createSelectionPositionController,
     positionAdaptiveMenu,
     positionFloatingPopover,
     restorePaneHome,

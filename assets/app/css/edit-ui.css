@@ -20,10 +20,47 @@
   gap: 8px;
   pointer-events: none;
   z-index: 34;
+  grid-template-columns: auto minmax(0, 1fr);
+  width: max-content;
+  max-width: calc(100vw - 24px);
 }
 
 #editSelectionTranslateCue[aria-hidden="false"] {
+  display: grid;
+}
+
+.editSelectionCueActions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#editSelectionPosition {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 8px;
+  padding: 10px;
+  border: 1px solid var(--vm-color-border-control);
+  border-radius: var(--vm-radius-md);
+  background: var(--vm-color-surface-control);
+  box-shadow: var(--vm-shadow-control);
+  pointer-events: auto;
+  width: 280px;
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+}
+
+#editSelectionPosition[hidden] { display: none; }
+#editSelectionPositionLabel { grid-column: 1 / -1; }
+#editSelectionPosition .vm-stat-label { color: var(--vm-color-on-control-dim); }
+#editSelectionPosition label { display: grid; gap: 4px; text-align: center; }
+#editSelectionPosition input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-family: var(--vm-font-mono);
+  text-align: center;
 }
 
 #editSelectionTranslateCue .material-symbols-rounded {

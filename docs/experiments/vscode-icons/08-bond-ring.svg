@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <title>VibeMol — Bond ring</title>
+  <desc>A clean molecular ring with one yellow bond.</desc>
+  <path d="M128 40L204 84V172L128 216L52 172V84L128 40Z" stroke="#3b5bd9" stroke-width="22" stroke-linejoin="round"/><path d="M128 40L204 84" stroke="#ffc53a" stroke-width="22" stroke-linecap="round"/>
+</svg>

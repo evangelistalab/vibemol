@@ -31,12 +31,12 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   --toolbar-mode-tab-fg-hover: var(--vm-color-toolbar-tab-fg-hover);
   --toolbar-mode-tab-accent: var(--vm-color-toolbar-tab-accent);
   --toolbar-divider: var(--vm-color-border);
-  position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 210px; flex: 0 0 auto; margin: 0; border: 0; isolation: isolate;
+  position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(340px, calc(100vw - 32px)); flex: 0 0 auto; margin: 0; border: 0; isolation: isolate;
   padding: 2px; background: var(--vm-color-surface-base); border-radius: var(--vm-radius-md);
 }
 .wb-bar #toolbarModeRow::before {
-  content: ''; position: absolute; left: 2px; top: 2px; bottom: 2px; width: calc((100% - 4px) / 3);
+  content: ''; position: absolute; left: 2px; top: 2px; bottom: 2px; width: calc((100% - 4px) / 4);
   border-radius: var(--vm-radius-md); background: var(--vm-color-surface-panel); box-shadow: var(--vm-shadow-sm);
   transform: translateX(calc(var(--wb-mode-index, 0) * 100%)); transition: transform 160ms ease;
   pointer-events: none; z-index: -1;

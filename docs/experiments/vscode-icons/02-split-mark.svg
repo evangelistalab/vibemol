@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <title>VibeMol — Split mark</title>
+  <desc>The same silhouette, with one yellow bond.</desc>
+  <path d="M57 178L128 150L199 178" stroke="#3b5bd9" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/><path d="M128 150V66" stroke="#ffc53a" stroke-width="28" stroke-linecap="round"/>
+</svg>

@@ -11,6 +11,7 @@ It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes
   - `Toon (luminous)`
   - `Kit (collar joints)` (internal style id: `kit`)
 - Edit mode and measurement mode
+- [Calculations mode](docs/calculations.md): select atomic functions on the structure, preview MINAO subspaces and π planes, and generate forte2 AVAS input
 - Save PNG, batch export, and XYZ export
 - Portable preset save/load in the web UI
 - Complete session save/open, with browser autosave and recovery

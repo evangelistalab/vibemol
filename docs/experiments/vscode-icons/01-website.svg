@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <title>VibeMol — Website + nucleus</title>
+  <desc>The existing website mark with a yellow center.</desc>
+  <path d="M128 150V66M128 150L57 178M128 150L199 178" stroke="#3b5bd9" stroke-width="28" stroke-linecap="round"/><circle cx="128" cy="150" r="21" fill="#ffc53a"/>
+</svg>

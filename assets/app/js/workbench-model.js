@@ -1,6 +1,7 @@
 (function (global) {
   'use strict';
   const catalog = Object.freeze([
+    { id: 'subspacePanel', panel: 'subspacePanel', label: 'Subspace', icon: 'science', place: 'right', mode: 'calculations' },
     { id: 'buildPanel', panel: 'editAdaptiveAddAtomPopover', label: 'Build', icon: 'construction', place: 'right', mode: 'edit' },
     { id: 'symmetryPanel', panel: 'editAdaptiveSymmetryPopover', label: 'Symmetry', icon: 'hub', place: 'right', mode: 'edit' },
     { id: 'moldenInspector', panel: 'moldenInspector', label: 'Orbitals', icon: 'blur_on', place: 'right' },

@@ -2274,6 +2274,7 @@
   <link rel="stylesheet" href="./assets/app/css/floating-panels.css">
   <link rel="stylesheet" href="./assets/app/css/workbench.css">
   <link rel="stylesheet" href="assets/app/css/measurements.css">
+  <link rel="stylesheet" href="assets/app/css/calculations.css">
 </head>
 
 <body>
@@ -2326,6 +2327,7 @@
           data-tooltip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure</button>
         <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode"
           data-tooltip="Edit mode: move/add/delete atoms. Shortcut: E">Edit</button>
+        <button id="modeCalculationsBtn" class="secondary tb-modeBtn" type="button" aria-label="Calculations mode" data-tooltip="Choose atomic functions and prepare a forte2 AVAS input" hidden>Calculations</button>
       </div>
     </div>
 
@@ -3260,6 +3262,7 @@
     </div>
   </div>
   <div id="editSelectionTranslateCue" aria-hidden="true" data-tooltip="Selected atoms">
+    <div class="editSelectionCueActions">
     <button id="editSelectionTranslateCueButton" class="editSelectionCueButton is-active" type="button" aria-label="Translate selection" data-tooltip="Translate selection">
       <span class="material-symbols-rounded" aria-hidden="true">open_with</span>
     </button>
@@ -3287,6 +3290,13 @@
     <button id="editSelectionDeleteCueButton" class="editSelectionCueButton is-delete" type="button" aria-label="Delete selection" data-tooltip="Delete selection">
       <span class="material-symbols-rounded" aria-hidden="true">delete</span>
     </button>
+    </div>
+    <div id="editSelectionPosition" role="group" aria-labelledby="editSelectionPositionLabel" hidden>
+      <span id="editSelectionPositionLabel" class="vm-stat-label" data-position-label>Position (Å)</span>
+      <label class="vm-stat-label">X<input class="editAddAtomOperatorCoord" data-selection-axis="x" aria-label="X position (Å)" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" /></label>
+      <label class="vm-stat-label">Y<input class="editAddAtomOperatorCoord" data-selection-axis="y" aria-label="Y position (Å)" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" /></label>
+      <label class="vm-stat-label">Z<input class="editAddAtomOperatorCoord" data-selection-axis="z" aria-label="Z position (Å)" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" /></label>
+    </div>
   </div>
   <div id="editSelectionCoordinationCuePopover" aria-hidden="true"></div>
   <div id="editSelectionMetalBondingCuePopover" aria-hidden="true"></div>
@@ -3802,6 +3812,10 @@
   <script src="./assets/app/js/axis-gizmo.js"></script>
   <!-- edit math helpers -->
   <script src="./assets/app/js/edit-utils.js"></script>
+  <script src="assets/app/js/calculations-model.js"></script>
+  <script src="assets/app/js/minao-renderer.js"></script>
+  <script src="assets/app/js/calculations-panel.js"></script>
+  <script src="assets/app/js/calculations-picker.js"></script>
   <!-- edit command objects -->
   <script src="./assets/app/js/edit-commands.js"></script>
   <!-- edit state/history helpers -->

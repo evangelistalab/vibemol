@@ -5,7 +5,7 @@ import { loadGlobalModules, evaluateInContext } from './load-global-module.mjs';
 function setup() {
   const ctx = loadGlobalModules(['assets/app/js/appearance-model.js', 'assets/app/js/appearance-looks.js',
     'assets/app/js/scene-graph.js', 'assets/app/js/scene-sources.js',
-    'assets/app/js/session-format.js', 'assets/app/js/measurements.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
+    'assets/app/js/session-format.js', 'assets/app/js/measurements.js', 'assets/app/js/calculations-model.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
   const fixture = evaluateInContext(ctx, `(() => {
     const graph = VibeMolSceneGraph.createSceneGraphController();
     const sources = VibeMolSceneSources.createSceneSources({ graph, hasGrid: v => !!v.data.length,
@@ -136,6 +136,29 @@ test('buffers are deduplicated and copied before asynchronous encoding yields', 
   assert.equal(saved.data[0], 0.125);
   assert.equal(saved.data, saved.alphaRe);
   assert.equal(saved.alphaIm, saved.betaRe);
+});
+
+test('AVAS session state survives hydration and rejects oversized or malformed selections', async () => {
+  const {ctx, fixture, capture, format} = setup();
+  fixture.records[0].calculations = ctx.VibeMolCalculationsModel.normalize({
+    selections:[{id:'atom-1',shells:{'2p':['px']}}], options:{reference:'ROHF',ms:1.5,method:'separate',docc:3,uocc:3},
+  });
+  const decoded = await format.decode(await format.encode(capture()));
+  const restored = ctx.VibeMolSessionModule.hydrate(decoded);
+  assert.deepEqual(JSON.parse(JSON.stringify(restored.records[0].calculations)), JSON.parse(JSON.stringify(fixture.records[0].calculations)));
+  for (const damage of [
+    state => { state.selections[0].shells['2p']=['invalid']; },
+    state => { state.selections=Array(2001).fill(state.selections[0]); },
+    state => { state.planes=[['atom-1']]; },
+    state => { state.options.sigma=Infinity; },
+    state => { state.options.minao='x'.repeat(201); },
+  ]) {
+    const old=decoded.sources[0].recordState.calculations;
+    decoded.sources[0].recordState.calculations=JSON.parse(JSON.stringify(old));
+    damage(decoded.sources[0].recordState.calculations);
+    assert.throws(()=>format.validate(decoded),/calculation/);
+    decoded.sources[0].recordState.calculations=old;
+  }
 });
 
 test('session import rejects damaged buffers and bad graph references before applying anything', async () => {

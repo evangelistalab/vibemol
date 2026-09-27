@@ -5,7 +5,7 @@
   const VOLUME_FIELDS = ['title', 'comment', 'natoms', 'units', 'kind', 'origin', 'axes', 'nxyz', 'atoms',
     'bonds', 'annotations', 'fragmentOps', 'isoHint', 'data', 'isTwoComponent', 'alphaRe', 'alphaIm', 'betaRe', 'betaIm'];
   const RECORD_FIELDS = ['moldenMoIndex', 'moldenGridStepAng', 'moldenGridPaddingAng',
-    'measurements', 'measurementLabelOffsets', 'pubchemMeta', '_sceneGraphHasOrbitalsGroup', '_sceneGraphLayerState', '_moldenSceneGraphLayerStateByMo'];
+    'calculations', 'measurements', 'measurementLabelOffsets', 'pubchemMeta', '_sceneGraphHasOrbitalsGroup', '_sceneGraphLayerState', '_moldenSceneGraphLayerStateByMo'];
   const SCENE_FIELDS = ['id', 'name', 'visible', 'expanded', 'sceneKey', 'sourceFile', 'kind', 'meta',
     'moleculeLayerId', 'orbitalsGroupId', 'measurementsGroupId', 'activeLayerId'];
   const LAYER_FIELDS = ['id', 'sceneId', 'parentId', 'kind', 'name', 'visible', 'expanded', 'labelId',
@@ -137,6 +137,7 @@
       if (vol.trajectory) Object.assign(vol.trajectory, { currentFrame: vol.trajectory.frameIndex, playing: false, _lastStepMs: 0 });
       const record = Object.assign({}, normalizeRecordSurfaceState(source.recordState), { name: source.name, vol: prepareVolume(vol), _sceneGraphSceneKey: source.sceneKey });
       if (record.measurements) record.measurements = global.VibeMolMeasurements.normalize(record.measurements);
+      if (record.calculations && global.VibeMolCalculationsModel) record.calculations = global.VibeMolCalculationsModel.normalize(record.calculations);
       return { id: source.id, record };
     });
     const byId = new Map(sources.map(source => [source.id, source.record]));

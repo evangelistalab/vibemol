@@ -173,6 +173,54 @@ def recovery(page,url):
     print('[recovery] naming, visible active source, consent before docks and restore policy: passed',flush=True)
 
 
+def recovery_live_panels(page,url):
+    page.goto(url);page.wait_for_function('()=>window.VibeMolRecovery?.getState().ready')
+    assert p.load(page,[{'name':'recoverable.xyz','text':'O 0 0 0\nH 1 0 0\nH 0 1 0'}])['ok']
+    page.evaluate('()=>VibeMolWorkbench.applyLayout({open:["coordsPanel","inspector"],activeBottom:"coordsPanel",activeRight:"inspector"})')
+    page.wait_for_function('()=>JSON.parse(localStorage.getItem("vibemol.workbench.lab.v1")).last.open.includes("coordsPanel")')
+    assert page.evaluate('()=>VibeMolRecovery.flush({force:true})')
+    original=page.evaluate('async()=> (await VibeMolSessionRecovery.createRecoveryStore().read()).latest')
+    page.reload();page.wait_for_selector('#sessionRecoveryPrompt',state='visible');settle(page)
+    # Saved windows stay deferred; panels explicitly opened now must still work.
+    assert page.locator('#workbenchDockRight').is_hidden() and page.locator('#workbenchDockBottom').is_hidden()
+    page.locator('#workbenchPanelsBtn').click()
+    page.get_by_role('menuitemcheckbox',name='Properties',exact=True).click();settle(page)
+    assert page.locator('#inspector').is_visible() and page.locator('#coordsPanel').is_hidden()
+    assert page.locator('#sessionRecoveryPrompt').is_visible()
+    page.locator('#workbenchPanelsBtn').click()
+    assert page.get_by_role('menuitemcheckbox',name='Properties',exact=True).get_attribute('aria-checked')=='true'
+    page.get_by_role('menuitemcheckbox',name='Properties',exact=True).click();settle(page)
+    assert page.locator('#workbenchDockRight').is_hidden()
+    # Reproduce the reported case: load new work without resolving recovery.
+    assert p.load(page,[{'name':'current.xyz','text':'C 0 0 0\nO 0 0 1.2\nH 0 1 -1\nH 0 -1 -1'}])['ok']
+    page.locator('#modeCalculationsBtn').click();page.evaluate('()=>VibeMolCalculations.ready()');settle(page)
+    assert page.locator('#subspacePanel').is_visible() and page.locator('#workbenchDockRight').is_visible()
+    assert page.locator('#workbenchSubspace').get_attribute('aria-expanded')=='true'
+    page.locator('#workbenchPanelsBtn').click()
+    subspace=page.get_by_role('menuitemcheckbox',name='Subspace',exact=True)
+    assert subspace.get_attribute('aria-checked')=='true' and 'Right' in subspace.inner_text()
+    subspace.click();settle(page)
+    assert page.locator('#subspacePanel').is_hidden()
+    page.locator('#workbenchSubspace').click();settle(page)
+    assert page.locator('#subspacePanel').is_visible()
+    page.evaluate('()=>VibeMolCalculations.toggleAtom(0)');settle(page)
+    assert page.locator('#calculationOrbitalsPopup').is_visible()
+    assert page.evaluate('()=>VibeMolCalculations.state().selectedAtomIds.length')==1
+    assert page.evaluate('()=>VibeMolCalculations.export().specs')==[]
+    page.screenshot(path=str(p.ARTIFACTS/'calculations-pending-recovery.png'))
+    # The recovery choice and scientific snapshot are unaffected by panel actions.
+    assert page.evaluate('()=>VibeMolRecovery.getState().pending')
+    assert not page.evaluate('()=>VibeMolRecovery.flush({force:true})')
+    assert page.evaluate('async()=> (await VibeMolSessionRecovery.createRecoveryStore().read()).latest')==original
+    page.set_viewport_size({'width':850,'height':850});settle(page)
+    assert page.locator('#workbenchDockBottom').is_visible() and page.locator('#subspacePanel').is_visible()
+    page.locator('#recoverSessionBtn').click();page.wait_for_selector('#sessionRecoveryPrompt',state='hidden');settle(page)
+    assert page.locator('#modeDisplayBtn').get_attribute('aria-checked')=='true'
+    assert page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms.length')==3
+    assert page.locator('#coordsPanel').is_visible() or page.locator('#inspector').is_visible()
+    print('[recovery] manual panels, Calculations dock/checkmarks, compact layout and preserved recovery snapshot: passed',flush=True)
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True,args=['--use-angle='+os.environ.get('VIBEMOL_TEST_ANGLE','swiftshader')])
@@ -180,6 +228,9 @@ def main():
         page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())
         try:
             measurements(page,url);workspace(page);recovery(page,url);assert not errors,errors
+            context=browser.new_context(viewport={'width':1512,'height':850})
+            page=context.new_page();page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())
+            recovery_live_panels(page,url);assert not errors,errors
         except Exception:
             p.write_failure_artifacts(page,p.ARTIFACTS,'measurements-failure',errors,[]);raise
         finally:browser.close()
