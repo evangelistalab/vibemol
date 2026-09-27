@@ -2,14 +2,14 @@
   'use strict';
   function create(deps) {
     const model=global.VibeMolCalculationsModel, popup=document.createElement('section');
-    popup.id='calculationOrbitalsPopup';popup.className='vm-popover vm-list-popover vm-calculations vm-avas-picker';
+    popup.id='calculationOrbitalsPopup';popup.className='vm-list-popover vm-selection-card vm-avas-picker';
     popup.setAttribute('role','dialog');popup.setAttribute('aria-label','Atomic orbitals');popup.setAttribute('aria-hidden','true');
-    popup.innerHTML=`<header class="vm-list-popover__header motionPanelHeader" data-vm-drag-handle tabindex="0"><span class="vm-list-popover__title title">Atomic orbitals</span><div class="vm-list-popover__actions"><button class="vm-btn vm-btn--ghost" type="button" data-close aria-label="Close atomic orbitals">×</button></div></header>
-      <div class="vm-list-popover__body"><p class="vm-session-status" data-selection></p>
-      <p class="vm-session-status" data-reason></p><div class="vm-avas-chips" data-shells></div>
-      <section class="vm-appearance-section" data-plane><p class="vm-section-label">π plane</p><p class="vm-session-status" data-plane-reason></p><button class="vm-btn vm-btn--ghost" type="button" data-fit>Fit π plane</button></section>
-      <p class="vm-session-status">Shells include all components. Expand p or d to choose individual orbitals. An underline marks mixed assignments.</p>
-      <div class="vm-list-popover__actions"><button class="vm-btn vm-btn--ghost" type="button" data-remove>Remove orbitals</button><button class="vm-btn vm-btn--ghost" type="button" data-deselect>Deselect atoms</button></div></div>`;
+    popup.innerHTML=`<header class="vm-list-popover__header vm-selection-card__header" data-vm-drag-handle tabindex="0"><span class="editAddAtomOperatorTitle"><span class="material-symbols-rounded" aria-hidden="true">drag_indicator</span><span class="editAddAtomOperatorLabel">Atomic orbitals</span></span><button class="motionPanelIconBtn" type="button" data-close aria-label="Close atomic orbitals">×</button></header>
+      <div class="vm-list-popover__body"><p class="vm-stat-label" data-selection></p>
+      <p class="vm-avas-note" data-reason></p><div class="vm-avas-chips" data-shells></div>
+      <section class="vm-avas-plane" data-plane><p class="vm-stat-label">π plane</p><p class="vm-avas-note" data-plane-reason></p><div class="editAddMoleculeOperatorButtonRow vm-avas-actions"><button type="button" data-fit>Fit π plane</button></div></section>
+      <p class="vm-avas-note">Shells include all components. Expand p or d to choose individual orbitals. An underline marks mixed assignments.</p>
+      <div class="editAddMoleculeOperatorButtonRow vm-avas-actions"><button type="button" data-remove>Remove orbitals</button><button type="button" data-deselect>Deselect atoms</button></div></div>`;
     document.body.append(popup);
     const floating=global.VibeMolFloatingPanels.register(popup,{label:'Atomic orbitals',handle:'[data-vm-drag-handle]'});
     const $=selector=>popup.querySelector(selector),expanded=new Set();
@@ -17,7 +17,8 @@
     const isOpen=()=>popup.classList.contains('open');
     function close(){if(isOpen()){popup.classList.remove('open');popup.setAttribute('aria-hidden','true');}}
     function pressed(values){return values.every(Boolean)?'true':values.some(Boolean)?'mixed':'false';}
-    function button(text,label,callback){const b=document.createElement('button');b.type='button';b.className='vm-btn vm-btn--ghost';b.textContent=text;b.setAttribute('aria-label',label);b.onclick=callback;return b;}
+    function button(text,label,callback){const b=document.createElement('button');b.type='button';b.className='editSelectionCueButton';b.textContent=text;b.setAttribute('aria-label',label);b.onclick=callback;return b;}
+    function markPressed(button,value){button.setAttribute('aria-pressed',value);button.classList.toggle('is-active',value==='true');}
     function sync(){
       if(!isOpen())return;
       const record=deps.getRecord(),context=model.selectionContext(record);
@@ -35,16 +36,17 @@
         const wrapper=document.createElement('div');wrapper.className='vm-avas-shell';
         const choices=ids.map(id=>model.choiceFor(record,id,shell.label));
         const chip=button(shell.label,`${shell.label} shell`,()=>{model.selectShells(record,ids,shell.label);deps.onChange();});
-        chip.setAttribute('aria-pressed',choices.every(c=>c==='all')?'true':choices.some(Boolean)?'mixed':'false');wrapper.append(chip);
+        markPressed(chip,choices.every(c=>c==='all')?'true':choices.some(Boolean)?'mixed':'false');wrapper.append(chip);
         const components=model.componentsFor(shell.label[1]);
         if(components.length>1){
           const caret=button('▾',`${shell.label} components`,()=>{if(expanded.has(shell.label))expanded.delete(shell.label);else expanded.add(shell.label);sync();});
-          caret.className+=' vm-avas-caret';caret.setAttribute('aria-expanded',String(expanded.has(shell.label)));wrapper.append(caret);
+          caret.className='motionPanelIconBtn vm-avas-caret';caret.setAttribute('aria-expanded',String(expanded.has(shell.label)));wrapper.append(caret);
           if(expanded.has(shell.label)){
+            wrapper.classList.add('is-expanded');
             const row=document.createElement('div');row.className='vm-avas-components';
             for(const component of components){
               const b=button(component,`${shell.label[0]}${component} orbital`,()=>{model.selectComponents(record,ids,shell.label,component);deps.onChange();});
-              b.setAttribute('aria-pressed',pressed(choices.map(c=>c==='all'||Array.isArray(c)&&c.includes(component))));row.append(b);
+              markPressed(b,pressed(choices.map(c=>c==='all'||Array.isArray(c)&&c.includes(component))));row.append(b);
             }
             wrapper.append(row);
           }

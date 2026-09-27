@@ -664,6 +664,7 @@
   const canvas = document.getElementById('canvas');
   const canvasEl = canvas;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  let figureRendering = false, figurePanel = null, figureComposer = null, figureRenderer = null;
   renderer.setPixelRatio(1);
   renderer.autoClear = false; // allow overlay rendering in same canvas
   const rendererDrawBufferSize = new THREE.Vector2();
@@ -825,6 +826,7 @@
    * @param {number} height
    */
   function updateActiveCameraProjection(width, height) {
+    if (figureRendering && figureRenderer) { figureRenderer.projection(width, height); return; }
     const w = Math.max(1, Number(width) || 1);
     const h = Math.max(1, Number(height) || 1);
     const aspect = w / h;
@@ -1225,6 +1227,7 @@
    * Uses the drop container bounds so sidebar layout changes keep correct aspect.
    */
   function resize() {
+    if (figureRendering) return;
     const cssSize = readViewportCssSize();
     resizeRendererToViewport({
       cssWidth: cssSize.width,
@@ -1569,6 +1572,8 @@
   function flashOutlinerLayer(...args) { return getSceneOutliner().flashOutlinerLayer(...args); }
   function finishOutlinerRename(...args) { return getSceneOutliner().finishOutlinerRename(...args); }
   function markSessionChanged() {
+    if (figureRendering) return;
+    figurePanel?.invalidate();
     if (appearanceStudy) return;
     if (sessionRecovery && !applyingSession && !(sessionController && sessionController.isOpening())) sessionRecovery.markDirty();
   }
@@ -5113,6 +5118,10 @@
     hasIsoInput: () => !!isoInput,
     rebuildScene,
   });
+  function estimateSurfaceAutoIso(vol, compMode) {
+    const stride = autoIsoController.pickAutoIsoSampleStride(vol);
+    return autoIsoController.estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
+  }
   window.addEventListener('beforeunload', disposeDofPostprocessResources);
 
   /**
@@ -6843,6 +6852,7 @@
    * Main animation loop: render scene, optional split-view, FPS meter, and axis overlay.
    */
   function render() {
+    if (figureRendering) { requestAnimationFrame(render); return; }
     const now = performance.now();
     updateTrajectoryPlayback(now);
     updateVibrationPlayback(now);
@@ -12080,6 +12090,8 @@
     keepOpenOnSwitch: id => !!window.VibeMolWorkbench?.manages(id),
     revealHiddenWindow: id => !!window.VibeMolWorkbench?.restoreIfHidden(id),
     entries: {
+      figurePanel: { id: 'figurePanel', label: 'Figure',
+        isOpen: () => !!figurePanel?.isOpen(), setOpen: open => figurePanel?.setOpen(open) },
       subspacePanel: { id: 'subspacePanel', label: 'Subspace', panelEl: calculationsPanel.panel,
         isOpen: calculationsPanel.isOpen, setOpen: calculationsPanel.setOpen },
       measurementsPanel: { id: 'measurementsPanel', label: 'Measurements', buttonEl: measurementsPanelBtn,
@@ -32602,8 +32614,7 @@
 
         if (!skipAutoIso && getLayerAutoIsoEnabled(layer)) {
           try {
-            const stride = autoIsoController.pickAutoIsoSampleStride(vol);
-            const estimated = autoIsoController.estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
+            const estimated = estimateSurfaceAutoIso(vol, compMode);
             if (Number.isFinite(estimated) && estimated > 0) {
               const changed = layer.isoPending || layer.iso !== estimated;
               layer.iso = estimated;
@@ -32654,6 +32665,7 @@
 
     refreshSimulationBoxes();
     applyCameraStrategy(preserveView, savedCam, savedTarget);
+    if (figureRendering) return;
     updateSidePanel();
     updatePostRebuildUI(activeSurfaceVol || moleculeVol, activeSurfaceCompMode);
     syncAppearanceControlsToActiveLayer();
@@ -32720,7 +32732,7 @@
 
   let batchExportRunning = false;
   batchBtn.onclick = async () => {
-    if (batchExportRunning) return;
+    if (batchExportRunning || figureComposer?.isRunning()) return;
     const exporter = window.VibeMolSceneExport;
     const targets = exporter.listTargets(sceneGraphController);
     if (!targets.length) return;
@@ -32784,6 +32796,151 @@
       batchBtn.disabled = false;
     }
   };
+
+  // Figure output owns a short rendering transaction, independent of sessions/Looks.
+  const figureExporter = window.VibeMolSceneExport;
+  const figureLayerKeys = ['iso', 'autoIso', 'isoPending', 'opacity', 'colorScheme', 'posColor', 'negColor', 'styleOverrides'];
+  const figureAutoIsoValues = new Map();
+  let figureFinalTarget = null, figurePostMaterial = null, figurePostScene = null;
+  function figureTargets() {
+    return figureExporter.listTargets(sceneGraphController).map(t => ({ id:t.layer.id, name:t.name,
+      sceneName:t.scene.name, iso:isCubeLikeLayer(t.layer) ? Number(t.layer.iso) || DEFAULT_ISO_VALUE : null }));
+  }
+  function figureSharedIso(targets) {
+    return Number(getActiveCubeLayer()?.iso) || Number(targets.find(t => Number(t.iso || t.layer?.iso)>0)?.iso
+      || targets.find(t => Number(t.layer?.iso)>0)?.layer.iso) || DEFAULT_ISO_VALUE;
+  }
+  function activateFigureTarget(target, options) {
+    figureExporter.activateTarget(sceneGraphController,target);
+    target.layer.visible=true;
+    currentIndex=Math.max(0,getRecordIndex(target.layer.record || target.scene.moleculeRecord));
+    if(isCubeLikeLayer(target.layer)) {
+      if(options.sharedIso)Object.assign(target.layer,{iso:Number(options.iso),autoIso:false,isoPending:false});
+      else if(getLayerAutoIsoEnabled(target.layer)) {
+        // Hidden/deferred orbitals can still have an old numeric iso. Resolve
+        // the same threshold as the viewport before the union-bounds pass,
+        // then reuse it for capture without persisting temporary layer edits.
+        if(!figureAutoIsoValues.has(target.layer)) {
+          const vol=getLayerCubeData(target.layer), compMode=getComponentMode(vol);
+          selectActiveRawComponent(vol,compMode);
+          figureAutoIsoValues.set(target.layer,hasVolumetricGrid(vol)?estimateSurfaceAutoIso(vol,compMode):NaN);
+        }
+        const iso=figureAutoIsoValues.get(target.layer);
+        if(Number.isFinite(iso)&&iso>0)Object.assign(target.layer,{iso,isoPending:false});
+      }
+      if(options.sharedLook)Object.assign(target.layer,{opacity:surfaceOpacityDefault,colorScheme:surfaceColorSchemeDefault,
+        posColor:surfacePosColorDefault,negColor:surfaceNegColorDefault,styleOverrides:{}});
+    }
+  }
+  function figureHelpers() {
+    return [editGridHelper,editSelGroup,addPreviewGroup,addAngleGuideGroup,transformGuideGroup,symmetryElementGuideGroup,
+      autoHydrogenPreviewGroup,gestureVoidPreviewGroup,editHaloGhostPreviewGroup,calculationsRenderer?.group,
+      editGizmos.getMoveGroup(),editGizmos.getRotateGroup()].filter(Boolean);
+  }
+  function rebuildFigureScene() {
+    // Activation has resolved per-orbital Auto-iso or applied the fixed lock.
+    rebuildScene({preserveView:true,skipAutoIso:true});
+    figureHelpers().forEach(obj=>{obj.visible=false;});
+    contentGroup.updateMatrixWorld(true);
+  }
+  function renderFigurePixels(size,pixelScale) {
+    const metrics={cssWidth:size,cssHeight:size,bufferWidth:size,bufferHeight:size,dpr:1};
+    const target=ensureSceneRenderTargets(metrics);renderer.setRenderTarget(target);
+    renderSceneFrame(metrics,target);
+    if(!figureFinalTarget || figureFinalTarget.width!==size) {
+      figureFinalTarget?.dispose();
+      figureFinalTarget=new THREE.WebGLRenderTarget(size,size,{format:THREE.RGBAFormat,type:THREE.UnsignedByteType,depthBuffer:false});
+      figureFinalTarget.texture.colorSpace=THREE.SRGBColorSpace;
+    }
+    if(figurePostMaterial)figurePostMaterial.dispose();
+    const source=isDepthOfFieldActive()?dofPostMaterial:sceneBlitMaterial;
+    figurePostMaterial=source.clone();
+    // Our color passes blend onto transparent black. Unpremultiply BEFORE the
+    // final tone/color-space conversion so translucent edges retain their color.
+    figurePostMaterial.fragmentShader=source.fragmentShader.replace('#include <tonemapping_fragment>',
+      'if (gl_FragColor.a > 0.00001) gl_FragColor.rgb /= gl_FragColor.a;\n#include <tonemapping_fragment>');
+    if(isDepthOfFieldActive()) {
+      updateDofUniformState(metrics,target);figurePostMaterial.uniforms=dofUniforms;
+      dofUniforms.blurAmount.value=getDofBlurAmount()*pixelScale;
+    } else {sceneBlitUniforms.tColor.value=target.texture;figurePostMaterial.uniforms=sceneBlitUniforms;}
+    figurePostScene=new THREE.Scene();figurePostScene.add(new THREE.Mesh(sceneBlitQuad.geometry,figurePostMaterial));
+    renderer.setRenderTarget(figureFinalTarget);renderer.setViewport(0,0,size,size);renderer.setScissorTest(false);renderer.clear();
+    renderer.render(figurePostScene,dofPostCamera);
+    const bytes=new Uint8Array(size*size*4);renderer.readRenderTargetPixels(figureFinalTarget,0,0,size,size,bytes);
+    const image=document.createElement('canvas');image.width=size;image.height=size;
+    const ctx=image.getContext('2d'), data=ctx.createImageData(size,size), stride=size*4;
+    for(let y=0;y<size;y++)data.data.set(bytes.subarray((size-y-1)*stride,(size-y)*stride),y*stride);
+    ctx.putImageData(data,0,0);return image;
+  }
+  let figureUiState=null;
+  function pauseFigureUI(preview) {
+    const rect=canvas.getBoundingClientRect(), freeze=document.createElement('canvas');
+    freeze.className='vm-figure-freeze';freeze.width=canvas.width;freeze.height=canvas.height;
+    freeze.getContext('2d').drawImage(canvas,0,0);
+    Object.assign(freeze.style,{left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});
+    const overlay=document.createElement('div');overlay.className='vm-figure-busy';overlay.hidden=preview;
+    overlay.innerHTML='<span role="status">Composing figure…</span><button type="button" class="vm-btn vm-btn--ghost">Cancel</button>';
+    overlay.querySelector('button').onclick=()=>figureComposer.cancel();
+    const elements=Array.from(document.body.children).filter(el=>!el.inert);
+    figureUiState={freeze,overlay,elements,focus:document.activeElement};
+    elements.forEach(el=>{el.inert=true;});document.body.append(freeze,overlay);
+  }
+  figureRenderer=window.VibeMolFigureRenderer.create({THREE,renderer,scene,controls,camera:()=>camera,
+    viewportHeight:()=>currentViewportMetrics.cssHeight,
+    pause: ({preview}) => {
+      figureAutoIsoValues.clear();
+      const state={ graph:figureExporter.captureGraphState(sceneGraphController),currentIndex,currentMode,
+        surfaceRenderSuppressed,showSurfaces,surfaceGeometryDeferred,
+        layers:getAllLookLayers().map(layer=>({layer,values:Object.fromEntries(figureLayerKeys.map(key=>[key,{own:Object.hasOwn(layer,key),value:cloneJsonLike(layer[key])}]))})),
+        helpers:figureHelpers().map(obj=>({obj,visible:obj.visible})),
+        master:{...getTrajectorySyncMaster()},trajectories:getAllTrajectoryInfos().map(info=>({traj:info.traj,playing:info.traj.playing})),vibrationPlaying,
+        orbitals:volumes.filter(r=>r.vol.kind==='molden').map(record=>({record,index:record.moldenMoIndex})),
+      };
+      figureRendering=true;pauseFigureUI(preview);
+      getTrajectorySyncMaster().playing=false;for(const info of getAllTrajectoryInfos())info.traj.playing=false;vibrationPlaying=false;
+      currentMode=MODES.DISPLAY;surfaceRenderSuppressed=false;showSurfaces=true;
+      return state;
+    },
+    activate:activateFigureTarget,rebuild:rebuildFigureScene,bounds:()=>collectVisibleSceneBounds().contentBox,
+    renderPixels:renderFigurePixels,
+    restoreApp: state => {
+      figureExporter.restoreGraphState(sceneGraphController,state.graph);
+      for(const {layer,values} of state.layers)for(const [key,entry] of Object.entries(values)){if(entry.own)layer[key]=entry.value;else delete layer[key];}
+      currentIndex=state.currentIndex;currentMode=state.currentMode;surfaceRenderSuppressed=state.surfaceRenderSuppressed;showSurfaces=state.showSurfaces;
+      Object.assign(getTrajectorySyncMaster(),state.master,{lastStepMs:0});for(const {traj,playing} of state.trajectories)Object.assign(traj,{playing,_lastStepMs:0});
+      vibrationPlaying=state.vibrationPlaying;vibrationLastStepMs=0;
+      for(const {record,index} of state.orbitals)record.moldenMoIndex=index;
+      rebuildScene({preserveView:true,skipAutoIso:true});surfaceGeometryDeferred=state.surfaceGeometryDeferred;
+      for(const {obj,visible} of state.helpers)obj.visible=visible;
+    },
+    dispose:()=>{figureAutoIsoValues.clear();figureFinalTarget?.dispose();figureFinalTarget=null;figurePostMaterial?.dispose();figurePostMaterial=null;figurePostScene=null;disposeSceneRenderTargets();},
+    resume:()=>{
+      // Suppress autosave/preview invalidation while restoring the original UI.
+      try {syncLoadedSceneControls();updatePostRebuildUI(volumes[currentIndex]?.vol,getComponentMode(volumes[currentIndex]?.vol));updateSidePanel();updateSelectedHalos();}
+      finally {
+        figureRendering=false;
+        const ui=figureUiState;figureUiState=null;
+        if(ui){ui.freeze.remove();ui.overlay.remove();ui.elements.forEach(el=>{el.inert=false;});if(ui.focus?.isConnected)ui.focus.focus({preventScroll:true});}
+      }
+    },
+  });
+  figureComposer=window.VibeMolFigureComposer.create({graph:sceneGraphController,...figureRenderer,
+    busy:()=>!!(batchExportRunning || applyingSession || sessionController?.isOpening() || fileLoaderController.isLoading()
+      || autoHydrogenPreviewGroup.children.length || getSessionBusyReason()),
+    sharedIso:figureSharedIso,
+    colors:background=>{
+      const color=background==='transparent'?null:background==='white'?'#ffffff':scene.background?.isColor?'#'+scene.background.getHexString():'#ffffff';
+      const c=new THREE.Color(color||'#ffffff'), luminance=.2126*c.r+.7152*c.g+.0722*c.b;
+      return {background:color,foreground:luminance<.3?'#ffffff':'#1a2230'};
+    },fontFamily:()=>getComputedStyle(document.documentElement).getPropertyValue('--vm-font-sans').trim()||'sans-serif',
+  });
+  figurePanel=window.VibeMolFigurePanel.create({targets:figureTargets,sharedIso:figureSharedIso,limits:figureRenderer.limits,
+    compose:figureComposer.compose,sceneName:()=>getFocusedScene()?.name||'vibemol',onOpenChange:()=>window.VibeMolWorkbench?.refresh()});
+  window.VibeMolFigure=Object.freeze({compose:figureComposer.compose,listTargets:figureTargets,limits:figureRenderer.limits,
+    open:()=>{figurePanel.setOpen(true);window.VibeMolWorkbench?.open('figurePanel');},
+    viewport:()=>({width:canvas.width,height:canvas.height,pixelRatio:renderer.getPixelRatio(),...figureRenderer.cameraSnapshot()}),
+  });
+  document.addEventListener('keydown',event=>{if(!figureRendering)return;if(event.key==='Escape')figureComposer.cancel();event.preventDefault();event.stopImmediatePropagation();},true);
 
   // Helpers to load the sample cube or demo
   /**
@@ -32928,7 +33085,7 @@
   }
 
   function getSessionBusyReason() {
-    if (batchExportRunning || (trajectoryVideoController && trajectoryVideoController.isActive())
+    if (figureRendering || batchExportRunning || (trajectoryVideoController && trajectoryVideoController.isActive())
       || (vibrationVideoController && vibrationVideoController.isActive())) return 'Finish the current export before saving or opening a session.';
     if (moldenRenderFrameId || moldenGridCommitDebounceTimer || getSceneOutliner().isComputing()) return 'Wait for the current calculation to finish.';
     if (addGrowActive || moleculePlaceActive || addFusePreviewState || transformActive) return 'Finish or cancel the current placement before saving or opening a session.';

@@ -9,6 +9,7 @@
     { id: 'coordsPanel', panel: 'coordsPanel', label: 'Coordinates', icon: 'table_rows', place: 'bottom' },
     { id: 'inspector', panel: 'inspector', label: 'Properties', icon: 'tune', place: 'right' },
     { id: 'viewPanel', panel: 'sidePanel', label: 'Camera', icon: 'view_in_ar', place: 'right' },
+    { id: 'figurePanel', panel: 'figurePanel', label: 'Figure', icon: 'grid_view', place: 'right' },
     { id: 'trajectoryPanel', panel: 'trajectoryPanel', label: 'Trajectory', icon: 'timeline', place: 'bottom' },
     { id: 'vibrationPanel', panel: 'vibrationPanel', label: 'Frequencies', icon: 'graphic_eq', place: 'bottom' },
     { id: 'spinorInfo', panel: 'spinorInfoPanel', label: 'Spinor info', icon: 'info', place: 'right' },

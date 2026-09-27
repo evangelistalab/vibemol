@@ -42,6 +42,7 @@ Primary capabilities:
 - `assets/app/js/scene-graph.js`: authoritative scene/layer model and explicit rename, move, order, focus, and visibility commands.
 - `assets/app/js/scene-sources.js`: incremental source registration and metadata-only registration of every Molden orbital; redraws never reconstruct the graph.
 - `assets/app/js/scene-export.js`: explicit batch targets and restoration of graph state after success or failure.
+- `assets/app/js/figure-composer.js`, `figure-renderer.js`, `figure-panel.js`, and `assets/app/css/figure.css`: dockable publication-figure grids with one locked camera, union fitting, shared iso/Look, print PNG/SVG, and finally-based renderer/state restoration. Loaded after scene-export. Output settings are transient, not preset/session state. See `docs/figure-composer.md` and `tests/e2e/figure.py`; oversized panels report a device/8192px cap (tiling deferred).
 - `assets/app/js/scene-outliner.js` and `assets/app/css/scene-outliner.css`: outliner rows, rename sessions, drag feedback, menus, and arithmetic forms.
 - `assets/app/js/grid-store.js`: bounded immutable-grid cache keyed by source, orbital, geometry, and grid settings.
 - `assets/app/js/arithmetic-grid.js`: allocation-free grid validation/planning and chunked scalar arithmetic.

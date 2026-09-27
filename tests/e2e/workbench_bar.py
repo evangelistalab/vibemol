@@ -188,7 +188,8 @@ def run(page):
         for mode in ['Display', 'Measure', 'Edit']:
             page.locator('#mode' + mode + 'Btn').click()
             result = check_bar(page)
-            assert len(result['rows']) == (9 if mode == 'Edit' else 8), result
+            assert len(result['rows']) == (10 if mode == 'Edit' else 9), result
+            assert any(row['id']=='figurePanel' for row in result['rows']),result
             report['responsive'].append({'width': width, **result})
         if width == 320: screenshot(page, 'mobile-edit')
     page.evaluate('() => { for (const button of __allPanelButtons) delete button.hidden; }')

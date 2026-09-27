@@ -1,0 +1,19 @@
+.vm-figure { position: fixed; top: 80px; right: 24px; width: min(400px, calc(100vw - 24px)); max-height: calc(100dvh - 96px); font: var(--vm-text-sm) var(--vm-font-sans); }
+.vm-figure [hidden] { display: none !important; }
+.vm-figure .vm-list-popover__body { padding: 8px 12px 12px; }
+.vm-figure section, .vm-figure-camera { margin: 12px 0; padding: 10px 0 0; border: 0; border-top: 1px solid var(--vm-color-border); min-width: 0; }
+.vm-figure .vm-field-control > :is(input:not([type='checkbox']),select) { min-width: 0; width: 100%; }
+.vm-figure-note { color: var(--vm-color-text-secondary); font-size: var(--vm-text-sm); line-height: 1.5; margin: 8px 0; overflow-wrap: anywhere; }
+.vm-figure-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.vm-figure-row > .vm-section-label { margin-right: auto; }
+.vm-figure-targets { margin: 8px 0; padding: 0; list-style: none; max-height: 240px; overflow: auto; }
+.vm-figure-targets li { display: grid; grid-template-columns: 24px 20px minmax(0,1fr); gap: 6px; align-items: center; margin-bottom: 6px; }
+.vm-figure-targets input[type='text'] { box-sizing: border-box; min-width: 0; width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--vm-color-border); border-radius: var(--vm-radius-sm); background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); }
+.vm-figure-grip.vm-btn { padding: 0; min-width: 24px; cursor: grab; }
+.vm-figure-camera label { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+.vm-figure-preview { min-height: 70px; display: grid; place-items: center; border: 1px solid var(--vm-color-border); border-radius: var(--vm-radius-sm); overflow: hidden; background: repeating-conic-gradient(var(--vm-color-surface-panel) 0% 25%, var(--vm-color-surface-secondary) 0% 50%) 0 0 / 16px 16px; }
+.vm-figure-preview img { display: block; width: 100%; height: auto; }
+.vm-figure-preview span { padding: 16px; color: var(--vm-color-text-secondary); }
+.vm-figure-freeze { position: fixed; pointer-events: none; z-index: 29; }
+.vm-figure-busy { position: fixed; inset: 0; z-index: 20001; display: grid; place-content: center; justify-items: center; gap: 16px; background: rgba(20,28,40,.65); color: white; font: var(--vm-text-base) var(--vm-font-sans); }
+.vm-figure-busy[hidden] { display: none; }

@@ -317,9 +317,9 @@
       white-space: nowrap;
     }
 
-    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) select,
-    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) input[type="number"],
-    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) input[type="text"] {
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #figurePanel, #appearanceCameraSection) select,
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #figurePanel, #appearanceCameraSection) input[type="number"],
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #figurePanel, #appearanceCameraSection) input[type="text"] {
       height: 30px;
       border: 1px solid var(--vm-color-border);
       border-radius: 8px;
@@ -2035,9 +2035,9 @@
       justify-content: flex-start;
     }
 
-    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) select,
-    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) input[type="number"],
-    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #appearanceCameraSection) input[type="text"] {
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #figurePanel, #appearanceCameraSection) select,
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #figurePanel, #appearanceCameraSection) input[type="number"],
+    :is(#toolbar, #styleStudio, #inspector, #displayInspector, #figurePanel, #appearanceCameraSection) input[type="text"] {
       width: 100%;
       box-sizing: border-box;
       height: 32px;
@@ -2275,6 +2275,7 @@
   <link rel="stylesheet" href="./assets/app/css/workbench.css">
   <link rel="stylesheet" href="assets/app/css/measurements.css">
   <link rel="stylesheet" href="assets/app/css/calculations.css">
+  <link rel="stylesheet" href="assets/app/css/figure.css">
 </head>
 
 <body>
@@ -3291,7 +3292,7 @@
       <span class="material-symbols-rounded" aria-hidden="true">delete</span>
     </button>
     </div>
-    <div id="editSelectionPosition" role="group" aria-labelledby="editSelectionPositionLabel" hidden>
+    <div id="editSelectionPosition" class="vm-selection-card" role="group" aria-labelledby="editSelectionPositionLabel" hidden>
       <span id="editSelectionPositionLabel" class="vm-stat-label" data-position-label>Position (Å)</span>
       <label class="vm-stat-label">X<input class="editAddAtomOperatorCoord" data-selection-axis="x" aria-label="X position (Å)" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" /></label>
       <label class="vm-stat-label">Y<input class="editAddAtomOperatorCoord" data-selection-axis="y" aria-label="Y position (Å)" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" /></label>
@@ -3883,6 +3884,9 @@
   <script src="./assets/app/js/scene-graph.js"></script>
   <script src="./assets/app/js/scene-sources.js"></script>
   <script src="./assets/app/js/scene-export.js"></script>
+  <script src="./assets/app/js/figure-composer.js"></script>
+  <script src="./assets/app/js/figure-renderer.js"></script>
+  <script src="./assets/app/js/figure-panel.js"></script>
   <script src="./assets/app/js/scene-outliner.js"></script>
   <!-- arithmetic grid helpers -->
   <script src="./assets/app/js/arithmetic-grid.js"></script>

@@ -33,6 +33,17 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  /* Keep the 4px active ring inside the dragged panel's scrollable bounds. */
+  padding: 6px;
+}
+
+.vm-selection-card {
+  border: 1px solid var(--vm-color-border-control);
+  border-radius: var(--vm-radius-md);
+  background: var(--vm-color-surface-control);
+  color: var(--vm-color-on-control);
+  box-shadow: var(--vm-shadow-control);
+  box-sizing: border-box;
 }
 
 #editSelectionPosition {
@@ -41,14 +52,9 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px 8px;
   padding: 10px;
-  border: 1px solid var(--vm-color-border-control);
-  border-radius: var(--vm-radius-md);
-  background: var(--vm-color-surface-control);
-  box-shadow: var(--vm-shadow-control);
   pointer-events: auto;
   width: 280px;
   max-width: calc(100vw - 24px);
-  box-sizing: border-box;
 }
 
 #editSelectionPosition[hidden] { display: none; }
@@ -419,7 +425,8 @@
 }
 
 #editAddAtomOperatorHeader,
-#editAddMoleculeOperatorHeader {
+#editAddMoleculeOperatorHeader,
+.vm-selection-card__header {
   appearance: none;
   width: 100%;
   display: flex;
@@ -428,6 +435,7 @@
   gap: 12px;
   padding: 10px 12px;
   border: 0;
+  box-sizing: border-box;
   background: transparent;
   color: var(--vm-color-on-control);
   cursor: pointer;

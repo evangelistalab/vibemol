@@ -137,7 +137,7 @@
 
   function available(item) {
     if (item.mode && item.mode !== host.getMode()) return false;
-    if (item.id === 'subspacePanel') return true;
+    if (item.id === 'subspacePanel' || item.id === 'figurePanel') return true;
     if (host.getMode() === 'calculations' && ['moldenInspector','trajectoryPanel','vibrationPanel','spinorInfo','measurementsPanel'].includes(item.id)) return false;
     if (item.id === 'measurementsPanel') return host.getMode() !== 'edit';
     return item.id === 'inspector' || (item.entry.buttonEl && !item.entry.buttonEl.hidden);

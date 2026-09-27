@@ -16,6 +16,7 @@
   });
 
   const ESCAPABLE_WINDOW_IDS = Object.freeze([
+    'figurePanel',
     WINDOW_IDS.STYLE_STUDIO,
     WINDOW_IDS.DISPLAY_INSPECTOR,
     WINDOW_IDS.MOLDEN_INSPECTOR,
