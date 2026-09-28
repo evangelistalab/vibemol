@@ -583,7 +583,7 @@
   });
   sync();
   if (params.get('workspaceDemo') === '1' && !global.VibeMolTesting.getSceneGraphSnapshot().scenes.length) {
-    fetch('assets/data/methane/canonical_4.cube').then(response => { if (!response.ok) throw new Error('Demo file unavailable'); return response.text(); })
+    fetch(window.VibeMolAssets.url('assets/data/methane/canonical_4.cube')).then(response => { if (!response.ok) throw new Error('Demo file unavailable'); return response.text(); })
       .then(text => global.VibeMolEmbed.loadFiles([{ name: 'Methane · orbital.cube', text }], { clearFirst: false }))
       .then(result => {
         if (!result.ok) throw new Error('Demo import failed');

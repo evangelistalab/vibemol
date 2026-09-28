@@ -40,7 +40,7 @@ def orbit_only(page, point, shift=False):
 
 
 def run(page, url):
-    page.route('**/assets/app/js/app.js', lambda route:route.fulfill(body=source(),content_type='text/javascript'))
+    page.route('**/assets/app/js/app.js*', lambda route:route.fulfill(body=source(),content_type='text/javascript'))
     page.goto(url+'?appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
     for name, kind in [('carbon', 'atom'), ('phenyl', 'fragment'), ('benzene', 'molecule')]:
         bonds.load(page)

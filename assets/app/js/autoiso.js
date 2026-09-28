@@ -50,7 +50,8 @@
       ? options.createWorker
       : (() => {
         if (typeof WorkerCtor === 'undefined' || WorkerCtor == null) return null;
-        return new WorkerCtor('./assets/app/js/autoiso-worker.js');
+        const path = './assets/app/js/autoiso-worker.js';
+        return new WorkerCtor(global.VibeMolAssets?.url(path) || path);
       });
 
     let autoIsoWorker = null;

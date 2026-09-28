@@ -57,7 +57,7 @@ def hover(page, pos):
 
 
 def run(page, url):
-    page.route('**/assets/app/js/app.js',lambda route:route.fulfill(body=source(),content_type='text/javascript'))
+    page.route('**/assets/app/js/app.js*',lambda route:route.fulfill(body=source(),content_type='text/javascript'))
     page.goto(url+'?appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
     load(page)
     page.locator('#editTransformToolBtn').click()

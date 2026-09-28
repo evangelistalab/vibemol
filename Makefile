@@ -1,4 +1,5 @@
 JS_CHECK_FILES = \
+	assets/app/js/asset-urls.js \
 	src/vscode_ext/vibemol/src/extension.js \
 	src/vscode_ext/vibemol/src/vmWebview.js \
 	src/vscode_ext/vibemol/src/folderFiles.js \
@@ -69,9 +70,14 @@ JS_CHECK_FILES = \
 	assets/app/js/trajectory-ui.js \
 	assets/app/js/app.js
 
-.PHONY: check test-unit test-e2e test
+.PHONY: check version-assets test-unit test-e2e test
+
+version-assets:
+	python3 tools/sync_asset_versions.py
 
 check:
+	python3 tools/sync_asset_versions.py --check
+	python3 -m py_compile tools/sync_asset_versions.py tests/e2e/asset_cache.py
 	@set -e; \
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
@@ -83,6 +89,7 @@ test-unit:
 	node --test tests/unit/*.test.mjs
 
 test-e2e:
+	python3 tests/e2e/asset_cache.py
 	python3 tests/e2e/edit_tool.py
 	python3 tests/e2e/build_bonds.py
 	python3 tests/e2e/build_orbit.py

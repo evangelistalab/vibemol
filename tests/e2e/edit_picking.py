@@ -447,7 +447,7 @@ def main():
         angle = os.environ.get('VIBEMOL_TEST_ANGLE', 'metal' if sys.platform == 'darwin' else 'swiftshader')
         browser = pw.chromium.launch(headless=True, args=['--use-angle=' + angle])
         page = browser.new_page(viewport={'width': 1200, 'height': 900}, device_scale_factor=1)
-        page.route('**/assets/app/js/app.js', lambda route: route.fulfill(body=instrumented_source(), content_type='application/javascript'))
+        page.route('**/assets/app/js/app.js*', lambda route: route.fulfill(body=instrumented_source(), content_type='application/javascript'))
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.on('dialog', lambda dialog: dialog.dismiss())

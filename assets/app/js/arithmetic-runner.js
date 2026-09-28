@@ -3,7 +3,8 @@
 
   function createArithmeticRunner(options = {}) {
     const grid = options.grid || global.VibeMolArithmeticGrid;
-    const workerUrl = options.workerUrl || './assets/app/js/arithmetic-worker.js';
+    const workerPath = options.workerUrl || './assets/app/js/arithmetic-worker.js';
+    const workerUrl = global.VibeMolAssets?.url(workerPath) || workerPath;
     const createWorker = options.createWorker || (() => new global.Worker(workerUrl));
     const yieldTask = options.yieldTask || (() => new Promise(resolve => setTimeout(resolve, 0)));
     const cancelled = () => ({ ok: false, cancelled: true, error: 'Calculation cancelled.' });

@@ -132,6 +132,8 @@ Primary capabilities:
 ## Runtime Model
 No build step is required for the web app. It runs directly from static files.
 
+`assets/app/js/asset-urls.js` loads first in the head and owns the single `APP_VERSION` constant. The app reads `VibeMolAssets.version`; runtime bundled loads use `VibeMolAssets.url`. Run `python3 tools/sync_asset_versions.py --version <version>` to bump a release and stamp committed HTML/CSS URLs together, or `make version-assets` after editing the constant. `make check` rejects stale URLs. Keep workers and their imports versioned too. See `docs/asset-versioning.md` and the real HTTP-cache regression `tests/e2e/asset_cache.py`.
+
 Required stylesheet order in `index.html`:
 1. `src/styles/tokens.css`
 2. `src/styles/vm-tooltip.css`

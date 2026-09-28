@@ -3,6 +3,7 @@
 import sys
 import premerge as p
 from appearance_controls import change
+from helpers import read_app_version
 
 sys.path.insert(0, str(p.ROOT / 'api'))
 from vibemol_client import _set_style_with_alias
@@ -12,7 +13,7 @@ def release(page, url, suffix):
     page.goto(url + suffix)
     page.wait_for_function('()=>window.VibeMolWorkbench && VibeMolRecovery.getState().ready')
     assert page.locator('#workbenchBar').is_visible()
-    assert page.locator('#toolbarVersion').inner_text() == 'v0.9.2'
+    assert page.locator('#toolbarVersion').inner_text() == 'v' + read_app_version()
     assert page.locator('.wb-lab, #appearanceLookPreset, #styleStudio').count() == 0
     assert 'experiment' not in page.locator('#sessionStatus').inner_text().lower()
     assert p.load(page, [{'name': 'release.cube', 'text': p.cube(0)}])['ok']

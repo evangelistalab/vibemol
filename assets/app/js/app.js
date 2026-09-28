@@ -1,8 +1,8 @@
 (function () {
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
-  // App version displayed in Help
-  const APP_VERSION = '0.9.2';
+  // Shared by UI/export metadata and every bundled asset URL.
+  const APP_VERSION = window.VibeMolAssets.version;
   const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
   window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
@@ -972,7 +972,7 @@
       }
     } catch { }
     loader.load(
-      SCENE_ENVIRONMENT_MAP_PATH,
+      window.VibeMolAssets.url(SCENE_ENVIRONMENT_MAP_PATH),
       (texture) => {
         try {
           texture.mapping = THREE.EquirectangularReflectionMapping;

@@ -26,7 +26,8 @@
   }
   async function loadBasis() {
     if (basis) return basis;
-    if (!pending) pending = fetch('assets/data/basis/cc-pvtz-minao.json').then(response => {
+    const path = 'assets/data/basis/cc-pvtz-minao.json';
+    if (!pending) pending = fetch(global.VibeMolAssets?.url(path) || path).then(response => {
       if (!response.ok) throw new Error('MINAO basis data could not be loaded.');
       return response.json();
     }).then(setBasis).catch(error => { pending = null; throw error; });

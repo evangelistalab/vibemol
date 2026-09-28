@@ -116,7 +116,7 @@ def visual_schemes(browser, url):
     page=browser.new_page(viewport={'width':1440,'height':1000})
     source=(p.ROOT/'assets/app/js/app.js').read_text()
     source=source.replace('const suppressSurfaces = currentMode === MODES.EDIT ||', 'const suppressSurfaces =')
-    page.route('**/assets/app/js/app.js',lambda route:route.fulfill(body=source,content_type='text/javascript'))
+    page.route('**/assets/app/js/app.js*',lambda route:route.fulfill(body=source,content_type='text/javascript'))
     page.goto(url+'?appearanceStudy=1');page.wait_for_function('()=>window.VibeMolWorkbench')
     assert p.load(page,[{'name':'hydrogen-2p.cube','text':p.hydrogen_2p_cube()}])['ok']
     page.locator('#modeEditBtn').click();arm(page);close_build(page)
