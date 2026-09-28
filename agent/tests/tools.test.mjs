@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { loadGlobalModules } from '../../tests/unit/load-global-module.mjs';
 
 const schema = JSON.parse(fs.readFileSync(new URL('../tools.schema.json', import.meta.url), 'utf8'));
-const load = () => loadGlobalModules(['agent/web/tools.js', 'agent/web/link.js']).window;
+const load = () => loadGlobalModules(['agent/web/tools.js', 'agent/web/link.js', 'agent/web/lasso.js']).window;
 
 function fakeApis() {
   const calls = [];
@@ -96,4 +96,25 @@ test('every seam member used by agent/web/host.js is exposed by app.js', () => {
   const used = new Set([...host.matchAll(/\b(?:S|seam\(\))\.([A-Za-z]+)/g)].map(m => m[1]));
   const missing = [...used].filter(name => !exposed.has(name));
   assert.deepEqual(missing, []);
+});
+
+test('lasso geometry and source lookup rank the defining lines first', () => {
+  const { pointInPolygon, searchSources } = load().VibeMolAgentLasso._internals;
+  const square = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  assert.equal(pointInPolygon(5, 5, square), true);
+  assert.equal(pointInPolygon(15, 5, square), false);
+  const files = [
+    { path: 'index.html', lines: ['<div>', '  <button id="saveBtn">Save</button>', '</div>'] },
+    { path: 'assets/app/js/app.js', lines: ['// saveBtnHelper is unrelated', "const saveButton = document.getElementById('saveBtn');", "saveButton.addEventListener('click', save);", "log('#saveBtn clicked');"] },
+  ];
+  const hits = searchSources(files, [{ kind: 'id', value: 'saveBtn' }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(hits.map(h => h.location))), ['index.html:2', 'assets/app/js/app.js:3', 'assets/app/js/app.js:2', 'assets/app/js/app.js:4']);
+  assert.match(hits[1].matched, /holds #saveBtn/);
+  assert.match(hits[2].snippet, /2: const saveButton = document.getElementById/);
+});
+
+test('vibemol_get_selection explains how to make a selection when none exists', async () => {
+  const w = load();
+  const tools = w.VibeMolAgentTools.createAgentTools({ schema, apis: w });
+  await assert.rejects(tools.call('vibemol_get_selection', {}), /Lasso/);
 });

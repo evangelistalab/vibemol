@@ -26,8 +26,10 @@
     mount.innerHTML = `
       <button id="connectClaudeBtn" class="secondary" type="button" data-tooltip="Let your Claude control this tab through the VibeMol connector">Connect Claude</button>
       <button id="agentLinkCopyBtn" class="secondary tb-iconBtn ms-icon-button" type="button" aria-label="Copy pairing code" data-tooltip="Copy pairing code" hidden>content_copy</button>
+      <button id="agentLassoBtn" class="secondary" type="button" data-tooltip="Draw around part of the page to show it to Claude (image, elements, source locations, atoms)">Lasso</button>
       <label class="vm-agent-link-scripts" data-tooltip="Let Claude ask to run custom scripts in this tab (you approve each one)"><input id="agentAllowScripts" type="checkbox" /> Allow scripts</label>
-      <div id="agentLinkStatus" class="vm-agent-link-status" role="status" aria-live="polite" data-state="idle"></div>`;
+      <div id="agentLinkStatus" class="vm-agent-link-status" role="status" aria-live="polite" data-state="idle"></div>
+      <div id="agentLassoStatus" class="vm-agent-link-status" role="status" aria-live="polite"></div>`;
   }
 
   function install() {

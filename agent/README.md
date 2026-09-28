@@ -22,6 +22,8 @@ agent/
     host.js           agent actions built on VibeMolAgentSeam (moves, trajectories, atoms, screenshots)
     tools.js          one handler per schema tool
     link.js/.css      Connect Claude button, pairing code, WebSocket to the relay
+    lasso.js          Lasso button: circle part of the page; Claude reads it with vibemol_get_selection
+    vendor/           html2canvas 1.4.1 (MIT), loaded only when a lasso image is captured
   relay/              Cloudflare Worker: MCP endpoint + one Durable Object per pairing code
   tests/              unit tests (run by `make test-unit`)
 ```

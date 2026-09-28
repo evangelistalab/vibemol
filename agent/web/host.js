@@ -248,6 +248,33 @@
     return { operation: op.operation, atomCountBefore: before, atomCountAfter: countAtoms() };
   }
 
+  /** Atoms of the active structure whose projected screen position lies in the lasso. */
+  function atomsInClientPolygon(poly, contains) {
+    const S = seam();
+    const record = activeRecord(false);
+    if (!record || !Array.isArray(record.vol.atoms)) return null;
+    const rect = S.getCanvas().getBoundingClientRect();
+    const overlaps = poly.some(([x, y]) => x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+    if (!overlaps) return null;
+    const camera = S.getCamera();
+    const scale = nativeScale(record.vol);
+    const v = new global.THREE.Vector3();
+    const indices = [];
+    record.vol.atoms.forEach((atom, i) => {
+      v.set(atom.x * scale, atom.y * scale, atom.z * scale).project(camera);
+      if (v.z < -1 || v.z > 1) return;
+      const sx = rect.left + ((v.x + 1) / 2) * rect.width;
+      const sy = rect.top + ((1 - v.y) / 2) * rect.height;
+      if (contains(sx, sy, poly)) indices.push(i);
+    });
+    return {
+      structure: String(record.name || ''),
+      count: indices.length,
+      indices: indices.slice(0, 500),
+      elements: indices.slice(0, 500).reduce((acc, i) => { const s = S.getElementSymbol(record.vol.atoms[i].Z | 0); acc[s] = (acc[s] || 0) + 1; return acc; }, {}),
+    };
+  }
+
   global.VibeMolAgentHost = Object.freeze({
     getSummary,
     getCameraAxes,
@@ -262,5 +289,6 @@
     setTrajectoryPlayback,
     listAtoms,
     editAtoms,
+    atomsInClientPolygon,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

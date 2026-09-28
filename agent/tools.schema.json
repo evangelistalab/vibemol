@@ -433,6 +433,23 @@
         ],
         "additionalProperties": false
       }
+    },
+    {
+      "name": "vibemol_get_selection",
+      "description": "Get the region the user circled with VibeMol's Lasso button: a masked image of the region, the enclosed UI elements (with refs for vibemol_operate_control, HTML, and source locations: index.html lines and JS lines that reference each element), and atom indices inside the lasso. Call this whenever the user refers to 'this', 'what I circled', or 'my selection'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "includeImage": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
     }
   ]
 }

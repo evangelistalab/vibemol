@@ -19,6 +19,7 @@ Workflow:
 4. Distances are in Angstrom. For left/right/up/down/toward/away, use frame "screen" (x right, y up, z toward viewer).
 5. After visual changes, call vibemol_screenshot to check the result. Structure edits are undoable with vibemol_history.
 6. For "how do I…" questions, call vibemol_help and answer in terms of VibeMol's own UI.
+7. When the user says "this", "what I circled", or "my selection", call vibemol_get_selection first. It returns an image of the circled region, the enclosed controls (their refs work with vibemol_operate_control), source locations for each element, and enclosed atom indices (usable with vibemol_edit_atoms).
 Large files (cube, molden) stay in the browser: ask the user to open them in VibeMol rather than pasting them.`;
 
 const SESSION_PROPERTY = { type: 'string', description: 'Pairing code shown in VibeMol after clicking "Connect Claude", e.g. ABCDE-FGH23.' };
@@ -65,8 +66,10 @@ function toToolResult(reply) {
   if (!reply || !reply.ok) return text(reply && reply.error ? reply.error : 'VibeMol reported an unknown error.', true);
   const result = reply.result || {};
   if (result.image && result.image.data) {
-    const { data, mimeType, ...meta } = result.image;
-    return { content: [{ type: 'image', data, mimeType: mimeType || 'image/jpeg' }, { type: 'text', text: JSON.stringify(meta) }] };
+    const { image, ...rest } = result;
+    const { data, mimeType, ...meta } = image;
+    const details = Object.keys(rest).length ? { ...rest, image: meta } : meta;
+    return { content: [{ type: 'image', data, mimeType: mimeType || 'image/jpeg' }, { type: 'text', text: JSON.stringify(details, null, 2) }] };
   }
   return text(result);
 }

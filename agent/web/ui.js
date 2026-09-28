@@ -182,5 +182,10 @@
     return { result: JSON.parse(json.length > 20000 ? JSON.stringify(json.slice(0, 20000)) : json) };
   }
 
-  global.VibeMolAgentUI = Object.freeze({ listControls, operateControl, pressKey, readText, runScript, _labelFor: labelFor });
+  global.VibeMolAgentUI = Object.freeze({
+    listControls, operateControl, pressKey, readText, runScript,
+    describeElement: el => describe(el, global.document),
+    isControl: el => !!(el && el.matches && el.matches(CONTROL_SELECTOR)),
+    _labelFor: labelFor,
+  });
 })(typeof window !== 'undefined' ? window : globalThis);

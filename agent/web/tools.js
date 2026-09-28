@@ -84,6 +84,11 @@
       vibemol_read_text: args => ui().readText(args),
       vibemol_run_script: args => ui().runScript(args),
 
+      vibemol_get_selection: args => {
+        if (!apis.VibeMolAgentLasso) throw new Error('Lasso module is not loaded.');
+        return apis.VibeMolAgentLasso.getSelection(args || {});
+      },
+
       vibemol_set_trajectory_sync: ({ sceneIds, enabled }) => {
         if (typeof enabled !== 'boolean') throw new Error('enabled must be true or false.');
         return host().setTrajectorySync(sceneIds, enabled);
