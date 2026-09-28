@@ -1,0 +1,438 @@
+{
+  "version": 1,
+  "tools": [
+    {
+      "name": "vibemol_get_state",
+      "description": "Summarize the paired VibeMol tab: loaded structures, the active structure (atom count, element counts, center of mass in Angstrom), current mode, and camera axes. Call this first in every task.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_list_appearance_settings",
+      "description": "List appearance/preset setting keys with their type, section, and current value. Use a filter such as 'surface', 'atom', 'bond', 'background', or 'camera' to keep the result short.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string",
+            "description": "Case-insensitive substring matched against key, section, and description."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_set_appearance",
+      "description": "Apply appearance settings by key (keys come from vibemol_list_appearance_settings). Only the provided keys change.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "type": "object",
+            "description": "Map of setting key to new value, e.g. {\"surface.isoValue\": 0.03}.",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "settings"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_translate_molecule",
+      "description": "Rigidly translate the active molecule (atoms and any volumetric grid) by a vector in Angstrom. Undoable. Use frame 'screen' for words like left/right/up/down/toward/away relative to the current view (x = right, y = up, z = toward the viewer); use 'world' for Cartesian x/y/z.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dx": {
+            "type": "number",
+            "default": 0
+          },
+          "dy": {
+            "type": "number",
+            "default": 0
+          },
+          "dz": {
+            "type": "number",
+            "default": 0
+          },
+          "frame": {
+            "type": "string",
+            "enum": [
+              "world",
+              "screen"
+            ],
+            "default": "world"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_center_com",
+      "description": "Move the active molecule so its center of mass sits at the origin. Undoable.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_history",
+      "description": "Undo or redo the most recent structure edit (including edits made by this connector).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "undo",
+              "redo"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_load_structure_text",
+      "description": "Load a small text structure (for example XYZ written by you) into the tab. Large cube/molden files should be opened by the user directly in VibeMol instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "File name including extension, e.g. water.xyz."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 200000
+          },
+          "replace": {
+            "type": "boolean",
+            "default": false,
+            "description": "Clear the current workspace first."
+          }
+        },
+        "required": [
+          "name",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_screenshot",
+      "description": "Capture the current viewport as a JPEG so you can check the result of visual changes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "maxSize": {
+            "type": "integer",
+            "minimum": 256,
+            "maximum": 1280,
+            "default": 768
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_list_trajectories",
+      "description": "List loaded multi-frame trajectories (XYZ trajectories) with sceneId, name, frame count, current frame, fps, playing, and whether each is synced, plus the shared sync-master clock.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_set_trajectory_sync",
+      "description": "Turn the per-trajectory Sync toggle on or off (the same as the Sync checkbox in the trajectory panel). Synced trajectories share one play/pause/frame clock.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sceneIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "sceneIds from vibemol_list_trajectories. Omit to act on all loaded trajectories."
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_trajectory_playback",
+      "description": "Play, pause, or jump to a frame (0-based) for trajectories. Synced trajectories follow the shared sync-master clock.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sceneIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "sceneIds from vibemol_list_trajectories. Omit to act on all loaded trajectories."
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "play",
+              "pause",
+              "frame"
+            ]
+          },
+          "frame": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_list_atoms",
+      "description": "List atoms of the active structure (index, element, x/y/z in Angstrom) plus the current edit selection. Page with start/count for large systems.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 200
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_edit_atoms",
+      "description": "Edit the active structure with VibeMol's own Edit-mode operations (undoable, with automatic hydrogens and bond perception). operation: select (indices), delete (indices), set_element (indices, element), add (element, position [x,y,z] Angstrom), move (indices, delta [dx,dy,dz] Angstrom, frame world|screen). After 'select', selection-based buttons found via vibemol_list_controls act on those atoms.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "select",
+              "add",
+              "delete",
+              "set_element",
+              "move"
+            ]
+          },
+          "indices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "0-based atom indices from vibemol_list_atoms."
+          },
+          "element": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Element symbol (e.g. 'N') or atomic number."
+          },
+          "position": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "delta": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "frame": {
+            "type": "string",
+            "enum": [
+              "world",
+              "screen"
+            ],
+            "default": "world"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_list_controls",
+      "description": "Discover VibeMol's user-interface controls (buttons, toggles, sliders, dropdowns, tabs) with a ref, label, section, and current state. This reaches every feature in the UI, including new ones: search with a query like 'theme', 'sidebar', 'atom size', 'visibility', 'orbital', 'export'. Hidden controls (in closed panels) are omitted unless includeHidden is true.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "includeHidden": {
+            "type": "boolean",
+            "default": false
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "default": 60
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_operate_control",
+      "description": "Operate a control found with vibemol_list_controls, as a user would. action 'click' presses buttons/tabs/menu items; action 'set' sets a checkbox/switch (true/false), slider, number or text field, color, or dropdown value. Returns the control's state afterwards; take a screenshot to confirm visual effects.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "click",
+              "set"
+            ],
+            "default": "click"
+          },
+          "value": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_press_key",
+      "description": "Press a VibeMol keyboard shortcut (e.g. key 'e' for Edit mode, 'Escape', 'Delete', key 'z' with meta for undo on macOS). Read the shortcut list with vibemol_read_text ref 'helpOverlay'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "ctrl": {
+            "type": "boolean"
+          },
+          "shift": {
+            "type": "boolean"
+          },
+          "alt": {
+            "type": "boolean"
+          },
+          "meta": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_read_text",
+      "description": "Read the visible text of a panel or element by ref (an element id or a ref from vibemol_list_controls), e.g. 'helpOverlay' for keyboard shortcuts, or a properties/measurement panel. Omit ref to read the whole page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "maxChars": {
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 20000,
+            "default": 6000
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_run_script",
+      "description": "Last resort for things no other tool can reach: run JavaScript in the VibeMol tab (async function body; the page's window is available as VibeMol and globally; return a JSON-serializable value). Only works if the user ticked 'Allow scripts', and the user must approve each script in a dialog. Explain the purpose in plain words.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "purpose": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "purpose"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

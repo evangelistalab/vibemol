@@ -2349,6 +2349,7 @@
         <button id="openSessionBtn" class="secondary" type="button" data-tooltip="Replace the workspace with a saved session">Open session</button>
       </div>
       <div id="sessionStatus" class="vm-session-status" role="status" aria-live="polite"></div>
+      <div id="vibemolAgentMount"></div><!-- Claude connector (agent/) -->
       <button id="retryAutosaveBtn" class="secondary" type="button" hidden>Retry autosave</button>
       <div id="sessionRecoveryPrompt" class="vm-session-recovery" hidden>
         <p id="sessionRecoveryMessage"></p>
@@ -3902,6 +3903,7 @@
   <script src="./assets/app/js/app.js"></script>
   <script src="./assets/app/js/workbench-model.js"></script>
   <script src="./assets/app/js/workbench.js"></script>
+  <script src="./agent/web/loader.js"></script><!-- Claude connector (agent/) -->
 </body>
 
 </html>

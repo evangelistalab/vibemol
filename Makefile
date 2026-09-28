@@ -1,4 +1,13 @@
 JS_CHECK_FILES = \
+	agent/web/loader.js \
+	agent/web/config.js \
+	agent/web/ui.js \
+	agent/web/host.js \
+	agent/web/tools.js \
+	agent/web/link.js \
+	agent/relay/src/index.js \
+	agent/relay/src/relay.js \
+	agent/relay/src/help.js \
 	src/vscode_ext/vibemol/src/extension.js \
 	src/vscode_ext/vibemol/src/vmWebview.js \
 	src/vscode_ext/vibemol/src/folderFiles.js \
@@ -68,7 +77,7 @@ check:
 	git diff --check
 
 test-unit:
-	node --test tests/unit/*.test.mjs
+	node --test tests/unit/*.test.mjs agent/tests/*.test.mjs
 
 test-e2e:
 	python3 tests/e2e/workbench_release.py

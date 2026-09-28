@@ -1,0 +1,22 @@
+name = "vibemol-mcp"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[vars]
+# Browser origins allowed to open a pairing WebSocket.
+ALLOWED_ORIGINS = "https://vibemol.org,https://www.vibemol.org,http://localhost:8000,http://127.0.0.1:8000"
+
+[[durable_objects.bindings]]
+name = "RELAY"
+class_name = "PairingRelay"
+
+# SQLite-backed Durable Objects are the ones available on the Workers Free plan.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PairingRelay"]
+
+# Bundle AGENTS.md / README.md as text for vibemol_help.
+[[rules]]
+type = "Text"
+globs = ["**/*.md"]
+fallthrough = true

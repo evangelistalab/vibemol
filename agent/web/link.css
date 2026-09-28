@@ -1,0 +1,7 @@
+/* Claude connector pairing control (assets/app/js/agent-link.js). */
+.vm-agent-link { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.vm-agent-link-status { flex-basis: 100%; font-size: 12px; line-height: 1.35; opacity: 0.8; overflow-wrap: anywhere; }
+.vm-agent-link-status:empty { display: none; }
+.vm-agent-link-status[data-state="connected"] { opacity: 1; font-weight: 600; }
+.vm-agent-link-status[data-state="error"] { color: #c0392b; opacity: 1; }
+.vm-agent-link-scripts { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; opacity: 0.85; }

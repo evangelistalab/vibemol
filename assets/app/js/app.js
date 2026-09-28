@@ -32967,6 +32967,46 @@
     resize,
   });
 
+  // Integration seam for the Claude connector in agent/. It exposes existing
+  // internals only; all agent logic lives in agent/web/host.js. Keep this list
+  // narrow and add to it only when the agent needs a new internal primitive.
+  window.VibeMolAgentSeam = Object.freeze({
+    bohrToAngstrom: BOHR_TO_ANG,
+    getRecords: () => volumes.filter(Boolean),
+    getActiveIndex: () => currentIndex,
+    getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].vol) ? volumes[currentIndex] : null),
+    getMode: () => currentMode,
+    isDragging: () => !!dragActive,
+    isRecordingVideo: () => !!(trajectoryVideoController && trajectoryVideoController.isRecording()),
+    getCamera: () => camera,
+    getCanvas: () => renderer.domElement,
+    getElementSymbol,
+    computeMassProperties,
+    hasVolumetricGrid,
+    cloneCoordinateSnapshot,
+    translateVolumetricGrid,
+    finalizeCoordinateSnapshotEdit,
+    centerActiveMoleculeMassAtOrigin,
+    undo: undoLastEditAction,
+    redo: redoLastEditAction,
+    setHint: message => setHintMessage(String(message || '')),
+    getAllTrajectoryInfos,
+    getTrajectorySyncMaster,
+    getTrajectoryInfoBySceneId,
+    setTrajectorySyncEnabled,
+    setTrajectoryPlayingForInfo,
+    applyMasterFrameToSyncedTrajectories,
+    applyTrajectoryFrameForInfo,
+    syncTrajectoryControls,
+    getEditAtomSelection,
+    setEditAtomSelection,
+    updateSelectedHalos,
+    deleteAtomsByIndex: indices => editPlacement.deleteAtomsByIndex(indices),
+    replaceAtomElementAtIndex: (index, z) => editPlacement.replaceAtomElementAtIndex(index, z),
+    appendAtomAtWorld: (worldPos, z) => editPlacement.appendAtomAtWorld(worldPos, z),
+    finalizeAddAtomOperatorSession: options => editPlacement.finalizeAddAtomOperatorSession(options),
+  });
+
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 
 })();

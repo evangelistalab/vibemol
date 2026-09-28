@@ -78,6 +78,7 @@ Primary capabilities:
 - `assets/app/js/session-format.js`: versioned portable session schema, bounded buffer codec, checksums, and dependency/shape validation.
 - `assets/app/js/session.js`: durable workspace capture, staged graph/source hydration, and `window.VibeMolSession` controller.
 - `assets/app/js/session-recovery.js`: debounced IndexedDB autosave, atomic two-snapshot retention, explicit recovery, and cross-tab revision checks.
+- `agent/`: self-contained Claude connector (browser code in `agent/web/`, Cloudflare relay in `agent/relay/`, shared tool schema, tests); see `agent/README.md`. The app's only hooks are `window.VibeMolAgentSeam` at the end of `app.js` and two lines in `index.html`. Give new controls an `aria-label` or `data-tooltip` so the connector can find them; mark controls agents must not touch with `data-agent-ignore`.
 - `assets/app/css/session-ui.css` and `docs/sessions.md`: session/recovery controls and persistence/API documentation.
 - `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, embed file-loading controller, and XYZ text detection/normalization helpers.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.
