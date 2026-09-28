@@ -1,4 +1,4 @@
-# MINAO preview data
+# AVAS reference-basis data
 
 `cc-pvtz-minao.json` is an unchanged copy of
 [`forte2/data/basis/cc-pvtz-minao.json`](https://github.com/evangelistalab/forte2/blob/a7283148f4da053e189520e502b2d9d652411389/forte2/data/basis/cc-pvtz-minao.json)
@@ -12,10 +12,22 @@ keys, exponents and contraction coefficients are preserved in the JSON.
 
 Coverage is H–Ar and Ca–Kr. The source explicitly says **only elements 1–10 have
 been pruned**; later elements include additional contractions and polarization
-functions. The picker uses the actual source shells, with transition-metal
-choices restricted to the valence d shell and its double-shell partner (3d/4d
-for Sc–Zn). Other elements retain their source shell choices. K and elements
-beyond Kr are absent.
+functions. K and elements beyond Kr are absent.
+
+`cc-pvtz.json` is an unchanged copy of
+[`forte2/data/basis/cc-pvtz.json`](https://github.com/evangelistalab/forte2/blob/a7283148f4da053e189520e502b2d9d652411389/forte2/data/basis/cc-pvtz.json)
+from the same forte2 commit. Its SHA-256 is
+`701f9117c5b2fc3487ab079ae6fa9e8ee0717fed874957ace1b2dc6c036e53fe`.
+Original BSE metadata and per-element references are preserved.
+
+The full cc-pVTZ dataset supplies next-shell functions missing from the pruned
+minimal basis, including C(3s) and C(3p). Menus limit its catalog to occupied/core,
+outer s/p, next s/p and occupied-d double shells, in filling order. A selection
+requiring a function missing from cc-pvtz-minao switches the record to cc-pvtz.
+Previews and the exported reference-basis name then both use the full dataset;
+the coefficients of different bases are never mixed. Older sessions using
+cc-pvtz-minao keep that basis and its original coefficients. Custom basis names
+use a cc-pVTZ preview with an explicit verification warning.
 
 General contractions expand in source order. The shell's principal number starts
 at `l + 1` on each atom and increments per contraction of the same angular

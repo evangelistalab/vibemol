@@ -89,6 +89,72 @@
   label(panelsButton, 'Panels');
   const panelsCount = label(panelsButton, '', 'wb-panel-count'); panelsCount.id = 'workbenchPanelsCount';
   panelsButton.setAttribute('aria-describedby', panelsCount.id); panelsButton.append(icon('expand_more')); tools.append(panelsButton);
+  const overflowButton = button('More actions', 'keyboard_double_arrow_right', () => toggleOverflow(), 'wb-tool');
+  overflowButton.id = 'workbenchOverflowBtn'; overflowButton.hidden = true;
+  overflowButton.setAttribute('aria-haspopup', 'menu'); overflowButton.setAttribute('aria-expanded', 'false');
+  overflowButton.setAttribute('aria-controls', 'workbenchOverflowMenu'); tools.insertBefore(overflowButton, panelsButton);
+  const overflowMenu = document.createElement('div'); overflowMenu.id = 'workbenchOverflowMenu';
+  overflowMenu.className = 'vm-popover wb-menu wb-panels-menu'; overflowMenu.hidden = true;
+  overflowMenu.setAttribute('role', 'menu'); overflowMenu.setAttribute('aria-labelledby', overflowButton.id); body.append(overflowMenu);
+  let overflowSources = [];
+  // Keep the real commands and their handlers authoritative. Only their
+  // presentation moves into the shared menu shell when icon-only cannot fit.
+  function fitTools() {
+    const groups = [quickActions, editTools, calculationTools, arrange, focusButton, preferencesButton];
+    groups.forEach(group => group.classList.remove('wb-overflowed'));
+    bar.classList.remove('wb-icon-tools'); overflowButton.hidden = true;
+    const fits = () => tools.scrollWidth <= tools.clientWidth + 1;
+    if (!fits()) bar.classList.add('wb-icon-tools');
+    const sources = [];
+    for (const group of groups) {
+      if (fits()) break;
+      if (group.hidden) continue;
+      sources.push(...(group.matches('button') ? [group] : [...group.children].filter(control => !control.hidden)));
+      group.classList.add('wb-overflowed'); overflowButton.hidden = false;
+    }
+    const changed = sources.length !== overflowSources.length || sources.some((source, i) => source !== overflowSources[i]);
+    overflowSources = sources;
+    if (changed) {
+      closeOverflow(); overflowMenu.replaceChildren();
+      for (const source of sources) {
+        const name = source.getAttribute('aria-label') || source.getAttribute('data-tooltip') || source.textContent.trim();
+        const row = button(name, source.querySelector('.material-symbols-rounded')?.textContent,
+          () => { closeOverflow(true); source.click(); }, 'wb-panel-option');
+        row.setAttribute('role', 'menuitem'); row.tabIndex = -1; label(row, name); overflowMenu.append(row);
+      }
+    }
+    [...overflowMenu.children].forEach((row, i) => {
+      row.disabled = sources[i].disabled;
+      for (const attr of ['aria-expanded', 'aria-controls']) {
+        if (sources[i].hasAttribute(attr)) row.setAttribute(attr, sources[i].getAttribute(attr)); else row.removeAttribute(attr);
+      }
+    });
+  }
+  function closeOverflow(restoreFocus = false) {
+    overflowMenu.hidden = true; overflowButton.setAttribute('aria-expanded', 'false');
+    if (restoreFocus) overflowButton.focus({ preventScroll: true });
+  }
+  function toggleOverflow(last = false) {
+    if (!overflowMenu.hidden) { closeOverflow(true); return; }
+    closePanelsMenu(); closeMenu(); overflowMenu.hidden = false; overflowButton.setAttribute('aria-expanded', 'true');
+    const rect = overflowButton.getBoundingClientRect();
+    overflowMenu.style.left = Math.max(12, Math.min(innerWidth - overflowMenu.offsetWidth - 12, rect.left)) + 'px';
+    overflowMenu.style.top = rect.bottom + 8 + 'px';
+    overflowMenu.style.maxHeight = Math.max(80, innerHeight - rect.bottom - 20) + 'px';
+    const rows = [...overflowMenu.children].filter(row => !row.disabled); (last ? rows.at(-1) : rows[0])?.focus();
+  }
+  overflowButton.addEventListener('keydown', event => {
+    if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+    event.preventDefault(); if (overflowMenu.hidden) toggleOverflow(event.key === 'ArrowUp');
+  });
+  overflowMenu.addEventListener('keydown', event => {
+    event.stopPropagation();
+    const rows = [...overflowMenu.children].filter(row => !row.disabled), index = rows.indexOf(document.activeElement);
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+      rows[event.key === 'Home' ? 0 : event.key === 'End' ? rows.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length]?.focus();
+    } else if (event.key === 'Escape' || event.key === 'Tab') { closeOverflow(true); if (event.key === 'Escape') event.preventDefault(); }
+  });
   const actions = document.createElement('div'); actions.className = 'wb-bar-actions'; bar.append(actions);
   const arrange = button('Layout', 'dashboard_customize', () => openArrange(), 'wb-arrange');
   arrange.id = 'workbenchArrange'; arrange.setAttribute('aria-haspopup', 'dialog'); label(arrange, 'Layout');
@@ -292,6 +358,7 @@
     docks.right.grip.setAttribute('aria-valuenow', String(Math.round(regions.right)));
     docks.bottom.grip.setAttribute('aria-valuenow', String(Math.round(regions.bottom)));
     syncPanelsMenu();
+    fitTools();
     if (key !== lastRegionKey) { lastRegionKey = key; host.resize(); }
     persist();
   }
@@ -321,7 +388,7 @@
   }
   function togglePanelsMenu(last = false) {
     if (!panelsMenu.hidden) { closePanelsMenu(true); return; }
-    closeMenu(); syncPanelsMenu(); panelsMenu.hidden = false; panelsButton.setAttribute('aria-expanded', 'true');
+    closeOverflow(); closeMenu(); syncPanelsMenu(); panelsMenu.hidden = false; panelsButton.setAttribute('aria-expanded', 'true');
     const trigger = panelsButton.getBoundingClientRect();
     panelsMenu.style.left = Math.max(12, Math.min(innerWidth - panelsMenu.offsetWidth - 12, trigger.left)) + 'px';
     panelsMenu.style.top = trigger.bottom + 8 + 'px';
@@ -331,7 +398,7 @@
   function closeMenu(restoreFocus = false) {
     menu.hidden = true; menu.setAttribute('aria-hidden', 'true');
     if (menuReturn && menuReturn !== arrange) menuReturn.setAttribute('aria-expanded', 'false');
-    if (restoreFocus) menuReturn?.focus({ preventScroll: true });
+    if (restoreFocus) (menuReturn?.classList.contains('wb-overflowed') ? overflowButton : menuReturn)?.focus({ preventScroll: true });
   }
   function startMenu(trigger, title) {
     closePanelsMenu(); closeMenu(); menuReturn = trigger;
@@ -339,7 +406,7 @@
     if (trigger !== arrange) trigger.setAttribute('aria-expanded', 'true'); menu.replaceChildren();
     const heading = document.createElement('div'); heading.className = 'wb-menu-title'; heading.textContent = title; menu.append(heading);
     menu.hidden = false; menu.setAttribute('aria-hidden', 'false'); menuMover.reset();
-    const box = trigger.getBoundingClientRect();
+    const box = (trigger.classList.contains('wb-overflowed') ? overflowButton : trigger).getBoundingClientRect();
     menu.style.left = Math.max(12, Math.min(innerWidth - 292, box.right - 280)) + 'px'; menu.style.top = Math.min(innerHeight - 300, box.bottom + 8) + 'px';
   }
   function menuAction(text, symbol, action, detail = '') {
@@ -430,7 +497,9 @@
   function focusQuickActions() {
     if (quickActionsSource.hidden) return;
     setFocus(false);
-    quickButtons[0]?.focus({ preventScroll: true });
+    const index = overflowSources.indexOf(quickButtons[0]);
+    if (index >= 0) { if (overflowMenu.hidden) toggleOverflow(); overflowMenu.children[index]?.focus({ preventScroll: true }); }
+    else quickButtons[0]?.focus({ preventScroll: true });
   }
   function installResize(grip, placement) {
     let gesture = null;
@@ -477,6 +546,9 @@
   }
   document.querySelector('#sidePanel > header > h2').textContent = 'Camera';
   const editObserver = new MutationObserver(schedule);
+  editObserver.observe(document.getElementById('editToolStrip'), { childList: true, subtree: true, characterData: true,
+    attributes: true, attributeFilter: ['hidden', 'aria-checked'] });
+  document.fonts?.ready.then(schedule);
   for (const control of editTools.children) if (control !== clearMeasurements) editObserver.observe(control, { attributes: true, attributeFilter: ['hidden', 'class'] });
   editObserver.observe(document.getElementById('editAdaptiveAddAtomPopover'), { attributes: true, attributeFilter: ['aria-hidden'] });
   modes.addEventListener('keydown', event => {
@@ -489,9 +561,7 @@
   const sidebarObserver = new MutationObserver(schedule); sidebarObserver.observe(body, { attributes: true, attributeFilter: ['class'] });
   const modeObserver = new MutationObserver(schedule); modeObserver.observe(document.getElementById('displayWindowAdaptiveMenu'), { attributes: true, attributeFilter: ['data-mode'] });
   modeObserver.observe(quickActionsSource, { attributes: true, attributeFilter: ['hidden'] });
-  // Wrapped command rows reserve their actual height above the canvas/docks.
-  // Dock updates can wrap the tool strip again. Leave the observer delivery
-  // cycle before changing layout, so wrapped bars settle without resize loops.
+  // Width changes may move commands between the bar and its overflow menu.
   let barResizeFrame = 0;
   const barObserver = global.ResizeObserver && new global.ResizeObserver(() => {
     if (!barResizeFrame) barResizeFrame = requestAnimationFrame(() => { barResizeFrame = 0; schedule(); });
@@ -528,12 +598,14 @@
     if (event.relatedTarget && !panelsMenu.contains(event.relatedTarget) && event.relatedTarget !== panelsButton) closePanelsMenu();
   });
   document.addEventListener('pointerdown', event => {
+    if (!overflowMenu.hidden && !overflowMenu.contains(event.target) && !overflowButton.contains(event.target)) closeOverflow();
     if (!menu.hidden && !menu.contains(event.target) && !menuReturn?.contains(event.target)) closeMenu();
     if (!panelsMenu.hidden && !panelsMenu.contains(event.target) && !panelsButton.contains(event.target)) closePanelsMenu();
   });
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape') return;
-    if (!panelsMenu.hidden) { closePanelsMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
+    if (!overflowMenu.hidden) { closeOverflow(true); event.preventDefault(); event.stopImmediatePropagation(); }
+    else if (!panelsMenu.hidden) { closePanelsMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
     else if (!menu.hidden) { closeMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
     // Let coordinate/operator fields cancel their own draft first. Build search
     // is a filter: Escape there still cancels placement or disarms the tool.

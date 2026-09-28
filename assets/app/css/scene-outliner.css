@@ -129,9 +129,7 @@
   }
 }
 
-#toolbar .vm-outliner-row.is-hidden .vm-outliner-row__icon,
-#toolbar .vm-outliner-row.is-hidden .vm-outliner-row__label,
-#toolbar .vm-outliner-row.is-hidden .vm-outliner-row__meta {
+#toolbar .vm-outliner-row.is-hidden .vm-outliner-row__icon {
   opacity: 0.45;
 }
 
@@ -217,7 +215,8 @@
 
 #toolbar .vm-outliner-row__prefix {
   margin-right: 4px;
-  color: var(--vm-color-text-secondary);
+  color: var(--vm-color-text-label);
+  opacity: 1;
   font-family: var(--vm-font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -228,7 +227,8 @@
   max-width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--vm-color-text-secondary);
+  color: var(--vm-color-text-label);
+  opacity: 1;
   font-family: var(--vm-font-mono);
   font-size: 10px;
   font-variant-numeric: tabular-nums;

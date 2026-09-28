@@ -7,11 +7,37 @@
     const name = entity.kind === 'atom' ? String(entity.name || 'atom').toLowerCase() : String(entity.name || 'item');
     const badge = entity.symbol || entity.name || '';
     const build = !!state.build;
-    const exit = state.placing ? 'Esc cancels placement' : build ? 'Esc switches to Transform'
-      : state.selected ? 'Esc clears selection' : '';
-    const action = build ? (state.placing ? `Position ${name}${state.confirmable ? ' • Enter confirms' : ''}` : `Click to place ${name}`)
-      : state.hasAtoms ? 'Left-click atoms or bonds to select • Right-drag to rotate • / opens Build' : 'Press / to open Build and place your first atom';
-    return { build, name, badge, hint: [action, build ? 'Right-drag to rotate' : '', exit].filter(Boolean).join(' • ') };
+    const escape = escapeAction(state);
+    const placement = state.placement || {};
+    const kind = placement.kind || entity.kind || 'atom';
+    const object = kind === 'atom' ? 'this atom' : `this ${kind}${placement.name || entity.name ? ` (${placement.name || entity.name})` : ''}`;
+    const action = kind === 'fused ring' ? 'Drag to spin around bond · Click again to place'
+      : state.placement?.stage === 'catalog' ? 'Drag to rotate · Click again to place · X/Y/Z align'
+      : 'Adjust location';
+    const hint = build ? state.placing
+      ? `${action}${state.confirmable ? ' · Enter confirms' : ''} · Esc discards ${object}`
+      : `Click to place ${name} · Right-drag to rotate · Esc switches to Transform`
+      : `Left-click atoms or bonds to select · ${escape === 'clear' ? 'Esc clears selection' : 'Right-drag to rotate'} · / opens Build`;
+    return { build, name, badge, hint };
+  }
+
+  function escapeAction(state) {
+    return state.placing ? 'cancel' : state.build ? 'transform' : state.selected ? 'clear' : null;
+  }
+
+  // Tool intent is workspace interaction state, not a scientific preset. A
+  // WeakMap releases closed scenes and does not arm tools on session restore.
+  function createSceneTools() {
+    const choices = new WeakMap();
+    return {
+      enter(scene, hasAtoms) {
+        const first = !choices.has(scene);
+        const tool = choices.get(scene) || (hasAtoms ? 'transform' : 'build');
+        choices.set(scene, tool);
+        return { tool, first };
+      },
+      remember(scene, tool) { if (scene) choices.set(scene, tool); },
+    };
   }
 
   function createController({ canvas, getState, setTool, onChange }) {
@@ -44,7 +70,7 @@
 
     function sync() {
       const state = getState(), info = describe(state);
-      const key = JSON.stringify([state.edit, state.build, state.placing, state.confirmable, state.selected, state.hasAtoms, info.badge, info.name]);
+      const key = JSON.stringify([state.edit, state.build, state.placing, state.confirmable, state.selected, state.hasAtoms, info.badge, info.name, info.hint]);
       if (key !== lastKey) {
         lastKey = key;
         overlay.hidden = !state.edit || !info.build;
@@ -98,5 +124,5 @@
     }
     return Object.freeze({ sync, mountToolbar });
   }
-  global.VibeMolEditToolUi = Object.freeze({ describe, createController });
+  global.VibeMolEditToolUi = Object.freeze({ describe, escapeAction, createSceneTools, createController });
 })(window);

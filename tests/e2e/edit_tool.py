@@ -39,7 +39,7 @@ def run(page, url):
     page.mouse.move(900,340)
     page.wait_for_function('()=>VibeMolTesting.getEditBuildState().gestureVoidPreviewVisible')
     page.locator('#editTransformToolBtn').click();tool(page,'transform')
-    assert 'first atom' in state(page)['hint'] and 'Select atoms to edit' not in state(page)['hint']
+    assert '/ opens Build' in state(page)['hint'] and 'Select atoms to edit' not in state(page)['hint']
     page.mouse.click(900,340)
     assert not p.snapshot(page)['scenes'], 'Transform unexpectedly created a structure'
     arm(page);tool(page,'build')
@@ -57,16 +57,39 @@ def run(page, url):
     page.mouse.click(900,340)
     page.wait_for_function('()=>VibeMolStructure.exportActive().volume.atoms.length>0')
     # Atom operator cancellation removes the provisional atom, stays armed.
+    assert state(page)['hint']=='BUILD — Adjust location · Enter confirms · Esc discards this atom',state(page)['hint']
+    assert page.locator('.vm-edit-tool-hint .vm-tool-badge').inner_text()=='BUILD'
     page.keyboard.press('Escape');tool(page,'build')
+    assert not page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms.length')
+    assert 'Esc switches to Transform' in state(page)['hint']
     page.keyboard.press('Escape');tool(page,'transform')
     assert page.locator('#editToolOverlay').is_hidden()
     assert page.locator('.vm-build-cursor').is_hidden()
     assert page.locator('#canvas').evaluate('el=>getComputedStyle(el).cursor')!='none'
+    # Confirm from the viewport or a coordinate input. Check the hint within
+    # the key event's turn: waiting for another rendered frame hid this bug.
+    for coordinate_entry in [False, True]:
+        arm(page);close_build(page)
+        page.mouse.click(900,340)
+        page.wait_for_function('()=>VibeMolStructure.exportActive().volume.atoms.length>0')
+        assert 'Esc discards this atom' in state(page)['hint']
+        if coordinate_entry:
+            page.locator('#editAddAtomOperatorHeader').click()
+        confirmed=page.evaluate('''coordinateEntry=>{
+          const target=document.getElementById(coordinateEntry?'editAddAtomOperatorX':'canvas');
+          target.focus();
+          target.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+          return {hint:VibeMolTesting.getEditBuildState().hint,structure:VibeMolStructure.exportActive().volume};
+        }''',coordinate_entry)
+        assert confirmed['hint']=='BUILD — Click to place carbon · Right-drag to rotate · Esc switches to Transform',confirmed['hint']
+        page.locator('#canvas').focus();page.keyboard.press('Escape');tool(page,'transform')
+        assert page.evaluate('()=>VibeMolStructure.exportActive().volume')==confirmed['structure'],'Esc removed committed atoms or hydrogens'
+        page.locator('#newFileBtn').click();tool(page,'build')
+        page.locator('#editTransformToolBtn').click();tool(page,'transform')
     # An atom click selects without replacing its element; Esc clears selection.
     assert p.load(page,[{'name':'one.xyz','text':'1\noxygen\nO 0 0 0'}])['ok']
     page.locator('#modeDisplayBtn').click()
-    page.locator('#modeEditBtn').click();tool(page,'build')
-    page.locator('#editTransformToolBtn').click()
+    page.locator('#modeEditBtn').click();tool(page,'transform')
     box=page.locator('#canvas').bounding_box();x=box['x']+box['width']/2;y=box['y']+box['height']/2
     page.mouse.click(x,y)
     page.wait_for_function('()=>VibeMolTesting.getEditSelectionCount()===1')
@@ -86,7 +109,9 @@ def run(page, url):
         box=page.locator('#canvas').bounding_box();page.mouse.click(box['x']+box['width']*.8,box['y']+box['height']*.3)
         page.wait_for_function('()=>VibeMolTesting.getEditBuildState().moleculePlacementActive')
         assert state(page)['moleculePlacementKind']==kind
-        assert 'Esc cancels placement' in state(page)['hint']
+        hint=state(page)['hint']
+        assert hint.startswith('BUILD — ') and f'Esc discards this {kind}' in hint,hint
+        assert name.lower() in hint.lower() and 'Enter confirms' in hint and '•' not in hint,hint
         page.keyboard.press('Escape');tool(page,'build')
         assert not state(page)['moleculePlacementActive'] and state(page)['payload']['kind']==kind
         page.keyboard.press('Escape');tool(page,'transform')

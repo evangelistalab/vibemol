@@ -609,7 +609,24 @@
     }
   }
 
+  // One projection drives both the cue's visual and accessible state. Edit
+  // actions remain toggle buttons; orbital choices are stable checkboxes.
+  function setCueState(button, state, { checkbox = false, allowMixed = false } = {}) {
+    const value = state === 'mixed' && checkbox && allowMixed ? 'mixed'
+      : state === true || state === 'true' ? 'true' : 'false';
+    button.classList.toggle('is-active', value === 'true');
+    if (checkbox) {
+      button.setAttribute('role', 'checkbox');
+      button.removeAttribute('aria-pressed');
+      button.setAttribute('aria-checked', value);
+    } else {
+      button.removeAttribute('aria-checked');
+      button.setAttribute('aria-pressed', value);
+    }
+  }
+
   global.VibeMolEditUi = Object.freeze({
+    setCueState,
     createSelectionPositionController,
     positionAdaptiveMenu,
     positionFloatingPopover,

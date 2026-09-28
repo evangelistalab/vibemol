@@ -2,7 +2,7 @@
   'use strict';
 
   // Single release version. Run `make version-assets` after changing it.
-  const APP_VERSION = '0.9.2';
+  const APP_VERSION = '0.9.4';
   const scriptUrl = global.document?.currentScript?.src;
   const root = scriptUrl ? new URL('../../../', scriptUrl) : null;
 

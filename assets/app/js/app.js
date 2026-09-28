@@ -7,7 +7,7 @@
   window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc starts a new selection • saved values remain in Measurements';
-  const HINT_EDIT = 'Left-click atoms or bonds to select • Right-drag to rotate • / opens Build';
+  const HINT_EDIT = 'Left-click atoms or bonds to select · Right-drag to rotate · / opens Build';
   const HINT_START = '';
   const VIBRATION_KIND = 'vibemol.vibrations';
   const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
@@ -1268,6 +1268,7 @@
     }
     if (trajectoryVideoController) trajectoryVideoController.onResize();
     if (vibrationVideoController) vibrationVideoController.onResize();
+    calculationsPicker?.reposition();
   }
   window.addEventListener('resize', resize);
   if (typeof ResizeObserver !== 'undefined' && dropViewportEl) {
@@ -7012,6 +7013,8 @@
   if (toolbarChannelBadge && VIBEMOL_CHANNEL === 'beta') toolbarChannelBadge.classList.add('is-visible');
   const emptyStateVersion = document.getElementById('emptyStateVersion');
   if (emptyStateVersion) emptyStateVersion.textContent = `v${APP_VERSION}`;
+  document.getElementById('emptyStateWhatsNewSummary').textContent = `What's new in v${APP_VERSION}`;
+  document.querySelector('.emptyStateWhatsNewLead').textContent = `VibeMol v${APP_VERSION} includes:`;
   const coordsContent = document.getElementById('coordsContent');
   const coordsSubheader = document.getElementById('coordsSubheader');
   const coordsControls = document.getElementById('coordsControls');
@@ -11200,7 +11203,7 @@
     }
     if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
       editAdvancedDrawerOpen = false;
-      setEditIntent(getBuildEditIntent(), { announce: false });
+      syncEditSceneTool(true);
     }
     updateAxisButtons();
     updateEditPlaneHelpers();
@@ -12056,6 +12059,9 @@
     onStatus: text => calculationsPanel?.setStatus(text),
   });
   calculationsPanel = window.VibeMolCalculationsPanel.create({ getRecord: measurementRecord,
+    getContour: calculationsRenderer.getContour,
+    setContour: calculationsRenderer.setContour,
+    onPreviewChange: () => syncCalculations(true),
     onChange: render => { markSessionChanged(); syncCalculations(render); updateSelectedHalos(); },
     onSelect: ids => { calculationsModel.setSelectedAtoms(measurementRecord(),ids); syncCalculations(); updateSelectedHalos(); calculationsPicker.show(true); },
     onOpenChange: () => { window.VibeMolWorkbench?.refresh(); },
@@ -12063,8 +12069,8 @@
   calculationsPicker = window.VibeMolCalculationsPicker.create({ getRecord: measurementRecord,
     isActive: () => currentMode === MODES.CALCULATIONS,
     getViewport: () => renderer.domElement.getBoundingClientRect(),
+    getSelectionBounds: indices => getEditSelectionClientBounds(indices, measurementRecord()?.vol, true),
     onChange: () => { markSessionChanged(); syncCalculations(); updateSelectedHalos(); },
-    onDeselect: () => { calculationsModel.setSelectedAtoms(measurementRecord(),[]); syncCalculations(); updateSelectedHalos(); },
   });
   function syncCalculations(force = false) {
     if (!calculationsRenderer) return;
@@ -12074,8 +12080,8 @@
     calculationsPicker?.sync();
     if (!enabled) { calculationsRenderer.setVisible(false); calculationsSignature = ''; return; }
     const selection = calculationsModel.state(record);
-    const signature = JSON.stringify([record?._sceneGraphSceneKey, selection.selections, selection.planes, record?.vol?.atoms,
-      surfacePosColorDefault, surfaceNegColorDefault, appearanceState.material]);
+    const signature = JSON.stringify([record?._sceneGraphSceneKey, selection.selections, selection.planes, selection.options.minao, record?.vol?.atoms,
+      surfacePosColorDefault, surfaceNegColorDefault, appearanceState.material, calculationsRenderer.getContour()]);
     if (!force && signature === calculationsSignature) return;
     calculationsSignature = signature;
     calculationsRenderer.sync(record, true); updateSelectedHalos();
@@ -12300,6 +12306,7 @@
    * Synchronize camera/target/shift form controls from the current scene state.
    */
   function refreshViewUI() {
+    calculationsPicker?.reposition();
     setViewControlValue(shiftX, contentGroup.position.x);
     setViewControlValue(shiftY, contentGroup.position.y);
     setViewControlValue(shiftZ, contentGroup.position.z);
@@ -15514,11 +15521,31 @@
     };
   }
 
+  const editSceneTools = window.VibeMolEditToolUi.createSceneTools();
+  const emptyEditScene = {};
+  let activeEditScene = null;
+  function syncEditSceneTool(force = false) {
+    if (currentMode !== MODES.EDIT) return;
+    const record = measurementRecord(), scene = record || emptyEditScene;
+    if (!force && scene === activeEditScene) return;
+    activeEditScene = scene;
+    const { tool, first } = editSceneTools.enter(scene, !!record?.vol?.atoms?.length);
+    if (first && tool === 'build') {
+      buildPayloadMode = EDIT_ADD_MODE.ATOM;
+      editAddElementZ = 6;
+      setEditIntent(EDIT_INTENT.ADD_ATOM, { announce: false });
+    }
+    chooseEditTool(tool, { openPalette: first && tool === 'build' });
+  }
+
   function getEditToolState() {
     return {
       edit: currentMode === MODES.EDIT,
       build: getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || isSelectionBuildCueActive(),
       payload: getCurrentBuildPayload(),
+      placement: addFusePreviewState ? { kind: 'fused ring', name: addFusePreviewState.fragment?.name }
+        : moleculePlaceActive ? { stage: 'catalog', kind: moleculePlaceTemplateData?.entryKind, name: moleculePlaceTemplateData?.name }
+        : null,
       placing: !!(moleculePlaceActive || addGrowActive || addFusePreviewState
         || (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection')),
       confirmable: !!(moleculePlaceActive || (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection')),
@@ -15556,15 +15583,15 @@
   function handleEditToolEscape(event) {
     if (currentMode !== MODES.EDIT) return false;
     if (isHelpOpen() || event?.target?.closest?.('[aria-modal="true"]')) return false;
-    const state = getEditToolState();
-    if (state.placing) {
-      if (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection') finalizeAddAtomOperatorSession({ commit: false, announce: false });
+    const action = window.VibeMolEditToolUi.escapeAction(getEditToolState());
+    if (action === 'cancel') {
+      if (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection') finalizeAddAtomOperatorSession({ commit: false, forceCancel: true, announce: false });
       clearMoleculePlacementPreview({ restoreCatalogPreview: false });
       clearFuseRingPreview();
       editGestureController?.clearState();
       cancelGestureGrowDrag();
       controls.enabled = true;
-    } else if (state.build) {
+    } else if (action === 'transform') {
       chooseEditTool('transform');
     } else {
       if (addAtomOperatorSession?.source === 'selection') finalizeAddAtomOperatorSession({ announce: false });
@@ -16670,6 +16697,7 @@
    * @param {{syncSearch?:boolean}=} options
    */
   function updateEditToolboxUi(options = {}) {
+    syncEditSceneTool();
     const syncSearch = options.syncSearch !== false;
     const isEdit = editMode;
     const intent = getEditIntent();
@@ -16737,6 +16765,7 @@
     }
     editTools.setEditIntent(normalized, options);
     syncEditIntentCompatibilityState();
+    if (currentMode === MODES.EDIT && activeEditScene) editSceneTools.remember(activeEditScene, getEditToolState().build ? 'build' : 'transform');
     if (prevIntent !== normalized && editGestureController) editGestureController.clearState();
     if (prevIntent !== normalized && editTransformController) editTransformController.clearAllTransformState();
     refreshActiveAddPreview();
@@ -16753,6 +16782,7 @@
     if (nextMode !== EDIT_ADD_MODE.FRAGMENT) clearFragmentAttachSessionState();
     editTools.setEditAddMode(nextMode, options);
     syncEditIntentCompatibilityState();
+    if (currentMode === MODES.EDIT && activeEditScene) editSceneTools.remember(activeEditScene, getEditToolState().build ? 'build' : 'transform');
     refreshActiveAddPreview();
   }
 
@@ -17102,8 +17132,11 @@
         try {
           const color = new THREE.Color(bgHex);
           const lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+          // The default mid-tone CPK chips also need the existing dark text.
+          // Keep custom element colors on the normal background-based path.
+          const darkCpkText = [6, 15, 26].includes(z) && bgHex === getDefaultElementHexColor(z);
           btn.style.background = bgHex;
-          btn.style.color = lum > 0.6 ? UI_PALETTE.quickPickTextOnLightAlt : UI_PALETTE.quickPickTextOnDark;
+          btn.style.color = lum > 0.6 || darkCpkText ? UI_PALETTE.quickPickTextOnLightAlt : UI_PALETTE.quickPickTextOnDark;
         } catch {
           btn.style.background = UI_PALETTE.quickPickFallbackBg;
           btn.style.color = UI_PALETTE.quickPickFallbackFg;
@@ -19878,7 +19911,7 @@
     showSelectionMetalBondingCuePopover();
   }
 
-  function getEditSelectionClientBounds(indices, vol) {
+  function getEditSelectionClientBounds(indices, vol, worldTransform = false) {
     const selected = Array.from(new Set((Array.isArray(indices) ? indices : [])
       .map((idx) => Number(idx) | 0)
       .filter((idx) => idx >= 0 && vol && Array.isArray(vol.atoms) && idx < vol.atoms.length)));
@@ -19891,7 +19924,8 @@
     for (const idx of selected) {
       const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
       const atom = vol.atoms[idx] || null;
-      const pos = mesh && mesh.position ? mesh.position : (atom ? atomUnitsToAng(vol, atom) : null);
+      let pos = mesh && mesh.position ? mesh.position : (atom ? atomUnitsToAng(vol, atom) : null);
+      if (worldTransform && pos) pos = mesh ? mesh.getWorldPosition(new THREE.Vector3()) : atomGroup.localToWorld(new THREE.Vector3(pos.x, pos.y, pos.z));
       const projected = projectWorldToClient(pos);
       if (!projected || !projected.visible) continue;
       const atomRadiusWorld = Math.max(
@@ -20116,16 +20150,14 @@
     if (editSelectionTranslateCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
       editSelectionTranslateCueButtonEl.hidden = !visible;
-      editSelectionTranslateCueButtonEl.classList.toggle('is-active', visible && !buildCueActive && effectiveMode === 'translate');
-      editSelectionTranslateCueButtonEl.setAttribute('aria-pressed', (visible && !buildCueActive && effectiveMode === 'translate') ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionTranslateCueButtonEl, visible && !buildCueActive && effectiveMode === 'translate');
     }
     if (editSelectionRotateCueButtonEl) {
       editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
       const rotateActive = isBondSideSelection
         ? (!buildCueActive && bondSideCueMode === 'axis')
         : (!buildCueActive && effectiveMode === 'rotate');
-      editSelectionRotateCueButtonEl.classList.toggle('is-active', rotateActive);
-      editSelectionRotateCueButtonEl.setAttribute('aria-pressed', rotateActive ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionRotateCueButtonEl, rotateActive);
       const rotateTooltip = isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection';
       setTooltipText(editSelectionRotateCueButtonEl, rotateTooltip);
       editSelectionRotateCueButtonEl.setAttribute('aria-label', rotateTooltip);
@@ -20133,14 +20165,12 @@
     if (editSelectionBondOrbitCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'orbit';
       editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
-      editSelectionBondOrbitCueButtonEl.classList.toggle('is-active', active);
-      editSelectionBondOrbitCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionBondOrbitCueButtonEl, active);
     }
     if (editSelectionBondDistanceCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'distance';
       editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
-      editSelectionBondDistanceCueButtonEl.classList.toggle('is-active', active);
-      editSelectionBondDistanceCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionBondDistanceCueButtonEl, active);
     }
     if (editSelectionBondOrderCueButtonEl) {
       const visible = !!isBondCenterSelection;
@@ -20151,8 +20181,7 @@
           : `bond order (${order})`)
         : 'Adjust bond order';
       editSelectionBondOrderCueButtonEl.hidden = !visible;
-      editSelectionBondOrderCueButtonEl.classList.toggle('is-active', visible);
-      editSelectionBondOrderCueButtonEl.setAttribute('aria-pressed', visible ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionBondOrderCueButtonEl, visible);
       editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
       const bondOrderTooltip = visible ? `Adjust ${label}` : 'Adjust bond order';
       setTooltipText(editSelectionBondOrderCueButtonEl, bondOrderTooltip);
@@ -20162,8 +20191,7 @@
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(metalBondingCueState && metalBondingCueState.choices.length);
       const active = visible && editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false';
       editSelectionMetalBondingCueButtonEl.hidden = !visible;
-      editSelectionMetalBondingCueButtonEl.classList.toggle('is-active', !!active);
-      editSelectionMetalBondingCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionMetalBondingCueButtonEl, !!active);
       if (!visible) hideSelectionMetalBondingCuePopover();
     }
     const coordinationCueState = getSelectionCoordinationCueState();
@@ -20171,8 +20199,7 @@
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(coordinationCueState && coordinationCueState.choices.length);
       const active = visible && editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
       editSelectionCoordinationCueButtonEl.hidden = !visible;
-      editSelectionCoordinationCueButtonEl.classList.toggle('is-active', !!active);
-      editSelectionCoordinationCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionCoordinationCueButtonEl, !!active);
       if (!visible) hideSelectionCoordinationCuePopover();
     }
     if (editSelectionAddFragmentCueButtonEl) {
@@ -20183,9 +20210,8 @@
           : `Build ${buildPayload.symbol || buildPayload.name || 'loaded element'} at open site`)
         : 'Choose an atom or fragment in Build first';
       editSelectionAddFragmentCueButtonEl.hidden = !visible;
-      editSelectionAddFragmentCueButtonEl.classList.toggle('is-active', visible && buildCueActive);
+      window.VibeMolEditUi.setCueState(editSelectionAddFragmentCueButtonEl, visible && buildCueActive);
       editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !buildCueActive);
-      editSelectionAddFragmentCueButtonEl.setAttribute('aria-pressed', (visible && buildCueActive) ? 'true' : 'false');
       editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
       setTooltipText(editSelectionAddFragmentCueButtonEl, cueLabel);
       if (!visible) {
@@ -20196,7 +20222,7 @@
     }
     if (editSelectionDeleteCueButtonEl) {
       editSelectionDeleteCueButtonEl.hidden = false;
-      editSelectionDeleteCueButtonEl.setAttribute('aria-pressed', 'false');
+      window.VibeMolEditUi.setCueState(editSelectionDeleteCueButtonEl, false);
     }
     const positionSnapshot = getSelectionPositionSnapshot();
     editSelectionPositionUi?.sync(positionSnapshot);
@@ -21407,10 +21433,7 @@
     updateSelectedHalos();
     updateEditSelectionVisuals();
     updateEditAdaptiveMenuUi();
-    setHintMessage(String(
-      options.hint
-      || `Added ${getElementName((atom && atom.Z) | 0)} (${symbol}) atom • Adjust location • Enter confirm • Esc ${options.cancelCommits ? 'close' : 'cancel'}`
-    ));
+    setHintMessage(HINT_EDIT);
     return true;
   }
 
@@ -24389,7 +24412,6 @@
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
-      hint: `Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc close`,
     });
     return { atomIndex: finalIndex >= 0 ? finalIndex : newIndex, selection: [] };
   }
@@ -24446,7 +24468,6 @@
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
-      hint: `Added ${getElementName(z)} (${getElementSymbol(z)}) with bond order ${bondOrder} • Adjust location • Enter confirm • Esc cancel`,
     });
     return { atomIndex: finalIndex >= 0 ? finalIndex : newIndex, selection: [] };
   }
@@ -24546,7 +24567,6 @@
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
-      hint: `Replaced terminal H with ${getElementName(z)} (${getElementSymbol(z)}) • Adjust location • Enter confirm • Esc cancel`,
     });
     return {
       atomIndex: finalIndex >= 0 ? finalIndex : newIndex,
@@ -29419,6 +29439,7 @@
    * Refresh coordinates panel contents for the active file.
    */
   function updateSidePanel() {
+    syncEditSceneTool();
     measurementsPanel?.sync();
     syncCalculations();
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
@@ -30916,16 +30937,17 @@
       line.append(document.createTextNode(info.hint)); hintEl.append(line);
       // Operation feedback is still useful, but never overrides the armed-tool signal.
       if (message && message !== HINT_EDIT && !/^(Build (element|fragment|molecule):|Canceled .*placement\.|Selection cleared\.)/.test(message)) {
-        const status = document.createElement('span'); status.className = 'vm-edit-tool-status'; status.textContent = message; hintEl.append(status);
+        const status = document.createElement('span'); status.className = 'vm-edit-tool-status'; status.textContent = String(message).replaceAll(' • ', ' · '); hintEl.append(status);
       }
     } else hintEl.textContent = message;
-    if (String(message || '').trim().length > 0) {
+    const hasHint = hintEl.textContent.trim().length > 0;
+    if (hasHint) {
       revealHintTemporarily();
     } else {
       clearHintVisibilityTimer();
       setHintVisible(false);
     }
-    const shouldAccent = options.accent !== false && String(message || '').trim().length > 0;
+    const shouldAccent = options.accent !== false && hasHint;
     if (hintAccentTimer) {
       clearTimeout(hintAccentTimer);
       hintAccentTimer = 0;

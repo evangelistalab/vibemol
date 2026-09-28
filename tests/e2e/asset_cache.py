@@ -136,7 +136,7 @@ def main():
                     'assets/app/js/asset-urls.js', 'assets/app/js/app.js', 'src/styles/tokens.css',
                     'assets/app/js/autoiso-worker.js', 'assets/app/js/arithmetic-worker.js',
                     'assets/app/js/arithmetic-grid.js', 'assets/data/basis/cc-pvtz-minao.json',
-                    'assets/data/sample.cube',
+                    'assets/data/basis/cc-pvtz.json', 'assets/data/sample.cube',
                     'assets/fragments/library.json', 'assets/fragments/methyl.xyz',
                     'assets/app/fonts/Geist-Variable.woff2',
                     'assets/environments/monochrome_studio_04_1k.png',

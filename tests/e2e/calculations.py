@@ -51,7 +51,7 @@ def run(page,url):
     result=page.evaluate('()=>VibeMolCalculations.export()')
     assert result['specs']==[] and result['counts']['minao']==0,result
     assert page.evaluate('()=>VibeMolCalculations.state().selectedAtomIds.length')==3
-    page.get_by_role('button',name='2p shell',exact=True).click();ready(page)
+    page.get_by_role('checkbox',name='2p shell',exact=True).click();ready(page)
     assert page.evaluate('()=>VibeMolCalculations.export().specs')==['C(2p)']
     point=page.evaluate('()=>VibeMolTesting.projectActiveAtomToClient(4)')
     page.keyboard.down('Shift');page.mouse.click(point['x'],point['y']);page.keyboard.up('Shift');ready(page)
@@ -80,8 +80,8 @@ def run(page,url):
     # Component editing cannot leave both a shell and one component selected.
     page.get_by_role('button',name='Edit orbitals for C1',exact=True).click()
     page.get_by_role('button',name='2p components',exact=True).click()
-    page.get_by_role('button',name='2px orbital',exact=True).click();ready(page)
-    assert page.get_by_role('button',name='2px orbital',exact=True).evaluate('e=>e===document.activeElement')
+    page.get_by_role('checkbox',name='2px orbital',exact=True).click();ready(page)
+    assert page.get_by_role('checkbox',name='2px orbital',exact=True).evaluate('e=>e===document.activeElement')
     result=page.evaluate('()=>VibeMolCalculations.export()')
     assert 'C1(2px)' in result['specs'] and 'C1(2p)' not in result['specs'],result
     assert page.get_by_role('checkbox',name='Include C1 in π plane').is_disabled()
@@ -94,7 +94,7 @@ def run(page,url):
     assert page.locator('#avas-total').input_value()=='7'
     assert not page.get_by_role('button',name='Use selection count',exact=True).is_visible()
     page.get_by_role('button',name='Edit orbitals for C1',exact=True).click()
-    for component in ['py','pz']:page.get_by_role('button',name='2'+component+' orbital',exact=True).click()
+    for component in ['py','pz']:page.get_by_role('checkbox',name='2'+component+' orbital',exact=True).click()
     ready(page);assert page.evaluate('()=>VibeMolCalculations.export().specs')==['C(2p)']
     assert page.locator('#avas-total').input_value()=='9'
     # New files do not inherit another molecule's selection.
@@ -105,7 +105,7 @@ def run(page,url):
     ready(page);result=input_artifact(page,'avas-formaldehyde')
     assert result['specs']==['C(2px)','O(2px)'] and result['counts']['orbitals']==2,result
     page.locator('#subspacePanel [data-planes]').evaluate('el=>el.open=false')
-    page.get_by_role('button',name='Close atomic orbitals',exact=True).click()
+    page.keyboard.press('Escape')
     settings(page,{'view.camera.x':3,'view.camera.y':8,'view.camera.z':5,'view.target.x':0,'view.target.y':0,'view.target.z':0});settle(page)
     page.screenshot(path=str(p.ARTIFACTS/'avas-formaldehyde.png'))
     page.locator('#themeToggleShell').click();settle(page)
@@ -169,22 +169,34 @@ def popup_selection(page,url):
     popup=page.locator('#calculationOrbitalsPopup')
     page.evaluate('()=>VibeMolCalculations.toggleAtom(0)');ready(page)
     assert popup.is_visible() and page.evaluate('()=>VibeMolCalculations.export().counts.minao')==0
+    assert not popup.locator('[data-components]').is_visible()
+    assert popup.get_by_role('button',name='Deselect atoms',exact=True).count()==0
+    anchor=page.evaluate('()=>VibeMolTesting.projectActiveAtomToClient(0)')
+    box=popup.bounding_box()
+    assert max(box['x']-anchor['x'],anchor['x']-box['x']-box['width'],0)<100, (anchor,box)
+    assert max(box['y']-anchor['y'],anchor['y']-box['y']-box['height'],0)<100, (anchor,box)
     popup.get_by_role('button',name='2p components',exact=True).click()
-    popup.get_by_role('button',name='2px orbital',exact=True).click();ready(page)
+    popup.get_by_role('checkbox',name='2px orbital',exact=True).click();ready(page)
     assert page.evaluate('()=>VibeMolCalculations.export().specs')==['C(2px)']
-    popup.get_by_role('button',name='Deselect atoms',exact=True).click()
+    canvas=page.locator('#canvas').bounding_box();page.mouse.click(canvas['x']+12,canvas['y']+12)
     assert not popup.is_visible() and page.evaluate('()=>VibeMolCalculations.state().selectedAtomIds')==[]
     assert page.evaluate('()=>VibeMolCalculations.export().specs')==['C(2px)']
     page.evaluate('()=>VibeMolCalculations.selectAtoms([0,1])');ready(page)
-    assert popup.get_by_role('button',name='2p shell',exact=True).get_attribute('aria-pressed')=='mixed'
-    assert popup.get_by_role('button',name='2px orbital',exact=True).get_attribute('aria-pressed')=='mixed'
-    popup.get_by_role('button',name='2px orbital',exact=True).click();ready(page)
+    assert popup.get_by_role('checkbox',name='2p shell',exact=True).get_attribute('aria-checked')=='mixed'
+    popup.get_by_role('button',name='2p components',exact=True).click()
+    assert popup.get_by_role('checkbox',name='2px orbital',exact=True).get_attribute('aria-checked')=='false'
+    popup.get_by_role('checkbox',name='2px orbital',exact=True).click();ready(page)
     assert page.evaluate('()=>VibeMolCalculations.export().specs')==['C(2px)','N(2px)']
     assert not popup.locator('[data-plane]').is_visible()
     page.evaluate('()=>VibeMolCalculations.selectAtoms([0,1,2])');ready(page)
     assert popup.locator('[data-plane]').is_visible()
     assert popup.get_by_role('button',name='Fit π plane',exact=True).is_disabled()
-    popup.get_by_role('button',name='2p shell',exact=True).click();ready(page)
+    popup.get_by_role('checkbox',name='2p shell',exact=True).click();ready(page)
+    assert popup.locator('[data-components]').is_visible()  # Selecting a degenerate shell opens its list.
+    shell_box=popup.get_by_role('checkbox',name='2p shell',exact=True).bounding_box()
+    list_box=popup.locator('[data-components]').bounding_box()
+    assert list_box['y']>=shell_box['y']+shell_box['height']
+    assert list_box['x']<=shell_box['x']+shell_box['width']/2<=list_box['x']+list_box['width']
     assert page.evaluate('()=>VibeMolCalculations.export().counts.orbitals')==9
     popup.get_by_role('button',name='Fit π plane',exact=True).click();ready(page)
     assert page.evaluate('()=>VibeMolCalculations.export().counts.orbitals')==3
@@ -204,7 +216,8 @@ def popup_selection(page,url):
     handle=popup.locator('[data-vm-drag-handle]');handle.focus()
     before=popup.bounding_box();page.keyboard.press('Alt+ArrowLeft');after=popup.bounding_box()
     assert after['x']<before['x']
-    popup.get_by_role('button',name='2px orbital',exact=True).click();ready(page)
+    popup.get_by_role('button',name='2p components',exact=True).click()
+    popup.get_by_role('checkbox',name='2px orbital',exact=True).click();ready(page)
     assert abs(popup.bounding_box()['x']-after['x'])<1
     page.keyboard.press('Escape');assert not popup.is_visible()
     assert page.locator('#modeCalculationsBtn').get_attribute('aria-checked')=='true'
@@ -239,17 +252,17 @@ def transition_metals(page,url):
     page.evaluate('()=>VibeMolCalculations.selectAtoms([0])');ready(page)
     def shell_names():
         return popup.locator('[data-shells] button[aria-label$=" shell"]').all_text_contents()
-    assert shell_names()==['3d','4d']
+    assert shell_names()==['1s','2s','2p','3s','3p','4s','3d','4p','5s','4d','5p']
     assert page.evaluate('()=>VibeMolCalculations.export().counts.minao')==0
-    popup.get_by_role('button',name='3d shell',exact=True).click();ready(page)
+    popup.get_by_role('checkbox',name='3d shell',exact=True).click();ready(page)
     popup.get_by_role('button',name='4d components',exact=True).click()
     assert popup.locator('[aria-label$=" orbital"]').count()==5
-    popup.get_by_role('button',name='4dz2 orbital',exact=True).click();ready(page)
+    popup.get_by_role('checkbox',name='4dz2 orbital',exact=True).click();ready(page)
     assert page.evaluate('()=>VibeMolCalculations.export().specs')==['Fe(3d)','Fe(4dz2)']
     page.evaluate('()=>VibeMolCalculations.selectAtoms([0,1])');ready(page)
-    assert shell_names()==['3d','4d']
-    popup.get_by_role('button',name='3d shell',exact=True).click();ready(page)
-    popup.get_by_role('button',name='4d shell',exact=True).click();ready(page)
+    assert shell_names()==['1s','2s','2p','3s','3p','4s','3d','4p','5s','4d','5p']
+    popup.get_by_role('checkbox',name='3d shell',exact=True).click();ready(page)
+    popup.get_by_role('checkbox',name='4d shell',exact=True).click();ready(page)
     result=input_artifact(page,'avas-transition-double-shell')
     assert result['specs']==['Fe(3d)','Fe(4d)','Ni(3d)','Ni(4d)']
     assert result['counts']['minao']==20 and result['counts']['orbitals']==20
@@ -318,6 +331,42 @@ def rohf(page,url):
     print('[calculations] ROHF ms control, spin validation, input preparation, reference switching and session restoration: passed',flush=True)
 
 
+def expanded_shells(page,url):
+    page.goto(url+'?appearanceStudy=1');page.wait_for_function('()=>window.VibeMolCalculations')
+    popup=page.locator('#calculationOrbitalsPopup')
+    examples=[('C',['1s','2s','2p','3s','3p']),('S',['1s','2s','2p','3s','3p','4s','4p']),
+              ('Fe',['1s','2s','2p','3s','3p','4s','3d','4p','5s','4d','5p'])]
+    for element,expected in examples:
+        if page.locator('#modeCalculationsBtn').get_attribute('aria-checked')=='true':page.locator('#modeDisplayBtn').click()
+        assert p.load(page,[{'name':element+'.xyz','text':element+' 0 0 0'}])['ok']
+        page.locator('#modeCalculationsBtn').click();ready(page)
+        page.evaluate('()=>VibeMolCalculations.selectAtoms([0])');ready(page)
+        assert popup.locator('[data-shell]').all_text_contents()==expected
+        shell=expected[-1]
+        popup.get_by_role('button',name=shell+' components',exact=True).click()
+        popup.get_by_role('checkbox',name=shell+'x orbital',exact=True).click();ready(page)
+        result=input_artifact(page,'avas-expanded-'+element)
+        assert result['specs']==[element+'('+shell+'x)'] and result['counts']['minao']==1
+        if element=='C':
+            assert 'minao_basis_set="cc-pvtz"' in result['code']
+            assert page.locator('#avas-minao').input_value()=='cc-pvtz'
+            assert 'cc-pvtz · includes next-shell' in page.locator('[data-preview-basis]').inner_text()
+            saved=page.evaluate('()=>VibeMolSession.export()')
+            assert page.evaluate('s=>VibeMolSession.import(s)',saved)['ok']
+            page.locator('#modeCalculationsBtn').click();ready(page)
+            assert page.evaluate('()=>VibeMolCalculations.export().specs')==['C(3px)']
+            assert page.locator('#avas-minao').input_value()=='cc-pvtz'
+            page.evaluate('()=>VibeMolCalculations.selectAtoms([0])');ready(page)
+        page.mouse.move(800,140);page.screenshot(path=str(p.ARTIFACTS/('avas-expanded-'+element+'.png')))
+    for width,height in [(390,850),(320,568),(740,340)]:
+        page.set_viewport_size({'width':width,'height':height});ready(page)
+        box=popup.bounding_box()
+        assert box['x']>=0 and box['x']+box['width']<=width+1 and box['y']+box['height']<=height+1,box
+        popup.get_by_role('checkbox',name='5pz orbital',exact=True).click();ready(page)
+        assert not popup.evaluate('(e)=>e.scrollWidth>e.clientWidth'),box
+    print('[calculations] C/S/Fe expanded menus, next-shell components, matching basis/input, session round-trip and compact metal menu: passed',flush=True)
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
@@ -332,6 +381,7 @@ def main():
                 page.set_viewport_size({'width':1440,'height':1000});popup_selection(page,url)
                 page.set_viewport_size({'width':1440,'height':1000});rohf(page,url)
                 transition_metals(page,url)
+                expanded_shells(page,url)
                 assert not errors,errors;assert not console,console
             except Exception:
                 p.write_failure_artifacts(page,p.ARTIFACTS,'calculations',errors,console);raise

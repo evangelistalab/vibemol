@@ -10,16 +10,31 @@
         <p class="vm-session-status">Click atoms to select or deselect them, then choose shells or orbitals in the popup. Atom selection alone does not change AVAS.</p>
         <p class="vm-session-status" data-loading role="status"></p>
         <p class="vm-session-status" data-selection-summary></p><button class="vm-btn vm-btn--ghost" type="button" data-choose>Choose orbitals</button><div data-atoms></div>
-        <p class="vm-calculations-count" data-count aria-live="polite"></p>
+        <p class="vm-calculations-count" data-count aria-live="polite"></p><p class="vm-session-status" data-preview-basis></p>
+        <div class="vm-field-row"><label class="vm-field-label" for="avas-lobe-size">Lobe size</label><div class="vm-field-control vm-avas-lobe-control"><input id="avas-lobe-size" type="range" class="vm-slider__range" min="35" max="85" step="1" aria-describedby="avas-contour-note"><output for="avas-lobe-size" data-contour></output></div></div>
         <details class="vm-appearance-section" data-planes><summary class="inspectorSubsectionSummary"><span class="vm-section-label">π planes</span></summary><div data-plane-atoms></div><p class="vm-session-status" data-plane-reason></p><button class="vm-btn vm-btn--ghost" type="button" data-fit>Fit selected atoms</button><div data-plane-list></div></details>
         <details class="vm-appearance-section" open><summary class="inspectorSubsectionSummary"><span class="vm-section-label">AVAS settings</span></summary><div data-fields></div><p class="vm-session-status" data-reference-note></p></details>
         <details class="vm-appearance-section"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Basis sets</span></summary><div data-basis></div></details>
         <details class="vm-appearance-section" open><summary class="inspectorSubsectionSummary"><span class="vm-section-label">forte2 input</span></summary><p class="vm-session-status" data-validation role="status"></p><button class="vm-btn vm-btn--ghost" type="button" data-copy>Copy input</button><textarea class="vm-mono" readonly aria-label="Generated forte2 input" spellcheck="false"></textarea></details>
-        <p class="vm-session-status">AO shapes use contracted cc-pvtz-minao functions at a 12% peak-amplitude contour. AVAS eigenvalues and the final active space require an SCF calculation. Nothing runs in VibeMol.</p>
+        <p class="vm-session-status" id="avas-contour-note"></p>
       </div>`;
     document.body.append(panel);
     global.VibeMolFloatingPanels.register(panel,{label:'Subspace',handle:'[data-vm-drag-handle]'});
     const $=selector=>panel.querySelector(selector), planeChecked=new Map(), fields=new Map();
+    let lobeTimer=0;
+    function syncContour() {
+      const percent=Math.round(deps.getContour()*100),input=$('#avas-lobe-size');
+      input.value=100-percent;input.style.setProperty('--vm-slider-fill-percent',((65-percent)/50*100)+'%');input.setAttribute('aria-valuetext',`${percent}% peak-amplitude contour; higher size shows more of the tail`);
+      $('[data-contour]').textContent=`${percent}% contour`;
+      const basis=model.previewBasis(deps.getRecord());
+      $('[data-preview-basis]').textContent=`Projector preview basis: ${basis}${basis==='cc-pvtz'?' · includes next-shell functions':''}.`;
+      $('#avas-contour-note').textContent=`AO shapes use contracted ${basis} functions at a ${percent}% peak-amplitude contour per shell. Preview radii are normalized to bond scale (0.9–1.25 Å at 40%); these are orientation diagrams, not density surfaces. Lobe size changes only the preview. AVAS eigenvalues and the final active space require an SCF calculation. Nothing runs in VibeMol.`;
+    }
+    $('#avas-lobe-size').oninput=()=>{
+      deps.setContour((100-Number($('#avas-lobe-size').value))/100);syncContour();
+      clearTimeout(lobeTimer);lobeTimer=setTimeout(()=>deps.onPreviewChange(),120);
+    };
+    $('#avas-lobe-size').onchange=()=>{clearTimeout(lobeTimer);deps.onPreviewChange();};
     let signature='',lastRecord=null,ready=false,loading=false;
     const button=(text,fn)=>{const b=document.createElement('button');b.type='button';b.className='vm-btn vm-btn--ghost';b.textContent=text;b.onclick=fn;return b;};
     function field(key,text,type,choices=null) {
@@ -59,6 +74,7 @@
     async function ensureBasis(){if(ready||loading)return;loading=true;$('[data-loading]').textContent='Loading MINAO basis…';try{await model.loadBasis();ready=true;$('[data-loading]').textContent='';changed();}catch(e){$('[data-loading]').textContent=e.message+' Close and reopen Subspace to retry.';}finally{loading=false;}}
     function sync(){
       if(!isOpen())return;
+      syncContour();
       const record=deps.getRecord(),s=model.state(record),all=model.atoms(record),projection=model.projection(record),options=model.optionsFor(record,projection);
       if(lastRecord!==record){lastRecord=record;signature='';planeChecked.clear();}
       $('[data-active]').textContent=record?`Active: ${record.name}`:'Load a structure to choose atomic functions.';
@@ -84,8 +100,8 @@
         if(focused)panel.querySelector(`[aria-label="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
         body.scrollTop=scroll;
       }
-      const countWord=s.options.reference==='GHF'?'spinors':'subspace orbitals';
-      $('[data-count]').textContent=`${projection.minao} MINAO functions → ${projection.orbitals} ${countWord} · ${projection.atomCount} atoms`;
+      const countWord=s.options.reference==='GHF'?'spinor':'subspace orbital',plural=global.VibeMolUI.plural;
+      $('[data-count]').textContent=`${plural(projection.minao,"MINAO function")} → ${plural(projection.orbitals,countWord)} · ${plural(projection.atomCount,"atom")}`;
       const validation=model.validation(record);
       $('[data-validation]').textContent=[...validation.errors,...validation.warnings].join(' ');
       const code=model.generate(record);$('textarea').value=code;$('[data-copy]').disabled=!code;

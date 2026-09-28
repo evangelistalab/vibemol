@@ -3481,10 +3481,10 @@ def main() -> int:
             page.keyboard.press('Escape')
             page.wait_for_function("() => document.getElementById('editAddAtomOperatorPanel')?.getAttribute('aria-hidden') === 'true'")
             after_add_escape = active_structure_summary(page)
-            if after_add_escape['atomCount'] != after_add_atom['atomCount']:
-                raise AssertionError(f'Esc unexpectedly removed the newly placed atom: {after_add_atom} -> {after_add_escape}')
-            if after_add_escape['atomicNumbers'].count(6) != after_add_atom['atomicNumbers'].count(6):
-                raise AssertionError(f'Esc unexpectedly changed the placed atom identity: {after_add_atom} -> {after_add_escape}')
+            if after_add_escape['atomCount'] != before_add_atom['atomCount']:
+                raise AssertionError(f'Esc did not cancel the provisional atom: {before_add_atom} -> {after_add_escape}')
+            if after_add_escape['atomicNumbers'].count(6) != before_add_atom['atomicNumbers'].count(6):
+                raise AssertionError(f'Esc did not restore the original elements: {before_add_atom} -> {after_add_escape}')
 
             log_step('grow-add can be followed immediately by atom selection')
             start_new_edit_file(page)
@@ -4947,7 +4947,7 @@ def main() -> int:
             midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
             page.mouse.click(midpoint_x, midpoint_y)
             page.wait_for_function("""() => !!window.VibeMolTesting?.isFuseRingPreviewActive?.()""")
-            wait_for_hint_contains(page, 'Fuse ring preview: Fusion phenyl')
+            wait_for_hint_contains(page, 'Esc discards this fused ring (Fusion phenyl)')
 
             log_step('clicking a bond with a non-fusion fragment leaves fuse preview inactive')
             load_build_query(page, 'methyl')

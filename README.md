@@ -153,6 +153,6 @@ python -m playwright install chromium
 ## Deployment
 - Current release: **v0.9.0** — [release notes](docs/releases/v0.9.0.md). [VibeMol](https://vibemol.org/) opens the Workbench interface by default.
 - Static deployment from repository root (`index.html`)
-- Release versions live in `assets/app/js/asset-urls.js`. Run `python3 tools/sync_asset_versions.py --version 0.9.3` (using the intended version) to update the version and committed asset URLs together. `make check` rejects stale URLs. See [asset versioning](docs/asset-versioning.md).
+- Release versions live in `assets/app/js/asset-urls.js`. Run `python3 tools/sync_asset_versions.py --version 0.9.4` (using the intended version) to update the version and committed asset URLs together. `make check` rejects stale URLs. See [asset versioning](docs/asset-versioning.md).
 - `.nojekyll` is required for GitHub Pages compatibility
 - Keep `CNAME` (`vibemol.org`) in source for production. The beta deployment workflow removes it only from the beta mirror.

@@ -5,41 +5,55 @@
   const defaults = Object.freeze({ reference: 'RHF', charge: 0, ms: 0, basis: 'cc-pvdz', auxiliary: 'def2-universal-jkfit',
     minao: 'cc-pvtz-minao', method: 'cumulative', sigma: 0.98, cutoff: 0.1, docc: 3, uocc: 3, total: 0, totalFollowsSelection: true, diagonalize: true });
   let basis = null, pending = null;
+  const referenceBases = new Map();
   const atomSelections = new WeakMap(); // Editing focus, not scientific/session state.
   const componentsFor = type => (labels['spd'.indexOf(type)] || []).slice();
-  function setBasis(data) {
-    basis = {};
+  function setBasis(data, name = 'cc-pvtz-minao') {
+    const catalog = {};
     for (const [z, element] of Object.entries(data.elements)) {
       const next = [1, 2, 3, 4, 5, 6];
-      basis[z] = [];
+      catalog[z] = [];
       // Match forte2's general-contraction expansion and BasisInfo n counters.
       for (const source of element.electron_shells || []) {
         for (let i = 0; i < source.coefficients.length; i++) {
           const l = source.angular_momentum[Math.min(i, source.angular_momentum.length - 1)];
           if (l > 5) continue;
-          basis[z].push({ label: `${next[l]++}${'spdfgh'[l]}`, l,
+          catalog[z].push({ label: `${next[l]++}${'spdfgh'[l]}`, l,
             exponents: source.exponents.map(Number), coefficients: source.coefficients[i].map(Number) });
         }
       }
     }
-    return basis;
+    referenceBases.set(name,catalog);
+    if(name==='cc-pvtz-minao')basis=catalog;
+    return catalog;
   }
   async function loadBasis() {
-    if (basis) return basis;
-    const path = 'assets/data/basis/cc-pvtz-minao.json';
-    if (!pending) pending = fetch(global.VibeMolAssets?.url(path) || path).then(response => {
-      if (!response.ok) throw new Error('MINAO basis data could not be loaded.');
-      return response.json();
-    }).then(setBasis).catch(error => { pending = null; throw error; });
+    if (basis && referenceBases.has('cc-pvtz')) return basis;
+    if (!pending) pending = Promise.all(['cc-pvtz-minao','cc-pvtz'].map(name=>{
+      if(referenceBases.has(name))return referenceBases.get(name);
+      const path=`assets/data/basis/${name}.json`;
+      return fetch(global.VibeMolAssets?.url(path) || path).then(response=>{
+        if(!response.ok)throw new Error(`${name} basis data could not be loaded.`);
+        return response.json();
+      }).then(data=>setBasis(data,name));
+    })).then(()=>basis).catch(error => { pending = null; throw error; });
     return pending;
   }
-  const shellsFor = z => basis?.[z] || [];
+  const shellsFor = (z,name='cc-pvtz-minao') => referenceBases.get(name)?.[z] || [];
+  const previewBasis = record => state(record).options.minao.trim().toLowerCase()==='cc-pvtz-minao'?'cc-pvtz-minao':'cc-pvtz';
+  const recordShells = (record,z) => shellsFor(z,previewBasis(record));
   function selectableShellsFor(z) {
-    // Match the app's d-block ranges. AVAS double shells are nd and (n+1)d,
-    // not every higher contraction present in the source basis. Keep the raw
-    // catalog intact for rendering/exporting assignments in existing sessions.
-    const n = z>=21&&z<=30 ? 3 : z>=39&&z<=48 ? 4 : z>=72&&z<=80 ? 5 : z>=104&&z<=112 ? 6 : 0;
-    return shellsFor(z).filter(shell=>!n||shell.label===`${n}d`||shell.label===`${n+1}d`);
+    // H–Kr: complete occupied/core shells, outer s/p and the next s/p set;
+    // once 3d is occupied, include 3d and its 4d correlation partner too.
+    // Restrict choices, never the raw catalog used by older saved selections.
+    const period=periodFor(z),catalog=referenceBases.get('cc-pvtz')?.[z]||shellsFor(z);
+    return catalog.filter(shell=>shell.l<2?Number(shell.label[0])<=period+1:
+      shell.l===2&&z>=21&&Number(shell.label[0])<=period)
+      .slice().sort((a,b)=>(Number(a.label[0])+a.l)-(Number(b.label[0])+b.l)||Number(a.label[0])-Number(b.label[0]));
+  }
+  function ensureShellBasis(record,ids,shell) {
+    const options=state(record).options;
+    if(options.minao.trim().toLowerCase()==='cc-pvtz-minao'&&atoms(record).some(a=>ids.includes(a.id)&&!shellsFor(a.Z).some(s=>s.label===shell)))options.minao='cc-pvtz';
   }
   function normalize(value = {}) {
     const options = { ...defaults };
@@ -131,6 +145,7 @@
   function selectShells(record,ids,shell) {
     const context=selectionContext(record,ids);
     if(context.error||context.atoms.length!==new Set(ids).size||!context.shells.some(s=>s.label===shell))return false;
+    ensureShellBasis(record,ids,shell);
     const remove=context.atoms.every(a=>choiceFor(record,a.id,shell)==='all');
     for(const a of context.atoms)writeChoice(record,a.id,shell,remove?null:'all');
     prune(record);return true;
@@ -138,6 +153,7 @@
   function selectComponents(record,ids,shell,component) {
     const context=selectionContext(record,ids),available=componentsFor(shell[1]);
     if(context.error||context.atoms.length!==new Set(ids).size||!context.shells.some(s=>s.label===shell)||!available.includes(component))return false;
+    ensureShellBasis(record,ids,shell);
     // A component click replaces a whole shell with a partial selection.
     // For mixed groups, add it everywhere; remove only if all partial choices include it.
     const remove=context.atoms.every(a=>{const c=choiceFor(record,a.id,shell);return Array.isArray(c)&&c.includes(component);});
@@ -204,7 +220,7 @@
     const all=atoms(record), s=state(record), groups=new Map();
     for(const a of all) {
       const row=s.selections.find(r=>r.id===a.id); if(!row)continue;
-      for(const shell of shellsFor(a.Z)) {
+      for(const shell of recordShells(record,a.Z)) {
         const choice=row.shells[shell.label];if(!choice)continue;
         for(const token of choice==='all'?[shell.label]:choice.map(c=>shell.label[0]+c)) {
           const key=a.element+'|'+token;
@@ -235,7 +251,7 @@
     for(const [id,n]of normals){const norm=Math.hypot(...n);if(norm<1e-8)error='Overlapping plane normals cancel; remove one plane.';else normals.set(id,n.map(v=>v/norm));}
     const functions=[];let minao=0;
     for(const atom of all){const row=s.selections.find(r=>r.id===atom.id);if(!row)continue;
-      for(const shell of shellsFor(atom.Z)){const choice=row.shells[shell.label];if(!choice)continue;
+      for(const shell of recordShells(record,atom.Z)){const choice=row.shells[shell.label];if(!choice)continue;
         minao+=choice==='all'?2*shell.l+1:choice.length;
         if(shell.l===1 && choice==='all' && normals.has(atom.id))functions.push({atom,shell,component:2,normal:normals.get(atom.id)});
         else for(const component of choice==='all'?Array.from({length:2*shell.l+1},(_,i)=>i):choice.map(c=>componentsFor(shell.label[1]).indexOf(c)))functions.push({atom,shell,component});
@@ -261,8 +277,14 @@
       }
     }
     for(const key of ['basis','auxiliary','minao'])if(!o[key].trim() || o[key].length>200)errors.push('Enter a valid basis-set name.');
-    if(o.minao.toLowerCase()!=='cc-pvtz-minao')warnings.push('Shells, counts and previews use cc-pvtz-minao. Verify these shells in your chosen MINAO basis before running.');
-    else if(all.some(a=>!shellsFor(a.Z).length))errors.push('The bundled cc-pvtz-minao basis is unavailable for one or more elements in this structure.');
+    const reference=previewBasis(record),known=referenceBases.has(o.minao.trim().toLowerCase());
+    if(!known)warnings.push(`Shells, counts and previews use ${reference}. Verify these shells in your chosen MINAO basis before running.`);
+    if(all.some(a=>!recordShells(record,a.Z).length))errors.push(`The bundled ${reference} basis is unavailable for one or more elements in this structure.`);
+    for(const row of state(record).selections){
+      const atom=all.find(a=>a.id===row.id);if(!atom)continue;
+      const available=new Set(recordShells(record,atom.Z).map(s=>s.label));
+      for(const shell of Object.keys(row.shells))if(!available.has(shell))errors.push(`${atom.label}(${shell}) is unavailable in ${reference}; choose a reference basis containing that shell (cc-pvtz supports the expanded choices).`);
+    }
     if(o.method==='cumulative' && !(Number.isFinite(o.sigma) && o.sigma>=0 && o.sigma<=1))errors.push('Sigma must be between 0 and 1.');
     else if(o.method==='cutoff' && !(Number.isFinite(o.cutoff) && o.cutoff>0 && o.cutoff<0.999999))errors.push('Cutoff must be greater than 0 and less than 0.999999.');
     else if(o.method==='total' && !(Number.isInteger(o.total) && o.total>0))errors.push('Total active count must be a positive integer.');
@@ -294,5 +316,5 @@
       `ci_solver = CISolver(State(nel=${mf}.nel, multiplicity=${rohf?2*Math.abs(o.ms)+1:1}, ms=${rohf?o.ms:'0.0'}))\nmc = MCOptimizer(ci_solver)(avas)\nmc.run()`;
     return `from forte2 import ${imports}\n\nxyz = """\n${xyz}\n"""\n\nsystem = System(\n    xyz=xyz,\n    basis_set=${quote(o.basis)},\n    auxiliary_basis_set=${quote(o.auxiliary)},\n    minao_basis_set=${quote(o.minao)},${ghf?'\n    x2c_type="so",':''}\n)\n\n${mf} = ${o.reference}(charge=${o.charge}${rohf?`, ms=${o.ms}`:''})(system)\n\navas = AVAS(\n${parameters.join('\n')}\n)(${mf})\n\n${downstream}\n`;
   }
-  global.VibeMolCalculationsModel=Object.freeze({defaults,loadBasis,setBasis,shellsFor,componentsFor,state,normalize,setOptions,optionsFor,atoms,defaultShell,periodFor,selectedIds,setSelectedAtoms,selectionContext,toggleAtom,choiceFor,selectShell,selectComponent,selectShells,selectComponents,removeOrbitals,planeEligible,fitPlane,addPlane,prune,specs,planeSpecs,projection,validation,generate});
+  global.VibeMolCalculationsModel=Object.freeze({defaults,loadBasis,setBasis,shellsFor,previewBasis,componentsFor,state,normalize,setOptions,optionsFor,atoms,defaultShell,periodFor,selectedIds,setSelectedAtoms,selectionContext,toggleAtom,choiceFor,selectShell,selectComponent,selectShells,selectComponents,removeOrbitals,planeEligible,fitPlane,addPlane,prune,specs,planeSpecs,projection,validation,generate});
 })(window);

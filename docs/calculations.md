@@ -12,24 +12,34 @@ input; it does not run SCF, AVAS, CI, or geometry optimization.
    prior camera view.
 2. Click atoms to select or deselect them; Shift-click retains an already selected
    atom. **No orbitals are assigned automatically.** Drag to orbit. Clicking empty
-   canvas or **Deselect atoms** clears editing focus and preserves assigned orbitals.
+   canvas clears editing focus and preserves assigned orbitals.
 3. The movable **Atomic orbitals** popup opens for one atom or a group from the same
    periodic-table row. Group controls show only shells available on every atom in
-   the bundled MINAO basis. Mixed-row selections keep their highlights but suppress
+   the bundled reference bases. Mixed-row selections keep their highlights but suppress
    the popup; Subspace explains why. **Choose orbitals** reopens it, while **Edit**
    on an existing assignment focuses just that atom.
-4. Toggle `(n,l)` shells with chips or expand p/d shells to select individual
-   orbitals. Changes apply to all focused atoms. Mixed/partial choices are underlined.
+4. The compact circular toolbar appears next to the selected atom or group. Toggle
+   `(n,l)` shells with its buttons; selecting p/d also opens a dropdown of individual
+   orbitals directly below that shell. Its caret opens the dropdown without assigning
+   a whole shell. Only one dropdown opens at a time. The popup shares Edit's drag
+   grip, selection rings, and remove button; removing orbitals never deletes atoms.
+   Changes apply to all focused atoms. Mixed/partial choices are underlined.
    Clicking a whole shell fills it everywhere (or removes it if already full
    everywhere). A first component click replaces whole-shell choices; subsequent
    clicks add the component everywhere, or remove it when every partial choice
    already contains it. Full component sets collapse to a whole shell.
-   Transition metals offer only the valence d shell and its double-shell partner,
-   `nd` and `(n+1)d`: **3d and 4d** for the supported Sc–Zn series, with all five
-   individual d components available. This limit also applies to group edits and
-   the selection API. Other elements keep their available basis shells. Existing
-   saved assignments outside this limit remain intact until explicitly removed.
-5. With three or more selected atoms, the popup offers **π plane** fitting. All
+   Menus follow the neutral element's occupied/core shells, complete outer s/p
+   shells, and the next s/p set. Elements with occupied 3d also expose 4d. They
+   appear in filling order, matching these examples:
+
+   - C: `1s 2s 2p 3s 3p`
+   - S: `1s 2s 2p 3s 3p 4s 4p`
+   - Fe: `1s 2s 2p 3s 3p 4s 3d 4p 5s 4d 5p`
+
+   H/He expose `1s 2s 2p`; Ca does not offer an unoccupied d shell. The same-period
+   group menu is the intersection of each atom's choices. Existing assignments
+   outside the menu limits remain intact until explicitly removed.
+5. With three or more selected atoms, the toolbar offers **π plane** fitting. All
    must have whole p shells and pass the non-collinear, near-coplanar checks.
    Disabled controls explain the missing condition. Existing planes can be
    removed from the popup or managed in Subspace's **π planes** section.
@@ -47,7 +57,9 @@ options belong to each structure and are included in portable sessions and
 autosave. They use stable atom IDs and are pruned after atom deletion or a
 geometry change that invalidates a plane. They are not Look properties.
 Atom editing focus and the popup's position/open state are transient and excluded
-from sessions. Deselecting or closing the popup never removes assigned orbitals;
+from sessions. Camera changes keep the popup near the selection unless manually
+moved. Selecting different atoms restores its automatic position and closes the
+dropdown. Deselecting or closing the popup never removes assigned orbitals;
 use **Remove orbitals**, a row's **Remove**, or **Clear subspace** for that.
 Escape first closes the popup, then clears atom focus, then returns to View.
 
@@ -103,25 +115,42 @@ Escape first closes the popup, then clears atom focus, then returns to View.
 ## Preview and basis data
 
 Previews evaluate normalized contracted real solid-harmonic GTOs on a 43³ grid.
-Each shell uses a contour at **12% of its peak radial amplitude**, with adaptive
+Each shell uses a contour at **40% of its peak radial amplitude**, with adaptive
 local bounds capped at 4 Å. These are AO shape previews, not computed molecular
 orbitals. Positive and negative phases inherit the Look's surface colors and
 material; a fixed 0.65 opacity keeps the structure visible.
 
-Geometry is cached by atomic number, shell and component. Repeated atoms instance
+Lobe size adjusts the contour from 65% (small) to 15% (large), showing the fraction in the slider and contour note. This preview-only choice is transient and excluded from scientific presets, sessions, and generated forte2 input. Each shell is normalized to its own peak, and its default radial envelope is scaled into 0.9–1.25 Å. At 40%, native outer extents for C(2p), N(2p), O(2p), and Fe(3d) are approximately 0.94, 0.77, 0.65, and 0.60 Å; the preview therefore leaves C unchanged and enlarges the other three to 0.9 Å. This keeps compact d functions outside the metal sphere and caps diffuse double shells. A fixed per-shell scale is used across slider changes, preserving angular shapes, nodal relationships, and continuous lobe sizing. The note explicitly identifies these as orientation diagrams, not quantitative density surfaces.
+
+Shell and component chips are checkboxes, with a mixed state only on shells. Components are checked when assigned on every focused atom; checking a partially assigned component applies it to the full focused group. The shared Edit cue state helper derives accessibility and visual state together.
+
+Geometry is cached by reference basis, atomic number, shell, component and contour. Repeated atoms instance
 the same geometry, and plane-directed p functions rotate a cached px pair.
 Construction yields between distinct functions and cancels obsolete work.
 At most 128 inactive cache entries remain; meshes needed by the live selection
 are retained. Preview bounds participate in camera depth fitting.
 
-The bundled basis matches forte2's `cc-pvtz-minao`: **H–Ar, Ca–Kr**, with only
-H–Ne pruned to minimal contractions in the source. See the
-[data provenance](../assets/data/basis/README.md). Unsupported elements cannot
-be selected, and input generation warns about unavailable basis coverage.
-The MINAO name is a text field, not a basis browser. Changing it changes the
-generated input only: shells, counts and previews still refer to bundled
-cc-pvtz-minao, and the panel states that explicitly. Verify shell availability
-in a custom basis before running the generated script.
+The bundled `cc-pvtz-minao` and full `cc-pvtz` bases both match forte2 data and
+cover **H–Ar, Ca–Kr**. K and elements beyond Kr remain unsupported. See the
+[data provenance](../assets/data/basis/README.md). Menus use the full basis to
+expose next-shell choices; stored reference-basis settings still control the
+actual functions used for previews, counts and generated input.
+
+The default and older sessions retain `cc-pvtz-minao`. Selecting a function
+absent from that basis, such as C(3p), switches the structure's reference basis
+to `cc-pvtz`. The basis field, preview note, geometry and generated
+`minao_basis_set` all update together, and the choice persists in sessions.
+The two datasets have different contractions even for some shared labels;
+therefore the whole preview uses the selected reference basis, without mixing
+coefficients. Switching explicitly back to a basis missing assigned shells
+blocks input generation and explains the missing functions. It never silently
+drops them or automatically reverts after a shell is removed.
+
+Shell numbers follow forte2's per-angular-momentum contraction counters. Higher
+labels identify reference-basis functions, not computed atomic excited states
+or molecular occupancies. The basis-name field also accepts custom names; these
+use cc-pVTZ for the preview and warn that the named basis must be checked before
+running. Choosing either bundled name uses its exact data.
 
 ## Validation and automation
 

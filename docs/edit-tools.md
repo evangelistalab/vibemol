@@ -1,6 +1,6 @@
 # Edit tools
 
-Edit has two tools: **Build** (left) and **Transform** (right). The Workbench mode row still contains View, Measure, Edit, and Calculations. Entering Edit arms Build with the current entity, without opening its palette. The tool strip is a separate radio group; arrow keys select and focus its radios, and Tab visits only the checked tool.
+Edit has two tools: **Build** (left) and **Transform** (right). The Workbench mode row still contains View, Measure, Edit, and Calculations. The first Edit entry for a scene with atoms selects Transform; an empty scene arms carbon in Build and opens the palette. Subsequent entries remember that scene’s last tool for the current browser session. The tool strip is a separate radio group; arrow keys select and focus its radios, and Tab visits only the checked tool.
 
 In Transform, left-click selects atoms, bond centers, or either bond end without changing bond order. A center selects the bond; an end selects the attached side for rotation or distance adjustment. Shift-click toggles atom selection. In both Build and Transform, right-click does nothing; right-drag (also with Shift) rotates the scene even when starting over atoms or bonds, preserving selection, geometry, and pending placement previews. With an atom loaded in Build, hovering any exposed part of a bond highlights the whole bond (including every cylinder or dash); clicking cycles its order. Fragment fusion and molecule placement retain their left-click gestures. Select an atom in Transform, then enable Build at open site (+) to choose an attachment anchor. Switching tools retains the loaded atom, fragment, or molecule. Choosing an entity in the Build palette arms Build. The Build radio also arms the current entity and opens its palette; `/` retains its existing open/focus behavior. Closing, docking, or minimizing the palette does not disarm Build. The Panels menu remains the panel-visibility control.
 
@@ -14,6 +14,18 @@ Escape resolves creation actions before clearing selections:
 4. With none of those active, leave the edit state unchanged. Existing dialog, panel, and Focus dismissal remain available.
 
 Edit hints remain visible and describe the current action and next Escape. Operation feedback appears below that instruction. Native modal dialogs retain their own keyboard handling.
+
+Placement hints use that same state projection and BUILD badge, with `·`
+separators. Atom placement reads `BUILD — Adjust location · Enter confirms ·
+Esc discards this atom`. Fragment/molecule previews include the catalog name,
+rotation/confirmation controls, and `Esc discards this fragment/molecule (…)`;
+fused rings say `Esc discards this fused ring (…)`. Placement controllers only
+request a hint refresh; they do not supply a second set of transient instructions.
+Ending an atom operator session synchronizes the tool UI immediately after
+clearing that session, including silent Enter confirmation from the viewport
+or coordinate fields. The hint returns to Build's placement prompt without
+waiting for a render frame; the next Escape switches to Transform and retains
+the committed atom and its hydrogens.
 
 ## Placement and styling
 
@@ -31,7 +43,7 @@ Accent against the theme base is 4.24:1 in light and 11.06:1 in dark. The white/
 ## Validation
 
 - `tests/unit/edit-tool-ui.test.mjs`: empty-scene guidance, entity names, and Escape precedence in instruction text.
-- `tests/e2e/edit_tool.py`: exclusive radios, one Tab stop, arrow navigation, panel-independent arming, atom selection without replacement, provisional placement cancellation, fragment/molecule cancellation, mode reset, and 320–1920px layouts.
+- `tests/e2e/edit_tool.py`: exclusive radios, one Tab stop, arrow navigation, panel-independent arming, atom selection without replacement, provisional placement cancellation, fragment/molecule cancellation, per-scene tool memory, and 320–1920px layouts.
 - `tests/e2e/build_bonds.py`: whole-bond hover and Build-only cycling, release hit validation, undo/redo, multiple/curved/dashed bonds, and hydrogen limits.
 - `tests/e2e/build_orbit.py`: right-click and right-drag behavior for atoms, fragments, and molecules, Shift-right-drag, payload retention across tool switches, and preservation of pending molecule previews.
 - `tests/e2e/transform_selection.py`: left-click atom/bond-center/bond-end selection, Shift toggles, scope transitions, and right-drag orbit over every target in both projections without modifying geometry or selection.

@@ -356,7 +356,8 @@
       state.moleculePlaceQuaternion.identity();
       rebuildMoleculePlacementPreviewMeshes();
       updateEditToolboxUi({ syncSearch: false });
-      setHintMessage(`Placing ${requestedKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule'} ${data.name} • Drag to rotate • Click again to place • X/Y/Z align • Esc cancel`);
+      // Placement instructions come from the shared armed-tool state projection.
+      setHintMessage('');
       return true;
     }
 
@@ -604,7 +605,7 @@
       };
       rebuildFuseRingPreviewMeshes();
       updateEditToolboxUi({ syncSearch: false });
-      setHintMessage(`Fuse ring preview: ${fragment.name} • Drag to spin around bond • Click again to place • Esc cancel`);
+      setHintMessage('');
       return true;
     }
 
@@ -802,14 +803,17 @@
       const session = state.addAtomOperatorSession;
       if (!session) return false;
       const commit = finalizeOptions.commit !== false;
-      const effectiveCommit = commit || (!commit && !!session.cancelCommits);
+      const effectiveCommit = commit || (!finalizeOptions.forceCancel && !!session.cancelCommits);
       const announce = finalizeOptions.announce !== false;
       const resolved = resolveAddAtomOperatorSession();
       state.addAtomOperatorSession = null;
       updateAddAtomOperatorUi();
+      // Confirmation may finish while rendering is idle. Publish the cleared
+      // placement state now so the hint describes the next Escape immediately.
+      updateEditToolboxUi({ syncSearch: false });
       if (!resolved) return true;
       if (!effectiveCommit) {
-        options.applyAtomsSnapshotToRecord(session.record, session.beforeAtoms, undefined, session.beforeBonds);
+        options.applyAtomsSnapshotToRecord(session.record, session.beforeAtoms, undefined, session.beforeBonds, session.beforeAnnotations);
         if (announce) setHintMessage('Canceled atom add.');
         return true;
       }
@@ -928,7 +932,7 @@
       );
       applyAutomaticHydrogenAdjustment(vol, [vol.atoms.length - 1], { source: 'operator' });
       updateAddAtomOperatorUi();
-      setHintMessage(`Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc close`);
+      setHintMessage('');
       return true;
     }
 

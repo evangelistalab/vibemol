@@ -55,7 +55,7 @@ def check_bar(page):
     assert not any(row['id']=='viewInspector' for row in result['rows'])
     assert page.evaluate('''()=> {
       const group=document.getElementById('workbenchQuickActions'), panel=document.getElementById('workbenchPanelsBtn');
-      return group.parentElement===panel.parentElement && group.nextElementSibling===panel;
+      return group.parentElement===panel.parentElement && group.nextElementSibling===document.getElementById("workbenchOverflowBtn") && group.nextElementSibling.nextElementSibling===panel;
     }''')
     bar=page.locator('#workbenchBar').bounding_box();canvas=page.locator('#canvas').bounding_box()
     assert canvas['y']>=bar['y']+bar['height']-1 and canvas['height']>=200
@@ -88,7 +88,7 @@ def run(page):
         assert page.locator('#mode' + target + 'Btn').get_attribute('aria-checked') == 'true'
         check_bar(page)
     page.keyboard.press('Tab')
-    assert page.locator('#editAdaptiveAddAtomBtn').evaluate('el => document.activeElement === el')
+    assert page.locator('#editTransformToolBtn').evaluate('el => document.activeElement === el')
 
     # Build is a tool radio; panel expansion is managed independently in Panels.
     page.locator('#editAdaptiveAddAtomBtn').click()

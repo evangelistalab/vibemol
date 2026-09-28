@@ -5,6 +5,7 @@ import { loadGlobalModules } from './load-global-module.mjs';
 const {VibeMolCalculationsModel:M,VibeMolMinaoRenderer:R}=loadGlobalModules([
   'assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/calculations-model.js','assets/app/js/minao-renderer.js']);
 M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz-minao.json',import.meta.url),'utf8')));
+M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz.json',import.meta.url),'utf8')),'cc-pvtz');
 const plain=x=>JSON.parse(JSON.stringify(x));
 const record=rows=>({name:'fixture',vol:{units:'angstrom',atoms:rows.map(([Z,x,y,z],i)=>({id:'a'+i,Z,x,y,z}))}});
 const ring=()=>record([[6,0,0,.859492],[6,0,-.651229,-.499559],[6,0,.651229,-.499559],[1,.91265,0,1.457504],[1,-.91265,0,1.457504],[1,0,-1.585659,-1.038624],[1,0,1.585659,-1.038624]]);
@@ -24,7 +25,7 @@ test('atom selection is transient and does not create or erase AVAS assignments'
 test('shared orbital editing requires a single period and the intersection of available shells',()=>{
  const r=record([[6,0,0,0],[8,0,1,0],[1,1,0,0],[20,0,0,1],[26,0,1,1],[19,1,1,1]]);
  M.setSelectedAtoms(r,['a0','a1']);assert.equal(M.selectionContext(r).period,2);
- assert.deepEqual(plain(M.selectionContext(r).shells.map(s=>s.label)),['1s','2s','2p']);
+ assert.deepEqual(plain(M.selectionContext(r).shells.map(s=>s.label)),['1s','2s','2p','3s','3p']);
  M.selectShells(r,M.selectedIds(r),'2p');assert.deepEqual(plain(M.specs(r)),['C(2p)','O(2p)']);
  const before=plain(M.state(r));assert.equal(M.selectShells(r,['a0','a2'],'1s'),false);
  assert.deepEqual(plain(M.state(r)),before);assert.match(M.selectionContext(r,['a0','a2']).error,/one periodic-table row/);
@@ -43,31 +44,50 @@ test('batch editing resolves mixed choices without duplicate functions or changi
  M.selectShells(r,['a0','a1'],'2p');assert.equal(M.choiceFor(r,'a0','2p'),'all');assert.equal(M.choiceFor(r,'a1','2p'),'all');
  M.selectShells(r,['a0','a1'],'2p');assert.deepEqual(plain(M.specs(r)),['C3(2s)']);
 });
-test('transition-metal choices are limited to valence d and double d shells for single and group editing',()=>{
- for(let z=21;z<=30;z++){
-   const r=record([[z,0,0,0]]);
-   assert.deepEqual(plain(M.selectionContext(r,['a0']).shells.map(s=>s.label)),['3d','4d']);
-   for(const shell of M.shellsFor(z).filter(s=>!['3d','4d'].includes(s.label))){
-     assert.equal(M.selectShell(r,'a0',shell.label),false);
-     for(const component of M.componentsFor(shell.label[1]))assert.equal(M.selectComponent(r,'a0',shell.label,component),false);
-   }
-   assert.equal(M.state(r).selections.length,0);
-   assert.equal(M.selectShell(r,'a0','3d'),true);assert.equal(M.selectShell(r,'a0','4d'),true);
-   assert.equal(M.projection(r).minao,10);assert.equal(M.optionsFor(r).total,10);
+test('occupied, outer and next-shell menus match C, S and Fe in filling order',()=>{
+ const examples=[
+  [6,['1s','2s','2p','3s','3p'],9],
+  [16,['1s','2s','2p','3s','3p','4s','4p'],13],
+  [26,['1s','2s','2p','3s','3p','4s','3d','4p','5s','4d','5p'],27]
+ ];
+ for(const [z,expected,count]of examples){
+  const r=record([[z,0,0,0]]);
+  assert.deepEqual(plain(M.selectionContext(r,['a0']).shells.map(s=>s.label)),expected);
+  for(const shell of expected)assert.equal(M.selectShell(r,'a0',shell),true);
+  assert.equal(M.projection(r).minao,count);assert.equal(M.optionsFor(r).total,count);
+  assert.equal(M.validation(r).errors.length,0);assert.ok(M.generate(r));
+  assert.equal(M.selectShell(r,'a0',z===6?'3d':z===16?'5s':'5d'),false);
  }
  const r=record([[26,0,0,0],[28,0,0,2],[20,0,0,4]]);
- assert.deepEqual(plain(M.selectionContext(r,['a0','a1']).shells.map(s=>s.label)),['3d','4d']);
  assert.equal(M.selectShells(r,['a0','a1'],'5d'),false);
  assert.equal(M.selectComponents(r,['a0','a1'],'6d','dxy'),false);
  M.selectShells(r,['a0','a1'],'3d');M.selectComponents(r,['a0','a1'],'4d','dz2');
  assert.deepEqual(plain(M.specs(r)),['Fe(3d)','Fe(4dz2)','Ni(3d)','Ni(4dz2)']);
  assert.equal(M.optionsFor(r).total,12);
- // The same-period intersection respects the restriction regardless of order.
- for(const ids of [['a0','a2'],['a2','a0']])assert.deepEqual(plain(M.selectionContext(r,ids).shells.map(s=>s.label)),['3d','4d']);
- for(const z of [6,17,20,31,36]){
-   const other=record([[z,0,0,0]]);
-   assert.deepEqual(plain(M.selectionContext(other,['a0']).shells),plain(M.shellsFor(z)));
+ for(const ids of [['a0','a2'],['a2','a0']])assert.deepEqual(plain(M.selectionContext(r,ids).shells.map(s=>s.label)),['1s','2s','2p','3s','3p','4s','4p','5s','5p']);
+});
+test('expanded light-element choices use real cc-pVTZ functions and matching input without changing old sessions',()=>{
+ const r=record([[6,0,0,0],[8,0,0,2]]);
+ M.selectComponent(r,'a0','2p','px');const old=plain(M.state(r));
+ assert.equal(M.previewBasis(r),'cc-pvtz-minao');
+ M.selectComponents(r,['a0','a1'],'3p','pz');
+ assert.equal(M.previewBasis(r),'cc-pvtz');
+ assert.equal(M.optionsFor(r).minao,'cc-pvtz');
+ assert.deepEqual(plain(M.specs(r)),['C(2px)','C(3pz)','O(3pz)']);
+ assert.match(M.generate(r),/minao_basis_set="cc-pvtz"/);
+ for(const f of M.projection(r).functions){
+  const actual=M.shellsFor(f.atom.Z,'cc-pvtz').find(s=>s.label===f.shell.label);
+  assert.deepEqual(plain(f.shell),plain(actual));
+  const g=R.grid(f.shell,f.component);assert.ok(g.iso>0&&g.data.some(v=>Math.abs(v)>g.iso));
  }
+ const restored={vol:r.vol,calculations:M.normalize(plain(M.state(r)))};
+ assert.deepEqual(plain(M.specs(restored)),plain(M.specs(r)));assert.equal(M.generate(restored),M.generate(r));
+ const legacy={vol:r.vol,calculations:M.normalize(old)};
+ assert.equal(M.previewBasis(legacy),'cc-pvtz-minao');assert.deepEqual(plain(M.specs(legacy)),['C(2px)']);
+ assert.deepEqual(plain(M.projection(legacy).functions[0].shell),plain(M.shellsFor(6).find(s=>s.label==='2p')));
+ // An explicit incompatible basis change must not silently drop higher shells.
+ M.setOptions(r,{minao:'cc-pvtz-minao'});assert.equal(M.generate(r),'');
+ assert.match(M.validation(r).errors.join(' '),/3p.*unavailable/);
 });
 test('older transition-metal assignments survive session normalization and can be explicitly removed',()=>{
  const r=record([[26,0,0,0]]);
@@ -204,4 +224,21 @@ test('contracted real harmonics have CCA axes, parity and unit radial/angular no
  assert.ok(Math.abs(R.harmonic(1,0,0,1,0)-1)<1e-10);assert.ok(Math.abs(R.harmonic(2,0,1,1,0)-Math.sqrt(3))<1e-10);
  for(let l=0;l<=4;l++)for(let m=0;m<=2*l;m++)assert.ok(Math.abs(R.harmonic(l,m,1,2,3)-(-1)**l*R.harmonic(l,m,-1,-2,-3))<1e-8);
  for(const shell of M.shellsFor(6)){const radial=R.radial(shell);let norm=0;const step=.001;for(let r=step/2;r<14;r+=step)norm+=radial(r*r)**2*r**(2*shell.l+2)*step*4*Math.PI/(2*shell.l+1);assert.ok(Math.abs(norm-1)<1e-5,[shell.label,norm]);}
+});
+
+test('MINAO size changes contour with fixed per-shell preview scaling and bond-scale bounds',()=>{
+ for(const [z,label]of [[6,'2p'],[7,'2p'],[8,'2p'],[26,'3d']]) {
+  const shell=M.shellsFor(z).find(s=>s.label===label);
+  const small=R.grid(shell,0,.65),normal=R.grid(shell,0),large=R.grid(shell,0,.15);
+  assert.ok(large.iso<normal.iso&&normal.iso<small.iso);
+  assert.ok(Math.abs(large.origin[0])>Math.abs(normal.origin[0]));
+  const radial=R.radial(shell);let peak=0,outer=0;
+  for(let i=0;i<=4000;i++){const r=i/1000/.529177210903;peak=Math.max(peak,Math.abs(radial(r*r))*r**shell.l);}
+  for(let i=0;i<=4000;i++){const r=i/1000/.529177210903;if(Math.abs(radial(r*r))*r**shell.l>=peak*R.DEFAULT_CONTOUR)outer=i/1000;}
+  assert.ok(outer>.5&&outer<1,`${z} ${label}: ${outer} Å`);
+  assert.equal(small.previewScale,normal.previewScale);assert.equal(large.previewScale,normal.previewScale);
+  assert.ok(outer*normal.previewScale>=.89 && outer*normal.previewScale<=1.26);
+ }
+ assert.equal(R.normalizeContour(NaN),R.DEFAULT_CONTOUR);
+ assert.equal(R.normalizeContour(0),.15);assert.equal(R.normalizeContour(1),.65);
 });
