@@ -50,13 +50,14 @@
   }
   modes.querySelector('#modeDisplayBtn').setAttribute('aria-label', 'View mode');
   const tools = document.createElement('div'); tools.className = 'wb-tools'; bar.append(tools, brand);
+  host.editTool.mountToolbar(tools, document.getElementById('editAdaptiveAddAtomBtn'));
   const editTools = document.createElement('div'); editTools.className = 'wb-context-tools'; editTools.hidden = true; tools.append(editTools);
   editTools.setAttribute('role', 'group'); editTools.setAttribute('aria-label', 'Mode actions');
-  for (const id of ['editAdaptiveAddAtomBtn', 'editAdaptiveSymmetryBtn', 'editAdaptiveCleanStructureBtn']) {
+  for (const id of ['editAdaptiveSymmetryBtn', 'editAdaptiveCleanStructureBtn']) {
     const control = document.getElementById(id); control.classList.add('vm-btn', 'vm-btn--ghost', 'wb-tool', 'wb-edit-tool');
     control.setAttribute('data-tooltip-placement', 'bottom'); editTools.append(control);
   }
-  const editPanelButtons = new Map(entries.filter(item => item.mode === 'edit')
+  const editPanelButtons = new Map(entries.filter(item => item.mode === 'edit' && item.id !== 'buildPanel')
     .map(item => [item.id, item.entry.buttonEl]));
   for (const [id, control] of editPanelButtons) control.setAttribute('aria-controls', byId.get(id).panel);
   const clearMeasurements = button('Clear measurements', 'backspace', () => host.clearMeasurements(), 'wb-tool');
@@ -489,7 +490,12 @@
   const modeObserver = new MutationObserver(schedule); modeObserver.observe(document.getElementById('displayWindowAdaptiveMenu'), { attributes: true, attributeFilter: ['data-mode'] });
   modeObserver.observe(quickActionsSource, { attributes: true, attributeFilter: ['hidden'] });
   // Wrapped command rows reserve their actual height above the canvas/docks.
-  const barObserver = global.ResizeObserver && new global.ResizeObserver(schedule);
+  // Dock updates can wrap the tool strip again. Leave the observer delivery
+  // cycle before changing layout, so wrapped bars settle without resize loops.
+  let barResizeFrame = 0;
+  const barObserver = global.ResizeObserver && new global.ResizeObserver(() => {
+    if (!barResizeFrame) barResizeFrame = requestAnimationFrame(() => { barResizeFrame = 0; schedule(); });
+  });
   barObserver?.observe(bar);
   for (const target of Object.values(docks)) target.tabs.addEventListener('keydown', event => {
     const tabs = [...target.tabs.children], index = tabs.indexOf(event.target);
@@ -529,6 +535,10 @@
     if (event.key !== 'Escape') return;
     if (!panelsMenu.hidden) { closePanelsMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
     else if (!menu.hidden) { closeMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
+    // Let coordinate/operator fields cancel their own draft first. Build search
+    // is a filter: Escape there still cancels placement or disarms the tool.
+    else if ((!event.target.closest?.('input, select, textarea, [contenteditable="true"]')
+      || event.target.closest?.('#editAdaptiveAddAtomPopover')) && host.editToolEscape(event)) { event.stopImmediatePropagation(); }
     else if (focus) { setFocus(false); focusButton.focus(); event.preventDefault(); event.stopImmediatePropagation(); }
     else if (!event.target.closest('input, select, textarea, [contenteditable="true"]')) {
       const id = event.target.closest('[data-wb-panel]')?.dataset.wbPanel;

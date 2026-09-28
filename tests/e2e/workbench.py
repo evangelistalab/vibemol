@@ -94,7 +94,8 @@ def modes(page):
     page.locator('#workbenchFocus').click();page.locator('#canvas').focus();page.keyboard.press('/')
     assert not layout(page)['focus']
     build=page.locator('#editAdaptiveAddAtomPopover');bounded_build(page,build)
-    assert page.locator('#editAdaptiveAddAtomBtn .adaptiveEditItemLabel').inner_text()=='Build'
+    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('role')=='radio'
+    assert page.locator('#editAdaptiveAddAtomBtn').inner_text().startswith('Build')
     assert page.locator('#editAdaptiveSymmetryBtn .adaptiveEditItemLabel').inner_text()=='Symmetry'
     assert page.locator('#editAdaptiveCleanStructureBtn .adaptiveEditItemLabel').inner_text()=='Optimize'
     page.locator('#editAdaptiveSymmetryBtn').click()

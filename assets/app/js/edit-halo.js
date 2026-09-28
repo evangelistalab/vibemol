@@ -742,7 +742,7 @@
         }
         scope = descriptor.label;
       } else if (state.hoverBondCenterReserved) {
-        hint = 'Bond midpoint: left click raises order • Right click lowers order';
+        hint = 'Left-click bond to cycle order • Right-drag to rotate';
         scope = 'Bond midpoint';
       }
       return {

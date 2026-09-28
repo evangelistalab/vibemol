@@ -41,8 +41,9 @@ def run(page, url):
     assert active_atom_positions(page)==before and panel.is_visible()
 
     # Selection remains editable with this inspector open; its scope follows it.
+    page.locator('#editTransformToolBtn').click()
     x,y=find_atom_click_point(page,0)
-    page.mouse.click(x,y,button='right')
+    page.mouse.click(x,y)
     page.wait_for_function('()=>VibeMolTesting.getEditSelectionCount()===1')
     assert 'Selected atoms (1)' in page.locator('#editSymmetryTargetSummary').inner_text()
     page.locator('#canvas').focus();page.keyboard.press('Escape')

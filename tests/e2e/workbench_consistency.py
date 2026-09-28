@@ -138,7 +138,7 @@ def workspace(page):
     mode(page,'Edit');assert build.is_visible()
     assert page.locator('#editBuildSearch').input_value()=='carbon'
     assert page.evaluate('()=>VibeMolFloatingPanels.get(document.getElementById("editAdaptiveAddAtomPopover")).getPosition()')==position
-    page.locator('#editAdaptiveAddAtomBtn').click()
+    build.get_by_role('button',name='Close Build',exact=True).click()
     mode(page,'Display');mode(page,'Edit');assert build.is_hidden()
     page.locator('#editAdaptiveSymmetryBtn').click()
     symmetry=page.locator('#editAdaptiveSymmetryPopover')

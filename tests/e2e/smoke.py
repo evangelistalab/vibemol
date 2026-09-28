@@ -1099,7 +1099,7 @@ def build_methane(page) -> None:
 
 def arm_fragment_attach_cue(page, atom_index: int = 0) -> None:
     atom_x, atom_y = find_atom_click_point(page, atom_index)
-    right_click_atom(page, atom_x, atom_y)
+    click_atom_to_select(page, atom_x, atom_y)
     wait_for_selected_atoms(page, 1)
     page.locator('#editSelectionAddFragmentCueButton').click()
     page.wait_for_function(
@@ -1204,7 +1204,17 @@ def trigger_selection_tool(page) -> None:
     )
 
 
-def right_click_atom(page, x: float, y: float, additive: bool = False) -> None:
+def click_atom_to_select(page, x: float, y: float, additive: bool = False) -> None:
+    # Selection belongs to Transform. Accept any placed atom before disarming
+    # Build, so Escape does not cancel the structure the fixture just created.
+    if page.locator('#canvas').evaluate("el=>el.classList.contains('vm-build-armed')"):
+        # The legacy canvas is not focusable; release toolbar focus before
+        # Enter so it accepts a provisional atom instead of activating New.
+        page.evaluate('()=>document.activeElement?.blur()')
+        page.locator('#canvas').focus()
+        page.keyboard.press('Enter')
+        page.keyboard.press('Escape')
+        page.wait_for_function("()=>!document.getElementById('canvas').classList.contains('vm-build-armed')")
     hit = page.evaluate(
         """(payload) => {
             if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
@@ -1223,7 +1233,7 @@ def right_click_atom(page, x: float, y: float, additive: bool = False) -> None:
     if additive:
         page.keyboard.down('Shift')
     try:
-        page.mouse.click(x, y, button='right')
+        page.mouse.click(x, y)
     finally:
         if additive:
             page.keyboard.up('Shift')
@@ -1281,7 +1291,7 @@ def select_two_fixture_atoms(page) -> None:
 
     def _select_one(candidates: list[tuple[float, float]]) -> bool:
         for x, y in candidates:
-            right_click_atom(page, x, y)
+            click_atom_to_select(page, x, y)
             try:
                 page.wait_for_function(
                     r"""() => {
@@ -1309,7 +1319,7 @@ def select_two_fixture_atoms(page) -> None:
         wait_for_selected_atoms(page, 1)
 
     for x, y in right_candidates:
-        right_click_atom(page, x, y, additive=True)
+        click_atom_to_select(page, x, y, additive=True)
         try:
             wait_for_selected_atoms(page, 2, timeout=750)
             return
@@ -1556,6 +1566,9 @@ def main() -> int:
                 }"""
             )
             page.keyboard.press('Escape')
+            # Build is armed on entry; first Escape switches to Transform,
+            # and the next dismisses the legacy Symmetry popup.
+            page.keyboard.press('Escape')
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
@@ -1614,6 +1627,8 @@ def main() -> int:
             }:
                 raise AssertionError(f'Unexpected build adaptive menu state: {empty_edit_visibility}')
 
+            # Selecting an entity explicitly arms Build; opening the palette alone does not.
+            page.locator('#editAddQuick button[data-z="6"]').click()
             # Gesture void-click places one carbon, but the first placed atom should not stay selected.
             x, y = canvas_point(page)
             page.mouse.click(x, y)
@@ -1631,7 +1646,7 @@ def main() -> int:
             page.mouse.move(x, y)
             page.wait_for_timeout(360)
             select_x, select_y = find_atom_click_point(page, 0)
-            right_click_atom(page, select_x, select_y)
+            click_atom_to_select(page, select_x, select_y)
             page.wait_for_function(
                 """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1"""
             )
@@ -1726,7 +1741,7 @@ def main() -> int:
             page.wait_for_timeout(360)
             atom2_x, atom2_y = project_active_atom(page, 1)
 
-            right_click_atom(page, atom1_x, atom1_y)
+            click_atom_to_select(page, atom1_x, atom1_y)
             try:
                 page.wait_for_function(
                     """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1""",
@@ -1812,6 +1827,8 @@ def main() -> int:
                     return atoms.length === 0 && Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0;
                 }"""
             )
+            load_build_query(page, 'Nitrogen')
+            ensure_build_popover_closed(page)
             page.mouse.click(x, y)
             page.wait_for_function(
                 """() => {
@@ -3170,7 +3187,7 @@ def main() -> int:
                 }"""
             )
             oxygen_x, oxygen_y = find_atom_click_point(page, 0)
-            right_click_atom(page, oxygen_x, oxygen_y)
+            click_atom_to_select(page, oxygen_x, oxygen_y)
             wait_for_selected_atoms(page, 1)
             click_when_ready(page, '#editAdaptiveSymmetryBtn')
             page.wait_for_function(
@@ -3186,6 +3203,8 @@ def main() -> int:
             page.wait_for_function(
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
+            page.keyboard.press('Escape')
+            page.wait_for_function('()=>VibeMolTesting.getEditBuildState().intent === "atom_manipulation"')
             page.keyboard.press('Escape')
             page.wait_for_function("""() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 0""")
             click_when_ready(page, '#editAdaptiveSymmetryBtn')
@@ -3325,7 +3344,7 @@ def main() -> int:
                 """() => document.getElementById('editAdaptiveSymmetryPopover')?.getAttribute('aria-hidden') === 'true'"""
             )
 
-            log_step('fragment cue cancel returns to atom manipulation')
+            log_step('fragment cue Escape disarms Build, then clears selection')
             select_two_fixture_atoms(page)
             page.locator('#editSelectionAddFragmentCueButton').click()
             page.wait_for_function(
@@ -3336,6 +3355,8 @@ def main() -> int:
                 }"""
             )
             page.keyboard.press('Escape')
+            page.wait_for_function('()=>VibeMolTesting.getEditBuildState().intent === "atom_manipulation"')
+            page.keyboard.press('Escape')
             page.wait_for_function(
                 """() => {
                     const selectionCount = Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0);
@@ -3344,17 +3365,18 @@ def main() -> int:
                 }"""
             )
 
-            log_step('fragment cue retargets to a newly clicked atom before attach')
+            log_step('Transform selects a new anchor before rearming fragment attachment')
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "fragment-retarget-fixture")', fixture_text)
             left_x, left_y = find_atom_click_point(page, 0)
             right_x, right_y = find_atom_click_point(page, 1)
-            right_click_atom(page, left_x, left_y)
+            click_atom_to_select(page, left_x, left_y)
             wait_for_selected_atoms(page, 1)
             page.locator('#editSelectionAddFragmentCueButton').click()
             page.wait_for_function(
                 """() => document.getElementById('editSelectionAddFragmentCueButton')?.getAttribute('aria-pressed') === 'true'"""
             )
-            right_click_atom(page, right_x, right_y)
+            click_atom_to_select(page, right_x, right_y)
+            page.locator('#editSelectionAddFragmentCueButton').click()
             page.wait_for_function(
                 """() => {
                     const exported = window.VibeMolStructure.exportActive();
@@ -3492,7 +3514,7 @@ def main() -> int:
                 }"""
             )
             anchor_select_x, anchor_select_y = find_atom_click_point(page, 0)
-            right_click_atom(page, anchor_select_x, anchor_select_y)
+            click_atom_to_select(page, anchor_select_x, anchor_select_y)
             page.wait_for_function(
                 """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1"""
             )
@@ -3589,7 +3611,7 @@ def main() -> int:
                       && state.intent === 'add_atom'
                       && state.elementZ === 9
                       && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'
-                      && /Build element: Fluorine \\(F\\)/.test(state.hint || '');
+                      && /Click to place fluorine/.test(state.hint || '');
                 }"""
             )
             x, y = find_empty_edit_canvas_point(page)
@@ -3618,7 +3640,7 @@ def main() -> int:
                       && document.getElementById('editAdaptiveAddAtomPopover')?.getAttribute('aria-hidden') === 'true'
                       && state.ghostKind === 'fragment'
                       && state.catalogVoidPreviewVisible === true
-                      && /Build fragment: Methylene/.test(state.hint || '');
+                      && /Click to place Methylene/.test(state.hint || '');
                 }"""
             )
 
@@ -3721,15 +3743,16 @@ def main() -> int:
             if roundtrip_summary['exportedCoordination'] != 'linear' or roundtrip_summary['importedCoordination'] != 'linear':
                 raise AssertionError(f'Round-trip lost coordination override: {roundtrip_summary}')
 
-            # Gesture bond-center clicking should raise with left click and lower with right click.
+            # Transform left clicks select bond scope; Build clicks cycle its order.
             log_step('bond gesture smoke')
             dihedral_fixture_text = build_fixture_dihedral_structure()
             page.evaluate('(text) => window.VibeMolStructure.importFromText(text, "bond-dihedral-fixture")', dihedral_fixture_text)
             set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
+            page.locator('#canvas').focus();page.keyboard.press('Escape')
             side_x, side_y = find_bond_side_canvas_point(page)
-            page.mouse.click(side_x, side_y, button='right')
+            page.mouse.click(side_x, side_y)
             page.wait_for_function(
                 """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) > 0"""
             )
@@ -3790,8 +3813,9 @@ def main() -> int:
             set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
+            page.locator('#canvas').focus();page.keyboard.press('Escape')
             side_x, side_y = find_bond_side_canvas_point(page)
-            page.mouse.click(side_x, side_y, button='right')
+            page.mouse.click(side_x, side_y)
             page.wait_for_function(
                 """() => {
                     const cue = window.VibeMolTesting?.getBondSideCueState?.();
@@ -3851,6 +3875,9 @@ def main() -> int:
             set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
+            # Bond-order cycling belongs to Build with an atom loaded.
+            load_build_query(page, 'Carbon')
+            ensure_build_popover_closed(page)
             for expected_order in (2, 3, 4, 3, 2, 1):
                 midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
                 page.mouse.click(midpoint_x, midpoint_y)
@@ -3870,13 +3897,14 @@ def main() -> int:
             set_focused_scene_visible(page, True)
             page.locator('#modeDisplayBtn').click()
             page.locator('#modeEditBtn').click()
+            page.locator('#canvas').focus();page.keyboard.press('Escape')
             side_x, side_y = find_bond_side_canvas_point(page)
-            page.mouse.click(side_x, side_y, button='right')
+            page.mouse.click(side_x, side_y)
             page.wait_for_function(
                 """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) > 0"""
             )
             midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
-            page.mouse.click(midpoint_x, midpoint_y, button='right')
+            page.mouse.click(midpoint_x, midpoint_y)
             page.wait_for_function(
                 """() => {
                     const cue = window.VibeMolTesting?.getBondCenterCueState?.();
@@ -4643,7 +4671,7 @@ def main() -> int:
             )
             ensure_build_popover_closed(page)
             metal_anchor_x, metal_anchor_y = find_atom_click_point(page, 0)
-            right_click_atom(page, metal_anchor_x, metal_anchor_y)
+            click_atom_to_select(page, metal_anchor_x, metal_anchor_y)
             page.wait_for_function(
                 """() => document.getElementById('editSelectionTranslateCue')?.getAttribute('aria-hidden') === 'false'"""
             )
@@ -4779,7 +4807,7 @@ def main() -> int:
             start_new_edit_file(page)
             build_methane(page)
             hydrogen_x, hydrogen_y = find_atom_click_point(page, 1)
-            right_click_atom(page, hydrogen_x, hydrogen_y)
+            click_atom_to_select(page, hydrogen_x, hydrogen_y)
             wait_for_selected_atoms(page, 1)
             set_checkbox_state(page, '#editAddAdjustHydrogens', True)
             before_hydrogen_delete = page.evaluate('() => VibeMolStructure.exportActive().volume')

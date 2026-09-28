@@ -20,7 +20,7 @@ HARNESS = r'''() => {
           return b !== hit && !b.contains(hit);
         }).map(b => b.id || b.getAttribute('aria-label')),
         pressed: bar.querySelectorAll('[aria-pressed]').length,
-        radios: [...bar.querySelectorAll('[role="radio"]')].map(b => ({id: b.id, checked: b.getAttribute('aria-checked'), tab: b.tabIndex})),
+        radios: [...bar.querySelectorAll('#toolbarModeRow [role="radio"]')].map(b => ({id: b.id, checked: b.getAttribute('aria-checked'), tab: b.tabIndex})),
         rows: [...document.querySelectorAll('#workbenchPanelsMenu [role="menuitemcheckbox"]')].filter(b => !b.hidden)
           .map(b => ({id: b.dataset.window, checked: b.getAttribute('aria-checked'), detail: b.querySelector('.wb-panel-location').textContent})),
       };
@@ -90,13 +90,14 @@ def run(page):
     page.keyboard.press('Tab')
     assert page.locator('#editAdaptiveAddAtomBtn').evaluate('el => document.activeElement === el')
 
-    # Build exposes expansion. Other commands never acquire toggle styling/state.
-    page.keyboard.press('Enter')
-    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-expanded') == 'true'
+    # Build is a tool radio; panel expansion is managed independently in Panels.
+    page.locator('#editAdaptiveAddAtomBtn').click()
+    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-checked') == 'true'
     assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-haspopup') is None
     assert page.locator('#editAdaptiveAddAtomPopover').get_attribute('role') == 'tabpanel'
-    page.locator('#editAdaptiveAddAtomBtn').click()
-    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-expanded') == 'false'
+    page.locator('#editAdaptiveAddAtomPopover').get_by_role('button', name='Close Build', exact=True).click()
+    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-checked') == 'true'
+    page.locator('#editTransformToolBtn').click()
 
     # Menu navigation, type-ahead, dismissal, and the formerly unreachable Camera.
     trigger = page.locator('#workbenchPanelsBtn')
@@ -216,7 +217,7 @@ def run(page):
     page.locator('#canvas').focus(); page.keyboard.press('o')
     page.wait_for_function('() => document.getElementById("hint").textContent.includes("UFF")')
     check_bar(page)
-    assert page.evaluate('() => __vmqa.errors') == []
+    assert page.evaluate('() => __vmqa.errors') == [], page.evaluate('() => __vmqa.errors')
     (p.ARTIFACTS / 'workbench-bar-report.json').write_text(json.dumps(report, indent=2))
     print('[workbench bar] desktop widths: ' + json.dumps({mode: report[mode]['scrollWidth'] for mode in ['Display', 'Measure', 'Edit']}), flush=True)
     print('[workbench bar] roles, keyboard, checkmarks, conditional panels, 11 viewport widths, themes and shortcuts: passed', flush=True)

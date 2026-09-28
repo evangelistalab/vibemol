@@ -69,6 +69,16 @@ def instrumented_source():
         return {atom:hoverAtomMesh?.userData.index ?? -1,
           bond:hit ? [hit.endpointAIndex,hit.endpointBIndex] : null};
       },
+      bondPointOutsideGizmo(point) {
+        // Transform now selects with left click, which also operates the XYZ
+        // handles. Test the exposed bond instead of clicking a visible handle.
+        for (const dx of Array.from({length:101},(_,i)=>i-50)) {
+          const p={...point,clientX:point.clientX+dx}, hit=pickBondHit(p);
+          if (hit && !hit.isProximity && hit.section==='center' && pickSelectedAtomDragFallback(p)
+            && !editGizmos.pickMoveHit(p) && !editGizmos.pickRotateHit(p)) return p;
+        }
+        return null;
+      },
       setAtomDepth(index,z) {
         const vol=volumes[currentIndex].vol, frame=vol.atoms.flatMap(a=>[a.x,a.y,a.z]);
         frame[index*3+2]=z; applyAtomCoordinateFrame(vol,frame,vol.atoms.length);
@@ -141,9 +151,10 @@ def single_atom_translation(page):
                     'view.target.x': 0, 'view.target.y': 0, 'view.target.z': 0,
                     'view.shift.x': 0, 'view.shift.y': 0, 'view.shift.z': 0})
     mode(page, 'Edit')
+    page.locator('#canvas').focus();page.keyboard.press('Escape')
     page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([])')
     point=page.evaluate('()=>VibeMolTesting.projectActiveAtomToClient(0)')
-    page.mouse.click(point['x'],point['y'],button='right');settle(page)
+    page.mouse.click(point['x'],point['y']);settle(page)
     assert page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()')==[0],page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()')
     page.locator('#editSelectionTranslateCueButton').click();settle(page)
     coords='()=>VibeMolStructure.exportActive().volume.atoms.map(a=>[a.x,a.y,a.z])'
@@ -346,6 +357,7 @@ def occlusion(page):
                             'view.shift.x': 0, 'view.shift.y': 0, 'view.shift.z': 0,
                             'molecule.feature.shadows': False})
             mode(page, 'Edit')
+            page.locator('#canvas').focus();page.keyboard.press('Escape')
             points = page.evaluate('()=>__editProbe.overlapPoints()')
             point = points['bond']
             assert picked(point) == {'atomIndex': -1, 'bondSection': 'center'}, (style, projection, points, picked(point))
@@ -355,14 +367,16 @@ def occlusion(page):
                 # recently hovered bond also must not steal the subsequent click.
                 assert picked(points['gap']) == {'atomIndex': 2, 'bondSection': ''}
                 assert hover(points['gap']) == {'atom': 2, 'bond': None}
-                page.mouse.click(points['gap']['clientX'], points['gap']['clientY'], button='right')
+                page.mouse.click(points['gap']['clientX'], points['gap']['clientY'])
                 assert page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()') == [2]
                 hover(point)
             # A selected rear atom's drag/context tolerance cannot override the
-            # actual foreground bond. Exercise the real right-click handler.
+            # actual foreground bond. Exercise the real Transform left click.
             page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([2])')
+            point = page.evaluate('p=>__editProbe.bondPointOutsideGizmo(p)', point)
+            assert point, (style, projection, 'No exposed center outside the selection handles')
             assert hover(point) == {'atom': -1, 'bond': [0, 1]}
-            page.mouse.click(point['clientX'], point['clientY'], button='right')
+            page.mouse.click(point['clientX'], point['clientY'])
             cue = page.evaluate('()=>VibeMolTesting.getBondCenterCueState()')
             assert cue['visible'] and cue['style'] == bond_style, (style, projection, cue)
             assert 2 not in page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()')
@@ -372,7 +386,7 @@ def occlusion(page):
             page.evaluate('()=>__editProbe.setAtomDepth(2,3)')
             assert picked(point) == {'atomIndex': 2, 'bondSection': ''}, (style, projection, picked(point))
             assert hover(point) == {'atom': 2, 'bond': None}
-            page.mouse.click(point['clientX'], point['clientY'], button='right')
+            page.mouse.click(point['clientX'], point['clientY'])
             assert page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()') == [2]
             page.evaluate('()=>{VibeMolTesting.setEditSelectionIndices([]);__editProbe.setAtomDepth(2,0);}')
             settings(page, {'view.shift.x': 0.8, 'view.shift.y': 0.3, 'view.shift.z': 0.25})

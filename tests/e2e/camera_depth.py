@@ -67,7 +67,9 @@ def slab_rotation_and_picking(page, context, url):
         assert atom['depth']<0
         point=page.evaluate('index=>VibeMolTesting.projectActiveAtomToClient(index)',atom['index'])
         assert point['visible']
-        page.mouse.click(point['x'],point['y'],button='right' if mode=='Edit' else 'left');settle(page)
+        if mode=='Edit':
+            page.locator('#canvas').focus();page.keyboard.press('Escape')
+        page.mouse.click(point['x'],point['y']);settle(page)
         selected=page.evaluate('() => VibeMolTesting.getMeasurementSnapshot().atomIndices') if mode=='Measure' else page.evaluate('() => VibeMolTesting.getEditSelectionIndices()')
         assert atom['index'] in selected,(mode,atom,selected)
         page.locator('#canvas').focus();page.keyboard.press('Escape')

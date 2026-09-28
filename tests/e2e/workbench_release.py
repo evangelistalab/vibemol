@@ -12,7 +12,7 @@ def release(page, url, suffix):
     page.goto(url + suffix)
     page.wait_for_function('()=>window.VibeMolWorkbench && VibeMolRecovery.getState().ready')
     assert page.locator('#workbenchBar').is_visible()
-    assert page.locator('#toolbarVersion').inner_text() == 'v0.9.0'
+    assert page.locator('#toolbarVersion').inner_text() == 'v0.9.2'
     assert page.locator('.wb-lab, #appearanceLookPreset, #styleStudio').count() == 0
     assert 'experiment' not in page.locator('#sessionStatus').inner_text().lower()
     assert p.load(page, [{'name': 'release.cube', 'text': p.cube(0)}])['ok']

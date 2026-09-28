@@ -101,6 +101,7 @@ Primary capabilities:
 - `docs/appearance-looks.md`: look scope, preservation, and validation contracts.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
 - `assets/app/js/edit-tools.js`: edit-tool state, selection coordination, and transient edit cleanup.
+- `assets/app/js/edit-tool-ui.js`: Build/Transform tool radio strip (Build is the default on entering Edit), neutral pointer crosshair, entity badge, viewport tint, and state-derived hint text. See `docs/edit-tools.md`; armed tool state stays independent of Build panel visibility.
 - `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover state, visibility, and picking helpers.
 - `assets/app/js/edit-transform.js`: shared move/rotate transform-session state, operator-panel application, and pointer-routing controller.
 - `assets/app/js/edit-gestures.js`: gesture-first edit interaction controller and pointer-routing helpers for gesture mode.
@@ -171,6 +172,7 @@ Required script order in `index.html`:
 21. `assets/app/js/cloud-rendering.js`
 22. `assets/app/js/bond-editing.js`
 23. `assets/app/js/edit-ui.js`
+    - `edit-tool-ui.js` loads immediately after edit UI, before `app.js`.
     - `floating-panels.js` loads immediately before edit UI, registering the static floating shells before their controllers.
 24. `assets/app/js/display-windows.js`
 25. `assets/app/js/appearance-ui.js`
@@ -235,6 +237,7 @@ Required script order in `index.html`:
 - `window.VibeMolCloudRendering`
 - `window.VibeMolBondEditing`
 - `window.VibeMolEditUi`
+- `window.VibeMolEditToolUi`
 - `window.VibeMolDisplayWindows`
 - `window.VibeMolFloatingPanels`
 - `window.VibeMolAppearanceUi`
@@ -418,13 +421,13 @@ Implemented:
   - click atom to select it
   - drag from an unselected atom into void to grow chemistry
   - drag from an unselected atom to another atom to create/update/delete a bond
-  - left-click on bonds is inert
+  - Transform left-click selects a bond center or either attached side; Build with an atom loaded cycles bond order
   - drag from a selected atom to move the resolved move scope
   - `Alt+drag` to force atom-only movement
   - `Shift+drag` from a bond to move the downstream side
   - wheel or `1/2/3` during grow/bond drags to change the pending bond order
-  - right-click on atoms/bonds selects atom or bond scope; right-click on a selected atom upgrades to whole-molecule selection
-  - right-click on void rotates the camera, and `Shift+right-click` on void pans the view
+  - In both Build and Transform, right-click never selects or edits; right-drag (including Shift-right-drag) rotates the scene from atoms, bonds, or void, preserving selection and pending placement previews
+  - Switching to Transform retains the loaded Build payload; returning to Build or arming the selection's open-site cue restores that atom or fragment without reselecting it in the palette
 - Selection supports click-to-replace, `Shift+click` toggle, empty-click clear, and `Cmd/Ctrl+A` select-all.
 - Selection mode supports screen-space marquee box selection of atom centers.
 - `Esc` clears the current edit selection when something is selected.
@@ -443,10 +446,10 @@ Implemented:
 - Transform mode is the advanced bond-aware rotation tool: it supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
 - Replacing an atom with a lower-valence element prunes excess bonds, preferring terminal hydrogens/terminal one-valence neighbors first, then runs local hydrogen repair on the surviving center.
 - Deleting atoms cascades to dangling one-valence neighbors and then repairs hydrogens on surviving frontier atoms in the same undo unit. Explicit hydrogen-only deletion removes just the targeted hydrogens, preserves all remaining coordinates, and skips automatic hydrogen repair/relaxation regardless of `Adjust hydrogens`; the setting itself stays unchanged.
-- Left-clicking the center of a normal bond in edit mode cycles its order `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`; bond-center context/right-click still selects the bond for cue-driven edits.
+- In Edit/Build with an atom loaded, hovering anywhere on a bond highlights every complete carrier and left-clicking cycles its order `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`; Transform left-click selects bond centers/ends without changing order. Bond selection for cue-driven edits belongs to Transform left-click. `tests/e2e/build_bonds.py` covers full-bond highlighting, Build-only cycling, undo/redo, and hydrogen limits; `tests/e2e/transform_selection.py` covers Transform left selection and right-drag orbit in both camera projections.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Direct delete via current selection or hovered atom (`Backspace`/`Delete`) is active.
-- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`) for ordinary bonds, edits metal bonds through a style popup (`1 = covalent`, `2 = coordination`, `3 = dative`, `0 = none`), supports right-click delete, includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds, and offers `Optimize Structure` for one whole-structure UFF coordinate cleanup pass.
+- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`) for ordinary bonds, edits metal bonds through a style popup (`1 = covalent`, `2 = coordination`, `3 = dative`, `0 = none`), includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds, and offers `Optimize Structure` for one whole-structure UFF coordinate cleanup pass.
 - Structures now persist explicit/perceived/suppressed `vol.bonds` with `{ id, a, b, order, kind, origin, style }`, where `style` is one of `covalent`, `metal-strong`, `metal-dative`, or `metal-metal`, and `kind: 'blocked'` records user-suppressed pairs that must not be auto-perceived back into existence.
 - `vol.annotations.coordination.byAtomId[atomId].geometryId` is a preferred coordination target for incomplete atoms, not authoritative stored hybridization.
 - `vol.annotations.metalBonding.byAtomId[atomId].mode` stores per-metal override mode (`auto`, `force_covalent`, `force_dative`, `no_bonds`) for coordination-bond inference.
@@ -625,12 +628,12 @@ After non-trivial changes:
 6. Check molecule styles (`basic`, `toon`, `kit/Kit`) through the Appearance menu and verify number keys do not change rendering in Display, Measure, or Edit mode.
 7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
 8. In edit mode, verify the adaptive edit menu appears and the onboarding splash hides.
-9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, and repeated right-click on a selected atom to upgrade to whole-molecule selection.
+9. In Edit/Transform, test left-click atoms and bond centers/ends, `Shift+click` atom toggles, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, inert right-click, and right-drag orbit from atoms/bonds/void. In Build, verify the same orbit-only right gestures with atom, fragment, and molecule payloads, including pending previews (`tests/e2e/build_orbit.py`).
 10. In edit mode, test the `Build` tool via button and `/`; confirm `/` opens or focuses the Build search field and that the `+` selection cue gates open-site build targets for selected atoms.
 11. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels, Build-palette open/close behavior across mode switches, ghost-preview readability under the active molecule style, plus undo/redo and `Esc` cancel for molecule placement.
 12. In edit mode, press `Space` once on a simple unsaturated structure and verify ghost hydrogens appear without mutating the structure; press `Space` again and verify the hydrogens are added with one undoable history entry.
-13. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, right-click void rotate, `Shift+right-click` void pan, and undo behavior on a selected atom set.
-14. In edit mode, test bond interactions: atom-to-atom create, left-click bond-center order cycling `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.
+13. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, right-drag and `Shift+right-drag` scene rotation, and undo behavior on a selected atom set.
+14. In edit mode, test bond interactions: atom-to-atom create, Build left-click whole-bond order cycling `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`, Transform left-click scope selection, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, `Clean Up Bonds`, and `Optimize Structure`.
 15. Load a `.2ccube` and verify the Appearance `2C mode` selector, centered `α` / `β` overlay labels, `Spinor info` popover, and phase wheel placement all react correctly when switching quantities and returning to `.cube`.
 16. In edit mode, test the `Symmetry` tool: open with button or `S`, preview one candidate, inspect a symmetry element in 3D, cancel/apply, and confirm Workbench keeps the panel across file changes, suspends it outside Edit, and clears unfinished candidates; the legacy popup closes on file/mode changes.
 17. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders and metal bond styles survive round-trip.

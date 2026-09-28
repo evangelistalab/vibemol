@@ -30,6 +30,7 @@ JS_CHECK_FILES = \
 	assets/app/js/cloud-rendering.js \
 	assets/app/js/bond-editing.js \
 	assets/app/js/edit-ui.js \
+	assets/app/js/edit-tool-ui.js \
 	assets/app/js/floating-panels.js \
 	assets/app/js/workbench-model.js \
 	assets/app/js/workbench.js \
@@ -75,13 +76,17 @@ check:
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
 	done
-	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_schemes.py tests/e2e/look_tiles.py tests/e2e/look_references.py tests/e2e/surface_shadows.py tests/e2e/camera_depth.py tests/e2e/edit_picking.py tests/e2e/mode_consistency.py tests/e2e/style_studio.py tests/e2e/appearance_scopes.py tests/e2e/appearance_controls.py tests/e2e/properties_inspector.py tests/e2e/properties_disclosures.py tests/e2e/floating_panels.py tests/e2e/workbench.py tests/e2e/workbench_release.py tests/e2e/workbench_consistency.py tests/e2e/workbench_bar.py tests/e2e/build_panel.py tests/e2e/symmetry_panel.py tests/e2e/hydrogen_contacts.py tests/e2e/axis_gizmo.py tests/e2e/measurements.py tests/e2e/calculations.py tests/e2e/figure.py tools/render_look_previews.py tools/profile_nacl_edit.py
+	python3 -m py_compile api/vibemol_client.py tests/e2e/helpers.py tests/e2e/smoke.py tests/e2e/premerge.py tests/e2e/sessions.py tests/e2e/looks.py tests/e2e/surface_schemes.py tests/e2e/look_tiles.py tests/e2e/look_references.py tests/e2e/surface_shadows.py tests/e2e/camera_depth.py tests/e2e/edit_picking.py tests/e2e/mode_consistency.py tests/e2e/style_studio.py tests/e2e/appearance_scopes.py tests/e2e/appearance_controls.py tests/e2e/properties_inspector.py tests/e2e/properties_disclosures.py tests/e2e/floating_panels.py tests/e2e/workbench.py tests/e2e/workbench_release.py tests/e2e/workbench_consistency.py tests/e2e/workbench_bar.py tests/e2e/build_panel.py tests/e2e/edit_tool.py tests/e2e/build_bonds.py tests/e2e/build_orbit.py tests/e2e/transform_selection.py tests/e2e/symmetry_panel.py tests/e2e/hydrogen_contacts.py tests/e2e/axis_gizmo.py tests/e2e/measurements.py tests/e2e/calculations.py tests/e2e/figure.py tools/render_look_previews.py tools/profile_nacl_edit.py
 	git diff --check
 
 test-unit:
 	node --test tests/unit/*.test.mjs
 
 test-e2e:
+	python3 tests/e2e/edit_tool.py
+	python3 tests/e2e/build_bonds.py
+	python3 tests/e2e/build_orbit.py
+	python3 tests/e2e/transform_selection.py
 	python3 tests/e2e/figure.py
 	python3 tests/e2e/calculations.py
 	python3 tests/e2e/measurements.py

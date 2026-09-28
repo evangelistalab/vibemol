@@ -5,6 +5,7 @@
     const dragThresholdPx = Number.isFinite(options.dragThresholdPx) ? Math.max(2, Number(options.dragThresholdPx)) : 6;
     const isEnabled = typeof options.isEnabled === 'function' ? options.isEnabled : (() => false);
     const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
+    const isSelectTool = typeof options.isSelectTool === 'function' ? options.isSelectTool : (() => false);
     const EDIT_INTENT = options.EDIT_INTENT || Object.freeze({
       ATOM_MANIPULATION: 'atom_manipulation',
       ADD_MOLECULE: 'add_molecule',
@@ -18,7 +19,8 @@
     const resolveGrowDragAnchorIndex = typeof options.resolveGrowDragAnchorIndex === 'function'
       ? options.resolveGrowDragAnchorIndex
       : ((atomIndex) => (atomIndex | 0));
-    const applyBondCenterClick = typeof options.applyBondCenterClick === 'function' ? options.applyBondCenterClick : (() => false);
+    const applyBuildBondClick = typeof options.applyBuildBondClick === 'function' ? options.applyBuildBondClick : (() => false);
+    const applyTransformBondClick = typeof options.applyTransformBondClick === 'function' ? options.applyTransformBondClick : (() => false);
     const showVoidPlacementPreview = typeof options.showVoidPlacementPreview === 'function' ? options.showVoidPlacementPreview : (() => false);
     const hideVoidPlacementPreview = typeof options.hideVoidPlacementPreview === 'function' ? options.hideVoidPlacementPreview : (() => {});
     const placeVoidAtom = typeof options.placeVoidAtom === 'function' ? options.placeVoidAtom : (() => null);
@@ -163,7 +165,7 @@
       state.hoverAtomIndex = atomIndex;
       state.hoverBondHit = bondHit || null;
       updateLastCenterBondHover(e, bondHit || null);
-      if (!selection.length && atomIndex < 0 && !bondHit) {
+      if (!isSelectTool() && !selection.length && atomIndex < 0 && !bondHit) {
         state.voidPreviewVisible = !!showVoidPlacementPreview(e);
       } else {
         state.voidPreviewVisible = false;
@@ -279,6 +281,7 @@
         return startAndApplyMove(resolved);
       }
       if (state.press.kind === 'atom-press-pending') {
+        if (isSelectTool()) return startAndApplyMove(resolveMoveScope(state.press.atomIndex, { atomOnly: true, preview: false }));
         const growAnchorIndex = Number.isInteger(state.press.growAtomIndex)
           ? (state.press.growAtomIndex | 0)
           : (state.press.atomIndex | 0);
@@ -364,7 +367,7 @@
         return true;
       }
       state.press = {
-        kind: selection.length ? 'void-clear' : 'void-place',
+        kind: selection.length || isSelectTool() ? 'void-clear' : 'void-place',
         clientX: Number(e.clientX) || 0,
         clientY: Number(e.clientY) || 0,
         pointerId: e.pointerId,
@@ -460,17 +463,22 @@
         updateIdleHover(e);
         return false;
       }
+      const wasClick = !movementExceeded(e);
       state.press = null;
       if (press.kind === 'bond-inert') {
-        const bondCenterHit = press.bondHit && press.bondHit.object && press.bondHit.section === 'center'
-          ? press.bondHit
-          : resolveBondCenterClickHit(e);
-        if (bondCenterHit && applyBondCenterClick(bondCenterHit, e)) {
+        // Re-pick on release: a foreground atom or a different bond must not
+        // inherit an earlier hover/press, and drags must never change topology.
+        const bondHit = wasClick && !pickAtomObject(e) ? pickBondHit(e) : null;
+        const applyBondClick = isSelectTool() ? applyTransformBondClick : applyBuildBondClick;
+        if (bondHit && bondHit.object === press.bondHit?.object && applyBondClick(bondHit, e)) {
           if (activePointerId != null) releasePointer(activePointerId);
           state.activePointerId = null;
           updateIdleHover(e);
           return true;
         }
+      } else if (isSelectTool() && wasClick && ['atom-press-pending', 'selected-atom'].includes(press.kind)) {
+        const atom = pickAtomObject(e);
+        if (atom?.userData?.index === press.atomIndex) applySelectionClick(press.atomIndex, press.additive);
       } else if (press.kind === 'void-clear') {
         if (clearSelection()) setHintMessage('Selection cleared.');
       } else if (press.kind === 'void-place') {

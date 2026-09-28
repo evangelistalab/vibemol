@@ -1206,3 +1206,25 @@
   font-size: var(--vm-text-xs);
   color: var(--vm-color-on-control-dim);
 }
+
+/* Creating tools use a dedicated accent; placement silhouettes stay neutral. */
+.vm-tool-badge {
+  display: inline-flex; align-items: center; padding: 2px 6px;
+  border-radius: var(--vm-radius-sm); background: var(--vm-color-tool-active);
+  color: var(--vm-color-on-tool-active); font: 600 11px/1.4 var(--vm-font-sans);
+}
+.vm-tool-badge[hidden] { display: none; }
+.vm-edit-tool-hint { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.vm-edit-tool-status { display: block; margin-top: 4px; font-size: 0.9em; opacity: 0.8; }
+.vm-edit-tool-overlay {
+  position: fixed; pointer-events: none; z-index: 30; overflow: hidden;
+  box-shadow: inset 0 0 0 2px var(--vm-color-tool-active-soft);
+}
+.vm-edit-tool-overlay[hidden], .vm-build-cursor[hidden] { display: none; }
+#canvas.vm-build-armed { cursor: none !important; }
+.vm-build-cursor { position: absolute; width: 25px; height: 25px; }
+.vm-build-cursor svg { position: absolute; left: -12.5px; top: -12.5px; overflow: visible; }
+.vm-build-cursor path { fill: none; stroke: white; stroke-width: 2; filter: drop-shadow(0 0 1px #17202b) drop-shadow(0 0 1px #17202b); }
+.vm-build-cursor .vm-tool-badge { position: absolute; top: 16px; left: 16px; white-space: nowrap; box-shadow: 0 0 0 1px white, 0 0 0 2px #17202b; }
+.vm-build-cursor.near-right .vm-tool-badge { left: auto; right: 16px; }
+.vm-build-cursor.near-bottom .vm-tool-badge { top: auto; bottom: 16px; }

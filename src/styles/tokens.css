@@ -244,6 +244,7 @@
   --vm-color-warning: var(--vm-brand-negative);
   --vm-color-warning-soft: color-mix(in srgb, var(--vm-brand-negative) 22%, transparent);
   --vm-color-unsaved: var(--vm-brand-negative);
+  --vm-color-tool-active-soft: color-mix(in srgb, var(--vm-color-tool-active) 40%, transparent);
   --vm-space-xs: 4px;
   --vm-space-sm: 8px;
   --vm-space-md: 12px;
@@ -271,6 +272,8 @@
 :root,
 :root[data-theme='light'] {
   color-scheme: light;
+  --vm-color-tool-active: #087e8b;
+  --vm-color-on-tool-active: #ffffff;
 
   --vm-color-surface-base: #eef1f5;
   --vm-color-surface-panel: #ffffff;
@@ -317,6 +320,8 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+  --vm-color-tool-active: #63d4df;
+  --vm-color-on-tool-active: #0f141c;
 
   --vm-color-surface-base: #0a0e14;
   --vm-color-surface-panel: #0f141c;

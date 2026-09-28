@@ -54,7 +54,7 @@ def run(page, url):
     assert 'buildPanel' in layout(page)['open']
     page.locator('#editAdaptiveSymmetryBtn').click()
     page.evaluate('()=>VibeMolWorkbench.open("inspector")')
-    assert build.is_hidden() and trigger.get_attribute('aria-expanded')=='false'
+    assert build.is_hidden() and trigger.get_attribute('aria-expanded') is None
     trigger.click();assert build.is_visible()
     window_menu(page,build,'Minimize to Panels menu')
     row=open_menu(page).get_by_role('menuitemcheckbox',name='Build',exact=True)
@@ -67,7 +67,7 @@ def run(page, url):
 
     # Floating position, close choice and search survive mode/scene changes.
     window_menu(page,build,'Float window')
-    assert build.get_attribute('role')=='dialog' and trigger.get_attribute('aria-haspopup')=='dialog'
+    assert build.get_attribute('role')=='dialog' and trigger.get_attribute('role')=='radio'
     handle=build.locator('[data-vm-drag-handle]');box=handle.bounding_box()
     page.mouse.move(box['x']+20,box['y']+12);page.mouse.down()
     page.mouse.move(620,220,steps=8);page.mouse.up()
