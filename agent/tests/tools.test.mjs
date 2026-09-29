@@ -176,3 +176,27 @@ test('saved extensions round-trip through storage and reject malformed entries',
   mem.set('vibemol.agent.extensions.v1', 'not json');
   assert.equal(readStore(storage).length, 0);
 });
+
+test('OAuth blobs are signed, typed, and expire', async () => {
+  const auth = await import('../relay/src/auth.js');
+  const secret = 'x'.repeat(40);
+  const token = await auth.seal(secret, 'access', { sub: 'abc' }, 60);
+  assert.equal((await auth.open(secret, 'access', token)).sub, 'abc');
+  assert.equal(await auth.open(secret, 'refresh', token), null, 'type must match');
+  assert.equal(await auth.open('y'.repeat(40), 'access', token), null, 'other secret');
+  assert.equal(await auth.open(secret, 'access', `${token}x`), null, 'tampered');
+  const expired = await auth.seal(secret, 'code', { sub: 'abc' }, -1);
+  assert.equal(await auth.open(secret, 'code', expired), null, 'expired');
+});
+
+test('only Claude, loopback, and configured redirects can register', async () => {
+  const { redirectAllowed } = await import('../relay/src/auth.js');
+  assert.equal(redirectAllowed({}, 'https://claude.ai/api/mcp/auth_callback'), true);
+  assert.equal(redirectAllowed({}, 'http://localhost:6274/oauth/callback'), true);
+  assert.equal(redirectAllowed({}, 'https://evil.example/cb'), false);
+  assert.equal(redirectAllowed({ ALLOWED_REDIRECTS: 'https://ok.example/*' }, 'https://ok.example/cb'), true);
+});
+
+test('Open in Claude prefills the connect message', () => {
+  assert.equal(load().VibeMolAgentLink.claudeUrl('connect to Vibemol ABCDE-FGH23'), 'https://claude.ai/new?q=connect%20to%20Vibemol%20ABCDE-FGH23');
+});

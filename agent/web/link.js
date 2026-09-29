@@ -1,10 +1,13 @@
 (function (global) {
   'use strict';
 
-  // Pairs this tab with the VibeMol MCP relay so the user's own Claude can
-  // drive it. Only tools from the agent registry can run; no arbitrary code.
-  // UI: a Claude button in the top-right utilities with a popup menu holding
-  // every connector control (connect, pairing text, lasso, scripts).
+  // Links this tab to the user's own Claude through the VibeMol relay.
+  //  - Browser channel (default): after the user authorized the connector once,
+  //    every VibeMol tab in this browser connects automatically; Claude's calls
+  //    go to the most recently focused tab (see agent/web/identity.js).
+  //  - Code channel (fallback): a one-off pairing code for other browsers.
+  // Only tools from the agent registry can run. UI: the Claude button in the
+  // top-right utilities with a popup menu.
   const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const PING_MS = 25000;
   const LASSO_KEY = 'L';
@@ -17,6 +20,10 @@
   }
 
   const pairingPhrase = code => `connect to Vibemol ${code}`;
+  // claude.ai has accepted a prefilled prompt via ?q=; if that ever changes, the
+  // user can still paste the copied message.
+  const claudeUrl = text => `https://claude.ai/new?q=${encodeURIComponent(text)}`;
+  const RECONNECT_MS = [1000, 3000, 8000, 20000, 45000];
 
   function getRelayUrl() {
     const url = String((global.VibeMolAgentConfig || {}).relayUrl || '').replace(/\/+$/, '');
@@ -44,14 +51,36 @@
         <span class="vm-agent-menu-title">Claude</span>
         <span id="agentLinkState" class="vm-agent-state" data-connected="false"><span class="vm-agent-dot" aria-hidden="true"></span><span class="vm-agent-state-text">Not connected</span></span>
       </div>
-      <div class="vm-agent-menu-row">
-        <button id="connectClaudeBtn" class="vm-agent-btn vm-agent-btn-primary" type="button">Connect Claude</button>
+
+      <div id="agentSetup" class="vm-agent-setup" hidden>
+        <div class="vm-agent-menu-sub">One-time setup</div>
+        <ol class="vm-agent-steps">
+          <li>In Claude, open <strong>Settings → Connectors → Add custom connector</strong> and paste:</li>
+        </ol>
+        <div class="vm-agent-menu-row vm-agent-pair">
+          <span id="agentConnectorUrl" class="vm-agent-note"></span>
+          <button id="agentCopyConnectorBtn" class="vm-agent-icon-btn material-symbols-rounded" type="button" aria-label="Copy connector URL" data-tooltip="Copy connector URL">content_copy</button>
+        </div>
+        <ol class="vm-agent-steps" start="2">
+          <li>Click <strong>Connect</strong>, then <strong>Allow</strong>. This tab connects on its own; then just ask Claude.</li>
+        </ol>
       </div>
-      <div class="vm-agent-menu-row vm-agent-pair" id="agentPairRow" hidden>
-        <span id="agentLinkStatus" class="vm-agent-note" role="status" aria-live="polite"></span>
-        <button id="agentLinkCopyBtn" class="vm-agent-icon-btn material-symbols-rounded" type="button" aria-label="Copy connect message" data-tooltip="Copy connect message">content_copy</button>
-      </div>
+
+      <div id="agentBrowserRow" class="vm-agent-note" hidden></div>
+
+      <details id="agentCodeBox" class="vm-agent-code">
+        <summary class="vm-agent-note">Pair with a code instead</summary>
+        <div class="vm-agent-menu-row">
+          <button id="connectClaudeBtn" class="vm-agent-btn" type="button">Get pairing code</button>
+        </div>
+        <div class="vm-agent-menu-row vm-agent-pair" id="agentPairRow" hidden>
+          <span id="agentLinkStatus" class="vm-agent-note" role="status" aria-live="polite"></span>
+          <button id="agentLinkCopyBtn" class="vm-agent-icon-btn material-symbols-rounded" type="button" aria-label="Copy connect message" data-tooltip="Copy connect message">content_copy</button>
+          <button id="agentOpenClaudeBtn" class="vm-agent-icon-btn material-symbols-rounded" type="button" aria-label="Open in Claude" data-tooltip="Open in Claude with this message">open_in_new</button>
+        </div>
+      </details>
       <div id="agentLinkError" class="vm-agent-note" role="status" aria-live="polite"></div>
+
       <div class="vm-agent-divider"></div>
       <div class="vm-agent-menu-row">
         <button id="agentLassoBtn" class="vm-agent-btn" type="button">
@@ -64,9 +93,19 @@
       <label class="vm-agent-check" data-tooltip="Let Claude add features by writing JavaScript in this tab (you approve each script)"><input id="agentAllowScripts" type="checkbox" /> Allow scripts <span class="vm-agent-note">(you approve each)</span></label>
       <div class="vm-agent-divider"></div>
       <div class="vm-agent-menu-sub">Extensions</div>
-      <div id="agentExtensionsList" class="vm-agent-ext-list"></div>`;
+      <div id="agentExtensionsList" class="vm-agent-ext-list"></div>
+      <div id="agentForgetRow" class="vm-agent-menu-row vm-agent-forget" hidden>
+        <button id="agentForgetBtn" class="vm-agent-link-btn" type="button">Forget this browser</button>
+      </div>`;
     document.body.appendChild(menu);
-    return { trigger: mount.querySelector('#agentMenuBtn'), menu };
+    const badge = document.createElement('div');
+    badge.id = 'agentDrivingBadge';
+    badge.className = 'vm-agent-link vm-agent-driving';
+    badge.setAttribute('role', 'status');
+    badge.hidden = true;
+    badge.innerHTML = '<span class="material-symbols-rounded vm-agent-trigger-icon" aria-hidden="true">auto_awesome</span>Claude is driving this tab';
+    document.body.appendChild(badge);
+    return { trigger: mount.querySelector('#agentMenuBtn'), menu, badge };
   }
 
   // Always sit directly after the GitHub link, wherever the app places it (the
@@ -80,15 +119,23 @@
     return mount;
   }
 
+  function copyWithFeedback(btn, text) {
+    if (!text || !navigator.clipboard) return;
+    void navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'check';
+      setTimeout(() => { btn.textContent = 'content_copy'; }, 1200);
+    });
+  }
+
   function install() {
     const mount = placeMount();
     if (!mount || mount.dataset.installed) return;
     mount.dataset.installed = '1';
-    const { trigger, menu } = render(mount);
+    const { trigger, menu, badge } = render(mount);
     const $ = id => document.getElementById(id);
-    const button = $('connectClaudeBtn'), state = $('agentLinkState'), pairRow = $('agentPairRow');
-    const pairText = $('agentLinkStatus'), errorText = $('agentLinkError'), copyBtn = $('agentLinkCopyBtn');
-    let socket = null, pingTimer = null, code = '';
+    const Identity = global.VibeMolAgentIdentity;
+    const state = $('agentLinkState'), errorText = $('agentLinkError');
+    const codeBtn = $('connectClaudeBtn'), pairRow = $('agentPairRow'), pairText = $('agentLinkStatus');
 
     // ---- menu open/close ----
     function place() {
@@ -110,27 +157,27 @@
     global.addEventListener('resize', () => { if (!menu.hidden) place(); });
     $('agentLassoBtn').addEventListener('click', () => setOpen(false)); // lasso.js handles the click itself
 
-    // ---- connection state ----
-    function setConnected(connected) {
+    // ---- shared state ----
+    const channels = { browser: { socket: null, ready: false }, code: { socket: null, ready: false, code: '' } };
+    const setError = text => { errorText.textContent = text || ''; };
+    const hint = text => { try { global.VibeMolAgentHost && global.VibeMolAgentHost.setHint(text); } catch { /* ignore */ } };
+    function refresh() {
+      const connected = channels.browser.ready || channels.code.ready;
       state.dataset.connected = String(connected);
       state.querySelector('.vm-agent-state-text').textContent = connected ? 'Connected' : 'Not connected';
       mount.dataset.connected = String(connected);
+      const hasIdentity = !!(Identity && Identity.get());
+      $('agentSetup').hidden = hasIdentity;
+      $('agentForgetRow').hidden = !hasIdentity;
+      $('agentConnectorUrl').textContent = (Identity && Identity.connectorUrl()) || 'Relay not configured (agent/web/config.js)';
+      const row = $('agentBrowserRow');
+      row.hidden = !hasIdentity;
+      row.textContent = channels.browser.ready ? 'Linked to your Claude connector. Just ask Claude.' : 'Linking this tab to your Claude connector…';
+      if (!connected) setDriving(false);
     }
-    const setError = text => { errorText.textContent = text || ''; };
-    const hint = text => { try { global.VibeMolAgentHost && global.VibeMolAgentHost.setHint(text); } catch { /* ignore */ } };
+    function setDriving(active) { badge.hidden = !active; }
 
-    function disconnect(error = '') {
-      clearInterval(pingTimer);
-      if (socket) { socket.onclose = null; try { socket.close(1000, 'user'); } catch { /* ignore */ } }
-      socket = null; code = '';
-      button.textContent = 'Connect Claude';
-      button.classList.add('vm-agent-btn-primary');
-      pairRow.hidden = true;
-      setConnected(false);
-      setError(error);
-    }
-
-    async function handleCall(msg) {
+    async function handleCall(socket, msg) {
       const reply = payload => socket && socket.readyState === 1 && socket.send(JSON.stringify(Object.assign({ type: 'result', id: msg.id }, payload)));
       try {
         const tools = await global.VibeMolAgentTools.whenReady();
@@ -141,44 +188,116 @@
       }
     }
 
-    function connect() {
+    function keepAlive(socket) {
+      const timer = setInterval(() => socket.readyState === 1 && socket.send('{"type":"ping"}'), PING_MS);
+      socket.addEventListener('close', () => clearInterval(timer));
+    }
+
+    // ---- browser channel (automatic) ----
+    let retry = 0, retryTimer = null;
+    async function connectBrowser() {
+      clearTimeout(retryTimer);
+      const identity = Identity && Identity.get();
       const relay = getRelayUrl();
-      if (!relay) { setError('Relay not configured (agent/web/config.js).'); return; }
-      setError('');
-      code = makePairCode();
-      button.textContent = 'Connecting…';
-      socket = new WebSocket(`${relay}/tab/${encodeURIComponent(code)}`);
+      if (!identity || !relay || channels.browser.socket) { refresh(); return; }
+      const hash = await Identity.hash(identity);
+      const socket = new WebSocket(`${relay}/tab-identity/${hash}`);
+      channels.browser.socket = socket;
       socket.onopen = () => {
-        button.textContent = 'Disconnect';
-        button.classList.remove('vm-agent-btn-primary');
-        pairText.textContent = `Tell Claude: "${pairingPhrase(code)}"`;
-        pairRow.hidden = false;
-        pingTimer = setInterval(() => socket && socket.readyState === 1 && socket.send('{"type":"ping"}'), PING_MS);
+        socket.send(JSON.stringify({ type: 'hello', identity, focused: document.hasFocus() }));
+        keepAlive(socket);
       };
       socket.onmessage = event => {
         let msg = null;
         try { msg = JSON.parse(event.data); } catch { return; }
-        if (msg && msg.type === 'call' && msg.id) { setConnected(true); void handleCall(msg); }
-        else if (msg && msg.type === 'paired') setConnected(true);
+        if (!msg) return;
+        if (msg.type === 'ready') { channels.browser.ready = true; retry = 0; setError(''); refresh(); }
+        else if (msg.type === 'driving') setDriving(!!msg.active);
+        else if (msg.type === 'call' && msg.id) { setDriving(true); void handleCall(socket, msg); }
       };
-      socket.onclose = () => {
-        const opened = pairRow.hidden === false;
-        disconnect(opened ? '' : 'Could not reach the relay. Serve the page over http(s) and check the relay is running.');
+      socket.onclose = event => {
+        channels.browser = { socket: null, ready: false };
+        refresh();
+        if (event.code === 4003) { setError('This browser\'s link to Claude is invalid. Use "Forget this browser" and add the connector again.'); return; }
+        if (Identity.get()) retryTimer = setTimeout(connectBrowser, RECONNECT_MS[Math.min(retry++, RECONNECT_MS.length - 1)]);
       };
     }
-
-    button.addEventListener('click', () => (socket ? disconnect() : connect()));
-    copyBtn.addEventListener('click', () => {
-      if (!code || !navigator.clipboard) return;
-      void navigator.clipboard.writeText(pairingPhrase(code)).then(() => {
-        copyBtn.textContent = 'check';
-        setTimeout(() => { copyBtn.textContent = 'content_copy'; }, 1200);
-      });
+    const sendFocus = () => {
+      const s = channels.browser.socket;
+      if (s && s.readyState === 1 && channels.browser.ready) s.send('{"type":"focus"}');
+    };
+    global.addEventListener('focus', sendFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      sendFocus();
+      if (!channels.browser.socket) connectBrowser();
     });
-    global.addEventListener('beforeunload', () => socket && socket.close(1001, 'tab closed'));
+    let lastPointer = 0;
+    document.addEventListener('pointerdown', () => { const now = Date.now(); if (now - lastPointer > 5000) { lastPointer = now; sendFocus(); } }, true);
+    // The consent page (another tab) creates the identity: connect as soon as it appears.
+    global.addEventListener('storage', event => { if (Identity && event.key === Identity.KEY) { if (event.newValue) connectBrowser(); else forgetLocal(); } });
+    global.addEventListener('online', () => { if (!channels.browser.socket) connectBrowser(); });
+
+    function forgetLocal() {
+      clearTimeout(retryTimer);
+      const s = channels.browser.socket;
+      channels.browser = { socket: null, ready: false };
+      if (s) { s.onclose = null; try { s.close(1000, 'forgotten'); } catch { /* ignore */ } }
+      refresh();
+    }
+    $('agentForgetBtn').addEventListener('click', () => {
+      if (!global.confirm('Forget this browser? Claude will no longer reach VibeMol tabs here until you add the connector again (in Claude, remove and re-add it).')) return;
+      Identity.forget();
+      forgetLocal();
+    });
+    $('agentCopyConnectorBtn').addEventListener('click', e => copyWithFeedback(e.currentTarget, Identity && Identity.connectorUrl()));
+
+    // ---- code channel (fallback) ----
+    function disconnectCode(error = '') {
+      const s = channels.code.socket;
+      channels.code = { socket: null, ready: false, code: '' };
+      if (s) { s.onclose = null; try { s.close(1000, 'user'); } catch { /* ignore */ } }
+      codeBtn.textContent = 'Get pairing code';
+      pairRow.hidden = true;
+      setError(error);
+      refresh();
+    }
+    function connectCode() {
+      const relay = getRelayUrl();
+      if (!relay) { setError('Relay not configured (agent/web/config.js).'); return; }
+      setError('');
+      const code = makePairCode();
+      codeBtn.textContent = 'Connecting…';
+      const socket = new WebSocket(`${relay}/tab/${encodeURIComponent(code)}`);
+      channels.code = { socket, ready: false, code };
+      socket.onopen = () => {
+        codeBtn.textContent = 'Stop pairing';
+        pairText.textContent = `Tell Claude: "${pairingPhrase(code)}"`;
+        pairRow.hidden = false;
+        keepAlive(socket);
+      };
+      socket.onmessage = event => {
+        let msg = null;
+        try { msg = JSON.parse(event.data); } catch { return; }
+        if (msg && msg.type === 'call' && msg.id) { channels.code.ready = true; refresh(); setDriving(true); void handleCall(socket, msg); }
+        else if (msg && msg.type === 'paired') { channels.code.ready = true; refresh(); }
+      };
+      socket.onclose = () => disconnectCode(pairRow.hidden ? 'Could not reach the relay. Serve the page over http(s) and check the relay is running.' : '');
+    }
+    codeBtn.addEventListener('click', () => (channels.code.socket ? disconnectCode() : connectCode()));
+    $('agentLinkCopyBtn').addEventListener('click', e => copyWithFeedback(e.currentTarget, channels.code.code && pairingPhrase(channels.code.code)));
+    $('agentOpenClaudeBtn').addEventListener('click', () => {
+      if (channels.code.code) global.open(claudeUrl(pairingPhrase(channels.code.code)), '_blank', 'noopener');
+    });
+
+    global.addEventListener('beforeunload', () => {
+      for (const ch of Object.values(channels)) if (ch.socket) ch.socket.close(1001, 'tab closed');
+    });
+    refresh();
+    connectBrowser();
   }
 
-  global.VibeMolAgentLink = Object.freeze({ makePairCode, pairingPhrase, install, LASSO_KEY });
+  global.VibeMolAgentLink = Object.freeze({ makePairCode, pairingPhrase, claudeUrl, install, LASSO_KEY });
   if (typeof document !== 'undefined' && document.readyState !== undefined) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
     else install();

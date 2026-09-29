@@ -1,5 +1,6 @@
 import schema from '../../tools.schema.json' with { type: 'json' };
 import { helpSearch } from './help.js';
+import { authEnabled, challenge, handleAuth, identityFromRequest } from './auth.js';
 
 export { PairingRelay } from './relay.js';
 
@@ -9,8 +10,9 @@ const CODE_PATTERN = /^[A-HJKMNP-Z2-9]{5}-[A-HJKMNP-Z2-9]{5}$/;
 
 const INSTRUCTIONS = `VibeMol (vibemol.org) is a browser molecular viewer. These tools control the user's own open VibeMol tab.
 Workflow:
-1. The user pairs by saying "connect to Vibemol ABCDE-FGH23" (the code from the Claude menu at the top right of VibeMol). Call vibemol_connect with that code. If you have no code, ask them to open that menu, click Connect Claude, and copy the message.
-2. Call vibemol_get_state before acting. Pass the same session code to every tab tool.
+1. Usually no pairing is needed: when the user authorized this connector, tools reach the VibeMol tab they most recently used in that browser. Just call the tools (start with vibemol_get_state) and omit "session".
+   Only if a tool reports that no tab is open, ask the user to open vibemol.org in the browser where they authorized the connector. For another browser or device, they can pair with a code: they say "connect to Vibemol ABCDE-FGH23" (from the Claude menu at the top right of VibeMol); call vibemol_connect with it and pass that code as "session" in every later call.
+2. Call vibemol_get_state before acting.
 3. Pick the most direct route:
    a. Dedicated tools for structure edits (vibemol_list_atoms, vibemol_edit_atoms), moving molecules, and trajectories.
    b. vibemol_list_appearance_settings / vibemol_set_appearance for rendering settings (atom and bond sizes, colors, surfaces, background).
@@ -23,13 +25,13 @@ Workflow:
 8. When the user says "this", "what I circled", or "my selection", call vibemol_get_selection first. It returns an image of the circled region, the enclosed controls (their refs work with vibemol_operate_control), source locations for each element, and enclosed atom indices (usable with vibemol_edit_atoms).
 Large files (cube, molden) stay in the browser: ask the user to open them in VibeMol rather than pasting them.`;
 
-const SESSION_PROPERTY = { type: 'string', description: 'Pairing code from the user\'s "connect to Vibemol ABCDE-FGH23" message.' };
+const SESSION_PROPERTY = { type: 'string', description: 'Optional pairing code from a "connect to Vibemol ABCDE-FGH23" message. Omit it to use the tab in the browser that authorized the connector.' };
 
 const SERVER_TOOLS = [
   {
     name: 'vibemol_connect',
-    description: 'Pair with the user\'s open VibeMol tab using the code it displays. Call once per conversation before other tab tools.',
-    inputSchema: { type: 'object', properties: { session: SESSION_PROPERTY }, required: ['session'], additionalProperties: false },
+    description: 'Check which VibeMol tab Claude will control. Without "session": reports tabs open in the browser that authorized the connector. With a pairing code: pairs with that tab (for another browser or device).',
+    inputSchema: { type: 'object', properties: { session: SESSION_PROPERTY }, additionalProperties: false },
     annotations: { readOnlyHint: true },
   },
   {
@@ -46,7 +48,7 @@ const TAB_TOOLS = schema.tools.map(tool => ({
   inputSchema: {
     ...tool.inputSchema,
     properties: { session: SESSION_PROPERTY, ...(tool.inputSchema.properties || {}) },
-    required: ['session', ...(tool.inputSchema.required || [])],
+    required: [...(tool.inputSchema.required || [])],
   },
   annotations: { readOnlyHint: !!(tool.annotations && tool.annotations.readOnlyHint) },
 }));
@@ -75,21 +77,29 @@ function toToolResult(reply) {
   return text(result);
 }
 
-async function callTool(env, name, args = {}) {
+async function callTool(env, name, args = {}, identity = null) {
   if (name === 'vibemol_help') return text(helpSearch(args.topic));
   if (name !== 'vibemol_connect' && !TAB_TOOL_NAMES.has(name)) return text(`Unknown tool: ${name}`, true);
-  const code = normalizeCode(args.session);
-  if (!code) return text('Missing or invalid pairing code. Ask the user to open the Claude menu (top right of VibeMol), click Connect Claude, and paste the copied message.', true);
   const { session, ...toolArgs } = args;
-  const stub = env.RELAY.get(env.RELAY.idFromName(code));
+  let channel, mode;
+  if (session) {
+    const code = normalizeCode(session);
+    if (!code) return text('That pairing code is not valid. Ask the user to copy the message from the Claude menu (top right of VibeMol) again.', true);
+    channel = code; mode = 'code';
+  } else if (identity) {
+    channel = `id:${identity}`; mode = 'identity';
+  } else {
+    return text('No VibeMol tab is linked yet. Ask the user to open the Claude menu (top right of VibeMol), click Connect Claude, and paste the copied message.', true);
+  }
+  const stub = env.RELAY.get(env.RELAY.idFromName(channel));
   const response = await stub.fetch('https://relay/call', {
     method: 'POST',
-    body: JSON.stringify({ tool: name === 'vibemol_connect' ? '__connect' : name, args: toolArgs }),
+    body: JSON.stringify({ tool: name === 'vibemol_connect' ? '__connect' : name, args: toolArgs, mode }),
   });
   return toToolResult(await response.json());
 }
 
-async function handleRpc(env, msg) {
+async function handleRpc(env, msg, identity) {
   const { id, method, params = {} } = msg || {};
   const ok = result => ({ jsonrpc: '2.0', id, result });
   const fail = (code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
@@ -107,28 +117,48 @@ async function handleRpc(env, msg) {
     }
     case 'ping': return ok({});
     case 'tools/list': return ok({ tools: [...SERVER_TOOLS, ...TAB_TOOLS] });
-    case 'tools/call': return ok(await callTool(env, params.name, params.arguments || {}));
+    case 'tools/call': return ok(await callTool(env, params.name, params.arguments || {}, identity));
     default: return fail(-32601, `Method not found: ${method}`);
   }
 }
 
 async function handleMcp(request, env) {
+  const origin = new URL(request.url).origin;
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, content-type, mcp-protocol-version, mcp-session-id', 'access-control-allow-methods': 'POST, OPTIONS' } });
+  // With AUTH_SECRET set, the connector uses OAuth: no token → start sign-in.
+  let identity = null;
+  if (authEnabled(env)) {
+    identity = await identityFromRequest(env, request);
+    if (!identity) return challenge(origin);
+  }
   if (request.method !== 'POST') return new Response('Use POST for MCP (Streamable HTTP, JSON responses).', { status: 405, headers: { allow: 'POST' } });
   let body;
   try { body = await request.json(); } catch { return Response.json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, { status: 400 }); }
-  const replies = (await Promise.all((Array.isArray(body) ? body : [body]).map(m => handleRpc(env, m)))).filter(Boolean);
+  const replies = (await Promise.all((Array.isArray(body) ? body : [body]).map(m => handleRpc(env, m, identity)))).filter(Boolean);
   if (!replies.length) return new Response(null, { status: 202 });
   return Response.json(Array.isArray(body) ? replies : replies[0]);
 }
 
-function handleTab(request, env, rawCode) {
+function originAllowed(request, env) {
   const origin = request.headers.get('Origin') || '';
-  const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (!allowed.includes(origin)) return new Response('Origin not allowed', { status: 403 });
+  return String(env.ALLOWED_ORIGINS || '').split(',').map(v => v.trim()).filter(Boolean).includes(origin);
+}
+
+function handleTab(request, env, rawCode) {
+  if (!originAllowed(request, env)) return new Response('Origin not allowed', { status: 403 });
   const code = normalizeCode(decodeURIComponent(rawCode));
   if (!code) return new Response('Invalid pairing code', { status: 400 });
   const stub = env.RELAY.get(env.RELAY.idFromName(code));
-  return stub.fetch(new Request('https://relay/connect', request));
+  return stub.fetch(new Request('https://relay/connect?mode=code', request));
+}
+
+// Tabs of a browser that authorized the connector. The path carries only the
+// identity's hash; the tab proves it holds the identity in its first message.
+function handleIdentityTab(request, env, hash) {
+  if (!originAllowed(request, env)) return new Response('Origin not allowed', { status: 403 });
+  if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) return new Response('Invalid identity', { status: 400 });
+  const stub = env.RELAY.get(env.RELAY.idFromName(`id:${hash}`));
+  return stub.fetch(new Request(`https://relay/connect?mode=identity&id=${hash}`, request));
 }
 
 export default {
@@ -137,6 +167,12 @@ export default {
     if (url.pathname === '/mcp') return handleMcp(request, env);
     const tab = /^\/tab\/([^/]+)$/.exec(url.pathname);
     if (tab) return handleTab(request, env, tab[1]);
+    const idTab = /^\/tab-identity\/([^/]+)$/.exec(url.pathname);
+    if (idTab) return handleIdentityTab(request, env, idTab[1]);
+    if (authEnabled(env)) {
+      const auth = await handleAuth(request, env);
+      if (auth) return auth;
+    }
     if (url.pathname === '/') return new Response('VibeMol MCP relay. Add <this origin>/mcp as a custom connector in Claude.\n');
     return new Response('Not found', { status: 404 });
   },

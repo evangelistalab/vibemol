@@ -5,6 +5,14 @@ compatibility_date = "2026-06-01"
 [vars]
 # Browser origins allowed to open a pairing WebSocket.
 ALLOWED_ORIGINS = "https://vibemol.org,https://www.vibemol.org,http://localhost:8000,http://127.0.0.1:8000"
+# Where the connector's consent page lives (agent/web/authorize.html). The browser
+# identity is stored for this origin, so it must be the site users actually open.
+SITE_URL = "https://vibemol.org"
+# Extra OAuth redirect URIs to accept, comma-separated (Claude's own callbacks and
+# localhost are always accepted). A trailing * allows a prefix.
+ALLOWED_REDIRECTS = ""
+# OAuth is on when the AUTH_SECRET secret is set (npx wrangler secret put AUTH_SECRET,
+# 32+ random characters). Without it the relay runs in pairing-code-only mode.
 
 [[durable_objects.bindings]]
 name = "RELAY"

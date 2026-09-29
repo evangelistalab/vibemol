@@ -167,3 +167,28 @@ div.vm-agent-note:empty { display: none; }
 .vm-agent-ext[data-state="on"] .vm-agent-ext-state { background: var(--vm-agent-on); }
 .vm-agent-ext[data-state="error"] .vm-agent-ext-state { background: var(--vm-agent-off); }
 .vm-agent-menu { max-height: calc(100vh - 80px); overflow-y: auto; }
+
+/* Setup, code fallback, forget (agent/web/link.js). */
+.vm-agent-setup { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--vm-color-surface-panel)); }
+.vm-agent-steps { margin: 0; padding-left: 18px; line-height: 1.45; }
+.vm-agent-steps li { margin: 0; }
+.vm-agent-code summary { cursor: pointer; list-style: none; }
+.vm-agent-code summary::-webkit-details-marker { display: none; }
+.vm-agent-code summary::before { content: '▸ '; }
+.vm-agent-code[open] summary::before { content: '▾ '; }
+.vm-agent-code[open] > .vm-agent-menu-row { margin-top: 8px; }
+.vm-agent-link-btn { border: 0; padding: 0; background: none; font: inherit; font-size: 11px; color: var(--vm-color-text-muted, #687180); text-decoration: underline; cursor: pointer; }
+.vm-agent-link-btn:hover { color: var(--vm-color-text-primary); }
+.vm-agent-forget { justify-content: flex-end; }
+
+/* "Claude is driving this tab" badge. */
+.vm-agent-driving {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 10050;
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 8px;
+  border: 1px solid var(--vm-color-border); border-radius: 999px;
+  background: var(--vm-color-surface-panel); box-shadow: var(--vm-shadow-sm);
+  color: var(--vm-color-text-secondary); font-family: var(--vm-font-sans); font-size: 12px; pointer-events: none;
+}
+.vm-agent-driving[hidden] { display: none; }
+.vm-agent-driving .vm-agent-trigger-icon { font-size: 16px; }

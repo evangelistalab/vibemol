@@ -22,12 +22,14 @@ agent/
     ui.js             generic UI reflection: list/operate any labeled control, keys, read text, opt-in scripts
     host.js           agent actions built on VibeMolAgentSeam (moves, trajectories, atoms, screenshots)
     tools.js          one handler per schema tool
-    link.js/.css      Connect Claude button, pairing code, WebSocket to the relay
+    link.js/.css      Claude menu: automatic browser link, pairing-code fallback, driving badge
+    identity.js       anonymous browser identity used by the connector's OAuth sign-in
+    authorize.html    consent page Claude opens when the connector is added
     lasso.js          Lasso button: circle part of the page; Claude reads it with vibemol_get_selection
     source.js         read-only access to the served source (vibemol_read_source, lasso source locations)
     extensions.js     Claude-written JavaScript: the `ext` helper, saved extensions, file-format hooks
     vendor/           html2canvas 1.4.1 (MIT), loaded only when a lasso image is captured
-  relay/              Cloudflare Worker: MCP endpoint + one Durable Object per pairing code
+  relay/              Cloudflare Worker: MCP endpoint, OAuth (auth.js), Durable Objects per code/browser
   tests/              unit tests (run by `make test-unit`)
 ```
 
@@ -51,15 +53,25 @@ Opening `index.html` as a file does not work; serve it over http.
 
 ## Deploy (Cloudflare Workers free plan)
 ```bash
-cd agent/relay && npx wrangler login && npm run deploy
+cd agent/relay && npx wrangler login
+npx wrangler secret put AUTH_SECRET     # paste 32+ random characters, e.g. from: openssl rand -base64 48
+npm run deploy
 ```
-Set `relayUrl` in `web/config.js` to the printed address with `wss://`. Add any extra site origins
-(for example a beta domain) to `ALLOWED_ORIGINS` in `relay/wrangler.toml`.
+Set `relayUrl` in `web/config.js` to the printed address with `wss://`. `SITE_URL` in `relay/wrangler.toml`
+must be the site users open (it hosts the consent page and owns the browser identity). Add any extra
+site origins (for example a beta domain) to `ALLOWED_ORIGINS`. Without `AUTH_SECRET` the relay runs in
+pairing-code-only mode. For local OAuth testing copy `relay/.dev.vars.example` to `relay/.dev.vars`.
 
-## Connect in Claude
-1. Customize → Connectors → Add custom connector → `https://<relay>/mcp`.
-2. In VibeMol open the Claude menu (top right), click **Connect Claude**, and copy the message.
-3. Paste it into a new chat ("connect to Vibemol ABCDE-FGH23") and continue with your request.
+## Connecting (users)
+One-time: in Claude, Settings → Connectors → Add custom connector → `https://<relay>/mcp` (the Claude
+menu in VibeMol has a copy button). Click **Connect**, then **Allow** on the VibeMol page that opens.
+That page gives this browser an anonymous ID (no account) and Claude a token for it.
+
+After that, every VibeMol tab in that browser links itself automatically; Claude's tools reach the
+most recently focused one, which shows "Claude is driving this tab". Just ask Claude.
+
+Other browser or device: open the Claude menu → "Pair with a code instead" → copy the message or
+click Open in Claude. "Forget this browser" in the menu removes the ID.
 
 Press **L** anywhere (outside text fields) to lasso part of the page for Claude.
 

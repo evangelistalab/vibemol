@@ -1,0 +1,4 @@
+# Copy to .dev.vars for `npm run dev` (never commit .dev.vars).
+# Enables OAuth locally and points the consent page at your local VibeMol server.
+AUTH_SECRET=replace-with-32-or-more-random-characters-0123456789
+SITE_URL=http://localhost:8000

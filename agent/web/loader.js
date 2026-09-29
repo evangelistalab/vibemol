@@ -14,7 +14,7 @@
 
   // Order matters: config → UI reflection → host (uses app seam) → source reader → tools
   // → pairing link (renders the menu) → extensions (fills the menu, runs saved ones) → lasso.
-  for (const file of ['config.js', 'ui.js', 'host.js', 'source.js', 'tools.js', 'link.js', 'extensions.js', 'lasso.js']) {
+  for (const file of ['config.js', 'identity.js', 'ui.js', 'host.js', 'source.js', 'tools.js', 'link.js', 'extensions.js', 'lasso.js']) {
     const el = document.createElement('script');
     el.src = new URL(file, base).href;
     el.async = false;
