@@ -1,11 +1,15 @@
 (function (global) {
   'use strict';
   const catalog = Object.freeze([
+    { id: 'subspacePanel', panel: 'subspacePanel', label: 'Subspace', icon: 'science', place: 'right', mode: 'calculations' },
+    { id: 'buildPanel', panel: 'editAdaptiveAddAtomPopover', label: 'Build', icon: 'construction', place: 'right', mode: 'edit' },
+    { id: 'symmetryPanel', panel: 'editAdaptiveSymmetryPopover', label: 'Symmetry', icon: 'hub', place: 'right', mode: 'edit' },
     { id: 'moldenInspector', panel: 'moldenInspector', label: 'Orbitals', icon: 'blur_on', place: 'right' },
+    { id: 'measurementsPanel', panel: 'measurementsPanel', label: 'Measurements', icon: 'straighten', place: 'right' },
     { id: 'coordsPanel', panel: 'coordsPanel', label: 'Coordinates', icon: 'table_rows', place: 'bottom' },
     { id: 'inspector', panel: 'inspector', label: 'Properties', icon: 'tune', place: 'right' },
-    { id: 'viewInspector', panel: 'viewInspector', label: 'Quick actions', icon: 'bolt', place: 'right' },
     { id: 'viewPanel', panel: 'sidePanel', label: 'Camera', icon: 'view_in_ar', place: 'right' },
+    { id: 'figurePanel', panel: 'figurePanel', label: 'Figure', icon: 'grid_view', place: 'right' },
     { id: 'trajectoryPanel', panel: 'trajectoryPanel', label: 'Trajectory', icon: 'timeline', place: 'bottom' },
     { id: 'vibrationPanel', panel: 'vibrationPanel', label: 'Frequencies', icon: 'graphic_eq', place: 'bottom' },
     { id: 'spinorInfo', panel: 'spinorInfoPanel', label: 'Spinor info', icon: 'info', place: 'right' },
@@ -35,15 +39,15 @@
       const index = parked.indexOf('inspector'); if (index >= 0) parked.splice(index, 1);
     }
     return { placements, positions, open: list('open'), parked,
-      rightWidth: clamp(value.rightWidth, 300, 680, 380), bottomHeight: clamp(value.bottomHeight, 180, 480, 270),
+      rightWidth: clamp(value.rightWidth, 300, 680, 380), bottomHeight: clamp(value.bottomHeight, 180, 480, 220),
       activeRight: ids.has(resolveId(value.activeRight)) ? resolveId(value.activeRight) : null,
       activeBottom: ids.has(resolveId(value.activeBottom)) ? resolveId(value.activeBottom) : null };
   }
-  function regions({ width, height, sidebar = 0, right = false, bottom = false, rightWidth = 380, bottomHeight = 270, focus = false, top = 56 }) {
+  function regions({ width, height, sidebar = 0, right = false, bottom = false, rightWidth = 380, bottomHeight = 220, focus = false, top = 56 }) {
     const left = focus || width < 760 ? 0 : Math.max(0, Math.min(sidebar, width - 100));
     const compact = width - left < 700;
-    const rw = !focus && right && !compact ? Math.min(rightWidth, width - left - 340) : 0;
-    const bh = !focus && (bottom || (right && compact)) ? Math.min(bottomHeight, Math.max(100, height - top - 214)) : 0;
+    const rw = !focus && right && !compact ? Math.min(rightWidth, Math.max(300, (width - left) * 0.4), width - left - 340) : 0;
+    const bh = !focus && (bottom || (right && compact)) ? Math.min(bottomHeight, Math.max(180, (height - top) * 0.36), Math.max(100, height - top - 214)) : 0;
     return { left, compact, right: Math.max(0, rw), bottom: bh, top };
   }
   global.VibeMolWorkbenchModel = Object.freeze({ catalog, normalize, regions, resolveId });

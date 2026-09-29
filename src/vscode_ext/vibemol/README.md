@@ -8,7 +8,7 @@ A VSCode extension that brings [VibeMol](https://github.com/evangelistalab/vibem
 Search for **VibeMol** in the Extensions panel (`Cmd+Shift+X`) and click **Install**.
 
 ### From source (local build)
-Prerequisite: [Node.js](https://nodejs.org) 20 or newer
+Prerequisite: [Node.js](https://nodejs.org) 22 or newer
 
 ```bash
 # From the vibemol repo root
@@ -81,3 +81,19 @@ Open the Command Palette (`Cmd+Shift+P`) and run **Launch VibeMol Webview**, or 
 
 - VSCode `^1.118.0`
 - No other dependencies — the extension is fully self-contained
+
+## Extension icon
+
+The Extensions list and Marketplace use `resources/icon.png`, a 256×256 PNG of
+VibeMol's yellow three-bond mark on a flat blue tile. It uses the shared blue/gold
+colors without shading. Its editable source is `resources/icon.svg`; the editor
+toolbar uses the compact app favicon.
+
+After editing the SVG, regenerate the PNG from the repository root using the
+Python Playwright environment described in `api/README.md`:
+
+```bash
+python tools/render_vscode_icon.py
+```
+
+Both icon files are included automatically by `npm run package`.

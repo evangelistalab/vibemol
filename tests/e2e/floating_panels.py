@@ -31,7 +31,7 @@ def catalog_contract(page):
     p.context_item(page, a['id'], 'Combine (2)...')
     page.locator('.vm-combine-popover__button.is-secondary').click()
     panels = page.locator('[data-vm-floating-panel]')
-    assert panels.count() == 24
+    assert panels.count() == 25
     # Clone each real shell to exercise its layout and shared movement without
     # the app hiding contextually unavailable tools. Live workflows below use
     # the originals, the running renderer and normal opening/closing commands.

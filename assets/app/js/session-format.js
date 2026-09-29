@@ -106,6 +106,35 @@
     sources.forEach(source => {
       requireValue(typeof source.name === 'string' && id(source.sceneKey) && object(source.recordState), 'invalid source metadata.');
       validateVolume(source.volume, source.name || source.id);
+      const calculations = source.recordState.calculations;
+      if (calculations !== undefined) {
+        requireValue(object(calculations) && object(calculations.options)
+          && Array.isArray(calculations.selections) && calculations.selections.length <= 2000
+          && Array.isArray(calculations.planes) && calculations.planes.length <= 40, 'invalid calculation settings.');
+        for (const row of calculations.selections) {
+          requireValue(id(row?.id) && row.id.length <= 128 && object(row.shells) && Object.keys(row.shells).length <= 40, 'invalid calculation atom.');
+          for (const [shell, choice] of Object.entries(row.shells)) requireValue(/^[1-9][spdfgh]$/.test(shell)
+            && (choice === 'all' || (Array.isArray(choice) && choice.length <= 5
+              && choice.every(c => typeof c === 'string' && /^(s|p[xyz]|d(xy|yz|z2|xz|x2-y2))$/.test(c)))), 'invalid calculation shell.');
+        }
+        for (const plane of calculations.planes) requireValue(Array.isArray(plane) && plane.length >= 3 && plane.length <= 2000
+          && plane.every(atomId => id(atomId) && atomId.length <= 128), 'invalid calculation plane.');
+        requireValue(Object.entries(calculations.options).every(([key, value]) => key.length <= 40
+          && (typeof value === 'boolean' || (typeof value === 'string' && value.length <= 200)
+            || (finite(value) && Math.abs(value) <= 1000000))), 'invalid calculation parameter.');
+      }
+      const measurements = source.recordState.measurements;
+      if (measurements !== undefined) {
+        requireValue(object(measurements) && ['angstrom', 'bohr'].includes(measurements.units)
+          && integer(measurements.decimals, 0) && measurements.decimals <= 6
+          && Array.isArray(measurements.entries) && measurements.entries.length <= 200, 'invalid measurement settings.');
+        for (const entry of measurements.entries) {
+          const size = { distance: 2, angle: 3, dihedral: 4 }[entry?.type];
+          requireValue(size && Array.isArray(entry.atomIds) && entry.atomIds.length === size
+            && entry.atomIds.every(atomId => id(atomId) && atomId.length <= 128)
+            && new Set(entry.atomIds).size === size, 'invalid measurement atom references.');
+        }
+      }
       if (source.volume.kind === 'molden') {
         const s = source.recordState;
         requireValue(integer(s.moldenMoIndex, -1) && s.moldenMoIndex < source.volume.molden.mos.length, 'invalid selected MO.');
@@ -148,7 +177,7 @@
           requireValue(sources.has(layer.sourceId) && layer.sourceId === scene.moleculeSourceId, 'missing or mismatched molecule data.');
           requireValue(layer.moleculeDisplay == null || (object(layer.moleculeDisplay)
             && Object.entries(layer.moleculeDisplay).every(([key, value]) =>
-              ['showAtoms', 'showBonds', 'showAtomLabels', 'showAtomLabelNumbers', 'showMultiBonds'].includes(key)
+              ['showAtoms', 'showBonds', 'showHydrogenBonds', 'showAtomLabels', 'showAtomLabelNumbers', 'showMultiBonds'].includes(key)
               && typeof value === 'boolean')), 'invalid structure display settings.');
         }
         if (layer.kind === 'cube') {

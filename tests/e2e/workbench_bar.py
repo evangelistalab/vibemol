@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Workbench bar semantics, keyboard navigation, and reachable controls."""
 import json
+import math
 import premerge as p
 
 
@@ -19,7 +20,7 @@ HARNESS = r'''() => {
           return b !== hit && !b.contains(hit);
         }).map(b => b.id || b.getAttribute('aria-label')),
         pressed: bar.querySelectorAll('[aria-pressed]').length,
-        radios: [...bar.querySelectorAll('[role="radio"]')].map(b => ({id: b.id, checked: b.getAttribute('aria-checked'), tab: b.tabIndex})),
+        radios: [...bar.querySelectorAll('#toolbarModeRow [role="radio"]')].map(b => ({id: b.id, checked: b.getAttribute('aria-checked'), tab: b.tabIndex})),
         rows: [...document.querySelectorAll('#workbenchPanelsMenu [role="menuitemcheckbox"]')].filter(b => !b.hidden)
           .map(b => ({id: b.dataset.window, checked: b.getAttribute('aria-checked'), detail: b.querySelector('.wb-panel-location').textContent})),
       };
@@ -42,7 +43,7 @@ def check_bar(page):
     assert result['scrollWidth'] <= result['clientWidth'] + 1, result
     assert not result['occluded'], result
     assert result['pressed'] == 0, result
-    assert len(result['radios']) == 3, result
+    assert len(result['radios']) == 4, result
     assert sum(r['checked'] == 'true' for r in result['radios']) == 1, result
     assert sum(r['tab'] == 0 for r in result['radios']) == 1, result
     assert all((r['checked'] == 'true') == (r['tab'] == 0) for r in result['radios']), result
@@ -50,6 +51,14 @@ def check_bar(page):
     assert page.locator('.wb-tools button[data-window]').count() == 0
     assert page.locator('.wb-context-tools #workbenchClearMeasurements').count() == 1
     assert page.locator('#themeToggleInput').get_attribute('aria-label') == 'Dark mode'
+    assert page.locator('#workbenchQuickActions .tb-quickActionBtn').count()==3
+    assert not any(row['id']=='viewInspector' for row in result['rows'])
+    assert page.evaluate('''()=> {
+      const group=document.getElementById('workbenchQuickActions'), panel=document.getElementById('workbenchPanelsBtn');
+      return group.parentElement===panel.parentElement && group.nextElementSibling===document.getElementById("workbenchOverflowBtn") && group.nextElementSibling.nextElementSibling===panel;
+    }''')
+    bar=page.locator('#workbenchBar').bounding_box();canvas=page.locator('#canvas').bounding_box()
+    assert canvas['y']>=bar['y']+bar['height']-1 and canvas['height']>=200
     return result
 
 
@@ -67,26 +76,28 @@ def run(page):
         screenshot(page, mode.lower())
     assert page.locator('.wb-tabs .wb-tab[role="tab"]').count() > 0
     assert page.locator('#workbenchArrange').get_attribute('aria-expanded') is None
-    for id_ in ['editAdaptiveSymmetryBtn', 'editAdaptiveCleanStructureBtn', 'workbenchClearMeasurements', 'workbenchFocus']:
+    for id_ in ['editAdaptiveCleanStructureBtn', 'workbenchClearMeasurements', 'workbenchFocus']:
         assert page.locator('#' + id_).get_attribute('aria-expanded') is None
 
     # A single Tab stop for modes; arrows change the actual mode, not just focus.
     page.locator('#modeDisplayBtn').click()
-    for key, target in [('ArrowRight', 'Measure'), ('ArrowRight', 'Edit'), ('ArrowRight', 'Display'),
-                        ('ArrowUp', 'Edit'), ('ArrowDown', 'Display'), ('End', 'Edit'), ('Home', 'Display'), ('ArrowLeft', 'Edit')]:
+    for key, target in [('ArrowRight', 'Measure'), ('ArrowRight', 'Edit'), ('ArrowRight', 'Calculations'), ('ArrowRight', 'Display'),
+                        ('ArrowUp', 'Calculations'), ('ArrowDown', 'Display'), ('End', 'Calculations'), ('Home', 'Display'), ('ArrowLeft', 'Calculations'), ('ArrowLeft', 'Edit')]:
         page.keyboard.press(key)
         assert page.locator('#mode' + target + 'Btn').evaluate('el => document.activeElement === el')
         assert page.locator('#mode' + target + 'Btn').get_attribute('aria-checked') == 'true'
         check_bar(page)
     page.keyboard.press('Tab')
-    assert page.locator('#editAdaptiveAddAtomBtn').evaluate('el => document.activeElement === el')
+    assert page.locator('#editTransformToolBtn').evaluate('el => document.activeElement === el')
 
-    # Build exposes expansion. Other commands never acquire toggle styling/state.
-    page.keyboard.press('Enter')
-    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-expanded') == 'true'
-    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-haspopup') == 'dialog'
+    # Build is a tool radio; panel expansion is managed independently in Panels.
     page.locator('#editAdaptiveAddAtomBtn').click()
-    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-expanded') == 'false'
+    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-checked') == 'true'
+    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-haspopup') is None
+    assert page.locator('#editAdaptiveAddAtomPopover').get_attribute('role') == 'tabpanel'
+    page.locator('#editAdaptiveAddAtomPopover').get_by_role('button', name='Close Build', exact=True).click()
+    assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-checked') == 'true'
+    page.locator('#editTransformToolBtn').click()
 
     # Menu navigation, type-ahead, dismissal, and the formerly unreachable Camera.
     trigger = page.locator('#workbenchPanelsBtn')
@@ -113,7 +124,7 @@ def run(page):
     open_menu(page); page.keyboard.press('Tab')
     assert menu.is_hidden() and page.locator('#workbenchArrange').evaluate('el => document.activeElement === el')
     open_menu(page); page.keyboard.press('Shift+Tab')
-    assert menu.is_hidden() and page.locator('#editAdaptiveCleanStructureBtn').evaluate('el => document.activeElement === el')
+    assert menu.is_hidden() and page.locator('#alignInertiaBtn').evaluate('el => document.activeElement === el')
     open_menu(page); page.locator('#canvas').click(position={'x': 30, 'y': 30})
     assert menu.is_hidden()
     page.locator('#workbenchArrange').click()
@@ -123,7 +134,7 @@ def run(page):
     # Two open windows sharing a dock remain checked as tabs switch.
     page.locator('#modeDisplayBtn').click()
     page.evaluate('() => VibeMolWorkbench.applyLayout({open:["coordsPanel","inspector"],activeBottom:"coordsPanel",activeRight:"inspector"})')
-    page.set_viewport_size({'width': 1024, 'height': 950})
+    page.set_viewport_size({'width': 900, 'height': 950})
     page.wait_for_function('() => VibeMolWorkbench.snapshot().compact')
     for name in ['Properties', 'Coordinates']:
         page.get_by_role('tab', name=name, exact=True).click()
@@ -178,7 +189,8 @@ def run(page):
         for mode in ['Display', 'Measure', 'Edit']:
             page.locator('#mode' + mode + 'Btn').click()
             result = check_bar(page)
-            assert len(result['rows']) == 8, result
+            assert len(result['rows']) == (10 if mode == 'Edit' else 9), result
+            assert any(row['id']=='figurePanel' for row in result['rows']),result
             report['responsive'].append({'width': width, **result})
         if width == 320: screenshot(page, 'mobile-edit')
     page.evaluate('() => { for (const button of __allPanelButtons) delete button.hidden; }')
@@ -205,10 +217,56 @@ def run(page):
     page.locator('#canvas').focus(); page.keyboard.press('o')
     page.wait_for_function('() => document.getElementById("hint").textContent.includes("UFF")')
     check_bar(page)
-    assert page.evaluate('() => __vmqa.errors') == []
+    assert page.evaluate('() => __vmqa.errors') == [], page.evaluate('() => __vmqa.errors')
     (p.ARTIFACTS / 'workbench-bar-report.json').write_text(json.dumps(report, indent=2))
     print('[workbench bar] desktop widths: ' + json.dumps({mode: report[mode]['scrollWidth'] for mode in ['Display', 'Measure', 'Edit']}), flush=True)
     print('[workbench bar] roles, keyboard, checkmarks, conditional panels, 11 viewport widths, themes and shortcuts: passed', flush=True)
+
+
+def quick_actions(page, url):
+    page.goto(url+'?appearanceStudy=1')
+    page.wait_for_function('()=>window.VibeMolWorkbench')
+    assert page.locator('#workbenchQuickActions button:disabled').count()==3
+    assert p.load(page,[{'name':'hydrogen.xyz','text':'H 2 3 4\nH 2.4 3.4 4.4'}])['ok']
+    for mode in ['Display','Measure','Edit']:
+        page.locator('#mode'+mode+'Btn').click()
+        page.locator('#canvas').focus();page.keyboard.press('q')
+        assert page.locator('#centerMassBtn').evaluate('el=>document.activeElement===el')
+        assert page.locator('#viewInspector').is_hidden()
+        for axis in 'XYZ':
+            page.locator('#viewAxis'+axis+'Btn').click()
+            camera=page.evaluate('()=>VibeMolTesting.getCameraSnapshot()')
+            distance=math.sqrt(sum((camera['camera'][c]-camera['target'][c])**2 for c in 'xyz'))
+            for component in 'xyz':
+                delta=camera['camera'][component]-camera['target'][component]
+                # OrbitControls offsets pole-aligned views by its small epsilon.
+                assert (delta>0 if component==axis.lower() else abs(delta)<distance*1e-5),(mode,axis,camera)
+    page.locator('#centerMassBtn').click()
+    atoms=page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms')
+    assert all(abs(sum(a[axis] for a in atoms))<1e-6 for axis in 'xyz')
+    page.locator('#alignInertiaBtn').click()
+    atoms=page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms')
+    delta=[atoms[0][axis]-atoms[1][axis] for axis in 'xyz']
+    assert sum(abs(value)>1e-6 for value in delta)==1
+    assert math.isclose(sum(value*value for value in delta),.48,abs_tol=1e-6)
+    camera=page.evaluate('()=>VibeMolTesting.getCameraSnapshot().camera')
+    page.locator('#pointCameraComBtn').click()
+    after=page.evaluate('()=>VibeMolTesting.getCameraSnapshot()')
+    assert all(math.isclose(camera[axis],after['camera'][axis],abs_tol=1e-6) for axis in 'xyz')
+    page.locator('#workbenchFocus').click();page.locator('#canvas').focus();page.keyboard.press('q')
+    assert not page.evaluate('()=>VibeMolWorkbench.snapshot().focus')
+    assert page.locator('#centerMassBtn').evaluate('el=>document.activeElement===el')
+    page.evaluate('()=>VibeMolWorkbench.preset("analyze")')
+    assert 'viewPanel' in page.evaluate('()=>VibeMolWorkbench.snapshot().open')
+    assert 'viewInspector' not in page.evaluate('()=>VibeMolWorkbench.snapshot().open')
+    # The explicit older interface still has its original Quick actions popup.
+    page.goto(url+'?workspaceLab=0&appearanceStudy=1')
+    page.wait_for_function('()=>window.VibeMolTesting')
+    assert p.load(page,[{'name':'hydrogen.xyz','text':'H 0 0 0\nH .7 0 0'}])['ok']
+    page.keyboard.press('q')
+    assert page.locator('#viewInspector').is_visible()
+    assert page.locator('#viewInspector .tb-quickActionBtn').count()==3
+    print('[quick actions] moved commands, geometry/camera behavior, Q, Focus, Analyze and legacy: passed',flush=True)
 
 
 def main():
@@ -224,6 +282,7 @@ def main():
             page.goto(url + '?workspaceLab=1&workspaceDemo=1')
             page.wait_for_function('() => window.VibeMolWorkbench')
             run(page)
+            quick_actions(page,url)
             assert not errors, errors
         except Exception:
             p.write_failure_artifacts(page, p.ARTIFACTS, 'workbench-bar-failure', errors, consoles)

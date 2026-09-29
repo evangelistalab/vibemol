@@ -194,7 +194,7 @@ test('edit-gizmos rotate gizmo updates, picks, and stays hidden outside edit mod
   assert.equal(controller.pickRotateHit({ clientX: 0, clientY: 0 }), null);
 });
 
-test('edit-gizmos exposes move and rotate gizmos in atom manipulation for multi-atom selection only', () => {
+test('edit-gizmos exposes translation for single atoms and rotation for multi-atom selections', () => {
   const { THREE, state, controller, raycaster } = createHarness();
 
   state.tool = 'atom_manipulation';
@@ -231,6 +231,22 @@ test('edit-gizmos exposes move and rotate gizmos in atom manipulation for multi-
   assert.equal(controller.getRotateGroup().visible, false);
   assert.equal(controller.pickMoveHit({ clientX: 5, clientY: 6 }), null);
   assert.equal(controller.pickRotateHit({ clientX: 5, clientY: 6 }), null);
+
+  state.dragMode = 'translate';
+  controller.updateMove();
+  assert.equal(controller.getMoveGroup().visible, true);
+  for (const axis of ['x', 'y', 'z']) {
+    const arrow = controller.getMoveGroup().children.find(child => child.userData.moveSelectionAxis === axis);
+    raycaster.hits = [{ object: arrow.children[1], point: new THREE.Vector3(1, 2, 3) }];
+    assert.equal(controller.pickMoveHit({ clientX: 5, clientY: 6 }).axis, axis);
+    controller.setMoveHover(axis);
+    assert.equal(arrow.userData.moveSelectionMaterial.opacity, 1);
+  }
+  assert.deepEqual([controller.getMoveGroup().position.x, controller.getMoveGroup().position.y, controller.getMoveGroup().position.z], [1, 2, 3]);
+  state.selection = [];
+  controller.updateMove();
+  assert.equal(controller.getMoveGroup().visible, false);
+  assert.equal(controller.pickMoveHit({ clientX: 5, clientY: 6 }), null);
 });
 
 test('edit-gizmos stay hidden for bond-side transform selection context', () => {

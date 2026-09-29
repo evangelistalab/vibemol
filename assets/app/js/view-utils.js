@@ -70,11 +70,11 @@
     const geometryVersions = new WeakMap();
     const instanceVersions = new WeakMap();
     const materialVisible = material => material && material.visible !== false && material.opacity !== 0;
-    function update(root, camera) {
+    function update(root, camera, extraRoot = null) {
       camera.updateMatrixWorld(true);
       root.updateWorldMatrix(true, true);
       let nearest = Infinity, farthest = -Infinity;
-      root.traverseVisible(node => {
+      const visit = node => {
         const geometry = node.geometry, material = node.material;
         if (!geometry || !(Array.isArray(material) ? material.some(materialVisible) : materialVisible(material))) return;
         const version = geometry.attributes.position?.version;
@@ -104,7 +104,9 @@
           + e[6] * (e[6] >= 0 ? hi.y : lo.y) + e[10] * (e[10] >= 0 ? hi.z : lo.z);
         nearest = Math.min(nearest, -zMax);
         farthest = Math.max(farthest, -zMin);
-      });
+      };
+      root.traverseVisible(visit);
+      if (extraRoot?.visible) { extraRoot.updateWorldMatrix(true, true); extraRoot.traverseVisible(visit); }
       if (!Number.isFinite(nearest) || !Number.isFinite(farthest)) return;
       const padding = Math.max(minimumPadding, (farthest - nearest) * 0.05);
       const near = camera.isOrthographicCamera ? nearest - padding : Math.max(0.01, nearest - padding);

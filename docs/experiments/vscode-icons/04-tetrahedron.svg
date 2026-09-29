@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <title>VibeMol — Tetrahedron</title>
+  <desc>A geometric take on the website’s tetra motif.</desc>
+  <path d="M128 53L47 188H209L128 53Z" stroke="#3b5bd9" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/><path d="M128 53V133L47 188M128 133L209 188" stroke="#ffc53a" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/><circle cx="128" cy="133" r="17" fill="#ffc53a"/>
+</svg>

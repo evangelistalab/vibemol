@@ -16,6 +16,7 @@
   });
 
   const ESCAPABLE_WINDOW_IDS = Object.freeze([
+    'figurePanel',
     WINDOW_IDS.STYLE_STUDIO,
     WINDOW_IDS.DISPLAY_INSPECTOR,
     WINDOW_IDS.MOLDEN_INSPECTOR,
@@ -28,6 +29,7 @@
   ]);
 
   const EXCLUSIVE_WINDOW_IDS = Object.freeze([
+    'measurementsPanel',
     WINDOW_IDS.MOLDEN_INSPECTOR,
     WINDOW_IDS.SPINOR_INFO,
     WINDOW_IDS.VIEW_INSPECTOR,
@@ -80,7 +82,7 @@
       try {
         for (const id of EXCLUSIVE_WINDOW_IDS) {
           if (exceptId && id === exceptId) continue;
-          if (exceptId && deps?.keepOpenOnSwitch?.(id)) continue;
+          if (deps?.keepOpenOnSwitch?.(id)) continue;
           const entry = getEntry(id);
           if (!entry || typeof entry.isOpen !== 'function' || typeof entry.setOpen !== 'function') continue;
           if (!entry.isOpen()) continue;

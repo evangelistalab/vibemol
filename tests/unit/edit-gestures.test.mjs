@@ -9,7 +9,8 @@ function createHarness(options = {}) {
   let pendingBondOrder = Number.isFinite(options.pendingBondOrder) ? Number(options.pendingBondOrder) : 1;
   const calls = {
     selectionClicks: [],
-    bondCenterClicks: [],
+    buildBondClicks: [],
+    transformBondClicks: [],
     setSelection: [],
     clearSelection: 0,
     startBoxSelection: [],
@@ -42,6 +43,7 @@ function createHarness(options = {}) {
   };
   const controller = api.createEditGestureController({
     isEnabled: () => true,
+    isSelectTool: options.isSelectTool,
     getSelection: () => selection.slice(),
     setSelection: (next) => {
       selection = Array.isArray(next) ? next.slice() : [];
@@ -77,8 +79,12 @@ function createHarness(options = {}) {
     },
     pickAtomObject: (e) => Number.isInteger(e && e.atomIndex) ? { userData: { index: e.atomIndex | 0 } } : null,
     pickBondHit: (e) => (e && e.bondHit) || null,
-    applyBondCenterClick: (bondHit) => {
-      calls.bondCenterClicks.push(bondHit);
+    applyBuildBondClick: (bondHit) => {
+      calls.buildBondClicks.push(bondHit);
+      return true;
+    },
+    applyTransformBondClick: (bondHit) => {
+      calls.transformBondClicks.push(bondHit);
       return true;
     },
     showVoidPlacementPreview: () => {
@@ -282,17 +288,70 @@ test('edit-gestures left-click on atom does not change selection', () => {
   assert.deepEqual(getSelection(), []);
 });
 
-test('edit-gestures left click on bond center-third delegates to bond order cycling', () => {
-  const { controller, calls, getSelection } = createHarness({ selection: [4] });
+test('Build cycles a bond once from either end or its center without changing selection', () => {
+  for (const section of ['nearA', 'center', 'nearB']) {
+    const { controller, calls, getSelection } = createHarness({ selection: [4] });
+    const bondHit = { object: { id: 'bond-1' }, section };
+    controller.handlePointerDown(pointerEvent({ bondHit }));
+    controller.handlePointerUp(pointerEvent({ bondHit }));
+    assert.equal(calls.buildBondClicks.length, 1);
+    assert.equal(calls.buildBondClicks[0].section, section);
+    assert.deepEqual(getSelection(), [4]);
+    assert.equal(calls.selectionClicks.length, 0);
+    assert.equal(calls.placeVoidAtom, 0);
+    assert.deepEqual(calls.transformBondClicks, []);
+  }
+});
 
-  controller.handlePointerDown(pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'center' } }));
-  controller.handlePointerUp(pointerEvent({ bondHit: { object: { id: 'bond-1' }, section: 'center' } }));
+test('Transform selects bond centers and sides without changing bond order', () => {
+  for (const section of ['nearA', 'center', 'nearB']) {
+    const { controller, calls } = createHarness({ isSelectTool: () => true });
+    const bondHit = { object: {}, section };
+    controller.handlePointerDown(pointerEvent({ bondHit }));
+    controller.handlePointerUp(pointerEvent({ bondHit }));
+    assert.deepEqual(calls.buildBondClicks, []);
+    assert.equal(calls.transformBondClicks.length, 1);
+    assert.equal(calls.transformBondClicks[0].section, section);
+  }
+});
 
-  assert.equal(calls.bondCenterClicks.length, 1);
-  assert.equal(calls.bondCenterClicks[0].section, 'center');
-  assert.deepEqual(getSelection(), [4]);
-  assert.equal(calls.selectionClicks.length, 0);
-  assert.equal(calls.placeVoidAtom, 0);
+test('Transform bond selection rejects drags, missed releases, foreground atoms and canceled clicks', () => {
+  const bondHit = { object: {}, section: 'center' };
+  for (const release of [{}, { atomIndex: 2, bondHit }, { bondHit: { object: {}, section: 'nearA' } }, { bondHit, clientX: 30 }]) {
+    const { controller, calls } = createHarness({ isSelectTool: () => true });
+    controller.handlePointerDown(pointerEvent({ bondHit, clientX: 0 }));
+    controller.handlePointerUp(pointerEvent(release));
+    assert.deepEqual(calls.transformBondClicks, []);
+  }
+  const { controller, calls } = createHarness({ isSelectTool: () => true });
+  controller.handlePointerDown(pointerEvent({ bondHit }));
+  controller.handlePointerCancel();
+  controller.handlePointerUp(pointerEvent({ bondHit }));
+  assert.deepEqual(calls.transformBondClicks, []);
+});
+
+test('Transform right presses do not enter atom or bond selection gestures', () => {
+  const { controller, calls } = createHarness({ isSelectTool: () => true });
+  assert.equal(controller.handlePointerDown(pointerEvent({ button: 2, atomIndex: 2 })), false);
+  assert.equal(controller.handlePointerDown(pointerEvent({ button: 2, bondHit: { object: {}, section: 'center' } })), false);
+  assert.deepEqual(calls.selectionClicks, []);
+  assert.deepEqual(calls.transformBondClicks, []);
+});
+
+test('Build requires a click released on the same visible bond', () => {
+  const bondHit = { object: {}, section: 'nearA' };
+  for (const release of [
+    { atomIndex: 2, bondHit },
+    { bondHit: { object: {}, section: 'center' } },
+    { bondHit, clientX: 30 },
+    {},
+  ]) {
+    const { controller, calls } = createHarness();
+    controller.handlePointerDown(pointerEvent({ bondHit, clientX: 0 }));
+    controller.handlePointerUp(pointerEvent(release));
+    assert.deepEqual(calls.buildBondClicks, []);
+    assert.equal(calls.placeVoidAtom, 0);
+  }
 });
 
 test('edit-gestures bond center click resolver does not override a current near-side hit', () => {
@@ -316,7 +375,7 @@ test('edit-gestures sticky bond center never overrides a newly visible atom', ()
   controller.handlePointerDown(event);
   controller.handlePointerUp(event);
 
-  assert.deepEqual(calls.bondCenterClicks, []);
+  assert.deepEqual(calls.buildBondClicks, []);
   assert.deepEqual(calls.selectionClicks, []);
   assert.deepEqual(getSelection(), []);
 });
@@ -479,7 +538,7 @@ test('edit-gestures allows external drag handlers to own move and release withou
   assert.deepEqual(external, { active: false, down: 1, move: 1, up: 1 });
 });
 
-test('edit-gestures left click on a bond side is inert even with shift held', () => {
+test('dragging from a bond side does not cycle its order, even with shift held', () => {
   const bondHit = { object: { id: 'bond-carrier' }, section: 'nearB', point: { x: 1, y: 2, z: 3 } };
   const { controller, calls, getSelection } = createHarness({ selection: [2] });
 
@@ -489,6 +548,7 @@ test('edit-gestures left click on a bond side is inert even with shift held', ()
 
   assert.equal(calls.resolveDownstreamMoveScope.length, 0);
   assert.equal(calls.startMoveDrag.length, 0);
+  assert.deepEqual(calls.buildBondClicks, []);
   assert.deepEqual(getSelection(), [2]);
 });
 
@@ -505,4 +565,31 @@ test('edit-gestures can start a grow drag directly from a halo action', () => {
   assert.deepEqual(calls.beginGrowDrag, [0]);
   assert.deepEqual(calls.capturePointer, [9]);
   assert.equal(controller.getUiState().gestureState, 'grow-drag');
+});
+
+
+test('Transform clicks empty space without a creation preview or placement, and selects atoms', () => {
+  const { controller, calls, getSelection } = createHarness({ isSelectTool: () => true });
+  controller.handlePointerMove(pointerEvent({}));
+  controller.handlePointerDown(pointerEvent({}));
+  controller.handlePointerUp(pointerEvent({}));
+  assert.equal(calls.showVoidPreview, 0);
+  assert.equal(calls.placeVoidAtom, 0);
+  controller.handlePointerDown(pointerEvent({ atomIndex: 2 }));
+  controller.handlePointerUp(pointerEvent({ atomIndex: 2 }));
+  assert.deepEqual(getSelection(), [2]);
+  controller.handlePointerDown(pointerEvent({ atomIndex: 3, shiftKey: true }));
+  controller.handlePointerUp(pointerEvent({ atomIndex: 3, shiftKey: true }));
+  assert.deepEqual(getSelection(), [2, 3]);
+});
+
+test('Transform dragging an unselected atom moves it without growing a new bond', () => {
+  const { controller, calls, getSelection } = createHarness({ isSelectTool: () => true });
+  controller.handlePointerDown(pointerEvent({ atomIndex: 2, clientX: 10, clientY: 10 }));
+  controller.handlePointerMove(pointerEvent({ atomIndex: 2, clientX: 30, clientY: 10 }));
+  controller.handlePointerUp(pointerEvent({ atomIndex: 2, clientX: 30, clientY: 10 }));
+  assert.deepEqual(getSelection(), [2]);
+  assert.equal(calls.startMoveDrag.length, 1);
+  assert.equal(calls.beginGrowDrag.length, 0);
+  assert.equal(calls.finishMoveDrag, 1);
 });

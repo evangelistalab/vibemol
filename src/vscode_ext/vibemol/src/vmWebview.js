@@ -588,7 +588,7 @@ function getWebviewContent(webview, scriptUri, assetUri) {
     })();
 <\/script>`;
 
-  // ── 3. Inject after the first </script> in <head> (after the font-pair script) ──
+  // ── 3. Inject after the first </script> in <head> (the asset bootstrap) ──
   html = html.replace('</script>', '</script>' + vscodeScripts);
 
   return html;

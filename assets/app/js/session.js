@@ -5,7 +5,7 @@
   const VOLUME_FIELDS = ['title', 'comment', 'natoms', 'units', 'kind', 'origin', 'axes', 'nxyz', 'atoms',
     'bonds', 'annotations', 'fragmentOps', 'isoHint', 'data', 'isTwoComponent', 'alphaRe', 'alphaIm', 'betaRe', 'betaIm'];
   const RECORD_FIELDS = ['moldenMoIndex', 'moldenGridStepAng', 'moldenGridPaddingAng',
-    'measurementLabelOffsets', 'pubchemMeta', '_sceneGraphHasOrbitalsGroup', '_sceneGraphLayerState', '_moldenSceneGraphLayerStateByMo'];
+    'calculations', 'measurements', 'measurementLabelOffsets', 'pubchemMeta', '_sceneGraphHasOrbitalsGroup', '_sceneGraphLayerState', '_moldenSceneGraphLayerStateByMo'];
   const SCENE_FIELDS = ['id', 'name', 'visible', 'expanded', 'sceneKey', 'sourceFile', 'kind', 'meta',
     'moleculeLayerId', 'orbitalsGroupId', 'measurementsGroupId', 'activeLayerId'];
   const LAYER_FIELDS = ['id', 'sceneId', 'parentId', 'kind', 'name', 'visible', 'expanded', 'labelId',
@@ -55,6 +55,27 @@
     return out;
   }
 
+  function activeContext(graph) {
+    const state = graph.getState(), scenes = graph.getScenes();
+    let scene = scenes.find(s => s.id === state.focusedSceneId) || scenes.find(s => s.id === state.activeSceneId);
+    if (!scene || scene.visible === false) scene = scenes.find(s => s.id === state.activeSceneId && s.visible !== false)
+      || scenes.find(s => s.visible !== false) || scene || scenes[0];
+    const layer = scene?.layers.find(l => l.id === state.activeLayerId) || scene?.layers.find(l => l.id === scene.activeLayerId)
+      || scene?.layers.find(l => l.kind === 'molecule');
+    return { scene, layer, record: layer?.record || scene?.moleculeRecord || null };
+  }
+  function sessionName(graph) {
+    const scenes = graph.getScenes(), active = activeContext(graph).scene;
+    return scenes.length > 1 ? `${scenes.length} scenes · ${active?.name || 'workspace'}` : active?.name || 'VibeMol session';
+  }
+  function snapshotName(text) {
+    // Read only metadata: opening and validating the numeric data still requires consent.
+    try {
+      const snapshot = JSON.parse(text), state = snapshot.graph;
+      if (snapshot.kind !== FORMAT.KIND || !Array.isArray(state?.scenes) || !state.scenes.length) return null;
+      return sessionName({ getState: () => state, getScenes: () => state.scenes });
+    } catch (_) { return null; }
+  }
   function capture({ graph, sources, records, activeRecord, preset, view, appVersion }) {
     const scenes = graph.getScenes();
     const recordsToSave = new Set(records);
@@ -81,11 +102,15 @@
       entries.push({ id: source.id, name: record.name, sceneKey, recordState, volume: captureVolume(record.vol) });
     }
     const state = graph.getState();
+    const context = activeContext(graph);
+    activeRecord = context.record || activeRecord;
     return {
       kind: FORMAT.KIND, sessionVersion: FORMAT.VERSION, appVersion,
-      name: scenes[0] && scenes[0].name || 'VibeMol session', savedAt: new Date().toISOString(),
+      name: sessionName(graph), savedAt: new Date().toISOString(),
       sources: entries, records: Array.from(recordsToSave, record => ids.get(record)), activeSourceId: ids.get(activeRecord) || null,
       graph: Object.assign(pick(state, ['activeSceneId', 'activeLayerId', 'focusedSceneId', 'selectedLayerIds']), {
+        activeSceneId: context.scene?.id || null, focusedSceneId: context.scene?.id || null, activeLayerId: context.layer?.id || null,
+        selectedLayerIds: context.scene?.id !== state.focusedSceneId && context.layer ? [context.layer.id] : state.selectedLayerIds,
         syncMaster: { frame: state.syncMaster.frame || 0, fps: state.syncMaster.fps || 12 },
         scenes: scenes.map(scene => Object.assign(pick(scene, SCENE_FIELDS), {
           moleculeSourceId: ids.get(scene.moleculeRecord),
@@ -111,6 +136,8 @@
       vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
       if (vol.trajectory) Object.assign(vol.trajectory, { currentFrame: vol.trajectory.frameIndex, playing: false, _lastStepMs: 0 });
       const record = Object.assign({}, normalizeRecordSurfaceState(source.recordState), { name: source.name, vol: prepareVolume(vol), _sceneGraphSceneKey: source.sceneKey });
+      if (record.measurements) record.measurements = global.VibeMolMeasurements.normalize(record.measurements);
+      if (record.calculations && global.VibeMolCalculationsModel) record.calculations = global.VibeMolCalculationsModel.normalize(record.calculations);
       return { id: source.id, record };
     });
     const byId = new Map(sources.map(source => [source.id, source.record]));
@@ -133,8 +160,15 @@
     Object.assign(graph.getState(), pick(session.graph, ['activeSceneId', 'activeLayerId', 'focusedSceneId', 'selectedLayerIds']), {
       syncMaster: Object.assign({}, session.graph.syncMaster, { playing: false, lastStepMs: 0 }),
     });
+    const context = activeContext(graph), state = graph.getState();
+    const repaired = state.activeSceneId !== context.scene?.id || state.focusedSceneId !== context.scene?.id;
+    if (context.layer) {
+      graph.setActiveLayer(context.layer.id);
+      if (repaired) graph.setSelection([context.layer.id]);
+    }
+    if (context.scene && context.record) context.scene.moleculeRecord = context.record;
     return { graph: graph.getState(), sources, records: session.records.map(key => byId.get(key)),
-      activeRecord: byId.get(session.activeSourceId) || null, preset: session.preset, view: session.view, name: session.name };
+      activeRecord: context.record || byId.get(session.activeSourceId) || null, preset: session.preset, view: session.view, name: session.name };
   }
 
   function createSessionController(deps) {
@@ -175,5 +209,5 @@
     });
   }
 
-  global.VibeMolSessionModule = Object.freeze({ capture, captureVolume, hydrate, createSessionController });
+  global.VibeMolSessionModule = Object.freeze({ capture, captureVolume, hydrate, activeContext, sessionName, snapshotName, createSessionController });
 })(typeof window !== 'undefined' ? window : globalThis);

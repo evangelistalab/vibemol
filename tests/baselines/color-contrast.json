@@ -1,0 +1,1568 @@
+{
+  "appVersion": "0.9.4",
+  "axeVersion": "4.11.0",
+  "viewport": {
+    "width": 1512,
+    "height": 950
+  },
+  "rule": "color-contrast",
+  "cases": {
+    "light/View": {
+      "panel": "viewPanel",
+      "scanCount": 1,
+      "incompleteResolvedByScrolling": 0,
+      "violationsCount": 0,
+      "violations": [],
+      "incompleteCount": 4,
+      "incomplete": [
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 0;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn active\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\">View</button>",
+          "target": [
+            "#modeDisplayBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 0;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: select atoms and measure distances/angles. Shortcut: M\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Measure</button>",
+          "target": [
+            "#modeMeasureBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 0;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Edit</button>",
+          "target": [
+            "#modeEditBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 0;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functions and prepare a forte2 AVAS input\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Calculations</button>",
+          "target": [
+            "#modeCalculationsBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        }
+      ],
+      "passesCount": 197,
+      "inapplicableCount": 0
+    },
+    "light/Measure": {
+      "panel": "measurementsPanel",
+      "scanCount": 1,
+      "incompleteResolvedByScrolling": 0,
+      "violationsCount": 0,
+      "violations": [],
+      "incompleteCount": 4,
+      "incomplete": [
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">View</button>",
+          "target": [
+            "#modeDisplayBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn active\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: select atoms and measure distances/angles. Shortcut: M\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\">Measure</button>",
+          "target": [
+            "#modeMeasureBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Edit</button>",
+          "target": [
+            "#modeEditBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functions and prepare a forte2 AVAS input\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Calculations</button>",
+          "target": [
+            "#modeCalculationsBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        }
+      ],
+      "passesCount": 172,
+      "inapplicableCount": 0
+    },
+    "light/Edit": {
+      "panel": "editAdaptiveAddAtomPopover",
+      "scanCount": 1,
+      "incompleteResolvedByScrolling": 0,
+      "violationsCount": 0,
+      "violations": [],
+      "incompleteCount": 6,
+      "incomplete": [
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "9.8pt (13px)",
+                "fontWeight": "normal",
+                "messageKey": "bgImage",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<select id=\"editAddCoordination\" class=\"editPopupSelect vm-select\" data-choices-signature=\"linear:Linear (2)|trigonalPlanar:Trigonal planar (3)|tetrahedral:Tetrahedral (4)\">",
+                  "target": [
+                    "#editAddCoordination"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background image"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<select id=\"editAddCoordination\" class=\"editPopupSelect vm-select\" data-choices-signature=\"linear:Linear (2)|trigonalPlanar:Trigonal planar (3)|tetrahedral:Tetrahedral (4)\">",
+          "target": [
+            "#editAddCoordination"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background image"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "9.8pt (13px)",
+                "fontWeight": "normal",
+                "messageKey": "bgImage",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<select id=\"editFragmentAttachPolicy\" class=\"editPopupSelect vm-select\" data-tooltip=\"Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.\">",
+                  "target": [
+                    "#editFragmentAttachPolicy"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background image"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<select id=\"editFragmentAttachPolicy\" class=\"editPopupSelect vm-select\" data-tooltip=\"Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.\">",
+          "target": [
+            "#editFragmentAttachPolicy"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background image"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 2;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">View</button>",
+          "target": [
+            "#modeDisplayBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 2;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: select atoms and measure distances/angles. Shortcut: M\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Measure</button>",
+          "target": [
+            "#modeMeasureBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 2;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn active\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\">Edit</button>",
+          "target": [
+            "#modeEditBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 2;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functions and prepare a forte2 AVAS input\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Calculations</button>",
+          "target": [
+            "#modeCalculationsBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        }
+      ],
+      "passesCount": 188,
+      "inapplicableCount": 0,
+      "buildChips": [
+        {
+          "symbol": "C",
+          "target": "button[data-z=\"6\"]",
+          "fgColor": "#0b1220",
+          "bgColor": "#7f7f7f",
+          "contrastRatio": 4.67,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "bold",
+          "messageKey": null,
+          "expectedContrastRatio": "4.5:1",
+          "shadowColor": null
+        },
+        {
+          "symbol": "P",
+          "target": "button[data-z=\"15\"]",
+          "fgColor": "#0b1220",
+          "bgColor": "#ff8000",
+          "contrastRatio": 7.43,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "bold",
+          "messageKey": null,
+          "expectedContrastRatio": "4.5:1",
+          "shadowColor": null
+        },
+        {
+          "symbol": "Fe",
+          "target": "button[data-z=\"26\"]",
+          "fgColor": "#0b1220",
+          "bgColor": "#e06633",
+          "contrastRatio": 5.45,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "bold",
+          "messageKey": null,
+          "expectedContrastRatio": "4.5:1",
+          "shadowColor": null
+        }
+      ]
+    },
+    "light/Calculations": {
+      "panel": "subspacePanel",
+      "scanCount": 3,
+      "incompleteResolvedByScrolling": 29,
+      "violationsCount": 0,
+      "violations": [],
+      "incompleteCount": 7,
+      "incomplete": [
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "bgImage",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<select id=\"avas-reference\" class=\"vm-select\"><option value=\"RHF\">RHF</option><option value=\"ROHF\">ROHF</option><option value=\"GHF\">GHF / two-component</option></select>",
+                  "target": [
+                    "#avas-reference"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background image"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<select id=\"avas-reference\" class=\"vm-select\"><option value=\"RHF\">RHF</option><option value=\"ROHF\">ROHF</option><option value=\"GHF\">GHF / two-component</option></select>",
+          "target": [
+            "#avas-reference"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background image"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "bgImage",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<select id=\"avas-method\" class=\"vm-select\"><option value=\"cumulative\">Cumulative</option><option value=\"cutoff\">Cutoff</option><option value=\"separate\">Separate occupied / virtual</option><option value=\"total\">Total</option></select>",
+                  "target": [
+                    "#avas-method"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background image"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<select id=\"avas-method\" class=\"vm-select\"><option value=\"cumulative\">Cumulative</option><option value=\"cutoff\">Cutoff</option><option value=\"separate\">Separate occupied / virtual</option><option value=\"total\">Total</option></select>",
+          "target": [
+            "#avas-method"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background image"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "elmPartiallyObscured",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<textarea class=\"vm-mono\" readonly=\"\" aria-label=\"Generated forte2 input\" spellcheck=\"false\"></textarea>",
+                  "target": [
+                    "textarea"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it's partially obscured by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<textarea class=\"vm-mono\" readonly=\"\" aria-label=\"Generated forte2 input\" spellcheck=\"false\"></textarea>",
+          "target": [
+            "textarea"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 3;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">View</button>",
+          "target": [
+            "#modeDisplayBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 3;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: select atoms and measure distances/angles. Shortcut: M\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Measure</button>",
+          "target": [
+            "#modeMeasureBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 3;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Edit</button>",
+          "target": [
+            "#modeEditBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 3;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn active\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functions and prepare a forte2 AVAS input\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\">Calculations</button>",
+          "target": [
+            "#modeCalculationsBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        }
+      ],
+      "passesCount": 184,
+      "inapplicableCount": 0
+    },
+    "dark/View": {
+      "panel": "viewPanel",
+      "scanCount": 1,
+      "incompleteResolvedByScrolling": 0,
+      "violationsCount": 0,
+      "violations": [],
+      "incompleteCount": 4,
+      "incomplete": [
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 0;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn...\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/...\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\" style=\"color: rgb(107, 155,...\">",
+          "target": [
+            "#modeDisplayBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 0;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: select atoms and measure distances/angles. Shortcut: M\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Measure</button>",
+          "target": [
+            "#modeMeasureBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 0;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Edit</button>",
+          "target": [
+            "#modeEditBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 0;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functions and prepare a forte2 AVAS input\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Calculations</button>",
+          "target": [
+            "#modeCalculationsBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        }
+      ],
+      "passesCount": 197,
+      "inapplicableCount": 0
+    },
+    "dark/Measure": {
+      "panel": "measurementsPanel",
+      "scanCount": 1,
+      "incompleteResolvedByScrolling": 0,
+      "violationsCount": 0,
+      "violations": [],
+      "incompleteCount": 4,
+      "incomplete": [
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\" style=\"\">View</button>",
+          "target": [
+            "#modeDisplayBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn...\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: se...\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\" style=\"color: rgb(107, 155,...\">",
+          "target": [
+            "#modeMeasureBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Edit</button>",
+          "target": [
+            "#modeEditBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functions and prepare a forte2 AVAS input\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Calculations</button>",
+          "target": [
+            "#modeCalculationsBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        }
+      ],
+      "passesCount": 172,
+      "inapplicableCount": 0
+    },
+    "dark/Edit": {
+      "panel": "editAdaptiveAddAtomPopover",
+      "scanCount": 1,
+      "incompleteResolvedByScrolling": 0,
+      "violationsCount": 0,
+      "violations": [],
+      "incompleteCount": 6,
+      "incomplete": [
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "9.8pt (13px)",
+                "fontWeight": "normal",
+                "messageKey": "bgImage",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<select id=\"editAddCoordination\" class=\"editPopupSelect vm-select\" data-choices-signature=\"linear:Linear (2)|trigonalPlanar:Trigonal planar (3)|tetrahedral:Tetrahedral (4)\">",
+                  "target": [
+                    "#editAddCoordination"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background image"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<select id=\"editAddCoordination\" class=\"editPopupSelect vm-select\" data-choices-signature=\"linear:Linear (2)|trigonalPlanar:Trigonal planar (3)|tetrahedral:Tetrahedral (4)\">",
+          "target": [
+            "#editAddCoordination"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background image"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "9.8pt (13px)",
+                "fontWeight": "normal",
+                "messageKey": "bgImage",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<select id=\"editFragmentAttachPolicy\" class=\"editPopupSelect vm-select\" data-tooltip=\"Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.\">",
+                  "target": [
+                    "#editFragmentAttachPolicy"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background image"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<select id=\"editFragmentAttachPolicy\" class=\"editPopupSelect vm-select\" data-tooltip=\"Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.\">",
+          "target": [
+            "#editFragmentAttachPolicy"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background image"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 2;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\" style=\"\">View</button>",
+          "target": [
+            "#modeDisplayBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 2;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: select atoms and measure distances/angles. Shortcut: M\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Measure</button>",
+          "target": [
+            "#modeMeasureBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 2;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn active\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\" style=\"color: rgb(107, 155, 255); background-color: rgb(15, 20, 28);\">Edit</button>",
+          "target": [
+            "#modeEditBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 2;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functions and prepare a forte2 AVAS input\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Calculations</button>",
+          "target": [
+            "#modeCalculationsBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        }
+      ],
+      "passesCount": 188,
+      "inapplicableCount": 0,
+      "buildChips": [
+        {
+          "symbol": "C",
+          "target": "button[data-z=\"6\"]",
+          "fgColor": "#0b1220",
+          "bgColor": "#7f7f7f",
+          "contrastRatio": 4.67,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "bold",
+          "messageKey": null,
+          "expectedContrastRatio": "4.5:1",
+          "shadowColor": null
+        },
+        {
+          "symbol": "P",
+          "target": "button[data-z=\"15\"]",
+          "fgColor": "#0b1220",
+          "bgColor": "#ff8000",
+          "contrastRatio": 7.43,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "bold",
+          "messageKey": null,
+          "expectedContrastRatio": "4.5:1",
+          "shadowColor": null
+        },
+        {
+          "symbol": "Fe",
+          "target": "button[data-z=\"26\"]",
+          "fgColor": "#0b1220",
+          "bgColor": "#e06633",
+          "contrastRatio": 5.45,
+          "fontSize": "9.0pt (12px)",
+          "fontWeight": "bold",
+          "messageKey": null,
+          "expectedContrastRatio": "4.5:1",
+          "shadowColor": null
+        }
+      ]
+    },
+    "dark/Calculations": {
+      "panel": "subspacePanel",
+      "scanCount": 3,
+      "incompleteResolvedByScrolling": 29,
+      "violationsCount": 0,
+      "violations": [],
+      "incompleteCount": 7,
+      "incomplete": [
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "bgImage",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<select id=\"avas-reference\" class=\"vm-select\"><option value=\"RHF\">RHF</option><option value=\"ROHF\">ROHF</option><option value=\"GHF\">GHF / two-component</option></select>",
+                  "target": [
+                    "#avas-reference"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background image"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<select id=\"avas-reference\" class=\"vm-select\"><option value=\"RHF\">RHF</option><option value=\"ROHF\">ROHF</option><option value=\"GHF\">GHF / two-component</option></select>",
+          "target": [
+            "#avas-reference"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background image"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "bgImage",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<select id=\"avas-method\" class=\"vm-select\"><option value=\"cumulative\">Cumulative</option><option value=\"cutoff\">Cutoff</option><option value=\"separate\">Separate occupied / virtual</option><option value=\"total\">Total</option></select>",
+                  "target": [
+                    "#avas-method"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background image"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<select id=\"avas-method\" class=\"vm-select\"><option value=\"cumulative\">Cumulative</option><option value=\"cutoff\">Cutoff</option><option value=\"separate\">Separate occupied / virtual</option><option value=\"total\">Total</option></select>",
+          "target": [
+            "#avas-method"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background image"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "elmPartiallyObscured",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<textarea class=\"vm-mono\" readonly=\"\" aria-label=\"Generated forte2 input\" spellcheck=\"false\"></textarea>",
+                  "target": [
+                    "textarea"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined because it's partially obscured by another element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<textarea class=\"vm-mono\" readonly=\"\" aria-label=\"Generated forte2 input\" spellcheck=\"false\"></textarea>",
+          "target": [
+            "textarea"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 3;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\" style=\"\">View</button>",
+          "target": [
+            "#modeDisplayBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 3;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: select atoms and measure distances/angles. Shortcut: M\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Measure</button>",
+          "target": [
+            "#modeMeasureBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 3;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Edit</button>",
+          "target": [
+            "#modeEditBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        },
+        {
+          "rule": "color-contrast",
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "fontSize": "9.0pt (12px)",
+                "fontWeight": "normal",
+                "messageKey": "pseudoContent",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 3;\">",
+                  "target": [
+                    "#toolbarModeRow"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a pseudo element"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn...\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functi...\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\" style=\"color: rgb(107, 155,...\">",
+          "target": [
+            "#modeCalculationsBtn"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+        }
+      ],
+      "passesCount": 184,
+      "inapplicableCount": 0
+    }
+  },
+  "browser": "145.0.7632.6"
+}

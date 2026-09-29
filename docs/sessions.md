@@ -5,6 +5,7 @@ Use **Save session** to download a `.vibemol-session` file. **Open session**, th
 A session contains the data needed to reopen offline. Original source files do not need to remain on disk. It preserves:
 
 - All loaded sources, including sources retained by copied or moved layers after their original scene was deleted. Duplicate filenames remain separate sources.
+- Measurement entries, units, decimal display precision, and dragged label positions (see [Measurements](measurements.md)).
 - Edited atoms, explicit/perceived/suppressed bonds and metal styles, annotations, and builder operation logs.
 - Scene and layer identity, names, order, membership, visibility, expansion, focus, selection, and individual surface/cloud appearance, including separate color/opacity override flags. Older sessions infer overrides from differences against their saved global defaults.
 - Molden basis/MO coefficients, selected orbitals and grid settings. Deleted entries stay deleted. Disposable MO grids are regenerated when needed for visible layers or explicit calculations.
@@ -22,7 +23,7 @@ Appearance settings include independent Style and Color scheme references in `ap
 
 Autosave uses the same session serializer and writes to IndexedDB. It waits approximately 1.5 seconds after changes settle, or up to 15 seconds during continuous changes. It waits for file loads, calculations, exports, and unfinished placements before taking a snapshot. Encoding numeric buffers yields to the browser between chunks; serialization is not part of the rendering loop.
 
-On reopening the app, **Recover session** explicitly restores the most recent completed autosave. **Start fresh** dismisses the prompt without deleting saved data. An empty startup never overwrites a snapshot. A later successful save of a nonempty workspace rotates the two retained snapshots. If the newest snapshot is damaged, recovery tries the preceding one.
+On reopening the app, **Recover session** explicitly restores the most recent completed autosave. The prompt names the active scene, or the scene count and active scene for a multi-scene workspace. Restoration reconciles the active source with the focused visible scene so the outliner, Coordinates, and renderer agree. A stale hidden focus in an older snapshot falls back to a visible scene without changing visibility flags. Saved Workbench panels wait until the recovery decision; their layout is a separate browser preference, not session data. Theme and typeface are application preferences and apply immediately. The recovery card states that sessions open in View with playback and auto-rotation paused. **Start fresh** dismisses the prompt without deleting saved data. An empty startup never overwrites a snapshot. A later successful save of a nonempty workspace rotates the two retained snapshots. If the newest snapshot is damaged, recovery tries the preceding one.
 
 A failed storage transaction preserves the completed snapshots and displays an error next to the session controls. **Retry autosave** retries a failed write; **Save session** downloads a portable file without relying on browser storage. Concurrent tabs use a revision check: a tab cannot silently replace recovery data updated by another tab.
 

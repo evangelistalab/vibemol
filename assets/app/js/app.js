@@ -1,13 +1,13 @@
 (function () {
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
-  // App version displayed in Help
-  const APP_VERSION = '0.9.0';
+  // Shared by UI/export metadata and every bundled asset URL.
+  const APP_VERSION = window.VibeMolAssets.version;
   const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
   window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
-  const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc removes measurements';
-  const HINT_EDIT = 'Select atoms to edit • / opens Build • Esc clears selection';
+  const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc starts a new selection • saved values remain in Measurements';
+  const HINT_EDIT = 'Left-click atoms or bonds to select · Right-drag to rotate · / opens Build';
   const HINT_START = '';
   const VIBRATION_KIND = 'vibemol.vibrations';
   const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
@@ -481,6 +481,9 @@
     throw new Error('VibeMolBondInference is not loaded. Ensure assets/app/js/bond-inference.js is included before assets/app/js/app.js.');
   }
 
+  const hydrogenBonds = window.VibeMolHydrogenBonds;
+  if (!hydrogenBonds) throw new Error('VibeMolHydrogenBonds is not loaded.');
+
   const { createAutoIsoController } = window.VibeMolAutoIso || {};
   if (![createAutoIsoController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolAutoIso is not loaded. Ensure assets/app/js/autoiso.js is included before assets/app/js/app.js.');
@@ -661,6 +664,7 @@
   const canvas = document.getElementById('canvas');
   const canvasEl = canvas;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  let figureRendering = false, figurePanel = null, figureComposer = null, figureRenderer = null;
   renderer.setPixelRatio(1);
   renderer.autoClear = false; // allow overlay rendering in same canvas
   const rendererDrawBufferSize = new THREE.Vector2();
@@ -672,7 +676,7 @@
     dpr: 1,
   };
   let adaptivePopoverController = null;
-  const axisOverlayLayout = { x: 16, y: 16, size: 0 };
+  const axisOverlayLayout = { x: 16, y: 16, left: 16, top: 16, size: 0 };
   const axisOverlaySidebar = document.getElementById('toolbar');
   const axisOverlayBottomControls = ['hint'].map(id => document.getElementById(id)).filter(Boolean);
 
@@ -694,10 +698,12 @@
       const inset = Number.parseFloat(style.bottom) || 0;
       bottom = Math.max(bottom, viewport.bottom - window.innerHeight + inset + element.offsetHeight + gap);
     }
-    const desiredSize = Math.max(64, Math.min(128, Math.floor(Math.min(viewport.width, viewport.height) / 5)));
+    const desiredSize = Math.max(112, Math.min(144, Math.floor(Math.min(viewport.width, viewport.height) / 4)));
     axisOverlayLayout.x = left;
     axisOverlayLayout.y = bottom;
     axisOverlayLayout.size = Math.max(0, Math.min(desiredSize, viewport.width - left - gap, viewport.height - bottom - gap));
+    axisOverlayLayout.left = viewport.left + left;
+    axisOverlayLayout.top = viewport.bottom - bottom - axisOverlayLayout.size;
   }
 
   /**
@@ -820,6 +826,7 @@
    * @param {number} height
    */
   function updateActiveCameraProjection(width, height) {
+    if (figureRendering && figureRenderer) { figureRenderer.projection(width, height); return; }
     const w = Math.max(1, Number(width) || 1);
     const h = Math.max(1, Number(height) || 1);
     const aspect = w / h;
@@ -965,7 +972,7 @@
       }
     } catch { }
     loader.load(
-      SCENE_ENVIRONMENT_MAP_PATH,
+      window.VibeMolAssets.url(SCENE_ENVIRONMENT_MAP_PATH),
       (texture) => {
         try {
           texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -1014,21 +1021,89 @@
 
   /**
    * Build the lightweight XY-plane edit grid shown only in edit mode.
-   * @returns {THREE.GridHelper}
+   * Project an unbounded XY plane through a screen-filling quad. Its depth is
+   * clamped independently so molecule-fitted clipping cannot crop the grid.
+   * @returns {THREE.Mesh}
    */
   function buildEditGridHelper() {
-    const helper = new THREE.GridHelper(48, 48, 0x92a0b4, 0xc3ccd8);
-    helper.rotation.x = -Math.PI / 2;
-    helper.position.set(0, 0, 0);
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        inverseProjection: { value: new THREE.Matrix4() },
+        cameraWorld: { value: new THREE.Matrix4() },
+        viewProjection: { value: new THREE.Matrix4() },
+        fadeDistance: { value: 10 },
+        lineWidth: { value: 1.35 },
+        gridColor: { value: new THREE.Color(0xc3ccd8) },
+        xColor: { value: new THREE.Color(0xff4136) },
+        yColor: { value: new THREE.Color(0x2ecc40) },
+      },
+      vertexShader: `
+        uniform mat4 inverseProjection, cameraWorld;
+        varying vec3 rayOrigin, rayDirection;
+        void main() {
+          vec4 nearPoint = inverseProjection * vec4(position.xy, -1.0, 1.0);
+          nearPoint /= nearPoint.w;
+          // A view-space ray avoids subtracting nearly coincident world points
+          // when the camera's clipping range is tight or far from the origin.
+          rayOrigin = (cameraWorld * (isOrthographic ? nearPoint : vec4(0.0, 0.0, 0.0, 1.0))).xyz;
+          rayDirection = mat3(cameraWorld) * (isOrthographic ? vec3(0.0, 0.0, -1.0) : nearPoint.xyz);
+          gl_Position = vec4(position.xy, 0.0, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform mat4 viewProjection;
+        uniform float lineWidth, fadeDistance;
+        uniform vec3 gridColor, xColor, yColor;
+        varying vec3 rayOrigin, rayDirection;
+        void main() {
+          vec3 direction = normalize(rayDirection);
+          if (abs(direction.z) < 0.000001) discard;
+          float distanceToPlane = -rayOrigin.z / direction.z;
+          // Perspective sees only forward intersections. Orthographic cameras
+          // deliberately support signed depths, including before their near plane.
+          if (!isOrthographic && distanceToPlane <= 0.0) discard;
+          vec3 worldPosition = rayOrigin + direction * distanceToPlane;
+          vec2 gridPosition = worldPosition.xy;
+          vec2 dx = dFdx(gridPosition), dy = dFdy(gridPosition);
+          vec2 pixelSize = max(sqrt(dx * dx + dy * dy), vec2(0.000001));
+          vec2 distanceToLine = abs(fract(gridPosition + 0.5) - 0.5) / pixelSize;
+          vec2 lines = clamp(vec2(lineWidth * 0.5 + 0.5) - distanceToLine, 0.0, 1.0);
+          // Fade the repeated lines before they become a dense subpixel pattern.
+          lines *= clamp(1.0 / pixelSize - 1.0, 0.0, 1.0);
+          vec2 distanceToMajor = abs(fract(gridPosition / 5.0 + 0.5) - 0.5) * 5.0 / pixelSize;
+          vec2 majorLines = clamp(vec2(lineWidth * 0.5 + 0.5) - distanceToMajor, 0.0, 1.0);
+          majorLines *= clamp(5.0 / pixelSize - 1.0, 0.0, 1.0);
+          vec2 axes = clamp(vec2(lineWidth * 0.5 + 0.5) - abs(gridPosition) / pixelSize, 0.0, 1.0);
+          float coverage = max(max(lines.x, lines.y) * 0.65, max(majorLines.x, majorLines.y));
+          coverage = max(coverage, max(axes.x, axes.y));
+          // Recede smoothly into the horizon instead of exposing a plane edge.
+          // Orthographic views have no perspective horizon or distance falloff.
+          if (!isOrthographic) coverage *= 1.0 - smoothstep(fadeDistance * 2.0, fadeDistance * 8.0, distanceToPlane);
+          if (coverage <= 0.0) discard;
+          vec3 color = mix(gridColor, xColor, axes.y);
+          color = mix(color, yColor, axes.x);
+          vec4 clipPosition = viewProjection * vec4(worldPosition.xy, 0.0, 1.0);
+          // Retain physical occlusion without widening molecular depth bounds.
+          gl_FragDepthEXT = clamp(0.5 * clipPosition.z / clipPosition.w + 0.5, 0.0, 1.0);
+          gl_FragColor = vec4(color, coverage * 0.5);
+          #include <colorspace_fragment>
+        }
+      `,
+      transparent: true, depthWrite: false, toneMapped: false,
+      extensions: { derivatives: true, fragDepth: true },
+    });
+    const helper = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+    helper.name = 'edit-grid';
+    helper.frustumCulled = false;
     helper.renderOrder = -20;
-    const materials = Array.isArray(helper.material) ? helper.material : [helper.material];
-    for (const material of materials) {
-      if (!material) continue;
-      material.transparent = true;
-      material.opacity = 0.5;
-      material.depthWrite = false;
-      material.toneMapped = false;
-    }
+    helper.onBeforeRender = (_renderer, _scene, renderCamera) => {
+      material.uniforms.inverseProjection.value.copy(renderCamera.projectionMatrixInverse);
+      material.uniforms.cameraWorld.value.copy(renderCamera.matrixWorld);
+      material.uniforms.viewProjection.value.multiplyMatrices(renderCamera.projectionMatrix, renderCamera.matrixWorldInverse);
+      material.uniforms.fadeDistance.value = Math.max(4, renderCamera.position.distanceTo(controls.target));
+      // The app sizes the drawing buffer explicitly, including export scaling.
+      material.uniforms.lineWidth.value = 1.35 * currentViewportMetrics.dpr;
+    };
     helper.visible = false;
     return helper;
   }
@@ -1058,16 +1133,27 @@
   }
 
   // --- Mode system + shortcut routing ---
-  const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement' });
+  const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement', CALCULATIONS: 'calculations' });
   let currentMode = MODES.DISPLAY;
   let canvasAdaptiveMenuEl = null;
   let displayWindowsController = null;
+  const measurements = window.VibeMolMeasurements;
+  let measurementsPanel = null;
+  const calculationsModel = window.VibeMolCalculationsModel;
+  let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = "", calculationsViewBeforeFit = null;
+  let calculationsPanelIntroduced = false;
+  let measureShowSurfaces = false;
+  let measurementPanelIntroduced = false;
+  let measurementViewBeforeFit = null;
+  let measurementLayoutKey = '';
+  const measurementRecord = () => (getFocusedScene() || sceneGraphController.getActiveScene())?.moleculeRecord || volumes[currentIndex];
   let displayAdaptiveMenuAutoHideController = null;
   let appearanceInspectorController = null;
   let editAtomsMenuEl = null;
   let editAtomsMenuBodyEl = null;
   let editAtomsMenuCurrentEl = null;
   let editSelectionTranslateCueEl = null;
+  let editSelectionPositionUi = null;
   let editSelectionTranslateCueButtonEl = null;
   let editSelectionRotateCueButtonEl = null;
   let editSelectionCoordinationCueButtonEl = null;
@@ -1087,7 +1173,8 @@
   let selectionMetalBondingCuePopoverRenderKey = '';
   let editHaloController = null;
   let editAdaptiveAddAtomBtn = null;
-  let editAdaptiveAddAtomMetaEl = null;
+  let editToolUi = null;
+  let lastHintMessage = '';
   let editAdaptiveSymmetryBtn = null;
   let editAdaptiveSymmetryMetaEl = null;
   let editAdaptiveCleanStructureBtn = null;
@@ -1141,6 +1228,7 @@
    * Uses the drop container bounds so sidebar layout changes keep correct aspect.
    */
   function resize() {
+    if (figureRendering) return;
     const cssSize = readViewportCssSize();
     resizeRendererToViewport({
       cssWidth: cssSize.width,
@@ -1180,10 +1268,16 @@
     }
     if (trajectoryVideoController) trajectoryVideoController.onResize();
     if (vibrationVideoController) vibrationVideoController.onResize();
+    calculationsPicker?.reposition();
   }
   window.addEventListener('resize', resize);
   if (typeof ResizeObserver !== 'undefined' && dropViewportEl) {
-    const dropResizeObserver = new ResizeObserver(() => resize());
+    // Resizing also updates panel chrome, which may wrap the Workbench bar.
+    // Defer those writes beyond ResizeObserver delivery to avoid a layout loop.
+    let viewportResizeFrame = 0;
+    const dropResizeObserver = new ResizeObserver(() => {
+      if (!viewportResizeFrame) viewportResizeFrame = requestAnimationFrame(() => { viewportResizeFrame = 0; resize(); });
+    });
     dropResizeObserver.observe(dropViewportEl);
   }
   resize();
@@ -1194,47 +1288,11 @@
     }
   }
 
-  // --- Corner axes (overlay) ---
-  const axisScene = new THREE.Scene();
-  // Use an orthographic camera so the gizmo stays centered without perspective shift
-  // Arrow tips reach 1.05 units from the origin; leave room at every orientation.
-  const axisCamera = new THREE.OrthographicCamera(-1.15, 1.15, 1.15, -1.15, 0.1, 10);
-  axisCamera.position.set(0, 0, 2);
-  axisCamera.lookAt(0, 0, 0);
-  const axisGizmo = new THREE.Group();
-  // Simple lights so the gizmo shows shaded heads/shafts
-  {
-    const aHemi = new THREE.HemisphereLight(0xffffff, 0x223344, 0.9);
-    const aDir = new THREE.DirectionalLight(0xffffff, 1.2); aDir.position.set(1, 1, 1);
-    axisScene.add(aHemi, aDir);
-  }
-  /**
-   * Add shaded arrow.
-   * @param {*} dir
-   * @param {*} color
-   */
-  function addShadedArrow(dir, color) {
-    const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.15 });
-    // Shaft along +Y
-    const shaftLen = 0.75, shaftRad = 0.05;
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(shaftRad, shaftRad, shaftLen, 16, 1), mat);
-    shaft.position.y = shaftLen / 2;
-    g.add(shaft);
-    // Head (cone) along +Y
-    const headLen = 0.30, headRad = 0.12;
-    const head = new THREE.Mesh(new THREE.ConeGeometry(headRad, headLen, 20, 1), mat);
-    head.position.y = shaftLen + headLen / 2;
-    g.add(head);
-    // Rotate to desired direction
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-    g.setRotationFromQuaternion(q);
-    axisGizmo.add(g);
-  }
-  addShadedArrow(new THREE.Vector3(1, 0, 0), 0xff4136); // X - red
-  addShadedArrow(new THREE.Vector3(0, 1, 0), 0x2ecc40); // Y - green
-  addShadedArrow(new THREE.Vector3(0, 0, 1), 0x0074d9); // Z - blue
-  axisScene.add(axisGizmo);
+  // Camera orientation control, rendered into the canvas with native hit targets.
+  const axisGizmo = window.VibeMolAxisGizmo.create({ THREE,
+    onSelect: (axis, sign) => setCameraAxisPreset(axis, sign),
+    onEscape: () => canvas.focus({ preventScroll: true }),
+  });
 
   const dofPostScene = new THREE.Scene();
   const dofPostCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -1521,6 +1579,8 @@
   function flashOutlinerLayer(...args) { return getSceneOutliner().flashOutlinerLayer(...args); }
   function finishOutlinerRename(...args) { return getSceneOutliner().finishOutlinerRename(...args); }
   function markSessionChanged() {
+    if (figureRendering) return;
+    figurePanel?.invalidate();
     if (appearanceStudy) return;
     if (sessionRecovery && !applyingSession && !(sessionController && sessionController.isOpening())) sessionRecovery.markDirty();
   }
@@ -1544,6 +1604,7 @@
   let hoverSurfaceMesh = null;
   let atomGroup = new THREE.Group();
   let bondGroup = new THREE.Group();
+  const bondDashSources = new WeakMap();
   let cloudGroup = new THREE.Group();
   let extraMoleculeRenderGroups = [];
   let extraBoxHelpers = [];
@@ -1580,10 +1641,6 @@
   let viewRotatePointerId = null;
   let viewRotateLastClientX = 0;
   let viewRotateLastClientY = 0;
-  let viewPanActive = false;
-  let viewPanPointerId = null;
-  let viewPanLastClientX = 0;
-  let viewPanLastClientY = 0;
   let manualViewGestureSuspendedControls = false;
   // Atom label shell meshes that should rotate to keep text visible to camera.
   const atomLabelTrackTargets = [];
@@ -1903,6 +1960,7 @@
    * @param {THREE.WebGLRenderTarget|null} sceneTarget
    */
   function renderSceneFrame(metrics, sceneTarget) {
+    layoutMeasurementLabels(metrics);
     updateSceneLightRigOrientation();
     updateSceneShadowBounds();
     let didSplit = false;
@@ -2079,6 +2137,7 @@
    */
   function disposeNode(node, state) {
     if (!node) return;
+    if (node.userData?.type === 'hydrogenBondContacts') node.dispose?.();
 
     const geom = node.geometry;
     if (geom && geom.dispose && !state.geometries.has(geom)) {
@@ -3834,6 +3893,7 @@
       atomPositions.push({
         pos,
         Z: z,
+        formalCharge: Number(a.formalCharge) || 0,
         color,
         bondColor: color ? getBondRenderColor(color, z) : null,
         metalBondMode: normalizeMetalBondingMode(getAtomMetalBondingMeta(vol, a).mode),
@@ -3895,6 +3955,12 @@
     const isKitStyle = profile.key === 'kit';
     const atomPositions = buildBondAtomRecords(vol);
     const bondEdges = getVolumeBondEdges(vol, atomPositions);
+    group.userData.hydrogenBondsEnabled = display.showHydrogenBonds && atomPositions.some(atom => atom.Z === 1);
+    if (group.userData.hydrogenBondsEnabled) {
+      group.userData.hydrogenBondEdges = bondEdges;
+      hydrogenBonds.updateGraphics(THREE, group, atomPositions, bondEdges, getBondMaterial({ color: '#398e9b', vertexColors: false }));
+    }
+    if (!display.showBonds) return group;
     const bondMat = getBondMaterial();
     const stylizedBondOutlineMat = (hasRelativeOutline || appearanceState.effects.outlineWidth > 0) ? getStylizedBondOutlineMaterial() : null;
     const stylizedBondHighlightMat = appearanceState.effects.highlights ? getStylizedBondHighlightMaterial() : null;
@@ -4385,6 +4451,12 @@
       }
     }
     const atomPositions = buildBondAtomRecords(vol, { includeRenderColor: useKitMoleculeStyle() && appearanceState.coloring.elementBonds });
+    if (targetBondGroup.userData.hydrogenBondsEnabled) {
+      // Coordinate-only updates reuse topology; edits to connectivity and dynamic
+      // trajectory bonding rebuild this group and its edge snapshot above.
+      hydrogenBonds.updateGraphics(THREE, targetBondGroup, atomPositions, targetBondGroup.userData.hydrogenBondEdges,
+        getBondMaterial({ color: '#398e9b', vertexColors: false }));
+    }
     const uniqueEdges = [];
     const seenEdgeKeys = new Set();
     for (const obj of targetBondGroup.children) {
@@ -4487,6 +4559,7 @@
     if (previousBondGroup) {
       contentGroup.remove(previousBondGroup);
       previousBondGroup.traverse(obj => {
+        if (obj.userData?.type === 'hydrogenBondContacts') obj.dispose?.();
         if (obj.isMesh || obj.isLine) {
           obj.geometry?.dispose?.(); // keep shared material caches
         }
@@ -4496,7 +4569,7 @@
       if (extraIndex >= 0) extraMoleculeRenderGroups.splice(extraIndex, 1);
     }
     const display = getMoleculeDisplay(targets.layer);
-    const nextBondGroup = display.showBonds ? buildBonds(vol, display) : new THREE.Group();
+    const nextBondGroup = (display.showBonds || display.showHydrogenBonds) ? buildBonds(vol, display) : new THREE.Group();
     applyShadowParticipation(nextBondGroup);
     contentGroup.add(nextBondGroup);
     if (targets.layer) targets.layer.renderBondGroup = nextBondGroup;
@@ -5049,6 +5122,10 @@
     hasIsoInput: () => !!isoInput,
     rebuildScene,
   });
+  function estimateSurfaceAutoIso(vol, compMode) {
+    const stride = autoIsoController.pickAutoIsoSampleStride(vol);
+    return autoIsoController.estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
+  }
   window.addEventListener('beforeunload', disposeDofPostprocessResources);
 
   /**
@@ -5158,7 +5235,7 @@
     }
     controls.target.copy(center);
     controls.update();
-    cameraDepthController.update(contentGroup, camera);
+    cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
   }
 
   /**
@@ -5264,7 +5341,7 @@
     if (currentMode === MODES.MEASURE) {
       updateSelectedHalos();
       updateEditSelectionVisuals();
-    }
+    } else measurementsPanel?.sync();
   }
   function getTrajectorySyncMaster() {
     const state = sceneGraphController && sceneGraphController.getState ? sceneGraphController.getState() : null;
@@ -6343,6 +6420,11 @@
   let __fpsAccMs = 0;
   let __fpsFrames = 0;
   let __fpsEMA = 0;
+  document.addEventListener('visibilitychange', () => {
+    __fpsLast = performance.now(); __fpsAccMs = 0; __fpsFrames = 0; __fpsEMA = 0;
+    const el = document.getElementById('fpsValue');
+    if (el) { el.textContent = document.hidden ? 'Paused' : '—'; el.title = document.hidden ? 'Frame rate paused while this tab is hidden' : 'Frames per second while this tab is visible'; }
+  });
 
   /**
    * Find alpha/beta render objects for split 2C rendering.
@@ -6759,15 +6841,14 @@
    * @param {{cssWidth:number,cssHeight:number,bufferWidth:number,bufferHeight:number}} metrics
    */
   function renderAxisOverlayPass(metrics) {
-    if (!window.__showAxes__ || axisOverlayLayout.size <= 0) return;
-    axisGizmo.quaternion.copy(camera.quaternion).invert();
+    if (!axisGizmo.update(camera, axisOverlayLayout, !!window.__showAxes__)) return;
     const { x, y, size } = axisOverlayLayout;
     const rect = cssRectToBufferRect(metrics, x, y, size, size);
     renderer.clearDepth();
     renderer.setScissorTest(true);
     renderer.setScissor(rect.x, rect.y, rect.width, rect.height);
     renderer.setViewport(rect.x, rect.y, rect.width, rect.height);
-    renderer.render(axisScene, axisCamera);
+    renderer.render(axisGizmo.scene, axisGizmo.camera);
     renderer.setScissorTest(false);
   }
 
@@ -6775,11 +6856,13 @@
    * Main animation loop: render scene, optional split-view, FPS meter, and axis overlay.
    */
   function render() {
+    if (figureRendering) { requestAnimationFrame(render); return; }
     const now = performance.now();
     updateTrajectoryPlayback(now);
     updateVibrationPlayback(now);
     controls.update();
-    cameraDepthController.update(contentGroup, camera);
+    if (currentMode === MODES.CALCULATIONS) calculationsRenderer?.updateTransform(atomGroup);
+    cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
     updateEditPlaneHelpers();
     updateTrackedAtomLabelOrientation();
     if (editHaloController) {
@@ -6788,6 +6871,7 @@
       renderEditHaloGhostPreview();
     }
     renderEditSelectionTranslateCue();
+    editToolUi?.sync();
     const metrics = readRendererViewportMetrics();
     const sceneTarget = beginSceneFrameTarget(metrics);
     renderSceneFrame(metrics, sceneTarget);
@@ -6795,7 +6879,7 @@
 
     // FPS update
     const dt = now - __fpsLast; __fpsLast = now;
-    __fpsAccMs += dt; __fpsFrames += 1;
+    if (!document.hidden) { __fpsAccMs += dt; __fpsFrames += 1; }
     if (__fpsAccMs >= 500) {
       const inst = (__fpsFrames * 1000) / __fpsAccMs;
       __fpsEMA = (__fpsEMA === 0) ? inst : (__fpsEMA * 0.8 + inst * 0.2);
@@ -6873,6 +6957,7 @@
   const spinorInfoLine3 = document.getElementById('spinorInfoLine3');
   const viewPanelBtn = document.getElementById('viewPanelBtn');
   const coordsPanelBtn = document.getElementById('coordsPanelBtn');
+  const measurementsPanelBtn = document.getElementById('measurementsPanelBtn');
   const displayInspectorBtn = document.getElementById('displayInspectorBtn');
   const displayInspectorToggleIcon = document.getElementById('displayInspectorToggleIcon');
   const appearanceResetBtn = document.getElementById('appearanceResetBtn');
@@ -6928,6 +7013,8 @@
   if (toolbarChannelBadge && VIBEMOL_CHANNEL === 'beta') toolbarChannelBadge.classList.add('is-visible');
   const emptyStateVersion = document.getElementById('emptyStateVersion');
   if (emptyStateVersion) emptyStateVersion.textContent = `v${APP_VERSION}`;
+  document.getElementById('emptyStateWhatsNewSummary').textContent = `What's new in v${APP_VERSION}`;
+  document.querySelector('.emptyStateWhatsNewLead').textContent = `VibeMol v${APP_VERSION} includes:`;
   const coordsContent = document.getElementById('coordsContent');
   const coordsSubheader = document.getElementById('coordsSubheader');
   const coordsControls = document.getElementById('coordsControls');
@@ -6944,9 +7031,6 @@
   const alignInertiaBtn = document.getElementById('alignInertiaBtn');
   const projectionPerspectiveBtn = document.getElementById('projectionPerspectiveBtn');
   const projectionOrthographicBtn = document.getElementById('projectionOrthographicBtn');
-  const viewAxisXBtn = document.getElementById('viewAxisXBtn');
-  const viewAxisYBtn = document.getElementById('viewAxisYBtn');
-  const viewAxisZBtn = document.getElementById('viewAxisZBtn');
   const camX = document.getElementById('camX');
   const camY = document.getElementById('camY');
   const camZ = document.getElementById('camZ');
@@ -7802,6 +7886,11 @@
   editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
   editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
   editSelectionTranslateCueEl = document.getElementById('editSelectionTranslateCue');
+  editSelectionPositionUi = window.VibeMolEditUi.createSelectionPositionController({
+    root: document.getElementById('editSelectionPosition'),
+    getSnapshot: getSelectionPositionSnapshot,
+    onCommit: (axis, value) => editTransformController?.setSelectionPosition(axis, value),
+  });
   editSelectionTranslateCueButtonEl = document.getElementById('editSelectionTranslateCueButton');
   editSelectionRotateCueButtonEl = document.getElementById('editSelectionRotateCueButton');
   editSelectionCoordinationCueButtonEl = document.getElementById('editSelectionCoordinationCueButton');
@@ -7992,7 +8081,6 @@
     }
   });
   editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
-  editAdaptiveAddAtomMetaEl = document.getElementById('editAdaptiveAddAtomMeta');
   editAdaptiveSymmetryBtn = document.getElementById('editAdaptiveSymmetryBtn');
   editAdaptiveSymmetryMetaEl = document.getElementById('editAdaptiveSymmetryMeta');
   editAdaptiveCleanStructureBtn = document.getElementById('editAdaptiveCleanStructureBtn');
@@ -8005,7 +8093,7 @@
     {
       id: 'build',
       getButtonEl: () => editAdaptiveAddAtomBtn,
-      getMetaEl: () => editAdaptiveAddAtomMetaEl,
+      getMetaEl: () => null,
       getState(context) {
         return {
           visible: context.isVisible,
@@ -8204,6 +8292,8 @@
   const modeDisplayBtn = document.getElementById('modeDisplayBtn');
   const modeMeasureBtn = document.getElementById('modeMeasureBtn');
   const modeEditBtn = document.getElementById('modeEditBtn');
+  const modeCalculationsBtn = document.getElementById('modeCalculationsBtn');
+  modeCalculationsBtn.hidden = !workspaceEnabled;
   const themeToggleInputEl = document.getElementById('themeToggleInput');
   const themeToggleShellEl = document.getElementById('themeToggleShell');
   const surfaceHoverLabelEl = (() => {
@@ -8248,7 +8338,7 @@
    */
   function syncToolbarModeButtonThemeState() {
     const isDark = getUiTheme() === 'dark';
-    const buttons = [modeDisplayBtn, modeMeasureBtn, modeEditBtn];
+    const buttons = [modeDisplayBtn, modeMeasureBtn, modeEditBtn, modeCalculationsBtn];
     for (const btn of buttons) {
       if (!btn) continue;
       const active = btn.classList.contains('active');
@@ -9164,7 +9254,7 @@
   // Structure display is session state. Older sessions inherit the legacy globals.
   function getMoleculeDisplay(layer = null) {
     return { showAtoms: !!toggleAtoms?.checked, showBonds: !!toggleBonds?.checked,
-      showAtomLabels, showAtomLabelNumbers, showMultiBonds, ...layer?.moleculeDisplay };
+      showAtomLabels, showAtomLabelNumbers, showMultiBonds, showHydrogenBonds: true, ...layer?.moleculeDisplay };
   }
 
   function getPropertyObjects() {
@@ -10172,7 +10262,8 @@
     const nextRecord = (nextIndex >= 0 && volumes[nextIndex]) ? volumes[nextIndex] : null;
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     if (previousRecord !== nextRecord && isSymmetryPopoverOpen()) {
-      hideSymmetryPopover({ restore: true });
+      if (workspaceEnabled) clearSymmetryPreview({ quiet: true });
+      else hideSymmetryPopover({ restore: true });
     }
     if (clearTransient) clearTransientInteractionState();
     currentIndex = nextIndex;
@@ -11056,6 +11147,7 @@
       [modeDisplayBtn, MODES.DISPLAY],
       [modeMeasureBtn, MODES.MEASURE],
       [modeEditBtn, MODES.EDIT],
+      [modeCalculationsBtn, MODES.CALCULATIONS],
     ];
     for (const [btn, mode] of buttons) {
       if (!btn) continue;
@@ -11078,6 +11170,11 @@
       return;
     }
     const prevMode = currentMode;
+    if (newMode === MODES.CALCULATIONS) calculationsViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
+    const hadSurfaceContext = meshes.some(mesh => mesh.visible !== false) || cloudGroup.children.length > 0;
+    if (newMode === MODES.MEASURE && hadSurfaceContext && !measureShowSurfaces) {
+      measurementViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
+    }
     coordsListPopover?.cancelInlineEdit({ focusButton: false });
     window.VibeMolWorkbench?.beforeModeChange();
     if (prevMode === MODES.EDIT && newMode !== MODES.EDIT) {
@@ -11092,10 +11189,10 @@
     endQuaternionViewRotate();
     currentMode = newMode;
     editMode = (currentMode === MODES.EDIT);
-    if (currentMode === MODES.EDIT && !options.preserveTrajectoryPlayback && isAnyTrajectoryPlaybackActive()) {
+    if ((currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS) && !options.preserveTrajectoryPlayback && isAnyTrajectoryPlaybackActive()) {
       stopAllTrajectoryPlayback({ syncUi: true });
     }
-    if (currentMode === MODES.EDIT) {
+    if (currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS) {
       const vibInfo = getActiveVibrationInfo();
       if (vibInfo.enabled) {
         vibrationPlaying = false;
@@ -11106,26 +11203,28 @@
     }
     if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
       editAdvancedDrawerOpen = false;
-      setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false });
+      syncEditSceneTool(true);
     }
     updateAxisButtons();
     updateEditPlaneHelpers();
     updateEditToolboxUi();
-    if (currentMode === MODES.MEASURE) {
+    if (currentMode === MODES.CALCULATIONS) {
+      setHintMessage('Click atoms to select · choose orbitals in the popup · drag to orbit · click empty space to deselect', { accent: false });
+    } else if (currentMode === MODES.MEASURE) {
       setHintMessage(HINT_MEASURE, { accent: false });
     } else if (currentMode === MODES.EDIT) {
       setHintMessage(HINT_EDIT, { accent: false });
     } else if (currentMode === MODES.DISPLAY) {
       setNavigationHint(HINT_START);
     }
-    // Measure picks atoms directly and keeps orbital context visible. Only Edit
-    // suppresses surfaces; this never changes the user's layer visibility flags.
-    if (currentMode === MODES.MEASURE || currentMode === MODES.EDIT) {
+    // Temporary surface suppression exposes atoms without changing layer state.
+    // Measure can opt back into surface context from its panel.
+    if (currentMode === MODES.MEASURE || currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS) {
       setBondHover(null);
       setSurfaceHover(null);
       hideSurfaceHoverLabel();
     }
-    const suppressSurfaces = currentMode === MODES.EDIT;
+    const suppressSurfaces = currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS || (currentMode === MODES.MEASURE && !measureShowSurfaces);
     if (surfaceRenderSuppressed !== suppressSurfaces) {
       surfaceRenderSuppressed = suppressSurfaces;
       if (typeof updateSurfBtn === 'function') updateSurfBtn();
@@ -11179,14 +11278,42 @@
     updateModeButtons();
     updateDisplayWindowAdaptiveMenuUi();
     window.VibeMolWorkbench?.afterModeChange();
+    updateEditSelectionVisuals();
+    if (currentMode === MODES.MEASURE && prevMode !== MODES.MEASURE) {
+      if (workspaceEnabled && !measurementPanelIntroduced && window.VibeMolWorkbench) {
+        window.VibeMolWorkbench.open('measurementsPanel', false);
+        measurementPanelIntroduced = true;
+      }
+      if (hadSurfaceContext && !measureShowSurfaces) requestAnimationFrame(() => {
+        if (currentMode === MODES.MEASURE && !measureShowSurfaces) frameMeasurementAtoms();
+      });
+    }
+    if (prevMode === MODES.MEASURE && currentMode !== MODES.MEASURE) {
+      if (currentMode === MODES.DISPLAY) restoreMeasurementSurfaceView();
+      measurementViewBeforeFit = null;
+    }
+    if (currentMode === MODES.EDIT && !workspaceEnabled) measurementsPanel?.setOpen(false);
+    if (currentMode === MODES.CALCULATIONS) {
+      if (!calculationsPanelIntroduced && window.VibeMolWorkbench) {
+        window.VibeMolWorkbench.open('subspacePanel', false);
+        calculationsPanelIntroduced = true;
+      }
+      calculationsPanel.ensureBasis();
+      requestAnimationFrame(() => { if (currentMode === MODES.CALCULATIONS) frameMeasurementAtoms(); });
+    } else if (prevMode === MODES.CALCULATIONS) {
+      if (currentMode === MODES.DISPLAY && calculationsViewBeforeFit?.record === measurementRecord()) restoreSessionView(calculationsViewBeforeFit.view);
+      calculationsViewBeforeFit = null;
+    }
+    syncCalculations(true); updateSelectedHalos();
   }
 
   if (modeDisplayBtn) modeDisplayBtn.onclick = () => setMode(MODES.DISPLAY);
   if (modeMeasureBtn) modeMeasureBtn.onclick = () => setMode(MODES.MEASURE);
   if (modeEditBtn) modeEditBtn.onclick = () => setMode(MODES.EDIT);
+  modeCalculationsBtn.onclick = () => setMode(MODES.CALCULATIONS);
   updateModeButtons();
 
-  const shortcutRegistry = createShortcutRegistry([MODES.DISPLAY, MODES.EDIT, MODES.MEASURE]);
+  const shortcutRegistry = createShortcutRegistry([MODES.DISPLAY, MODES.EDIT, MODES.MEASURE, MODES.CALCULATIONS]);
   const bind = shortcutRegistry.bind;
   const dispatchShortcut = (e, kind, mode, options = {}) => {
     if (!options.allowTyping && isTypingInInput()) return false;
@@ -11482,6 +11609,8 @@
     const showTrajectory = getAllTrajectoryInfos().length > 0;
     const showVibration = !!getActiveVibrationInfo().enabled;
     const itemDefs = [
+      { windowId: 'measurementsPanel', buttonEl: measurementsPanelBtn, visible: hasAtoms,
+        presentation: { icon: 'straighten', label: 'Measurements', meta: '', key: '', title: 'Measurements', static: false } },
       {
         windowId: NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR,
         buttonEl: moldenInspectorBtn,
@@ -11530,7 +11659,7 @@
     for (const itemDef of itemDefs) {
       setAdaptiveItemPresentation(itemDef.buttonEl, itemDef.presentation);
       const entry = displayWindowsController ? displayWindowsController.getEntry(itemDef.windowId) : null;
-      if (!itemDef.visible && entry && typeof entry.isOpen === 'function' && entry.isOpen() && typeof entry.setOpen === 'function') {
+      if (!itemDef.visible && !(workspaceEnabled && itemDef.windowId === 'measurementsPanel') && entry && typeof entry.isOpen === 'function' && entry.isOpen() && typeof entry.setOpen === 'function') {
         entry.setOpen(false);
       }
       // Workbench keeps shared inspectors available while editing. Analysis-only
@@ -11564,6 +11693,7 @@
       viewInspectorBtn,
       viewPanelBtn,
       coordsPanelBtn,
+      measurementsPanelBtn,
       spinorInfoBtn,
       trajectoryPanelBtn,
       vibrationPanelBtn,
@@ -11572,7 +11702,7 @@
       const buttonEl = chipDef.getButtonEl();
       const metaEl = chipDef.getMetaEl();
       const chipState = chipDef.getState(context);
-      setAdaptiveItemPresentation(buttonEl, chipState.presentation);
+      if (buttonEl?.getAttribute('role') !== 'radio') setAdaptiveItemPresentation(buttonEl, chipState.presentation);
       visibleItems.push({ el: buttonEl, visible: !!chipState.visible });
       activeItems.push({ el: buttonEl, active: !!chipState.active });
       metaItems.push({ el: metaEl, text: chipState.presentation.meta || '' });
@@ -11708,6 +11838,10 @@
    * @param {boolean} open
    */
   function setViewInspectorOpen(open) {
+    if (workspaceEnabled) {
+      if (open) window.VibeMolWorkbench?.focusQuickActions();
+      return;
+    }
     const shouldOpen = !!open;
     if (shouldOpen) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR);
     setToolbarInspectorOpen(viewInspectorRefs, shouldOpen);
@@ -11899,16 +12033,99 @@
     if ((spinorInfoPanel && spinorInfoPanel.contains(target)) || (spinorInfoBtn && spinorInfoBtn.contains(target))) return;
     setSpinorInfoPanelOpen(false);
   });
+  measurementsPanel = window.VibeMolMeasurementsPanel.create({
+    getRecord: measurementRecord,
+    isMeasuring: () => currentMode === MODES.MEASURE,
+    showSurfaces: () => measureShowSurfaces,
+    setShowSurfaces: value => {
+      if (!value && measureShowSurfaces) measurementViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
+      measureShowSurfaces = value;
+      surfaceRenderSuppressed = currentMode === MODES.EDIT || (currentMode === MODES.MEASURE && !value);
+      if (!surfaceRenderSuppressed && surfaceGeometryDeferred) rebuildScene({ preserveView: true });
+      else syncSurfaceModeVisibility();
+      if (value) restoreMeasurementSurfaceView();
+      else frameMeasurementAtoms();
+      measurementsPanel.sync();
+    },
+    frameAtoms: frameMeasurementAtoms,
+    onOpenChange: updateDisplayWindowAdaptiveMenuUi,
+    onStatus: text => setHintMessage(text),
+    newSelection: clearEditSelection,
+    onChange: () => { updateEditSelectionVisuals(); markSessionChanged(); },
+  });
+  measurementsPanelBtn.onclick = () => toggleExclusiveDisplayWindow('measurementsPanel');
+  calculationsRenderer = window.VibeMolMinaoRenderer.create({ scene,
+    createMaterial: sign => createSurfaceMaterial(new THREE.Color(sign === 'neg' ? surfaceNegColorDefault : surfacePosColorDefault), 0.65, null),
+    onStatus: text => calculationsPanel?.setStatus(text),
+  });
+  calculationsPanel = window.VibeMolCalculationsPanel.create({ getRecord: measurementRecord,
+    getContour: calculationsRenderer.getContour,
+    setContour: calculationsRenderer.setContour,
+    onPreviewChange: () => syncCalculations(true),
+    onChange: render => { markSessionChanged(); syncCalculations(render); updateSelectedHalos(); },
+    onSelect: ids => { calculationsModel.setSelectedAtoms(measurementRecord(),ids); syncCalculations(); updateSelectedHalos(); calculationsPicker.show(true); },
+    onOpenChange: () => { window.VibeMolWorkbench?.refresh(); },
+  });
+  calculationsPicker = window.VibeMolCalculationsPicker.create({ getRecord: measurementRecord,
+    isActive: () => currentMode === MODES.CALCULATIONS,
+    getViewport: () => renderer.domElement.getBoundingClientRect(),
+    getSelectionBounds: indices => getEditSelectionClientBounds(indices, measurementRecord()?.vol, true),
+    onChange: () => { markSessionChanged(); syncCalculations(); updateSelectedHalos(); },
+  });
+  function syncCalculations(force = false) {
+    if (!calculationsRenderer) return;
+    const record = measurementRecord(), enabled = currentMode === MODES.CALCULATIONS;
+    if (record) ensureVolumeAtomIds(record.vol);
+    calculationsPanel?.sync();
+    calculationsPicker?.sync();
+    if (!enabled) { calculationsRenderer.setVisible(false); calculationsSignature = ''; return; }
+    const selection = calculationsModel.state(record);
+    const signature = JSON.stringify([record?._sceneGraphSceneKey, selection.selections, selection.planes, selection.options.minao, record?.vol?.atoms,
+      surfacePosColorDefault, surfaceNegColorDefault, appearanceState.material, calculationsRenderer.getContour()]);
+    if (!force && signature === calculationsSignature) return;
+    calculationsSignature = signature;
+    calculationsRenderer.sync(record, true); updateSelectedHalos();
+  }
+  async function toggleCalculationAtom(index, extend) {
+    const record = measurementRecord(); if (!record?.vol?.atoms[index]) return;
+    if (currentMode !== MODES.CALCULATIONS || record !== measurementRecord()) return;
+    ensureVolumeAtomIds(record.vol);
+    calculationsModel.toggleAtom(record, String(record.vol.atoms[index].id), extend);
+    syncCalculations(); updateSelectedHalos(); calculationsPicker.show();
+  }
   displayWindowsController = createDisplayWindowsController({
     aliases: workspaceEnabled ? { displayInspector: 'inspector', styleStudio: 'inspector' } : {},
     positionFloatingPopover: positionFloatingPopoverUi,
     keepOpenOnSwitch: id => !!window.VibeMolWorkbench?.manages(id),
     revealHiddenWindow: id => !!window.VibeMolWorkbench?.restoreIfHidden(id),
     entries: {
+      figurePanel: { id: 'figurePanel', label: 'Figure',
+        isOpen: () => !!figurePanel?.isOpen(), setOpen: open => figurePanel?.setOpen(open) },
+      subspacePanel: { id: 'subspacePanel', label: 'Subspace', panelEl: calculationsPanel.panel,
+        isOpen: calculationsPanel.isOpen, setOpen: calculationsPanel.setOpen },
+      measurementsPanel: { id: 'measurementsPanel', label: 'Measurements', buttonEl: measurementsPanelBtn,
+        panelEl: measurementsPanel.panel, isOpen: measurementsPanel.isOpen, setOpen: open => {
+          if (open) closeExclusiveDisplayWindows('measurementsPanel');
+          measurementsPanel.setOpen(open);
+        } },
       ...(workspaceEnabled ? { inspector: {
         id: 'inspector', label: 'Properties',
         isOpen: () => !!propertiesInspector?.isOpen(),
         setOpen: open => propertiesInspector?.setOpen(open, { focus: false }),
+      }, buildPanel: {
+        id: 'buildPanel', label: 'Build', buttonEl: editAdaptiveAddAtomBtn,
+        isOpen: isBuildPopoverOpen,
+        setOpen: open => {
+          if (!open) hideBuildPopover();
+          else if (!isBuildPopoverOpen()) showBuildPopover({ fromWorkbench: true, preserveFocus: true });
+        },
+      }, symmetryPanel: {
+        id: 'symmetryPanel', label: 'Symmetry', buttonEl: editAdaptiveSymmetryBtn,
+        isOpen: isSymmetryPopoverOpen,
+        setOpen: open => {
+          if (!open) hideSymmetryPopover();
+          else if (!isSymmetryPopoverOpen()) showSymmetryPopover({ fromWorkbench: true, preserveFocus: true });
+        },
       } } : {}),
       [NON_EDIT_WINDOW_ID.STYLE_STUDIO]: {
         id: NON_EDIT_WINDOW_ID.STYLE_STUDIO,
@@ -12089,6 +12306,7 @@
    * Synchronize camera/target/shift form controls from the current scene state.
    */
   function refreshViewUI() {
+    calculationsPicker?.reposition();
     setViewControlValue(shiftX, contentGroup.position.x);
     setViewControlValue(shiftY, contentGroup.position.y);
     setViewControlValue(shiftZ, contentGroup.position.z);
@@ -12190,6 +12408,8 @@
   let editAdvancedDrawerOpen = false;
   let editAtomSelectionIndices = [];
   let editAddMode = EDIT_ADD_MODE.ATOM;
+  // Keep the loaded palette item while Transform resets the active placement mode.
+  let buildPayloadMode = EDIT_ADD_MODE.ATOM;
   let selectionBuildCueArmed = false;
   let fragmentAttachSession = {
     armed: false,
@@ -12245,7 +12465,6 @@
   const EDIT_QUICK_MOLECULES = ['benzene', 'pyridine', 'cyclohexane'];
   const GESTURE_BOND_ANGLE_DRAG_SENSITIVITY = 0.01;
   const GESTURE_BOND_DISTANCE_DRAG_SENSITIVITY = 0.01;
-  const EDIT_CONTEXT_DOUBLE_CLICK_THRESHOLD_MS = 400;
   let addGrowActive = false;
   let addGrowKind = '';
   let addGrowAnchorIndex = -1;
@@ -12350,7 +12569,10 @@
     get editAtomSelectionIndices() { return editAtomSelectionIndices; },
     set editAtomSelectionIndices(value) { editAtomSelectionIndices = Array.isArray(value) ? value : []; },
     get editAddMode() { return editAddMode; },
-    set editAddMode(value) { editAddMode = value; },
+    set editAddMode(value) {
+      editAddMode = value;
+      if (editIntent !== EDIT_INTENT.ATOM_MANIPULATION) buildPayloadMode = value;
+    },
     get editAddElementZ() { return editAddElementZ; },
     set editAddElementZ(value) { editAddElementZ = Number(value) | 0; },
     get editAddBondOrder() { return editAddBondOrder; },
@@ -15299,8 +15521,90 @@
     };
   }
 
+  const editSceneTools = window.VibeMolEditToolUi.createSceneTools();
+  const emptyEditScene = {};
+  let activeEditScene = null;
+  function syncEditSceneTool(force = false) {
+    if (currentMode !== MODES.EDIT) return;
+    const record = measurementRecord(), scene = record || emptyEditScene;
+    if (!force && scene === activeEditScene) return;
+    activeEditScene = scene;
+    const { tool, first } = editSceneTools.enter(scene, !!record?.vol?.atoms?.length);
+    if (first && tool === 'build') {
+      buildPayloadMode = EDIT_ADD_MODE.ATOM;
+      editAddElementZ = 6;
+      setEditIntent(EDIT_INTENT.ADD_ATOM, { announce: false });
+    }
+    chooseEditTool(tool, { openPalette: first && tool === 'build' });
+  }
+
+  function getEditToolState() {
+    return {
+      edit: currentMode === MODES.EDIT,
+      build: getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || isSelectionBuildCueActive(),
+      payload: getCurrentBuildPayload(),
+      placement: addFusePreviewState ? { kind: 'fused ring', name: addFusePreviewState.fragment?.name }
+        : moleculePlaceActive ? { stage: 'catalog', kind: moleculePlaceTemplateData?.entryKind, name: moleculePlaceTemplateData?.name }
+        : null,
+      placing: !!(moleculePlaceActive || addGrowActive || addFusePreviewState
+        || (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection')),
+      confirmable: !!(moleculePlaceActive || (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection')),
+      selected: !!(editAtomSelectionIndices.length || transformSelectionIndices.length || bondCenterSelectionState),
+      hasAtoms: !!volumes[currentIndex]?.vol?.atoms?.length,
+    };
+  }
+
+  function getBuildEditIntent() {
+    const payload = getCurrentBuildPayload();
+    return payload.kind === 'molecule' ? EDIT_INTENT.ADD_MOLECULE
+      : payload.kind === 'fragment' ? EDIT_INTENT.ADD_FRAGMENT : EDIT_INTENT.ADD_ATOM;
+  }
+
+  function chooseEditTool(tool, options = {}) {
+    if (currentMode !== MODES.EDIT) return;
+    if (tool === 'transform') {
+      // Explicitly leaving Build commits any accepted atom placement, as before;
+      // Escape is the separate cancellation path.
+      setSelectionBuildCueActive(false, { announce: false });
+      setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, preserveSelection: true, closePopovers: false });
+      clearActiveVoidPlacementPreview();
+    } else {
+      if (!getEditToolState().build) setEditIntent(getBuildEditIntent(),
+        { announce: false, preserveSelection: true, closePopovers: false });
+      if (options.openPalette) {
+        if (workspaceEnabled && window.VibeMolWorkbench) window.VibeMolWorkbench.open('buildPanel');
+        else showBuildPopover();
+      }
+    }
+    setHintMessage(HINT_EDIT, { accent: false });
+    editToolUi?.sync();
+  }
+
+  function handleEditToolEscape(event) {
+    if (currentMode !== MODES.EDIT) return false;
+    if (isHelpOpen() || event?.target?.closest?.('[aria-modal="true"]')) return false;
+    const action = window.VibeMolEditToolUi.escapeAction(getEditToolState());
+    if (action === 'cancel') {
+      if (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection') finalizeAddAtomOperatorSession({ commit: false, forceCancel: true, announce: false });
+      clearMoleculePlacementPreview({ restoreCatalogPreview: false });
+      clearFuseRingPreview();
+      editGestureController?.clearState();
+      cancelGestureGrowDrag();
+      controls.enabled = true;
+    } else if (action === 'transform') {
+      chooseEditTool('transform');
+    } else {
+      if (addAtomOperatorSession?.source === 'selection') finalizeAddAtomOperatorSession({ announce: false });
+      if (!clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true })) return false;
+    }
+    event?.preventDefault();
+    updateEditToolboxUi({ syncSearch: false });
+    setHintMessage(HINT_EDIT, { accent: false });
+    return true;
+  }
+
   function getCurrentBuildPayload() {
-    if (editAddMode === EDIT_ADD_MODE.MOLECULE) {
+    if (buildPayloadMode === EDIT_ADD_MODE.MOLECULE) {
       const molecule = getCurrentMoleculeDefinition();
       return {
         kind: 'molecule',
@@ -15310,7 +15614,7 @@
         formula: molecule ? String(molecule.formula || '') : '',
       };
     }
-    if (editAddMode === EDIT_ADD_MODE.FRAGMENT) {
+    if (buildPayloadMode === EDIT_ADD_MODE.FRAGMENT) {
       const fragment = getCurrentFragmentDefinition();
       return {
         kind: 'fragment',
@@ -15347,8 +15651,8 @@
       coordinationLabel,
       hydrogenLabel,
       angleLabel,
-      hudHint: `Click void to place ${symbol} • Right-click atom to select`,
-      rowMeta: `Loaded ${symbol} • click void to add • right-click atom to select`,
+      hudHint: `Click void to place ${symbol} • Right-drag to rotate the scene`,
+      rowMeta: `Loaded ${symbol} • click void to add • right-drag to rotate`,
       scopeSummary: `${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • ${hydrogenLabel}`,
       currentSummary: `Build: ${name} (${symbol}) • ${coordinationLabel} • bond ${editAddBondOrder} • angle ${angleLabel} • ${hydrogenLabel}`,
       operatorLabel: `Build ${symbol}`,
@@ -15596,7 +15900,7 @@
   }
 
   function shouldBlockEditVoidPlacement() {
-    return currentMode === MODES.EDIT && isSymmetryPopoverOpen();
+    return !getEditToolState().build || (!workspaceEnabled && currentMode === MODES.EDIT && isSymmetryPopoverOpen());
   }
 
   bondEditing = createBondEditingController({
@@ -16393,6 +16697,7 @@
    * @param {{syncSearch?:boolean}=} options
    */
   function updateEditToolboxUi(options = {}) {
+    syncEditSceneTool();
     const syncSearch = options.syncSearch !== false;
     const isEdit = editMode;
     const intent = getEditIntent();
@@ -16445,6 +16750,7 @@
       syncBuildPaletteQuickButtonStates(buildPayload);
     }
     syncBuildSearchNavigationUi();
+    editToolUi?.sync();
   }
 
   function setEditIntent(nextIntent, options = {}) {
@@ -16459,6 +16765,7 @@
     }
     editTools.setEditIntent(normalized, options);
     syncEditIntentCompatibilityState();
+    if (currentMode === MODES.EDIT && activeEditScene) editSceneTools.remember(activeEditScene, getEditToolState().build ? 'build' : 'transform');
     if (prevIntent !== normalized && editGestureController) editGestureController.clearState();
     if (prevIntent !== normalized && editTransformController) editTransformController.clearAllTransformState();
     refreshActiveAddPreview();
@@ -16475,6 +16782,7 @@
     if (nextMode !== EDIT_ADD_MODE.FRAGMENT) clearFragmentAttachSessionState();
     editTools.setEditAddMode(nextMode, options);
     syncEditIntentCompatibilityState();
+    if (currentMode === MODES.EDIT && activeEditScene) editSceneTools.remember(activeEditScene, getEditToolState().build ? 'build' : 'transform');
     refreshActiveAddPreview();
   }
 
@@ -16562,11 +16870,16 @@
 
   /**
    * Hide every adaptive tool popover except one optional kind.
-   * @param {'atom'|'molecule'|''=} exceptKind
+   * @param {'build'|'symmetry'|''=} exceptKind
    */
   function hideAllAdaptiveToolPopovers(exceptKind = '') {
-    if (exceptKind !== 'build') hideBuildPopover({ quiet: true });
-    if (exceptKind !== 'symmetry') hideSymmetryPopover({ restore: true, quiet: true });
+    // Workbench owns Edit panel visibility. Cancel unfinished chemistry while
+    // preserving the user's open tabs and layout choices.
+    if (!workspaceEnabled && exceptKind !== 'build') hideBuildPopover({ quiet: true });
+    if (exceptKind !== 'symmetry') {
+      if (workspaceEnabled) clearSymmetryPreview({ quiet: true });
+      else hideSymmetryPopover({ restore: true, quiet: true });
+    }
   }
 
   function closeEditModeTransientPopovers() {
@@ -16819,8 +17132,11 @@
         try {
           const color = new THREE.Color(bgHex);
           const lum = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+          // The default mid-tone CPK chips also need the existing dark text.
+          // Keep custom element colors on the normal background-based path.
+          const darkCpkText = [6, 15, 26].includes(z) && bgHex === getDefaultElementHexColor(z);
           btn.style.background = bgHex;
-          btn.style.color = lum > 0.6 ? UI_PALETTE.quickPickTextOnLightAlt : UI_PALETTE.quickPickTextOnDark;
+          btn.style.color = lum > 0.6 || darkCpkText ? UI_PALETTE.quickPickTextOnLightAlt : UI_PALETTE.quickPickTextOnDark;
         } catch {
           btn.style.background = UI_PALETTE.quickPickFallbackBg;
           btn.style.color = UI_PALETTE.quickPickFallbackFg;
@@ -16922,7 +17238,8 @@
   function commitBuildPaletteSelection(selection, options = {}) {
     const applied = applyBuildPaletteSelection(selection, options);
     if (!applied) return false;
-    if (options.closePopover !== false) hideBuildPopover();
+    if (!workspaceEnabled && options.closePopover !== false) hideBuildPopover();
+    if (workspaceEnabled) canvas.focus({ preventScroll: true });
     return true;
   }
 
@@ -17272,6 +17589,7 @@
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a template first, then align to Z.'); };
     if (editAdaptiveAddAtomBtn) {
       editAdaptiveAddAtomBtn.onclick = () => {
+        if (window.VibeMolWorkbench?.restoreIfHidden('buildPanel')) return;
         if (isBuildPopoverOpen()) hideBuildPopover();
         else showBuildPopover();
       };
@@ -17291,6 +17609,7 @@
     if (editAdaptiveSymmetryBtn) {
       editAdaptiveSymmetryBtn.onclick = () => {
         if (editAdaptiveSymmetryBtn.dataset.static === 'true') return;
+        if (window.VibeMolWorkbench?.restoreIfHidden('symmetryPanel')) return;
         if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
         else showSymmetryPopover();
       };
@@ -17547,6 +17866,8 @@
     pickAtomObject: pickGestureAtom,
     pickBondHit,
     resolveGrowDragAnchorIndex: resolveGestureGrowDragAnchorIndex,
+    isSelectTool: () => !getEditToolState().build,
+    applyTransformBondClick: (bondHit) => !getEditToolState().build && applyEditBondScopeSelection(bondHit),
     showVoidPlacementPreview: showGestureVoidPlacementPreview,
     hideVoidPlacementPreview: clearActiveVoidPlacementPreview,
     startBoxSelection: (startX, startY, clientX, clientY) => {
@@ -17607,7 +17928,7 @@
     },
     getSelectedAtomDragAction: (atomIndex, e) => (editHaloController ? editHaloController.resolveSelectedAtomDragAction(atomIndex, e) : null),
     getSelectionDragMode: getEffectiveEditSelectionDragMode,
-    applyBondCenterClick: (bondHit, e) => stepGestureBondCenterOrder(bondHit, 1, e),
+    applyBuildBondClick: (bondHit, e) => stepBuildBondOrder(bondHit, 1, e),
     getPendingBondOrder: () => normalizeEditAddBondOrder(editAddBondOrder || 1),
     cyclePendingBondOrder: (direction) => {
       const current = normalizeEditAddBondOrder(editAddBondOrder || 1);
@@ -17741,46 +18062,6 @@
   }
 
   /**
-   * End one active camera pan gesture on the main canvas.
-   * @param {PointerEvent=} e
-   */
-  function endViewPan(e) {
-    if (!viewPanActive) return;
-    viewPanActive = false;
-    const pointerId = viewPanPointerId;
-    viewPanPointerId = null;
-    if (canvasEl && Number.isInteger(pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
-      try { canvasEl.releasePointerCapture(pointerId); } catch { }
-    }
-    if (manualViewGestureSuspendedControls) {
-      manualViewGestureSuspendedControls = false;
-      try { controls.enabled = true; } catch { }
-      try { controls.update(); } catch { }
-      refreshViewUI();
-    }
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-  }
-
-  /**
-   * Begin one camera pan gesture on the main canvas.
-   * @param {PointerEvent} e
-   */
-  function beginViewPan(e) {
-    hideSurfaceHoverLabel();
-    viewPanActive = true;
-    viewPanPointerId = Number.isInteger(e.pointerId) ? e.pointerId : null;
-    viewPanLastClientX = Number(e.clientX) || 0;
-    viewPanLastClientY = Number(e.clientY) || 0;
-    manualViewGestureSuspendedControls = !!(controls && controls.enabled !== false);
-    if (manualViewGestureSuspendedControls) {
-      try { controls.enabled = false; } catch { manualViewGestureSuspendedControls = false; }
-    }
-    if (canvasEl && Number.isInteger(viewPanPointerId) && typeof canvasEl.setPointerCapture === 'function') {
-      try { canvasEl.setPointerCapture(viewPanPointerId); } catch { }
-    }
-  }
-
-  /**
    * Orbit the active camera about the current target using quaternion rotations.
    * This keeps the camera moving smoothly through the poles without OrbitControls'
    * spherical singularity.
@@ -17819,53 +18100,6 @@
     refreshViewUI();
   }
 
-  /**
-   * Pan the active camera/target pair using OrbitControls-style screen deltas.
-   * @param {number} deltaX
-   * @param {number} deltaY
-   */
-  function applyViewPan(deltaX, deltaY) {
-    if (!(Number.isFinite(deltaX) && Number.isFinite(deltaY))) return;
-    if (Math.abs(deltaX) < 1e-6 && Math.abs(deltaY) < 1e-6) return;
-    const element = (renderer && renderer.domElement) ? renderer.domElement : canvasEl;
-    const clientWidth = Math.max(1, Number(element && element.clientWidth) || currentViewportMetrics.cssWidth || 1);
-    const clientHeight = Math.max(1, Number(element && element.clientHeight) || currentViewportMetrics.cssHeight || 1);
-    const panOffset = new THREE.Vector3();
-    const panLeft = (distance) => {
-      const v = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
-      v.multiplyScalar(-distance);
-      panOffset.add(v);
-    };
-    const panUp = (distance) => {
-      const v = new THREE.Vector3();
-      if (controls && controls.screenSpacePanning === true) {
-        v.setFromMatrixColumn(camera.matrix, 1);
-      } else {
-        v.setFromMatrixColumn(camera.matrix, 0);
-        v.crossVectors(camera.up, v);
-      }
-      v.multiplyScalar(distance);
-      panOffset.add(v);
-    };
-    if (camera && camera.isPerspectiveCamera) {
-      const offset = camera.position.clone().sub(controls.target);
-      let targetDistance = offset.length();
-      targetDistance *= Math.tan(((Number(camera.fov) || DEFAULT_PERSPECTIVE_FOV) / 2) * Math.PI / 180.0);
-      panLeft(2 * deltaX * targetDistance / clientHeight);
-      panUp(2 * deltaY * targetDistance / clientHeight);
-    } else if (camera && camera.isOrthographicCamera) {
-      panLeft(deltaX * (camera.right - camera.left) / Math.max(1e-6, Number(camera.zoom) || 1) / clientWidth);
-      panUp(deltaY * (camera.top - camera.bottom) / Math.max(1e-6, Number(camera.zoom) || 1) / clientHeight);
-    } else {
-      return;
-    }
-    if (panOffset.lengthSq() <= 1e-14) return;
-    camera.position.add(panOffset);
-    controls.target.add(panOffset);
-    camera.updateMatrixWorld();
-    controls.update();
-    refreshViewUI();
-  }
   // --- Edit selection (temporary list) and visuals ---
   let editSel = []; // array of atom indices (max 3) — used in measurement mode
   let editSelGroup = new THREE.Group(); contentGroup.add(editSelGroup);
@@ -17915,6 +18149,10 @@
   function updateSelectedHalos() {
     if (!atomGroup || !atomGroup.children) return;
     const selectedSet = new Set();
+    if (currentMode === MODES.CALCULATIONS) {
+      const record = measurementRecord(), ids = new Set(calculationsModel.selectedIds(record));
+      for (const atom of calculationsModel.atoms(record)) if (ids.has(atom.id)) selectedSet.add(atom.index);
+    }
     if (currentMode === MODES.MEASURE) {
       for (const idx of editSel) selectedSet.add(idx);
     }
@@ -17938,45 +18176,12 @@
   }
   let __editDownPt = null; let __editMoved = false; let __editClickIdx = -1;
   let gestureBondSidePress = null;
-  let __contextDownPt = null; let __contextMoved = false; let __contextHandled = false;
-  let editContextAtomClickState = null;
+  let editViewOrbitPointerId = null;
 
-  function resetContextClickState() {
-    __contextDownPt = null;
-    __contextMoved = false;
-    __contextHandled = false;
-  }
-
-  function getPointerEventTimestamp(e) {
-    const stamp = Number(e && e.timeStamp);
-    return Number.isFinite(stamp) ? stamp : Date.now();
-  }
-
-  function clearRecentEditContextAtomClick() {
-    editContextAtomClickState = null;
-  }
-
-  function wasRecentRepeatedEditContextAtomClick(atomIndex, e) {
-    const last = editContextAtomClickState;
-    if (!last || (last.atomIndex | 0) !== (atomIndex | 0)) return false;
-    return (getPointerEventTimestamp(e) - last.at) <= EDIT_CONTEXT_DOUBLE_CLICK_THRESHOLD_MS;
-  }
-
-  function recordEditContextAtomClick(atomIndex, e) {
-    editContextAtomClickState = { atomIndex: atomIndex | 0, at: getPointerEventTimestamp(e) };
-  }
-
-  function isEditContextPointerEvent(e) {
+  function isEditViewOrbitPointerEvent(e) {
     return currentMode === MODES.EDIT
       && !!e
       && (e.button === 2 || (e.button === 0 && !!e.ctrlKey && !e.altKey && !e.metaKey));
-  }
-
-  function isTrackedContextPointerEvent(e) {
-    if (isEditContextPointerEvent(e)) return true;
-    if (!__contextDownPt || !e) return false;
-    return !Number.isInteger(__contextDownPt.pointerId)
-      || __contextDownPt.pointerId === e.pointerId;
   }
   /**
    * Clear the current measurement/edit atom selection.
@@ -18128,6 +18333,9 @@
       }
       const payload = getCurrentBuildPayload();
       const payloadKind = String(payload && payload.kind || '').trim().toLowerCase();
+      if ((payloadKind === 'fragment' || payloadKind === 'atom') && !getEditToolState().build) {
+        setEditIntent(getBuildEditIntent(), { announce: false, syncSearch: false, preserveSelection: true, closePopovers: false });
+      }
       if (payloadKind === 'fragment') return setSelectionFragmentCueActive(true, options);
       if (payloadKind === 'atom') return setSelectionAtomBuildCueActive(true, options);
       if (announce && editMode) setHintMessage('Build cue: choose an atom or fragment in Build first.');
@@ -18327,6 +18535,7 @@
   }
 
   function hideEditSelectionTranslateCue() {
+    editSelectionPositionUi?.sync(null);
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
@@ -18384,6 +18593,7 @@
 
   function positionBuildPopover() {
     if (!editAdaptiveAddAtomPopoverEl || !editAdaptiveAddAtomBtn) return;
+    if (window.VibeMolWorkbench?.isDocked('buildPanel')) return;
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveAddAtomPopoverEl,
       triggerEl: editAdaptiveAddAtomBtn,
@@ -18438,7 +18648,8 @@
   function hideBuildPopover(options = {}) {
     const quiet = !!(options && options.quiet);
     clearBuildSearchKeyboardSelection();
-    resetBuildSearchFieldOnHide();
+    if (!workspaceEnabled) resetBuildSearchFieldOnHide();
+    else if (editAdaptiveAddAtomPopoverEl?.contains(document.activeElement)) editBuildSearchEl?.blur();
     if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
     restoreBuildPopoverPanes();
     syncBuildSearchNavigationUi();
@@ -18447,12 +18658,12 @@
 
   function showBuildPopover(options = {}) {
     if (!editAdaptiveAddAtomPopoverEl) return;
+    if (workspaceEnabled && currentMode !== MODES.EDIT) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
-    const wasOpen = isBuildPopoverOpen();
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
-    if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
+    if (!workspaceEnabled && isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
     if (Object.prototype.hasOwnProperty.call(options, 'query')) {
       setBuildPaletteFilterQuery(String(options.query || ''), { syncInput: true });
     }
@@ -18463,11 +18674,13 @@
       preferPayloadSelection: options.preferPayloadSelection !== false,
     });
     updateEditAdaptiveMenuUi();
+    if (!options.fromWorkbench) window.VibeMolWorkbench?.open('buildPanel', false);
     if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
   }
 
   function positionSymmetryPopover() {
     if (!editAdaptiveSymmetryPopoverEl || !editAdaptiveSymmetryBtn) return;
+    if (window.VibeMolWorkbench?.isDocked('symmetryPanel')) return;
     positionFloatingPopoverUi({
       popoverEl: editAdaptiveSymmetryPopoverEl,
       triggerEl: editAdaptiveSymmetryBtn,
@@ -18580,8 +18793,11 @@
     const quiet = !!options.quiet;
     symmetryPreviewState = null;
     if (symmetryController) symmetryController.clearPreview();
+    clearSymmetryElementGuide();
     invalidateSymmetryPopoverAnalysisCache();
-    if (!keepPopover && editAdaptiveSymmetryPopoverEl) {
+    // Clearing a chemistry operation must not close a Workbench panel. Only
+    // hideSymmetryPopover handles an explicit close in that interface.
+    if (!workspaceEnabled && !keepPopover && editAdaptiveSymmetryPopoverEl) {
       editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'true');
     }
     if (!quiet) updateEditAdaptiveMenuUi();
@@ -18928,6 +19144,7 @@
   }
 
   function renderSymmetryPopover() {
+    if (currentMode !== MODES.EDIT) return;
     if (!editAdaptiveSymmetryPopoverEl || editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'true') return;
     const target = resolveEditSymmetryTarget();
     syncSymmetryToleranceUi();
@@ -18976,6 +19193,7 @@
       symmetryPopoverSelectedElementId = '';
       clearSymmetryElementGuide();
       clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
+      editAdaptiveSymmetryPopoverEl?.setAttribute('aria-hidden', 'true');
       if (!options.quiet) updateEditAdaptiveMenuUi();
     };
     applyHide();
@@ -18983,6 +19201,7 @@
 
   function showSymmetryPopover(options = {}) {
     if (!editAdaptiveSymmetryPopoverEl) return;
+    if (workspaceEnabled && currentMode !== MODES.EDIT) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     clearSymmetryCurrentGroupHighlight();
     symmetryPopoverCurrentGroupLabel = '';
@@ -18991,12 +19210,13 @@
     clearGestureVoidPreview();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
-    hideBuildPopover();
+    if (!workspaceEnabled) hideBuildPopover();
     invalidateSymmetryPopoverAnalysisCache();
     editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
     if (editGestureController) editGestureController.refreshUi();
     renderSymmetryPopover();
     updateEditAdaptiveMenuUi();
+    if (!options.fromWorkbench) window.VibeMolWorkbench?.open('symmetryPanel', false);
   }
 
   function setSymmetryTolerance(nextValue) {
@@ -19118,6 +19338,13 @@
 
   function showSelectionFragmentCuePopover(options = {}) {
     if (!editSelectionAddFragmentCueButtonEl || !editSelectionFragmentCuePopoverEl || !editAddFragmentPaneEl) return;
+    if (workspaceEnabled) {
+      // The legacy cue and Build share this pane. Keep one owner in Workbench.
+      showBuildPopover({ query: '' });
+      editAddFragmentPaneEl.scrollIntoView({ block: 'nearest' });
+      if (options.focusSearch) focusElementDeferred(editBuildSearchEl);
+      return;
+    }
     if (selectionFragmentCuePopoverHideTimer) {
       clearTimeout(selectionFragmentCuePopoverHideTimer);
       selectionFragmentCuePopoverHideTimer = 0;
@@ -19353,6 +19580,9 @@
       segmentCount: count,
     });
     mesh.raycast = createGroupedInstanceRaycast(THREE, Array.from(pickGroups.values()));
+    for (const entry of pickGroups.values()) {
+      bondDashSources.set(entry.object, { mesh, indices: entry.instances });
+    }
     return mesh;
   }
 
@@ -19667,7 +19897,7 @@
     if (!state || !state.choices.length) return;
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
-    hideBuildPopover({ quiet: true });
+    if (!workspaceEnabled) hideBuildPopover({ quiet: true });
     editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionMetalBondingCuePopover();
   }
@@ -19681,7 +19911,7 @@
     showSelectionMetalBondingCuePopover();
   }
 
-  function getEditSelectionClientBounds(indices, vol) {
+  function getEditSelectionClientBounds(indices, vol, worldTransform = false) {
     const selected = Array.from(new Set((Array.isArray(indices) ? indices : [])
       .map((idx) => Number(idx) | 0)
       .filter((idx) => idx >= 0 && vol && Array.isArray(vol.atoms) && idx < vol.atoms.length)));
@@ -19694,7 +19924,8 @@
     for (const idx of selected) {
       const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
       const atom = vol.atoms[idx] || null;
-      const pos = mesh && mesh.position ? mesh.position : (atom ? atomUnitsToAng(vol, atom) : null);
+      let pos = mesh && mesh.position ? mesh.position : (atom ? atomUnitsToAng(vol, atom) : null);
+      if (worldTransform && pos) pos = mesh ? mesh.getWorldPosition(new THREE.Vector3()) : atomGroup.localToWorld(new THREE.Vector3(pos.x, pos.y, pos.z));
       const projected = projectWorldToClient(pos);
       if (!projected || !projected.visible) continue;
       const atomRadiusWorld = Math.max(
@@ -19865,6 +20096,18 @@
     };
   }
 
+  function getSelectionPositionSnapshot() {
+    if (currentMode !== MODES.EDIT || getEffectiveEditSelectionDragMode() !== 'translate'
+      || isSelectionBuildCueActive() || getCurrentTransformSelectionContext()?.type === 'bond') return null;
+    const record = currentIndex >= 0 ? volumes[currentIndex] : null, vol = record?.vol;
+    const selection = getEditAtomSelection();
+    if (!vol || !selection.length || getBondCenterSelectionResolved(vol)) return null;
+    const center = getEditSelectionCenterWorld(selection, vol);
+    if (!center) return null;
+    return { record, center, key: JSON.stringify(selection.map(i => vol.atoms[i]?.id)),
+      label: selection.length === 1 ? 'Position (Å)' : 'Center of mass (Å)' };
+  }
+
   function renderEditSelectionTranslateCue() {
     if (!editSelectionTranslateCueEl) return;
     if (currentMode !== MODES.EDIT) {
@@ -19907,16 +20150,14 @@
     if (editSelectionTranslateCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
       editSelectionTranslateCueButtonEl.hidden = !visible;
-      editSelectionTranslateCueButtonEl.classList.toggle('is-active', visible && !buildCueActive && effectiveMode === 'translate');
-      editSelectionTranslateCueButtonEl.setAttribute('aria-pressed', (visible && !buildCueActive && effectiveMode === 'translate') ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionTranslateCueButtonEl, visible && !buildCueActive && effectiveMode === 'translate');
     }
     if (editSelectionRotateCueButtonEl) {
       editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
       const rotateActive = isBondSideSelection
         ? (!buildCueActive && bondSideCueMode === 'axis')
         : (!buildCueActive && effectiveMode === 'rotate');
-      editSelectionRotateCueButtonEl.classList.toggle('is-active', rotateActive);
-      editSelectionRotateCueButtonEl.setAttribute('aria-pressed', rotateActive ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionRotateCueButtonEl, rotateActive);
       const rotateTooltip = isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection';
       setTooltipText(editSelectionRotateCueButtonEl, rotateTooltip);
       editSelectionRotateCueButtonEl.setAttribute('aria-label', rotateTooltip);
@@ -19924,14 +20165,12 @@
     if (editSelectionBondOrbitCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'orbit';
       editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
-      editSelectionBondOrbitCueButtonEl.classList.toggle('is-active', active);
-      editSelectionBondOrbitCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionBondOrbitCueButtonEl, active);
     }
     if (editSelectionBondDistanceCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'distance';
       editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
-      editSelectionBondDistanceCueButtonEl.classList.toggle('is-active', active);
-      editSelectionBondDistanceCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionBondDistanceCueButtonEl, active);
     }
     if (editSelectionBondOrderCueButtonEl) {
       const visible = !!isBondCenterSelection;
@@ -19942,8 +20181,7 @@
           : `bond order (${order})`)
         : 'Adjust bond order';
       editSelectionBondOrderCueButtonEl.hidden = !visible;
-      editSelectionBondOrderCueButtonEl.classList.toggle('is-active', visible);
-      editSelectionBondOrderCueButtonEl.setAttribute('aria-pressed', visible ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionBondOrderCueButtonEl, visible);
       editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
       const bondOrderTooltip = visible ? `Adjust ${label}` : 'Adjust bond order';
       setTooltipText(editSelectionBondOrderCueButtonEl, bondOrderTooltip);
@@ -19953,8 +20191,7 @@
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(metalBondingCueState && metalBondingCueState.choices.length);
       const active = visible && editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false';
       editSelectionMetalBondingCueButtonEl.hidden = !visible;
-      editSelectionMetalBondingCueButtonEl.classList.toggle('is-active', !!active);
-      editSelectionMetalBondingCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionMetalBondingCueButtonEl, !!active);
       if (!visible) hideSelectionMetalBondingCuePopover();
     }
     const coordinationCueState = getSelectionCoordinationCueState();
@@ -19962,8 +20199,7 @@
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(coordinationCueState && coordinationCueState.choices.length);
       const active = visible && editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
       editSelectionCoordinationCueButtonEl.hidden = !visible;
-      editSelectionCoordinationCueButtonEl.classList.toggle('is-active', !!active);
-      editSelectionCoordinationCueButtonEl.setAttribute('aria-pressed', active ? 'true' : 'false');
+      window.VibeMolEditUi.setCueState(editSelectionCoordinationCueButtonEl, !!active);
       if (!visible) hideSelectionCoordinationCuePopover();
     }
     if (editSelectionAddFragmentCueButtonEl) {
@@ -19974,9 +20210,8 @@
           : `Build ${buildPayload.symbol || buildPayload.name || 'loaded element'} at open site`)
         : 'Choose an atom or fragment in Build first';
       editSelectionAddFragmentCueButtonEl.hidden = !visible;
-      editSelectionAddFragmentCueButtonEl.classList.toggle('is-active', visible && buildCueActive);
+      window.VibeMolEditUi.setCueState(editSelectionAddFragmentCueButtonEl, visible && buildCueActive);
       editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !buildCueActive);
-      editSelectionAddFragmentCueButtonEl.setAttribute('aria-pressed', (visible && buildCueActive) ? 'true' : 'false');
       editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
       setTooltipText(editSelectionAddFragmentCueButtonEl, cueLabel);
       if (!visible) {
@@ -19987,9 +20222,13 @@
     }
     if (editSelectionDeleteCueButtonEl) {
       editSelectionDeleteCueButtonEl.hidden = false;
-      editSelectionDeleteCueButtonEl.setAttribute('aria-pressed', 'false');
+      window.VibeMolEditUi.setCueState(editSelectionDeleteCueButtonEl, false);
     }
-    if (isBondCenterSelection) {
+    const positionSnapshot = getSelectionPositionSnapshot();
+    editSelectionPositionUi?.sync(positionSnapshot);
+    if (positionSnapshot) {
+      setTooltipText(editSelectionTranslateCueEl, '');
+    } else if (isBondCenterSelection) {
       setTooltipText(editSelectionTranslateCueEl, bondCenterSelection.metalPair
         ? `Bond style ${getMetalBondStyleLabel(bondCenterSelection.style)}`
         : `Bond order ${bondCenterSelection.order | 0}`);
@@ -20000,20 +20239,24 @@
     } else {
       setTooltipText(editSelectionTranslateCueEl, effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection');
     }
+    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
+    if (editSelectionPositionUi?.isEditing()) return;
     const badgeWidth = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().width || editSelectionTranslateCueEl.offsetWidth || 42));
     const badgeHeight = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().height || editSelectionTranslateCueEl.offsetHeight || 42));
-    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
-    const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
+    const viewportWidth = Math.max(1, Math.round(window.innerWidth || document.documentElement.clientWidth));
+    const viewportHeight = Math.max(1, Math.round(window.innerHeight || document.documentElement.clientHeight));
     const margin = 12;
     const toolbarRect = toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function'
       ? toolbarEl.getBoundingClientRect()
       : null;
-    const minLeft = toolbarRect ? Math.max(margin, Math.round(toolbarRect.right + 12)) : margin;
+    const maxLeft = Math.max(margin, viewportWidth - badgeWidth - margin);
+    const minLeft = Math.min(maxLeft, toolbarRect ? Math.max(margin, Math.round(toolbarRect.right + 12)) : margin);
     const cueGap = 14;
     let left = Math.round(bounds.maxX + cueGap);
     let top = Math.round(bounds.minY - badgeHeight - cueGap);
     if (left + badgeWidth > viewportWidth - margin) left = Math.round(bounds.minX - badgeWidth - cueGap);
     if (left < minLeft) left = Math.max(minLeft, Math.min(viewportWidth - badgeWidth - margin, Math.round(bounds.maxX + cueGap)));
+    left = Math.max(margin, Math.min(maxLeft, left));
     if (top < margin) top = Math.round(bounds.maxY + cueGap);
     if (top + badgeHeight > viewportHeight - margin) top = Math.max(margin, viewportHeight - badgeHeight - margin);
     editSelectionTranslateCueEl.style.left = `${left}px`;
@@ -20330,6 +20573,20 @@
 
   function handleAtomManipulationControllerPointerDown(e) {
     const valueLabelHit = pickTransformValueLabelHit(e);
+    if (valueLabelHit && !getEditToolState().build) {
+      // A label over the bond must not swallow a plain selection click.
+      // Keep its value-drag action, but start it only after pointer movement.
+      gestureBondSidePress = {
+        pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
+        clientX: Number(e.clientX) || 0,
+        clientY: Number(e.clientY) || 0,
+        valueLabelHit,
+        bondHit: pickBondHit(e),
+      };
+      try { canvasEl.setPointerCapture(e.pointerId); } catch { }
+      e.preventDefault();
+      return true;
+    }
     if (valueLabelHit && beginTransformValueLabelDrag(e, valueLabelHit)) {
       if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.setPointerCapture === 'function') {
         try { canvasEl.setPointerCapture(e.pointerId); } catch { }
@@ -20341,7 +20598,7 @@
     const vol = record && record.vol;
     const activeBondCenterSelection = getBondCenterSelectionResolved(vol);
     const selection = getEditAtomSelection();
-    if (selection.length >= 2 && editGizmos && editTransformController) {
+    if (selection.length && editGizmos && editTransformController) {
       const moveGizmoHit = editGizmos.pickMoveHit(e);
       if (moveGizmoHit) {
         const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
@@ -20371,6 +20628,8 @@
     const currentTransformContext = getCurrentTransformSelectionContext();
     const activeBondCueMode = getEffectiveEditBondSideCueMode();
     const pickedBondHit = pickBondHit(e);
+    // The gesture controller resolves bond clicks on release for both tools.
+    if ((!getEditToolState().build || canCycleBuildBondOrder()) && pickedBondHit && !pickAtom(e)) return false;
     const centerBondHit = (
       pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center'
         ? pickedBondHit
@@ -20455,6 +20714,8 @@
         clientX: Number(e.clientX) || 0,
         clientY: Number(e.clientY) || 0,
         bondHit: null,
+        atomIndex: pickedAtomIndex,
+        additive: !!e.shiftKey,
         bondContext: cloneTransformBondContext(currentTransformContext),
         dragMode: activeBondCueMode === 'orbit'
           ? 'bondQuaternion'
@@ -20624,7 +20885,7 @@
 
   function handleAtomManipulationControllerPointerMove(e) {
     const valueLabelHit = pickTransformValueLabelHit(e);
-    if (valueLabelHit) {
+    if (valueLabelHit && !gestureBondSidePress) {
       if (editGizmos) editGizmos.clearHover();
       clearEditHaloGhostHoverState();
       setHover(null);
@@ -20634,7 +20895,7 @@
       return true;
     }
     const selection = getEditAtomSelection();
-    if (selection.length >= 2 && !(editTransformState.dragActive || editTransformState.rotateDragActive) && editGizmos) {
+    if (selection.length && !(editTransformState.dragActive || editTransformState.rotateDragActive) && editGizmos) {
       const moveGizmoHit = editGizmos.pickMoveHit(e);
       if (moveGizmoHit) {
         editGizmos.setMoveHover(moveGizmoHit.axis);
@@ -20680,11 +20941,13 @@
       if (Math.hypot(dx, dy) > 4) {
         __editMoved = true;
         const bondHit = gestureBondSidePress.bondHit || null;
+        const valueLabelHit = gestureBondSidePress.valueLabelHit || null;
         const bondContext = gestureBondSidePress.bondContext || null;
         const dragMode = gestureBondSidePress.dragMode === 'bondQuaternion'
           ? 'bondQuaternion'
           : (gestureBondSidePress.dragMode === 'bondDistanceHorizontal' ? 'bondDistanceHorizontal' : 'bondAngleHorizontal');
         gestureBondSidePress = null;
+        if (valueLabelHit && beginTransformValueLabelDrag(e, valueLabelHit)) return true;
         if (bondHit && beginTransformDragFromBondHit(e, bondHit, { dragMode })) return true;
         if (bondContext && bondContext.type === 'bond') {
           const record = ensureEditableVolumeRecord();
@@ -20772,10 +21035,19 @@
 
   function handleAtomManipulationControllerPointerUp(e) {
     if (gestureBondSidePress && (!Number.isInteger(gestureBondSidePress.pointerId) || gestureBondSidePress.pointerId === e.pointerId)) {
+      const press = gestureBondSidePress;
       if (canvasEl && Number.isInteger(e.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
         try { canvasEl.releasePointerCapture(e.pointerId); } catch { }
       }
       gestureBondSidePress = null;
+      if (!getEditToolState().build && Math.hypot(e.clientX - press.clientX, e.clientY - press.clientY) <= 4) {
+        const atom = pickAtom(e);
+        if (atom && atom.userData.index === press.atomIndex) applyEditAtomSelectionClick(press.atomIndex, press.additive);
+        else if (press.valueLabelHit && !atom) {
+          const bondHit = pickBondHit(e);
+          if (bondHit && bondHit.object === press.bondHit?.object) applyEditBondScopeSelection(bondHit);
+        }
+      }
       updateAxisGuideLine();
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
@@ -20915,22 +21187,13 @@
     }
     if (isAtomPlacementIntentValue(intent)) {
       const clickPress = controllerState && controllerState.press ? controllerState.press : null;
-      if (clickPress && !__editMoved && clickPress.kind === 'bond-inert') {
-        const bondHit = clickPress.bondHit && clickPress.bondHit.object && clickPress.bondHit.section === 'center'
-          ? clickPress.bondHit
-          : resolveGestureBondCenterClickHit(e);
-        if (bondHit && stepGestureBondCenterOrder(bondHit, 1, e)) {
-          clearExternalGestureControllerState(controllerState, e && e.pointerId);
-          __editDownPt = null; __editClickIdx = -1; __editMoved = false;
-          return true;
-        }
-      }
       const payload = getCurrentBuildPayload();
       if (
         clickPress
         && !__editMoved
         && payload
         && payload.kind === 'atom'
+        && getEditToolState().build
         && (clickPress.kind === 'atom-press-pending' || clickPress.kind === 'selected-atom')
       ) {
         const hit = pickAtomHit(e);
@@ -21170,10 +21433,7 @@
     updateSelectedHalos();
     updateEditSelectionVisuals();
     updateEditAdaptiveMenuUi();
-    setHintMessage(String(
-      options.hint
-      || `Added ${getElementName((atom && atom.Z) | 0)} (${symbol}) atom • Adjust location • Enter confirm • Esc ${options.cancelCommits ? 'close' : 'cancel'}`
-    ));
+    setHintMessage(HINT_EDIT);
     return true;
   }
 
@@ -21590,64 +21850,14 @@
     return record.measurementLabelOffsets;
   }
 
-  /**
-   * Build one stable atom-id token for measurement-label keys.
-   * @param {*} vol
-   * @param {number} atomIndex
-   * @returns {string}
-   */
-  function getMeasurementAtomKeyToken(vol, atomIndex) {
-    if (!vol || !Array.isArray(vol.atoms)) return '';
-    const atom = vol.atoms[atomIndex | 0];
-    return atom ? String(ensureAtomId(atom)) : '';
-  }
-
-  /**
-   * Build one stable key for a distance label.
-   * @param {*} vol
-   * @param {number} i
-   * @param {number} j
-   * @returns {string}
-   */
+  // Transform guides and measurement annotations share stable label-offset keys.
   function buildMeasurementDistanceKey(vol, i, j) {
-    const a = getMeasurementAtomKeyToken(vol, i);
-    const b = getMeasurementAtomKeyToken(vol, j);
-    if (!a || !b) return '';
-    return a < b ? `distance:${a}:${b}` : `distance:${b}:${a}`;
+    const atoms = [vol?.atoms[i], vol?.atoms[j]];
+    return atoms.every(Boolean) ? measurements.key('distance', atoms.map(ensureAtomId)) : '';
   }
-
-  /**
-   * Build one stable key for an angle label.
-   * @param {*} vol
-   * @param {number} ia
-   * @param {number} ib
-   * @param {number} ic
-   * @returns {string}
-   */
-  function buildMeasurementAngleKey(vol, ia, ib, ic) {
-    const a = getMeasurementAtomKeyToken(vol, ia);
-    const b = getMeasurementAtomKeyToken(vol, ib);
-    const c = getMeasurementAtomKeyToken(vol, ic);
-    if (!a || !b || !c) return '';
-    return a < c ? `angle:${a}:${b}:${c}` : `angle:${c}:${b}:${a}`;
-  }
-
-  /**
-   * Build one stable key for a dihedral label.
-   * @param {*} vol
-   * @param {number} i
-   * @param {number} j
-   * @param {number} k
-   * @param {number} l
-   * @returns {string}
-   */
   function buildMeasurementDihedralKey(vol, i, j, k, l) {
-    const a = getMeasurementAtomKeyToken(vol, i);
-    const b = getMeasurementAtomKeyToken(vol, j);
-    const c = getMeasurementAtomKeyToken(vol, k);
-    const d = getMeasurementAtomKeyToken(vol, l);
-    if (!a || !b || !c || !d) return '';
-    return `dihedral:${a}:${b}:${c}:${d}`;
+    const atoms = [vol?.atoms[i], vol?.atoms[j], vol?.atoms[k], vol?.atoms[l]];
+    return atoms.every(Boolean) ? measurements.key('dihedral', atoms.map(ensureAtomId)) : '';
   }
 
   /**
@@ -21714,7 +21924,9 @@
     const nextOptions = hovered
       ? Object.assign({}, baseOptions, { bgColor: UI_PALETTE.measurementLabelBgHover })
       : baseOptions;
+    const scale = sprite.scale.clone();
     applyTextSpriteTexture(sprite, data.text, nextOptions);
+    sprite.scale.copy(scale);
     sprite.userData.measurementLabel.hovered = !!hovered;
   }
 
@@ -21792,6 +22004,11 @@
     if (editSel.length >= 4) editSel = editSel.slice(1); // keep last 3, then push new -> last 4
     if (editSel.length && editSel[editSel.length - 1] === i) return; // ignore duplicate consecutive
     editSel.push(i);
+    const record = measurementRecord();
+    if (record) {
+      ensureVolumeAtomIds(record.vol);
+      if (measurements.add(record, editSel.map(index => String(record.vol.atoms[index]?.id)))) markSessionChanged();
+    }
     updateEditSelectionVisuals();
   }
   /**
@@ -21811,7 +22028,7 @@
   function disposeOverlayTree(root) {
     if (!root || typeof root.traverse !== 'function') return;
     root.traverse((obj) => {
-      if (!obj || obj === root) return;
+      if (!obj) return;
       try { obj.geometry && obj.geometry.dispose && obj.geometry.dispose(); } catch { }
       try {
         if (Array.isArray(obj.material)) {
@@ -21842,7 +22059,7 @@
      * @param {boolean} isRoot
      * @returns {THREE.Mesh|null}
      */
-    const cloneOverlayMesh = (mesh, isRoot = false) => {
+    const cloneOverlayMesh = (mesh, isRoot = false, instances = null) => {
       if (!mesh || !mesh.isMesh || !mesh.geometry) return null;
       if (mesh.userData && skipTypes.has(mesh.userData.type)) return null;
       const overlayMat = new THREE.MeshBasicMaterial({
@@ -21852,7 +22069,23 @@
         depthWrite: false,
         depthTest: true,
       });
-      const overlay = new THREE.Mesh(mesh.geometry.clone(), overlayMat);
+      const overlay = mesh.isInstancedMesh
+        ? new THREE.InstancedMesh(mesh.geometry.clone(), overlayMat, instances ? instances.length : mesh.count)
+        : new THREE.Mesh(mesh.geometry.clone(), overlayMat);
+      if (mesh.isInstancedMesh) {
+        if (instances) {
+          const matrix = new THREE.Matrix4();
+          mesh.updateMatrix(); carrier.updateMatrix();
+          const intoCarrier = new THREE.Matrix4().copy(carrier.matrix).invert().multiply(mesh.matrix);
+          instances.forEach((index, i) => {
+            mesh.getMatrixAt(index, matrix);
+            overlay.setMatrixAt(i, matrix.premultiply(intoCarrier));
+          });
+        } else overlay.instanceMatrix.copy(mesh.instanceMatrix);
+        overlay.instanceMatrix.needsUpdate = true;
+        // Grow each dash around its own axis without moving its center.
+        overlay.geometry.scale(radialScale, 1, radialScale);
+      }
       if (!isRoot) {
         overlay.position.copy(mesh.position);
         overlay.quaternion.copy(mesh.quaternion);
@@ -21860,11 +22093,13 @@
         overlay.visible = mesh.visible !== false;
       }
       overlay.renderOrder = (mesh.renderOrder || 0) + 2;
-      overlay.scale.set(
-        overlay.scale.x * radialScale,
-        overlay.scale.y,
-        overlay.scale.z * radialScale
-      );
+      if (!mesh.isInstancedMesh) {
+        overlay.scale.set(
+          overlay.scale.x * radialScale,
+          overlay.scale.y,
+          overlay.scale.z * radialScale
+        );
+      }
       return overlay;
     };
 
@@ -21891,7 +22126,10 @@
       return group.children.length ? group : null;
     };
 
-    return cloneNode(carrier, true);
+    const dashSource = bondDashSources.get(carrier);
+    return dashSource
+      ? cloneOverlayMesh(dashSource.mesh, true, dashSource.indices)
+      : cloneNode(carrier, true);
   }
 
   /**
@@ -22566,8 +22804,9 @@
     const w = textW + wpad * 2;
     const h = Math.max(fontPx + hpad * 2, Math.round(18 * uiScale) + hpad * 2);
     // hi-DPI backing store
-    c.width = w * 2; c.height = h * 2;
-    ctx.scale(2, 2);
+    const backingScale = options.backingScale || 2;
+    c.width = w * backingScale; c.height = h * backingScale;
+    ctx.scale(backingScale, backingScale);
     ctx.font = font;
 
     // rounded rectangle background
@@ -22643,11 +22882,11 @@
    */
   function makeMeasurementLabelSprite(txt, key, basePosition, options = {}) {
     const sprite = makeTextSprite(txt, {
-      uiScale: Number(options.uiScale) || 0.9,
+      uiScale: Number(options.uiScale) || 0.9, backingScale: 4,
       bgColor: UI_PALETTE.measurementLabelBg,
       textColor: UI_PALETTE.measurementLabelText,
     });
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const record = measurementRecord();
     const offset = getMeasurementLabelOffset(record, key);
     sprite.position.copy(basePosition).add(offset);
     sprite.renderOrder = 125;
@@ -22657,7 +22896,7 @@
         text: String(txt || ''),
         basePosition: basePosition.clone(),
         textOptions: {
-          uiScale: Number(options.uiScale) || 0.9,
+          uiScale: Number(options.uiScale) || 0.9, backingScale: 4,
           bgColor: UI_PALETTE.measurementLabelBg,
           textColor: UI_PALETTE.measurementLabelText,
         },
@@ -22674,159 +22913,96 @@
    * Render distance, angle, and dihedral overlays for the current selection.
    */
   function updateEditSelectionVisuals() {
+    measurementLayoutKey = '';
     measurementLabelHoverSprite = null;
     clearGroup(editSelGroup);
-    // Only render measurement overlays in measurement mode
-    if (currentMode !== MODES.MEASURE || !atomGroup || !atomGroup.children || atomGroup.children.length === 0) return;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    if (!vol || !Array.isArray(vol.atoms)) return;
-    ensureVolumeAtomIds(vol);
-    /**
-     * Get atom position by atom index.
-     * @param {number} idx
-     * @returns {THREE.Vector3|null}
-     */
-    const posOf = (idx) => (atomGroup.children[idx] && atomGroup.children[idx].position) ? atomGroup.children[idx].position.clone() : null;
-    /**
-     * Format a distance value for labels.
-     * @param {number} d
-     * @returns {string}
-     */
-    const fmtDist = (d) => d.toFixed(4) + ' Å';
-    /**
-     * Format an angle in radians as a degree label.
-     * @param {number} r
-     * @returns {string}
-     */
-    const fmtDeg = (r) => (r * 180 / Math.PI).toFixed(2) + '°';
-    /**
-     * Draw a measurement edge and midpoint distance label.
-     * @param {number} i
-     * @param {number} j
-     * @param {number} color
-     */
-    const addEdge = (i, j, color = 0xd3d3d3) => {
-      const a = posOf(i), b = posOf(j); if (!a || !b) return;
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([a.x, a.y, a.z, b.x, b.y, b.z]), 3));
-      const m = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.9, depthTest: false });
-      editSelGroup.add(new THREE.Line(g, m));
-      // label at midpoint
-      const mid = a.clone().add(b).multiplyScalar(0.5);
-      const dist = a.distanceTo(b);
-      const labelKey = buildMeasurementDistanceKey(vol, i, j);
-      const label = makeMeasurementLabelSprite(fmtDist(dist), labelKey, mid, { uiScale: 0.9 });
-      label.position.copy(mid);
-      // slight lift towards camera to avoid z-fighting
-      const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
-      const basePosition = mid.clone().add(camDir.multiplyScalar(0.01));
-      label.position.copy(basePosition).add(getMeasurementLabelOffset(record, labelKey));
-      if (label.userData && label.userData.measurementLabel) label.userData.measurementLabel.basePosition.copy(basePosition);
-      editSelGroup.add(label);
-    };
-    // Draw distances for adjacent pairs
-    for (let t = 0; t < editSel.length - 1; t++) addEdge(editSel[t], editSel[t + 1]);
-
-    // Helper to draw angle fan and numeric label for triplet a-b-c (angle at b)
-    /**
-     * Draw an angle fan and label for a three-atom selection.
-     * @param {*} ia
-     * @param {*} ib
-     * @param {*} ic
-     */
-    const addAngle = (ia, ib, ic) => {
-      const pa = posOf(ia), pb = posOf(ib), pc = posOf(ic);
-      if (!pa || !pb || !pc) return;
-      const v1 = pa.clone().sub(pb).normalize();
-      const v2 = pc.clone().sub(pb).normalize();
-      let dot = v1.dot(v2); dot = Math.max(-1, Math.min(1, dot));
-      const theta = Math.acos(dot);
-      const n = new THREE.Vector3().crossVectors(v1, v2);
-      if (n.lengthSq() < 1e-8 || !isFinite(theta) || theta <= 0) return;
-      n.normalize();
-      const e1 = v1.clone();
-      const e3 = n.clone();
-      const e2 = new THREE.Vector3().crossVectors(e3, e1).normalize();
-      const radius = Math.max(0.4, Math.min(pa.distanceTo(pb), pc.distanceTo(pb)) * 0.45);
-      const segs = 48;
-      const geom = new THREE.CircleGeometry(radius, segs, 0, theta);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
-      const fan = new THREE.Mesh(geom, mat);
-      const basis = new THREE.Matrix4(); basis.makeBasis(e1, e2, e3);
-      const q = new THREE.Quaternion().setFromRotationMatrix(basis);
-      fan.quaternion.copy(q);
-      fan.position.copy(pb.clone().add(e3.clone().multiplyScalar(0.002)));
-      editSelGroup.add(fan);
-      // Angle label at arc midpoint
-      const midDir = e1.clone().multiplyScalar(Math.cos(theta / 2)).add(e2.clone().multiplyScalar(Math.sin(theta / 2)));
-      const basePosition = pb.clone().add(midDir.multiplyScalar(radius + 0.06));
-      const labelKey = buildMeasurementAngleKey(vol, ia, ib, ic);
-      const label = makeMeasurementLabelSprite(fmtDeg(theta), labelKey, basePosition, { uiScale: 0.9 });
-      editSelGroup.add(label);
-    };
-
-    if (editSel.length >= 3) {
-      for (let t = 0; t <= editSel.length - 3; t++) addAngle(editSel[t], editSel[t + 1], editSel[t + 2]);
-    }
-
-    // Dihedral for four atoms: 1-2-3-4
-    if (editSel.length >= 4) {
-      const i = editSel[0], j = editSel[1], k = editSel[2], l = editSel[3];
-      const p1 = posOf(i), p2 = posOf(j), p3 = posOf(k), p4 = posOf(l);
-      if (p1 && p2 && p3 && p4) {
-        // Bond vectors
-        const b1 = p2.clone().sub(p1);
-        const b2 = p3.clone().sub(p2);
-        const b3 = p4.clone().sub(p3);
-        // Axis of rotation (normalized 2->3)
-        const u = b2.clone().normalize();
-        if (!isFinite(u.length()) || u.lengthSq() < 1e-10) { /* skip */ }
-        else {
-          // Project (-b1) and (b3) onto plane perpendicular to u (spanning vectors)
-          const vAraw = b1.clone().negate();
-          const vBraw = b3.clone();
-          const vA = vAraw.clone().sub(u.clone().multiplyScalar(vAraw.dot(u)));
-          const vB = vBraw.clone().sub(u.clone().multiplyScalar(vBraw.dot(u)));
-          const lenA = vA.length(), lenB = vB.length();
-          if (lenA > 1e-6 && lenB > 1e-6) {
-            vA.multiplyScalar(1 / lenA);
-            vB.multiplyScalar(1 / lenB);
-            // Signed dihedral angle φ from vA -> vB around axis u
-            const cosPhi = vA.dot(vB);
-            const sinPhi = u.dot(new THREE.Vector3().crossVectors(vA, vB));
-            const phi = Math.atan2(sinPhi, cosPhi); // [-pi, pi]
-            const mid = p2.clone().add(p3).multiplyScalar(0.5);
-            // Local basis: eZ along u, eX along vA, eY = eZ × eX
-            const eZ = u.clone();
-            const eX = vA.clone();
-            const eY = new THREE.Vector3().crossVectors(eZ, eX).normalize();
-            // Arc parameters so ends align with vA and vB
-            const thetaStart = (phi < 0 ? phi : 0);
-            const thetaLen = Math.abs(phi);
-            const segs = 64;
-            const radius = Math.max(0.35, Math.min(b2.length() * 0.35, 1.2));
-            const geom = new THREE.CircleGeometry(radius, segs, thetaStart, thetaLen);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide });
-            const fan = new THREE.Mesh(geom, mat);
-            const basis = new THREE.Matrix4().makeBasis(eX, eY, eZ);
-            fan.quaternion.setFromRotationMatrix(basis);
-            fan.position.copy(mid.clone().add(eZ.clone().multiplyScalar(0.002)));
-            editSelGroup.add(fan);
-            // Emphasize the central bond axis
-            addEdge(j, k, 0x8e44ad);
-            // Dihedral label (abs degrees, 2 digits) along arc bisector
-            const half = phi / 2;
-            const midDir = eX.clone().multiplyScalar(Math.cos(half)).add(eY.clone().multiplyScalar(Math.sin(half))).normalize();
-            const basePosition = mid.clone().add(midDir.multiplyScalar(radius + 0.08));
-            const labelKey = buildMeasurementDihedralKey(vol, i, j, k, l);
-            const label = makeMeasurementLabelSprite(fmtDeg(Math.abs(phi)), labelKey, basePosition, { uiScale: 0.9 });
-            editSelGroup.add(label);
-          }
+    measurementsPanel?.sync();
+    if (currentMode !== MODES.MEASURE || !atomGroup?.children.length) return;
+    const record = measurementRecord();
+    if (!record) return;
+    for (const row of measurements.rows(record)) {
+      if (row.value === null) continue;
+      const points = row.points.map(point => new THREE.Vector3(...point));
+      const color = row.type === 'distance' ? 0xd3d3d3 : row.type === 'angle' ? 0xffa500 : 0x8e44ad;
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8, depthTest: false, depthWrite: false }));
+      editSelGroup.add(line);
+      let anchor = points[0].clone().add(points[1]).multiplyScalar(0.5);
+      if (row.type === 'angle') {
+        const a = points[0].clone().sub(points[1]).normalize(), b = points[2].clone().sub(points[1]).normalize();
+        const axis = new THREE.Vector3().crossVectors(a, b).normalize();
+        const radius = Math.min(points[0].distanceTo(points[1]), points[2].distanceTo(points[1])) * 0.4;
+        const bisector = a.clone().add(b);
+        if (bisector.lengthSq() < 1e-8) bisector.crossVectors(a, camera.up);
+        anchor = points[1].clone().add(bisector.normalize().multiplyScalar(radius));
+        if (axis.lengthSq() > 1e-8) {
+          const arc = Array.from({ length: 33 }, (_, i) => a.clone().applyAxisAngle(axis, row.value * Math.PI / 180 * i / 32).multiplyScalar(radius).add(points[1]));
+          editSelGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(arc),
+            new THREE.LineBasicMaterial({ color, depthTest: false, depthWrite: false })));
         }
-      }
+      } else if (row.type === 'dihedral') anchor = points[1].clone().add(points[2]).multiplyScalar(0.5);
+      const label = makeMeasurementLabelSprite(row.text, row.id, anchor);
+      const leader = new THREE.Line(new THREE.BufferGeometry().setFromPoints([anchor, anchor]),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.65, depthTest: false, depthWrite: false }));
+      label.userData.measurementLabel.leader = leader;
+      label.userData.measurementLabel.baseScale = label.scale.clone();
+      editSelGroup.add(leader, label);
     }
     syncMeasurementLabelCursor();
+  }
+
+  function restoreMeasurementSurfaceView() {
+    if (measurementViewBeforeFit?.record === measurementRecord()) restoreSessionView(measurementViewBeforeFit.view);
+    measurementViewBeforeFit = null;
+  }
+
+  function frameMeasurementAtoms() {
+    if (!atomGroup?.children.length) return;
+    const bounds = new THREE.Box3().setFromObject(atomGroup);
+    if (bounds.isEmpty()) return;
+    const center = bounds.getCenter(new THREE.Vector3());
+    const metrics = readRendererViewportMetrics();
+    const fit = computeSceneFitGeometry({ contentBox: bounds }, center, metrics.cssWidth / metrics.cssHeight, perspectiveCamera.fov);
+    // Keep the chosen viewing direction and projection while framing atoms.
+    const direction = camera.position.clone().sub(controls.target).normalize(), up = camera.up.clone();
+    camera.zoom = 1;
+    applySceneCameraFit(center, fit.distance);
+    camera.up.copy(up); camera.position.copy(center).addScaledVector(direction, fit.distance);
+    controls.autoRotate = false; controls.update(); refreshViewUI();
+  }
+
+  function layoutMeasurementLabels(metrics) {
+    if (currentMode !== MODES.MEASURE || measurementLabelDragState) return;
+    const labels = editSelGroup.children.filter(child => child.userData?.measurementLabel);
+    if (!labels.length) return;
+    camera.updateMatrixWorld(); editSelGroup.updateWorldMatrix(true, false);
+    const width = metrics.cssWidth || canvasEl.clientWidth, height = metrics.cssHeight || canvasEl.clientHeight;
+    const key = [...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, ...editSelGroup.matrixWorld.elements, width, height].join(',');
+    if (key === measurementLayoutKey) return; measurementLayoutKey = key;
+    const record = measurementRecord(), world = new THREE.Vector3();
+    const items = labels.map((sprite, index) => {
+      const data = sprite.userData.measurementLabel, offset = getMeasurementLabelOffset(record, data.key);
+      const anchor = editSelGroup.localToWorld(data.basePosition.clone().add(offset));
+      const projected = anchor.clone().project(camera);
+      const base = data.baseScale;
+      const viewDepth = Math.abs(anchor.clone().applyMatrix4(camera.matrixWorldInverse).z);
+      const worldPerPixel = camera.isOrthographicCamera ? (camera.top-camera.bottom)/camera.zoom/height
+        : 2 * viewDepth * Math.tan(THREE.MathUtils.degToRad(camera.fov/2)) / camera.zoom / height;
+      // Keep world-size zoom behavior, with a readable on-screen minimum.
+      const h = Math.max(24, Math.min(36, base.y / worldPerPixel)), w = h * base.x / base.y;
+      sprite.scale.set(w * worldPerPixel, h * worldPerPixel, 1);
+      return { id: index, x: (projected.x+1)*width/2, y: (1-projected.y)*height/2, z: projected.z, w, h, manual: offset.lengthSq() > 0 };
+    });
+    for (const item of measurements.layoutLabels(items, width, height)) {
+      const sprite = labels[item.id], data = sprite.userData.measurementLabel;
+      sprite.visible = item.z >= -1 && item.z <= 1 && !item.crowded;
+      world.set(item.x/width*2-1, 1-item.y/height*2, item.z).unproject(camera);
+      sprite.position.copy(editSelGroup.worldToLocal(world));
+      const position = data.leader.geometry.attributes.position;
+      position.setXYZ(0, data.basePosition.x, data.basePosition.y, data.basePosition.z);
+      position.setXYZ(1, sprite.position.x, sprite.position.y, sprite.position.z); position.needsUpdate = true;
+      data.leader.geometry.computeBoundingSphere(); data.leader.visible = sprite.visible;
+    }
   }
   /**
    * Update normalized device coordinates from a pointer event.
@@ -22844,7 +23020,7 @@
    */
   function setRaycasterFromEvent(e) {
     setNDCFromEvent(e);
-    cameraDepthController.update(contentGroup, camera);
+    cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
     setCameraRay(raycaster, ndc, camera);
   }
 
@@ -22928,7 +23104,7 @@
    */
   function beginMeasurementLabelDrag(e, hit) {
     const sprite = hit && hit.object;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+    const record = measurementRecord();
     const labelData = sprite && sprite.userData && sprite.userData.measurementLabel;
     if (!record || !sprite || !sprite.isSprite || !labelData || !labelData.basePosition || !labelData.basePosition.isVector3) return false;
     const key = String(labelData.key || '');
@@ -22938,7 +23114,7 @@
     const cameraDir = new THREE.Vector3();
     camera.getWorldDirection(cameraDir);
     if (cameraDir.lengthSq() < 1e-10) cameraDir.set(0, 0, -1);
-    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(cameraDir.normalize(), sprite.position.clone());
+    const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(cameraDir.normalize(), sprite.getWorldPosition(new THREE.Vector3()));
     const planePoint = new THREE.Vector3();
     if (!raycaster.ray.intersectPlane(plane, planePoint)) return false;
     measurementLabelDragState = {
@@ -22947,8 +23123,8 @@
       key,
       record,
       plane,
-      startPlanePoint: planePoint.clone(),
-      initialOffset: getMeasurementLabelOffset(record, key),
+      startPlanePoint: editSelGroup.worldToLocal(planePoint.clone()),
+      initialOffset: sprite.position.clone().sub(labelData.basePosition),
     };
     try { canvasEl.setPointerCapture(e.pointerId); } catch { }
     __editMoved = false;
@@ -22969,7 +23145,7 @@
     if (!raycaster.ray.intersectPlane(plane, planeHit)) return;
     const labelData = sprite.userData && sprite.userData.measurementLabel;
     if (!labelData || !labelData.basePosition || !labelData.basePosition.isVector3) return;
-    const nextOffset = initialOffset.clone().add(planeHit.sub(startPlanePoint));
+    const nextOffset = initialOffset.clone().add(editSelGroup.worldToLocal(planeHit).sub(startPlanePoint));
     setMeasurementLabelOffset(record, key, nextOffset);
     sprite.position.copy(labelData.basePosition).add(nextOffset);
     __editMoved = true;
@@ -22980,6 +23156,7 @@
    * @param {PointerEvent=} e
    */
   function finalizeMeasurementLabelDrag(e) {
+    measurementLayoutKey = '';
     if (!measurementLabelDragState) return false;
     const pointerId = measurementLabelDragState.pointerId;
     if (Number.isInteger(pointerId)) {
@@ -23052,7 +23229,7 @@
     const carrier = hitOrCarrier && hitOrCarrier.object && hitOrCarrier.object.userData
       ? hitOrCarrier.object
       : hitOrCarrier;
-    const section = hitOrCarrier && hitOrCarrier.object && hitOrCarrier.object.userData
+    const section = !canCycleBuildBondOrder() && hitOrCarrier && hitOrCarrier.object && hitOrCarrier.object.userData
       ? String(hitOrCarrier.section || 'center')
       : '';
     const logicalKey = getBondCarrierLogicalKey(carrier);
@@ -23101,15 +23278,17 @@
     return normalizeEditAddBondOrder(carrier.userData.bondOrder || 1);
   }
 
-  function stepGestureBondCenterOrder(bondHit, delta, pointerLike = null) {
+  function canCycleBuildBondOrder() {
+    return currentMode === MODES.EDIT && getEditToolState().build
+      && getCurrentBuildPayload().kind === 'atom' && !addFusePreviewState;
+  }
+
+  function stepBuildBondOrder(bondHit, delta, pointerLike = null) {
     if (
-      getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION
-      || isFragmentPayloadLoaded()
-      || !!addFusePreviewState
+      !canCycleBuildBondOrder()
       || !bondEditing
       || !bondHit
       || !bondHit.object
-      || bondHit.section !== 'center'
     ) return false;
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
@@ -23340,17 +23519,6 @@
     return changed;
   }
 
-  function handleBondCenterScopeSelection(e, initialBondHit = null) {
-    const pickedBondHit = initialBondHit && initialBondHit.object
-      ? initialBondHit
-      : pickBondHit(e);
-    const bondHit = (pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center')
-      ? pickedBondHit
-      : resolveGestureBondCenterClickHit(e);
-    if (!(bondHit && bondHit.object && bondHit.section === 'center')) return false;
-    return setBondCenterSelectionFromHit(bondHit, { announce: true });
-  }
-
   function handleBondCenterSelectionShortcut(rawValue, e) {
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
@@ -23556,131 +23724,10 @@
     return pickSelectedAtomDragFallback(e);
   }
 
-  function pickSelectedEditContextAtomFallback(e) {
-    if (currentMode !== MODES.EDIT) return null;
-    const selection = getEditAtomSelection();
-    if (!Array.isArray(selection) || selection.length !== 1) return null;
-    const idx = selection[0] | 0;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length) return null;
-    const atom = vol.atoms[idx];
-    const mesh = atomGroup && atomGroup.children ? atomGroup.children[idx] : null;
-    if (!atom || !(mesh && mesh.userData)) return null;
-    const world = mesh.position && mesh.position.isVector3 ? mesh.position : atomUnitsToAng(vol, atom);
-    const projected = projectWorldToClient(world);
-    if (!projected || !projected.visible) return null;
-    const projectedRadius = Math.max(
-      14,
-      projectWorldRadiusToClientPixels(world, getRenderedAtomDisplayRadius((atom.Z | 0))) + 6
-    );
-    const dx = (Number(e && e.clientX) || 0) - (Number(projected.x) || 0);
-    const dy = (Number(e && e.clientY) || 0) - (Number(projected.y) || 0);
-    return (dx * dx + dy * dy) <= (projectedRadius * projectedRadius) ? mesh : null;
-  }
-
-  function pickEditContextAtomHit(e) {
-    const atomHit = pickAtomHit(e);
-    if (atomHit && atomHit.object && atomHit.object.userData) return atomHit;
-    const bondHit = pickBondHit(e);
-    if (bondHit && !bondHit.isProximity) return null;
-    const selectedFallback = pickSelectedEditContextAtomFallback(e);
-    if (!(selectedFallback && selectedFallback.userData)) return null;
-    return {
-      object: selectedFallback,
-      point: selectedFallback.position && selectedFallback.position.isVector3
-        ? selectedFallback.position.clone()
-        : null,
-    };
-  }
-
-  function handleEditAtomContextSelection(e) {
-    if (currentMode !== MODES.EDIT) return false;
-    const hit = pickEditContextAtomHit(e);
-    if (!(hit && hit.object && hit.object.userData)) return false;
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const hitIndex = hit.object.userData.index | 0;
-    if (!vol || !Array.isArray(vol.atoms) || hitIndex < 0 || hitIndex >= vol.atoms.length) return false;
-    const resolvedAnchorHit = resolveFragmentAnchorPlacementHit(vol, hit);
-    const resolvedAnchorIndex = resolvedAnchorHit ? (resolvedAnchorHit.anchorIndex | 0) : hitIndex;
-    const attachContext = getActiveFragmentAttachContext(vol, resolvedAnchorIndex);
-    const hitAtom = vol.atoms[hitIndex];
-    if (attachContext && attachContext.cueArmed) {
-      const isPinnedHydrogenReplace = !!(
-        hitAtom
-        && (hitAtom.Z | 0) === 1
-        && resolvedAnchorHit
-        && resolvedAnchorIndex === attachContext.pinnedAnchorIndex
-        && resolvedAnchorHit.initialWorldPos
-        && resolvedAnchorHit.initialWorldPos.isVector3
-      );
-      if (isPinnedHydrogenReplace) {
-        return commitFragmentAttachAtWorld(attachContext.pinnedAnchorIndex, resolvedAnchorHit.initialWorldPos.clone(), attachContext);
-      }
-      if (resolvedAnchorIndex >= 0) {
-        clearRecentEditContextAtomClick();
-        applyEditAtomSelectionClick(resolvedAnchorIndex, false);
-        setFragmentAttachCueAnchorByIndex(resolvedAnchorIndex);
-        hideSelectionFragmentCuePopover();
-        updateEditToolboxUi({ syncSearch: false });
-        return true;
-      }
-    }
-    const currentSelection = normalizeEditAtomSelection(getEditAtomSelection(), vol);
-    const isSameSingleSelectedAtom = currentSelection.length === 1 && currentSelection[0] === hitIndex;
-    if (isSameSingleSelectedAtom) {
-      clearRecentEditContextAtomClick();
-      const moleculeIndices = getMoleculeComponentIndices(vol, hitIndex);
-      if (Array.isArray(moleculeIndices) && moleculeIndices.length) {
-        applyEditAtomSelectionBox(moleculeIndices, !!(e && e.shiftKey));
-        return true;
-      }
-    }
-    const repeatedClick = wasRecentRepeatedEditContextAtomClick(hitIndex, e);
-    recordEditContextAtomClick(hitIndex, e);
-    if (repeatedClick) {
-      const moleculeIndices = getMoleculeComponentIndices(vol, hitIndex);
-      if (Array.isArray(moleculeIndices) && moleculeIndices.length) {
-        applyEditAtomSelectionBox(moleculeIndices, !!(e && e.shiftKey));
-        return true;
-      }
-    }
-    return !!applyEditAtomSelectionClick(hitIndex, !!(e && e.shiftKey));
-  }
-
-  function shouldConsumeSymmetryContextHit(e) {
-    if (currentMode !== MODES.EDIT || !isSymmetryPopoverOpen()) return false;
-    const atomHit = pickAtomHit(e);
-    if (atomHit && atomHit.object && atomHit.object.userData) return true;
-    const bondHit = pickBondHit(e);
-    return !!(bondHit && bondHit.object);
-  }
-
-  function handleEditScopeContextSelection(e) {
-    if (currentMode !== MODES.EDIT) return false;
-    if (shouldConsumeSymmetryContextHit(e)) {
-      clearRecentEditContextAtomClick();
-      return true;
-    }
-    const atomHandled = handleEditAtomContextSelection(e);
-    if (atomHandled) {
-      clearBondCenterSelection({ updateVisuals: true });
-      return true;
-    }
-    clearRecentEditContextAtomClick();
-    const pickedBondHit = pickBondHit(e);
-    if (pickedBondHit && pickedBondHit.object && isExplicitTransformBondSideHit(pickedBondHit)) {
-      clearBondCenterSelection({ updateVisuals: false });
-      const payload = applyGestureBondSideSelection(pickedBondHit);
-      return !!payload;
-    }
-    const bondHit = (pickedBondHit && pickedBondHit.object && pickedBondHit.section === 'center')
-      ? pickedBondHit
-      : resolveGestureBondCenterClickHit(e);
+  function applyEditBondScopeSelection(bondHit) {
     if (!(bondHit && bondHit.object)) return false;
     clearBondCenterSelection({ updateVisuals: false });
-    if (bondHit.section === 'center') return handleBondCenterScopeSelection(e, bondHit);
+    if (bondHit.section === 'center') return setBondCenterSelectionFromHit(bondHit, { announce: true });
     if (isExplicitTransformBondSideHit(bondHit)) {
       const payload = applyGestureBondSideSelection(bondHit);
       return !!payload;
@@ -24365,7 +24412,6 @@
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
-      hint: `Added ${getElementName(z)} (${getElementSymbol(z)}) atom • Adjust location • Enter confirm • Esc close`,
     });
     return { atomIndex: finalIndex >= 0 ? finalIndex : newIndex, selection: [] };
   }
@@ -24422,7 +24468,6 @@
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
-      hint: `Added ${getElementName(z)} (${getElementSymbol(z)}) with bond order ${bondOrder} • Adjust location • Enter confirm • Esc cancel`,
     });
     return { atomIndex: finalIndex >= 0 ? finalIndex : newIndex, selection: [] };
   }
@@ -24522,7 +24567,6 @@
       autoAdjustHydrogensOnCommit: false,
       translateAttachedHydrogens: true,
       startCollapsed: true,
-      hint: `Replaced terminal H with ${getElementName(z)} (${getElementSymbol(z)}) • Adjust location • Enter confirm • Esc cancel`,
     });
     return {
       atomIndex: finalIndex >= 0 ? finalIndex : newIndex,
@@ -25427,11 +25471,6 @@
 
   let __lastBondUpdate = 0;
   canvasEl.addEventListener('pointermove', (e) => {
-    if (__contextDownPt && (!Number.isInteger(__contextDownPt.pointerId) || __contextDownPt.pointerId === e.pointerId)) {
-      const contextDx = (Number(e.clientX) || 0) - __contextDownPt.x;
-      const contextDy = (Number(e.clientY) || 0) - __contextDownPt.y;
-      if (Math.hypot(contextDx, contextDy) > 4) __contextMoved = true;
-    }
     if (viewRotateActive && viewRotatePointerId === e.pointerId) {
       const dx = (Number(e.clientX) || 0) - viewRotateLastClientX;
       const dy = (Number(e.clientY) || 0) - viewRotateLastClientY;
@@ -25448,21 +25487,15 @@
       if (typeof e.preventDefault === 'function') e.preventDefault();
       return;
     }
-    if (viewPanActive && viewPanPointerId === e.pointerId) {
-      const dx = (Number(e.clientX) || 0) - viewPanLastClientX;
-      const dy = (Number(e.clientY) || 0) - viewPanLastClientY;
-      viewPanLastClientX = Number(e.clientX) || viewPanLastClientX;
-      viewPanLastClientY = Number(e.clientY) || viewPanLastClientY;
-      applyViewPan(dx, dy);
-      if (typeof e.preventDefault === 'function') e.preventDefault();
-      return;
-    }
     // Allow hover highlighting in Display, Edit, and Measurement modes.
-    const allowHover = (currentMode === MODES.DISPLAY || currentMode === MODES.EDIT || currentMode === MODES.MEASURE);
+    const allowHover = (currentMode === MODES.DISPLAY || currentMode === MODES.EDIT || currentMode === MODES.MEASURE || currentMode === MODES.CALCULATIONS);
     if (!allowHover) {
       clearMeasurementLabelHover();
       hideSurfaceHoverLabel();
       return;
+    }
+    if (currentMode === MODES.CALCULATIONS) {
+      setHover(pickAtom(e)); setBondHover(null); setSurfaceHover(null); hideSurfaceHoverLabel(); return;
     }
     // Track movement to distinguish click vs drag in measurement and edit modes.
     if ((currentMode === MODES.MEASURE || currentMode === MODES.EDIT) && __editDownPt) {
@@ -25564,24 +25597,7 @@
   });
 
   canvasEl.addEventListener('contextmenu', (e) => {
-    if (currentMode === MODES.EDIT) {
-      if (!__contextMoved) {
-        if (__contextHandled) {
-          if (typeof e.preventDefault === 'function') e.preventDefault();
-          resetContextClickState();
-          return;
-        }
-        if (handleEditScopeContextSelection(e)) {
-          if (typeof e.preventDefault === 'function') e.preventDefault();
-          resetContextClickState();
-          return;
-        }
-      }
-      if (typeof e.preventDefault === 'function') e.preventDefault();
-      resetContextClickState();
-      return;
-    }
-    resetContextClickState();
+    if (currentMode === MODES.EDIT) e.preventDefault();
   });
 
   canvasEl.addEventListener('wheel', (e) => {
@@ -25592,23 +25608,11 @@
   }, { passive: false });
 
   canvasEl.addEventListener('pointerdown', (e) => {
-    if (isEditContextPointerEvent(e)) {
-      __contextHandled = false;
-      if (handleEditScopeContextSelection(e)) {
-        __contextHandled = true;
-        if (typeof e.preventDefault === 'function') e.preventDefault();
-        return;
-      }
-      __contextDownPt = {
-        x: Number(e.clientX) || 0,
-        y: Number(e.clientY) || 0,
-        pointerId: Number.isInteger(e.pointerId) ? e.pointerId : null,
-      };
-      __contextMoved = false;
-      __contextHandled = true;
-      if (e.shiftKey) beginViewPan(e);
-      else beginQuaternionViewRotate(e);
-      if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (isEditViewOrbitPointerEvent(e)) {
+      editViewOrbitPointerId = e.pointerId;
+      __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+      beginQuaternionViewRotate(e);
+      e.preventDefault();
       return;
     }
     if (e.button !== 0) return;
@@ -25623,7 +25627,7 @@
     dragBeforeBondSnapshot = null;
     const obj = pickAtom(e);
     if (currentMode === MODES.EDIT) {
-      if (isSymmetryPopoverOpen()) {
+      if (!workspaceEnabled && isSymmetryPopoverOpen()) {
         if (typeof e.preventDefault === 'function') e.preventDefault();
         return;
       }
@@ -25634,6 +25638,10 @@
       beginQuaternionViewRotate(e);
       e.preventDefault();
       return;
+    } else if (currentMode === MODES.CALCULATIONS) {
+      beginQuaternionViewRotate(e);
+      __editClickIdx = obj?.userData?.index ?? -1;
+      e.preventDefault();
     } else if (currentMode === MODES.MEASURE) {
       const labelHit = pickMeasurementLabelHit(e);
       if (labelHit && beginMeasurementLabelDrag(e, labelHit)) {
@@ -25651,33 +25659,21 @@
     if (viewRotateActive && viewRotatePointerId === e.pointerId) {
       endQuaternionViewRotate(e);
     }
-    if (viewPanActive && viewPanPointerId === e.pointerId) {
-      endViewPan(e);
-    }
-    if (currentMode === MODES.EDIT && isTrackedContextPointerEvent(e)) {
-      resetContextClickState();
+    if (isEditViewOrbitPointerEvent(e) || editViewOrbitPointerId === e.pointerId) {
+      editViewOrbitPointerId = null;
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return;
     }
     if (currentMode === MODES.EDIT) {
-      if (e.button === 0 && !__editMoved) {
-        const bondCenterHit = resolveGestureBondCenterClickHit(e);
-        if (bondCenterHit && bondCenterHit.object && bondCenterHit.section === 'center') {
-          const changed = stepGestureBondCenterOrder(bondCenterHit, 1, e);
-          if (editGestureController && typeof editGestureController.clearState === 'function') {
-            editGestureController.clearState();
-          }
-          if (changed) {
-            updateAxisGuideLine();
-            __editDownPt = null; __editClickIdx = -1; __editMoved = false;
-            return;
-          }
-        }
-      }
       if (editGestureController && editGestureController.handlePointerUp(e)) {
         updateAxisGuideLine();
         __editDownPt = null; __editClickIdx = -1; __editMoved = false;
         return;
+      }
+    } else if (currentMode === MODES.CALCULATIONS) {
+      if (e.button === 0 && !__editMoved) {
+        if (__editClickIdx >= 0) toggleCalculationAtom(__editClickIdx, e.shiftKey).catch(error => setHintMessage(error.message));
+        else { calculationsModel.setSelectedAtoms(measurementRecord(),[]); syncCalculations(); updateSelectedHalos(); }
       }
     } else if (currentMode === MODES.MEASURE) {
       if (finalizeMeasurementLabelDrag(e)) {
@@ -25707,9 +25703,8 @@
     __editDownPt = null; __editClickIdx = -1; __editMoved = false;
   });
   canvasEl.addEventListener('pointercancel', (e) => {
-    resetContextClickState();
+    editViewOrbitPointerId = null;
     if (viewRotateActive && (!Number.isInteger(viewRotatePointerId) || viewRotatePointerId === e.pointerId)) endQuaternionViewRotate(e);
-    if (viewPanActive && (!Number.isInteger(viewPanPointerId) || viewPanPointerId === e.pointerId)) endViewPan(e);
     if (gestureBondSidePress && canvasEl && Number.isInteger(gestureBondSidePress.pointerId) && typeof canvasEl.releasePointerCapture === 'function') {
       try { canvasEl.releasePointerCapture(gestureBondSidePress.pointerId); } catch { }
     }
@@ -25728,7 +25723,6 @@
       try { controls.enabled = true; } catch { }
     }
     try { controls.enabled = true; } catch { }
-    resetContextClickState();
     updateAxisGuideLine();
   });
 
@@ -25759,8 +25753,9 @@
   /**
    * Snap camera to one principal axis direction while keeping target and distance.
    * @param {'x'|'y'|'z'} axis
+   * @param {1|-1} sign Camera side of the target (not the gaze vector).
    */
-  function setCameraAxisPreset(axis) {
+  function setCameraAxisPreset(axis, sign = 1) {
     const key = axis === 'y' ? 'y' : (axis === 'z' ? 'z' : 'x');
     const dir = key === 'x'
       ? new THREE.Vector3(1, 0, 0)
@@ -25768,7 +25763,8 @@
     const target = controls.target.clone();
     let dist = camera.position.distanceTo(target);
     if (!(Number.isFinite(dist) && dist > 1e-6)) dist = 8;
-    camera.position.copy(target).addScaledVector(dir, dist);
+    camera.position.copy(target).addScaledVector(dir, dist * (sign < 0 ? -1 : 1));
+    controls.autoRotate = false;
     if (key === 'x' || key === 'y') camera.up.set(0, 0, 1);
     else camera.up.set(0, 1, 0);
     camera.lookAt(target);
@@ -25776,11 +25772,8 @@
     updateActiveCameraProjection(w, h);
     controls.update();
     refreshViewUI();
-    setHintMessage(`View preset: +${key.toUpperCase()}`);
+    setHintMessage(`View from ${sign < 0 ? '−' : '+'}${key.toUpperCase()}`);
   }
-  if (viewAxisXBtn) viewAxisXBtn.onclick = () => setCameraAxisPreset('x');
-  if (viewAxisYBtn) viewAxisYBtn.onclick = () => setCameraAxisPreset('y');
-  if (viewAxisZBtn) viewAxisZBtn.onclick = () => setCameraAxisPreset('z');
 
   // --- Shortcut bindings ---
 
@@ -25838,6 +25831,12 @@
   // Note: Esc handling removed per request. Use on-screen UI to close dialogs.
 
   // Display mode bindings
+  bind('down', MODES.CALCULATIONS, 'Escape', () => {
+    if(calculationsModel.selectedIds(measurementRecord()).length){calculationsModel.setSelectedAtoms(measurementRecord(),[]);syncCalculations();updateSelectedHalos();}
+    else setMode(MODES.DISPLAY);
+  });
+  bind('down', MODES.CALCULATIONS, 'e', () => setMode(MODES.EDIT));
+  bind('down', MODES.CALCULATIONS, 'm', () => setMode(MODES.MEASURE));
   bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
   bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
   // Toggle View window in standard (display) mode
@@ -25878,6 +25877,12 @@
   bind('down', MODES.EDIT, 'p', () => { alignActiveMoleculePrincipalAxes(); });
   bind('down', MODES.EDIT, 's', (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (window.VibeMolWorkbench?.snapshot().focus) {
+      window.VibeMolWorkbench.setFocus(false);
+      window.VibeMolWorkbench.open('symmetryPanel');
+      return;
+    }
+    if (window.VibeMolWorkbench?.restoreIfHidden('symmetryPanel')) return;
     if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
     else showSymmetryPopover();
   });
@@ -25991,6 +25996,10 @@
     const isRedo = (key === 'z' && e.shiftKey) || key === 'y';
     if (!isUndo && !isRedo) return false;
     e.preventDefault();
+    if (currentMode === MODES.MEASURE) {
+      measurements.undo(measurementRecord(), isRedo);
+      updateEditSelectionVisuals(); markSessionChanged(); return true;
+    }
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     if (isUndo) undoLastEditAction();
     else redoLastEditAction();
@@ -26070,6 +26079,7 @@
       styleStudio.setOpen(false);
       return;
     }
+    if (e.key === 'Escape' && currentMode === MODES.EDIT && handleEditToolEscape(e)) return;
     if (currentMode === MODES.EDIT && addAtomOperatorSession) {
       if (e.key === 'Enter' && !isTypingInInput()) {
         e.preventDefault();
@@ -26115,9 +26125,11 @@
       setHintMessage('Canceled fuse-ring placement.');
       return;
     }
-    if (e.key === 'Escape' && currentMode === MODES.EDIT && isSymmetryPopoverOpen()) {
+    if (e.key === 'Escape' && currentMode === MODES.EDIT && isSymmetryPopoverOpen()
+      && (!workspaceEnabled || symmetryPreviewState)) {
       e.preventDefault();
-      hideSymmetryPopover({ restore: true });
+      if (workspaceEnabled) cancelSymmetryPreview();
+      else hideSymmetryPopover({ restore: true });
       return;
     }
     if (e.key === 'Escape' && !workspaceEnabled) {
@@ -26505,6 +26517,7 @@
         && type !== 'atomHighlight'
         && type !== 'atomLabel'
         && type !== 'bondOutline'
+        && type !== 'hydrogenBondContacts'
         && type !== 'bondHighlight';
       node.castShadow = allow;
       node.receiveShadow = allow;
@@ -27829,6 +27842,7 @@
     updateSelectedHalos(); updateTransformBondSelectionHalos(); updateTransformSelectionGuides();
   }
   function finishLookChange(options = {}) {
+    syncCalculations(true);
     applyMoleculeStyleUiState();
     if (options.geometry !== false) rebuildAppearanceMolecules();
     const targets = options.targets || ['atoms', 'bonds', 'surfaces'];
@@ -27987,6 +28001,20 @@
 
   // Public API for browser automation and future integrations.
   window.VibeMolStructure = structureTransportController.getPublicApi();
+  window.VibeMolCalculations = Object.freeze({
+    enter: () => setMode(MODES.CALCULATIONS),
+    ready: () => calculationsModel.loadBasis(),
+    state: () => { const r=measurementRecord(); return JSON.parse(JSON.stringify({ ...calculationsModel.state(r), selectedAtomIds:calculationsModel.selectedIds(r), options:calculationsModel.optionsFor(r) })); },
+    toggleAtom: toggleCalculationAtom,
+    selectAtoms: indices => { const r=measurementRecord();if(!r)return;ensureVolumeAtomIds(r.vol);calculationsModel.setSelectedAtoms(r,indices.map(i=>String(r.vol.atoms[i]?.id)));syncCalculations();updateSelectedHalos();calculationsPicker.show(); },
+    selectShell: (index, shell) => { const r=measurementRecord(); ensureVolumeAtomIds(r.vol); calculationsModel.selectShell(r,String(r.vol.atoms[index].id),shell); markSessionChanged(); syncCalculations(true); },
+    selectComponent: (index, shell, component) => { const r=measurementRecord(); ensureVolumeAtomIds(r.vol); calculationsModel.selectComponent(r,String(r.vol.atoms[index].id),shell,component); markSessionChanged(); syncCalculations(true); },
+    addPlane: indices => { const r=measurementRecord(); const result=calculationsModel.addPlane(r,indices?.map(i=>String(r.vol.atoms[i].id))); markSessionChanged(); syncCalculations(true); return result; },
+    configure: patch => { calculationsModel.setOptions(measurementRecord(),patch); markSessionChanged(); syncCalculations(); },
+    export: () => ({ code: calculationsModel.generate(measurementRecord()), specs: calculationsModel.specs(measurementRecord()), planes: calculationsModel.planeSpecs(measurementRecord()),
+      counts: (() => { const p=calculationsModel.projection(measurementRecord()); return { minao:p.minao,orbitals:p.orbitals,atoms:p.atomCount }; })(), validation: calculationsModel.validation(measurementRecord()) }),
+    cacheSize: () => calculationsRenderer.cacheSize(),
+  });
   window.VibeMolUFFLocal = Object.freeze({
     createActiveLocalUffContext,
     optimizeActiveStructureWithUff,
@@ -28050,6 +28078,17 @@
     },
     getMeasurementSnapshot: () => ({
       atomIndices: editSel.slice(),
+      rows: measurements.rows(measurementRecord()),
+      surfacesSuppressed: surfaceRenderSuppressed,
+      labels: editSelGroup.children.filter(child => child.userData?.measurementLabel).map(sprite => {
+        const center = sprite.getWorldPosition(new THREE.Vector3());
+        const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(sprite.scale.x / 2);
+        const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(sprite.scale.y / 2);
+        const a = center.clone().sub(right).add(up).project(camera), b = center.clone().add(right).sub(up).project(camera);
+        return { key: sprite.userData.measurementLabel.key, text: sprite.userData.measurementLabel.text, visible: sprite.visible,
+          left: (a.x+1)*currentViewportMetrics.cssWidth/2, top: (1-a.y)*currentViewportMetrics.cssHeight/2,
+          right: (b.x+1)*currentViewportMetrics.cssWidth/2, bottom: (1-b.y)*currentViewportMetrics.cssHeight/2 };
+      }),
       labelCount: editSelGroup.children.filter(child => child.userData?.measurementLabel).length,
     }),
     getEditSelectionIndices: () => {
@@ -28193,6 +28232,7 @@
     getMoleculeRenderSnapshot: () => {
       const atoms = [];
       const bonds = [];
+      const hydrogenBondContacts = [];
       const world = new THREE.Vector3();
       const isVisible = (obj) => {
         for (let cur = obj; cur; cur = cur.parent) {
@@ -28204,6 +28244,7 @@
       if (contentGroup && typeof contentGroup.traverse === 'function') {
         contentGroup.traverse((obj) => {
           if (!obj || !obj.userData || !isVisible(obj)) return;
+          if (obj.userData.type === 'hydrogenBondContacts') hydrogenBondContacts.push(...obj.userData.contacts);
           if (obj.userData.type === 'atom' && obj.position) {
             obj.getWorldPosition(world);
             atoms.push({
@@ -28229,6 +28270,8 @@
       return {
         atomCount: atoms.length,
         bondCarrierCount: bonds.length,
+        hydrogenBondCount: hydrogenBondContacts.length,
+        hydrogenBondContacts,
         atoms,
         bonds,
       };
@@ -29396,6 +29439,9 @@
    * Refresh coordinates panel contents for the active file.
    */
   function updateSidePanel() {
+    syncEditSceneTool();
+    measurementsPanel?.sync();
+    syncCalculations();
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     ensureListPopovers();
     if (coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });
@@ -30792,7 +30838,7 @@
       ['Name', meta.title || '—'],
       ['CID', meta.cid != null ? String(meta.cid) : '—'],
       ['Formula', meta.molecularFormula || '—'],
-      ['Weight', meta.molecularWeight || '—'],
+      ['Molar mass', meta.molecularWeight ? `${meta.molecularWeight} g/mol` : '—'],
       ['IUPAC', meta.iupacName || '—'],
       ['SMILES', meta.connectivitySmiles || '—'],
       ['Source', meta.source || 'PubChem']
@@ -30855,6 +30901,7 @@
     if (!hintEl || String(hintEl.textContent || '').trim().length === 0) return;
     setHintVisible(true);
     clearHintVisibilityTimer();
+    if (currentMode === MODES.EDIT) return;
     hintVisibilityTimer = window.setTimeout(() => {
       hintVisibilityTimer = 0;
       setHintVisible(false);
@@ -30879,14 +30926,28 @@
    */
   function setHintMessage(message, options = {}) {
     if (!hintEl) return;
-    hintEl.textContent = message;
-    if (String(message || '').trim().length > 0) {
+    lastHintMessage = message;
+    hintEl.textContent = '';
+    if (currentMode === MODES.EDIT && editTools) {
+      const info = window.VibeMolEditToolUi.describe(getEditToolState());
+      const line = document.createElement('span'); line.className = 'vm-edit-tool-hint';
+      if (info.build) {
+        const tag = document.createElement('span'); tag.className = 'vm-tool-badge'; tag.textContent = 'BUILD'; line.append(tag, document.createTextNode(' — '));
+      }
+      line.append(document.createTextNode(info.hint)); hintEl.append(line);
+      // Operation feedback is still useful, but never overrides the armed-tool signal.
+      if (message && message !== HINT_EDIT && !/^(Build (element|fragment|molecule):|Canceled .*placement\.|Selection cleared\.)/.test(message)) {
+        const status = document.createElement('span'); status.className = 'vm-edit-tool-status'; status.textContent = String(message).replaceAll(' • ', ' · '); hintEl.append(status);
+      }
+    } else hintEl.textContent = message;
+    const hasHint = hintEl.textContent.trim().length > 0;
+    if (hasHint) {
       revealHintTemporarily();
     } else {
       clearHintVisibilityTimer();
       setHintVisible(false);
     }
-    const shouldAccent = options.accent !== false && String(message || '').trim().length > 0;
+    const shouldAccent = options.accent !== false && hasHint;
     if (hintAccentTimer) {
       clearTimeout(hintAccentTimer);
       hintAccentTimer = 0;
@@ -32293,7 +32354,7 @@
       if (asActive) atomGroup = nextAtomGroup;
       else extraMoleculeRenderGroups.push(nextAtomGroup);
     }
-    if (display.showBonds) {
+    if (display.showBonds || display.showHydrogenBonds) {
       const nextBondGroup = buildBonds(vol, display);
       applyShadowParticipation(nextBondGroup);
       contentGroup.add(nextBondGroup);
@@ -32397,8 +32458,7 @@
 
         if (!skipAutoIso && getLayerAutoIsoEnabled(layer)) {
           try {
-            const stride = autoIsoController.pickAutoIsoSampleStride(vol);
-            const estimated = autoIsoController.estimateAutoIsoValue(vol, compMode, AUTO_ISO_TARGET_FRACTION, stride);
+            const estimated = estimateSurfaceAutoIso(vol, compMode);
             if (Number.isFinite(estimated) && estimated > 0) {
               const changed = layer.isoPending || layer.iso !== estimated;
               layer.iso = estimated;
@@ -32449,6 +32509,7 @@
 
     refreshSimulationBoxes();
     applyCameraStrategy(preserveView, savedCam, savedTarget);
+    if (figureRendering) return;
     updateSidePanel();
     updatePostRebuildUI(activeSurfaceVol || moleculeVol, activeSurfaceCompMode);
     syncAppearanceControlsToActiveLayer();
@@ -32515,7 +32576,7 @@
 
   let batchExportRunning = false;
   batchBtn.onclick = async () => {
-    if (batchExportRunning) return;
+    if (batchExportRunning || figureComposer?.isRunning()) return;
     const exporter = window.VibeMolSceneExport;
     const targets = exporter.listTargets(sceneGraphController);
     if (!targets.length) return;
@@ -32579,6 +32640,151 @@
       batchBtn.disabled = false;
     }
   };
+
+  // Figure output owns a short rendering transaction, independent of sessions/Looks.
+  const figureExporter = window.VibeMolSceneExport;
+  const figureLayerKeys = ['iso', 'autoIso', 'isoPending', 'opacity', 'colorScheme', 'posColor', 'negColor', 'styleOverrides'];
+  const figureAutoIsoValues = new Map();
+  let figureFinalTarget = null, figurePostMaterial = null, figurePostScene = null;
+  function figureTargets() {
+    return figureExporter.listTargets(sceneGraphController).map(t => ({ id:t.layer.id, name:t.name,
+      sceneName:t.scene.name, iso:isCubeLikeLayer(t.layer) ? Number(t.layer.iso) || DEFAULT_ISO_VALUE : null }));
+  }
+  function figureSharedIso(targets) {
+    return Number(getActiveCubeLayer()?.iso) || Number(targets.find(t => Number(t.iso || t.layer?.iso)>0)?.iso
+      || targets.find(t => Number(t.layer?.iso)>0)?.layer.iso) || DEFAULT_ISO_VALUE;
+  }
+  function activateFigureTarget(target, options) {
+    figureExporter.activateTarget(sceneGraphController,target);
+    target.layer.visible=true;
+    currentIndex=Math.max(0,getRecordIndex(target.layer.record || target.scene.moleculeRecord));
+    if(isCubeLikeLayer(target.layer)) {
+      if(options.sharedIso)Object.assign(target.layer,{iso:Number(options.iso),autoIso:false,isoPending:false});
+      else if(getLayerAutoIsoEnabled(target.layer)) {
+        // Hidden/deferred orbitals can still have an old numeric iso. Resolve
+        // the same threshold as the viewport before the union-bounds pass,
+        // then reuse it for capture without persisting temporary layer edits.
+        if(!figureAutoIsoValues.has(target.layer)) {
+          const vol=getLayerCubeData(target.layer), compMode=getComponentMode(vol);
+          selectActiveRawComponent(vol,compMode);
+          figureAutoIsoValues.set(target.layer,hasVolumetricGrid(vol)?estimateSurfaceAutoIso(vol,compMode):NaN);
+        }
+        const iso=figureAutoIsoValues.get(target.layer);
+        if(Number.isFinite(iso)&&iso>0)Object.assign(target.layer,{iso,isoPending:false});
+      }
+      if(options.sharedLook)Object.assign(target.layer,{opacity:surfaceOpacityDefault,colorScheme:surfaceColorSchemeDefault,
+        posColor:surfacePosColorDefault,negColor:surfaceNegColorDefault,styleOverrides:{}});
+    }
+  }
+  function figureHelpers() {
+    return [editGridHelper,editSelGroup,addPreviewGroup,addAngleGuideGroup,transformGuideGroup,symmetryElementGuideGroup,
+      autoHydrogenPreviewGroup,gestureVoidPreviewGroup,editHaloGhostPreviewGroup,calculationsRenderer?.group,
+      editGizmos.getMoveGroup(),editGizmos.getRotateGroup()].filter(Boolean);
+  }
+  function rebuildFigureScene() {
+    // Activation has resolved per-orbital Auto-iso or applied the fixed lock.
+    rebuildScene({preserveView:true,skipAutoIso:true});
+    figureHelpers().forEach(obj=>{obj.visible=false;});
+    contentGroup.updateMatrixWorld(true);
+  }
+  function renderFigurePixels(size,pixelScale) {
+    const metrics={cssWidth:size,cssHeight:size,bufferWidth:size,bufferHeight:size,dpr:1};
+    const target=ensureSceneRenderTargets(metrics);renderer.setRenderTarget(target);
+    renderSceneFrame(metrics,target);
+    if(!figureFinalTarget || figureFinalTarget.width!==size) {
+      figureFinalTarget?.dispose();
+      figureFinalTarget=new THREE.WebGLRenderTarget(size,size,{format:THREE.RGBAFormat,type:THREE.UnsignedByteType,depthBuffer:false});
+      figureFinalTarget.texture.colorSpace=THREE.SRGBColorSpace;
+    }
+    if(figurePostMaterial)figurePostMaterial.dispose();
+    const source=isDepthOfFieldActive()?dofPostMaterial:sceneBlitMaterial;
+    figurePostMaterial=source.clone();
+    // Our color passes blend onto transparent black. Unpremultiply BEFORE the
+    // final tone/color-space conversion so translucent edges retain their color.
+    figurePostMaterial.fragmentShader=source.fragmentShader.replace('#include <tonemapping_fragment>',
+      'if (gl_FragColor.a > 0.00001) gl_FragColor.rgb /= gl_FragColor.a;\n#include <tonemapping_fragment>');
+    if(isDepthOfFieldActive()) {
+      updateDofUniformState(metrics,target);figurePostMaterial.uniforms=dofUniforms;
+      dofUniforms.blurAmount.value=getDofBlurAmount()*pixelScale;
+    } else {sceneBlitUniforms.tColor.value=target.texture;figurePostMaterial.uniforms=sceneBlitUniforms;}
+    figurePostScene=new THREE.Scene();figurePostScene.add(new THREE.Mesh(sceneBlitQuad.geometry,figurePostMaterial));
+    renderer.setRenderTarget(figureFinalTarget);renderer.setViewport(0,0,size,size);renderer.setScissorTest(false);renderer.clear();
+    renderer.render(figurePostScene,dofPostCamera);
+    const bytes=new Uint8Array(size*size*4);renderer.readRenderTargetPixels(figureFinalTarget,0,0,size,size,bytes);
+    const image=document.createElement('canvas');image.width=size;image.height=size;
+    const ctx=image.getContext('2d'), data=ctx.createImageData(size,size), stride=size*4;
+    for(let y=0;y<size;y++)data.data.set(bytes.subarray((size-y-1)*stride,(size-y)*stride),y*stride);
+    ctx.putImageData(data,0,0);return image;
+  }
+  let figureUiState=null;
+  function pauseFigureUI(preview) {
+    const rect=canvas.getBoundingClientRect(), freeze=document.createElement('canvas');
+    freeze.className='vm-figure-freeze';freeze.width=canvas.width;freeze.height=canvas.height;
+    freeze.getContext('2d').drawImage(canvas,0,0);
+    Object.assign(freeze.style,{left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});
+    const overlay=document.createElement('div');overlay.className='vm-figure-busy';overlay.hidden=preview;
+    overlay.innerHTML='<span role="status">Composing figure…</span><button type="button" class="vm-btn vm-btn--ghost">Cancel</button>';
+    overlay.querySelector('button').onclick=()=>figureComposer.cancel();
+    const elements=Array.from(document.body.children).filter(el=>!el.inert);
+    figureUiState={freeze,overlay,elements,focus:document.activeElement};
+    elements.forEach(el=>{el.inert=true;});document.body.append(freeze,overlay);
+  }
+  figureRenderer=window.VibeMolFigureRenderer.create({THREE,renderer,scene,controls,camera:()=>camera,
+    viewportHeight:()=>currentViewportMetrics.cssHeight,
+    pause: ({preview}) => {
+      figureAutoIsoValues.clear();
+      const state={ graph:figureExporter.captureGraphState(sceneGraphController),currentIndex,currentMode,
+        surfaceRenderSuppressed,showSurfaces,surfaceGeometryDeferred,
+        layers:getAllLookLayers().map(layer=>({layer,values:Object.fromEntries(figureLayerKeys.map(key=>[key,{own:Object.hasOwn(layer,key),value:cloneJsonLike(layer[key])}]))})),
+        helpers:figureHelpers().map(obj=>({obj,visible:obj.visible})),
+        master:{...getTrajectorySyncMaster()},trajectories:getAllTrajectoryInfos().map(info=>({traj:info.traj,playing:info.traj.playing})),vibrationPlaying,
+        orbitals:volumes.filter(r=>r.vol.kind==='molden').map(record=>({record,index:record.moldenMoIndex})),
+      };
+      figureRendering=true;pauseFigureUI(preview);
+      getTrajectorySyncMaster().playing=false;for(const info of getAllTrajectoryInfos())info.traj.playing=false;vibrationPlaying=false;
+      currentMode=MODES.DISPLAY;surfaceRenderSuppressed=false;showSurfaces=true;
+      return state;
+    },
+    activate:activateFigureTarget,rebuild:rebuildFigureScene,bounds:()=>collectVisibleSceneBounds().contentBox,
+    renderPixels:renderFigurePixels,
+    restoreApp: state => {
+      figureExporter.restoreGraphState(sceneGraphController,state.graph);
+      for(const {layer,values} of state.layers)for(const [key,entry] of Object.entries(values)){if(entry.own)layer[key]=entry.value;else delete layer[key];}
+      currentIndex=state.currentIndex;currentMode=state.currentMode;surfaceRenderSuppressed=state.surfaceRenderSuppressed;showSurfaces=state.showSurfaces;
+      Object.assign(getTrajectorySyncMaster(),state.master,{lastStepMs:0});for(const {traj,playing} of state.trajectories)Object.assign(traj,{playing,_lastStepMs:0});
+      vibrationPlaying=state.vibrationPlaying;vibrationLastStepMs=0;
+      for(const {record,index} of state.orbitals)record.moldenMoIndex=index;
+      rebuildScene({preserveView:true,skipAutoIso:true});surfaceGeometryDeferred=state.surfaceGeometryDeferred;
+      for(const {obj,visible} of state.helpers)obj.visible=visible;
+    },
+    dispose:()=>{figureAutoIsoValues.clear();figureFinalTarget?.dispose();figureFinalTarget=null;figurePostMaterial?.dispose();figurePostMaterial=null;figurePostScene=null;disposeSceneRenderTargets();},
+    resume:()=>{
+      // Suppress autosave/preview invalidation while restoring the original UI.
+      try {syncLoadedSceneControls();updatePostRebuildUI(volumes[currentIndex]?.vol,getComponentMode(volumes[currentIndex]?.vol));updateSidePanel();updateSelectedHalos();}
+      finally {
+        figureRendering=false;
+        const ui=figureUiState;figureUiState=null;
+        if(ui){ui.freeze.remove();ui.overlay.remove();ui.elements.forEach(el=>{el.inert=false;});if(ui.focus?.isConnected)ui.focus.focus({preventScroll:true});}
+      }
+    },
+  });
+  figureComposer=window.VibeMolFigureComposer.create({graph:sceneGraphController,...figureRenderer,
+    busy:()=>!!(batchExportRunning || applyingSession || sessionController?.isOpening() || fileLoaderController.isLoading()
+      || autoHydrogenPreviewGroup.children.length || getSessionBusyReason()),
+    sharedIso:figureSharedIso,
+    colors:background=>{
+      const color=background==='transparent'?null:background==='white'?'#ffffff':scene.background?.isColor?'#'+scene.background.getHexString():'#ffffff';
+      const c=new THREE.Color(color||'#ffffff'), luminance=.2126*c.r+.7152*c.g+.0722*c.b;
+      return {background:color,foreground:luminance<.3?'#ffffff':'#1a2230'};
+    },fontFamily:()=>getComputedStyle(document.documentElement).getPropertyValue('--vm-font-sans').trim()||'sans-serif',
+  });
+  figurePanel=window.VibeMolFigurePanel.create({targets:figureTargets,sharedIso:figureSharedIso,limits:figureRenderer.limits,
+    compose:figureComposer.compose,sceneName:()=>getFocusedScene()?.name||'vibemol',onOpenChange:()=>window.VibeMolWorkbench?.refresh()});
+  window.VibeMolFigure=Object.freeze({compose:figureComposer.compose,listTargets:figureTargets,limits:figureRenderer.limits,
+    open:()=>{figurePanel.setOpen(true);window.VibeMolWorkbench?.open('figurePanel');},
+    viewport:()=>({width:canvas.width,height:canvas.height,pixelRatio:renderer.getPixelRatio(),...figureRenderer.cameraSnapshot()}),
+  });
+  document.addEventListener('keydown',event=>{if(!figureRendering)return;if(event.key==='Escape')figureComposer.cancel();event.preventDefault();event.stopImmediatePropagation();},true);
 
   // Helpers to load the sample cube or demo
   /**
@@ -32723,7 +32929,7 @@
   }
 
   function getSessionBusyReason() {
-    if (batchExportRunning || (trajectoryVideoController && trajectoryVideoController.isActive())
+    if (figureRendering || batchExportRunning || (trajectoryVideoController && trajectoryVideoController.isActive())
       || (vibrationVideoController && vibrationVideoController.isActive())) return 'Finish the current export before saving or opening a session.';
     if (moldenRenderFrameId || moldenGridCommitDebounceTimer || getSceneOutliner().isComputing()) return 'Wait for the current calculation to finish.';
     if (addGrowActive || moleculePlaceActive || addFusePreviewState || transformActive) return 'Finish or cancel the current placement before saving or opening a session.';
@@ -32753,7 +32959,7 @@
       if (looksUi) looksUi.clearUndo();
       if (sessionStatusEl) sessionStatusEl.textContent = `Opened ${staged.name || 'session'}`;
       if (sessionRecovery) { sessionRecovery.startFresh(); sessionRecovery.markDirty(); }
-      setHintMessage('Session opened. Playback is paused.');
+      setHintMessage('Session opened in View. Playback and auto-rotate are paused.');
     },
   });
   window.VibeMolSession = Object.freeze({
@@ -32794,14 +33000,17 @@
     importText: text => window.VibeMolSession.importText(text),
     hasWork: () => sceneGraphController.getScenes().length > 0,
     isBusy: () => !!(applyingSession || sessionController.isOpening() || fileLoaderController.isLoading() || getSessionBusyReason()),
-    getName: () => sceneGraphController.getScenes()[0]?.name || 'VibeMol session',
+    getName: () => window.VibeMolSessionModule.sessionName(sceneGraphController),
+    getSnapshotName: text => window.VibeMolSessionModule.snapshotName(text),
     onStatus: ({state, message}) => {
       sessionStatusEl.textContent = message;
       sessionStatusEl.dataset.state = state;
       retryAutosaveBtn.hidden = state !== 'error';
+      window.VibeMolWorkbench?.refresh();
     },
     onRecovery: candidates => {
       recoveryPrompt.hidden = !candidates.length;
+      window.VibeMolWorkbench?.refresh();
       if (candidates.length) {
         const candidate = candidates[0];
         const date = new Date(candidate.savedAt);
@@ -32944,24 +33153,34 @@
   syncLoadedSceneControls();
   updateEmptyStateVisibility();
 
+  editToolUi = window.VibeMolEditToolUi.createController({
+    canvas: canvasEl, getState: getEditToolState, setTool: chooseEditTool,
+    onChange: () => setHintMessage(lastHintMessage || HINT_EDIT, { accent: false }),
+  });
+
   // Narrow host adapter for the Workbench interface. Scientific state
   // remains owned by the existing window controllers and renderer.
   window.VibeMolWorkbenchHost = Object.freeze({
     enabled: workspaceEnabled,
     windows: displayWindowsController,
     properties: propertiesInspector,
+    editTool: editToolUi,
+    editToolEscape: handleEditToolEscape,
+    awaitingRecovery: () => {
+      const status = sessionRecovery?.getState();
+      return !appearanceStudy && status && ((!status.ready && sessionStatusEl.dataset.state !== 'error') || status.pending);
+    },
     // Match the launcher's UI ids; the internal measurement-mode key is longer.
     getMode: () => currentMode === MODES.MEASURE ? 'measure' : currentMode,
+    calculations: Object.freeze({
+      showPlanes: () => calculationsPanel.showPlanes(),
+      clear: () => { const record = measurementRecord(); if (!record) return; const s = calculationsModel.state(record); s.selections = []; s.planes = []; calculationsModel.setSelectedAtoms(record,[]); markSessionChanged(); syncCalculations(true); },
+    }),
     clearMeasurements: () => {
       if (currentMode !== MODES.MEASURE) return;
-      clearEditSelection();
+      measurements.clear(measurementRecord());
+      clearEditSelection(); markSessionChanged();
       setHintMessage(HINT_MEASURE, { accent: false });
-    },
-    captureEditPanels: () => ({ build: isBuildPopoverOpen(), query: getBuildPaletteFilterQuery(), symmetry: isSymmetryPopoverOpen() }),
-    restoreEditPanels: state => {
-      if (currentMode !== MODES.EDIT || !state) return;
-      if (state.build) showBuildPopover({ query: state.query, preserveFocus: true });
-      else if (state.symmetry) showSymmetryPopover({ preserveFocus: true });
     },
     setSidebarCollapsed: setWorkspaceSidebarCollapsed,
     resize,

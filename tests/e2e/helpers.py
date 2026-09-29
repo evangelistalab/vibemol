@@ -3,11 +3,18 @@ from __future__ import annotations
 import contextlib
 import http.client
 import pathlib
+import re
 import socket
 import subprocess
 import sys
 import time
 from typing import Iterator
+
+
+def read_app_version() -> str:
+    root = pathlib.Path(__file__).resolve().parents[2]
+    source = (root / 'assets/app/js/asset-urls.js').read_text()
+    return re.search(r"const APP_VERSION = '([^']+)';", source).group(1)
 
 
 def find_free_port() -> int:

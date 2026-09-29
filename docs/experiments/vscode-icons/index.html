@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VibeMol — 10 flat extension icons</title>
+  <style>
+    @font-face{font-family:Geist;src:url('../../../assets/app/fonts/Geist-Variable.woff2') format('woff2');font-weight:100 900;font-display:swap}
+    *{box-sizing:border-box}
+    :root{font-family:Geist,system-ui,sans-serif;color:#19243a;background:#f5f6f8;--blue:#3b5bd9;--gold:#ffc53a;--card:#fff;--text:#19243a;--muted:#667085;--line:#dce0e7}
+    body{margin:0}
+    main{max-width:1440px;margin:auto;padding:34px 36px 24px}
+    header{display:flex;justify-content:space-between;gap:32px;align-items:center;margin-bottom:24px}
+    .eyebrow{font-size:12px;letter-spacing:.12em;font-weight:600;margin:0 0 8px;color:#667085}
+    h1{font-size:32px;line-height:1.12;letter-spacing:-.04em;margin:0 0 10px;font-weight:650}
+    .subtitle{font-size:14px;color:#667085;margin:0}
+    .reference{display:flex;align-items:center;gap:16px;padding-left:24px;border-left:1px solid var(--line);min-width:242px}
+    .reference img{width:44px;height:44px}
+    .reference strong{font-size:13px;font-weight:550;display:block;margin-bottom:7px}
+    .reference small{font-size:11px;color:#667085}
+    .swatch{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;min-height:36px}
+    .controls{display:flex;align-items:center;gap:24px}
+    .field{display:flex;align-items:center;gap:10px;font-size:12px}
+    .segmented{display:flex;border:1px solid #d1d6e0;border-radius:8px;padding:2px;background:#fff;gap:2px}
+    .segmented button{border:0;background:none;color:#596277;padding:5px 12px;border-radius:5px;font:inherit;cursor:pointer}
+    .segmented button[aria-pressed="true"]{background:#eaf0ff;color:#2947b4}
+    select{border:1px solid #d1d6e0;border-radius:7px;background:white;color:#19243a;font:inherit;padding:5px 8px}
+    .hint{font-size:12px;color:#667085;margin:0}
+    .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+    .card{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--text);text-align:left;border-radius:12px;padding:16px;cursor:pointer;min-width:0}
+    .card:hover{border-color:#8b9fdb}
+    .card[aria-pressed="true"]{outline:2px solid var(--blue);outline-offset:2px}
+    button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #91acf1;outline-offset:3px}
+    .card-heading{display:flex;gap:10px;align-items:baseline;font-size:14px;font-weight:600;line-height:20px}
+    .number{font-size:11px;color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+    .symbol{height:144px;display:grid;place-items:center;margin:9px 0 4px}
+    .symbol img{width:var(--icon-size,128px);height:var(--icon-size,128px)}
+    .card p{font-size:12px;color:var(--muted);line-height:1.5;margin:0;min-height:36px}
+    .miniatures{border-top:1px solid var(--line);display:flex;align-items:center;gap:24px;margin-top:12px;padding-top:12px}
+    .miniatures span{display:flex;align-items:center;gap:6px;height:32px}
+    .miniatures small{font-size:10px;color:var(--muted)}
+    .selection{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:50px;padding-top:18px;font-size:12px;color:#667085}
+    .selection a{color:#2947b4;margin-left:16px}
+    [hidden]{display:none!important}
+    main[data-background="dark"]{--card:#20252e;--text:#ecf0f8;--muted:#a9b3c6;--line:#3d4552}
+    @media(max-width:1050px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.reference{min-width:220px}}
+    @media(max-width:720px){main{padding:24px 18px}header{display:block}.reference{margin-top:20px;padding:0;border:0}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.toolbar{display:block}.hint{margin-top:12px}.controls{gap:14px;flex-wrap:wrap}h1{font-size:28px}.card{padding:12px}.card-heading{gap:7px;font-size:13px}.miniatures{gap:12px}.selection{align-items:start;flex-direction:column}}
+    @media(prefers-reduced-motion:no-preference){.card{transition:border-color .12s}}
+  </style>
+</head>
+<body>
+<main data-background="light">
+  <header>
+    <div>
+      <p class="eyebrow">VIBEMOL / EXTENSION ICON</p>
+      <h1>Ten flat directions.</h1>
+      <p class="subtitle">Simple shapes. Blue and yellow. No shading.</p>
+    </div>
+    <div class="reference">
+      <img src="../../../assets/app/img/favicon-tetra.svg" alt="The existing VibeMol website favicon">
+      <div><strong>Website icon as reference</strong><small><i class="swatch" style="background:#3b5bd9"></i> #3B5BD9 &nbsp; <i class="swatch" style="background:#ffc53a"></i> #FFC53A</small></div>
+    </div>
+  </header>
+  <div class="toolbar">
+    <div class="controls">
+      <div class="field"><span>Background</span><div class="segmented" role="group" aria-label="Preview background"><button type="button" data-background="light" aria-pressed="true">Light</button><button type="button" data-background="dark" aria-pressed="false">Dark</button></div></div>
+      <label class="field">Icon size <select id="iconSize"><option value="128">128 px</option><option value="64">64 px</option><option value="32">32 px</option></select></label>
+    </div>
+    <p class="hint">Select a direction to compare or download.</p>
+  </div>
+  <div class="grid" aria-label="Ten icon alternatives">
+      <button class="card" type="button" data-id="01" data-name="Website + nucleus" data-file="01-website" aria-pressed="false">
+        <div class="card-heading"><span class="number">01</span><span>Website + nucleus</span></div>
+        <div class="symbol"><img src="01-website.svg" width="128" height="128" alt="Website + nucleus icon"></div>
+        <p>The existing website mark with a yellow center.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="01-website.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="01-website.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="02" data-name="Split mark" data-file="02-split-mark" aria-pressed="false">
+        <div class="card-heading"><span class="number">02</span><span>Split mark</span></div>
+        <div class="symbol"><img src="02-split-mark.svg" width="128" height="128" alt="Split mark icon"></div>
+        <p>The same silhouette, with one yellow bond.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="02-split-mark.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="02-split-mark.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="03" data-name="Flat molecule" data-file="03-molecule" aria-pressed="false">
+        <div class="card-heading"><span class="number">03</span><span>Flat molecule</span></div>
+        <div class="symbol"><img src="03-molecule.svg" width="128" height="128" alt="Flat molecule icon"></div>
+        <p>A compact ball-and-stick symbol.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="03-molecule.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="03-molecule.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="04" data-name="Tetrahedron" data-file="04-tetrahedron" aria-pressed="false">
+        <div class="card-heading"><span class="number">04</span><span>Tetrahedron</span></div>
+        <div class="symbol"><img src="04-tetrahedron.svg" width="128" height="128" alt="Tetrahedron icon"></div>
+        <p>A geometric take on the website’s tetra motif.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="04-tetrahedron.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="04-tetrahedron.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="05" data-name="Phase pair" data-file="05-phase-pair" aria-pressed="false">
+        <div class="card-heading"><span class="number">05</span><span>Phase pair</span></div>
+        <div class="symbol"><img src="05-phase-pair.svg" width="128" height="128" alt="Phase pair icon"></div>
+        <p>Two opposite orbital lobes; no extra detail.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="05-phase-pair.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="05-phase-pair.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="06" data-name="Orbital fork" data-file="06-orbital-fork" aria-pressed="false">
+        <div class="card-heading"><span class="number">06</span><span>Orbital fork</span></div>
+        <div class="symbol"><img src="06-orbital-fork.svg" width="128" height="128" alt="Orbital fork icon"></div>
+        <p>Three flat lobes echo the website icon.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="06-orbital-fork.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="06-orbital-fork.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="07" data-name="V + nucleus" data-file="07-v-nucleus" aria-pressed="false">
+        <div class="card-heading"><span class="number">07</span><span>V + nucleus</span></div>
+        <div class="symbol"><img src="07-v-nucleus.svg" width="128" height="128" alt="V + nucleus icon"></div>
+        <p>A V for VibeMol, anchored by one atom.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="07-v-nucleus.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="07-v-nucleus.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="08" data-name="Bond ring" data-file="08-bond-ring" aria-pressed="false">
+        <div class="card-heading"><span class="number">08</span><span>Bond ring</span></div>
+        <div class="symbol"><img src="08-bond-ring.svg" width="128" height="128" alt="Bond ring icon"></div>
+        <p>A clean molecular ring with one yellow bond.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="08-bond-ring.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="08-bond-ring.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="09" data-name="VM monogram" data-file="09-vm" aria-pressed="false">
+        <div class="card-heading"><span class="number">09</span><span>VM monogram</span></div>
+        <div class="symbol"><img src="09-vm.svg" width="128" height="128" alt="VM monogram icon"></div>
+        <p>The name reduced to two connected strokes.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="09-vm.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="09-vm.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+      <button class="card" type="button" data-id="10" data-name="Website tile" data-file="10-website-tile" aria-pressed="false">
+        <div class="card-heading"><span class="number">10</span><span>Website tile</span></div>
+        <div class="symbol"><img src="10-website-tile.svg" width="128" height="128" alt="Website tile icon"></div>
+        <p>The familiar website symbol inside a flat tile.</p>
+        <div class="miniatures" aria-label="Actual size previews">
+          <span><img src="10-website-tile.svg" width="32" height="32" alt=""><small>32 px</small></span>
+          <span><img src="10-website-tile.svg" width="16" height="16" alt=""><small>16 px</small></span>
+        </div>
+      </button>
+  </div>
+  <div class="selection" aria-live="polite"><span id="selectionLabel">Choose a number — these are proposals for the extension.</span><span id="downloads" hidden><a id="svgDownload" download>Download SVG</a><a id="pngDownload" download>Download PNG</a></span></div>
+</main>
+<script>
+  const main = document.querySelector('main');
+  document.querySelectorAll('.segmented button').forEach(button => {
+    button.addEventListener('click', () => {
+      main.dataset.background = button.dataset.background;
+      document.querySelectorAll('.segmented button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    });
+  });
+  document.querySelector('#iconSize').addEventListener('change', event => {
+    main.style.setProperty('--icon-size', event.target.value + 'px');
+  });
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.card').forEach(item => item.setAttribute('aria-pressed', String(item === card)));
+      document.querySelector('#selectionLabel').textContent = card.dataset.id + ' — ' + card.dataset.name;
+      document.querySelector('#svgDownload').href = card.dataset.file + '.svg';
+      document.querySelector('#pngDownload').href = card.dataset.file + '.png';
+      document.querySelector('#downloads').hidden = false;
+    });
+  });
+</script>
+</body>
+</html>

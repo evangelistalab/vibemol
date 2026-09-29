@@ -15,6 +15,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Check release asset versions
+        run: python3 tools/sync_asset_versions.py --check
+
       - name: Push to vibemol-beta (without workflows)
         run: |
           # Stage a clean tree without .github/workflows

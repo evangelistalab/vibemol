@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <title>VibeMol — V + nucleus</title>
+  <desc>A V for VibeMol, anchored by one atom.</desc>
+  <path d="M57 65L128 190L199 65" stroke="#3b5bd9" stroke-width="31" stroke-linecap="round" stroke-linejoin="round"/><circle cx="128" cy="190" r="23" fill="#ffc53a"/>
+</svg>

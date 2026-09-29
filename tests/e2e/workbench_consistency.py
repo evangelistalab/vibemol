@@ -61,13 +61,17 @@ def workspace(page):
     # Both atoms are inside an opaque isosurface: picking must still reach them.
     field=p.cube(0).replace('1 -4 -4 -4','2 -4 -4 -4',1).replace('1 1 0 0 0\n','1 1 0 0 0\n1 1 1.4 0 0\n',1)
     assert p.load(page,[{'name':'enclosed.cube','text':field}])['ok']
+    mode(page,'Measure')
+    assert page.locator('#measurementsPanel').is_visible()
+    page.evaluate('()=>VibeMolWorkbench.close("measurementsPanel")')
+    mode(page,'Display')
     corner_axes(page)
     assert page.locator('#toolbar #displayInspector').count()==0
     assert page.locator('#toolbar .tb-appearance').count()==0
     assert page.locator('#toolbar #appearancePresetSection').count()==0
     assert page.locator('#displayInspector').count()==0
     assert page.locator('#sidePanel #appearanceCameraSection').count()==1
-    assert open_menu(page).get_by_role('menuitemcheckbox',name='Quick actions',exact=True).is_visible()
+    assert open_menu(page).get_by_role('menuitemcheckbox',name='Quick actions',exact=True).count()==0
     open_panel(page,'Properties')
     appearance=page.locator('#inspector')
     assert appearance.is_visible() and appearance.get_attribute('data-wb-placement')=='right'
@@ -84,8 +88,9 @@ def workspace(page):
     page.wait_for_function('()=>VibeMolTesting.getSceneGraphSnapshot().scenes.flatMap(s=>s.layers).some(l=>l.kind==="cube" && Math.abs(l.iso-0.03)<0.001)')
     page.evaluate('()=>VibeMolWorkbench.open("coordsPanel")')
     corner_axes(page)
-    page.evaluate('()=>VibeMolWorkbench.open("viewInspector")')
-    window_menu(page,page.locator('#viewInspector'),'Minimize to Panels menu')
+    page.locator('#canvas').focus();page.keyboard.press('q')
+    assert page.locator('#centerMassBtn').evaluate('el=>document.activeElement===el')
+    assert page.locator('#viewInspector').is_hidden()
     page.evaluate('()=>VibeMolWorkbench.open("styleStudio")')
     open_panel(page,'Properties')
     assert appearance.is_visible()
@@ -102,12 +107,12 @@ def workspace(page):
         meshes=page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')
         assert len(meshes)==len(materials)
         assert [m['geometryId'] for m in meshes]==[m['geometryId'] for m in materials]
-        assert all(m['visible']==(name!='Edit') for m in meshes)
+        assert all(m['visible']==(name=='Display') for m in meshes)
         assert appearance.is_visible()
     # View-to-Measure is only an interaction change: reuse the exact surface meshes.
     materials=page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')
     mode(page,'Measure')
-    assert page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')==materials
+    assert not any(m['visible'] for m in page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()'))
     window_menu(page,appearance,'Minimize to Panels menu')
     for index in [0,1]:
         point=page.evaluate('(i)=>VibeMolTesting.projectActiveAtomToClient(i)',index)
@@ -133,7 +138,7 @@ def workspace(page):
     mode(page,'Edit');assert build.is_visible()
     assert page.locator('#editBuildSearch').input_value()=='carbon'
     assert page.evaluate('()=>VibeMolFloatingPanels.get(document.getElementById("editAdaptiveAddAtomPopover")).getPosition()')==position
-    page.locator('#editAdaptiveAddAtomBtn').click()
+    build.get_by_role('button',name='Close Build',exact=True).click()
     mode(page,'Display');mode(page,'Edit');assert build.is_hidden()
     page.locator('#editAdaptiveSymmetryBtn').click()
     symmetry=page.locator('#editAdaptiveSymmetryPopover')

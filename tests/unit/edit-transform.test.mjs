@@ -353,6 +353,39 @@ test('edit-transform rotate baseline tracks the current selection', () => {
   assert.equal(baseline.startCenterWorld.x, 0.5);
 });
 
+test('absolute selection coordinates translate only the chosen atoms and create one undo step', () => {
+  const h = createHarness([1]);
+  assert.equal(h.controller.setSelectionPosition('x', 3.25), true);
+  assert.deepEqual(h.record.vol.atoms.map(a => [a.x,a.y,a.z]), [[0,0,0],[3.25,0,0],[2,0,0]]);
+  assert.equal(h.atomGroup.children[1].position.x, 3.25);
+  assert.equal(h.calls.history.length, 1);
+  assert.equal(h.calls.history[0].label, 'Move atom');
+  assert.equal(h.calls.history[0].before[1].x, 1);
+  assert.equal(h.calls.history[0].after[1].x, 3.25);
+  for (const [axis,value] of [['x',3.25],['q',1],['x',NaN],['y',Infinity],['z','2']]) {
+    assert.equal(h.controller.setSelectionPosition(axis,value), false);
+  }
+  h.setMode('display');assert.equal(h.controller.setSelectionPosition('x',4), false);
+  assert.equal(h.calls.history.length, 1);
+  const empty = createHarness([]);assert.equal(empty.controller.setSelectionPosition('x',0), false);
+});
+
+test('absolute selection translation preserves offsets, invalidates rotation baseline and rejects active drags', () => {
+  const h = createHarness([0,1]);
+  h.controller.ensureRotateBaseline();
+  assert.equal(h.controller.setSelectionPosition('x', 2.5), true);
+  assert.deepEqual(h.record.vol.atoms.map(a => a.x), [2,3,2]);
+  assert.equal(h.state.rotateOperatorBaseline, null);
+  assert.equal(h.calls.history[0].label, 'Move 2 atoms');
+  assert.equal(h.calls.rebuildScene, 1);
+  assert.equal(h.calls.rebuildBondsFromAtoms, 1);
+  h.state.dragActive = true;
+  assert.equal(h.controller.setSelectionPosition('z', 1), false);
+  h.state.dragActive = false;h.state.rotateDragActive = true;
+  assert.equal(h.controller.setSelectionPosition('y', 1), false);
+  assert.equal(h.calls.history.length, 1);
+});
+
 test('edit-transform move drag stores selection targets and creates move history on finish', () => {
   const harness = createHarness([2]);
   const startWorld = new harness.THREE.Vector3(2, 0, 0);

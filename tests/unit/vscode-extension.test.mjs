@@ -151,6 +151,11 @@ test('VS Code custom editors and folder launchers send one batch after readiness
     const provider = new VibeMolEditorProvider(uri(extensionRoot));
     if (customEditor) await provider.resolveCustomTextEditor({ uri: Uri.joinPath(folder, 'a.xyz'), getText: () => 'current edit' }, panel);
     else vmWebview(uri(extensionRoot), null, provider, { folderUri: folder });
+    const version = fs.readFileSync(path.join(REPO_ROOT, 'assets/app/js/asset-urls.js'), 'utf8')
+      .match(/const APP_VERSION = '([^']+)'/)[1];
+    for (const asset of ['assets/app/js/asset-urls.js', 'assets/app/js/app.js', 'src/styles/tokens.css']) {
+      assert.ok(panel.webview.html.includes(`https://webview.example/app/${asset}?v=${version}`), asset);
+    }
     assert.equal(panel.posts.length, 0);
     assert.equal(host.reads.length, 0);
     await panel.receive({ command: 'ready' });

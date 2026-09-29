@@ -12,7 +12,6 @@
     .slice(0, 8).map(item => ({ name: item.name.slice(0, 48), layout: model.normalize(item.layout) })) : [];
   let focus = false, compactBeforeFocus = false, sidebarBeforeFocus = false, scheduled = false, saving = 0, lastRegionKey = '';
   let menuReturn = null, snapPlace = null, draggingId = null, narrow = global.innerWidth < 760;
-  let editPanels = null;
   const pending = new Set(state.open);
   const restorePositions = new Set(Object.keys(state.positions));
   const previousOpen = new Set();
@@ -51,28 +50,119 @@
   }
   modes.querySelector('#modeDisplayBtn').setAttribute('aria-label', 'View mode');
   const tools = document.createElement('div'); tools.className = 'wb-tools'; bar.append(tools, brand);
+  host.editTool.mountToolbar(tools, document.getElementById('editAdaptiveAddAtomBtn'));
   const editTools = document.createElement('div'); editTools.className = 'wb-context-tools'; editTools.hidden = true; tools.append(editTools);
   editTools.setAttribute('role', 'group'); editTools.setAttribute('aria-label', 'Mode actions');
-  for (const id of ['editAdaptiveAddAtomBtn', 'editAdaptiveSymmetryBtn', 'editAdaptiveCleanStructureBtn']) {
+  for (const id of ['editAdaptiveSymmetryBtn', 'editAdaptiveCleanStructureBtn']) {
     const control = document.getElementById(id); control.classList.add('vm-btn', 'vm-btn--ghost', 'wb-tool', 'wb-edit-tool');
     control.setAttribute('data-tooltip-placement', 'bottom'); editTools.append(control);
   }
-  const buildButton = editTools.querySelector('#editAdaptiveAddAtomBtn');
-  buildButton.setAttribute('aria-haspopup', 'dialog'); buildButton.setAttribute('aria-controls', 'editAdaptiveAddAtomPopover');
+  const editPanelButtons = new Map(entries.filter(item => item.mode === 'edit' && item.id !== 'buildPanel')
+    .map(item => [item.id, item.entry.buttonEl]));
+  for (const [id, control] of editPanelButtons) control.setAttribute('aria-controls', byId.get(id).panel);
   const clearMeasurements = button('Clear measurements', 'backspace', () => host.clearMeasurements(), 'wb-tool');
   clearMeasurements.id = 'workbenchClearMeasurements'; clearMeasurements.hidden = true;
-  clearMeasurements.setAttribute('data-tooltip', 'Clear measurements (Esc)'); label(clearMeasurements, 'Clear measurements', 'wb-tool-label'); editTools.append(clearMeasurements);
+  clearMeasurements.setAttribute('data-tooltip', 'Clear all measurements (undo available in Measurements)'); label(clearMeasurements, 'Clear measurements', 'wb-tool-label'); editTools.append(clearMeasurements);
+  const calculationTools = document.createElement('div'); calculationTools.className = 'wb-context-tools';
+  calculationTools.setAttribute('role', 'group'); calculationTools.setAttribute('aria-label', 'Calculation actions'); calculationTools.hidden = true; tools.append(calculationTools);
+  const subspaceButton = button('Subspace', 'science', () => reveal('subspacePanel'), 'wb-tool');
+  subspaceButton.id = 'workbenchSubspace'; label(subspaceButton, 'Subspace'); subspaceButton.setAttribute('aria-controls', 'subspacePanel');
+  const planesButton = button('π planes', 'layers', () => { reveal('subspacePanel'); host.calculations.showPlanes(); }, 'wb-tool'); label(planesButton, 'π planes');
+  const clearSubspace = button('Clear subspace', 'backspace', () => host.calculations.clear(), 'wb-tool'); label(clearSubspace, 'Clear');
+  calculationTools.append(subspaceButton, planesButton, clearSubspace);
+  // Reuse the real buttons and their chemistry/camera handlers. Quick actions
+  // are commands in the bar, so they no longer occupy a saved dock or window.
+  const quickActions = document.createElement('div'); quickActions.id = 'workbenchQuickActions';
+  quickActions.className = 'wb-context-tools'; quickActions.setAttribute('role', 'group');
+  quickActions.setAttribute('aria-label', 'Quick actions'); tools.append(quickActions);
+  const quickActionsSource = document.getElementById('viewInspectorBtn');
+  const quickButtons = [...document.querySelectorAll('#viewInspector .tb-quickActionBtn')];
+  for (const control of quickButtons) {
+    control.classList.remove('secondary'); control.classList.add('vm-btn', 'vm-btn--ghost', 'wb-tool');
+    control.classList.add('wb-quick-icon');
+    control.setAttribute('data-tooltip-placement', 'bottom'); quickActions.append(control);
+  }
+  document.getElementById('viewInspector').hidden = true;
   const panelsButton = button('Panels', 'view_quilt', () => togglePanelsMenu(), 'wb-tool wb-panels-trigger');
   panelsButton.id = 'workbenchPanelsBtn'; panelsButton.setAttribute('aria-haspopup', 'menu');
   panelsButton.setAttribute('aria-expanded', 'false'); panelsButton.setAttribute('aria-controls', 'workbenchPanelsMenu');
   label(panelsButton, 'Panels');
   const panelsCount = label(panelsButton, '', 'wb-panel-count'); panelsCount.id = 'workbenchPanelsCount';
   panelsButton.setAttribute('aria-describedby', panelsCount.id); panelsButton.append(icon('expand_more')); tools.append(panelsButton);
+  const overflowButton = button('More actions', 'keyboard_double_arrow_right', () => toggleOverflow(), 'wb-tool');
+  overflowButton.id = 'workbenchOverflowBtn'; overflowButton.hidden = true;
+  overflowButton.setAttribute('aria-haspopup', 'menu'); overflowButton.setAttribute('aria-expanded', 'false');
+  overflowButton.setAttribute('aria-controls', 'workbenchOverflowMenu'); tools.insertBefore(overflowButton, panelsButton);
+  const overflowMenu = document.createElement('div'); overflowMenu.id = 'workbenchOverflowMenu';
+  overflowMenu.className = 'vm-popover wb-menu wb-panels-menu'; overflowMenu.hidden = true;
+  overflowMenu.setAttribute('role', 'menu'); overflowMenu.setAttribute('aria-labelledby', overflowButton.id); body.append(overflowMenu);
+  let overflowSources = [];
+  // Keep the real commands and their handlers authoritative. Only their
+  // presentation moves into the shared menu shell when icon-only cannot fit.
+  function fitTools() {
+    const groups = [quickActions, editTools, calculationTools, arrange, focusButton, preferencesButton];
+    groups.forEach(group => group.classList.remove('wb-overflowed'));
+    bar.classList.remove('wb-icon-tools'); overflowButton.hidden = true;
+    const fits = () => tools.scrollWidth <= tools.clientWidth + 1;
+    if (!fits()) bar.classList.add('wb-icon-tools');
+    const sources = [];
+    for (const group of groups) {
+      if (fits()) break;
+      if (group.hidden) continue;
+      sources.push(...(group.matches('button') ? [group] : [...group.children].filter(control => !control.hidden)));
+      group.classList.add('wb-overflowed'); overflowButton.hidden = false;
+    }
+    const changed = sources.length !== overflowSources.length || sources.some((source, i) => source !== overflowSources[i]);
+    overflowSources = sources;
+    if (changed) {
+      closeOverflow(); overflowMenu.replaceChildren();
+      for (const source of sources) {
+        const name = source.getAttribute('aria-label') || source.getAttribute('data-tooltip') || source.textContent.trim();
+        const row = button(name, source.querySelector('.material-symbols-rounded')?.textContent,
+          () => { closeOverflow(true); source.click(); }, 'wb-panel-option');
+        row.setAttribute('role', 'menuitem'); row.tabIndex = -1; label(row, name); overflowMenu.append(row);
+      }
+    }
+    [...overflowMenu.children].forEach((row, i) => {
+      row.disabled = sources[i].disabled;
+      for (const attr of ['aria-expanded', 'aria-controls']) {
+        if (sources[i].hasAttribute(attr)) row.setAttribute(attr, sources[i].getAttribute(attr)); else row.removeAttribute(attr);
+      }
+    });
+  }
+  function closeOverflow(restoreFocus = false) {
+    overflowMenu.hidden = true; overflowButton.setAttribute('aria-expanded', 'false');
+    if (restoreFocus) overflowButton.focus({ preventScroll: true });
+  }
+  function toggleOverflow(last = false) {
+    if (!overflowMenu.hidden) { closeOverflow(true); return; }
+    closePanelsMenu(); closeMenu(); overflowMenu.hidden = false; overflowButton.setAttribute('aria-expanded', 'true');
+    const rect = overflowButton.getBoundingClientRect();
+    overflowMenu.style.left = Math.max(12, Math.min(innerWidth - overflowMenu.offsetWidth - 12, rect.left)) + 'px';
+    overflowMenu.style.top = rect.bottom + 8 + 'px';
+    overflowMenu.style.maxHeight = Math.max(80, innerHeight - rect.bottom - 20) + 'px';
+    const rows = [...overflowMenu.children].filter(row => !row.disabled); (last ? rows.at(-1) : rows[0])?.focus();
+  }
+  overflowButton.addEventListener('keydown', event => {
+    if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+    event.preventDefault(); if (overflowMenu.hidden) toggleOverflow(event.key === 'ArrowUp');
+  });
+  overflowMenu.addEventListener('keydown', event => {
+    event.stopPropagation();
+    const rows = [...overflowMenu.children].filter(row => !row.disabled), index = rows.indexOf(document.activeElement);
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+      rows[event.key === 'Home' ? 0 : event.key === 'End' ? rows.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length]?.focus();
+    } else if (event.key === 'Escape' || event.key === 'Tab') { closeOverflow(true); if (event.key === 'Escape') event.preventDefault(); }
+  });
   const actions = document.createElement('div'); actions.className = 'wb-bar-actions'; bar.append(actions);
   const arrange = button('Layout', 'dashboard_customize', () => openArrange(), 'wb-arrange');
   arrange.id = 'workbenchArrange'; arrange.setAttribute('aria-haspopup', 'dialog'); label(arrange, 'Layout');
+  const preferencesButton = button('App settings', 'settings', () => openPreferences());
+  preferencesButton.id = 'workbenchPreferences'; preferencesButton.setAttribute('aria-haspopup', 'dialog');
+  preferencesButton.setAttribute('data-tooltip', 'App settings');
   const focusButton = button('Focus on molecule', 'fullscreen', () => setFocus(!focus));
-  focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton);
+  focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton, preferencesButton);
   const utilities = document.getElementById('topRightUtilities'); if (utilities) actions.append(utilities);
   bar.querySelector('#themeToggleInput')?.setAttribute('aria-label', 'Dark mode');
   const sidebarButton = document.getElementById('toolbarShowBtn');
@@ -112,7 +202,13 @@
   const snap = document.createElement('div'); snap.className = 'wb-snap'; snap.id = 'workbenchSnap'; snap.hidden = true;
   const snapLabel = label(snap, ''); body.append(snap);
 
-  function available(item) { return item.id === 'inspector' || (item.entry.buttonEl && !item.entry.buttonEl.hidden); }
+  function available(item) {
+    if (item.mode && item.mode !== host.getMode()) return false;
+    if (item.id === 'subspacePanel' || item.id === 'figurePanel') return true;
+    if (host.getMode() === 'calculations' && ['moldenInspector','trajectoryPanel','vibrationPanel','spinorInfo','measurementsPanel'].includes(item.id)) return false;
+    if (item.id === 'measurementsPanel') return host.getMode() !== 'edit';
+    return item.id === 'inspector' || (item.entry.buttonEl && !item.entry.buttonEl.hidden);
+  }
   function open(item) { return !!item.entry.isOpen(); }
   function isParked(id) { return state.parked.includes(id); }
   function compact() { return focus ? compactBeforeFocus : model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth() }).compact; }
@@ -140,6 +236,7 @@
     if (place === 'bottom') state.activeBottom = id;
   }
   function reveal(id, takeFocus = true) {
+    if (id === 'viewInspector') { focusQuickActions(); return; }
     id = model.resolveId(id);
     const item = byId.get(id); if (!item || !available(item)) return;
     state.parked = state.parked.filter(value => value !== id); pending.delete(id);
@@ -183,16 +280,17 @@
     scheduled = false;
     body.dataset.wbMode = host.getMode();
     const isCompact = compact(); body.dataset.wbCompact = String(isCompact);
-    editTools.hidden = host.getMode() === 'display'; clearMeasurements.hidden = host.getMode() !== 'measure';
+    calculationTools.hidden = host.getMode() !== 'calculations';
+    editTools.hidden = !['edit','measure'].includes(host.getMode()); clearMeasurements.hidden = host.getMode() !== 'measure';
+    for (const control of quickButtons) control.disabled = quickActionsSource.hidden;
     for (const control of editTools.children) control.removeAttribute('aria-pressed');
-    buildButton.setAttribute('aria-expanded', String(document.getElementById('editAdaptiveAddAtomPopover').getAttribute('aria-hidden') === 'false'));
     for (const control of modeButtons) {
       const checked = control.classList.contains('active');
       control.setAttribute('aria-checked', String(checked)); control.tabIndex = checked ? 0 : -1;
     }
     modes.style.setProperty('--wb-mode-index', modeButtons.findIndex(control => control.classList.contains('active')));
     for (const item of entries) {
-      const requested = pending.has(item.id) && available(item);
+      const requested = !host.awaitingRecovery() && pending.has(item.id) && available(item);
       const restoring = requested && !open(item);
       if (requested) { pending.delete(item.id); if (restoring) item.entry.setOpen(true); }
       const isOpen = open(item);
@@ -200,6 +298,8 @@
       if (isOpen) previousOpen.add(item.id); else { previousOpen.delete(item.id); if (!pending.has(item.id)) state.parked = state.parked.filter(id => id !== item.id); }
     }
     const placementFor = id => isCompact ? 'bottom' : state.placements[id];
+    // Recovery delays restoring saved windows above, not windows opened for the
+    // current workspace. A pending recovery choice must not hide live panels.
     const live = entries.filter(item => open(item) && available(item) && !isParked(item.id));
     const right = live.filter(item => placementFor(item.id) === 'right');
     const bottom = live.filter(item => placementFor(item.id) === 'bottom');
@@ -218,6 +318,12 @@
       return [item.id, { open: isOpen, dock: placement === 'float' ? null : placement,
         active: isOpen && available(item) && (placement === 'float' || item.id === (placement === 'right' ? activeRight : activeBottom)) }];
     }));
+    subspaceButton.setAttribute('aria-expanded', String(windowStates.get('subspacePanel').active && !focus));
+    for (const [id, control] of editPanelButtons) {
+      control.setAttribute('aria-expanded', String(windowStates.get(id).active && !focus));
+      if (placementFor(id) === 'float') control.setAttribute('aria-haspopup', 'dialog');
+      else control.removeAttribute('aria-haspopup');
+    }
     const regions = model.regions({ width: innerWidth, height: innerHeight, sidebar: sidebarWidth(), right: !!right.length,
       bottom: !!bottom.length, rightWidth: state.rightWidth, bottomHeight: state.bottomHeight, focus, top: bar.getBoundingClientRect().height });
     const key = JSON.stringify(regions);
@@ -252,6 +358,7 @@
     docks.right.grip.setAttribute('aria-valuenow', String(Math.round(regions.right)));
     docks.bottom.grip.setAttribute('aria-valuenow', String(Math.round(regions.bottom)));
     syncPanelsMenu();
+    fitTools();
     if (key !== lastRegionKey) { lastRegionKey = key; host.resize(); }
     persist();
   }
@@ -281,7 +388,7 @@
   }
   function togglePanelsMenu(last = false) {
     if (!panelsMenu.hidden) { closePanelsMenu(true); return; }
-    closeMenu(); syncPanelsMenu(); panelsMenu.hidden = false; panelsButton.setAttribute('aria-expanded', 'true');
+    closeOverflow(); closeMenu(); syncPanelsMenu(); panelsMenu.hidden = false; panelsButton.setAttribute('aria-expanded', 'true');
     const trigger = panelsButton.getBoundingClientRect();
     panelsMenu.style.left = Math.max(12, Math.min(innerWidth - panelsMenu.offsetWidth - 12, trigger.left)) + 'px';
     panelsMenu.style.top = trigger.bottom + 8 + 'px';
@@ -291,14 +398,15 @@
   function closeMenu(restoreFocus = false) {
     menu.hidden = true; menu.setAttribute('aria-hidden', 'true');
     if (menuReturn && menuReturn !== arrange) menuReturn.setAttribute('aria-expanded', 'false');
-    if (restoreFocus) menuReturn?.focus({ preventScroll: true });
+    if (restoreFocus) (menuReturn?.classList.contains('wb-overflowed') ? overflowButton : menuReturn)?.focus({ preventScroll: true });
   }
   function startMenu(trigger, title) {
     closePanelsMenu(); closeMenu(); menuReturn = trigger;
+    menu.setAttribute('aria-label', title);
     if (trigger !== arrange) trigger.setAttribute('aria-expanded', 'true'); menu.replaceChildren();
     const heading = document.createElement('div'); heading.className = 'wb-menu-title'; heading.textContent = title; menu.append(heading);
     menu.hidden = false; menu.setAttribute('aria-hidden', 'false'); menuMover.reset();
-    const box = trigger.getBoundingClientRect();
+    const box = (trigger.classList.contains('wb-overflowed') ? overflowButton : trigger).getBoundingClientRect();
     menu.style.left = Math.max(12, Math.min(innerWidth - 292, box.right - 280)) + 'px'; menu.style.top = Math.min(innerHeight - 300, box.bottom + 8) + 'px';
   }
   function menuAction(text, symbol, action, detail = '') {
@@ -332,9 +440,10 @@
   function preset(name) {
     const next = model.normalize();
     if (name === 'analyze') {
-      next.open = ['moldenInspector', 'viewInspector'].filter(id => available(byId.get(id))).slice(0, 1);
+      next.open = ['moldenInspector', 'viewPanel'].filter(id => available(byId.get(id))).slice(0, 1);
       const table = ['vibrationPanel', 'trajectoryPanel', 'coordsPanel'].find(id => available(byId.get(id)));
-      if (table) next.open.push(table);
+      if (table) { next.open.push(table); next.placements[table] = 'right'; next.activeRight = table; }
+      next.rightWidth = 340;
     }
     if (name === 'style') { next.open = ['inspector']; host.properties.setTab('look'); next.rightWidth = 560; }
     if (name === 'explore' && available(byId.get('moldenInspector'))) next.open = ['moldenInspector'];
@@ -345,7 +454,7 @@
     startMenu(arrange, 'Arrange your workspace');
     menuAction('Explore', 'deployed_code', () => preset('explore'), 'Keep the molecule in view');
     menuAction('Analyze', 'view_quilt', () => preset('analyze'), 'Inspect data alongside the molecule');
-    menuAction('Style', 'palette', () => preset('style'), 'Edit the look alongside the molecule');
+    menuAction('Presentation', 'palette', () => preset('style'), 'Edit the look alongside the molecule');
     if (saved.length) {
       menu.append(document.createElement('hr'));
       for (const item of saved) menuAction(item.name, 'bookmark', () => applyLayout(item.layout));
@@ -355,7 +464,7 @@
     const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'Name this workspace'; input.setAttribute('aria-label', 'Workspace name'); input.maxLength = 48; input.required = true;
     const save = button('Save workspace', 'bookmark_add', () => {}); save.type = 'submit';
     const status = document.createElement('div'); status.className = 'wb-status'; status.setAttribute('role', 'status');
-    form.append(input, save); menu.append(form, status, host.properties.preferences);
+    form.append(input, save); menu.append(form, status);
     form.addEventListener('submit', event => {
       event.preventDefault(); const name = input.value.trim(); if (!name) return;
       saved = saved.filter(item => item.name !== name); saved.push({ name, layout: snapshot() }); saved = saved.slice(-8);
@@ -368,6 +477,14 @@
     });
     finishMenu();
   }
+  function openPreferences() {
+    if (!menu.hidden && menuReturn === preferencesButton) { closeMenu(true); return; }
+    startMenu(preferencesButton, 'App settings');
+    menu.append(host.properties.preferences);
+    const note = document.createElement('p'); note.className = 'vm-session-status';
+    note.textContent = 'Theme and typeface are browser preferences, independent of molecules, looks, and workspace layouts.';
+    menu.append(note); finishMenu();
+  }
   function setFocus(value) {
     const next = !!value; if (focus === next) return;
     if (next) compactBeforeFocus = compact();
@@ -376,6 +493,13 @@
     else host.setSidebarCollapsed(sidebarBeforeFocus);
     focusLabel.textContent = focus ? 'Back to workspace' : 'Focus';
     focusButton.setAttribute('aria-label', focus ? 'Return to workspace' : 'Focus on molecule'); sync();
+  }
+  function focusQuickActions() {
+    if (quickActionsSource.hidden) return;
+    setFocus(false);
+    const index = overflowSources.indexOf(quickButtons[0]);
+    if (index >= 0) { if (overflowMenu.hidden) toggleOverflow(); overflowMenu.children[index]?.focus({ preventScroll: true }); }
+    else quickButtons[0]?.focus({ preventScroll: true });
   }
   function installResize(grip, placement) {
     let gesture = null;
@@ -396,12 +520,25 @@
     item.role = item.root.getAttribute('role'); item.labelledBy = item.root.getAttribute('aria-labelledby');
     item.root.dataset.wbPanel = item.id;
     const header = item.root.querySelector('[data-vm-drag-handle]');
+    if (item.mode === 'edit') {
+      item.role = 'dialog'; item.root.setAttribute('aria-label', item.label);
+      if (item.id === 'symmetryPanel') {
+        // Keep the existing drag handle, with the scientific summary in the
+        // scrolling body and the window controls always within reach.
+        document.getElementById('editSymmetryHeader').prepend(document.getElementById('editSymmetryTargetSummary'));
+        item.root.prepend(header);
+      }
+      if (header) { header.textContent = ''; label(header, item.label, 'wb-window-title'); }
+      const closeButton = button('Close ' + item.label, 'close', () => close(item.id), 'wb-window-close');
+      header?.append(closeButton);
+    }
     header?.classList.add('wb-window-header');
     header?.querySelectorAll('button.secondary').forEach(control => control.classList.add('vm-btn', 'vm-btn--ghost'));
     const windowMenu = button('Window options for ' + item.label, 'more_horiz', () => openWindowMenu(item, windowMenu), 'wb-window-menu');
     windowMenu.setAttribute('aria-haspopup', 'dialog'); windowMenu.setAttribute('data-tooltip', 'Dock, float, or minimize');
     const actionGroup = header?.querySelector('.vm-list-popover__actions, .motionPanelHeaderActions, .vm-popover__actions, .actions');
-    if (actionGroup) actionGroup.prepend(windowMenu); else header?.append(windowMenu);
+    if (actionGroup) actionGroup.prepend(windowMenu);
+    else if (header) header.insertBefore(windowMenu, header.querySelector('.wb-window-close'));
     header?.setAttribute('data-tooltip', 'Drag to move. Release near the right or bottom edge to dock. Use window options for other placements.');
     const observer = new MutationObserver(schedule);
     observer.observe(item.root, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
@@ -409,6 +546,9 @@
   }
   document.querySelector('#sidePanel > header > h2').textContent = 'Camera';
   const editObserver = new MutationObserver(schedule);
+  editObserver.observe(document.getElementById('editToolStrip'), { childList: true, subtree: true, characterData: true,
+    attributes: true, attributeFilter: ['hidden', 'aria-checked'] });
+  document.fonts?.ready.then(schedule);
   for (const control of editTools.children) if (control !== clearMeasurements) editObserver.observe(control, { attributes: true, attributeFilter: ['hidden', 'class'] });
   editObserver.observe(document.getElementById('editAdaptiveAddAtomPopover'), { attributes: true, attributeFilter: ['aria-hidden'] });
   modes.addEventListener('keydown', event => {
@@ -420,6 +560,13 @@
   });
   const sidebarObserver = new MutationObserver(schedule); sidebarObserver.observe(body, { attributes: true, attributeFilter: ['class'] });
   const modeObserver = new MutationObserver(schedule); modeObserver.observe(document.getElementById('displayWindowAdaptiveMenu'), { attributes: true, attributeFilter: ['data-mode'] });
+  modeObserver.observe(quickActionsSource, { attributes: true, attributeFilter: ['hidden'] });
+  // Width changes may move commands between the bar and its overflow menu.
+  let barResizeFrame = 0;
+  const barObserver = global.ResizeObserver && new global.ResizeObserver(() => {
+    if (!barResizeFrame) barResizeFrame = requestAnimationFrame(() => { barResizeFrame = 0; schedule(); });
+  });
+  barObserver?.observe(bar);
   for (const target of Object.values(docks)) target.tabs.addEventListener('keydown', event => {
     const tabs = [...target.tabs.children], index = tabs.indexOf(event.target);
     if (index < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -451,13 +598,19 @@
     if (event.relatedTarget && !panelsMenu.contains(event.relatedTarget) && event.relatedTarget !== panelsButton) closePanelsMenu();
   });
   document.addEventListener('pointerdown', event => {
+    if (!overflowMenu.hidden && !overflowMenu.contains(event.target) && !overflowButton.contains(event.target)) closeOverflow();
     if (!menu.hidden && !menu.contains(event.target) && !menuReturn?.contains(event.target)) closeMenu();
     if (!panelsMenu.hidden && !panelsMenu.contains(event.target) && !panelsButton.contains(event.target)) closePanelsMenu();
   });
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape') return;
-    if (!panelsMenu.hidden) { closePanelsMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
+    if (!overflowMenu.hidden) { closeOverflow(true); event.preventDefault(); event.stopImmediatePropagation(); }
+    else if (!panelsMenu.hidden) { closePanelsMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
     else if (!menu.hidden) { closeMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
+    // Let coordinate/operator fields cancel their own draft first. Build search
+    // is a filter: Escape there still cancels placement or disarms the tool.
+    else if ((!event.target.closest?.('input, select, textarea, [contenteditable="true"]')
+      || event.target.closest?.('#editAdaptiveAddAtomPopover')) && host.editToolEscape(event)) { event.stopImmediatePropagation(); }
     else if (focus) { setFocus(false); focusButton.focus(); event.preventDefault(); event.stopImmediatePropagation(); }
     else if (!event.target.closest('input, select, textarea, [contenteditable="true"]')) {
       const id = event.target.closest('[data-wb-panel]')?.dataset.wbPanel;
@@ -491,22 +644,18 @@
   });
   global.VibeMolWorkbench = Object.freeze({
     beforeModeChange: () => {
-      if (host.getMode() === 'edit') editPanels = host.captureEditPanels();
       closePanelsMenu(); closeMenu();
     },
-    afterModeChange: () => {
-      if (host.getMode() === 'edit') host.restoreEditPanels(editPanels);
-      sync();
-    },
+    afterModeChange: sync, refresh: schedule,
     manages: id => byId.has(model.resolveId(id)),
     isDocked: id => byId.has(model.resolveId(id)) && effectivePlace(model.resolveId(id)) !== 'float',
     restoreIfHidden: id => { id = model.resolveId(id); const item = byId.get(id); if (item && open(item) && item.root.dataset.wbHidden === 'true' && !focus) { reveal(id); return true; } return false; },
-    open: reveal, close, place, park, setFocus, applyLayout, preset,
+    open: reveal, close, place, park, setFocus, focusQuickActions, applyLayout, preset,
     snapshot: () => ({ ...snapshot(), focus, compact: compact(), draggingId }),
   });
   sync();
   if (params.get('workspaceDemo') === '1' && !global.VibeMolTesting.getSceneGraphSnapshot().scenes.length) {
-    fetch('assets/data/methane/canonical_4.cube').then(response => { if (!response.ok) throw new Error('Demo file unavailable'); return response.text(); })
+    fetch(window.VibeMolAssets.url('assets/data/methane/canonical_4.cube')).then(response => { if (!response.ok) throw new Error('Demo file unavailable'); return response.text(); })
       .then(text => global.VibeMolEmbed.loadFiles([{ name: 'Methane · orbital.cube', text }], { clearFirst: false }))
       .then(result => {
         if (!result.ok) throw new Error('Demo import failed');

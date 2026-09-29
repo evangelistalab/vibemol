@@ -9,6 +9,14 @@ const sphere = (x, y, z, radius = 0.5) => {
   mesh.position.set(x, y, z); return mesh;
 };
 
+test('AO preview bounds extend clipping only while the separate preview root is visible', () => {
+  const root=new T.Group(), preview=new T.Group(), camera=new T.OrthographicCamera(-10,10,10,-10), depth=V.createCameraDepthController(T);
+  root.add(sphere(0,0,0));preview.add(sphere(0,0,-50,4));
+  depth.update(root,camera,preview);assert.ok(camera.far>=57);
+  preview.visible=false;depth.update(root,camera,preview);assert.ok(camera.far<4);
+  preview.visible=true;preview.position.z=100;depth.update(root,camera,preview);assert.ok(camera.near<=-57);
+});
+
 test('orthographic depth covers rotated slabs and orbital bounds with padding without reframing', () => {
   const root = new T.Group(), camera = new T.OrthographicCamera(-20, 20, 20, -20, 0.1, 10);
   const depth = V.createCameraDepthController(T);

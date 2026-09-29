@@ -1,0 +1,43 @@
+.vm-calculations { position: fixed; top: 80px; right: 24px; width: min(430px, calc(100vw - 24px)); max-height: calc(100dvh - 96px); background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); border: 1px solid var(--vm-color-border); border-radius: var(--vm-radius-md); box-shadow: var(--vm-shadow-lg); font: var(--vm-text-sm) var(--vm-font-sans); }
+.vm-calculations .vm-list-popover__body { padding: 8px 12px; overflow: auto; }
+.vm-calculations [hidden] { display: none !important; }
+.vm-calculations .vm-field-control > :is(input:not([type='checkbox']), select) { min-width: 0; width: 100%; min-height: 32px; box-sizing: border-box; }
+.vm-calculations .vm-select { min-height: 32px; padding: 4px 8px; font-size: var(--vm-text-sm); }
+.vm-calculations input[type='text'] { text-align: left; }
+.vm-calculations .vm-appearance-section { border-top: 1px solid var(--vm-color-border); margin-top: 10px; }
+.vm-avas-atom { padding: 8px 0; border-bottom: 1px solid var(--vm-color-border); }
+.vm-avas-atom-title { display: flex; gap: 8px; align-items: center; justify-content: space-between; color: var(--vm-color-text-secondary); }
+.vm-avas-chips { align-items: center; min-width: 0; }
+.vm-avas-shell { display: flex; align-items: center; gap: 2px; }
+.vm-avas-shell .editSelectionCueButton { flex-shrink: 0; font: var(--vm-font-weight-strong) var(--vm-text-sm) var(--vm-font-sans); }
+.vm-avas-shell button[aria-checked='mixed'] { box-shadow: var(--vm-shadow-control), inset 0 -3px var(--vm-color-on-control-dim); }
+.vm-avas-picker .vm-avas-caret { min-width: 24px; width: 24px; height: 32px; border-color: transparent; background: transparent; box-shadow: none; color: var(--vm-color-text-secondary); }
+.vm-avas-picker .vm-avas-caret:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+.vm-avas-caret[aria-expanded='true'] { transform: rotate(180deg); }
+.vm-avas-components { grid-column: 1 / -1; display: grid; width: 136px; max-width: 100%; min-height: 0; max-height: min(240px, calc(100dvh - 104px)); overflow: auto; padding: 8px; gap: 8px; pointer-events: auto; }
+.vm-avas-components .editSelectionCueButton { width: 100%; min-width: 42px; height: 32px; padding: 0 8px; border-radius: 8px; font: var(--vm-font-weight-strong) var(--vm-text-sm) var(--vm-font-sans); }
+.vm-avas-components sub { font-size: .8em; align-self: center; margin-top: .45em; }
+.vm-avas-components .editSelectionCueButton:not(.is-active) { background: color-mix(in srgb, var(--vm-color-surface-control) 78%, var(--vm-color-surface-panel)); box-shadow: none; }
+.vm-avas-plane-atom { display: flex; gap: 8px; padding: 6px 0; min-height: 24px; align-items: center; cursor: pointer; color: var(--vm-color-text-secondary); }
+.vm-calculations-count { font-weight: var(--vm-font-weight-strong); }
+.vm-calculations textarea { display: block; box-sizing: border-box; width: 100%; min-height: 240px; margin-top: 6px; resize: vertical; font: var(--vm-text-xs) var(--vm-font-mono); background: var(--vm-color-surface-base); color: var(--vm-color-text-primary); border: 1px solid var(--vm-color-border); border-radius: var(--vm-radius-sm); padding: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.vm-avas-picker { position: fixed; display: none; grid-template-columns: 24px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 8px; width: max-content; max-width: min(440px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); z-index: 60; color: var(--vm-color-text-primary); font: var(--vm-text-sm) var(--vm-font-sans); }
+.vm-avas-picker { pointer-events: none; }
+.vm-avas-picker.open { display: grid; }
+.vm-avas-chips { pointer-events: auto; }
+/* Reserve the Edit cue's active rings; only an expanded shell has a lower menu. */
+.vm-avas-picker[data-vm-floating-moved='true'] { overflow: visible; }
+.vm-avas-picker .vm-floating-panel__grip { align-self: start; height: 54px; }
+.vm-avas-picker .editSelectionCueButton:disabled { opacity: 0.5; cursor: default; }
+.vm-avas-picker .editSelectionCueButton .material-symbols-rounded { font-size: var(--vm-text-xl); font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24; }
+.vm-avas-picker [hidden] { display: none !important; }
+.vm-avas-picker button:focus-visible { outline: 2px solid var(--vm-color-on-control-dim); outline-offset: 2px; }
+
+/* Keep real hit areas usable, including the invisible switch input. */
+#subspacePanel .vm-select { min-height: 32px; }
+#subspacePanel .vm-toggle { min-height: 24px; }
+#subspacePanel .vm-toggle__input { min-height: 24px; }
+.vm-avas-plane-atom input { width: 24px; height: 24px; flex-shrink: 0; margin: 0; }
+.vm-avas-lobe-control { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.vm-avas-lobe-control .vm-slider__range { flex: 1; min-width: 70px; min-height: 24px; background-size: 100% 4px; background-repeat: no-repeat; background-position: center; }
+.vm-avas-lobe-control output { font: var(--vm-text-xs) var(--vm-font-mono); color: var(--vm-color-text-label); }

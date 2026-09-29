@@ -101,7 +101,6 @@
       const transformContext = getTransformSelectionContext();
       if (transformContext && transformContext.type === 'bond') return false;
       return getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION
-        && selection.length >= 2
         && String(getSelectionDragMode() || '').toLowerCase() !== 'rotate';
     }
 

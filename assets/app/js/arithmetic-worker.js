@@ -1,5 +1,9 @@
 /* Worker messages contain grid data only; source buffers are never transferred. */
-importScripts('./arithmetic-grid.js');
+// Workers do not inherit the document's query string or asset helper.
+const gridUrl = new URL('./arithmetic-grid.js', self.location.href);
+const assetVersion = new URL(self.location.href).searchParams.get('v');
+if (assetVersion) gridUrl.searchParams.set('v', assetVersion);
+importScripts(gridUrl.href);
 self.onmessage = (event) => {
   const { operation, operands, outputName, limits } = event.data;
   try {

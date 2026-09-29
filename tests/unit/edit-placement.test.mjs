@@ -29,6 +29,7 @@ function createPlacementHarness() {
     rebuildScene: 0,
     history: [],
     hydrogenAdjustment: [],
+    pendingSessionsAtUiSync: [],
   };
   const state = {};
   const controller = placementApi.createEditPlacementController({
@@ -51,6 +52,9 @@ function createPlacementHarness() {
     atomUnitsToAng: (_vol, atom) => ({ x: Number(atom && atom.x) || 0, y: Number(atom && atom.y) || 0, z: Number(atom && atom.z) || 0 }),
     normalizeEditAddBondOrder: structure.normalizeEditAddBondOrder,
     upsertVolumeBond: structure.upsertVolumeBond,
+    applyAtomsSnapshotToRecord: (target,atoms,_fragments,bonds,annotations) => {
+      Object.assign(target.vol,{atoms:plain(atoms),bonds:plain(bonds),annotations:plain(annotations)});
+    },
     pushEditHistoryEntry: (...args) => { calls.history.push(args); },
     inferVolumeBonds: () => { calls.inferVolumeBonds += 1; return []; },
     rebuildScene: () => { calls.rebuildScene += 1; },
@@ -109,6 +113,7 @@ function createPlacementHarness() {
     onDeleteAtomsPostprocess: () => {},
     updateSidePanel: () => {},
     updateAddAtomOperatorUi: () => {},
+    updateEditToolboxUi: () => calls.pendingSessionsAtUiSync.push(state.addAtomOperatorSession),
     setHintMessage: () => {},
   });
   return { structure, controller, record, calls, state };
@@ -166,6 +171,26 @@ test('edit-placement void-added atom sessions commit on cancel-style finalize', 
   assert.equal(finalized, true);
   assert.equal(record.vol.atoms.length, 1);
   assert.equal(calls.history.length, 1);
+  assert.equal(state.addAtomOperatorSession, null);
+});
+
+test('explicit Escape cancellation rolls back a void-added atom instead of committing it', () => {
+  const { controller, record, calls, state } = createPlacementHarness();
+  controller.appendAtomAtWorld({ x: 1.5, y: 0, z: 0 }, 6);
+  controller.finalizeAddAtomOperatorSession({ commit: false, forceCancel: true, announce: false });
+  assert.equal(record.vol.atoms.length, 0);
+  assert.equal(calls.history.length, 0);
+  assert.equal(state.addAtomOperatorSession, null);
+});
+
+test('silent confirmation publishes the cleared placement state without waiting for rendering', () => {
+  const { controller, record, calls, state } = createPlacementHarness();
+  controller.appendAtomAtWorld({ x: 1.5, y: 0, z: 0 }, 6);
+  assert.ok(state.addAtomOperatorSession);
+  controller.finalizeAddAtomOperatorSession({ commit: true, announce: false });
+  assert.equal(record.vol.atoms.length, 1);
+  assert.equal(calls.history.length, 1);
+  assert.equal(calls.pendingSessionsAtUiSync.at(-1), null);
   assert.equal(state.addAtomOperatorSession, null);
 });
 

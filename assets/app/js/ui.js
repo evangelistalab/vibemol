@@ -129,7 +129,10 @@
     return lines.join('\n');
   }
 
+  function plural(count, noun) { return `${count} ${noun}${count === 1 ? "" : "s"}`; }
+
   global.VibeMolUI = {
+    plural,
     renderCoordsContent,
     volumeToXYZ,
   };

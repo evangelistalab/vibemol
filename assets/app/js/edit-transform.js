@@ -135,6 +135,42 @@
       return true;
     }
 
+    // Set an absolute atom/selection COM coordinate in angstroms. As with an
+    // arrow drag, translate just the selected atoms and record one undo step.
+    function setSelectionPosition(axis, value) {
+      if (getMode() !== MODES.EDIT || !['x', 'y', 'z'].includes(axis) || !Number.isFinite(value)
+        || state.dragActive || state.rotateDragActive) return false;
+      const record = getActiveRecord(), vol = record && record.vol;
+      const indices = [...new Set(getSelection())];
+      if (!vol || !indices.length || indices.some(i => !Number.isInteger(i) || !vol.atoms[i])) return false;
+      const center = getSelectionCenterWorld(indices, vol);
+      const delta = center ? value - center[axis] : NaN;
+      if (!Number.isFinite(delta) || Math.abs(delta) < 1e-12) return false;
+      const positions = indices.map(i => {
+        const point = atomUnitsToAng(vol, vol.atoms[i]);
+        point[axis] += delta;
+        return { point, native: worldToAtomUnits(vol, point)['xyz'.indexOf(axis)] };
+      });
+      if (positions.some(p => !Number.isFinite(p.point[axis]) || !Number.isFinite(p.native))) return false;
+      const beforeAtoms = cloneAtomsSnapshot(vol), beforeBonds = cloneBondSnapshot(vol);
+      const atomGroup = getAtomGroup();
+      indices.forEach((index, i) => {
+        vol.atoms[index][axis] = positions[i].native;
+        const mesh = atomGroup?.children?.[index];
+        if (mesh?.position) mesh.position[axis] = positions[i].point[axis];
+      });
+      clearRotateBaseline();
+      rebuildBondsFromAtoms();
+      pushEditHistoryEntry(record, beforeAtoms, cloneAtomsSnapshot(vol), buildHistoryLabel('move', indices.length), {
+        beforeBonds, afterBonds: cloneBondSnapshot(vol),
+      });
+      rebuildScene({ preserveView: true });
+      updateSelectionVisuals();
+      updateMoveGizmo();
+      updateRotateGizmo();
+      return true;
+    }
+
     function startMoveDrag(e, indices, anchorWorld, dragOptions = {}) {
       const record = getActiveRecord();
       const vol = record && record.vol;
@@ -442,6 +478,7 @@
     }
 
     return Object.freeze({
+      setSelectionPosition,
       ensureRotateBaseline,
       startMoveDrag,
       updateMoveDrag,

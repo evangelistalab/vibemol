@@ -23,9 +23,9 @@
 }
 
 #toolbar .vm-outliner__add {
-  width: 22px;
-  min-width: 22px;
-  height: 22px;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
   padding: 0;
   border-radius: 4px;
   justify-content: center !important;
@@ -54,7 +54,7 @@
 
 #toolbar .vm-outliner-row {
   display: grid;
-  grid-template-columns: 14px 20px 20px minmax(0, 1fr) minmax(36px, max-content);
+  grid-template-columns: 24px 28px 16px minmax(0, 1fr) minmax(30px, max-content);
   align-items: center;
   gap: 6px;
   min-height: 30px;
@@ -129,9 +129,7 @@
   }
 }
 
-#toolbar .vm-outliner-row.is-hidden .vm-outliner-row__icon,
-#toolbar .vm-outliner-row.is-hidden .vm-outliner-row__label,
-#toolbar .vm-outliner-row.is-hidden .vm-outliner-row__meta {
+#toolbar .vm-outliner-row.is-hidden .vm-outliner-row__icon {
   opacity: 0.45;
 }
 
@@ -148,11 +146,15 @@
   line-height: 1;
 }
 
+#toolbar .vm-outliner-row__twisty { width: 24px; height: 28px; }
+
 #toolbar .vm-outliner-row__twisty.is-leaf {
   visibility: hidden;
 }
 
 #toolbar .vm-outliner-row__eye {
+  width: 28px;
+  height: 28px;
   border: 0;
   background: transparent;
   padding: 0;
@@ -213,7 +215,8 @@
 
 #toolbar .vm-outliner-row__prefix {
   margin-right: 4px;
-  color: var(--vm-color-text-secondary);
+  color: var(--vm-color-text-label);
+  opacity: 1;
   font-family: var(--vm-font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -224,7 +227,8 @@
   max-width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--vm-color-text-secondary);
+  color: var(--vm-color-text-label);
+  opacity: 1;
   font-family: var(--vm-font-mono);
   font-size: 10px;
   font-variant-numeric: tabular-nums;

@@ -374,7 +374,7 @@
 
     async function fetchText(path) {
       if (!fetchImpl) throw new Error('Fetch API is unavailable.');
-      const resp = await fetchImpl(path, { cache: 'no-store' });
+      const resp = await fetchImpl(global.VibeMolAssets?.url(path) || path, { cache: 'no-store' });
       if (!resp.ok) throw new Error(`${path}: HTTP ${resp.status}`);
       return resp.text();
     }

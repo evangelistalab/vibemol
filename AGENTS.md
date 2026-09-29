@@ -17,6 +17,7 @@ Primary capabilities:
 - Iso-surface rendering and cloud rendering
 - Atom/bond rendering with multiple molecule styles
 - Edit mode, transform mode, and measurement mode
+- Calculations mode: structure-first MINAO selection and forte2 AVAS input generation (no execution)
 - Fragment attachment and standalone molecule placement in the editor
 - Multi-frame XYZ trajectory playback (play/pause, frame slider, FPS, loop)
 - Vibrational mode playback (mode table, amplitude, speed, hide-small-frequencies filter)
@@ -41,6 +42,7 @@ Primary capabilities:
 - `assets/app/js/scene-graph.js`: authoritative scene/layer model and explicit rename, move, order, focus, and visibility commands.
 - `assets/app/js/scene-sources.js`: incremental source registration and metadata-only registration of every Molden orbital; redraws never reconstruct the graph.
 - `assets/app/js/scene-export.js`: explicit batch targets and restoration of graph state after success or failure.
+- `assets/app/js/figure-composer.js`, `figure-renderer.js`, `figure-panel.js`, and `assets/app/css/figure.css`: dockable publication-figure grids with one locked camera, union fitting, shared iso/Look, print PNG/SVG, and finally-based renderer/state restoration. Loaded after scene-export. Output settings are transient, not preset/session state. See `docs/figure-composer.md` and `tests/e2e/figure.py`; oversized panels report a device/8192px cap (tiling deferred).
 - `assets/app/js/scene-outliner.js` and `assets/app/css/scene-outliner.css`: outliner rows, rename sessions, drag feedback, menus, and arithmetic forms.
 - `assets/app/js/grid-store.js`: bounded immutable-grid cache keyed by source, orbital, geometry, and grid settings.
 - `assets/app/js/arithmetic-grid.js`: allocation-free grid validation/planning and chunked scalar arithmetic.
@@ -53,16 +55,20 @@ Primary capabilities:
 - `assets/app/js/fragments.js`: fragment/molecule catalog loading, manifest support, and fragment builders.
 - `assets/app/js/parsers.js`: parsers (`parseCube`, `parseTwoComponentCube`, `parseXYZ`) including streaming tokenization.
 - `assets/app/js/rendering.js`: volume/stat helpers used by `app.js`.
+- `assets/app/js/measurements.js` and `assets/app/js/measurements-panel.js`: persistent per-structure measurement values, units/precision, CSV, undo, and the shared Measurements panel. Loaded after view-utils; see `docs/measurements.md` and `tests/e2e/measurements.py`.
 - `assets/app/js/interaction.js`: keyboard shortcut routing and input-focus guards.
 - `assets/app/js/ui.js`: UI formatting helpers for coordinates and XYZ export text.
+- `assets/app/js/axis-gizmo.js` and `assets/app/css/axis-gizmo.css`: six-direction camera orientation gizmo, shared projected hit targets and canvas-export rendering; loads after view-utils.js.
 - `assets/app/js/view-utils.js`: viewport/camera helpers, cached visible-geometry depth fitting, and clipping-aware picking shared by `app.js`.
 - `assets/app/js/edit-utils.js`: edit-mode math helpers (mass properties, inertia, eigen solve).
+- `assets/app/js/calculations-model.js`, `minao-renderer.js`, `calculations-panel.js`, `calculations-picker.js`, and `assets/app/css/calculations.css`: Workbench Calculations mode, transient atom focus, shared-shell popup, exclusive whole-shell/component assignments, plane fitting, contracted AO previews, and forte2 input. Scripts load after edit-utils; rendering is created after the volume helpers. `assets/data/basis/cc-pvtz-minao.json` and `cc-pvtz.json` contain attributed forte2 reference-basis data. See `docs/calculations.md` and `tests/e2e/calculations.py`.
 - `assets/app/js/edit-commands.js`: history command object creation for atom snapshots.
 - `assets/app/js/edit-state.js`: editable-record bootstrap plus undo/redo history orchestration.
 - `assets/app/js/io-utils.js`: input-kind detection helpers shared by drag/drop and import flows.
 - `assets/app/js/structure.js`: minimal incremental structure schema helpers (atoms, styled bonds, builder/coordination/metal-bonding annotations, structure export/import support).
 - `assets/app/js/volume-geometry.js`: pure atom/voxel/world coordinate and marching-cubes isosurface helpers.
 - `assets/app/js/volume-2c.js`: 2C phase and Bloch-colored isosurface builders.
+- `assets/app/js/hydrogen-bonds.js`: explicit-H contact detection using spatial bins and a separate instanced dashed annotation mesh; see `docs/hydrogen-bonds.md`.
 - `assets/app/js/bond-inference.js`: nonmetal covalent candidate generation, metal-aware coordination-style inference, bond-order inference, and aromatic six-ring detection helpers.
 - `docs/bond-fitting.md`: cap seating equations, per-bond radius limits, sphere mesh clearance, and hydrogen topology constraints.
 - `assets/app/js/bond-geometry.js`: continuous closed bond cylinders, sharp element-color boundaries without internal caps, and shared sphere seating / per-bond radius-limit math.
@@ -96,6 +102,7 @@ Primary capabilities:
 - `docs/appearance-looks.md`: look scope, preservation, and validation contracts.
 - `assets/app/js/edit-placement.js`: add-atom / fragment / molecule / fuse-ring placement workflows.
 - `assets/app/js/edit-tools.js`: edit-tool state, selection coordination, and transient edit cleanup.
+- `assets/app/js/edit-tool-ui.js`: Build/Transform tool radio strip (first Edit entry uses Build for empty scenes and Transform for loaded structures, then remembers each scene’s tool), neutral pointer crosshair, entity badge, viewport tint, and state-derived hint text. See `docs/edit-tools.md`; armed tool state stays independent of Build panel visibility.
 - `assets/app/js/edit-gizmos.js`: move/rotate gizmo creation, hover state, visibility, and picking helpers.
 - `assets/app/js/edit-transform.js`: shared move/rotate transform-session state, operator-panel application, and pointer-routing controller.
 - `assets/app/js/edit-gestures.js`: gesture-first edit interaction controller and pointer-routing helpers for gesture mode.
@@ -120,11 +127,14 @@ Primary capabilities:
 - `tests/e2e/sessions.py`: fresh-page session round-trips, retained sources, typed arrays, derived dependencies, downloads, quota/corruption recovery, and cross-tab protection.
 - `tests/e2e/mode_consistency.py`: shared coordinate permissions and orbital-context behavior through the original interface, independent of Workbench.
 - `tests/e2e/helpers.py`: shared server/artifact helpers for browser smoke tests.
+- `tests/e2e/accessibility.py`: pinned, test-only axe-core `color-contrast` audit in both themes and all four Workbench modes. Compares failing/incomplete targets against `tests/baselines/color-contrast.json`; `--update-baseline` explicitly records reviewed changes. Incomplete checks are not passes. See `docs/accessibility-qa.md`; do not substitute custom CSS color parsing.
 - `.github/workflows/ci.yml`: CI workflow for checks, unit tests, and browser smoke tests.
 - `notebooks/vibemol_notebook_demo.ipynb`: notebook demo (PNG render + iframe auto-load via postMessage).
 
 ## Runtime Model
 No build step is required for the web app. It runs directly from static files.
+
+`assets/app/js/asset-urls.js` loads first in the head and owns the single `APP_VERSION` constant. The app reads `VibeMolAssets.version`; runtime bundled loads use `VibeMolAssets.url`. Run `python3 tools/sync_asset_versions.py --version <version>` to bump a release and stamp committed HTML/CSS URLs together, or `make version-assets` after editing the constant. `make check` rejects stale URLs. Keep workers and their imports versioned too. See `docs/asset-versioning.md` and the real HTTP-cache regression `tests/e2e/asset_cache.py`.
 
 Required stylesheet order in `index.html`:
 1. `src/styles/tokens.css`
@@ -132,6 +142,7 @@ Required stylesheet order in `index.html`:
 3. `assets/app/css/palette.css`
 4. `assets/app/css/edit-ui.css`
 5. `assets/app/css/display-ui.css`
+   - `assets/app/css/axis-gizmo.css` follows display-ui.css.
 6. `src/styles/vm-list-popover.css`
 7. `assets/app/css/session-ui.css`
 8. `assets/app/css/scene-outliner.css` (after the inline shell styles)
@@ -148,6 +159,7 @@ Required script order in `index.html`:
 7. `assets/app/js/interaction.js`
 8. `assets/app/js/ui.js`
 9. `assets/app/js/view-utils.js`
+   - `assets/app/js/axis-gizmo.js` follows view-utils.js.
 10. `assets/app/js/edit-utils.js`
 11. `assets/app/js/edit-commands.js`
 12. `assets/app/js/edit-state.js`
@@ -158,11 +170,13 @@ Required script order in `index.html`:
 17. `assets/app/js/volume-2c.js`
     - `bond-geometry.js` loads after `volume-2c.js` and before `bond-inference.js`.
 18. `assets/app/js/bond-inference.js`
+    - `hydrogen-bonds.js` loads immediately after bond inference.
 19. `assets/app/js/auto-hydrogen.js`
 20. `assets/app/js/autoiso.js`
 21. `assets/app/js/cloud-rendering.js`
 22. `assets/app/js/bond-editing.js`
 23. `assets/app/js/edit-ui.js`
+    - `edit-tool-ui.js` loads immediately after edit UI, before `app.js`.
     - `floating-panels.js` loads immediately before edit UI, registering the static floating shells before their controllers.
 24. `assets/app/js/display-windows.js`
 25. `assets/app/js/appearance-ui.js`
@@ -207,6 +221,7 @@ Required script order in `index.html`:
 - `window.VibeMolUI`
 - `window.VibeMolListPopover`
 - `window.VibeMolViewUtils`
+- `window.VibeMolAxisGizmo`
 - `window.VibeMolEditUtils`
 - `window.VibeMolEditCommands`
 - `window.VibeMolEditState`
@@ -216,6 +231,7 @@ Required script order in `index.html`:
 - `window.VibeMolVolumeGeometry`
 - `window.VibeMolVolume2C`
 - `window.VibeMolBondInference`
+- `window.VibeMolHydrogenBonds`
 - `window.VibeMolBondGeometry`
 - `window.VibeMolCoordination`
 - `window.VibeMolGeometryInference`
@@ -225,6 +241,7 @@ Required script order in `index.html`:
 - `window.VibeMolCloudRendering`
 - `window.VibeMolBondEditing`
 - `window.VibeMolEditUi`
+- `window.VibeMolEditToolUi`
 - `window.VibeMolDisplayWindows`
 - `window.VibeMolFloatingPanels`
 - `window.VibeMolAppearanceUi`
@@ -267,15 +284,23 @@ Preset automation contract exposed globally:
 - `window.VibeMolPreset.import(preset, options?)`
 
 ## Key Behavior Notes
+- A pending session-recovery choice defers automatic restoration of saved Workbench windows. It never hides panels opened in the current workspace (including Subspace on entering Calculations); menu checkmarks and dock visibility use the same live panel state. Opening a panel does not accept/dismiss recovery or overwrite its snapshot. `tests/e2e/measurements.py` covers this with new work loaded while recovery remains pending.
+- Calculations is Workbench's fourth mode. It temporarily hides ordinary surfaces/clouds, frames atoms, pauses playback, and offers Subspace / π planes / Clear. Shared inspectors remain available; other analysis panels suspend. Selections use stable atom IDs, live per structure, and persist in sessions/recovery. Shell and component states are mutually exclusive; p/d expose CCA components, f/higher whole shells only. Planes require whole p shells, at least three non-collinear atoms and RMS ≤0.100 Å; shared normals are averaged. Cached/instanced contracted cc-pvtz-minao previews use Look phase colors and include camera-depth bounds. GHF doubles generated counts once. No SCF or AVAS runs in the browser. Legacy launch keeps three modes.
+- Calculations' Total active count defaults to the selected spin-free subspace dimension after π-plane constraints. Editing it pins a manual value; Use selection count resumes automatic updates. Sessions retain this choice, and older explicit totals remain manual. `VibeMolCalculations.configure({total: n})` pins the count; `{totalFollowsSelection: true}` resets it. Occupied/virtual split remains explicit, and cumulative remains the default selection method.
+- AVAS shell menus expose occupied/core shells, complete outer s/p and next s/p shells; occupied 3d adds 4d. C offers 1s/2s/2p/3s/3p; S adds 3s/3p/4s/4p to the Ne core; Fe offers 1s/2s/2p/3s/3p/4s/3d/4p/5s/4d/5p in filling order. This supersedes the earlier d-only transition-metal restriction. Menus use full cc-pVTZ and group intersections. Existing cc-pvtz-minao choices remain until an unavailable shell is selected, which switches that record to cc-pvtz; preview coefficients, cache keys, counts, basis field, input and session state stay consistent. Explicit incompatible basis changes block input instead of dropping assignments. Raw catalogs retain legacy assignments outside the new menu limits. Bundled coverage remains H–Ar and Ca–Kr.
+- Calculations supports RHF, ROHF, and GHF. Spin projection `ms` is enabled only for ROHF, retained per structure/session, and validated for half-integer steps, electron parity, and `|ms| ≤ nel/2`. ROHF input targets the matching high-spin CI state (`S = |ms|`, multiplicity `2|ms|+1`). AVAS counts remain spatial and are additional to the automatically included singly occupied orbitals; the panel labels/explains this. The current forte2 signed-ms limitation for separate counts is checked before export. See `docs/calculations.md`.
+- Calculations atom focus is separate from AVAS assignments: clicks never assign or remove shells. `calculations-picker.js` provides the movable Atomic orbitals popup for one atom or a same-period group, using the intersection of supported MINAO shells. Group edits show mixed states and enforce whole-shell/component exclusivity. Its compact shell toolbar anchors near the focused atoms, follows camera changes unless manually moved, and resets anchoring for a new selection. Selecting p/d opens a component dropdown beneath that shell; the caret opens it without assigning orbitals. There is no lower information card or deselect button; empty-space clicks clear focus. The toolbar exposes π-plane fitting for at least three eligible atoms. Mixed-period focus suppresses the popup and explains the restriction in Subspace. Assigned AO rows/planes persist in sessions; focused atom IDs and popup layout are transient. Subspace Edit focuses one assigned atom; Remove explicitly removes its orbitals. `VibeMolCalculations.state().selectedAtomIds` reports transient focus; `selections` reports persistent assignments.
 - VS Code molecular editors load supported files directly in the opened file's folder as one batch. `Open Folder in VibeMol` also accepts an Explorer folder or a folder picker. `src/vscode_ext/vibemol/src/folderFiles.js` uses `workspace.fs` and current text documents (including unsaved edits), skips subfolders/symlinks/unrelated JSON/presets/sessions, and reports file failures within 250 MiB per-file / 512 MiB per-folder bounds. `vmWebview.js` shares panel setup and waits for DOM/app readiness before initial loading. Folder loads are snapshots, not filesystem watches. See `tests/unit/vscode-extension.test.mjs`.
 - Independent shadow, camera-depth, picking, performance, and mode fixes have been backported to `main` without the Workbench shell. The experimental branch includes that main baseline; see `docs/core-fixes-backport.md` for source commits, exclusions, and validation commands.
 - Workbench is the default v0.9.0 interface and manages persistent display inspectors through `VibeMolWorkbenchHost`; edit menus and transient dialogs retain their existing behavior. Its existing `vibemol.workbench.lab.v1` layout storage is preserved separately from scientific presets/sessions. Normal launches and old `?workspaceLab=1` links enable appearance defaults/autosave and session recovery. Only explicit `?appearanceStudy=1` or `?workspaceDemo=1` pages skip persistence; the latter loads the bundled methane demonstration into an empty scene. `tests/e2e/workbench_release.py` covers default launch, legacy links, persistence/recovery, startup defaults, and Python renderer styles. The CLI uses the public Look API for style selection, with a DOM fallback for older deployments.
-- Workbench merges Appearance and Style Studio into one Properties inspector (`inspector`) with Object/Look tabs. `properties-inspector.js` builds controls once and updates them in place. Command/Ctrl-click can select the structure and orbitals together; Structure and Surfaces controls apply only to the relevant selected type. Molecule-layer `moleculeDisplay` flags are session state and preserve legacy global defaults when absent. Shared materials, geometry, colors, lighting, and background live in Look; Object color/opacity overrides expose reset-to-look. Workbench layout normalization and window APIs accept `displayInspector` / `styleStudio` aliases; explicit legacy launches keep the original two inspectors. Axes/focus live in Camera; box visibility is per surface; the global 2C control is labelled explicitly. Typeface is available from Layout. See `docs/experiments/workbench/inspector-consolidation.md` and `tests/e2e/properties_inspector.py`.
-- The Workbench bar separates a View/Measure/Edit radiogroup, contextual commands (including Clear measurements), and one Panels menu. Mode buttons use `aria-checked` with roving Tab focus and wrapping arrows/Home/End; the original launch path retains its existing mode semantics. Build exposes expansion; no bar control uses `aria-pressed`. Panels rows show open checkmarks and effective dock locations, including inactive dock tabs. Minimized inspectors are unchecked and restore from their menu row. The menu dismisses on activation, Escape, Tab, or outside click. Menu and dock states derive from the same window/layout projection; no extra persistence is added. `tests/e2e/workbench_bar.py` covers keyboard, ARIA, conditional entries, and bar hit testing/overflow at 320–1920 px.
-- Workbench puts the original View/Measure/Edit selector and stable Build/Symmetry/Optimize actions in its top bar. Coordinates, Camera, Quick actions, and Properties stay available across modes; analysis inspectors suspend during Edit and restore their tabs afterward. Measure has a Clear measurements action. Contextual palettes open below their top-bar buttons and above docks; compact layouts use a two-row bar. Mode changes preserve Focus, restore the appropriate hint, and retain molecular/session state. Build/Symmetry open choices and Build search are restored on return to Edit; transient previews are canceled. In Workbench, search filters without selecting on blur; Enter or a result click commits a Build payload. Workbench `M` enters Measure from View/Edit, while `C`/`V`/`Q` consistently access shared inspectors. Explicit legacy launches retain the original mode selector/launcher, with Coordinates available in Edit.
-- Workbench keeps the left sidebar dedicated to scene management. Properties launches from Panels. Object contains selected-layer scientific controls; Look contains the single preset selector and named-style editor. Measure renders the same surfaces/clouds as View and picks atoms through them; Edit alone temporarily suppresses surfaces. Mode changes preserve visibility flags, materials, isovalues, and Properties tab choice.
+- Workbench merges Appearance and Style Studio into one Properties inspector (`inspector`) with Object/Look tabs. `properties-inspector.js` builds controls once and updates them in place. Command/Ctrl-click can select the structure and orbitals together; Structure and Surfaces controls apply only to the relevant selected type. Molecule-layer `moleculeDisplay` flags are session state and preserve legacy global defaults when absent. Shared materials, geometry, colors, lighting, and background live in Look; Object color/opacity overrides expose reset-to-look. Workbench layout normalization and window APIs accept `displayInspector` / `styleStudio` aliases; explicit legacy launches keep the original two inspectors. Axes/focus live in Camera; box visibility is per surface; the global 2C control is labelled explicitly. Typeface is available from App settings, separate from Layout. Geist is the default; supported font-pair alternatives intentionally use the same shared tokens. See `docs/experiments/workbench/inspector-consolidation.md` and `tests/e2e/properties_inspector.py`.
+- The Workbench bar separates a View/Measure/Edit radiogroup, contextual commands (including Clear measurements), and one Panels menu. Mode buttons use `aria-checked` with roving Tab focus and wrapping arrows/Home/End; the original launch path retains its existing mode semantics. Build and Symmetry expose expansion; no bar control uses `aria-pressed`. Panels rows show open checkmarks and effective dock locations, including inactive dock tabs. Minimized inspectors are unchecked and restore from their menu row. The menu dismisses on activation, Escape, Tab, or outside click. Menu and dock states derive from the same window/layout projection; no extra persistence is added. `tests/e2e/workbench_bar.py` covers keyboard, ARIA, conditional entries, and bar hit testing/overflow at 320–1920 px.
+- Workbench puts the original View/Measure/Edit selector and stable Build/Symmetry/Optimize actions in its top bar. Coordinates, Camera, and Properties stay available across modes; Quick actions (COM/orientation) are three direct top-bar commands before Panels, disabled without atoms; analysis inspectors suspend during Edit and restore their tabs afterward. Measure has a Clear measurements action. Build and Symmetry use the panel system; desktop bars stay 56 px across modes, with icon-only contextual actions and a keyboard-accessible overflow menu; compact layouts reserve a fixed 96 px. Mode changes preserve Focus, restore the appropriate hint, and retain molecular/session state. Build/Symmetry are Edit-only panels with dock/float/minimize support and saved-layout state; their open choices, Build search, and Symmetry tolerance are restored on return to Edit; transient previews are canceled. In Workbench, search filters without selecting on blur; Enter or a result click commits a Build payload. Workbench `M` enters Measure from View/Edit, while `C`/`V` access shared inspectors and `Q` exits Focus and focuses the first Quick action. Saved layouts drop the retired `viewInspector` panel; legacy launches retain its popup. Explicit legacy launches retain the original mode selector/launcher, with Coordinates available in Edit.
+- Measurements are durable per-record annotations with stable atom IDs, display units/precision, CSV, and independent Undo/Redo; Esc clears the picking sequence only. Measurements is available in View/Measure, suspended in Edit, and excluded from appearance presets. Sessions retain annotations but not their undo history.
+- Workbench keeps the left sidebar dedicated to scene management. Properties launches from Panels. Object contains selected-layer scientific controls; Look contains the single preset selector and named-style editor. Measure temporarily suppresses surfaces/clouds and frames atoms when entering from surface context, with Show surfaces and Frame atoms in Measurements. View restores layer visibility choices; Edit always suppresses surfaces. Mode changes preserve visibility flags, materials, isovalues, and Properties tab choice.
 - The floating question-mark Help button is removed. Help remains available from the sidebar and `?`. The corner axes reserve 16 px above the hint bar within the active canvas, tracking docks and wrapped hints; Focus releases that space when the hint is hidden.
-- All 24 custom floating interfaces use title bars or compact grips for movement, including display/edit windows, operator panels, scene/arithmetic menus, modal dialogs, confirmations, and video recording controls. Manual positions survive close/reopen and scene updates until reload; Alt+arrows move a focused handle and Alt+Home restores anchoring. Native browser dialogs/pickers remain browser-controlled. Floating layout is excluded from presets/sessions/recovery. `floating-panels.js` loads before UI controllers and registers static shells; the outliner registers its dynamic shells.
+- All 25 custom floating interfaces use title bars or compact grips for movement, including display/edit windows, operator panels, scene/arithmetic menus, modal dialogs, confirmations, and video recording controls. Manual positions survive close/reopen and scene updates until reload; Alt+arrows move a focused handle and Alt+Home restores anchoring. Native browser dialogs/pickers remain browser-controlled. Floating layout is excluded from presets/sessions/recovery. `floating-panels.js` loads before UI controllers and registers static shells; the outliner registers its dynamic shells.
+- Properties → Object → Structure includes Hydrogen bonds, enabled by default per molecule layer and independent of Show bonds. Explicit N/O/F/S–H donors and suitable N/O/F/S acceptors produce dashed H···A contacts at 1.2–2.5 Å, D···A ≤ 3.5 Å, and D–H···A ≥ 120°. Contacts are annotations only: no chemical topology, valence, UFF, export, or bond-editing changes. The toggle is session state, excluded from Looks; old sessions default on. Geometry changes update contacts, with spatial bins and no idle-frame inference. See `docs/hydrogen-bonds.md` and `tests/e2e/hydrogen_contacts.py`.
 - 2C surface mode is global across loaded 2C files.
 - Molecule styles are: `basic`, `toon`, `kit` (shown as Basic, Toon, and Kit).
 - Rendering presets are selected through the Appearance menu. Number keys do not change rendering in any mode; edit-mode bond-order/style shortcuts remain active.
@@ -286,6 +311,7 @@ Preset automation contract exposed globally:
 - Toon molecule style shades surfaces with Toon by default; an explicitly chosen orbital finish overrides it for the targeted layers.
 - Camera rotation uses quaternion orbiting in all interaction modes to avoid pole locking.
 - Camera clipping follows visible atom/bond/surface/cloud bounds with at least 3 Å of padding on each side, growing to 5% of the depth span for large structures. Orthographic depth may extend behind the nominal camera position without changing framing; picking and depth-of-field share that signed range. Perspective clipping stays positive and updates while dollying. Rotation, playback, edits, and session restoration refit depth without computing hidden orbitals.
+- The Edit XY grid is an unbounded projected plane with antialiased 1 Å lines, stronger 5 Å lines, red X/green Y axes, and a smooth perspective distance fade. Its fragment depth preserves atom occlusion while clamping outside the molecular clipping range; it never expands camera bounds. Orthographic views keep the grid continuous when panned or zoomed. `tests/e2e/camera_depth.py` covers grid extent, clipping, and occlusion.
 - Molecular picking compares actual atom and bond intersections by camera depth. Instanced metal-bond dashes use per-bond bounds to restrict triangle tests to candidate instances, including their caps and real gaps. Screen-distance assistance applies only when no physical atom/bond is hit; selected-atom tolerance and sticky bond hints cannot override a physical foreground target. Hover/selection overlays never intercept picking. Pointer handlers and the idle Edit halo share a hit/miss cache keyed by pointer, mode, volume, atom/bond groups, bond revision, viewport, and camera/group matrices; coordinate updates invalidate it, including atom-only edits. Straight-bond fallback converts only two endpoints; multiple-bond plane data is cached per bond-group revision. `tests/e2e/edit_picking.py` covers occlusion, dash gaps, projections, scene shifts, the 2,000-atom NaCl work count, invalidation, and curved/multiple bonds; `tools/profile_nacl_edit.py` records CPU benchmarks.
 - Mode-only surface suppression retains and hides orbital/cloud graphics without rebuilding unchanged molecules; a real rebuild in Edit defers those graphics until return to View/Measure. Closed Coordinates tables populate on opening. `tests/e2e/edit_picking.py` covers mode-only mesh reuse and graphics restoration.
 - Startup opens to an empty scene with onboarding card (sample is no longer auto-loaded).
@@ -324,7 +350,7 @@ Preset automation contract exposed globally:
 - Outside edit mode, trajectory bond rendering is dynamic per frame and does not mutate stored `vol.bonds`.
 - Bond radius is a requested maximum: each connector is capped to fit its smaller atom, with mesh facets, contours, and joints included. For plain cylinders, double-bond radius is at most `R/2.05`, triple/quadruple at most `R/3.1`, where `R` is the smaller sphere mesh's safe interior radius. Component spacing scales with thickness. Straight end caps use `sqrt(R²-(offset+rimRadius)²)` and live edits recompute the seating. Saved looks retain the requested radius; see `docs/bond-fitting.md`.
 - Hydrogen has one neighbor and order one across covalent/metal styles. The structure core normalizes legacy H orders and surplus neighbors (explicit then closest), and rejects a new neighbor on occupied H. Bond editing disables/rejects higher H orders; saturated-H growth stops before atom insertion. Covalent and metal inference share H capacity; H2 is supported. Explicit H deletion retains its no-adjustment/no-optimization behavior.
-- In edit mode, the `Build` popover is toggled explicitly by the toolbar button or `/`; pressing `/` focuses the Build search field when the palette is already open. The `Symmetry` popover is toggled explicitly by the toolbar button or `S`.
+- In edit mode, the `Build` popover is toggled explicitly by the toolbar button or `/`; pressing `/` focuses the Build search field when the palette is already open. The `Symmetry` panel is toggled explicitly by the toolbar button or `S`, which restores an inactive or minimized panel; explicit legacy launches retain its popup.
 - The `Symmetry` tool supports point-group analysis, RMS-based approximate fits, preview/apply/auto-apply symmetrization, and 3D symmetry-element visualization.
 - Appearance is an accordion inspector with a native Preset dropdown for built-in/saved looks, a Style Studio launcher directly below, and the existing Rendering, Atoms, Bonds, Camera, Scene, Surfaces, and Preferences sections. The dropdown and Studio share selection state and Appearance Undo. Geometry/Colors/Material/Lighting & contours/Surfaces controls, Undo/Revert, and preset/material saving live in the Studio popup. Surface and 2C/cloud controls appear only when relevant.
 - Background color is one global canvas setting saved with each look. Style Studio → Lighting & contours → Background and Appearance → Scene → Background share `global.backgroundColor`, including grouped Appearance Undo, Modified/Revert, named looks, exports, autosave, and sessions. Follow UI theme sits beside the Studio background control and darkens only the rendered color in dark mode. Background edits reuse meshes and never compute deferred orbitals. `docs/appearance-audit.md` records the resolved Studio/sidebar, camera, surface-default, and Undo contracts.
@@ -343,7 +369,7 @@ Preset automation contract exposed globally:
 - The experimental `Enamel` surface material gives opaque orbital figures compact highlights, a small colored fill, and no environment reflections. Native blue/orange Emissive, Enamel, and Satin presets and actual renderer previews live in `docs/experiments/style-lab/`; the original six-look lab keeps its separate study format. `compare.html` uses real app frames to compare full looks or materials only; Basic/Toon/Kit/Classic/Porcelain/Ink/Opal are approved; Nocturne and Atelier remain experimental. Studio presets retain the original Lab lighting, environment reflections, display radii, and ACES tone mapping (Classic uses no tone mapping). Study frames skip normal autosave/default/recovery behavior.
 - Loaded `.2ccube` files expose the 2C quantity selector in Appearance with math-aware labels (`Re(ψ^α)`, `Im(ψ^β)`, and so on).
 - In `alphaBetaPhase` split view, the canvas overlays centered `α` / `β` labels and exposes a `Spinor info` popover whose copy follows the active 2C quantity; the phase wheel sits at the lower-right above the hint bar.
-- Quick actions include `COM → Origin`, principal-axis alignment, and `+X/+Y/+Z` camera presets; `+X` places positive Y to the right and positive Z up. Shortcut `R` shifts active molecule center of mass to origin.
+- Quick actions include `COM → Origin`, camera targeting to COM, and principal-axis alignment. The bottom-left axis gizmo provides +X/−X, +Y/−Y, and +Z/−Z camera views in every mode, including empty scenes. Positive axes use the original shaded arrows and labeled filled endpoints; negative axes use translucent segments and unlabeled flat outlined endpoints. Negative shafts end at the projected circumference of their white-filled rings, including the cylinder cap extent, so they touch rather than enter the circles. Markers establish depth before translucent shafts render for correct occlusion against other axes. Projections overlap naturally without displacement, and the frontmost endpoint receives pointer input; covered endpoints remain keyboard-accessible. Native buttons support touch, one Tab stop, arrows/Home/End, Enter/Space, and Escape. Snaps preserve target, distance, projection and zoom, stop auto-rotation, and change no atoms or selection. +X places positive Y to the right and positive Z up. Camera’s Axes toggle hides both the drawn widget and hit targets; PNG/video retain its lines and labels. `tests/e2e/axis_gizmo.py` checks input, state isolation and responsive placement. Shortcut `R` shifts active molecule center of mass to origin.
 - `View` and `Coordinates` are separate floating windows launched from the adaptive non-edit menu; the coordinates window can toggle between angstrom and bohr display and supports inline atom editing in Edit mode only.
 - Malformed file imports (`.xyz`, `.cube`, `.2ccube`) are surfaced via popup errors.
 - Multi-frame `.xyz` files are parsed as trajectories and can be animated from the Trajectory panel controls.
@@ -382,7 +408,7 @@ Implemented:
 - The old gesture HUD has been removed; current edit state is conveyed through the floating cue row, popovers, and transient previews instead.
 - The `Build` palette is the source of truth for the currently loaded atom/fragment/molecule payload; it is opened by the toolbar button or `/`, and `/` focuses the Build search field when the palette is already visible.
 - The Build palette exposes atoms, fragments, and molecules plus element-specific coordination and `Adjust hydrogens` behavior for single-atom placement.
-- Leaving edit mode closes the `Build` palette and other edit-only floating popovers immediately; they do not persist into Display or Measure mode.
+- In Workbench, Build is an Edit-only panel (`buildPanel`) with right/bottom docking, floating, minimization, named-layout persistence, and a fixed header over a scrollable body. The Build button and `/` reveal inactive/minimized tabs. Payload selection keeps the panel open and focuses the canvas. Mode changes hide it without losing its open/closed/minimized choice or search; transient placement previews still cancel. Search/payload are not part of saved layouts. Legacy `?workspaceLab=0` keeps the close-on-selection popup. `tests/e2e/build_panel.py` covers both paths.
 - Layer 2 context halo is active in gesture mode:
   - selecting one atom shows a chemistry-aware halo immediately
   - hovering one atom while idle for ~300 ms shows the same halo
@@ -399,18 +425,19 @@ Implemented:
   - click atom to select it
   - drag from an unselected atom into void to grow chemistry
   - drag from an unselected atom to another atom to create/update/delete a bond
-  - left-click on bonds is inert
+  - Transform left-click selects a bond center or either attached side; Build with an atom loaded cycles bond order
   - drag from a selected atom to move the resolved move scope
   - `Alt+drag` to force atom-only movement
   - `Shift+drag` from a bond to move the downstream side
   - wheel or `1/2/3` during grow/bond drags to change the pending bond order
-  - right-click on atoms/bonds selects atom or bond scope; right-click on a selected atom upgrades to whole-molecule selection
-  - right-click on void rotates the camera, and `Shift+right-click` on void pans the view
+  - In both Build and Transform, right-click never selects or edits; right-drag (including Shift-right-drag) rotates the scene from atoms, bonds, or void, preserving selection and pending placement previews
+  - Switching to Transform retains the loaded Build payload; returning to Build or arming the selection's open-site cue restores that atom or fragment without reselecting it in the palette
 - Selection supports click-to-replace, `Shift+click` toggle, empty-click clear, and `Cmd/Ctrl+A` select-all.
 - Selection mode supports screen-space marquee box selection of atom centers.
 - `Esc` clears the current edit selection when something is selected.
 - Pressing `Space` in edit mode previews missing hydrogen placement for the current atom selection, or for the full active editable structure when nothing is selected; pressing `Space` again commits the previewed hydrogens.
-- Move mode supports multi-atom selection movement, a right-side XYZ displacement operator panel, and a 3-axis translation gizmo anchored at the geometric selection center.
+- Translate selection supports single-atom and multi-atom movement, a right-side XYZ displacement operator panel, and red X / green Y / blue Z arrows anchored at the selection center. Arrow hover and dragging work for a single atom; only that selection moves, with normal undo/redo. Rotate gizmos still require multiple atoms; bond-side transforms retain their own controls.
+- Translate selection also exposes absolute editable X/Y/Z fields below the floating selection actions. Single atoms show their position; groups show the mass-weighted center of mass. Fields always use angstroms, independently of camera shifts or native file units. Enter or blur commits one undoable axis translation; Escape cancels the draft. Unchanged/invalid input and stale selection drafts never move atoms. The popup stays anchored while typing; Rotate/Build and bond-specific controls hide these fields. `tests/e2e/edit_picking.py` covers the fields in both interfaces, unit conversion and rigid group movement.
 - Rotate mode supports multi-atom selection rotation, a right-side XYZ rotation operator panel, and a 3-axis broken-ring rotation gizmo anchored at the geometric selection center.
 - Add tool includes cursor-relative placement with automatic angle snapping (`180°`, `120°`, `109.5°`, `90°`, `60°`).
 - Hold `Shift` during add-grow placement to bypass angle snap.
@@ -423,10 +450,10 @@ Implemented:
 - Transform mode is the advanced bond-aware rotation tool: it supports bond hover, bond-side selection, additive selection, explicit rotate-fragment and rotate-bond actions, and post-transform cleanup.
 - Replacing an atom with a lower-valence element prunes excess bonds, preferring terminal hydrogens/terminal one-valence neighbors first, then runs local hydrogen repair on the surviving center.
 - Deleting atoms cascades to dangling one-valence neighbors and then repairs hydrogens on surviving frontier atoms in the same undo unit. Explicit hydrogen-only deletion removes just the targeted hydrogens, preserves all remaining coordinates, and skips automatic hydrogen repair/relaxation regardless of `Adjust hydrogens`; the setting itself stays unchanged.
-- Left-clicking the center of a normal bond in edit mode cycles its order `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`; bond-center context/right-click still selects the bond for cue-driven edits.
+- In Edit/Build with an atom loaded, hovering anywhere on a bond highlights every complete carrier and left-clicking cycles its order `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`; Transform left-click selects bond centers/ends without changing order. Bond selection for cue-driven edits belongs to Transform left-click. `tests/e2e/build_bonds.py` covers full-bond highlighting, Build-only cycling, undo/redo, and hydrogen limits; `tests/e2e/transform_selection.py` covers Transform left selection and right-drag orbit in both camera projections.
 - Edit undo/redo history is active (`Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`).
 - Direct delete via current selection or hovered atom (`Backspace`/`Delete`) is active.
-- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`) for ordinary bonds, edits metal bonds through a style popup (`1 = covalent`, `2 = coordination`, `3 = dative`, `0 = none`), supports right-click delete, includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds, and offers `Optimize Structure` for one whole-structure UFF coordinate cleanup pass.
+- Bond tool creates bonds by clicking two atoms, edits order through an in-scene popup (`1–4,0`) for ordinary bonds, edits metal bonds through a style popup (`1 = covalent`, `2 = coordination`, `3 = dative`, `0 = none`), includes a reviewed `Clean Up Bonds` preview/apply workflow for perceived bonds, and offers `Optimize Structure` for one whole-structure UFF coordinate cleanup pass.
 - Structures now persist explicit/perceived/suppressed `vol.bonds` with `{ id, a, b, order, kind, origin, style }`, where `style` is one of `covalent`, `metal-strong`, `metal-dative`, or `metal-metal`, and `kind: 'blocked'` records user-suppressed pairs that must not be auto-perceived back into existence.
 - `vol.annotations.coordination.byAtomId[atomId].geometryId` is a preferred coordination target for incomplete atoms, not authoritative stored hybridization.
 - `vol.annotations.metalBonding.byAtomId[atomId].mode` stores per-metal override mode (`auto`, `force_covalent`, `force_dative`, `no_bonds`) for coordination-bond inference.
@@ -605,14 +632,14 @@ After non-trivial changes:
 6. Check molecule styles (`basic`, `toon`, `kit/Kit`) through the Appearance menu and verify number keys do not change rendering in Display, Measure, or Edit mode.
 7. Enter edit mode and measurement mode; verify quaternion background rotation still works.
 8. In edit mode, verify the adaptive edit menu appears and the onboarding splash hides.
-9. In edit mode, test `Selection` behavior: click, `Shift+click`, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, and repeated right-click on a selected atom to upgrade to whole-molecule selection.
+9. In Edit/Transform, test left-click atoms and bond centers/ends, `Shift+click` atom toggles, empty-click clear, `Esc` clear, `Cmd/Ctrl+A`, inert right-click, and right-drag orbit from atoms/bonds/void. In Build, verify the same orbit-only right gestures with atom, fragment, and molecule payloads, including pending previews (`tests/e2e/build_orbit.py`).
 10. In edit mode, test the `Build` tool via button and `/`; confirm `/` opens or focuses the Build search field and that the `+` selection cue gates open-site build targets for selected atoms.
 11. In edit mode, test `Add > Atom`, `Add > Fragment`, and `Add > Molecule`, including the add-atom and add-molecule operator panels, Build-palette open/close behavior across mode switches, ghost-preview readability under the active molecule style, plus undo/redo and `Esc` cancel for molecule placement.
 12. In edit mode, press `Space` once on a simple unsaturated structure and verify ghost hydrogens appear without mutating the structure; press `Space` again and verify the hydrogens are added with one undoable history entry.
-13. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, right-click void rotate, `Shift+right-click` void pan, and undo behavior on a selected atom set.
-14. In edit mode, test bond interactions: atom-to-atom create, left-click bond-center order cycling `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, right-click bond delete, `Clean Up Bonds`, and `Optimize Structure`.
+13. In edit mode, test `Move` and `Rotate`: gizmo hover, operator-panel input commit, drag interaction, right-drag and `Shift+right-drag` scene rotation, and undo behavior on a selected atom set.
+14. In edit mode, test bond interactions: atom-to-atom create, Build left-click whole-bond order cycling `1 -> 2 -> 3 -> 4 -> 3 -> 2 -> 1`, Transform left-click scope selection, clicked-bond popup `1–4,0`, metal bond style popup `1/2/3/0`, `Clean Up Bonds`, and `Optimize Structure`.
 15. Load a `.2ccube` and verify the Appearance `2C mode` selector, centered `α` / `β` overlay labels, `Spinor info` popover, and phase wheel placement all react correctly when switching quantities and returning to `.cube`.
-16. In edit mode, test the `Symmetry` tool: open with button or `S`, preview one candidate, inspect a symmetry element in 3D, cancel/apply, and confirm the popover closes on file/mode changes.
+16. In edit mode, test the `Symmetry` tool: open with button or `S`, preview one candidate, inspect a symmetry element in 3D, cancel/apply, and confirm Workbench keeps the panel across file changes, suspends it outside Edit, and clears unfinished candidates; the legacy popup closes on file/mode changes.
 17. Use `Save Structure`, then drag-drop the exported `vibemol.structure` file back into the app and verify explicit bond orders and metal bond styles survive round-trip.
 18. Open `View`, `Coordinates`, `Trajectory`, and `Frequencies`; verify orthographic toggle, COM/orientation actions, angstrom/bohr switching, inline coordinate edits, trajectory play/reset/frame/FPS/loop, and vibration mode/amplitude/speed/hide-small-frequencies behavior.
 19. Save/load a preset in web UI and verify settings round-trip, including `extensions.builder` when fragment operations exist.

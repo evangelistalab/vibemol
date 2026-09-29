@@ -1,0 +1,20 @@
+.vm-axis-gizmo {
+  position: fixed;
+  z-index: 7;
+  pointer-events: none;
+  font-family: var(--vm-font-sans);
+}
+.vm-axis-gizmo[hidden] { display: none; }
+.vm-axis-gizmo .vm-axis-gizmo__end {
+  position: absolute;
+  width: 24px; height: 24px; min-width: 24px;
+  margin: 0; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; box-shadow: none; outline: none;
+  pointer-events: auto; cursor: pointer; touch-action: manipulation;
+  clip-path: circle(50%);
+  transform: none; transition: none;
+}
+/* Feedback is drawn with the gizmo so exports and on-screen geometry agree. */
+.vm-axis-gizmo .vm-axis-gizmo__end:is(:hover, :active, :focus-visible) {
+  background: transparent; box-shadow: none; transform: none;
+}

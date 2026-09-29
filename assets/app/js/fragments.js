@@ -634,7 +634,7 @@
     }
     let response;
     try {
-      response = await fetch(url, { cache: 'no-store' });
+      response = await fetch(window.VibeMolAssets?.url(url) || url, { cache: 'no-store' });
     } catch (error) {
       throw new Error(`fragment manifest fetch failed (${url}): ${error && error.message ? error.message : String(error)}`);
     }
@@ -666,7 +666,7 @@
       try {
         if ((!Array.isArray(item.atoms) || item.atoms.length === 0) && item.xyz) {
           const xyzUrl = resolveAgainstBaseUrl(item.xyz, normalizedBaseUrl);
-          const xyzResp = await fetch(xyzUrl, { cache: 'no-store' });
+          const xyzResp = await fetch(window.VibeMolAssets?.url(xyzUrl) || xyzUrl, { cache: 'no-store' });
           if (!xyzResp || !xyzResp.ok) {
             const status = xyzResp ? `${xyzResp.status} ${xyzResp.statusText}`.trim() : 'no response';
             throw new Error(`xyz fetch failed (${item.xyz}): ${status}`);

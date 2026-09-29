@@ -63,7 +63,9 @@
       const card = document.createElement('button');
       card.type = 'button'; card.className = 'vm-look-card'; card.dataset.look = look.id;
       card.setAttribute('aria-pressed', 'false'); card.setAttribute('aria-label', look.name + ' preset');
-      const preview = document.createElement('img'); preview.src = `assets/app/img/looks/studio-${look.id}.png`;
+      const preview = document.createElement('img');
+      const path = `assets/app/img/looks/studio-${look.id}.png`;
+      preview.src = global.VibeMolAssets?.url(path) || path;
       preview.alt = ''; preview.width = 240; preview.height = 160; preview.draggable = false;
       const label = document.createElement('span'); label.textContent = look.name;
       card.append(preview, label); card.addEventListener('click', () => run(() => choose(look, { includeColors: true, message: `${look.name} applied.` })));
