@@ -10,12 +10,26 @@
 #vibemolAgentMount { display: inline-flex; }
 .vm-agent-trigger {
   position: relative;
+  margin-inline: 6px;
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
 }
-.vm-agent-trigger .material-symbols-rounded { font-size: 24px; line-height: 1; }
+/* Cosmic gradient on the sparkle glyph (blue → violet → magenta). */
+.vm-agent-trigger-icon {
+  font-size: 24px;
+  line-height: 1;
+  background: linear-gradient(135deg, #2f7bff 0%, #7b4dff 50%, #e23bd6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  transition: filter 160ms ease;
+}
+.vm-agent-trigger:hover .vm-agent-trigger-icon,
+.vm-agent-trigger:focus-visible .vm-agent-trigger-icon { filter: brightness(1.15) saturate(1.1); }
 .vm-agent-trigger-dot {
   position: absolute;
   right: 1px;
@@ -30,7 +44,7 @@
 #vibemolAgentMount[data-connected="true"] .vm-agent-trigger-dot { display: block; }
 /* Workbench header: match its icon size, and keep Claude visible in compact
    mode (which hides the other utility links). */
-.vm-workbench #topRightUtilities .vm-agent-trigger .material-symbols-rounded { font-size: 22px; }
+.vm-workbench #topRightUtilities .vm-agent-trigger .vm-agent-trigger-icon { font-size: 22px; }
 .vm-workbench[data-wb-compact='true'] .wb-bar #topRightUtilities .topRightUtilityLink.vm-agent-trigger { display: inline-flex; }
 
 /* Keep the auto-hiding utilities visible while the menu is open. */
@@ -109,12 +123,26 @@ body.vm-agent-menu-open #topRightUtilitiesReveal { opacity: 1; pointer-events: a
 }
 div.vm-agent-note:empty { display: none; }
 .vm-agent-pair .vm-agent-note { flex: 1; color: var(--vm-color-text-secondary); font-family: var(--vm-font-mono); }
+/* Keycap: raised face, thicker bottom edge, soft top highlight. */
 .vm-agent-kbd {
-  min-height: 20px;
+  box-sizing: border-box;
+  min-width: 22px;
+  min-height: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--vm-color-text-muted, #687180) 40%, transparent);
+  border-bottom-width: 3px;
+  border-radius: 5px;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--vm-color-surface-panel) 92%, #fff) 0%,
+    color-mix(in srgb, var(--vm-color-surface-panel) 94%, var(--vm-color-text-muted, #687180)) 100%);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 55%, transparent), 0 1px 1px rgba(0, 0, 0, 0.08);
   color: var(--vm-color-text-muted, #687180);
-  background: transparent;
-  border-color: color-mix(in srgb, var(--vm-color-text-muted, #687180) 45%, transparent);
-  font-weight: var(--vm-font-weight-body, 400);
+  font-family: var(--vm-font-sans);
+  font-size: 11px;
+  font-weight: var(--vm-font-weight-strong, 600);
+  line-height: 1;
+  letter-spacing: 0;
 }
 .vm-agent-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 

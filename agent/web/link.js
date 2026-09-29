@@ -29,8 +29,8 @@
     mount.classList.add('vm-agent-link');
     mount.innerHTML = `
       <button id="agentMenuBtn" class="topRightUtilityLink vm-agent-trigger" type="button" aria-haspopup="dialog" aria-expanded="false"
-        aria-label="Claude connector" data-tooltip="Claude">
-        <span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>
+        aria-label="Pair to Claude" data-tooltip="Pair to Claude">
+        <span class="material-symbols-rounded vm-agent-trigger-icon" aria-hidden="true">auto_awesome</span>
         <span class="vm-agent-trigger-dot" aria-hidden="true"></span>
       </button>`;
     const menu = document.createElement('div');
