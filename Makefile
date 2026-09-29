@@ -6,6 +6,8 @@ JS_CHECK_FILES = \
 	agent/web/tools.js \
 	agent/web/link.js \
 	agent/web/lasso.js \
+	agent/web/source.js \
+	agent/web/extensions.js \
 	agent/relay/src/index.js \
 	agent/relay/src/relay.js \
 	agent/relay/src/help.js \

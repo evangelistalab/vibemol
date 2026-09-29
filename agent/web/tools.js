@@ -22,6 +22,11 @@
       return apis.VibeMolAgentUI;
     };
 
+    const ext = () => {
+      if (!apis.VibeMolAgentExtensions) throw new Error('Extensions module is not loaded.');
+      return apis.VibeMolAgentExtensions;
+    };
+
     const handlers = {
       vibemol_get_state: () => host().getSummary(),
 
@@ -83,6 +88,14 @@
       vibemol_press_key: args => ui().pressKey(args),
       vibemol_read_text: args => ui().readText(args),
       vibemol_run_script: args => ui().runScript(args),
+
+      vibemol_read_source: args => {
+        if (!apis.VibeMolAgentSource) throw new Error('Source reader is not loaded.');
+        return apis.VibeMolAgentSource.readSource(args || {});
+      },
+      vibemol_save_extension: args => ext().save(args || {}),
+      vibemol_list_extensions: args => ext().list(args || {}),
+      vibemol_manage_extension: args => ext().manage(args || {}),
 
       vibemol_get_selection: args => {
         if (!apis.VibeMolAgentLasso) throw new Error('Lasso module is not loaded.');

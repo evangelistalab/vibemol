@@ -1,5 +1,6 @@
 import agentsMd from '../../../AGENTS.md';
 import readmeMd from '../../../README.md';
+import extendingMd from '../../EXTENDING.md';
 
 // Split repository docs into heading-level sections once per isolate.
 function sections(markdown, source) {
@@ -18,10 +19,12 @@ function sections(markdown, source) {
   return out.map(s => ({ title: s.title, text: s.body.join('\n').trim() })).filter(s => s.text);
 }
 
-const DOCS = [...sections(readmeMd, 'README'), ...sections(agentsMd, 'AGENTS')];
+const DOCS = [...sections(extendingMd, 'Extending VibeMol'), ...sections(readmeMd, 'README'), ...sections(agentsMd, 'AGENTS')];
 
 /** Return the doc sections most relevant to a free-text topic. */
 export function helpSearch(topic) {
+  // The extension guide is short and always wanted whole before writing code.
+  if (/extend|extension|new feature|add(ing)? (a )?feature|plugin/i.test(String(topic || ''))) return String(extendingMd).slice(0, 12000);
   const terms = String(topic || '').toLowerCase().split(/[^a-z0-9.]+/).filter(t => t.length > 2);
   if (!terms.length) return `Available help sections:\n${DOCS.map(d => `- ${d.title}`).join('\n')}`;
   const scored = DOCS.map(doc => {

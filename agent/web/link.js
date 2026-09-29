@@ -61,7 +61,10 @@
       </div>
       <div id="agentLassoStatus" class="vm-agent-note" role="status" aria-live="polite"></div>
       <div class="vm-agent-divider"></div>
-      <label class="vm-agent-check"><input id="agentAllowScripts" type="checkbox" /> Allow scripts <span class="vm-agent-note">(you approve each)</span></label>`;
+      <label class="vm-agent-check" data-tooltip="Let Claude add features by writing JavaScript in this tab (you approve each script)"><input id="agentAllowScripts" type="checkbox" /> Allow scripts <span class="vm-agent-note">(you approve each)</span></label>
+      <div class="vm-agent-divider"></div>
+      <div class="vm-agent-menu-sub">Extensions</div>
+      <div id="agentExtensionsList" class="vm-agent-ext-list"></div>`;
     document.body.appendChild(menu);
     return { trigger: mount.querySelector('#agentMenuBtn'), menu };
   }

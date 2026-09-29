@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { loadGlobalModules } from '../../tests/unit/load-global-module.mjs';
 
 const schema = JSON.parse(fs.readFileSync(new URL('../tools.schema.json', import.meta.url), 'utf8'));
-const load = () => loadGlobalModules(['agent/web/tools.js', 'agent/web/link.js', 'agent/web/lasso.js']).window;
+const load = () => loadGlobalModules(['agent/web/tools.js', 'agent/web/link.js', 'agent/web/lasso.js', 'agent/web/source.js', 'agent/web/extensions.js']).window;
 
 function fakeApis() {
   const calls = [];
@@ -123,4 +123,56 @@ test('the copy button text is the full connect message', () => {
   const link = load().VibeMolAgentLink;
   assert.equal(link.pairingPhrase('ABCDE-FGH23'), 'connect to Vibemol ABCDE-FGH23');
   assert.equal(link.LASSO_KEY, 'L');
+});
+
+test('read_source lists, searches, and pages through served files', () => {
+  const { query } = load().VibeMolAgentSource._internals;
+  const files = [
+    { path: 'index.html', lines: ['<html>', '<input id="fileInput">', '</html>'] },
+    { path: 'assets/app/js/file-loader.js', lines: Array.from({ length: 450 }, (_, i) => (i === 9 ? 'function handleFileDrop(e) {' : `// line ${i + 1}`)) },
+  ];
+  const listing = JSON.parse(JSON.stringify(query(files)));
+  assert.deepEqual(listing.files, [{ path: 'index.html', lines: 3 }, { path: 'assets/app/js/file-loader.js', lines: 450 }]);
+  const hits = query(files, { query: 'handlefiledrop' });
+  assert.equal(hits.total, 1);
+  assert.equal(hits.matches[0].location, 'assets/app/js/file-loader.js:10');
+  const page = query(files, { file: 'file-loader.js', start: 1, end: 999 });
+  assert.equal(page.end, 400);
+  assert.equal(page.nextStart, 401);
+  assert.match(page.text, /^1: \/\/ line 1/);
+  assert.throws(() => query(files, { file: 'nope.js' }), /No served file/);
+  assert.throws(() => query(files, { query: '(', regex: true }), /Invalid regex/);
+});
+
+test('extension contexts clean up everything they added', () => {
+  const w = load();
+  const { createContext, extOf } = w.VibeMolAgentExtensions._internals;
+  const events = [];
+  const target = { addEventListener: (t) => events.push(`+${t}`), removeEventListener: (t) => events.push(`-${t}`) };
+  const children = [];
+  const group = { add: o => { children.push(o); o.parent = group; }, remove: o => children.splice(children.indexOf(o), 1) };
+  w.VibeMolAgentSeam = { getContentGroup: () => group, getScene: () => group };
+  const { ext, dispose } = createContext('demo');
+  ext.listen(target, 'click', () => {});
+  const disposed = [];
+  ext.add3D({ traverse: fn => fn({ geometry: { dispose: () => disposed.push('geometry') }, material: { dispose: () => disposed.push('material') } }) });
+  ext.registerFileFormat({ extensions: ['NMD'], convert: t => t });
+  assert.equal(extOf('protein.NMD'), '.nmd');
+  assert.equal(children.length, 1);
+  dispose();
+  assert.equal(children.length, 0);
+  assert.deepEqual(events, ['+click', '-click']);
+  assert.deepEqual(disposed, ['geometry', 'material']);
+  assert.equal(extOf('protein.nmd'), '');
+});
+
+test('saved extensions round-trip through storage and reject malformed entries', () => {
+  const { readStore, writeStore } = load().VibeMolAgentExtensions._internals;
+  const mem = new Map();
+  const storage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, v) };
+  writeStore([{ name: 'NMD loader', code: 'return 1', enabled: true }, { name: 5 }], storage);
+  const back = JSON.parse(JSON.stringify(readStore(storage)));
+  assert.deepEqual(back.map(e => e.name), ['NMD loader']);
+  mem.set('vibemol.agent.extensions.v1', 'not json');
+  assert.equal(readStore(storage).length, 0);
 });

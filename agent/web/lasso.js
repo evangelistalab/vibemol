@@ -15,7 +15,6 @@
   const MAX_IMAGE_SIDE = 1024;
   const captures = [];
   let active = null;
-  let sourceCache = null;
 
   // ---- Geometry -------------------------------------------------------------
   function pointInPolygon(x, y, poly) {
@@ -159,27 +158,9 @@
   }
 
   // ---- Source lookup --------------------------------------------------------
-  async function loadSources() {
-    if (sourceCache) return sourceCache;
-    const doc = global.document;
-    const root = new URL('./', global.location.href);
-    const urls = new Set([new URL(global.location.pathname, global.location.origin).href]);
-    for (const s of doc.querySelectorAll('script[src]')) {
-      const url = new URL(s.getAttribute('src'), global.location.href);
-      if (url.origin !== global.location.origin || /\/vendor\/|\.min\.js$|\/agent\//.test(url.pathname)) continue;
-      urls.add(url.href);
-    }
-    const files = [];
-    await Promise.all([...urls].map(async href => {
-      try {
-        const res = await fetch(href, { cache: 'force-cache' });
-        if (!res.ok) return;
-        const path = href.startsWith(root.href) ? href.slice(root.href.length) || 'index.html' : new URL(href).pathname;
-        files.push({ path: path.split('?')[0] || 'index.html', lines: (await res.text()).split('\n') });
-      } catch { /* unreadable file: skip */ }
-    }));
-    sourceCache = files;
-    return files;
+  // Source files come from agent/web/source.js (shared with vibemol_read_source).
+  function loadSources() {
+    return global.VibeMolAgentSource ? global.VibeMolAgentSource.loadSources({ includeAgent: false }) : Promise.resolve([]);
   }
 
   const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

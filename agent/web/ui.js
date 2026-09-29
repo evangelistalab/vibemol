@@ -167,19 +167,11 @@
     return { ref: ref || 'body', text: text.replace(/[ \t]+/g, ' ').replace(/ *\n[\s]*/g, '\n').trim().slice(0, limit), truncated: text.length > limit };
   }
 
-  // Opt-in escape hatch for anything the tools above can't reach. Off unless the
-  // user ticks "Allow scripts" in the page, and every script needs confirmation.
-  async function runScript({ code, purpose = '' } = {}, doc = global.document) {
-    const allow = doc.getElementById('agentAllowScripts');
-    if (!allow || !allow.checked) throw new Error('Running scripts is disabled. Ask the user to tick "Allow scripts" in the Claude menu (top right) if they want this.');
-    if (typeof code !== 'string' || !code.trim()) throw new Error('code is required.');
-    const ok = global.confirm(`Claude wants to run a script in this VibeMol tab.\n\nPurpose: ${clean(purpose, 300) || '(not given)'}\n\n${code.slice(0, 1500)}${code.length > 1500 ? '\n…' : ''}\n\nRun it?`);
-    if (!ok) throw new Error('The user declined to run the script.');
-    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-    const value = await new AsyncFunction('VibeMol', code)(global);
-    let json;
-    try { json = JSON.stringify(value === undefined ? null : value); } catch { json = JSON.stringify(String(value)); }
-    return { result: JSON.parse(json.length > 20000 ? JSON.stringify(json.slice(0, 20000)) : json) };
+  // Claude's JavaScript (one-off scripts and saved extensions) runs through
+  // agent/web/extensions.js, which gives it the `ext` helper and cleanup.
+  function runScript(args) {
+    if (!global.VibeMolAgentExtensions) throw new Error('Extensions module is not loaded.');
+    return global.VibeMolAgentExtensions.runScript(args);
   }
 
   global.VibeMolAgentUI = Object.freeze({

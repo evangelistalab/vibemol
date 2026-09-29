@@ -415,7 +415,7 @@
     },
     {
       "name": "vibemol_run_script",
-      "description": "Last resort for things no other tool can reach: run JavaScript in the VibeMol tab (async function body; the page's window is available as VibeMol and globally; return a JSON-serializable value). Only works if the user ticked 'Allow scripts', and the user must approve each script in a dialog. Explain the purpose in plain words.",
+      "description": "Run JavaScript in the user's VibeMol tab. This is how you add NEW functionality (visualizations, file formats, panels, buttons, analysis): VibeMol is a browser app, so new features are JavaScript. The code is the body of async function (VibeMol, ext): VibeMol is window; ext is a helper whose additions are cleaned up automatically (ext.add3D, ext.mount, ext.listen, ext.onFrame, ext.registerFileFormat, ext.storage, ext.app, ext.THREE). Return a JSON-serializable value. Read vibemol_help topic 'extending VibeMol' first and study existing code with vibemol_read_source. Needs 'Allow scripts' on; the user approves each script. Effects last until reload: use vibemol_save_extension to keep a working feature.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -449,6 +449,117 @@
       },
       "annotations": {
         "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_read_source",
+      "description": "Read VibeMol's own source code as served to the user's tab (index.html, app JavaScript, CSS, and the agent's files) so new features fit existing code. No arguments: list files with line counts. query (plain text, or regex=true): search, optionally within one file. file + start/end: read numbered lines (up to 400 per call; use nextStart to continue).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path or unique file name, e.g. assets/app/js/file-loader.js or file-loader.js"
+          },
+          "query": {
+            "type": "string"
+          },
+          "regex": {
+            "type": "boolean",
+            "default": false
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "maxResults": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 30
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_save_extension",
+      "description": "Save JavaScript as a named extension in the user's browser so the feature persists: it runs now and on every page load while enabled, and appears in the Claude menu's Extensions list (toggle, download, delete). Same code format as vibemol_run_script; saving an existing name replaces it. Needs 'Allow scripts'; the user approves.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "code"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "vibemol_list_extensions",
+      "description": "List saved extensions with enabled/running state and any error from their last run. includeCode returns their source for review or editing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "includeCode": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "vibemol_manage_extension",
+      "description": "Enable, disable, or remove a saved extension by name. Disabling runs its cleanup (removes what it added via ext).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "enable",
+              "disable",
+              "remove"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "action"
+        ],
+        "additionalProperties": false
       }
     }
   ]

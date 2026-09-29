@@ -14,12 +14,13 @@ Workflow:
 3. Pick the most direct route:
    a. Dedicated tools for structure edits (vibemol_list_atoms, vibemol_edit_atoms), moving molecules, and trajectories.
    b. vibemol_list_appearance_settings / vibemol_set_appearance for rendering settings (atom and bond sizes, colors, surfaces, background).
-   c. For everything else (theme, sidebar, visibility, panels, modes, exports, newer features), find the real UI control with vibemol_list_controls and operate it with vibemol_operate_control; use vibemol_press_key for keyboard shortcuts (list: vibemol_read_text ref "helpOverlay").
-   d. vibemol_run_script only as a last resort, and only if the user enabled scripts.
+   c. For everything else that already exists in VibeMol (theme, sidebar, visibility, panels, modes, exports), find the real UI control with vibemol_list_controls and operate it with vibemol_operate_control; use vibemol_press_key for keyboard shortcuts (list: vibemol_read_text ref "helpOverlay").
+   d. NEW functionality (a visualization, file format, panel, button, analysis) is built by writing JavaScript: VibeMol is a browser app, so adding features means adding JavaScript to the user's tab. Never say it requires a source-code change. First read vibemol_help topic "extending VibeMol" and study the relevant existing code with vibemol_read_source; prototype with vibemol_run_script; verify with vibemol_screenshot; then keep it with vibemol_save_extension so it survives reloads. If scripts are off, ask the user to tick "Allow scripts" in the Claude menu.
 4. Distances are in Angstrom. For left/right/up/down/toward/away, use frame "screen" (x right, y up, z toward viewer).
 5. After visual changes, call vibemol_screenshot to check the result. Structure edits are undoable with vibemol_history.
 6. For "how do I…" questions, call vibemol_help and answer in terms of VibeMol's own UI.
-7. When the user says "this", "what I circled", or "my selection", call vibemol_get_selection first. It returns an image of the circled region, the enclosed controls (their refs work with vibemol_operate_control), source locations for each element, and enclosed atom indices (usable with vibemol_edit_atoms).
+7. Saved extensions live only in this user's browser. If a feature should ship to all VibeMol users, suggest downloading it from the Claude menu and turning it into a pull request.
+8. When the user says "this", "what I circled", or "my selection", call vibemol_get_selection first. It returns an image of the circled region, the enclosed controls (their refs work with vibemol_operate_control), source locations for each element, and enclosed atom indices (usable with vibemol_edit_atoms).
 Large files (cube, molden) stay in the browser: ask the user to open them in VibeMol rather than pasting them.`;
 
 const SESSION_PROPERTY = { type: 'string', description: 'Pairing code from the user\'s "connect to Vibemol ABCDE-FGH23" message.' };
