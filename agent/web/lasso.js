@@ -310,7 +310,7 @@
 
   function getSelection({ includeImage = true } = {}) {
     const latest = captures[0];
-    if (!latest) throw new Error('No lasso selection yet. Ask the user to click "Lasso" next to Connect Claude and draw around what they mean.');
+    if (!latest) throw new Error('No lasso selection yet. Ask the user to press L (or use Lasso in the Claude menu at the top right) and draw around what they mean.');
     const { image, ...rest } = latest;
     const result = { ...rest };
     if (image && image.error) result.imageError = image.error;
@@ -318,30 +318,45 @@
     return result;
   }
 
-  function install() {
+  function isTyping(target) {
+    const el = target && target.closest ? target : null;
+    return !!(el && (el.isContentEditable || el.closest('input, textarea, select, [contenteditable="true"]')));
+  }
+
+  function trigger() {
     const doc = global.document;
-    doc.addEventListener('click', event => {
-      const button = event.target.closest && event.target.closest('#agentLassoBtn');
-      if (!button) return;
-      const status = doc.getElementById('agentLassoStatus');
-      const say = text => { if (status) status.textContent = text; };
-      startLasso(async poly => {
-        if (!poly) { say(''); return; }
-        say('Capturing selection…');
-        try {
-          const sel = await buildSelection(poly);
-          const parts = [`${sel.elementCount} element${sel.elementCount === 1 ? '' : 's'}`];
-          if (sel.atoms && sel.atoms.count) parts.push(`${sel.atoms.count} atom${sel.atoms.count === 1 ? '' : 's'}`);
-          say(`Selection captured (${parts.join(', ')}). Ask Claude to look at your VibeMol selection.`);
-        } catch (error) {
-          say(`Could not capture selection: ${error.message}`);
-        }
-      });
+    const status = doc.getElementById('agentLassoStatus');
+    const say = text => { if (status) status.textContent = text; };
+    startLasso(async poly => {
+      if (!poly) return;
+      say('Capturing…');
+      try {
+        const sel = await buildSelection(poly);
+        const parts = [`${sel.elementCount} element${sel.elementCount === 1 ? '' : 's'}`];
+        if (sel.atoms && sel.atoms.count) parts.push(`${sel.atoms.count} atom${sel.atoms.count === 1 ? '' : 's'}`);
+        say(`Selection ready · ${parts.join(' · ')}`);
+      } catch (error) {
+        say(`Capture failed: ${error.message}`);
+      }
     });
   }
 
+  function install() {
+    const doc = global.document;
+    doc.addEventListener('click', event => {
+      if (event.target.closest && event.target.closest('#agentLassoBtn')) trigger();
+    });
+    // Shortcut: L (no modifiers), ignored while typing in a field.
+    doc.addEventListener('keydown', event => {
+      if (event.defaultPrevented || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (String(event.key).toLowerCase() !== 'l' || isTyping(event.target) || active) return;
+      event.preventDefault();
+      trigger();
+    }, true);
+  }
+
   global.VibeMolAgentLasso = Object.freeze({
-    startLasso, buildSelection, getSelection,
+    startLasso, buildSelection, getSelection, trigger,
     _internals: { pointInPolygon, polygonArea, searchSources, cssPath },
   });
   if (typeof document !== 'undefined' && global.document && global.document.addEventListener) install();

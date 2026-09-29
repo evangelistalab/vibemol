@@ -33,7 +33,7 @@ export class PairingRelay extends DurableObject {
   async call({ tool, args }) {
     const [tab] = this.ctx.getWebSockets();
     if (!tab) {
-      return { ok: false, error: 'No VibeMol tab is paired with this code. Ask the user to click "Connect Claude" on vibemol.org and share the new code.' };
+      return { ok: false, error: 'No VibeMol tab is paired with this code. Ask the user to open the Claude menu in VibeMol, click Connect Claude, and paste the new message.' };
     }
     if (tool === '__connect') {
       tab.send('{"type":"paired"}');

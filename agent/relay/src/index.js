@@ -9,7 +9,7 @@ const CODE_PATTERN = /^[A-HJKMNP-Z2-9]{5}-[A-HJKMNP-Z2-9]{5}$/;
 
 const INSTRUCTIONS = `VibeMol (vibemol.org) is a browser molecular viewer. These tools control the user's own open VibeMol tab.
 Workflow:
-1. If you do not have a pairing code, ask the user to click "Connect Claude" in VibeMol and paste the code (format ABCDE-FGH23). Then call vibemol_connect.
+1. The user pairs by saying "connect to Vibemol ABCDE-FGH23" (the code from the Claude menu at the top right of VibeMol). Call vibemol_connect with that code. If you have no code, ask them to open that menu, click Connect Claude, and copy the message.
 2. Call vibemol_get_state before acting. Pass the same session code to every tab tool.
 3. Pick the most direct route:
    a. Dedicated tools for structure edits (vibemol_list_atoms, vibemol_edit_atoms), moving molecules, and trajectories.
@@ -22,7 +22,7 @@ Workflow:
 7. When the user says "this", "what I circled", or "my selection", call vibemol_get_selection first. It returns an image of the circled region, the enclosed controls (their refs work with vibemol_operate_control), source locations for each element, and enclosed atom indices (usable with vibemol_edit_atoms).
 Large files (cube, molden) stay in the browser: ask the user to open them in VibeMol rather than pasting them.`;
 
-const SESSION_PROPERTY = { type: 'string', description: 'Pairing code shown in VibeMol after clicking "Connect Claude", e.g. ABCDE-FGH23.' };
+const SESSION_PROPERTY = { type: 'string', description: 'Pairing code from the user\'s "connect to Vibemol ABCDE-FGH23" message.' };
 
 const SERVER_TOOLS = [
   {
@@ -78,7 +78,7 @@ async function callTool(env, name, args = {}) {
   if (name === 'vibemol_help') return text(helpSearch(args.topic));
   if (name !== 'vibemol_connect' && !TAB_TOOL_NAMES.has(name)) return text(`Unknown tool: ${name}`, true);
   const code = normalizeCode(args.session);
-  if (!code) return text('Missing or invalid pairing code. Ask the user to click "Connect Claude" in VibeMol and share the code it shows.', true);
+  if (!code) return text('Missing or invalid pairing code. Ask the user to open the Claude menu (top right of VibeMol), click Connect Claude, and paste the copied message.', true);
   const { session, ...toolArgs } = args;
   const stub = env.RELAY.get(env.RELAY.idFromName(code));
   const response = await stub.fetch('https://relay/call', {

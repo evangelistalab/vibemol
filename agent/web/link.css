@@ -1,11 +1,126 @@
-/* Claude connector pairing control (assets/app/js/agent-link.js). */
-.vm-agent-link { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
-.vm-agent-link-status { flex-basis: 100%; font-size: 12px; line-height: 1.35; opacity: 0.8; overflow-wrap: anywhere; }
-.vm-agent-link-status:empty { display: none; }
-.vm-agent-link-status[data-state="connected"] { opacity: 1; font-weight: 600; }
-.vm-agent-link-status[data-state="error"] { color: #c0392b; opacity: 1; }
-.vm-agent-link-scripts { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; opacity: 0.85; }
-/* Lasso overlay (agent/web/lasso.js) */
+/* Claude connector UI (agent/web/link.js, agent/web/lasso.js). Uses VibeMol's
+   palette tokens so it follows the light/dark theme. */
+
+.vm-agent-link {
+  --vm-agent-on: #22a55a;
+  --vm-agent-off: #d64545;
+}
+
+/* Trigger: sits beside the GitHub mark and reuses .topRightUtilityLink. */
+#vibemolAgentMount { display: inline-flex; }
+.vm-agent-trigger {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.vm-agent-trigger .material-symbols-rounded { font-size: 24px; line-height: 1; }
+.vm-agent-trigger-dot {
+  position: absolute;
+  right: 1px;
+  bottom: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--vm-agent-on);
+  box-shadow: 0 0 0 2px var(--vm-color-surface-panel);
+  display: none;
+}
+#vibemolAgentMount[data-connected="true"] .vm-agent-trigger-dot { display: block; }
+
+/* Keep the auto-hiding utilities visible while the menu is open. */
+body.vm-agent-menu-open #topRightUtilitiesReveal { opacity: 1; pointer-events: auto; }
+
+/* Popup menu (same surface as other VibeMol popovers). */
+.vm-agent-menu {
+  position: fixed;
+  z-index: 10060;
+  width: min(300px, calc(100vw - 16px));
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--vm-color-border);
+  border-radius: 8px;
+  background: var(--vm-color-surface-panel);
+  box-shadow: var(--vm-shadow-sm), 0 18px 42px rgba(0, 0, 0, 0.16);
+  color: var(--vm-color-text-primary);
+  font-family: var(--vm-font-sans);
+  font-size: 12px;
+}
+.vm-agent-menu[hidden] { display: none !important; }
+.vm-agent-menu-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.vm-agent-menu-title { font-size: 13px; font-weight: 700; }
+.vm-agent-menu-row { display: flex; align-items: center; gap: 8px; }
+.vm-agent-menu-row[hidden] { display: none; }
+.vm-agent-divider { height: 1px; background: var(--vm-color-border); margin: 2px 0; }
+
+/* Binary status: red dot = not connected, green dot = connected. */
+.vm-agent-state { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--vm-color-text-secondary); }
+.vm-agent-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--vm-agent-off); flex: none; }
+.vm-agent-state[data-connected="true"] .vm-agent-dot { background: var(--vm-agent-on); }
+
+/* Buttons mirror #toolbar button / button.secondary. */
+.vm-agent-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 11px;
+  border: none;
+  border-radius: 8px;
+  background: var(--vm-color-surface-secondary);
+  color: var(--vm-color-text-primary);
+  font: inherit;
+  font-weight: var(--vm-font-weight-strong);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.vm-agent-btn:hover { background: color-mix(in srgb, var(--vm-color-surface-secondary) 85%, var(--vm-color-text-primary)); }
+.vm-agent-btn-primary { background: var(--accent); color: var(--vm-color-text-on-accent); }
+.vm-agent-btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, #000); }
+.vm-agent-btn .material-symbols-rounded { font-size: 18px; }
+#connectClaudeBtn { flex: 1; justify-content: center; }
+.vm-agent-icon-btn {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--vm-color-text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+}
+.vm-agent-icon-btn:hover { background: color-mix(in srgb, var(--vm-color-text-primary) 8%, transparent); color: var(--vm-color-text-primary); }
+
+/* Quiet secondary text, same as "Autosave ready" (.vm-session-status). */
+.vm-agent-note {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--vm-color-text-muted, #687180);
+  overflow-wrap: anywhere;
+}
+div.vm-agent-note:empty { display: none; }
+.vm-agent-pair .vm-agent-note { flex: 1; color: var(--vm-color-text-secondary); font-family: var(--vm-font-mono); }
+.vm-agent-kbd {
+  min-height: 20px;
+  color: var(--vm-color-text-muted, #687180);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--vm-color-text-muted, #687180) 45%, transparent);
+  font-weight: var(--vm-font-weight-body, 400);
+}
+.vm-agent-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+/* Lasso overlay (agent/web/lasso.js). */
 .vm-agent-lasso { position: fixed; inset: 0; z-index: 2147483000; cursor: crosshair; touch-action: none; background: rgba(0, 0, 0, 0.06); }
 .vm-agent-lasso canvas { width: 100%; height: 100%; display: block; }
-.vm-agent-lasso-hint { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); padding: 6px 12px; border-radius: 6px; background: rgba(20, 20, 24, 0.85); color: #fff; font-size: 13px; pointer-events: none; }
+.vm-agent-lasso-hint {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  padding: 6px 12px; border-radius: 8px;
+  background: var(--vm-color-surface-panel); color: var(--vm-color-text-secondary);
+  border: 1px solid var(--vm-color-border); box-shadow: var(--vm-shadow-sm);
+  font-family: var(--vm-font-sans); font-size: 12px; pointer-events: none;
+}

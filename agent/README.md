@@ -5,7 +5,7 @@ in this directory. The rest of the app knows about it in exactly three places:
 
 | Hook | Where | Purpose |
 |---|---|---|
-| `<div id="vibemolAgentMount">` | `index.html` | where the Connect Claude controls render |
+| `<span id="vibemolAgentMount">` | `index.html`, next to the GitHub link | where the Claude menu button renders |
 | `<script src="./agent/web/loader.js">` | `index.html` (after `app.js`) | loads everything in `agent/web/` |
 | `window.VibeMolAgentSeam` | end of `assets/app/js/app.js` | narrow list of existing internals the agent may call |
 
@@ -55,5 +55,7 @@ Set `relayUrl` in `web/config.js` to the printed address with `wss://`. Add any 
 
 ## Connect in Claude
 1. Customize → Connectors → Add custom connector → `https://<relay>/mcp`.
-2. In VibeMol click **Connect Claude** and copy the pairing code.
-3. In a new chat: "Connect to VibeMol ABCDE-FGH23, then …".
+2. In VibeMol open the Claude menu (top right), click **Connect Claude**, and copy the message.
+3. Paste it into a new chat ("connect to Vibemol ABCDE-FGH23") and continue with your request.
+
+Press **L** anywhere (outside text fields) to lasso part of the page for Claude.

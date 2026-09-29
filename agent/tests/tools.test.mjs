@@ -118,3 +118,9 @@ test('vibemol_get_selection explains how to make a selection when none exists', 
   const tools = w.VibeMolAgentTools.createAgentTools({ schema, apis: w });
   await assert.rejects(tools.call('vibemol_get_selection', {}), /Lasso/);
 });
+
+test('the copy button text is the full connect message', () => {
+  const link = load().VibeMolAgentLink;
+  assert.equal(link.pairingPhrase('ABCDE-FGH23'), 'connect to Vibemol ABCDE-FGH23');
+  assert.equal(link.LASSO_KEY, 'L');
+});

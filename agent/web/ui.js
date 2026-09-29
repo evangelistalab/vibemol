@@ -171,7 +171,7 @@
   // user ticks "Allow scripts" in the page, and every script needs confirmation.
   async function runScript({ code, purpose = '' } = {}, doc = global.document) {
     const allow = doc.getElementById('agentAllowScripts');
-    if (!allow || !allow.checked) throw new Error('Running scripts is disabled. Ask the user to tick "Allow scripts" next to Connect Claude if they want this.');
+    if (!allow || !allow.checked) throw new Error('Running scripts is disabled. Ask the user to tick "Allow scripts" in the Claude menu (top right) if they want this.');
     if (typeof code !== 'string' || !code.trim()) throw new Error('code is required.');
     const ok = global.confirm(`Claude wants to run a script in this VibeMol tab.\n\nPurpose: ${clean(purpose, 300) || '(not given)'}\n\n${code.slice(0, 1500)}${code.length > 1500 ? '\n…' : ''}\n\nRun it?`);
     if (!ok) throw new Error('The user declined to run the script.');
