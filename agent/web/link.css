@@ -28,6 +28,10 @@
   display: none;
 }
 #vibemolAgentMount[data-connected="true"] .vm-agent-trigger-dot { display: block; }
+/* Workbench header: match its icon size, and keep Claude visible in compact
+   mode (which hides the other utility links). */
+.vm-workbench #topRightUtilities .vm-agent-trigger .material-symbols-rounded { font-size: 22px; }
+.vm-workbench[data-wb-compact='true'] .wb-bar #topRightUtilities .topRightUtilityLink.vm-agent-trigger { display: inline-flex; }
 
 /* Keep the auto-hiding utilities visible while the menu is open. */
 body.vm-agent-menu-open #topRightUtilitiesReveal { opacity: 1; pointer-events: auto; }

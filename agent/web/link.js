@@ -66,8 +66,19 @@
     return { trigger: mount.querySelector('#agentMenuBtn'), menu };
   }
 
+  // Always sit directly after the GitHub link, wherever the app places it (the
+  // floating top-right utilities or the workbench header), even if an older
+  // index.html still has the mount elsewhere.
+  function placeMount() {
+    let mount = document.getElementById('vibemolAgentMount');
+    const github = document.getElementById('githubRepoLink');
+    if (!mount && github) { mount = document.createElement('span'); mount.id = 'vibemolAgentMount'; }
+    if (mount && github && github.nextElementSibling !== mount) github.insertAdjacentElement('afterend', mount);
+    return mount;
+  }
+
   function install() {
-    const mount = document.getElementById('vibemolAgentMount');
+    const mount = placeMount();
     if (!mount || mount.dataset.installed) return;
     mount.dataset.installed = '1';
     const { trigger, menu } = render(mount);
