@@ -37,6 +37,7 @@ KNOWN_ENTRY_KEYS = {
     "id",
     "name",
     "formula",
+    "importanceRank",
     "tags",
     "xyz",
     "bonds",
@@ -306,6 +307,16 @@ def normalize_entry(entry: dict, manifest_dir: Path, refresh_formula: bool) -> T
         })
         if fuse_pair is not None:
             normalized["fuseBondLocalPair"] = fuse_pair
+    else:
+        importance_rank_raw = entry.get("importanceRank")
+        if importance_rank_raw is not None:
+            try:
+                importance_rank = int(importance_rank_raw)
+            except Exception as exc:
+                raise SyncError(f"entry '{entry_id}': importanceRank must be a positive integer") from exc
+            if importance_rank <= 0:
+                raise SyncError(f"entry '{entry_id}': importanceRank must be a positive integer")
+            normalized["importanceRank"] = importance_rank
 
     for key, value in entry.items():
         if key not in KNOWN_ENTRY_KEYS:
@@ -366,7 +377,11 @@ def run(manifest_path: Path, write: bool, check: bool, refresh_formula: bool) ->
         print(f"error: duplicate entry id(s): {', '.join(sorted(duplicates))}", file=sys.stderr)
         return 1
 
-    normalized_entries.sort(key=lambda item: (item.get("kind", "fragment"), item["id"]))
+    normalized_entries.sort(key=lambda item: (
+        1 if item.get("kind") == CATALOG_KIND_MOLECULE else 0,
+        item.get("importanceRank", sys.maxsize) if item.get("kind") == CATALOG_KIND_MOLECULE else item["id"],
+        item["id"],
+    ))
 
     normalized_payload = {
         "kind": str(payload.get("kind", "vibemol.fragment-library")),

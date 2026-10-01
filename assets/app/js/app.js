@@ -8268,10 +8268,14 @@
   const editFragmentSearchEl = document.getElementById('editFragmentSearch');
   const editFragmentSuggestionsEl = document.getElementById('editFragmentSuggestions');
   const editFragmentQuickEl = document.getElementById('editFragmentQuick');
+  const editFragmentListMetaEl = document.getElementById('editFragmentListMeta');
+  const editFragmentMoreBtn = document.getElementById('editFragmentMoreBtn');
   const editFragmentAttachPolicyEl = document.getElementById('editFragmentAttachPolicy');
   const editMoleculeSearchEl = document.getElementById('editMoleculeSearch');
   const editMoleculeSuggestionsEl = document.getElementById('editMoleculeSuggestions');
   const editMoleculeQuickEl = document.getElementById('editMoleculeQuick');
+  const editMoleculeListMetaEl = document.getElementById('editMoleculeListMeta');
+  const editMoleculeMoreBtn = document.getElementById('editMoleculeMoreBtn');
   const editMoleculeAlignXBtn = document.getElementById('editMoleculeAlignXBtn');
   const editMoleculeAlignYBtn = document.getElementById('editMoleculeAlignYBtn');
   const editMoleculeAlignZBtn = document.getElementById('editMoleculeAlignZBtn');
@@ -12461,8 +12465,14 @@
   const EDIT_ANGLE_SNAP_OPTIONS = Object.freeze([60, 90, 109.5, 120, 180]);
   let addGrowDetectedAngleDeg = 0;
   const EDIT_QUICK_ADD_ELEMENTS = [1, 6, 7, 8, 9, 15, 16, 17, 26, 35];
-  const EDIT_QUICK_FRAGMENTS = ['methyl', 'methylene', 'hydroxyl', 'amino', 'carbonyl', 'amide', 'phenyl'];
-  const EDIT_QUICK_MOLECULES = ['benzene', 'pyridine', 'cyclohexane'];
+  const EDIT_QUICK_FRAGMENTS = [
+    'methyl', 'methylene', 'hydroxyl', 'amino', 'carbonyl', 'amide', 'phenyl',
+    'ethyl', 'methoxy', 'fluoro', 'chloro', 'bromo', 'cyano', 'nitro',
+    'carboxyl', 'isopropyl', 'tert-butyl',
+  ];
+  const EDIT_CATALOG_COMPACT_COUNT = 6;
+  let editFragmentListExpanded = false;
+  let editMoleculeListExpanded = false;
   const GESTURE_BOND_ANGLE_DRAG_SENSITIVITY = 0.01;
   const GESTURE_BOND_DISTANCE_DRAG_SENSITIVITY = 0.01;
   let addGrowActive = false;
@@ -17118,7 +17128,59 @@
     applyFilter(editAddQuickEl);
     applyFilter(editFragmentQuickEl);
     applyFilter(editMoleculeQuickEl);
+    syncEditFragmentListDisclosure(q);
+    syncEditMoleculeListDisclosure(q);
     syncBuildSearchKeyboardSelectionVisibility();
+  }
+
+  function syncEditCatalogListDisclosure(options = {}) {
+    const containerEl = options.containerEl;
+    if (!containerEl) return;
+    const q = String(options.query || '').trim();
+    const buttons = Array.from(containerEl.querySelectorAll(options.buttonSelector));
+    const matchingCount = buttons.filter((buttonEl) => !buttonEl.hidden).length;
+    const isFiltering = !!q;
+    containerEl.classList.toggle('is-filtering', isFiltering);
+    containerEl.classList.toggle('is-expanded', !isFiltering && options.expanded);
+
+    if (options.metaEl) {
+      if (isFiltering) {
+        options.metaEl.textContent = `${matchingCount} ${matchingCount === 1 ? 'match' : 'matches'}`;
+      } else {
+        options.metaEl.textContent = `${buttons.length} ${buttons.length === 1 ? options.singularLabel : options.pluralLabel} · A–Z`;
+      }
+    }
+    if (options.toggleEl) {
+      options.toggleEl.hidden = isFiltering || buttons.length <= EDIT_CATALOG_COMPACT_COUNT;
+      options.toggleEl.setAttribute('aria-expanded', options.expanded ? 'true' : 'false');
+      options.toggleEl.textContent = options.expanded ? 'Compact' : 'Expand';
+    }
+  }
+
+  function syncEditFragmentListDisclosure(query = '') {
+    syncEditCatalogListDisclosure({
+      containerEl: editFragmentQuickEl,
+      metaEl: editFragmentListMetaEl,
+      toggleEl: editFragmentMoreBtn,
+      buttonSelector: 'button[data-fragment-id]',
+      singularLabel: 'fragment',
+      pluralLabel: 'fragments',
+      expanded: editFragmentListExpanded,
+      query,
+    });
+  }
+
+  function syncEditMoleculeListDisclosure(query = '') {
+    syncEditCatalogListDisclosure({
+      containerEl: editMoleculeQuickEl,
+      metaEl: editMoleculeListMetaEl,
+      toggleEl: editMoleculeMoreBtn,
+      buttonSelector: 'button[data-molecule-id]',
+      singularLabel: 'molecule',
+      pluralLabel: 'molecules',
+      expanded: editMoleculeListExpanded,
+      query,
+    });
   }
 
   function syncBuildPaletteQuickButtonStates(buildPayload = getCurrentBuildPayload()) {
@@ -17301,7 +17363,9 @@
    * Rebuild fragment suggestions and quick chips from the active fragment catalog.
    */
   function refreshEditAddFragmentControls() {
-    const fragmentEntries = getCatalogEntries(CATALOG_KIND.FRAGMENT);
+    const fragmentEntries = getCatalogEntries(CATALOG_KIND.FRAGMENT)
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     if (editFragmentSuggestionsEl) {
       editFragmentSuggestionsEl.innerHTML = '';
       for (const fragment of fragmentEntries) {
@@ -17312,21 +17376,30 @@
     }
     if (editFragmentQuickEl) {
       editFragmentQuickEl.innerHTML = '';
-      for (const id of EDIT_QUICK_FRAGMENTS) {
-        const fragment = getCatalogEntryById(id, CATALOG_KIND.FRAGMENT);
-        if (!fragment) continue;
+      const listedFragments = EDIT_QUICK_FRAGMENTS
+        .map((id) => getCatalogEntryById(id, CATALOG_KIND.FRAGMENT))
+        .filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+      for (const fragment of listedFragments) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('data-fragment-id', fragment.id);
         btn.setAttribute('data-build-search-key', `fragment:${fragment.id}`);
         btn.setAttribute('data-search-terms', `${fragment.name} ${fragment.formula} ${fragment.id} ${(Array.isArray(fragment.tags) ? fragment.tags.join(' ') : '')}`.toLowerCase());
         setTooltipText(btn, `${fragment.name} (${fragment.formula})`);
-        btn.textContent = fragment.name;
+        const nameEl = document.createElement('span');
+        nameEl.className = 'vm-catalog-list-name';
+        nameEl.textContent = fragment.name;
+        const formulaEl = document.createElement('span');
+        formulaEl.className = 'vm-catalog-list-formula';
+        formulaEl.textContent = fragment.formula;
+        btn.append(nameEl, formulaEl);
         btn.onclick = () => {
           commitBuildPaletteSelection({ kind: 'fragment', id: fragment.id }, { announce: true, syncSearch: true });
         };
         editFragmentQuickEl.appendChild(btn);
       }
+      syncEditFragmentListDisclosure(getBuildPaletteFilterQuery());
     }
     if (!getCatalogEntryById(editAddFragmentId, CATALOG_KIND.FRAGMENT) && fragmentEntries[0]) {
       editAddFragmentId = fragmentEntries[0].id;
@@ -17338,10 +17411,12 @@
   }
 
   /**
-   * Rebuild molecule suggestions and quick chips from the active catalog.
+   * Rebuild the alphabetical molecule library from the active catalog.
    */
   function refreshEditAddMoleculeControls() {
-    const moleculeEntries = getCatalogEntries(CATALOG_KIND.MOLECULE);
+    const moleculeEntries = getCatalogEntries(CATALOG_KIND.MOLECULE)
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     if (editMoleculeSuggestionsEl) {
       editMoleculeSuggestionsEl.innerHTML = '';
       for (const molecule of moleculeEntries) {
@@ -17352,21 +17427,26 @@
     }
     if (editMoleculeQuickEl) {
       editMoleculeQuickEl.innerHTML = '';
-      for (const id of EDIT_QUICK_MOLECULES) {
-        const molecule = getCatalogEntryById(id, CATALOG_KIND.MOLECULE);
-        if (!molecule) continue;
+      for (const molecule of moleculeEntries) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('data-molecule-id', molecule.id);
         btn.setAttribute('data-build-search-key', `molecule:${molecule.id}`);
         btn.setAttribute('data-search-terms', `${molecule.name} ${molecule.formula} ${molecule.id} ${(Array.isArray(molecule.tags) ? molecule.tags.join(' ') : '')}`.toLowerCase());
         setTooltipText(btn, `${molecule.name} (${molecule.formula})`);
-        btn.textContent = molecule.name;
+        const nameEl = document.createElement('span');
+        nameEl.className = 'vm-catalog-list-name';
+        nameEl.textContent = molecule.name;
+        const formulaEl = document.createElement('span');
+        formulaEl.className = 'vm-catalog-list-formula';
+        formulaEl.textContent = molecule.formula;
+        btn.append(nameEl, formulaEl);
         btn.onclick = () => {
           commitBuildPaletteSelection({ kind: 'molecule', id: molecule.id }, { announce: true, syncSearch: true });
         };
         editMoleculeQuickEl.appendChild(btn);
       }
+      syncEditMoleculeListDisclosure(getBuildPaletteFilterQuery());
     }
     if (!getCatalogEntryById(editAddMoleculeId, CATALOG_KIND.MOLECULE) && moleculeEntries[0]) {
       const benzene = getCatalogEntryById('benzene', CATALOG_KIND.MOLECULE);
@@ -17581,6 +17661,18 @@
         commit();
       });
       editMoleculeSearchEl.addEventListener('input', () => updateEditToolboxUi({ syncSearch: false }));
+    }
+    if (editMoleculeMoreBtn) {
+      editMoleculeMoreBtn.onclick = () => {
+        editMoleculeListExpanded = !editMoleculeListExpanded;
+        syncEditMoleculeListDisclosure(getBuildPaletteFilterQuery());
+      };
+    }
+    if (editFragmentMoreBtn) {
+      editFragmentMoreBtn.onclick = () => {
+        editFragmentListExpanded = !editFragmentListExpanded;
+        syncEditFragmentListDisclosure(getBuildPaletteFilterQuery());
+      };
     }
     if (editAddModeAtomBtn) editAddModeAtomBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.ATOM, { announce: true, syncSearch: true });
     if (editAddModeMoleculeBtn) editAddModeMoleculeBtn.onclick = () => setEditAddMode(EDIT_ADD_MODE.MOLECULE, { announce: true, syncSearch: true });

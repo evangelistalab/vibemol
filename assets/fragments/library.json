@@ -84,142 +84,6 @@
     },
     {
       "kind": "fragment",
-      "id": "carbonyl",
-      "name": "Carbonyl",
-      "formula": "CO",
-      "tags": [
-        "oxygen",
-        "double-bond",
-        "organic",
-        "starter"
-      ],
-      "xyz": "./carbonyl.xyz",
-      "bonds": [
-        {
-          "i": 0,
-          "j": 1,
-          "order": 2
-        }
-      ],
-      "connectionAtomIndex": 0,
-      "preferredBondOrder": 1,
-      "linkBondDirection": [
-        0.0,
-        0.0,
-        1.0
-      ],
-      "attachModes": [
-        "append",
-        "replace_h"
-      ]
-    },
-    {
-      "kind": "fragment",
-      "id": "hydroxyl",
-      "name": "Hydroxyl",
-      "formula": "OH",
-      "tags": [
-        "oxygen",
-        "organic",
-        "starter"
-      ],
-      "xyz": "./hydroxyl.xyz",
-      "bonds": [
-        {
-          "i": 0,
-          "j": 1,
-          "order": 1
-        }
-      ],
-      "connectionAtomIndex": 0,
-      "preferredBondOrder": 1,
-      "linkBondDirection": [
-        0.0,
-        0.0,
-        1.0
-      ],
-      "attachModes": [
-        "append",
-        "replace_h"
-      ]
-    },
-    {
-      "kind": "fragment",
-      "id": "methyl",
-      "name": "Methyl",
-      "formula": "CH3",
-      "tags": [
-        "alkyl",
-        "organic",
-        "starter"
-      ],
-      "xyz": "./methyl.xyz",
-      "bonds": [
-        {
-          "i": 0,
-          "j": 1,
-          "order": 1
-        },
-        {
-          "i": 0,
-          "j": 2,
-          "order": 1
-        },
-        {
-          "i": 0,
-          "j": 3,
-          "order": 1
-        }
-      ],
-      "connectionAtomIndex": 0,
-      "preferredBondOrder": 1,
-      "linkBondDirection": [
-        0.0,
-        0.0,
-        1.0
-      ],
-      "attachModes": [
-        "append",
-        "replace_h"
-      ]
-    },
-    {
-      "kind": "fragment",
-      "id": "methylene",
-      "name": "Methylene",
-      "formula": "CH2",
-      "tags": [
-        "alkyl",
-        "organic",
-        "starter"
-      ],
-      "xyz": "./methylene.xyz",
-      "bonds": [
-        {
-          "i": 0,
-          "j": 1,
-          "order": 1
-        },
-        {
-          "i": 0,
-          "j": 2,
-          "order": 1
-        }
-      ],
-      "connectionAtomIndex": 0,
-      "preferredBondOrder": 1,
-      "linkBondDirection": [
-        0.0,
-        0.0,
-        1.0
-      ],
-      "attachModes": [
-        "append",
-        "replace_h"
-      ]
-    },
-    {
-      "kind": "fragment",
       "id": "appendmethyl",
       "name": "Append-only methyl",
       "formula": "CH3",
@@ -259,16 +123,164 @@
     },
     {
       "kind": "fragment",
-      "id": "phenyl",
-      "name": "Phenyl",
-      "formula": "C6H5",
+      "id": "bromo",
+      "name": "Bromo",
+      "formula": "Br",
       "tags": [
-        "aryl",
-        "ring",
+        "halogen",
+        "bromine",
+        "organic"
+      ],
+      "xyz": "./bromo.xyz",
+      "bonds": [],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "carbonyl",
+      "name": "Carbonyl",
+      "formula": "CO",
+      "tags": [
+        "oxygen",
+        "double-bond",
         "organic",
         "starter"
       ],
-      "xyz": "./phenyl.xyz",
+      "xyz": "./carbonyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "carboxyl",
+      "name": "Carboxyl",
+      "formula": "CHO2",
+      "tags": [
+        "carboxylic-acid",
+        "oxygen",
+        "organic"
+      ],
+      "xyz": "./carboxyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "chloro",
+      "name": "Chloro",
+      "formula": "Cl",
+      "tags": [
+        "halogen",
+        "chlorine",
+        "organic"
+      ],
+      "xyz": "./chloro.xyz",
+      "bonds": [],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "cyano",
+      "name": "Cyano",
+      "formula": "CN",
+      "tags": [
+        "nitrile",
+        "nitrogen",
+        "triple-bond",
+        "organic"
+      ],
+      "xyz": "./cyano.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 3
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "ethyl",
+      "name": "Ethyl",
+      "formula": "C2H5",
+      "tags": [
+        "alkyl",
+        "organic"
+      ],
+      "xyz": "./ethyl.xyz",
       "bonds": [
         {
           "i": 0,
@@ -277,55 +289,54 @@
         },
         {
           "i": 0,
-          "j": 5,
-          "order": 2
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
         },
         {
           "i": 1,
-          "j": 2,
-          "order": 2
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 5,
+          "order": 1
         },
         {
           "i": 1,
           "j": 6,
           "order": 1
-        },
-        {
-          "i": 2,
-          "j": 3,
-          "order": 1
-        },
-        {
-          "i": 2,
-          "j": 7,
-          "order": 1
-        },
-        {
-          "i": 3,
-          "j": 4,
-          "order": 2
-        },
-        {
-          "i": 3,
-          "j": 8,
-          "order": 1
-        },
-        {
-          "i": 4,
-          "j": 5,
-          "order": 1
-        },
-        {
-          "i": 4,
-          "j": 9,
-          "order": 1
-        },
-        {
-          "i": 5,
-          "j": 10,
-          "order": 1
         }
       ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "fluoro",
+      "name": "Fluoro",
+      "formula": "F",
+      "tags": [
+        "halogen",
+        "fluorine",
+        "organic"
+      ],
+      "xyz": "./fluoro.xyz",
+      "bonds": [],
       "connectionAtomIndex": 0,
       "preferredBondOrder": 1,
       "linkBondDirection": [
@@ -426,6 +437,518 @@
       ]
     },
     {
+      "kind": "fragment",
+      "id": "hydroxyl",
+      "name": "Hydroxyl",
+      "formula": "OH",
+      "tags": [
+        "oxygen",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./hydroxyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "isopropyl",
+      "name": "Isopropyl",
+      "formula": "C3H7",
+      "tags": [
+        "alkyl",
+        "branched",
+        "organic"
+      ],
+      "xyz": "./isopropyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 9,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "methoxy",
+      "name": "Methoxy",
+      "formula": "CH3O",
+      "tags": [
+        "ether",
+        "oxygen",
+        "organic"
+      ],
+      "xyz": "./methoxy.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 4,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "methyl",
+      "name": "Methyl",
+      "formula": "CH3",
+      "tags": [
+        "alkyl",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./methyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "methylene",
+      "name": "Methylene",
+      "formula": "CH2",
+      "tags": [
+        "alkyl",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./methylene.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "nitro",
+      "name": "Nitro",
+      "formula": "NO2",
+      "tags": [
+        "nitro",
+        "nitrogen",
+        "oxygen",
+        "organic"
+      ],
+      "xyz": "./nitro.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 2
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "phenyl",
+      "name": "Phenyl",
+      "formula": "C6H5",
+      "tags": [
+        "aryl",
+        "ring",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./phenyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 4,
+          "order": 2
+        },
+        {
+          "i": 3,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 9,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 10,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "fragment",
+      "id": "tert-butyl",
+      "name": "tert-Butyl",
+      "formula": "C4H9",
+      "tags": [
+        "alkyl",
+        "branched",
+        "organic"
+      ],
+      "xyz": "./tert-butyl.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 9,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 10,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 11,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 12,
+          "order": 1
+        }
+      ],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 1,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "append",
+        "replace_h"
+      ]
+    },
+    {
+      "kind": "molecule",
+      "id": "water",
+      "name": "Water",
+      "formula": "H2O",
+      "tags": [
+        "water",
+        "inorganic",
+        "starter"
+      ],
+      "xyz": "./water.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        }
+      ],
+      "importanceRank": 1
+    },
+    {
+      "kind": "molecule",
+      "id": "methane",
+      "name": "Methane",
+      "formula": "CH4",
+      "tags": [
+        "alkane",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./methane.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 4,
+          "order": 1
+        }
+      ],
+      "importanceRank": 2
+    },
+    {
+      "kind": "molecule",
+      "id": "ammonia",
+      "name": "Ammonia",
+      "formula": "NH3",
+      "tags": [
+        "nitrogen",
+        "inorganic",
+        "starter"
+      ],
+      "xyz": "./ammonia.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "importanceRank": 3
+    },
+    {
       "kind": "molecule",
       "id": "benzene",
       "name": "Benzene",
@@ -498,7 +1021,234 @@
           "j": 11,
           "order": 1
         }
-      ]
+      ],
+      "importanceRank": 4
+    },
+    {
+      "kind": "molecule",
+      "id": "ethanol",
+      "name": "Ethanol",
+      "formula": "C2H6O",
+      "tags": [
+        "alcohol",
+        "organic",
+        "solvent",
+        "starter"
+      ],
+      "xyz": "./ethanol.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 7,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 8,
+          "order": 1
+        }
+      ],
+      "importanceRank": 5
+    },
+    {
+      "kind": "molecule",
+      "id": "carbon-dioxide",
+      "name": "Carbon dioxide",
+      "formula": "CO2",
+      "tags": [
+        "oxide",
+        "inorganic",
+        "linear",
+        "starter"
+      ],
+      "xyz": "./carbon-dioxide.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        }
+      ],
+      "importanceRank": 6
+    },
+    {
+      "kind": "molecule",
+      "id": "methanol",
+      "name": "Methanol",
+      "formula": "CH4O",
+      "tags": [
+        "alcohol",
+        "organic",
+        "solvent",
+        "starter"
+      ],
+      "xyz": "./methanol.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 4,
+          "order": 1
+        }
+      ],
+      "importanceRank": 7
+    },
+    {
+      "kind": "molecule",
+      "id": "ethene",
+      "name": "Ethene",
+      "formula": "C2H4",
+      "tags": [
+        "alkene",
+        "organic",
+        "pi-bond",
+        "starter"
+      ],
+      "xyz": "./ethene.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 5,
+          "order": 1
+        }
+      ],
+      "importanceRank": 10
+    },
+    {
+      "kind": "molecule",
+      "id": "ethyne",
+      "name": "Ethyne",
+      "formula": "C2H2",
+      "tags": [
+        "alkyne",
+        "organic",
+        "linear",
+        "starter"
+      ],
+      "xyz": "./ethyne.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 3
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "importanceRank": 11
+    },
+    {
+      "kind": "molecule",
+      "id": "formaldehyde",
+      "name": "Formaldehyde",
+      "formula": "CH2O",
+      "tags": [
+        "carbonyl",
+        "organic",
+        "benchmark",
+        "starter"
+      ],
+      "xyz": "./formaldehyde.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "importanceRank": 12
     },
     {
       "kind": "molecule",
@@ -524,8 +1274,28 @@
           "order": 1
         },
         {
+          "i": 0,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 7,
+          "order": 1
+        },
+        {
           "i": 1,
           "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 8,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 9,
           "order": 1
         },
         {
@@ -534,16 +1304,223 @@
           "order": 1
         },
         {
+          "i": 2,
+          "j": 10,
+          "order": 1
+        },
+        {
+          "i": 2,
+          "j": 11,
+          "order": 1
+        },
+        {
           "i": 3,
           "j": 4,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 12,
+          "order": 1
+        },
+        {
+          "i": 3,
+          "j": 13,
           "order": 1
         },
         {
           "i": 4,
           "j": 5,
           "order": 1
+        },
+        {
+          "i": 4,
+          "j": 14,
+          "order": 1
+        },
+        {
+          "i": 4,
+          "j": 15,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 16,
+          "order": 1
+        },
+        {
+          "i": 5,
+          "j": 17,
+          "order": 1
         }
-      ]
+      ],
+      "importanceRank": 13
+    },
+    {
+      "kind": "molecule",
+      "id": "dinitrogen",
+      "name": "Dinitrogen",
+      "formula": "N2",
+      "tags": [
+        "diatomic",
+        "nitrogen",
+        "inorganic",
+        "benchmark"
+      ],
+      "xyz": "./dinitrogen.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 3
+        }
+      ],
+      "importanceRank": 14
+    },
+    {
+      "kind": "molecule",
+      "id": "dioxygen",
+      "name": "Dioxygen",
+      "formula": "O2",
+      "tags": [
+        "diatomic",
+        "oxygen",
+        "triplet",
+        "radical",
+        "benchmark"
+      ],
+      "xyz": "./dioxygen.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        }
+      ],
+      "importanceRank": 15
+    },
+    {
+      "kind": "molecule",
+      "id": "dihydrogen",
+      "name": "Dihydrogen",
+      "formula": "H2",
+      "tags": [
+        "diatomic",
+        "hydrogen",
+        "inorganic",
+        "benchmark"
+      ],
+      "xyz": "./dihydrogen.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        }
+      ],
+      "importanceRank": 16
+    },
+    {
+      "kind": "molecule",
+      "id": "carbon-monoxide",
+      "name": "Carbon monoxide",
+      "formula": "CO",
+      "tags": [
+        "diatomic",
+        "carbonyl",
+        "inorganic",
+        "benchmark"
+      ],
+      "xyz": "./carbon-monoxide.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 3
+        }
+      ],
+      "importanceRank": 17
+    },
+    {
+      "kind": "molecule",
+      "id": "hydrogen-peroxide",
+      "name": "Hydrogen peroxide",
+      "formula": "H2O2",
+      "tags": [
+        "peroxide",
+        "oxygen",
+        "inorganic",
+        "torsion"
+      ],
+      "xyz": "./hydrogen-peroxide.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "importanceRank": 18
+    },
+    {
+      "kind": "molecule",
+      "id": "ethane",
+      "name": "Ethane",
+      "formula": "C2H6",
+      "tags": [
+        "alkane",
+        "organic",
+        "starter"
+      ],
+      "xyz": "./ethane.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 7,
+          "order": 1
+        }
+      ],
+      "importanceRank": 19
     },
     {
       "kind": "molecule",
@@ -613,7 +1590,399 @@
           "j": 9,
           "order": 1
         }
-      ]
+      ],
+      "importanceRank": 20
+    },
+    {
+      "kind": "molecule",
+      "id": "acetonitrile",
+      "name": "Acetonitrile",
+      "formula": "C2H3N",
+      "tags": [
+        "nitrile",
+        "organic",
+        "solvent"
+      ],
+      "xyz": "./acetonitrile.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 2,
+          "order": 3
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 5,
+          "order": 1
+        }
+      ],
+      "importanceRank": 24
+    },
+    {
+      "kind": "molecule",
+      "id": "formic-acid",
+      "name": "Formic acid",
+      "formula": "CH2O2",
+      "tags": [
+        "carboxylic-acid",
+        "organic"
+      ],
+      "xyz": "./formic-acid.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 2,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "importanceRank": 36
+    },
+    {
+      "kind": "molecule",
+      "id": "lithium-hydride",
+      "name": "Lithium hydride",
+      "formula": "LiH",
+      "tags": [
+        "diatomic",
+        "hydride",
+        "inorganic",
+        "benchmark"
+      ],
+      "xyz": "./lithium-hydride.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        }
+      ],
+      "importanceRank": 45
+    },
+    {
+      "kind": "molecule",
+      "id": "hydrogen-fluoride",
+      "name": "Hydrogen fluoride",
+      "formula": "HF",
+      "tags": [
+        "diatomic",
+        "halide",
+        "inorganic",
+        "benchmark"
+      ],
+      "xyz": "./hydrogen-fluoride.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        }
+      ],
+      "importanceRank": 46
+    },
+    {
+      "kind": "molecule",
+      "id": "boron-trifluoride",
+      "name": "Boron trifluoride",
+      "formula": "BF3",
+      "tags": [
+        "inorganic",
+        "trigonal-planar",
+        "vsepr"
+      ],
+      "xyz": "./boron-trifluoride.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "importanceRank": 61
+    },
+    {
+      "kind": "molecule",
+      "id": "sulfur-dioxide",
+      "name": "Sulfur dioxide",
+      "formula": "SO2",
+      "tags": [
+        "inorganic",
+        "oxide",
+        "bent",
+        "vsepr"
+      ],
+      "xyz": "./sulfur-dioxide.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 2
+        }
+      ],
+      "importanceRank": 69
+    },
+    {
+      "kind": "molecule",
+      "id": "sulfur-trioxide",
+      "name": "Sulfur trioxide",
+      "formula": "SO3",
+      "tags": [
+        "inorganic",
+        "oxide",
+        "trigonal-planar",
+        "vsepr"
+      ],
+      "xyz": "./sulfur-trioxide.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 2
+        }
+      ],
+      "importanceRank": 70
+    },
+    {
+      "kind": "molecule",
+      "id": "nitrogen-dioxide",
+      "name": "Nitrogen dioxide",
+      "formula": "NO2",
+      "tags": [
+        "inorganic",
+        "oxide",
+        "radical",
+        "doublet",
+        "bent"
+      ],
+      "xyz": "./nitrogen-dioxide.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 2
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        }
+      ],
+      "importanceRank": 71
+    },
+    {
+      "kind": "molecule",
+      "id": "nitrous-oxide",
+      "name": "Nitrous oxide",
+      "formula": "N2O",
+      "tags": [
+        "inorganic",
+        "oxide",
+        "linear"
+      ],
+      "xyz": "./nitrous-oxide.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 3
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        }
+      ],
+      "importanceRank": 72
+    },
+    {
+      "kind": "molecule",
+      "id": "phosphorus-trifluoride",
+      "name": "Phosphorus trifluoride",
+      "formula": "PF3",
+      "tags": [
+        "inorganic",
+        "pyramidal",
+        "vsepr"
+      ],
+      "xyz": "./phosphorus-trifluoride.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        }
+      ],
+      "importanceRank": 73
+    },
+    {
+      "kind": "molecule",
+      "id": "diborane",
+      "name": "Diborane",
+      "formula": "B2H6",
+      "tags": [
+        "borane",
+        "inorganic",
+        "bridging-hydrogen",
+        "three-center-bond"
+      ],
+      "xyz": "./diborane.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 7,
+          "order": 1
+        }
+      ],
+      "importanceRank": 74
+    },
+    {
+      "kind": "molecule",
+      "id": "ammonia-borane",
+      "name": "Ammonia borane",
+      "formula": "BH3NH3",
+      "tags": [
+        "borane",
+        "inorganic",
+        "dative-bond"
+      ],
+      "xyz": "./ammonia-borane.xyz",
+      "bonds": [
+        {
+          "i": 0,
+          "j": 1,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 2,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 3,
+          "order": 1
+        },
+        {
+          "i": 0,
+          "j": 4,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 5,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 6,
+          "order": 1
+        },
+        {
+          "i": 1,
+          "j": 7,
+          "order": 1
+        }
+      ],
+      "importanceRank": 75
     }
   ],
   "generatedAt": "2026-03-06T16:07:10.141Z"

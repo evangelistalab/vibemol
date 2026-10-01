@@ -1,0 +1,19 @@
+! Native-GFN2-xTB GOAT NoAutoStart
+
+%pal
+  nprocs 1
+end
+
+%maxcore 3000
+
+%goat
+  MaxIter 18
+  NWorkers 4
+  MinGlobalIter 1
+  MaxGlobalIter 1
+  RandomSeed false
+  KeepWorkerData false
+  MaxEn 6.0
+end
+
+* xyzfile 0 1 cyclohexane-start.xyz

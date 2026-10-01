@@ -1,0 +1,331 @@
+{
+  "kind": "vibemol.fragment-geometry-results",
+  "version": 1,
+  "program": {
+    "name": "ORCA",
+    "version": "6.1.0"
+  },
+  "finalMethod": {
+    "environment": "gas phase",
+    "functional": "PBE0",
+    "dispersion": "D4",
+    "basis": "def2-TZVP",
+    "auxiliaryBasis": "def2/J",
+    "exchangeApproximation": "RIJCOSX",
+    "scf": "TightSCF",
+    "optimization": "TightOpt",
+    "grid": "DEFGRID3",
+    "frequencies": "analytic harmonic frequencies at the parent geometry"
+  },
+  "attachmentConvention": {
+    "connectionAtomIndex": 0,
+    "linkBondDirection": [0, 0, 1],
+    "axisSource": "vector from retained linker atom to deleted methyl-cap carbon",
+    "postExtractionRelaxation": false
+  },
+  "fragments": [
+    {
+      "id": "methyl",
+      "geometry": "../methyl.xyz",
+      "capParent": "ethane",
+      "parentInput": "../molecule_optimization/inputs/ethane.inp",
+      "parentResult": "../molecule_optimization/results.json#ethane",
+      "parentFinalEnergyEh": -79.752529891526,
+      "parentOptimizationConverged": true,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 306.1693331545121,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0, 2, 3, 4]
+    },
+    {
+      "id": "hydroxyl",
+      "geometry": "../hydroxyl.xyz",
+      "capParent": "methanol",
+      "parentInput": "../molecule_optimization/inputs/methanol.inp",
+      "parentResult": "../molecule_optimization/results.json#methanol",
+      "parentFinalEnergyEh": -115.63866652881,
+      "parentOptimizationConverged": true,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 300.6338792177687,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0, 5]
+    },
+    {
+      "id": "amino",
+      "geometry": "../amino.xyz",
+      "capParent": "methylamine",
+      "parentInput": "./inputs/methylamine.inp",
+      "parentFinalEnergyEh": -95.779166567121,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentVibrationalModeCount": 15,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 300.67,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0, 5, 6],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6329,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6329"
+      }
+    },
+    {
+      "id": "amide",
+      "geometry": "../amide.xyz",
+      "capParent": "acetamide",
+      "parentInput": "./inputs/acetamide.inp",
+      "restartInput": "./inputs/acetamide-restart.inp",
+      "frequencyInput": "./inputs/acetamide-frequency.inp",
+      "parentFinalEnergyEh": -209.069150480938,
+      "parentOptimizationConverged": false,
+      "parentMinimumVerifiedByFrequency": true,
+      "parentNormalTermination": true,
+      "parentVibrationalModeCount": 21,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 15.61,
+      "softCapRotorException": "TightOpt displacement oscillated along the deleted methyl-cap torsion; the retained geometry was selected from the lowest-energy near-threshold-gradient frame and verified by an all-positive same-level analytic Hessian.",
+      "parentConnectionAtomIndex": 3,
+      "parentCapCarbonIndex": 2,
+      "retainedParentAtomIndices": [3, 0, 1, 7, 8],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 178,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/178"
+      }
+    },
+    {
+      "id": "phenyl",
+      "geometry": "../phenyl.xyz",
+      "capParent": "toluene",
+      "parentInput": "./inputs/toluene.inp",
+      "parentFinalEnergyEh": -271.339211915534,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentVibrationalModeCount": 39,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 27.23,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 3,
+      "retainedParentAtomIndices": [0, 1, 4, 6, 5, 2, 7, 12, 14, 13, 8],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 1140,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/1140"
+      }
+    },
+    {
+      "id": "ethyl",
+      "geometry": "../ethyl.xyz",
+      "capParent": "propane",
+      "parentInput": "./inputs/propane.inp",
+      "parentFinalEnergyEh": -119.033026293990,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 527.966,
+      "parentVibrationalModeCount": 27,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 222.22,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0, 2, 3, 4, 8, 9, 10],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6334,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6334"
+      }
+    },
+    {
+      "id": "methoxy",
+      "geometry": "../methoxy.xyz",
+      "capParent": "dimethyl ether",
+      "parentInput": "./inputs/dimethyl-ether.inp",
+      "parentFinalEnergyEh": -154.906353671779,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 406.502,
+      "parentVibrationalModeCount": 21,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 214.89,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0, 2, 6, 7, 8],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 8254,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/8254"
+      }
+    },
+    {
+      "id": "fluoro",
+      "geometry": "../fluoro.xyz",
+      "capParent": "fluoromethane",
+      "parentInput": "./inputs/fluoromethane.inp",
+      "parentFinalEnergyEh": -139.654799269412,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 113.499,
+      "parentVibrationalModeCount": 9,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 1096.69,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 11638,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/11638"
+      }
+    },
+    {
+      "id": "chloro",
+      "geometry": "../chloro.xyz",
+      "capParent": "chloromethane",
+      "parentInput": "./inputs/chloromethane.inp",
+      "parentFinalEnergyEh": -499.936680026136,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 134.787,
+      "parentVibrationalModeCount": 9,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 756.36,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6327,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6327"
+      }
+    },
+    {
+      "id": "bromo",
+      "geometry": "../bromo.xyz",
+      "capParent": "bromomethane",
+      "parentInput": "./inputs/bromomethane.inp",
+      "parentFinalEnergyEh": -2613.733561254161,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 195.216,
+      "parentVibrationalModeCount": 9,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 633.20,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6323,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6323"
+      }
+    },
+    {
+      "id": "cyano",
+      "geometry": "../cyano.xyz",
+      "capParent": "acetonitrile",
+      "parentInput": "../molecule_optimization/inputs/acetonitrile.inp",
+      "parentResult": "../molecule_optimization/results.json#acetonitrile",
+      "parentFinalEnergyEh": -132.643478267242,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 264.385,
+      "parentVibrationalModeCount": 12,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 389.70164798901527,
+      "parentConnectionAtomIndex": 2,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [2, 0],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6342,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6342"
+      }
+    },
+    {
+      "id": "nitro",
+      "geometry": "../nitro.xyz",
+      "capParent": "nitromethane",
+      "parentInput": "./inputs/nitromethane.inp",
+      "parentFinalEnergyEh": -244.856020370681,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 548.119,
+      "parentVibrationalModeCount": 15,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 18.66,
+      "parentConnectionAtomIndex": 2,
+      "parentCapCarbonIndex": 3,
+      "retainedParentAtomIndices": [2, 0, 1],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6375,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6375"
+      }
+    },
+    {
+      "id": "carboxyl",
+      "geometry": "../carboxyl.xyz",
+      "capParent": "acetic acid",
+      "parentInput": "./inputs/acetic-acid.inp",
+      "parentFinalEnergyEh": -228.934434963095,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 607.224,
+      "parentVibrationalModeCount": 18,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 72.92,
+      "parentConnectionAtomIndex": 3,
+      "parentCapCarbonIndex": 2,
+      "retainedParentAtomIndices": [3, 1, 0, 7],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 176,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/176"
+      }
+    },
+    {
+      "id": "isopropyl",
+      "geometry": "../isopropyl.xyz",
+      "capParent": "isobutane",
+      "parentInput": "./inputs/isobutane.inp",
+      "parentFinalEnergyEh": -158.315307689839,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 1044.878,
+      "parentVibrationalModeCount": 36,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 215.03,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0, 2, 3, 4, 8, 9, 10, 11, 12, 13],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6360,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6360"
+      }
+    },
+    {
+      "id": "tert-butyl",
+      "geometry": "../tert-butyl.xyz",
+      "capParent": "neopentane",
+      "parentInput": "./inputs/neopentane.inp",
+      "parentFinalEnergyEh": -197.598162106010,
+      "parentOptimizationConverged": true,
+      "parentNormalTermination": true,
+      "parentCalculationWallTimeSeconds": 1478.206,
+      "parentVibrationalModeCount": 45,
+      "parentImaginaryVibrationalModes": 0,
+      "parentLowestVibrationalFrequencyCm-1": 205.57,
+      "parentConnectionAtomIndex": 0,
+      "parentCapCarbonIndex": 1,
+      "retainedParentAtomIndices": [0, 2, 3, 4, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 10041,
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/10041"
+      }
+    }
+  ]
+}

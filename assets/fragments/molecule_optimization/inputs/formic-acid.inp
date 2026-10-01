@@ -1,0 +1,11 @@
+! PBE0 D4 def2-TZVP def2/J RIJCOSX TightSCF TightOpt Freq DEFGRID3 NoAutoStart
+%pal nprocs 1 end
+%maxcore 3000
+%geom MaxIter 200 end
+* xyz 0 1
+O     -1.16850000     0.18250000     0.00000000
+O      1.11460000     0.21030000     0.00000000
+C      0.05380000    -0.39270000     0.00000000
+H     -0.05110000    -1.48750000     0.00020000
+H     -1.11420000     1.16200000     0.00000000
+*

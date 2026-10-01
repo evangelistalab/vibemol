@@ -1,5 +1,5 @@
 3
-Amino | id=amino | connectionAtomIndex=0 | linkBondDirection=0,0,1
-N 0.000000 0.000000 0.000000
-H 0.000000 0.580000 -0.840000
-H 0.000000 -0.580000 -0.840000
+PBE0-D4/def2-TZVP | methylamine CH3 cap removed | ORCA 6.1.0 | parent minimum (0 imaginary modes)
+N 0.00000000 0.00000000 0.00000000
+H -0.41270570 0.85203533 -0.35681146
+H -0.55663861 -0.76579238 -0.35682509

@@ -1,0 +1,603 @@
+{
+  "kind": "vibemol.molecule-geometry-results",
+  "version": 1,
+  "program": {
+    "name": "ORCA",
+    "version": "6.1.0"
+  },
+  "finalMethod": {
+    "environment": "gas phase",
+    "functional": "PBE0",
+    "dispersion": "D4",
+    "basis": "def2-TZVP",
+    "auxiliaryBasis": "def2/J",
+    "exchangeApproximation": "RIJCOSX",
+    "scf": "TightSCF",
+    "optimization": "TightOpt",
+    "grid": "DEFGRID3",
+    "frequencies": "analytic harmonic frequencies at the optimization level"
+  },
+  "molecules": [
+    {
+      "id": "water",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/water.inp",
+      "geometry": "../water.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "finalEnergyEh": -76.377639382278,
+      "vibrationalModeCount": 3,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 1622.787950411864
+    },
+    {
+      "id": "methane",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/methane.inp",
+      "geometry": "../methane.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "finalEnergyEh": -40.474899219099,
+      "vibrationalModeCount": 9,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 1326.480100729974
+    },
+    {
+      "id": "ammonia",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/ammonia.inp",
+      "geometry": "../ammonia.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "finalEnergyEh": -56.513553604079,
+      "vibrationalModeCount": 6,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 1030.783316088829
+    },
+    {
+      "id": "benzene",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/benzene.inp",
+      "geometry": "../benzene.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "finalEnergyEh": -232.054463059158,
+      "vibrationalModeCount": 30,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 409.967039041337
+    },
+    {
+      "id": "ethanol",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/ethanol.inp",
+      "geometry": "../ethanol.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "finalEnergyEh": -154.924174644436,
+      "vibrationalModeCount": 21,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 265.562043283401,
+      "startingGeometry": {
+        "input": "./inputs/ethanol-start.xyz",
+        "source": "PubChem",
+        "cid": 702,
+        "conformerId": "000002BE00000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/702"
+      },
+      "conformerSearch": {
+        "input": "./inputs/ethanol-goat.inp",
+        "method": "ORCA native GFN2-xTB GOAT",
+        "normalTermination": true,
+        "uniqueConformers": 3,
+        "globalMinimumEnergyEh": -11.3943392773,
+        "nextConformerGapKcalMol": 1.5511230359
+      }
+    },
+    {
+      "id": "carbon-dioxide",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/carbon-dioxide.inp",
+      "geometry": "../carbon-dioxide.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 118.787,
+      "finalEnergyEh": -188.467409494982,
+      "vibrationalModeCount": 4,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 687.1627056492961,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 280,
+        "conformerId": "0000011800000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/280"
+      }
+    },
+    {
+      "id": "methanol",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/methanol.inp",
+      "geometry": "../methanol.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 169.781,
+      "finalEnergyEh": -115.63866652881,
+      "vibrationalModeCount": 12,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 300.6338792177687,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 887,
+        "conformerId": "0000037700000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/887"
+      }
+    },
+    {
+      "id": "ethene",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/ethene.inp",
+      "geometry": "../ethene.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 150.617,
+      "finalEnergyEh": -78.513894451888,
+      "vibrationalModeCount": 12,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 827.8341561108663,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6325,
+        "conformerId": "000018B500000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6325"
+      }
+    },
+    {
+      "id": "ethyne",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/ethyne.inp",
+      "geometry": "../ethyne.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 73.646,
+      "finalEnergyEh": -77.257087080019,
+      "vibrationalModeCount": 6,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 636.321732495876,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6326,
+        "conformerId": "000018B600000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6326"
+      }
+    },
+    {
+      "id": "formaldehyde",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/formaldehyde.inp",
+      "geometry": "../formaldehyde.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 102.714,
+      "finalEnergyEh": -114.419497480607,
+      "vibrationalModeCount": 6,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 1205.6975077615762,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 712,
+        "conformerId": "000002C800000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/712"
+      }
+    },
+    {
+      "id": "cyclohexane",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/cyclohexane.inp",
+      "geometry": "../cyclohexane.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "finalEnergyEh": -235.680071957074,
+      "vibrationalModeCount": 48,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 232.21559113683,
+      "startingGeometry": {
+        "input": "./inputs/cyclohexane-start.xyz",
+        "source": "PubChem",
+        "cid": 8078,
+        "conformerId": "00001F8E00000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/8078"
+      },
+      "conformerSearch": {
+        "input": "./inputs/cyclohexane-goat.inp",
+        "method": "ORCA native GFN2-xTB GOAT",
+        "normalTermination": true,
+        "uniqueConformers": 2,
+        "globalMinimumEnergyEh": -18.986715835,
+        "nextConformerGapKcalMol": 5.3860355522
+      },
+      "catalogAtomPermutationFromOrcaOutput": [
+        0,
+        1,
+        3,
+        5,
+        4,
+        2,
+        6,
+        7,
+        8,
+        9,
+        12,
+        13,
+        16,
+        17,
+        14,
+        15,
+        10,
+        11
+      ]
+    },
+    {
+      "id": "dinitrogen",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/dinitrogen.inp",
+      "geometry": "../dinitrogen.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 45.972,
+      "finalEnergyEh": -109.446643518706,
+      "vibrationalModeCount": 1,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 2483.9111746171698,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 947,
+        "conformerId": "000003B300000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/947"
+      }
+    },
+    {
+      "id": "dioxygen",
+      "charge": 0,
+      "multiplicity": 3,
+      "input": "./inputs/dioxygen.inp",
+      "geometry": "../dioxygen.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 51.915,
+      "finalEnergyEh": -150.23590672644,
+      "vibrationalModeCount": 1,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 1713.5083361449697,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 977,
+        "conformerId": "000003D100000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/977"
+      }
+    },
+    {
+      "id": "dihydrogen",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/dihydrogen.inp",
+      "geometry": "../dihydrogen.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 5.695,
+      "finalEnergyEh": -1.168393689444,
+      "vibrationalModeCount": 1,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 4417.213438227582,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized 0.74 A starting bond"
+      }
+    },
+    {
+      "id": "carbon-monoxide",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/carbon-monoxide.inp",
+      "geometry": "../carbon-monoxide.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 52.353,
+      "finalEnergyEh": -113.231336759261,
+      "vibrationalModeCount": 1,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 2239.264102095468,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 281,
+        "conformerId": "0000011900000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/281"
+      }
+    },
+    {
+      "id": "hydrogen-peroxide",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/hydrogen-peroxide.inp",
+      "geometry": "../hydrogen-peroxide.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 111.335,
+      "finalEnergyEh": -151.455609604584,
+      "vibrationalModeCount": 6,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 398.1924046588768,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 784,
+        "conformerId": "0000031000000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/784"
+      }
+    },
+    {
+      "id": "ethane",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/ethane.inp",
+      "geometry": "../ethane.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 232.238,
+      "finalEnergyEh": -79.752529891526,
+      "vibrationalModeCount": 18,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 306.1693331545121,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6324,
+        "conformerId": "000018B400000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6324"
+      }
+    },
+    {
+      "id": "pyridine",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/pyridine.inp",
+      "geometry": "../pyridine.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "finalEnergyEh": -248.084216000531,
+      "vibrationalModeCount": 27,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 381.838518854728
+    },
+    {
+      "id": "acetonitrile",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/acetonitrile.inp",
+      "geometry": "../acetonitrile.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 264.385,
+      "finalEnergyEh": -132.643478267242,
+      "vibrationalModeCount": 12,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 389.70164798901527,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 6342,
+        "conformerId": "000018C600000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/6342"
+      }
+    },
+    {
+      "id": "formic-acid",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/formic-acid.inp",
+      "geometry": "../formic-acid.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 271.966,
+      "finalEnergyEh": -189.641694113635,
+      "vibrationalModeCount": 9,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 635.9894875359131,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 284,
+        "conformerId": "0000011C00000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/284"
+      }
+    },
+    {
+      "id": "lithium-hydride",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/lithium-hydride.inp",
+      "geometry": "../lithium-hydride.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 7.38,
+      "finalEnergyEh": -8.05091925214,
+      "vibrationalModeCount": 1,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 1409.9838284855293,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized 1.60 A starting bond"
+      }
+    },
+    {
+      "id": "hydrogen-fluoride",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/hydrogen-fluoride.inp",
+      "geometry": "../hydrogen-fluoride.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 18.241,
+      "finalEnergyEh": -100.391985567505,
+      "vibrationalModeCount": 1,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 4151.126498678777,
+      "startingGeometry": {
+        "source": "PubChem",
+        "cid": 14917,
+        "conformerId": "00003A4500000001",
+        "url": "https://pubchem.ncbi.nlm.nih.gov/compound/14917"
+      }
+    },
+    {
+      "id": "boron-trifluoride",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/boron-trifluoride.inp",
+      "geometry": "../boron-trifluoride.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 194.802,
+      "finalEnergyEh": -324.390970544204,
+      "vibrationalModeCount": 6,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 474.8420926014994,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized trigonal-planar VSEPR start"
+      }
+    },
+    {
+      "id": "sulfur-dioxide",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/sulfur-dioxide.inp",
+      "geometry": "../sulfur-dioxide.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 127.658,
+      "finalEnergyEh": -548.412557374968,
+      "vibrationalModeCount": 3,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 531.7017804785186,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized bent VSEPR start"
+      }
+    },
+    {
+      "id": "sulfur-trioxide",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/sulfur-trioxide.inp",
+      "geometry": "../sulfur-trioxide.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 259.788,
+      "finalEnergyEh": -623.571494737892,
+      "vibrationalModeCount": 6,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 508.7658434208983,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized trigonal-planar VSEPR start"
+      }
+    },
+    {
+      "id": "nitrogen-dioxide",
+      "charge": 0,
+      "multiplicity": 2,
+      "input": "./inputs/nitrogen-dioxide.inp",
+      "geometry": "../nitrogen-dioxide.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 156.942,
+      "finalEnergyEh": -204.954495937662,
+      "vibrationalModeCount": 3,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 782.4915449081047,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized bent radical start"
+      }
+    },
+    {
+      "id": "nitrous-oxide",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/nitrous-oxide.inp",
+      "geometry": "../nitrous-oxide.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 122.392,
+      "finalEnergyEh": -184.546379209385,
+      "vibrationalModeCount": 4,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 640.5060094968907,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized linear N-N-O start"
+      }
+    },
+    {
+      "id": "phosphorus-trifluoride",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/phosphorus-trifluoride.inp",
+      "geometry": "../phosphorus-trifluoride.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 283.775,
+      "finalEnergyEh": -640.730033293135,
+      "vibrationalModeCount": 6,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 341.3342646985965,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized trigonal-pyramidal VSEPR start"
+      }
+    },
+    {
+      "id": "diborane",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/diborane.inp",
+      "geometry": "../diborane.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 292.554,
+      "finalEnergyEh": -53.212413820008,
+      "vibrationalModeCount": 18,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 328.4765558568231,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized D2h diborane start with two bridging hydrogens"
+      }
+    },
+    {
+      "id": "ammonia-borane",
+      "charge": 0,
+      "multiplicity": 1,
+      "input": "./inputs/ammonia-borane.inp",
+      "geometry": "../ammonia-borane.xyz",
+      "normalTermination": true,
+      "optimizationConverged": true,
+      "calculationWallTimeSeconds": 225.441,
+      "finalEnergyEh": -83.137754306863,
+      "vibrationalModeCount": 18,
+      "imaginaryVibrationalModes": 0,
+      "lowestVibrationalFrequencyCm-1": 270.68259131125615,
+      "startingGeometry": {
+        "source": "Idealized construction",
+        "description": "idealized staggered ammonia-borane start"
+      }
+    }
+  ]
+}

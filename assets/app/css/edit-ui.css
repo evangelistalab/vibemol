@@ -1096,18 +1096,72 @@
   color: var(--vm-color-text-primary);
 }
 
-#editAddQuick,
-#editFragmentQuick,
-#editMoleculeQuick {
+#editAddQuick {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
 }
 
-#editAddQuick button,
-#editFragmentQuick button,
-#editMoleculeQuick button {
+.vm-catalog-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 9px;
+  min-height: 24px;
+}
+
+#editFragmentListMeta,
+#editMoleculeListMeta {
+  color: var(--vm-color-text-secondary);
+  font-size: var(--vm-text-sm);
+}
+
+#editFragmentMoreBtn,
+#editMoleculeMoreBtn {
+  appearance: none;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: var(--vm-color-accent-primary);
+  font: inherit;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
+  cursor: pointer;
+}
+
+#editFragmentMoreBtn:hover,
+#editFragmentMoreBtn:focus-visible,
+#editMoleculeMoreBtn:hover,
+#editMoleculeMoreBtn:focus-visible {
+  text-decoration: underline;
+}
+
+#editFragmentQuick,
+#editMoleculeQuick {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  margin-top: 5px;
+  max-height: 188px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 3px;
+  scrollbar-gutter: stable;
+}
+
+#editFragmentQuick.is-expanded,
+#editMoleculeQuick.is-expanded {
+  max-height: min(320px, 40vh);
+}
+
+#editFragmentQuick button[hidden],
+#editMoleculeQuick button[hidden] {
+  display: none;
+}
+
+#editAddQuick button {
   appearance: none;
   border: 1px solid var(--vm-color-border-soft);
   border-radius: 999px;
@@ -1119,9 +1173,46 @@
   cursor: pointer;
 }
 
-#editAddQuick button.active,
-#editFragmentQuick button.active,
-#editMoleculeQuick button.active {
+#editFragmentQuick button,
+#editMoleculeQuick button {
+  appearance: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 5px 8px;
+  background: transparent;
+  color: var(--vm-color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+#editFragmentQuick button:hover,
+#editMoleculeQuick button:hover {
+  border-color: var(--vm-color-border-soft);
+  background: var(--vm-color-surface-chip-strong);
+}
+
+#editFragmentQuick .vm-catalog-list-name,
+#editMoleculeQuick .vm-catalog-list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-font-weight-heading);
+}
+
+#editFragmentQuick .vm-catalog-list-formula,
+#editMoleculeQuick .vm-catalog-list-formula {
+  color: var(--vm-color-text-secondary);
+  font-size: var(--vm-text-xs);
+  white-space: nowrap;
+}
+
+#editAddQuick button.active {
   border-width: 2px;
   border-color: var(--vm-color-accent-primary);
   background: var(--vm-color-surface-panel);
@@ -1131,8 +1222,14 @@
     0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 40%, transparent) inset;
 }
 
-#editFragmentQuick button,
-#editMoleculeQuick button,
+#editFragmentQuick button.active,
+#editMoleculeQuick button.active {
+  border-color: var(--vm-color-accent-primary);
+  background: color-mix(in srgb, var(--vm-color-accent-primary) 10%, var(--vm-color-surface-panel));
+  color: var(--vm-color-text-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vm-brand-accent) 35%, transparent) inset;
+}
+
 #editFragmentQuick button.active,
 #editMoleculeQuick button.active {
   color: var(--vm-color-text-primary);
