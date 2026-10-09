@@ -8,7 +8,10 @@
   "summary": {
     "failures": 13,
     "environment": 11,
-    "realPreExistingDefects": 2
+    "realPreExistingDefects": 2,
+    "scope": "Original 13 Stage 0 failures; the additional Appearance failure aliases an existing workflow.",
+    "additionalFailingEntryPoints": 1,
+    "currentFailedEntryPoints": 14
   },
   "prRequirement": "Every stage touching mapped functions or their dependencies must name the affected failed suites and record the listed manual workflows, base/current outcomes and evidence in its PR. All 13 failing workflows remain uncharacterized; generic captures do not replace manual verification.",
   "failures": [
@@ -234,12 +237,27 @@
       "coverageStatus": "uncharacterized failing workflow; suite not green",
       "manualVerification": [
         "In Edit select atoms, focus an axis endpoint, use arrows/Home/End/Space/Enter and Escape; verify selection and focus against the tagged base.",
-        "Check all six directions in both projections and modes, pointer/touch gestures, small viewports and canvas PNG/WebM rendering. Record the pre-existing Escape defect if still present."
+        "Check all six directions in both projections and modes, pointer/touch gestures, small viewports and canvas PNG/WebM rendering. Record the pre-existing Escape defect if still present.",
+        "Exercise Escape from menus, coordinate/operator fields, provisional placement, armed Build, selected Transform, Focus and panels; preserve cancellation/disarm/selection-clear precedence and gizmo focus return."
       ],
       "evidence": [
         "evidence/stage0/probes/axis_gizmo.json",
         "evidence/stage0/failures/axis_gizmo.log"
-      ]
+      ],
+      "fixConstraints": {
+        "origin": "0.9.2/0.9.3 Escape-ladder work",
+        "captureEditToolBranchCommit": "5f6a3909",
+        "source": "assets/app/js/workbench.js:610-624; docs/edit-tools.md",
+        "requirement": "Preserve capture-phase arbitration and ladder semantics; do not fix focus by dropping interception.",
+        "precedence": [
+          "Dismiss active menus and let coordinate/operator fields cancel their own drafts.",
+          "Cancel provisional placement while retaining Build.",
+          "Disarm Build to Transform while retaining selection.",
+          "Clear Transform selection.",
+          "Allow subsequent Focus/panel dismissal."
+        ],
+        "focusHandoff": "Retain the intended axis-gizmo-to-canvas focus handoff while preserving the edit action selected by the ladder."
+      }
     },
     {
       "suite": "tests/e2e/smoke.py",
@@ -515,6 +533,12 @@
       "evidence": [
         "evidence/stage0/probes/properties_inspector.json",
         "evidence/stage0/failures/properties_inspector.log"
+      ],
+      "additionalEntryPoints": [
+        "tests/e2e/appearance_controls.py"
+      ],
+      "additionalEvidence": [
+        "evidence/stage0/followups/appearance_controls.log"
       ]
     },
     {
@@ -600,5 +624,60 @@
       ]
     }
   ],
-  "coverageMeaning": "The listed app.js functions delimit the failed workflow and its intended verification scope; they are not claims that later assertions in the interrupted suite ran successfully."
+  "coverageMeaning": "The listed app.js functions delimit the failed workflow and its intended verification scope; they are not claims that later assertions in the interrupted suite ran successfully.",
+  "additionalSuiteFailures": [
+    {
+      "suite": "tests/e2e/appearance_controls.py",
+      "classification": "environment",
+      "sameWorkflowAs": "tests/e2e/properties_inspector.py",
+      "failingLine": 173,
+      "appJsCoverage": [
+        {
+          "function": "setMode (Measurements introduction)",
+          "baseLine": 11287,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "window.VibeMolWorkbench.open('measurementsPanel', false);"
+        },
+        {
+          "function": "getPropertyObjects",
+          "baseLine": 9263,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function getPropertyObjects() {"
+        },
+        {
+          "function": "editMoleculeDisplay",
+          "baseLine": 9269,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function editMoleculeDisplay(key, value) {"
+        },
+        {
+          "function": "applyLookSettings",
+          "baseLine": 27949,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyLookSettings(settings, layers = getAllLookLayers()) {"
+        },
+        {
+          "function": "propertiesInspector construction",
+          "baseLine": 33201,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "propertiesInspector = window.VibeMolPropertiesInspector.createController({"
+        }
+      ],
+      "manualVerification": [
+        "Select structures and surfaces together; edit Object/Look controls, 2C cloud settings and per-surface inheritance.",
+        "Float/park/reopen Properties, cycle Edit/Measure/View and verify Object/Look tab and placement separately from the intentional first-Measure panel introduction."
+      ],
+      "evidence": [
+        "evidence/stage0/followups/appearance_controls.log"
+      ]
+    }
+  ],
+  "projectionAppDefect": {
+    "classification": "real pre-existing defect",
+    "issue": "https://github.com/evangelistalab/vibemol/issues/3",
+    "evidence": "characterize-pixel-investigation.json",
+    "separateFromSuiteFailureCounts": true,
+    "harnessMasksDefect": true
+  },
+  "stageRiskPlan": "refactor-stage-risk.json"
 }

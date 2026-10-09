@@ -1,7 +1,9 @@
 {
   "baseTag": "v0.9.5-pre-refactor",
   "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
-  "classification": "settle race",
+  "classification": "real pre-existing defect",
+  "diagnosticTrigger": "A settle race in deferred resize ordering exposed the production projection-refresh defect.",
+  "supersedes": "The initial harness-only attribution was incorrect. Ordinary public preset imports use the same defective camera/target setters.",
   "initialDiagnostic": {
     "changedSnapshots": [
       "session/light/Display"
@@ -9,7 +11,23 @@
     "structuredCapturesPerRun": 102,
     "structuredIdentical": true
   },
-  "cause": "The QA camera pin changes the restored orthographic camera coordinates without refreshing an already-active orthographic projection. A deferred viewport resize can recompute the frustum before or after the pin. If the callback ran first, the frustum remains at the restored distance despite the new serialized pose. The discrepancy persists until another projection refresh; extra frame waits alone do not repair it.",
+  "cause": "Preset view.camera.* and view.target.* setters mutate position/target without refreshing projection. updateActiveCameraProjection derives the orthographic frustum from distance-to-target, but setProjectionMode returns early for an unchanged mode and afterApplySettings does not refresh it. A camera/target batch can therefore retain the previous distance's frustum until resize. Deferred resize ordering exposed this app defect after session restoration in QA; extra frame waits alone do not repair it.",
+  "appDefect": {
+    "releaseLine": "0.9.x",
+    "issue": "https://github.com/evangelistalab/vibemol/issues/3",
+    "fixOwner": "preset afterApplySettings at app.js:27118",
+    "proposedFix": "After a preset batch touching any view.camera.* or view.target.* key, update controls and refresh the active projection once using the current viewport dimensions. Do not refresh per axis.",
+    "observedScaleRatio": 1.563471919944809,
+    "sessionScope": "Complete hydration refreshes explicitly in restoreSessionView. The confirmed session-path trigger is a subsequent preset camera batch; verify both APIs in the 0.9.x fix.",
+    "fixedInProduction": false
+  },
+  "ordinaryApiVerification": {
+    "qaHarnessLoaded": false,
+    "cameraOnlyBatch": "Reproduced stale half-height 19.428338208873594; resize corrects it to 12.426406871192833.",
+    "targetOnlyBatch": "Reproduced stale half-height 19.428338208873594; resize corrects it to 17.078462692276148.",
+    "completeSessionHydration": "Projection is correct before resize because restoreSessionView explicitly refreshes it.",
+    "evidence": "evidence/stage0/followups/public-projection-proof.json"
+  },
   "reproduction": {
     "trials": 3,
     "bothOriginalHashesReproducedInEachPage": true,
@@ -54,6 +72,10 @@
       "baseLine": 27516
     },
     {
+      "function": "preset view.target coordinate setters",
+      "baseLine": 27522
+    },
+    {
       "function": "preset afterApplySettings",
       "baseLine": 27118
     },
@@ -71,7 +93,9 @@
     }
   ],
   "resolution": {
-    "scope": "QA harness only; app.js and vendored runtime remain unchanged",
+    "scope": "QA workaround only; the 0.9.x app defect remains open and app.js/vendor code is unchanged",
+    "masksProductionDefect": true,
+    "verificationLimit": "Passing pinned captures and the resize-order regression do not establish that ordinary preset camera/target batches refresh projection correctly.",
     "cameraPin": "Explicitly switch through perspective before applying the orthographic pose so frustum initialization never depends on a deferred resize.",
     "structuredCapture": "Include the actual rendered camera projection matrix/near/far/zoom and canvas CSS/buffer dimensions.",
     "regression": "For both resize orderings after restoring the fixture, compare full structured capture and same-browser pixel hash before and after another resize.",

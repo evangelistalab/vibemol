@@ -111,6 +111,11 @@ test-e2e:
 	python3 tests/e2e/smoke.py
 	python3 tests/e2e/premerge.py
 	python3 tests/e2e/sessions.py
+	python3 tests/e2e/appearance_controls.py
+	python3 tests/e2e/look_references.py
+	python3 tests/e2e/look_tiles.py
+	python3 tests/e2e/surface_schemes.py
+	python3 tests/e2e/surface_shadows.py
 	python3 tests/e2e/looks.py
 	python3 tests/e2e/camera_depth.py
 	python3 tests/e2e/edit_picking.py

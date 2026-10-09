@@ -1,0 +1,20 @@
+{
+  "staticChecks": {
+    "command": "make check",
+    "exitCode": 0,
+    "result": "passed"
+  },
+  "additionalBrowserSuites": {
+    "passed": 4,
+    "failed": 1,
+    "evidence": "appearance-results.json"
+  },
+  "ordinaryProjectionApiProbe": {
+    "qaHarnessLoaded": false,
+    "cameraOnlyBugReproduced": true,
+    "targetOnlyBugReproduced": true,
+    "completeSessionProjectionCorrect": true,
+    "evidence": "public-projection-proof.json"
+  },
+  "unitTests": "No production JS changes; Stage 0's 422 passing unit tests retained as prior validation, not rerun for these Python entry-point/documentation changes."
+}

@@ -182,3 +182,8 @@ def reference_migration(page, context, url):
             assert ids(other)==[style,colors] and flags(other)==[False,False]
         finally:fresh.close()
     print('[look refs] legacy composites, settings-only presets, strict/relaxed imports and old last-appearance migration: passed',flush=True)
+
+
+if __name__ == '__main__':
+    from helpers import run_appearance_scenarios
+    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration])

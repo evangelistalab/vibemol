@@ -103,3 +103,8 @@ def complete_look_tiles(page, context, url):
     page.locator('#lookUndo').click();assert settings() == before and menus() == ['classic', 'classic']
     style.select_option(saved['id']);assert colors.input_value() == 'classic'
     print('[look tiles] six requested checks, all seven complete looks, menu mixing, Undo, saved looks, preserved overrides, hover/focus and screenshots: passed', flush=True)
+
+
+if __name__ == '__main__':
+    from helpers import run_appearance_scenarios
+    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [complete_look_tiles])

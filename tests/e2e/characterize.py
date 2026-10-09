@@ -82,9 +82,10 @@ def first_difference(expected, actual, path='$'):
 
 
 def pin(page):
-    # Coordinate setters do not refresh an existing orthographic frustum.
-    # Restore can leave it at the saved camera's distance until a dock resize;
-    # change projection explicitly so the pin never depends on that callback.
+    # Work around the 0.9.x app defect: camera/target preset setters do not refresh
+    # an existing orthographic frustum (evangelistalab/vibemol#3). This pin masks
+    # that defect; passing characterization does not verify the ordinary API.
+    # Refresh explicitly so the pin never depends on a pending dock resize.
     page.evaluate("""() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,
       settings:{'view.projection':'perspective'}},{mode:'strict'})""")
     page.evaluate('''() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,settings:{

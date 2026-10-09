@@ -202,3 +202,8 @@ def split_surface_shadows(page, context, url):
             mats=page.evaluate('() => VibeMolTesting.getSurfaceMaterialSnapshot()')
             assert mats and all(m['phaseHue'] and m['castShadow'] and m['receiveShadow'] for m in mats),mats
     print('[looks] 2C phase/Bloch shadows, separate alpha/beta shadow maps, opacity, depth of field and transparency fallback: passed',flush=True)
+
+
+if __name__ == '__main__':
+    from helpers import run_appearance_scenarios
+    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [shadow_camera_fit, surfaces_cast_and_receive, split_surface_shadows])

@@ -22,7 +22,8 @@
       "render.viewport",
       "render.projection"
     ],
-    "evidence": "tests/baselines/evidence/stage0/base-final-evidence.json"
+    "evidence": "tests/baselines/evidence/stage0/base-final-evidence.json",
+    "knownLimitation": "The camera pin forces projection refresh and masks the open 0.9.x app defect (#3). Passing captures do not validate ordinary preset camera/target batches."
   },
   "installedLoader": {
     "runs": 2,
@@ -34,7 +35,8 @@
     "qaAssetVersion": "0.9.5",
     "sessionCameraPinResizeOrderRegression": "passed for both orderings",
     "browserVersion": "145.0.7632.6",
-    "evidence": "tests/baselines/evidence/stage0/installed-final-evidence.json"
+    "evidence": "tests/baselines/evidence/stage0/installed-final-evidence.json",
+    "knownLimitation": "The camera pin forces projection refresh and masks the open 0.9.x app defect (#3). Passing captures do not validate ordinary preset camera/target batches."
   },
   "existingBrowserSuites": [
     {
@@ -160,6 +162,31 @@
     {
       "test": "tests/e2e/style_lab.py",
       "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/appearance_controls.py",
+      "exitCode": 1,
+      "evidence": "tests/baselines/evidence/stage0/followups/appearance_controls.log"
+    },
+    {
+      "test": "tests/e2e/look_references.py",
+      "exitCode": 0,
+      "evidence": "tests/baselines/evidence/stage0/followups/look_references.log"
+    },
+    {
+      "test": "tests/e2e/look_tiles.py",
+      "exitCode": 0,
+      "evidence": "tests/baselines/evidence/stage0/followups/look_tiles.log"
+    },
+    {
+      "test": "tests/e2e/surface_schemes.py",
+      "exitCode": 0,
+      "evidence": "tests/baselines/evidence/stage0/followups/surface_schemes.log"
+    },
+    {
+      "test": "tests/e2e/surface_shadows.py",
+      "exitCode": 0,
+      "evidence": "tests/baselines/evidence/stage0/followups/surface_shadows.log"
     }
   ],
   "consoleExceptions": {
@@ -168,15 +195,23 @@
   },
   "stage1Finding": "getElementSymbol copies differ in fallback, whitespace handling and numeric coercion",
   "existingBrowserSuitesSummary": {
-    "passed": 18,
-    "failed": 13,
+    "passed": 22,
+    "failed": 14,
     "all13FailuresObservedOnBase": true,
     "failedWorkflowClassification": {
-      "environment": 11,
+      "environment": 12,
       "realPreExistingDefects": 2
     },
     "failuresReport": "tests/baselines/characterize-failures.json",
-    "fullMakeTestE2eGreen": false
+    "fullMakeTestE2eGreen": false,
+    "originalStage0SuiteCounts": {
+      "passed": 18,
+      "failed": 13
+    },
+    "failedEntryPointCount": 14,
+    "distinctRecordedFailingWorkflows": 13,
+    "additionalFailureAlias": "appearance_controls.py delegates to properties_inspector.py and fails at the same assertion.",
+    "countScope": "31 original Stage 0 entry points plus five standalone follow-up runs; no full 36-suite rerun claimed."
   },
   "baseTag": "v0.9.5-pre-refactor",
   "pixelInvestigation": "tests/baselines/characterize-pixel-investigation.json",
@@ -187,5 +222,22 @@
     "evidence": "tests/baselines/evidence/stage0/style-lab.log"
   },
   "rawArtifacts": "out/test-artifacts/stage0 (ignored); concise evidence committed under tests/baselines/evidence/stage0",
-  "goldenSha256": "2a636346dd90bede1008de971e537bebe3da6870223f73bb7da92156c4074388"
+  "goldenSha256": "2a636346dd90bede1008de971e537bebe3da6870223f73bb7da92156c4074388",
+  "additionalAppearanceSuites": {
+    "passed": 4,
+    "failed": 1,
+    "evidence": "tests/baselines/evidence/stage0/followups/appearance-results.json",
+    "allFiveIncludedInMakeTestE2e": true
+  },
+  "projectionDefect": {
+    "classification": "real pre-existing defect",
+    "releaseLine": "0.9.x",
+    "issue": "https://github.com/evangelistalab/vibemol/issues/3",
+    "harnessMasksDefect": true,
+    "productionFixApplied": false,
+    "countedAmongBrowserSuiteFailures": false,
+    "ordinaryApiEvidence": "tests/baselines/evidence/stage0/followups/public-projection-proof.json"
+  },
+  "stageRiskPlan": "tests/baselines/refactor-stage-risk.json",
+  "followupChecks": "tests/baselines/evidence/stage0/followups/checks.json"
 }

@@ -81,3 +81,31 @@ def write_failure_artifacts(page, artifact_dir: pathlib.Path, name: str, page_er
     log_lines.append("[console errors]")
     log_lines.extend(console_errors or ["(none)"])
     log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
+
+
+def run_appearance_scenarios(root: pathlib.Path, artifact_dir: pathlib.Path, scenarios) -> None:
+    """Run the existing Looks scenarios independently with their original setup."""
+    from playwright.sync_api import sync_playwright
+
+    with run_http_server(root) as url, sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            for scenario in scenarios:
+                context = browser.new_context(viewport={"width": 1200, "height": 1000}, device_scale_factor=1)
+                page = context.new_page()
+                errors, console_errors = [], []
+                page.on("pageerror", lambda error: errors.append(str(error)))
+                page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
+                page.on("dialog", lambda dialog: dialog.dismiss())
+                try:
+                    page.goto(url + "?workspaceLab=0")
+                    page.wait_for_function("() => window.VibeMolAppearanceLooks")
+                    scenario(page, context, url)
+                    assert not errors, errors
+                except Exception:
+                    write_failure_artifacts(page, artifact_dir, "appearance-" + scenario.__name__, errors, console_errors)
+                    raise
+                finally:
+                    context.close()
+        finally:
+            browser.close()
