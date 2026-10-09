@@ -621,6 +621,13 @@ Repo checks:
 - Keep heavy computation out of the frame loop.
 - Ensure geometries/materials/textures are disposed on teardown/rebuild paths.
 
+## app.js Refactor Characterization
+
+- The decomposition starts at `v0.9.5-pre-refactor` (`1c609b338344aaa49ffd11b9ee2ad834a6e0d85d`). Stage 0 moves no production functions; its optional `qa-characterize.js` loads after Workbench only with `?qa=1`.
+- Run `tests/e2e/characterize.py` for the two-run structured determinism gate. Committed captures and validation evidence live under `tests/baselines/`; generated browser output belongs in ignored `out/test-artifacts/`.
+- The 13 failing baseline browser suites are listed and classified in `tests/baselines/characterize-failures.json`. Their failing workflows are uncharacterized paths even when a failure comes from test setup or an outdated assertion. Do not report these suites as passing.
+- Every refactor-stage PR touching a mapped function or its dependencies must include a **Manual verification** section naming the affected suites, the listed workflows, the result on the tagged base and on the proposed change, and the verification evidence. A passing generic characterization capture does not replace this verification. Record any remaining pre-existing defect explicitly.
+
 ## Manual Validation Checklist
 After non-trivial changes:
 1. Launch local server and load app.

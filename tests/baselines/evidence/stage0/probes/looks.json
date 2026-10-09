@@ -1,0 +1,224 @@
+{
+  "suite": "looks",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "",
+  "frames": [
+    {
+      "line": 978,
+      "function": "hydrogen_bond_restrictions",
+      "locals": {}
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 5.762377221302765,
+        "y": 4.414877221302749,
+        "z": 4.414877221302727
+      },
+      "target": {
+        "x": 1.3475000000000001,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "atom_manipulation",
+      "addMode": "atom",
+      "elementZ": 6,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "6",
+        "symbol": "C",
+        "name": "Carbon",
+        "formula": ""
+      },
+      "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens BuildSelected H-C bond \u00b7 Order 1 \u00b7 Drag the bond cue to change 0-1.",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens BuildSelected H-C bond \u00b7 Order 1 \u00b7 Drag the bond cue to change 0-1.",
+    "selection": [],
+    "bondCue": {
+      "visible": true,
+      "order": 1,
+      "style": "covalent",
+      "metalPair": false
+    },
+    "layout": null,
+    "properties": null,
+    "activeElement": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn active\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" aria-pressed=\"true\">Edit</button>",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 320,
+          "y": 0,
+          "width": 880,
+          "height": 900
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 900,
+        "clientHeight": 900,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      null,
+      null,
+      null,
+      null,
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "24",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "false",
+        "rect": {
+          "x": 1003,
+          "y": 237,
+          "width": 136,
+          "height": 54
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "34",
+        "scrollHeight": 54,
+        "clientHeight": 54,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": null
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 5.762377221302762,
+        "y": 4.414877221302746,
+        "z": 4.414877221302723
+      },
+      "target": {
+        "x": 1.3475000000000001,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "layout": null,
+    "storedLayout": null,
+    "activeElement": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn active\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" aria-pressed=\"true\">Edit</button>"
+  }
+}

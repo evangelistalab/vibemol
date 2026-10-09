@@ -4,6 +4,9 @@ docs/latex/
 __pycache__/
 *.pyc
 
+# Browser verification output (committed evidence lives in tests/baselines).
+out/test-artifacts/
+
 # VSCode extension generated files to ignore
 src/vscode_ext/vibemol/app/
 src/vscode_ext/vibemol/node_modules/

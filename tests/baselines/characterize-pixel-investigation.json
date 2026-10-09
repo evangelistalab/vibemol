@@ -1,0 +1,94 @@
+{
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "classification": "settle race",
+  "initialDiagnostic": {
+    "changedSnapshots": [
+      "session/light/Display"
+    ],
+    "structuredCapturesPerRun": 102,
+    "structuredIdentical": true
+  },
+  "cause": "The QA camera pin changes the restored orthographic camera coordinates without refreshing an already-active orthographic projection. A deferred viewport resize can recompute the frustum before or after the pin. If the callback ran first, the frustum remains at the restored distance despite the new serialized pose. The discrepancy persists until another projection refresh; extra frame waits alone do not repair it.",
+  "reproduction": {
+    "trials": 3,
+    "bothOriginalHashesReproducedInEachPage": true,
+    "originalStructuredCaptureBeforeAfterIdentical": true,
+    "restoredPosition": [
+      30,
+      20,
+      30
+    ],
+    "restoredDistance": 46.9041575982343,
+    "pinnedPosition": [
+      30,
+      0,
+      0
+    ],
+    "fovDegrees": 45,
+    "staleHalfHeight": 19.42833820887364,
+    "refreshedHalfHeight": 12.426406871192851,
+    "canvasDimensionsUnchanged": [
+      1212,
+      724
+    ],
+    "cameraPoseAndDepthPlanesUnchangedDuringExplicitRefresh": true,
+    "proof": "evidence/stage0/pixel-projection-proof.json"
+  },
+  "ruledOut": {
+    "unpinnedAnimation": "Auto-rotation is false in both states; the fixture contains no trajectory or vibration. Both images remain stable across repeated rendered frames.",
+    "uninitializedRestoreValue": "restoreSessionView initializes the frustum from the valid saved pose. Both differing frusta are finite, deterministic projections of the old/new camera distances.",
+    "clearedDrawingBuffer": "The differing hash is a fully rendered water molecule, and the canvas size does not change."
+  },
+  "appJsCode": [
+    {
+      "function": "restoreSessionView",
+      "baseLine": 32939
+    },
+    {
+      "function": "setProjectionMode (already-active mode returns early)",
+      "baseLine": 12284
+    },
+    {
+      "function": "preset view.camera coordinate setters",
+      "baseLine": 27516
+    },
+    {
+      "function": "preset afterApplySettings",
+      "baseLine": 27118
+    },
+    {
+      "function": "applyCameraStrategy",
+      "baseLine": 32486
+    },
+    {
+      "function": "updateActiveCameraProjection",
+      "baseLine": 828
+    },
+    {
+      "function": "ResizeObserver callback calling resize",
+      "baseLine": 1273
+    }
+  ],
+  "resolution": {
+    "scope": "QA harness only; app.js and vendored runtime remain unchanged",
+    "cameraPin": "Explicitly switch through perspective before applying the orthographic pose so frustum initialization never depends on a deferred resize.",
+    "structuredCapture": "Include the actual rendered camera projection matrix/near/far/zoom and canvas CSS/buffer dimensions.",
+    "regression": "For both resize orderings after restoring the fixture, compare full structured capture and same-browser pixel hash before and after another resize.",
+    "historicalDiagnosticRetained": true,
+    "all102PriorStructuredCapturesUnchanged": true,
+    "taggedBaseTwoRuns": {
+      "capturesPerRun": 102,
+      "structuredIdentical": true,
+      "pixelDifferences": 0
+    },
+    "installedLoaderTwoRuns": {
+      "capturesPerRun": 102,
+      "matchesTaggedBase": true,
+      "structuredIdentical": true,
+      "pixelDifferences": 0
+    }
+  },
+  "pixelHashesAreDiagnosticEvidenceOnly": true,
+  "portablePixelGoldens": false
+}

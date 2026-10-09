@@ -1,0 +1,470 @@
+{
+  "suite": "figure",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "({'width': 1140, 'height': 944, 'pixelRatio': 1, 'position': [2.916000622988134, 2.916000622988133, 2.9160006229881317], 'quaternion': [0.17591989660616122, 0.42470820027786693, 0.8204732385702833, 0.33985114297998736], 'zoom': 1, 'target': [0, 0, 0], 'near': 0.6440626127553415, 'far': 9.762780447525557, 'aspect': 1.2076271186440677}, {'width': 1140, 'height': 944, 'pixelRatio': 1, 'position': [2.9160006229881335, 2.916000622988131, 2.916000622988127], 'quaternion': [0.1759198966061614, 0.4247082002778672, 0.8204732385702831, 0.3398511429799875], 'zoom': 1, 'target': [0, 0, 0], 'near': 0.8436596013601929, 'far': 9.563183493333447, 'aspect': 1.2076271186440677})",
+  "frames": [
+    {
+      "line": 12,
+      "function": "same_view",
+      "locals": {}
+    },
+    {
+      "line": 23,
+      "function": "compose",
+      "locals": {
+        "result": {
+          "before": {
+            "width": 1140,
+            "height": 944,
+            "pixelRatio": 1,
+            "position": [
+              2.916000622988134,
+              2.916000622988133,
+              2.9160006229881317
+            ],
+            "quaternion": [
+              0.17591989660616122,
+              0.42470820027786693,
+              0.8204732385702833,
+              0.33985114297998736
+            ],
+            "zoom": 1,
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "near": 0.6440626127553415,
+            "far": 9.762780447525557,
+            "aspect": 1.2076271186440677
+          },
+          "after": {
+            "width": 1140,
+            "height": 944,
+            "pixelRatio": 1,
+            "position": [
+              2.9160006229881335,
+              2.916000622988131,
+              2.916000622988127
+            ],
+            "quaternion": [
+              0.1759198966061614,
+              0.4247082002778672,
+              0.8204732385702831,
+              0.3398511429799875
+            ],
+            "zoom": 1,
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "near": 0.8436596013601929,
+            "far": 9.563183493333447,
+            "aspect": 1.2076271186440677
+          },
+          "cams": [
+            {
+              "index": 0,
+              "layerId": "cube-1",
+              "position": [
+                2.916138169574849,
+                2.7981076810837897,
+                2.7981076810837884
+              ],
+              "quaternion": [
+                0.17591989660616122,
+                0.42470820027786693,
+                0.8204732385702833,
+                0.33985114297998736
+              ],
+              "zoom": 1,
+              "target": [
+                0.11803048849105835,
+                0,
+                0
+              ],
+              "near": 0.20929915996982507,
+              "far": 9.483630177401889,
+              "aspect": 1
+            },
+            {
+              "index": 1,
+              "layerId": "cube-2",
+              "position": [
+                2.916138169574849,
+                2.7981076810837897,
+                2.7981076810837884
+              ],
+              "quaternion": [
+                0.17591989660616122,
+                0.42470820027786693,
+                0.8204732385702833,
+                0.33985114297998736
+              ],
+              "zoom": 1,
+              "target": [
+                0.11803048849105835,
+                0,
+                0
+              ],
+              "near": 0.20929915996982507,
+              "far": 9.483630177401889,
+              "aspect": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "line": 41,
+      "function": "run",
+      "locals": {}
+    },
+    {
+      "line": 196,
+      "function": "main",
+      "locals": {}
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 2.9160006229881335,
+        "y": 2.916000622988131,
+        "z": 2.916000622988127
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "add_atom",
+      "addMode": "atom",
+      "elementZ": 6,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "6",
+        "symbol": "C",
+        "name": "Carbon",
+        "formula": ""
+      },
+      "hint": "Loaded 2 files \u2022 Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Loaded 2 files \u2022 Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+    "selection": [],
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    },
+    "layout": {
+      "placements": {
+        "subspacePanel": "right",
+        "buildPanel": "right",
+        "symmetryPanel": "right",
+        "moldenInspector": "right",
+        "measurementsPanel": "right",
+        "coordsPanel": "bottom",
+        "inspector": "right",
+        "viewPanel": "right",
+        "figurePanel": "right",
+        "trajectoryPanel": "bottom",
+        "vibrationPanel": "bottom",
+        "spinorInfo": "right"
+      },
+      "positions": {},
+      "open": [],
+      "parked": [],
+      "rightWidth": 380,
+      "bottomHeight": 220,
+      "activeRight": null,
+      "activeBottom": null,
+      "focus": false,
+      "compact": false,
+      "draggingId": null
+    },
+    "properties": {
+      "tab": "object",
+      "selected": [
+        {
+          "id": "cube-1",
+          "kind": "cube",
+          "name": "first.cube"
+        }
+      ]
+    },
+    "activeElement": "<body class=\"vm-workbench\" data-wb-mode=\"display\" data-wb-compact=\"false\" style=\"--wb-left: 300px; --wb-right: 0px; --wb-bottom: 0px; --wb-top: 56px;\">\n  \n  <div id=\"toolbar\" aria-expanded=\"true\">\n    <input type=\"file\" id=\"fileInput\" accept=\".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,.vibemol-session,application/json,text/plain\" multiple=\"\">\n    <input type=\"file\" id=\"sessionFileInput\" accept=\".vibemol-session,.json,application/json\" hidden=\"\">\n    <datalist id=\"pubchemSuggestions\"></datalist>\n\n    <div id=\"toolbarHead\">\n      <div class=\"tb-headTop\">\n        <div class=\"tb-brand\">\n          <img class=\"tb-brandLogo themeLogoLight\" src=\"assets/app/img/logo_600px.png?v=0.9.5\" alt=\"VibeMol\">\n          <img class=\"tb-brandLogo themeLogoDa [truncated DOM]",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 300,
+          "y": 56,
+          "width": 1140,
+          "height": 944
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 944,
+        "clientHeight": 944,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "right"
+      },
+      {
+        "id": "inspector",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "right"
+      },
+      {
+        "id": "inspectorLook",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "inspectorObject",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "inspectorShowHydrogenBonds",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "bottom"
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "60",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "60",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": "{\"last\":{\"placements\":{\"subspacePanel\":\"right\",\"buildPanel\":\"right\",\"symmetryPanel\":\"right\",\"moldenInspector\":\"right\",\"measurementsPanel\":\"right\",\"coordsPanel\":\"bottom\",\"inspector\":\"right\",\"viewPanel\":\"right\",\"figurePanel\":\"right\",\"trajectoryPanel\":\"bottom\",\"vibrationPanel\":\"bottom\",\"spinorInfo\":\"right\"},\"positions\":{},\"open\":[],\"parked\":[],\"rightWidth\":380,\"bottomHeight\":220,\"activeRight\":null,\"activeBottom\":null},\"saved\":[]}",
+    "scrollHit": "<div id=\"toolbar\" aria-expanded=\"true\">\n    <input type=\"file\" id=\"fileInput\" accept=\".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,.vibemol-session,application/json,text/plain\" multiple=\"\">\n    <input type=\"file\" id=\"sessionFileInput\" accept=\".vibemol-session,.json,application/json\" hidden=\"\">\n    <datalist id=\"pubchemSuggestions\"></datalist>\n\n    <div id=\"toolbarHead\">\n      <div class=\"tb-headTop\">\n        <div class=\"tb-brand\">\n          <img class=\"tb-brandLogo themeLogoLight\" src=\"assets/app/img/logo_600px.png?v=0.9.5\" alt=\"VibeMol\">\n          <img class=\"tb-brandLogo themeLogoDark\" src=\"assets/app/img/logo_dark_600px.png?v=0.9.5\" alt=\"VibeMol\">\n          <span id=\"toolbarVersion\" class=\"tb-versionBadge vm-versionBadge\" aria-label=\"V [truncated DOM]"
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 2.9160006229881335,
+        "y": 2.916000622988131,
+        "z": 2.916000622988127
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "layout": {
+      "placements": {
+        "subspacePanel": "right",
+        "buildPanel": "right",
+        "symmetryPanel": "right",
+        "moldenInspector": "right",
+        "measurementsPanel": "right",
+        "coordsPanel": "bottom",
+        "inspector": "right",
+        "viewPanel": "right",
+        "figurePanel": "right",
+        "trajectoryPanel": "bottom",
+        "vibrationPanel": "bottom",
+        "spinorInfo": "right"
+      },
+      "positions": {},
+      "open": [],
+      "parked": [],
+      "rightWidth": 380,
+      "bottomHeight": 220,
+      "activeRight": null,
+      "activeBottom": null,
+      "focus": false,
+      "compact": false,
+      "draggingId": null
+    },
+    "storedLayout": "{\"last\":{\"placements\":{\"subspacePanel\":\"right\",\"buildPanel\":\"right\",\"symmetryPanel\":\"right\",\"moldenInspector\":\"right\",\"measurementsPanel\":\"right\",\"coordsPanel\":\"bottom\",\"inspector\":\"right\",\"viewPanel\":\"right\",\"figurePanel\":\"right\",\"trajectoryPanel\":\"bottom\",\"vibrationPanel\":\"bottom\",\"spinorInfo\":\"right\"},\"positions\":{},\"open\":[],\"parked\":[],\"rightWidth\":380,\"bottomHeight\":220,\"activeRight\":null,\"activeBottom\":null},\"saved\":[]}",
+    "activeElement": "<body class=\"vm-workbench\" data-wb-mode=\"display\" data-wb-compact=\"false\" style=\"--wb-left: 300px; --wb-right: 0px; --wb-bottom: 0px; --wb-top: 56px;\">\n  \n  <div id=\"toolbar\" aria-expanded=\"true\">\n    <input type=\"file\" id=\"fileInput\" accept=\".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,.vibemol-session,application/json,text/plain\" multiple=\"\">\n    <input type=\"file\" id=\"sessionFileInput\" accept=\".vibemol-session,.json,application/json\" hidden=\"\">\n    <datalist id=\"pubchemSuggestions\"></datalist>\n\n    <div id=\"toolbarHead\">\n      <div class=\"tb-headTop\">\n        <div class=\"tb-brand\">\n          <img class=\"tb-brandLogo themeLogoLight\" src=\"assets/app/img/logo_600px.png?v=0.9.5\" alt=\"VibeMol\">\n          <img class=\"tb-brandLogo themeLogoDa [truncated DOM]"
+  }
+}

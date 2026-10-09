@@ -3937,6 +3937,14 @@
   <script src="./assets/app/js/app.js?v=0.9.5"></script>
   <script src="./assets/app/js/workbench-model.js?v=0.9.5"></script>
   <script src="./assets/app/js/workbench.js?v=0.9.5"></script>
+  <!-- Characterization stays out of ordinary launches and loads after all app scripts. -->
+  <script>
+    if (new URLSearchParams(location.search).get('qa') === '1') {
+      const qaScript = document.createElement('script');
+      qaScript.src = window.VibeMolAssets.url('./assets/app/js/qa-characterize.js');
+      document.body.appendChild(qaScript);
+    }
+  </script>
 </body>
 
 </html>

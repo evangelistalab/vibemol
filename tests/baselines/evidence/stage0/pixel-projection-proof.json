@@ -1,0 +1,363 @@
+[
+  {
+    "trial": 0,
+    "restored": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 29.999999999999957,
+          "y": 19.999999999999826,
+          "z": 29.999999999999815
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 19.42833820887364,
+        "bottom": -19.42833820887364,
+        "left": -32.52368219496527,
+        "right": 32.52368219496527,
+        "near": 43.017242618194736,
+        "far": 50.441423403450216
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "beforeProjectionRefresh": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 30,
+          "y": -1.836970198721029e-15,
+          "z": 1.8369701987210296e-15
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 19.42833820887364,
+        "bottom": -19.42833820887364,
+        "left": -32.52368219496527,
+        "right": 32.52368219496527,
+        "near": 25.88,
+        "far": 33.41
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "afterProjectionRefresh": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 30,
+          "y": -1.836970198721029e-15,
+          "z": 1.8369701987210296e-15
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 12.426406871192851,
+        "bottom": -12.426406871192851,
+        "left": -20.802217027466487,
+        "right": 20.802217027466487,
+        "near": 25.88,
+        "far": 33.41
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "oldHash": "44e555e9d88e6ef49e122fbb3df47d33f5f6a6327352f35f8a6e1ac48e9c55e3",
+    "newHash": "eacaa30d443a33c1997727bb73f43e86f0d3576ee32e2340841e4d1b693bc10b",
+    "structuredIdentical": true,
+    "errors": [],
+    "console": [
+      {
+        "type": "warning",
+        "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x11c001a8c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x11c001a8c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x11c001a8c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+      },
+      {
+        "type": "warning",
+        "text": "[.WebGL-0x11c001a8c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      }
+    ]
+  },
+  {
+    "trial": 1,
+    "restored": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 29.99999999999995,
+          "y": 19.99999999999984,
+          "z": 29.99999999999983
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 19.42833820887364,
+        "bottom": -19.42833820887364,
+        "left": -32.52368219496527,
+        "right": 32.52368219496527,
+        "near": 43.01724261819474,
+        "far": 50.44142340345022
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "beforeProjectionRefresh": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 30,
+          "y": -1.836970198721029e-15,
+          "z": 1.8369701987210296e-15
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 19.42833820887364,
+        "bottom": -19.42833820887364,
+        "left": -32.52368219496527,
+        "right": 32.52368219496527,
+        "near": 25.88,
+        "far": 33.41
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "afterProjectionRefresh": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 30,
+          "y": -1.836970198721029e-15,
+          "z": 1.8369701987210296e-15
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 12.426406871192851,
+        "bottom": -12.426406871192851,
+        "left": -20.802217027466487,
+        "right": 20.802217027466487,
+        "near": 25.88,
+        "far": 33.41
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "oldHash": "44e555e9d88e6ef49e122fbb3df47d33f5f6a6327352f35f8a6e1ac48e9c55e3",
+    "newHash": "eacaa30d443a33c1997727bb73f43e86f0d3576ee32e2340841e4d1b693bc10b",
+    "structuredIdentical": true,
+    "errors": [],
+    "console": [
+      {
+        "type": "warning",
+        "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+      }
+    ]
+  },
+  {
+    "trial": 2,
+    "restored": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 29.999999999999957,
+          "y": 19.999999999999815,
+          "z": 29.999999999999797
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 19.42833820887364,
+        "bottom": -19.42833820887364,
+        "left": -32.52368219496527,
+        "right": 32.52368219496527,
+        "near": 43.017242618194715,
+        "far": 50.441423403450194
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "beforeProjectionRefresh": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 30,
+          "y": -1.836970198721029e-15,
+          "z": 1.8369701987210296e-15
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 19.42833820887364,
+        "bottom": -19.42833820887364,
+        "left": -32.52368219496527,
+        "right": 32.52368219496527,
+        "near": 25.88,
+        "far": 33.41
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "afterProjectionRefresh": {
+      "pose": {
+        "mode": "orthographic",
+        "camera": {
+          "x": 30,
+          "y": -1.836970198721029e-15,
+          "z": 1.8369701987210296e-15
+        },
+        "target": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "up": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "controlsEnabled": true
+      },
+      "frustum": {
+        "top": 12.426406871192851,
+        "bottom": -12.426406871192851,
+        "left": -20.802217027466487,
+        "right": 20.802217027466487,
+        "near": 25.88,
+        "far": 33.41
+      },
+      "canvas": [
+        1212,
+        724
+      ],
+      "autoRotate": false
+    },
+    "oldHash": "44e555e9d88e6ef49e122fbb3df47d33f5f6a6327352f35f8a6e1ac48e9c55e3",
+    "newHash": "eacaa30d443a33c1997727bb73f43e86f0d3576ee32e2340841e4d1b693bc10b",
+    "structuredIdentical": true,
+    "errors": [],
+    "console": [
+      {
+        "type": "warning",
+        "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+      }
+    ]
+  }
+]

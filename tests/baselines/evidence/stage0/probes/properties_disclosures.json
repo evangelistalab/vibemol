@@ -1,0 +1,365 @@
+{
+  "suite": "properties_disclosures",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "Page.wait_for_function: Timeout 30000ms exceeded.",
+  "frames": [
+    {
+      "line": 19,
+      "function": "check_panel",
+      "locals": {
+        "box": {
+          "x": 1,
+          "y": 583.765625,
+          "width": 444,
+          "height": 71.234375
+        },
+        "placement": "bottom"
+      }
+    },
+    {
+      "line": 69,
+      "function": "main",
+      "locals": {
+        "placement": "bottom"
+      }
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 5.999999999999977,
+        "y": 5.999999999999975,
+        "z": 5.999999999999937
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "add_atom",
+      "addMode": "atom",
+      "elementZ": 6,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "6",
+        "symbol": "C",
+        "name": "Carbon",
+        "formula": ""
+      },
+      "hint": "Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+    "selection": [],
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    },
+    "layout": {
+      "placements": {
+        "subspacePanel": "right",
+        "buildPanel": "right",
+        "symmetryPanel": "right",
+        "moldenInspector": "right",
+        "measurementsPanel": "right",
+        "coordsPanel": "bottom",
+        "inspector": "bottom",
+        "viewPanel": "right",
+        "figurePanel": "right",
+        "trajectoryPanel": "bottom",
+        "vibrationPanel": "bottom",
+        "spinorInfo": "right"
+      },
+      "positions": {},
+      "open": [
+        "inspector"
+      ],
+      "parked": [],
+      "rightWidth": 380,
+      "bottomHeight": 220,
+      "activeRight": null,
+      "activeBottom": "inspector",
+      "focus": false,
+      "compact": true,
+      "draggingId": null
+    },
+    "properties": {
+      "tab": "look",
+      "selected": []
+    },
+    "activeElement": "<button type=\"button\" class=\"vm-btn vm-btn--ghost wb-tab\" aria-label=\"Properties\" role=\"tab\" data-window=\"inspector\" id=\"wb-tab-inspector\" aria-controls=\"inspector\" aria-selected=\"true\" tabindex=\"0\"><span class=\"material-symbols-rounded\" aria-hidden=\"true\">tune</span><span class=\"\">Properties</span></button>",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 96,
+          "width": 445,
+          "height": 358
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 358,
+        "clientHeight": 358,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "bottom"
+      },
+      {
+        "id": "inspector",
+        "hidden": false,
+        "ariaHidden": "false",
+        "rect": {
+          "x": 1,
+          "y": 493.765625,
+          "width": 444,
+          "height": 161.234375
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 161,
+        "clientHeight": 161,
+        "scrollTop": 0,
+        "placement": "bottom"
+      },
+      {
+        "id": "inspectorLook",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 1,
+          "y": 583.765625,
+          "width": 444,
+          "height": 71.234375
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 1095,
+        "clientHeight": 71,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "inspectorObject",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "inspectorShowHydrogenBonds",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "bottom"
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "60",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "60",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": "{\"last\":{\"placements\":{\"subspacePanel\":\"right\",\"buildPanel\":\"right\",\"symmetryPanel\":\"right\",\"moldenInspector\":\"right\",\"measurementsPanel\":\"right\",\"coordsPanel\":\"bottom\",\"inspector\":\"bottom\",\"viewPanel\":\"right\",\"figurePanel\":\"right\",\"trajectoryPanel\":\"bottom\",\"vibrationPanel\":\"bottom\",\"spinorInfo\":\"right\"},\"positions\":{},\"open\":[\"inspector\"],\"parked\":[],\"rightWidth\":380,\"bottomHeight\":220,\"activeRight\":null,\"activeBottom\":\"inspector\"},\"saved\":[]}",
+    "scrollHit": null
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 5.999999999999977,
+        "y": 5.999999999999975,
+        "z": 5.999999999999937
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "layout": {
+      "placements": {
+        "subspacePanel": "right",
+        "buildPanel": "right",
+        "symmetryPanel": "right",
+        "moldenInspector": "right",
+        "measurementsPanel": "right",
+        "coordsPanel": "bottom",
+        "inspector": "bottom",
+        "viewPanel": "right",
+        "figurePanel": "right",
+        "trajectoryPanel": "bottom",
+        "vibrationPanel": "bottom",
+        "spinorInfo": "right"
+      },
+      "positions": {},
+      "open": [
+        "inspector"
+      ],
+      "parked": [],
+      "rightWidth": 380,
+      "bottomHeight": 220,
+      "activeRight": null,
+      "activeBottom": "inspector",
+      "focus": false,
+      "compact": true,
+      "draggingId": null
+    },
+    "storedLayout": "{\"last\":{\"placements\":{\"subspacePanel\":\"right\",\"buildPanel\":\"right\",\"symmetryPanel\":\"right\",\"moldenInspector\":\"right\",\"measurementsPanel\":\"right\",\"coordsPanel\":\"bottom\",\"inspector\":\"bottom\",\"viewPanel\":\"right\",\"figurePanel\":\"right\",\"trajectoryPanel\":\"bottom\",\"vibrationPanel\":\"bottom\",\"spinorInfo\":\"right\"},\"positions\":{},\"open\":[\"inspector\"],\"parked\":[],\"rightWidth\":380,\"bottomHeight\":220,\"activeRight\":null,\"activeBottom\":\"inspector\"},\"saved\":[]}",
+    "activeElement": "<button type=\"button\" class=\"vm-btn vm-btn--ghost wb-tab\" aria-label=\"Properties\" role=\"tab\" data-window=\"inspector\" id=\"wb-tab-inspector\" aria-controls=\"inspector\" aria-selected=\"true\" tabindex=\"0\"><span class=\"material-symbols-rounded\" aria-hidden=\"true\">tune</span><span class=\"\">Properties</span></button>"
+  }
+}

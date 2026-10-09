@@ -1,0 +1,383 @@
+{
+  "suite": "edit_picking",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "('basic', 'orthographic', {'visible': False, 'order': 1, 'style': 'metal-dative', 'metalPair': True})",
+  "frames": [
+    {
+      "line": 381,
+      "function": "occlusion",
+      "locals": {
+        "cue": {
+          "visible": false,
+          "order": 1,
+          "style": "metal-dative",
+          "metalPair": true
+        },
+        "points": {
+          "bond": {
+            "clientX": 719.2043413246512,
+            "clientY": 477.9997962313184
+          },
+          "gap": {
+            "clientX": 737.9140593400307,
+            "clientY": 477.9997962313184
+          }
+        },
+        "point": {
+          "clientX": 712.2043413246512,
+          "clientY": 477.9997962313184
+        },
+        "style": "basic",
+        "projection": "orthographic"
+      }
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "orthographic",
+      "camera": {
+        "x": 0,
+        "y": -1.0000444492064275e-05,
+        "z": 9.999999999994904
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "atom_manipulation",
+      "addMode": "atom",
+      "elementZ": 6,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "6",
+        "symbol": "C",
+        "name": "Carbon",
+        "formula": ""
+      },
+      "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens BuildSelected Na-Cl bond \u00b7 Style Dative \u00b7 Click the bond cue or use 1/2/3/0.",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens BuildSelected Na-Cl bond \u00b7 Style Dative \u00b7 Click the bond cue or use 1/2/3/0.",
+    "selection": [],
+    "bondCue": {
+      "visible": false,
+      "order": 1,
+      "style": "metal-dative",
+      "metalPair": true
+    },
+    "layout": {
+      "placements": {
+        "subspacePanel": "right",
+        "buildPanel": "right",
+        "symmetryPanel": "right",
+        "moldenInspector": "right",
+        "measurementsPanel": "right",
+        "coordsPanel": "bottom",
+        "inspector": "right",
+        "viewPanel": "right",
+        "figurePanel": "right",
+        "trajectoryPanel": "bottom",
+        "vibrationPanel": "bottom",
+        "spinorInfo": "right"
+      },
+      "positions": {},
+      "open": [],
+      "parked": [],
+      "rightWidth": 380,
+      "bottomHeight": 220,
+      "activeRight": null,
+      "activeBottom": null,
+      "focus": false,
+      "compact": false,
+      "draggingId": null
+    },
+    "properties": {
+      "tab": "object",
+      "selected": [
+        {
+          "id": "molecule-1",
+          "kind": "molecule",
+          "name": "Molecule"
+        }
+      ]
+    },
+    "activeElement": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"948\" height=\"844\" style=\"touch-action: none; width: 948px; height: 844px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 252,
+          "y": 56,
+          "width": 948,
+          "height": 844
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 844,
+        "clientHeight": 844,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "right"
+      },
+      {
+        "id": "inspector",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "right"
+      },
+      {
+        "id": "inspectorLook",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "inspectorObject",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "inspectorShowHydrogenBonds",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "bottom"
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "false",
+        "rect": {
+          "x": 827,
+          "y": 222,
+          "width": 280,
+          "height": 154.78125
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "60",
+        "scrollHeight": 155,
+        "clientHeight": 155,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 865,
+          "y": 228,
+          "width": 42,
+          "height": 42
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 40,
+        "clientHeight": 40,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 827,
+          "y": 284,
+          "width": 280,
+          "height": 92.78125
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 91,
+        "clientHeight": 91,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "60",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": "{\"last\":{\"placements\":{\"subspacePanel\":\"right\",\"buildPanel\":\"right\",\"symmetryPanel\":\"right\",\"moldenInspector\":\"right\",\"measurementsPanel\":\"right\",\"coordsPanel\":\"bottom\",\"inspector\":\"right\",\"viewPanel\":\"right\",\"figurePanel\":\"right\",\"trajectoryPanel\":\"bottom\",\"vibrationPanel\":\"bottom\",\"spinorInfo\":\"right\"},\"positions\":{},\"open\":[],\"parked\":[],\"rightWidth\":380,\"bottomHeight\":220,\"activeRight\":null,\"activeBottom\":null},\"saved\":[]}",
+    "scrollHit": "<div id=\"toolbar\" aria-expanded=\"true\">\n    <input type=\"file\" id=\"fileInput\" accept=\".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,.vibemol-session,application/json,text/plain\" multiple=\"\">\n    <input type=\"file\" id=\"sessionFileInput\" accept=\".vibemol-session,.json,application/json\" hidden=\"\">\n    <datalist id=\"pubchemSuggestions\"></datalist>\n\n    <div id=\"toolbarHead\">\n      <div class=\"tb-headTop\">\n        <div class=\"tb-brand\">\n          <img class=\"tb-brandLogo themeLogoLight\" src=\"assets/app/img/logo_600px.png?v=0.9.5\" alt=\"VibeMol\">\n          <img class=\"tb-brandLogo themeLogoDark\" src=\"assets/app/img/logo_dark_600px.png?v=0.9.5\" alt=\"VibeMol\">\n          <span id=\"toolbarVersion\" class=\"tb-versionBadge vm-versionBadge\" aria-label=\"V [truncated DOM]"
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "orthographic",
+      "camera": {
+        "x": 0,
+        "y": -1.0000444492064275e-05,
+        "z": 9.9999999999949
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "layout": {
+      "placements": {
+        "subspacePanel": "right",
+        "buildPanel": "right",
+        "symmetryPanel": "right",
+        "moldenInspector": "right",
+        "measurementsPanel": "right",
+        "coordsPanel": "bottom",
+        "inspector": "right",
+        "viewPanel": "right",
+        "figurePanel": "right",
+        "trajectoryPanel": "bottom",
+        "vibrationPanel": "bottom",
+        "spinorInfo": "right"
+      },
+      "positions": {},
+      "open": [],
+      "parked": [],
+      "rightWidth": 380,
+      "bottomHeight": 220,
+      "activeRight": null,
+      "activeBottom": null,
+      "focus": false,
+      "compact": false,
+      "draggingId": null
+    },
+    "storedLayout": "{\"last\":{\"placements\":{\"subspacePanel\":\"right\",\"buildPanel\":\"right\",\"symmetryPanel\":\"right\",\"moldenInspector\":\"right\",\"measurementsPanel\":\"right\",\"coordsPanel\":\"bottom\",\"inspector\":\"right\",\"viewPanel\":\"right\",\"figurePanel\":\"right\",\"trajectoryPanel\":\"bottom\",\"vibrationPanel\":\"bottom\",\"spinorInfo\":\"right\"},\"positions\":{},\"open\":[],\"parked\":[],\"rightWidth\":380,\"bottomHeight\":220,\"activeRight\":null,\"activeBottom\":null},\"saved\":[]}",
+    "activeElement": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"948\" height=\"844\" style=\"touch-action: none; width: 948px; height: 844px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+    "bondCue": {
+      "visible": true,
+      "order": 1,
+      "style": "metal-dative",
+      "metalPair": true
+    },
+    "cue": "false",
+    "translateVisible": false
+  }
+}

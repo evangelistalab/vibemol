@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "<string>", line 4, in <module>
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/style_studio.py", line 239, in main
+    scenario(page)
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/style_studio.py", line 141, in run
+    assert page.evaluate('() => VibeMolTesting.getCameraSnapshot()') == camera
+AssertionError
