@@ -1,0 +1,36 @@
+{
+  "kind": "vibemol.vibrations",
+  "version": 1,
+  "units": "angstrom",
+  "atomCount": 2,
+  "atomSymbols": [
+    "C",
+    "C"
+  ],
+  "modes": [
+    {
+      "label": "Translation",
+      "frequencyCm1": 3.0,
+      "displacements": [
+        0.1,
+        0,
+        0,
+        0.1,
+        0,
+        0
+      ]
+    },
+    {
+      "label": "Stretch",
+      "frequencyCm1": 245.0,
+      "displacements": [
+        -0.18,
+        0,
+        0,
+        0.18,
+        0,
+        0
+      ]
+    }
+  ]
+}

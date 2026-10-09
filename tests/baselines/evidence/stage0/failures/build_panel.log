@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "<string>", line 6, in <module>
+  File "/Users/fevange/Source/vibemol/tests/e2e/build_panel.py", line 134, in main
+    run(page,url)
+  File "/Users/fevange/Source/vibemol/tests/e2e/build_panel.py", line 20, in run
+    assert build.is_visible() and build.get_attribute('data-wb-placement')=='right'
+AssertionError

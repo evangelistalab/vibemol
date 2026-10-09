@@ -1,0 +1,245 @@
+{
+  "suite": "smoke",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "Translate selection cue is not visible for move smoke",
+  "frames": [
+    {
+      "line": 2948,
+      "function": "main",
+      "locals": {}
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 2.0254765944896787,
+        "y": 2.025476594489678,
+        "z": 2.0254765944896778
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "atom_manipulation",
+      "addMode": "atom",
+      "elementZ": 7,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "7",
+        "symbol": "N",
+        "name": "Nitrogen",
+        "formula": ""
+      },
+      "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens BuildSelection updated \u00b7 2 atoms selected.",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens BuildSelection updated \u00b7 2 atoms selected.",
+    "selection": [
+      0,
+      1
+    ],
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    },
+    "layout": null,
+    "properties": null,
+    "activeElement": "<body>\n  <div id=\"topRightUtilities\" aria-label=\"Global utilities\">\n    <div id=\"topRightUtilitiesReveal\">\n      <a id=\"githubRepoLink\" class=\"topRightUtilityLink\" href=\"https://github.com/evangelistalab/vibemol\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open VibeMol GitHub repository\" data-tooltip=\"Open VibeMol on GitHub\">\n        <svg class=\"topRightUtilityGithubMark\" viewBox=\"0 0 16 16\" aria-hidden=\"true\">\n          <path d=\"M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82a7.66 7.66 0 0 1 4 0c1.53-1.04 2.2-.8 [truncated DOM]",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 320,
+          "y": 0,
+          "width": 1120,
+          "height": 1000
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 1000,
+        "clientHeight": 1000,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      null,
+      null,
+      null,
+      null,
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "24",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "34",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": null
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 2.0254765944896787,
+        "y": 2.025476594489678,
+        "z": 2.0254765944896778
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "layout": null,
+    "storedLayout": null,
+    "activeElement": "<body>\n  <div id=\"topRightUtilities\" aria-label=\"Global utilities\">\n    <div id=\"topRightUtilitiesReveal\">\n      <a id=\"githubRepoLink\" class=\"topRightUtilityLink\" href=\"https://github.com/evangelistalab/vibemol\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open VibeMol GitHub repository\" data-tooltip=\"Open VibeMol on GitHub\">\n        <svg class=\"topRightUtilityGithubMark\" viewBox=\"0 0 16 16\" aria-hidden=\"true\">\n          <path d=\"M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82a7.66 7.66 0 0 1 4 0c1.53-1.04 2.2-.8 [truncated DOM]",
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    },
+    "cue": "true",
+    "translateVisible": false
+  },
+  "afterPresentedFrames": {
+    "cue": "false",
+    "translateVisible": true,
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    }
+  }
+}

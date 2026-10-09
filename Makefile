@@ -70,6 +70,8 @@ JS_CHECK_FILES = \
 	assets/app/js/trajectory-ui.js \
 	assets/app/js/app.js
 
+JS_CHECK_FILES += assets/app/js/qa-characterize.js
+
 .PHONY: check version-assets test-unit test-e2e test
 
 version-assets:
@@ -78,6 +80,7 @@ version-assets:
 check:
 	python3 tools/sync_asset_versions.py --check
 	python3 -m py_compile tools/sync_asset_versions.py tests/e2e/asset_cache.py
+	python3 -m py_compile tests/e2e/characterize.py tests/e2e/style_lab.py
 	@set -e; \
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
@@ -90,6 +93,7 @@ test-unit:
 
 test-e2e:
 	python3 tests/e2e/asset_cache.py
+	python3 tests/e2e/characterize.py
 	python3 tests/e2e/edit_tool.py
 	python3 tests/e2e/build_bonds.py
 	python3 tests/e2e/build_orbit.py
@@ -112,6 +116,7 @@ test-e2e:
 	python3 tests/e2e/edit_picking.py
 	python3 tests/e2e/mode_consistency.py
 	python3 tests/e2e/style_studio.py
+	python3 tests/e2e/style_lab.py
 	python3 tests/e2e/appearance_scopes.py
 	python3 tests/e2e/properties_inspector.py
 	python3 tests/e2e/properties_disclosures.py

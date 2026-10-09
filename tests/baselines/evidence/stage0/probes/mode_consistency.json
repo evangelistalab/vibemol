@@ -1,0 +1,326 @@
+{
+  "suite": "mode_consistency",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"#coordsContent [data-atom-index=\\\"1\\\"] [data-coords-action=\\\"delete\\\"]\")\n    - locator resolved to <button type=\"button\" data-coords-action=\"delete\" aria-label=\"Delete atom 2 (H)\" data-tooltip=\"Delete atom 2 (H)\" class=\"vm-btn vm-btn--icon vm-btn--ghost vm-btn--danger\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div role=\"group\" class=\"vm-selection-card\" id=\"editSelectionPosition\" aria-labelledby=\"editSelectionPositionLabel\">\u2026</div> from <div aria-hidden=\"false\" id=\"editSelectionTranslateCue\" data-vm-floating-panel=\"Selection tools\">\u2026</div> subtree intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div role=\"group\" class=\"vm-selection-card\" id=\"editSelectionPosition\" aria-labelledby=\"editSelectionPositionLabel\">\u2026</div> from <div aria-hidden=\"false\" id=\"editSelectionTranslateCue\" data-vm-floating-panel=\"Selection tools\">\u2026</div> subtree intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    48 \u00d7 waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div role=\"group\" class=\"vm-selection-card\" id=\"editSelectionPosition\" aria-labelledby=\"editSelectionPositionLabel\">\u2026</div> from <div aria-hidden=\"false\" id=\"editSelectionTranslateCue\" data-vm-floating-panel=\"Selection tools\">\u2026</div> subtree intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n",
+  "frames": [
+    {
+      "line": 80,
+      "function": "coordinate_row_actions",
+      "locals": {
+        "before": {
+          "title": "XYZ",
+          "comment": "water.xyz",
+          "natoms": 3,
+          "origin": [
+            0,
+            0,
+            0
+          ],
+          "nxyz": [
+            0,
+            0,
+            0
+          ],
+          "axes": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1
+            ]
+          ],
+          "atoms": [
+            {
+              "id": "atom-4",
+              "Z": 8,
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "formalCharge": 0
+            },
+            {
+              "id": "atom-5",
+              "Z": 1,
+              "x": 0.95,
+              "y": 0,
+              "z": 0,
+              "formalCharge": 0
+            },
+            {
+              "id": "atom-6",
+              "Z": 1,
+              "x": -0.24,
+              "y": 0.92,
+              "z": 0,
+              "formalCharge": 0
+            }
+          ],
+          "data": [],
+          "units": "angstrom",
+          "kind": "xyz",
+          "annotations": {
+            "builder": {
+              "byAtomId": {}
+            },
+            "coordination": {
+              "byAtomId": {}
+            },
+            "metalBonding": {
+              "byAtomId": {}
+            }
+          },
+          "fragmentOps": [],
+          "bonds": [
+            {
+              "id": "bond:atom-4:atom-5",
+              "a": "atom-4",
+              "b": "atom-5",
+              "order": 1,
+              "kind": "normal",
+              "origin": "perceived",
+              "style": "covalent"
+            },
+            {
+              "id": "bond:atom-4:atom-6",
+              "a": "atom-4",
+              "b": "atom-6",
+              "order": 1,
+              "kind": "normal",
+              "origin": "perceived",
+              "style": "covalent"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "line": 162,
+      "function": "main",
+      "locals": {}
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 2.206861613301496,
+        "y": 2.2343616133014903,
+        "z": 1.8518616133014507
+      },
+      "target": {
+        "x": 0.3549999999999999,
+        "y": 0.38250000000000006,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "atom_manipulation",
+      "addMode": "atom",
+      "elementZ": 6,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "6",
+        "symbol": "C",
+        "name": "Carbon",
+        "formula": ""
+      },
+      "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens BuildAdjust hydrogens enabled for new atoms.",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens BuildAdjust hydrogens enabled for new atoms.",
+    "selection": [
+      0,
+      2
+    ],
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    },
+    "layout": null,
+    "properties": null,
+    "activeElement": "<button id=\"coordsUnitsBtn\" class=\"secondary\" data-tooltip=\"Show coordinates in bohr\" aria-label=\"Switch coordinates to bohr\">Bohr</button>",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 320,
+          "y": 0,
+          "width": 880,
+          "height": 900
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 900,
+        "clientHeight": 900,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      null,
+      null,
+      null,
+      null,
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "false",
+        "rect": {
+          "x": 766,
+          "y": 68,
+          "width": 422,
+          "height": 260.671875
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "24",
+        "scrollHeight": 259,
+        "clientHeight": 259,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "false",
+        "rect": {
+          "x": 908,
+          "y": 73,
+          "width": 280,
+          "height": 154.78125
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "34",
+        "scrollHeight": 155,
+        "clientHeight": 155,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 946,
+          "y": 79,
+          "width": 42,
+          "height": 42
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 40,
+        "clientHeight": 40,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 908,
+          "y": 135,
+          "width": 280,
+          "height": 92.78125
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 91,
+        "clientHeight": 91,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": null
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 2.206861613301496,
+        "y": 2.2343616133014903,
+        "z": 1.8518616133014507
+      },
+      "target": {
+        "x": 0.3549999999999999,
+        "y": 0.38250000000000006,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "layout": null,
+    "storedLayout": null,
+    "activeElement": "<button id=\"coordsUnitsBtn\" class=\"secondary\" data-tooltip=\"Show coordinates in bohr\" aria-label=\"Switch coordinates to bohr\">Bohr</button>"
+  }
+}

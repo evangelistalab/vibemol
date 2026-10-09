@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<stdin>", line 13, in <module>
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/looks.py", line 978, in hydrogen_bond_restrictions
+    assert 'single bond' in page.evaluate('() => VibeMolTesting.getHintMessage()')
+AssertionError

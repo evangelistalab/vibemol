@@ -1,0 +1,356 @@
+{
+  "suite": "floating_panels",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "Locator.hover: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"#editAddAtomOperatorPanel\").locator(\"[data-vm-drag-handle]\").first\n    - locator resolved to <button type=\"button\" aria-expanded=\"false\" data-vm-drag-handle=\"\" id=\"editAddAtomOperatorHeader\" aria-label=\"Move Atom placement\" data-tooltip=\"Drag to move. Alt + arrow keys move; Alt + Home restores the default position.\">\u2026</button>\n  - attempting hover action\n    2 \u00d7 waiting for element to be visible and stable\n      - element is visible and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <input type=\"text\" autocomplete=\"off\" spellcheck=\"false\" inputmode=\"decimal\" data-selection-axis=\"y\" aria-label=\"Y position (\u00c5)\" class=\"editAddAtomOperatorCoord\"/> from <div aria-hidden=\"false\" data-vm-floating-moved=\"true\" id=\"editSelectionTranslateCue\" data-vm-floating-panel=\"Selection tools\">\u2026</div> subtree intercepts pointer events\n    - retrying hover action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible and stable\n      - element is visible and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <input type=\"text\" autocomplete=\"off\" spellcheck=\"false\" inputmode=\"decimal\" data-selection-axis=\"y\" aria-label=\"Y position (\u00c5)\" class=\"editAddAtomOperatorCoord\"/> from <div aria-hidden=\"false\" data-vm-floating-moved=\"true\" id=\"editSelectionTranslateCue\" data-vm-floating-panel=\"Selection tools\">\u2026</div> subtree intercepts pointer events\n    - retrying hover action\n      - waiting 100ms\n    48 \u00d7 waiting for element to be visible and stable\n       - element is visible and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <input type=\"text\" autocomplete=\"off\" spellcheck=\"false\" inputmode=\"decimal\" data-selection-axis=\"y\" aria-label=\"Y position (\u00c5)\" class=\"editAddAtomOperatorCoord\"/> from <div aria-hidden=\"false\" data-vm-floating-moved=\"true\" id=\"editSelectionTranslateCue\" data-vm-floating-panel=\"Selection tools\">\u2026</div> subtree intercepts pointer events\n     - retrying hover action\n       - waiting 500ms\n    - waiting for element to be visible and stable\n",
+  "frames": [
+    {
+      "line": 11,
+      "function": "drag",
+      "locals": {}
+    },
+    {
+      "line": 135,
+      "function": "live_workflows",
+      "locals": {
+        "before": {
+          "molecule.style": "basic",
+          "molecule.atomRadiusScale": 1,
+          "molecule.bondRadiusScale": 1,
+          "molecule.feature.shadows": true,
+          "molecule.feature.fog": false,
+          "molecule.feature.fog.depth": 14,
+          "global.backgroundColor": "#ffffff",
+          "global.elementColors": true,
+          "global.elementColorOverrides": {},
+          "surface.materialPreset": "emissive",
+          "surface.opacity": 1,
+          "surface.colorScheme": "emory",
+          "surface.posColor": "#ffba04",
+          "surface.negColor": "#153fc7",
+          "appearance.rendering": {
+            "version": 3,
+            "geometry": {
+              "connector": "cylinder",
+              "atomScaleMain": 1,
+              "atomScaleTransitionMetal": 1,
+              "sphereWidthSegments": 36,
+              "sphereHeightSegments": 24,
+              "bondRadius": 0.099,
+              "bondRadialSegments": 16,
+              "bondHeightSegments": 2,
+              "kitCollarRadius": 0.114,
+              "curvedMultipleBonds": false,
+              "atomRadii": {}
+            },
+            "lighting": {
+              "hemiColor": "#ffffff",
+              "hemiGroundColor": "#081018",
+              "hemiIntensity": 2,
+              "dirColor": "#ffffff",
+              "dirIntensity": 1,
+              "dirPos": [
+                1,
+                1,
+                1
+              ],
+              "ambColor": "#999999",
+              "ambIntensity": 0.65,
+              "rimColor": "#9fb8ff",
+              "rimIntensity": 0,
+              "rimPos": [
+                -1.4,
+                1,
+                -0.8
+              ],
+              "exposure": 1,
+              "toneMapping": "linear",
+              "followTheme": true
+            },
+            "coloring": {
+              "palette": "basic",
+              "elementBonds": true,
+              "bondColor": "#eaecf0"
+            },
+            "effects": {
+              "outlineWidth": 0,
+              "atomOutlineFraction": 0,
+              "bondOutlineFraction": 0,
+              "highlights": false
+            },
+            "material": {
+              "model": "physical",
+              "roughness": 0.72,
+              "metalness": 0.04,
+              "clearcoat": 1,
+              "clearcoatRoughness": 0.1,
+              "reflectivity": 0.62,
+              "specularIntensity": 1,
+              "shininess": 30,
+              "specularColor": "#ffffff",
+              "tint": "#ffffff",
+              "emissiveColor": "#ffffff",
+              "emissiveUsesColor": true,
+              "emissiveIntensity": 0.36,
+              "emissiveScale": 1,
+              "emissiveMix": 0,
+              "envMapIntensity": 0,
+              "iridescence": 0,
+              "vertexEmissiveColor": null,
+              "vertexEmissiveIntensity": null,
+              "toonSteps": [
+                12,
+                64,
+                142,
+                255
+              ],
+              "iridescenceThicknessRange": [
+                180,
+                420
+              ],
+              "byElement": {}
+            },
+            "surfaceMaterial": null
+          }
+        },
+        "after": {
+          "mode": "perspective",
+          "camera": {
+            "x": 0.468272166611691,
+            "y": 0.46827216661168936,
+            "z": 0.4682721666116846
+          },
+          "target": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "up": {
+            "x": 0,
+            "y": 0,
+            "z": 1
+          },
+          "controlsEnabled": true
+        }
+      }
+    },
+    {
+      "line": 224,
+      "function": "main",
+      "locals": {}
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 0.46827216661165466,
+        "y": 0.468272166611648,
+        "z": 0.4682721666115959
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "atom_manipulation",
+      "addMode": "atom",
+      "elementZ": 6,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "6",
+        "symbol": "C",
+        "name": "Carbon",
+        "formula": ""
+      },
+      "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens Build",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Left-click atoms or bonds to select \u00b7 Esc clears selection \u00b7 / opens Build",
+    "selection": [
+      0
+    ],
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    },
+    "layout": null,
+    "properties": null,
+    "activeElement": "<button class=\"vm-floating-panel__grip vm-floating-panel__grip--inline\" type=\"button\" data-vm-drag-handle=\"\" aria-label=\"Move Selection tools\" data-tooltip=\"Drag to move. Alt + arrow keys move; Alt + Home restores the default position.\"><span class=\"material-symbols-rounded\" aria-hidden=\"true\">drag_indicator</span></button>",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 320,
+          "y": 0,
+          "width": 1120,
+          "height": 1000
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 1000,
+        "clientHeight": 1000,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "50",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      null,
+      null,
+      null,
+      null,
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "50",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "false",
+        "rect": {
+          "x": 1148,
+          "y": 833.21875,
+          "width": 280,
+          "height": 154.78125
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "55",
+        "scrollHeight": 155,
+        "clientHeight": 155,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 1186,
+          "y": 839.21875,
+          "width": 42,
+          "height": 42
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 40,
+        "clientHeight": 40,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 1148,
+          "y": 895.21875,
+          "width": 280,
+          "height": 92.78125
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 91,
+        "clientHeight": 91,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "false",
+        "rect": {
+          "x": 1082,
+          "y": 938.40625,
+          "width": 342,
+          "height": 37.59375
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 36,
+        "clientHeight": 36,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": null
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 0.46827216661165433,
+        "y": 0.4682721666116476,
+        "z": 0.4682721666115951
+      },
+      "target": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "layout": null,
+    "storedLayout": null,
+    "activeElement": "<button class=\"vm-floating-panel__grip vm-floating-panel__grip--inline\" type=\"button\" data-vm-drag-handle=\"\" aria-label=\"Move Selection tools\" data-tooltip=\"Drag to move. Alt + arrow keys move; Alt + Home restores the default position.\"><span class=\"material-symbols-rounded\" aria-hidden=\"true\">drag_indicator</span></button>"
+  }
+}

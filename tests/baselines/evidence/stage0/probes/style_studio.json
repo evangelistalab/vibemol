@@ -1,0 +1,255 @@
+{
+  "suite": "style_studio",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "",
+  "frames": [
+    {
+      "line": 141,
+      "function": "run",
+      "locals": {
+        "camera": {
+          "mode": "perspective",
+          "camera": {
+            "x": 5.8987146035723965,
+            "y": 5.878116978572395,
+            "z": 4.470065833572393
+          },
+          "target": {
+            "x": -1.1999999999234845e-07,
+            "y": -0.02059774499999989,
+            "z": -1.4286488900000003
+          },
+          "up": {
+            "x": 0,
+            "y": 0,
+            "z": 1
+          },
+          "controlsEnabled": true
+        },
+        "before": {
+          "x": 29,
+          "y": 654.65625,
+          "width": 100,
+          "height": 99.328125
+        }
+      }
+    },
+    {
+      "line": 239,
+      "function": "main",
+      "locals": {}
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 5.898714603572354,
+        "y": 5.878116978572333,
+        "z": 4.4700658335722565
+      },
+      "target": {
+        "x": -1.1999999999234845e-07,
+        "y": -0.02059774499999989,
+        "z": -1.4286488900000003
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "add_atom",
+      "addMode": "atom",
+      "elementZ": 6,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "6",
+        "symbol": "C",
+        "name": "Carbon",
+        "formula": ""
+      },
+      "hint": "Loaded 1 file \u2022 Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Loaded 1 file \u2022 Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+    "selection": [],
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    },
+    "layout": null,
+    "properties": null,
+    "activeElement": "<button type=\"button\" class=\"vm-look-card\" data-look=\"classic\" aria-pressed=\"true\" aria-label=\"Classic preset\"><img src=\"assets/app/img/looks/studio-classic.png?v=0.9.5\" alt=\"\" width=\"240\" height=\"160\" draggable=\"false\"><span>Classic</span></button>",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 320,
+          "y": 0,
+          "width": 1120,
+          "height": 1000
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 1000,
+        "clientHeight": 1000,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      null,
+      null,
+      null,
+      null,
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "24",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "34",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "35",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": null
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "perspective",
+      "camera": {
+        "x": 5.898714603572354,
+        "y": 5.878116978572333,
+        "z": 4.4700658335722565
+      },
+      "target": {
+        "x": -1.1999999999234845e-07,
+        "y": -0.02059774499999989,
+        "z": -1.4286488900000003
+      },
+      "up": {
+        "x": 0,
+        "y": 0,
+        "z": 1
+      },
+      "controlsEnabled": true
+    },
+    "layout": null,
+    "storedLayout": null,
+    "activeElement": "<button type=\"button\" class=\"vm-look-card\" data-look=\"classic\" aria-pressed=\"true\" aria-label=\"Classic preset\"><img src=\"assets/app/img/looks/studio-classic.png?v=0.9.5\" alt=\"\" width=\"240\" height=\"160\" draggable=\"false\"><span>Classic</span></button>"
+  }
+}

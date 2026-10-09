@@ -1,0 +1,408 @@
+{
+  "suite": "axis_gizmo",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "exception": "",
+  "frames": [
+    {
+      "line": 130,
+      "function": "run",
+      "locals": {
+        "before": {
+          "mode": "orthographic",
+          "camera": {
+            "x": -12.856406460550927,
+            "y": 1.9999999999999991,
+            "z": 3.000000000000001
+          },
+          "target": {
+            "x": 1,
+            "y": 2,
+            "z": 3
+          },
+          "up": {
+            "x": 0,
+            "y": 0,
+            "z": 1
+          },
+          "controlsEnabled": true
+        },
+        "after": {
+          "mode": "orthographic",
+          "camera": {
+            "x": 1,
+            "y": 2.000013856406463,
+            "z": -10.856406460544
+          },
+          "target": {
+            "x": 1,
+            "y": 2,
+            "z": 3
+          },
+          "up": {
+            "x": 0,
+            "y": 1,
+            "z": 0
+          },
+          "controlsEnabled": true
+        },
+        "box": {
+          "x": 321,
+          "y": 836,
+          "width": 24,
+          "height": 24
+        },
+        "projection": "orthographic",
+        "mode": "Edit"
+      }
+    },
+    {
+      "line": 170,
+      "function": "main",
+      "locals": {}
+    }
+  ],
+  "state": {
+    "camera": {
+      "mode": "orthographic",
+      "camera": {
+        "x": 1,
+        "y": 2.000013856406463,
+        "z": -10.856406460543987
+      },
+      "target": {
+        "x": 1,
+        "y": 2,
+        "z": 3
+      },
+      "up": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "controlsEnabled": true
+    },
+    "build": {
+      "intent": "atom_manipulation",
+      "addMode": "atom",
+      "elementZ": 6,
+      "fragmentId": "methyl",
+      "moleculeId": "benzene",
+      "payload": {
+        "kind": "atom",
+        "id": "6",
+        "symbol": "C",
+        "name": "Carbon",
+        "formula": ""
+      },
+      "hint": "Left-click atoms or bonds to select \u00b7 Right-drag to rotate \u00b7 / opens Build",
+      "ghostKind": "",
+      "catalogVoidPreviewKind": "",
+      "catalogVoidPreviewVisible": false,
+      "gestureVoidPreviewVisible": false,
+      "addGrowActive": false,
+      "addGrowKind": "",
+      "moleculePlacementActive": false,
+      "moleculePlacementKind": ""
+    },
+    "hint": "Left-click atoms or bonds to select \u00b7 Right-drag to rotate \u00b7 / opens Build",
+    "selection": [],
+    "bondCue": {
+      "visible": false,
+      "order": -1,
+      "style": "",
+      "metalPair": false
+    },
+    "layout": {
+      "placements": {
+        "subspacePanel": "right",
+        "buildPanel": "right",
+        "symmetryPanel": "right",
+        "moldenInspector": "right",
+        "measurementsPanel": "right",
+        "coordsPanel": "bottom",
+        "inspector": "right",
+        "viewPanel": "right",
+        "figurePanel": "right",
+        "trajectoryPanel": "bottom",
+        "vibrationPanel": "bottom",
+        "spinorInfo": "right"
+      },
+      "positions": {},
+      "open": [
+        "measurementsPanel"
+      ],
+      "parked": [],
+      "rightWidth": 380,
+      "bottomHeight": 220,
+      "activeRight": "measurementsPanel",
+      "activeBottom": null,
+      "focus": false,
+      "compact": false,
+      "draggingId": null
+    },
+    "properties": {
+      "tab": "object",
+      "selected": [
+        {
+          "id": "molecule-1",
+          "kind": "molecule",
+          "name": "Molecule"
+        }
+      ]
+    },
+    "activeElement": "<button id=\"viewAxisNegZBtn\" type=\"button\" class=\"vm-axis-gizmo__end\" data-axis=\"z\" data-sign=\"-1\" aria-label=\"View from \u2212Z\" data-tooltip=\"View from \u2212Z toward the current target\" data-tooltip-placement=\"top\" tabindex=\"0\" style=\"left: 60px; top: 60.0001px; z-index: 6;\" aria-current=\"true\"></button>",
+    "panels": [
+      {
+        "id": "canvas",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 300,
+          "y": 56,
+          "width": 1140,
+          "height": 944
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 944,
+        "clientHeight": 944,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAdaptiveAddAtomPopover",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "right"
+      },
+      {
+        "id": "inspector",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "right"
+      },
+      {
+        "id": "inspectorLook",
+        "hidden": true,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "inspectorObject",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "inspectorShowHydrogenBonds",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "block",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "coordsPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "41",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": "bottom"
+      },
+      {
+        "id": "editSelectionTranslateCue",
+        "hidden": false,
+        "ariaHidden": "false",
+        "rect": {
+          "x": 953,
+          "y": 438,
+          "width": 280,
+          "height": 154.78125
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "60",
+        "scrollHeight": 155,
+        "clientHeight": 155,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionTranslateCueButton",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 991,
+          "y": 444,
+          "width": 42,
+          "height": 42
+        },
+        "display": "flex",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 40,
+        "clientHeight": 40,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editSelectionPosition",
+        "hidden": false,
+        "ariaHidden": null,
+        "rect": {
+          "x": 953,
+          "y": 500,
+          "width": 280,
+          "height": 92.78125
+        },
+        "display": "grid",
+        "visibility": "visible",
+        "z": "auto",
+        "scrollHeight": 91,
+        "clientHeight": 91,
+        "scrollTop": 0,
+        "placement": null
+      },
+      {
+        "id": "editAddAtomOperatorPanel",
+        "hidden": false,
+        "ariaHidden": "true",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "display": "none",
+        "visibility": "visible",
+        "z": "60",
+        "scrollHeight": 0,
+        "clientHeight": 0,
+        "scrollTop": 0,
+        "placement": null
+      }
+    ],
+    "storedLayout": "{\"last\":{\"placements\":{\"subspacePanel\":\"right\",\"buildPanel\":\"right\",\"symmetryPanel\":\"right\",\"moldenInspector\":\"right\",\"measurementsPanel\":\"right\",\"coordsPanel\":\"bottom\",\"inspector\":\"right\",\"viewPanel\":\"right\",\"figurePanel\":\"right\",\"trajectoryPanel\":\"bottom\",\"vibrationPanel\":\"bottom\",\"spinorInfo\":\"right\"},\"positions\":{},\"open\":[\"measurementsPanel\"],\"parked\":[],\"rightWidth\":380,\"bottomHeight\":220,\"activeRight\":\"measurementsPanel\",\"activeBottom\":null},\"saved\":[]}",
+    "scrollHit": "<div id=\"toolbar\" aria-expanded=\"true\">\n    <input type=\"file\" id=\"fileInput\" accept=\".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,.vibemol-session,application/json,text/plain\" multiple=\"\" style=\"\">\n    <input type=\"file\" id=\"sessionFileInput\" accept=\".vibemol-session,.json,application/json\" hidden=\"\" style=\"\">\n    <datalist id=\"pubchemSuggestions\"></datalist>\n\n    <div id=\"toolbarHead\">\n      <div class=\"tb-headTop\">\n        <div class=\"tb-brand\">\n          <img class=\"tb-brandLogo themeLogoLight\" src=\"assets/app/img/logo_600px.png?v=0.9.5\" alt=\"VibeMol\">\n          <img class=\"tb-brandLogo themeLogoDark\" src=\"assets/app/img/logo_dark_600px.png?v=0.9.5\" alt=\"VibeMol\">\n          <span id=\"toolbarVersion\" class=\"tb-versionBadge vm-versionBa [truncated DOM]"
+  },
+  "after250ms": {
+    "camera": {
+      "mode": "orthographic",
+      "camera": {
+        "x": 1,
+        "y": 2.000013856406463,
+        "z": -10.856406460543981
+      },
+      "target": {
+        "x": 1,
+        "y": 2,
+        "z": 3
+      },
+      "up": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "controlsEnabled": true
+    },
+    "layout": {
+      "placements": {
+        "subspacePanel": "right",
+        "buildPanel": "right",
+        "symmetryPanel": "right",
+        "moldenInspector": "right",
+        "measurementsPanel": "right",
+        "coordsPanel": "bottom",
+        "inspector": "right",
+        "viewPanel": "right",
+        "figurePanel": "right",
+        "trajectoryPanel": "bottom",
+        "vibrationPanel": "bottom",
+        "spinorInfo": "right"
+      },
+      "positions": {},
+      "open": [
+        "measurementsPanel"
+      ],
+      "parked": [],
+      "rightWidth": 380,
+      "bottomHeight": 220,
+      "activeRight": "measurementsPanel",
+      "activeBottom": null,
+      "focus": false,
+      "compact": false,
+      "draggingId": null
+    },
+    "storedLayout": "{\"last\":{\"placements\":{\"subspacePanel\":\"right\",\"buildPanel\":\"right\",\"symmetryPanel\":\"right\",\"moldenInspector\":\"right\",\"measurementsPanel\":\"right\",\"coordsPanel\":\"bottom\",\"inspector\":\"right\",\"viewPanel\":\"right\",\"figurePanel\":\"right\",\"trajectoryPanel\":\"bottom\",\"vibrationPanel\":\"bottom\",\"spinorInfo\":\"right\"},\"positions\":{},\"open\":[\"measurementsPanel\"],\"parked\":[],\"rightWidth\":380,\"bottomHeight\":220,\"activeRight\":\"measurementsPanel\",\"activeBottom\":null},\"saved\":[]}",
+    "activeElement": "<button id=\"viewAxisNegZBtn\" type=\"button\" class=\"vm-axis-gizmo__end\" data-axis=\"z\" data-sign=\"-1\" aria-label=\"View from \u2212Z\" data-tooltip=\"View from \u2212Z toward the current target\" data-tooltip-placement=\"top\" tabindex=\"0\" style=\"left: 60px; top: 60.0001px; z-index: 6;\" aria-current=\"true\"></button>"
+  }
+}

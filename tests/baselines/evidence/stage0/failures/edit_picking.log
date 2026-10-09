@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<string>", line 13, in <module>
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/edit_picking.py", line 381, in occlusion
+    assert cue['visible'] and cue['style'] == bond_style, (style, projection, cue)
+AssertionError: ('basic', 'orthographic', {'visible': False, 'order': 1, 'style': 'metal-dative', 'metalPair': True})
