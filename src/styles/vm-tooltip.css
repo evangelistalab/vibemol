@@ -13,9 +13,9 @@
   border-radius: 6px;
   padding: 6px 10px;
   font-family: var(--vm-font-sans);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.3;
+  font-size: var(--vm-type-tooltip-size);
+  font-weight: var(--vm-type-tooltip-weight);
+  line-height: var(--vm-leading-body);
   width: max-content;
   max-width: min(420px, calc(100vw - 16px));
   white-space: normal;

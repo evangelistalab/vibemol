@@ -8,25 +8,26 @@
   flex: 1;
   min-width: 0;
   padding: 7px 8px;
-  font-size: 12px;
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
 }
 
-:is(#toolbar, #styleStudio) .vm-session-status {
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--vm-color-text-muted, #687180);
+:is(#toolbar, #styleStudio) :is(.vm-helper-text, .vm-status-text) {
+  font-size: var(--vm-type-helper-size);
+  line-height: var(--vm-leading-body);
   overflow-wrap: anywhere;
 }
 
-:is(#toolbar, #styleStudio) .vm-session-status:empty { display: none; }
+:is(#toolbar, #styleStudio) :is(.vm-helper-text, .vm-status-text):empty { display: none; }
 #sessionFileInput[hidden], #sessionRecoveryPrompt[hidden], #sessionBusyOverlay[hidden], #retryAutosaveBtn[hidden] { display: none; }
 
 #toolbar .vm-session-recovery {
   border: 1px solid var(--vm-accent-outline, #8796af);
   border-radius: 8px;
   padding: 10px;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
+  line-height: var(--vm-leading-body);
 }
 
 #toolbar .vm-session-recovery p { margin: 0 0 8px; }
@@ -39,5 +40,6 @@
   place-items: center;
   background: rgba(20, 28, 40, 0.65);
   color: white;
-  font-size: 18px;
+  font-size: var(--vm-type-display-size);
+  font-weight: var(--vm-type-display-weight);
 }

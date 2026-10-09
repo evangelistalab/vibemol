@@ -6937,7 +6937,6 @@
   const toggleAxes = document.getElementById('showAxes');
   const saveBtn = document.getElementById('saveBtn');
   const batchBtn = document.getElementById('batchBtn');
-  const savePresetBtn = document.getElementById('savePresetBtn');
   const saveStructureBtn = document.getElementById('saveStructureBtn');
   const surfBtn = document.getElementById('surfBtn');
   const clearBtn = document.getElementById('clearBtn');
@@ -27161,7 +27160,6 @@
   const syncBuilderExtensionFromVolumes = presetController.syncBuilderExtensionFromVolumes;
   const exportPresetEnvelope = presetController.exportEnvelope;
   const importPresetEnvelope = presetController.importEnvelope;
-  const saveCurrentPresetToFile = presetController.saveCurrentPresetToFile;
   const importPresetFromTextRaw = presetController.importFromText;
   const getPresetPublicApi = presetController.getPublicApi;
 
@@ -28818,7 +28816,6 @@
     }),
   });
 
-  if (savePresetBtn) savePresetBtn.onclick = () => saveCurrentPresetToFile();
   if (saveStructureBtn) saveStructureBtn.onclick = () => saveCurrentStructureToFile();
 
   // Axes gizmo state

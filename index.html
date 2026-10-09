@@ -49,16 +49,6 @@
   <style>
     :root {
       --vm-color-accent: #0c3575;
-      --vm-font-weight-body: 400;
-      --vm-font-weight-emphasis: 500;
-      --vm-font-weight-strong: 600;
-      --vm-font-weight-heading: 700;
-      --vm-text-xs: 11px;
-      --vm-text-sm: 12px;
-      --vm-text-base: 13px;
-      --vm-text-md: 15px;
-      --vm-text-lg: 18px;
-      --vm-text-xl: 22px;
       --bg: var(--vm-color-surface-base);
       --panel: var(--vm-color-surface-panel);
       --text: var(--vm-color-text-main);
@@ -82,7 +72,7 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font: var(--vm-text-base)/1.3 var(--vm-font-sans);
+      font: var(--vm-type-body-weight) var(--vm-type-body-size)/1.3 var(--vm-font-sans);
       font-weight: var(--vm-font-weight-body);
     }
 
@@ -112,8 +102,8 @@
       color: var(--vm-color-on-control);
       border-top: 1px solid var(--vm-color-border-control);
       font-family: var(--vm-font-mono);
-      font-size: var(--vm-text-sm);
-      font-weight: var(--vm-font-weight-emphasis);
+      font-size: var(--vm-type-status-size);
+      font-weight: var(--vm-type-status-weight);
       font-variant-numeric: tabular-nums;
       backdrop-filter: blur(8px) saturate(140%);
       -webkit-backdrop-filter: blur(8px) saturate(140%);
@@ -203,16 +193,16 @@
       background: var(--vm-color-surface-panel);
       color: var(--vm-color-text-secondary);
       font-family: var(--vm-font-mono);
-      font-size: var(--vm-text-xs);
-      font-weight: var(--vm-font-weight-emphasis);
+      font-size: var(--vm-type-badge-size);
+      font-weight: var(--vm-type-badge-weight);
       font-variant-numeric: tabular-nums;
       line-height: 1.1;
     }
 
     .vm-sidebar-section-label {
       font-family: var(--vm-font-sans);
-      font-size: 11px;
-      font-weight: 700;
+      font-size: var(--vm-type-section-size);
+      font-weight: var(--vm-type-section-weight);
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--vm-color-text-label);
@@ -222,8 +212,8 @@
 
     .vm-section-label {
       font-family: var(--vm-font-sans);
-      font-size: 10px;
-      font-weight: 600;
+      font-size: var(--vm-type-section-size);
+      font-weight: var(--vm-type-section-weight);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--vm-color-text-secondary);
@@ -235,8 +225,8 @@
     }
 
     .vm-field-label {
-      font-size: var(--vm-text-sm);
-      font-weight: var(--vm-font-weight-emphasis);
+      font-size: var(--vm-type-label-size);
+      font-weight: var(--vm-type-label-weight);
       color: var(--vm-color-text-secondary);
       margin-bottom: 4px;
     }
@@ -315,7 +305,8 @@
       align-items: center;
       gap: 6px;
       color: var(--vm-color-text-secondary);
-      font-size: var(--vm-text-sm);
+      font-size: var(--vm-type-label-size);
+      font-weight: var(--vm-type-label-weight);
       white-space: nowrap;
     }
 
@@ -356,8 +347,8 @@
       color: var(--vm-color-text-primary);
       padding: 6px 10px;
       font-family: var(--vm-font-sans);
-      font-size: 12px;
-      font-weight: 500;
+      font-size: var(--vm-type-compact-control-size);
+      font-weight: var(--vm-type-compact-control-weight);
       box-shadow: none;
       outline: none;
     }
@@ -628,7 +619,9 @@
     }
 
     .motionPanelHeader .title {
-      font-weight: var(--vm-font-weight-strong);
+      font-size: var(--vm-type-panel-title-size);
+      font-weight: var(--vm-type-panel-title-weight);
+      line-height: var(--vm-leading-tight);
     }
 
     .motionPanelHeader .actions {
@@ -747,7 +740,8 @@
 
     .motionPanelBody label {
       color: var(--vm-color-text-secondary);
-      font-size: var(--vm-text-sm);
+      font-size: var(--vm-type-label-size);
+      font-weight: var(--vm-type-label-weight);
       width: auto;
     }
 
@@ -797,7 +791,8 @@
     #vibrationSpectrumMeta {
       margin-top: 5px;
       color: var(--vm-color-text-secondary);
-      font-size: var(--vm-text-xs);
+      font-size: var(--vm-type-helper-size);
+      font-weight: var(--vm-type-helper-weight);
       line-height: 1.2;
       font-variant-numeric: tabular-nums;
     }
@@ -805,7 +800,8 @@
     #vibrationModeTable {
       width: 100%;
       border-collapse: collapse;
-      font-size: var(--vm-text-sm);
+      font-size: var(--vm-type-data-size);
+      font-weight: var(--vm-type-data-weight);
       color: var(--text);
     }
 
@@ -824,7 +820,8 @@
       z-index: 1;
       background: var(--vm-color-surface-chip);
       color: var(--vm-color-text-label);
-      font-weight: var(--vm-font-weight-strong);
+      font-size: var(--vm-type-section-size);
+      font-weight: var(--vm-type-section-weight);
     }
 
     #vibrationModeTable td:nth-child(1) {
@@ -865,7 +862,7 @@
 
     #vibrationModeTable tr.mode-row.active td {
       color: var(--vm-color-on-control);
-      font-weight: var(--vm-font-weight-strong);
+      font-weight: var(--vm-type-data-emphasis-weight);
     }
 
     .vibrationPlayCell {
@@ -897,15 +894,17 @@
       margin-top: 4px;
       margin-bottom: 8px;
       color: var(--vm-color-text-secondary);
-      font-size: var(--vm-text-sm);
-      line-height: 1.2;
+      font-size: var(--vm-type-status-size);
+      font-weight: var(--vm-type-status-weight);
+      line-height: var(--vm-leading-body);
       font-variant-numeric: tabular-nums;
     }
 
     #vibrationModeEmpty {
       display: none;
       color: var(--vm-color-text-secondary);
-      font-size: var(--vm-text-sm);
+      font-size: var(--vm-type-helper-size);
+      font-weight: var(--vm-type-helper-weight);
       padding: 10px 2px 2px;
     }
 
@@ -925,7 +924,9 @@
     }
 
     #sideHeader .title {
-      font-weight: var(--vm-font-weight-strong);
+      font-size: var(--vm-type-panel-title-size);
+      font-weight: var(--vm-type-panel-title-weight);
+      line-height: var(--vm-leading-tight);
     }
 
     #sideClose {
@@ -941,7 +942,8 @@
       padding: 10px 12px;
       overflow: visible;
       color: var(--text);
-      font-size: var(--vm-text-base);
+      font-size: var(--vm-type-data-size);
+      font-weight: var(--vm-type-data-weight);
       font-variant-numeric: tabular-nums;
       font-family: var(--vm-font-mono);
     }
@@ -1038,7 +1040,8 @@
 
     #viewControls label {
       color: var(--vm-color-text-secondary);
-      font-size: var(--vm-text-sm);
+      font-size: var(--vm-type-label-size);
+      font-weight: var(--vm-type-label-weight);
     }
 
     #viewControls input[type="number"] {
@@ -1056,7 +1059,8 @@
 
     #viewControls .axis {
       color: var(--vm-color-text-label);
-      font-size: var(--vm-text-sm);
+      font-size: var(--vm-type-helper-size);
+      font-weight: var(--vm-type-helper-weight);
       text-align: center;
     }
 
@@ -1075,7 +1079,8 @@
     #coordsContent th {
       text-align: left;
       color: var(--vm-color-text-label);
-      font-weight: var(--vm-font-weight-strong);
+      font-size: var(--vm-type-section-size);
+      font-weight: var(--vm-type-section-weight);
     }
 
     #coordsContent tbody tr[data-atom-index] {
@@ -1149,8 +1154,8 @@
       padding: 6px 14px;
       border-radius: 6px;
       font-family: var(--vm-font-mono);
-      font-size: var(--vm-text-sm);
-      font-weight: var(--vm-font-weight-emphasis);
+      font-size: var(--vm-type-status-size);
+      font-weight: var(--vm-type-status-weight);
       font-variant-numeric: tabular-nums;
       backdrop-filter: blur(8px) saturate(140%);
       -webkit-backdrop-filter: blur(8px) saturate(140%);
@@ -1413,7 +1418,9 @@
     }
 
     #elementColorHead .title {
-      font-weight: var(--vm-font-weight-heading);
+      font-size: var(--vm-type-panel-title-size);
+      font-weight: var(--vm-type-panel-title-weight);
+      line-height: var(--vm-leading-tight);
     }
 
     #elementColorPickerRow {
@@ -1428,7 +1435,8 @@
     #elementColorName {
       min-width: 180px;
       color: var(--text);
-      font-weight: var(--vm-font-weight-strong);
+      font-size: var(--vm-type-label-size);
+      font-weight: var(--vm-type-data-emphasis-weight);
     }
 
     #periodicTableViewport {
@@ -1451,7 +1459,8 @@
     .pt-legend {
       margin-top: 8px;
       color: var(--vm-color-text-secondary);
-      font-size: var(--vm-text-sm);
+      font-size: var(--vm-type-helper-size);
+      font-weight: var(--vm-type-helper-weight);
     }
 
     /* --- Workspace Sidebar (Figma-like left dock) --- */
@@ -1462,13 +1471,13 @@
       --toolbar-divider: var(--vm-color-toolbar-divider);
       /* Toolbar typography tokens */
       --tb-font-family: var(--vm-font-sans);
-      --tb-text-size-title: var(--vm-text-md);
-      --tb-text-size-ui: var(--vm-text-base);
-      --tb-text-size-label: var(--vm-text-sm);
-      --tb-text-size-meta: var(--vm-text-xs);
-      --tb-text-weight-regular: var(--vm-font-weight-body);
-      --tb-text-weight-semibold: var(--vm-font-weight-strong);
-      --tb-text-weight-bold: var(--vm-font-weight-heading);
+      --tb-text-size-title: var(--vm-type-panel-title-size);
+      --tb-text-size-ui: var(--vm-type-body-size);
+      --tb-text-size-label: var(--vm-type-label-size);
+      --tb-text-size-meta: var(--vm-type-helper-size);
+      --tb-text-weight-regular: var(--vm-type-body-weight);
+      --tb-text-weight-semibold: var(--vm-type-panel-title-weight);
+      --tb-text-weight-bold: var(--vm-type-data-emphasis-weight);
       --tb-text-color-primary: var(--vm-color-toolbar-text-primary);
       --tb-text-color-strong: var(--vm-color-toolbar-text-strong);
       --tb-text-color-subtle: var(--vm-color-toolbar-text-subtle);
@@ -1579,8 +1588,8 @@
       border-radius: 999px;
       background: #f2a900;
       color: #0033a0;
-      font-size: var(--vm-text-xs);
-      font-weight: var(--vm-font-weight-heading);
+      font-size: var(--vm-type-badge-size);
+      font-weight: var(--vm-type-badge-weight);
       letter-spacing: 0;
       line-height: 1.1;
     }
@@ -2080,8 +2089,8 @@
       border-radius: 0;
       background: transparent !important;
       color: var(--vm-color-text-secondary) !important;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: var(--vm-type-compact-control-size);
+      font-weight: var(--vm-type-compact-control-weight);
       line-height: 1;
       justify-content: center !important;
       text-align: center !important;
@@ -2112,8 +2121,9 @@
       margin: -2px 0 8px;
       color: var(--vm-color-text-secondary);
       font-family: var(--vm-font-mono);
-      font-size: 11px;
-      line-height: 1.3;
+      font-size: var(--vm-type-helper-size);
+      font-weight: var(--vm-type-helper-weight);
+      line-height: var(--vm-leading-body);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -2123,7 +2133,8 @@
       align-self: center;
       margin-left: 6px;
       color: var(--vm-color-text-secondary);
-      font-size: 10px;
+      font-size: var(--vm-type-helper-size);
+      font-weight: var(--vm-type-helper-weight);
       font-style: italic;
       white-space: nowrap;
     }
@@ -2349,10 +2360,6 @@
         <button id="batchBtn" class="secondary tb-iconBtn ms-icon-button"
           aria-label="Export image set"
           data-tooltip="Export image set">photo_library</button>
-        <span class="vm-toolbar-divider" aria-hidden="true"></span>
-        <button id="savePresetBtn" class="secondary tb-iconBtn ms-icon-button"
-          aria-label="Download preset"
-          data-tooltip="Download preset">tune</button>
         <button id="saveStructureBtn" class="secondary tb-iconBtn ms-icon-button"
           aria-label="Download structure"
           data-tooltip="Download structure">file_download</button>
@@ -2361,11 +2368,11 @@
         <button id="saveSessionBtn" class="secondary" type="button" data-tooltip="Download the complete workspace, including source data and layers">Save session</button>
         <button id="openSessionBtn" class="secondary" type="button" data-tooltip="Replace the workspace with a saved session">Open session</button>
       </div>
-      <div id="sessionStatus" class="vm-session-status" role="status" aria-live="polite"></div>
+      <div id="sessionStatus" class="vm-status-text" role="status" aria-live="polite"></div>
       <button id="retryAutosaveBtn" class="secondary" type="button" hidden>Retry autosave</button>
       <div id="sessionRecoveryPrompt" class="vm-session-recovery" hidden>
         <p id="sessionRecoveryMessage"></p>
-        <p class="vm-session-status">Restores molecules, measurements, display settings, and camera. Opens in View with playback and auto-rotate paused. Theme, typeface, and window layout are separate browser preferences.</p>
+        <p class="vm-helper-text">Restores molecules, measurements, display settings, and camera. Opens in View with playback and auto-rotate paused. Theme, typeface, and window layout are separate browser preferences.</p>
         <div class="vm-session-actions">
           <button id="recoverSessionBtn" class="secondary" type="button">Recover session</button>
           <button id="skipRecoveryBtn" class="secondary" type="button">Start fresh</button>
@@ -2615,7 +2622,7 @@
 
             <section class="vm-appearance-section" id="appearanceCameraSection">
               <h3 class="vm-section-label">Camera</h3>
-              <p class="vm-session-status">Camera and focus settings are saved with the session and preserved when changing styles.</p>
+              <p class="vm-helper-text">Camera and focus settings are saved with the session and preserved when changing styles.</p>
               <div class="vm-field-row">
                 <label class="vm-field-label" for="projectionPerspectiveBtn">Projection</label>
                 <div class="vm-field-control vm-field-control--group">
@@ -2706,7 +2713,7 @@
             <section class="vm-appearance-section" id="appearanceSurfacesSection" hidden>
               <h3 class="vm-section-label">Surfaces</h3>
               <div id="surfaceScopeLabel" class="vm-surface-scope-label" hidden></div>
-              <p id="surfaceStyleScopeStatus" class="vm-session-status"></p>
+              <p id="surfaceStyleScopeStatus" class="vm-status-text"></p>
               <div class="vm-popover__actions">
                 <button id="surfaceUseStyleColors" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Use style colors</button>
                 <button id="surfaceUseStyleOpacity" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Use style opacity</button>

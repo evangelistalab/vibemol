@@ -68,6 +68,54 @@ def screenshot(page, name):
 
 def run(page):
     page.wait_for_function('() => VibeMolWorkbench.snapshot().open.includes("inspector") && VibeMolWorkbench.snapshot().open.includes("coordsPanel")')
+    assert page.locator('#savePresetBtn').count() == 0
+    page.locator('#workbenchPreferences').click()
+    assert page.locator('#workbenchMenu').get_by_role('button', name='Download preset', exact=True).is_visible()
+    typography = page.evaluate('''() => {
+      const read = selector => {
+        const style = getComputedStyle(document.querySelector(selector));
+        return [style.fontSize, style.fontWeight];
+      };
+      return {
+        title: read('#workbenchMenu .wb-menu-title'),
+        section: read('#appearancePreferencesSection .vm-section-label'),
+        label: read('#appearancePreferencesSection .vm-field-label'),
+        note: read('#workbenchMenu > .vm-helper-text'),
+        action: read('#workbenchMenu > button span:not(.material-symbols-rounded)'),
+        detail: read('#workbenchMenu > button small'),
+        panelTitle: read('#coordsPanelTitle'),
+        outlinerTitle: read('#toolbar .vm-outliner__title'),
+        outlinerRow: read('#toolbar .vm-outliner-row__label'),
+        dataHead: read('#coordsContent th'),
+        dataCell: read('#coordsContent td'),
+        propertySection: read('#inspector .vm-section-label'),
+        propertyLabel: read('#inspector .vm-field-label'),
+        buildTitle: read('#editAdaptiveAddAtomPopover .wb-window-title'),
+        buildSection: read('#editBuildPalette .vm-section-label'),
+        symmetryTitle: read('#editAdaptiveSymmetryPopover .wb-window-title'),
+        symmetrySection: read('#editSymmetryToleranceLabel'),
+        hint: read('#hint'),
+        tooltip: read('.vm-tooltip'),
+        spinorTitle: read('#spinorInfoPanelTitle'),
+        spinorBody: read('#spinorInfoLine1'),
+        sessionRecovery: read('#sessionRecoveryPrompt'),
+      };
+    }''')
+    assert typography == {
+        'title': ['15px', '600'], 'section': ['11px', '600'], 'label': ['12px', '500'],
+        'note': ['11px', '400'], 'action': ['13px', '500'], 'detail': ['11px', '400'],
+        'panelTitle': ['15px', '600'],
+        'outlinerTitle': ['11px', '600'], 'outlinerRow': ['12px', '600'],
+        'dataHead': ['11px', '600'], 'dataCell': ['12px', '400'],
+        'propertySection': ['11px', '600'], 'propertyLabel': ['12px', '500'],
+        'buildTitle': ['15px', '600'], 'buildSection': ['11px', '600'],
+        'symmetryTitle': ['15px', '600'], 'symmetrySection': ['11px', '600'],
+        'hint': ['11px', '400'], 'tooltip': ['12px', '400'],
+        'spinorTitle': ['15px', '600'], 'spinorBody': ['11px', '400'],
+        'sessionRecovery': ['11px', '400'],
+    }, typography
+    assert page.locator('.vm-session-status').count() == 0
+    page.keyboard.press('Escape')
     # The requested desktop report uses the real demo and the existing dock sizes.
     report = {}
     for mode in ['Display', 'Measure', 'Edit']:

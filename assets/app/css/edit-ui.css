@@ -137,8 +137,8 @@
   border-radius: 999px;
   background: var(--vm-color-surface-raised);
   color: var(--vm-color-on-raised);
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-badge-size);
+  font-weight: var(--vm-type-badge-weight);
   line-height: 18px;
   box-shadow: 0 4px 10px rgba(8, 16, 28, 0.28);
 }
@@ -163,15 +163,15 @@
 
 .editCoordinationCueHeader {
   margin: 0 0 10px;
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-control-size);
+  font-weight: var(--vm-type-panel-title-weight);
   color: var(--vm-color-text-primary);
 }
 
 .editCoordinationCueHeaderSubtext {
   margin: -4px 0 10px;
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   color: var(--vm-color-text-secondary);
 }
 
@@ -230,14 +230,14 @@
 }
 
 .editCoordinationCueLabel {
-  font-size: var(--vm-text-base);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-control-size);
+  font-weight: var(--vm-type-data-emphasis-weight);
   color: var(--vm-color-on-control);
 }
 
 .editCoordinationCueSubtext {
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   color: var(--vm-color-on-control-dim);
 }
 
@@ -360,8 +360,8 @@
 }
 
 #bondOrderPopupTitle {
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-section-size);
+  font-weight: var(--vm-type-section-weight);
   color: var(--vm-color-text-primary);
 }
 
@@ -381,8 +381,8 @@
   background: var(--vm-color-surface-control);
   color: var(--vm-color-on-control);
   border-radius: 999px;
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -465,8 +465,8 @@
 
 .editAddAtomOperatorLabel,
 .editAddMoleculeOperatorLabel {
-  font-size: var(--vm-text-base);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-control-size);
+  font-weight: var(--vm-type-panel-title-weight);
   line-height: 1.1;
   color: var(--vm-color-on-control);
   white-space: nowrap;
@@ -493,8 +493,8 @@
 }
 
 .editAddAtomOperatorRowLabel {
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-label-weight);
   color: rgba(214, 221, 233, 0.78);
   text-align: left;
   min-width: 52px;
@@ -508,8 +508,8 @@
   background: color-mix(in srgb, var(--vm-color-surface-control) 78%, var(--vm-color-surface-panel));
   color: var(--vm-color-on-control);
   padding: 6px 8px;
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-data-emphasis-weight);
 }
 
 .editAddAtomOperatorCoord:focus {
@@ -520,8 +520,8 @@
 
 .editAddAtomOperatorFoot {
   grid-column: 1 / -1;
-  font-size: 10px;
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   color: rgba(214, 221, 233, 0.72);
   padding-top: 2px;
 }
@@ -535,8 +535,8 @@
 }
 
 .editAddMoleculeOperatorButtonLabel {
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-label-weight);
   color: rgba(214, 221, 233, 0.78);
   white-space: nowrap;
   margin-right: 2px;
@@ -551,8 +551,8 @@
   color: var(--vm-color-on-control);
   min-width: 24px;
   padding: 6px 0;
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   cursor: pointer;
 }
 
@@ -616,14 +616,14 @@
 }
 
 #editSymmetryTitle {
-  font-size: var(--vm-text-base);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-panel-title-size);
+  font-weight: var(--vm-type-panel-title-weight);
   color: var(--vm-color-on-raised);
 }
 
 #editSymmetryTargetSummary {
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   color: rgba(214, 221, 233, 0.84);
   font-variant-numeric: tabular-nums;
 }
@@ -665,8 +665,8 @@
 
 .editSymmetryInlineIcon,
 #editSymmetryExactResult {
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-status-size);
+  font-weight: var(--vm-type-status-weight);
   color: rgba(214, 221, 233, 0.84);
 }
 
@@ -697,8 +697,8 @@
 #editSymmetryToleranceLabel,
 .editSymmetryCandidateSectionTitle,
 #editSymmetryElementLabel {
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-section-size);
+  font-weight: var(--vm-type-section-weight);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--vm-color-text-label);
@@ -777,8 +777,8 @@
 }
 
 .editSymmetryCandidateLabel {
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-data-emphasis-weight);
   color: var(--vm-color-on-control);
   line-height: 1.15;
   min-width: 0;
@@ -799,8 +799,8 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   font-family: var(--vm-font-mono);
-  font-size: 9px;
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   color: rgba(227, 233, 244, 0.8);
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -810,8 +810,8 @@
   padding: 10px;
   border: 1px dashed rgba(117, 129, 150, 0.28);
   border-radius: 10px;
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   color: rgba(214, 221, 233, 0.76);
 }
 
@@ -839,8 +839,8 @@
   gap: 6px;
   background: linear-gradient(180deg, rgba(25, 32, 45, 0.94), rgba(17, 24, 39, 0.9));
   color: var(--vm-color-on-control);
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   cursor: pointer;
 }
 
@@ -909,8 +909,8 @@
   border: 1px solid rgba(166, 176, 191, 0.2);
   background: rgba(187, 195, 208, 0.14);
   color: rgba(221, 227, 236, 0.82);
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
 }
 
 .editBuildPaletteSection {
@@ -967,16 +967,16 @@
 }
 
 .adaptiveEditItemLabel {
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-data-emphasis-weight);
   line-height: 1.1;
   color: var(--vm-color-on-control);
   white-space: nowrap;
 }
 
 .adaptiveEditItemMeta {
-  font-size: 10px;
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   line-height: 1.25;
   color: var(--vm-color-on-control-dim);
   white-space: nowrap;
@@ -1016,8 +1016,8 @@
   border-radius: 8px;
   padding: 5px 8px;
   cursor: pointer;
-  font-weight: var(--vm-font-weight-heading);
-  font-size: var(--vm-text-sm);
+  font-weight: var(--vm-type-compact-control-weight);
+  font-size: var(--vm-type-compact-control-size);
 }
 
 #editAddModeToggle button.active {
@@ -1115,7 +1115,8 @@
 #editFragmentListMeta,
 #editMoleculeListMeta {
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
 }
 
 #editFragmentMoreBtn,
@@ -1126,8 +1127,8 @@
   background: transparent;
   color: var(--vm-color-accent-primary);
   font: inherit;
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   cursor: pointer;
 }
 
@@ -1166,8 +1167,8 @@
   border: 1px solid var(--vm-color-border-soft);
   border-radius: 999px;
   padding: 3px 8px;
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   background: var(--vm-color-surface-panel);
   color: var(--vm-color-text-primary);
   cursor: pointer;
@@ -1201,14 +1202,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-family: var(--vm-font-sans);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-data-emphasis-weight);
 }
 
 #editFragmentQuick .vm-catalog-list-formula,
 #editMoleculeQuick .vm-catalog-list-formula {
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-xs);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   white-space: nowrap;
 }
 
@@ -1259,7 +1262,8 @@
 
 #editTransformCurrent {
   margin-top: 7px;
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-status-size);
+  font-weight: var(--vm-type-status-weight);
   color: var(--vm-color-text-secondary);
   min-height: 1.4em;
 }
@@ -1275,8 +1279,8 @@
   border: 1px solid var(--vm-color-border-soft);
   border-radius: 8px;
   padding: 5px 8px;
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   background: var(--vm-color-surface-panel);
   color: var(--vm-color-text-primary);
   cursor: pointer;
@@ -1292,15 +1296,16 @@
 
 #editSnapPane .title {
   display: block;
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-section-size);
   color: var(--vm-color-on-control-dim);
   margin-bottom: 5px;
-  font-weight: var(--vm-font-weight-heading);
+  font-weight: var(--vm-type-section-weight);
 }
 
 #editSnapHint {
   margin-top: 5px;
-  font-size: var(--vm-text-xs);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   color: var(--vm-color-on-control-dim);
 }
 
@@ -1308,11 +1313,11 @@
 .vm-tool-badge {
   display: inline-flex; align-items: center; padding: 2px 6px;
   border-radius: var(--vm-radius-sm); background: var(--vm-color-tool-active);
-  color: var(--vm-color-on-tool-active); font: 600 11px/1.4 var(--vm-font-sans);
+  color: var(--vm-color-on-tool-active); font: var(--vm-type-badge-weight) var(--vm-type-badge-size)/1.4 var(--vm-font-sans);
 }
 .vm-tool-badge[hidden] { display: none; }
 .vm-edit-tool-hint { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.vm-edit-tool-status { display: block; margin-top: 4px; font-size: 0.9em; opacity: 0.8; }
+.vm-edit-tool-status { display: block; margin-top: 4px; font-size: var(--vm-type-status-size); font-weight: var(--vm-type-status-weight); line-height: var(--vm-leading-body); opacity: 0.8; }
 .vm-edit-tool-overlay {
   position: fixed; pointer-events: none; z-index: 30; overflow: hidden;
   box-shadow: inset 0 0 0 2px var(--vm-color-tool-active-soft);

@@ -1,7 +1,7 @@
 /* Layout only: appearance controls inherit the existing inspector components. */
 #looksPanel [hidden] { display: none !important; }
 #looksPanel .vm-popover__actions { display: flex; flex-wrap: wrap; margin: 8px 0; }
-#looksPanel .vm-session-status:empty { display: none; }
+#looksPanel .vm-status-text:empty { display: none; }
 
 :is(#styleStudio, #inspector) {
   left: 12px;
@@ -45,7 +45,7 @@
   border-radius: var(--vm-radius-md);
   background: var(--vm-color-surface-panel);
   color: var(--vm-color-text-secondary);
-  font: 500 12px var(--vm-font-sans);
+  font: var(--vm-type-compact-control-weight) var(--vm-type-compact-control-size) var(--vm-font-sans);
   box-shadow: none;
   cursor: pointer;
 }

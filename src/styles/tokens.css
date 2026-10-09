@@ -236,6 +236,50 @@
   --vm-font-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --vm-font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --vm-font-icon: 'Material Symbols Rounded';
+  --vm-font-weight-body: 400;
+  --vm-font-weight-emphasis: 500;
+  --vm-font-weight-strong: 600;
+  --vm-font-weight-heading: 700;
+
+  /* Numerical scale. Components consume the semantic roles below. */
+  --vm-text-xs: 11px;
+  --vm-text-sm: 12px;
+  --vm-text-base: 13px;
+  --vm-text-md: 15px;
+  --vm-text-lg: 18px;
+  --vm-text-xl: 22px;
+
+  /* Shared UI typography roles. */
+  --vm-type-window-title-size: var(--vm-text-md);
+  --vm-type-window-title-weight: var(--vm-font-weight-strong);
+  --vm-type-panel-title-size: var(--vm-text-md);
+  --vm-type-panel-title-weight: var(--vm-font-weight-strong);
+  --vm-type-section-size: var(--vm-text-xs);
+  --vm-type-section-weight: var(--vm-font-weight-strong);
+  --vm-type-body-size: var(--vm-text-base);
+  --vm-type-body-weight: var(--vm-font-weight-body);
+  --vm-type-control-size: var(--vm-text-base);
+  --vm-type-control-weight: var(--vm-font-weight-emphasis);
+  --vm-type-compact-control-size: var(--vm-text-sm);
+  --vm-type-compact-control-weight: var(--vm-font-weight-emphasis);
+  --vm-type-label-size: var(--vm-text-sm);
+  --vm-type-label-weight: var(--vm-font-weight-emphasis);
+  --vm-type-helper-size: var(--vm-text-xs);
+  --vm-type-helper-weight: var(--vm-font-weight-body);
+  --vm-type-status-size: var(--vm-text-xs);
+  --vm-type-status-weight: var(--vm-font-weight-body);
+  --vm-type-data-size: var(--vm-text-sm);
+  --vm-type-data-weight: var(--vm-font-weight-body);
+  --vm-type-data-emphasis-weight: var(--vm-font-weight-strong);
+  --vm-type-tooltip-size: var(--vm-text-sm);
+  --vm-type-tooltip-weight: var(--vm-font-weight-body);
+  --vm-type-badge-size: var(--vm-text-xs);
+  --vm-type-badge-weight: var(--vm-font-weight-strong);
+  --vm-type-display-size: var(--vm-text-lg);
+  --vm-type-display-weight: var(--vm-font-weight-strong);
+  --vm-leading-tight: 1.2;
+  --vm-leading-body: 1.4;
+
   /* UI accent and positive-isosurface blue are intentionally separate tokens. */
   --vm-brand-positive: #3b5bd9;
   --vm-brand-negative: #ffc53a;
@@ -257,6 +301,34 @@
   --vm-radius-lg: 10px;
   --vm-radius-xl: 14px;
   --vm-shadow-focus-ring: 0 0 0 3px color-mix(in srgb, var(--vm-color-accent-primary) 40%, transparent);
+}
+
+.vm-body-note {
+  color: var(--vm-color-text-primary);
+  font-family: var(--vm-font-sans);
+  font-size: var(--vm-type-body-size);
+  font-weight: var(--vm-type-body-weight);
+  line-height: var(--vm-leading-body);
+}
+
+.vm-helper-text {
+  color: var(--vm-color-text-secondary);
+  font-family: var(--vm-font-sans);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
+  line-height: var(--vm-leading-body);
+}
+
+.vm-status-text {
+  color: var(--vm-color-text-muted);
+  font-family: var(--vm-font-sans);
+  font-size: var(--vm-type-status-size);
+  font-weight: var(--vm-type-status-weight);
+  line-height: var(--vm-leading-body);
+}
+
+:is(.vm-helper-text, .vm-status-text):empty {
+  display: none;
 }
 
 :root[data-font='inter'] {
