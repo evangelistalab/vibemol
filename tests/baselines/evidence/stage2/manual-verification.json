@@ -1,0 +1,392 @@
+{
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "method": "Replay the Stage 0/1 browser workflow probes on Stage 2 using frame settling, visible dock controls and exposed drag handles; results match both tagged-base and accepted Stage 1 evidence exactly. Direct color-editor pointer/keyboard workflows are also compared on the tagged base and proposed change in the same browser. Production behavior and original suite assertions are unchanged.",
+  "semanticProofExactlyMatchesBase": true,
+  "floatingProofExactlyMatchesBase": true,
+  "supplementaryChecks": [
+    {
+      "suites": [
+        "figure.py"
+      ],
+      "workflow": "Frame-settled two-cube fit composition restores camera pose/frustum, zoom and renderer dimensions",
+      "base": "passed",
+      "evidence": "manual-proof.json#figureAfterSettlingDepth",
+      "stage2": "passed",
+      "acceptedStage1": "passed"
+    },
+    {
+      "suites": [
+        "measurements.py"
+      ],
+      "workflow": "Unsafe layout poll reproduces the null error; null-safe poll observes the saved layout",
+      "base": "passed",
+      "evidence": "manual-proof.json#measurementsPersistence",
+      "stage2": "passed",
+      "acceptedStage1": "passed"
+    },
+    {
+      "suites": [
+        "build_panel.py"
+      ],
+      "workflow": "Empty Edit starts with Build open/checked; its checked Panels row closes it",
+      "base": "passed",
+      "evidence": "manual-proof.json#buildMenu",
+      "stage2": "passed",
+      "acceptedStage1": "passed"
+    },
+    {
+      "suites": [
+        "properties_disclosures.py"
+      ],
+      "workflow": "Compact bottom Properties scrolls when the wheel is inside its visible body",
+      "base": "passed",
+      "evidence": "manual-proof.json#disclosuresInsideBody",
+      "stage2": "passed",
+      "acceptedStage1": "passed"
+    },
+    {
+      "suites": [
+        "hydrogen_contacts.py"
+      ],
+      "workflow": "Reveal Properties, then run defaults, independent bonds/objects, modes, edit/undo, sessions, Looks and trajectory checks",
+      "base": "passed",
+      "evidence": "manual-proof.json#hydrogenRevealingInspector",
+      "stage2": "passed",
+      "acceptedStage1": "passed"
+    },
+    {
+      "suites": [
+        "floating_panels.py"
+      ],
+      "workflow": "Use the exposed Atom-placement handle for live orbital filters, exclusive windows, camera safety, reset cancellation, Build search and operator interactions",
+      "base": "passed",
+      "evidence": "manual-floating-proof.json",
+      "stage2": "passed",
+      "acceptedStage1": "passed"
+    }
+  ],
+  "affectedFailingSuites": [
+    {
+      "suite": "tests/e2e/figure.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "render",
+        "rebuildFigureScene",
+        "renderFigurePixels",
+        "figureRenderer.restoreApp",
+        "rebuildScene"
+      ],
+      "listedWorkflows": [
+        "With two cube layers, change iso and wait for a presented frame; compose fit/current-camera PNG and SVG grids. Compare camera pose, frustum, renderer size and graph before/after.",
+        "Repeat with Edit suppression, forced capture failure and abort; verify visibility, inert UI, playback and camera restore."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 12,
+      "evidence": "tests/baselines/evidence/stage2/browser/figure.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/measurements.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "getSessionState",
+        "applySessionState",
+        "sessionRecoveryController construction",
+        "setMode"
+      ],
+      "listedWorkflows": [
+        "Save two scenes, reload, leave recovery pending and open live Coordinates/Properties/Subspace panels; confirm the saved snapshot is untouched until an explicit choice.",
+        "Recover and dismiss in separate fresh pages; verify measurements, layout and named active structure. Wait for the saved-layout record safely."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 180,
+      "evidence": "tests/baselines/evidence/stage2/browser/measurements.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/build_panel.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "setMode",
+        "syncEditSceneTool",
+        "chooseEditTool",
+        "showBuildPopover"
+      ],
+      "listedWorkflows": [
+        "Enter Edit with both an empty scene and a loaded structure; verify initial Build/Transform choice and Panels checkmarks.",
+        "Place an atom/fragment/molecule, change modes, then float/minimize/reopen Build; verify search, placement, saved-layout and legacy behavior."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 20,
+      "evidence": "tests/baselines/evidence/stage2/browser/build_panel.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/hydrogen_contacts.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "getMoleculeDisplay",
+        "editMoleculeDisplay",
+        "buildAtoms",
+        "buildBonds",
+        "setMode",
+        "applyCoordsPanelEditState",
+        "applySessionState"
+      ],
+      "listedWorkflows": [
+        "Reveal Properties Object explicitly, toggle Hydrogen bonds independently of chemical bonds, edit coordinates and undo; check contacts and topology.",
+        "Switch molecule layers, round-trip new/old sessions and play a trajectory; check per-object flags, defaults, contact counts and Look independence."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 57,
+      "evidence": "tests/baselines/evidence/stage2/browser/hydrogen_contacts.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/axis_gizmo.py",
+      "classification": "real pre-existing defect",
+      "mappedAppFunctions": [
+        "axisGizmo onEscape callback",
+        "handleEditToolEscape",
+        "global keydown routing",
+        "VibeMolWorkbenchHost.editToolEscape"
+      ],
+      "listedWorkflows": [
+        "In Edit select atoms, focus an axis endpoint, use arrows/Home/End/Space/Enter and Escape; verify selection and focus against the tagged base.",
+        "Check all six directions in both projections and modes, pointer/touch gestures, small viewports and canvas PNG/WebM rendering. Record the pre-existing Escape defect if still present.",
+        "Exercise Escape from menus, coordinate/operator fields, provisional placement, armed Build, selected Transform, Focus and panels; preserve cancellation/disarm/selection-clear precedence and gizmo focus return."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 130,
+      "evidence": "tests/baselines/evidence/stage2/browser/axis_gizmo.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/smoke.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "getEditSelectionClientBounds",
+        "projectWorldToClient",
+        "renderEditSelectionTranslateCue",
+        "updateEditSelectionVisuals",
+        "applyTransformWorldPositions"
+      ],
+      "listedWorkflows": [
+        "Repeat the legacy two-atom fixture after the preceding auto-hydrogen/import actions, select both atoms, wait for the cue to be visible and drag Translate; verify displacement and undo.",
+        "Repeat Rotate and bond-group selection/operator inputs, including shifted/rotated content and camera changes. Verify actual frame presentation instead of a fixed sleep."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 2948,
+      "evidence": "tests/baselines/evidence/stage2/browser/smoke.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/looks.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "syncEditSceneTool",
+        "chooseEditTool",
+        "stepBuildBondOrder",
+        "setBondCenterSelectionFromHit",
+        "applyEditBondScopeSelection"
+      ],
+      "listedWorkflows": [
+        "Import legacy multiple/over-coordinated H bonds; verify repair to a single bond.",
+        "Explicitly choose Build and attempt bond-order cycling/growth from saturated H; then choose Transform and check scope selection, metal styles and topology export."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 978,
+      "evidence": "tests/baselines/evidence/stage2/looks-investigation.json",
+      "stage2Outcome": "Initial material-control timeout at looks.py:107 did not reproduce in paired focused/full replays; full replay fails at the same stale assertion at looks.py:978. Timeout mechanism unresolved.",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/edit_picking.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "pickMoleculeHitUncached",
+        "setBondCenterSelectionFromHit",
+        "applyEditBondScopeSelection",
+        "renderEditSelectionTranslateCue"
+      ],
+      "listedWorkflows": [
+        "Use foreground covalent/strong/dative/weak bonds overlapping a selected rear atom in both projections; click exposed centers and dash gaps, then wait for presented UI.",
+        "Check hover/frontmost ownership, metal-style cues, rear-atom deselection and live coordinate changes under every Look."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 381,
+      "evidence": "tests/baselines/evidence/stage2/browser/edit_picking.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/mode_consistency.py",
+      "classification": "real pre-existing defect",
+      "mappedAppFunctions": [
+        "renderEditSelectionTranslateCue",
+        "buildCoordsRowActions",
+        "applyCoordsPanelEditState",
+        "finalizeCoordsPanelEdit",
+        "renderCoordsPanelIfOpen"
+      ],
+      "listedWorkflows": [
+        "Open Coordinates in the legacy interface, enter Edit and select two atoms; attempt row Delete/Copy/Reorder with the selection card visible.",
+        "Move panels to expose controls, perform edits and undo, then repeat in Workbench; verify atom IDs, selection remapping, units and clipboard round-trips. Record the default legacy overlap."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 80,
+      "evidence": "tests/baselines/evidence/stage2/browser/mode_consistency.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/style_studio.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "applyNamedLook",
+        "finishLookChange",
+        "rebuildAppearanceMolecules",
+        "applyMoleculeStyleUiState",
+        "render"
+      ],
+      "listedWorkflows": [
+        "In the legacy Style Studio, apply every Look and compare camera pose within a documented 1e-12 tolerance, molecule topology and material/geometry values.",
+        "Edit materials/geometry, Undo/Revert, save/import named Looks and switch themes; verify popup layout and live rendering."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 141,
+      "evidence": "tests/baselines/evidence/stage2/browser/style_studio.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/properties_inspector.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "setMode (Measurements introduction)",
+        "getPropertyObjects",
+        "editMoleculeDisplay",
+        "applyLookSettings",
+        "propertiesInspector construction"
+      ],
+      "listedWorkflows": [
+        "Select structures and surfaces together; edit Object/Look controls, 2C cloud settings and per-surface inheritance.",
+        "Float/park/reopen Properties, cycle Edit/Measure/View and verify Object/Look tab and placement separately from the intentional first-Measure panel introduction."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 173,
+      "evidence": "tests/baselines/evidence/stage2/browser/properties_inspector.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/properties_disclosures.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "propertiesInspector construction",
+        "syncAppearanceControlsToActiveLayer",
+        "finishLookChange",
+        "updateDisplayWindowAdaptiveMenuUi"
+      ],
+      "listedWorkflows": [
+        "Place Properties right, bottom and floating at desktop/mobile widths; wheel inside the visible Look body and verify scroll movement.",
+        "Click each disclosure at fixed coordinates through pointer down/up, then Space/Enter; check first-click behavior, stable heading positions and no focus-induced scrolling."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 19,
+      "evidence": "tests/baselines/evidence/stage2/browser/properties_disclosures.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/floating_panels.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "renderEditSelectionTranslateCue",
+        "positionRightOperatorPanel",
+        "positionAddAtomOperatorPanel",
+        "showBuildPopover"
+      ],
+      "listedWorkflows": [
+        "Exercise actual exposed title bars/grips with overlapping windows, including Selection tools and Atom placement; verify drag, keyboard movement/reset and collapse clicks.",
+        "Repeat Build search, orbital filters, modal/reset menus and video controls, including touch/resize, reopen-position persistence and viewport bounds."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 135,
+      "evidence": "tests/baselines/evidence/stage2/browser/floating_panels.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    },
+    {
+      "suite": "tests/e2e/appearance_controls.py",
+      "classification": "environment",
+      "mappedAppFunctions": [
+        "setMode (Measurements introduction)",
+        "getPropertyObjects",
+        "editMoleculeDisplay",
+        "applyLookSettings",
+        "propertiesInspector construction"
+      ],
+      "listedWorkflows": [
+        "Select structures and surfaces together; edit Object/Look controls, 2C cloud settings and per-surface inheritance.",
+        "Float/park/reopen Properties, cycle Edit/Measure/View and verify Object/Look tab and placement separately from the intentional first-Measure panel introduction."
+      ],
+      "baseOutcome": "fails at recorded location",
+      "failureLine": 173,
+      "evidence": "tests/baselines/evidence/stage2/browser/appearance_controls.log",
+      "stage2Outcome": "fails at same recorded location",
+      "fullListedWorkflowCoverage": false
+    }
+  ],
+  "coverageLimit": "Supplementary probes cover only the specific checks above. The 14 unmodified failing suite entry points remain red; later assertions and every interaction in the full manual matrix are not claimed as verified. Stage 4 requires the separate 34/2 repair and its panel-specific manual matrix.",
+  "remainingAppDefects": {
+    "axisGizmo": "Escape focus handoff; preserve the 0.9.2/0.9.3 capture-phase ladder",
+    "modeConsistency": "Legacy Coordinates/selection-card overlap",
+    "projection": "Separate 0.9.x issue #3; characterization camera pin masks the ordinary preset camera/target projection refresh defect"
+  },
+  "semanticProofExactlyMatchesAcceptedStage1": true,
+  "floatingProofExactlyMatchesAcceptedStage1": true,
+  "directMovedWorkflows": {
+    "suites": [
+      "properties_inspector.py",
+      "appearance_controls.py",
+      "properties_disclosures.py",
+      "style_studio.py",
+      "looks.py",
+      "hydrogen_contacts.py",
+      "floating_panels.py",
+      "axis_gizmo.py"
+    ],
+    "workflow": [
+      "Lazy Element Colors opening via Studio/Properties",
+      "Actual sphere picking and selected highlight",
+      "Color input/change, reset one/all",
+      "Pending picker value on preset download",
+      "Imported overrides/global color flag",
+      "Session export/import",
+      "Loop stop/restart and reopen/resize",
+      "Close button, backdrop and Escape cancellation"
+    ],
+    "cases": [
+      "Workbench/light/desktop",
+      "Workbench/dark/compact",
+      "Legacy/light/compact",
+      "Legacy/dark/desktop"
+    ],
+    "base": "passed",
+    "acceptedStage1": "passed",
+    "stage2": "passed",
+    "all36InteractionCapturesExact": true,
+    "evidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+    "visualEvidence": "tests/baselines/evidence/stage2/periodic-screenshot-comparison.json",
+    "limit": "All moved functions and live editor workflows are exercised; unreachable malformed-DOM/metadata guards and unrelated failed-suite later assertions are not claimed as verified."
+  },
+  "additionalInvestigation": "tests/baselines/evidence/stage2/looks-investigation.json"
+}

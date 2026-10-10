@@ -1,6 +1,7 @@
 JS_CHECK_FILES = \
 	assets/app/js/asset-urls.js \
 	assets/app/js/element-utils.js \
+	assets/app/js/periodic-table.js \
 	src/vscode_ext/vibemol/src/extension.js \
 	src/vscode_ext/vibemol/src/vmWebview.js \
 	src/vscode_ext/vibemol/src/folderFiles.js \
@@ -81,7 +82,7 @@ version-assets:
 check:
 	python3 tools/sync_asset_versions.py --check
 	python3 -m py_compile tools/sync_asset_versions.py tests/e2e/asset_cache.py
-	python3 -m py_compile tests/e2e/characterize.py tests/e2e/style_lab.py
+	python3 -m py_compile tests/e2e/characterize.py tests/e2e/periodic_table.py tests/e2e/style_lab.py
 	@set -e; \
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
@@ -95,6 +96,7 @@ test-unit:
 test-e2e:
 	python3 tests/e2e/asset_cache.py
 	python3 tests/e2e/characterize.py
+	python3 tests/e2e/periodic_table.py
 	python3 tests/e2e/edit_tool.py
 	python3 tests/e2e/build_bonds.py
 	python3 tests/e2e/build_orbit.py

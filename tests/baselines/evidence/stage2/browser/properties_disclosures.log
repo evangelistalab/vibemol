@@ -1,0 +1,21 @@
+[disclosures] chromium: right, 1512x950: wheel, first clicks, stable scroll, keyboard passed
+Traceback (most recent call last):
+  File "/Users/fevange/Source/vibemol/tests/e2e/properties_disclosures.py", line 82, in <module>
+    main()
+  File "/Users/fevange/Source/vibemol/tests/e2e/properties_disclosures.py", line 69, in main
+    check_panel(page, placement)
+  File "/Users/fevange/Source/vibemol/tests/e2e/properties_disclosures.py", line 19, in check_panel
+    page.wait_for_function('() => document.getElementById("inspectorLook").scrollTop > 0')
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/sync_api/_generated.py", line 12436, in wait_for_function
+    self._sync(
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_page.py", line 1136, in wait_for_function
+    return await self._main_frame.wait_for_function(**locals_to_params(locals()))
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_frame.py", line 910, in wait_for_function
+    await self._channel.send("waitForFunction", self._timeout, params)
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Page.wait_for_function: Timeout 30000ms exceeded.

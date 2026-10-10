@@ -1,0 +1,93 @@
+{
+  "initialAttempt": {
+    "evidence": "tests/baselines/evidence/stage2/browser/looks.log",
+    "failureSites": [
+      {
+        "suite": "looks.py",
+        "line": 1014,
+        "function": "<module>"
+      },
+      {
+        "suite": "looks.py",
+        "line": 1006,
+        "function": "main"
+      },
+      {
+        "suite": "looks.py",
+        "line": 145,
+        "function": "material_families"
+      },
+      {
+        "suite": "looks.py",
+        "line": 107,
+        "function": "exercise"
+      }
+    ],
+    "mechanism": "Unresolved early timeout waiting for #appearanceMaterialPreset in fresh Workbench Properties."
+  },
+  "focusedProbes": {
+    "accepted-stage1": {
+      "passed": true,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "sourceAppSha256": "c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be",
+      "evidence": "tests/baselines/evidence/stage2/looks-material-accepted-stage1.json",
+      "workflow": "Unmodified looks.material_families assertions in Studio and fresh Workbench Properties; observe control changes and DOM lifetime."
+    },
+    "stage2": {
+      "passed": true,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+      "evidence": "tests/baselines/evidence/stage2/looks-material-stage2.json",
+      "workflow": "Unmodified looks.material_families assertions in Studio and fresh Workbench Properties; observe control changes and DOM lifetime."
+    }
+  },
+  "fullReplays": {
+    "accepted-stage1": {
+      "exitCode": 1,
+      "failureSites": [
+        {
+          "suite": "looks.py",
+          "line": 1014,
+          "function": "<module>"
+        },
+        {
+          "suite": "looks.py",
+          "line": 1006,
+          "function": "main"
+        },
+        {
+          "suite": "looks.py",
+          "line": 978,
+          "function": "hydrogen_bond_restrictions"
+        }
+      ],
+      "matchesAcceptedStage1FailureLocation": true,
+      "evidence": "tests/baselines/evidence/stage2/browser/looks-replay-accepted-stage1.log"
+    },
+    "stage2": {
+      "exitCode": 1,
+      "failureSites": [
+        {
+          "suite": "looks.py",
+          "line": 1014,
+          "function": "<module>"
+        },
+        {
+          "suite": "looks.py",
+          "line": 1006,
+          "function": "main"
+        },
+        {
+          "suite": "looks.py",
+          "line": 978,
+          "function": "hydrogen_bond_restrictions"
+        }
+      ],
+      "matchesAcceptedStage1FailureLocation": true,
+      "evidence": "tests/baselines/evidence/stage2/browser/looks-replay-stage2.log"
+    }
+  },
+  "conclusion": "The first early timeout did not reproduce in either focused source or either unchanged full-suite replay. Both full replays pass the material workflow and reach the same pre-existing hydrogen_bond_restrictions assertion at looks.py:978. The timeout mechanism remains unresolved; it is retained as an intermittent observation, not declared a fixed or proven harness defect. No production code, assertion or synchronization change was made in response."
+}

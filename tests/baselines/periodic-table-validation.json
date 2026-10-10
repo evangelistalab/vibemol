@@ -1,0 +1,139 @@
+{
+  "stage": 2,
+  "status": "implemented and validated against the accepted baseline; first Looks timeout retained as an unresolved intermittent observation",
+  "branch": "codex/periodic-table-extraction",
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "preExtractionHead": "9b4fa793d7dc86e68b00984f435e7001fca66e92",
+  "preExtractionProductionHead": "f3f1fd6",
+  "prBaseBranch": "codex/app-js-decomposition",
+  "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+  "scope": "Move the Element Colors preview state, renderer and popup wiring; retain app construction/registration. No behavior correction, DOM cache consolidation or browser assertion repair.",
+  "extraction": {
+    "module": "assets/app/js/periodic-table.js",
+    "factory": "createPeriodicTableController",
+    "originalFunctionsMoved": 15,
+    "bodiesVerbatimExceptIndent": true,
+    "ownedMutableBindings": 7,
+    "explicitDependencies": 19,
+    "individualDomDependencies": 9,
+    "noAccidentalAppClosureReferences": true,
+    "controllerAndNamespaceFrozen": true,
+    "listenerRegistrationTimingRetained": true,
+    "rendererCreationStillLazy": true,
+    "closureAudit": "tests/baselines/evidence/stage2/closure-audit.json",
+    "dependencyNote": "Nine DOM nodes, THREE, two metadata tables, palette and six color/appearance functions are explicit; no grouping hides dependencies. The count stays below the plan's 20-dependency stop condition."
+  },
+  "metrics": {
+    "before": {
+      "lines": 33270,
+      "functionDeclarations": 1196,
+      "letDeclarations": 313,
+      "constDeclarations": 596,
+      "sha256": "c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be"
+    },
+    "after": {
+      "lines": 32928,
+      "functionDeclarations": 1181,
+      "letDeclarations": 306,
+      "constDeclarations": 588,
+      "sha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6"
+    },
+    "delta": {
+      "lines": -342,
+      "functionDeclarations": -15,
+      "letDeclarations": -7,
+      "constDeclarations": -8
+    },
+    "countMethod": "Line count: splitlines(); function/let/const declarations: two-space app.js top-level lines. Function count includes async declarations and excludes arrow aliases."
+  },
+  "staticChecks": {
+    "passed": true,
+    "evidence": "tests/baselines/evidence/stage2/checks.log"
+  },
+  "unitTests": {
+    "passed": 426,
+    "failed": 0,
+    "evidence": "tests/baselines/evidence/stage2/unit-tests.log"
+  },
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "allOriginalFieldsExact": true,
+    "deterministic": true,
+    "originalApiNamespaces": 86,
+    "additionalNamespaces": {
+      "VibeMolElementUtils": 8,
+      "VibeMolPeriodicTable": 1
+    },
+    "exactAdditionalContract": "tests/baselines/characterize-api-additions.json",
+    "originalGoldenByteIdentical": true,
+    "originalGoldenSha256": "6d80d00a0ecadff2d481536153fb18754021c7a911d27bea300f2fb99e02890d",
+    "sameBrowserPixelDifferences": 0,
+    "sameHostStage1PixelDifferences": 0,
+    "evidence": "tests/baselines/evidence/stage2/characterize-evidence.json",
+    "pixelEvidence": "tests/baselines/evidence/stage2/pixel-comparison.json",
+    "knownLimitation": "The camera pin still masks the separate ordinary preset projection defect (#3)."
+  },
+  "directPeriodicTableGate": {
+    "passed": true,
+    "cases": 4,
+    "interactionCaptures": 36,
+    "allFieldsExactAgainstTaggedBase": true,
+    "allFieldsExactAgainstAcceptedStage1": true,
+    "editorPixelsExactInAllFourPairs": true,
+    "unexpectedConsoleErrorsOrWarnings": 0,
+    "makeTestE2eIncludesGate": true,
+    "original36CountUnaffected": true,
+    "evidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+    "visualEvidence": "tests/baselines/evidence/stage2/periodic-screenshot-comparison.json"
+  },
+  "existingBrowserSuites": {
+    "attempted": 36,
+    "passed": 22,
+    "failed": 14,
+    "acceptedBaseline": {
+      "passed": 22,
+      "failed": 14,
+      "total": 36
+    },
+    "allOutcomesMatchBaseline": true,
+    "initialFailureLocationsAllMatchBaseline": false,
+    "initialFailureLocationChanges": [
+      "tests/e2e/looks.py"
+    ],
+    "pairedReplayMatchesAcceptedStage1FailureLocation": true,
+    "fullMakeTestE2eGreen": false,
+    "evidence": "tests/baselines/evidence/stage2/browser-results.json",
+    "investigation": "tests/baselines/evidence/stage2/looks-investigation.json"
+  },
+  "manualVerification": "tests/baselines/evidence/stage2/manual-verification.json",
+  "utilityDivergencesFollowup": {
+    "issue": "https://github.com/evangelistalab/vibemol/issues/5",
+    "commit": "9b4fa79",
+    "separateFromExtraction": true,
+    "evidence": "tests/baselines/evidence/stage1-followup/"
+  },
+  "browserRepair": {
+    "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+    "plan": "tests/baselines/browser-suite-repair-plan.json",
+    "separatePR": true,
+    "deadline": "Land before Stage 4 opens",
+    "target": {
+      "passed": 34,
+      "failed": 2,
+      "total": 36
+    },
+    "remainingFailures": [
+      "axis_gizmo.py",
+      "mode_consistency.py"
+    ],
+    "blocksStage2": false
+  },
+  "runtimeVersion": "0.9.5",
+  "sessionFormatVersion": 1,
+  "vendorChanges": false,
+  "betaSoak": "Not started; preserve the planned minimum week before advancing the sequence.",
+  "artifactRoot": "out/test-artifacts/stage2",
+  "committedEvidenceRoot": "tests/baselines/evidence/stage2"
+}

@@ -1,0 +1,2 @@
+[floating] live orbital filters, exclusive windows, camera safety, reset cancel, Build search and operator clicks: passed
+{"passed": true, "proof": [{"handle": {"x": 1083, "y": 939.40625, "width": 340, "height": 35.59375}, "centerHit": "<input class=\"editAddAtomOperatorCoord\" data-selection-axis=\"y\" aria-label=\"Y position (\u00c5)\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\" spellcheck=\"false\" style=\"\">", "grabHit": ""}]}

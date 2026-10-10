@@ -1,0 +1,66 @@
+{
+  "purpose": "Same-machine, same-browser-session diagnostic, not portable goldens",
+  "pairs": [
+    {
+      "case": "workbench-light",
+      "identicalBytes": true,
+      "baseSha256": "4c58ce865d0d9a76c96d493261b5fa509037c9da6070445c15ea458c8bb20619",
+      "currentSha256": "4c58ce865d0d9a76c96d493261b5fa509037c9da6070445c15ea458c8bb20619",
+      "pixelDifferenceBounds": null,
+      "differingPixels": 0,
+      "maxChannelDelta": 0
+    },
+    {
+      "case": "workbench-dark",
+      "identicalBytes": false,
+      "baseSha256": "de6b21db2b934b6ea4c99d1fb88525a0170fc59c7a9ab533c1a83c8da4c10cd6",
+      "currentSha256": "4f6be677704249fcf5efcc8abe429489066362ef5674a88740be489abcc269b3",
+      "pixelDifferenceBounds": [
+        14,
+        756,
+        1088,
+        784
+      ],
+      "differingPixels": 26510,
+      "maxChannelDelta": 1
+    },
+    {
+      "case": "legacy-light",
+      "identicalBytes": false,
+      "baseSha256": "ace0ed073a3b31de80353b4babbd55dfe937d31a6005af009393e2100bf0ee23",
+      "currentSha256": "c82dbdad0e747de1827648df4d86e3c41a938ebc568a8ba1d9d4641f4f6cf081",
+      "pixelDifferenceBounds": [
+        344,
+        756,
+        1088,
+        784
+      ],
+      "differingPixels": 20328,
+      "maxChannelDelta": 25
+    },
+    {
+      "case": "legacy-dark",
+      "identicalBytes": false,
+      "baseSha256": "4e41eb45e7926d2dd86c160b88482902bc4dcddd566ad58bda077ea8def961d9",
+      "currentSha256": "f86b8b2b65fd70efe223ae3ed85258fd784cfcbe987545ee9c06b2d302c4ccd3",
+      "pixelDifferenceBounds": [
+        344,
+        756,
+        1088,
+        784
+      ],
+      "differingPixels": 20351,
+      "maxChannelDelta": 33
+    }
+  ],
+  "manuallyViewed": [
+    "workbench-dark"
+  ],
+  "observedVisualDifference": "No editor difference; the transient bottom hint differs in three complete screenshots.",
+  "periodicEditorPixelsIdenticalInAllFourPairs": true,
+  "diagnosticExplanation": "All differing screenshot pixels are in the bottom session-opened hint (y=756..783), outside the Element Colors editor. The existing #hint visibility/accent CSS transitions run after session import; complete screenshot files are diagnostic, not portable goldens. The entire editor and the rest of the screenshot above y=756 are pixel-identical.",
+  "relatedCode": [
+    "index.html #hint transition rules",
+    "app.js setHintMessage/revealHintTemporarily after session import"
+  ]
+}
