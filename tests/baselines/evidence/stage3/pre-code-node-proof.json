@@ -1,0 +1,357 @@
+{
+  "sourceCommit": "e4b5e498fe818171e3205313667614cfd8d2832c",
+  "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+  "method": "Read-only response instrumentation exposes existing closure values without changing production files, queries, controllers, listeners or behavior.",
+  "browser": "Chromium 145.0.7632.6, headless shell 1208; same executable and SwiftShader flags as Stage 0/Stage 2/browser repair",
+  "baselineValues": [
+    {
+      "name": "canvasAdaptiveMenuEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "measurementsPanel",
+      "isDomNode": false,
+      "isSameNode": false,
+      "panelIsSameNode": true,
+      "controllerKeys": [
+        "isOpen",
+        "panel",
+        "setOpen",
+        "sync"
+      ]
+    },
+    {
+      "name": "calculationsPanel",
+      "isDomNode": false,
+      "isSameNode": false,
+      "panelIsSameNode": true,
+      "controllerKeys": [
+        "ensureBasis",
+        "isOpen",
+        "panel",
+        "setOpen",
+        "setStatus",
+        "showPlanes",
+        "sync"
+      ]
+    },
+    {
+      "name": "editAtomsMenuEl",
+      "isDomNode": false,
+      "isNull": true,
+      "isSameNode": true
+    },
+    {
+      "name": "editAtomsMenuBodyEl",
+      "isDomNode": false,
+      "isNull": true,
+      "isSameNode": true
+    },
+    {
+      "name": "editAtomsMenuCurrentEl",
+      "isDomNode": false,
+      "isNull": true,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionTranslateCueEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionTranslateCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionRotateCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionCoordinationCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionMetalBondingCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionBondOrbitCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionBondDistanceCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionBondOrderCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionAddFragmentCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionDeleteCueButtonEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionFragmentCuePopoverEl",
+      "isDomNode": false,
+      "isNull": true,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionCoordinationCuePopoverEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSelectionMetalBondingCuePopoverEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveAddAtomBtn",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveSymmetryBtn",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveSymmetryMetaEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveCleanStructureBtn",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveCleanStructureMetaEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveShiftComBtn",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveShiftComMetaEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveAlignPrincipalBtn",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveAlignPrincipalMetaEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveAddAtomPopoverEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editAdaptiveSymmetryPopoverEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editBuildSearchEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editBuildAtomsHostEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editBuildFragmentsHostEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editBuildMoleculesHostEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryTargetSummaryEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryExactResultCardEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryExactResultEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryToleranceSelectEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryElementSelectEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryCandidatesEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryApplyBtnEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryCancelBtnEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    },
+    {
+      "name": "editSymmetryAutoBtnEl",
+      "isDomNode": true,
+      "isNull": false,
+      "isSameNode": true
+    }
+  ],
+  "snapshots": [
+    {
+      "launch": "workbench",
+      "afterMode": "Display",
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    },
+    {
+      "launch": "workbench",
+      "afterMode": "Measure",
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    },
+    {
+      "launch": "workbench",
+      "afterMode": "Edit",
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    },
+    {
+      "launch": "workbench",
+      "afterMode": "Calculations",
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    },
+    {
+      "launch": "workbench",
+      "afterSessionRestore": true,
+      "pageErrors": [],
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    },
+    {
+      "launch": "legacy",
+      "afterMode": "Display",
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    },
+    {
+      "launch": "legacy",
+      "afterMode": "Measure",
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    },
+    {
+      "launch": "legacy",
+      "afterMode": "Edit",
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    },
+    {
+      "launch": "legacy",
+      "afterSessionRestore": true,
+      "pageErrors": [],
+      "allValuesExactAgainstBaseline": true,
+      "cacheIdentityChecksPassed": 41,
+      "controllerPanelIdentityChecksPassed": 2
+    }
+  ],
+  "checks": {
+    "snapshots": 9,
+    "identityAssertionsPassed": 387,
+    "actualCaches": 41,
+    "actualControllers": 2,
+    "controllerDirectIdentityAssertionsWouldFail": true,
+    "controllerPanelIdentityAssertionsPass": true
+  },
+  "scope": "Read-only audit proof after mode transitions and session restore; this is not the Stage 3 QA harness or a new 37-suite sweep."
+}
