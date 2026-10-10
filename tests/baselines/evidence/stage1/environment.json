@@ -1,0 +1,18 @@
+{
+  "system": "Darwin",
+  "machine": "arm64",
+  "python": "3.9.6",
+  "playwright": "1.60.0",
+  "chromiumLaunchArgs": [
+    "--use-gl=angle",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader"
+  ],
+  "browserProvisioning": "Installed Playwright expects Chromium revision 1223; available local Chromium revision 1208 was used through temporary cache aliases. No browser/dependency files were committed.",
+  "nativeMetal": "The native Metal path produced shader failures on the tagged base; the recorded suite runs use SwiftShader.",
+  "testArtifactRoot": "out/test-artifacts/stage1",
+  "crossMachinePixelGoldens": false,
+  "browserVersion": "145.0.7632.6",
+  "unchangedFromStage0": true,
+  "launchSupport": "Existing suite entry points use the Stage 0 temporary BrowserType.launch wrapper to supply SwiftShader args; characterize.py supplies them explicitly."
+}

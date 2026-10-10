@@ -1,0 +1,21 @@
+{
+  "baseTag": "v0.9.5-pre-refactor",
+  "purpose": "Exact additive API contract for the explicitly planned classic-script extraction. Original Stage 0 captures and all existing exports remain unchanged.",
+  "modules": [
+    {
+      "stage": 1,
+      "script": "assets/app/js/element-utils.js",
+      "global": "VibeMolElementUtils",
+      "keys": [
+        "clamp",
+        "clampOrZero",
+        "clampWithUpperPriority",
+        "getElementSymbol",
+        "getElementSymbolByAtomicNumber",
+        "getElementSymbolRaw",
+        "isLanthanideOrActinideAtomicNumber",
+        "isTransitionMetalAtomicNumber"
+      ]
+    }
+  ]
+}

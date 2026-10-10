@@ -135,6 +135,8 @@ No build step is required for the web app. It runs directly from static files.
 
 `assets/app/js/asset-urls.js` loads first in the head and owns the single `APP_VERSION` constant. The app reads `VibeMolAssets.version`; runtime bundled loads use `VibeMolAssets.url`. Run `python3 tools/sync_asset_versions.py --version <version>` to bump a release and stamp committed HTML/CSS URLs together, or `make version-assets` after editing the constant. `make check` rejects stale URLs. Keep workers and their imports versioned too. See `docs/asset-versioning.md` and the real HTTP-cache regression `tests/e2e/asset_cache.py`.
 
+`assets/app/js/element-utils.js` loads immediately after `asset-urls.js`, before every consumer. It exports pure `VibeMolElementUtils` helpers; callers pass atomic metadata explicitly. Symbol/clamp compatibility variants preserve each tagged-base caller's behavior. The standalone Style Lab loads it before volume geometry too.
+
 Required stylesheet order in `index.html`:
 1. `src/styles/tokens.css`
 2. `src/styles/vm-tooltip.css`
@@ -214,6 +216,7 @@ Required script order in `index.html`:
 57. `assets/app/js/app.js`
 
 `assets/app/js/app.js` requires global modules:
+- `window.VibeMolElementUtils`
 - `window.VibeMolParsers`
 - `window.VibeMolRendering`
 - `window.VibeMolInteraction`
@@ -625,11 +628,14 @@ Repo checks:
 
 - The decomposition starts at `v0.9.5-pre-refactor` (`1c609b338344aaa49ffd11b9ee2ad834a6e0d85d`). Stage 0 moves no production functions; its optional `qa-characterize.js` loads after Workbench only with `?qa=1`.
 - Run `tests/e2e/characterize.py` for the two-run structured determinism gate. Committed captures and validation evidence live under `tests/baselines/`; generated browser output belongs in ignored `out/test-artifacts/`.
+- Stage 0's current browser baseline is **22 passing / 14 failing of 36 entry points**, including the five added Appearance suites. Historical 18/13 counts covered only 31 entry points and are superseded. The 102 captured scientific/session/geometry/DOM goldens remain unchanged; `tests/baselines/characterize-api-additions.json` checks the exact additional Stage 1 utility namespace while preserving every existing export.
+- Stage 1's duplicate audit, metrics and validation are recorded in `tests/baselines/element-utils-validation.json` and `tests/baselines/evidence/stage1/`. Keep the explicitly distinct symbol/clamp policies until a separate behavior-change PR; the extraction preserves all 14 original bodies' observable behavior.
 - The original 13 failing baseline browser suites are listed and classified in `tests/baselines/characterize-failures.json`; the additional `appearance_controls.py` failure delegates to the already-recorded Properties workflow. These failing workflows are uncharacterized paths even when a failure comes from test setup or an outdated assertion. Do not report these suites as passing.
 - Every refactor-stage PR touching a mapped function or its dependencies must include a **Manual verification** section naming the affected suites, the listed workflows, the result on the tagged base and on the proposed change, and the verification evidence. A passing generic characterization capture does not replace this verification. Record any remaining pre-existing defect explicitly.
 - The orthographic preset camera/target projection-refresh defect is a separate **0.9.x bug**, tracked at https://github.com/evangelistalab/vibemol/issues/3. Fix ownership is `afterApplySettings`: refresh the active projection once after a batch touching `view.camera.*` or `view.target.*`. The characterization pin deliberately masks it; passing captures do not prove the ordinary API is fixed. Keep its workaround during the structural refactor and ship the behavior fix separately.
 - **Stage 4 needs the heaviest manual verification.** DOM-cache changes cross the failed panel and Looks/Appearance workflows, including the five independently wired Appearance suites. Stage 5 still has substantial feature coupling, but Stage 4 has the weakest existing interaction coverage. The detailed plan and suite mapping live in `tests/baselines/refactor-stage-risk.json`.
 - Split Stage 4 into **one panel per PR**, with a binding inventory, direct event-path verification, both themes, all applicable modes, legacy/Workbench launches, responsive docks/floats, focus/keyboard interactions, and base/change evidence for affected failing workflows. Do not consolidate all 44 planned bindings in one PR. Preserve lazy DOM creation and listener-registration timing; controller/state bindings are not DOM caches. Separate Properties/Looks, Coordinates, selection tools, Build, Symmetry, and shared canvas/menu changes.
+- **Before Stage 4 opens**, land the browser-suite repair in its own PR, separate from extraction, tracked at https://github.com/evangelistalab/vibemol/issues/4 and `tests/baselines/browser-suite-repair-plan.json`. Repair stale assertions first, targeting second, and presented-frame/persistence synchronization third. The gate is **34 passing / 2 failing of 36**; retain the axis-gizmo and legacy mode-consistency defect assertions. The repair PR must name the intended behavior change each stale assertion tracked. This scheduled prerequisite does not block Stage 1.
 - The axis-gizmo Escape defect involves the capture-phase interception introduced by the **0.9.2/0.9.3 Escape ladder**. Any fix must preserve menu/field cancellation precedence, provisional-placement cancellation, Build disarming while retaining selection, Transform selection clearing, and subsequent Focus/panel dismissal. Keep capture-phase arbitration; restore the intended gizmo-to-canvas focus handoff without dropping the ladder.
 
 ## Manual Validation Checklist

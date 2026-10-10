@@ -1,6 +1,7 @@
 (function () {
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
+  const getElementSymbol = z => window.VibeMolElementUtils.getElementSymbol(z, ATOM_Z_TO_DATA);
   // Shared by UI/export metadata and every bundled asset URL.
   const APP_VERSION = window.VibeMolAssets.version;
   const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
@@ -2532,17 +2533,6 @@
     if (/^#[0-9a-f]{6}$/.test(s)) return s;
     if (/^#[0-9a-f]{3}$/.test(s)) return `#${s[1]}${s[1]}${s[2]}${s[2]}${s[3]}${s[3]}`;
     return fallback;
-  }
-
-  /**
-   * Resolve an element symbol from atomic metadata.
-   * @param {number} z
-   * @returns {string}
-   */
-  function getElementSymbol(z) {
-    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];
-    if (info && typeof info.symbol === 'string' && info.symbol.trim()) return info.symbol.trim();
-    return `Z${z | 0}`;
   }
 
   /**

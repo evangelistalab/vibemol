@@ -1,6 +1,8 @@
 (function (global) {
   'use strict';
 
+  const { clampOrZero: clamp } = global.VibeMolElementUtils;
+
   const {
     getCovalentRadiusAngstrom,
     isAutoBondSupportedAtomicNumber,
@@ -59,10 +61,6 @@
     35: Object.freeze({ symbol: 'Br', targetValence: 1, targetBondCount: 1, geometryKey: 'tetrahedral' }),
     53: Object.freeze({ symbol: 'I', targetValence: 1, targetBondCount: 1, geometryKey: 'tetrahedral' }),
   });
-
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, Number(value) || 0));
-  }
 
   function vec3(x = 0, y = 0, z = 0) {
     return [Number(x) || 0, Number(y) || 0, Number(z) || 0];

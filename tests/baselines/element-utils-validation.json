@@ -1,0 +1,104 @@
+{
+  "stage": 1,
+  "status": "implemented and validated against the accepted baseline",
+  "branch": "codex/app-js-decomposition",
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "preExtractionHead": "79c3f04ffc21f345a18226714450c3498db1315e",
+  "sourceAppSha256": "c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be",
+  "scope": "Consolidate the four planned pure utility families. No behavior fix, panel-binding extraction or browser-suite assertion repair is included.",
+  "utilities": {
+    "originalCopies": 14,
+    "sharedImplementations": 8,
+    "compatibilityDifferences": "Three symbol policies and three clamp policies retained explicitly; both metal-classifier families were identical",
+    "audit": "tests/baselines/evidence/stage1/duplicate-audit.json",
+    "originalBodies": "tests/fixtures/element-utils-legacy.json",
+    "closureDependencies": "Atomic metadata is a function argument; remaining references are standard JS globals. No app closure, DOM or renderer dependency."
+  },
+  "metrics": {
+    "before": {
+      "lines": 33280,
+      "functionDeclarations": 1197,
+      "letDeclarations": 313,
+      "constDeclarations": 595,
+      "sha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5"
+    },
+    "after": {
+      "lines": 33270,
+      "functionDeclarations": 1196,
+      "letDeclarations": 313,
+      "constDeclarations": 596,
+      "sha256": "c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be"
+    },
+    "delta": {
+      "lines": -10,
+      "functionDeclarations": -1,
+      "letDeclarations": 0,
+      "constDeclarations": 1
+    },
+    "countMethod": "Line count: splitlines(); function/let/const declarations: two-space app.js top-level lines. Function count includes async declarations and excludes arrow aliases."
+  },
+  "staticChecks": {
+    "passed": true,
+    "evidence": "tests/baselines/evidence/stage1/checks.log"
+  },
+  "unitTests": {
+    "passed": 426,
+    "failed": 0,
+    "newParityTests": 4,
+    "evidence": "tests/baselines/evidence/stage1/unit-tests.log"
+  },
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "allOriginalFieldsExact": true,
+    "deterministic": true,
+    "originalApiNamespaces": 86,
+    "additionalNamespaces": {
+      "VibeMolElementUtils": 8
+    },
+    "exactAdditionalContract": "tests/baselines/characterize-api-additions.json",
+    "originalGoldenByteIdentical": true,
+    "sameBrowserPixelDifferences": 0,
+    "sameHostStage0PixelDifferences": 0,
+    "evidence": "tests/baselines/evidence/stage1/characterize-evidence.json",
+    "pixelEvidence": "tests/baselines/evidence/stage1/pixel-comparison.json",
+    "knownLimitation": "The camera pin still masks the separately filed ordinary preset projection defect (#3)."
+  },
+  "existingBrowserSuites": {
+    "attempted": 36,
+    "passed": 22,
+    "failed": 14,
+    "acceptedBaseline": {
+      "passed": 22,
+      "failed": 14,
+      "total": 36
+    },
+    "allOutcomesMatchBaseline": true,
+    "allFailureLocationsMatchBaseline": true,
+    "fullMakeTestE2eGreen": false,
+    "evidence": "tests/baselines/evidence/stage1/browser-results.json"
+  },
+  "manualVerification": "tests/baselines/evidence/stage1/manual-verification.json",
+  "browserRepair": {
+    "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+    "plan": "tests/baselines/browser-suite-repair-plan.json",
+    "separatePR": true,
+    "deadline": "Land before Stage 4 opens",
+    "target": {
+      "passed": 34,
+      "failed": 2,
+      "total": 36
+    },
+    "remainingFailures": [
+      "axis_gizmo.py",
+      "mode_consistency.py"
+    ],
+    "blocksStage1": false
+  },
+  "runtimeVersion": "0.9.5",
+  "sessionFormatVersion": 1,
+  "vendorChanges": false,
+  "artifactRoot": "out/test-artifacts/stage1",
+  "committedEvidenceRoot": "tests/baselines/evidence/stage1"
+}

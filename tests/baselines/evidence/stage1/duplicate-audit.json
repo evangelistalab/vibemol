@@ -1,0 +1,77 @@
+{
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "originalBodies": "tests/fixtures/element-utils-legacy.json",
+  "originalDefinitionCount": 14,
+  "sharedImplementationCount": 8,
+  "scope": "Only the four named utility families; caller-specific compatibility behavior is retained, with no opportunistic correction",
+  "differences": [
+    {
+      "family": "getElementSymbol",
+      "copies": 4,
+      "identicalPairs": ["coordination.js / geometry-inference.js: same observable lookup behavior, with a redundant local-table fallback in coordination"],
+      "variants": [
+        {
+          "callers": ["app.js"],
+          "sharedHelper": "getElementSymbol(z, table)",
+          "policy": "Use the original key without atomic-number coercion; accept only nonblank strings and trim them; otherwise return Z followed by z|0"
+        },
+        {
+          "callers": ["coordination.js", "geometry-inference.js"],
+          "sharedHelper": "getElementSymbolByAtomicNumber(z, table)",
+          "policy": "Look up z|0; stringify any truthy symbol without trimming; otherwise return Z followed by z|0"
+        },
+        {
+          "callers": ["bond-inference.js"],
+          "sharedHelper": "getElementSymbolRaw(z, table)",
+          "policy": "Use the original key; return its raw truthy symbol or empty string, without trimming or stringification"
+        }
+      ],
+      "examples": [
+        "A spaced symbol is trimmed by app.js and preserved by chemistry callers.",
+        "With metadata only at key 6, z=6.9 resolves to Z6 in app.js, empty string in bond inference, and the element symbol in geometry/coordination.",
+        "A numeric symbol is rejected by app.js, kept numeric by bond inference and stringified by geometry/coordination."
+      ],
+      "decision": "Report the latent contract differences and retain all three policies explicitly; no normalization or behavior fix in Stage 1"
+    },
+    {
+      "family": "clamp",
+      "copies": 4,
+      "variants": [
+        {"callers": ["volume-geometry.js"], "sharedHelper": "clamp", "policy": "Original max(min, min(max, value)) nesting, preserving NaN"},
+        {"callers": ["auto-hydrogen.js", "edit-halo.js"], "sharedHelper": "clampOrZero", "policy": "Original Number(value)||0 coercion followed by the same max/min nesting"},
+        {"callers": ["symmetry.js"], "sharedHelper": "clampWithUpperPriority", "policy": "Original min(max, max(min, value)) nesting, preserving NaN and the upper-bound result for reversed ranges"}
+      ],
+      "examples": ["NaN returns zero in hydrogen/halo helpers and NaN in volume/symmetry.", "For value=0, min=1, max=-1, volume/hydrogen/halo return 1 while symmetry returns -1."],
+      "decision": "Retain all three policies; the four-argument fallback clamp in workbench-model.js is a separate contract outside the planned copies"
+    },
+    {
+      "family": "isTransitionMetalAtomicNumber",
+      "copies": 3,
+      "sharedHelper": "isTransitionMetalAtomicNumber",
+      "decision": "Identical integer-coercion and inclusive-range behavior in all copies; consolidate directly"
+    },
+    {
+      "family": "isLanthanideOrActinideAtomicNumber",
+      "copies": 3,
+      "sharedHelper": "isLanthanideOrActinideAtomicNumber",
+      "decision": "Identical integer-coercion and inclusive-range behavior in all copies; consolidate directly"
+    }
+  ],
+  "closureAudit": {
+    "functionInputs": ["z", "table", "value", "min", "max"],
+    "functionLocals": ["info", "n"],
+    "standardGlobals": ["Math", "Number", "String"],
+    "exportOnlyGlobals": ["Object", "window/globalThis via the IIFE parameter"],
+    "appClosureReferences": [],
+    "domReferences": [],
+    "renderingReferences": [],
+    "metadataInjection": "The symbol wrappers pass the current atomic table at call time, so the utility script can load before atomic-data.js"
+  },
+  "verification": {
+    "parityTests": "tests/unit/element-utils.test.mjs executes all 14 untouched tagged-base bodies against the shared implementations, including missing/spaced/nonstring metadata, numeric strings, fractional atomic numbers, NaN/infinities, reversed bounds and throwing inputs",
+    "existingCallers": "Their existing unit tests retain all assertions and explicitly load element-utils.js before consumers",
+    "apiContract": "tests/baselines/characterize-api-additions.json: exactly one planned eight-export namespace; every original export remains exact",
+    "goldens": "tests/baselines/characterize.json.gz is not regenerated"
+  }
+}

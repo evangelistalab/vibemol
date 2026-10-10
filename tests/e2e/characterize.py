@@ -7,6 +7,7 @@ production scripts. --update-baseline is permitted only with the original app.js
 from __future__ import annotations
 
 import argparse
+import copy
 import gzip
 import hashlib
 import json
@@ -23,6 +24,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / 'tests/fixtures/characterize'
 BASELINE = ROOT / 'tests/baselines/characterize.json.gz'
 SUMMARY = ROOT / 'tests/baselines/characterize-summary.json'
+API_ADDITIONS = ROOT / 'tests/baselines/characterize-api-additions.json'
 BASE_COMMIT = '1c609b338344aaa49ffd11b9ee2ad834a6e0d85d'
 BASE_TAG = 'v0.9.5-pre-refactor'
 VIEWPORT = {'width': 1512, 'height': 1000}
@@ -320,6 +322,21 @@ def metadata(source_root):
                         'constDeclarations': len(re.findall(r'^  const\b', text, re.M))}}
 
 
+def expected_captures(golden, source_root):
+    # Preserve all original goldens. A planned new classic-script module has an
+    # explicit additive contract; existing APIs and every other field stay exact.
+    captures = copy.deepcopy(golden['captures'])
+    additions = json.loads(API_ADDITIONS.read_text())['modules'] if API_ADDITIONS.exists() else []
+    for module in additions:
+        if not (source_root / module['script']).is_file():
+            assert metadata(source_root)['appSha256'] == golden['baseline']['appSha256'], module['script']
+            continue
+        for capture in captures.values():
+            assert module['global'] not in capture['api'], module['global']
+            capture['api'][module['global']] = module['keys']
+    return captures
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source-root', type=pathlib.Path, default=ROOT)
@@ -337,6 +354,7 @@ def main():
         assert meta['appSha256'] == hashlib.sha256(original).hexdigest(), 'Capture goldens before changing app.js.'
     if not args.update_baseline and not args.prepare_fixtures:
         golden = json.loads(gzip.decompress(BASELINE.read_bytes()))
+        expected = expected_captures(golden, args.source_root)
     with run_http_server(args.source_root) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True, args=[
             '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])
@@ -370,7 +388,7 @@ def main():
                     assert not diff, 'Non-deterministic characterization: ' + str(diff)
                     pixel_changes.extend(key for key in pixels if pixels[key] != pixel_baseline[key])
                 if not args.update_baseline:
-                    diff = first_difference(golden['captures'], captures)
+                    diff = first_difference(expected, captures)
                     assert not diff, 'Characterization regression: ' + str(diff)
             if args.update_baseline:
                 raw = (json.dumps({'baseline': meta, 'captures': baseline}, indent=2) + '\n').encode()

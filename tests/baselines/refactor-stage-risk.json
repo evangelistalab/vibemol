@@ -1,8 +1,17 @@
 {
   "baseTag": "v0.9.5-pre-refactor",
   "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
-  "scope": "Structural 0.10.0 refactor with no behavior, API, visual or session-format changes; 0.9.x defects ship separately.",
+  "scope": "Structural 0.10.0 refactor preserving existing APIs, behavior, visuals and session format; planned extracted-module namespaces have exact additive contracts. 0.9.x defects ship separately.",
   "manualVerificationRiskOrder": [4, 5, 3, 2, 1],
+  "currentBrowserBaseline": {"passed": 22, "failed": 14, "total": 36},
+  "beforeStage4Prerequisite": {
+    "work": "Repair the browser suite in a separate PR, before any Stage 4 DOM-cache extraction PR opens",
+    "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+    "plan": "tests/baselines/browser-suite-repair-plan.json",
+    "target": {"passed": 34, "failed": 2, "total": 36},
+    "requiredRemainingFailures": ["axis_gizmo.py", "mode_consistency.py"],
+    "blocksStage1": false
+  },
   "stages": [
     {
       "stage": 1,
@@ -26,7 +35,7 @@
       "stage": 4,
       "risk": "highest manual-verification burden",
       "scope": "DOM element cache consolidation, split by panel",
-      "reason": "The 13 failed baseline suites and the five additional Appearance entry points cluster around panel DOM, Looks, focus, layout and controls. Renaming/rebinding caches can silently miss event paths, null/lazy nodes and callbacks that generic captures do not exercise. A large mechanical diff would cross this coverage gap.",
+      "reason": "The current 22/14 baseline covers 36 entry points; 14 fail (13 distinct first-failing workflows, including the Appearance alias). Seven of the eight cheap assertion/targeting repairs cover panel, Looks and Properties paths. Stage 4 rewrites panel bindings, so the separate 34/2 browser repair must land before it opens. Renaming/rebinding caches can silently miss event paths, null/lazy nodes and callbacks that generic captures do not exercise.",
       "originalPlanBindingCount": 44,
       "bindingInventory": "Audit the actual tagged-base declarations per panel before each PR. Distinguish DOM nodes from controllers/state; preserve when each node is created, assigned, replaced and observed. The original count is planning input, not permission for one 44-binding PR.",
       "prRule": "One panel per PR, including separate child-popover PRs when their lifecycle differs. Each PR gets its own review and beta soak. Keep listeners, focus behavior and lazy-query timing unchanged.",

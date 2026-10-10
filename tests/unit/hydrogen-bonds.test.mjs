@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { loadGlobalModules } from './load-global-module.mjs';
 
 const { VibeMolStructureCore: S, VibeMolBondInference: I, THREE } = loadGlobalModules([
+  'assets/app/js/element-utils.js',
   'assets/vendor/js/three.min.js', 'assets/vendor/js/atomic-data.js',
   'assets/app/js/structure.js', 'assets/app/js/bond-inference.js',
 ]);

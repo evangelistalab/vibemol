@@ -28,7 +28,7 @@
   "tests/baselines/evidence/stage0/followups/surface_shadows.log": "13d471834e8c1c2416f1147d88913d29876dc5e0825c40e132214ca920dfb1a0",
   "tests/baselines/evidence/stage0/initial-characterize-evidence.json": "b454a6827c65d67a2d645f7309649e05fe904e39381e30bcf49fec0aa9e1cad8",
   "tests/baselines/evidence/stage0/initial-installed-evidence.json": "2e656b1769259581f425ff3320fe4601e04e1ec099e8f7d3481558093f077558",
-  "tests/baselines/evidence/stage0/initial-validation.json": "c87e2ddb04683e7de075f6a9e32f10cf49603aee5341183379a773fc0c7cb281",
+  "tests/baselines/evidence/stage0/initial-validation.json": "e382614f077ee5ea309b07eed86b6d8ebf05a7661e83a068f42df3b42fef0fef",
   "tests/baselines/evidence/stage0/installed-final-evidence.json": "32aa99bae10bf4a0c7eb47110e765f29885fb00536f96f7f6ca978503c89b135",
   "tests/baselines/evidence/stage0/pixel-projection-proof.json": "3a3527d574178aedba60092c835627a4f693dc708e12963c70b7fb80419b1ee8",
   "tests/baselines/evidence/stage0/probes/axis_gizmo.json": "69401664cf0d16058acd73476458ad31cff3312192e17fee0a7afa04d5e0733d",

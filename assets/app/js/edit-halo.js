@@ -1,6 +1,8 @@
 (function (global) {
   'use strict';
 
+  const { clampOrZero: clamp } = global.VibeMolElementUtils;
+
   const EPSILON = 1e-8;
   const { countsTowardAtomValence } = global.VibeMolBondInference || {};
   const {
@@ -15,10 +17,6 @@
     inferAtomGeometry,
   ].every((fn) => typeof fn === 'function')) {
     throw new Error('VibeMolEditHalo requires VibeMolBondInference, VibeMolCoordination and VibeMolGeometryInference to be loaded first.');
-  }
-
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, Number(value) || 0));
   }
 
   function vec3(x = 0, y = 0, z = 0) {

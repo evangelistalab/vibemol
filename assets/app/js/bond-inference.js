@@ -1,6 +1,9 @@
 (function (global) {
   'use strict';
 
+  const { getElementSymbolRaw, isTransitionMetalAtomicNumber, isLanthanideOrActinideAtomicNumber } = global.VibeMolElementUtils;
+  const getElementSymbol = z => getElementSymbolRaw(z, global.ATOM_Z_TO_DATA);
+
   const AUTO_BOND_TOLERANCE = 1.15;
   const AUTO_BOND_MIN_DISTANCE = 0.4;
   const METAL_BOND_RADIUS = Object.freeze({
@@ -27,10 +30,6 @@
   const METAL_BOND_MODE_FORCE_COVALENT = 'force_covalent';
   const METAL_BOND_MODE_FORCE_DATIVE = 'force_dative';
   const METAL_BOND_MODE_NO_BONDS = 'no_bonds';
-
-  function getElementSymbol(z) {
-    return (global.ATOM_Z_TO_DATA && global.ATOM_Z_TO_DATA[z] && global.ATOM_Z_TO_DATA[z].symbol) || '';
-  }
 
   function normalizeMetalBondMode(value) {
     const mode = String(value || '').trim().toLowerCase();
@@ -64,16 +63,6 @@
    */
   function getCovalentRadiusAngstrom(z) {
     return (global.ATOM_Z_TO_DATA && global.ATOM_Z_TO_DATA[z] && global.ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
-  }
-
-  /**
-   * Check whether an atomic number belongs to lanthanides/actinides.
-   * @param {number} z
-   * @returns {boolean}
-   */
-  function isLanthanideOrActinideAtomicNumber(z) {
-    const n = z | 0;
-    return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);
   }
 
   /**
@@ -123,21 +112,6 @@
       if (v >= currentValence) return v;
     }
     return allowed[allowed.length - 1];
-  }
-
-  /**
-   * Check whether an atomic number belongs to a transition metal block.
-   * @param {number} z
-   * @returns {boolean}
-   */
-  function isTransitionMetalAtomicNumber(z) {
-    const n = z | 0;
-    return (
-      (n >= 21 && n <= 30) ||
-      (n >= 39 && n <= 48) ||
-      (n >= 72 && n <= 80) ||
-      (n >= 104 && n <= 112)
-    );
   }
 
   /**

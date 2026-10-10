@@ -206,12 +206,21 @@
     "fullMakeTestE2eGreen": false,
     "originalStage0SuiteCounts": {
       "passed": 18,
-      "failed": 13
+      "failed": 13,
+      "total": 31,
+      "supersededBy": {
+        "passed": 22,
+        "failed": 14,
+        "total": 36,
+        "evidence": "tests/baselines/characterize-validation.json",
+        "supersedesHistoricalCounts": true
+      }
     },
     "failedEntryPointCount": 14,
     "distinctRecordedFailingWorkflows": 13,
     "additionalFailureAlias": "appearance_controls.py delegates to properties_inspector.py and fails at the same assertion.",
-    "countScope": "31 original Stage 0 entry points plus five standalone follow-up runs; no full 36-suite rerun claimed."
+    "countScope": "31 original Stage 0 entry points plus five standalone follow-up runs; no full 36-suite rerun claimed.",
+    "total": 36
   },
   "baseTag": "v0.9.5-pre-refactor",
   "pixelInvestigation": "tests/baselines/characterize-pixel-investigation.json",
@@ -239,5 +248,16 @@
     "ordinaryApiEvidence": "tests/baselines/evidence/stage0/followups/public-projection-proof.json"
   },
   "stageRiskPlan": "tests/baselines/refactor-stage-risk.json",
-  "followupChecks": "tests/baselines/evidence/stage0/followups/checks.json"
+  "followupChecks": "tests/baselines/evidence/stage0/followups/checks.json",
+  "browserSuiteRepair": {
+    "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+    "plan": "tests/baselines/browser-suite-repair-plan.json",
+    "target": {
+      "passed": 34,
+      "failed": 2,
+      "total": 36
+    },
+    "beforeStage4": true,
+    "separateExtractionPR": true
+  }
 }

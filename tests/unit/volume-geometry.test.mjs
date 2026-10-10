@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateInContext, loadGlobalModule } from './load-global-module.mjs';
+import { evaluateInContext, loadGlobalModules } from './load-global-module.mjs';
 
 function createThreeStub() {
   class Vector3 {
@@ -44,7 +44,7 @@ function createThreeStub() {
 }
 
 test('volume geometry converts atom and world coordinates between bohr and angstrom', () => {
-  const context = loadGlobalModule('assets/app/js/volume-geometry.js', {
+  const context = loadGlobalModules(['assets/app/js/element-utils.js', 'assets/app/js/volume-geometry.js'], {
     globals: {
       THREE: createThreeStub(),
       isosurface: { marchingCubes: () => ({ positions: [], cells: [] }) },
@@ -69,7 +69,7 @@ test('volume geometry converts atom and world coordinates between bohr and angst
 });
 
 test('volume geometry maps voxel coordinates and welds marching-cubes vertices', () => {
-  const context = loadGlobalModule('assets/app/js/volume-geometry.js', {
+  const context = loadGlobalModules(['assets/app/js/element-utils.js', 'assets/app/js/volume-geometry.js'], {
     globals: {
       THREE: createThreeStub(),
       isosurface: {
@@ -112,7 +112,7 @@ test('volume geometry maps voxel coordinates and welds marching-cubes vertices',
 });
 
 test('volume geometry applies gradient-based normals to welded isosurface vertices', () => {
-  const context = loadGlobalModule('assets/app/js/volume-geometry.js', {
+  const context = loadGlobalModules(['assets/app/js/element-utils.js', 'assets/app/js/volume-geometry.js'], {
     globals: {
       THREE: createThreeStub(),
       isosurface: {
@@ -165,7 +165,7 @@ test('volume geometry applies gradient-based normals to welded isosurface vertic
 });
 
 test('volume geometry keeps gradient normals consistent for negative lobes', () => {
-  const context = loadGlobalModule('assets/app/js/volume-geometry.js', {
+  const context = loadGlobalModules(['assets/app/js/element-utils.js', 'assets/app/js/volume-geometry.js'], {
     globals: {
       THREE: createThreeStub(),
       isosurface: {

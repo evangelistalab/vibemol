@@ -4,6 +4,7 @@ import { loadGlobalModules } from './load-global-module.mjs';
 
 function loadSymmetry() {
   return loadGlobalModules([
+    'assets/app/js/element-utils.js',
     'assets/app/js/edit-utils.js',
     'assets/app/js/symmetry.js',
   ]);

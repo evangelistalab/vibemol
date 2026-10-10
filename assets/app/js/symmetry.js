@@ -1,6 +1,8 @@
 (function (global) {
   'use strict';
 
+  const { clampWithUpperPriority: clamp } = global.VibeMolElementUtils;
+
   const editUtils = global.VibeMolEditUtils || {};
   const externalEigenSymmetric3x3 = typeof editUtils.eigenSymmetric3x3 === 'function'
     ? editUtils.eigenSymmetric3x3
@@ -221,10 +223,6 @@
         (m[0][0] * m[1][1] - m[0][1] * m[1][0]) * invDet,
       ],
     ];
-  }
-
-  function clamp(value, min, max) {
-    return Math.min(max, Math.max(min, value));
   }
 
   function matsApproxEqual(a, b, tol = 1e-8) {

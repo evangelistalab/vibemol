@@ -1,5 +1,6 @@
 JS_CHECK_FILES = \
 	assets/app/js/asset-urls.js \
+	assets/app/js/element-utils.js \
 	src/vscode_ext/vibemol/src/extension.js \
 	src/vscode_ext/vibemol/src/vmWebview.js \
 	src/vscode_ext/vibemol/src/folderFiles.js \

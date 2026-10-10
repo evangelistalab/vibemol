@@ -34,6 +34,7 @@ function createThreeStub() {
 
 function createContext() {
   return loadGlobalModules([
+    'assets/app/js/element-utils.js',
     'assets/app/js/volume-geometry.js',
     'assets/app/js/volume-2c.js',
   ], {

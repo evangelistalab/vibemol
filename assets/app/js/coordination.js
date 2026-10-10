@@ -1,6 +1,9 @@
 (function (global) {
   'use strict';
 
+  const { getElementSymbolByAtomicNumber, isTransitionMetalAtomicNumber, isLanthanideOrActinideAtomicNumber } = global.VibeMolElementUtils;
+  const getElementSymbol = z => getElementSymbolByAtomicNumber(z, global.ATOM_Z_TO_DATA);
+
   const EPSILON = 1e-8;
   const DEG120 = 0.8660254037844386;
   const SQRT2_INV = 0.7071067811865476;
@@ -174,22 +177,6 @@
     GeometryId.PENTAGONAL_BIPYRAMIDAL,
     GeometryId.SQUARE_ANTIPRISMATIC,
   ], { defaultGeometryId: GeometryId.SQUARE_ANTIPRISMATIC });
-
-  function getElementSymbol(z) {
-    const table = global.ATOM_Z_TO_DATA || null;
-    const info = table && table[z | 0];
-    return info && info.symbol ? String(info.symbol) : `Z${z | 0}`;
-  }
-
-  function isTransitionMetalAtomicNumber(z) {
-    const n = z | 0;
-    return (n >= 21 && n <= 30) || (n >= 39 && n <= 48) || (n >= 72 && n <= 80) || (n >= 104 && n <= 112);
-  }
-
-  function isLanthanideOrActinideAtomicNumber(z) {
-    const n = z | 0;
-    return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);
-  }
 
   function getGeometry(id) {
     return GEOMETRY_CATALOG[String(id || '')] || null;

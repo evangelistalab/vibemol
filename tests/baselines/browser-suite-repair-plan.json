@@ -1,0 +1,63 @@
+{
+  "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+  "status": "scheduled",
+  "release": "0.10.0 refactor preparation",
+  "currentBaseline": {"passed": 22, "failed": 14, "total": 36},
+  "deadline": "Land before Stage 4 opens",
+  "delivery": "One dedicated PR, separate from every extraction; PR description names the intentional changes tracked by stale assertions",
+  "blocksStage1": false,
+  "priorityOrder": [
+    {
+      "priority": 1,
+      "category": "stale assertions about intentional changes",
+      "repairs": [
+        {
+          "suites": ["build_panel.py", "looks.py"],
+          "trackedChange": "0.9.2 scene-contents-dependent default Edit tool: Build for empty scenes, Transform for loaded structures",
+          "repair": "Assert the intended initial tool/panel state; explicitly choose Build before testing Build-only bond-order/H guards"
+        },
+        {
+          "suites": ["properties_inspector.py", "appearance_controls.py"],
+          "trackedChange": "Intentional first-Measure introduction of the Measurements panel",
+          "repair": "Assert preserved Properties tab/placement independently from the expected new Measurements layout entry"
+        },
+        {
+          "suites": ["style_studio.py"],
+          "trackedChange": "OrbitControls spherical-conversion float drift of approximately 1.4e-13",
+          "repair": "Use a documented numeric tolerance while retaining projection, target/up, topology and Look-isolation checks"
+        }
+      ]
+    },
+    {
+      "priority": 2,
+      "category": "harness targeting",
+      "repairs": [
+        {"suite": "hydrogen_contacts.py", "repair": "Reveal Properties before interacting with its Hydrogen bonds control"},
+        {"suite": "properties_disclosures.py", "repair": "Wheel inside the actual visible scroll body at compact sizes"},
+        {"suite": "floating_panels.py", "repair": "Target the intended exposed drag grip instead of its covered center"}
+      ]
+    },
+    {
+      "priority": 3,
+      "category": "settle races",
+      "suites": ["figure.py", "smoke.py", "edit_picking.py", "measurements.py"],
+      "repair": "Replace fixed sleeps with waits on a presented frame and the required UI/persistence state; use a null-safe saved-layout poll for measurements",
+      "evidence": ["tests/baselines/evidence/stage0/semantic-proofs.json", "tests/baselines/evidence/stage0/probes/smoke.json", "tests/baselines/characterize-failures.json"]
+    }
+  ],
+  "acceptance": {
+    "passed": 34,
+    "failed": 2,
+    "total": 36,
+    "remainingFailures": [
+      {"suite": "axis_gizmo.py", "defect": "Escape focus handoff; preserve the 0.9.2/0.9.3 capture-phase ladder"},
+      {"suite": "mode_consistency.py", "defect": "Legacy selection-card collision with Coordinates controls"}
+    ],
+    "productionBehaviorChanges": false,
+    "extractionChanges": false,
+    "noWeakenedDefectAssertions": true,
+    "attemptEverySuite": "Run and report every entry point; fail-fast make output cannot prove downstream results",
+    "evidence": "Committed concise logs/results and ignored raw browser artifacts"
+  },
+  "rationale": "Seven of eight cheap stale-assertion/targeting repairs exercise panel, Looks and Properties code. These suites must be green before Stage 4 rewrites panel element bindings. Stage 4 remains split by panel with the heaviest manual verification."
+}

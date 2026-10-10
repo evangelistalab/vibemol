@@ -1,0 +1,89 @@
+{
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "functions": [
+    {
+      "file": "assets/app/js/app.js",
+      "function": "getElementSymbol",
+      "baseLine": 2542,
+      "source": "  function getElementSymbol(z) {\n    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];\n    if (info && typeof info.symbol === 'string' && info.symbol.trim()) return info.symbol.trim();\n    return `Z${z | 0}`;\n  }"
+    },
+    {
+      "file": "assets/app/js/bond-inference.js",
+      "function": "getElementSymbol",
+      "baseLine": 31,
+      "source": "  function getElementSymbol(z) {\n    return (global.ATOM_Z_TO_DATA && global.ATOM_Z_TO_DATA[z] && global.ATOM_Z_TO_DATA[z].symbol) || '';\n  }"
+    },
+    {
+      "file": "assets/app/js/bond-inference.js",
+      "function": "isTransitionMetalAtomicNumber",
+      "baseLine": 133,
+      "source": "  function isTransitionMetalAtomicNumber(z) {\n    const n = z | 0;\n    return (\n      (n >= 21 && n <= 30) ||\n      (n >= 39 && n <= 48) ||\n      (n >= 72 && n <= 80) ||\n      (n >= 104 && n <= 112)\n    );\n  }"
+    },
+    {
+      "file": "assets/app/js/bond-inference.js",
+      "function": "isLanthanideOrActinideAtomicNumber",
+      "baseLine": 74,
+      "source": "  function isLanthanideOrActinideAtomicNumber(z) {\n    const n = z | 0;\n    return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);\n  }"
+    },
+    {
+      "file": "assets/app/js/coordination.js",
+      "function": "getElementSymbol",
+      "baseLine": 178,
+      "source": "  function getElementSymbol(z) {\n    const table = global.ATOM_Z_TO_DATA || null;\n    const info = table && table[z | 0];\n    return info && info.symbol ? String(info.symbol) : `Z${z | 0}`;\n  }"
+    },
+    {
+      "file": "assets/app/js/coordination.js",
+      "function": "isTransitionMetalAtomicNumber",
+      "baseLine": 184,
+      "source": "  function isTransitionMetalAtomicNumber(z) {\n    const n = z | 0;\n    return (n >= 21 && n <= 30) || (n >= 39 && n <= 48) || (n >= 72 && n <= 80) || (n >= 104 && n <= 112);\n  }"
+    },
+    {
+      "file": "assets/app/js/coordination.js",
+      "function": "isLanthanideOrActinideAtomicNumber",
+      "baseLine": 189,
+      "source": "  function isLanthanideOrActinideAtomicNumber(z) {\n    const n = z | 0;\n    return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);\n  }"
+    },
+    {
+      "file": "assets/app/js/geometry-inference.js",
+      "function": "getElementSymbol",
+      "baseLine": 56,
+      "source": "  function getElementSymbol(z) {\n    const info = global.ATOM_Z_TO_DATA && global.ATOM_Z_TO_DATA[z | 0];\n    return info && info.symbol ? String(info.symbol) : `Z${z | 0}`;\n  }"
+    },
+    {
+      "file": "assets/app/js/geometry-inference.js",
+      "function": "isTransitionMetalAtomicNumber",
+      "baseLine": 61,
+      "source": "  function isTransitionMetalAtomicNumber(z) {\n    const n = z | 0;\n    return (n >= 21 && n <= 30) || (n >= 39 && n <= 48) || (n >= 72 && n <= 80) || (n >= 104 && n <= 112);\n  }"
+    },
+    {
+      "file": "assets/app/js/geometry-inference.js",
+      "function": "isLanthanideOrActinideAtomicNumber",
+      "baseLine": 66,
+      "source": "  function isLanthanideOrActinideAtomicNumber(z) {\n    const n = z | 0;\n    return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);\n  }"
+    },
+    {
+      "file": "assets/app/js/auto-hydrogen.js",
+      "function": "clamp",
+      "baseLine": 63,
+      "source": "  function clamp(value, min, max) {\n    return Math.max(min, Math.min(max, Number(value) || 0));\n  }"
+    },
+    {
+      "file": "assets/app/js/edit-halo.js",
+      "function": "clamp",
+      "baseLine": 20,
+      "source": "  function clamp(value, min, max) {\n    return Math.max(min, Math.min(max, Number(value) || 0));\n  }"
+    },
+    {
+      "file": "assets/app/js/symmetry.js",
+      "function": "clamp",
+      "baseLine": 226,
+      "source": "  function clamp(value, min, max) {\n    return Math.min(max, Math.max(min, value));\n  }"
+    },
+    {
+      "file": "assets/app/js/volume-geometry.js",
+      "function": "clamp",
+      "baseLine": 263,
+      "source": "  function clamp(value, min, max) {\n    return Math.max(min, Math.min(max, value));\n  }"
+    }
+  ]
+}

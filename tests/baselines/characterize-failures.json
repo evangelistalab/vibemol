@@ -679,5 +679,13 @@
     "separateFromSuiteFailureCounts": true,
     "harnessMasksDefect": true
   },
-  "stageRiskPlan": "refactor-stage-risk.json"
+  "stageRiskPlan": "refactor-stage-risk.json",
+  "currentBrowserBaseline": {
+    "passed": 22,
+    "failed": 14,
+    "total": 36,
+    "evidence": "tests/baselines/characterize-validation.json",
+    "supersedesHistoricalCounts": true
+  },
+  "scheduledRepair": "browser-suite-repair-plan.json"
 }
