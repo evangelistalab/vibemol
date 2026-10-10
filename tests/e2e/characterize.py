@@ -69,6 +69,9 @@ def file_input(path):
 def load(page, paths):
     result = page.evaluate('files => VibeMolEmbed.loadFiles(files)', [file_input(path) for path in paths])
     assert result['ok'], result
+    if (any(path.endswith('.vibemol-session.gz') for path in paths)
+            and page.evaluate('() => !!window.__vmqaElementCaches')):
+        page.evaluate("() => __vmqa.assertElementCacheIdentity('session restore')")
 
 
 def first_difference(expected, actual, path='$'):
@@ -323,6 +326,58 @@ def run_once(browser, url, inject):
     return captures, pixels, console_by_fixture
 
 
+def verify_element_caches(browser, url, inject):
+    """Additional identity gate; keep the 102 golden payloads unchanged."""
+    results = []
+    for legacy in (False, True):
+        for dark in (False, True):
+            context = browser.new_context(viewport=VIEWPORT, device_scale_factor=1)
+            page = context.new_page()
+            page.set_default_timeout(60000)
+            page.goto(url + '?appearanceStudy=1&qa=1' + ('&workspaceLab=0' if legacy else ''))
+            page.wait_for_function('() => window.VibeMolSession && window.VibeMolWorkbenchHost')
+            if inject:
+                page.add_script_tag(content=QA)
+            page.wait_for_function('() => window.__vmqa?.characterizeVersion === 1')
+            try:
+                if not page.evaluate('() => !!window.__vmqaElementCaches'):
+                    return {'historicalSourceWithoutCacheBridge': True}
+                page.locator('#themeToggleInput').evaluate('''(el, dark) => {
+                    if (el.checked !== dark) { el.checked = dark; el.dispatchEvent(new Event('change', {bubbles:true})); }
+                }''', dark)
+                load(page, ['sample.cube.gz'])
+                modes = ('Display', 'Measure', 'Edit') + (() if legacy else ('Calculations',))
+                for mode in modes:
+                    page.locator('#mode' + mode + 'Btn').click()
+                    page.evaluate('() => __vmqa.settle()')
+                    assert page.evaluate("() => __vmqa.assertElementCacheIdentity('mode switch').count") == 43
+                ids = page.evaluate('''() => [...new Set([
+                    ...Object.values(VibeMolWorkbenchHost.windows.ids), 'inspector',
+                    'measurementsPanel', 'subspacePanel', 'figurePanel', 'buildPanel', 'symmetryPanel'
+                ])].filter(id => VibeMolWorkbenchHost.windows.getEntry(id)?.setOpen)''')
+                for panel in ids:
+                    mode = ('Edit' if panel in ('buildPanel', 'symmetryPanel') else
+                            'Calculations' if panel == 'subspacePanel' and not legacy else 'Display')
+                    page.locator('#mode' + mode + 'Btn').click()
+                    for opened in (True, False):
+                        page.evaluate('''({panel,opened}) => VibeMolWorkbenchHost.windows.getEntry(panel).setOpen(opened)''',
+                                      {'panel': panel, 'opened': opened})
+                        page.evaluate('() => __vmqa.settle()')
+                        assert page.evaluate('(reason) => __vmqa.assertElementCacheIdentity(reason).count',
+                                             ('panel open: ' if opened else 'panel close: ') + panel) == 43
+                session = page.evaluate('() => VibeMolSession.export()')
+                page.evaluate('doc => VibeMolSession.import(doc)', session)
+                page.evaluate('() => __vmqa.settle()')
+                assert page.evaluate("() => __vmqa.assertElementCacheIdentity('session restore').count") == 43
+                results.append({'launch': 'legacy' if legacy else 'workbench', 'theme': 'dark' if dark else 'light',
+                                'modes': list(modes), 'panelOpenClosePairs': ids,
+                                'identity': page.evaluate('() => __vmqa.elementCacheReport()')})
+                assert not results[-1]['identity']['failures'], results[-1]
+            finally:
+                context.close()
+    return results
+
+
 def metadata(source_root):
     app = (source_root / 'assets/app/js/app.js').read_bytes()
     text = app.decode()
@@ -402,6 +457,9 @@ def main():
             assert page.evaluate('() => window.__vmqa === undefined')
             assert not qa_requests, qa_requests
             context.close()
+            cache_identity = verify_element_caches(browser, url, args.inject_harness)
+            if args.source_root.resolve() == ROOT:
+                assert isinstance(cache_identity, list) and len(cache_identity) == 4, cache_identity
             camera_pin = verify_session_camera_pin(browser, url, args.inject_harness)
             baseline = pixel_baseline = None
             pixel_changes = []
@@ -440,6 +498,7 @@ def main():
                         'captureSha256PerRun': capture_hashes,
                         'deterministic': True, 'console': console,
                         'sessionCameraPin': camera_pin,
+                        'elementCacheIdentity': cache_identity,
                         'sameSessionPixelChanges': sorted(set(pixel_changes))}
             (ARTIFACTS / 'characterize-evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
             print(f'[characterize] {args.runs} identical runs; {len(baseline)} snapshots each; '

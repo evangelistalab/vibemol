@@ -1,0 +1,11 @@
+{
+  "suite": "edit_picking.py",
+  "sourceRoot": ".",
+  "sourceAppSha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944",
+  "testSha256": "3f193d09b691a2d7de7c38f30a7af9abaf54760880c82bbd13c63ffd9c99c100",
+  "exitCode": 0,
+  "seconds": 289.42,
+  "rawLog": "out/test-artifacts/stage3/build/picking-current/run.log",
+  "timeoutOrAssertionChanges": false,
+  "serialBrowserExecution": true
+}

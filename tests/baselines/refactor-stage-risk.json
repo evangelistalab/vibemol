@@ -446,7 +446,7 @@
           "periodic_table.py"
         ]
       },
-      "status": "PR #12 authorized to merge using its own re-evaluated CI result. Rebase #8 onto merged #12 and require one CI run on that candidate to prove both the 34/3/37 workflows and all identity minima before merging. Adaptive opens as a draft afterward; do not merge the draft.",
+      "status": "PR #12 merged. Build conversions remain byte-identical; rebase #8 and run CI once on this candidate to prove browser workflows and all identity firing minima together. Five groups remain; the next adaptive PR is a draft and must not merge.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -486,7 +486,7 @@
       },
       "qaIdentityInvariant": {
         "firstSubPr": true,
-        "status": "required before first cache change; not yet implemented",
+        "status": "Implemented in the first Build sub-PR: QA-only bridge, sticky mutation/checkpoint assertions, four launch/theme contexts and detached-node negative control",
         "realCacheChecks": 41,
         "additionalControllerPanelChecks": 2,
         "totalNodeChecks": 43,
@@ -498,14 +498,29 @@
           "after session restore"
         ],
         "negativeControl": "Replacing a live node while retaining its ID must fail identity even if Category D IDs and ARIA remain unchanged.",
-        "goldens": "Preserve all 102 captures and original payloads; identity checks are an additional gate."
+        "goldens": "Preserve all 102 captures and original payloads; identity checks are an additional gate.",
+        "evidence": "tests/baselines/evidence/stage3/build/characterize-evidence.json",
+        "negativeControlEvidence": "tests/baselines/evidence/stage3/build/negative-identity.json"
       },
       "soakPolicy": {
         "boundary": "one soak after all sub-PRs merge into the stage branch",
         "perSubPrSoak": false,
         "stageBranch": "codex/element-cache-consolidation"
       },
-      "remainingPanelGroupCount": 5
+      "subPrProgress": [
+        {
+          "order": 1,
+          "group": "editBuild*",
+          "cacheBindings": 4,
+          "cumulativeCacheBindings": 4,
+          "letBefore": 306,
+          "letAfter": 302,
+          "evidence": "tests/baselines/evidence/stage3/build/validation.json",
+          "status": "Candidate rebased onto merged #12; historical local validation retained, but merge requires this candidate's own complete CI result with both workflow and identity gates.",
+          "appLines": 33037,
+          "functionDeclarations": 1181
+        }
+      ]
     },
     {
       "stage": 4,

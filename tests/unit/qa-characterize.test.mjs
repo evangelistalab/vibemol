@@ -57,3 +57,40 @@ test('session comparison masks capture clocks while preserving scientific data a
   assert.equal(invalid.preset.meta.createdAt, 'invalid-date');
   assert.equal(Object.hasOwn(invalid.preset.meta, 'updatedAt'), false);
 });
+
+test('node identity rejects a detached cache even when replacement IDs and ARIA match', () => {
+  class Mesh {}
+  Mesh.prototype.onBeforeRender = () => {};
+  const ids = Object.fromEntries(Array.from({ length: 43 }, (_, i) => ['cache' + i, 'node' + i]));
+  const live = new Map();
+  const original = { id: 'node0', ariaHidden: 'false' };
+  live.set('node0', original);
+  const nodes = Object.fromEntries(Object.entries(ids).map(([name, id]) => [name, live.get(id) || null]));
+  const context = loadGlobalModule('assets/app/js/qa-characterize.js', { globals: {
+    location: { search: '?qa=1' }, URLSearchParams, THREE: { Mesh }, addEventListener: () => {},
+    document: { getElementById: id => live.get(id) || null },
+    __vmqaElementCaches: { ids, readNodes: () => nodes },
+  } });
+  assert.equal(context.__vmqa.assertElementCacheIdentity('mode switch').count, 43);
+  const replacement = { ...original };
+  live.set('node0', replacement);
+  assert.deepEqual(replacement, original, 'The live ID/ARIA contract still matches');
+  assert.throws(() => context.__vmqa.assertElementCacheIdentity('panel open'), /cache0 \(#node0\)/);
+  // A transient detach cannot be hidden by restoring the original before the
+  // next presented checkpoint; the observer keeps its first failure sticky.
+  live.set('node0', original);
+  assert.throws(() => context.__vmqa.assertElementCacheIdentity('session restore'), /after panel open/);
+});
+
+test('node identity does not accept a cached null once a live node exists', () => {
+  class Mesh {}
+  Mesh.prototype.onBeforeRender = () => {};
+  const ids = Object.fromEntries(Array.from({ length: 43 }, (_, i) => ['cache' + i, 'node' + i]));
+  const nodes = Object.fromEntries(Object.keys(ids).map(name => [name, null]));
+  const context = loadGlobalModule('assets/app/js/qa-characterize.js', { globals: {
+    location: { search: '?qa=1' }, URLSearchParams, THREE: { Mesh }, addEventListener: () => {},
+    document: { getElementById: id => id === 'node0' ? { id } : null },
+    __vmqaElementCaches: { ids, readNodes: () => nodes },
+  } });
+  assert.throws(() => context.__vmqa.assertElementCacheIdentity('panel close'), /cache0/);
+});

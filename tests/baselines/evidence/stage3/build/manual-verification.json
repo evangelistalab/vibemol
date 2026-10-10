@@ -1,0 +1,30 @@
+{
+  "method": "Direct UI event workflow replay using the current unchanged suites against the immutable tagged base, paired with each same suite in the current full sweep; no human interaction is claimed.",
+  "tag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "taggedBase": [
+    {
+      "suite": "build_panel.py",
+      "sourceRoot": "out/test-artifacts/stage3/tagged-base",
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "testSha256": "3aac1c5861aa5c565b73bf8eef3b250f836f66a012947a952c482bf3eb17df26",
+      "exitCode": 0,
+      "seconds": 22.81,
+      "rawLog": "out/test-artifacts/stage3/build/build-panel-tagged-base/run.log",
+      "timeoutOrAssertionChanges": false,
+      "serialBrowserExecution": true,
+      "evidence": "tests/baselines/evidence/stage3/build/manual/build-panel-tagged-base.log"
+    }
+  ],
+  "current": [
+    {
+      "test": "tests/e2e/build_panel.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 23.17,
+      "rawLog": "out/test-artifacts/stage3/build/browser/build_panel/run.log",
+      "testSha256": "3aac1c5861aa5c565b73bf8eef3b250f836f66a012947a952c482bf3eb17df26",
+      "evidence": "tests/baselines/evidence/stage3/build/browser/build_panel.log"
+    }
+  ]
+}

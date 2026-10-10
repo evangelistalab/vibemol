@@ -1,0 +1,13 @@
+✔ characterization is inert without the explicit qa=1 query (2.902083ms)
+✔ QA observes rendering while preserving existing callbacks and global APIs (1.198625ms)
+✔ session comparison masks capture clocks while preserving scientific data and metadata shape (1.165208ms)
+✔ node identity rejects a detached cache even when replacement IDs and ARIA match (1.585917ms)
+✔ node identity does not accept a cached null once a live node exists (0.61125ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65.137
