@@ -1,0 +1,175 @@
+{
+  "sourceAppSha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944",
+  "runs": 2,
+  "launchThemeContextsPerRun": 4,
+  "contexts": [
+    {
+      "run": 1,
+      "launch": "workbench",
+      "theme": "light",
+      "checksByReason": {
+        "presented checkpoint": 39,
+        "mode switch": 408,
+        "DOM replacement": 5319,
+        "session restore": 1,
+        "panel transition": 1064
+      },
+      "minimumChecksByReason": {
+        "presented checkpoint": 39,
+        "mode switch": 5,
+        "panel transition": 2,
+        "DOM replacement": 1,
+        "session restore": 1
+      },
+      "explicitModeChecks": 4,
+      "observedModeChecks": 404
+    },
+    {
+      "run": 1,
+      "launch": "workbench",
+      "theme": "dark",
+      "checksByReason": {
+        "presented checkpoint": 39,
+        "mode switch": 408,
+        "DOM replacement": 5431,
+        "session restore": 1,
+        "panel transition": 1061
+      },
+      "minimumChecksByReason": {
+        "presented checkpoint": 39,
+        "mode switch": 5,
+        "panel transition": 2,
+        "DOM replacement": 1,
+        "session restore": 1
+      },
+      "explicitModeChecks": 4,
+      "observedModeChecks": 404
+    },
+    {
+      "run": 1,
+      "launch": "legacy",
+      "theme": "light",
+      "checksByReason": {
+        "presented checkpoint": 32,
+        "mode switch": 9,
+        "DOM replacement": 2965,
+        "session restore": 1,
+        "panel transition": 672
+      },
+      "minimumChecksByReason": {
+        "presented checkpoint": 32,
+        "mode switch": 4,
+        "panel transition": 2,
+        "DOM replacement": 1,
+        "session restore": 1
+      },
+      "explicitModeChecks": 3,
+      "observedModeChecks": 6
+    },
+    {
+      "run": 1,
+      "launch": "legacy",
+      "theme": "dark",
+      "checksByReason": {
+        "presented checkpoint": 32,
+        "mode switch": 9,
+        "DOM replacement": 3077,
+        "session restore": 1,
+        "panel transition": 681
+      },
+      "minimumChecksByReason": {
+        "presented checkpoint": 32,
+        "mode switch": 4,
+        "panel transition": 2,
+        "DOM replacement": 1,
+        "session restore": 1
+      },
+      "explicitModeChecks": 3,
+      "observedModeChecks": 6
+    },
+    {
+      "run": 2,
+      "launch": "workbench",
+      "theme": "light",
+      "checksByReason": {
+        "presented checkpoint": 39,
+        "mode switch": 408,
+        "DOM replacement": 5319,
+        "session restore": 1,
+        "panel transition": 1058
+      },
+      "minimumChecksByReason": {
+        "presented checkpoint": 39,
+        "mode switch": 5,
+        "panel transition": 2,
+        "DOM replacement": 1,
+        "session restore": 1
+      },
+      "explicitModeChecks": 4,
+      "observedModeChecks": 404
+    },
+    {
+      "run": 2,
+      "launch": "workbench",
+      "theme": "dark",
+      "checksByReason": {
+        "presented checkpoint": 39,
+        "mode switch": 408,
+        "DOM replacement": 5430,
+        "session restore": 1,
+        "panel transition": 1058
+      },
+      "minimumChecksByReason": {
+        "presented checkpoint": 39,
+        "mode switch": 5,
+        "panel transition": 2,
+        "DOM replacement": 1,
+        "session restore": 1
+      },
+      "explicitModeChecks": 4,
+      "observedModeChecks": 404
+    },
+    {
+      "run": 2,
+      "launch": "legacy",
+      "theme": "light",
+      "checksByReason": {
+        "presented checkpoint": 32,
+        "mode switch": 9,
+        "DOM replacement": 2965,
+        "session restore": 1,
+        "panel transition": 669
+      },
+      "minimumChecksByReason": {
+        "presented checkpoint": 32,
+        "mode switch": 4,
+        "panel transition": 2,
+        "DOM replacement": 1,
+        "session restore": 1
+      },
+      "explicitModeChecks": 3,
+      "observedModeChecks": 6
+    },
+    {
+      "run": 2,
+      "launch": "legacy",
+      "theme": "dark",
+      "checksByReason": {
+        "presented checkpoint": 32,
+        "mode switch": 9,
+        "DOM replacement": 3077,
+        "session restore": 1,
+        "panel transition": 681
+      },
+      "minimumChecksByReason": {
+        "presented checkpoint": 32,
+        "mode switch": 4,
+        "panel transition": 2,
+        "DOM replacement": 1,
+        "session restore": 1
+      },
+      "explicitModeChecks": 3,
+      "observedModeChecks": 6
+    }
+  ]
+}

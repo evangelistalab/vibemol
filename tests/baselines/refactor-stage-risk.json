@@ -486,7 +486,7 @@
       },
       "qaIdentityInvariant": {
         "firstSubPr": true,
-        "status": "Implemented in the first Build sub-PR: QA-only bridge, sticky mutation/checkpoint assertions, four launch/theme contexts and detached-node negative control",
+        "status": "Implemented in the first Build sub-PR: required current-source bridge, sticky mutation/checkpoint assertions, minimum firing counts in four fresh launch/theme contexts per run, detached-node and dormant-observer negative controls",
         "realCacheChecks": 41,
         "additionalControllerPanelChecks": 2,
         "totalNodeChecks": 43,
@@ -500,7 +500,30 @@
         "negativeControl": "Replacing a live node while retaining its ID must fail identity even if Category D IDs and ARIA remain unchanged.",
         "goldens": "Preserve all 102 captures and original payloads; identity checks are an additional gate.",
         "evidence": "tests/baselines/evidence/stage3/build/characterize-evidence.json",
-        "negativeControlEvidence": "tests/baselines/evidence/stage3/build/negative-identity.json"
+        "negativeControlEvidence": "tests/baselines/evidence/stage3/build/negative-identity.json",
+        "missingBridgePolicy": "Fatal on every non-inject run, including alternate source roots; historicalSourceWithoutCacheBridge is allowed only with --inject-harness and checked again at the top level",
+        "exerciseGate": {
+          "characterizationRuns": 2,
+          "freshLaunchThemeContextsPerRun": 4,
+          "minimumPresentedCheckpoints": "mode count + twice the panel count + one restore; currently 39 Workbench / 32 legacy",
+          "minimumModeSwitches": "explicit mode count + one observer firing; currently 5 Workbench / 4 legacy",
+          "minimumPanelTransitions": 2,
+          "minimumDomReplacements": 1,
+          "minimumSessionRestores": 1,
+          "observerRequirement": "Mode-switch counts must exceed explicit calls; panel transition and DOM replacement reasons originate only in the observer. A present bridge with a dormant observer must fail.",
+          "countsEvidence": "tests/baselines/evidence/stage3/build/characterize-evidence.json",
+          "negativeExerciseEvidence": "tests/baselines/evidence/stage3/build/qa-followup/negative-exercise.json"
+        },
+        "browserCiGate": {
+          "requiredBeforeFirstSubPrMerge": true,
+          "status": "Not yet satisfied: original PR #8 browser CI failed the unchanged Linux float-string golden comparison before reaching the 37 suites; local 35/2/37 alone is insufficient",
+          "originalHead": "eb1a3f9c02edea6eb8ae67c6303e1a16312b0af2",
+          "originalJob": "https://github.com/evangelistalab/vibemol/actions/runs/38088035783/job/114318625552",
+          "firstDifference": "$.sample/light/Display.geometry.molecule.bonds[6].z: 2.375228488400047e-06 != 2.3752284884000466e-06",
+          "precedent": "The same difference occurred on pre-stage PR #7; preserve goldens and investigate the comparison separately",
+          "preStageArtifactComparison": "All 102 CI first-run captures from PR #7 and original PR #8 are byte-identical; this does not replace a second CI run or the missing 37-suite results",
+          "comparisonEvidence": "tests/baselines/evidence/stage3/build/qa-followup/ci-capture-comparison.json"
+        }
       },
       "soakPolicy": {
         "boundary": "one soak after all sub-PRs merge into the stage branch",
@@ -520,7 +543,8 @@
           "appLines": 33037,
           "functionDeclarations": 1181
         }
-      ]
+      ],
+      "remainingPanelGroupCount": 5
     },
     {
       "stage": 4,

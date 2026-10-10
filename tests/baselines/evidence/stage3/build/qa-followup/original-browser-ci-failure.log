@@ -1,0 +1,41 @@
+e2e	End-to-end smoke tests	﻿2026-10-10T21:34:28.5903066Z ##[group]Run make test-e2e
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5903397Z ^[[36;1mmake test-e2e^[[0m
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5965586Z shell: /usr/bin/bash -e {0}
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5965843Z env:
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5966130Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5966571Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5967007Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5967374Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5967748Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5968122Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.5968433Z ##[endgroup]
+e2e	End-to-end smoke tests	2026-10-10T21:34:28.6076046Z python3 tests/e2e/asset_cache.py
+e2e	End-to-end smoke tests	2026-10-10T21:34:45.1166027Z [asset cache] v0.9.5: warm-cache upgrade, workers, fonts, data and same-release reuse passed
+e2e	End-to-end smoke tests	2026-10-10T21:34:56.1310535Z [asset cache] v0.9.6: warm-cache upgrade, workers, fonts, data and same-release reuse passed
+e2e	End-to-end smoke tests	2026-10-10T21:34:56.6500937Z python3 tests/e2e/characterize.py
+e2e	End-to-end smoke tests	2026-10-10T21:43:34.3600903Z [characterize] sample/light: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:44:02.4997068Z [characterize] sample/dark: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:44:46.7114038Z [characterize] methane/light: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:45:37.2562509Z [characterize] methane/dark: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:46:53.3533664Z [characterize] two-component/light: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:48:10.7054382Z [characterize] two-component/dark: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:48:31.9226080Z [characterize] pubchem/light: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:48:49.7963471Z [characterize] pubchem/dark: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:49:03.4958794Z [characterize] session/light: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:49:17.0490155Z [characterize] session/dark: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:49:44.5614892Z [characterize] look/light: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:50:13.1539919Z [characterize] look/dark: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:50:26.3916766Z [characterize] trajectory/light: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:50:40.2058874Z [characterize] trajectory/dark: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:50:54.6783459Z [characterize] vibration/light: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:51:09.6976636Z [characterize] vibration/dark: API, session, geometry, DOM and console captured
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.0801101Z Traceback (most recent call last):
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.0811992Z   File "/home/runner/work/vibemol/vibemol/tests/e2e/characterize.py", line 477, in <module>
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.0812872Z     raise SystemExit(main())
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.0813234Z                      ^^^^^^
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.0813881Z   File "/home/runner/work/vibemol/vibemol/tests/e2e/characterize.py", line 450, in main
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.0814756Z     assert not diff, 'Characterization regression: ' + str(diff)
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.0815241Z            ^^^^^^^^
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.0816362Z AssertionError: Characterization regression: $.sample/light/Display.geometry.molecule.bonds[6].z: '2.375228488400047e-06' != '2.3752284884000466e-06'
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.1986096Z make: *** [Makefile:98: test-e2e] Error 1
+e2e	End-to-end smoke tests	2026-10-10T21:51:11.2003308Z ##[error]Process completed with exit code 2.

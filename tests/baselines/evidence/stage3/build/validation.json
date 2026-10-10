@@ -1,6 +1,6 @@
 {
   "group": "build",
-  "recordedUtc": "2026-10-10T21:32:10.704002+00:00",
+  "recordedUtc": "2026-10-10T22:51:21.817441+00:00",
   "sourceAppSha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944",
   "metrics": {
     "before": {
@@ -19,7 +19,7 @@
     }
   },
   "check": "passed",
-  "unitTests": 428,
+  "unitTests": 433,
   "browser": {
     "passed": 35,
     "failed": 2,
@@ -31,7 +31,11 @@
     "goldensUnchanged": true,
     "diagnosticPixelChanges": [],
     "primaryNodeChecks": 43,
-    "launchThemeContexts": 4
+    "launchThemeContexts": 4,
+    "launchThemeContextsPerRun": 4,
+    "totalIdentityContexts": 8,
+    "reasonCountMinimumsPassedPerRun": true,
+    "reasonCountsEvidence": "tests/baselines/evidence/stage3/build/qa-followup/reason-counts.json"
   },
   "goldenHashes": {
     "tests/baselines/characterize.json.gz": "6d80d00a0ecadff2d481536153fb18754021c7a911d27bea300f2fb99e02890d",
@@ -47,5 +51,18 @@
   },
   "controllerLetsRetained": true,
   "helpRestoreFocusElRetained": true,
-  "soak": "one stage-boundary soak after all panel sub-PRs merge; not per sub-PR"
+  "soak": "one stage-boundary soak after all panel sub-PRs merge; not per sub-PR",
+  "unitTestsByLanguage": {
+    "javascript": 428,
+    "python": 5
+  },
+  "qaOnlyFollowup": {
+    "appByteIdenticalToApprovedHead": "eb1a3f9c02edea6eb8ae67c6303e1a16312b0af2",
+    "browserSuiteResult": "The retained 35/2/37 full-suite evidence covers this identical app SHA and identical suite files; no browser assertion or production JS changed in the follow-up.",
+    "missingCurrentBridge": "fatal before the harness wait, also checked at the top level",
+    "historicalSentinel": "allowed only with --inject-harness",
+    "dormantObserver": "real-browser negative control fails despite the present 43-node bridge",
+    "negativeControlEvidence": "tests/baselines/evidence/stage3/build/qa-followup/negative-exercise.json",
+    "browserCiMergeGate": "Required; original head failed the unchanged Linux float comparison before the 37 suites. Recheck the updated head before any merge."
+  }
 }

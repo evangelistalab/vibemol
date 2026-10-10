@@ -1,0 +1,18 @@
+{
+  "firstAttempt": {
+    "fixture": "two-component/light",
+    "failure": "net::ERR_NAME_NOT_RESOLVED",
+    "exactRequestUrlNotRecorded": true,
+    "evidence": "tests/baselines/evidence/stage3/build/qa-followup/first-attempt-dns-failure.log"
+  },
+  "recheck": {
+    "method": "Unmodified characterization assertions after checking DNS; request-failure and console-location tracing only",
+    "externalHosts": [
+      "pubchem.ncbi.nlm.nih.gov",
+      "www.google-analytics.com",
+      "www.googletagmanager.com"
+    ],
+    "consoleErrors": [],
+    "nonCloseFailures": []
+  }
+}
