@@ -1,0 +1,132 @@
+{
+  "baseCommit": "da1e5520a89dff94d7778f85c7a0077e233b1ec2",
+  "rule": "Every changed assertion cites the commit, issue or release note invalidating the old expectation; undiagnosed assertions remain unchanged.",
+  "citations": [
+    {
+      "files": [
+        "tests/e2e/build_panel.py",
+        "tests/e2e/looks.py"
+      ],
+      "citation": "https://github.com/evangelistalab/vibemol/commit/5f6a3909a8ec5e88e7b60dc0a3412e4a8dcda054",
+      "change": "v0.9.2 scene-contents-dependent default Edit tool; entity commits arm Build in the legacy launcher",
+      "repair": "Assert empty-scene Build is already open; explicitly commit carbon before Build-only hydrogen warning/growth checks. Existing Looks assertions are unchanged."
+    },
+    {
+      "files": [
+        "tests/e2e/properties_inspector.py",
+        "tests/e2e/appearance_controls.py"
+      ],
+      "citation": "https://github.com/evangelistalab/vibemol/commit/4bdc820838139e2e2bd19f74ae64ea09f4a97478",
+      "change": "First Measure entry introduces Measurements and activates its dock tab",
+      "repair": "Compare the complete layout with only the explicitly introduced Measurements open/activeRight changes; retain exact Properties tab/placement checks. The Appearance alias imports and calls this same main; its own source is unchanged."
+    },
+    {
+      "files": [
+        "tests/e2e/style_studio.py"
+      ],
+      "citation": "https://github.com/evangelistalab/vibemol/issues/4",
+      "change": "Documented OrbitControls spherical round-trip drift of approximately 1.4e-13 invalidates byte-exact camera-vector equality",
+      "repair": "Absolute 1e-12, relative 0 for camera/target/up vectors; exact mode, controlsEnabled and snapshot key set. Scientific geometry, topology, projection-mode and Look assertions remain unchanged."
+    },
+    {
+      "files": [
+        "tests/e2e/floating_panels.py"
+      ],
+      "citations": [
+        "https://github.com/evangelistalab/vibemol/commit/727a8d949f1d7b11212443c592083ce7441b1f06",
+        "https://github.com/evangelistalab/vibemol/commit/7df01b40435f6f37c073fd2c1dd74e0d7dc11a8b"
+      ],
+      "change": "Subspace/Atomic orbitals and Figure add three registered shells after the 25-shell test baseline",
+      "repair": "Exact shell count is 28; the loop exercises all 28 shells with the original movement, keyboard, reopen and placement assertions."
+    },
+    {
+      "files": [
+        "tests/e2e/looks.py"
+      ],
+      "citation": "https://github.com/evangelistalab/vibemol/commit/624bb61ff4075666be7d6ce5375eb78d254d36d3",
+      "change": "Hydrogen-bond contacts are independent teal annotations; their empty mesh shares the bond material target but is not a chemical connector",
+      "repair": "Target getBondCarrierSnapshots().flatMap(carrier => carrier.meshes) for the existing exact uniform chemical-bond color assertion, including solid and dashed metal connectors. No assertion or annotation color is changed."
+    }
+  ],
+  "assertionAstAudit": [
+    {
+      "file": "tests/e2e/build_panel.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 2
+    },
+    {
+      "file": "tests/e2e/edit_picking.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 0
+    },
+    {
+      "file": "tests/e2e/figure.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 0
+    },
+    {
+      "file": "tests/e2e/floating_panels.py",
+      "removedOrReplacedAssertions": 1,
+      "addedOrReplacementAssertions": 1
+    },
+    {
+      "file": "tests/e2e/helpers.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 0
+    },
+    {
+      "file": "tests/e2e/hydrogen_contacts.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 0
+    },
+    {
+      "file": "tests/e2e/looks.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 0
+    },
+    {
+      "file": "tests/e2e/measurements.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 0
+    },
+    {
+      "file": "tests/e2e/properties_disclosures.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 0
+    },
+    {
+      "file": "tests/e2e/properties_inspector.py",
+      "removedOrReplacedAssertions": 1,
+      "addedOrReplacementAssertions": 2
+    },
+    {
+      "file": "tests/e2e/smoke.py",
+      "removedOrReplacedAssertions": 0,
+      "addedOrReplacementAssertions": 0
+    },
+    {
+      "file": "tests/e2e/style_studio.py",
+      "removedOrReplacedAssertions": 1,
+      "addedOrReplacementAssertions": 3
+    }
+  ],
+  "materialFamilies": {
+    "bodyChanged": false,
+    "intermittentSelector": "#appearanceMaterialPreset",
+    "riskStatus": "open",
+    "scope": "Only hydrogen_bond_restrictions setup and chemical-bond material targeting change in looks.py; material_families and main scenario routing remain unchanged.",
+    "material_familiesAstSha256": "17b533353b8f6172a55a5702950e8f07073159abe65710c6b00c9d620f38bc07",
+    "mainAstSha256": "f253cea816803c71e5c68be75d5c2b4a6e874215face45fe254e3ca77bca4220"
+  },
+  "preservedDefectSuites": {
+    "tests/e2e/axis_gizmo.py": "7847c5ede2ccc827e4725a86e0eb71d15bac7a6a91801cc2a1ce8bd2596fceb6",
+    "tests/e2e/mode_consistency.py": "f88242838ba6f50e5ca1988c4601478d62e3fb91f51b9024f73684fbc3142aa1"
+  },
+  "appearanceControlsAlias": {
+    "sourceUnchanged": true,
+    "sha256": "9363a34cc3ad889044fe8d1bcb6ed57fe500454cb0667c82ea68ca6d98fc6974",
+    "delegation": "from properties_inspector import main; main() under __main__",
+    "assertionRepairedOnce": "properties_inspector.py complete layout equality after the first Measure entry",
+    "bothEntryPointsExecuted": true
+  }
+}

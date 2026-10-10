@@ -1,0 +1,329 @@
+{
+  "observedBeforeSave": [
+    {
+      "line": 155,
+      "phase": "before",
+      "state": {
+        "live": {
+          "placements": {
+            "subspacePanel": "right",
+            "buildPanel": "right",
+            "symmetryPanel": "right",
+            "moldenInspector": "right",
+            "measurementsPanel": "right",
+            "coordsPanel": "right",
+            "inspector": "right",
+            "viewPanel": "right",
+            "figurePanel": "right",
+            "trajectoryPanel": "bottom",
+            "vibrationPanel": "bottom",
+            "spinorInfo": "right"
+          },
+          "positions": {},
+          "open": [
+            "coordsPanel",
+            "inspector"
+          ],
+          "parked": [],
+          "rightWidth": 340,
+          "bottomHeight": 220,
+          "activeRight": "inspector",
+          "activeBottom": null,
+          "focus": false,
+          "compact": false,
+          "draggingId": null
+        },
+        "stored": {
+          "placements": {
+            "subspacePanel": "right",
+            "buildPanel": "right",
+            "symmetryPanel": "right",
+            "moldenInspector": "right",
+            "measurementsPanel": "right",
+            "coordsPanel": "right",
+            "inspector": "right",
+            "viewPanel": "right",
+            "figurePanel": "right",
+            "trajectoryPanel": "bottom",
+            "vibrationPanel": "bottom",
+            "spinorInfo": "right"
+          },
+          "positions": {},
+          "open": [
+            "coordsPanel",
+            "viewPanel"
+          ],
+          "parked": [],
+          "rightWidth": 340,
+          "bottomHeight": 220,
+          "activeRight": "coordsPanel",
+          "activeBottom": "coordsPanel"
+        },
+        "recoveryPending": false,
+        "time": 3998.2000000029802
+      },
+      "beforeLayout": null
+    },
+    {
+      "line": 155,
+      "phase": "after",
+      "state": {
+        "live": {
+          "placements": {
+            "subspacePanel": "right",
+            "buildPanel": "right",
+            "symmetryPanel": "right",
+            "moldenInspector": "right",
+            "measurementsPanel": "right",
+            "coordsPanel": "right",
+            "inspector": "right",
+            "viewPanel": "right",
+            "figurePanel": "right",
+            "trajectoryPanel": "bottom",
+            "vibrationPanel": "bottom",
+            "spinorInfo": "right"
+          },
+          "positions": {},
+          "open": [
+            "coordsPanel",
+            "inspector"
+          ],
+          "parked": [],
+          "rightWidth": 340,
+          "bottomHeight": 220,
+          "activeRight": "inspector",
+          "activeBottom": null,
+          "focus": false,
+          "compact": false,
+          "draggingId": null
+        },
+        "stored": {
+          "placements": {
+            "subspacePanel": "right",
+            "buildPanel": "right",
+            "symmetryPanel": "right",
+            "moldenInspector": "right",
+            "measurementsPanel": "right",
+            "coordsPanel": "right",
+            "inspector": "right",
+            "viewPanel": "right",
+            "figurePanel": "right",
+            "trajectoryPanel": "bottom",
+            "vibrationPanel": "bottom",
+            "spinorInfo": "right"
+          },
+          "positions": {},
+          "open": [
+            "coordsPanel",
+            "viewPanel"
+          ],
+          "parked": [],
+          "rightWidth": 340,
+          "bottomHeight": 220,
+          "activeRight": "coordsPanel",
+          "activeBottom": "coordsPanel"
+        },
+        "recoveryPending": false,
+        "time": 4160.20000000298
+      },
+      "beforeLayout": null
+    },
+    {
+      "line": 156,
+      "phase": "before",
+      "state": {
+        "live": {
+          "placements": {
+            "subspacePanel": "right",
+            "buildPanel": "right",
+            "symmetryPanel": "right",
+            "moldenInspector": "right",
+            "measurementsPanel": "right",
+            "coordsPanel": "right",
+            "inspector": "right",
+            "viewPanel": "right",
+            "figurePanel": "right",
+            "trajectoryPanel": "bottom",
+            "vibrationPanel": "bottom",
+            "spinorInfo": "right"
+          },
+          "positions": {},
+          "open": [
+            "coordsPanel",
+            "inspector"
+          ],
+          "parked": [],
+          "rightWidth": 340,
+          "bottomHeight": 220,
+          "activeRight": "inspector",
+          "activeBottom": null,
+          "focus": false,
+          "compact": false,
+          "draggingId": null
+        },
+        "stored": {
+          "placements": {
+            "subspacePanel": "right",
+            "buildPanel": "right",
+            "symmetryPanel": "right",
+            "moldenInspector": "right",
+            "measurementsPanel": "right",
+            "coordsPanel": "right",
+            "inspector": "right",
+            "viewPanel": "right",
+            "figurePanel": "right",
+            "trajectoryPanel": "bottom",
+            "vibrationPanel": "bottom",
+            "spinorInfo": "right"
+          },
+          "positions": {},
+          "open": [
+            "coordsPanel",
+            "viewPanel"
+          ],
+          "parked": [],
+          "rightWidth": 340,
+          "bottomHeight": 220,
+          "activeRight": "coordsPanel",
+          "activeBottom": "coordsPanel"
+        },
+        "recoveryPending": false,
+        "time": 4165.9000000059605
+      },
+      "beforeLayout": {
+        "placements": {
+          "subspacePanel": "right",
+          "buildPanel": "right",
+          "symmetryPanel": "right",
+          "moldenInspector": "right",
+          "measurementsPanel": "right",
+          "coordsPanel": "right",
+          "inspector": "right",
+          "viewPanel": "right",
+          "figurePanel": "right",
+          "trajectoryPanel": "bottom",
+          "vibrationPanel": "bottom",
+          "spinorInfo": "right"
+        },
+        "positions": {},
+        "open": [
+          "coordsPanel",
+          "inspector"
+        ],
+        "parked": [],
+        "rightWidth": 340,
+        "bottomHeight": 220,
+        "activeRight": "inspector",
+        "activeBottom": null,
+        "focus": false,
+        "compact": false,
+        "draggingId": null
+      }
+    },
+    {
+      "line": 156,
+      "phase": "after",
+      "state": {
+        "live": {
+          "placements": {
+            "subspacePanel": "right",
+            "buildPanel": "right",
+            "symmetryPanel": "right",
+            "moldenInspector": "right",
+            "measurementsPanel": "right",
+            "coordsPanel": "right",
+            "inspector": "right",
+            "viewPanel": "right",
+            "figurePanel": "right",
+            "trajectoryPanel": "bottom",
+            "vibrationPanel": "bottom",
+            "spinorInfo": "right"
+          },
+          "positions": {},
+          "open": [
+            "coordsPanel",
+            "inspector"
+          ],
+          "parked": [],
+          "rightWidth": 340,
+          "bottomHeight": 220,
+          "activeRight": "inspector",
+          "activeBottom": null,
+          "focus": false,
+          "compact": false,
+          "draggingId": null
+        },
+        "stored": {
+          "placements": {
+            "subspacePanel": "right",
+            "buildPanel": "right",
+            "symmetryPanel": "right",
+            "moldenInspector": "right",
+            "measurementsPanel": "right",
+            "coordsPanel": "right",
+            "inspector": "right",
+            "viewPanel": "right",
+            "figurePanel": "right",
+            "trajectoryPanel": "bottom",
+            "vibrationPanel": "bottom",
+            "spinorInfo": "right"
+          },
+          "positions": {},
+          "open": [
+            "coordsPanel",
+            "viewPanel"
+          ],
+          "parked": [],
+          "rightWidth": 340,
+          "bottomHeight": 220,
+          "activeRight": "coordsPanel",
+          "activeBottom": "coordsPanel"
+        },
+        "recoveryPending": false,
+        "time": 4304.5
+      },
+      "beforeLayout": {
+        "placements": {
+          "subspacePanel": "right",
+          "buildPanel": "right",
+          "symmetryPanel": "right",
+          "moldenInspector": "right",
+          "measurementsPanel": "right",
+          "coordsPanel": "right",
+          "inspector": "right",
+          "viewPanel": "right",
+          "figurePanel": "right",
+          "trajectoryPanel": "bottom",
+          "vibrationPanel": "bottom",
+          "spinorInfo": "right"
+        },
+        "positions": {},
+        "open": [
+          "coordsPanel",
+          "inspector"
+        ],
+        "parked": [],
+        "rightWidth": 340,
+        "bottomHeight": 220,
+        "activeRight": "inspector",
+        "activeBottom": null,
+        "focus": false,
+        "compact": false,
+        "draggingId": null
+      }
+    }
+  ],
+  "predicateDiagnosis": {
+    "publicSnapshotTransientFields": [
+      "compact",
+      "draggingId",
+      "focus"
+    ],
+    "persistedFieldDifferences": {},
+    "productionSource": "assets/app/js/workbench.js: persist() writes its internal layout snapshot; the public snapshot() adds focus, compact and draggingId",
+    "correctWait": "Require the null-safe saved last layout to equal every persistable live field, excluding only those three never-persisted public fields. Keep the default timeout and all recovery assertions.",
+    "initialWholeSnapshotTimeoutWasAppDefect": false
+  },
+  "noProductionChanges": true,
+  "noTimeoutEscalation": true
+}

@@ -1,8 +1,12 @@
 {
   "issue": "https://github.com/evangelistalab/vibemol/issues/4",
-  "status": "scheduled",
+  "status": "validated on codex/browser-suite-repair; dedicated PR pending merge before Stage 3 opens",
   "release": "0.10.0 refactor preparation",
-  "currentBaseline": {"passed": 23, "failed": 14, "total": 37},
+  "currentBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37
+  },
   "deadline": "Land before Stage 3 element-cache consolidation (original Stage 4) opens",
   "delivery": "One dedicated PR, separate from every extraction; PR description names the intentional changes tracked by stale assertions",
   "blocksStage1": false,
@@ -14,17 +18,22 @@
         {
           "suites": ["build_panel.py", "looks.py"],
           "trackedChange": "0.9.2 scene-contents-dependent default Edit tool: Build for empty scenes, Transform for loaded structures",
-          "repair": "Assert the intended initial tool/panel state; explicitly choose Build before testing Build-only bond-order/H guards"
+          "repair": "Assert the intended initial tool/panel state; explicitly choose Build before testing Build-only bond-order/H guards",
+          "citation": "https://github.com/evangelistalab/vibemol/commit/5f6a3909a8ec5e88e7b60dc0a3412e4a8dcda054"
         },
         {
           "suites": ["properties_inspector.py", "appearance_controls.py"],
           "trackedChange": "Intentional first-Measure introduction of the Measurements panel",
-          "repair": "Assert preserved Properties tab/placement independently from the expected new Measurements layout entry"
+          "repair": "Keep the exact complete Workbench layout comparison with only Measurements open/activeRight changes, and check Properties Look tab exactly in every mode; Appearance is the same main/assertion alias",
+          "citation": "https://github.com/evangelistalab/vibemol/commit/4bdc820838139e2e2bd19f74ae64ea09f4a97478"
         },
         {
           "suites": ["style_studio.py"],
           "trackedChange": "OrbitControls spherical-conversion float drift of approximately 1.4e-13",
-          "repair": "Use a documented numeric tolerance while retaining projection, target/up, topology and Look-isolation checks"
+          "repair": "Use a documented numeric tolerance while retaining projection, target/up, topology and Look-isolation checks",
+          "citation": "https://github.com/evangelistalab/vibemol/issues/4",
+          "absoluteTolerance": 1e-12,
+          "relativeTolerance": 0
         }
       ]
     },
@@ -76,5 +85,34 @@
   },
   "rationale": "Seven of eight cheap stale-assertion/targeting repairs exercise panel, Looks and Properties code. These suites must be green before Stage 3 element-cache consolidation (original Stage 4) rewrites their bindings. The cache stage precedes PubChem and trajectory/symmetry/vibration, remains split by panel and needs the heaviest manual verification.",
   "executionOrder": "Issue #4 repair → Stage 3 element-cache consolidation → Stage 4 PubChem → Stage 5 trajectory/symmetry/vibration",
-  "openIntermittent": "The unresolved looks.py #appearanceMaterialPreset timeout remains open against the cache stage in refactor-stage-risk.json. Passing repair results do not explain or close it; recurrence during cache work requires a regression probe."
+  "openIntermittent": "The unresolved looks.py #appearanceMaterialPreset timeout remains open against the cache stage in refactor-stage-risk.json. Passing repair results do not explain or close it; recurrence during cache work requires a regression probe.",
+  "hardConstraints": {
+    "baseBranch": "codex/app-js-decomposition",
+    "appJsByteIdentical": true,
+    "productionJavaScriptChanges": false,
+    "unchangedCharacterizationCapturesPerRun": 102,
+    "requiredMatchingRuns": 2,
+    "changedAssertionCitation": "Every changed assertion cites the commit, issue or release note invalidating its old expectation; uncited failures stay failing.",
+    "synchronization": "wait_for_function on observable presented-frame or saved-layout state; no sleeps or timeout retries. A correct wait that does not fix the suite is a stop/report discriminator, not permission to increase waits.",
+    "looksMaterialFamilies": "Keep material_families unchanged and the appearanceMaterialPreset intermittent reachable and open."
+  },
+  "additionalCitedFindings": [
+    {
+      "suite": "floating_panels.py",
+      "finding": "Exact catalog count 25 predates Subspace/Atomic orbitals and Figure; inventory is 28, all exercised by the unchanged movement checks",
+      "citations": ["727a8d949f1d7b11212443c592083ce7441b1f06", "7df01b40435f6f37c073fd2c1dd74e0d7dc11a8b"]
+    },
+    {
+      "suite": "looks.py",
+      "finding": "Generic bond-target material snapshot includes independent teal hydrogen contacts; target chemical-carrier meshes for the unchanged exact uniform-color assertion",
+      "citation": "624bb61ff4075666be7d6ce5375eb78d254d36d3",
+      "materialFamiliesTouched": false
+    }
+  ],
+  "preRepairBaseline": {
+    "passed": 23,
+    "failed": 14,
+    "total": 37
+  },
+  "validation": "tests/baselines/browser-suite-repair-validation.json"
 }

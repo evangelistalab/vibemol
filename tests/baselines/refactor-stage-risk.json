@@ -3,7 +3,12 @@
   "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
   "scope": "Structural 0.10.0 refactor preserving existing APIs, behavior, visuals and session format; planned extracted-module namespaces have exact additive contracts. 0.9.x defects ship separately.",
   "manualVerificationRiskOrder": [3, 5, 4, 2, 1],
-  "currentBrowserBaseline": {"passed": 23, "failed": 14, "total": 37},
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+  },
   "stages": [
     {
       "stage": 1,
@@ -21,9 +26,8 @@
       "stage": 3,
       "risk": "highest manual-verification burden",
       "scope": "DOM element cache consolidation, split by panel",
-      "reason": "The current 23/14 baseline covers 37 entry points, including periodic_table.py; 14 fail (13 distinct first-failing workflows, including the Appearance alias). Seven of eight cheap assertion/targeting repairs cover panel, Looks and Properties paths. Stage 3 cache consolidation rewrites those bindings, so the separate 35/2 browser repair must land before it opens. Renaming/rebinding caches can silently miss event paths, null/lazy nodes and callbacks that generic captures do not exercise.",
-      "originalPlanBindingCount": 44,
-      "bindingInventory": "Audit the actual tagged-base declarations per panel before each PR. Distinguish DOM nodes from controllers/state; preserve when each node is created, assigned, replaced and observed. The original count is planning input, not permission for one 44-binding PR.",
+      "reason": "The current 35/2 baseline covers all 37 entry points, including periodic_table.py. The separate browser repair restores 12 previously failing entry points; seven of eight cheap assertion/targeting repairs cover panel, Looks and Properties paths. Stage 3 rewrites those bindings and still needs the heaviest manual verification: renaming/rebinding caches can silently miss event paths, null/lazy nodes and callbacks that generic captures do not exercise. The repair PR must merge before Stage 3 opens; the two unchanged app defects and the open Looks intermittent remain explicit risks.",
+      "bindingInventory": "Audit the actual tagged-base declarations per panel before each PR. Distinguish DOM nodes from controllers/state; preserve when each node is created, assigned, replaced and observed. The original 44 included helpRestoreFocusEl, which is focus-restoration state and remains a let outside els. Score the cache scope against 43 bindings and the planned let reduction of 313 to 270; do not make one 43-binding PR.",
       "prRule": "One panel per PR, including separate child-popover PRs when their lifecycle differs. Each PR gets its own review and beta soak. Keep listeners, focus behavior and lazy-query timing unchanged.",
       "panelPrPlan": [
         {
@@ -107,9 +111,46 @@
           "initialLog": "tests/baselines/evidence/stage2/browser/looks.log",
           "pairedProbeEvidence": ["tests/baselines/evidence/stage2/looks-material-accepted-stage1.json", "tests/baselines/evidence/stage2/looks-material-stage2.json"],
           "passingReplaysCloseRisk": false,
-          "recurrencePolicy": "If this hang recurs during cache consolidation, treat it as a candidate regression and probe before assuming the known intermittent. Compare pre-change/current control creation and replacement, selector presence and node identity, cached bindings, event-listener and delayed closure references, runtime errors and presented-frame readiness. Preserve the failing trace and document the mechanism and result in that panel PR."
+          "recurrencePolicy": "If this hang recurs during cache consolidation, treat it as a candidate regression and probe before assuming the known intermittent. Compare pre-change/current control creation and replacement, selector presence and node identity, cached bindings, event-listener and delayed closure references, runtime errors and presented-frame readiness. Preserve the failing trace and document the mechanism and result in that panel PR.",
+          "browserRepairCheck": {
+            "materialFamiliesTouched": false,
+            "mainRoutingTouched": false,
+            "selectorStillReachable": true,
+            "observedInPassingFullRun": false,
+            "riskClosed": false,
+            "evidence": "tests/baselines/evidence/browser-repair/assertion-audit.json"
+          }
         }
-      ]
+      ],
+      "domCacheBindingCount": 43,
+      "plannedLetReduction": {
+        "before": 313,
+        "after": 270,
+        "delta": -43
+      },
+      "excludedBinding": {
+        "name": "helpRestoreFocusEl",
+        "kind": "focus-restoration state holding an element",
+        "retainsLet": true,
+        "entersEls": false
+      },
+      "browserSafetyNet": {
+        "passingSuites": ["asset_cache.py", "edit_tool.py", "build_bonds.py", "build_orbit.py", "transform_selection.py", "figure.py", "calculations.py", "ux_review.py", "accessibility.py", "measurements.py", "build_panel.py", "symmetry_panel.py", "hydrogen_contacts.py", "workbench_release.py", "smoke.py", "premerge.py", "sessions.py", "looks.py", "camera_depth.py", "edit_picking.py", "style_studio.py", "appearance_scopes.py", "properties_inspector.py", "properties_disclosures.py", "floating_panels.py", "workbench.py", "workbench_consistency.py", "workbench_bar.py", "style_lab.py", "appearance_controls.py", "look_references.py", "look_tiles.py", "surface_schemes.py", "surface_shadows.py", "periodic_table.py"],
+        "newlyGreenSuites": ["figure.py", "measurements.py", "build_panel.py", "hydrogen_contacts.py", "smoke.py", "looks.py", "edit_picking.py", "style_studio.py", "properties_inspector.py", "properties_disclosures.py", "floating_panels.py", "appearance_controls.py"],
+        "remainingFailureFirstLocations": [
+          {
+            "suite": "axis_gizmo.py",
+            "line": 130,
+            "function": "run"
+          },
+          {
+            "suite": "mode_consistency.py",
+            "line": 80,
+            "function": "coordinate_row_actions"
+          }
+        ],
+        "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+      }
     },
     {
       "stage": 4,
@@ -130,14 +171,22 @@
     "axisGizmo": "Preserve the 0.9.2/0.9.3 capture-phase Escape ladder: menu/field precedence, cancel provisional placement, disarm Build without dropping selection, clear Transform selection, then allow Focus/panel dismissal. Repair focus handoff without removing interception."
   },
   "stage1BlockedByTheseFollowups": false,
-  "baselineCountScope": "37 make test-e2e browser suites including periodic_table.py; the 102-capture characterization runner is a separate gate. Original suite evidence plus later direct periodic-table comparisons; no new full sweep claimed.",
+  "baselineCountScope": "All 37 make test-e2e browser entry points executed independently on the repair branch, including the Appearance alias and periodic_table.py. Focused repaired-suite runs plus all remaining entry points; no downstream outcomes inferred from fail-fast make. The two-run 102-capture characterization is an additional gate.",
   "beforeElementCachePrerequisite": {
     "work": "Repair the browser suite in a separate PR before any Stage 3 element-cache consolidation PR opens",
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
     "plan": "tests/baselines/browser-suite-repair-plan.json",
-    "target": {"passed": 35, "failed": 2, "total": 37},
+    "target": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37
+    },
     "requiredRemainingFailures": ["axis_gizmo.py", "mode_consistency.py"],
-    "blocksElementCacheStage": true
+    "blocksElementCacheStage": true,
+    "validation": {
+      "status": "35/2 gate met on the repair branch; merge still required before Stage 3 opens",
+      "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    }
   },
   "executionOrder": [
     {
@@ -161,5 +210,10 @@
       "work": "Trajectory, symmetry and vibration, one feature per PR"
     }
   ],
-  "reorderRationale": "Establish els before PubChem and trajectory/symmetry/vibration so later seams consume panel caches rather than enumerate individual DOM dependencies and approach the 20-dependency stop condition."
+  "reorderRationale": "Establish els before PubChem and trajectory/symmetry/vibration so later seams consume panel caches rather than enumerate individual DOM dependencies and approach the 20-dependency stop condition.",
+  "preRepairBrowserBaseline": {
+    "passed": 23,
+    "failed": 14,
+    "total": 37
+  }
 }

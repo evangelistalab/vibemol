@@ -138,7 +138,13 @@ def run(page):
     page.locator('.vm-look-card[data-look="classic"]').click()
     original = settings(page)
     assert page.evaluate('() => VibeMolStructure.exportActive().volume') == molecule
-    assert page.evaluate('() => VibeMolTesting.getCameraSnapshot()') == camera
+    # Issue #4: OrbitControls round-trips drift by ~1.4e-13. A 1e-12 absolute
+    # tolerance permits rounding only; mode, enabled state and shape stay exact.
+    after = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+    assert after.keys() == camera.keys()
+    assert after['mode'] == camera['mode'] and after['controlsEnabled'] == camera['controlsEnabled']
+    assert all(math.isclose(after[vector][axis], camera[vector][axis], rel_tol=0, abs_tol=1e-12)
+               for vector in ['camera','target','up'] for axis in ['x','y','z']), (camera, after)
     page.locator('#appearanceAtomSize').fill('1.22'); page.locator('#appearanceAtomSize').press('Enter')
     assert settings(page)['appearance.rendering']['geometry']['atomScaleMain'] == 1.22
     assert page.evaluate('VibeMolAppearanceLooks.snapshot().styleModified')

@@ -9,11 +9,12 @@
     "failures": 13,
     "environment": 11,
     "realPreExistingDefects": 2,
-    "scope": "Original 13 Stage 0 failures; the additional Appearance failure aliases an existing workflow.",
+    "scope": "Historical original 13 Stage 0 failures plus the Properties alias; 12 of the 14 entry points now pass after the separate harness repair. Only axis_gizmo.py and mode_consistency.py remain failing.",
     "additionalFailingEntryPoints": 1,
-    "currentFailedEntryPoints": 14
+    "currentFailedEntryPoints": 2,
+    "historicalFailedEntryPoints": 14
   },
-  "prRequirement": "Every stage touching mapped functions or their dependencies must name the affected failed suites and record the listed manual workflows, base/current outcomes and evidence in its PR. All 13 failing workflows remain uncharacterized; generic captures do not replace manual verification.",
+  "prRequirement": "Every stage touching mapped functions or their dependencies must name affected suites and record the panel manual workflows, base/current outcomes and evidence in its PR. The original first failures remain historical characterization limits; current automated outcomes are in the browser-repair report. The two surviving defects still fail. Generic captures do not replace manual verification or close the open Looks intermittent.",
   "failures": [
     {
       "suite": "tests/e2e/figure.py",
@@ -681,11 +682,30 @@
   },
   "stageRiskPlan": "refactor-stage-risk.json",
   "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "supersedesHistoricalCounts": true
+  },
+  "scheduledRepair": "browser-suite-repair-plan.json",
+  "preRepairBrowserBaseline": {
     "passed": 23,
     "failed": 14,
     "total": 37,
     "evidence": "tests/baselines/characterize-validation.json",
     "supersedesHistoricalCounts": true
   },
-  "scheduledRepair": "browser-suite-repair-plan.json"
+  "currentRemainingFailures": [
+    {
+      "suite": "axis_gizmo.py",
+      "line": 130,
+      "function": "run"
+    },
+    {
+      "suite": "mode_consistency.py",
+      "line": 80,
+      "function": "coordinate_row_actions"
+    }
+  ]
 }

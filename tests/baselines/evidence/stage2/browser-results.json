@@ -599,7 +599,13 @@
     "tests/e2e/looks.py"
   ],
   "verifiedFailureSitesMatchAcceptedStage1": true,
-  "countScope": "Original 36-entry-point sweep plus the later verified periodic_table.py gate. Aggregate 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
+  "countScope": "Original 36-entry-point sweep plus the later verified periodic_table.py gate. Historical aggregate 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
   "originalSweepEntryPoints": 36,
-  "supplementalGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
+  "supplementalGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+  }
 }

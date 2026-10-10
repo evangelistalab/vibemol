@@ -1,0 +1,3 @@
+[release] /: default Workbench, CLI styles, last appearance, explicit recovery, sessions and startup default: passed
+[release] ?workspaceLab=1: default Workbench, CLI styles, last appearance, explicit recovery, sessions and startup default: passed
+[release] explicit legacy compatibility and isolated study/demo launches: passed

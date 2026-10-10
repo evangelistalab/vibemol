@@ -218,17 +218,17 @@
       "failed": 13,
       "total": 31,
       "supersededBy": {
-        "passed": 23,
-        "failed": 14,
+        "passed": 35,
+        "failed": 2,
         "total": 37,
-        "evidence": "tests/baselines/characterize-validation.json",
+        "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
         "supersedesHistoricalCounts": true
       }
     },
     "failedEntryPointCount": 14,
     "distinctRecordedFailingWorkflows": 13,
     "additionalFailureAlias": "appearance_controls.py delegates to properties_inspector.py and fails at the same assertion.",
-    "countScope": "31 original Stage 0 entry points, five standalone Appearance follow-ups and the later periodic_table.py check against the tagged base. Current aggregate is 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
+    "countScope": "31 original Stage 0 entry points, five standalone Appearance follow-ups and the later periodic_table.py check against the tagged base. Historical aggregate is 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
     "total": 37,
     "supplementalPeriodicGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
   },
@@ -268,6 +268,13 @@
       "total": 37
     },
     "separateExtractionPR": true,
-    "beforeElementCacheStage": 3
+    "beforeElementCacheStage": 3,
+    "validatedEvidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+  },
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
   }
 }

@@ -1,0 +1,3 @@
+[look refs] six requested checks, row resets/Undo, stable aliases, rename/update/delete, nulls, experimental options, Object isolation and screenshots: passed
+[look refs] fresh-browser user baselines, explicit nulls, sessions, last appearance, custom startup default and invalid-file atomicity: passed
+[look refs] legacy composites, settings-only presets, strict/relaxed imports and old last-appearance migration: passed

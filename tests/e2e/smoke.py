@@ -13,9 +13,9 @@ from playwright.sync_api import sync_playwright
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-    from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
+    from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
 else:
-    from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
+    from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACT_DIR = ensure_artifact_dir(pathlib.Path(os.environ.get('VIBEMOL_TEST_ARTIFACT_DIR', str(REPO_ROOT / 'out' / 'test-artifacts'))))
@@ -2943,6 +2943,12 @@ def main() -> int:
             before_move = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
+            # Issue #4 / Stage 0 proof: selection is synchronous, cue layout is
+            # presented by the render loop. Preserve the existing move checks.
+            wait_for_presented_state(page, '''() => {
+              const el=document.getElementById('editSelectionTranslateCueButton');
+              return !!el && !el.hidden && el.getBoundingClientRect().width>0;
+            }''')
             translate_cue_box = page.locator('#editSelectionTranslateCueButton').bounding_box()
             if not translate_cue_box:
                 raise AssertionError('Translate selection cue is not visible for move smoke')
@@ -2999,6 +3005,10 @@ def main() -> int:
             before_rotate = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
+            wait_for_presented_state(page, '''() => {
+              const el=document.getElementById('editSelectionRotateCueButton');
+              return !!el && !el.hidden && el.getBoundingClientRect().width>0;
+            }''')
             rotate_cue_box = page.locator('#editSelectionRotateCueButton').bounding_box()
             if not rotate_cue_box:
                 raise AssertionError('Rotate selection cue is not visible for rotate smoke')
@@ -3074,6 +3084,10 @@ def main() -> int:
             )
             if not isinstance(before_group_bond, dict):
                 raise AssertionError(f'Could not capture grouped bond carrier before live rotate: {before_group_bond!r}')
+            wait_for_presented_state(page, '''() => {
+              const el=document.getElementById('editSelectionRotateCueButton');
+              return !!el && !el.hidden && el.getBoundingClientRect().width>0;
+            }''')
             rotate_cue_box = page.locator('#editSelectionRotateCueButton').bounding_box()
             if not rotate_cue_box:
                 raise AssertionError('Rotate selection cue is not visible for grouped-bond rotate smoke')

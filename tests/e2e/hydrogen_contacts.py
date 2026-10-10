@@ -54,6 +54,9 @@ def run(page,url):
     page.screenshot(path=str(p.ARTIFACTS/'hydrogen-contacts-on.png'))
 
     # Independent structure choices and durable session state, separate from Looks.
+    # Measure introduced an active Measurements dock tab; reveal Properties
+    # before operating its existing Object controls (issue #4 targeting repair).
+    page.evaluate('()=>VibeMolWorkbench.open("inspector")')
     toggle.uncheck()
     translated=[(s,x+8,y,z) for s,x,y,z in WATER]
     assert p.load(page,[{'name':'second-dimer.xyz','text':xyz(translated)}],clear_first=False)['ok']

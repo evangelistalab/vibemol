@@ -907,7 +907,10 @@ def bond_colors_and_preset_controls(page, context, url):
     # Uniform colors also apply to solid and dashed metal connectors.
     assert p.load(page,[{'name':'metal.xyz','text':'4\nCoordination\nFe 0 0 0\nN 2.0 0 0\nN 0 2.6 0\nH 3.01 0 0\n'}])['ok']
     page.locator('#appearanceBondColorMode').select_option('uniform');value(page,'appearanceBondColor','#b02fd1')
-    mats=page.evaluate('() => VibeMolTesting.getLookMaterialSnapshot("bonds")')
+    # 624bb61 adds separately colored teal hydrogen-contact annotations to the
+    # bond group. Target chemical carriers, including solid/dashed connectors.
+    # https://github.com/evangelistalab/vibemol/commit/624bb61ff4075666be7d6ce5375eb78d254d36d3
+    mats=page.evaluate('() => VibeMolTesting.getBondCarrierSnapshots().flatMap(carrier=>carrier.meshes)')
     assert mats and all(mat['color']=='b02fd1' for mat in mats),mats
     saved=page.evaluate('() => VibeMolSession.export()')
     page.locator('#lookPreset').select_option('kit')
@@ -972,6 +975,12 @@ def hydrogen_bond_restrictions(page, context, url):
     topology=page.evaluate('() => VibeMolStructure.exportActive().volume.bonds')
     assert len(topology)==1 and topology[0]['order']==1
     page.locator('#modeEditBtn').click()
+    # 5f6a390 (v0.9.2): loaded scenes enter Transform. These chemistry guards
+    # concern Build-only bond cycling/growing, so explicitly arm Build first.
+    page.locator('#editAdaptiveAddAtomBtn').click()
+    # The legacy launcher opens the palette; committing an entity arms Build.
+    page.locator('#editBuildSearch').fill('carbon')
+    page.locator('#editBuildSearch').press('Enter')
     from smoke import find_bond_midpoint_canvas_point, find_atom_click_point
     x,y=find_bond_midpoint_canvas_point(page);page.mouse.click(x,y)
     assert page.evaluate('() => VibeMolStructure.exportActive().volume.bonds')==topology

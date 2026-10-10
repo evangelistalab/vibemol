@@ -6,6 +6,7 @@ import sys
 import premerge as p
 from smoke import build_fixture_structure
 from surface_shadows import settings, settle
+from helpers import wait_for_presented_state
 
 
 def instrumented_source():
@@ -377,6 +378,8 @@ def occlusion(page):
             assert point, (style, projection, 'No exposed center outside the selection handles')
             assert hover(point) == {'atom': -1, 'bond': [0, 1]}
             page.mouse.click(point['clientX'], point['clientY'])
+            # Issue #4: the render loop presents the newly selected bond's cue.
+            wait_for_presented_state(page, '()=>VibeMolTesting.getBondCenterCueState().visible')
             cue = page.evaluate('()=>VibeMolTesting.getBondCenterCueState()')
             assert cue['visible'] and cue['style'] == bond_style, (style, projection, cue)
             assert 2 not in page.evaluate('()=>VibeMolTesting.getEditSelectionIndices()')

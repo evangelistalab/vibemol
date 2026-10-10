@@ -107,7 +107,7 @@
     "fullMakeTestE2eGreen": false,
     "evidence": "tests/baselines/evidence/stage2/browser-results.json",
     "investigation": "tests/baselines/evidence/stage2/looks-investigation.json",
-    "countScope": "Original 36-entry-point sweep plus the later direct periodic_table.py check on this source; current aggregate is 23 passing / 14 failing of 37, not a new 37-suite sweep.",
+    "countScope": "Original 36-entry-point sweep plus the later direct periodic_table.py check on this source; historical aggregate is 23 passing / 14 failing of 37, not a new 37-suite sweep.",
     "originalSweepEntryPoints": 36,
     "supplementalGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
   },
@@ -133,7 +133,8 @@
       "mode_consistency.py"
     ],
     "blocksStage2": false,
-    "beforeElementCacheStage": 3
+    "beforeElementCacheStage": 3,
+    "validatedEvidence": "tests/baselines/evidence/browser-repair/browser-results.json"
   },
   "runtimeVersion": "0.9.5",
   "sessionFormatVersion": 1,
@@ -153,5 +154,11 @@
     "ownedByStage": 3,
     "riskPlan": "tests/baselines/refactor-stage-risk.json",
     "passingPairedReplaysCloseRisk": false
+  },
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
   }
 }
