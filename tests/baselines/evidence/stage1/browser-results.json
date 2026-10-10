@@ -1,9 +1,9 @@
 {
   "sourceAppSha256": "c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be",
   "knownBaseline": {
-    "passed": 22,
+    "passed": 23,
     "failed": 14,
-    "total": 36
+    "total": 37
   },
   "suites": [
     {
@@ -559,10 +559,22 @@
       "seconds": 31.97,
       "rawLog": "out/test-artifacts/stage1/browser/surface_shadows/run.log",
       "evidence": "tests/baselines/evidence/stage1/browser/surface_shadows.log"
+    },
+    {
+      "test": "tests/e2e/periodic_table.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "verificationScope": "Supplemental direct periodic-table check captured during Stage 2; not part of the original suite sweep",
+      "verifiedSource": "Accepted Stage 1 app.js c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be; exactMatch against the later direct-gate capture",
+      "evidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+      "logEvidence": "tests/baselines/evidence/stage2/periodic.log"
     }
   ],
-  "passed": 22,
+  "passed": 23,
   "failed": 14,
-  "total": 36,
-  "outcomeChangesFromBaseline": []
+  "total": 37,
+  "outcomeChangesFromBaseline": [],
+  "countScope": "Original 36-entry-point sweep plus the later verified periodic_table.py gate. Aggregate 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
+  "originalSweepEntryPoints": 36,
+  "supplementalGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
 }

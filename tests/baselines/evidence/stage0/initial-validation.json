@@ -177,11 +177,11 @@
   },
   "workingChangesCommitted": false,
   "currentBrowserBaseline": {
-    "passed": 22,
+    "passed": 23,
     "failed": 14,
-    "total": 36,
+    "total": 37,
     "evidence": "tests/baselines/characterize-validation.json",
     "supersedesHistoricalCounts": true
   },
-  "historicalCountsNotice": "This retained original run covered 30 entry points (17/13); with Style Lab it was 31 (18/13). Both are superseded by the current 22/14 of 36 baseline. Historical outcomes are retained as evidence, not current counts."
+  "historicalCountsNotice": "This retained original run covered 30 entry points (17/13); with Style Lab it was 31 (18/13). Both are superseded by the current 23/14 of 37 baseline. Historical outcomes are retained as evidence, not current counts."
 }

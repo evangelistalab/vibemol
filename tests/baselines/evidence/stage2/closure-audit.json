@@ -368,7 +368,7 @@
     "pointerListener": "Registered only during the first lazy scene creation",
     "controlListeners": "bindControls is called at the original late UI-wiring point",
     "animation": "Same RAF start/stop and visibility checks",
-    "domCaches": "Existing startup queries and node references retained; Stage 4 cache consolidation is not included",
+    "domCaches": "Existing startup queries and node references retained; Stage 3 cache consolidation (original Stage 4) is not included",
     "modelBoundary": "All seven owned mutable bindings describe the preview renderer/selection lifecycle; appearance/color settings and persistence remain injected app-owned state"
   },
   "scope": "15 original function bodies and all control event bodies moved without edits; new methods adapt existing preset/popup call sites. No behavior correction, vendor change or test-assertion repair.",

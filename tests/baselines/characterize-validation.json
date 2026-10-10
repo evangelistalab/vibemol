@@ -187,6 +187,15 @@
       "test": "tests/e2e/surface_shadows.py",
       "exitCode": 0,
       "evidence": "tests/baselines/evidence/stage0/followups/surface_shadows.log"
+    },
+    {
+      "test": "tests/e2e/periodic_table.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "verificationScope": "Supplemental direct periodic-table check captured during Stage 2; not part of the original suite sweep",
+      "verifiedSource": "Tagged base v0.9.5-pre-refactor / 1c609b3; direct gate passes in all four cases",
+      "evidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+      "logEvidence": "tests/baselines/evidence/stage2/periodic.log"
     }
   ],
   "consoleExceptions": {
@@ -195,7 +204,7 @@
   },
   "stage1Finding": "getElementSymbol copies differ in fallback, whitespace handling and numeric coercion",
   "existingBrowserSuitesSummary": {
-    "passed": 22,
+    "passed": 23,
     "failed": 14,
     "all13FailuresObservedOnBase": true,
     "failedWorkflowClassification": {
@@ -209,9 +218,9 @@
       "failed": 13,
       "total": 31,
       "supersededBy": {
-        "passed": 22,
+        "passed": 23,
         "failed": 14,
-        "total": 36,
+        "total": 37,
         "evidence": "tests/baselines/characterize-validation.json",
         "supersedesHistoricalCounts": true
       }
@@ -219,8 +228,9 @@
     "failedEntryPointCount": 14,
     "distinctRecordedFailingWorkflows": 13,
     "additionalFailureAlias": "appearance_controls.py delegates to properties_inspector.py and fails at the same assertion.",
-    "countScope": "31 original Stage 0 entry points plus five standalone follow-up runs; no full 36-suite rerun claimed.",
-    "total": 36
+    "countScope": "31 original Stage 0 entry points, five standalone Appearance follow-ups and the later periodic_table.py check against the tagged base. Current aggregate is 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
+    "total": 37,
+    "supplementalPeriodicGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
   },
   "baseTag": "v0.9.5-pre-refactor",
   "pixelInvestigation": "tests/baselines/characterize-pixel-investigation.json",
@@ -253,11 +263,11 @@
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
     "plan": "tests/baselines/browser-suite-repair-plan.json",
     "target": {
-      "passed": 34,
+      "passed": 35,
       "failed": 2,
-      "total": 36
+      "total": 37
     },
-    "beforeStage4": true,
-    "separateExtractionPR": true
+    "separateExtractionPR": true,
+    "beforeElementCacheStage": 3
   }
 }

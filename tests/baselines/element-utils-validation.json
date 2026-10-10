@@ -66,35 +66,39 @@
     "knownLimitation": "The camera pin still masks the separately filed ordinary preset projection defect (#3)."
   },
   "existingBrowserSuites": {
-    "attempted": 36,
-    "passed": 22,
+    "attempted": 37,
+    "passed": 23,
     "failed": 14,
     "acceptedBaseline": {
-      "passed": 22,
+      "passed": 23,
       "failed": 14,
-      "total": 36
+      "total": 37
     },
     "allOutcomesMatchBaseline": true,
     "allFailureLocationsMatchBaseline": true,
     "fullMakeTestE2eGreen": false,
-    "evidence": "tests/baselines/evidence/stage1/browser-results.json"
+    "evidence": "tests/baselines/evidence/stage1/browser-results.json",
+    "countScope": "Original 36-entry-point sweep plus the later direct periodic_table.py check on this source; current aggregate is 23 passing / 14 failing of 37, not a new 37-suite sweep.",
+    "originalSweepEntryPoints": 36,
+    "supplementalGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
   },
   "manualVerification": "tests/baselines/evidence/stage1/manual-verification.json",
   "browserRepair": {
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
     "plan": "tests/baselines/browser-suite-repair-plan.json",
     "separatePR": true,
-    "deadline": "Land before Stage 4 opens",
+    "deadline": "Land before Stage 3 element-cache consolidation (original Stage 4) opens",
     "target": {
-      "passed": 34,
+      "passed": 35,
       "failed": 2,
-      "total": 36
+      "total": 37
     },
     "remainingFailures": [
       "axis_gizmo.py",
       "mode_consistency.py"
     ],
-    "blocksStage1": false
+    "blocksStage1": false,
+    "beforeElementCacheStage": 3
   },
   "runtimeVersion": "0.9.5",
   "sessionFormatVersion": 1,

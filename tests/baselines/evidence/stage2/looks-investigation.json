@@ -89,5 +89,13 @@
       "evidence": "tests/baselines/evidence/stage2/browser/looks-replay-stage2.log"
     }
   },
-  "conclusion": "The first early timeout did not reproduce in either focused source or either unchanged full-suite replay. Both full replays pass the material workflow and reach the same pre-existing hydrogen_bond_restrictions assertion at looks.py:978. The timeout mechanism remains unresolved; it is retained as an intermittent observation, not declared a fixed or proven harness defect. No production code, assertion or synchronization change was made in response."
+  "conclusion": "The first early timeout did not reproduce in either focused source or either unchanged full-suite replay. Both full replays pass the material workflow and reach the same pre-existing hydrogen_bond_restrictions assertion at looks.py:978. The timeout mechanism remains unresolved; it is retained as an intermittent observation, not declared a fixed or proven harness defect. No production code, assertion or synchronization change was made in response.",
+  "carryForward": {
+    "status": "open intermittent",
+    "ownedByStage": 3,
+    "scope": "Element-cache consolidation (original Stage 4), especially Properties/Look bindings",
+    "riskPlan": "tests/baselines/refactor-stage-risk.json",
+    "passingReplaysCloseRisk": false,
+    "recurrencePolicy": "Treat recurrence as a candidate regression and probe control/node lifetime, cached bindings and delayed closures before assuming a known flake."
+  }
 }

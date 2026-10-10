@@ -345,7 +345,7 @@
       "fullListedWorkflowCoverage": false
     }
   ],
-  "coverageLimit": "Supplementary probes cover only the specific checks above. The 14 unmodified failing suite entry points remain red; later assertions and every interaction in the full manual matrix are not claimed as verified. Stage 4 requires the separate 34/2 repair and its panel-specific manual matrix.",
+  "coverageLimit": "Supplementary probes cover only the specific checks above. The 14 unmodified failing suite entry points remain red; later assertions and every interaction in the full manual matrix are not claimed as verified. Stage 3 element-cache consolidation (original Stage 4) requires the separate 35/2-of-37 repair and its panel-specific manual matrix.",
   "remainingAppDefects": {
     "axisGizmo": "Escape focus handoff; preserve the 0.9.2/0.9.3 capture-phase ladder",
     "modeConsistency": "Legacy Coordinates/selection-card overlap",
@@ -388,5 +388,6 @@
     "visualEvidence": "tests/baselines/evidence/stage2/periodic-screenshot-comparison.json",
     "limit": "All moved functions and live editor workflows are exercised; unreachable malformed-DOM/metadata guards and unrelated failed-suite later assertions are not claimed as verified."
   },
-  "additionalInvestigation": "tests/baselines/evidence/stage2/looks-investigation.json"
+  "additionalInvestigation": "tests/baselines/evidence/stage2/looks-investigation.json",
+  "openIntermittentRisk": "looks-appearance-material-preset-timeout remains open against Stage 3 element-cache consolidation; see refactor-stage-risk.json. Paired passes do not close it."
 }

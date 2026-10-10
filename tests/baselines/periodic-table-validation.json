@@ -1,6 +1,6 @@
 {
   "stage": 2,
-  "status": "implemented and validated against the accepted baseline; first Looks timeout retained as an unresolved intermittent observation",
+  "status": "approved and merged; unresolved Looks timeout remains an open intermittent against Stage 3 element-cache consolidation",
   "branch": "codex/periodic-table-extraction",
   "baseTag": "v0.9.5-pre-refactor",
   "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
@@ -22,7 +22,8 @@
     "listenerRegistrationTimingRetained": true,
     "rendererCreationStillLazy": true,
     "closureAudit": "tests/baselines/evidence/stage2/closure-audit.json",
-    "dependencyNote": "Nine DOM nodes, THREE, two metadata tables, palette and six color/appearance functions are explicit; no grouping hides dependencies. The count stays below the plan's 20-dependency stop condition."
+    "dependencyNote": "Nine DOM nodes, THREE, two metadata tables, palette and six color/appearance functions are explicit; no grouping hides dependencies. The count stays below the plan's 20-dependency stop condition.",
+    "cacheStageFollowup": "Stage 3 will revisit deps after establishing els; 19 current dependencies (nine DOM) are expected to become approximately 11. Record the actual count in the Element Colors cache PR; no consolidation is included in Stage 2."
   },
   "metrics": {
     "before": {
@@ -84,18 +85,18 @@
     "editorPixelsExactInAllFourPairs": true,
     "unexpectedConsoleErrorsOrWarnings": 0,
     "makeTestE2eIncludesGate": true,
-    "original36CountUnaffected": true,
     "evidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
-    "visualEvidence": "tests/baselines/evidence/stage2/periodic-screenshot-comparison.json"
+    "visualEvidence": "tests/baselines/evidence/stage2/periodic-screenshot-comparison.json",
+    "includedInCurrent37SuiteBaseline": true
   },
   "existingBrowserSuites": {
-    "attempted": 36,
-    "passed": 22,
+    "attempted": 37,
+    "passed": 23,
     "failed": 14,
     "acceptedBaseline": {
-      "passed": 22,
+      "passed": 23,
       "failed": 14,
-      "total": 36
+      "total": 37
     },
     "allOutcomesMatchBaseline": true,
     "initialFailureLocationsAllMatchBaseline": false,
@@ -105,7 +106,10 @@
     "pairedReplayMatchesAcceptedStage1FailureLocation": true,
     "fullMakeTestE2eGreen": false,
     "evidence": "tests/baselines/evidence/stage2/browser-results.json",
-    "investigation": "tests/baselines/evidence/stage2/looks-investigation.json"
+    "investigation": "tests/baselines/evidence/stage2/looks-investigation.json",
+    "countScope": "Original 36-entry-point sweep plus the later direct periodic_table.py check on this source; current aggregate is 23 passing / 14 failing of 37, not a new 37-suite sweep.",
+    "originalSweepEntryPoints": 36,
+    "supplementalGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
   },
   "manualVerification": "tests/baselines/evidence/stage2/manual-verification.json",
   "utilityDivergencesFollowup": {
@@ -118,22 +122,36 @@
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
     "plan": "tests/baselines/browser-suite-repair-plan.json",
     "separatePR": true,
-    "deadline": "Land before Stage 4 opens",
+    "deadline": "Land before Stage 3 element-cache consolidation (original Stage 4) opens",
     "target": {
-      "passed": 34,
+      "passed": 35,
       "failed": 2,
-      "total": 36
+      "total": 37
     },
     "remainingFailures": [
       "axis_gizmo.py",
       "mode_consistency.py"
     ],
-    "blocksStage2": false
+    "blocksStage2": false,
+    "beforeElementCacheStage": 3
   },
   "runtimeVersion": "0.9.5",
   "sessionFormatVersion": 1,
   "vendorChanges": false,
   "betaSoak": "Not started; preserve the planned minimum week before advancing the sequence.",
   "artifactRoot": "out/test-artifacts/stage2",
-  "committedEvidenceRoot": "tests/baselines/evidence/stage2"
+  "committedEvidenceRoot": "tests/baselines/evidence/stage2",
+  "merge": {
+    "pullRequest": "https://github.com/evangelistalab/vibemol/pull/6",
+    "baseBranch": "codex/app-js-decomposition",
+    "commit": "b72c4e5216d7a7267728af3596a5237e4babbc0b",
+    "mergedAt": "2026-10-10T16:49:02Z"
+  },
+  "openIntermittent": {
+    "id": "looks-appearance-material-preset-timeout",
+    "status": "open",
+    "ownedByStage": 3,
+    "riskPlan": "tests/baselines/refactor-stage-risk.json",
+    "passingPairedReplaysCloseRisk": false
+  }
 }

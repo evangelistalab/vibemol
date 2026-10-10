@@ -1,9 +1,9 @@
 {
   "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
   "knownBaseline": {
-    "passed": 22,
+    "passed": 23,
     "failed": 14,
-    "total": 36
+    "total": 37
   },
   "suites": [
     {
@@ -580,14 +580,26 @@
       "seconds": 30.66,
       "rawLog": "out/test-artifacts/stage2/browser/surface_shadows/run.log",
       "evidence": "tests/baselines/evidence/stage2/browser/surface_shadows.log"
+    },
+    {
+      "test": "tests/e2e/periodic_table.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "verificationScope": "Supplemental direct periodic-table check captured during Stage 2; not part of the original suite sweep",
+      "verifiedSource": "Stage 2 app.js 481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6; direct gate passes",
+      "evidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+      "logEvidence": "tests/baselines/evidence/stage2/periodic.log"
     }
   ],
-  "passed": 22,
+  "passed": 23,
   "failed": 14,
-  "total": 36,
+  "total": 37,
   "outcomeChangesFromBaseline": [],
   "initialFailureLocationChanges": [
     "tests/e2e/looks.py"
   ],
-  "verifiedFailureSitesMatchAcceptedStage1": true
+  "verifiedFailureSitesMatchAcceptedStage1": true,
+  "countScope": "Original 36-entry-point sweep plus the later verified periodic_table.py gate. Aggregate 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
+  "originalSweepEntryPoints": 36,
+  "supplementalGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
 }

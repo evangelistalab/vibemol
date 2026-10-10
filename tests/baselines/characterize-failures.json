@@ -681,9 +681,9 @@
   },
   "stageRiskPlan": "refactor-stage-risk.json",
   "currentBrowserBaseline": {
-    "passed": 22,
+    "passed": 23,
     "failed": 14,
-    "total": 36,
+    "total": 37,
     "evidence": "tests/baselines/characterize-validation.json",
     "supersedesHistoricalCounts": true
   },
