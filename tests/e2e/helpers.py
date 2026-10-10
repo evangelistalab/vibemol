@@ -66,6 +66,19 @@ def ensure_artifact_dir(root: pathlib.Path) -> pathlib.Path:
     return root
 
 
+def wait_for_presented_state(page, predicate: str) -> None:
+    """Poll app state after presentation, using Stage 0's two-frame boundary.
+
+    The app renders in requestAnimationFrame. The second callback observes the
+    previous frame after presentation; the predicate checks the actual app/DOM
+    state. A failed wait propagates once, without sleeping or timeout retries.
+    """
+    page.wait_for_function('''async () => {
+        await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+        return (''' + predicate + ''')();
+    }''')
+
+
 def write_failure_artifacts(page, artifact_dir: pathlib.Path, name: str, page_errors: list[str], console_errors: list[str]) -> None:
     ensure_artifact_dir(artifact_dir)
     png_path = artifact_dir / f"{name}.png"

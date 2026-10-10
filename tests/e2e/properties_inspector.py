@@ -168,9 +168,17 @@ def main():
             page.evaluate('VibeMolWorkbench.open("inspector")')
             assert page.locator('#inspectorLookTab').get_attribute('aria-selected')=='true'
             layout = page.evaluate('VibeMolWorkbench.snapshot()')
+            # 4bdc820 introduced Measurements on first Measure entry. Preserve
+            # the complete layout except its explicit new panel/active dock tab.
+            # appearance_controls.py delegates to this same main/assertion.
+            expected_layout = layout
             for mode in ['Edit','Measure','Display']:
                 page.locator('#mode'+mode+'Btn').click()
-                assert page.evaluate('VibeMolWorkbench.snapshot()') == layout
+                if mode == 'Measure':
+                    expected_layout = {**layout, 'open': ['measurementsPanel', *layout['open']],
+                                       'activeRight': 'measurementsPanel'}
+                assert page.evaluate('VibeMolWorkbench.snapshot()') == expected_layout
+                assert page.locator('#inspectorLookTab').get_attribute('aria-selected')=='true'
             # Every control remains inside the narrow panel in both themes.
             for width in [390,768,1512]:
                 page.set_viewport_size({'width':width,'height':950})

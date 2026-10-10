@@ -8,7 +8,10 @@ import premerge as p
 def drag(page, panel, dx=70, dy=40):
     handle = panel.locator('[data-vm-drag-handle]').first
     handle.wait_for(state='visible')
-    handle.hover()
+    # Issue #4: overlapping Selection tools cover the Atom placement handle's
+    # centre. Hover the same exposed grip position that the drag actually uses.
+    box = handle.bounding_box()
+    handle.hover(position={'x': min(30, box['width']/2), 'y': min(15, box['height']/2)})
     before = panel.bounding_box()
     box = handle.bounding_box()
     x, y = box['x'] + min(30, box['width']/2), box['y'] + min(15, box['height']/2)
@@ -31,7 +34,9 @@ def catalog_contract(page):
     p.context_item(page, a['id'], 'Combine (2)...')
     page.locator('.vm-combine-popover__button.is-secondary').click()
     panels = page.locator('[data-vm-floating-panel]')
-    assert panels.count() == 25
+    # 727a8d9 added Subspace/Atomic orbitals; 7df01b4 added Figure after the
+    # 25-shell baseline. Keep exact inventory and drag coverage for all 28.
+    assert panels.count() == 28
     # Clone each real shell to exercise its layout and shared movement without
     # the app hiding contextually unavailable tools. Live workflows below use
     # the originals, the running renderer and normal opening/closing commands.

@@ -12,7 +12,19 @@ def same_view(a,b):
         elif key in ["near","far"]:assert math.isclose(a[key],b[key],rel_tol=1e-12,abs_tol=1e-12),(a,b)
         else:assert a[key]==b[key],(a,b)
 
+def wait_for_presented_view(page):
+    # Issue #4 / Stage 0 pixel investigation: iso changes invalidate depth fit;
+    # sample the restoration baseline only once the presented frustum is stable.
+    # A stable-but-wrong restore still fails the unchanged same_view assertions.
+    page.wait_for_function('''async () => {
+      const before=JSON.stringify(VibeMolFigure.viewport());
+      await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+      return before===JSON.stringify(VibeMolFigure.viewport());
+    }''')
+
+
 def compose(page, options, name=None):
+    wait_for_presented_view(page)
     result=page.evaluate('''async options=>{
       const before=VibeMolFigure.viewport(), graph=JSON.parse(JSON.stringify(VibeMolTesting.getSceneGraphSnapshot())), cams=[], layers=[];
       const blob=await VibeMolFigure.compose({...options,onPanel:p=>{cams.push(p);layers.push(VibeMolTesting.getSceneGraphSnapshot().scenes.flatMap(s=>s.layers).find(l=>l.id===p.layerId));}});
@@ -54,12 +66,14 @@ def run(page,url):
     assert page.locator('#modeEditBtn').get_attribute('aria-checked')=='true'
     assert page.evaluate('()=>VibeMolTesting.getMeasurementSnapshot().surfacesSuppressed')
     page.locator('#modeDisplayBtn').click()
+    wait_for_presented_view(page)
     failure=page.evaluate('''async()=>{const before=VibeMolFigure.viewport(),graph=JSON.parse(JSON.stringify(VibeMolTesting.getSceneGraphSnapshot()));let error;
       try{await VibeMolFigure.compose({width:512,_forceThrowOnPanel:2});}catch(e){error=e.message;}
       return {before,after:VibeMolFigure.viewport(),graph,afterGraph:JSON.parse(JSON.stringify(VibeMolTesting.getSceneGraphSnapshot())),error,inert:document.querySelectorAll('[inert]').length};}''')
     same_view(failure['before'],failure['after']);assert failure['graph']==failure['afterGraph'],failure
     assert 'Forced figure capture failure' in failure['error'] and not failure['inert'],failure
     # An aborted capture also restores the transaction, including inert UI.
+    wait_for_presented_view(page)
     assert page.evaluate('''async()=>{const before=VibeMolFigure.viewport(),controller=new AbortController();let error;
       try{await VibeMolFigure.compose({width:400,signal:controller.signal,onPanel:()=>controller.abort()});}catch(e){error=e.name;}
       const after=VibeMolFigure.viewport();return error==='AbortError'&&before.width===after.width&&before.height===after.height&&!document.querySelector('[inert]');}''')

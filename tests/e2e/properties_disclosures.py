@@ -14,7 +14,11 @@ def check_panel(page, placement):
     page.locator('#lookGallery img').evaluate_all('images => Promise.all(images.map(img => img.decode()))')
     body = page.locator('#inspectorLook')
     box = body.bounding_box()
-    page.mouse.move(box['x'] + box['width'] / 2, box['y'] + 75)
+    # Issue #4: the compact body is only ~71 px high; y+75 is off-screen.
+    # Wheel at the centre of its visible intersection with the viewport.
+    left, right = max(0, box['x']), min(page.viewport_size['width'], box['x'] + box['width'])
+    top, bottom = max(0, box['y']), min(page.viewport_size['height'], box['y'] + box['height'])
+    page.mouse.move((left + right) / 2, (top + bottom) / 2)
     page.mouse.wheel(0, 140)
     page.wait_for_function('() => document.getElementById("inspectorLook").scrollTop > 0')
 
