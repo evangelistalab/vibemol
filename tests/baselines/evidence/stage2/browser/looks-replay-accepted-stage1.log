@@ -1,0 +1,31 @@
+[look refs] six requested checks, row resets/Undo, stable aliases, rename/update/delete, nulls, experimental options, Object isolation and screenshots: passed
+[look refs] fresh-browser user baselines, explicit nulls, sessions, last appearance, custom startup default and invalid-file atomicity: passed
+[look refs] legacy composites, settings-only presets, strict/relaxed imports and old last-appearance migration: passed
+[look tiles] six requested checks, all seven complete looks, menu mixing, Undo, saved looks, preserved overrides, hover/focus and screenshots: passed
+[surface palettes] legacy sessions/Looks/presets/libraries/defaults/autosave, exact labels, rendered polarity and Tableau round-trip: passed
+[colors] Studio: independent selection, overrides, Undo, saving/import and sessions: passed
+[colors] Properties: independent selection, overrides, Undo, saving/import and sessions: passed
+[materials] Studio: families, controls, recipe matching, undo, personal libraries, sessions: passed
+[materials] Properties: families, controls, recipe matching, undo, personal libraries, sessions: passed
+[looks] first-frame opacity, stable frames during drag/full-opacity transitions, reusable surface/WBOIT materials, and shader variants: passed
+[looks] visible surface-only opacity, individual/group edits, mixed values, slider undo, stable geometry, opaque molecules, legacy presets/sessions and deferred MOs: passed
+[looks] tighter shadow framing, device map limit, rotated/offset molecules, large surfaces and pole-aligned lights: passed
+[looks] opaque and WBOIT surface cross-shadows (opacity, receive pixels, cast pixels): [(1, 8035, 7741), (0.55, 8059, 7612)]; toggle geometry and session round-trip: passed
+[looks] 2C phase/Bloch shadows, separate alpha/beta shadow maps, opacity, depth of field and transparency fallback: passed
+[looks] sphere-cap containment, all multiple-bond orders/presets, small atoms, radius caps, Kit toggle and sessions: passed
+Traceback (most recent call last):
+  File "/Users/fevange/Source/vibemol/out/test-artifacts/stage2/replay-looks.py", line 17, in <module>
+    runpy.run_path(str(root / 'tests/e2e/looks.py'), run_name='__main__')
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/runpy.py", line 268, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/runpy.py", line 97, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/Users/fevange/Source/vibemol/tests/e2e/looks.py", line 1014, in <module>
+    if __name__=='__main__':main()
+  File "/Users/fevange/Source/vibemol/tests/e2e/looks.py", line 1006, in main
+    page.goto(url+'?workspaceLab=0');page.wait_for_function('() => window.VibeMolAppearanceLooks');run(page,context,url)
+  File "/Users/fevange/Source/vibemol/tests/e2e/looks.py", line 978, in hydrogen_bond_restrictions
+    assert 'single bond' in page.evaluate('() => VibeMolTesting.getHintMessage()')
+AssertionError

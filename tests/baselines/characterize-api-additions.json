@@ -16,6 +16,14 @@
         "isLanthanideOrActinideAtomicNumber",
         "isTransitionMetalAtomicNumber"
       ]
+    },
+    {
+      "stage": 2,
+      "script": "assets/app/js/periodic-table.js",
+      "global": "VibeMolPeriodicTable",
+      "keys": [
+        "createPeriodicTableController"
+      ]
     }
   ]
 }

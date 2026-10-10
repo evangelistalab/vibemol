@@ -1,0 +1,29 @@
+[measurements] persistent list, units/CSV/clipboard, undo, label layout, surfaces and camera: passed
+[workspace] Analyze canvas share, responsive rail, hit targets, settings and contrast: passed
+[recovery] naming, visible active source, consent before docks and restore policy: passed
+Traceback (most recent call last):
+  File "/Users/fevange/Source/vibemol/tests/e2e/measurements.py", line 237, in <module>
+    if __name__=='__main__':main()
+  File "/Users/fevange/Source/vibemol/tests/e2e/measurements.py", line 233, in main
+    recovery_live_panels(page,url);assert not errors,errors
+  File "/Users/fevange/Source/vibemol/tests/e2e/measurements.py", line 180, in recovery_live_panels
+    page.wait_for_function('()=>JSON.parse(localStorage.getItem("vibemol.workbench.lab.v1")).last.open.includes("coordsPanel")')
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/sync_api/_generated.py", line 12436, in wait_for_function
+    self._sync(
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_page.py", line 1136, in wait_for_function
+    return await self._main_frame.wait_for_function(**locals_to_params(locals()))
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_frame.py", line 910, in wait_for_function
+    await self._channel.send("waitForFunction", self._timeout, params)
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: Page.wait_for_function: TypeError: Cannot read properties of null (reading 'last')
+    at eval (eval at predicate (eval at evaluate (:302:30)), <anonymous>:1:65)
+    at predicate (eval at evaluate (:302:30), <anonymous>:13:29)
+    at next (eval at evaluate (:302:30), <anonymous>:29:33)
+    at eval (eval at evaluate (:302:30), <anonymous>:42:13)
+    at UtilityScript.evaluate (<anonymous>:304:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44)

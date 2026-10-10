@@ -55,6 +55,7 @@ Primary capabilities:
 - `assets/app/js/fragments.js`: fragment/molecule catalog loading, manifest support, and fragment builders.
 - `assets/app/js/parsers.js`: parsers (`parseCube`, `parseTwoComponentCube`, `parseXYZ`) including streaming tokenization.
 - `assets/app/js/rendering.js`: volume/stat helpers used by `app.js`.
+- `assets/app/js/periodic-table.js`: lazy Element Colors preview renderer, selected element and popup event wiring, created with explicit app-owned metadata/color/DOM dependencies. It owns no appearance persistence or Build element chooser state.
 - `assets/app/js/measurements.js` and `assets/app/js/measurements-panel.js`: persistent per-structure measurement values, units/precision, CSV, undo, and the shared Measurements panel. Loaded after view-utils; see `docs/measurements.md` and `tests/e2e/measurements.py`.
 - `assets/app/js/interaction.js`: keyboard shortcut routing and input-focus guards.
 - `assets/app/js/ui.js`: UI formatting helpers for coordinates and XYZ export text.
@@ -214,10 +215,12 @@ Required script order in `index.html`:
 55. `assets/app/js/trajectory-ui.js`
 56. `assets/app/js/trajectory-video.js`
 57. `assets/app/js/app.js`
+    - `periodic-table.js` loads immediately before `app.js`; its controller is constructed at the original periodic-state initialization point and binds controls at the original late UI-wiring point.
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolElementUtils`
 - `window.VibeMolParsers`
+- `window.VibeMolPeriodicTable`
 - `window.VibeMolRendering`
 - `window.VibeMolInteraction`
 - `window.VibeMolUI`
@@ -631,6 +634,7 @@ Repo checks:
 - Stage 0's current browser baseline is **22 passing / 14 failing of 36 entry points**, including the five added Appearance suites. Historical 18/13 counts covered only 31 entry points and are superseded. The 102 captured scientific/session/geometry/DOM goldens remain unchanged; `tests/baselines/characterize-api-additions.json` checks the exact additional Stage 1 utility namespace while preserving every existing export.
 - Stage 1's duplicate audit, metrics and validation are recorded in `tests/baselines/element-utils-validation.json` and `tests/baselines/evidence/stage1/`. Keep the explicitly distinct symbol/clamp policies until a separate behavior-change PR; the extraction preserves all 14 original bodies' observable behavior.
 - The symbol fallback, reversed-range clamp and NaN-coercion divergences are filed together as the separate **0.9.x issue #5**: https://github.com/evangelistalab/vibemol/issues/5. Its worked examples and executable input-path investigation live in `tests/baselines/evidence/stage1-followup/`. CUBE parsers retain fractional Z in intermediates, but supported live-app paths normalize or reject it before the symbol callers; direct low-level API callers can bypass that normalization. The four-argument layout clamp in `workbench-model.js` is known and outside the extraction's four-copy clamp scope, including Stage 4/5.
+- Stage 2's closure audit, metrics and validation live in `tests/baselines/periodic-table-validation.json` and `tests/baselines/evidence/stage2/`. `tests/e2e/periodic_table.py` directly exercises all moved functions and live color-editor workflows and can compare with a tagged archive using `--base-root`. It is an additional extraction gate alongside characterization; the accepted 22/14 count still refers to the original 36 browser entry points. Its new namespace has one exact export in `characterize-api-additions.json`; the original 102 structured goldens remain unchanged.
 - The original 13 failing baseline browser suites are listed and classified in `tests/baselines/characterize-failures.json`; the additional `appearance_controls.py` failure delegates to the already-recorded Properties workflow. These failing workflows are uncharacterized paths even when a failure comes from test setup or an outdated assertion. Do not report these suites as passing.
 - Every refactor-stage PR touching a mapped function or its dependencies must include a **Manual verification** section naming the affected suites, the listed workflows, the result on the tagged base and on the proposed change, and the verification evidence. A passing generic characterization capture does not replace this verification. Record any remaining pre-existing defect explicitly.
 - The orthographic preset camera/target projection-refresh defect is a separate **0.9.x bug**, tracked at https://github.com/evangelistalab/vibemol/issues/3. Fix ownership is `afterApplySettings`: refresh the active projection once after a batch touching `view.camera.*` or `view.target.*`. The characterization pin deliberately masks it; passing captures do not prove the ordinary API is fixed. Keep its workaround during the structural refactor and ship the behavior fix separately.

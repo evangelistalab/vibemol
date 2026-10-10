@@ -1,0 +1,27 @@
+{
+  "artifactRoot": "out/test-artifacts/stage2",
+  "committedEvidenceRoot": "tests/baselines/evidence/stage2",
+  "rawArtifactsIgnored": true,
+  "repositoryLocatedEvidence": true,
+  "reproduction": {
+    "periodicTable": "python3 tests/e2e/periodic_table.py --base-root <archive of v0.9.5-pre-refactor>",
+    "characterization": "python3 tests/e2e/characterize.py",
+    "static": "make check",
+    "unit": "make test-unit",
+    "existingBrowserSweep": "36 existing Makefile entry points run sequentially so known failures do not prevent later suites from being attempted"
+  },
+  "environment": {
+    "browser": "Chromium 145.0.7632.6",
+    "gl": "SwiftShader ANGLE, same as Stage 0/1",
+    "python": "3.9.6",
+    "node": "24.13.1"
+  },
+  "tools": {
+    "closureAudit": "Babel parser/traverse from existing local gatsby-cli installation, used only to verify identifier binding and verbatim function-body parity; no runtime/build dependency added."
+  },
+  "rawArchives": [
+    "/private/tmp/vibemol-characterize-1c609b3",
+    "/private/tmp/vibemol-stage1-source"
+  ],
+  "archivePurpose": "Temporary source archives only; no validation evidence depends on temporary storage."
+}

@@ -1,0 +1,377 @@
+{
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "priorCommit": "f3f1fd6",
+  "movedFunctions": [
+    {
+      "name": "makePeriodicSymbolSprite",
+      "baseLine": 10839,
+      "priorLine": 10829,
+      "moduleLine": 60,
+      "bodySha256IgnoringIndent": "50e60cbcd02c80d4b2eb15f29f842f5978f5ddb1219460c068b0ca6c5a1fe9ba",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "getPeriodicTablePosition",
+      "baseLine": 10871,
+      "priorLine": 10861,
+      "moduleLine": 92,
+      "bodySha256IgnoringIndent": "c1426529df1eddf1cd32810a43516957595a1aa2cc4c90d00c3492b65a8b37a5",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "getPeriodicTableHalfExtents",
+      "baseLine": 10886,
+      "priorLine": 10876,
+      "moduleLine": 107,
+      "bodySha256IgnoringIndent": "d47990dec94a75a6e99d8379f696f1395b687f7119dffeedd6bda1db50718700",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "resizePeriodicTableScene",
+      "baseLine": 10915,
+      "priorLine": 10905,
+      "moduleLine": 136,
+      "bodySha256IgnoringIndent": "bb46d5a8e82203d5444f93fe4c8a85c993138018418065335c8f915acd91a900",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "renderPeriodicTableFrame",
+      "baseLine": 10939,
+      "priorLine": 10929,
+      "moduleLine": 160,
+      "bodySha256IgnoringIndent": "fce5cea12d2dc64e2fae9f3beb92020f1910404ec4791652dc84dc1870682065",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "periodicTableLoop",
+      "baseLine": 10948,
+      "priorLine": 10938,
+      "moduleLine": 169,
+      "bodySha256IgnoringIndent": "fb2b0f0f645ecda28f6a002f1c359906dc911b69741bbae7f73d6b1182050eeb",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "startPeriodicTableLoop",
+      "baseLine": 10960,
+      "priorLine": 10950,
+      "moduleLine": 181,
+      "bodySha256IgnoringIndent": "85133ffd986b307a52cc30f92f604553816754fce32ef698dc395d243aa5b05e",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "stopPeriodicTableLoop",
+      "baseLine": 10968,
+      "priorLine": 10958,
+      "moduleLine": 189,
+      "bodySha256IgnoringIndent": "9d9a2cefc5f14114896f0560a2fa147d67e66e3550c070ab5e9b8f50a63d2c5f",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "ensurePeriodicTableScene",
+      "baseLine": 10977,
+      "priorLine": 10967,
+      "moduleLine": 198,
+      "bodySha256IgnoringIndent": "30e21e74d37e61a04f4188d2856c5f2852430b350b2903382d0952f980cef400",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "refreshPeriodicCell",
+      "baseLine": 11076,
+      "priorLine": 11066,
+      "moduleLine": 297,
+      "bodySha256IgnoringIndent": "93d6e997dc143cb6ef370f4e5c6d54bb83a61dfec6f7935160eb9d107ff8dc3b",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "refreshPeriodicCells",
+      "baseLine": 11091,
+      "priorLine": 11081,
+      "moduleLine": 312,
+      "bodySha256IgnoringIndent": "4c1e244074e6f64d012cebdfa27c7b6304a4a8fba3d3018132e6437ccbe5222c",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "selectElementForColorEditor",
+      "baseLine": 11099,
+      "priorLine": 11089,
+      "moduleLine": 320,
+      "bodySha256IgnoringIndent": "2fbe25fb7adbd1f6c8b2469772bee7596e064e9ef07ca3d095616cf04983aec0",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "buildPeriodicTableEditor",
+      "baseLine": 11117,
+      "priorLine": 11107,
+      "moduleLine": 338,
+      "bodySha256IgnoringIndent": "e21bfede0bb5d060579d772be467033d5be92416e01c6c031c984dbe6bb9a766",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "setElementColorOverlayOpen",
+      "baseLine": 11129,
+      "priorLine": 11119,
+      "moduleLine": 350,
+      "bodySha256IgnoringIndent": "90e7105ac110a21ead3b53844b75c0e1b1b305745b65f1cb0a34b0dfb7f7fdae",
+      "verbatimExceptIndent": true
+    },
+    {
+      "name": "applyElementColorPickerValue",
+      "baseLine": 31739,
+      "priorLine": 31729,
+      "moduleLine": 377,
+      "bodySha256IgnoringIndent": "f19d7fed85a6d546546c1816bff7561f191178643a25116ebed2833b6f7ef65d",
+      "verbatimExceptIndent": true
+    }
+  ],
+  "movedMutableBindings": [
+    "periodicTableRenderer",
+    "periodicTableScene",
+    "periodicTableCamera",
+    "periodicTableControls",
+    "periodicTableRoot",
+    "periodicTableRaf",
+    "selectedElementForEditor"
+  ],
+  "injectedDependencies": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor",
+    "elementColorBtn",
+    "elementColorOverlay",
+    "elementColorClose",
+    "periodicTableViewport",
+    "periodicTableCanvas",
+    "elementColorName",
+    "elementColorPicker",
+    "elementColorResetOne",
+    "elementColorResetAll"
+  ],
+  "dependencyCount": 19,
+  "unboundPlatformIdentifiers": [
+    "Map",
+    "Math",
+    "Number",
+    "Object",
+    "cancelAnimationFrame",
+    "document",
+    "globalThis",
+    "requestAnimationFrame",
+    "window"
+  ],
+  "accidentalAppClosureReferences": [],
+  "identifiersByMovedFunction": {
+    "makePeriodicSymbolSprite": [
+      "THREE",
+      "UI_PALETTE",
+      "c",
+      "ctx",
+      "document",
+      "mat",
+      "spr",
+      "symbol",
+      "tex",
+      "txt"
+    ],
+    "getPeriodicTablePosition": [
+      "THREE",
+      "col",
+      "row",
+      "sx",
+      "sy",
+      "x",
+      "y",
+      "z"
+    ],
+    "getPeriodicTableHalfExtents": [
+      "ATOM_SYMBOL_TO_Z",
+      "ATOM_Z_TO_DATA",
+      "Math",
+      "Number",
+      "PERIODIC_TABLE_LAYOUT",
+      "PERIODIC_TABLE_NODE_SCALE",
+      "PERIODIC_TABLE_OUTLINE_SCALE",
+      "PERIODIC_TABLE_SELECTED_SCALE",
+      "PERIODIC_TABLE_SPHERE_RADIUS",
+      "col",
+      "cols",
+      "getPeriodicTablePosition",
+      "maxX",
+      "maxY",
+      "p",
+      "row",
+      "shellPad",
+      "symbol",
+      "z"
+    ],
+    "resizePeriodicTableScene": [
+      "Math",
+      "PERIODIC_TABLE_VIEW_MARGIN",
+      "aspect",
+      "ext",
+      "getPeriodicTableHalfExtents",
+      "h",
+      "orthoHalfHeight",
+      "periodicTableCamera",
+      "periodicTableRenderer",
+      "periodicTableViewport",
+      "w",
+      "window"
+    ],
+    "renderPeriodicTableFrame": [
+      "periodicTableCamera",
+      "periodicTableControls",
+      "periodicTableRenderer",
+      "periodicTableScene"
+    ],
+    "periodicTableLoop": [
+      "elementColorOverlay",
+      "periodicTableLoop",
+      "renderPeriodicTableFrame",
+      "requestAnimationFrame"
+    ],
+    "startPeriodicTableLoop": [
+      "periodicTableLoop",
+      "periodicTableRaf",
+      "requestAnimationFrame"
+    ],
+    "stopPeriodicTableLoop": [
+      "cancelAnimationFrame",
+      "periodicTableRaf"
+    ],
+    "ensurePeriodicTableScene": [
+      "ATOM_SYMBOL_TO_Z",
+      "ATOM_Z_TO_DATA",
+      "Number",
+      "PERIODIC_TABLE_LAYOUT",
+      "PERIODIC_TABLE_NODE_SCALE",
+      "PERIODIC_TABLE_OUTLINE_SCALE",
+      "PERIODIC_TABLE_SPHERE_RADIUS",
+      "THREE",
+      "col",
+      "colorHex",
+      "cols",
+      "d1",
+      "d2",
+      "e",
+      "getActiveElementHexColor",
+      "getPeriodicTablePosition",
+      "hit",
+      "hits",
+      "label",
+      "makePeriodicSymbolSprite",
+      "mat",
+      "mesh",
+      "outline",
+      "outlineMat",
+      "periodicNodesByZ",
+      "periodicPickTargets",
+      "periodicPointer",
+      "periodicRaycaster",
+      "periodicTableCamera",
+      "periodicTableCanvas",
+      "periodicTableRoot",
+      "periodicTableScene",
+      "rect",
+      "renderPeriodicTableFrame",
+      "resizePeriodicTableScene",
+      "row",
+      "selectElementForColorEditor",
+      "sphereGeom",
+      "symbol",
+      "z"
+    ],
+    "refreshPeriodicCell": [
+      "PERIODIC_TABLE_NODE_SCALE",
+      "PERIODIC_TABLE_SELECTED_SCALE",
+      "getActiveElementHexColor",
+      "hex",
+      "node",
+      "periodicNodesByZ",
+      "selected",
+      "selectedElementForEditor",
+      "z"
+    ],
+    "refreshPeriodicCells": [
+      "periodicNodesByZ",
+      "refreshPeriodicCell",
+      "z"
+    ],
+    "selectElementForColorEditor": [
+      "elementColorName",
+      "elementColorPicker",
+      "getActiveElementHexColor",
+      "getElementName",
+      "getElementSymbol",
+      "name",
+      "next",
+      "refreshPeriodicCells",
+      "selectedElementForEditor",
+      "symbol",
+      "z"
+    ],
+    "buildPeriodicTableEditor": [
+      "ensurePeriodicTableScene",
+      "refreshPeriodicCells",
+      "renderPeriodicTableFrame",
+      "resizePeriodicTableScene",
+      "selectElementForColorEditor",
+      "selectedElementForEditor"
+    ],
+    "setElementColorOverlayOpen": [
+      "buildPeriodicTableEditor",
+      "elementColorOverlay",
+      "isOpen",
+      "open",
+      "refreshPeriodicCells",
+      "selectElementForColorEditor",
+      "selectedElementForEditor",
+      "startPeriodicTableLoop",
+      "stopPeriodicTableLoop"
+    ],
+    "applyElementColorPickerValue": [
+      "editAppearanceSettings",
+      "elementColorPicker",
+      "event",
+      "exportElementColorOverrides",
+      "getActiveElementHexColor",
+      "normalizeHexColor",
+      "selectedElementForEditor"
+    ]
+  },
+  "metrics": {
+    "before": {
+      "lines": 33270,
+      "functionDeclarations": 1196,
+      "letDeclarations": 313,
+      "constDeclarations": 596,
+      "sha256": "c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be"
+    },
+    "after": {
+      "lines": 32928,
+      "functionDeclarations": 1181,
+      "letDeclarations": 306,
+      "constDeclarations": 588,
+      "sha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6"
+    }
+  },
+  "lazyLifecycle": {
+    "controllerCreated": "Same point as the original periodic state block",
+    "renderer": "Created on first overlay open; cached on close/reopen",
+    "pointerListener": "Registered only during the first lazy scene creation",
+    "controlListeners": "bindControls is called at the original late UI-wiring point",
+    "animation": "Same RAF start/stop and visibility checks",
+    "domCaches": "Existing startup queries and node references retained; Stage 4 cache consolidation is not included",
+    "modelBoundary": "All seven owned mutable bindings describe the preview renderer/selection lifecycle; appearance/color settings and persistence remain injected app-owned state"
+  },
+  "scope": "15 original function bodies and all control event bodies moved without edits; new methods adapt existing preset/popup call sites. No behavior correction, vendor change or test-assertion repair.",
+  "dependencyBudget": "19 explicit dependencies, including all nine individual DOM nodes; below the plan's 20-dependency stop condition. No hidden grouped dependencies.",
+  "sourceState": "Accepted Stage 1 production source f3f1fd6; the Stage 2 PR base 9b4fa79 adds only the requested issue #5 follow-up evidence."
+}
