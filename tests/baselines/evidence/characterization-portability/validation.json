@@ -1,0 +1,17 @@
+{
+  "productionJsChanges": false,
+  "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+  "checks": "passed",
+  "unitTests": {
+    "node": 426,
+    "python": 6,
+    "failed": 0
+  },
+  "oldGoldenWithFloatOnlyTolerance": {
+    "existingCiCaptures": 102,
+    "existingLocalCaptures": 102,
+    "differencesOutsideTolerance": 0
+  },
+  "baselineRecording": "pending on CI; no local re-recording performed",
+  "pr8": "unmerged; four Build cache conversions remain unchanged on its branch"
+}

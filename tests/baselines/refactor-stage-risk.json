@@ -437,5 +437,19 @@
     "passed": 23,
     "failed": 14,
     "total": 37
+  },
+  "characterizationPortability": {
+    "status": "CI recording and 37-suite validation pending; cache sub-PR sequence stopped",
+    "comparison": {
+      "floatLeaves": {
+        "relTol": 1e-09,
+        "absTol": 1e-12
+      },
+      "otherTypesAndStructure": "exact; type comparison runs first"
+    },
+    "audit": "tests/baselines/evidence/characterization-portability/pre-change-differences.json",
+    "findings": "32 one- or four-ULP float leaves; maximum relative difference 7.82384323679457e-16; no real cross-platform difference found. The other 918 raw added leaves are the approved module API additions.",
+    "captureHome": "Two independent GitHub CI Ubuntu jobs capture v0.9.5-pre-refactor twice each; raw repeat captures must be exactly identical.",
+    "browserCiGate": "Execute all 37 independently; report 35 passing and the two unchanged filed failures before merging PR #8."
   }
 }

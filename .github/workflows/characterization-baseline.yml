@@ -1,0 +1,59 @@
+name: Record characterization baseline on CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  record:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'codex/characterization-portability'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        capture: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install capture dependencies
+        run: |
+          pip install -r api/requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: Capture the tagged base twice without tolerance between repeats
+        env:
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/ci-baseline
+        run: |
+          source_root="$RUNNER_TEMP/characterization-base"
+          mkdir -p "$source_root" "$VIBEMOL_TEST_ARTIFACT_DIR"
+          git archive v0.9.5-pre-refactor | tar -x -C "$source_root"
+          python tests/e2e/characterize.py --source-root "$source_root" --inject-harness --update-baseline --runs 2
+          cp tests/baselines/characterize.json.gz tests/baselines/characterize-summary.json "$VIBEMOL_TEST_ARTIFACT_DIR/"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: characterization-baseline-${{ matrix.capture }}
+          path: out/test-artifacts/ci-baseline/
+          if-no-files-found: error
+
+  compare:
+    needs: record
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: characterization-baseline-*
+          path: out/test-artifacts/ci-baselines
+      - name: Require identical captures on both independent CI runners
+        run: python tests/e2e/compare_ci_baselines.py out/test-artifacts/ci-baselines
+      - uses: actions/upload-artifact@v4
+        with:
+          name: characterization-ci-comparison
+          path: out/test-artifacts/ci-baselines/ci-comparison.json

@@ -2,7 +2,7 @@
 """Characterize v0.9.5-pre-refactor (1c609b3); pixel hashes are diagnostic.
 
 Use --source-root with an archived baseline and --inject-harness before changing
-production scripts. --update-baseline is permitted only with the original app.js.
+production scripts. --update-baseline is permitted only on CI with the original app.js.
 """
 from __future__ import annotations
 
@@ -11,8 +11,10 @@ import copy
 import gzip
 import hashlib
 import json
+import math
 import os
 import pathlib
+import platform
 import re
 import subprocess
 from urllib.parse import urlparse
@@ -37,6 +39,14 @@ VENDOR_WARNING = ('Scripts "build/three.js" and "build/three.min.js" are depreca
 READBACK_DIAGNOSTIC = re.compile(
     r'^\[\.WebGL-0x[0-9a-f]+\]GL Driver Message \(OpenGL, Performance, GL_CLOSE_PATH_NV, High\): '
     r'GPU stall due to ReadPixels(?: \(this message will no longer repeat\))?$')
+COMPARISON_POLICY = {
+    'floatLeaves': {'relTol': 1e-9, 'absTol': 1e-12},
+    'exact': ['types', 'integers', 'booleans', 'strings', 'keys', 'lengths', 'structure'],
+    'reason': 'The complete CI/local audit found only 32 one- or four-ULP bond-z differences: '
+              'maximum absolute 4.235164736271502e-22, relative 7.82384323679457e-16. '
+              'The tolerance accommodates floating-point platform drift while rejecting a 1e-6 change.',
+    'summary': 'Goldens are compared with tolerance for float leaves and are expected to hold across machines; '
+               'all other leaves, types and structure remain exact.'}
 
 
 def unexpected_console(messages):
@@ -78,6 +88,9 @@ def first_difference(expected, actual, path='$'):
             diff = first_difference(a, b, f'{path}[{index}]')
             if diff:
                 return diff
+    elif isinstance(expected, float):
+        if not math.isclose(expected, actual, rel_tol=1e-9, abs_tol=1e-12):
+            return f'{path}: {expected!r} != {actual!r}'
     elif expected != actual:
         return f'{path}: {str(expected)[:180]!r} != {str(actual)[:180]!r}'
     return None
@@ -322,9 +335,21 @@ def metadata(source_root):
                         'constDeclarations': len(re.findall(r'^  const\b', text, re.M))}}
 
 
+def capture_provenance(browser):
+    provenance = {'os': platform.system(), 'osRelease': platform.release(),
+                  'architecture': platform.machine(), 'browserName': browser.browser_type.name,
+                  'browserVersion': browser.version}
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        provenance['ci'] = {'provider': 'GitHub Actions',
+                            'runUrl': f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+                            'runAttempt': os.environ.get('GITHUB_RUN_ATTEMPT', '1'),
+                            'runnerImage': os.environ.get('ImageOS')}
+    return provenance
+
+
 def expected_captures(golden, source_root):
     # Preserve all original goldens. A planned new classic-script module has an
-    # explicit additive contract; existing APIs and every other field stay exact.
+    # explicit additive contract; float leaves use COMPARISON_POLICY, everything else stays exact.
     captures = copy.deepcopy(golden['captures'])
     additions = json.loads(API_ADDITIONS.read_text())['modules'] if API_ADDITIONS.exists() else []
     for module in additions:
@@ -346,6 +371,8 @@ def main():
     parser.add_argument('--runs', type=int, default=2)
     args = parser.parse_args()
     assert args.runs >= 2, 'The determinism gate requires at least two runs.'
+    if args.update_baseline:
+        assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Re-record characterization goldens on GitHub CI, never locally.'
     meta = metadata(args.source_root)
     if args.update_baseline or args.prepare_fixtures:
         tagged = subprocess.check_output(['git', 'rev-parse', BASE_TAG + '^{commit}'], cwd=ROOT).decode().strip()
@@ -359,6 +386,7 @@ def main():
         browser = playwright.chromium.launch(headless=True, args=[
             '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])
         try:
+            meta['captureProvenance'] = capture_provenance(browser)
             if args.prepare_fixtures:
                 prepare_fixtures(browser, url, args.inject_harness)
                 print('[characterize] Exported Look and two-scene session fixtures.', flush=True)
@@ -377,8 +405,10 @@ def main():
             camera_pin = verify_session_camera_pin(browser, url, args.inject_harness)
             baseline = pixel_baseline = None
             pixel_changes = []
+            capture_hashes = []
             for run in range(1, args.runs + 1):
                 captures, pixels, console = run_once(browser, url, args.inject_harness)
+                capture_hashes.append(hashlib.sha256(json.dumps(captures, indent=2).encode()).hexdigest())
                 (ARTIFACTS / f'characterize-run-{run}.json').write_text(json.dumps(captures, indent=2) + '\n')
                 (ARTIFACTS / f'characterize-pixels-{run}.json').write_text(json.dumps(pixels, indent=2) + '\n')
                 if baseline is None:
@@ -386,6 +416,7 @@ def main():
                 else:
                     diff = first_difference(baseline, captures)
                     assert not diff, 'Non-deterministic characterization: ' + str(diff)
+                    assert captures == baseline, 'Within-machine runs must be exactly identical, even when float drift is within cross-machine tolerance.'
                     pixel_changes.extend(key for key in pixels if pixels[key] != pixel_baseline[key])
                 if not args.update_baseline:
                     diff = first_difference(expected, captures)
@@ -394,7 +425,9 @@ def main():
                 raw = (json.dumps({'baseline': meta, 'captures': baseline}, indent=2) + '\n').encode()
                 BASELINE.write_bytes(gzip.compress(raw, mtime=0))
                 SUMMARY.write_text(json.dumps({'baseline': meta, 'captures': len(baseline),
-                    'determinism': {'runs': args.runs, 'identical': True},
+                    'comparison': COMPARISON_POLICY,
+                    'determinism': {'runs': args.runs, 'identical': True, 'exact': True,
+                                    'captureSha256PerRun': capture_hashes},
                     'api': next(iter(baseline.values()))['api'],
                     'goldenSha256': hashlib.sha256(raw).hexdigest(),
                     'pixelDiagnostic': {'hashesPerRun': len(pixel_baseline),
@@ -403,6 +436,8 @@ def main():
                                           'browserReadbackDiagnostic': READBACK_DIAGNOSTIC.pattern}}, indent=2) + '\n')
             evidence = {'baseline': meta, 'runs': args.runs, 'capturesPerRun': len(baseline),
                         'browserVersion': browser.version,
+                        'comparison': COMPARISON_POLICY, 'exactlyIdentical': True,
+                        'captureSha256PerRun': capture_hashes,
                         'deterministic': True, 'console': console,
                         'sessionCameraPin': camera_pin,
                         'sameSessionPixelChanges': sorted(set(pixel_changes))}
