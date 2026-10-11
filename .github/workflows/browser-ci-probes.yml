@@ -1,0 +1,39 @@
+name: Issue 4 unbounded state probes
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/browser-ci-probes.yml'
+      - 'tests/e2e/ci_gate_diagnostics.py'
+      - 'tests/e2e/edit_picking.py'
+      - 'tests/e2e/smoke.py'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [smoke, edit_picking]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser dependencies
+        run: pip install -r api/requirements.txt && python -m playwright install --with-deps chromium
+      - name: Full suite with unbounded real-state wait
+        env:
+          VIBEMOL_CI_UNBOUNDED_PROBE: '1'
+          VIBEMOL_SMOKE_VERBOSE: '1'
+          PYTHONUNBUFFERED: '1'
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/ci-probe/${{ matrix.suite }}
+        run: python tests/e2e/${{ matrix.suite }}.py
+      - name: Upload renderer, state transitions and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue4-${{ matrix.suite }}
+          path: out/test-artifacts/ci-probe/
