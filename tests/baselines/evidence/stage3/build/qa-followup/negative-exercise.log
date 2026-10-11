@@ -1,0 +1,12 @@
+{
+  "sourceAppSha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944",
+  "missingBridgeWithoutInjection": "element cache bridge missing on current source",
+  "historicalWithInjection": {
+    "historicalSourceWithoutCacheBridge": true
+  },
+  "topLevelNonInjectSentinel": "element cache bridge missing on current source",
+  "presentBridgeDormantObserver": {
+    "method": "QA-only observer disabled in the served script response; no source file edited",
+    "failure": "element cache sweep not exercised: mode switch: 4 < 5; panel transition: 0 < 2; DOM replacement: 0 < 1"
+  }
+}

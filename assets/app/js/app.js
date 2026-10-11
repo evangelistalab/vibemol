@@ -1141,6 +1141,22 @@
   // --- Mode system + shortcut routing ---
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement', CALCULATIONS: 'calculations' });
   let currentMode = MODES.DISPLAY;
+  // DOM cache registration stays at each original wiring point. Missing nodes
+  // are queried lazily again; a cached node is never silently replaced.
+  const els = {
+    editBuildSearchEl: null,
+    editBuildAtomsHostEl: null,
+    editBuildFragmentsHostEl: null,
+    editBuildMoleculesHostEl: null,
+  };
+  const cacheElement = (name, id) => {
+    const cache = { node: null };
+    Object.defineProperty(els, name, {
+      enumerable: true,
+      get: () => cache.node || (cache.node = document.getElementById(id)),
+    });
+    return els[name];
+  };
   let canvasAdaptiveMenuEl = null;
   let displayWindowsController = null;
   const measurements = window.VibeMolMeasurements;
@@ -1191,10 +1207,6 @@
   let editAdaptiveAlignPrincipalMetaEl = null;
   let editAdaptiveAddAtomPopoverEl = null;
   let editAdaptiveSymmetryPopoverEl = null;
-  let editBuildSearchEl = null;
-  let editBuildAtomsHostEl = null;
-  let editBuildFragmentsHostEl = null;
-  let editBuildMoleculesHostEl = null;
   let editSymmetryTargetSummaryEl = null;
   let editSymmetryExactResultCardEl = null;
   let editSymmetryExactResultEl = null;
@@ -8210,10 +8222,10 @@
   ]);
   editAdaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
   editAdaptiveSymmetryPopoverEl = document.getElementById('editAdaptiveSymmetryPopover');
-  editBuildSearchEl = document.getElementById('editBuildSearch');
-  editBuildAtomsHostEl = document.getElementById('editBuildAtomsHost');
-  editBuildFragmentsHostEl = document.getElementById('editBuildFragmentsHost');
-  editBuildMoleculesHostEl = document.getElementById('editBuildMoleculesHost');
+  cacheElement('editBuildSearchEl', 'editBuildSearch');
+  cacheElement('editBuildAtomsHostEl', 'editBuildAtomsHost');
+  cacheElement('editBuildFragmentsHostEl', 'editBuildFragmentsHost');
+  cacheElement('editBuildMoleculesHostEl', 'editBuildMoleculesHost');
   editSymmetryTargetSummaryEl = document.getElementById('editSymmetryTargetSummary');
   editSymmetryExactResultCardEl = document.getElementById('editSymmetryExactResultCard');
   editSymmetryExactResultEl = document.getElementById('editSymmetryExactResult');
@@ -16431,9 +16443,9 @@
 
     syncBuildPaletteQuickButtonStates(buildPayload);
     syncBuildSearchField();
-    if (editBuildSearchEl) {
+    if (els.editBuildSearchEl) {
       const activeQuery = getBuildPaletteFilterQuery()
-        || (document.activeElement === editBuildSearchEl ? String(editBuildSearchEl.value || '') : '');
+        || (document.activeElement === els.editBuildSearchEl ? String(els.editBuildSearchEl.value || '') : '');
       updateBuildPaletteFilter(activeQuery);
       syncBuildPaletteQuickButtonStates(buildPayload);
     }
@@ -16596,8 +16608,8 @@
 
   function setBuildPaletteFilterQuery(nextQuery, options = {}) {
     buildPaletteFilterQuery = String(nextQuery || '');
-    if (options.syncInput !== false && editBuildSearchEl) {
-      editBuildSearchEl.value = buildPaletteFilterQuery;
+    if (options.syncInput !== false && els.editBuildSearchEl) {
+      els.editBuildSearchEl.value = buildPaletteFilterQuery;
     }
   }
 
@@ -16618,8 +16630,8 @@
   }
 
   function isBuildSearchNavigationActive() {
-    if (!editBuildSearchEl) return false;
-    return document.activeElement === editBuildSearchEl && !!String(editBuildSearchEl.value || '').trim();
+    if (!els.editBuildSearchEl) return false;
+    return document.activeElement === els.editBuildSearchEl && !!String(els.editBuildSearchEl.value || '').trim();
   }
 
   function syncBuildSearchNavigationUi() {
@@ -16787,9 +16799,9 @@
   }
 
   function syncBuildSearchField() {
-    if (!editBuildSearchEl) return;
+    if (!els.editBuildSearchEl) return;
     const activeQuery = getBuildPaletteFilterQuery();
-    if (editBuildSearchEl.value !== activeQuery) editBuildSearchEl.value = activeQuery;
+    if (els.editBuildSearchEl.value !== activeQuery) els.editBuildSearchEl.value = activeQuery;
   }
 
   function updateBuildPaletteFilter(query = '') {
@@ -17212,9 +17224,9 @@
         updateEditToolboxUi({ syncSearch: false });
       });
     }
-    if (editBuildSearchEl) {
+    if (els.editBuildSearchEl) {
       const commit = () => {
-        const rawValue = String(editBuildSearchEl.value || '').trim();
+        const rawValue = String(els.editBuildSearchEl.value || '').trim();
         if (!rawValue) {
           setBuildPaletteFilterQuery('', { syncInput: false });
           clearBuildSearchKeyboardSelection();
@@ -17231,12 +17243,12 @@
           return;
         }
       };
-      editBuildSearchEl.addEventListener('focus', () => {
-        const query = String(editBuildSearchEl.value || '');
+      els.editBuildSearchEl.addEventListener('focus', () => {
+        const query = String(els.editBuildSearchEl.value || '');
         setBuildPaletteFilterQuery(query, { syncInput: false });
         renderBuildPopover({ preferPayloadSelection: false });
       });
-      editBuildSearchEl.addEventListener('blur', (e) => {
+      els.editBuildSearchEl.addEventListener('blur', (e) => {
         const nextTarget = e && e.relatedTarget;
         if (
           nextTarget
@@ -17249,15 +17261,15 @@
         clearBuildSearchKeyboardSelection();
         syncBuildSearchNavigationUi();
       });
-      editBuildSearchEl.addEventListener('input', () => {
-        const query = String(editBuildSearchEl.value || '');
+      els.editBuildSearchEl.addEventListener('input', () => {
+        const query = String(els.editBuildSearchEl.value || '');
         setBuildPaletteFilterQuery(query, { syncInput: false });
         renderBuildPopover({ preferPayloadSelection: false });
       });
       // Workbench search is a filter. Moving the panel or changing mode must
       // not select a payload and close it as a side effect of blurring the field.
-      if (!workspaceEnabled) editBuildSearchEl.addEventListener('change', commit);
-      editBuildSearchEl.addEventListener('keydown', (e) => {
+      if (!workspaceEnabled) els.editBuildSearchEl.addEventListener('change', commit);
+      els.editBuildSearchEl.addEventListener('keydown', (e) => {
         if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
           hideBuildPopover();
@@ -18326,21 +18338,21 @@
   }
 
   function restoreBuildPopoverPanes() {
-    if (editAddAtomPaneEl && editAddAtomPaneHomeParent && editAddAtomPaneEl.parentElement === editBuildAtomsHostEl) {
+    if (editAddAtomPaneEl && editAddAtomPaneHomeParent && editAddAtomPaneEl.parentElement === els.editBuildAtomsHostEl) {
       restorePaneHomeHelper({
         paneEl: editAddAtomPaneEl,
         homeParent: editAddAtomPaneHomeParent,
         homeNextSibling: editAddAtomPaneHomeNextSibling,
       });
     }
-    if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === editBuildFragmentsHostEl) {
+    if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === els.editBuildFragmentsHostEl) {
       restorePaneHomeHelper({
         paneEl: editAddFragmentPaneEl,
         homeParent: editAddFragmentPaneHomeParent,
         homeNextSibling: editAddFragmentPaneHomeNextSibling,
       });
     }
-    if (editAddMoleculePaneEl && editAddMoleculePaneHomeParent && editAddMoleculePaneEl.parentElement === editBuildMoleculesHostEl) {
+    if (editAddMoleculePaneEl && editAddMoleculePaneHomeParent && editAddMoleculePaneEl.parentElement === els.editBuildMoleculesHostEl) {
       restorePaneHomeHelper({
         paneEl: editAddMoleculePaneEl,
         homeParent: editAddMoleculePaneHomeParent,
@@ -18350,14 +18362,14 @@
   }
 
   function syncBuildPopoverPanes() {
-    if (editAddAtomPaneEl && editBuildAtomsHostEl && editAddAtomPaneEl.parentElement !== editBuildAtomsHostEl) {
-      editBuildAtomsHostEl.appendChild(editAddAtomPaneEl);
+    if (editAddAtomPaneEl && els.editBuildAtomsHostEl && editAddAtomPaneEl.parentElement !== els.editBuildAtomsHostEl) {
+      els.editBuildAtomsHostEl.appendChild(editAddAtomPaneEl);
     }
-    if (editAddFragmentPaneEl && editBuildFragmentsHostEl && editAddFragmentPaneEl.parentElement !== editBuildFragmentsHostEl) {
-      editBuildFragmentsHostEl.appendChild(editAddFragmentPaneEl);
+    if (editAddFragmentPaneEl && els.editBuildFragmentsHostEl && editAddFragmentPaneEl.parentElement !== els.editBuildFragmentsHostEl) {
+      els.editBuildFragmentsHostEl.appendChild(editAddFragmentPaneEl);
     }
-    if (editAddMoleculePaneEl && editBuildMoleculesHostEl && editAddMoleculePaneEl.parentElement !== editBuildMoleculesHostEl) {
-      editBuildMoleculesHostEl.appendChild(editAddMoleculePaneEl);
+    if (editAddMoleculePaneEl && els.editBuildMoleculesHostEl && editAddMoleculePaneEl.parentElement !== els.editBuildMoleculesHostEl) {
+      els.editBuildMoleculesHostEl.appendChild(editAddMoleculePaneEl);
     }
   }
 
@@ -18376,9 +18388,9 @@
   }
 
   function resetBuildSearchFieldOnHide() {
-    if (!editBuildSearchEl) return;
+    if (!els.editBuildSearchEl) return;
     setBuildPaletteFilterQuery('', { syncInput: true });
-    try { editBuildSearchEl.blur(); } catch { }
+    try { els.editBuildSearchEl.blur(); } catch { }
   }
 
   function renderBuildPopover(options = {}) {
@@ -18419,7 +18431,7 @@
     const quiet = !!(options && options.quiet);
     clearBuildSearchKeyboardSelection();
     if (!workspaceEnabled) resetBuildSearchFieldOnHide();
-    else if (editAdaptiveAddAtomPopoverEl?.contains(document.activeElement)) editBuildSearchEl?.blur();
+    else if (editAdaptiveAddAtomPopoverEl?.contains(document.activeElement)) els.editBuildSearchEl?.blur();
     if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
     restoreBuildPopoverPanes();
     syncBuildSearchNavigationUi();
@@ -18445,7 +18457,7 @@
     });
     updateEditAdaptiveMenuUi();
     if (!options.fromWorkbench) window.VibeMolWorkbench?.open('buildPanel', false);
-    if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
+    if (options.focusSearch) focusElementDeferred(els.editBuildSearchEl || null);
   }
 
   function positionSymmetryPopover() {
@@ -19112,7 +19124,7 @@
       // The legacy cue and Build share this pane. Keep one owner in Workbench.
       showBuildPopover({ query: '' });
       editAddFragmentPaneEl.scrollIntoView({ block: 'nearest' });
-      if (options.focusSearch) focusElementDeferred(editBuildSearchEl);
+      if (options.focusSearch) focusElementDeferred(els.editBuildSearchEl);
       return;
     }
     if (selectionFragmentCuePopoverHideTimer) {
@@ -32922,6 +32934,103 @@
     setSidebarCollapsed: setWorkspaceSidebarCollapsed,
     resize,
   });
+
+  // Only the explicit QA launch exposes private cache values. The live DOM
+  // is queried by the harness, independently of these cached references.
+  if (launchParams.get('qa') === '1') {
+    window.__vmqaElementCaches = Object.freeze({
+      ids: Object.freeze({
+        canvasAdaptiveMenuEl: 'displayWindowAdaptiveMenu',
+        measurementsPanel: 'measurementsPanel',
+        calculationsPanel: 'subspacePanel',
+        editAtomsMenuEl: 'editAtomsMenu',
+        editAtomsMenuBodyEl: 'editAtomsMenuBody',
+        editAtomsMenuCurrentEl: 'editAtomsMenuCurrent',
+        editSelectionTranslateCueEl: 'editSelectionTranslateCue',
+        editSelectionTranslateCueButtonEl: 'editSelectionTranslateCueButton',
+        editSelectionRotateCueButtonEl: 'editSelectionRotateCueButton',
+        editSelectionCoordinationCueButtonEl: 'editSelectionCoordinationCueButton',
+        editSelectionMetalBondingCueButtonEl: 'editSelectionMetalBondingCueButton',
+        editSelectionBondOrbitCueButtonEl: 'editSelectionBondOrbitCueButton',
+        editSelectionBondDistanceCueButtonEl: 'editSelectionBondDistanceCueButton',
+        editSelectionBondOrderCueButtonEl: 'editSelectionBondOrderCueButton',
+        editSelectionAddFragmentCueButtonEl: 'editSelectionAddFragmentCueButton',
+        editSelectionDeleteCueButtonEl: 'editSelectionDeleteCueButton',
+        editSelectionFragmentCuePopoverEl: 'editSelectionFragmentCuePopover',
+        editSelectionCoordinationCuePopoverEl: 'editSelectionCoordinationCuePopover',
+        editSelectionMetalBondingCuePopoverEl: 'editSelectionMetalBondingCuePopover',
+        editAdaptiveAddAtomBtn: 'editAdaptiveAddAtomBtn',
+        editAdaptiveSymmetryBtn: 'editAdaptiveSymmetryBtn',
+        editAdaptiveSymmetryMetaEl: 'editAdaptiveSymmetryMeta',
+        editAdaptiveCleanStructureBtn: 'editAdaptiveCleanStructureBtn',
+        editAdaptiveCleanStructureMetaEl: 'editAdaptiveCleanStructureMeta',
+        editAdaptiveShiftComBtn: 'editAdaptiveShiftComBtn',
+        editAdaptiveShiftComMetaEl: 'editAdaptiveShiftComMeta',
+        editAdaptiveAlignPrincipalBtn: 'editAdaptiveAlignPrincipalBtn',
+        editAdaptiveAlignPrincipalMetaEl: 'editAdaptiveAlignPrincipalMeta',
+        editAdaptiveAddAtomPopoverEl: 'editAdaptiveAddAtomPopover',
+        editAdaptiveSymmetryPopoverEl: 'editAdaptiveSymmetryPopover',
+        editBuildSearchEl: 'editBuildSearch',
+        editBuildAtomsHostEl: 'editBuildAtomsHost',
+        editBuildFragmentsHostEl: 'editBuildFragmentsHost',
+        editBuildMoleculesHostEl: 'editBuildMoleculesHost',
+        editSymmetryTargetSummaryEl: 'editSymmetryTargetSummary',
+        editSymmetryExactResultCardEl: 'editSymmetryExactResultCard',
+        editSymmetryExactResultEl: 'editSymmetryExactResult',
+        editSymmetryToleranceSelectEl: 'editSymmetryToleranceSelect',
+        editSymmetryElementSelectEl: 'editSymmetryElementSelect',
+        editSymmetryCandidatesEl: 'editSymmetryCandidates',
+        editSymmetryApplyBtnEl: 'editSymmetryApplyBtn',
+        editSymmetryCancelBtnEl: 'editSymmetryCancelBtn',
+        editSymmetryAutoBtnEl: 'editSymmetryAutoBtn',
+      }),
+      readNodes: () => ({
+        canvasAdaptiveMenuEl: canvasAdaptiveMenuEl,
+        measurementsPanel: measurementsPanel.panel,
+        calculationsPanel: calculationsPanel.panel,
+        editAtomsMenuEl: editAtomsMenuEl,
+        editAtomsMenuBodyEl: editAtomsMenuBodyEl,
+        editAtomsMenuCurrentEl: editAtomsMenuCurrentEl,
+        editSelectionTranslateCueEl: editSelectionTranslateCueEl,
+        editSelectionTranslateCueButtonEl: editSelectionTranslateCueButtonEl,
+        editSelectionRotateCueButtonEl: editSelectionRotateCueButtonEl,
+        editSelectionCoordinationCueButtonEl: editSelectionCoordinationCueButtonEl,
+        editSelectionMetalBondingCueButtonEl: editSelectionMetalBondingCueButtonEl,
+        editSelectionBondOrbitCueButtonEl: editSelectionBondOrbitCueButtonEl,
+        editSelectionBondDistanceCueButtonEl: editSelectionBondDistanceCueButtonEl,
+        editSelectionBondOrderCueButtonEl: editSelectionBondOrderCueButtonEl,
+        editSelectionAddFragmentCueButtonEl: editSelectionAddFragmentCueButtonEl,
+        editSelectionDeleteCueButtonEl: editSelectionDeleteCueButtonEl,
+        editSelectionFragmentCuePopoverEl: editSelectionFragmentCuePopoverEl,
+        editSelectionCoordinationCuePopoverEl: editSelectionCoordinationCuePopoverEl,
+        editSelectionMetalBondingCuePopoverEl: editSelectionMetalBondingCuePopoverEl,
+        editAdaptiveAddAtomBtn: editAdaptiveAddAtomBtn,
+        editAdaptiveSymmetryBtn: editAdaptiveSymmetryBtn,
+        editAdaptiveSymmetryMetaEl: editAdaptiveSymmetryMetaEl,
+        editAdaptiveCleanStructureBtn: editAdaptiveCleanStructureBtn,
+        editAdaptiveCleanStructureMetaEl: editAdaptiveCleanStructureMetaEl,
+        editAdaptiveShiftComBtn: editAdaptiveShiftComBtn,
+        editAdaptiveShiftComMetaEl: editAdaptiveShiftComMetaEl,
+        editAdaptiveAlignPrincipalBtn: editAdaptiveAlignPrincipalBtn,
+        editAdaptiveAlignPrincipalMetaEl: editAdaptiveAlignPrincipalMetaEl,
+        editAdaptiveAddAtomPopoverEl: editAdaptiveAddAtomPopoverEl,
+        editAdaptiveSymmetryPopoverEl: editAdaptiveSymmetryPopoverEl,
+        editBuildSearchEl: els.editBuildSearchEl,
+        editBuildAtomsHostEl: els.editBuildAtomsHostEl,
+        editBuildFragmentsHostEl: els.editBuildFragmentsHostEl,
+        editBuildMoleculesHostEl: els.editBuildMoleculesHostEl,
+        editSymmetryTargetSummaryEl: editSymmetryTargetSummaryEl,
+        editSymmetryExactResultCardEl: editSymmetryExactResultCardEl,
+        editSymmetryExactResultEl: editSymmetryExactResultEl,
+        editSymmetryToleranceSelectEl: editSymmetryToleranceSelectEl,
+        editSymmetryElementSelectEl: editSymmetryElementSelectEl,
+        editSymmetryCandidatesEl: editSymmetryCandidatesEl,
+        editSymmetryApplyBtnEl: editSymmetryApplyBtnEl,
+        editSymmetryCancelBtnEl: editSymmetryCancelBtnEl,
+        editSymmetryAutoBtnEl: editSymmetryAutoBtnEl,
+      }),
+    });
+  }
 
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 

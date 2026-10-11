@@ -69,6 +69,9 @@ def file_input(path):
 def load(page, paths):
     result = page.evaluate('files => VibeMolEmbed.loadFiles(files)', [file_input(path) for path in paths])
     assert result['ok'], result
+    if (any(path.endswith('.vibemol-session.gz') for path in paths)
+            and page.evaluate('() => !!window.__vmqaElementCaches')):
+        page.evaluate("() => __vmqa.assertElementCacheIdentity('session restore')")
 
 
 def first_difference(expected, actual, path='$'):
@@ -323,6 +326,103 @@ def run_once(browser, url, inject):
     return captures, pixels, console_by_fixture
 
 
+def require_element_cache_result(result, inject):
+    """Only an explicitly injected historical harness may skip the sweep."""
+    if isinstance(result, dict) and result.get('historicalSourceWithoutCacheBridge'):
+        if not inject:
+            raise AssertionError('element cache bridge missing on current source')
+        return
+    assert isinstance(result, list) and len(result) == 4, result
+
+
+def assert_element_cache_exercise(identity, modes, panels):
+    """Require actual checkpoint and observer firings in each fresh context."""
+    assert identity['supported'] and identity['nodeCount'] == 43, identity
+    assert not identity['failures'], identity
+    checks = identity['checks']
+    counts = {reason: checks.get(reason, 0) for reason in (
+        'presented checkpoint', 'mode switch', 'DOM replacement', 'session restore')}
+    counts['panel transition'] = sum(count for reason, count in checks.items()
+                                      if reason.startswith('panel transition: '))
+    minimums = {
+        # One settle for each explicit mode, panel open/close and restore.
+        'presented checkpoint': len(modes) + 2 * len(panels) + 1,
+        # Explicit mode assertions share this reason with the observer. Require
+        # an additional firing so those calls cannot hide a dormant observer.
+        'mode switch': len(modes) + 1,
+        # These two reasons are emitted only by the MutationObserver. Require
+        # at least two panel mutations and a child-list mutation, without pinning
+        # the much larger counts that vary with rendering and panel activity.
+        'panel transition': 2,
+        'DOM replacement': 1,
+        'session restore': 1,
+    }
+    deficits = [f'{reason}: {counts[reason]} < {minimum}'
+                for reason, minimum in minimums.items() if counts[reason] < minimum]
+    assert not deficits, 'element cache sweep not exercised: ' + '; '.join(deficits)
+    return {'checksByReason': counts, 'minimumChecksByReason': minimums,
+            'explicitModeChecks': len(modes),
+            'observedModeChecks': counts['mode switch'] - len(modes)}
+
+
+def verify_element_caches(browser, url, inject):
+    """Additional identity gate; keep the 102 golden payloads unchanged."""
+    results = []
+    for legacy in (False, True):
+        for dark in (False, True):
+            context = browser.new_context(viewport=VIEWPORT, device_scale_factor=1)
+            page = context.new_page()
+            page.set_default_timeout(60000)
+            page.goto(url + '?appearanceStudy=1&qa=1' + ('&workspaceLab=0' if legacy else ''))
+            page.wait_for_function('() => window.VibeMolSession && window.VibeMolWorkbenchHost')
+            if inject:
+                page.add_script_tag(content=QA)
+            try:
+                if not page.evaluate('() => !!window.__vmqaElementCaches'):
+                    if not inject:
+                        raise AssertionError('element cache bridge missing on current source')
+                    return {'historicalSourceWithoutCacheBridge': True}
+                page.wait_for_function('() => window.__vmqa?.characterizeVersion === 1')
+                page.locator('#themeToggleInput').evaluate('''(el, dark) => {
+                    if (el.checked !== dark) { el.checked = dark; el.dispatchEvent(new Event('change', {bubbles:true})); }
+                }''', dark)
+                load(page, ['sample.cube.gz'])
+                modes = ('Display', 'Measure', 'Edit') + (() if legacy else ('Calculations',))
+                for mode in modes:
+                    page.locator('#mode' + mode + 'Btn').click()
+                    page.evaluate('() => __vmqa.settle()')
+                    assert page.evaluate("() => __vmqa.assertElementCacheIdentity('mode switch').count") == 43
+                ids = page.evaluate('''() => [...new Set([
+                    ...Object.values(VibeMolWorkbenchHost.windows.ids), 'inspector',
+                    'measurementsPanel', 'subspacePanel', 'figurePanel', 'buildPanel', 'symmetryPanel'
+                ])].filter(id => VibeMolWorkbenchHost.windows.getEntry(id)?.setOpen)''')
+                for panel in ids:
+                    mode = ('Edit' if panel in ('buildPanel', 'symmetryPanel') else
+                            'Calculations' if panel == 'subspacePanel' and not legacy else 'Display')
+                    page.locator('#mode' + mode + 'Btn').click()
+                    for opened in (True, False):
+                        page.evaluate('''({panel,opened}) => VibeMolWorkbenchHost.windows.getEntry(panel).setOpen(opened)''',
+                                      {'panel': panel, 'opened': opened})
+                        page.evaluate('() => __vmqa.settle()')
+                        assert page.evaluate('(reason) => __vmqa.assertElementCacheIdentity(reason).count',
+                                             ('panel open: ' if opened else 'panel close: ') + panel) == 43
+                session = page.evaluate('() => VibeMolSession.export()')
+                page.evaluate('doc => VibeMolSession.import(doc)', session)
+                page.evaluate('() => __vmqa.settle()')
+                assert page.evaluate("() => __vmqa.assertElementCacheIdentity('session restore').count") == 43
+                identity = page.evaluate('() => __vmqa.elementCacheReport()')
+                exercise = assert_element_cache_exercise(identity, modes, ids)
+                launch, theme = 'legacy' if legacy else 'workbench', 'dark' if dark else 'light'
+                results.append({'launch': launch, 'theme': theme,
+                                'modes': list(modes), 'panelOpenClosePairs': ids,
+                                'identity': identity, 'exercise': exercise})
+                print(f'[element cache] {launch}/{theme}: ' +
+                      json.dumps(exercise['checksByReason'], sort_keys=True), flush=True)
+            finally:
+                context.close()
+    return results
+
+
 def metadata(source_root):
     app = (source_root / 'assets/app/js/app.js').read_bytes()
     text = app.decode()
@@ -402,11 +502,22 @@ def main():
             assert page.evaluate('() => window.__vmqa === undefined')
             assert not qa_requests, qa_requests
             context.close()
-            camera_pin = verify_session_camera_pin(browser, url, args.inject_harness)
+            camera_pin = None
             baseline = pixel_baseline = None
             pixel_changes = []
             capture_hashes = []
+            cache_identity_runs = []
             for run in range(1, args.runs + 1):
+                cache_identity = verify_element_caches(browser, url, args.inject_harness)
+                require_element_cache_result(cache_identity, args.inject_harness)
+                cache_identity_runs.append({'run': run, 'elementCacheIdentity': cache_identity})
+                # Preserve the exercised safety-net evidence even if a later
+                # scientific golden comparison fails (including on CI).
+                (ARTIFACTS / 'characterize-cache-identity.json').write_text(json.dumps({
+                    'sourceAppSha256': meta['appSha256'], 'requestedRuns': args.runs,
+                    'elementCacheIdentityRuns': cache_identity_runs}, indent=2) + '\n')
+                if camera_pin is None:
+                    camera_pin = verify_session_camera_pin(browser, url, args.inject_harness)
                 captures, pixels, console = run_once(browser, url, args.inject_harness)
                 capture_hashes.append(hashlib.sha256(json.dumps(captures, indent=2).encode()).hexdigest())
                 (ARTIFACTS / f'characterize-run-{run}.json').write_text(json.dumps(captures, indent=2) + '\n')
@@ -440,6 +551,8 @@ def main():
                         'captureSha256PerRun': capture_hashes,
                         'deterministic': True, 'console': console,
                         'sessionCameraPin': camera_pin,
+                        'elementCacheIdentity': cache_identity,
+                        'elementCacheIdentityRuns': cache_identity_runs,
                         'sameSessionPixelChanges': sorted(set(pixel_changes))}
             (ARTIFACTS / 'characterize-evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
             print(f'[characterize] {args.runs} identical runs; {len(baseline)} snapshots each; '

@@ -446,7 +446,7 @@
           "periodic_table.py"
         ]
       },
-      "status": "PR #12 authorized to merge using its own re-evaluated CI result. Rebase #8 onto merged #12 and require one CI run on that candidate to prove both the 34/3/37 workflows and all identity minima before merging. Adaptive opens as a draft afterward; do not merge the draft.",
+      "status": "PR #12 merged. Build conversions remain byte-identical; rebase #8 and run CI once on this candidate to prove browser workflows and all identity firing minima together. Five groups remain; the next adaptive PR is a draft and must not merge.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -486,7 +486,7 @@
       },
       "qaIdentityInvariant": {
         "firstSubPr": true,
-        "status": "required before first cache change; not yet implemented",
+        "status": "Implemented in the first Build sub-PR: required current-source bridge, sticky mutation/checkpoint assertions, minimum firing counts in four fresh launch/theme contexts per run, detached-node and dormant-observer negative controls",
         "realCacheChecks": 41,
         "additionalControllerPanelChecks": 2,
         "totalNodeChecks": 43,
@@ -498,13 +498,52 @@
           "after session restore"
         ],
         "negativeControl": "Replacing a live node while retaining its ID must fail identity even if Category D IDs and ARIA remain unchanged.",
-        "goldens": "Preserve all 102 captures and original payloads; identity checks are an additional gate."
+        "goldens": "Preserve all 102 captures and original payloads; identity checks are an additional gate.",
+        "evidence": "tests/baselines/evidence/stage3/build/characterize-evidence.json",
+        "negativeControlEvidence": "tests/baselines/evidence/stage3/build/negative-identity.json",
+        "missingBridgePolicy": "Fatal on every non-inject run, including alternate source roots; historicalSourceWithoutCacheBridge is allowed only with --inject-harness and checked again at the top level",
+        "exerciseGate": {
+          "characterizationRuns": 2,
+          "freshLaunchThemeContextsPerRun": 4,
+          "minimumPresentedCheckpoints": "mode count + twice the panel count + one restore; currently 39 Workbench / 32 legacy",
+          "minimumModeSwitches": "explicit mode count + one observer firing; currently 5 Workbench / 4 legacy",
+          "minimumPanelTransitions": 2,
+          "minimumDomReplacements": 1,
+          "minimumSessionRestores": 1,
+          "observerRequirement": "Mode-switch counts must exceed explicit calls; panel transition and DOM replacement reasons originate only in the observer. A present bridge with a dormant observer must fail.",
+          "countsEvidence": "tests/baselines/evidence/stage3/build/characterize-evidence.json",
+          "negativeExerciseEvidence": "tests/baselines/evidence/stage3/build/qa-followup/negative-exercise.json"
+        },
+        "browserCiGate": {
+          "requiredBeforeFirstSubPrMerge": true,
+          "status": "Not yet satisfied: original PR #8 browser CI failed the unchanged Linux float-string golden comparison before reaching the 37 suites; local 35/2/37 alone is insufficient",
+          "originalHead": "eb1a3f9c02edea6eb8ae67c6303e1a16312b0af2",
+          "originalJob": "https://github.com/evangelistalab/vibemol/actions/runs/38088035783/job/114318625552",
+          "firstDifference": "$.sample/light/Display.geometry.molecule.bonds[6].z: 2.375228488400047e-06 != 2.3752284884000466e-06",
+          "precedent": "The same difference occurred on pre-stage PR #7; preserve goldens and investigate the comparison separately",
+          "preStageArtifactComparison": "All 102 CI first-run captures from PR #7 and original PR #8 are byte-identical; this does not replace a second CI run or the missing 37-suite results",
+          "comparisonEvidence": "tests/baselines/evidence/stage3/build/qa-followup/ci-capture-comparison.json"
+        }
       },
       "soakPolicy": {
         "boundary": "one soak after all sub-PRs merge into the stage branch",
         "perSubPrSoak": false,
         "stageBranch": "codex/element-cache-consolidation"
       },
+      "subPrProgress": [
+        {
+          "order": 1,
+          "group": "editBuild*",
+          "cacheBindings": 4,
+          "cumulativeCacheBindings": 4,
+          "letBefore": 306,
+          "letAfter": 302,
+          "evidence": "tests/baselines/evidence/stage3/build/validation.json",
+          "status": "Candidate rebased onto merged #12; historical local validation retained, but merge requires this candidate's own complete CI result with both workflow and identity gates.",
+          "appLines": 33037,
+          "functionDeclarations": 1181
+        }
+      ],
       "remainingPanelGroupCount": 5
     },
     {

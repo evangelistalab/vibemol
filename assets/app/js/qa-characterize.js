@@ -6,6 +6,8 @@
   if (global.__vmqa?.characterizeVersion === 1) return;
 
   const errors = [];
+  const elementCacheChecks = Object.create(null);
+  const elementCacheFailures = [];
   let observedScene = null;
   let observedCamera = null;
   global.addEventListener('error', event => errors.push(event.message));
@@ -169,9 +171,58 @@
       })) };
   }
 
+  function assertElementCacheIdentity(reason = 'checkpoint') {
+    const bridge = global.__vmqaElementCaches;
+    // Historical sources can still use this harness through --inject-harness.
+    if (!bridge) return null;
+    const nodes = bridge.readNodes();
+    const names = Object.keys(bridge.ids);
+    if (names.length !== 43 || Object.keys(nodes).sort().join() !== names.slice().sort().join()) {
+      throw new Error('Element cache inventory must contain exactly 43 node checks.');
+    }
+    elementCacheChecks[reason] = (elementCacheChecks[reason] || 0) + 1;
+    const stale = names.filter(name => nodes[name] !== global.document.getElementById(bridge.ids[name]));
+    if (stale.length) {
+      const message = 'Element cache identity failed after ' + reason + ': ' + stale
+        .map(name => name + ' (#' + bridge.ids[name] + ')').join(', ');
+      elementCacheFailures.push(message);
+    }
+    if (elementCacheFailures.length) throw new Error(elementCacheFailures[0]);
+    return { count: names.length, reason };
+  }
+
+  function elementCacheReport() {
+    return { supported: !!global.__vmqaElementCaches, checks: { ...elementCacheChecks },
+      failures: elementCacheFailures.slice(), nodeCount: global.__vmqaElementCaches ? 43 : 0 };
+  }
+
+  // Check mutations at the end of the UI operation, once reparenting finishes.
+  // Child-list observation also catches replacing a node while retaining its
+  // ID and ARIA: the DOM contract alone cannot detect that failure.
+  if (global.__vmqaElementCaches && global.MutationObserver) {
+    new global.MutationObserver(records => {
+      for (const record of records) {
+        let reason = null;
+        if (record.type === 'childList') reason = 'DOM replacement';
+        else if (/^mode(Display|Measure|Edit|Calculations)Btn$/.test(record.target.id)
+          && ['aria-checked', 'class'].includes(record.attributeName)) reason = 'mode switch';
+        else if (record.target.matches('[data-vm-floating-panel],[data-wb-panel],[role="dialog"],[role="tabpanel"]')) {
+          reason = 'panel transition: ' + (record.target.id || record.target.getAttribute('aria-label'));
+        }
+        if (reason) {
+          try { assertElementCacheIdentity(reason); }
+          catch (_) { /* Keep the first failure sticky; the next checkpoint throws it. */ }
+        }
+      }
+    }).observe(global.document.body, { subtree: true, childList: true, attributes: true,
+      attributeOldValue: true, attributeFilter: ['aria-checked', 'aria-hidden', 'hidden', 'class', 'style', 'open'] });
+    assertElementCacheIdentity('QA initialization');
+  }
+
   async function settle() {
     await global.document.fonts.ready;
     await new Promise(resolve => global.requestAnimationFrame(() => global.requestAnimationFrame(resolve)));
+    assertElementCacheIdentity('presented checkpoint');
   }
 
   function renderState() {
@@ -196,5 +247,6 @@
   }
 
   global.__vmqa = Object.freeze({ ...global.__vmqa, characterizeVersion: 1,
-    errors, apiSurface, decodedSession, domContract, geometry, coordinates, renderState, settle, capture, pixelHash });
+    errors, apiSurface, decodedSession, domContract, geometry, coordinates, renderState, settle, capture, pixelHash,
+    assertElementCacheIdentity, elementCacheReport });
 })(window);
