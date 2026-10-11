@@ -1,0 +1,260 @@
+{
+  "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/38162234951",
+  "testedHead": "da3b5e0cafd42837b8554c4c308df3a297cea3a6",
+  "ciCheckoutMergeRef": "8b2be69",
+  "base": "e427e075bef8f8295aa5284d378322bdb1e471ed",
+  "sameArtifactConjunctionVerified": true,
+  "sourceAppSha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944",
+  "qaSha256": "334d8acc72d6a8bf553bb1e0084c49cf97495d02e481a6341a5361006436592c",
+  "appAndQaByteIdenticalToApprovedBuild": true,
+  "browser": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "allSuitesExecutedOnce": true,
+    "failures": [
+      {
+        "suite": "tests/e2e/axis_gizmo.py",
+        "workflow": {
+          "id": "escape-canvas-focus"
+        },
+        "exceptionType": "AssertionError"
+      },
+      {
+        "suite": "tests/e2e/smoke.py",
+        "workflow": {
+          "id": "issue-11-stop-after-second-download",
+          "site": "trajectory"
+        },
+        "exceptionType": "TimeoutError"
+      },
+      {
+        "suite": "tests/e2e/mode_consistency.py",
+        "workflow": {
+          "id": "coordinates-delete-selection-card"
+        },
+        "exceptionType": "TimeoutError"
+      }
+    ]
+  },
+  "issue11Workflow": {
+    "id": "issue-11-stop-after-second-download",
+    "site": "trajectory"
+  },
+  "vibrationReachedThisRun": false,
+  "goldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "unchangedGoldensMatch": true,
+    "repeatsExactlyIdentical": true
+  },
+  "elementCacheIdentity": {
+    "contexts": 8,
+    "identitiesPerContext": 43,
+    "allMinimumsMet": true,
+    "counts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5357,
+          "session restore": 1,
+          "panel transition": 1115
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5463,
+          "session restore": 1,
+          "panel transition": 1100
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3286,
+          "session restore": 1,
+          "panel transition": 849
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3398,
+          "session restore": 1,
+          "panel transition": 834
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 412,
+          "DOM replacement": 5650,
+          "session restore": 1,
+          "panel transition": 1137
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 408
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5466,
+          "session restore": 1,
+          "panel transition": 1088
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2989,
+          "session restore": 1,
+          "panel transition": 788
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3393,
+          "session restore": 1,
+          "panel transition": 823
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ],
+    "aggregateCounts": {
+      "presented checkpoint": 284,
+      "mode switch": 1672,
+      "DOM replacement": 35002,
+      "session restore": 8,
+      "panel transition": 7734
+    }
+  },
+  "metrics": {
+    "before": {
+      "lines": 32928,
+      "functionDeclarations": 1181,
+      "letDeclarations": 306,
+      "constDeclarations": 588,
+      "sha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6"
+    },
+    "after": {
+      "lines": 33037,
+      "functionDeclarations": 1181,
+      "letDeclarations": 302,
+      "constDeclarations": 590,
+      "sha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944"
+    }
+  },
+  "checksAndUnit": "success",
+  "webkitProperties": "success"
+}

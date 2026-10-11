@@ -1,0 +1,13 @@
+{
+  "suite": "edit_tool.py",
+  "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/tagged-base",
+  "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+  "method": "Unchanged suite main() and real UI events; only static server root and artifact destination redirected.",
+  "assertionsChanged": false,
+  "waitsChanged": false,
+  "retries": 0,
+  "serialBrowserExecution": true,
+  "status": "passed",
+  "seconds": 52.48
+}

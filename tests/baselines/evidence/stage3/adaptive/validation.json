@@ -1,0 +1,120 @@
+{
+  "recordedAt": "2026-10-11T21:34:51.959427+00:00",
+  "status": "Prepared for draft review; own complete CI conjunction pending; not approved to merge.",
+  "branch": "codex/element-cache-adaptive",
+  "baseCommit": "4db82178ee662735059717c006e10aff70592044",
+  "scope": "Eleven editAdaptive caches; nine chip and two Build/Symmetry popover query points remain in the original app IIFE wiring sites.",
+  "metrics": {
+    "before": {
+      "lines": 33037,
+      "functionDeclarations": 1181,
+      "letDeclarations": 302,
+      "constDeclarations": 590,
+      "sha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944"
+    },
+    "after": {
+      "lines": 33037,
+      "functionDeclarations": 1181,
+      "letDeclarations": 291,
+      "constDeclarations": 590,
+      "sha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23"
+    }
+  },
+  "bindingCount": 11,
+  "cumulativeConvertedCacheCount": 15,
+  "wholeStageScope": {
+    "accessors": 40,
+    "aliases": 1,
+    "controllersRetained": 2,
+    "identityChecks": 43,
+    "letBefore": 306,
+    "letAfter": 265
+  },
+  "appSourceAudit": {
+    "entireAppExactAfterApprovedConversions": true,
+    "functionDeclarationsAudited": 1190,
+    "affectedFunctionBodies": 14,
+    "lexicalReferenceSubstitutions": 75,
+    "evidence": "source-audit.json"
+  },
+  "retained": [
+    "calculationsPanel controller let",
+    "measurementsPanel controller let",
+    "helpRestoreFocusEl focus-state let",
+    "canvasAdaptiveMenuEl alias and displayWindowAdaptiveMenuEl",
+    "all other cache groups"
+  ],
+  "qaBridgeSha256": "334d8acc72d6a8bf553bb1e0084c49cf97495d02e481a6341a5361006436592c",
+  "qaBridgeUnchangedFromParent": true,
+  "local": {
+    "checks": "passed",
+    "javascriptUnitTestsPassed": 428,
+    "pythonUnitTestsPassed": 16,
+    "characterizationRuns": 2,
+    "capturesPerRun": 102,
+    "unchangedGoldensMatch": true,
+    "exactRepeatMatch": true,
+    "pixelChanges": [],
+    "identitiesPerContext": 43,
+    "identityContexts": 8,
+    "reasonMinimaMet": true,
+    "reasonCounts": "local-reason-counts.json",
+    "manualEvidence": "manual-verification.json"
+  },
+  "captureProvenance": {
+    "os": "Darwin",
+    "osRelease": "25.6.0",
+    "architecture": "arm64",
+    "browserName": "chromium",
+    "browserVersion": "145.0.7632.6"
+  },
+  "periodicTableDependencies": {
+    "before": 19,
+    "afterThisGroup": 19,
+    "individualDomInputs": 9,
+    "plannedFutureHandoff": "Approximately 11 after the periodic-table panel group; not done by this PR."
+  },
+  "full37SuiteCi": {
+    "status": "pending adaptive CI",
+    "artifactAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+    "actual": null,
+    "suiteCount": 37,
+    "allSuitesExecutedOnce": null,
+    "gate": {
+      "environment": "CI",
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "acceptedFailures": [
+        {
+          "suite": "tests/e2e/axis_gizmo.py",
+          "workflow": "Escape interception prevents canvas focus"
+        },
+        {
+          "suite": "tests/e2e/mode_consistency.py",
+          "workflow": "selection card covers Coordinates Delete"
+        },
+        {
+          "suite": "tests/e2e/smoke.py",
+          "workflow": "#11 wait_for_video_idle after the second trajectory or vibration download"
+        }
+      ],
+      "otherFailurePolicy": "Stop; do not retry, rerun or adjust the gate."
+    },
+    "issue11WorkflowFired": null,
+    "vibrationReachedThisRun": null,
+    "sameArtifactRequirement": "One adaptive CI run must carry all 37 suites, both 102-capture runs, all 43 identities in eight contexts and per-reason minima. Build CI is not adaptive proof.",
+    "precedingMergedBuildCi": {
+      "runId": 38162234951,
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "scope": "Merged parent only, not an adaptive result",
+      "issue11WorkflowFired": "trajectory after second download",
+      "vibrationReachedThisRun": false
+    }
+  },
+  "appearanceMaterialPresetIntermittent": "open",
+  "soak": "Once at the complete Stage 3 boundary; no per-group soak.",
+  "defectFixes": "None; #3, axis_gizmo, mode_consistency and #11 remain outside this branch."
+}

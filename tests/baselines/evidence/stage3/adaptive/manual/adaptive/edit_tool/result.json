@@ -1,0 +1,13 @@
+{
+  "suite": "edit_tool.py",
+  "sourceRoot": "/Users/fevange/Source/vibemol",
+  "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+  "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+  "method": "Unchanged suite main() and real UI events; only static server root and artifact destination redirected.",
+  "assertionsChanged": false,
+  "waitsChanged": false,
+  "retries": 0,
+  "serialBrowserExecution": true,
+  "status": "passed",
+  "seconds": 52.94
+}

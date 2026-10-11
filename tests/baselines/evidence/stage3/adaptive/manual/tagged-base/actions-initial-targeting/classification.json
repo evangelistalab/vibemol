@@ -1,0 +1,17 @@
+{
+  "source": "tagged-base",
+  "suite": "actions-initial-targeting",
+  "exitCode": 1,
+  "seconds": 37.38,
+  "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/actions-initial-targeting/run.log.gz",
+  "classification": "New probe targeted a Workbench-only Transform button absent in legacy; source and saved DOM establish locator error before any action.",
+  "productionSourceChanged": false,
+  "existingSuitesChanged": false,
+  "citation": "5f6a390 (v0.9.2) scene-dependent default tool; workbench.js mountToolbar is absent in legacy, so its editTransformToolBtn does not exist.",
+  "correction": "Observe VibeMolTesting.getEditBuildState().intent === atom_manipulation on the presented frame; no sleep or retry.",
+  "correctedResults": [
+    "../actions/result.json",
+    "../../adaptive/actions/result.json"
+  ]
+}

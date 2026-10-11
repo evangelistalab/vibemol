@@ -14,7 +14,7 @@
     "failed": 3,
     "total": 37,
     "environment": "CI",
-    "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
+    "evidence": "tests/baselines/evidence/stage3/build/ci-38162234951/browser-results.json",
     "comparison": "local 35/2/37 (historical), CI 34/3/37",
     "historicalLocalResult": {
       "passed": 35,
@@ -23,7 +23,7 @@
       "environment": "local",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
     },
-    "provenance": "Completed CI run 38141289409 re-evaluated without rerunning: 34/3/37; all three failures match (suite, workflow). Issue #11 fired at trajectory after the second download; vibration was not reached. Traceback lines and file hashes are diagnostic, not acceptance keys. Historical local 35/2/37 remains local evidence only.",
+    "provenance": "Build candidate CI run 38162234951, attempt 1, proves CI 34/3/37 and all 43 identities in all eight contexts with every firing minimum on the same tested artifact. Issue #11 fired at trajectory after the second download; vibration was not reached. PR #8 merged as 4db82178ee662735059717c006e10aff70592044. Historical local 35/2/37 is not a CI gate.",
     "gate": {
       "passed": 34,
       "failed": 3,
@@ -386,8 +386,8 @@
             "diagnosticOnly": true
           }
         ],
-        "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
-        "provenance": "Completed CI run 38141289409 re-evaluated without rerunning: 34/3/37; all three failures match (suite, workflow). Issue #11 fired at trajectory after the second download; vibration was not reached. Traceback lines and file hashes are diagnostic, not acceptance keys. Historical local 35/2/37 remains local evidence only.",
+        "evidence": "tests/baselines/evidence/stage3/build/ci-38162234951/browser-results.json",
+        "provenance": "Build candidate CI run 38162234951, attempt 1, proves CI 34/3/37 and all 43 identities in all eight contexts with every firing minimum on the same tested artifact. Issue #11 fired at trajectory after the second download; vibration was not reached. PR #8 merged as 4db82178ee662735059717c006e10aff70592044. Historical local 35/2/37 is not a CI gate.",
         "ciEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
         "ciGateSatisfied": true,
         "latestCiResult": {
@@ -446,7 +446,7 @@
           "periodic_table.py"
         ]
       },
-      "status": "PR #12 merged. Build conversions remain byte-identical; rebase #8 and run CI once on this candidate to prove browser workflows and all identity firing minima together. Five groups remain; the next adaptive PR is a draft and must not merge.",
+      "status": "Build PR #8 merged after its own CI 34/3/37 plus 43-node identity conjunction. Adaptive group is prepared as an unmerged draft with its own CI pending; five panel groups remain unmerged. No other group is authorized in this continuation.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -511,18 +511,23 @@
           "minimumDomReplacements": 1,
           "minimumSessionRestores": 1,
           "observerRequirement": "Mode-switch counts must exceed explicit calls; panel transition and DOM replacement reasons originate only in the observer. A present bridge with a dormant observer must fail.",
-          "countsEvidence": "tests/baselines/evidence/stage3/build/characterize-evidence.json",
+          "countsEvidence": "tests/baselines/evidence/stage3/build/ci-38162234951/characterize-cache-identity.json",
           "negativeExerciseEvidence": "tests/baselines/evidence/stage3/build/qa-followup/negative-exercise.json"
         },
         "browserCiGate": {
           "requiredBeforeFirstSubPrMerge": true,
-          "status": "Not yet satisfied: original PR #8 browser CI failed the unchanged Linux float-string golden comparison before reaching the 37 suites; local 35/2/37 alone is insufficient",
+          "status": "Satisfied by the single rebased Build candidate run 38162234951, attempt 1: CI 34/3/37, all 43 identities in eight contexts and every firing minimum.",
           "originalHead": "eb1a3f9c02edea6eb8ae67c6303e1a16312b0af2",
           "originalJob": "https://github.com/evangelistalab/vibemol/actions/runs/38088035783/job/114318625552",
           "firstDifference": "$.sample/light/Display.geometry.molecule.bonds[6].z: 2.375228488400047e-06 != 2.3752284884000466e-06",
           "precedent": "The same difference occurred on pre-stage PR #7; preserve goldens and investigate the comparison separately",
           "preStageArtifactComparison": "All 102 CI first-run captures from PR #7 and original PR #8 are byte-identical; this does not replace a second CI run or the missing 37-suite results",
-          "comparisonEvidence": "tests/baselines/evidence/stage3/build/qa-followup/ci-capture-comparison.json"
+          "comparisonEvidence": "tests/baselines/evidence/stage3/build/qa-followup/ci-capture-comparison.json",
+          "satisfied": true,
+          "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38162234951",
+          "testedHead": "da3b5e0cafd42837b8554c4c308df3a297cea3a6",
+          "evidence": "tests/baselines/evidence/stage3/build/ci-38162234951/candidate-verification.json",
+          "issue11Site": "trajectory"
         }
       },
       "soakPolicy": {
@@ -539,9 +544,46 @@
           "letBefore": 306,
           "letAfter": 302,
           "evidence": "tests/baselines/evidence/stage3/build/validation.json",
-          "status": "Candidate rebased onto merged #12; historical local validation retained, but merge requires this candidate's own complete CI result with both workflow and identity gates.",
+          "status": "Merged after one candidate CI run proved CI 34/3/37 with accepted workflows and all 43 identities in all eight contexts, with every minimum met.",
           "appLines": 33037,
-          "functionDeclarations": 1181
+          "functionDeclarations": 1181,
+          "pr": "https://github.com/evangelistalab/vibemol/pull/8",
+          "mergeCommit": "4db82178ee662735059717c006e10aff70592044",
+          "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/38162234951",
+          "ciEvidence": "tests/baselines/evidence/stage3/build/ci-38162234951/candidate-verification.json",
+          "issue11Site": "trajectory"
+        },
+        {
+          "order": 2,
+          "group": "editAdaptive*",
+          "cacheBindings": 11,
+          "cumulativeCacheBindings": 15,
+          "letBefore": 302,
+          "letAfter": 291,
+          "appLines": 33037,
+          "functionDeclarations": 1181,
+          "status": "Draft preparation; remains unmerged. Its own candidate CI must supply the full workflow/identity conjunction; Build evidence is not substituted.",
+          "baseCommit": "4db82178ee662735059717c006e10aff70592044",
+          "evidence": "tests/baselines/evidence/stage3/adaptive/validation.json",
+          "ciStatus": "pending",
+          "soak": "Once at the whole-stage boundary.",
+          "localValidation": {
+            "status": "passed; adaptive CI pending",
+            "checks": true,
+            "javascriptUnitTests": 428,
+            "pythonUnitTests": 16,
+            "characterization": "2 identical runs of 102, unchanged goldens",
+            "identityContexts": 8,
+            "identitiesPerContext": 43,
+            "allReasonMinimaMet": true,
+            "directUiSuites": "5 unchanged suites once on each source; both-theme legacy action probe",
+            "evidence": "tests/baselines/evidence/stage3/adaptive/validation.json"
+          },
+          "browserResult": "Pending on the adaptive artifact; parent Build CI 34/3/37 is not this group\u2019s result.",
+          "periodicTableDependencyCountBeforeAndAfterThisGroup": [
+            19,
+            19
+          ]
         }
       ],
       "remainingPanelGroupCount": 5
@@ -585,7 +627,7 @@
     ],
     "blocksElementCacheStage": false,
     "validation": {
-      "status": "Workflow gate met: completed CI run 38141289409 re-evaluated under the corrected specification, without rerunning. PR #8 merge still awaits its identity evidence provenance decision.",
+      "status": "CI prerequisite satisfied. PR #12 merged on its own re-evaluated run; rebased PR #8 merged after its single candidate run proved both browser workflows and identity minima together.",
       "mergeCommit": "e4b5e498fe818171e3205313667614cfd8d2832c",
       "pr": "https://github.com/evangelistalab/vibemol/pull/7",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
@@ -607,7 +649,8 @@
           "environment": "CI",
           "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json"
         }
-      }
+      },
+      "currentCiEvidence": "tests/baselines/evidence/stage3/build/ci-38162234951/candidate-verification.json"
     },
     "acceptedDefects": [
       {
@@ -763,8 +806,8 @@
   },
   "defectBatchPolicy": "Projection #3, axis-gizmo Escape routing, mode-consistency selection-card collision, and video crop #11 stay production defects. Schedule after 0.10.0 or in parallel on 0.9.x; do not merge their fixes into this refactor.",
   "latestCiGateAttempt": {
-    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38141289409",
-    "headCommit": "d2fb002188c8324ac9d4dc1524818b4201d5c0bc",
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38162234951",
+    "headCommit": "da3b5e0cafd42837b8554c4c308df3a297cea3a6",
     "actual": {
       "passed": 34,
       "failed": 3,
@@ -777,14 +820,16 @@
     },
     "gateMet": true,
     "unexpectedFailures": [],
-    "reason": "Mis-specified vibration-only line acceptance corrected to (suite, workflow), including both issue #11 exporter paths after the second download. Same completed CI run re-evaluated without a rerun.",
-    "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
-    "characterization": "Two exactly identical 102-capture runs passed comparison with the unchanged goldens.",
+    "reason": "Single rebased Build candidate run proves the full workflow and cache-identity conjunction. Accepted failures are identified by suite and workflow; every other failure stops.",
+    "evidence": "tests/baselines/evidence/stage3/build/ci-38162234951/browser-results.json",
+    "characterization": "Two exactly identical 102-capture runs match unchanged goldens using the approved float policy.",
     "renderer": "Linux x86_64 Chromium 153.0.8010.12, software SwiftShader",
     "issue11Workflow": {
       "id": "issue-11-stop-after-second-download",
       "site": "trajectory"
-    }
+    },
+    "identityEvidence": "tests/baselines/evidence/stage3/build/ci-38162234951/characterize-cache-identity.json",
+    "candidateVerification": "tests/baselines/evidence/stage3/build/ci-38162234951/candidate-verification.json"
   },
   "gateAcceptancePolicy": {
     "identity": "suite and workflow",
@@ -819,6 +864,7 @@
     "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
     "cacheGroups": "Each cache group gets one CI run on its rebased merge candidate, carrying both all 37 suite results and the 43-node identity sweep with per-reason minima.",
     "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
-    "pr8": "Rebase onto merged #12, then run CI once on that rebased candidate. Older Build identity evidence is historical only; do not combine it with #12 as merge evidence."
+    "pr8": "Merged on candidate run 38162234951, attempt 1, on da3b5e0cafd42837b8554c4c308df3a297cea3a6 against e427e075bef8f8295aa5284d378322bdb1e471ed: complete CI 34/3/37 and all 43 identities with every reason minimum. Older runs are historical, never combined merge proof.",
+    "adaptive": "Unmerged draft from merged #8; requires its own single candidate CI run carrying all 37 workflows and all 43 identity checks. Never use the preceding Build run as adaptive evidence."
   }
 }

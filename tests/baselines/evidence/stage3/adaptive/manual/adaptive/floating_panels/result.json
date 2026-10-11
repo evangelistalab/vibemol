@@ -1,0 +1,13 @@
+{
+  "suite": "floating_panels.py",
+  "sourceRoot": "/Users/fevange/Source/vibemol",
+  "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+  "testSha256": "9028696f8d583c9f2a304d6d456573b633f88e1ed0ceceda1ff0dc5c27b55d42",
+  "method": "Unchanged suite main() and real UI events; only static server root and artifact destination redirected.",
+  "assertionsChanged": false,
+  "waitsChanged": false,
+  "retries": 0,
+  "serialBrowserExecution": true,
+  "status": "passed",
+  "seconds": 36.5
+}

@@ -1,0 +1,4 @@
+[consistency] Appearance, Quick actions, surfaces, measurement picking, layouts, Build, Symmetry and Focus: passed
+[consistency] Orbital-group selection reveals Appearance and edits deferred layers without computing grids: passed
+[consistency] Coordinates: read-only View/Measure, editing and pending-edit cancellation: passed
+[consistency] Coordinates: read-only View/Measure, editing and pending-edit cancellation: passed
