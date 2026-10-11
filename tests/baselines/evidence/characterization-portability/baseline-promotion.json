@@ -1,0 +1,318 @@
+{
+  "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+  "recordingSource": "CI artifact 1 copied byte-for-byte; no local re-recording",
+  "ciProvenance": {
+    "os": "Linux",
+    "osRelease": "6.17.0-1022-azure",
+    "architecture": "x86_64",
+    "browserName": "chromium",
+    "browserVersion": "153.0.8010.12",
+    "ci": {
+      "provider": "GitHub Actions",
+      "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+      "runAttempt": "1",
+      "runnerImage": "ubuntu24"
+    }
+  },
+  "sourceAppSha256Preserved": true,
+  "exactCiRuns": {
+    "independentCiJobs": 2,
+    "runsPerJob": 2,
+    "capturesPerRun": 102,
+    "exactlyIdentical": true,
+    "toleranceUsedForCiRepeatComparison": false,
+    "provenancePerJob": [
+      {
+        "os": "Linux",
+        "osRelease": "6.17.0-1022-azure",
+        "architecture": "x86_64",
+        "browserName": "chromium",
+        "browserVersion": "153.0.8010.12",
+        "ci": {
+          "provider": "GitHub Actions",
+          "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+          "runAttempt": "1",
+          "runnerImage": "ubuntu24"
+        }
+      },
+      {
+        "os": "Linux",
+        "osRelease": "6.17.0-1022-azure",
+        "architecture": "x86_64",
+        "browserName": "chromium",
+        "browserVersion": "153.0.8010.12",
+        "ci": {
+          "provider": "GitHub Actions",
+          "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+          "runAttempt": "1",
+          "runnerImage": "ubuntu24"
+        }
+      }
+    ],
+    "captures": [
+      {
+        "job": 1,
+        "run": 1,
+        "captureSha256": "4fcade5bf136b2ff1d7d4ef7e1cb1d93aaaba7a434b7c07a4e8aee3f57c6cc60"
+      },
+      {
+        "job": 1,
+        "run": 2,
+        "captureSha256": "4fcade5bf136b2ff1d7d4ef7e1cb1d93aaaba7a434b7c07a4e8aee3f57c6cc60"
+      },
+      {
+        "job": 2,
+        "run": 1,
+        "captureSha256": "4fcade5bf136b2ff1d7d4ef7e1cb1d93aaaba7a434b7c07a4e8aee3f57c6cc60"
+      },
+      {
+        "job": 2,
+        "run": 2,
+        "captureSha256": "4fcade5bf136b2ff1d7d4ef7e1cb1d93aaaba7a434b7c07a4e8aee3f57c6cc60"
+      }
+    ]
+  },
+  "oldLocalToNewCiGolden": {
+    "differingLeaves": 32,
+    "differences": [
+      {
+        "path": "$.sample/light/Display.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.sample/light/Display.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.sample/light/Measure.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.sample/light/Measure.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.sample/light/Edit.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.sample/light/Edit.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.sample/light/Calculations.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.sample/light/Calculations.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.sample/dark/Display.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.sample/dark/Display.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.sample/dark/Measure.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.sample/dark/Measure.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.sample/dark/Edit.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.sample/dark/Edit.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.sample/dark/Calculations.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.sample/dark/Calculations.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.look/light/Display.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.look/light/Display.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.look/light/Measure.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.look/light/Measure.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.look/light/Edit.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.look/light/Edit.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.look/light/Calculations.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.look/light/Calculations.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.look/dark/Display.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.look/dark/Display.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.look/dark/Measure.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.look/dark/Measure.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.look/dark/Edit.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.look/dark/Edit.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      },
+      {
+        "path": "$.look/dark/Calculations.geometry.molecule.bonds[6].z",
+        "oldLocalGolden": 2.375228488400047e-06,
+        "newCiGolden": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16
+      },
+      {
+        "path": "$.look/dark/Calculations.geometry.molecule.bonds[7].z",
+        "oldLocalGolden": 2.7065756611495235e-07,
+        "newCiGolden": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16
+      }
+    ]
+  },
+  "existingMacCapturesAgainstNewCiGolden": [
+    {
+      "run": 1,
+      "captureFileSha256": "03721dc2e078f33655474d1d3ed6f8629ce3c97a9d8e04d1be38e2b845aaf0ac",
+      "matchesNewCiGoldenWithFloatTolerance": true
+    },
+    {
+      "run": 2,
+      "captureFileSha256": "03721dc2e078f33655474d1d3ed6f8629ce3c97a9d8e04d1be38e2b845aaf0ac",
+      "matchesNewCiGoldenWithFloatTolerance": true
+    }
+  ],
+  "goldenCompressedSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+  "summaryCaptureHashDefinition": "SHA256 of indented capture JSON without its final file newline; CI comparison records full artifact byte hashes."
+}

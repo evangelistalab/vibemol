@@ -5,8 +5,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  record:
+  request:
     if: github.event_name == 'workflow_dispatch' || github.head_ref == 'codex/characterization-portability'
+    runs-on: ubuntu-latest
+    outputs:
+      record: ${{ steps.request.outputs.record }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: request
+        env:
+          VIBEMOL_RECORD_BASELINE: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+          summary = json.loads(pathlib.Path('tests/baselines/characterize-summary.json').read_text())
+          recorded_on_ci = summary['baseline'].get('captureProvenance', {}).get('ci', {}).get('provider') == 'GitHub Actions'
+          record = os.environ['VIBEMOL_RECORD_BASELINE'] == 'true' or not recorded_on_ci
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'record={str(record).lower()}\n')
+          print('Record the tagged base on CI:', record)
+          PY
+
+  record:
+    needs: request
+    if: needs.request.outputs.record == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

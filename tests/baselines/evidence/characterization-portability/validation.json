@@ -12,6 +12,17 @@
     "existingLocalCaptures": 102,
     "differencesOutsideTolerance": 0
   },
-  "baselineRecording": "pending on CI; no local re-recording performed",
-  "pr8": "unmerged; four Build cache conversions remain unchanged on its branch"
+  "baselineRecording": {
+    "status": "passed",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+    "independentJobs": 2,
+    "runsPerJob": 2,
+    "capturesPerRun": 102,
+    "allFourExact": true
+  },
+  "pr8": "unmerged; four Build cache conversions remain unchanged on its branch",
+  "crossMachinePortability": {
+    "priorMacRuns": 2,
+    "matchAgainstNewCiGolden": true
+  }
 }

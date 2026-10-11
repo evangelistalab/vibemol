@@ -1,0 +1,9 @@
+{
+  "localRecordingRejected": true,
+  "message": "Re-record characterization goldens on GitHub CI, never locally.",
+  "baselineFilesUnchanged": true,
+  "sha256": {
+    "/Users/fevange/Source/vibemol/tests/baselines/characterize.json.gz": "6d80d00a0ecadff2d481536153fb18754021c7a911d27bea300f2fb99e02890d",
+    "/Users/fevange/Source/vibemol/tests/baselines/characterize-summary.json": "3a1b83dd3b7d0bd337987a193a2de6902bd354678bcb7b2fa7ea0a5479313679"
+  }
+}
