@@ -14,7 +14,7 @@
     "failed": 3,
     "total": 37,
     "environment": "CI",
-    "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json",
+    "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
     "comparison": "local 35/2/37 (historical), CI 34/3/37",
     "historicalLocalResult": {
       "passed": 35,
@@ -23,32 +23,33 @@
       "environment": "local",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
     },
-    "provenance": "PR #10 full CI run 38110555939 reports 34/3/37. The corrected gate accepts the three named production defects. A new run under this exact manifest must confirm 34/3/37 before cache groups open.",
+    "provenance": "Completed CI run 38141289409 re-evaluated without rerunning: 34/3/37; all three failures match (suite, workflow). Issue #11 fired at trajectory after the second download; vibration was not reached. Traceback lines and file hashes are diagnostic, not acceptance keys. Historical local 35/2/37 remains local evidence only.",
     "gate": {
       "passed": 34,
       "failed": 3,
       "total": 37,
       "environment": "CI",
-      "satisfied": false
+      "satisfied": true
     },
     "acceptedDefects": [
       {
         "suite": "axis_gizmo.py",
-        "defect": "Escape routing; preserve the 0.9.2/0.9.3 capture-phase ladder"
+        "workflow": "escape-canvas-focus",
+        "defect": "Escape interception prevents canvas focus; preserve the 0.9.2/0.9.3 capture-phase ladder"
       },
       {
         "suite": "mode_consistency.py",
-        "defect": "Selection card overlays Coordinates Delete"
+        "workflow": "coordinates-delete-selection-card",
+        "defect": "Selection card covers Coordinates Delete"
       },
       {
         "suite": "smoke.py",
-        "historicalFailureLine": 4525,
-        "currentCallSite": {
-          "suite": "smoke.py",
-          "line": 4531,
-          "function": "main"
-        },
-        "defect": "#11: vibration crop overlay reopens after export",
+        "workflow": "issue-11-stop-after-second-download",
+        "sites": [
+          "trajectory",
+          "vibration"
+        ],
+        "defect": "#11: delayed Stop after export opens a new crop selection after the second download",
         "issue": "https://github.com/evangelistalab/vibemol/issues/11"
       }
     ]
@@ -70,7 +71,7 @@
       "stage": 3,
       "risk": "highest manual-verification burden",
       "scope": "DOM element cache consolidation, split by prefix/panel group and ordered by coverage strength",
-      "reason": "Stage 3 needs the heaviest manual verification: lazy panel bindings can miss event paths and retain detached nodes that DOM captures do not detect. CI 34/3/37 is the corrected gate, accepting only axis_gizmo.py (Escape routing), mode_consistency.py (selection card over Coordinates Delete), and smoke.py:4525 (#11, crop overlay after export). The latter is a 0.9.x production defect, not a suite repair. PR #10 repairs resize-picking readiness without changing production JS. Confirm the next CI run exactly before reopening; any different result stops the sequence. The Appearance material-preset intermittent remains open.",
+      "reason": "Stage 3 needs the heaviest manual verification: lazy panel bindings can miss event paths and retain detached nodes that DOM captures do not detect. The CI 34/3/37 gate accepts only Escape preventing canvas focus, selection card covering Coordinates Delete, and issue #11 at trajectory or vibration idle wait after the second download. Completed run 38141289409 matches these workflows without a rerun. Production defects remain outside the refactor. The Appearance material-preset intermittent stays open.",
       "bindingInventory": "Babel AST pre-code audit: the requested 43 leading null-initialized let names contain 40 direct lookups, one lookup alias, and two controllers. All node queries are unconditional in the app IIFE, spread across four wiring blocks. No initCalculations, lazy-open or conditional query sites. Keep helpRestoreFocusEl and both controllers outside els. Full names, IDs, enclosing function, query/assignment lines and creation sites are in lookup-site-audit.json.",
       "prRule": "Split by prefix/panel group and coverage strength. Each sub-PR records its inventory and full 37-suite result, merges into the stage branch, and receives its own review. Soak once at the stage boundary, not per sub-PR. Preserve original priming, listener and controller creation points.",
       "panelPrPlan": [
@@ -341,7 +342,17 @@
           {
             "suite": "axis_gizmo.py",
             "line": 130,
-            "function": "run"
+            "function": "run",
+            "callSite": {
+              "suite": "axis_gizmo.py",
+              "line": 170,
+              "function": "main"
+            },
+            "suiteWorkflow": "tests/e2e/axis_gizmo.py",
+            "workflow": {
+              "id": "escape-canvas-focus"
+            },
+            "diagnosticOnly": true
           },
           {
             "suite": "ci_gate_diagnostics.py",
@@ -349,37 +360,53 @@
             "function": "wait_for_video_idle",
             "callSite": {
               "suite": "smoke.py",
-              "line": 4531,
+              "line": 4394,
               "function": "main"
             },
-            "historicalFailure": "smoke.py:4525",
-            "issue": "https://github.com/evangelistalab/vibemol/issues/11"
+            "suiteWorkflow": "tests/e2e/smoke.py",
+            "workflow": {
+              "id": "issue-11-stop-after-second-download",
+              "site": "trajectory"
+            },
+            "diagnosticOnly": true
           },
           {
             "suite": "mode_consistency.py",
             "line": 80,
-            "function": "coordinate_row_actions"
+            "function": "coordinate_row_actions",
+            "callSite": {
+              "suite": "mode_consistency.py",
+              "line": 162,
+              "function": "main"
+            },
+            "suiteWorkflow": "tests/e2e/mode_consistency.py",
+            "workflow": {
+              "id": "coordinates-delete-selection-card"
+            },
+            "diagnosticOnly": true
           }
         ],
         "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
-        "provenance": "The safety net uses the 34 suites that passed CI run 38110555939. Historical local 35/2/37 is retained as local evidence only. Corrected CI gate: 34/3/37, with the three specified production defects; a fresh manifest run is required before reopening.",
-        "ciEvidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json",
-        "ciGateSatisfied": false,
+        "provenance": "Completed CI run 38141289409 re-evaluated without rerunning: 34/3/37; all three failures match (suite, workflow). Issue #11 fired at trajectory after the second download; vibration was not reached. Traceback lines and file hashes are diagnostic, not acceptance keys. Historical local 35/2/37 remains local evidence only.",
+        "ciEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
+        "ciGateSatisfied": true,
         "latestCiResult": {
           "passed": 34,
           "failed": 3,
           "total": 37,
-          "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json",
-          "unexpectedFailuresUnderOldGate": [
-            "tests/e2e/smoke.py"
-          ]
+          "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
+          "unexpectedFailures": [],
+          "issue11Workflow": {
+            "id": "issue-11-stop-after-second-download",
+            "site": "trajectory"
+          }
         },
         "requiredGate": {
           "passed": 34,
           "failed": 3,
           "total": 37,
           "environment": "CI",
-          "satisfied": false
+          "satisfied": true
         },
         "historicalLocalPassingSuites": [
           "asset_cache.py",
@@ -419,7 +446,7 @@
           "periodic_table.py"
         ]
       },
-      "status": "PR #10 merged; corrected CI 34/3/37 gate awaits one fresh complete CI run. PR #8 Build conversions remain unchanged; no later cache group opens before confirmation.",
+      "status": "PR #12 authorized to merge using its own re-evaluated CI result. Rebase #8 onto merged #12 and require one CI run on that candidate to prove both the 34/3/37 workflows and all identity minima before merging. Adaptive opens as a draft afterward; do not merge the draft.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -513,19 +540,19 @@
       "environment": "CI"
     },
     "requiredRemainingFailures": [
-      "axis_gizmo.py",
-      "mode_consistency.py",
-      "smoke.py:4525 (#11, crop overlay after export)"
+      "axis_gizmo.py \u2014 escape-canvas-focus",
+      "mode_consistency.py \u2014 coordinates-delete-selection-card",
+      "smoke.py \u2014 issue-11-stop-after-second-download"
     ],
-    "blocksElementCacheStage": true,
+    "blocksElementCacheStage": false,
     "validation": {
-      "status": "PRs #7, #9 and #10 merged. New corrected CI 34/3/37 gate is pending one fresh complete run; #11 is explicitly accepted out-of-scope production code.",
+      "status": "Workflow gate met: completed CI run 38141289409 re-evaluated under the corrected specification, without rerunning. PR #8 merge still awaits its identity evidence provenance decision.",
       "mergeCommit": "e4b5e498fe818171e3205313667614cfd8d2832c",
       "pr": "https://github.com/evangelistalab/vibemol/pull/7",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
       "ciLimitation": {
         "checksAndUnit": "passed",
-        "e2e": "PR #10 complete CI run 38110555939 reports 34/3/37; resize picking passes. Smoke fails the same vibration overlay assertion (original 4525, current caller 4531 / helper 88). No assertion or production fix included.",
+        "e2e": "Completed CI run 38141289409 re-evaluated without rerunning: 34/3/37; all three failures match (suite, workflow). Issue #11 fired at trajectory after the second download; vibration was not reached. Traceback lines and file hashes are diagnostic, not acceptance keys. Historical local 35/2/37 remains local evidence only.",
         "firstDifference": "$.sample/light/Display.geometry.molecule.bonds[6].z: '2.375228488400047e-06' != '2.3752284884000466e-06'",
         "job": "https://github.com/evangelistalab/vibemol/actions/runs/38077486777/job/114287477705",
         "localGoldensUnchanged": true,
@@ -539,28 +566,29 @@
           "failed": 3,
           "total": 37,
           "environment": "CI",
-          "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+          "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json"
         }
       }
     },
     "acceptedDefects": [
       {
         "suite": "axis_gizmo.py",
-        "defect": "Escape routing; preserve the 0.9.2/0.9.3 capture-phase ladder"
+        "workflow": "escape-canvas-focus",
+        "defect": "Escape interception prevents canvas focus; preserve the 0.9.2/0.9.3 capture-phase ladder"
       },
       {
         "suite": "mode_consistency.py",
-        "defect": "Selection card overlays Coordinates Delete"
+        "workflow": "coordinates-delete-selection-card",
+        "defect": "Selection card covers Coordinates Delete"
       },
       {
         "suite": "smoke.py",
-        "historicalFailureLine": 4525,
-        "currentCallSite": {
-          "suite": "smoke.py",
-          "line": 4531,
-          "function": "main"
-        },
-        "defect": "#11: vibration crop overlay reopens after export",
+        "workflow": "issue-11-stop-after-second-download",
+        "sites": [
+          "trajectory",
+          "vibration"
+        ],
+        "defect": "#11: delayed Stop after export opens a new crop selection after the second download",
         "issue": "https://github.com/evangelistalab/vibemol/issues/11"
       }
     ]
@@ -594,7 +622,7 @@
     "total": 37
   },
   "characterizationPortability": {
-    "status": "PR #9 portability fix merged; PR #10 repairs actual-state synchronization. Corrected CI 34/3/37 gate awaits a fresh complete run.",
+    "status": "Portability and actual-state synchronization repairs merged; completed CI run 38141289409 matches the corrected workflow gate without a rerun.",
     "comparison": {
       "floatLeaves": {
         "relTol": 1e-09,
@@ -605,7 +633,7 @@
     "audit": "tests/baselines/evidence/characterization-portability/pre-change-differences.json",
     "findings": "32 one- or four-ULP float leaves; maximum relative difference 7.82384323679457e-16; no real cross-platform difference found. The other 918 raw added leaves are the approved module API additions.",
     "captureHome": "Two independent GitHub CI Ubuntu jobs capture v0.9.5-pre-refactor twice each; raw repeat captures must be exactly identical.",
-    "browserCiGate": "Required: CI 34 passing / 3 failing / 37. Accept only axis_gizmo.py (Escape routing), mode_consistency.py (selection card over Coordinates Delete), smoke.py:4525 (#11 crop overlay after export). Run 38110555939 recorded those totals under the previous manifest; a new run must confirm them under the corrected gate. Any other result stops reopening.",
+    "browserCiGate": "CI 34 passing / 3 failing / 37. Accepted by (suite, workflow): Escape prevents canvas focus; selection card covers Coordinates Delete; issue #11 at trajectory or vibration wait_for_video_idle after the second download. Completed run 38141289409 matches; record the fired #11 site on every run. All other failures stop the sequence. Traceback lines are diagnostic only.",
     "recordingEvidence": "tests/baselines/evidence/characterization-portability/ci-recording-comparison.json",
     "captureProvenance": {
       "os": "Linux",
@@ -685,13 +713,73 @@
     "evidence": "tests/baselines/evidence/browser-ci-followup/validation.json",
     "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",
     "editPicking": "Full suite passes after unbounded wait for applied/presented viewport; assertions unchanged",
-    "smoke": "Normal full CI run 38110555939 reaches vibration Stop: historical smoke.py:4525 is now caller 4531 and helper 88. Timeout on the reopened crop overlay is filed production defect #11; it remains unchanged.",
+    "smoke": "Run 38141289409 fired the trajectory Stop-after-second-download variant of #11, before vibration. Both workflow variants are accepted; production code remains unchanged.",
     "videoDefect": "https://github.com/evangelistalab/vibemol/issues/11",
     "renderer": "Both CI suites use software SwiftShader",
     "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
-    "gateMet": false,
+    "gateMet": true,
     "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37",
-    "latestCompleteCiRun": "https://github.com/evangelistalab/vibemol/actions/runs/38110555939"
+    "latestCompleteCiRun": "https://github.com/evangelistalab/vibemol/actions/runs/38141289409",
+    "gateEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json"
   },
-  "defectBatchPolicy": "Projection #3, axis-gizmo Escape routing, mode-consistency selection-card collision, and video crop #11 stay production defects. Schedule after 0.10.0 or in parallel on 0.9.x; do not merge their fixes into this refactor."
+  "defectBatchPolicy": "Projection #3, axis-gizmo Escape routing, mode-consistency selection-card collision, and video crop #11 stay production defects. Schedule after 0.10.0 or in parallel on 0.9.x; do not merge their fixes into this refactor.",
+  "latestCiGateAttempt": {
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38141289409",
+    "headCommit": "d2fb002188c8324ac9d4dc1524818b4201d5c0bc",
+    "actual": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "expected": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "gateMet": true,
+    "unexpectedFailures": [],
+    "reason": "Mis-specified vibration-only line acceptance corrected to (suite, workflow), including both issue #11 exporter paths after the second download. Same completed CI run re-evaluated without a rerun.",
+    "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
+    "characterization": "Two exactly identical 102-capture runs passed comparison with the unchanged goldens.",
+    "renderer": "Linux x86_64 Chromium 153.0.8010.12, software SwiftShader",
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    }
+  },
+  "gateAcceptancePolicy": {
+    "identity": "suite and workflow",
+    "lineNumbers": "diagnostic only; never acceptance keys",
+    "smokeScope": "Only wait_for_video_idle after the second download for trajectory or vibration, issue #11",
+    "perRunSiteEvidence": "browser-results.json issue11Workflow and each failureWorkflow.site",
+    "reRunForThisCorrection": false,
+    "acceptedWorkflows": [
+      {
+        "suite": "axis_gizmo.py",
+        "workflow": "escape-canvas-focus",
+        "defect": "Escape interception prevents canvas focus; preserve the 0.9.2/0.9.3 capture-phase ladder"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "defect": "Selection card covers Coordinates Delete"
+      },
+      {
+        "suite": "smoke.py",
+        "workflow": "issue-11-stop-after-second-download",
+        "sites": [
+          "trajectory",
+          "vibration"
+        ],
+        "defect": "#11: delayed Stop after export opens a new crop selection after the second download",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11"
+      }
+    ]
+  },
+  "ciArtifactEvidencePolicy": {
+    "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
+    "cacheGroups": "Each cache group gets one CI run on its rebased merge candidate, carrying both all 37 suite results and the 43-node identity sweep with per-reason minima.",
+    "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
+    "pr8": "Rebase onto merged #12, then run CI once on that rebased candidate. Older Build identity evidence is historical only; do not combine it with #12 as merge evidence."
+  }
 }

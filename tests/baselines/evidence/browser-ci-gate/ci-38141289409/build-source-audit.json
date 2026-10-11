@@ -1,0 +1,145 @@
+{
+  "group": "editBuild*",
+  "baseCommit": "d2fb002",
+  "inventory": [
+    {
+      "name": "editBuildSearchEl",
+      "declarationLine": 1194,
+      "assignmentLine": 8213,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editBuild*",
+      "kind": "DOM cache",
+      "id": "editBuildSearch",
+      "queryLine": 8213,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell"
+    },
+    {
+      "name": "editBuildAtomsHostEl",
+      "declarationLine": 1195,
+      "assignmentLine": 8214,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editBuild*",
+      "kind": "DOM cache",
+      "id": "editBuildAtomsHost",
+      "queryLine": 8214,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell"
+    },
+    {
+      "name": "editBuildFragmentsHostEl",
+      "declarationLine": 1196,
+      "assignmentLine": 8215,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editBuild*",
+      "kind": "DOM cache",
+      "id": "editBuildFragmentsHost",
+      "queryLine": 8215,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell"
+    },
+    {
+      "name": "editBuildMoleculesHostEl",
+      "declarationLine": 1197,
+      "assignmentLine": 8216,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editBuild*",
+      "kind": "DOM cache",
+      "id": "editBuildMoleculesHost",
+      "queryLine": 8216,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell"
+    }
+  ],
+  "functionsWhoseBodiesReferenceTheConvertedCache": [
+    {
+      "name": "updateEditToolboxUi",
+      "beforeLine": 16387,
+      "afterLine": 16399
+    },
+    {
+      "name": "setBuildPaletteFilterQuery",
+      "beforeLine": 16597,
+      "afterLine": 16609
+    },
+    {
+      "name": "isBuildSearchNavigationActive",
+      "beforeLine": 16620,
+      "afterLine": 16632
+    },
+    {
+      "name": "syncBuildSearchField",
+      "beforeLine": 16789,
+      "afterLine": 16801
+    },
+    {
+      "name": "buildEditAddControls",
+      "beforeLine": 17162,
+      "afterLine": 17174
+    },
+    {
+      "name": "restoreBuildPopoverPanes",
+      "beforeLine": 18328,
+      "afterLine": 18340
+    },
+    {
+      "name": "syncBuildPopoverPanes",
+      "beforeLine": 18352,
+      "afterLine": 18364
+    },
+    {
+      "name": "resetBuildSearchFieldOnHide",
+      "beforeLine": 18378,
+      "afterLine": 18390
+    },
+    {
+      "name": "hideBuildPopover",
+      "beforeLine": 18418,
+      "afterLine": 18430
+    },
+    {
+      "name": "showBuildPopover",
+      "beforeLine": 18429,
+      "afterLine": 18441
+    },
+    {
+      "name": "showSelectionFragmentCuePopover",
+      "beforeLine": 19109,
+      "afterLine": 19121
+    }
+  ],
+  "allExistingFunctionDeclarationsExactAfterLexicalReferenceSubstitution": true,
+  "auditedFunctionDeclarations": 1190,
+  "shadowedElsReferences": [],
+  "metrics": {
+    "before": {
+      "lines": 32928,
+      "functionDeclarations": 1181,
+      "letDeclarations": 306,
+      "constDeclarations": 588,
+      "sha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6"
+    },
+    "after": {
+      "lines": 33037,
+      "functionDeclarations": 1181,
+      "letDeclarations": 302,
+      "constDeclarations": 590,
+      "sha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944"
+    }
+  },
+  "controllerLetsRetained": true,
+  "focusStateLetRetained": true,
+  "queryRegistrationAtOriginalWiringSites": true
+}
