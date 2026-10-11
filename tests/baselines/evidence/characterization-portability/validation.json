@@ -20,9 +20,66 @@
     "capturesPerRun": 102,
     "allFourExact": true
   },
-  "pr8": "unmerged; four Build cache conversions remain unchanged on its branch",
+  "pr8": {
+    "testedHead": "2056f2a5f60743ffc5fbe2523f6540cb0b860f65",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100155036",
+    "status": "unmerged; complete CI gate failed",
+    "characterization": {
+      "runs": 2,
+      "capturesPerRun": 102,
+      "exactlyIdentical": true,
+      "sameScientificCapturesAsPortabilityPr": true
+    },
+    "identityInvariant": {
+      "nodes": 43,
+      "contextsPerRun": 4,
+      "runs": 2,
+      "minimumFiringCountsPassed": true,
+      "countsEvidence": "tests/baselines/evidence/characterization-portability/ci-build/cache-identity-counts.json"
+    },
+    "browserSuites": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37,
+      "unexpectedFailures": [
+        "tests/e2e/smoke.py",
+        "tests/e2e/edit_picking.py"
+      ],
+      "matchesAcceptedBaseline": false
+    },
+    "webkitProperties": "passed",
+    "fourBuildConversionsUnchanged": true,
+    "qaJavascriptUnchanged": true,
+    "letBefore": 306,
+    "letAfter": 302,
+    "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+  },
   "crossMachinePortability": {
     "priorMacRuns": 2,
     "matchAgainstNewCiGolden": true
-  }
+  },
+  "ordinaryCi": {
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100061231",
+    "testedHead": "01bc3651981bf5ec3304d22ef30eeab5bbf276f5",
+    "characterization": {
+      "runs": 2,
+      "capturesPerRun": 102,
+      "exactlyIdentical": true
+    },
+    "browserSuites": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "matchesAcceptedBaseline": false
+    },
+    "unexpectedFailure": {
+      "suite": "tests/e2e/smoke.py",
+      "line": 4525,
+      "function": "main",
+      "exceptionType": "TimeoutError"
+    },
+    "webkitProperties": "passed",
+    "evidence": "tests/baselines/evidence/characterization-portability/ci-portability/browser-results.json"
+  },
+  "unresolvedCiFindings": "tests/baselines/evidence/characterization-portability/ci-findings.json"
 }

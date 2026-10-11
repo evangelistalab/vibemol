@@ -13,7 +13,8 @@
     "passed": 35,
     "failed": 2,
     "total": 37,
-    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "provenance": "Accepted local repair baseline; the expected CI gate remains 35/2/37. Additional CI failures are recorded separately, not absorbed."
   },
   "stages": [
     {
@@ -212,6 +213,14 @@
             "observedInPassingFullRun": false,
             "riskClosed": false,
             "evidence": "tests/baselines/evidence/browser-repair/assertion-audit.json"
+          },
+          "portabilityCiCheck": {
+            "suiteRan": true,
+            "materialFamiliesUnchanged": true,
+            "passed": true,
+            "riskClosed": false,
+            "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100061231",
+            "pr8AlsoPassed": true
           }
         }
       ],
@@ -295,9 +304,22 @@
             "function": "coordinate_row_actions"
           }
         ],
-        "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+        "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+        "provenance": "Listed passing/newly green suites are the accepted local issue #4 repair baseline. The completed pre-Build CI run is 34/3/37; smoke currently fails there. CI observations are recorded separately and do not expand the accepted failure set.",
+        "ciEvidence": "tests/baselines/evidence/characterization-portability/ci-portability/browser-results.json",
+        "ciGateSatisfied": false,
+        "latestCiResult": {
+          "passed": 33,
+          "failed": 4,
+          "total": 37,
+          "unexpectedFailures": [
+            "tests/e2e/smoke.py",
+            "tests/e2e/edit_picking.py"
+          ],
+          "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+        }
       },
-      "status": "Pre-code audit accepted; implement 41 caches as 40 accessors plus one canonical-entry alias; both controllers retained",
+      "status": "Sub-PR sequence stopped by the user pending portable CI characterization and the complete PR #8 browser gate. Four Build conversions remain unchanged in PR #8.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -398,7 +420,7 @@
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
       "ciLimitation": {
         "checksAndUnit": "passed",
-        "e2e": "failed before browser suites on a cross-platform structured-geometry float-string difference",
+        "e2e": "Historical PR #7 failed before browser suites on a cross-platform float-leaf difference. The separate portability PR now passes two CI characterization runs; its 37-suite run exposes an additional smoke failure.",
         "firstDifference": "$.sample/light/Display.geometry.molecule.bonds[6].z: '2.375228488400047e-06' != '2.3752284884000466e-06'",
         "job": "https://github.com/evangelistalab/vibemol/actions/runs/38077486777/job/114287477705",
         "localGoldensUnchanged": true,
@@ -439,7 +461,7 @@
     "total": 37
   },
   "characterizationPortability": {
-    "status": "CI baseline captured and promoted; full CI browser sweeps pending",
+    "status": "Portable CI baseline verified; PR #8 executed all 37 suites and failed the required 35/2 gate at 33/4/37. Sub-PR sequence remains stopped.",
     "comparison": {
       "floatLeaves": {
         "relTol": 1e-09,
@@ -450,7 +472,7 @@
     "audit": "tests/baselines/evidence/characterization-portability/pre-change-differences.json",
     "findings": "32 one- or four-ULP float leaves; maximum relative difference 7.82384323679457e-16; no real cross-platform difference found. The other 918 raw added leaves are the approved module API additions.",
     "captureHome": "Two independent GitHub CI Ubuntu jobs capture v0.9.5-pre-refactor twice each; raw repeat captures must be exactly identical.",
-    "browserCiGate": "Execute all 37 independently; report 35 passing and the two unchanged filed failures before merging PR #8.",
+    "browserCiGate": "Not met: PR #8 actually reported 33 passing / 4 failing / 37. Smoke and resize picking findings remain outside the two accepted filed defects; do not merge or resume cache groups.",
     "recordingEvidence": "tests/baselines/evidence/characterization-portability/ci-recording-comparison.json",
     "captureProvenance": {
       "os": "Linux",
@@ -464,6 +486,64 @@
         "runAttempt": "1",
         "runnerImage": "ubuntu24"
       }
+    },
+    "ordinaryCi": {
+      "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100061231",
+      "testedHead": "01bc3651981bf5ec3304d22ef30eeab5bbf276f5",
+      "characterization": {
+        "runs": 2,
+        "capturesPerRun": 102,
+        "exactlyIdentical": true
+      },
+      "browserSuites": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37,
+        "matchesAcceptedBaseline": false
+      },
+      "unexpectedFailure": {
+        "suite": "tests/e2e/smoke.py",
+        "line": 4525,
+        "function": "main",
+        "exceptionType": "TimeoutError"
+      },
+      "webkitProperties": "passed",
+      "evidence": "tests/baselines/evidence/characterization-portability/ci-portability/browser-results.json"
+    },
+    "unresolvedFindings": "tests/baselines/evidence/characterization-portability/ci-findings.json",
+    "pr8": {
+      "testedHead": "2056f2a5f60743ffc5fbe2523f6540cb0b860f65",
+      "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100155036",
+      "status": "unmerged; complete CI gate failed",
+      "characterization": {
+        "runs": 2,
+        "capturesPerRun": 102,
+        "exactlyIdentical": true,
+        "sameScientificCapturesAsPortabilityPr": true
+      },
+      "identityInvariant": {
+        "nodes": 43,
+        "contextsPerRun": 4,
+        "runs": 2,
+        "minimumFiringCountsPassed": true,
+        "countsEvidence": "tests/baselines/evidence/characterization-portability/ci-build/cache-identity-counts.json"
+      },
+      "browserSuites": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37,
+        "unexpectedFailures": [
+          "tests/e2e/smoke.py",
+          "tests/e2e/edit_picking.py"
+        ],
+        "matchesAcceptedBaseline": false
+      },
+      "webkitProperties": "passed",
+      "fourBuildConversionsUnchanged": true,
+      "qaJavascriptUnchanged": true,
+      "letBefore": 306,
+      "letAfter": 302,
+      "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
     }
   }
 }
