@@ -1,0 +1,56 @@
+2026-10-11T03:48:33.0364261Z [renderer] {"suite": "smoke", "os": "Linux", "architecture": "x86_64", "browserName": "chromium", "browserVersion": "153.0.8010.12", "rendererClass": "software", "vendor": "WebKit", "renderer": "WebKit WebGL", "unmaskedVendor": "Google Inc. (Google)", "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)", "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)", "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233"}
+2026-10-11T03:48:33.0469438Z [smoke] startup theme controls
+2026-10-11T03:48:33.6389197Z [smoke] initial edit mode and adaptive menu
+2026-10-11T03:52:12.4328972Z [smoke] deterministic fixture import
+2026-10-11T03:52:15.9675387Z [smoke] deterministic fixture selection
+2026-10-11T03:52:30.0782583Z [smoke] selection move smoke
+2026-10-11T03:52:34.3052805Z [smoke] selection rotate smoke
+2026-10-11T03:52:45.5998487Z [smoke] live rotate updates grouped bond carriers
+2026-10-11T03:52:51.4991465Z [smoke] edit void orbit matches display orbit
+2026-10-11T03:53:10.2268933Z [smoke] symmetry popover smoke
+2026-10-11T03:53:58.6189776Z [smoke] fragment cue Escape disarms Build, then clears selection
+2026-10-11T03:54:35.3035707Z [smoke] Transform selects a new anchor before rearming fragment attachment
+2026-10-11T03:54:53.4398923Z [smoke] copy paste smoke
+2026-10-11T03:54:58.8688081Z [smoke] add atom smoke
+2026-10-11T03:55:12.1197034Z [smoke] grow-add can be followed immediately by atom selection
+2026-10-11T03:55:50.6265887Z [smoke] add molecule smoke
+2026-10-11T03:57:18.0883237Z [smoke] bond gesture smoke
+2026-10-11T03:59:41.5663462Z [smoke] clean structure smoke
+2026-10-11T03:59:47.3817818Z [smoke] trajectory smoke
+2026-10-11T04:00:11.8369823Z [video-state] {"prefix":"trajectory","event":"before-stop-action","at":700890.5,"state":{"mode":"recording","recording":true,"active":true,"overlayState":"recording","hidden":"false","playDisabled":true,"resetDisabled":true,"downloads":1}}
+2026-10-11T04:00:12.6177720Z [video-state] {"prefix":"trajectory","event":"pointerdown","at":701671.9,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}}
+2026-10-11T04:00:12.6185945Z [video-state] {"prefix":"trajectory","event":"pointerup","at":701672.2999999999,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}}
+2026-10-11T04:00:12.6194095Z [video-state] {"prefix":"trajectory","event":"click","at":701672.4,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}}
+2026-10-11T04:00:12.6197312Z [video-state] {"prefix":"trajectory","event":"after-click","at":701674.4,"state":{"mode":"selecting","recording":false,"active":true,"overlayState":"selecting","hidden":"false","playDisabled":false,"resetDisabled":false,"downloads":2}}
+2026-10-11T04:00:12.9722502Z [video-state] {"prefix":"trajectory","event":"terminal-new-selection","state":{"mode":"selecting","recording":false,"active":true,"overlayState":"selecting","hidden":"false","playDisabled":false,"resetDisabled":false,"downloads":2}}
+2026-10-11T04:00:13.8150364Z Traceback (most recent call last):
+2026-10-11T04:00:13.8157754Z   File "/home/runner/work/vibemol/vibemol/tests/e2e/smoke.py", line 5524, in <module>
+2026-10-11T04:00:13.8160441Z     raise SystemExit(main())
+2026-10-11T04:00:13.8160946Z                      ^^^^^^
+2026-10-11T04:00:13.8161844Z   File "/home/runner/work/vibemol/vibemol/tests/e2e/smoke.py", line 4394, in main
+2026-10-11T04:00:13.8168607Z     wait_for_video_idle(page, 'trajectory')
+2026-10-11T04:00:13.8169775Z   File "/home/runner/work/vibemol/vibemol/tests/e2e/ci_gate_diagnostics.py", line 108, in wait_for_video_idle
+2026-10-11T04:00:13.8170967Z     wait_for_presented_state(page, predicate, timeout=0)
+2026-10-11T04:00:13.8172037Z   File "/home/runner/work/vibemol/vibemol/tests/e2e/helpers.py", line 86, in wait_for_presented_state
+2026-10-11T04:00:13.8172900Z     page.wait_for_function('boundary => boundary.presented && (' + predicate + ')()',
+2026-10-11T04:00:13.8174231Z   File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/playwright/sync_api/_generated.py", line 12809, in wait_for_function
+2026-10-11T04:00:13.8187324Z     self._sync(
+2026-10-11T04:00:13.8188286Z   File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+2026-10-11T04:00:13.8189340Z     return task.result()
+2026-10-11T04:00:13.8189776Z            ^^^^^^^^^^^^^
+2026-10-11T04:00:13.8190500Z   File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/playwright/_impl/_page.py", line 1153, in wait_for_function
+2026-10-11T04:00:13.8191691Z     return await self._main_frame.wait_for_function(**locals_to_params(locals()))
+2026-10-11T04:00:13.8194042Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-11T04:00:13.8195155Z   File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/playwright/_impl/_frame.py", line 941, in wait_for_function
+2026-10-11T04:00:13.8196223Z     await self._channel.send("waitForFunction", self._timeout, params)
+2026-10-11T04:00:13.8197604Z   File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 76, in send
+2026-10-11T04:00:13.8198663Z     return await self._connection.wrap_api_call(
+2026-10-11T04:00:13.8199164Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-11T04:00:13.8200279Z   File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 632, in wrap_api_call
+2026-10-11T04:00:13.8201492Z     raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+2026-10-11T04:00:13.8207375Z playwright._impl._errors.Error: Page.wait_for_function: Error: Unbounded real-state wait: export ended before Stop click; click opened a new crop selection. [{"prefix":"trajectory","event":"before-stop-action","at":700890.5,"state":{"mode":"recording","recording":true,"active":true,"overlayState":"recording","hidden":"false","playDisabled":true,"resetDisabled":true,"downloads":1}},{"prefix":"trajectory","event":"pointerdown","at":701671.9,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}},{"prefix":"trajectory","event":"pointerup","at":701672.2999999999,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}},{"prefix":"trajectory","event":"click","at":701672.4,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}},{"prefix":"trajectory","event":"after-click","at":701674.4,"state":{"mode":"selecting","recording":false,"active":true,"overlayState":"selecting","hidden":"false","playDisabled":false,"resetDisabled":false,"downloads":2}}]
+2026-10-11T04:00:13.8211768Z     at eval (eval at predicate (eval at evaluate (:311:30)), <anonymous>:12:15)
+2026-10-11T04:00:13.8212414Z     at eval (eval at predicate (eval at evaluate (:311:30)), <anonymous>:15:7)
+2026-10-11T04:00:13.8212847Z     at predicate (eval at evaluate (:311:30), <anonymous>:13:29)
+2026-10-11T04:00:13.8213226Z     at next (eval at evaluate (:311:30), <anonymous>:29:33)
+2026-10-11T04:00:13.8443164Z ##[error]Process completed with exit code 1.

@@ -1,0 +1,15 @@
+{
+  "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",
+  "jobUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233/job/114382033713",
+  "testedHead": "2f9cb3e0b2c5fe6fdba273b5ef0e1a8213c4f143",
+  "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+  "result": "passed full suite",
+  "unboundedWaitTimeout": 0,
+  "predicateIsSynchronous": true,
+  "falseStateRejectedOnCi": true,
+  "signal": "After two presentation frames, renderer viewport CSS size, canvas rectangle and drawing-buffer size must equal readViewportCssSize and DPR-scaled buffer dimensions.",
+  "previousWrongSignal": "Playwright set_viewport_size acknowledgement, before the deferred app resize/ResizeObserver/projection update.",
+  "existingAssertionsChanged": false,
+  "rendererClass": "software",
+  "all37SuiteGateClaimed": false
+}

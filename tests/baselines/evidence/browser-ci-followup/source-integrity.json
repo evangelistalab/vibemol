@@ -8,5 +8,9 @@
     "comparison": "local 35/2/37, CI 33/4/37",
     "requiredGate": "CI 35/2/37",
     "gateMet": false
-  }
+  },
+  "allTrackedJsFilesCompared": 94,
+  "allTrackedJsChanged": [],
+  "unchangedCharacterizationGoldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+  "sourceOfGolden": "CI-recorded baseline from merged PR #9, not re-recorded"
 }

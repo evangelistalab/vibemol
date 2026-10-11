@@ -198,5 +198,5 @@
       "satisfied": false
     }
   },
-  "historicalCountsNotice": "This retained original run covered 30 entry points (17/13); with Style Lab it was 31 (18/13). Both are superseded by the current 35/2 of 37 browser-repair baseline. Historical outcomes are retained as evidence, not current counts."
+  "historicalCountsNotice": "This retained original run covered 30 entry points (17/13); with Style Lab it was 31 (18/13). Both are superseded by the local 35/2/37 browser-repair evidence; CI remains 33/4/37 and the CI 35/2/37 gate is not met. Historical outcomes are retained as evidence, not current counts."
 }
