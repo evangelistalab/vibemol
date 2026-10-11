@@ -74,10 +74,19 @@ def wait_for_presented_state(page, predicate: str, *, timeout=None) -> None:
     state. A failed wait propagates once, without sleeping or timeout retries.
     """
     options = {} if timeout is None else {'timeout': timeout}
-    page.wait_for_function('''async () => {
-        await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
-        return (''' + predicate + ''')();
-    }''', **options)
+    # Playwright tests the immediate predicate return for truthiness: an async
+    # predicate's Promise succeeds even when it later resolves to false. Keep
+    # the presentation boundary separate and the polled app predicate sync.
+    boundary = page.evaluate_handle('''() => {
+        const boundary = {presented: false};
+        requestAnimationFrame(() => requestAnimationFrame(() => {boundary.presented = true;}));
+        return boundary;
+    }''')
+    try:
+        page.wait_for_function('boundary => boundary.presented && (' + predicate + ')()',
+                               arg=boundary, **options)
+    finally:
+        boundary.dispose()
 
 
 def write_failure_artifacts(page, artifact_dir: pathlib.Path, name: str, page_errors: list[str], console_errors: list[str]) -> None:

@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/browser-ci-probes.yml'
       - 'tests/e2e/ci_gate_diagnostics.py'
+      - 'tests/e2e/helpers.py'
+      - 'tests/e2e/presented_state_probe.py'
       - 'tests/e2e/edit_picking.py'
       - 'tests/e2e/smoke.py'
   workflow_dispatch:
@@ -30,7 +32,9 @@ jobs:
           VIBEMOL_SMOKE_VERBOSE: '1'
           PYTHONUNBUFFERED: '1'
           VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/ci-probe/${{ matrix.suite }}
-        run: python tests/e2e/${{ matrix.suite }}.py
+        run: |
+          python tests/e2e/presented_state_probe.py
+          python tests/e2e/${{ matrix.suite }}.py
       - name: Upload renderer, state transitions and failure evidence
         if: always()
         uses: actions/upload-artifact@v4

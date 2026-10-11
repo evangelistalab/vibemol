@@ -3,6 +3,10 @@ import json
 import os
 import platform
 from pathlib import Path
+if __package__ in (None, ''):
+    from helpers import wait_for_presented_state
+else:
+    from .helpers import wait_for_presented_state
 
 
 UNBOUNDED = os.environ.get('VIBEMOL_CI_UNBOUNDED_PROBE') == '1'
@@ -86,20 +90,21 @@ def wait_for_video_idle(page, prefix):
     # Issue #4 CI discriminator: there is no duration limit or retry. Read the
     # controller as well as its live UI projection. Reject a terminal transition
     # to a NEW crop selection explicitly, rather than waiting for a timeout.
-    page.wait_for_function('''async prefix => {
-      await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+    predicate = '''() => {
+      const prefix=__PREFIX__;
       const state=__ciVideoState(prefix);
       if(state.mode==='idle' && !state.active && state.hidden==='true'
         && !state.playDisabled && !state.resetDisabled) return true;
       const events=__ciStopTrace?.prefix===prefix ? __ciStopTrace.events : [];
       const click=events.find(e=>e.event==='click');
       const after=events.find(e=>e.event==='after-click');
-      if(click?.state.mode==='idle' && after?.state.mode==='selecting'
+      if(click && after?.state.mode==='selecting'
         && state.mode==='selecting' && state.downloads===2) {
         console.log('[video-state] '+JSON.stringify({prefix,event:'terminal-new-selection',state}));
         throw new Error('Unbounded real-state wait: export ended before Stop click; click opened a new crop selection. '+JSON.stringify(events));
       }
       return false;
-    }''', arg=prefix, timeout=0)
+    }'''.replace('__PREFIX__', json.dumps(prefix))
+    wait_for_presented_state(page, predicate, timeout=0)
     print('[video-state] '+json.dumps({'prefix': prefix, 'event': 'unbounded-idle-wait-passed',
                                      'state': page.evaluate('prefix=>__ciVideoState(prefix)', prefix)}), flush=True)

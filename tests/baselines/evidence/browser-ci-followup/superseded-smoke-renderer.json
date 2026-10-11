@@ -1,0 +1,14 @@
+{
+  "suite": "smoke",
+  "os": "Linux",
+  "architecture": "x86_64",
+  "browserName": "chromium",
+  "browserVersion": "153.0.8010.12",
+  "rendererClass": "software",
+  "vendor": "WebKit",
+  "renderer": "WebKit WebGL",
+  "unmaskedVendor": "Google Inc. (Google)",
+  "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+  "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38108824029"
+}

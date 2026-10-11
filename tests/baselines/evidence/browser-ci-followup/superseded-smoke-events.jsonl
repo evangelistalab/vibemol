@@ -1,0 +1,5 @@
+{"prefix":"trajectory","event":"before-stop-action","at":537484.5,"state":{"mode":"recording","recording":true,"active":true,"overlayState":"recording","hidden":"false","playDisabled":true,"resetDisabled":true,"downloads":1}}
+{"prefix":"trajectory","event":"pointerdown","at":538210.5,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}}
+{"prefix":"trajectory","event":"pointerup","at":538210.7000000001,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}}
+{"prefix":"trajectory","event":"click","at":538210.9,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}}
+{"prefix":"trajectory","event":"after-click","at":538210.9,"state":{"mode":"idle","recording":false,"active":false,"overlayState":"idle","hidden":"true","playDisabled":false,"resetDisabled":false,"downloads":2}}
