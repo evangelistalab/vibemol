@@ -70,9 +70,11 @@ def arm_video_stop_trace(page, prefix):
       for(const name of ['pointerdown','pointerup','click']) {
         button.addEventListener(name,()=>{
           emit(name,__ciVideoState(prefix));
-          if(name==='click') queueMicrotask(()=>emit('after-click',__ciVideoState(prefix)));
         },{capture:true,once:true});
       }
+      // This listener is registered after the app's existing target listener.
+      // A capture-listener microtask can run BEFORE that native click handler.
+      button.addEventListener('click',()=>emit('after-click',__ciVideoState(prefix)),{once:true});
       emit('before-stop-action',__ciVideoState(prefix));
     }''', prefix)
 

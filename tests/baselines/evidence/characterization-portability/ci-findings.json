@@ -2,7 +2,7 @@
   "productionJsChanged": false,
   "existingBrowserAssertionsChanged": false,
   "acceptedFailureSetChanged": false,
-  "ciGate": "35 passing / 2 failing / 37 remains required. Unexpected failures are not accepted as known defects.",
+  "ciGate": "CI 35 passing / 2 failing / 37 remains required. Local 35/2/37, CI 33/4/37. Unexpected failures are not accepted as known defects.",
   "videoStop": {
     "status": "open finding; no repair included",
     "observations": [

@@ -1,0 +1,42 @@
+[
+  {
+    "prefix": "trajectory",
+    "pointerDown": {
+      "mode": "recording",
+      "hidden": "false",
+      "glyph": "stop_circle"
+    },
+    "finishedWhileHeld": {
+      "mode": "idle",
+      "hidden": "true",
+      "glyph": "videocam"
+    },
+    "afterPointerUp": {
+      "mode": "selecting",
+      "hidden": "false",
+      "glyph": "videocam_off"
+    },
+    "nativeDownloads": 1,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)"
+  },
+  {
+    "prefix": "vibration",
+    "pointerDown": {
+      "mode": "recording",
+      "hidden": "false",
+      "glyph": "stop_circle"
+    },
+    "finishedWhileHeld": {
+      "mode": "idle",
+      "hidden": "true",
+      "glyph": "videocam"
+    },
+    "afterPointerUp": {
+      "mode": "selecting",
+      "hidden": "false",
+      "glyph": "videocam_off"
+    },
+    "nativeDownloads": 2,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)"
+  }
+]

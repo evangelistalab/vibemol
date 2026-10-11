@@ -1,0 +1,12 @@
+{
+  "baseCommit": "a1b00b72bf0fa4e9f992a22170000e4a204fcaf6",
+  "productionJsFilesCompared": 78,
+  "productionJsChanged": [],
+  "appSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+  "cacheStagePr8Touched": false,
+  "baseline": {
+    "comparison": "local 35/2/37, CI 33/4/37",
+    "requiredGate": "CI 35/2/37",
+    "gateMet": false
+  }
+}

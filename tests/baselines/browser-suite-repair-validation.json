@@ -1,6 +1,6 @@
 {
   "issue": "https://github.com/evangelistalab/vibemol/issues/4",
-  "status": "validated on the repair branch; dedicated PR must merge before Stage 3 opens",
+  "status": "PR #7 merged with local evidence only: local 35/2/37, CI 33/4/37. CI 35/2/37 gate is unmet; issue #4 reopened and Stage 3 held.",
   "branch": "codex/browser-suite-repair",
   "prBaseBranch": "codex/app-js-decomposition",
   "preRepairHead": "da1e5520a89dff94d7778f85c7a0077e233b1ec2",
@@ -124,7 +124,23 @@
         "function": "coordinate_row_actions"
       }
     ],
-    "fullMakeTestE2eGreen": false
+    "fullMakeTestE2eGreen": false,
+    "environment": "local",
+    "comparison": "local 35/2/37, CI 33/4/37",
+    "ci": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
   },
   "characterization": {
     "runs": 2,
