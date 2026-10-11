@@ -5,8 +5,8 @@
   "appSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
   "cacheStagePr8Touched": false,
   "baseline": {
-    "comparison": "local 35/2/37, CI 33/4/37",
-    "requiredGate": "CI 35/2/37",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "requiredGate": "CI 34/3/37",
     "gateMet": false
   },
   "allTrackedJsFilesCompared": 94,

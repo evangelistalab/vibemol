@@ -41,12 +41,14 @@ class BrowserFailureReportingTests(unittest.TestCase):
         self.assertEqual(details['exceptionType'], 'AssertionError')
 
     def test_other_failures_cannot_be_absorbed_as_known_defects(self):
-        known = {'firstFailure': {'suite': 'axis_gizmo.py', 'line': 130, 'function': 'run'},
-                 'exceptionType': 'AssertionError', 'testSha256': 'original'}
-        result = {**known, 'exitCode': 1}
+        # Issue #4's corrected gate identifies the workflow; traceback lines
+        # and whole-file hashes change when the harness is edited.
+        known = {'workflow': 'escape-canvas-focus', 'exceptionType': 'AssertionError'}
+        result = {'failureWorkflow': {'id': known['workflow']},
+                  'exceptionType': 'AssertionError', 'exitCode': 1}
         self.assertTrue(matches_known_defect(result, known))
-        for key, value in [('exitCode', 0), ('firstFailure', None), ('exceptionType', 'TimeoutError'),
-                           ('testSha256', 'modified')]:
+        for key, value in [('exitCode', 0), ('failureWorkflow', None), ('exceptionType', 'TimeoutError'),
+                           ('failureWorkflow', {'id': 'different-action'})]:
             with self.subTest(key=key):
                 self.assertFalse(matches_known_defect({**result, key: value}, known))
 
