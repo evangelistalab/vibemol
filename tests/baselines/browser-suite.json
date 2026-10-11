@@ -65,5 +65,7 @@
       "evidence": "tests/baselines/evidence/browser-repair/browser/mode_consistency.log"
     }
   },
-  "policy": "Filed defects remain failing. CI accepts only the exact test fingerprint, first failure site and exception type from the accepted issue #4 repair; every other failure fails the gate."
+  "policy": "Filed defects remain failing. CI accepts only the exact test fingerprint, first failure site and exception type from the accepted issue #4 repair; every other failure fails the gate.",
+  "gateEnvironment": "CI",
+  "baselineComparison": "local 35/2/37, CI 33/4/37"
 }

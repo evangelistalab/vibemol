@@ -781,8 +781,33 @@
       "localBrowserBaseline": {
         "passed": 35,
         "failed": 2,
-        "total": 37
+        "total": 37,
+        "environment": "local",
+        "comparison": "local 35/2/37, CI 33/4/37",
+        "ci": {
+          "passed": 33,
+          "failed": 4,
+          "total": 37,
+          "environment": "CI",
+          "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+        },
+        "requiredCiGate": {
+          "passed": 35,
+          "failed": 2,
+          "total": 37,
+          "environment": "CI",
+          "satisfied": false
+        }
       }
     }
-  }
+  },
+  "browserBaselineComparison": "local 35/2/37, CI 33/4/37",
+  "requiredCiGate": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "environment": "CI",
+    "satisfied": false
+  },
+  "stage3Status": "Held; PR #8 unmerged and sub-PR sequence stopped"
 }

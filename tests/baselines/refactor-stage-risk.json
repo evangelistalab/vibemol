@@ -14,7 +14,23 @@
     "failed": 2,
     "total": 37,
     "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
-    "provenance": "Accepted local repair baseline; the expected CI gate remains 35/2/37. Additional CI failures are recorded separately, not absorbed."
+    "provenance": "Local 35/2/37 is retained local evidence only; CI 33/4/37 has not met the CI 35/2/37 gate. No extra failures are absorbed.",
+    "environment": "local",
+    "comparison": "local 35/2/37, CI 33/4/37",
+    "ci": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+    },
+    "gate": {
+      "environment": "CI",
+      "passed": 35,
+      "failed": 2,
+      "total": 37,
+      "satisfied": false
+    }
   },
   "stages": [
     {
@@ -33,7 +49,7 @@
       "stage": 3,
       "risk": "highest manual-verification burden",
       "scope": "DOM element cache consolidation, split by prefix/panel group and ordered by coverage strength",
-      "reason": "The current 35/2 baseline covers all 37 entry points, including periodic_table.py. The separate browser repair restores 12 previously failing entry points; seven of eight cheap assertion/targeting repairs cover panel, Looks and Properties paths. Stage 3 rewrites those bindings and still needs the heaviest manual verification: renaming/rebinding caches can silently miss event paths, null/lazy nodes and callbacks that generic captures do not exercise. PR #7 merged before Stage 3 opens; the two unchanged app defects and the open Looks intermittent remain explicit risks.",
+      "reason": "Local 35/2/37, CI 33/4/37; only CI 35/2/37 opens this stage. Both recorded sweeps cover all 37 entry points, including periodic_table.py. The separate browser repair restores 12 previously failing entry points; seven of eight cheap assertion/targeting repairs cover panel, Looks and Properties paths. Stage 3 rewrites those bindings and still needs the heaviest manual verification: renaming/rebinding caches can silently miss event paths, null/lazy nodes and callbacks that generic captures do not exercise. PR #7 merged with local evidence; Stage 3 remains closed on the unmet CI gate; the two unchanged app defects and the open Looks intermittent remain explicit risks.",
       "bindingInventory": "Babel AST pre-code audit: the requested 43 leading null-initialized let names contain 40 direct lookups, one lookup alias, and two controllers. All node queries are unconditional in the app IIFE, spread across four wiring blocks. No initCalculations, lazy-open or conditional query sites. Keep helpRestoreFocusEl and both controllers outside els. Full names, IDs, enclosing function, query/assignment lines and creation sites are in lookup-site-audit.json.",
       "prRule": "Split by prefix/panel group and coverage strength. Each sub-PR records its inventory and full 37-suite result, merges into the stage branch, and receives its own review. Soak once at the stage boundary, not per sub-PR. Preserve original priming, listener and controller creation points.",
       "panelPrPlan": [
@@ -305,8 +321,8 @@
           }
         ],
         "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
-        "provenance": "Listed passing/newly green suites are the accepted local issue #4 repair baseline. The completed pre-Build CI run is 34/3/37; smoke currently fails there. CI observations are recorded separately and do not expand the accepted failure set.",
-        "ciEvidence": "tests/baselines/evidence/characterization-portability/ci-portability/browser-results.json",
+        "provenance": "Listed passing/newly green suites are LOCAL issue #4 evidence: local 35/2/37, CI 33/4/37. Smoke and edit picking remain outside the accepted two filed failures. Gate: CI 35/2/37.",
+        "ciEvidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json",
         "ciGateSatisfied": false,
         "latestCiResult": {
           "passed": 33,
@@ -317,9 +333,15 @@
             "tests/e2e/edit_picking.py"
           ],
           "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+        },
+        "requiredGate": {
+          "environment": "CI",
+          "passed": 35,
+          "failed": 2,
+          "total": 37
         }
       },
-      "status": "Sub-PR sequence stopped by the user pending portable CI characterization and the complete PR #8 browser gate. Four Build conversions remain unchanged in PR #8.",
+      "status": "Held by user: local 35/2/37, CI 33/4/37. Stage 3 reopens only after CI 35/2/37; PR #8 remains held and the sub-PR sequence must not resume.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -398,7 +420,7 @@
     "axisGizmo": "Preserve the 0.9.2/0.9.3 capture-phase Escape ladder: menu/field precedence, cancel provisional placement, disarm Build without dropping selection, clear Transform selection, then allow Focus/panel dismissal. Repair focus handoff without removing interception."
   },
   "stage1BlockedByTheseFollowups": false,
-  "baselineCountScope": "All 37 make test-e2e browser entry points executed independently on the repair branch, including the Appearance alias and periodic_table.py. Focused repaired-suite runs plus all remaining entry points; no downstream outcomes inferred from fail-fast make. The two-run 102-capture characterization is an additional gate.",
+  "baselineCountScope": "All 37 make test-e2e browser entry points executed independently on the repair branch, including the Appearance alias and periodic_table.py. Focused repaired-suite runs plus all remaining entry points; no downstream outcomes inferred from fail-fast make. The two-run 102-capture characterization is an additional gate. Baseline comparison: local 35/2/37, CI 33/4/37. The gate is the CI number.",
   "beforeElementCachePrerequisite": {
     "work": "Repair the browser suite in a separate PR before any Stage 3 element-cache consolidation PR opens",
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
@@ -406,21 +428,22 @@
     "target": {
       "passed": 35,
       "failed": 2,
-      "total": 37
+      "total": 37,
+      "environment": "CI"
     },
     "requiredRemainingFailures": [
       "axis_gizmo.py",
       "mode_consistency.py"
     ],
-    "blocksElementCacheStage": false,
+    "blocksElementCacheStage": true,
     "validation": {
-      "status": "35/2/37 repair gate met; PR #7 merged into integration before the Stage 3 pre-code audit",
+      "status": "PR #7 merged; local 35/2/37, CI 33/4/37. CI 35/2/37 prerequisite remains unmet; Stage 3 stays closed.",
       "mergeCommit": "e4b5e498fe818171e3205313667614cfd8d2832c",
       "pr": "https://github.com/evangelistalab/vibemol/pull/7",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
       "ciLimitation": {
         "checksAndUnit": "passed",
-        "e2e": "Historical PR #7 failed before browser suites on a cross-platform float-leaf difference. The separate portability PR now passes two CI characterization runs; its 37-suite run exposes an additional smoke failure.",
+        "e2e": "PR #9 portability audit merged. CI now executes all 37 suites; PR #8 reports 33/4/37, with additional smoke.py:4525 and edit_picking.py:145 failures.",
         "firstDifference": "$.sample/light/Display.geometry.molecule.bonds[6].z: '2.375228488400047e-06' != '2.3752284884000466e-06'",
         "job": "https://github.com/evangelistalab/vibemol/actions/runs/38077486777/job/114287477705",
         "localGoldensUnchanged": true,
@@ -428,6 +451,13 @@
           "passed": 35,
           "failed": 2,
           "total": 37
+        },
+        "ciBrowserBaseline": {
+          "passed": 33,
+          "failed": 4,
+          "total": 37,
+          "environment": "CI",
+          "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
         }
       }
     }
@@ -461,7 +491,7 @@
     "total": 37
   },
   "characterizationPortability": {
-    "status": "Portable CI baseline verified; PR #8 executed all 37 suites and failed the required 35/2 gate at 33/4/37. Sub-PR sequence remains stopped.",
+    "status": "PR #9 merged as a1b00b72bf0fa4e9f992a22170000e4a204fcaf6. Local 35/2/37, CI 33/4/37; the required CI 35/2/37 gate remains closed.",
     "comparison": {
       "floatLeaves": {
         "relTol": 1e-09,
@@ -545,5 +575,18 @@
       "letAfter": 302,
       "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
     }
+  },
+  "ciBrowserFollowup": {
+    "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+    "pr": "https://github.com/evangelistalab/vibemol/pull/10",
+    "evidence": "tests/baselines/evidence/browser-ci-followup/validation.json",
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",
+    "editPicking": "Full suite passes after unbounded wait for applied/presented viewport; assertions unchanged",
+    "smoke": "Correct unbounded wait rejects terminal new crop selection; stopped at earlier trajectory variant; vibration still requires full CI verification",
+    "videoDefect": "https://github.com/evangelistalab/vibemol/issues/11",
+    "renderer": "Both CI suites use software SwiftShader",
+    "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
+    "gateMet": false,
+    "completeBaselineComparison": "local 35/2/37, CI 33/4/37"
   }
 }

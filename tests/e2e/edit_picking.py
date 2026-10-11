@@ -7,6 +7,7 @@ import premerge as p
 from smoke import build_fixture_structure
 from surface_shadows import settings, settle
 from helpers import wait_for_presented_state
+from ci_gate_diagnostics import record_renderer
 
 
 def instrumented_source():
@@ -24,6 +25,18 @@ def instrumented_source():
     marker = 'window.VibeMolTesting = Object.freeze({'
     assert source.count(marker) == 1
     return source.replace(marker, '''window.__editProbe = {
+      viewportState() {
+        return {requested:readViewportCssSize(), applied:readRendererViewportMetrics(),
+          canvas:{width:Math.round(canvas.getBoundingClientRect().width),
+            height:Math.round(canvas.getBoundingClientRect().height)}};
+      },
+      viewportReady() {
+        const {requested,applied,canvas}=this.viewportState();
+        return applied.cssWidth===requested.width && applied.cssHeight===requested.height
+          && canvas.width===requested.width && canvas.height===requested.height
+          && applied.bufferWidth===Math.round(requested.width*applied.dpr)
+          && applied.bufferHeight===Math.round(requested.height*applied.dpr);
+      },
       moveGizmo() {
         contentGroup.updateMatrixWorld(true);
         const group=editGizmos.getMoveGroup();
@@ -138,10 +151,20 @@ def compare_fresh(page, point):
     return result
 
 
-def invalidates(page, point, action):
+def invalidates(page, point, action, *, presented_state=None):
     query(page, point)
     page.evaluate('()=>__editProbe.reset()')
     action()
+    if presented_state:
+        # Issue #4 CI follow-up: browser viewport acknowledgement is not the
+        # app's deferred ResizeObserver/projection update. Preserve both checks.
+        timeout = 0 if os.environ.get('VIBEMOL_CI_UNBOUNDED_PROBE') == '1' else None
+        before = page.evaluate('()=>__editProbe.viewportState()')
+        wait_for_presented_state(page, presented_state, timeout=timeout)
+        after = page.evaluate('()=>__editProbe.viewportState()')
+        evidence = {'timeout': timeout, 'before': before, 'after': after}
+        (p.ARTIFACTS / 'resize-state-wait.json').write_text(json.dumps(evidence, indent=2)+'\n')
+        print('[picking] applied viewport wait: '+json.dumps(evidence), flush=True)
     assert compare_fresh(page, point)['counts']['queries'] >= 1, 'Changed geometry/view reused a stale hit'
 
 
@@ -295,7 +318,8 @@ def slab(page):
     assert counts(page) == {'queries': 0, 'records': 0, 'segments': 0}, counts(page)
     page.mouse.move(5, 5)
     invalidates(page, point, lambda: page.evaluate('()=>__editProbe.rotateCamera()'))
-    invalidates(page, point, lambda: page.set_viewport_size({'width': 1100, 'height': 850}))
+    invalidates(page, point, lambda: page.set_viewport_size({'width': 1100, 'height': 850}),
+                presented_state='()=>__editProbe.viewportReady()')
     invalidates(page, point, lambda: mode(page, 'Measure'))
     mode(page, 'Edit')
     page.evaluate('()=>VibeMolWorkbench.open("coordsPanel")')
@@ -456,6 +480,7 @@ def main():
         page.on('dialog', lambda dialog: dialog.dismiss())
         try:
             page.goto(url + '?workspaceLab=1&appearanceStudy=1'); page.wait_for_function('()=>window.__editProbe')
+            record_renderer(page, p.ARTIFACTS, 'edit_picking')
             single_atom_translation(page)
             selection_position_fields(page)
             slab(page)

@@ -1,0 +1,1 @@
+{"kind": "vibemol.vibrations", "version": 1, "units": "angstrom", "atomCount": 2, "atomSymbols": ["C", "C"], "modes": [{"label": "Symmetric stretch", "frequencyCm1": 245, "displacements": [-0.18, 0, 0, 0.18, 0, 0]}]}
