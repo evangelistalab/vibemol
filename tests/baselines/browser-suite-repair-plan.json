@@ -7,13 +7,13 @@
     "failed": 2,
     "total": 37,
     "environment": "local",
-    "comparison": "local 35/2/37, CI 33/4/37",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
     "ci": {
-      "passed": 33,
-      "failed": 4,
+      "passed": 34,
+      "failed": 3,
       "total": 37,
       "environment": "CI",
-      "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
     }
   },
   "deadline": "Land before Stage 3 element-cache consolidation (original Stage 4) opens",
@@ -90,17 +90,28 @@
     }
   ],
   "acceptance": {
-    "passed": 35,
-    "failed": 2,
+    "passed": 34,
+    "failed": 3,
     "total": 37,
     "remainingFailures": [
       {
         "suite": "axis_gizmo.py",
-        "defect": "Escape focus handoff; preserve the 0.9.2/0.9.3 capture-phase ladder"
+        "defect": "Escape routing; preserve the 0.9.2/0.9.3 capture-phase ladder"
       },
       {
         "suite": "mode_consistency.py",
-        "defect": "Legacy selection-card collision with Coordinates controls"
+        "defect": "Selection card overlays Coordinates Delete"
+      },
+      {
+        "suite": "smoke.py",
+        "historicalFailureLine": 4525,
+        "currentCallSite": {
+          "suite": "smoke.py",
+          "line": 4531,
+          "function": "main"
+        },
+        "defect": "#11: vibration crop overlay reopens after export",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11"
       }
     ],
     "productionBehaviorChanges": false,
@@ -157,6 +168,6 @@
     "renderer": "Both CI suites use software SwiftShader",
     "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
     "gateMet": false,
-    "completeBaselineComparison": "local 35/2/37, CI 33/4/37"
+    "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37"
   }
 }

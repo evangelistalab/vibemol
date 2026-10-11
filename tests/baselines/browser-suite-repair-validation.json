@@ -1,6 +1,6 @@
 {
   "issue": "https://github.com/evangelistalab/vibemol/issues/4",
-  "status": "PR #7 merged with local evidence only: local 35/2/37, CI 33/4/37. CI 35/2/37 gate is unmet; issue #4 reopened and Stage 3 held.",
+  "status": "PRs #7 and #10 merged. Corrected CI gate 34/3/37 explicitly accepts production defect #11 alongside axis-gizmo and mode-consistency. Fresh complete manifest CI confirmation pending; historical local 35/2/37 is not the gate.",
   "branch": "codex/browser-suite-repair",
   "prBaseBranch": "codex/app-js-decomposition",
   "preRepairHead": "da1e5520a89dff94d7778f85c7a0077e233b1ec2",
@@ -126,17 +126,17 @@
     ],
     "fullMakeTestE2eGreen": false,
     "environment": "local",
-    "comparison": "local 35/2/37, CI 33/4/37",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
     "ci": {
-      "passed": 33,
-      "failed": 4,
+      "passed": 34,
+      "failed": 3,
       "total": 37,
       "environment": "CI",
-      "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
     },
     "requiredCiGate": {
-      "passed": 35,
-      "failed": 2,
+      "passed": 34,
+      "failed": 3,
       "total": 37,
       "environment": "CI",
       "satisfied": false
@@ -200,6 +200,6 @@
     "renderer": "Both CI suites use software SwiftShader",
     "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
     "gateMet": false,
-    "completeBaselineComparison": "local 35/2/37, CI 33/4/37"
+    "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37"
   }
 }

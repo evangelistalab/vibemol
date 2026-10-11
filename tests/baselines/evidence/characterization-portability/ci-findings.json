@@ -2,7 +2,7 @@
   "productionJsChanged": false,
   "existingBrowserAssertionsChanged": false,
   "acceptedFailureSetChanged": false,
-  "ciGate": "CI 35 passing / 2 failing / 37 remains required. Local 35/2/37, CI 33/4/37. Unexpected failures are not accepted as known defects.",
+  "ciGate": "Corrected gate: CI 34 passing / 3 failing / 37, accepting axis-gizmo Escape routing, mode-consistency selection-card collision, smoke.py:4525 (#11 crop overlay after export). Original raw findings remain historical. PR #10 fixes applied-viewport synchronization; #11 remains production code out of refactor scope. Confirm a fresh complete run before cache groups open.",
   "videoStop": {
     "status": "open finding; no repair included",
     "observations": [

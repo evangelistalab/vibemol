@@ -21,19 +21,22 @@ def failure_details(log):
     exceptions = re.findall(r'^([\w.]*(?:Error|Exception))(?::|$)', log, re.M)
     return {'firstFailure': ({'suite': sites[-1][0], 'line': int(sites[-1][1]), 'function': sites[-1][2]}
                              if sites else None),
+            'failureCallSite': ({'suite': sites[-2][0], 'line': int(sites[-2][1]), 'function': sites[-2][2]}
+                                if len(sites) > 1 else None),
             'exceptionType': exceptions[-1].split('.')[-1] if exceptions else None}
 
 
 def matches_known_defect(result, known):
     return (result['exitCode'] != 0 and result['firstFailure'] == known['firstFailure']
             and result['exceptionType'] == known['exceptionType']
-            and result['testSha256'] == known['testSha256'])
+            and result['testSha256'] == known['testSha256']
+            and ('failureCallSite' not in known or result['failureCallSite'] == known['failureCallSite']))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--allow-known-defects', action='store_true',
-                        help='Accept only the two unchanged filed failures; still report them as failing.')
+                        help='Accept only the three fingerprinted filed failures; still report them as failing.')
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text())
     suites, known = manifest['suites'], manifest['knownDefects']

@@ -1,7 +1,7 @@
 {
   "expected": {
-    "passed": 35,
-    "failed": 2,
+    "passed": 34,
+    "failed": 3,
     "total": 37
   },
   "suites": [
@@ -52,7 +52,8 @@
       },
       "testSha256": "7847c5ede2ccc827e4725a86e0eb71d15bac7a6a91801cc2a1ce8bd2596fceb6",
       "exceptionType": "AssertionError",
-      "evidence": "tests/baselines/evidence/browser-repair/browser/axis_gizmo.log"
+      "evidence": "tests/baselines/evidence/browser-repair/browser/axis_gizmo.log",
+      "defect": "Escape routing"
     },
     "tests/e2e/mode_consistency.py": {
       "firstFailure": {
@@ -62,10 +63,29 @@
       },
       "testSha256": "f88242838ba6f50e5ca1988c4601478d62e3fb91f51b9024f73684fbc3142aa1",
       "exceptionType": "TimeoutError",
-      "evidence": "tests/baselines/evidence/browser-repair/browser/mode_consistency.log"
+      "evidence": "tests/baselines/evidence/browser-repair/browser/mode_consistency.log",
+      "defect": "Selection card overlays Coordinates Delete"
+    },
+    "tests/e2e/smoke.py": {
+      "firstFailure": {
+        "suite": "ci_gate_diagnostics.py",
+        "line": 88,
+        "function": "wait_for_video_idle"
+      },
+      "testSha256": "f0432301030f09d3fd30cc1d199f081468e20e09acccc291077679f0651c1145",
+      "exceptionType": "TimeoutError",
+      "failureCallSite": {
+        "suite": "smoke.py",
+        "line": 4531,
+        "function": "main"
+      },
+      "historicalFailure": "smoke.py:4525",
+      "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+      "defect": "Crop overlay after vibration export",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/smoke.log"
     }
   },
-  "policy": "Filed defects remain failing. CI accepts only the exact test fingerprint, first failure site and exception type from the accepted issue #4 repair; every other failure fails the gate.",
+  "policy": "CI requires exactly 34 passing / 3 failing / 37. Accept only the unchanged test fingerprint, first failure site, exception type and specified caller of the three filed defects. Every other failure stops Stage 3. #11 remains production code outside the refactor; no assertions are relaxed.",
   "gateEnvironment": "CI",
-  "baselineComparison": "local 35/2/37, CI 33/4/37"
+  "baselineComparison": "local 35/2/37 (historical), CI 34/3/37"
 }

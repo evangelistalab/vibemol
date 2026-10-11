@@ -42,7 +42,7 @@ jobs:
         env:
           VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/characterize
         run: python tests/e2e/characterize.py
-      - name: All 37 browser suites (35 passing, two filed defects)
+      - name: All 37 browser suites (34 passing, three filed defects)
         if: ${{ !cancelled() && steps.browsers.outcome == 'success' }}
         run: python tests/e2e/browser_suite.py --allow-known-defects
       - name: WebKit Properties interactions

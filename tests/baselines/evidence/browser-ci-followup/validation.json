@@ -10,8 +10,8 @@
     "unchangedHead": "2056f2a5f60743ffc5fbe2523f6540cb0b860f65",
     "fourBuildConversionsChanged": false
   },
-  "completeBaselineComparison": "local 35/2/37, CI 33/4/37",
-  "requiredGate": "CI 35/2/37",
+  "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37",
+  "requiredGate": "CI 34/3/37",
   "gateMet": false,
   "focusedCi": {
     "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",

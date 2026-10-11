@@ -10,27 +10,48 @@
     1
   ],
   "currentBrowserBaseline": {
-    "passed": 35,
-    "failed": 2,
+    "passed": 34,
+    "failed": 3,
     "total": 37,
-    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
-    "provenance": "Local 35/2/37 is retained local evidence only; CI 33/4/37 has not met the CI 35/2/37 gate. No extra failures are absorbed.",
-    "environment": "local",
-    "comparison": "local 35/2/37, CI 33/4/37",
-    "ci": {
-      "passed": 33,
-      "failed": 4,
-      "total": 37,
-      "environment": "CI",
-      "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
-    },
-    "gate": {
-      "environment": "CI",
+    "environment": "CI",
+    "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "historicalLocalResult": {
       "passed": 35,
       "failed": 2,
       "total": 37,
+      "environment": "local",
+      "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    },
+    "provenance": "PR #10 full CI run 38110555939 reports 34/3/37. The corrected gate accepts the three named production defects. A new run under this exact manifest must confirm 34/3/37 before cache groups open.",
+    "gate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
       "satisfied": false
-    }
+    },
+    "acceptedDefects": [
+      {
+        "suite": "axis_gizmo.py",
+        "defect": "Escape routing; preserve the 0.9.2/0.9.3 capture-phase ladder"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "defect": "Selection card overlays Coordinates Delete"
+      },
+      {
+        "suite": "smoke.py",
+        "historicalFailureLine": 4525,
+        "currentCallSite": {
+          "suite": "smoke.py",
+          "line": 4531,
+          "function": "main"
+        },
+        "defect": "#11: vibration crop overlay reopens after export",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11"
+      }
+    ]
   },
   "stages": [
     {
@@ -49,7 +70,7 @@
       "stage": 3,
       "risk": "highest manual-verification burden",
       "scope": "DOM element cache consolidation, split by prefix/panel group and ordered by coverage strength",
-      "reason": "Local 35/2/37, CI 33/4/37; only CI 35/2/37 opens this stage. Both recorded sweeps cover all 37 entry points, including periodic_table.py. The separate browser repair restores 12 previously failing entry points; seven of eight cheap assertion/targeting repairs cover panel, Looks and Properties paths. Stage 3 rewrites those bindings and still needs the heaviest manual verification: renaming/rebinding caches can silently miss event paths, null/lazy nodes and callbacks that generic captures do not exercise. PR #7 merged with local evidence; Stage 3 remains closed on the unmet CI gate; the two unchanged app defects and the open Looks intermittent remain explicit risks.",
+      "reason": "Stage 3 needs the heaviest manual verification: lazy panel bindings can miss event paths and retain detached nodes that DOM captures do not detect. CI 34/3/37 is the corrected gate, accepting only axis_gizmo.py (Escape routing), mode_consistency.py (selection card over Coordinates Delete), and smoke.py:4525 (#11, crop overlay after export). The latter is a 0.9.x production defect, not a suite repair. PR #10 repairs resize-picking readiness without changing production JS. Confirm the next CI run exactly before reopening; any different result stops the sequence. The Appearance material-preset intermittent remains open.",
       "bindingInventory": "Babel AST pre-code audit: the requested 43 leading null-initialized let names contain 40 direct lookups, one lookup alias, and two controllers. All node queries are unconditional in the app IIFE, spread across four wiring blocks. No initCalculations, lazy-open or conditional query sites. Keep helpRestoreFocusEl and both controllers outside els. Full names, IDs, enclosing function, query/assignment lines and creation sites are in lookup-site-audit.json.",
       "prRule": "Split by prefix/panel group and coverage strength. Each sub-PR records its inventory and full 37-suite result, merges into the stage branch, and receives its own review. Soak once at the stage boundary, not per sub-PR. Preserve original priming, listener and controller creation points.",
       "panelPrPlan": [
@@ -83,22 +104,32 @@
         },
         {
           "order": 3,
-          "group": "remainder: editSymmetry* and canvasAdaptiveMenuEl; periodic-table const inputs",
-          "actualCacheBindings": 10,
+          "group": "periodic-table Element Colors controls",
+          "actualCacheBindings": 0,
           "additionalConstDomInputs": 9,
           "affectedSuites": [
-            "symmetry_panel.py",
             "periodic_table.py",
-            "workbench_bar.py",
-            "workbench_consistency.py",
-            "floating_panels.py",
-            "looks.py"
+            "looks.py",
+            "appearance_controls.py"
           ],
-          "coverageStrength": "Direct green symmetry and periodic-table interaction gates; shared menu paths need the manual matrix",
-          "manualVerification": "Exercise symmetry tolerance/candidate/preview/apply/cancel/undo, shared menu mode/exclusivity and every color editor event. Group the existing nine const nodes under els and measure actual periodic-table dependencies. Keep the material-control intermittent reachable/open."
+          "coverageStrength": "Direct green CI Element Colors/color-editor events and Looks coverage",
+          "manualVerification": "Exercise all nine Element Colors controls in both themes, selection/color/radius/font/preview/popup close. Pass els as one controller dependency and record actual 19-to-after dependency count. The appearanceMaterialPreset intermittent stays open."
         },
         {
           "order": 4,
+          "group": "remainder: editSymmetry* and canvasAdaptiveMenuEl",
+          "actualCacheBindings": 10,
+          "affectedSuites": [
+            "symmetry_panel.py",
+            "workbench_bar.py",
+            "workbench_consistency.py",
+            "floating_panels.py"
+          ],
+          "coverageStrength": "Direct green symmetry and periodic-table interaction gates; shared menu paths need the manual matrix",
+          "manualVerification": "Exercise symmetry tolerance/candidate/preview/apply/cancel/undo, shared menu mode/exclusivity and the canvas-to-display menu alias. Keep null guards and Escape semantics."
+        },
+        {
+          "order": 5,
           "group": "editSelection*",
           "actualCacheBindings": 13,
           "affectedSuites": [
@@ -114,7 +145,7 @@
           "manualVerification": "Check selection cue drags and listeners, absolute position, every coordination/metal option, selection and scene changes, null-only fragment popover guards, focus/Escape and known legacy stacking failure."
         },
         {
-          "order": 5,
+          "order": 6,
           "group": "editAtomsMenu*",
           "actualCacheBindings": 3,
           "affectedSuites": [
@@ -259,6 +290,99 @@
       "browserSafetyNet": {
         "passingSuites": [
           "asset_cache.py",
+          "periodic_table.py",
+          "edit_tool.py",
+          "build_bonds.py",
+          "build_orbit.py",
+          "transform_selection.py",
+          "figure.py",
+          "calculations.py",
+          "ux_review.py",
+          "accessibility.py",
+          "measurements.py",
+          "build_panel.py",
+          "symmetry_panel.py",
+          "hydrogen_contacts.py",
+          "workbench_release.py",
+          "premerge.py",
+          "sessions.py",
+          "appearance_controls.py",
+          "look_references.py",
+          "look_tiles.py",
+          "surface_schemes.py",
+          "surface_shadows.py",
+          "looks.py",
+          "camera_depth.py",
+          "edit_picking.py",
+          "style_studio.py",
+          "style_lab.py",
+          "appearance_scopes.py",
+          "properties_inspector.py",
+          "properties_disclosures.py",
+          "floating_panels.py",
+          "workbench.py",
+          "workbench_consistency.py",
+          "workbench_bar.py"
+        ],
+        "newlyGreenSuites": [
+          "figure.py",
+          "measurements.py",
+          "build_panel.py",
+          "hydrogen_contacts.py",
+          "looks.py",
+          "edit_picking.py",
+          "style_studio.py",
+          "properties_inspector.py",
+          "properties_disclosures.py",
+          "floating_panels.py",
+          "appearance_controls.py"
+        ],
+        "remainingFailureFirstLocations": [
+          {
+            "suite": "axis_gizmo.py",
+            "line": 130,
+            "function": "run"
+          },
+          {
+            "suite": "ci_gate_diagnostics.py",
+            "line": 88,
+            "function": "wait_for_video_idle",
+            "callSite": {
+              "suite": "smoke.py",
+              "line": 4531,
+              "function": "main"
+            },
+            "historicalFailure": "smoke.py:4525",
+            "issue": "https://github.com/evangelistalab/vibemol/issues/11"
+          },
+          {
+            "suite": "mode_consistency.py",
+            "line": 80,
+            "function": "coordinate_row_actions"
+          }
+        ],
+        "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+        "provenance": "The safety net uses the 34 suites that passed CI run 38110555939. Historical local 35/2/37 is retained as local evidence only. Corrected CI gate: 34/3/37, with the three specified production defects; a fresh manifest run is required before reopening.",
+        "ciEvidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json",
+        "ciGateSatisfied": false,
+        "latestCiResult": {
+          "passed": 34,
+          "failed": 3,
+          "total": 37,
+          "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json",
+          "unexpectedFailuresUnderOldGate": [
+            "tests/e2e/smoke.py"
+          ]
+        },
+        "requiredGate": {
+          "passed": 34,
+          "failed": 3,
+          "total": 37,
+          "environment": "CI",
+          "satisfied": false
+        },
+        "historicalLocalPassingSuites": [
+          "asset_cache.py",
           "edit_tool.py",
           "build_bonds.py",
           "build_orbit.py",
@@ -293,55 +417,9 @@
           "surface_schemes.py",
           "surface_shadows.py",
           "periodic_table.py"
-        ],
-        "newlyGreenSuites": [
-          "figure.py",
-          "measurements.py",
-          "build_panel.py",
-          "hydrogen_contacts.py",
-          "smoke.py",
-          "looks.py",
-          "edit_picking.py",
-          "style_studio.py",
-          "properties_inspector.py",
-          "properties_disclosures.py",
-          "floating_panels.py",
-          "appearance_controls.py"
-        ],
-        "remainingFailureFirstLocations": [
-          {
-            "suite": "axis_gizmo.py",
-            "line": 130,
-            "function": "run"
-          },
-          {
-            "suite": "mode_consistency.py",
-            "line": 80,
-            "function": "coordinate_row_actions"
-          }
-        ],
-        "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
-        "provenance": "Listed passing/newly green suites are LOCAL issue #4 evidence: local 35/2/37, CI 33/4/37. Smoke and edit picking remain outside the accepted two filed failures. Gate: CI 35/2/37.",
-        "ciEvidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json",
-        "ciGateSatisfied": false,
-        "latestCiResult": {
-          "passed": 33,
-          "failed": 4,
-          "total": 37,
-          "unexpectedFailures": [
-            "tests/e2e/smoke.py",
-            "tests/e2e/edit_picking.py"
-          ],
-          "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
-        },
-        "requiredGate": {
-          "environment": "CI",
-          "passed": 35,
-          "failed": 2,
-          "total": 37
-        }
+        ]
       },
-      "status": "Held by user: local 35/2/37, CI 33/4/37. Stage 3 reopens only after CI 35/2/37; PR #8 remains held and the sub-PR sequence must not resume.",
+      "status": "PR #10 merged; corrected CI 34/3/37 gate awaits one fresh complete CI run. PR #8 Build conversions remain unchanged; no later cache group opens before confirmation.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -399,7 +477,8 @@
         "boundary": "one soak after all sub-PRs merge into the stage branch",
         "perSubPrSoak": false,
         "stageBranch": "codex/element-cache-consolidation"
-      }
+      },
+      "remainingPanelGroupCount": 5
     },
     {
       "stage": 4,
@@ -417,33 +496,36 @@
   ],
   "knownDefectConstraints": {
     "projection": "https://github.com/evangelistalab/vibemol/issues/3; camera pin masks the 0.9.x defect, so ordinary preset batches need separate verification.",
-    "axisGizmo": "Preserve the 0.9.2/0.9.3 capture-phase Escape ladder: menu/field precedence, cancel provisional placement, disarm Build without dropping selection, clear Transform selection, then allow Focus/panel dismissal. Repair focus handoff without removing interception."
+    "axisGizmo": "Preserve the 0.9.2/0.9.3 capture-phase Escape ladder: menu/field precedence, cancel provisional placement, disarm Build without dropping selection, clear Transform selection, then allow Focus/panel dismissal. Repair focus handoff without removing interception.",
+    "modeConsistency": "Selection card overlays Coordinates Delete in legacy mode; preserve the failing assertion. Separate 0.9.x defect batch.",
+    "videoCrop": "#11 https://github.com/evangelistalab/vibemol/issues/11: click-time Save/Stop branch reopens crop selection after trajectory/vibration completion. Do not fix in the refactor; schedule after 0.10.0 or in parallel on 0.9.x. Figure path gets one probe only."
   },
   "stage1BlockedByTheseFollowups": false,
-  "baselineCountScope": "All 37 make test-e2e browser entry points executed independently on the repair branch, including the Appearance alias and periodic_table.py. Focused repaired-suite runs plus all remaining entry points; no downstream outcomes inferred from fail-fast make. The two-run 102-capture characterization is an additional gate. Baseline comparison: local 35/2/37, CI 33/4/37. The gate is the CI number.",
+  "baselineCountScope": "All 37 make test-e2e browser entry points executed independently on the repair branch, including the Appearance alias and periodic_table.py. Focused repaired-suite runs plus all remaining entry points; no downstream outcomes inferred from fail-fast make. The two-run 102-capture characterization is an additional gate. Baseline comparison: local 35/2/37 (historical), CI 34/3/37. The gate is the CI number.",
   "beforeElementCachePrerequisite": {
     "work": "Repair the browser suite in a separate PR before any Stage 3 element-cache consolidation PR opens",
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
     "plan": "tests/baselines/browser-suite-repair-plan.json",
     "target": {
-      "passed": 35,
-      "failed": 2,
+      "passed": 34,
+      "failed": 3,
       "total": 37,
       "environment": "CI"
     },
     "requiredRemainingFailures": [
       "axis_gizmo.py",
-      "mode_consistency.py"
+      "mode_consistency.py",
+      "smoke.py:4525 (#11, crop overlay after export)"
     ],
     "blocksElementCacheStage": true,
     "validation": {
-      "status": "PR #7 merged; local 35/2/37, CI 33/4/37. CI 35/2/37 prerequisite remains unmet; Stage 3 stays closed.",
+      "status": "PRs #7, #9 and #10 merged. New corrected CI 34/3/37 gate is pending one fresh complete run; #11 is explicitly accepted out-of-scope production code.",
       "mergeCommit": "e4b5e498fe818171e3205313667614cfd8d2832c",
       "pr": "https://github.com/evangelistalab/vibemol/pull/7",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
       "ciLimitation": {
         "checksAndUnit": "passed",
-        "e2e": "PR #9 portability audit merged. CI now executes all 37 suites; PR #8 reports 33/4/37, with additional smoke.py:4525 and edit_picking.py:145 failures.",
+        "e2e": "PR #10 complete CI run 38110555939 reports 34/3/37; resize picking passes. Smoke fails the same vibration overlay assertion (original 4525, current caller 4531 / helper 88). No assertion or production fix included.",
         "firstDifference": "$.sample/light/Display.geometry.molecule.bonds[6].z: '2.375228488400047e-06' != '2.3752284884000466e-06'",
         "job": "https://github.com/evangelistalab/vibemol/actions/runs/38077486777/job/114287477705",
         "localGoldensUnchanged": true,
@@ -453,14 +535,35 @@
           "total": 37
         },
         "ciBrowserBaseline": {
-          "passed": 33,
-          "failed": 4,
+          "passed": 34,
+          "failed": 3,
           "total": 37,
           "environment": "CI",
-          "evidence": "tests/baselines/evidence/characterization-portability/ci-build/browser-results.json"
+          "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
         }
       }
-    }
+    },
+    "acceptedDefects": [
+      {
+        "suite": "axis_gizmo.py",
+        "defect": "Escape routing; preserve the 0.9.2/0.9.3 capture-phase ladder"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "defect": "Selection card overlays Coordinates Delete"
+      },
+      {
+        "suite": "smoke.py",
+        "historicalFailureLine": 4525,
+        "currentCallSite": {
+          "suite": "smoke.py",
+          "line": 4531,
+          "function": "main"
+        },
+        "defect": "#11: vibration crop overlay reopens after export",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11"
+      }
+    ]
   },
   "executionOrder": [
     {
@@ -491,7 +594,7 @@
     "total": 37
   },
   "characterizationPortability": {
-    "status": "PR #9 merged as a1b00b72bf0fa4e9f992a22170000e4a204fcaf6. Local 35/2/37, CI 33/4/37; the required CI 35/2/37 gate remains closed.",
+    "status": "PR #9 portability fix merged; PR #10 repairs actual-state synchronization. Corrected CI 34/3/37 gate awaits a fresh complete run.",
     "comparison": {
       "floatLeaves": {
         "relTol": 1e-09,
@@ -502,7 +605,7 @@
     "audit": "tests/baselines/evidence/characterization-portability/pre-change-differences.json",
     "findings": "32 one- or four-ULP float leaves; maximum relative difference 7.82384323679457e-16; no real cross-platform difference found. The other 918 raw added leaves are the approved module API additions.",
     "captureHome": "Two independent GitHub CI Ubuntu jobs capture v0.9.5-pre-refactor twice each; raw repeat captures must be exactly identical.",
-    "browserCiGate": "Not met: PR #8 actually reported 33 passing / 4 failing / 37. Smoke and resize picking findings remain outside the two accepted filed defects; do not merge or resume cache groups.",
+    "browserCiGate": "Required: CI 34 passing / 3 failing / 37. Accept only axis_gizmo.py (Escape routing), mode_consistency.py (selection card over Coordinates Delete), smoke.py:4525 (#11 crop overlay after export). Run 38110555939 recorded those totals under the previous manifest; a new run must confirm them under the corrected gate. Any other result stops reopening.",
     "recordingEvidence": "tests/baselines/evidence/characterization-portability/ci-recording-comparison.json",
     "captureProvenance": {
       "os": "Linux",
@@ -582,11 +685,13 @@
     "evidence": "tests/baselines/evidence/browser-ci-followup/validation.json",
     "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",
     "editPicking": "Full suite passes after unbounded wait for applied/presented viewport; assertions unchanged",
-    "smoke": "Correct unbounded wait rejects terminal new crop selection; stopped at earlier trajectory variant; vibration still requires full CI verification",
+    "smoke": "Normal full CI run 38110555939 reaches vibration Stop: historical smoke.py:4525 is now caller 4531 and helper 88. Timeout on the reopened crop overlay is filed production defect #11; it remains unchanged.",
     "videoDefect": "https://github.com/evangelistalab/vibemol/issues/11",
     "renderer": "Both CI suites use software SwiftShader",
     "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
     "gateMet": false,
-    "completeBaselineComparison": "local 35/2/37, CI 33/4/37"
-  }
+    "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37",
+    "latestCompleteCiRun": "https://github.com/evangelistalab/vibemol/actions/runs/38110555939"
+  },
+  "defectBatchPolicy": "Projection #3, axis-gizmo Escape routing, mode-consistency selection-card collision, and video crop #11 stay production defects. Schedule after 0.10.0 or in parallel on 0.9.x; do not merge their fixes into this refactor."
 }
