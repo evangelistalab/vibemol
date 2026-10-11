@@ -1,0 +1,6 @@
+[picking] single-atom XYZ arrows: hover, constrained pointer drags, unselected-atom isolation and undo/redo: passed
+[picking] editable atom/COM positions: rigid translation, units, undo, input validation, stale focus, Tab and compact layout: passed
+[picking] 2,000 atoms/5,400 bonds: no full atom records, shared idle hits, view invalidation and lazy Coordinates: passed
+[picking] double/triple Basic, Classic and Kit hit regions and live coordinate invalidation: passed
+[picking] frontmost atoms/bonds, real dash gaps, selected-atom fallbacks, crossing bonds, and both projections: passed
+[picking] surfaces and cube/point clouds retained on mode switches, restored after an Edit rebuild: passed

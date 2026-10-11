@@ -1,0 +1,5 @@
+[figure] device limits {'gpu': 8192, 'panel': 8192, 'tiled': False}
+[figure] fixed cameras, union fit, renderer/graph restoration, exception cleanup, PNG size/DPI/alpha, SVG labels, dock and keyboard order passed
+[figure] rotated/scaled hidden orbitals honor Auto-iso in preview/PNG/SVG, match viewport, retain manual/shared values, and restore layer state
+[figure] raw/phase spinors and deferred Molden Auto-iso match viewport thresholds; failed exports restore pending values
+[figure] six two-component orbitals composed as PNG and SVG

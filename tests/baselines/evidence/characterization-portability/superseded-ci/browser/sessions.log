@@ -1,0 +1,8 @@
+[sessions] portable_round_trip: passed
+[sessions] failed_imports: passed
+[sessions] arithmetic_and_lazy_orbitals: passed
+[sessions] vibration_and_topology: passed
+[sessions] recovery_and_quota: passed
+[sessions] spinor_and_download: passed
+[sessions] retained_source: passed
+[sessions] autosave_and_tab_conflict: passed

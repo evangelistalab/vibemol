@@ -1,0 +1,401 @@
+{
+  "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+  "expected": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37
+  },
+  "suites": [
+    {
+      "test": "tests/e2e/asset_cache.py",
+      "exitCode": 0,
+      "seconds": 14.13,
+      "testSha256": "972943c7726e419ca8c6a4e46feb711a484f9e0517a6858916302262e270c641",
+      "rawLog": "out/test-artifacts/browser-suite/asset_cache/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/periodic_table.py",
+      "exitCode": 0,
+      "seconds": 37.37,
+      "testSha256": "f3dd1e3d425999cc3f4df91d01d4e37738b88d537a95a3318eb04b6c624cc4ac",
+      "rawLog": "out/test-artifacts/browser-suite/periodic_table/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/edit_tool.py",
+      "exitCode": 0,
+      "seconds": 86.07,
+      "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+      "rawLog": "out/test-artifacts/browser-suite/edit_tool/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/build_bonds.py",
+      "exitCode": 0,
+      "seconds": 24.71,
+      "testSha256": "dfd872c2b6aa981a84c7d84574a9e3ff381f0d3944401bd685f985e65c396a63",
+      "rawLog": "out/test-artifacts/browser-suite/build_bonds/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/build_orbit.py",
+      "exitCode": 0,
+      "seconds": 25.82,
+      "testSha256": "86cfc611919540431e4fca2131553a0de3ffe473cad68f41f21a905dd542c6b7",
+      "rawLog": "out/test-artifacts/browser-suite/build_orbit/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/transform_selection.py",
+      "exitCode": 0,
+      "seconds": 25.5,
+      "testSha256": "487eb4f88704a1969d87fba5a17a42ce1cecb943f61549b7106ca2bf5a473601",
+      "rawLog": "out/test-artifacts/browser-suite/transform_selection/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/figure.py",
+      "exitCode": 0,
+      "seconds": 88.92,
+      "testSha256": "cf90f32366ced96b7fe3b994523325ebae525227b02b385b102a9619cbbff9d1",
+      "rawLog": "out/test-artifacts/browser-suite/figure/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/calculations.py",
+      "exitCode": 0,
+      "seconds": 429.89,
+      "testSha256": "48032f174b1c5acc7c093f392f3d844ab9543814646cf476f5ca320cc6ce3be3",
+      "rawLog": "out/test-artifacts/browser-suite/calculations/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/ux_review.py",
+      "exitCode": 0,
+      "seconds": 82.07,
+      "testSha256": "063c5d9d30ebadc5b15651c27290a6e432c597aaaaa6c09702bbcc374fa7d69e",
+      "rawLog": "out/test-artifacts/browser-suite/ux_review/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/accessibility.py",
+      "exitCode": 0,
+      "seconds": 85.54,
+      "testSha256": "d08584aea8afad874e511b5a1db544868924b2b6e53511e2aa08ef8ef91c6cf4",
+      "rawLog": "out/test-artifacts/browser-suite/accessibility/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/measurements.py",
+      "exitCode": 0,
+      "seconds": 77.37,
+      "testSha256": "89f129610d18e6755f903eef019ed373497a8fe429ecc4969ffee7de8d16403a",
+      "rawLog": "out/test-artifacts/browser-suite/measurements/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/build_panel.py",
+      "exitCode": 0,
+      "seconds": 13.29,
+      "testSha256": "3aac1c5861aa5c565b73bf8eef3b250f836f66a012947a952c482bf3eb17df26",
+      "rawLog": "out/test-artifacts/browser-suite/build_panel/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/symmetry_panel.py",
+      "exitCode": 0,
+      "seconds": 19.79,
+      "testSha256": "7dfa1d84c4cc8bb6443da76be6e4879d5209bfee0faf5a6db0462c49b2e5b28d",
+      "rawLog": "out/test-artifacts/browser-suite/symmetry_panel/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/hydrogen_contacts.py",
+      "exitCode": 0,
+      "seconds": 11.07,
+      "testSha256": "57c62e65d56ecf66654ab4af3f5b9b344cb77b9bffd5e86b03b97bce5e8d2e05",
+      "rawLog": "out/test-artifacts/browser-suite/hydrogen_contacts/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/axis_gizmo.py",
+      "exitCode": 1,
+      "seconds": 25.83,
+      "testSha256": "7847c5ede2ccc827e4725a86e0eb71d15bac7a6a91801cc2a1ce8bd2596fceb6",
+      "rawLog": "out/test-artifacts/browser-suite/axis_gizmo/run.log",
+      "firstFailure": {
+        "suite": "axis_gizmo.py",
+        "line": 130,
+        "function": "run"
+      },
+      "exceptionType": "AssertionError",
+      "knownDefect": true
+    },
+    {
+      "test": "tests/e2e/workbench_release.py",
+      "exitCode": 0,
+      "seconds": 18.86,
+      "testSha256": "206f2522a99fb7af55541f6c8ccce8b3c8a51ececa7673ca48d9aa9327196427",
+      "rawLog": "out/test-artifacts/browser-suite/workbench_release/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/smoke.py",
+      "exitCode": 1,
+      "seconds": 407.3,
+      "testSha256": "99da8b579885282918640e3a08b41ed4a9f683d8f40ae8963ee72b0213eb8401",
+      "rawLog": "out/test-artifacts/browser-suite/smoke/run.log",
+      "firstFailure": {
+        "suite": "smoke.py",
+        "line": 4525,
+        "function": "main"
+      },
+      "exceptionType": "TimeoutError",
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/premerge.py",
+      "exitCode": 0,
+      "seconds": 327.49,
+      "testSha256": "6e525e27e7c5ada224a4c503ea7975a0fbcec79f2ab759b2766269d4767909eb",
+      "rawLog": "out/test-artifacts/browser-suite/premerge/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/sessions.py",
+      "exitCode": 0,
+      "seconds": 171.31,
+      "testSha256": "95cf8c50246953fcacd95e28d5483d7aff5de750252454ca8d913d6881cb61ee",
+      "rawLog": "out/test-artifacts/browser-suite/sessions/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/appearance_controls.py",
+      "exitCode": 0,
+      "seconds": 35.01,
+      "testSha256": "9363a34cc3ad889044fe8d1bcb6ed57fe500454cb0667c82ea68ca6d98fc6974",
+      "rawLog": "out/test-artifacts/browser-suite/appearance_controls/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/look_references.py",
+      "exitCode": 0,
+      "seconds": 194.91,
+      "testSha256": "9f454e5f0ddc42aea0a8cf18272876d33ceccfa0ff690336762a24ee117d45a8",
+      "rawLog": "out/test-artifacts/browser-suite/look_references/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/look_tiles.py",
+      "exitCode": 0,
+      "seconds": 168.56,
+      "testSha256": "0d1e882ea11e63f820b858bc182286e2a5479794ef8386c622825a54cf3dd155",
+      "rawLog": "out/test-artifacts/browser-suite/look_tiles/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/surface_schemes.py",
+      "exitCode": 0,
+      "seconds": 24.57,
+      "testSha256": "08cd0cf8f20674671fb39601e8987214cbe7e68495d2ff312d4498e158a3bfb8",
+      "rawLog": "out/test-artifacts/browser-suite/surface_schemes/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/surface_shadows.py",
+      "exitCode": 0,
+      "seconds": 32.97,
+      "testSha256": "0a19dc3088467016b06c4616852d45ecab8a10a9696b5a878e237d25eea7f8ef",
+      "rawLog": "out/test-artifacts/browser-suite/surface_shadows/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/looks.py",
+      "exitCode": 0,
+      "seconds": 979.05,
+      "testSha256": "90d47c468e898c6c4a89cb6a7b76151f48a2b765dd85bed9e4cd821379bfc7ec",
+      "rawLog": "out/test-artifacts/browser-suite/looks/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/camera_depth.py",
+      "exitCode": 0,
+      "seconds": 142.2,
+      "testSha256": "99471b90bcee3865cfcfd36e1ddbb0ac9e312d2d33db9b712a0c7c5eeb712a9a",
+      "rawLog": "out/test-artifacts/browser-suite/camera_depth/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/edit_picking.py",
+      "exitCode": 0,
+      "seconds": 199.53,
+      "testSha256": "3f193d09b691a2d7de7c38f30a7af9abaf54760880c82bbd13c63ffd9c99c100",
+      "rawLog": "out/test-artifacts/browser-suite/edit_picking/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/mode_consistency.py",
+      "exitCode": 1,
+      "seconds": 48.54,
+      "testSha256": "f88242838ba6f50e5ca1988c4601478d62e3fb91f51b9024f73684fbc3142aa1",
+      "rawLog": "out/test-artifacts/browser-suite/mode_consistency/run.log",
+      "firstFailure": {
+        "suite": "mode_consistency.py",
+        "line": 80,
+        "function": "coordinate_row_actions"
+      },
+      "exceptionType": "TimeoutError",
+      "knownDefect": true
+    },
+    {
+      "test": "tests/e2e/style_studio.py",
+      "exitCode": 0,
+      "seconds": 79.88,
+      "testSha256": "5af59eba18a6bf92d0c261df66ede2cf00be16b599efe995ab2067e950c7c51f",
+      "rawLog": "out/test-artifacts/browser-suite/style_studio/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/style_lab.py",
+      "exitCode": 0,
+      "seconds": 14.37,
+      "testSha256": "39f2f9a3d76856d2abda4a1a26336a6b8aa17f95b3e9fd2560d75630b1ecf7c3",
+      "rawLog": "out/test-artifacts/browser-suite/style_lab/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/appearance_scopes.py",
+      "exitCode": 0,
+      "seconds": 108.54,
+      "testSha256": "d06e9b3f3b826558067be4a7df37bbf8564ace54e798519b7e364a6920edad29",
+      "rawLog": "out/test-artifacts/browser-suite/appearance_scopes/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/properties_inspector.py",
+      "exitCode": 0,
+      "seconds": 34.69,
+      "testSha256": "769128912ef6e82bdbd574b7639329146d24838e871621d80dd9e068913774d6",
+      "rawLog": "out/test-artifacts/browser-suite/properties_inspector/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/properties_disclosures.py",
+      "exitCode": 0,
+      "seconds": 8.37,
+      "testSha256": "9cd759256eaaced34ab00b167918aa0598c440418fbdb04ce0a5cf971db79ec3",
+      "rawLog": "out/test-artifacts/browser-suite/properties_disclosures/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/floating_panels.py",
+      "exitCode": 0,
+      "seconds": 104.72,
+      "testSha256": "9028696f8d583c9f2a304d6d456573b633f88e1ed0ceceda1ff0dc5c27b55d42",
+      "rawLog": "out/test-artifacts/browser-suite/floating_panels/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/workbench.py",
+      "exitCode": 0,
+      "seconds": 62.94,
+      "testSha256": "afc061c88013892b263ea53f7f1d4b4fd36be8080a20d9b3bbaeb1cc645a8060",
+      "rawLog": "out/test-artifacts/browser-suite/workbench/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/workbench_consistency.py",
+      "exitCode": 0,
+      "seconds": 45.48,
+      "testSha256": "45e953ea63ce36c29fccc4163b87a0d4023b63e21738761feca84ecf94209842",
+      "rawLog": "out/test-artifacts/browser-suite/workbench_consistency/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/workbench_bar.py",
+      "exitCode": 0,
+      "seconds": 96.63,
+      "testSha256": "dbcdda7fe51e2c8b7aeab0450536650e5a0ba51958fc9b923ef963652ae14872",
+      "rawLog": "out/test-artifacts/browser-suite/workbench_bar/run.log",
+      "firstFailure": null,
+      "exceptionType": null,
+      "knownDefect": false
+    }
+  ],
+  "method": "Every entry point runs once, sequentially, without retries or changed assertions.",
+  "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100061231",
+  "passed": 34,
+  "failed": 3,
+  "total": 37,
+  "unexpectedFailures": [
+    "tests/e2e/smoke.py"
+  ],
+  "matchesAcceptedBaseline": false
+}

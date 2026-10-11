@@ -1,0 +1,5284 @@
+{
+  "ciRun": 38092994806,
+  "ciCapturesSha256": "f57b11202ae022bc4b46f15300bac2ed071085f8ae2c25ef49bb62eb5d4d5274",
+  "committedGoldenComparison": {
+    "differingLeaves": 950,
+    "differences": [
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.look/dark/Calculations.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Calculations.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.look/dark/Display.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Display.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.look/dark/Edit.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Edit.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.look/dark/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.look/dark/Measure.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Measure.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.look/light/Calculations.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Calculations.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.look/light/Display.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Display.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.look/light/Edit.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Edit.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.look/light/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.look/light/Measure.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Measure.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_1.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_2.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_3.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/canonical_4.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_1.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_2.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_3.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/dark/orbital/localized_4.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_1.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_2.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_3.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/canonical_4.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_1.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_2.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_3.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.methane/light/orbital/localized_4.cube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/dark/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.pubchem/light/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/dark/Calculations.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Calculations.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/dark/Display.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Display.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/dark/Edit.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Edit.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.sample/dark/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/dark/Measure.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Measure.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/light/Calculations.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Calculations.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/light/Display.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Display.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/light/Edit.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Edit.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.sample/light/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.sample/light/Measure.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Measure.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.session/dark/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.session/light/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/dark/frame-3.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.trajectory/light/frame-3.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_0.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_1.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_2.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_3.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_4.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_5.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_6.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_7.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/dark/orbital/orbital_8.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_0.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_1.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_2.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_3.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_4.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_5.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_6.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_7.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.two-component/light/orbital/orbital_8.2ccube.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/dark/controls.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Calculations.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Display.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Edit.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/Measure.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolElementUtils[0]",
+        "kind": "added",
+        "actual": "clamp"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolElementUtils[1]",
+        "kind": "added",
+        "actual": "clampOrZero"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolElementUtils[2]",
+        "kind": "added",
+        "actual": "clampWithUpperPriority"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolElementUtils[3]",
+        "kind": "added",
+        "actual": "getElementSymbol"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolElementUtils[4]",
+        "kind": "added",
+        "actual": "getElementSymbolByAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolElementUtils[5]",
+        "kind": "added",
+        "actual": "getElementSymbolRaw"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolElementUtils[6]",
+        "kind": "added",
+        "actual": "isLanthanideOrActinideAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolElementUtils[7]",
+        "kind": "added",
+        "actual": "isTransitionMetalAtomicNumber"
+      },
+      {
+        "path": "$.vibration/light/controls.api.VibeMolPeriodicTable[0]",
+        "kind": "added",
+        "actual": "createPeriodicTableController"
+      }
+    ]
+  },
+  "approvedApiAdditions": [
+    {
+      "global": "VibeMolElementUtils",
+      "keys": [
+        "clamp",
+        "clampOrZero",
+        "clampWithUpperPriority",
+        "getElementSymbol",
+        "getElementSymbolByAtomicNumber",
+        "getElementSymbolRaw",
+        "isLanthanideOrActinideAtomicNumber",
+        "isTransitionMetalAtomicNumber"
+      ]
+    },
+    {
+      "global": "VibeMolPeriodicTable",
+      "keys": [
+        "createPeriodicTableController"
+      ]
+    }
+  ],
+  "comparisonAfterApprovedApiAdditions": {
+    "differingLeaves": 32,
+    "differences": [
+      {
+        "path": "$.look/dark/Calculations.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Calculations.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Display.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Display.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Edit.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Edit.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Measure.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/dark/Measure.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Calculations.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Calculations.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Display.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Display.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Edit.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Edit.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Measure.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.look/light/Measure.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Calculations.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Calculations.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Display.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Display.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Edit.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Edit.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Measure.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/dark/Measure.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Calculations.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Calculations.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Display.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true,
+        "localCapture": 2.375228488400047e-06
+      },
+      {
+        "path": "$.sample/light/Display.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Edit.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Edit.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Measure.geometry.molecule.bonds[6].z",
+        "kind": "float",
+        "expected": 2.375228488400047e-06,
+        "actual": 2.3752284884000466e-06,
+        "absoluteDifference": 4.235164736271502e-22,
+        "relativeDifference": 1.7830557173572413e-16,
+        "ulps": 1.0,
+        "withinProposedTolerance": true
+      },
+      {
+        "path": "$.sample/light/Measure.geometry.molecule.bonds[7].z",
+        "kind": "float",
+        "expected": 2.7065756611495235e-07,
+        "actual": 2.7065756611495256e-07,
+        "absoluteDifference": 2.117582368135751e-22,
+        "relativeDifference": 7.82384323679457e-16,
+        "ulps": 4.0,
+        "withinProposedTolerance": true
+      }
+    ]
+  },
+  "localComparisonAfterApprovedApiAdditions": {
+    "differingLeaves": 0,
+    "differences": []
+  },
+  "largestAbsoluteDifference": 4.235164736271502e-22,
+  "largestRelativeDifference": 7.82384323679457e-16,
+  "aboveInvestigationThreshold": [],
+  "focus": {
+    "path": "$.sample/light/Display.geometry.molecule.bonds[6].z",
+    "kind": "float",
+    "expected": 2.375228488400047e-06,
+    "actual": 2.3752284884000466e-06,
+    "absoluteDifference": 4.235164736271502e-22,
+    "relativeDifference": 1.7830557173572413e-16,
+    "ulps": 1.0,
+    "withinProposedTolerance": true,
+    "localCapture": 2.375228488400047e-06
+  }
+}

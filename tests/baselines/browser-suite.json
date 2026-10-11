@@ -1,0 +1,69 @@
+{
+  "expected": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37
+  },
+  "suites": [
+    "tests/e2e/asset_cache.py",
+    "tests/e2e/periodic_table.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/accessibility.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/workbench_release.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/looks.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/style_lab.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_bar.py"
+  ],
+  "knownDefects": {
+    "tests/e2e/axis_gizmo.py": {
+      "firstFailure": {
+        "suite": "axis_gizmo.py",
+        "line": 130,
+        "function": "run"
+      },
+      "testSha256": "7847c5ede2ccc827e4725a86e0eb71d15bac7a6a91801cc2a1ce8bd2596fceb6",
+      "exceptionType": "AssertionError",
+      "evidence": "tests/baselines/evidence/browser-repair/browser/axis_gizmo.log"
+    },
+    "tests/e2e/mode_consistency.py": {
+      "firstFailure": {
+        "suite": "mode_consistency.py",
+        "line": 80,
+        "function": "coordinate_row_actions"
+      },
+      "testSha256": "f88242838ba6f50e5ca1988c4601478d62e3fb91f51b9024f73684fbc3142aa1",
+      "exceptionType": "TimeoutError",
+      "evidence": "tests/baselines/evidence/browser-repair/browser/mode_consistency.log"
+    }
+  },
+  "policy": "Filed defects remain failing. CI accepts only the exact test fingerprint, first failure site and exception type from the accepted issue #4 repair; every other failure fails the gate."
+}

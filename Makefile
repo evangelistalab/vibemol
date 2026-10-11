@@ -82,7 +82,7 @@ version-assets:
 check:
 	python3 tools/sync_asset_versions.py --check
 	python3 -m py_compile tools/sync_asset_versions.py tests/e2e/asset_cache.py
-	python3 -m py_compile tests/e2e/characterize.py tests/e2e/periodic_table.py tests/e2e/style_lab.py
+	python3 -m py_compile tests/e2e/characterize.py tests/e2e/browser_suite.py tests/e2e/compare_ci_baselines.py tests/e2e/periodic_table.py tests/e2e/style_lab.py
 	@set -e; \
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \
@@ -92,45 +92,10 @@ check:
 
 test-unit:
 	node --test tests/unit/*.test.mjs
+	python3 -m unittest discover -s tests/unit -p 'test_*.py'
 
 test-e2e:
-	python3 tests/e2e/asset_cache.py
 	python3 tests/e2e/characterize.py
-	python3 tests/e2e/periodic_table.py
-	python3 tests/e2e/edit_tool.py
-	python3 tests/e2e/build_bonds.py
-	python3 tests/e2e/build_orbit.py
-	python3 tests/e2e/transform_selection.py
-	python3 tests/e2e/figure.py
-	python3 tests/e2e/calculations.py
-	python3 tests/e2e/ux_review.py
-	python3 tests/e2e/accessibility.py
-	python3 tests/e2e/measurements.py
-	python3 tests/e2e/build_panel.py
-	python3 tests/e2e/symmetry_panel.py
-	python3 tests/e2e/hydrogen_contacts.py
-	python3 tests/e2e/axis_gizmo.py
-	python3 tests/e2e/workbench_release.py
-	python3 tests/e2e/smoke.py
-	python3 tests/e2e/premerge.py
-	python3 tests/e2e/sessions.py
-	python3 tests/e2e/appearance_controls.py
-	python3 tests/e2e/look_references.py
-	python3 tests/e2e/look_tiles.py
-	python3 tests/e2e/surface_schemes.py
-	python3 tests/e2e/surface_shadows.py
-	python3 tests/e2e/looks.py
-	python3 tests/e2e/camera_depth.py
-	python3 tests/e2e/edit_picking.py
-	python3 tests/e2e/mode_consistency.py
-	python3 tests/e2e/style_studio.py
-	python3 tests/e2e/style_lab.py
-	python3 tests/e2e/appearance_scopes.py
-	python3 tests/e2e/properties_inspector.py
-	python3 tests/e2e/properties_disclosures.py
-	python3 tests/e2e/floating_panels.py
-	python3 tests/e2e/workbench.py
-	python3 tests/e2e/workbench_consistency.py
-	python3 tests/e2e/workbench_bar.py
+	python3 tests/e2e/browser_suite.py
 
 test: check test-unit test-e2e
